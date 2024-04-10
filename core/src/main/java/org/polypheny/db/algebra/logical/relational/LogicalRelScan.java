@@ -41,6 +41,8 @@ import org.polypheny.db.algebra.AlgInput;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.relational.RelScan;
+import org.polypheny.db.algebra.polyalg.arguments.EntityArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -124,6 +126,10 @@ public final class LogicalRelScan extends RelScan<Entity> {
                                 } );
 
         return new LogicalRelScan( cluster, traitSet, entity );
+    }
+
+    public static LogicalRelScan create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster) {
+        return create( cluster, args.getArg( 0, EntityArg.class ).getEntity());
     }
 
 

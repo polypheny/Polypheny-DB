@@ -74,7 +74,11 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
+import org.polypheny.db.algebra.polyalg.parser.PolyAlgParser;
+import org.polypheny.db.algebra.polyalg.parser.PolyAlgToAlgConverter;
+import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.Entity;
@@ -82,6 +86,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.Information;
 import org.polypheny.db.information.InformationCode;
@@ -97,10 +102,12 @@ import org.polypheny.db.monitoring.events.QueryEvent;
 import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.partition.properties.PartitionProperty;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
+import org.polypheny.db.plan.volcano.VolcanoPlanner;
 import org.polypheny.db.prepare.Prepare.PreparedResult;
 import org.polypheny.db.prepare.Prepare.PreparedResultImpl;
 import org.polypheny.db.processing.caching.ImplementationCache;
@@ -244,6 +251,53 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 group,
                 AlgOptUtil.dumpPlan( "Logical Query Plan", logicalRoot.alg, ExplainFormat.JSON, ExplainLevel.ALL_ATTRIBUTES ) );
         queryAnalyzer.registerInformation( informationQueryPlan );
+
+        testPolyAlgParserDuringDevelopment(logicalRoot.alg); // TODO: Delete as soon as PolyAlgParser is working
+    }
+
+    private void testPolyAlgParserDuringDevelopment(AlgNode alg) {
+        /*TransactionManager tm = TransactionManagerImpl.getInstance();
+        Transaction transaction = tm.startTransaction( statement.getTransaction().getUser().getId(), false,  "PolyAlg Tester");*/
+        AlgDataTypeFactory factory = AlgDataTypeFactory.DEFAULT;
+        AlgCluster cluster = AlgCluster.create( new VolcanoPlanner(), new RexBuilder( factory ), null, null );
+        Snapshot snapshot = Catalog.snapshot();
+
+
+        StringBuilder sb = new StringBuilder();
+        alg.buildPolyAlgebra( sb, "" );
+
+        String polyAlg = sb.toString();
+        System.out.println( "===== Logical Query Plan =====" );
+        System.out.println( polyAlg );
+        System.out.print( "----> " );
+        try {
+            PolyAlgParser parser = PolyAlgParser.create( polyAlg );
+            PolyAlgNode node = (PolyAlgNode) parser.parseQuery();
+            System.out.println( "Successfully parsed input!\n" );
+
+            PolyAlgToAlgConverter converter = new PolyAlgToAlgConverter(snapshot, cluster);
+
+            AlgRoot root = converter.convert( node );
+
+            System.out.println( "Successfully built AlgNode Tree!\n" );
+
+            sb.setLength( 0 ); // reset StringBuilder
+            root.alg.buildPolyAlgebra( sb, "" );
+            String roundTripPolyAlg = sb.toString();
+            System.out.println( ">>>>> Logical Query Plan (parsed) <<<<<" );
+            System.out.println( sb );
+            if (polyAlg.replace( "PROJECT#", "PROJECT" ).equals( roundTripPolyAlg )) {
+                System.out.println("----> Plans are equal!");
+            } else {
+                log.warn( "Plans are not equal" );
+            }
+            System.out.println();
+
+        } catch ( Exception e ) {
+            System.out.println( "Could not parse input correctly:" );
+            e.printStackTrace();
+        }
+
     }
 
 

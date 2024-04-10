@@ -17,6 +17,7 @@
 package org.polypheny.db.algebra.polyalg.arguments;
 
 import java.util.List;
+import lombok.Getter;
 import lombok.NonNull;
 import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.AlgNode;
@@ -26,11 +27,12 @@ public class CollationArg implements PolyAlgArg {
 
     public static final CollationArg NULL = new CollationArg( null );
 
-    private final AlgFieldCollation arg;
+    @Getter
+    private final AlgFieldCollation coll;
 
 
-    public CollationArg( AlgFieldCollation arg ) {
-        this.arg = arg;
+    public CollationArg( AlgFieldCollation coll ) {
+        this.coll = coll;
     }
 
 
@@ -42,13 +44,17 @@ public class CollationArg implements PolyAlgArg {
 
     @Override
     public String toPolyAlg( AlgNode context, @NonNull List<String> inputFieldNames ) {
-        if ( arg == null ) {
+        if ( coll == null ) {
             return "";
         }
-        int idx = arg.getFieldIndex();
+        int idx = coll.getFieldIndex();
         String str = inputFieldNames.size() > idx ? inputFieldNames.get( idx ) : Integer.toString( idx );
-        if ( arg.direction != AlgFieldCollation.Direction.ASCENDING || arg.nullDirection != arg.direction.defaultNullDirection() ) {
-            str += " " + arg.shortString();
+        boolean notDefaultNullDir = coll.nullDirection != coll.direction.defaultNullDirection();
+        if ( coll.direction != AlgFieldCollation.Direction.ASCENDING || notDefaultNullDir ) {
+            str += " " + coll.direction.shortString;
+            if ( notDefaultNullDir ) {
+                str += " " + coll.nullDirection.toString();
+            }
         }
         return str;
     }

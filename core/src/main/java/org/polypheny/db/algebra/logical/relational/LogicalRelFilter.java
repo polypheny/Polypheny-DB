@@ -35,6 +35,7 @@ package org.polypheny.db.algebra.logical.relational;
 
 
 import com.google.common.collect.ImmutableSet;
+import java.util.List;
 import java.util.Objects;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
@@ -48,6 +49,8 @@ import org.polypheny.db.algebra.core.relational.RelAlg;
 import org.polypheny.db.algebra.metadata.AlgMdCollation;
 import org.polypheny.db.algebra.metadata.AlgMdDistribution;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.polyalg.arguments.CorrelationArg;
+import org.polypheny.db.algebra.polyalg.arguments.ListArg;
 import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.algebra.polyalg.arguments.RexArg;
 import org.polypheny.db.plan.AlgCluster;
@@ -104,6 +107,18 @@ public final class LogicalRelFilter extends Filter implements RelAlg {
     }
 
 
+    public static LogicalRelFilter create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+        RexArg condition = args.getArg( "condition", RexArg.class );
+        List<CorrelationId> variables = args.getListArg( "variables", CorrelationArg.class ).map( CorrelationArg::getCorrId );
+        return create( children.get( 0 ), condition.getNode(), ImmutableSet.copyOf( variables ) );
+    }
+
+
+    @Override
+    public ImmutableSet<CorrelationId> getVariablesSet() {
+        return variablesSet;
+    }
+
 
     @Override
     public LogicalRelFilter copy( AlgTraitSet traitSet, AlgNode input, RexNode condition ) {
@@ -127,8 +142,8 @@ public final class LogicalRelFilter extends Filter implements RelAlg {
     @Override
     public PolyAlgArgs collectAttributes() {
         PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
-
-        args.put( 0, new RexArg( condition ) );
+        args.put( 0, new RexArg( condition ) )
+                .put( "variables", new ListArg<>( variablesSet.asList(), CorrelationArg::new ) );
         return args;
     }
 

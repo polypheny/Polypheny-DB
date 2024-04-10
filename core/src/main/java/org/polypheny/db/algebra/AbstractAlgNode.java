@@ -40,18 +40,15 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
-import org.checkerframework.checker.units.qual.A;
 import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.core.CorrelationId;
+import org.polypheny.db.algebra.core.SetOp;
 import org.polypheny.db.algebra.externalize.AlgWriterImpl;
 import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
@@ -62,7 +59,6 @@ import org.polypheny.db.algebra.polyalg.PolyAlgRegistry;
 import org.polypheny.db.algebra.polyalg.PolyAlgUtils;
 import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
@@ -360,7 +356,10 @@ public abstract class AbstractAlgNode implements AlgNode {
     public void buildPolyAlgebra( StringBuilder sb, String prefix ) {
         final String INDENT = " ";
         String nextPrefix = prefix == null ? null : prefix + INDENT;
-        List<String> inputFieldNames = PolyAlgUtils.uniquifiedInputFieldNames( this );
+        boolean makeFieldsUnique = !(this instanceof SetOp); // set operations like UNION require duplicate field names
+        List<String> inputFieldNames = makeFieldsUnique ?
+                PolyAlgUtils.uniquifiedInputFieldNames( this ) :
+                PolyAlgUtils.getInputFieldNamesList( this );
 
         PolyAlgDeclaration decl = getPolyAlgDeclaration();
         sb.append( prefix == null ? "" : prefix ).append( decl.opName );
@@ -374,7 +373,9 @@ public abstract class AbstractAlgNode implements AlgNode {
         sb.append( "(\n" );
         int inputIdx = 0;
         for ( AlgNode child : getInputs() ) {
-            List<String> projections = PolyAlgUtils.getAuxProjections( child, inputFieldNames, inputIdx );
+            List<String> projections = makeFieldsUnique ?
+                    PolyAlgUtils.getAuxProjections( child, inputFieldNames, inputIdx ) :
+                    List.of();
             inputIdx += child.getTupleType().getFieldCount();
 
             if ( projections.isEmpty() ) {
@@ -382,8 +383,8 @@ public abstract class AbstractAlgNode implements AlgNode {
             } else {
                 sb.append( nextPrefix )
                         .append( PolyAlgRegistry.getDeclaration( LogicalRelProject.class ).opName ).append( "#" )  // TODO: select Project depending on data model, logical / physical
-                        .append( "[" ).append( PolyAlgUtils.joinMultiValued( projections, true ) ).append( "]")
-                        .append("(\n" );
+                        .append( "[" ).append( PolyAlgUtils.joinMultiValued( projections, true ) ).append( "]" )
+                        .append( "(\n" );
                 child.buildPolyAlgebra( sb, nextPrefix == null ? null : nextPrefix + INDENT );
                 sb.append( ")" );
             }
@@ -406,7 +407,7 @@ public abstract class AbstractAlgNode implements AlgNode {
      */
     @Override
     public PolyAlgDeclaration getPolyAlgDeclaration() {
-        return PolyAlgRegistry.getDeclaration( getClass(), getInputs().size() );
+        return PolyAlgRegistry.getDeclaration( getClass(), getModel(), getInputs().size() );
     }
 
 

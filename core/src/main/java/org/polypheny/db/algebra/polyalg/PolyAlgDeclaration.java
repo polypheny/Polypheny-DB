@@ -21,13 +21,13 @@ import com.google.common.collect.ImmutableMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import lombok.Builder;
 import lombok.Data;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Singular;
+import org.apache.commons.lang3.function.TriFunction;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.polyalg.arguments.AggArg;
 import org.polypheny.db.algebra.polyalg.arguments.AnyArg;
@@ -42,32 +42,37 @@ import org.polypheny.db.algebra.polyalg.arguments.ListArg;
 import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArg;
 import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.algebra.polyalg.arguments.RexArg;
+import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.plan.AlgCluster;
 
 
 public class PolyAlgDeclaration {
 
     public final String opName;
     public final ImmutableList<String> opAliases;
-    public final int numInputs; // -1 if arbitrary amount is allowed
+    public final DataModel model;
+    private final int numInputs; // -1 if arbitrary amount is allowed
     public final ImmutableList<OperatorTag> opTags;
 
     public final ImmutableList<Parameter> posParams;
     public final ImmutableList<Parameter> kwParams;
     private final ImmutableMap<String, Parameter> paramLookup;
 
-    private final BiFunction<PolyAlgArgs, List<AlgNode>, AlgNode> creator;
+    private final TriFunction<PolyAlgArgs, List<AlgNode>, AlgCluster, AlgNode> creator;
 
 
     @Builder
     public PolyAlgDeclaration(
             @NonNull String opName,
             @Singular ImmutableList<String> opAliases,
-            BiFunction<PolyAlgArgs, List<AlgNode>, AlgNode> creator,
+            @NonNull DataModel model,
+            TriFunction<PolyAlgArgs, List<AlgNode>, AlgCluster, AlgNode> creator,
             @Singular ImmutableList<OperatorTag> opTags,
             int numInputs,
             @Singular ImmutableList<Parameter> params ) {
         this.opName = opName;
         this.opAliases = (opAliases != null) ? opAliases : ImmutableList.of();
+        this.model = model;
         this.creator = creator;
         this.numInputs = numInputs;
         this.opTags = (opTags != null) ? opTags : ImmutableList.of();
@@ -96,8 +101,8 @@ public class PolyAlgDeclaration {
     }
 
 
-    public AlgNode createNode( PolyAlgArgs args, List<AlgNode> children ) {
-        return creator.apply( args, children );
+    public AlgNode createNode( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+        return creator.apply( args, children, cluster );
     }
 
 
@@ -159,6 +164,11 @@ public class PolyAlgDeclaration {
 
     public boolean containsParam( Parameter p ) {
         return posParams.contains( p ) || kwParams.contains( p );
+    }
+
+
+    public boolean supportsNumberOfChildren( int n ) {
+        return numInputs == -1 || numInputs == n;
     }
 
 
@@ -279,9 +289,6 @@ public class PolyAlgDeclaration {
 
 
     public enum OperatorTag {
-        REL,
-        DOC,
-        LPG,
         LOGICAL,
         PHYSICAL,
         ALLOCATION,

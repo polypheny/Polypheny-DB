@@ -38,6 +38,7 @@ import java.util.List;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
+import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.Sort;
@@ -87,6 +88,14 @@ public final class LogicalRelSort extends Sort implements RelAlg {
     }
 
 
+    public static LogicalRelSort create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+        ListArg<CollationArg> collations = args.getListArg( "sort", CollationArg.class );
+        RexArg limit = args.getArg( "limit", RexArg.class );
+        RexArg offset = args.getArg( "offset", RexArg.class );
+        return create( children.get( 0 ), AlgCollations.of( collations.map( CollationArg::getColl ) ), offset.getNode(), limit.getNode() );
+    }
+
+
     @Override
     public Sort copy( AlgTraitSet traitSet, AlgNode newInput, AlgCollation newCollation, ImmutableList<RexNode> fieldExps, RexNode offset, RexNode fetch ) {
         return new LogicalRelSort( getCluster(), traitSet, newInput, newCollation, fieldExps, offset, fetch );
@@ -105,7 +114,7 @@ public final class LogicalRelSort extends Sort implements RelAlg {
 
         PolyAlgArg collArg = new ListArg<>(
                 collation.getFieldCollations(),
-                c -> new CollationArg( c ),
+                CollationArg::new,
                 args.getDecl().canUnpackValues() );
 
         args.put( "sort", collArg )

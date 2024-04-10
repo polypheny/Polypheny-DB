@@ -26,11 +26,16 @@ public class BooleanArg implements PolyAlgArg {
     public static final BooleanArg FALSE = new BooleanArg( false );
     public static final BooleanArg TRUE = new BooleanArg( true );
 
-    private final boolean arg;
+    private final boolean bool;
 
 
-    public BooleanArg( boolean arg ) {
-        this.arg = arg;
+    public BooleanArg( boolean bool ) {
+        this.bool = bool;
+    }
+
+
+    public boolean toBool() {
+        return bool;
     }
 
 
@@ -42,7 +47,7 @@ public class BooleanArg implements PolyAlgArg {
 
     @Override
     public String toPolyAlg( AlgNode context, @NonNull List<String> inputFieldNames ) {
-        return Boolean.toString( arg );
+        return Boolean.toString( bool );
     }
 
 }

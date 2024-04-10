@@ -80,6 +80,11 @@ public final class LogicalRelUnion extends Union implements RelAlg {
     }
 
 
+    public static LogicalRelUnion create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+        return create( children, args.getArg( "all", BooleanArg.class ).toBool() );
+    }
+
+
     @Override
     public LogicalRelUnion copy( AlgTraitSet traitSet, List<AlgNode> inputs, boolean all ) {
         assert traitSet.containsIfApplicable( Convention.NONE );

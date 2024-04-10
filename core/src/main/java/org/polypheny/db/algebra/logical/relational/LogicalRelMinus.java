@@ -80,6 +80,11 @@ public final class LogicalRelMinus extends Minus implements RelAlg {
     }
 
 
+    public static LogicalRelMinus create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+        return create( children, args.getArg( "all", BooleanArg.class ).toBool() );
+    }
+
+
     @Override
     public LogicalRelMinus copy( AlgTraitSet traitSet, List<AlgNode> inputs, boolean all ) {
         assert traitSet.containsIfApplicable( Convention.NONE );

@@ -17,6 +17,7 @@
 package org.polypheny.db.algebra.polyalg.arguments;
 
 import java.util.List;
+import lombok.Getter;
 import lombok.NonNull;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.CorrelationId;
@@ -24,11 +25,12 @@ import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.ParamType;
 
 public class CorrelationArg implements PolyAlgArg {
 
-    private final CorrelationId arg;
+    @Getter
+    private final CorrelationId corrId;
 
 
-    public CorrelationArg( CorrelationId arg ) {
-        this.arg = arg;
+    public CorrelationArg( CorrelationId corrId ) {
+        this.corrId = corrId;
     }
 
 
@@ -40,7 +42,7 @@ public class CorrelationArg implements PolyAlgArg {
 
     @Override
     public String toPolyAlg( AlgNode context, @NonNull List<String> inputFieldNames ) {
-        return String.valueOf( arg.getId() );
+        return String.valueOf( corrId.getId() );
     }
 
 }

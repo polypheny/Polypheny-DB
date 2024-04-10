@@ -30,6 +30,7 @@ public class RexArg implements PolyAlgArg {
 
     @Getter
     private final RexNode node;
+    @Getter
     private final String alias;
     private boolean omitTrue = false;
 

@@ -91,4 +91,14 @@ public class ListArg<E extends PolyAlgArg> implements PolyAlgArg {
         return PolyAlgUtils.joinMultiValued( strArgs, unpackValues );
     }
 
+
+    public <T> List<T> map( Function<E, T> mapper ) {
+        return args.stream().map( mapper ).toList();
+    }
+
+
+    public boolean isEmpty() {
+        return args.isEmpty();
+    }
+
 }

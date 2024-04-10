@@ -34,6 +34,8 @@
 package org.polypheny.db.algebra.logical.relational;
 
 
+import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
@@ -44,7 +46,9 @@ import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.relational.RelAlg;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.ParamType;
 import org.polypheny.db.algebra.polyalg.arguments.BooleanArg;
+import org.polypheny.db.algebra.polyalg.arguments.CorrelationArg;
 import org.polypheny.db.algebra.polyalg.arguments.EnumArg;
+import org.polypheny.db.algebra.polyalg.arguments.ListArg;
 import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.algebra.polyalg.arguments.RexArg;
 import org.polypheny.db.plan.AlgCluster;
@@ -68,7 +72,6 @@ public final class LogicalRelJoin extends Join implements RelAlg {
 
     // NOTE jvs 14-Mar-2006:  Normally we don't use state like this to control rule firing, but due to the non-local nature of semijoin optimizations, it's pretty much required.
     private final boolean semiJoinDone;
-
 
 
     /**
@@ -122,6 +125,15 @@ public final class LogicalRelJoin extends Join implements RelAlg {
     }
 
 
+    public static LogicalRelJoin create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+        RexArg condition = args.getArg( "condition", RexArg.class );
+        EnumArg<JoinAlgType> type = args.getEnumArg( "type", JoinAlgType.class );
+        List<CorrelationId> variables = args.getListArg( "variables", CorrelationArg.class ).map( CorrelationArg::getCorrId );
+        BooleanArg semiJoinDone = args.getArg( "semiJoinDone", BooleanArg.class );
+        return create( children.get( 0 ), children.get( 1 ), condition.getNode(), new HashSet<>( variables ), type.getArg(), semiJoinDone.toBool() );
+    }
+
+
     @Override
     public LogicalRelJoin copy( AlgTraitSet traitSet, RexNode conditionExpr, AlgNode left, AlgNode right, JoinAlgType joinType, boolean semiJoinDone ) {
         assert traitSet.containsIfApplicable( Convention.NONE );
@@ -147,14 +159,17 @@ public final class LogicalRelJoin extends Join implements RelAlg {
         return semiJoinDone;
     }
 
+
     @Override
     public PolyAlgArgs collectAttributes() {
         PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
 
-        args.put( 0, new RexArg( condition, true ) )
+        args.put( 0, new RexArg( condition ) )
                 .put( "type", new EnumArg<>( joinType, ParamType.JOIN_TYPE_ENUM ) )
+                .put( "variables", new ListArg<>( variablesSet.asList(), CorrelationArg::new ) )
                 .put( "semiJoinDone", new BooleanArg( semiJoinDone ) );
         return args;
     }
+
 }
 

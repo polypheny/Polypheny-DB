@@ -17,14 +17,17 @@
 package org.polypheny.db.algebra.polyalg.arguments;
 
 import java.util.List;
+import lombok.Getter;
 import lombok.NonNull;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.ParamType;
 
-public class EnumArg<E extends Enum<E>> implements PolyAlgArg{
+public class EnumArg<E extends Enum<E>> implements PolyAlgArg {
 
+    @Getter
     private final E arg;
     private final ParamType type;
+
 
     public EnumArg( E arg, ParamType enumType ) {
         assert enumType.isEnum();
@@ -32,6 +35,7 @@ public class EnumArg<E extends Enum<E>> implements PolyAlgArg{
         this.arg = arg;
         this.type = enumType;
     }
+
 
     @Override
     public ParamType getType() {

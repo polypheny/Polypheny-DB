@@ -429,6 +429,10 @@ public class AlgBuilder {
      */
     public RexNode literal( Object value ) {
         final RexBuilder rexBuilder = cluster.getRexBuilder();
+        return literal( value, rexBuilder );
+    }
+
+    public static RexNode literal( Object value, RexBuilder rexBuilder) {
         if ( value == null ) {
             return rexBuilder.constantNull();
         } else if ( value instanceof Boolean ) {

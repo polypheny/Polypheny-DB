@@ -16,20 +16,32 @@
 
 package org.polypheny.db.algebra.polyalg.parser.nodes;
 
+import java.util.Locale;
+import lombok.Getter;
+import org.polypheny.db.algebra.AlgFieldCollation;
+import org.polypheny.db.algebra.AlgFieldCollation.Direction;
+import org.polypheny.db.algebra.AlgFieldCollation.NullDirection;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.ParserPos;
 
 public class PolyAlgLiteral extends PolyAlgNode {
 
     private final String str;
+    @Getter
     private final boolean isNumber;
+    @Getter
+    private final boolean isQuoted;
+    @Getter
+    private final boolean isBoolean;
 
 
-    public PolyAlgLiteral( String str, boolean isNumber, ParserPos pos ) {
+    public PolyAlgLiteral( String str, boolean isNumber, boolean isQuoted, boolean isBoolean, ParserPos pos ) {
         super( pos );
 
         this.str = str;
         this.isNumber = isNumber;
+        this.isQuoted = isQuoted;
+        this.isBoolean = isBoolean;
     }
 
 
@@ -46,8 +58,48 @@ public class PolyAlgLiteral extends PolyAlgNode {
     }
 
 
+    public Number toNumber() {
+        if ( !this.isNumber ) {
+            throw new GenericRuntimeException( "Not a valid number" );
+        }
+
+        Number num;
+        double dbl = Double.parseDouble( str );
+        num = dbl;
+        if ( dbl % 1 == 0 ) {
+            num = Integer.parseInt( str );
+        }
+        return num;
+    }
+
+
+    public AlgFieldCollation.Direction toDirection() {
+        return switch ( str.toUpperCase( Locale.ROOT ) ) {
+            case "ASC" -> Direction.ASCENDING;
+            case "DESC" -> Direction.DESCENDING;
+            case "SASC" -> Direction.STRICTLY_ASCENDING;
+            case "SDESC" -> Direction.STRICTLY_DESCENDING;
+            case "CLU" -> Direction.CLUSTERED;
+            default -> throw new IllegalArgumentException( "'" + str + "' is not a valid direction" );
+        };
+    }
+
+
+    public AlgFieldCollation.NullDirection toNullDirection() {
+        return NullDirection.valueOf( str.toUpperCase( Locale.ROOT ) );
+    }
+
+
     @Override
     public String toString() {
+        return str;
+    }
+
+
+    public String toUnquotedString() {
+        if ( isQuoted ) {
+            return str.substring( 1, str.length() - 1 );
+        }
         return str;
     }
 

@@ -84,10 +84,6 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
 import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.operators.OperatorName;
-import org.polypheny.db.algebra.polyalg.parser.PolyAlgToAlgConverter;
-import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgNode;
-import org.polypheny.db.algebra.polyalg.parser.PolyAlgParser;
-import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgOperator;
 import org.polypheny.db.algebra.rules.AggregateProjectPullUpConstantsRule;
 import org.polypheny.db.algebra.rules.DateRangeRules;
 import org.polypheny.db.algebra.rules.FilterMergeRule;
@@ -1364,31 +1360,6 @@ public abstract class AlgOptUtil {
      * @return Plan
      */
     public static String dumpPlan( String header, AlgNode alg, ExplainFormat format, ExplainLevel detailLevel ) {
-        //TODO: Delete lines for testing PolyAlg serialization
-        if ( !header.startsWith( "Routed" ) ) {
-            StringBuilder sb = new StringBuilder();
-            alg.buildPolyAlgebra( sb, "" );
-            System.out.println( "===== " + header + " =====" );
-            System.out.println( sb );
-            System.out.print( "----> " );
-
-            try {
-                PolyAlgParser parser = PolyAlgParser.create( sb.toString() );
-                PolyAlgNode node = (PolyAlgNode) parser.parseQuery();
-                System.out.println( "Successfully parsed input!" );
-
-                if ( !header.startsWith( "Physical" ) ) {
-                    //PolyAlgToAlgConverter.buildNode( (PolyAlgOperator) node );
-                }
-            } catch ( Exception e ) {
-                System.out.println( "Could not parse input correctly:" );
-                System.out.println( e.getMessage() );
-                e.printStackTrace();
-            }
-
-            System.out.println();
-        }
-
         StringWriter sw = new StringWriter();
         PrintWriter pw = new PrintWriter( sw );
         if ( !header.isEmpty() ) {

@@ -125,13 +125,18 @@ public class PolyAlgUtils {
     }
 
 
-    public static List<String> uniquifiedInputFieldNames( AlgNode context ) {
+    public static List<String> getInputFieldNamesList( AlgNode context ) {
         if ( context == null ) {
             return List.of();
         }
-        List<String> names = context.getInputs().stream()
+        return context.getInputs().stream()
                 .flatMap( node -> node.getTupleType().getFieldNames().stream() )
                 .toList();
+    }
+
+
+    public static List<String> uniquifiedInputFieldNames( AlgNode context ) {
+        List<String> names = getInputFieldNamesList( context );
         return ValidatorUtil.uniquify( names, ValidatorUtil.ATTEMPT_SUGGESTER, true );
     }
 
@@ -250,7 +255,7 @@ public class PolyAlgUtils {
             sb.append( "{\n" );
             subQuery.alg.buildPolyAlgebra( sb );
             sb.append( "})" );
-            return "subQuery: " + sb.toString();
+            return "subQuery: " + sb;
         }
 
 
@@ -310,7 +315,7 @@ public class PolyAlgUtils {
             StringWriter sw = new StringWriter();
             PrintWriter pw = new PrintWriter( sw );
             int clauseCount = 0;
-            if ( window.partitionKeys.size() > 0 ) {
+            if ( !window.partitionKeys.isEmpty() ) {
                 if ( clauseCount++ > 0 ) {
                     pw.print( ' ' );
                 }

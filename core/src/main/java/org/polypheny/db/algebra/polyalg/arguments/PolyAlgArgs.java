@@ -149,6 +149,34 @@ public class PolyAlgArgs {
     }
 
 
+    public <T extends PolyAlgArg> ListArg<T> getListArg( int pos, Class<T> type ) {
+        ListArg<?> listArg = getArg( pos, ListArg.class );
+        assert listArg.isEmpty() || type.isInstance( listArg.getArgs().get( 0 ) ); // an empty ListArg is of type EMPTY_LIST
+        return (ListArg<T>) listArg;
+    }
+
+
+    public <T extends PolyAlgArg> ListArg<T> getListArg( String name, Class<T> type ) {
+        ListArg<?> listArg = getArg( name, ListArg.class );
+        assert listArg.isEmpty() || type.isInstance( listArg.getArgs().get( 0 ) ); // an empty ListArg is of type EMPTY_LIST
+        return (ListArg<T>) listArg;
+    }
+
+
+    public <T extends Enum<T>> EnumArg<T> getEnumArg( int pos, Class<T> type ) {
+        EnumArg<?> enumArg = getArg( pos, EnumArg.class );
+        assert type.isInstance( enumArg.getArg() );
+        return (EnumArg<T>) enumArg;
+    }
+
+
+    public <T extends Enum<T>> EnumArg<T> getEnumArg( String name, Class<T> type ) {
+        EnumArg<?> enumArg = getArg( name, EnumArg.class );
+        assert type.isInstance( enumArg.getArg() );
+        return (EnumArg<T>) enumArg;
+    }
+
+
     private <T extends PolyAlgArg> T getArg( Parameter p, Class<T> type ) {
         PolyAlgArg arg = getArg( p );
         assert type.isInstance( arg );

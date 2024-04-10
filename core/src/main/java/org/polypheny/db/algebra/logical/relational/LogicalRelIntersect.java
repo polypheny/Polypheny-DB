@@ -71,6 +71,11 @@ public final class LogicalRelIntersect extends Intersect implements RelAlg {
     }
 
 
+    public static LogicalRelIntersect create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+        return create( children, args.getArg( "all", BooleanArg.class ).toBool() );
+    }
+
+
     @Override
     public LogicalRelIntersect copy( AlgTraitSet traitSet, List<AlgNode> inputs, boolean all ) {
         return new LogicalRelIntersect( getCluster(), traitSet, inputs, all );

@@ -17,11 +17,15 @@
 package org.polypheny.db.algebra.polyalg.parser.nodes;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.StringJoiner;
 import lombok.Getter;
 import lombok.NonNull;
+import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.nodes.Operator;
 
 /**
  * One-size-fits-all class for any RexNodes or even literals not wrapped in a RexNode
@@ -37,7 +41,9 @@ public class PolyAlgExpression extends PolyAlgNode {
 
     public PolyAlgExpression( @NonNull List<PolyAlgLiteral> literals, List<PolyAlgExpression> childExps, String cast, ParserPos pos ) {
         super( pos );
-        assert !literals.isEmpty();
+        if ( literals.isEmpty() ) {
+            throw new GenericRuntimeException( "Expression must have at least one literal" );
+        }
 
         this.literals = literals;
         this.childExps = childExps;
@@ -48,7 +54,7 @@ public class PolyAlgExpression extends PolyAlgNode {
 
     public boolean isCall() {
         // if childExps is an empty list, we have a call with 0 arguments
-        return childExps == null;
+        return childExps != null;
     }
 
 
@@ -64,15 +70,23 @@ public class PolyAlgExpression extends PolyAlgNode {
 
     public int toInt() {
         if ( !isSingleLiteral() ) {
-            throw new GenericRuntimeException( "Not a valid integer" );
+            throw new GenericRuntimeException( "Not a valid integer: " + this );
         }
         return literals.get( 0 ).toInt();
     }
 
 
+    public Number toNumber() {
+        if ( !isSingleLiteral() ) {
+            throw new GenericRuntimeException( "Not a valid number: " + this );
+        }
+        return literals.get( 0 ).toNumber();
+    }
+
+
     public boolean toBoolean() {
         if ( !isSingleLiteral() ) {
-            throw new GenericRuntimeException( "Not a valid integer" );
+            throw new GenericRuntimeException( "Not a valid integer: " + this );
         }
         return literals.get( 0 ).toBoolean();
     }
@@ -80,14 +94,27 @@ public class PolyAlgExpression extends PolyAlgNode {
 
     public <T extends Enum<T>> T toEnum( Class<T> enumClass ) {
         if ( !isSingleLiteral() ) {
-            throw new GenericRuntimeException( "Not a valid integer" );
+            throw new GenericRuntimeException( "Not a valid integer: " + this );
         }
         return Enum.valueOf( enumClass, literals.get( 0 ).toString() );
     }
 
 
+    public String toIdentifier() {
+        if ( !isSingleLiteral() ) {
+            throw new GenericRuntimeException( "Not a valid identifier: " + this );
+        }
+        return literals.get( 0 ).toUnquotedString();
+    }
+
+
     public List<String> getLiteralsAsStrings() {
         return literals.stream().map( PolyAlgLiteral::toString ).toList();
+    }
+
+
+    public String getLiteralsAsString() {
+        return String.join( "", getLiteralsAsStrings() );
     }
 
 
@@ -108,6 +135,27 @@ public class PolyAlgExpression extends PolyAlgNode {
             sb.append( ":" ).append( cast );
         }
         return sb.toString();
+    }
+
+
+    public Operator getOperator() {
+        String str = getLiteralsAsString();
+        return switch ( str.toUpperCase( Locale.ROOT ) ) {
+            case "+" -> OperatorRegistry.get( OperatorName.PLUS );
+            case "-" -> OperatorRegistry.get( OperatorName.MINUS );
+            case "*" -> OperatorRegistry.get( OperatorName.MULTIPLY );
+            case "/" -> OperatorRegistry.get( OperatorName.DIVIDE );
+            case "=" -> OperatorRegistry.get( OperatorName.EQUALS );
+            case "!=", "<>" -> OperatorRegistry.get( OperatorName.NOT_EQUALS );
+            case ">" -> OperatorRegistry.get( OperatorName.GREATER_THAN );
+            case ">=" -> OperatorRegistry.get( OperatorName.GREATER_THAN_OR_EQUAL );
+            case "<" -> OperatorRegistry.get( OperatorName.LESS_THAN );
+            case "<=" -> OperatorRegistry.get( OperatorName.LESS_THAN_OR_EQUAL );
+            case "AND" -> OperatorRegistry.get( OperatorName.AND );
+            case "OR" -> OperatorRegistry.get( OperatorName.OR );
+            case "NOT" -> OperatorRegistry.get( OperatorName.NOT );
+            default -> throw new IllegalArgumentException( "Operator '" + str + "' is not yet supported" );
+        };
     }
 
 }

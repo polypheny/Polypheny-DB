@@ -134,6 +134,9 @@ TOKEN :
 | <EQUALS: "=">
 | <COLON: ":">
 | <AS: "AS">
+| <BOOL: (<TRUE> | <FALSE>)>
+| <#TRUE: "TRUE">
+| <#FALSE: "FALSE">
 | <IDENTIFIER: (<LETTER> | <IDENTIFIER_SYMBOL>) (<LETTER> | <DIGIT> | <IDENTIFIER_SYMBOL>)*>
 | <NUMBER: (<DIGIT>)+ (".")? (<DIGIT>)*>
 | <#LETTER: ["_","a"-"z","A"-"Z","ö", "Ö", "ä", "Ä", "ü", "Ü", "à", "À", "ç","Ç", "á", "Á", "è", "È","í","Í", "î", "Î","ó","Ó","ò", "ô", "Ô", "Ò" , "í", "Í", "ë", "Ë", "â", "Â", "ï", "Ï", "é", "É", "ñ", "Ñ", "ß"] >
@@ -312,6 +315,8 @@ PolyAlgLiteral Literal() :
 {
     Token t;
     boolean isNumber = false;
+    boolean isBoolean = false;
+    boolean isQuoted = false;
 
 }
 {
@@ -322,11 +327,13 @@ PolyAlgLiteral Literal() :
         |
         t = <SYMBOL>
         |
-        t = <QUOTED>
+        t = <QUOTED> {isQuoted = true;}
         |
         t = <EQUALS>
+        |
+        t = <BOOL> {isBoolean = true;}
     )
-    {return new PolyAlgLiteral(t.image, isNumber, getPos());}
+    {return new PolyAlgLiteral(t.image, isNumber, isQuoted, isBoolean, getPos());}
 
 }
 
@@ -350,8 +357,7 @@ String AliasName() :
     (
         name = OpName()
         |
-        t = <QUOTED>
-        {name = t.image;}
+        t = <QUOTED> {name = t.image;}
     )
     {return name;}
 }
