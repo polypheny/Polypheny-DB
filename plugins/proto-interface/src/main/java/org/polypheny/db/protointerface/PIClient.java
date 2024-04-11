@@ -30,26 +30,25 @@ import org.polypheny.db.transaction.TransactionManager;
 public class PIClient {
 
     @Getter
-    private String clientUUID;
-    private LogicalUser catalogUser;
+    private final String clientUUID;
+    private final LogicalUser catalogUser;
     private Transaction currentTransaction;
-    private TransactionManager transactionManager;
+    private final TransactionManager transactionManager;
     @Getter
-    private StatementManager statementManager;
+    private final StatementManager statementManager;
     @Getter
-    private PIClientInfoProperties PIClientInfoProperties;
+    private final PIClientInfoProperties PIClientInfoProperties;
     @Getter
     @Setter
     private boolean isAutoCommit;
     @Getter
     @Setter
     private LogicalNamespace namespace;
-    private boolean isActive;
     @Getter
-    private MonitoringPage monitoringPage;
+    private final MonitoringPage monitoringPage;
 
 
-    public PIClient(
+    PIClient(
             String clientUUID,
             LogicalUser catalogUser,
             TransactionManager transactionManager,
@@ -63,7 +62,6 @@ public class PIClient {
         this.catalogUser = catalogUser;
         this.transactionManager = transactionManager;
         this.isAutoCommit = isAutoCommit;
-        this.isActive = true;
         this.monitoringPage = monitoringPage;
         monitoringPage.addStatementManager( statementManager );
     }
@@ -135,22 +133,10 @@ public class PIClient {
     }
 
 
-    public void prepareForDisposal() {
+    void prepareForDisposal() {
         statementManager.closeAll();
         rollbackCurrentTransaction();
         monitoringPage.removeStatementManager( statementManager );
-    }
-
-
-    public void setIsActive() {
-        isActive = true;
-    }
-
-
-    public boolean returnAndResetIsActive() {
-        boolean oldIsActive = isActive;
-        isActive = false;
-        return oldIsActive;
     }
 
 }

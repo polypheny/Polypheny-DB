@@ -49,10 +49,10 @@ import org.polypheny.db.protointerface.proto.ConnectionPropertiesUpdateResponse;
 import org.polypheny.db.protointerface.proto.ConnectionRequest;
 import org.polypheny.db.protointerface.proto.ConnectionResponse;
 import org.polypheny.db.protointerface.proto.ConnectionResponse.Builder;
-import org.polypheny.db.protointerface.proto.DatabasesRequest;
-import org.polypheny.db.protointerface.proto.DatabasesResponse;
 import org.polypheny.db.protointerface.proto.DbmsVersionRequest;
 import org.polypheny.db.protointerface.proto.DbmsVersionResponse;
+import org.polypheny.db.protointerface.proto.DefaultNamespaceRequest;
+import org.polypheny.db.protointerface.proto.DefaultNamespaceResponse;
 import org.polypheny.db.protointerface.proto.DisconnectRequest;
 import org.polypheny.db.protointerface.proto.DisconnectResponse;
 import org.polypheny.db.protointerface.proto.EntitiesRequest;
@@ -111,7 +111,7 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Util;
 
 @Slf4j
-public class PIService {
+class PIService {
 
     private static final int majorApiVersion = 2;
     private static final int minorApiVersion = 0;
@@ -276,10 +276,13 @@ public class PIService {
 
 
     private Response handleMessage( Request req ) throws IOException {
+        if ( uuid == null || clientManager.getClient( uuid ) == null ) {
+            throw new IllegalStateException( "Clients must be authenticated before sending any messages" );
+        }
         return switch ( req.getTypeCase() ) {
             case DBMS_VERSION_REQUEST -> getDbmsVersion( req.getDbmsVersionRequest(), new ResponseMaker<>( req, "dbms_version_response" ) );
             case LANGUAGE_REQUEST -> throw new NotImplementedException( "Currently not used" );
-            case DATABASES_REQUEST -> getDatabases( req.getDatabasesRequest(), new ResponseMaker<>( req, "databases_response" ) );
+            case DEFAULT_NAMESPACE_REQUEST -> getDefaultNamespace( req.getDefaultNamespaceRequest(), new ResponseMaker<>( req, "databases_response" ) );
             case TABLE_TYPES_REQUEST -> getTableTypes( req.getTableTypesRequest(), new ResponseMaker<>( req, "table_types_response" ) );
             case TYPES_REQUEST -> getTypes( req.getTypesRequest(), new ResponseMaker<>( req, "types_response" ) );
             case USER_DEFINED_TYPES_REQUEST -> throw new NotImplementedException();
@@ -311,13 +314,13 @@ public class PIService {
             case COMMIT_REQUEST -> commitTransaction( req.getCommitRequest(), new ResponseMaker<>( req, "commit_response" ) );
             case ROLLBACK_REQUEST -> rollbackTransaction( req.getRollbackRequest(), new ResponseMaker<>( req, "rollback_response" ) );
             case CONNECTION_PROPERTIES_UPDATE_REQUEST -> updateConnectionProperties( req.getConnectionPropertiesUpdateRequest(), new ResponseMaker<>( req, "connection_properties_update_response" ) );
-            case TYPE_NOT_SET -> throw new NotImplementedException( "Unsupported call " + req.getTypeCase() );
             case CLOSE_RESULT_REQUEST -> closeResult( req.getCloseResultRequest(), new ResponseMaker<>( req, "close_result_response" ) );
+            case TYPE_NOT_SET -> throw new NotImplementedException( "Unsupported call " + req.getTypeCase() );
         };
     }
 
 
-    public Response connect( ConnectionRequest request, ResponseMaker<ConnectionResponse> responseObserver ) throws TransactionException, AuthenticationException {
+    private Response connect( ConnectionRequest request, ResponseMaker<ConnectionResponse> responseObserver ) throws TransactionException, AuthenticationException {
         if ( uuid != null ) {
             throw new PIServiceException( "Can only connect once per session" );
         }
@@ -338,7 +341,7 @@ public class PIService {
     }
 
 
-    public Response disconnect( DisconnectRequest request, ResponseMaker<DisconnectResponse> responseObserver ) {
+    private Response disconnect( DisconnectRequest request, ResponseMaker<DisconnectResponse> responseObserver ) {
         PIClient client = getClient();
         clientManager.unregisterConnection( client );
         uuid = null;
@@ -346,22 +349,17 @@ public class PIService {
     }
 
 
-    public Response checkConnection( ConnectionCheckRequest request, ResponseMaker<ConnectionCheckResponse> responseObserver ) {
-        getClient().setIsActive();
+    private Response checkConnection( ConnectionCheckRequest request, ResponseMaker<ConnectionCheckResponse> responseObserver ) {
         return responseObserver.makeResponse( ConnectionCheckResponse.newBuilder().build() );
     }
 
 
-    public Response getDbmsVersion( DbmsVersionRequest request, ResponseMaker<DbmsVersionResponse> responseObserver ) {
-        /* called as client auth check */
-        getClient();
+    private Response getDbmsVersion( DbmsVersionRequest request, ResponseMaker<DbmsVersionResponse> responseObserver ) {
         return responseObserver.makeResponse( DbMetaRetriever.getDbmsVersion() );
     }
 
 
-    public void getSupportedLanguages( LanguageRequest request, ResponseMaker<LanguageResponse> responseObserver ) {
-        /* called as client auth check */
-        getClient();
+    private void getSupportedLanguages( LanguageRequest request, ResponseMaker<LanguageResponse> responseObserver ) {
         LanguageResponse supportedLanguages = LanguageResponse.newBuilder()
                 .addAllLanguageNames( new LinkedList<>() )
                 .build();
@@ -376,105 +374,79 @@ public class PIService {
     }
 
 
-    public Response getDatabases( DatabasesRequest request, ResponseMaker<DatabasesResponse> responseObserver ) {
-        /* called as client auth check */
-        getClient();
-        return responseObserver.makeResponse( DbMetaRetriever.getDatabases() );
+    private Response getDefaultNamespace( DefaultNamespaceRequest request, ResponseMaker<DefaultNamespaceResponse> responseObserver ) {
+        return responseObserver.makeResponse( DbMetaRetriever.getDefaultNamespace() );
     }
 
 
-    public Response getTableTypes( TableTypesRequest request, ResponseMaker<TableTypesResponse> responseObserver ) {
-        /* called as client auth check */
-        getClient();
+    private Response getTableTypes( TableTypesRequest request, ResponseMaker<TableTypesResponse> responseObserver ) {
         return responseObserver.makeResponse( DbMetaRetriever.getTableTypes() );
     }
 
 
-    public Response getTypes( TypesRequest request, ResponseMaker<TypesResponse> responseStreamObserver ) {
-        /* called as client auth check */
-        getClient();
+    private Response getTypes( TypesRequest request, ResponseMaker<TypesResponse> responseStreamObserver ) {
         return responseStreamObserver.makeResponse( DbMetaRetriever.getTypes() );
     }
 
 
-    public Response searchNamespaces( NamespacesRequest request, ResponseMaker<NamespacesResponse> responseObserver ) {
-        /* called as client auth check */
-        getClient();
+    private Response searchNamespaces( NamespacesRequest request, ResponseMaker<NamespacesResponse> responseObserver ) {
         String namespacePattern = request.hasNamespacePattern() ? request.getNamespacePattern() : null;
         String namespaceType = request.hasNamespaceType() ? request.getNamespaceType() : null;
         return responseObserver.makeResponse( DbMetaRetriever.searchNamespaces( namespacePattern, namespaceType ) );
     }
 
 
-    public void getNamespace( NamespaceRequest request, ResponseMaker<Namespace> responseObserver ) {
-        /* called as client auth check */
-        getClient();
+    private void getNamespace( NamespaceRequest request, ResponseMaker<Namespace> responseObserver ) {
         responseObserver.makeResponse( DbMetaRetriever.getNamespace( request.getNamespaceName() ) );
     }
 
 
-    public Response searchEntities( EntitiesRequest request, ResponseMaker<EntitiesResponse> responseObserver ) {
-        /* called as client auth check */
-        getClient();
+    private Response searchEntities( EntitiesRequest request, ResponseMaker<EntitiesResponse> responseObserver ) {
         String entityPattern = request.hasEntityPattern() ? request.getEntityPattern() : null;
         return responseObserver.makeResponse( DbMetaRetriever.searchEntities( request.getNamespaceName(), entityPattern ) );
     }
 
 
-    public Response getSqlStringFunctions( SqlStringFunctionsRequest request, ResponseMaker<MetaStringResponse> responseObserver ) {
-        /* called as client auth check */
-        getClient();
+    private Response getSqlStringFunctions( SqlStringFunctionsRequest request, ResponseMaker<MetaStringResponse> responseObserver ) {
         return responseObserver.makeResponse( buildMetaStringResponse( SqlJdbcFunctionCall.getStringFunctions() ) );
     }
 
 
-    public Response getSqlSystemFunctions( SqlSystemFunctionsRequest request, ResponseMaker<MetaStringResponse> responseObserver ) {
-        /* called as client auth check */
-        getClient();
+    private Response getSqlSystemFunctions( SqlSystemFunctionsRequest request, ResponseMaker<MetaStringResponse> responseObserver ) {
         return responseObserver.makeResponse( buildMetaStringResponse( SqlJdbcFunctionCall.getSystemFunctions() ) );
     }
 
 
-    public Response getSqlTimeDateFunctions( SqlTimeDateFunctionsRequest request, ResponseMaker<MetaStringResponse> responseObserver ) {
-        /* called as client auth check */
-        getClient();
+    private Response getSqlTimeDateFunctions( SqlTimeDateFunctionsRequest request, ResponseMaker<MetaStringResponse> responseObserver ) {
         return responseObserver.makeResponse( buildMetaStringResponse( SqlJdbcFunctionCall.getTimeDateFunctions() ) );
     }
 
 
-    public Response getSqlNumericFunctions( SqlNumericFunctionsRequest request, ResponseMaker<MetaStringResponse> responseObserver ) {
-        /* called as client auth check */
-        getClient();
+    private Response getSqlNumericFunctions( SqlNumericFunctionsRequest request, ResponseMaker<MetaStringResponse> responseObserver ) {
         return responseObserver.makeResponse( buildMetaStringResponse( SqlJdbcFunctionCall.getNumericFunctions() ) );
     }
 
 
-    public Response getSqlKeywords( SqlKeywordsRequest request, ResponseMaker<MetaStringResponse> responseObserver ) {
-        /* called as client auth check */
-        getClient();
+    private Response getSqlKeywords( SqlKeywordsRequest request, ResponseMaker<MetaStringResponse> responseObserver ) {
         // TODO actually return keywords
         return responseObserver.makeResponse( buildMetaStringResponse( "" ) );
     }
 
 
-    public Response searchProcedures( ProceduresRequest request, ResponseMaker<ProceduresResponse> responseObserver ) {
-        /* called as client auth check */
-        getClient();
+    private Response searchProcedures( ProceduresRequest request, ResponseMaker<ProceduresResponse> responseObserver ) {
         String procedurePattern = request.hasProcedureNamePattern() ? request.getProcedureNamePattern() : null;
         return responseObserver.makeResponse( DbMetaRetriever.getProcedures( request.getLanguage(), procedurePattern ) );
     }
 
 
-    public Response searchFunctions( FunctionsRequest request, ResponseMaker<FunctionsResponse> responseObserver ) {
-        /* called as client auth check */
-        getClient();
+    private Response searchFunctions( FunctionsRequest request, ResponseMaker<FunctionsResponse> responseObserver ) {
         QueryLanguage queryLanguage = QueryLanguage.from( request.getQueryLanguage() );
         FunctionCategory functionCategory = FunctionCategory.valueOf( request.getFunctionCategory() );
         return responseObserver.makeResponse( DbMetaRetriever.getFunctions( queryLanguage, functionCategory ) );
     }
 
 
-    public Response executeUnparameterizedStatement( ExecuteUnparameterizedStatementRequest request, ResponseMaker<StatementResponse> responseObserver ) throws IOException {
+    private Response executeUnparameterizedStatement( ExecuteUnparameterizedStatementRequest request, ResponseMaker<StatementResponse> responseObserver ) throws IOException {
         PIClient client = getClient();
         PIUnparameterizedStatement statement = client.getStatementManager().createUnparameterizedStatement( request );
         Response mid = responseObserver.makeResponse( ProtoUtils.createResult( statement ), false );
@@ -488,7 +460,7 @@ public class PIService {
     }
 
 
-    public Response executeUnparameterizedStatementBatch( ExecuteUnparameterizedStatementBatchRequest request, ResponseMaker<StatementBatchResponse> responseObserver ) throws IOException {
+    private Response executeUnparameterizedStatementBatch( ExecuteUnparameterizedStatementBatchRequest request, ResponseMaker<StatementBatchResponse> responseObserver ) throws IOException {
         PIClient client = getClient();
         PIUnparameterizedStatementBatch batch = client.getStatementManager().createUnparameterizedStatementBatch( request.getStatementsList() );
         Response mid = responseObserver.makeResponse( ProtoUtils.createStatementBatchStatus( batch.getBatchId() ), false );
@@ -498,14 +470,14 @@ public class PIService {
     }
 
 
-    public Response prepareIndexedStatement( PrepareStatementRequest request, ResponseMaker<PreparedStatementSignature> responseObserver ) {
+    private Response prepareIndexedStatement( PrepareStatementRequest request, ResponseMaker<PreparedStatementSignature> responseObserver ) {
         PIClient client = getClient();
         PIPreparedIndexedStatement statement = client.getStatementManager().createIndexedPreparedInterfaceStatement( request );
         return responseObserver.makeResponse( ProtoUtils.createPreparedStatementSignature( statement ) );
     }
 
 
-    public Response executeIndexedStatement( ExecuteIndexedStatementRequest request, ResponseMaker<StatementResult> responseObserver ) {
+    private Response executeIndexedStatement( ExecuteIndexedStatementRequest request, ResponseMaker<StatementResult> responseObserver ) {
         PIClient client = getClient();
         PIPreparedIndexedStatement statement = client.getStatementManager().getIndexedPreparedStatement( request.getStatementId() );
         int fetchSize = request.hasFetchSize()
@@ -515,7 +487,7 @@ public class PIService {
     }
 
 
-    public Response executeIndexedStatementBatch( ExecuteIndexedStatementBatchRequest request, ResponseMaker<StatementBatchResponse> resultObserver ) {
+    private Response executeIndexedStatementBatch( ExecuteIndexedStatementBatchRequest request, ResponseMaker<StatementBatchResponse> resultObserver ) {
         PIClient client = getClient();
         PIPreparedIndexedStatement statement = client.getStatementManager().getIndexedPreparedStatement( request.getStatementId() );
         List<List<PolyValue>> valuesList = ProtoValueDeserializer.deserializeParameterLists( request.getParametersList() );
@@ -524,14 +496,14 @@ public class PIService {
     }
 
 
-    public Response prepareNamedStatement( PrepareStatementRequest request, ResponseMaker<PreparedStatementSignature> responseObserver ) {
+    private Response prepareNamedStatement( PrepareStatementRequest request, ResponseMaker<PreparedStatementSignature> responseObserver ) {
         PIClient client = getClient();
         PIPreparedNamedStatement statement = client.getStatementManager().createNamedPreparedInterfaceStatement( request );
         return responseObserver.makeResponse( ProtoUtils.createPreparedStatementSignature( statement ) );
     }
 
 
-    public Response executeNamedStatement( ExecuteNamedStatementRequest request, ResponseMaker<StatementResult> responseObserver ) {
+    private Response executeNamedStatement( ExecuteNamedStatementRequest request, ResponseMaker<StatementResult> responseObserver ) {
         PIClient client = getClient();
         PIPreparedNamedStatement statement = client.getStatementManager().getNamedPreparedStatement( request.getStatementId() );
         int fetchSize = request.hasFetchSize()
@@ -545,7 +517,7 @@ public class PIService {
     }
 
 
-    public Response fetchResult( FetchRequest request, ResponseMaker<Frame> responseObserver ) {
+    private Response fetchResult( FetchRequest request, ResponseMaker<Frame> responseObserver ) {
         PIClient client = getClient();
         PIStatement statement = client.getStatementManager().getStatement( request.getStatementId() );
         int fetchSize = request.hasFetchSize()
@@ -556,28 +528,28 @@ public class PIService {
     }
 
 
-    public Response commitTransaction( CommitRequest request, ResponseMaker<CommitResponse> responseStreamObserver ) {
+    private Response commitTransaction( CommitRequest request, ResponseMaker<CommitResponse> responseStreamObserver ) {
         PIClient client = getClient();
         client.commitCurrentTransaction();
         return responseStreamObserver.makeResponse( CommitResponse.newBuilder().build() );
     }
 
 
-    public Response rollbackTransaction( RollbackRequest request, ResponseMaker<RollbackResponse> responseStreamObserver ) {
+    private Response rollbackTransaction( RollbackRequest request, ResponseMaker<RollbackResponse> responseStreamObserver ) {
         PIClient client = getClient();
         client.rollbackCurrentTransaction();
         return responseStreamObserver.makeResponse( RollbackResponse.newBuilder().build() );
     }
 
 
-    public Response closeStatement( CloseStatementRequest request, ResponseMaker<CloseStatementResponse> responseObserver ) {
+    private Response closeStatement( CloseStatementRequest request, ResponseMaker<CloseStatementResponse> responseObserver ) {
         PIClient client = getClient();
         client.getStatementManager().closeStatementOrBatch( request.getStatementId() );
         return responseObserver.makeResponse( CloseStatementResponse.newBuilder().build() );
     }
 
 
-    public Response closeResult( CloseResultRequest request, ResponseMaker<CloseResultResponse> responseObserver ) {
+    private Response closeResult( CloseResultRequest request, ResponseMaker<CloseResultResponse> responseObserver ) {
         PIClient client = getClient();
         PIStatement statement = client.getStatementManager().getStatement( request.getStatementId() );
         statement.closeResults();
@@ -585,7 +557,7 @@ public class PIService {
     }
 
 
-    public Response updateConnectionProperties( ConnectionPropertiesUpdateRequest request, ResponseMaker<ConnectionPropertiesUpdateResponse> responseObserver ) {
+    private Response updateConnectionProperties( ConnectionPropertiesUpdateRequest request, ResponseMaker<ConnectionPropertiesUpdateResponse> responseObserver ) {
         PIClient client = getClient();
         ConnectionProperties properties = request.getConnectionProperties();
         if ( properties.hasIsAutoCommit() ) {
@@ -603,7 +575,7 @@ public class PIService {
     }
 
 
-    public Response getClientInfoProperties( ClientInfoPropertiesRequest request, ResponseMaker<ClientInfoProperties> responseObserver ) {
+    private Response getClientInfoProperties( ClientInfoPropertiesRequest request, ResponseMaker<ClientInfoProperties> responseObserver ) {
         PIClient client = getClient();
         ClientInfoProperties.Builder responseBuilder = ClientInfoProperties.newBuilder();
         PIClientInfoProperties PIClientInfoProperties = client.getPIClientInfoProperties();
@@ -612,7 +584,7 @@ public class PIService {
     }
 
 
-    public Response setClientInfoProperties( ClientInfoProperties properties, ResponseMaker<ClientInfoPropertiesResponse> reponseObserver ) {
+    private Response setClientInfoProperties( ClientInfoProperties properties, ResponseMaker<ClientInfoPropertiesResponse> reponseObserver ) {
         PIClient client = getClient();
         client.getPIClientInfoProperties().putAll( properties.getPropertiesMap() );
         return reponseObserver.makeResponse( ClientInfoPropertiesResponse.newBuilder().build() );

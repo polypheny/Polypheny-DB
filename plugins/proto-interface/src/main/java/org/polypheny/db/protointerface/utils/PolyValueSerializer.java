@@ -82,7 +82,7 @@ public class PolyValueSerializer {
 
 
     public static ProtoValue serialize( PolyValue polyValue ) {
-        if ( polyValue == null ) {
+        if ( polyValue == null || polyValue.isNull() ) {
             return serializeAsProtoNull();
         }
         switch ( polyValue.getType() ) {

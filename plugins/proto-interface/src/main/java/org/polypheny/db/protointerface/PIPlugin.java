@@ -62,18 +62,12 @@ public class PIPlugin extends PolyPlugin {
         public static final String INTERFACE_NAME = "Proto Interface";
         public static final String INTERFACE_DESCRIPTION = "proto-interface query interface supporting the PolySQL dialect.";
         public static final List<QueryInterfaceSetting> AVAILABLE_PLAIN_SETTINGS = ImmutableList.of(
-                new QueryInterfaceSettingInteger( "port", false, true, false, 20590 ),
-                new QueryInterfaceSettingBoolean( "requires heartbeat", false, true, false, false ),
-                new QueryInterfaceSettingLong( "heartbeat interval", false, true, false, 300000L )
+                new QueryInterfaceSettingInteger( "port", false, true, false, 20590 )
         );
         public static final List<QueryInterfaceSetting> AVAILABLE_UNIX_SETTINGS = ImmutableList.of(
                 new QueryInterfaceSettingString( "path", false, true, false, "polypheny-prism.sock" )
         );
 
-        @Getter
-        private final boolean requiresHeartbeat;
-        @Getter
-        private final long heartbeatInterval;
         @Getter
         private final TransactionManager transactionManager;
         @Getter
@@ -91,7 +85,7 @@ public class PIPlugin extends PolyPlugin {
         }
 
 
-        private Transport transport;
+        private final Transport transport;
 
 
         private ProtoInterface( TransactionManager transactionManager, Authenticator authenticator, String uniqueName, Transport transport, Map<String, String> settings ) {
@@ -99,13 +93,6 @@ public class PIPlugin extends PolyPlugin {
             this.authenticator = authenticator;
             this.transactionManager = transactionManager;
             this.transport = transport;
-            if ( getAvailableSettings().stream().anyMatch( s -> s.name.equals( "requires heartbeat" ) ) ) {
-                this.requiresHeartbeat = Boolean.getBoolean( settings.get( "requires heartbeat" ) );
-                this.heartbeatInterval = Long.parseLong( settings.get( "heartbeat interval" ) );
-            } else {
-                this.requiresHeartbeat = false;
-                this.heartbeatInterval = 0;
-            }
             this.monitoringPage = new MonitoringPage( uniqueName, INTERFACE_NAME );
         }
 

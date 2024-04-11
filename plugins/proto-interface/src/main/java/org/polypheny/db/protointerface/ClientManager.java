@@ -40,29 +40,18 @@ import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 
 @Slf4j
-public class ClientManager {
-
-    private static final long HEARTBEAT_TOLERANCE = 2000;
-    @Getter
-    private long heartbeatInterval;
+class ClientManager {
 
     private final ConcurrentHashMap<String, PIClient> clients;
     private final Authenticator authenticator;
     private final TransactionManager transactionManager;
-    private Timer cleanupTimer;
     private final MonitoringPage monitoringPage;
 
 
-    public ClientManager( PIPlugin.ProtoInterface protoInterface ) {
+    ClientManager( PIPlugin.ProtoInterface protoInterface ) {
         this.clients = new ConcurrentHashMap<>();
         this.authenticator = protoInterface.getAuthenticator();
         this.transactionManager = protoInterface.getTransactionManager();
-        if ( protoInterface.isRequiresHeartbeat() ) {
-            this.heartbeatInterval = protoInterface.getHeartbeatInterval();
-            this.cleanupTimer = new Timer();
-            cleanupTimer.schedule( createNewCleanupTask(), 0, heartbeatInterval + HEARTBEAT_TOLERANCE );
-        }
-        this.heartbeatInterval = 0;
         this.monitoringPage = protoInterface.getMonitoringPage();
         monitoringPage.setClientManager( this );
     }
@@ -76,7 +65,7 @@ public class ClientManager {
     }
 
 
-    public LogicalUser getUser( ConnectionRequest connectionRequest, Transport t ) throws AuthenticationException {
+    private LogicalUser getUser( ConnectionRequest connectionRequest, Transport t ) throws AuthenticationException {
         if ( connectionRequest.hasUsername() ) {
             String username = connectionRequest.getUsername();
             if ( !connectionRequest.hasPassword() ) {
@@ -101,7 +90,7 @@ public class ClientManager {
     }
 
 
-    public String registerConnection( ConnectionRequest connectionRequest, Transport t ) throws AuthenticationException, TransactionException, PIServiceException {
+    String registerConnection( ConnectionRequest connectionRequest, Transport t ) throws AuthenticationException, TransactionException, PIServiceException {
         byte[] raw = new byte[32];
         new SecureRandom().nextBytes( raw );
         String uuid = Base64.getUrlEncoder().encodeToString( raw );
@@ -130,12 +119,12 @@ public class ClientManager {
     }
 
 
-    public Stream<Entry<String, PIClient>> getClients() {
+    Stream<Entry<String, PIClient>> getClients() {
         return clients.entrySet().stream();
     }
 
 
-    public int getClientCount() {
+    int getClientCount() {
         return clients.size();
     }
 
@@ -162,29 +151,8 @@ public class ClientManager {
     }
 
 
-    public PIClient getClient( String clientUUID ) throws PIServiceException {
-        if ( !clients.containsKey( clientUUID ) ) {
-            throw new PIServiceException( "Client not registered! Has the server been restarted in the meantime?" );
-        }
+    PIClient getClient( String clientUUID ) throws PIServiceException {
         return clients.get( clientUUID );
-    }
-
-
-    private TimerTask createNewCleanupTask() {
-        Runnable runnable = this::unregisterInactiveClients;
-        return new TimerTask() {
-            @Override
-            public void run() {
-                runnable.run();
-            }
-        };
-    }
-
-
-    private void unregisterInactiveClients() {
-        List<PIClient> inactiveClients = clients.values().stream()
-                .filter( c -> !c.returnAndResetIsActive() ).toList();
-        inactiveClients.forEach( this::unregisterConnection );
     }
 
 }

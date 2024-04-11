@@ -178,8 +178,6 @@ The value is reconstructed by calculating unscaled_value * 10 ^ -scale.
 message ProtoBigDecimal {
   // The scale of the BigDecimal.
   int32 scale = 1;
-  // The precision of the BigDecimal.
-  uint32 precision = 2;
   // The unscaled value of the BigDecimal.
   bytes unscaled_value = 3;
 }

@@ -25,12 +25,8 @@ This message does not contain any fields. It acts as a request for the server to
 message LanguageRequest {
 }
 
-/*
-The DatabasesRequest message is employed to solicit a list of databases that are currently managed by the DBMS.
-This is pivotal for clients aiming to interact with a specific database or to understand the landscape of databases under management.
-This message does not have any fields. It signals the server to provide a list of databases in a DatabasesResponse.
-*/
-message DatabasesRequest {
+/* Request the default namespace */
+message DefaultNamespaceRequest {
 }
 
 /*
