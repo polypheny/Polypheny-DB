@@ -152,9 +152,6 @@ public class ClientManager {
 
 
     public PIClient getClient( String clientUUID ) throws PIServiceException {
-        if ( !clients.containsKey( clientUUID ) ) {
-            throw new PIServiceException( "Client not registered! Has the server been restarted in the meantime?" );
-        }
         return clients.get( clientUUID );
     }
 

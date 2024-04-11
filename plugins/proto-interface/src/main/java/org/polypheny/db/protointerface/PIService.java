@@ -272,6 +272,9 @@ public class PIService {
 
 
     private Response handleMessage( Request req ) throws IOException {
+        if ( uuid == null || clientManager.getClient( uuid ) == null ) {
+            throw new IllegalStateException( "Clients must be authenticated before sending any messages" );
+        }
         return switch ( req.getTypeCase() ) {
             case DBMS_VERSION_REQUEST -> getDbmsVersion( req.getDbmsVersionRequest(), new ResponseMaker<>( req, "dbms_version_response" ) );
             case LANGUAGE_REQUEST -> throw new NotImplementedException( "Currently not used" );
@@ -349,15 +352,11 @@ public class PIService {
 
 
     public Response getDbmsVersion( DbmsVersionRequest request, ResponseMaker<DbmsVersionResponse> responseObserver ) {
-        /* called as client auth check */
-        getClient();
         return responseObserver.makeResponse( DbMetaRetriever.getDbmsVersion() );
     }
 
 
     public void getSupportedLanguages( LanguageRequest request, ResponseMaker<LanguageResponse> responseObserver ) {
-        /* called as client auth check */
-        getClient();
         LanguageResponse supportedLanguages = LanguageResponse.newBuilder()
                 .addAllLanguageNames( new LinkedList<>() )
                 .build();
@@ -373,29 +372,21 @@ public class PIService {
 
 
     public Response getDefaultNamespace( DefaultNamespaceRequest request, ResponseMaker<DefaultNamespaceResponse> responseObserver ) {
-        /* called as client auth check */
-        getClient();
         return responseObserver.makeResponse( DbMetaRetriever.getDefaultNamespace() );
     }
 
 
     public Response getTableTypes( TableTypesRequest request, ResponseMaker<TableTypesResponse> responseObserver ) {
-        /* called as client auth check */
-        getClient();
         return responseObserver.makeResponse( DbMetaRetriever.getTableTypes() );
     }
 
 
     public Response getTypes( TypesRequest request, ResponseMaker<TypesResponse> responseStreamObserver ) {
-        /* called as client auth check */
-        getClient();
         return responseStreamObserver.makeResponse( DbMetaRetriever.getTypes() );
     }
 
 
     public Response searchNamespaces( NamespacesRequest request, ResponseMaker<NamespacesResponse> responseObserver ) {
-        /* called as client auth check */
-        getClient();
         String namespacePattern = request.hasNamespacePattern() ? request.getNamespacePattern() : null;
         String namespaceType = request.hasNamespaceType() ? request.getNamespaceType() : null;
         return responseObserver.makeResponse( DbMetaRetriever.searchNamespaces( namespacePattern, namespaceType ) );
@@ -403,67 +394,49 @@ public class PIService {
 
 
     public void getNamespace( NamespaceRequest request, ResponseMaker<Namespace> responseObserver ) {
-        /* called as client auth check */
-        getClient();
         responseObserver.makeResponse( DbMetaRetriever.getNamespace( request.getNamespaceName() ) );
     }
 
 
     public Response searchEntities( EntitiesRequest request, ResponseMaker<EntitiesResponse> responseObserver ) {
-        /* called as client auth check */
-        getClient();
         String entityPattern = request.hasEntityPattern() ? request.getEntityPattern() : null;
         return responseObserver.makeResponse( DbMetaRetriever.searchEntities( request.getNamespaceName(), entityPattern ) );
     }
 
 
     public Response getSqlStringFunctions( SqlStringFunctionsRequest request, ResponseMaker<MetaStringResponse> responseObserver ) {
-        /* called as client auth check */
-        getClient();
         return responseObserver.makeResponse( buildMetaStringResponse( SqlJdbcFunctionCall.getStringFunctions() ) );
     }
 
 
     public Response getSqlSystemFunctions( SqlSystemFunctionsRequest request, ResponseMaker<MetaStringResponse> responseObserver ) {
-        /* called as client auth check */
-        getClient();
         return responseObserver.makeResponse( buildMetaStringResponse( SqlJdbcFunctionCall.getSystemFunctions() ) );
     }
 
 
     public Response getSqlTimeDateFunctions( SqlTimeDateFunctionsRequest request, ResponseMaker<MetaStringResponse> responseObserver ) {
-        /* called as client auth check */
-        getClient();
         return responseObserver.makeResponse( buildMetaStringResponse( SqlJdbcFunctionCall.getTimeDateFunctions() ) );
     }
 
 
     public Response getSqlNumericFunctions( SqlNumericFunctionsRequest request, ResponseMaker<MetaStringResponse> responseObserver ) {
-        /* called as client auth check */
-        getClient();
         return responseObserver.makeResponse( buildMetaStringResponse( SqlJdbcFunctionCall.getNumericFunctions() ) );
     }
 
 
     public Response getSqlKeywords( SqlKeywordsRequest request, ResponseMaker<MetaStringResponse> responseObserver ) {
-        /* called as client auth check */
-        getClient();
         // TODO actually return keywords
         return responseObserver.makeResponse( buildMetaStringResponse( "" ) );
     }
 
 
     public Response searchProcedures( ProceduresRequest request, ResponseMaker<ProceduresResponse> responseObserver ) {
-        /* called as client auth check */
-        getClient();
         String procedurePattern = request.hasProcedureNamePattern() ? request.getProcedureNamePattern() : null;
         return responseObserver.makeResponse( DbMetaRetriever.getProcedures( request.getLanguage(), procedurePattern ) );
     }
 
 
     public Response searchFunctions( FunctionsRequest request, ResponseMaker<FunctionsResponse> responseObserver ) {
-        /* called as client auth check */
-        getClient();
         QueryLanguage queryLanguage = QueryLanguage.from( request.getQueryLanguage() );
         FunctionCategory functionCategory = FunctionCategory.valueOf( request.getFunctionCategory() );
         return responseObserver.makeResponse( DbMetaRetriever.getFunctions( queryLanguage, functionCategory ) );
