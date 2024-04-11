@@ -32,24 +32,9 @@ message LanguageResponse {
   repeated string language_names = 1;
 }
 
-/*
-The DatabasesResponse message provides details about the databases present in the system.
-*/
-message DatabasesResponse {
-  // A list of Database objects detailing each database present in the system.
-  repeated Database databases = 1;
-}
-
-/*
-The Database message encapsulates details about an individual database.
-*/
-message Database {
-  // The name of the database.
-  string database_name = 1;
-  // The name of the owner of the database.
-  string owner_name = 2;
-  // The default namespace associated with the database.
-  string default_namespace_name = 3;
+/* The default namespace */
+message DefaultNamespaceResponse {
+  string default_namespace = 1;
 }
 
 /*

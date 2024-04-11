@@ -42,14 +42,13 @@ import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.protointerface.proto.ClientInfoPropertyMeta;
 import org.polypheny.db.protointerface.proto.ClientInfoPropertyMetaResponse;
 import org.polypheny.db.protointerface.proto.Column;
-import org.polypheny.db.protointerface.proto.Database;
-import org.polypheny.db.protointerface.proto.DatabasesResponse;
 import org.polypheny.db.protointerface.proto.DbmsVersionResponse;
 import org.polypheny.db.protointerface.proto.EntitiesResponse;
 import org.polypheny.db.protointerface.proto.Entity;
 import org.polypheny.db.protointerface.proto.ForeignKey;
 import org.polypheny.db.protointerface.proto.Function;
 import org.polypheny.db.protointerface.proto.FunctionsResponse;
+import org.polypheny.db.protointerface.proto.DefaultNamespaceResponse;
 import org.polypheny.db.protointerface.proto.Index;
 import org.polypheny.db.protointerface.proto.Namespace;
 import org.polypheny.db.protointerface.proto.NamespacesResponse;
@@ -263,14 +262,9 @@ public class DbMetaRetriever {
     }
 
 
-    public static synchronized DatabasesResponse getDatabases() {
-        Database database = Database.newBuilder()
-                .setDatabaseName( Catalog.DATABASE_NAME )
-                .setOwnerName( "system" )
-                .setDefaultNamespaceName( Catalog.DEFAULT_NAMESPACE_NAME )
-                .build();
-        return DatabasesResponse.newBuilder()
-                .addDatabases( database )
+    public static synchronized DefaultNamespaceResponse getDefaultNamespace() {
+        return DefaultNamespaceResponse.newBuilder()
+                .setDefaultNamespace( Catalog.DEFAULT_NAMESPACE_NAME )
                 .build();
     }
 

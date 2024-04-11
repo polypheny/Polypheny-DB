@@ -49,10 +49,10 @@ import org.polypheny.db.protointerface.proto.ConnectionPropertiesUpdateResponse;
 import org.polypheny.db.protointerface.proto.ConnectionRequest;
 import org.polypheny.db.protointerface.proto.ConnectionResponse;
 import org.polypheny.db.protointerface.proto.ConnectionResponse.Builder;
-import org.polypheny.db.protointerface.proto.DatabasesRequest;
-import org.polypheny.db.protointerface.proto.DatabasesResponse;
 import org.polypheny.db.protointerface.proto.DbmsVersionRequest;
 import org.polypheny.db.protointerface.proto.DbmsVersionResponse;
+import org.polypheny.db.protointerface.proto.DefaultNamespaceRequest;
+import org.polypheny.db.protointerface.proto.DefaultNamespaceResponse;
 import org.polypheny.db.protointerface.proto.DisconnectRequest;
 import org.polypheny.db.protointerface.proto.DisconnectResponse;
 import org.polypheny.db.protointerface.proto.EntitiesRequest;
@@ -271,11 +271,11 @@ public class PIService {
     }
 
 
-    private Response handleMessage( Request req ) throws TransactionException, AuthenticationException, IOException {
+    private Response handleMessage( Request req ) throws IOException {
         return switch ( req.getTypeCase() ) {
             case DBMS_VERSION_REQUEST -> getDbmsVersion( req.getDbmsVersionRequest(), new ResponseMaker<>( req, "dbms_version_response" ) );
             case LANGUAGE_REQUEST -> throw new NotImplementedException( "Currently not used" );
-            case DATABASES_REQUEST -> getDatabases( req.getDatabasesRequest(), new ResponseMaker<>( req, "databases_response" ) );
+            case DEFAULT_NAMESPACE_REQUEST -> getDefaultNamespace( req.getDefaultNamespaceRequest(), new ResponseMaker<>( req, "databases_response" ) );
             case TABLE_TYPES_REQUEST -> getTableTypes( req.getTableTypesRequest(), new ResponseMaker<>( req, "table_types_response" ) );
             case TYPES_REQUEST -> getTypes( req.getTypesRequest(), new ResponseMaker<>( req, "types_response" ) );
             case USER_DEFINED_TYPES_REQUEST -> throw new NotImplementedException();
@@ -307,8 +307,8 @@ public class PIService {
             case COMMIT_REQUEST -> commitTransaction( req.getCommitRequest(), new ResponseMaker<>( req, "commit_response" ) );
             case ROLLBACK_REQUEST -> rollbackTransaction( req.getRollbackRequest(), new ResponseMaker<>( req, "rollback_response" ) );
             case CONNECTION_PROPERTIES_UPDATE_REQUEST -> updateConnectionProperties( req.getConnectionPropertiesUpdateRequest(), new ResponseMaker<>( req, "connection_properties_update_response" ) );
-            case TYPE_NOT_SET -> throw new NotImplementedException( "Unsupported call " + req.getTypeCase() );
             case CLOSE_RESULT_REQUEST -> closeResult( req.getCloseResultRequest(), new ResponseMaker<>( req, "close_result_response" ) );
+            case TYPE_NOT_SET -> throw new NotImplementedException( "Unsupported call " + req.getTypeCase() );
         };
     }
 
@@ -372,10 +372,10 @@ public class PIService {
     }
 
 
-    public Response getDatabases( DatabasesRequest request, ResponseMaker<DatabasesResponse> responseObserver ) {
+    public Response getDefaultNamespace( DefaultNamespaceRequest request, ResponseMaker<DefaultNamespaceResponse> responseObserver ) {
         /* called as client auth check */
         getClient();
-        return responseObserver.makeResponse( DbMetaRetriever.getDatabases() );
+        return responseObserver.makeResponse( DbMetaRetriever.getDefaultNamespace() );
     }
 
 

@@ -33,7 +33,7 @@ message Request {
   oneof type {
     DbmsVersionRequest dbms_version_request = 2;
     LanguageRequest language_request = 3;
-    DatabasesRequest databases_request = 4;
+    DefaultNamespaceRequest default_namespace_request = 4;
     TableTypesRequest table_types_request = 5;
     TypesRequest types_request = 6;
     UserDefinedTypesRequest user_defined_types_request = 7;
@@ -89,7 +89,7 @@ message Response {
     ErrorResponse error_response = 256;
     DbmsVersionResponse dbms_version_response = 3;
     LanguageResponse language_response = 4;
-    DatabasesResponse databases_response = 24;
+    DefaultNamespaceResponse default_namespace_response = 24;
     TableTypesResponse table_types_response = 5;
     TypesResponse types_response = 26;
     UserDefinedTypesResponse user_defined_types_response = 6;
@@ -119,49 +119,4 @@ message Response {
     ConnectionPropertiesUpdateResponse connection_properties_update_response = 23;
     CloseResultResponse close_result_response = 34;
   }
-}
-
-service ProtoInterface {
-  // Meta functions
-  rpc GetDbmsVersion(DbmsVersionRequest) returns (DbmsVersionResponse) {}
-  rpc GetSupportedLanguages(LanguageRequest) returns (LanguageResponse) {}
-  rpc GetDatabases(DatabasesRequest) returns (DatabasesResponse) {}
-  rpc GetTableTypes(TableTypesRequest) returns (TableTypesResponse) {}
-  rpc GetTypes(TypesRequest) returns (TypesResponse) {}
-  rpc GetUserDefinedTypes(UserDefinedTypesRequest) returns (UserDefinedTypesResponse) {}
-  rpc GetClientInfoPropertyMetas(ClientInfoPropertyMetaRequest) returns (ClientInfoPropertyMetaResponse) {}
-  rpc SearchProcedures(ProceduresRequest) returns (ProceduresResponse) {}
-  rpc SearchFunctions(FunctionsRequest) returns (FunctionsResponse) {}
-  rpc SearchNamespaces(NamespacesRequest) returns (NamespacesResponse) {}
-  rpc GetNamespace(NamespaceRequest) returns (Namespace) {}
-  rpc SearchEntities(EntitiesRequest) returns (EntitiesResponse) {}
-  rpc GetSqlStringFunctions(SqlStringFunctionsRequest) returns (MetaStringResponse) {}
-  rpc GetSqlSystemFunctions(SqlSystemFunctionsRequest) returns (MetaStringResponse) {}
-  rpc GetSqlTimeDateFunctions(SqlTimeDateFunctionsRequest) returns (MetaStringResponse) {}
-  rpc GetSqlNumericFunctions(SqlNumericFunctionsRequest) returns (MetaStringResponse) {}
-  rpc GetSqlKeywords(SqlKeywordsRequest) returns (MetaStringResponse) {}
-  // Connection related
-  rpc Connect(ConnectionRequest) returns (ConnectionResponse) {}
-  rpc CheckConnection(ConnectionCheckRequest) returns (ConnectionCheckResponse) {}
-  rpc Disconnect(DisconnectRequest) returns (DisconnectResponse) {}
-  rpc GetClientInfoProperties(ClientInfoPropertiesRequest) returns (ClientInfoProperties) {}
-  rpc SetClientInfoProperties(ClientInfoProperties) returns (ClientInfoPropertiesResponse) {}
-  // Unparameterized statements
-  rpc ExecuteUnparameterizedStatement(ExecuteUnparameterizedStatementRequest) returns (stream StatementResponse) {}
-  rpc ExecuteUnparameterizedStatementBatch(ExecuteUnparameterizedStatementBatchRequest) returns (stream StatementBatchResponse) {}
-  // Prepared Statements
-  rpc PrepareIndexedStatement(PrepareStatementRequest) returns (PreparedStatementSignature) {}
-  rpc ExecuteIndexedStatement(ExecuteIndexedStatementRequest) returns (StatementResult) {}
-  rpc ExecuteIndexedStatementBatch(ExecuteIndexedStatementBatchRequest) returns (StatementBatchResponse) {}
-  rpc PrepareNamedStatement(PrepareStatementRequest) returns (PreparedStatementSignature) {}
-  rpc ExecuteNamedStatement(ExecuteNamedStatementRequest) returns (StatementResult) {}
-  // ExecuteNamedStatementBatch ?
-  // Results
-  rpc FetchResult(FetchRequest) returns (Frame) {}
-  // Transaction handling
-  rpc CloseStatement(CloseStatementRequest) returns (CloseStatementResponse) {}
-  rpc CommitTransaction(CommitRequest) returns (CommitResponse) {}
-  rpc RollbackTransaction(RollbackRequest) returns (RollbackResponse) {}
-  // Properties
-  rpc UpdateConnectionProperties(ConnectionPropertiesUpdateRequest) returns (ConnectionPropertiesUpdateResponse) {}
 }
