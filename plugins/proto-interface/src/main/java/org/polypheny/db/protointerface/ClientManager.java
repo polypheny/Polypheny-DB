@@ -42,14 +42,9 @@ import org.polypheny.db.transaction.TransactionManager;
 @Slf4j
 public class ClientManager {
 
-    private static final long HEARTBEAT_TOLERANCE = 2000;
-    @Getter
-    private long heartbeatInterval;
-
     private final ConcurrentHashMap<String, PIClient> clients;
     private final Authenticator authenticator;
     private final TransactionManager transactionManager;
-    private Timer cleanupTimer;
     private final MonitoringPage monitoringPage;
 
 
