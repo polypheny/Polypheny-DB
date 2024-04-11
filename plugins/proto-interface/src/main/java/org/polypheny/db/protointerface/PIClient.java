@@ -30,14 +30,14 @@ import org.polypheny.db.transaction.TransactionManager;
 public class PIClient {
 
     @Getter
-    private String clientUUID;
-    private LogicalUser catalogUser;
+    private final String clientUUID;
+    private final LogicalUser catalogUser;
     private Transaction currentTransaction;
-    private TransactionManager transactionManager;
+    private final TransactionManager transactionManager;
     @Getter
-    private StatementManager statementManager;
+    private final StatementManager statementManager;
     @Getter
-    private PIClientInfoProperties PIClientInfoProperties;
+    private final PIClientInfoProperties PIClientInfoProperties;
     @Getter
     @Setter
     private boolean isAutoCommit;
@@ -46,7 +46,7 @@ public class PIClient {
     private LogicalNamespace namespace;
     private boolean isActive;
     @Getter
-    private MonitoringPage monitoringPage;
+    private final MonitoringPage monitoringPage;
 
 
     public PIClient(
