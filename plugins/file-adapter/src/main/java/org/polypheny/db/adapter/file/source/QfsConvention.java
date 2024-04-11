@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,8 +23,8 @@ import org.polypheny.db.adapter.file.FileConvention;
 import org.polypheny.db.adapter.file.FileMethod;
 import org.polypheny.db.adapter.file.FileSchema;
 import org.polypheny.db.adapter.file.algebra.FileRules;
-import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptRule;
+import org.polypheny.db.plan.AlgPlanner;
 
 
 public class QfsConvention extends FileConvention {
@@ -40,7 +40,7 @@ public class QfsConvention extends FileConvention {
 
 
     @Override
-    public void register( AlgOptPlanner planner ) {
+    public void register( AlgPlanner planner ) {
         for ( AlgOptRule rule : FileRules.rules( this, FileMethod.EXECUTE_QFS.method, getFileSchema() ) ) {
             planner.addRule( rule );
         }

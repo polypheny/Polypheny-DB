@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -84,7 +84,7 @@ public class QueryPlanBuilder {
         }
         switch ( node.type ) {
             case "Scan":
-                return builder.scan( node.tableName.split( "\\." ) ).as( node.tableName.split( "\\." )[1] );
+                return builder.relScan( node.entityName.split( "\\." ) ).as( node.entityName.split( "\\." )[1] );
             case "Join":
                 return builder.join( node.join, builder.call( getOperator( node.operator ), builder.field( node.inputCount, field1[0], field1[1] ), builder.field( node.inputCount, field2[0], field2[1] ) ) );
             case "Filter":
@@ -107,25 +107,14 @@ public class QueryPlanBuilder {
             case "Aggregate":
                 AlgBuilder.AggCall aggregation;
                 String[] aggFields = node.field.split( "\\." );
-                switch ( node.aggregation ) {
-                    case "SUM":
-                        aggregation = builder.sum( false, node.alias, builder.field( node.inputCount, aggFields[0], aggFields[1] ) );
-                        break;
-                    case "COUNT":
-                        aggregation = builder.count( false, node.alias, builder.field( node.inputCount, aggFields[0], aggFields[1] ) );
-                        break;
-                    case "AVG":
-                        aggregation = builder.avg( false, node.alias, builder.field( node.inputCount, aggFields[0], aggFields[1] ) );
-                        break;
-                    case "MAX":
-                        aggregation = builder.max( node.alias, builder.field( node.inputCount, aggFields[0], aggFields[1] ) );
-                        break;
-                    case "MIN":
-                        aggregation = builder.min( node.alias, builder.field( node.inputCount, aggFields[0], aggFields[1] ) );
-                        break;
-                    default:
-                        throw new IllegalArgumentException( "unknown aggregate type" );
-                }
+                aggregation = switch ( node.aggregation ) {
+                    case "SUM" -> builder.sum( false, node.alias, builder.field( node.inputCount, aggFields[0], aggFields[1] ) );
+                    case "COUNT" -> builder.count( false, node.alias, builder.field( node.inputCount, aggFields[0], aggFields[1] ) );
+                    case "AVG" -> builder.avg( false, node.alias, builder.field( node.inputCount, aggFields[0], aggFields[1] ) );
+                    case "MAX" -> builder.max( node.alias, builder.field( node.inputCount, aggFields[0], aggFields[1] ) );
+                    case "MIN" -> builder.min( node.alias, builder.field( node.inputCount, aggFields[0], aggFields[1] ) );
+                    default -> throw new IllegalArgumentException( "unknown aggregate type" );
+                };
                 if ( node.groupBy == null || node.groupBy.equals( "" ) ) {
                     return builder.aggregate( builder.groupKey(), aggregation );
                 } else {
@@ -174,23 +163,15 @@ public class QueryPlanBuilder {
      * @return parsed operator as SqlOperator
      */
     private static Operator getOperator( final String operator ) {
-        switch ( operator ) {
-            case "=":
-                return OperatorRegistry.get( OperatorName.EQUALS );
-            case "!=":
-            case "<>":
-                return OperatorRegistry.get( OperatorName.NOT_EQUALS );
-            case "<":
-                return OperatorRegistry.get( OperatorName.LESS_THAN );
-            case "<=":
-                return OperatorRegistry.get( OperatorName.LESS_THAN_OR_EQUAL );
-            case ">":
-                return OperatorRegistry.get( OperatorName.GREATER_THAN );
-            case ">=":
-                return OperatorRegistry.get( OperatorName.GREATER_THAN_OR_EQUAL );
-            default:
-                throw new IllegalArgumentException( "Operator '" + operator + "' is not supported." );
-        }
+        return switch ( operator ) {
+            case "=" -> OperatorRegistry.get( OperatorName.EQUALS );
+            case "!=", "<>" -> OperatorRegistry.get( OperatorName.NOT_EQUALS );
+            case "<" -> OperatorRegistry.get( OperatorName.LESS_THAN );
+            case "<=" -> OperatorRegistry.get( OperatorName.LESS_THAN_OR_EQUAL );
+            case ">" -> OperatorRegistry.get( OperatorName.GREATER_THAN );
+            case ">=" -> OperatorRegistry.get( OperatorName.GREATER_THAN_OR_EQUAL );
+            default -> throw new IllegalArgumentException( "Operator '" + operator + "' is not supported." );
+        };
     }
 
 }

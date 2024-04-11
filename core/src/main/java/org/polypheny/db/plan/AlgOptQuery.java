@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,7 +40,7 @@ import org.polypheny.db.algebra.AlgNode;
 
 
 /**
- * A <code>AlgOptQuery</code> represents a set of {@link AlgNode relational expressions} which derive from the same <code>select</code> statement.
+ * A <code>AlgOptQuery</code> represents a set of {@link AlgNode algebra expressions} which derive from the same <code>select</code> statement.
  */
 public class AlgOptQuery {
 

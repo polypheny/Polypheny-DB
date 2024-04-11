@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.polypheny.db.piglet;
 
 import com.google.common.collect.ImmutableList;
 import java.io.StringReader;
+import java.util.Arrays;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.StopWatch;
@@ -47,7 +48,7 @@ public class PigProcessor extends Processor {
 
     @Override
     public List<? extends Node> parse( String query ) {
-        this.query = query;
+        this.query = query.trim();
         final StopWatch stopWatch = new StopWatch();
         if ( log.isDebugEnabled() ) {
             log.debug( "Parsing PolyPIG statement ..." );
@@ -59,6 +60,9 @@ public class PigProcessor extends Processor {
         }
 
         try {
+            if ( !query.endsWith( ";" ) ) {
+                query = query + ";";
+            }
             parsed = new PigletParser( new StringReader( query ) ).stmtListEof();
         } catch ( ParseException e ) {
             log.error( "Caught exception", e );
@@ -110,6 +114,12 @@ public class PigProcessor extends Processor {
     @Override
     public AlgDataType getParameterRowType( Node left ) {
         return null;
+    }
+
+
+    @Override
+    public List<String> splitStatements( String statements ) {
+        return Arrays.stream( statements.split( ";" ) ).filter( q -> !q.trim().isEmpty() ).toList();
     }
 
 }

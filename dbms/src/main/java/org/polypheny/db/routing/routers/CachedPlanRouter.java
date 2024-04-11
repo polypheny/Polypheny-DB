@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,24 +16,16 @@
 
 package org.polypheny.db.routing.routers;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.core.document.DocumentScan;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
-import org.polypheny.db.algebra.logical.relational.LogicalValues;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
-import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.partition.properties.PartitionProperty;
-import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.routing.LogicalQueryInformation;
+import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
+import org.polypheny.db.routing.ColumnDistribution;
+import org.polypheny.db.routing.RoutingContext;
 import org.polypheny.db.routing.dto.CachedProposedRoutingPlan;
 import org.polypheny.db.tools.RoutedAlgBuilder;
-import org.polypheny.db.transaction.Statement;
 
 
 /**
@@ -43,36 +35,25 @@ import org.polypheny.db.transaction.Statement;
 public class CachedPlanRouter extends BaseRouter {
 
 
-    public RoutedAlgBuilder routeCached( AlgRoot logicalRoot, CachedProposedRoutingPlan routingPlanCached, Statement statement, LogicalQueryInformation queryInformation ) {
-        final RoutedAlgBuilder builder = RoutedAlgBuilder.create( statement, logicalRoot.alg.getCluster() );
-        return buildCachedSelect( logicalRoot.alg, builder, statement, logicalRoot.alg.getCluster(), routingPlanCached, queryInformation );
+    public RoutedAlgBuilder routeCached( AlgRoot logicalRoot, CachedProposedRoutingPlan routingPlanCached, RoutingContext context ) {
+        final RoutedAlgBuilder builder = context.getRoutedAlgBuilder();
+        return buildCachedSelect( logicalRoot.alg, builder, routingPlanCached, context );
     }
 
 
-    private RoutedAlgBuilder buildCachedSelect( AlgNode node, RoutedAlgBuilder builder, Statement statement, AlgOptCluster cluster, CachedProposedRoutingPlan cachedPlan, LogicalQueryInformation queryInformation ) {
+    private RoutedAlgBuilder buildCachedSelect( AlgNode node, RoutedAlgBuilder builder, CachedProposedRoutingPlan cachedPlan, RoutingContext context ) {
         for ( int i = 0; i < node.getInputs().size(); i++ ) {
-            builder = buildCachedSelect( node.getInput( i ), builder, statement, cluster, cachedPlan, queryInformation );
+            builder = buildCachedSelect( node.getInput( i ), builder, cachedPlan, context );
         }
 
         if ( node.unwrap( DocumentScan.class ).isPresent() ) {
-            return builder.push( super.handleDocScan( (DocumentScan<?>) node, statement, null ) );
+            return builder.push( super.handleDocScan( (DocumentScan<?>) node, context.getStatement(), null ) );
         }
 
         if ( node.unwrap( LogicalRelScan.class ).isPresent() && node.getEntity() != null ) {
-            LogicalTable table = node.getEntity().unwrap( LogicalTable.class ).orElseThrow();
-            PartitionProperty property = Catalog.snapshot().alloc().getPartitionProperty( table.id ).orElseThrow();
-            List<Long> partitionIds = property.partitionIds;
-            Map<Long, List<AllocationColumn>> partitions = new HashMap<>();
-            for ( long partition : partitionIds ) {
-                if ( cachedPlan.physicalPlacementsOfPartitions.get( partition ) != null ) {
-                    List<AllocationColumn> colPlacements = cachedPlan.physicalPlacementsOfPartitions.get( partition );
-                    partitions.put( partition, colPlacements );
-                }
-            }
-
-            return builder.push( super.buildJoinedScan( statement, cluster, table, partitions ) );
-        } else if ( node instanceof LogicalValues ) {
-            return super.handleValues( (LogicalValues) node, builder );
+            return builder.push( super.buildJoinedScan( (ColumnDistribution) cachedPlan.fieldDistribution, context ) );
+        } else if ( node instanceof LogicalRelValues ) {
+            return super.handleValues( (LogicalRelValues) node, builder );
         } else {
             return super.handleGeneric( node, builder );
         }

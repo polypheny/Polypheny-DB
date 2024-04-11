@@ -31,10 +31,25 @@
  * limitations under the License.
  */
 
+
 options {
-    STATIC = false;
-    IGNORE_CASE = true;
-    UNICODE_INPUT = true;
+  STATIC = false;
+  LOOKAHEAD = 2;
+  CHOICE_AMBIGUITY_CHECK = 2;
+  OTHER_AMBIGUITY_CHECK = 1;
+  FORCE_LA_CHECK = false;
+  DEBUG_PARSER = false;
+  DEBUG_LOOKAHEAD = false;
+  DEBUG_TOKEN_MANAGER = false;
+  ERROR_REPORTING = true;
+  UNICODE_INPUT = true;
+  IGNORE_CASE = true;
+  BUILD_PARSER = true;
+  BUILD_TOKEN_MANAGER = true;
+  SANITY_CHECK = true;
+  COMMON_TOKEN_ACTION = false;
+  JDK_VERSION = "1.17";
+  TOKEN_MANAGER_USES_PARSER = true;
 }
 
 
@@ -162,8 +177,8 @@ import org.polypheny.db.nodes.Identifier;
 import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.apache.calcite.avatica.util.Casing;
-import org.apache.calcite.avatica.util.DateTimeUtils;
-import org.apache.calcite.avatica.util.TimeUnit;
+import org.polypheny.db.util.temporal.DateTimeUtils;
+import org.polypheny.db.util.temporal.TimeUnit;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.algebra.json.JsonConstructorNullClause;

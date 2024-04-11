@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,10 +19,9 @@ package org.polypheny.db.catalog.entity.logical;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.annotations.SerializeNullable;
-import java.io.Serializable;
+import java.io.Serial;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 import lombok.experimental.SuperBuilder;
@@ -34,6 +33,9 @@ import org.polypheny.db.catalog.entity.PolyObject;
 import org.polypheny.db.catalog.logistic.Collation;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.numerical.PolyInteger;
 
 
 @EqualsAndHashCode()
@@ -42,6 +44,7 @@ import org.polypheny.db.type.PolyType;
 @NonFinal
 public class LogicalColumn implements PolyObject, Comparable<LogicalColumn> {
 
+    @Serial
     private static final long serialVersionUID = -4792846455300897399L;
 
     @Serialize
@@ -66,7 +69,6 @@ public class LogicalColumn implements PolyObject, Comparable<LogicalColumn> {
     public @SerializeNullable PolyType collectionsType;
 
     @Serialize
-    //@SerializeVarLength // fixes bug with 255 length
     public @SerializeNullable Integer length; // JDBC length or precision depending on type
 
     @Serialize
@@ -124,14 +126,19 @@ public class LogicalColumn implements PolyObject, Comparable<LogicalColumn> {
 
 
     public AlgDataType getAlgDataType( final AlgDataTypeFactory typeFactory ) {
+        return getAlgDataType( typeFactory, this.length, this.scale, this.type, collectionsType, cardinality, dimension, nullable );
+    }
+
+
+    public static AlgDataType getAlgDataType( AlgDataTypeFactory typeFactory, Integer length, Integer scale, PolyType type, PolyType collectionsType, Integer cardinality, Integer dimension, boolean nullable ) {
         AlgDataType elementType;
-        if ( this.length != null && this.scale != null && this.type.allowsPrecScale( true, true ) ) {
-            elementType = typeFactory.createPolyType( this.type, this.length, this.scale );
-        } else if ( this.length != null && this.type.allowsPrecNoScale() ) {
-            elementType = typeFactory.createPolyType( this.type, this.length );
+        if ( length != null && scale != null && type.allowsPrecScale( true, true ) ) {
+            elementType = typeFactory.createPolyType( type, length, scale );
+        } else if ( length != null && type.allowsPrecNoScale() ) {
+            elementType = typeFactory.createPolyType( type, length );
         } else {
-            assert this.type.allowsNoPrecNoScale();
-            elementType = typeFactory.createPolyType( this.type );
+            assert type.allowsNoPrecNoScale();
+            elementType = typeFactory.createPolyType( type );
         }
 
         if ( collectionsType == PolyType.ARRAY ) {
@@ -153,37 +160,29 @@ public class LogicalColumn implements PolyObject, Comparable<LogicalColumn> {
         return Catalog.snapshot().rel().getTable( tableId ).orElseThrow().name;
     }
 
-    public String nullableBoolToString () {
-        if (this.nullable) {
-            return "NULL";
-        } else {
-            return "NOT NULL";
-        }
-    }
-
 
     @Override
-    public Serializable[] getParameterArray() {
-        return new Serializable[]{
-                Catalog.DATABASE_NAME,
-                getNamespaceName(),
-                getTableName(),
-                name,
-                type.getJdbcOrdinal(),
-                type.name(),
-                length,
+    public PolyValue[] getParameterArray() {
+        return new PolyValue[]{
+                PolyString.of( Catalog.DATABASE_NAME ),
+                PolyString.of( getNamespaceName() ),
+                PolyString.of( getTableName() ),
+                PolyString.of( name ),
+                PolyInteger.of( type.getJdbcOrdinal() ),
+                PolyString.of( type.name() ),
+                PolyInteger.of( length ),
                 null,
-                scale,
+                PolyInteger.of( scale ),
                 null,
-                nullable ? 1 : 0,
-                "",
-                defaultValue == null ? null : defaultValue.value.toJson(),
+                PolyInteger.of( nullable ? 1 : 0 ),
+                PolyString.of( "" ),
+                PolyString.of( defaultValue == null ? null : defaultValue.value.toJson() ),
                 null,
                 null,
                 null,
-                position,
-                nullable ? "YES" : "NO",
-                PolyObject.getEnumNameOrNull( collation ) };
+                PolyInteger.of( position ),
+                PolyString.of( nullable ? "YES" : "NO" ),
+                PolyString.of( PolyObject.getEnumNameOrNull( collation ) ) };
     }
 
 
@@ -205,29 +204,17 @@ public class LogicalColumn implements PolyObject, Comparable<LogicalColumn> {
     }
 
 
-    @RequiredArgsConstructor
-    public static class PrimitiveCatalogColumn {
+    /**
+     * @param columnSize precision or length
+     * @param bufferLength always null
+     * @param decimalDigits scale
+     * @param sqlDataType always null
+     * @param sqlDatetimeSub always null
+     * @param charOctetLength always null
+     * @param ordinalPosition position
+     */
 
-        public final String tableCat;
-        public final String tableSchem;
-        public final String tableName;
-        public final String columnName;
-        public final int dataType;
-        public final String typeName;
-        public final Integer columnSize; // precision or length
-        public final Integer bufferLength; // always null
-        public final Integer decimalDigits; // scale
-        public final Integer numPrecRadix;
-        public final int nullable;
-        public final String remarks;
-        public final String columnDef;
-        public final Integer sqlDataType; // always null
-        public final Integer sqlDatetimeSub; // always null
-        public final Integer charOctetLength; // always null
-        public final int ordinalPosition; // position
-        public final String isNullable;
-
-        public final String collation;
+    public record PrimitiveCatalogColumn(String tableCat, String tableSchem, String tableName, String columnName, int dataType, String typeName, Integer columnSize, Integer bufferLength, Integer decimalDigits, Integer numPrecRadix, int nullable, String remarks, String columnDef, Integer sqlDataType, Integer sqlDatetimeSub, Integer charOctetLength, int ordinalPosition, String isNullable, String collation) {
 
     }
 

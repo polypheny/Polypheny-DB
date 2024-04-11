@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@ import static org.polypheny.db.adapter.neo4j.util.NeoStatements.skip_;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.polypheny.db.adapter.neo4j.NeoGraphImplementor;
 import org.polypheny.db.adapter.neo4j.rules.NeoGraphAlg;
 import org.polypheny.db.adapter.neo4j.util.NeoStatements;
@@ -34,11 +33,12 @@ import org.polypheny.db.algebra.AlgFieldCollation.Direction;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.lpg.LpgSort;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.trait.ModelTrait;
+import org.polypheny.db.type.entity.PolyString;
 
 public class NeoLpgSort extends LpgSort implements NeoGraphAlg {
 
@@ -49,14 +49,14 @@ public class NeoLpgSort extends LpgSort implements NeoGraphAlg {
      * @param traits Traits active for this node, including {@link ModelTrait#GRAPH}
      * @param input Input algebraic expression
      */
-    public NeoLpgSort( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, AlgCollation collation, RexNode offset, RexNode fetch ) {
+    public NeoLpgSort( AlgCluster cluster, AlgTraitSet traits, AlgNode input, AlgCollation collation, RexNode offset, RexNode fetch ) {
         super( cluster, traits, input, collation, offset, fetch );
     }
 
 
     @Override
     public Sort copy( AlgTraitSet traitSet, AlgNode newInput, AlgCollation newCollation, ImmutableList<RexNode> fieldExps, RexNode offset, RexNode fetch ) {
-        return new NeoLpgSort( input.getCluster(), traitSet, input, collation, offset, fetch );
+        return new NeoLpgSort( newInput.getCluster(), traitSet, newInput, newCollation, offset, fetch );
     }
 
 
@@ -74,15 +74,15 @@ public class NeoLpgSort extends LpgSort implements NeoGraphAlg {
         }
 
         if ( !groups.isEmpty() ) {
-            implementor.add( orderBy_( list_( groups.stream().map( NeoStatements::literal_ ).collect( Collectors.toList() ) ) ) );
+            implementor.add( orderBy_( list_( groups.stream().map( e -> NeoStatements.literal_( PolyString.of( e ) ) ).toList() ) ) );
         }
 
         if ( offset != null ) {
-            implementor.add( skip_( ((RexLiteral) offset).value.asNumber().intValue() ) );
+            implementor.add( skip_( ((RexLiteral) offset).value.asNumber() ) );
         }
 
         if ( fetch != null ) {
-            implementor.add( limit_( ((RexLiteral) fetch).value.asNumber().intValue() ) );
+            implementor.add( limit_( ((RexLiteral) fetch).value.asNumber() ) );
         }
 
     }

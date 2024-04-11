@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,43 +38,43 @@ import org.polypheny.db.util.ValidatorUtil;
 
 
 /**
- * Namespace based on a table from the catalog.
+ * Namespace based on an entity from the catalog.
  */
 class EntityNamespace extends AbstractNamespace {
 
     @Getter
-    private final Entity table;
+    private final Entity entity;
     public final ImmutableList<AlgDataTypeField> extendedFields;
 
 
     /**
-     * Creates a TableNamespace.
+     * Creates a EntityNamespace.
      */
     private EntityNamespace( SqlValidatorImpl validator, Entity entity, List<AlgDataTypeField> fields ) {
         super( validator, null );
-        this.table = entity;
+        this.entity = entity;
         this.extendedFields = ImmutableList.copyOf( fields );
     }
 
 
-    EntityNamespace( SqlValidatorImpl validator, Entity table ) {
-        this( validator, table, ImmutableList.of() );
+    EntityNamespace( SqlValidatorImpl validator, Entity entity ) {
+        this( validator, entity, ImmutableList.of() );
     }
 
 
     @Override
     public DataModel getDataModel() {
-        return table.dataModel;
+        return entity.dataModel;
     }
 
 
     @Override
     protected AlgDataType validateImpl( AlgDataType targetRowType ) {
         if ( extendedFields.isEmpty() ) {
-            return table.getRowType();
+            return entity.getTupleType();
         }
         final Builder builder = validator.getTypeFactory().builder();
-        builder.addAll( table.getRowType().getFields() );
+        builder.addAll( entity.getTupleType().getFields() );
         builder.addAll( extendedFields );
         return builder.build();
     }
@@ -89,14 +89,14 @@ class EntityNamespace extends AbstractNamespace {
 
     @Override
     public Monotonicity getMonotonicity( String columnName ) {
-        final Entity table = getTable();
-        return Util.getMonotonicity( table, columnName );
+        final Entity entity = this.getEntity();
+        return Util.getMonotonicity( entity, columnName );
     }
 
 
     /**
-     * Creates a TableNamespace based on the same table as this one, but with extended fields.
-     *
+     * Creates a EntityNamespace based on the same entity as this one, but with extended fields.
+     * <p>
      * Extended fields are "hidden" or undeclared fields that may nevertheless be present if you ask for them.
      */
     public EntityNamespace extend( SqlNodeList extendList ) {
@@ -104,33 +104,31 @@ class EntityNamespace extends AbstractNamespace {
         SqlValidatorUtil.checkIdentifierListForDuplicates( identifierList, validator.getValidationErrorFunction() );
         final ImmutableList.Builder<AlgDataTypeField> builder = ImmutableList.builder();
         builder.addAll( this.extendedFields );
-        builder.addAll( SqlValidatorUtil.getExtendedColumns( validator.getTypeFactory(), getTable(), extendList ) );
+        builder.addAll( SqlValidatorUtil.getExtendedColumns( validator.getTypeFactory(), this.getEntity(), extendList ) );
         final List<AlgDataTypeField> extendedFields = builder.build();
-        Optional<Entity> oEntity = table.unwrap( Entity.class );
-        if ( oEntity.isPresent() && table.unwrap( ExtensibleEntity.class ).isPresent() ) {
+        Optional<Entity> oEntity = entity.unwrap( Entity.class );
+        if ( oEntity.isPresent() && entity.unwrap( ExtensibleEntity.class ).isPresent() ) {
             checkExtendedColumnTypes( extendList );
-            //final AlgOptEntity algOptEntity = ((AlgOptEntity) table).extend( extendedFields );
-            //final CatalogEntity validatorTable = algOptEntity.unwrap( ValidatorTable.class );
-            return new EntityNamespace( validator, table, ImmutableList.of() );
+            return new EntityNamespace( validator, entity, ImmutableList.of() );
         }
-        return new EntityNamespace( validator, table, extendedFields );
+        return new EntityNamespace( validator, entity, extendedFields );
     }
 
 
     /**
-     * Gets the data-type of all columns in a table (for a view table: including columns of the underlying table)
+     * Gets the data-type of all columns in an entity (for a view entity: including fields of the underlying entity)
      */
     private AlgDataType getBaseRowType() {
-        final Entity schemaEntity = table.unwrap( Entity.class ).orElseThrow();
-        return schemaEntity.getRowType( validator.typeFactory );
+        final Entity entity = this.entity.unwrap( Entity.class ).orElseThrow();
+        return entity.getTupleType( validator.typeFactory );
     }
 
 
     /**
-     * Ensures that extended columns that have the same name as a base column also have the same data-type.
+     * Ensures that extended fields that have the same name as a base field also have the same data-type.
      */
     private void checkExtendedColumnTypes( SqlNodeList extendList ) {
-        final List<AlgDataTypeField> extendedFields = SqlValidatorUtil.getExtendedColumns( validator.getTypeFactory(), table, extendList );
+        final List<AlgDataTypeField> extendedFields = SqlValidatorUtil.getExtendedColumns( validator.getTypeFactory(), entity, extendList );
         final List<AlgDataTypeField> baseFields = getBaseRowType().getFields();
         final Map<String, Integer> nameToIndex = ValidatorUtil.mapNameToIndex( baseFields );
 

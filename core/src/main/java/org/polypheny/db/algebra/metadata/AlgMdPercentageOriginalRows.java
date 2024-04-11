@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,9 +55,9 @@ public class AlgMdPercentageOriginalRows implements MetadataHandler<BuiltInMetad
     public static final AlgMetadataProvider SOURCE =
             ChainedAlgMetadataProvider.of(
                     ImmutableList.of(
-                            ReflectiveAlgMetadataProvider.reflectiveSource( BuiltInMethod.PERCENTAGE_ORIGINAL_ROWS.method, INSTANCE ),
-                            ReflectiveAlgMetadataProvider.reflectiveSource( BuiltInMethod.CUMULATIVE_COST.method, INSTANCE ),
-                            ReflectiveAlgMetadataProvider.reflectiveSource( BuiltInMethod.NON_CUMULATIVE_COST.method, INSTANCE ) ) );
+                            ReflectiveAlgMetadataProvider.reflectiveSource( INSTANCE, BuiltInMethod.PERCENTAGE_ORIGINAL_ROWS.method ),
+                            ReflectiveAlgMetadataProvider.reflectiveSource( INSTANCE, BuiltInMethod.CUMULATIVE_COST.method ),
+                            ReflectiveAlgMetadataProvider.reflectiveSource( INSTANCE, BuiltInMethod.NON_CUMULATIVE_COST.method ) ) );
 
 
     private AlgMdPercentageOriginalRows() {
@@ -87,7 +87,7 @@ public class AlgMdPercentageOriginalRows implements MetadataHandler<BuiltInMetad
         // case where a huge table has been completely filtered away.
 
         for ( AlgNode input : alg.getInputs() ) {
-            double rowCount = mq.getRowCount( input );
+            double rowCount = mq.getTupleCount( input );
             double percentage = mq.getPercentageOriginalRows( input );
             if ( percentage != 0.0 ) {
                 denominator += rowCount / percentage;
@@ -119,7 +119,7 @@ public class AlgMdPercentageOriginalRows implements MetadataHandler<BuiltInMetad
             return null;
         }
 
-        if ( alg.getInputs().size() == 0 ) {
+        if ( alg.getInputs().isEmpty() ) {
             // Assume no filtering happening at leaf.
             return 1.0;
         }
@@ -133,7 +133,7 @@ public class AlgMdPercentageOriginalRows implements MetadataHandler<BuiltInMetad
 
         // Compute product of percentage filtering from this alg (assuming any filtering is the effect of single-table filters) with the percentage filtering performed by the child.
         Double algPercentage =
-                quotientForPercentage( mq.getRowCount( alg ), mq.getRowCount( child ) );
+                quotientForPercentage( mq.getTupleCount( alg ), mq.getTupleCount( child ) );
         if ( algPercentage == null ) {
             return null;
         }

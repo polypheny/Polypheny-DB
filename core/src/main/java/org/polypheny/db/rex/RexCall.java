@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -202,39 +202,23 @@ public class RexCall extends RexNode {
     public boolean isAlwaysTrue() {
         // "c IS NOT NULL" occurs when we expand EXISTS.
         // This reduction allows us to convert it to a semi-join.
-        switch ( getKind() ) {
-            case IS_NOT_NULL:
-                return !operands.get( 0 ).getType().isNullable();
-            case IS_NOT_TRUE:
-            case IS_FALSE:
-            case NOT:
-                return operands.get( 0 ).isAlwaysFalse();
-            case IS_NOT_FALSE:
-            case IS_TRUE:
-            case CAST:
-                return operands.get( 0 ).isAlwaysTrue();
-            default:
-                return false;
-        }
+        return switch ( getKind() ) {
+            case IS_NOT_NULL -> !operands.get( 0 ).getType().isNullable();
+            case IS_NOT_TRUE, IS_FALSE, NOT -> operands.get( 0 ).isAlwaysFalse();
+            case IS_NOT_FALSE, IS_TRUE, CAST -> operands.get( 0 ).isAlwaysTrue();
+            default -> false;
+        };
     }
 
 
     @Override
     public boolean isAlwaysFalse() {
-        switch ( getKind() ) {
-            case IS_NULL:
-                return !operands.get( 0 ).getType().isNullable();
-            case IS_NOT_TRUE:
-            case IS_FALSE:
-            case NOT:
-                return operands.get( 0 ).isAlwaysTrue();
-            case IS_NOT_FALSE:
-            case IS_TRUE:
-            case CAST:
-                return operands.get( 0 ).isAlwaysFalse();
-            default:
-                return false;
-        }
+        return switch ( getKind() ) {
+            case IS_NULL -> !operands.get( 0 ).getType().isNullable();
+            case IS_NOT_TRUE, IS_FALSE, NOT -> operands.get( 0 ).isAlwaysTrue();
+            case IS_NOT_FALSE, IS_TRUE, CAST -> operands.get( 0 ).isAlwaysFalse();
+            default -> false;
+        };
     }
 
 

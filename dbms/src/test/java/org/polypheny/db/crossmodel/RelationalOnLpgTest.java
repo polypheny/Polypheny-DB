@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,6 @@ import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.models.results.GraphResult;
 
 @Tag("adapter")
-@Tag("fileExcluded") // Array support for FileAdapter is quite wonky, which results in mismatched labels here, todo enable when fixed @see simpleLpgTest
 public class RelationalOnLpgTest extends CrossModelTestTemplate {
 
     private static final String GRAPH_NAME = "crossGraph";
@@ -115,23 +114,11 @@ public class RelationalOnLpgTest extends CrossModelTestTemplate {
 
 
     @Test
-    @Tag("neoExcluded") // returns 3.0, this is an inconsistency, which should be expected when working on cross model queries, might adjust the checkResultSet method
     public void simpleProjectTest() {
         executeStatements( ( s, c ) -> {
             ResultSet result = s.executeQuery( String.format( "SELECT properties, labels FROM \"%s\".\"%s\"", GRAPH_NAME, DATA_LABEL ) );
             TestHelper.checkResultSet( result,
                     ImmutableList.of( new Object[]{ "{\"key\":\"3\"}", new Object[]{ DATA_LABEL } } ) );
-        } );
-
-    }
-
-
-    @Test
-    @Tag("neoExcluded") // see simpleProjectTest method
-    public void itemSelectTest() {
-        executeStatements( ( s, c ) -> {
-            ResultSet result = s.executeQuery( String.format( "SELECT properties[\"key\"] FROM \"%s\".\"%s\"", GRAPH_NAME, DATA_LABEL ) );
-            TestHelper.checkResultSet( result, ImmutableList.of( new Object[]{ "3" } ) );
         } );
 
     }

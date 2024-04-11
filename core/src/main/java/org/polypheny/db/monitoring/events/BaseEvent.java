@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,25 +19,22 @@ package org.polypheny.db.monitoring.events;
 import java.sql.Timestamp;
 import java.util.UUID;
 import lombok.Getter;
+import lombok.Setter;
 
 
 public abstract class BaseEvent implements MonitoringEvent {
 
     @Getter
     private final UUID id = UUID.randomUUID();
+    @Setter
     protected String eventType;
 
-    private long recordedTimestamp;
+    private final long recordedTimestamp;
 
 
     public BaseEvent() {
         setEventType( eventType );
         recordedTimestamp = getCurrentTimestamp();
-    }
-
-
-    public void setEventType( String eventType ) {
-        this.eventType = eventType;
     }
 
 

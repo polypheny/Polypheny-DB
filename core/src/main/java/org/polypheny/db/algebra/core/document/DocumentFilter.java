@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,10 +20,11 @@ import java.util.List;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.NonFinal;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.SingleAlg;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
@@ -34,6 +35,7 @@ import org.polypheny.db.schema.trait.ModelTrait;
 @NonFinal
 public abstract class DocumentFilter extends SingleAlg implements DocumentAlg {
 
+    @NotNull
     public RexNode condition;
 
 
@@ -41,7 +43,7 @@ public abstract class DocumentFilter extends SingleAlg implements DocumentAlg {
      * Creates a {@link DocumentFilter}.
      * {@link ModelTrait#DOCUMENT} native node of a filter.
      */
-    protected DocumentFilter( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, RexNode condition ) {
+    protected DocumentFilter( AlgCluster cluster, AlgTraitSet traits, AlgNode input, @NotNull RexNode condition ) {
         super( cluster, traits, input );
         this.condition = condition;
     }
@@ -49,7 +51,9 @@ public abstract class DocumentFilter extends SingleAlg implements DocumentAlg {
 
     @Override
     public String algCompareString() {
-        return "$" + getClass().getSimpleName() + "$" + condition.hashCode() + "$" + input.algCompareString();
+        return getClass().getSimpleName() + "$"
+                + condition.hashCode() + "$"
+                + input.algCompareString() + "&";
     }
 
 

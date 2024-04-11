@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,18 +17,21 @@
 package org.polypheny.db.catalog.entity.physical;
 
 import io.activej.serializer.annotations.Deserialize;
-import java.io.Serializable;
+import java.util.List;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.NonFinal;
+import lombok.experimental.SuperBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.type.entity.PolyValue;
 
 @EqualsAndHashCode(callSuper = true)
 @Value
 @NonFinal
+@SuperBuilder(toBuilder = true)
 public class PhysicalCollection extends PhysicalEntity {
 
     public PhysicalCollection(
@@ -39,13 +42,13 @@ public class PhysicalCollection extends PhysicalEntity {
             @Deserialize("name") String name,
             @Deserialize("namespaceName") String namespaceName,
             @Deserialize("adapterId") long adapterId ) {
-        super( id, allocationId, logicalId, name, namespaceId, namespaceName, DataModel.DOCUMENT, adapterId );
+        super( id, allocationId, logicalId, name, namespaceId, namespaceName, List.of(), DataModel.DOCUMENT, adapterId );
     }
 
 
     @Override
-    public Serializable[] getParameterArray() {
-        return new Serializable[0];
+    public PolyValue[] getParameterArray() {
+        return new PolyValue[0];
     }
 
 

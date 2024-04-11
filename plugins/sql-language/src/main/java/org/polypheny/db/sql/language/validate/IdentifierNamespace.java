@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,15 +22,19 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import javax.annotation.Nullable;
 import lombok.Getter;
 import lombok.experimental.Accessors;
+import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.Modality;
 import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.Entity;
+import org.polypheny.db.catalog.entity.logical.LogicalGraph.SubstitutionGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -42,9 +46,8 @@ import org.polypheny.db.sql.language.SqlIdentifier;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlNodeList;
 import org.polypheny.db.sql.language.SqlUtil;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.util.CyclicDefinitionException;
-import org.polypheny.db.util.NameMatcher;
-import org.polypheny.db.util.NameMatchers;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Static;
 import org.polypheny.db.util.Util;
@@ -53,8 +56,10 @@ import org.polypheny.db.util.Util;
 /**
  * Namespace whose contents are defined by the type of an {@link SqlIdentifier identifier}.
  */
+@Slf4j
 public class IdentifierNamespace extends AbstractNamespace {
 
+    @Getter
     private final SqlIdentifier id;
     private final SqlValidatorScope parentScope;
     public final SqlNodeList extendList;
@@ -97,22 +102,19 @@ public class IdentifierNamespace extends AbstractNamespace {
 
 
     protected static Pair<SqlIdentifier, SqlNodeList> split( SqlNode node ) {
-        switch ( node.getKind() ) {
-            case EXTEND:
-                final SqlCall call = (SqlCall) node;
-                return Pair.of( (SqlIdentifier) call.getOperandList().get( 0 ), (SqlNodeList) call.getOperandList().get( 1 ) );
-            default:
-                return Pair.of( (SqlIdentifier) node, null );
+        if ( Objects.requireNonNull( node.getKind() ) == Kind.EXTEND ) {
+            final SqlCall call = (SqlCall) node;
+            return Pair.of( (SqlIdentifier) call.getOperandList().get( 0 ), (SqlNodeList) call.getOperandList().get( 1 ) );
         }
+        return Pair.of( (SqlIdentifier) node, null );
     }
 
 
     private SqlValidatorNamespace resolveImpl( SqlIdentifier id ) {
-        final NameMatcher nameMatcher = validator.snapshot.nameMatcher;
         final SqlValidatorScope.ResolvedImpl resolved = new SqlValidatorScope.ResolvedImpl();
         final List<String> names = SqlIdentifier.toStar( id.names );
         try {
-            parentScope.resolveTable( names, nameMatcher, SqlValidatorScope.Path.EMPTY, resolved );
+            parentScope.resolveEntity( names, SqlValidatorScope.Path.EMPTY, resolved );
         } catch ( CyclicDefinitionException e ) {
             if ( e.depth == 1 ) {
                 throw validator.newValidationError( id, Static.RESOURCE.cyclicDefinition( id.toString(), SqlIdentifier.getString( e.path ) ) );
@@ -120,47 +122,11 @@ public class IdentifierNamespace extends AbstractNamespace {
                 throw new CyclicDefinitionException( e.depth - 1, e.path );
             }
         }
-        SqlValidatorScope.Resolve previousResolve = null;
         if ( resolved.count() == 1 ) {
-            final SqlValidatorScope.Resolve resolve = previousResolve = resolved.only();
+            final SqlValidatorScope.Resolve resolve = resolved.only();
             return resolve.namespace;
-            /*if ( resolve.remainingNames.isEmpty() ) {
-                return resolve.namespace;
-            }*/
-            // If we're not case-sensitive, give an error.
-            // If we're case-sensitive, we'll shortly try again and give an error then.
-            /*if ( !nameMatcher.isCaseSensitive() ) {
-                throw validator.newValidationError( id, Static.RESOURCE.objectNotFoundWithin( resolve.remainingNames.get( 0 ), SqlIdentifier.getString( resolve.path.stepNames() ) ) );
-            }*/
         }
 
-        // Failed to match.  If we're matching case-sensitively, try a more lenient match. If we find something we can offer a helpful hint.
-        if ( nameMatcher.isCaseSensitive() ) {
-            final NameMatcher liberalMatcher = NameMatchers.liberal();
-            resolved.clear();
-            parentScope.resolveTable( names, liberalMatcher, SqlValidatorScope.Path.EMPTY, resolved );
-            if ( resolved.count() == 1 ) {
-                final SqlValidatorScope.Resolve resolve = resolved.only();
-                /*if ( resolve.remainingNames.isEmpty() || previousResolve == null ) {
-                    // We didn't match it case-sensitive, so they must have had the right identifier, wrong case.
-                    //
-                    // If previousResolve is null, we matched nothing case-sensitive and everything case-insensitive, so the mismatch must have been at position 0.
-                    final int i = previousResolve == null
-                            ? 0
-                            : previousResolve.path.stepCount();
-                    final int offset = resolve.path.stepCount() + resolve.remainingNames.size() - names.size();
-                    final List<String> prefix = resolve.path.stepNames().subList( 0, offset + i );
-                    final String next = resolve.path.stepNames().get( i + offset );
-                    if ( prefix.isEmpty() ) {
-                        throw validator.newValidationError( id, Static.RESOURCE.objectNotFoundDidYouMean( names.get( i ), next ) );
-                    } else {
-                        throw validator.newValidationError( id, Static.RESOURCE.objectNotFoundWithinDidYouMean( names.get( i ), SqlIdentifier.getString( prefix ), next ) );
-                    }
-                } else {
-                    throw validator.newValidationError( id, Static.RESOURCE.objectNotFoundWithin( resolve.remainingNames.get( 0 ), SqlIdentifier.getString( resolve.path.stepNames() ) ) );
-                }*/
-            }
-        }
         List<String> ns = id.names;
 
         if ( ns.size() == 1 ) {
@@ -173,19 +139,31 @@ public class IdentifierNamespace extends AbstractNamespace {
                 return new EntityNamespace( validator, validator.snapshot.rel().getTables( null, Pattern.of( ns.get( 0 ) ) ).get( 0 ) );
             }
         } else if ( ns.size() == 2 ) {
-            LogicalNamespace namespace = validator.snapshot.getNamespace( ns.get( 0 ) ).orElseThrow();
+            String entityName = ns.get( 1 );
+
+            Optional<LogicalNamespace> optionalNamespace = validator.snapshot.getNamespace( ns.get( 0 ) );
+            if ( optionalNamespace.isEmpty() ) {
+                // we might have [entity].[column] not [namespace].[entity]
+                optionalNamespace = validator.snapshot.getNamespace( Catalog.defaultNamespaceId );
+                entityName = ns.get( 0 );
+            }
+
+            LogicalNamespace namespace = optionalNamespace.orElseThrow();
+
             Entity entity = null;
             if ( namespace.dataModel == DataModel.RELATIONAL ) {
-                entity = validator.snapshot.rel().getTable( namespace.id, ns.get( 1 ) ).orElse( null );
+                entity = validator.snapshot.rel().getTable( namespace.id, entityName ).orElse( null );
             } else if ( namespace.dataModel == DataModel.DOCUMENT ) {
-                entity = validator.snapshot.doc().getCollection( namespace.id, ns.get( 1 ) ).orElse( null );
+                entity = validator.snapshot.doc().getCollection( namespace.id, entityName ).orElse( null );
             } else if ( namespace.dataModel == DataModel.GRAPH ) {
-                entity = validator.snapshot.graph().getGraph( namespace.id ).orElse( null );
+                // we use a subgraph to define label which is used as table
+                final String finalEntityName = entityName;
+                entity = validator.snapshot.graph().getGraph( namespace.id ).map( g -> new SubstitutionGraph( g.id, ns.get( 1 ), false, g.caseSensitive, List.of( PolyString.of( finalEntityName ) ) ) ).orElse( null );
             }
 
             return new EntityNamespace( validator, entity );
         }
-        throw new GenericRuntimeException( "Table not found" );
+        throw new GenericRuntimeException( "Entity not found" );
     }
 
 
@@ -193,7 +171,7 @@ public class IdentifierNamespace extends AbstractNamespace {
     public AlgDataType validateImpl( AlgDataType targetRowType ) {
         resolvedNamespace = Objects.requireNonNull( resolveImpl( id ) );
         if ( resolvedNamespace instanceof EntityNamespace ) {
-            Entity table = resolvedNamespace.getTable();
+            Entity table = resolvedNamespace.getEntity();
             if ( validator.shouldExpandIdentifiers() ) {
                 // TODO:  expand qualifiers for column references also
                 List<String> qualifiedNames = List.of( table.name );
@@ -211,14 +189,14 @@ public class IdentifierNamespace extends AbstractNamespace {
             }
         }
 
-        AlgDataType rowType = resolvedNamespace.getRowType();
+        AlgDataType rowType = resolvedNamespace.getTupleType();
 
         if ( extendList != null ) {
             if ( !(resolvedNamespace instanceof EntityNamespace) ) {
                 throw new GenericRuntimeException( "cannot convert" );
             }
             resolvedNamespace = ((EntityNamespace) resolvedNamespace).extend( extendList );
-            rowType = resolvedNamespace.getRowType();
+            rowType = resolvedNamespace.getTupleType();
         }
 
         // Build a list of monotonic expressions.
@@ -238,11 +216,6 @@ public class IdentifierNamespace extends AbstractNamespace {
     }
 
 
-    public SqlIdentifier getId() {
-        return id;
-    }
-
-
     @Override
     public SqlNode getNode() {
         return id;
@@ -251,14 +224,17 @@ public class IdentifierNamespace extends AbstractNamespace {
 
     @Override
     public SqlValidatorNamespace resolve() {
+        if ( resolvedNamespace == null ) {
+            log.warn( "resolvedNamespace is null" );
+        }
         assert resolvedNamespace != null : "must call validate first";
         return resolvedNamespace.resolve();
     }
 
 
     @Override
-    public Entity getTable() {
-        return resolvedNamespace == null ? null : resolve().getTable();
+    public Entity getEntity() {
+        return resolvedNamespace == null ? null : resolve().getEntity();
     }
 
 
@@ -270,14 +246,14 @@ public class IdentifierNamespace extends AbstractNamespace {
 
     @Override
     public Monotonicity getMonotonicity( String columnName ) {
-        final Entity table = getTable();
+        final Entity table = this.getEntity();
         return Util.getMonotonicity( table, columnName );
     }
 
 
     @Override
     public boolean supportsModality( Modality modality ) {
-        final Entity table = getTable();
+        final Entity table = this.getEntity();
         if ( table == null ) {
             return modality == Modality.RELATION;
         }

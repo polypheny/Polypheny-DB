@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,19 +65,19 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
 
 
     public AbstractJdbcSource(
-            long storeId,
-            String uniqueName,
-            Map<String, String> settings,
-            String diverClass,
-            SqlDialect dialect,
-            boolean readOnly ) {
+            final long storeId,
+            final String uniqueName,
+            final Map<String, String> settings,
+            final String diverClass,
+            final SqlDialect dialect,
+            final boolean readOnly ) {
         super( storeId, uniqueName, settings, readOnly, new RelAdapterCatalog( storeId ) );
         this.connectionFactory = createConnectionFactory( settings, dialect, diverClass );
         this.dialect = dialect;
         // Register the JDBC Pool Size as information in the information manager and enable it
         registerInformationPage();
 
-        this.delegate = new RelationalScanDelegate( this, storeCatalog );
+        this.delegate = new RelationalScanDelegate( this, adapterCatalog );
     }
 
 
@@ -121,7 +121,7 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
 
     @Override
     public void updateNamespace( String name, long id ) {
-        currentJdbcSchema = JdbcSchema.create( id, storeCatalog, name, connectionFactory, dialect, this );
+        currentJdbcSchema = JdbcSchema.create( id, name, connectionFactory, dialect, this );
         putNamespace( currentJdbcSchema );
     }
 
@@ -135,20 +135,9 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
     protected abstract String getConnectionUrl( final String dbHostname, final int dbPort, final String dbName );
 
 
-    /*@Override
-    public void createNewSchema( Snapshot snapshot, String name, long id ) {
-        currentJdbcSchema = JdbcSchema.create( id, snapshot, name, connectionFactory, dialect, this );
-    }*/
-
-
     @Override
     public void truncate( Context context, long allocId ) {
-        // We get the physical schema / table name by checking existing column placements of the same logical table placed on this store.
-        // This works because there is only one physical table for each logical table on JDBC stores. The reason for choosing this
-        // approach rather than using the default physical schema / table names is that this approach allows truncating linked tables.
-        // String physicalTableName = context.getSnapshot().alloc().getPartitionPlacementsByTableOnAdapter( getAdapterId(), catalogTable.id ).get( 0 ).physicalTableName;
-        // String physicalSchemaName = context.getSnapshot().alloc().getPartitionPlacementsByTableOnAdapter( getAdapterId(), catalogTable.id ).get( 0 ).physicalSchemaName;
-        PhysicalTable table = storeCatalog.getTable( allocId );
+        PhysicalTable table = adapterCatalog.getTable( allocId );
         StringBuilder builder = new StringBuilder();
         builder.append( "TRUNCATE TABLE " )
                 .append( dialect.quoteIdentifier( table.namespaceName ) )
@@ -260,16 +249,12 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
                                 scale = row.getInt( "DECIMAL_DIGITS" );
                                 break;
                             case TIME:
-                            case TIME_WITH_LOCAL_TIME_ZONE:
-                                type = PolyType.TIME;
                                 length = row.getInt( "DECIMAL_DIGITS" );
                                 if ( length > 3 ) {
                                     throw new GenericRuntimeException( "Unsupported precision for data type time: " + length );
                                 }
                                 break;
                             case TIMESTAMP:
-                            case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-                                type = PolyType.TIMESTAMP;
                                 length = row.getInt( "DECIMAL_DIGITS" );
                                 if ( length > 3 ) {
                                     throw new GenericRuntimeException( "Unsupported precision for data type timestamp: " + length );
@@ -314,8 +299,23 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
     }
 
 
+    protected void updateNativePhysical( long allocId ) {
+        PhysicalTable table = adapterCatalog.fromAllocation( allocId );
+        adapterCatalog.replacePhysical( this.currentJdbcSchema.createJdbcTable( table ) );
+    }
+
+
+    @Override
+    public void renameLogicalColumn( long id, String newColumnName ) {
+        adapterCatalog.renameLogicalColumn( id, newColumnName );
+        adapterCatalog.fields.values().stream().filter( c -> c.id == id ).forEach( c -> updateNativePhysical( c.allocId ) );
+    }
+
+
     @SuppressWarnings("unused")
     public interface Exclude {
+
+        void renameLogicalColumn( long id, String newColumnName );
 
         void updateTable( long allocId );
 

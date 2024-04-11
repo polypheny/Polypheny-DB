@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,29 +17,31 @@
 package org.polypheny.db.adapter.neo4j.rules.graph;
 
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.list_;
+import static org.polypheny.db.adapter.neo4j.util.NeoStatements.literal_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.with_;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.neo4j.NeoGraphImplementor;
 import org.polypheny.db.adapter.neo4j.rules.NeoGraphAlg;
-import org.polypheny.db.adapter.neo4j.util.NeoStatements;
 import org.polypheny.db.adapter.neo4j.util.NeoStatements.OperatorStatement;
 import org.polypheny.db.adapter.neo4j.util.NeoUtil;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.Aggregate;
-import org.polypheny.db.algebra.core.AggregateCall;
+import org.polypheny.db.algebra.core.LaxAggregateCall;
 import org.polypheny.db.algebra.core.lpg.LpgAggregate;
 import org.polypheny.db.algebra.core.lpg.LpgProject;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.util.ImmutableBitSet;
+import org.polypheny.db.rex.RexIndexRef;
+import org.polypheny.db.rex.RexNameRef;
+import org.polypheny.db.type.entity.PolyString;
 
 public class NeoLpgAggregate extends LpgAggregate implements NeoGraphAlg {
 
@@ -49,19 +51,19 @@ public class NeoLpgAggregate extends LpgAggregate implements NeoGraphAlg {
      * @param cluster Cluster this expression belongs to
      * @param traits Traits active for this node, including {@link org.polypheny.db.catalog.logistic.DataModel#GRAPH}
      */
-    public NeoLpgAggregate( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) {
-        super( cluster, traits, child, indicator, groupSet, groupSets, aggCalls );
+    public NeoLpgAggregate( AlgCluster cluster, AlgTraitSet traits, AlgNode child, @NotNull List<RexNameRef> groups, List<LaxAggregateCall> aggCalls, AlgDataType tupleType ) {
+        super( cluster, traits, child, groups, aggCalls, tupleType );
     }
 
 
     @Override
-    public Aggregate copy( AlgTraitSet traitSet, AlgNode input, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) {
-        return new NeoLpgAggregate( input.getCluster(), traitSet, input, indicator, groupSet, groupSets, aggCalls );
+    public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
+        return new NeoLpgAggregate( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), groups, aggCalls, rowType );
     }
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         return super.computeSelfCost( planner, mq ).multiplyBy( 0.2 );
     }
 
@@ -69,7 +71,7 @@ public class NeoLpgAggregate extends LpgAggregate implements NeoGraphAlg {
     @Override
     public void implement( NeoGraphImplementor implementor ) {
         implementor.visitChild( 0, getInput() );
-        if ( implementor.getLast() instanceof LpgProject ) {
+        if ( implementor.getLast() instanceof LpgProject || implementor.getLast() instanceof NeoLpgMatch ) {
             OperatorStatement last = implementor.removeLast();
             List<String> finalRow = new ArrayList<>();
             for ( AlgDataTypeField ignored : getTupleType().getFields() ) {
@@ -79,19 +81,25 @@ public class NeoLpgAggregate extends LpgAggregate implements NeoGraphAlg {
             List<String> lastNames = implementor.getLast().getTupleType().getFieldNames();
             List<String> currentNames = getTupleType().getFieldNames();
 
-            for ( int index : groupSet.asSet() ) {
-                String name = lastNames.get( index );
-                finalRow.set( currentNames.indexOf( name ), name );
+            for ( RexNameRef name : groups ) {
+                finalRow.set( currentNames.indexOf( name.name ), name.name );
             }
-            for ( AggregateCall agg : aggCalls ) {
-                List<String> refs = agg.getArgList().stream().map( lastNames::get ).collect( Collectors.toList() );
-                if ( refs.isEmpty() ) {
+            for ( LaxAggregateCall agg : aggCalls ) {
+                List<String> refs = new ArrayList<>();
+                if ( agg.getInput().isEmpty() ) {
                     refs.add( "*" );
+                } else {
+                    refs.add( lastNames.get( ((RexIndexRef) agg.getInput().get()).getIndex() ) );
                 }
-                finalRow.set( currentNames.indexOf( agg.name ), Objects.requireNonNull( NeoUtil.getOpAsNeo( agg.getAggregation().getOperatorName(), List.of(), agg.type ) ).apply( refs ) );
+                int i = currentNames.indexOf( agg.name );
+                if ( i == -1 ) {
+                    i = currentNames.indexOf( agg.function.getOperatorName().name() );
+                }
+
+                finalRow.set( i, Objects.requireNonNull( NeoUtil.getOpAsNeo( agg.function.getOperatorName(), List.of(), null ) ).apply( refs ) );
             }
 
-            implementor.add( with_( list_( finalRow.stream().map( NeoStatements::literal_ ).collect( Collectors.toList() ) ) ) );
+            implementor.add( with_( list_( finalRow.stream().map( e -> literal_( PolyString.of( e ) ) ).toList() ) ) );
 
         }
 

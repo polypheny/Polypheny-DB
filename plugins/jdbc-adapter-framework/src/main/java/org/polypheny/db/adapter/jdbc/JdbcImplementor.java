@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,11 @@
 package org.polypheny.db.adapter.jdbc;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.function.Function;
+import lombok.Getter;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.adapter.jdbc.rel2sql.AlgToSqlConverter;
 import org.polypheny.db.algebra.AlgNode;
@@ -47,28 +51,30 @@ import org.polypheny.db.util.Util;
 /**
  * State for generating a SQL statement.
  */
+@Getter
 public class JdbcImplementor extends AlgToSqlConverter {
 
-    private final JdbcSchema schema;
+    private final ImmutableMap<Class<? extends AlgNode>, Function<AlgNode, Result>> handlers;
 
 
     public JdbcImplementor( SqlDialect dialect, JavaTypeFactory typeFactory, JdbcSchema schema ) {
         super( dialect );
         Util.discard( typeFactory );
-        this.schema = schema;
+
+        handlers = ImmutableMap.copyOf( new HashMap<>() {{
+            putAll( JdbcImplementor.super.getHandlers() );
+            put( JdbcScan.class, s -> accept( (JdbcScan) s ) );
+        }} );
     }
 
 
-    /**
-     * @see #dispatch
-     */
-    public Result visit( JdbcScan scan ) {
+    public Result accept( JdbcScan scan ) {
         return result( scan.jdbcTable.physicalTableName(), ImmutableList.of( Clause.FROM ), scan, null );
     }
 
 
     public Result implement( AlgNode node ) {
-        return dispatch( node );
+        return handle( node );
     }
 
 

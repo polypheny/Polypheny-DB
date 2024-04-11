@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,14 +41,14 @@ import org.polypheny.db.util.Pair;
 
 /**
  * Callback for an expression to dump itself to.
- *
+ * <p>
  * It is used for generating EXPLAIN PLAN output, and also for serializing a tree of relational expressions to JSON.
  */
 public interface AlgWriter {
 
     /**
      * Prints an explanation of a node, with a list of (term, value) pairs.
-     *
+     * <p>
      * The term-value pairs are generally gathered by calling {@link AlgNode#explain(AlgWriter)}.
      * Each sub-class of {@link AlgNode} calls {@link #input(String, AlgNode)} and {@link #item(String, Object)} to declare term-value pairs.
      *

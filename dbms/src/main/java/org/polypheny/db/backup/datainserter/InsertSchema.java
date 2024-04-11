@@ -17,44 +17,39 @@
 package org.polypheny.db.backup.datainserter;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.gson.JsonObject;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.stream.Collectors;
+import java.util.List;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.ResultIterator;
-import org.polypheny.db.backup.BackupInformationObject;
 import org.polypheny.db.backup.BackupEntityWrapper;
+import org.polypheny.db.backup.BackupInformationObject;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalConstraint;
-import org.polypheny.db.catalog.entity.logical.*;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalEntity;
+import org.polypheny.db.catalog.entity.logical.LogicalForeignKey;
+import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.QueryLanguage;
-import org.polypheny.db.languages.QueryParameters;
-import org.polypheny.db.nodes.Node;
 import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
-import org.polypheny.db.processing.Processor;
 import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
-
-import java.util.List;
-import java.util.Map;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.entity.PolyString;
-import org.polypheny.db.type.entity.PolyUserDefinedValue;
-import org.polypheny.db.type.entity.PolyValue;
 
 @Slf4j
 public class InsertSchema {
 
+    public static final String BACKUP_MANAGER = "Backup Manager";
     private BackupInformationObject backupInformationObject;
     private final TransactionManager transactionManager;
 
@@ -102,7 +97,6 @@ public class InsertSchema {
         //tables = bupInformationObject.transformLogicalEntitiesToBupSuperEntityyy( bupInformationObject.getTables() );
         //bupInformationObject.setBupTables( tables );
 
-
         //List<BupSuperEntity<LogicalEntity>> bupEntityList = new ArrayList<>();
         Map<Long, List<BackupEntityWrapper<? extends LogicalEntity>>> tempMap = new HashMap<>();
         //luege öbs goht eso (a de räschtleche ort, ond söcht met instance of caste)
@@ -118,12 +112,10 @@ public class InsertSchema {
 
          */
 
-
         // create table
         //bupInformationObject.transformLogicalEntitiesToBupSuperEntity( bupInformationObject.getTables() );
         //tables = backupInformationObject.tempWrapLogicalTables( backupInformationObject.getTables(), true );
         //backupInformationObject.setWrappedTables( tables );
-
 
         //LogicalTable lol = backupInformationObject.getWrappedTables().get( 0 ).get( 0 ).getEntityObject().unwrap( LogicalTable.class );
         //use LogicalEntity.unwrap(LogicalTable.class) for each of the LogicalEntities in wrappedTables
@@ -137,7 +129,7 @@ public class InsertSchema {
         insertAlterTableFK( backupInformationObject.getWrappedTables(), backupInformationObject.getForeignKeysPerTable() );
 
         // create Collections
-        insertCreateCollection( backupInformationObject.getWrappedCollections());
+        insertCreateCollection( backupInformationObject.getWrappedCollections() );
 
         //TODO(FF): create something to test that only available data is tried to be inserted
         //TODO(FF): don't insert tables from source (check for entityType SOURCE (not default is ENTITY))
@@ -195,7 +187,7 @@ public class InsertSchema {
         //TODO(FF): check if namespaces is empty, throw error if it is
         for ( Map.Entry<Long, BackupEntityWrapper<LogicalNamespace>> ns : namespaces.entrySet() ) {
             //only insert namespaces that are marked to be inserted
-            if (ns.getValue().getToBeInserted()) {
+            if ( ns.getValue().getToBeInserted() ) {
                 //query = "CREATE " + ns.getValue().getEntityObject().dataModel.toString() + " NAMESPACE " + ns.getValue().getEntityObject().name + ";";
                 query = String.format( "CREATE %s NAMESPACE %s11", ns.getValue().getEntityObject().dataModel.toString(), ns.getValue().getEntityObject().name );
 
@@ -220,8 +212,6 @@ public class InsertSchema {
                         default:
                             throw new GenericRuntimeException( "During backup schema insertions not supported data model detected" + ns.getValue().getEntityObject().dataModel );
                     }
-
-
 
                     //executeStatementInPolypheny( "CREATE DATABASE product2 IF NOT EXISTS", Catalog.defaultNamespaceId, DataModel.GRAPH );
                     //executeStatementInPolypheny( query, ns.getKey(), ns.getValue().getEntityObject().dataModel );
@@ -251,7 +241,7 @@ public class InsertSchema {
             // go through each table in the list (of tables for one namespace)
             for ( BackupEntityWrapper<LogicalEntity> table : tablesList ) {
                 // only create tables that should be inserted
-                if ( table.getToBeInserted()) {
+                if ( table.getToBeInserted() ) {
                     // only create tables that don't (exist by default in polypheny)
                     if ( !(table.getEntityObject().entityType.equals( EntityType.SOURCE )) ) {
                         query = createTableQuery( table, namespaceName );
@@ -277,7 +267,7 @@ public class InsertSchema {
                 //TODO(FF - cosmetic): exclude source tables (for speed)
 
                 // compare the table id with the constraint keys, and if they are the same, create the constraint, and check if it schoult be inserted
-                if ( (constraints.containsKey( table.getEntityObject().unwrap( LogicalTable.class ).get().getId() )) && table.getToBeInserted()) {
+                if ( (constraints.containsKey( table.getEntityObject().unwrap( LogicalTable.class ).get().getId() )) && table.getToBeInserted() ) {
                     List<LogicalConstraint> constraintsList = constraints.get( table.getEntityObject().unwrap( LogicalTable.class ).get().getId() );
                     List<LogicalColumn> logicalColumns = backupInformationObject.getColumns().get( table.getEntityObject().unwrap( LogicalTable.class ).get().getId() );
 
@@ -287,7 +277,7 @@ public class InsertSchema {
                         String constraintName = constraint.name;
                         String listOfCols = new String();
 
-                        List<Long> colIDs = constraint.getKey().columnIds;
+                        List<Long> colIDs = constraint.getKey().fieldIds;
 
                         // get all column-names used in the constraint from the columns
                         listOfCols = getListOfCol( colIDs, logicalColumns );
@@ -305,44 +295,43 @@ public class InsertSchema {
     private void insertAlterTableFK( ImmutableMap<Long, List<BackupEntityWrapper<LogicalEntity>>> bupTables, ImmutableMap<Long, List<LogicalForeignKey>> foreignKeysPerTable ) {
         String query = new String();
         //if (!foreignKeysPerTable.isEmpty()) {
-            // go through foreign key constraints and collect the necessary data
-            for ( Map.Entry<Long, List<LogicalForeignKey>> fkListPerTable : foreignKeysPerTable.entrySet() ) {
-                if (!(fkListPerTable.getValue().isEmpty())) {
-                    Long tableId = fkListPerTable.getKey();
+        // go through foreign key constraints and collect the necessary data
+        for ( Map.Entry<Long, List<LogicalForeignKey>> fkListPerTable : foreignKeysPerTable.entrySet() ) {
+            if ( !(fkListPerTable.getValue().isEmpty()) ) {
+                Long tableId = fkListPerTable.getKey();
 
-                    for ( LogicalForeignKey foreignKey : fkListPerTable.getValue() ) {
-                        // get the table where the foreign key is saved
-                        Long nsId = foreignKey.namespaceId;
-                        BackupEntityWrapper<LogicalEntity> table = backupInformationObject.getWrappedTables().get( nsId ).stream().filter( e -> e.getEntityObject().unwrap( LogicalTable.class ).get().getId() == tableId ).findFirst().get();
-                        //boolean lol = table.getToBeInserted();
-                        // check if the table is marked to be inserted
-                        if (table.getToBeInserted()) {
-                            String namespaceName = backupInformationObject.getWrappedNamespaces().get( foreignKey.namespaceId ).getNameForQuery();
-                            String tableName = backupInformationObject.getWrappedTables().get( foreignKey.namespaceId ).stream().filter( e -> e.getEntityObject().unwrap( LogicalTable.class ).get().getId() == foreignKey.tableId ).findFirst().get().getNameForQuery();
-                            String constraintName = foreignKey.name;
-                            String listOfCols = getListOfCol( foreignKey.columnIds, backupInformationObject.getColumns().get( foreignKey.tableId ) );
-                            String referencedNamespaceName = backupInformationObject.getWrappedNamespaces().get( foreignKey.referencedKeySchemaId ).getNameForQuery();
-                            String referencedTableName = backupInformationObject.getWrappedTables().get( foreignKey.referencedKeySchemaId ).stream().filter( e -> e.getEntityObject().unwrap( LogicalTable.class ).get().getId() == foreignKey.referencedKeyTableId ).findFirst().get().getNameForQuery();
-                            String referencedListOfCols = getListOfCol( foreignKey.referencedKeyColumnIds, backupInformationObject.getColumns().get( foreignKey.referencedKeyTableId ) );
-                            String updateAction = foreignKey.updateRule.foreignKeyOptionToString();
-                            String deleteAction = foreignKey.deleteRule.foreignKeyOptionToString();
-                            //enforcementTime (on commit) - right now is manually set to the same thing everywhere (in the rest of polypheny)
+                for ( LogicalForeignKey foreignKey : fkListPerTable.getValue() ) {
+                    // get the table where the foreign key is saved
+                    Long nsId = foreignKey.namespaceId;
+                    BackupEntityWrapper<LogicalEntity> table = backupInformationObject.getWrappedTables().get( nsId ).stream().filter( e -> e.getEntityObject().unwrap( LogicalTable.class ).orElseThrow().getId() == tableId ).findFirst().orElseThrow();
+                    //boolean lol = table.getToBeInserted();
+                    // check if the table is marked to be inserted
+                    if ( table.getToBeInserted() ) {
+                        String namespaceName = backupInformationObject.getWrappedNamespaces().get( foreignKey.namespaceId ).getNameForQuery();
+                        String tableName = backupInformationObject.getWrappedTables().get( foreignKey.namespaceId ).stream().filter( e -> e.getEntityObject().unwrap( LogicalTable.class ).orElseThrow().getId() == foreignKey.entityId ).findFirst().orElseThrow().getNameForQuery();
+                        String constraintName = foreignKey.name;
+                        String listOfCols = getListOfCol( foreignKey.fieldIds, backupInformationObject.getColumns().get( foreignKey.entityId ) );
+                        String referencedNamespaceName = backupInformationObject.getWrappedNamespaces().get( foreignKey.referencedKeyNamespaceId ).getNameForQuery();
+                        String referencedTableName = backupInformationObject.getWrappedTables().get( foreignKey.referencedKeyNamespaceId ).stream().filter( e -> e.getEntityObject().unwrap( LogicalTable.class ).orElseThrow().getId() == foreignKey.referencedKeyEntityId ).findFirst().orElseThrow().getNameForQuery();
+                        String referencedListOfCols = getListOfCol( foreignKey.referencedKeyFieldIds, backupInformationObject.getColumns().get( foreignKey.referencedKeyEntityId ) );
+                        String updateAction = foreignKey.updateRule.name();
+                        String deleteAction = foreignKey.deleteRule.name();
+                        //enforcementTime (on commit) - right now is manually set to the same thing everywhere (in the rest of polypheny)
 
-                            query = String.format( "ALTER TABLE %s11.%s11 ADD CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s11.%s11 (%s) ON UPDATE %s ON DELETE %s", namespaceName, tableName, constraintName, listOfCols, referencedNamespaceName, referencedTableName, referencedListOfCols, updateAction, deleteAction );
-                            log.info( query );
-                            executeStatementInPolypheny( query, nsId, DataModel.RELATIONAL );
-                        }
+                        query = String.format( "ALTER TABLE %s11.%s11 ADD CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s11.%s11 (%s) ON UPDATE %s ON DELETE %s", namespaceName, tableName, constraintName, listOfCols, referencedNamespaceName, referencedTableName, referencedListOfCols, updateAction, deleteAction );
+                        log.info( query );
+                        executeStatementInPolypheny( query, nsId, DataModel.RELATIONAL );
                     }
                 }
-
             }
-        //}
 
+        }
+        //}
 
     }
 
 
-    private void insertCreateCollection(ImmutableMap<Long, List<BackupEntityWrapper<LogicalEntity>>> wrappedCollections) {
+    private void insertCreateCollection( ImmutableMap<Long, List<BackupEntityWrapper<LogicalEntity>>> wrappedCollections ) {
         String query = new String();
 
         //FIXME(FF): collections are not wrapped yet!!
@@ -356,7 +345,7 @@ public class InsertSchema {
             // go through each collection in the list (of collections for one namespace)
             for ( BackupEntityWrapper<LogicalEntity> collection : collectionsList ) {
                 // only create collections that should be inserted
-                if ( collection.getToBeInserted()) {
+                if ( collection.getToBeInserted() ) {
                     // only create tables that don't (exist by default in polypheny)
                     query = String.format( "db.createCollection(\"%s11\")", collection.getNameForQuery() );
                     log.info( query );
@@ -401,11 +390,11 @@ public class InsertSchema {
 
     private String createTableQuery( BackupEntityWrapper<LogicalEntity> table, String namespaceName ) {
         String query = new String();
-        String columnDefinitions = new String();
-        String pkConstraint = new String();
+        String columnDefinitions = "";
+        String pkConstraint = "";
         ImmutableMap<Long, List<LogicalColumn>> columns = backupInformationObject.getColumns();
         ImmutableMap<Long, List<LogicalPrimaryKey>> primaryKeys = backupInformationObject.getPrimaryKeysPerTable();
-        LogicalTable logicalTable = table.getEntityObject().unwrap( LogicalTable.class ).get();
+        LogicalTable logicalTable = table.getEntityObject().unwrap( LogicalTable.class ).orElseThrow();
         Long tableID = logicalTable.getId();
         List<LogicalColumn> colsPerTable = columns.get( tableID );
         List<LogicalPrimaryKey> pksPerTable = primaryKeys.get( tableID );
@@ -415,25 +404,22 @@ public class InsertSchema {
             columnDefinitions = columnDefinitions + createColumnDefinition( col );
             //log.info( columnDefinitions );
         }
-        if ( columnDefinitions.length() > 0 ) {
+        if ( !columnDefinitions.isEmpty() ) {
             columnDefinitions = columnDefinitions.substring( 0, columnDefinitions.length() - 2 ); // remove last ", "
         }
 
-
         // create the primary key constraint statement for the table
-        if (!(pksPerTable.isEmpty())) {
-            List<String> colNamesForPK = pksPerTable.get( 0 ).getColumnNames(); //FIXME(FF): index out of bounds (if there are no pks at all)
+        if ( !(pksPerTable.isEmpty()) ) {
+            List<String> colNamesForPK = pksPerTable.get( 0 ).getFieldNames(); //FIXME(FF): index out of bounds (if there are no pks at all)
             String listOfCols = new String();
             for ( String colName : colNamesForPK ) {
                 listOfCols = listOfCols + colName + ", ";
             }
-            if ( listOfCols.length() > 0 ) {
+            if ( !listOfCols.isEmpty() ) {
                 listOfCols = listOfCols.substring( 0, listOfCols.length() - 2 ); // remove last ", "
                 pkConstraint = ", PRIMARY KEY (" + listOfCols + ")";
             }
         }
-
-
 
         //query to create one table (from the list of tables, from the list of namespaces)
         //TODO(FF): ON STORE storename PARTITION BY partionionInfo
@@ -449,8 +435,7 @@ public class InsertSchema {
         String columnDefinitionString = new String();
         String colName = col.getName();
         String colDataType = col.getType().toString();
-        String colNullable = col.nullableBoolToString();
-
+        String colNullable = String.valueOf( col.nullable );
 
         String defaultValue = new String();
         if ( !(col.defaultValue == null) ) {
@@ -473,10 +458,10 @@ public class InsertSchema {
             */
 
             //replace ' to '', in case there is a " in the default value
-            String value = col.defaultValue.value.toJson( );
+            String value = col.defaultValue.value.toJson();
             value = value.replaceAll( "'", "''" );
 
-            if (PolyType.CHAR_TYPES.contains( col.defaultValue.type ) || PolyType.DATETIME_TYPES.contains( col.defaultValue.type ) ) {
+            if ( PolyType.CHAR_TYPES.contains( col.defaultValue.type ) || PolyType.DATETIME_TYPES.contains( col.defaultValue.type ) ) {
                 //defaultValue = String.format( " DEFAULT '%s'", regexString );
                 defaultValue = String.format( " DEFAULT '%s'", value );
                 //String test = " DEFAULT '" + regexString + "'";
@@ -491,15 +476,15 @@ public class InsertSchema {
 
         String caseSensitivity = new String();
         if ( !(col.collation == null) ) {
-            caseSensitivity = String.format( "COLLATE %s", col.collation.collationToString() );
+            caseSensitivity = String.format( "COLLATE %s", col.collation.toString() );
         }
 
-        if (colNullable.equals( "NULL" )) {
+        if ( colNullable.equals( "NULL" ) ) {
             colNullable = "";
-        } else if (colNullable.equals( "NOT NULL" )) {
+        } else if ( colNullable.equals( "NOT NULL" ) ) {
             colNullable = String.format( " %s ", colNullable );
         } else {
-            throw new GenericRuntimeException( "During backup schema insertions not supported nullable value detected" + colNullable);
+            throw new GenericRuntimeException( "During backup schema insertions not supported nullable value detected" + colNullable );
         }
 
         String dataTypeString = new String();
@@ -519,7 +504,6 @@ public class InsertSchema {
                 dataTypeString = colDataType;
                 break;
 
-
             case "TIME":
             case "TIMESTAMP":
                 if ( !(col.length == null) ) {
@@ -529,15 +513,13 @@ public class InsertSchema {
                 }
                 break;
 
-
             case "VARCHAR":
                 dataTypeString = String.format( "%s(%s) ", colDataType, col.length.toString() );
                 break;
 
-
             case "DECIMAL":
-                if (!(col.length == null))  {
-                    if (!(col.scale == null)) {
+                if ( !(col.length == null) ) {
+                    if ( !(col.scale == null) ) {
                         dataTypeString = String.format( "%s(%s, %s) ", colDataType, col.length.toString(), col.scale.toString() );
                     } else {
                         dataTypeString = String.format( "%s(%s) ", colDataType, col.length.toString() );
@@ -548,12 +530,12 @@ public class InsertSchema {
                 break;
 
             default:
-                throw new GenericRuntimeException( "During backup schema insertions not supported datatype detected" + colDataType);
+                throw new GenericRuntimeException( "During backup schema insertions not supported datatype detected" + colDataType );
         }
 
         String arrayString = new String();
 
-        if (!(col.collectionsType == null)) {
+        if ( !(col.collectionsType == null) ) {
             String collectionsType = col.collectionsType.toString();
 
             switch ( collectionsType ) {
@@ -562,10 +544,9 @@ public class InsertSchema {
                     break;
 
                 default:
-                    throw new GenericRuntimeException( "During backup schema insertions not supported collectionstype detected" + collectionsType);
+                    throw new GenericRuntimeException( "During backup schema insertions not supported collectionstype detected" + collectionsType );
             }
         }
-
 
         columnDefinitionString = String.format( "%s %s%s%s%s %s, ", colName, dataTypeString, arrayString, colNullable, defaultValue, caseSensitivity );
         //log.info( columnDefinitionString );
@@ -605,7 +586,7 @@ public class InsertSchema {
 
 
     private void executeStatementInPolypheny( String query, Long namespaceId, DataModel dataModel ) {
-        log.info( "entered execution with query:"+query );
+        log.info( "entered execution with query:" + query );
         Transaction transaction;
         Statement statement = null;
         PolyImplementation result;
@@ -618,7 +599,16 @@ public class InsertSchema {
                     // get a transaction and a statement
                     transaction = transactionManager.startTransaction( Catalog.defaultUserId, false, "Backup Inserter" );
                     statement = transaction.createStatement();
-                    ExecutedContext executedQuery = LanguageManager.getINSTANCE().anyQuery( QueryContext.builder().language( QueryLanguage.from( "sql" ) ).query( query ).origin( "Backup Manager" ).transactionManager( transactionManager ).namespaceId( namespaceId ).build(), statement ).get( 0 );
+                    ExecutedContext executedQuery = LanguageManager.getINSTANCE().anyQuery(
+                            QueryContext.builder()
+                                    .language( QueryLanguage.from( "sql" ) )
+                                    .query( query )
+                                    .origin( BACKUP_MANAGER )
+                                    .transactionManager( transactionManager )
+                                    .namespaceId( namespaceId )
+                                    .statement( statement )
+                                    .build()
+                                    .addTransaction( transaction ) ).get( 0 );
                     transaction.commit();
 
                 } catch ( Exception e ) {
@@ -633,7 +623,17 @@ public class InsertSchema {
                     // get a transaction and a statement
                     transaction = transactionManager.startTransaction( Catalog.defaultUserId, false, "Backup Inserter" );
                     statement = transaction.createStatement();
-                    ExecutedContext executedQuery = LanguageManager.getINSTANCE().anyQuery( QueryContext.builder().language( QueryLanguage.from( "mql" ) ).query( query ).origin( "Backup Manager" ).transactionManager( transactionManager ).namespaceId( namespaceId ).build(), statement ).get( 0 );
+                    ExecutedContext executedQuery = LanguageManager.getINSTANCE()
+                            .anyQuery(
+                                    QueryContext.builder()
+                                            .language( QueryLanguage.from( "mql" ) )
+                                            .query( query )
+                                            .origin( BACKUP_MANAGER )
+                                            .transactionManager( transactionManager )
+                                            .namespaceId( namespaceId )
+                                            .statement( statement )
+                                            .build()
+                                            .addTransaction( transaction ) ).get( 0 );
                     transaction.commit();
 
                 } catch ( Exception e ) {
@@ -648,13 +648,22 @@ public class InsertSchema {
                     // get a transaction and a statement
                     transaction = transactionManager.startTransaction( Catalog.defaultUserId, false, "Backup Inserter" );
                     statement = transaction.createStatement();
-                    ExecutedContext executedQuery = LanguageManager.getINSTANCE().anyQuery( QueryContext.builder().language( QueryLanguage.from( "cypher" ) ).query( query ).origin( "Backup Manager" ).transactionManager( transactionManager ).namespaceId( namespaceId ).build(), statement ).get( 0 );
+                    ExecutedContext executedQuery = LanguageManager.getINSTANCE()
+                            .anyQuery(
+                                    QueryContext.builder().language( QueryLanguage.from( "cypher" ) )
+                                            .query( query )
+                                            .origin( BACKUP_MANAGER )
+                                            .transactionManager( transactionManager )
+                                            .namespaceId( namespaceId )
+                                            .statement( statement )
+                                            .build()
+                                            .addTransaction( transaction ) ).get( 0 );
                     transaction.commit();
 
                 } catch ( Exception e ) {
-                    throw new GenericRuntimeException( "Error while starting transaction"+ e.getMessage() );
+                    throw new GenericRuntimeException( "Error while starting transaction" + e.getMessage() );
                 } catch ( TransactionException e ) {
-                    throw new GenericRuntimeException( "Error while starting transaction"+ e.getMessage() );
+                    throw new GenericRuntimeException( "Error while starting transaction" + e.getMessage() );
                 }
                 break;
 
@@ -664,12 +673,22 @@ public class InsertSchema {
 
         //just to keep it
         int i = 1;
-        if(i == 0) {
+        if ( i == 0 ) {
             try {
                 // get a transaction and a statement
                 transaction = transactionManager.startTransaction( Catalog.defaultUserId, false, "Backup Inserter" );
                 statement = transaction.createStatement();
-                ExecutedContext executedQuery = LanguageManager.getINSTANCE().anyQuery( QueryContext.builder().language( QueryLanguage.from( "sql" ) ).query( query ).origin( "Backup Manager" ).transactionManager( transactionManager ).namespaceId( Catalog.defaultNamespaceId ).build(), statement ).get( 0 );
+                ExecutedContext executedQuery = LanguageManager.getINSTANCE()
+                        .anyQuery(
+                                QueryContext.builder()
+                                        .language( QueryLanguage.from( "sql" ) )
+                                        .query( query )
+                                        .origin( BACKUP_MANAGER )
+                                        .transactionManager( transactionManager )
+                                        .namespaceId( Catalog.defaultNamespaceId )
+                                        .statement( statement )
+                                        .build()
+                                        .addTransaction( transaction ) ).get( 0 );
                 // in case of results
                 ResultIterator iter = executedQuery.getIterator();
                 while ( iter.hasMoreRows() ) {

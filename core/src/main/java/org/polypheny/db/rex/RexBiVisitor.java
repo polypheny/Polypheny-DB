@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,6 +68,8 @@ public interface RexBiVisitor<R, P> {
     R visitPatternFieldRef( RexPatternFieldRef ref, P arg );
 
     R visitNameRef( RexNameRef ref, P arg );
+
+    R visitElementRef( RexElementRef rexElementRef, P arg );
 
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ import org.polypheny.db.util.Pair;
 
 public class CypherAggregate extends CypherExpression {
 
-    private final OperatorName op;
+    public final OperatorName op;
     private final CypherExpression target;
     private final boolean distinct;
 
@@ -87,16 +87,17 @@ public class CypherAggregate extends CypherExpression {
 
 
     private Pair<RexNode, AlgDataType> getReturnType( CypherContext context, RexNode node ) {
-        switch ( op ) {
-            case COLLECT:
+        return switch ( op ) {
+            case COLLECT -> {
                 Pair<PolyString, RexNode> rex = Objects.requireNonNull( this.target ).getRex( context, RexType.PROJECT );
-                return Pair.of( node, context.typeFactory.createArrayType( rex.getValue().getType(), -1 ) );
-            case AVG:
+                yield Pair.of( node, context.typeFactory.createArrayType( rex.getValue().getType(), -1 ) );
+            }
+            case AVG -> {
                 RexNode casted = context.rexBuilder.makeCast( context.typeFactory.createTypeWithNullability( context.typeFactory.createPolyType( PolyType.DOUBLE ), true ), node );
-                return Pair.of( casted, context.typeFactory.createTypeWithNullability( context.typeFactory.createPolyType( PolyType.DOUBLE ), true ) );
-            default:
-                return Pair.of( node, context.typeFactory.createPolyType( PolyType.BIGINT ) );
-        }
+                yield Pair.of( casted, context.typeFactory.createTypeWithNullability( context.typeFactory.createPolyType( PolyType.DOUBLE ), true ) );
+            }
+            default -> Pair.of( node, context.typeFactory.createPolyType( PolyType.BIGINT ) );
+        };
     }
 
 

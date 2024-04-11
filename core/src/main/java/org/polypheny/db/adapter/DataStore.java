@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ import com.google.gson.JsonSerializer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.pf4j.ExtensionPoint;
@@ -55,29 +54,17 @@ public abstract class DataStore<S extends AdapterCatalog> extends Adapter<S> imp
     public abstract List<FunctionalIndexInfo> getFunctionalIndexes( LogicalTable catalogTable );
 
 
-
-
-    @AllArgsConstructor
-    public static class IndexMethodModel {
-
-        public final String name;
-        public final String displayName;
+    public record IndexMethodModel(String name, String displayName) {
 
     }
 
 
-    @AllArgsConstructor
-    public static class FunctionalIndexInfo {
-
-        public final List<Long> columnIds;
-        public final String methodDisplayName;
-
+    public record FunctionalIndexInfo(List<Long> columnIds, String methodDisplayName) {
 
         public List<String> getColumnNames() {
             List<String> columnNames = new ArrayList<>( columnIds.size() );
             for ( long columnId : columnIds ) {
-                // columnNames.add( Catalog.getInstance().getLogicalRel( columnNames ).getColumn( columnId ).name );
-                // todo dl
+                columnNames.add( Catalog.getInstance().getSnapshot().rel().getColumn( columnId ).orElseThrow().name );
             }
             return columnNames;
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.logical.LogicalView;
 import org.polypheny.db.catalog.impl.logical.RelationalCatalog;
 import org.polypheny.db.catalog.logistic.Collation;
+import org.polypheny.db.catalog.logistic.ConstraintType;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.ForeignKeyOption;
 import org.polypheny.db.catalog.logistic.IndexType;
@@ -194,9 +195,8 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
      *
      * @param tableId The id of the table
      * @param columnIds The id of key which will be part of the primary keys
-     * @return
      */
-    LogicalTable addPrimaryKey( long tableId, List<Long> columnIds );
+    void addPrimaryKey( long tableId, List<Long> columnIds );
 
 
     /**
@@ -218,9 +218,19 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
      * @param tableId The id of the table
      * @param constraintName The name of the constraint
      * @param columnIds A list of column ids
-     * @return
      */
-    LogicalTable addUniqueConstraint( long tableId, String constraintName, List<Long> columnIds );
+    void addUniqueConstraint( long tableId, String constraintName, List<Long> columnIds );
+
+
+    /**
+     * Add generic constraint.
+     *
+     * @param tableId The id of the table
+     * @param constraintName The name of the constraint
+     * @param columnIds A list of column ids
+     * @param type The type of the constraint
+     */
+    void addConstraint( long tableId, String constraintName, List<Long> columnIds, ConstraintType type );
 
     /**
      * Deletes the specified primary key (including the entry in the key table). If there is an index on this key, make sure to delete it first.

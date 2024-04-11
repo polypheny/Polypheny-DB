@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,10 +19,8 @@ package org.polypheny.db.adapter.neo4j.util;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.edge_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.node_;
 
-import java.sql.Time;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -30,13 +28,19 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import lombok.Getter;
+import lombok.NonNull;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.commons.lang3.NotImplementedException;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
+import org.neo4j.driver.internal.value.FloatValue;
+import org.neo4j.driver.internal.value.IntegerValue;
+import org.neo4j.driver.internal.value.ListValue;
+import org.neo4j.driver.internal.value.StringValue;
 import org.neo4j.driver.types.Node;
 import org.neo4j.driver.types.Path;
 import org.neo4j.driver.types.Relationship;
+import org.polypheny.db.adapter.neo4j.types.NestedPolyType;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.core.Project;
@@ -49,19 +53,12 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexVisitorImpl;
 import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.entity.PolyBigDecimal;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
-import org.polypheny.db.type.entity.PolyDate;
-import org.polypheny.db.type.entity.PolyDouble;
-import org.polypheny.db.type.entity.PolyFloat;
-import org.polypheny.db.type.entity.PolyInteger;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolySymbol;
-import org.polypheny.db.type.entity.PolyTime;
-import org.polypheny.db.type.entity.PolyTimestamp;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyBlob;
 import org.polypheny.db.type.entity.document.PolyDocument;
@@ -70,28 +67,31 @@ import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyEdge.EdgeDirection;
 import org.polypheny.db.type.entity.graph.PolyNode;
 import org.polypheny.db.type.entity.graph.PolyPath;
+import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
+import org.polypheny.db.type.entity.numerical.PolyDouble;
+import org.polypheny.db.type.entity.numerical.PolyFloat;
+import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.temporal.PolyDate;
+import org.polypheny.db.type.entity.temporal.PolyTime;
+import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 import org.polypheny.db.util.Pair;
-import org.polypheny.db.util.TimeString;
 import org.polypheny.db.util.UnsupportedRexCallVisitor;
 
 public interface NeoUtil {
 
-    static Function1<Value, PolyValue> getTypeFunction( PolyType type, PolyType componentType ) {
-        Function1<Value, PolyValue> getter = getUnnullableTypeFunction( type, componentType );
+    static Function1<Value, PolyValue> getTypeFunction( NestedPolyType type, boolean isNested ) {
+        Function1<Value, PolyValue> getter = getUnnullableTypeFunction( type, isNested );
         return o -> {
             if ( o.isNull() ) {
-                return null;
-            }
-            if ( getter == null ) {
-                return null;
+                return PolyNull.NULL;
             }
             return getter.apply( o );
         };
     }
 
-    static Function1<Value, PolyValue> getUnnullableTypeFunction( PolyType type, PolyType componentType ) {
+    static Function1<Value, PolyValue> getUnnullableTypeFunction( NestedPolyType type, boolean isNested ) {
 
-        switch ( type ) {
+        switch ( type.getType() ) {
             case NULL:
                 return o -> PolyNull.NULL;
             case BOOLEAN:
@@ -99,41 +99,30 @@ public interface NeoUtil {
             case TINYINT:
             case SMALLINT:
             case INTEGER:
-                return v -> PolyInteger.of( v.asInt() );
+                return v -> PolyInteger.of( v.asNumber() );
             case DATE:
-                return v -> PolyDate.of( v.asInt() );
+                return v -> PolyDate.of( v.asNumber() );
             case TIME:
-            case TIME_WITH_LOCAL_TIME_ZONE:
-                return v -> PolyTime.of( v.asInt() );
+                return v -> PolyTime.of( v.asNumber() );
             case TIMESTAMP:
-            case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-                return v -> PolyTimestamp.of( v.asLong() );
+                return v -> PolyTimestamp.of( v.asNumber() );
             case BIGINT:
                 return v -> PolyBigDecimal.of( v.asLong() );
             case DECIMAL:
                 return v -> PolyBigDecimal.of( v.asDouble() );
             case FLOAT:
             case REAL:
-                return v -> PolyFloat.of( v.asDouble() );
+                return v -> PolyFloat.of( v.asNumber() );
             case DOUBLE:
-                return v -> PolyDouble.of( v.asDouble() );
-            case INTERVAL_YEAR:
-            case INTERVAL_YEAR_MONTH:
-            case INTERVAL_MONTH:
-            case INTERVAL_DAY:
-            case INTERVAL_DAY_HOUR:
-            case INTERVAL_DAY_MINUTE:
-            case INTERVAL_DAY_SECOND:
-            case INTERVAL_HOUR:
-            case INTERVAL_HOUR_MINUTE:
-            case INTERVAL_HOUR_SECOND:
-            case INTERVAL_MINUTE:
-            case INTERVAL_MINUTE_SECOND:
-            case INTERVAL_SECOND:
+                return v -> PolyDouble.of( v.asNumber() );
+            case INTERVAL:
                 break;
+            case ANY:
+                return v -> PolyString.of( v.asObject().toString() );
             case CHAR:
             case VARCHAR:
-                return v -> PolyString.of( v.toString() );
+            case TEXT:
+                return v -> PolyString.of( v.asString() );
             case BINARY:
             case VARBINARY:
                 return v -> PolyBinary.of( v.asByteArray() );
@@ -142,21 +131,21 @@ public interface NeoUtil {
             case VIDEO:
             case AUDIO:
                 return v -> PolyBlob.of( v.asByteArray() );
-            case ANY:
             case SYMBOL:
                 return v -> PolySymbol.of( v.asObject() );
             case ARRAY:
-                Function1<Value, PolyValue> componentFunc = getTypeFunction( componentType, componentType );
+                if ( isNested ) {
+                    return v -> PolyValue.fromTypedJson( v.asString(), PolyList.class );
+                }
+                Function1<Value, PolyValue> componentFunc = getTypeFunction( type.asList().types.get( 0 ), true );
                 return el -> PolyList.of( el.asList( componentFunc::apply ) );
             case MAP:
                 return value -> PolyString.of( value.asString() );
             case DOCUMENT:
             case JSON:
-                return value -> {
-                    return PolyDocument.deserialize( value.asString() );
-                };
+                return value -> PolyDocument.deserialize( value.asString() );
             case GRAPH:
-                return null;
+                return o -> (PolyValue) o;
             case NODE:
                 return o -> asPolyNode( o.asNode() );
             case EDGE:
@@ -181,8 +170,8 @@ public interface NeoUtil {
         }
 
         return PolyPath.create(
-                nodes.stream().map( n -> Pair.of( (PolyString) null, n ) ).collect( Collectors.toList() ),
-                edges.stream().map( e -> Pair.of( (PolyString) null, e ) ).collect( Collectors.toList() ) );
+                nodes.stream().map( n -> Pair.of( (PolyString) null, n ) ).toList(),
+                edges.stream().map( e -> Pair.of( (PolyString) null, e ) ).toList() );
     }
 
     static PolyNode asPolyNode( Node node ) {
@@ -211,10 +200,6 @@ public interface NeoUtil {
             return null;
         }
         Object obj = e.asObject();
-        if ( obj instanceof List<?> ) {
-            return new PolyList<>( (List<PolyValue>) obj );
-        }
-
         if ( obj instanceof PolyValue ) {
             return (PolyValue) obj;
         }
@@ -222,16 +207,24 @@ public interface NeoUtil {
         return asPolyValue( e );
     }
 
-    static PolyValue asPolyValue( Value value ) {
-        return PolyString.of( value.asString() );
+    static PolyValue asPolyValue( @NonNull Value value ) {
+        if ( value instanceof IntegerValue ) {
+            return PolyString.of( String.valueOf( value.asLong() ) );
+        } else if ( value instanceof StringValue ) {
+            return PolyString.of( value.asString() );
+        } else if ( value instanceof FloatValue ) {
+            return PolyString.of( String.valueOf( value.asDouble() ) );
+        } else if ( value instanceof ListValue ) {
+            return new PolyList<>( (value).asList( NeoUtil::getComparableOrString ) );
+        }
+        throw new NotImplementedException( "Type not supported" );
     }
 
-    static Function1<Record, PolyValue[]> getTypesFunction( List<PolyType> types, List<PolyType> componentTypes ) {
-        int i = 0;
+    static Function1<Record, PolyValue[]> getTypesFunction( NestedPolyType types ) {
+
         List<Function1<Value, PolyValue>> functions = new ArrayList<>();
-        for ( PolyType type : types ) {
-            functions.add( getTypeFunction( type, componentTypes.get( i ) ) );
-            i++;
+        for ( NestedPolyType type : types.asList().types ) {
+            functions.add( getTypeFunction( type, false ) );
         }
         if ( functions.size() == 1 ) {
             // SCALAR
@@ -285,26 +278,12 @@ public interface NeoUtil {
             case INTEGER:
             case DATE:
             case TIME:
-            case TIME_WITH_LOCAL_TIME_ZONE:
                 return literal.value.asNumber().toString();
             case BIGINT:
-            case INTERVAL_YEAR:
-            case INTERVAL_YEAR_MONTH:
-            case INTERVAL_MONTH:
-            case INTERVAL_DAY:
-            case INTERVAL_DAY_HOUR:
-            case INTERVAL_DAY_MINUTE:
-            case INTERVAL_DAY_SECOND:
-            case INTERVAL_HOUR:
-            case INTERVAL_HOUR_MINUTE:
-            case INTERVAL_HOUR_SECOND:
-            case INTERVAL_MINUTE:
-            case INTERVAL_MINUTE_SECOND:
-            case INTERVAL_SECOND:
+            case INTERVAL:
                 return literal.getValue().toString();
             case TIMESTAMP:
-            case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-                return literal.value.asTemporal().getMilliSinceEpoch().toString();
+                return literal.value.asTemporal().getMillisSinceEpoch().toString();
             case DECIMAL:
             case FLOAT:
             case REAL:
@@ -389,8 +368,6 @@ public interface NeoUtil {
                 return o -> o.stream().map( e -> String.format( "(%s)", e ) ).collect( Collectors.joining( " OR " ) );
             case PLUS:
                 return o -> String.format( "%s + %s", o.get( 0 ), o.get( 1 ) );
-            case DATETIME_PLUS:
-                return null;
             case IS_NOT_NULL:
                 return o -> String.format( "%s IS NOT NULL ", o.get( 0 ) );
             case IS_NULL:
@@ -417,6 +394,8 @@ public interface NeoUtil {
                 return o -> "coalesce(" + String.join( ", ", o ) + ")";
             case NOT_LIKE:
                 return handleLike( operands, true );
+            case CYPHER_LIKE:
+                return o -> String.format( "%s =~ '%s'", o.get( 0 ), maybeUnquote( getAsRegex( o.get( 1 ) ) ) );
             case LIKE:
                 return handleLike( operands, false );
             case POWER:
@@ -458,7 +437,7 @@ public interface NeoUtil {
             case CAST:
                 return handleCast( operands );
             case ITEM:
-                return o -> String.format( "%s[%s - 1]", o.get( 0 ), o.get( 1 ) );
+                return o -> String.format( "%s[toInteger(%s - 1)]", o.get( 0 ), o.get( 1 ) );
             case ARRAY_VALUE_CONSTRUCTOR:
                 return o -> "[" + String.join( ", ", o ) + "]";
             case CYPHER_EXTRACT_FROM_PATH:
@@ -478,25 +457,35 @@ public interface NeoUtil {
             case CYPHER_SET_PROPERTIES:
                 throw new GenericRuntimeException( "No values should land here" );
             case CYPHER_SET_PROPERTY:
-                return o -> String.format( "%s.%s = %s", o.get( 0 ), o.get( 1 ), o.get( 2 ) );
+                return o -> String.format( "%s.%s = %s", o.get( 0 ), maybeUnquote( o.get( 1 ) ), o.get( 2 ) );
             case CYPHER_EXTRACT_PROPERTY:
                 return o -> {
                     String name = o.get( 0 );
                     if ( name.contains( "." ) ) {
                         name = name.split( "\\." )[0];
                     }
-                    return String.format( "%s.%s", name, o.get( 1 ) );
+                    return String.format( "%s.%s", name, NeoUtil.maybeUnquote( o.get( 1 ) ) );
                 };
             case CYPHER_EXTRACT_ID:
                 return o -> String.format( " %s.id ", o.get( 0 ) );
             case CYPHER_HAS_PROPERTY:
-                return o -> String.format( " EXISTS(%s.%s) ", o.get( 0 ), o.get( 1 ) );
+                return o -> String.format( " EXISTS(%s.%s) ", o.get( 0 ), NeoUtil.maybeUnquote( o.get( 1 ) ) );
             case COUNT:
                 return o -> String.format( "count(%s)", String.join( ",", o ) );
+            case AVG:
+                return o -> String.format( "avg(%s)", o.get( 0 ) );
+            case MIN:
+                return o -> String.format( "min(%s)", o.get( 0 ) );
+            case MAX:
+                return o -> String.format( "max(%s)", o.get( 0 ) );
             default:
                 return null;
         }
 
+    }
+
+    static String maybeUnquote( String key ) {
+        return key.startsWith( "'" ) && key.endsWith( "'" ) ? key.substring( 1, key.length() - 1 ) : key;
     }
 
     private static Function1<List<String>, String> handleCast( List<RexNode> operands ) {
@@ -554,6 +543,10 @@ public interface NeoUtil {
         if ( p.getTraitSet().contains( ModelTrait.GRAPH ) ) {
             return false;
         }
+        if ( p.getTupleType().getFieldNames().stream().anyMatch( n -> n.matches( "^[0-9].*" ) ) ) {
+            return false;
+        }
+
         NeoSupportVisitor visitor = new NeoSupportVisitor();
         for ( RexNode project : p.getProjects() ) {
             project.accept( visitor );
@@ -561,7 +554,7 @@ public interface NeoUtil {
         return visitor.supports && !UnsupportedRexCallVisitor.containsModelItem( p.getProjects() );
     }
 
-    static Object fixParameterValue( PolyValue value, Pair<PolyType, PolyType> type ) {
+    static Object fixParameterValue( PolyValue value, NestedPolyType type, boolean isNested ) {
         if ( value == null ) {
             return null;
         }
@@ -570,55 +563,39 @@ public interface NeoUtil {
         }
 
         if ( value.isNumber() ) {
-            return value.asNumber().doubleValue();
+            return value.asNumber().DoubleValue();
         }
         if ( value.isList() ) {
-            return value.asList().value.stream().map( e -> fixParameterValue( e, Pair.of( type.right, type.right ) ) ).collect( Collectors.toList() );
+            if ( isNested ) {
+                return value.toTypedJson();
+            }
+            return value.asList().value.stream().map( e -> fixParameterValue( e, type.asList().types.get( 0 ), true ) ).toList();
         }
 
-        switch ( type.left ) {
-            case DATE:
-                return value.asTemporal().getDaysSinceEpoch();
-            case TIME:
-                return value.asTemporal().getMilliSinceEpoch();//handleFixTime( value );
-            case TIMESTAMP:
-                /*if ( value instanceof Long ) {
-                    return value;
-                } else if ( value instanceof java.sql.Timestamp ) {
-                    int offset = Calendar.getInstance().getTimeZone().getRawOffset();
-                    return ((Timestamp) value).getTime() + offset;
+        return switch ( type.getType() ) {
+            case DATE -> value.asTemporal().getDaysSinceEpoch();
+            case TIME -> value.asTemporal().getMillisSinceEpoch();
+            case TIMESTAMP -> value.asTemporal().getMillisSinceEpoch();
+            case DOCUMENT -> value.asDocument().toTypedJson();
+            case INTEGER -> value.asNumber().IntValue();
+            case BIGINT -> value.asNumber().LongValue();
+            case VARCHAR, TEXT, CHAR -> value.asString().value;
+            case BOOLEAN -> value.asBoolean().value;
+            case BINARY, VARBINARY, FILE, IMAGE, VIDEO, AUDIO -> value.asBlob().asByteArray();
+            case FLOAT, REAL, DOUBLE, DECIMAL -> value.asNumber().doubleValue();
+            case ARRAY -> value.asList().value.stream().map( e -> {
+                if ( isNested ) {
+                    return e.toTypedJson();
                 }
-                return ((TimestampString) value).getMillisSinceEpoch();*/
-                return value.asTemporal().getMilliSinceEpoch();
-            case DOCUMENT:
-                return value.asDocument().toTypedJson();//.toString();
-            case INTEGER:
-                return value.asNumber().intValue();
-            case BIGINT:
-                return value.asNumber().longValue();
-            case VARCHAR:
-                return value.asString().value;
-        }
-        throw new NotImplementedException();
-    }
-
-    private static long handleFixTime( Object value ) {
-        if ( value instanceof Integer ) {
-            return Long.valueOf( (Integer) value );
-        } else if ( value instanceof TimeString ) {
-            return ((TimeString) value).getMillisOfDay();
-        } else if ( value instanceof Time ) {
-            return ((Time) value).toLocalTime().toNanoOfDay() / 1000000;
-        } else if ( value instanceof GregorianCalendar ) {
-            return ((GregorianCalendar) value).toZonedDateTime().toEpochSecond();
-        }
-        throw new UnsupportedOperationException( "Cannot handle Time format." );
+                return fixParameterValue( e, type.asList().types.get( 0 ), true );
+            } ).toList();
+            default -> throw new NotImplementedException();
+        };
     }
 
     @Getter
     class NeoSupportVisitor extends RexVisitorImpl<Void> {
 
-        @Getter
         private boolean supports;
 
 

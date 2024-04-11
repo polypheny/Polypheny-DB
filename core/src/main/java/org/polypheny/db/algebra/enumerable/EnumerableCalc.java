@@ -1,9 +1,26 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * This file incorporates code covered by the following terms:
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to you under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -41,8 +58,10 @@ import org.polypheny.db.algebra.core.Calc;
 import org.polypheny.db.algebra.metadata.AlgMdCollation;
 import org.polypheny.db.algebra.metadata.AlgMdDistribution;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
+import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPredicateList;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexProgram;
@@ -64,10 +83,16 @@ public class EnumerableCalc extends Calc implements EnumerableAlg {
      *
      * Use {@link #create} unless you know what you're doing.
      */
-    public EnumerableCalc( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, RexProgram program ) {
+    public EnumerableCalc( AlgCluster cluster, AlgTraitSet traitSet, AlgNode input, RexProgram program ) {
         super( cluster, traitSet, input, program );
         assert getConvention() instanceof EnumerableConvention;
         assert !program.containsAggs();
+    }
+
+
+    @Override
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
+        return super.computeSelfCost( planner, mq ).multiplyBy( 10 );
     }
 
 
@@ -75,7 +100,7 @@ public class EnumerableCalc extends Calc implements EnumerableAlg {
      * Creates an EnumerableCalc.
      */
     public static EnumerableCalc create( final AlgNode input, final RexProgram program ) {
-        final AlgOptCluster cluster = input.getCluster();
+        final AlgCluster cluster = input.getCluster();
         final AlgMetadataQuery mq = cluster.getMetadataQuery();
         final AlgTraitSet traitSet = cluster.traitSet()
                 .replace( EnumerableConvention.INSTANCE )
@@ -101,7 +126,7 @@ public class EnumerableCalc extends Calc implements EnumerableAlg {
 
         final Result result = implementor.visitChild( this, 0, child, pref );
 
-        final PhysType physType = PhysTypeImpl.of( typeFactory, getTupleType(), JavaRowFormat.ARRAY );
+        final PhysType physType = PhysTypeImpl.of( typeFactory, getTupleType(), JavaTupleFormat.ARRAY );
 
         // final Enumerable<Employee> inputEnumerable = <<child adapter>>;
         // return new Enumerable<IntString>() {
@@ -109,9 +134,9 @@ public class EnumerableCalc extends Calc implements EnumerableAlg {
         //         return new Enumerator<IntString>() {
         //             public void reset() {
         // ...
-        Type outputJavaType = physType.getJavaRowType();
+        Type outputJavaType = physType.getJavaTupleType();
         final Type enumeratorType = Types.of( Enumerator.class, outputJavaType );
-        Type inputJavaType = result.physType.getJavaRowType();
+        Type inputJavaType = result.physType().getJavaTupleType();
         ParameterExpression inputEnumerator = Expressions.parameter( Types.of( Enumerator.class, inputJavaType ), "inputEnumerator" );
         Expression input = RexToLixTranslator.convert( Expressions.call( inputEnumerator, BuiltInMethod.ENUMERATOR_CURRENT.method ), inputJavaType );
 
@@ -131,7 +156,7 @@ public class EnumerableCalc extends Calc implements EnumerableAlg {
                             program,
                             typeFactory,
                             builder2,
-                            new RexToLixTranslator.InputGetterImpl( Collections.singletonList( Pair.of( input, result.physType ) ) ),
+                            new RexToLixTranslator.InputGetterImpl( Collections.singletonList( Pair.of( input, result.physType() ) ) ),
                             implementor.allCorrelateVariables,
                             implementor.getConformance() );
             builder2.add(
@@ -145,7 +170,7 @@ public class EnumerableCalc extends Calc implements EnumerableAlg {
         }
 
         final BlockBuilder builder3 = new BlockBuilder();
-        final Conformance conformance = ConformanceEnum.DEFAULT;//(Conformance) implementor.map.getOrDefault( "_conformance", PolySymbol.of( ConformanceEnum.DEFAULT ) );
+        final Conformance conformance = ConformanceEnum.DEFAULT;
         List<Expression> expressions =
                 RexToLixTranslator.translateProjects(
                         program,
@@ -154,12 +179,12 @@ public class EnumerableCalc extends Calc implements EnumerableAlg {
                         builder3,
                         physType,
                         DataContext.ROOT,
-                        new RexToLixTranslator.InputGetterImpl( Collections.singletonList( Pair.of( input, result.physType ) ) ),
+                        new RexToLixTranslator.InputGetterImpl( Collections.singletonList( Pair.of( input, result.physType() ) ) ),
                         implementor.allCorrelateVariables );
         builder3.add( Expressions.return_( null, physType.record( expressions ) ) );
         BlockStatement currentBody = builder3.toBlock();
 
-        final Expression inputEnumerable = builder.append( builder.newName( "inputEnumerable" + System.nanoTime() ), result.block, false );
+        final Expression inputEnumerable = builder.append( builder.newName( "inputEnumerable" + System.nanoTime() ), result.block(), false );
         final Expression body;
 
         body = Expressions.new_(

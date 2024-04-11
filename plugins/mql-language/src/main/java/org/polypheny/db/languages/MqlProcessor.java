@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.polypheny.db.languages;
 
 import com.google.common.collect.ImmutableList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
@@ -32,7 +33,7 @@ import org.polypheny.db.languages.mql.parser.MqlParser;
 import org.polypheny.db.languages.mql.parser.MqlParser.MqlParserConfig;
 import org.polypheny.db.languages.mql2alg.MqlToAlgConverter;
 import org.polypheny.db.nodes.Node;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
@@ -72,6 +73,10 @@ public class MqlProcessor extends Processor {
             log.debug( "MQL: {}", mql );
         }
 
+        // preprocessing
+
+        mql = preprocess( mql );
+
         try {
             final MqlParser parser = MqlParser.create( new SourceStringReader( mql ), parserConfig );
             parsed = parser.parseStmt();
@@ -90,6 +95,23 @@ public class MqlProcessor extends Processor {
     }
 
 
+    private String preprocess( String query ) {
+        String lowercase = query.toLowerCase();
+        if ( lowercase.startsWith( "use " ) || lowercase.startsWith( "show " ) || lowercase.startsWith( "db." ) ) {
+            return query;
+        }
+        String[] splits = query.split( "\\." );
+        if ( splits.length > 1 ) {
+            // we prefix query "entity".command( with db."entity.command(" as this is simpler to parse
+            if ( splits[1].contains( "(" ) && !(splits[1].startsWith( "create" ) || splits[1].startsWith( "drop" )) ) {
+                return "db." + query;
+            }
+        }
+
+        return query;
+    }
+
+
     @Override
     public Pair<Node, AlgDataType> validate( Transaction transaction, Node parsed, boolean addDefaultValues ) {
         throw new GenericRuntimeException( "The MQL implementation does not support validation." );
@@ -105,7 +127,7 @@ public class MqlProcessor extends Processor {
         stopWatch.start();
 
         final RexBuilder rexBuilder = new RexBuilder( statement.getTransaction().getTypeFactory() );
-        final AlgOptCluster cluster = AlgOptCluster.createDocument( statement.getQueryProcessor().getPlanner(), rexBuilder, statement.getTransaction().getSnapshot() );
+        final AlgCluster cluster = AlgCluster.createDocument( statement.getQueryProcessor().getPlanner(), rexBuilder, statement.getTransaction().getSnapshot() );
 
         final MqlToAlgConverter mqlToAlgConverter = new MqlToAlgConverter( statement.getTransaction().getSnapshot(), cluster );
         AlgRoot logicalRoot = mqlToAlgConverter.convert( context );
@@ -147,6 +169,12 @@ public class MqlProcessor extends Processor {
     @Override
     public AlgDataType getParameterRowType( Node left ) {
         return null;
+    }
+
+
+    @Override
+    public List<String> splitStatements( String statements ) {
+        return Arrays.stream( statements.split( ";" ) ).filter( q -> !q.trim().isEmpty() ).toList();
     }
 
 }

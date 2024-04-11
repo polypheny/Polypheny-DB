@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package org.polypheny.db.processing;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
@@ -56,10 +55,8 @@ public class DataContextImpl implements DataContext {
     private final Statement statement;
 
     @Getter
-    @Setter
     private Map<Long, AlgDataType> parameterTypes; // ParameterIndex -> Data ExpressionType
     @Getter
-    @Setter
     private List<Map<Long, PolyValue>> parameterValues; // List of ( ParameterIndex -> Value )
 
     private final Map<Integer, List<Map<Long, PolyValue>>> otherParameterValues;
@@ -78,13 +75,13 @@ public class DataContextImpl implements DataContext {
         this.statement = statement;
         this.map = getMedaInfo( parameters );
         this.parameterTypes = parameterTypes;
-        this.parameterValues = parameterValues;
+        this.parameterValues = new ArrayList<>( parameterValues );
         otherParameterValues = new HashMap<>();
     }
 
 
     public DataContextImpl( QueryProvider queryProvider, Map<String, Object> parameters, Snapshot snapshot, JavaTypeFactory typeFactory, Statement statement ) {
-        this( queryProvider, parameters, snapshot, typeFactory, statement, new HashMap<>(), new LinkedList<>() );
+        this( queryProvider, parameters, snapshot, typeFactory, statement, new HashMap<>(), new ArrayList<>() );
     }
 
 
@@ -97,25 +94,15 @@ public class DataContextImpl implements DataContext {
         Hook.CURRENT_TIME.run( timeHolder );
         final long time = timeHolder.get();
         final long localOffset = timeZone.getOffset( time );
-        final long currentOffset = localOffset;
 
         // Give a hook chance to alter standard input, output, error streams.
         final Holder<Object[]> streamHolder = Holder.of( new Object[]{ System.in, System.out, System.err } );
         Hook.STANDARD_STREAMS.run( streamHolder );
 
         Map<String, Object> map = new HashMap<>();
-        /*map.put( Variable.UTC_TIMESTAMP.camelName, time );
-        map.put( Variable.CURRENT_TIMESTAMP.camelName, time + currentOffset );
-        map.put( Variable.LOCAL_TIMESTAMP.camelName, time + localOffset );
-        map.put( Variable.TIME_ZONE.camelName, timeZone );
-        map.put( Variable.STDIN.camelName, streamHolder.get()[0] );
-        map.put( Variable.STDOUT.camelName, streamHolder.get()[1] );
-        map.put( Variable.STDERR.camelName, streamHolder.get()[2] );*/
         for ( Map.Entry<String, Object> entry : parameters.entrySet() ) {
             Object e = entry.getValue();
-            if ( e == null ) {
-                //e = AvaticaSite.DUMMY_VALUE;
-            }
+            //e = AvaticaSite.DUMMY_VALUE;
             map.put( entry.getKey(), e );
         }
         return map;
@@ -128,9 +115,6 @@ public class DataContextImpl implements DataContext {
         if ( o == AvaticaSite.DUMMY_VALUE ) {
             return null;
         }
-        /* if ( o == null && Variable.SQL_ADVISOR.camelName.equals( name ) ) {
-            return getSqlAdvisor();
-        } */
         return o;
     }
 
@@ -169,6 +153,18 @@ public class DataContextImpl implements DataContext {
 
 
     @Override
+    public void setParameterValues( List<Map<Long, PolyValue>> values ) {
+        parameterValues = new ArrayList<>( values );
+    }
+
+
+    @Override
+    public void setParameterTypes( Map<Long, AlgDataType> types ) {
+        parameterTypes = new HashMap<>( types );
+    }
+
+
+    @Override
     public void resetParameterValues() {
         parameterTypes = new HashMap<>();
         parameterValues = new ArrayList<>();
@@ -194,7 +190,7 @@ public class DataContextImpl implements DataContext {
     @Override
     public void resetContext() {
         i = 0;
-        if ( otherParameterValues.size() > 0 ) {
+        if ( !otherParameterValues.isEmpty() ) {
             parameterValues = otherParameterValues.get( i );
         } else {
             parameterValues = new ArrayList<>();

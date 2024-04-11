@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,10 +27,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import lombok.AllArgsConstructor;
-import lombok.Value;
+import java.util.Optional;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.java.AdapterTemplate;
 import org.polypheny.db.catalog.Catalog;
@@ -82,80 +82,7 @@ public class AdapterManager {
     }
 
 
-    public Adapter<?> getAdapter( String uniqueName ) {
-        return adapterByName.get( uniqueName.toLowerCase() );
-    }
-
-
-    public Adapter<?> getAdapter( long id ) {
-        return adapterById.get( id );
-    }
-
-
-    public ImmutableMap<String, Adapter<?>> getAdapters() {
-        return ImmutableMap.copyOf( adapterByName );
-    }
-
-
-    public DataStore<?> getStore( String uniqueName ) {
-        Adapter<?> adapter = getAdapter( uniqueName );
-        if ( adapter instanceof DataStore ) {
-            return (DataStore<?>) adapter;
-        }
-        return null;
-    }
-
-
-    public DataStore<?> getStore( long id ) {
-        Adapter<?> adapter = getAdapter( id );
-        if ( adapter instanceof DataStore ) {
-            return (DataStore<?>) adapter;
-        }
-        return null;
-    }
-
-
-    public ImmutableMap<String, DataStore<?>> getStores() {
-        Map<String, DataStore<?>> map = new HashMap<>();
-        for ( Entry<String, Adapter<?>> entry : getAdapters().entrySet() ) {
-            if ( entry.getValue() instanceof DataStore<?> ) {
-                map.put( entry.getKey(), (DataStore<?>) entry.getValue() );
-            }
-        }
-        return ImmutableMap.copyOf( map );
-    }
-
-
-    public DataSource<?> getSource( String uniqueName ) {
-        Adapter<?> adapter = getAdapter( uniqueName );
-        if ( adapter instanceof DataSource<?> ) {
-            return (DataSource<?>) adapter;
-        }
-        return null;
-    }
-
-
-    public DataSource<?> getSource( long id ) {
-        Adapter<?> adapter = getAdapter( id );
-        if ( adapter instanceof DataSource<?> ) {
-            return (DataSource<?>) adapter;
-        }
-        return null;
-    }
-
-
-    public ImmutableMap<String, DataSource<?>> getSources() {
-        Map<String, DataSource<?>> map = new HashMap<>();
-        for ( Entry<String, Adapter<?>> entry : getAdapters().entrySet() ) {
-            if ( entry.getValue() instanceof DataSource<?> ) {
-                map.put( entry.getKey(), (DataSource<?>) entry.getValue() );
-            }
-        }
-        return ImmutableMap.copyOf( map );
-    }
-
-
-    public List<AdapterInformation> getAvailableAdapters( AdapterType adapterType ) {
+    public List<AdapterInformation> getAdapterTemplates( AdapterType adapterType ) {
         List<AdapterTemplate> adapterTemplates = Catalog.snapshot().getAdapterTemplates( adapterType );
 
         List<AdapterInformation> result = new ArrayList<>();
@@ -179,6 +106,70 @@ public class AdapterManager {
     }
 
 
+    @NotNull
+    public Optional<Adapter<?>> getAdapter( String uniqueName ) {
+        return Optional.ofNullable( adapterByName.get( uniqueName.toLowerCase() ) );
+    }
+
+
+    @NotNull
+    public Optional<Adapter<?>> getAdapter( long id ) {
+        return Optional.ofNullable( adapterById.get( id ) );
+    }
+
+
+    public ImmutableMap<String, Adapter<?>> getAdapters() {
+        return ImmutableMap.copyOf( adapterByName );
+    }
+
+
+    @NotNull
+    public Optional<DataStore<?>> getStore( String uniqueName ) {
+        return getAdapter( uniqueName ).filter( a -> a instanceof DataStore<?> ).map( a -> (DataStore<?>) a );
+
+    }
+
+
+    @NotNull
+    public Optional<DataStore<?>> getStore( long id ) {
+        return getAdapter( id ).filter( a -> a instanceof DataStore<?> ).map( a -> (DataStore<?>) a );
+    }
+
+
+    public ImmutableMap<String, DataStore<?>> getStores() {
+        Map<String, DataStore<?>> map = new HashMap<>();
+        for ( Entry<String, Adapter<?>> entry : getAdapters().entrySet() ) {
+            if ( entry.getValue() instanceof DataStore<?> ) {
+                map.put( entry.getKey(), (DataStore<?>) entry.getValue() );
+            }
+        }
+        return ImmutableMap.copyOf( map );
+    }
+
+
+    @NotNull
+    public Optional<DataSource<?>> getSource( String uniqueName ) {
+        return getAdapter( uniqueName ).filter( a -> a instanceof DataSource<?> ).map( a -> (DataSource<?>) a );
+    }
+
+
+    @NotNull
+    public Optional<DataSource<?>> getSource( long id ) {
+        return getAdapter( id ).filter( a -> a instanceof DataSource<?> ).map( a -> (DataSource<?>) a );
+    }
+
+
+    public ImmutableMap<String, DataSource<?>> getSources() {
+        Map<String, DataSource<?>> map = new HashMap<>();
+        for ( Entry<String, Adapter<?>> entry : getAdapters().entrySet() ) {
+            if ( entry.getValue() instanceof DataSource<?> ) {
+                map.put( entry.getKey(), (DataSource<?>) entry.getValue() );
+            }
+        }
+        return ImmutableMap.copyOf( map );
+    }
+
+
     public Adapter<?> addAdapter( String adapterName, String uniqueName, AdapterType adapterType, DeployMode mode, Map<String, String> settings ) {
         uniqueName = uniqueName.toLowerCase();
         if ( getAdapters().containsKey( uniqueName ) ) {
@@ -196,7 +187,6 @@ public class AdapterManager {
             adapterByName.put( adapter.getUniqueName(), adapter );
             adapterById.put( adapter.getAdapterId(), adapter );
             return adapter;
-
         } catch ( Exception e ) {
             Catalog.getInstance().dropAdapter( adapterId );
             throw new GenericRuntimeException( "Something went wrong while adding a new adapter", e );
@@ -205,16 +195,20 @@ public class AdapterManager {
 
 
     public void removeAdapter( long adapterId ) {
-        Adapter<?> adapterInstance = getAdapter( adapterId );
-        if ( adapterInstance == null ) {
+        Optional<Adapter<?>> optionalAdapter = getAdapter( adapterId );
+        if ( optionalAdapter.isEmpty() ) {
             throw new GenericRuntimeException( "Unknown adapter instance with id: %s", adapterId );
         }
+        Adapter<?> adapterInstance = optionalAdapter.get();
+
         LogicalAdapter logicalAdapter = Catalog.getInstance().getSnapshot().getAdapter( adapterId ).orElseThrow();
 
         // Check if the store has any placements
         List<AllocationEntity> placements = Catalog.getInstance().getSnapshot().alloc().getEntitiesOnAdapter( logicalAdapter.id ).orElseThrow( () -> new GenericRuntimeException( "There is still data placed on this data store" ) );
         if ( !placements.isEmpty() ) {
-            throw new GenericRuntimeException( "There is still data placed on this data store" );
+            if ( adapterInstance instanceof DataStore<?> ) {
+                throw new GenericRuntimeException( "There is still data placed on this data store" );
+            }
         }
 
         // Shutdown store
@@ -246,24 +240,7 @@ public class AdapterManager {
     }
 
 
-    public List<AdapterInformation> getAvailableAdapters() {
-        List<AdapterInformation> adapters = new ArrayList<>( getAvailableAdapters( AdapterType.STORE ) );
-        adapters.addAll( getAvailableAdapters( AdapterType.SOURCE ) );
-        return adapters;
-    }
-
-
-    @AllArgsConstructor
-    @Value
-    public static class AdapterInformation {
-
-        public String name;
-        public String description;
-        public AdapterType type;
-        public List<AbstractAdapterSetting> settings;
-
-        public List<DeployMode> modes;
-
+    public record AdapterInformation(String name, String description, AdapterType type, List<AbstractAdapterSetting> settings, List<DeployMode> modes) {
 
         public static JsonSerializer<AdapterInformation> getSerializer() {
             return ( src, typeOfSrc, context ) -> {
@@ -285,6 +262,5 @@ public class AdapterManager {
         R get( P1 p1, P2 p2, P3 p3 );
 
     }
-
 
 }

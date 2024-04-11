@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,7 +64,7 @@ import org.polypheny.db.util.NumberUtil;
  */
 public class AlgMdDistinctRowCount implements MetadataHandler<BuiltInMetadata.DistinctRowCount> {
 
-    public static final AlgMetadataProvider SOURCE = ReflectiveAlgMetadataProvider.reflectiveSource( BuiltInMethod.DISTINCT_ROW_COUNT.method, new AlgMdDistinctRowCount() );
+    public static final AlgMetadataProvider SOURCE = ReflectiveAlgMetadataProvider.reflectiveSource( new AlgMdDistinctRowCount(), BuiltInMethod.DISTINCT_ROW_COUNT.method );
 
 
     protected AlgMdDistinctRowCount() {
@@ -86,7 +86,7 @@ public class AlgMdDistinctRowCount implements MetadataHandler<BuiltInMetadata.Di
         // REVIEW zfong: Broadbase code does not take into consideration selectivity of predicates passed in.  Also, they assume the rows are unique even if the table is not
         boolean uniq = AlgMdUtil.areColumnsDefinitelyUnique( mq, alg, groupKey );
         if ( uniq ) {
-            return NumberUtil.multiply( mq.getRowCount( alg ), mq.getSelectivity( alg, predicate ) );
+            return NumberUtil.multiply( mq.getTupleCount( alg ), mq.getSelectivity( alg, predicate ) );
         }
         return null;
     }
@@ -208,7 +208,7 @@ public class AlgMdDistinctRowCount implements MetadataHandler<BuiltInMetadata.Di
         double selectivity = AlgMdUtil.guessSelectivity( predicate );
 
         // assume half the rows are duplicates
-        double nRows = alg.estimateRowCount( mq ) / 2;
+        double nRows = alg.estimateTupleCount( mq ) / 2;
         return AlgMdUtil.numDistinctVals( nRows, nRows * selectivity );
     }
 
@@ -260,7 +260,7 @@ public class AlgMdDistinctRowCount implements MetadataHandler<BuiltInMetadata.Di
             distinctRowCount *= subRowCount;
         }
 
-        return AlgMdUtil.numDistinctVals( distinctRowCount, mq.getRowCount( alg ) );
+        return AlgMdUtil.numDistinctVals( distinctRowCount, mq.getTupleCount( alg ) );
     }
 
 
@@ -278,7 +278,7 @@ public class AlgMdDistinctRowCount implements MetadataHandler<BuiltInMetadata.Di
                 Double d2 = mq.getDistinctRowCount( r2, groupKey, predicate );
                 d = NumberUtil.min( d, d2 );
             } catch ( CyclicMetadataException e ) {
-                // Ignore this relational expression; there will be non-cyclic ones in this set.
+                // Ignore this algebra expression; there will be non-cyclic ones in this set.
             }
         }
         return d;

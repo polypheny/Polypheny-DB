@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package org.polypheny.db.cypher;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.webui.models.results.GraphResult;
@@ -112,7 +111,6 @@ public class AggregateTest extends CypherTestTemplate {
 
 
     @Test
-    @Disabled // own min max impl necessary
     public void singleAvgAggregateTest() {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_PERSON_2 );
@@ -129,7 +127,6 @@ public class AggregateTest extends CypherTestTemplate {
 
 
     @Test
-    @Disabled // own min max impl necessary
     public void singleMinMaxAggregateTest() {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_PERSON_2 );
@@ -151,14 +148,13 @@ public class AggregateTest extends CypherTestTemplate {
 
 
     @Test
-    @Disabled// own min max impl necessary
     public void singleSumAggregateTest() {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_PERSON_2 );
         execute( SINGLE_EDGE_1 );
         execute( SINGLE_EDGE_2 );
 
-        GraphResult res = execute( "MATCH (n) RETURN sum(n.age)" );
+        execute( "MATCH (n) RETURN sum(n.age)" );
     }
 
 }

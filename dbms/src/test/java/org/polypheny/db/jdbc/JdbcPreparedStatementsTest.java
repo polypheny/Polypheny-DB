@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package org.polypheny.db.jdbc;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.google.common.collect.ImmutableList;
 import java.math.BigDecimal;
 import java.sql.Connection;
@@ -31,15 +33,12 @@ import org.apache.calcite.avatica.ColumnMetaData.Rep;
 import org.apache.calcite.avatica.SqlType;
 import org.apache.calcite.avatica.util.ArrayFactoryImpl;
 import org.apache.calcite.avatica.util.Unsafe;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
-import org.polypheny.db.excluded.CottontailExcluded;
-import org.polypheny.db.excluded.FileExcluded;
+
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Tag("adapter")
@@ -158,7 +157,7 @@ public class JdbcPreparedStatementsTest {
                         exceptionThrown = true;
                     }
 
-                    Assertions.assertTrue( exceptionThrown, "Excepted null value for a non-nullable column" );
+                    assertTrue( exceptionThrown, "Excepted null value for a non-nullable column" );
 
                     connection.commit();
                 } finally {
@@ -334,8 +333,8 @@ public class JdbcPreparedStatementsTest {
                     preparedInsert.executeBatch();
                     connection.commit();
 
-                    PreparedStatement preparedSelect = connection.prepareStatement( ""
-                            + "SELECT * FROM pstest WHERE "
+                    PreparedStatement preparedSelect = connection.prepareStatement(
+                            "SELECT * FROM pstest WHERE "
                             + "tbigint = ? AND "
                             + "tboolean = ? AND "
                             + "tdate = ? AND "
@@ -417,8 +416,6 @@ public class JdbcPreparedStatementsTest {
 
 
     @Test
-    @Tag("cottontailExcluded")
-    @Tag("fileExcluded")
     public void updateTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -476,8 +473,7 @@ public class JdbcPreparedStatementsTest {
 
 
     @Test
-    @Tag("cottontailExcluded")
-    @Tag("fileExcluded")
+    @Tag("cottontailExcluded") // leads to BatchQuery is unimplemented
     public void batchUpdateTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -487,14 +483,14 @@ public class JdbcPreparedStatementsTest {
                 try {
                     // Insert data
                     PreparedStatement preparedInsert = connection.prepareStatement( "INSERT INTO pstest(tinteger,tsmallint,tvarchar) VALUES (?,?,?)" );
-                    preparedInsert.setInt( 1, 1 );
-                    preparedInsert.setShort( 2, (short) 5 );
-                    preparedInsert.setString( 3, "Foo" );
+                    preparedInsert.setInt( 1, 1 ); // integer
+                    preparedInsert.setShort( 2, (short) 5 ); // smallint + 3 + 1
+                    preparedInsert.setString( 3, "Foo" ); // varchar
                     preparedInsert.addBatch();
 
-                    preparedInsert.setInt( 1, 2 );
-                    preparedInsert.setShort( 2, (short) 5 );
-                    preparedInsert.setString( 3, "Bar" );
+                    preparedInsert.setInt( 1, 2 ); // integer
+                    preparedInsert.setShort( 2, (short) 5 ); // smallint
+                    preparedInsert.setString( 3, "Bar" ); // varchar
                     preparedInsert.addBatch();
 
                     // Update
@@ -587,7 +583,6 @@ public class JdbcPreparedStatementsTest {
 
 
     @Test
-    @Tag("fileExcluded")
     public void arrayTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -633,7 +628,6 @@ public class JdbcPreparedStatementsTest {
 
 
     @Test
-    @Tag("fileExcluded")
     public void arrayBatchTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,8 +53,8 @@ import org.polypheny.db.catalog.entity.LogicalAdapter;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.LogicalQueryInterface;
 import org.polypheny.db.catalog.entity.LogicalUser;
-import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.impl.allocation.PolyAllocDocCatalog;
 import org.polypheny.db.catalog.impl.allocation.PolyAllocGraphCatalog;
@@ -63,9 +63,13 @@ import org.polypheny.db.catalog.impl.logical.DocumentCatalog;
 import org.polypheny.db.catalog.impl.logical.GraphCatalog;
 import org.polypheny.db.catalog.impl.logical.RelationalCatalog;
 import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.catalog.persistance.FilePersister;
+import org.polypheny.db.catalog.persistance.InMemoryPersister;
+import org.polypheny.db.catalog.persistance.Persister;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.catalog.snapshot.impl.SnapshotBuilder;
 import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceTemplate;
+import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.util.Pair;
 
@@ -82,7 +86,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
     /**
      * Constraints which have to be met before a commit can be executed.
      */
-    private Collection<Pair<Supplier<Boolean>, String>> commitConstraints = new ConcurrentLinkedDeque<>();
+    private final Collection<Pair<Supplier<Boolean>, String>> commitConstraints = new ConcurrentLinkedDeque<>();
 
 
     @Serialize
@@ -110,12 +114,12 @@ public class PolyCatalog extends Catalog implements PolySerializable {
     public final Map<String, QueryInterfaceTemplate> interfaceTemplates;
 
     @Getter
-    public final Map<Long, AdapterCatalog> storeCatalogs;
+    public final Map<Long, AdapterCatalog> adapterCatalogs;
 
     @Serialize
     public final Map<Long, AdapterRestore> adapterRestore;
 
-    private final IdBuilder idBuilder = IdBuilder.getInstance();
+    public final IdBuilder idBuilder = IdBuilder.getInstance();
     private final Persister persister;
 
     @Getter
@@ -157,17 +161,16 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
         // temporary data
         this.adapterTemplates = new ConcurrentHashMap<>();
-        this.storeCatalogs = new ConcurrentHashMap<>();
+        this.adapterCatalogs = new ConcurrentHashMap<>();
         this.interfaceTemplates = new ConcurrentHashMap<>();
 
-        this.persister = new Persister();
+        this.persister = memoryCatalog ? new InMemoryPersister() : new FilePersister();
 
     }
 
 
     @Override
     public void init() {
-        //new DefaultInserter();
         updateSnapshot();
 
         Catalog.afterInit.forEach( Runnable::run );
@@ -182,24 +185,11 @@ public class PolyCatalog extends Catalog implements PolySerializable {
     }
 
 
-    private void addNamespaceIfNecessary( AllocationEntity entity ) {
-        Adapter<?> adapter = AdapterManager.getInstance().getAdapter( entity.adapterId );
-
-        if ( adapter.getCurrentNamespace() == null || adapter.getCurrentNamespace().getId() != entity.namespaceId ) {
-            adapter.updateNamespace( entity.name, entity.namespaceId );
-        }
-
-        // re-add physical namespace, we could check first, but not necessary
-
-        getStoreSnapshot( entity.adapterId ).ifPresent( e -> e.addNamespace( entity.namespaceId, adapter.getCurrentNamespace() ) );
-
-    }
-
-
     @Override
     public void change() {
         // empty for now
         this.dirty.set( true );
+        updateSnapshot();
     }
 
 
@@ -213,7 +203,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
                 .stream()
                 .map( c -> Pair.of( c.left.get(), c.right ) )
                 .filter( c -> !c.left )
-                .collect( Collectors.toList() );
+                .toList();
 
         if ( !fails.isEmpty() ) {
             commitConstraints.clear();
@@ -221,6 +211,13 @@ public class PolyCatalog extends Catalog implements PolySerializable {
         }
 
         log.debug( "commit" );
+
+        this.adapterRestore.clear();
+        adapterCatalogs.forEach( ( id, catalog ) -> {
+            Map<Long, List<PhysicalEntity>> restore = catalog.allocToPhysicals.entrySet().stream().map( a -> Pair.of( a, a.getValue().stream().map( key -> catalog.physicals.get( key ).normalize() ).toList() ) ).collect( Collectors.toMap( a -> a.getKey().getKey(), Pair::getValue ) );
+            this.adapterRestore.put( id, new AdapterRestore( id, restore, catalog.allocations ) );
+        } );
+
         this.backup = serialize();
 
         updateSnapshot();
@@ -231,11 +228,14 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
 
     public void rollback() {
+        long id = snapshot.id();
         restoreLastState();
 
         log.debug( "rollback" );
 
-        updateSnapshot();
+        if ( id != snapshot.id() ) {
+            updateSnapshot();
+        }
 
     }
 
@@ -308,14 +308,14 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
 
     @Override
-    public <S extends AdapterCatalog> Optional<S> getStoreSnapshot( long id ) {
-        return Optional.ofNullable( (S) storeCatalogs.get( id ) );
+    public <S extends AdapterCatalog> Optional<S> getAdapterCatalog( long id ) {
+        return Optional.ofNullable( (S) adapterCatalogs.get( id ) );
     }
 
 
     @Override
     public void addStoreSnapshot( AdapterCatalog snapshot ) {
-        storeCatalogs.put( snapshot.adapterId, snapshot );
+        adapterCatalogs.put( snapshot.adapterId, snapshot );
     }
 
 
@@ -446,7 +446,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
 
     @Override
-    public void restore() {
+    public void restore( Transaction transaction ) {
         this.backup = persister.read();
         if ( this.backup == null || this.backup.isEmpty() ) {
             log.warn( "No file found to restore" );
@@ -459,8 +459,8 @@ public class PolyCatalog extends Catalog implements PolySerializable {
         AdapterManager.getInstance().restoreAdapters( List.copyOf( adapters.values() ) );
 
         adapterRestore.forEach( ( id, restore ) -> {
-            Adapter<?> adapter = AdapterManager.getInstance().getAdapter( id );
-            restore.activate( adapter );
+            Adapter<?> adapter = AdapterManager.getInstance().getAdapter( id ).orElseThrow();
+            restore.activate( adapter, transaction.createStatement().getPrepareContext() );
         } );
 
         updateSnapshot();

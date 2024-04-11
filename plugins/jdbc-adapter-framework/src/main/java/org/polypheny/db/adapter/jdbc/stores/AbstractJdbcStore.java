@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.polypheny.db.adapter.jdbc.stores;
 
 
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -71,11 +72,11 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
 
 
     public AbstractJdbcStore(
-            long storeId,
-            String uniqueName,
-            Map<String, String> settings,
-            SqlDialect dialect,
-            boolean persistent ) {
+            final long storeId,
+            final String uniqueName,
+            final Map<String, String> settings,
+            final SqlDialect dialect,
+            final boolean persistent ) {
         super( storeId, uniqueName, settings, persistent, new RelAdapterCatalog( storeId ) );
         this.dialect = dialect;
 
@@ -96,7 +97,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
         // Create udfs
         createUdfs();
 
-        this.delegate = new RelationalModifyDelegate( this, storeCatalog );
+        this.delegate = new RelationalModifyDelegate( this, adapterCatalog );
     }
 
 
@@ -124,9 +125,9 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
 
     @Override
     public void updateNamespace( String name, long id ) {
-        if ( storeCatalog.getNamespace( id ) == null ) {
-            currentJdbcSchema = JdbcSchema.create( id, storeCatalog, getDefaultPhysicalNamespaceName(), connectionFactory, dialect, this );
-            storeCatalog.addNamespace( id, currentJdbcSchema );
+        if ( adapterCatalog.getNamespace( id ) == null ) {
+            currentJdbcSchema = JdbcSchema.create( id, getDefaultPhysicalSchemaName(), connectionFactory, dialect, this );
+            adapterCatalog.addNamespace( id, currentJdbcSchema );
         }
         putNamespace( currentJdbcSchema );
     }
@@ -149,32 +150,32 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
     @Override
     public List<PhysicalEntity> createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocationWrapper ) {
         AllocationTable allocation = allocationWrapper.table;
-        String namespaceName = getDefaultPhysicalNamespaceName();
-        String tableName = getPhysicalTableName( allocation.id, 0 );
+        String namespaceName = getDefaultPhysicalSchemaName();
+        String tableName = getPhysicalTableName( allocation.id );
 
         updateNamespace( logical.table.getNamespaceName(), logical.table.namespaceId );
 
-        PhysicalTable table = storeCatalog.createTable(
+        PhysicalTable table = adapterCatalog.createTable(
                 namespaceName,
                 tableName,
                 allocationWrapper.columns.stream().collect( Collectors.toMap( c -> c.columnId, c -> getPhysicalColumnName( c.columnId ) ) ),
                 logical.table,
                 logical.columns.stream().collect( Collectors.toMap( c -> c.id, c -> c ) ),
-                allocationWrapper );
+                logical.pkIds, allocationWrapper );
 
-        executeCreateTable( context, table );
+        executeCreateTable( context, table, logical.pkIds );
 
-        JdbcTable physical = this.currentJdbcSchema.createJdbcTable( storeCatalog, table );
-        storeCatalog.replacePhysical( physical );
+        JdbcTable physical = this.currentJdbcSchema.createJdbcTable( table );
+        adapterCatalog.replacePhysical( physical );
         return List.of( physical );
     }
 
 
-    private void executeCreateTable( Context context, PhysicalTable table ) {
+    public void executeCreateTable( Context context, PhysicalTable table, List<Long> pkIds ) {
         if ( log.isDebugEnabled() ) {
             log.debug( "[{}] createTable: Qualified names: {}, physicalTableName: {}", getUniqueName(), table.namespaceName, table.name );
         }
-        StringBuilder query = buildCreateTableQuery( table );
+        StringBuilder query = buildCreateTableQuery( table, pkIds );
         if ( RuntimeConfig.DEBUG.getBoolean() ) {
             log.info( "{} on store {}", query.toString(), this.getUniqueName() );
         }
@@ -182,7 +183,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
     }
 
 
-    protected StringBuilder buildCreateTableQuery( PhysicalTable table ) {
+    protected StringBuilder buildCreateTableQuery( PhysicalTable table, List<Long> pkIds ) {
         StringBuilder builder = new StringBuilder();
         builder.append( "CREATE TABLE " )
                 .append( dialect.quoteIdentifier( table.namespaceName ) )
@@ -190,26 +191,39 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
                 .append( dialect.quoteIdentifier( table.name ) )
                 .append( " ( " );
         boolean first = true;
+        List<String> pkNames = new ArrayList<>();
         for ( PhysicalColumn column : table.columns ) {
             if ( !first ) {
                 builder.append( ", " );
             }
             first = false;
-            builder.append( dialect.quoteIdentifier( column.name ) ).append( " " );
+            String name = dialect.quoteIdentifier( column.name );
+            if ( pkIds.contains( column.id ) ) {
+                pkNames.add( name );
+            }
+
+            builder.append( name ).append( " " );
             createColumnDefinition( column, builder );
             builder.append( " NULL" );
         }
+
+        attachPrimaryKey( pkNames, builder );
         builder.append( " )" );
         return builder;
+    }
+
+
+    public void attachPrimaryKey( List<String> pkNames, StringBuilder builder ) {
+        // empty on purpose
     }
 
 
     @Override
     public void addColumn( Context context, long allocId, LogicalColumn logicalColumn ) {
         String physicalColumnName = getPhysicalColumnName( logicalColumn.id );
-        PhysicalTable table = storeCatalog.fromAllocation( allocId );
-        int max = storeCatalog.getColumns( allocId ).stream().max( Comparator.comparingInt( a -> a.position ) ).orElseThrow().position;
-        PhysicalColumn column = storeCatalog.addColumn( physicalColumnName, allocId, max + 1, logicalColumn );
+        PhysicalTable table = adapterCatalog.fromAllocation( allocId );
+        int max = adapterCatalog.getColumns( allocId ).stream().max( Comparator.comparingInt( a -> a.position ) ).orElseThrow().position;
+        PhysicalColumn column = adapterCatalog.addColumn( physicalColumnName, allocId, max + 1, logicalColumn );
 
         StringBuilder query = buildAddColumnQuery( table, column );
         executeUpdate( query, context );
@@ -238,21 +252,25 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
 
 
     protected void createColumnDefinition( PhysicalColumn column, StringBuilder builder ) {
-        if ( !this.dialect.supportsNestedArrays() && column.collectionsType == PolyType.ARRAY ) {
+        boolean supportsThisArray = column.collectionsType == PolyType.ARRAY && column.dimension != null && this.dialect.supportsArrays() && (this.dialect.supportsNestedArrays() || column.dimension == 1);
+        if ( supportsThisArray ) {
             // Returns e.g. TEXT if arrays are not supported
-            builder.append( getTypeString( PolyType.ARRAY ) );
+            builder.append( getTypeString( column.type ) ).append( " " ).append( getTypeString( PolyType.ARRAY ).repeat( column.dimension ) );
         } else if ( column.collectionsType == PolyType.MAP ) {
             builder.append( getTypeString( PolyType.ARRAY ) );
         } else {
-            builder.append( " " ).append( getTypeString( column.type ) );
-            if ( column.length != null && doesTypeUseLength( column.type ) ) {
+            PolyType type = column.dimension != null ? PolyType.TEXT : column.type; // nested array was not supported
+            PolyType collectionsType = column.collectionsType == PolyType.ARRAY ? null : column.collectionsType; // nested array was not suppored
+
+            builder.append( " " ).append( getTypeString( type ) );
+            if ( column.length != null && doesTypeUseLength( type ) ) {
                 builder.append( "(" ).append( column.length );
                 if ( column.scale != null ) {
                     builder.append( "," ).append( column.scale );
                 }
                 builder.append( ")" );
             }
-            if ( column.collectionsType != null ) {
+            if ( collectionsType != null ) {
                 builder.append( " " ).append( getTypeString( column.collectionsType ) );
             }
         }
@@ -271,26 +289,13 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
             throw new GenericRuntimeException( "Default values are not supported for array types" );
         }
 
-        SqlLiteral literal;
-        switch ( Objects.requireNonNull( column.defaultValue ).type ) {
-            case BOOLEAN:
-                literal = SqlLiteral.createBoolean( Boolean.parseBoolean( column.defaultValue.value.toJson() ), ParserPos.ZERO );
-                break;
-            case INTEGER:
-            case DECIMAL:
-            case BIGINT:
-                literal = SqlLiteral.createExactNumeric( column.defaultValue.value.toJson(), ParserPos.ZERO );
-                break;
-            case REAL:
-            case DOUBLE:
-                literal = SqlLiteral.createApproxNumeric( column.defaultValue.value.toJson(), ParserPos.ZERO );
-                break;
-            case VARCHAR:
-                literal = SqlLiteral.createCharString( column.defaultValue.value.toJson(), ParserPos.ZERO );
-                break;
-            default:
-                throw new PolyphenyDbException( "Not yet supported default value type: " + column.defaultValue.type );
-        }
+        SqlLiteral literal = switch ( Objects.requireNonNull( column.defaultValue ).type ) {
+            case BOOLEAN -> SqlLiteral.createBoolean( Boolean.parseBoolean( column.defaultValue.value.toJson() ), ParserPos.ZERO );
+            case INTEGER, DECIMAL, BIGINT -> SqlLiteral.createExactNumeric( column.defaultValue.value.toJson(), ParserPos.ZERO );
+            case REAL, DOUBLE -> SqlLiteral.createApproxNumeric( column.defaultValue.value.toJson(), ParserPos.ZERO );
+            case VARCHAR -> SqlLiteral.createCharString( column.defaultValue.value.toJson(), ParserPos.ZERO );
+            default -> throw new PolyphenyDbException( "Not yet supported default value type: " + column.defaultValue.type );
+        };
         builder.append( literal.toSqlString( dialect ) );
         return builder;
     }
@@ -299,12 +304,12 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
     // Make sure to update overridden methods as well
     @Override
     public void updateColumnType( Context context, long allocId, LogicalColumn newCol ) {
-        PhysicalColumn column = storeCatalog.updateColumnType( allocId, newCol );
+        PhysicalColumn column = adapterCatalog.updateColumnType( allocId, newCol );
 
         if ( !this.dialect.supportsNestedArrays() && column.collectionsType != null ) {
             return;
         }
-        PhysicalTable physicalTable = storeCatalog.fromAllocation( allocId );
+        PhysicalTable physicalTable = adapterCatalog.fromAllocation( allocId );
 
         StringBuilder builder = new StringBuilder();
         builder.append( "ALTER TABLE " )
@@ -329,16 +334,13 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
 
 
     public boolean doesTypeUseLength( PolyType type ) {
-        return true;
+        return type != PolyType.TEXT;
     }
 
 
     @Override
     public void dropTable( Context context, long allocId ) {
-        // We get the physical schema / table name by checking existing column placements of the same logical table placed on this store.
-        // This works because there is only one physical table for each logical table on JDBC stores. The reason for choosing this
-        // approach rather than using the default physical schema / table names is that this approach allows dropping linked tables.
-        PhysicalTable table = storeCatalog.fromAllocation( allocId );
+        PhysicalTable table = adapterCatalog.fromAllocation( allocId );
         StringBuilder builder = new StringBuilder();
 
         builder.append( "DROP TABLE " )
@@ -350,22 +352,21 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
             log.info( "{} from store {}", builder, this.getUniqueName() );
         }
         executeUpdate( builder, context );
-        storeCatalog.removeAllocAndPhysical( allocId );
+        adapterCatalog.removeAllocAndPhysical( allocId );
     }
 
 
     @Override
     public void renameLogicalColumn( long id, String newColumnName ) {
-        storeCatalog.renameLogicalColumn( id, newColumnName );
-        storeCatalog.fields.values().stream().filter( c -> c.id == id ).forEach( c -> updateNativePhysical( c.allocId ) );
+        adapterCatalog.renameLogicalColumn( id, newColumnName );
+        adapterCatalog.fields.values().stream().filter( c -> c.id == id ).forEach( c -> updateNativePhysical( c.allocId ) );
     }
 
 
     @Override
     public void dropColumn( Context context, long allocId, long columnId ) {
-        //for ( CatalogPartitionPlacement partitionPlacement : context.getSnapshot().alloc().getEntity( columnPlacement.tableId ) ) {
-        PhysicalTable table = storeCatalog.fromAllocation( allocId );
-        PhysicalColumn column = storeCatalog.getColumn( columnId, allocId );
+        PhysicalTable table = adapterCatalog.fromAllocation( allocId );
+        PhysicalColumn column = adapterCatalog.getColumn( columnId, allocId );
         StringBuilder builder = new StringBuilder();
         builder.append( "ALTER TABLE " )
                 .append( dialect.quoteIdentifier( table.namespaceName ) )
@@ -373,25 +374,21 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
                 .append( dialect.quoteIdentifier( table.name ) );
         builder.append( " DROP " ).append( dialect.quoteIdentifier( column.name ) );
         executeUpdate( builder, context );
-        storeCatalog.dropColumn( allocId, columnId );
+        adapterCatalog.dropColumn( allocId, columnId );
 
         updateNativePhysical( allocId );
-        //}
     }
 
 
-    private void updateNativePhysical( long allocId ) {
-        PhysicalTable table = storeCatalog.fromAllocation( allocId );
-        storeCatalog.replacePhysical( this.currentJdbcSchema.createJdbcTable( storeCatalog, table ) );
+    protected void updateNativePhysical( long allocId ) {
+        PhysicalTable table = adapterCatalog.fromAllocation( allocId );
+        adapterCatalog.replacePhysical( this.currentJdbcSchema.createJdbcTable( table ) );
     }
 
 
     @Override
     public void truncate( Context context, long allocId ) {
-        // We get the physical schema / table name by checking existing column placements of the same logical table placed on this store.
-        // This works because there is only one physical table for each logical table on JDBC stores. The reason for choosing this
-        // approach rather than using the default physical schema / table names is that this approach allows truncating linked tables.
-        PhysicalTable physical = storeCatalog.fromAllocation( allocId );
+        PhysicalTable physical = adapterCatalog.fromAllocation( allocId );
 
         StringBuilder builder = new StringBuilder();
         builder.append( "TRUNCATE TABLE " )
@@ -409,6 +406,21 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
         } catch ( SQLException | ConnectionHandlerException e ) {
             throw new GenericRuntimeException( e );
         }
+    }
+
+
+    @Override
+    public void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities, Context context ) {
+        for ( PhysicalEntity entity : entities ) {
+            PhysicalTable table = entity.unwrap( PhysicalTable.class ).orElseThrow();
+            if ( !isPersistent() ) {
+                executeCreateTable( context, table, table.uniqueFieldIds );
+            }
+
+            updateNamespace( table.namespaceName, table.namespaceId );
+            adapterCatalog.addPhysical( alloc, currentJdbcSchema.createJdbcTable( table.unwrap( PhysicalTable.class ).orElseThrow() ) );
+        }
+
     }
 
 
@@ -461,12 +473,8 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
     }
 
 
-    public String getPhysicalTableName( long tableId, long partitionId ) {
-        String physicalTableName = "tab" + tableId;
-        if ( partitionId >= 0 ) {
-            physicalTableName += "_part" + partitionId;
-        }
-        return physicalTableName;
+    public String getPhysicalTableName( long tableId ) {
+        return "tab" + tableId;
     }
 
 
@@ -475,18 +483,12 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
     }
 
 
-    protected String getPhysicalIndexName( long tableId, long indexId ) {
-        return "idx" + tableId + "_" + indexId;
+    protected String getPhysicalIndexName( long physicalId, long indexId ) {
+        return "idx" + physicalId + "_" + indexId;
     }
 
 
-    @Override
-    public void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities ) {
-        storeCatalog.addPhysical( alloc, entities.get( 0 ) );
-    }
-
-
-    public abstract String getDefaultPhysicalNamespaceName();
+    public abstract String getDefaultPhysicalSchemaName();
 
 
     @SuppressWarnings("unused")

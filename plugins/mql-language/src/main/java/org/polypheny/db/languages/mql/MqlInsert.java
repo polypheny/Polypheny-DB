@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,16 +27,15 @@ import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.mql.Mql.Type;
 
 
+@Getter
 public class MqlInsert extends MqlCollectionStatement {
 
-    @Getter
     private final BsonArray values;
-    @Getter
     private final boolean ordered;
 
 
-    public MqlInsert( ParserPos pos, String collection, BsonValue values, BsonDocument options ) {
-        super( collection, pos );
+    public MqlInsert( ParserPos pos, String collection, String namespace, BsonValue values, BsonDocument options ) {
+        super( collection, namespace, pos );
         if ( values.isDocument() ) {
             this.values = new BsonArray( Collections.singletonList( values.asDocument() ) );
         } else if ( values.isArray() ) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package org.polypheny.db.catalog.entity.physical;
 
 import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.annotations.SerializeClass;
-import java.io.Serializable;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.NonFinal;
@@ -27,6 +26,7 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
+import org.polypheny.db.type.entity.PolyValue;
 
 @EqualsAndHashCode(callSuper = true)
 @Value
@@ -39,7 +39,7 @@ public abstract class PhysicalField extends Entity {
     public long adapterId;
 
     @Serialize
-    public long entityId;
+    public long logicalEntityId;
 
     @Serialize
     public String logicalName;
@@ -53,12 +53,12 @@ public abstract class PhysicalField extends Entity {
             final String name,
             final String logicalName,
             final long allocId,
-            final long entityId,
+            final long logicalEntityId,
             final long adapterId,
             final DataModel dataModel,
             final boolean modifiable ) {
         super( id, name, allocId, EntityType.ENTITY, dataModel, modifiable );
-        this.entityId = entityId;
+        this.logicalEntityId = logicalEntityId;
         this.allocId = allocId;
         this.adapterId = adapterId;
         this.logicalName = logicalName;
@@ -66,8 +66,8 @@ public abstract class PhysicalField extends Entity {
 
 
     @Override
-    public Serializable[] getParameterArray() {
-        return new Serializable[0];
+    public PolyValue[] getParameterArray() {
+        return new PolyValue[0];
     }
 
 

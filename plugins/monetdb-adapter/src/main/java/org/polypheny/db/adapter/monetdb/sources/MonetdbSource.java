@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,13 +31,13 @@ import org.polypheny.db.adapter.jdbc.JdbcTable;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.TransactionalConnectionFactory;
 import org.polypheny.db.adapter.jdbc.sources.AbstractJdbcSource;
+import org.polypheny.db.adapter.monetdb.MonetdbSqlDialect;
 import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
 import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.sql.language.SqlDialect;
-import org.polypheny.db.sql.language.dialect.MonetdbSqlDialect;
 
 
 @Slf4j
@@ -55,7 +55,7 @@ import org.polypheny.db.sql.language.dialect.MonetdbSqlDialect;
 @AdapterSettingString(name = "table", defaultValue = "public.foo,public.bar", description = "Maximum number of concurrent JDBC connections.")
 public class MonetdbSource extends AbstractJdbcSource {
 
-    public MonetdbSource( long storeId, String uniqueName, final Map<String, String> settings ) {
+    public MonetdbSource( final long storeId, final String uniqueName, final Map<String, String> settings ) {
         super( storeId, uniqueName, settings, "nl.cwi.monetdb.jdbc.MonetDriver", MonetdbSqlDialect.DEFAULT, false );
     }
 
@@ -112,17 +112,18 @@ public class MonetdbSource extends AbstractJdbcSource {
 
     @Override
     public List<PhysicalEntity> createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation ) {
-        PhysicalTable table = storeCatalog.createTable(
+        PhysicalTable table = adapterCatalog.createTable(
                 logical.table.getNamespaceName(),
                 logical.table.name,
                 logical.columns.stream().collect( Collectors.toMap( c -> c.id, c -> c.name ) ),
                 logical.table,
                 logical.columns.stream().collect( Collectors.toMap( t -> t.id, t -> t ) ),
+                logical.pkIds,
                 allocation );
 
-        JdbcTable physical = currentJdbcSchema.createJdbcTable( storeCatalog, table );
+        JdbcTable physical = currentJdbcSchema.createJdbcTable( table );
 
-        storeCatalog.replacePhysical( physical );
+        adapterCatalog.replacePhysical( physical );
 
         return List.of( physical );
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,7 +41,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import org.polypheny.db.algebra.AlgDecorrelator;
 import org.polypheny.db.algebra.AlgFieldTrimmer;
 import org.polypheny.db.algebra.AlgNode;
@@ -85,9 +84,9 @@ import org.polypheny.db.config.PolyphenyDbConnectionConfig;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.interpreter.NoneToBindableConverterRule;
 import org.polypheny.db.plan.AlgOptCostImpl;
-import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.hep.HepMatchOrder;
 import org.polypheny.db.plan.hep.HepPlanner;
@@ -207,7 +206,7 @@ public class Programs {
      * Creates a list of programs based on an array of rule sets.
      */
     public static List<Program> listOf( RuleSet... ruleSets ) {
-        return Arrays.stream( ruleSets ).map( Programs::of ).collect( Collectors.toList() );
+        return Arrays.stream( ruleSets ).map( Programs::of ).toList();
     }
 
 
@@ -215,7 +214,7 @@ public class Programs {
      * Creates a list of programs based on a list of rule sets.
      */
     public static List<Program> listOf( List<RuleSet> ruleSets ) {
-        return ruleSets.stream().map( Programs::of ).collect( Collectors.toList() );
+        return ruleSets.stream().map( Programs::of ).toList();
     }
 
 
@@ -365,10 +364,10 @@ public class Programs {
                     assert rootAlg2 != null;
 
                     planner.setRoot( rootAlg2 );
-                    final AlgOptPlanner planner2 = planner.chooseDelegate();
-                    final AlgNode rootRel3 = planner2.findBestExp();
-                    assert rootRel3 != null : "could not implement exp";
-                    return rootRel3;
+                    final AlgPlanner planner2 = planner.chooseDelegate();
+                    final AlgNode rootAlg3 = planner2.findBestExp();
+                    assert rootAlg3 != null : "could not implement exp";
+                    return rootAlg3;
                 };
 
         return sequence(
@@ -396,7 +395,7 @@ public class Programs {
 
 
         @Override
-        public AlgNode run( AlgOptPlanner planner, AlgNode alg, AlgTraitSet requiredOutputTraits ) {
+        public AlgNode run( AlgPlanner planner, AlgNode alg, AlgTraitSet requiredOutputTraits ) {
             planner.clear();
             for ( AlgOptRule rule : ruleSet ) {
                 planner.addRule( rule );
@@ -426,7 +425,7 @@ public class Programs {
 
 
         @Override
-        public AlgNode run( AlgOptPlanner planner, AlgNode alg, AlgTraitSet requiredOutputTraits ) {
+        public AlgNode run( AlgPlanner planner, AlgNode alg, AlgTraitSet requiredOutputTraits ) {
             for ( Program program : programs ) {
                 alg = program.run( planner, alg, requiredOutputTraits );
             }
@@ -445,7 +444,7 @@ public class Programs {
     private static class DecorrelateProgram implements Program {
 
         @Override
-        public AlgNode run( AlgOptPlanner planner, AlgNode alg, AlgTraitSet requiredOutputTraits ) {
+        public AlgNode run( AlgPlanner planner, AlgNode alg, AlgTraitSet requiredOutputTraits ) {
             Optional<PolyphenyDbConnectionConfig> oConfig = planner.getContext().unwrap( PolyphenyDbConnectionConfig.class );
             if ( oConfig.isPresent() && oConfig.get().forceDecorrelate() ) {
                 final AlgBuilder algBuilder = AlgFactories.LOGICAL_BUILDER.create( alg.getCluster(), null );
@@ -463,7 +462,7 @@ public class Programs {
     private static class TrimFieldsProgram implements Program {
 
         @Override
-        public AlgNode run( AlgOptPlanner planner, AlgNode alg, AlgTraitSet requiredOutputTraits ) {
+        public AlgNode run( AlgPlanner planner, AlgNode alg, AlgTraitSet requiredOutputTraits ) {
             final AlgBuilder algBuilder = AlgFactories.LOGICAL_BUILDER.create( alg.getCluster(), null );
             return new AlgFieldTrimmer( null, algBuilder ).trim( alg );
         }

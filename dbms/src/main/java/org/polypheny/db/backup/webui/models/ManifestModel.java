@@ -25,22 +25,12 @@ import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import lombok.Value;
-import org.polypheny.db.type.entity.PolyTimestamp;
+import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 
-@Value
-public class ManifestModel {
-
-
-    @JsonProperty
-    List<ElementModel> elements; // 3 namespaces at max with entities and columns as children and sub-children
-
-    @JsonProperty
-    long id;
-
-    @JsonProperty
-    @JsonSerialize(using = PolyTimestampSerializer.class)
-    PolyTimestamp timestamp;
+/**
+ * @param elements 3 namespaces at max with entities and columns as children and sub-children
+ */
+public record ManifestModel(@JsonProperty long id, @JsonProperty List<ElementModel> elements, @JsonProperty @JsonSerialize(using = PolyTimestampSerializer.class) PolyTimestamp timestamp) {
 
 
     public ManifestModel(

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,10 +65,10 @@ public class CypherAddPlacement extends CypherAdminCommand implements Executable
 
         AdapterManager adapterManager = AdapterManager.getInstance();
 
-        List<LogicalGraph> graphs = statement.getTransaction().getSnapshot().getNamespaces( new Pattern( this.database ) ).stream().map( g -> statement.getTransaction().getSnapshot().graph().getGraph( g.id ).orElseThrow() ).collect( Collectors.toList() );
+        List<LogicalGraph> graphs = statement.getTransaction().getSnapshot().getNamespaces( new Pattern( this.database ) ).stream().map( g -> statement.getTransaction().getSnapshot().graph().getGraph( g.id ).orElseThrow() ).toList();
 
         List<DataStore<?>> dataStores = Stream.of( store )
-                .map( store -> (DataStore<?>) adapterManager.getAdapter( store ) )
+                .map( store -> adapterManager.getStore( store ).orElseThrow() )
                 .collect( Collectors.toList() );
 
         if ( !adapterManager.getAdapters().containsKey( store ) ) {
@@ -79,7 +79,7 @@ public class CypherAddPlacement extends CypherAdminCommand implements Executable
             throw new GenericRuntimeException( "Error while adding graph placement." );
         }
 
-        if ( Catalog.snapshot().alloc().getFromLogical( graphs.get( 0 ).id ).stream().anyMatch( p -> dataStores.stream().map( Adapter::getAdapterId ).collect( Collectors.toList() ).contains( p.adapterId ) ) ) {
+        if ( Catalog.snapshot().alloc().getFromLogical( graphs.get( 0 ).id ).stream().anyMatch( p -> dataStores.stream().map( Adapter::getAdapterId ).toList().contains( p.adapterId ) ) ) {
             throw new GenericRuntimeException( "Could not create placement of graph as it already exists." );
         }
 

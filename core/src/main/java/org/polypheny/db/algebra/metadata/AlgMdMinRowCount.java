@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,8 +60,8 @@ public class AlgMdMinRowCount implements MetadataHandler<BuiltInMetadata.MinRowC
 
     public static final AlgMetadataProvider SOURCE =
             ReflectiveAlgMetadataProvider.reflectiveSource(
-                    BuiltInMethod.MIN_ROW_COUNT.method,
-                    new AlgMdMinRowCount() );
+                    new AlgMdMinRowCount(),
+                    BuiltInMethod.MIN_ROW_COUNT.method );
 
 
     @Override

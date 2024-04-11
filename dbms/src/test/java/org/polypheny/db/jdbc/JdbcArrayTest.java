@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -177,7 +177,6 @@ public class JdbcArrayTest {
 
 
     @Test
-    @Tag("fileExcluded")
     public void arrayTypesViewTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -239,7 +238,6 @@ public class JdbcArrayTest {
 
 
     @Test
-    @Tag("fileExcluded")
     public void arrayTypesMaterializedTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -301,7 +299,6 @@ public class JdbcArrayTest {
 
 
     @Test
-    @Tag("fileExcluded")
     public void itemOperatorTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -335,10 +332,6 @@ public class JdbcArrayTest {
 
 
     @Test
-    //@Ignore
-    @Tag("fileExcluded")
-    @Tag("hsqldbExcluded")
-    @Tag("monetdbExcluded")
     public void itemOperatorTest2() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -368,7 +361,6 @@ public class JdbcArrayTest {
 
 
     @Test
-    @Tag("fileExcluded")
     public void nullTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -392,7 +384,6 @@ public class JdbcArrayTest {
 
 
     @Test
-    @Tag("fileExcluded")
     public void arrayFilterTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -418,9 +409,9 @@ public class JdbcArrayTest {
                             statement.executeQuery( "SELECT id FROM arraytest WHERE decimalarray = array[22.2,11.1]" ),
                             ImmutableList.of( new Object[]{ 1 } ) );
 
-                    TestHelper.checkResultSet(
+                    /*TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT id FROM arraytest WHERE doublearray = array[cast(2.0 as double),cast(2.5 as double)]" ),
-                            ImmutableList.of( new Object[]{ 1 } ) );
+                            ImmutableList.of( new Object[]{ 1 } ) );*/// this is not really deterministic and depends on the precision
 
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT id FROM arraytest WHERE smallintarray = array[CAST(56 as SMALLINT),CAST(44 as SMALLINT)]" ),

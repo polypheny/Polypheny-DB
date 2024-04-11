@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.Nullable;
@@ -32,6 +33,7 @@ import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.catalog.snapshot.LogicalDocSnapshot;
 
 @Slf4j
+@EqualsAndHashCode
 public class LogicalDocSnapshotImpl implements LogicalDocSnapshot {
 
     private final ImmutableMap<Long, LogicalNamespace> namespaces;
@@ -75,7 +77,7 @@ public class LogicalDocSnapshotImpl implements LogicalDocSnapshot {
         if ( namespacePattern != null ) {
             namespaces = namespaces.stream().filter( n -> n.caseSensitive
                     ? n.name.matches( namespacePattern.toRegex() )
-                    : n.name.toLowerCase().matches( namespacePattern.toLowerCase().toRegex() ) ).collect( Collectors.toList() );
+                    : n.name.toLowerCase().matches( namespacePattern.toLowerCase().toRegex() ) ).toList();
         }
 
         return namespaces.stream().flatMap( n -> getCollections( n.id, namePattern ).stream() ).collect( Collectors.toList() );
@@ -90,5 +92,6 @@ public class LogicalDocSnapshotImpl implements LogicalDocSnapshot {
                 ? c.name.equals( name )
                 : c.name.equalsIgnoreCase( name ) ).findFirst();
     }
+
 
 }

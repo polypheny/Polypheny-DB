@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,9 +54,9 @@ import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.NodeToAlgConverter;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.validate.ValidatorTable;
-import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexExecutorImpl;
@@ -111,7 +111,7 @@ public abstract class Prepare<T> {
      * @return an equivalent optimized relational expression
      */
     protected AlgRoot optimize( AlgRoot root ) {
-        final AlgOptPlanner planner = root.alg.getCluster().getPlanner();
+        final AlgPlanner planner = root.alg.getCluster().getPlanner();
 
         final DataContext dataContext = context.getDataContext();
         planner.setExecutor( new RexExecutorImpl( dataContext ) );
@@ -121,12 +121,11 @@ public abstract class Prepare<T> {
         // Work around: Allow rules to be registered during planning process by briefly creating each kind of physical table
         // to let it register its rules.
         // The problem occurs when plans are created via AlgBuilder, not the usual process
-        // (SQL and SqlToRelConverter.Config.isConvertTableAccess = true).
         final AlgVisitor visitor = new AlgVisitor() {
             @Override
             public void visit( AlgNode node, int ordinal, AlgNode parent ) {
                 if ( node instanceof RelScan ) {
-                    final AlgOptCluster cluster = node.getCluster();
+                    final AlgCluster cluster = node.getCluster();
                     final AlgNode r = node.getEntity().unwrap( TranslatableEntity.class ).orElseThrow().toAlg( cluster, node.getTraitSet() );
                     planner.registerClass( r );
                 }

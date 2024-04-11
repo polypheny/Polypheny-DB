@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,7 +43,6 @@ import com.mongodb.client.gridfs.GridFSBucket;
 import com.mongodb.client.model.DeleteManyModel;
 import com.mongodb.client.model.DeleteOneModel;
 import com.mongodb.client.model.WriteModel;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -55,6 +54,7 @@ import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Value;
+import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
@@ -64,15 +64,12 @@ import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.bson.BsonDocument;
-import org.bson.BsonInt32;
-import org.bson.BsonString;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.bson.json.JsonMode;
 import org.bson.json.JsonWriterSettings;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.mongodb.MongoPlugin.MongoStore;
 import org.polypheny.db.adapter.mongodb.rules.MongoScan;
 import org.polypheny.db.adapter.mongodb.util.MongoDynamic;
 import org.polypheny.db.adapter.mongodb.util.MongoTupleType;
@@ -94,7 +91,7 @@ import org.polypheny.db.catalog.entity.physical.PhysicalField;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexNode;
@@ -104,8 +101,8 @@ import org.polypheny.db.schema.types.ModifiableTable;
 import org.polypheny.db.schema.types.QueryableEntity;
 import org.polypheny.db.schema.types.TranslatableEntity;
 import org.polypheny.db.transaction.PolyXid;
-import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.util.BsonUtil;
 import org.polypheny.db.util.Util;
 
@@ -116,6 +113,7 @@ import org.polypheny.db.util.Util;
 @EqualsAndHashCode(callSuper = true)
 @Slf4j
 @Value
+@SuperBuilder(toBuilder = true)
 public class MongoEntity extends PhysicalEntity implements TranslatableEntity, ModifiableTable, ModifiableCollection, QueryableEntity {
 
     @Getter
@@ -135,7 +133,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
      * Creates a MongoTable.
      */
     MongoEntity( PhysicalEntity physical, List<? extends PhysicalField> fields, MongoNamespace namespace, TransactionProvider transactionProvider ) {
-        super( physical.id, physical.allocationId, physical.logicalId, physical.name, physical.namespaceId, physical.namespaceName, physical.dataModel, physical.adapterId );
+        super( physical.id, physical.allocationId, physical.logicalId, physical.name, physical.namespaceId, physical.namespaceName.toLowerCase(), physical.getUniqueFieldIds(), physical.dataModel, physical.adapterId );
         this.physical = physical;
         this.mongoNamespace = namespace;
         this.transactionProvider = transactionProvider;
@@ -146,18 +144,18 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
 
 
     @Override
-    public AlgDataType getRowType() {
+    public AlgDataType getTupleType() {
         if ( dataModel == DataModel.RELATIONAL ) {
             return buildProto().apply( AlgDataTypeFactory.DEFAULT );
         }
-        return super.getRowType();
+        return super.getTupleType();
     }
 
 
     public AlgProtoDataType buildProto() {
         final AlgDataTypeFactory.Builder fieldInfo = AlgDataTypeFactory.DEFAULT.builder();
 
-        for ( PhysicalColumn column : fields.stream().map( f -> f.unwrap( PhysicalColumn.class ).orElseThrow() ).sorted( Comparator.comparingInt( a -> a.position ) ).collect( Collectors.toList() ) ) {
+        for ( PhysicalColumn column : fields.stream().map( f -> f.unwrap( PhysicalColumn.class ).orElseThrow() ).sorted( Comparator.comparingInt( a -> a.position ) ).toList() ) {
             AlgDataType sqlType = column.getAlgDataType( AlgDataTypeFactory.DEFAULT );
             fieldInfo.add( column.id, column.logicalName, column.name, sqlType ).nullable( column.nullable );
         }
@@ -172,14 +170,14 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
 
 
     @Override
-    public AlgNode toAlg( AlgOptCluster cluster, AlgTraitSet traitSet ) {
+    public AlgNode toAlg( AlgCluster cluster, AlgTraitSet traitSet ) {
         return new MongoScan( cluster, traitSet.replace( MongoAlg.CONVENTION ), this );
     }
 
 
     /**
      * Executes a "find" operation on the underlying collection.
-     *
+     * <p>
      * For example,
      * <code>zipsTable.find("{state: 'OR'}", "{city: 1, zipcode: 1}")</code>
      *
@@ -206,7 +204,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
 
     /**
      * Executes an "aggregate" operation on the underlying collection.
-     *
+     * <p>
      * For example:
      * <code>zipsTable.aggregate(
      * "{$filter: {state: 'OR'}",
@@ -251,10 +249,6 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
             }
         }
 
-        /*if ( logicalCols.size() != 0 && logical != null ) {
-            list.add( 0, getPhysicalProjections( logicalCols, logical.getColumnNames(), logical.fieldIds ) );
-        }*/
-
         final Function1<Document, PolyValue[]> getter = MongoEnumerator.getter( tupleType );
 
         if ( log.isDebugEnabled() ) {
@@ -272,7 +266,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
                 final Iterator<PolyValue[]> resultIterator;
                 try {
                     if ( !list.isEmpty() ) {
-                        resultIterator = mongoDb.getCollection( physical.name ).aggregate( session, list ).map( d -> getter.apply( d ) ).iterator();
+                        resultIterator = mongoDb.getCollection( physical.name ).aggregate( session, list ).map( getter::apply ).iterator();
                     } else {
                         resultIterator = Collections.emptyIterator();
                     }
@@ -285,34 +279,9 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
     }
 
 
-    public static BsonDocument getPhysicalProjections( List<String> logicalCols, List<String> fieldNames, List<Long> fieldIds ) {
-        BsonDocument projections = new BsonDocument();
-        for ( String logicalCol : logicalCols ) {
-            int index = fieldNames.indexOf( logicalCol );
-            if ( index != -1 ) {
-                projections.append( logicalCol, new BsonString( "$" + MongoStore.getPhysicalColumnName( fieldIds.get( index ) ) ) );
-            } else {
-                projections.append( logicalCol, new BsonInt32( 1 ) );
-            }
-        }
-        return new BsonDocument( "$project", projections );
-    }
-
-
-    /**
-     * Helper method to strip non-numerics from a string.
-     *
-     * Currently used to determine mongod versioning numbers
-     * from buildInfo.versionArray for use in aggregate method logic.
-     */
-    private static Integer parseIntString( String valueString ) {
-        return Integer.parseInt( valueString.replaceAll( "[^0-9]", "" ) );
-    }
-
-
     @Override
     public Modify<?> toModificationTable(
-            AlgOptCluster cluster,
+            AlgCluster cluster,
             AlgTraitSet traitSet,
             Entity table,
             AlgNode child,
@@ -332,7 +301,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
 
     @Override
     public Modify<?> toModificationCollection(
-            AlgOptCluster cluster,
+            AlgCluster cluster,
             AlgTraitSet traits,
             Entity collection,
             AlgNode child,
@@ -353,8 +322,8 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
 
 
     @Override
-    public Serializable[] getParameterArray() {
-        return new Serializable[0];
+    public PolyValue[] getParameterArray() {
+        return new PolyValue[0];
     }
 
 
@@ -389,22 +358,6 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
     public String getPhysicalName( String logicalName ) {
         return fields.stream().filter( f -> f.logicalName.equals( logicalName ) ).map( f -> f.name ).findFirst().orElse( null );
     }
-
-
-
-
-    /*@Override
-    public Modify<?> toModificationGraph(
-            AlgOptCluster cluster,
-            AlgTraitSet traitSet,
-            CatalogEntity entity,
-            AlgNode child,
-            Operation operation,
-            List<String> keys,
-            List<RexNode> updates ) {
-        mongoSchema.getConvention().register( cluster.getPlanner() );
-        return new LogicalDocumentModify( child.getTraitSet(), entity, catalogReader, child, operation, keys, updates );
-    }*/
 
 
     /**
@@ -445,7 +398,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
         @SuppressWarnings("UnusedDeclaration")
         public Enumerable<PolyValue[]> aggregate( MongoTupleType tupleType, List<String> operations, List<String> preProjections, List<String> logicalCols ) {
             ClientSession session = getEntity().getTransactionProvider().getSession( dataContext.getStatement().getTransaction().getXid() );
-            dataContext.getStatement().getTransaction().registerInvolvedAdapter( AdapterManager.getInstance().getStore( (int) this.getEntity().getStoreId() ) );
+            dataContext.getStatement().getTransaction().registerInvolvedAdapter( AdapterManager.getInstance().getStore( (int) this.getEntity().getStoreId() ).orElseThrow() );
 
             Map<Long, PolyValue> values = new HashMap<>();
             if ( dataContext.getParameterValues().size() == 1 ) {
@@ -460,7 +413,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
                     tupleType,
                     operations,
                     values,
-                    preProjections.stream().map( BsonDocument::parse ).collect( Collectors.toList() ) );
+                    preProjections.stream().map( BsonDocument::parse ).toList() );
         }
 
 
@@ -490,7 +443,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
         @SuppressWarnings("UnusedDeclaration")
         public Enumerable<Object> handleDirectDML( Operation operation, String filter, List<String> operations, boolean onlyOne, boolean needsDocument ) {
             PolyXid xid = dataContext.getStatement().getTransaction().getXid();
-            dataContext.getStatement().getTransaction().registerInvolvedAdapter( AdapterManager.getInstance().getStore( entity.getAdapterId() ) );
+            dataContext.getStatement().getTransaction().registerInvolvedAdapter( AdapterManager.getInstance().getStore( entity.getAdapterId() ).orElseThrow() );
             GridFSBucket bucket = entity.getMongoNamespace().getBucket();
 
             try {
@@ -522,7 +475,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
                         return inserts.size();
                     } else {
                         // direct
-                        List<Document> docs = operations.stream().map( BsonDocument::parse ).map( BsonUtil::asDocument ).collect( Collectors.toList() );
+                        List<Document> docs = operations.stream().map( BsonDocument::parse ).map( BsonUtil::asDocument ).toList();
                         entity.getCollection().insertMany( session, docs );
                         return docs.size();
                     }
@@ -566,12 +519,12 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
                         if ( onlyOne ) {
                             changes = entity
                                     .getCollection()
-                                    .updateOne( session, BsonDocument.parse( filter ), BsonDocument.parse( operations.get( 0 ) ) )
+                                    .updateOne( session, BsonDocument.parse( filter ), List.of( BsonDocument.parse( operations.get( 0 ) ) ) )
                                     .getModifiedCount();
                         } else {
                             changes = entity
                                     .getCollection()
-                                    .updateMany( session, BsonDocument.parse( filter ), BsonDocument.parse( operations.get( 0 ) ) )
+                                    .updateMany( session, BsonDocument.parse( filter ), List.of( BsonDocument.parse( operations.get( 0 ) ) ) )
                                     .getModifiedCount();
                         }
 

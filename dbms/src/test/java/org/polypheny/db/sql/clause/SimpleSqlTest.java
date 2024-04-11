@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ package org.polypheny.db.sql.clause;
 import java.sql.SQLException;
 import java.util.List;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 
@@ -41,19 +40,11 @@ public class SimpleSqlTest {
 
 
     @Test
-    @Disabled
-    public void createTable() {
-        TestHelper.executeSql(
-                ( c, s ) -> s.executeUpdate( "CREATE TABLE TableA(ID INTEGER NOT NULL, NAME VARCHAR(20), AGE INTEGER, PRIMARY KEY (ID))" )
-        );
-    }
-
-
-    @Test
     public void dropTable() {
         TestHelper.executeSql(
                 ( c, s ) -> s.executeUpdate( "CREATE TABLE TableA(ID INTEGER NOT NULL, NAME VARCHAR(20), AGE INTEGER, PRIMARY KEY (ID))" ),
-                ( c, s ) -> s.executeUpdate( "DROP TABLE TableA" )
+                ( c, s ) -> s.executeUpdate( "DROP TABLE TableA" ),
+                ( c, s ) -> c.commit()
         );
     }
 
@@ -103,8 +94,7 @@ public class SimpleSqlTest {
         );
         TestHelper.executeSql(
                 ( c, s ) -> s.executeUpdate( "CREATE TABLE Person(ID INTEGER NOT NULL, NAME VARCHAR(20), PRIMARY KEY (ID))" ),
-                ( c, s ) -> s.executeUpdate( "INSERT INTO Person VALUES (1, 'Name1')" ),
-                ( c, s ) -> s.executeUpdate( "INSERT INTO Person VALUES (2, 'Name2')" ),
+                ( c, s ) -> s.executeUpdate( "INSERT INTO Person VALUES (1, 'Name1'),(2, 'Name2')" ),
                 ( c, s ) -> s.executeUpdate( "INSERT INTO Person VALUES (3, 'Name3')" ),
                 ( c, s ) -> s.executeUpdate( "INSERT INTO Person VALUES (4, 'Name4')" ),
                 ( c, s ) -> TestHelper.checkResultSet( s.executeQuery( "SELECT test, name FROM (SELECT COUNT(id) as test, name FROM Person GROUP BY name)" ), data, true ),

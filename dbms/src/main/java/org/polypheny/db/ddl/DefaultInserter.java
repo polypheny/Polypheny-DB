@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceTemplate;
+import org.polypheny.db.util.RunMode;
 
 @Deterministic
 public class DefaultInserter {
@@ -34,7 +35,7 @@ public class DefaultInserter {
     /**
      * Fills the catalog database with default data, skips if data is already inserted
      */
-    public static void resetData( DdlManager ddlManager ) {
+    public static void resetData( DdlManager ddlManager, RunMode mode ) {
         final Catalog catalog = Catalog.getInstance();
         restoreUsers( catalog );
 
@@ -48,14 +49,14 @@ public class DefaultInserter {
         //////////////
         // init adapters
 
-        restoreAdapters( ddlManager, catalog );
+        restoreAdapters( ddlManager, catalog, mode );
 
         catalog.commit();
 
     }
 
 
-    private static void restoreAdapters( DdlManager ddlManager, Catalog catalog ) {
+    private static void restoreAdapters( DdlManager ddlManager, Catalog catalog, RunMode mode ) {
         if ( !catalog.getAdapters().isEmpty() ) {
             catalog.commit();
             return;
@@ -63,12 +64,19 @@ public class DefaultInserter {
 
         catalog.updateSnapshot();
 
-        // Deploy default storeId
+        // Deploy default store (HSQLDB)
         Map<String, String> defaultStore = Catalog.snapshot().getAdapterTemplate( Catalog.defaultStore.getAdapterName(), AdapterType.STORE ).orElseThrow().getDefaultSettings();
-        ddlManager.createAdapter( "hsqldb", Catalog.defaultStore.getAdapterName(), AdapterType.STORE, defaultStore, DeployMode.EMBEDDED );
-        // Deploy default CSV view
+        ddlManager.createStore( "hsqldb", Catalog.defaultStore.getAdapterName(), AdapterType.STORE, defaultStore, DeployMode.EMBEDDED );
+
+        if ( mode == RunMode.TEST ) {
+            return; // source adapters create schema structure, which we do not want for testing
+        }
+
+        // Deploy default source (CSV with HR data)
         Map<String, String> defaultSource = Catalog.snapshot().getAdapterTemplate( Catalog.defaultSource.getAdapterName(), AdapterType.SOURCE ).orElseThrow().getDefaultSettings();
-        ddlManager.createAdapter( "hr", Catalog.defaultSource.getAdapterName(), AdapterType.SOURCE, defaultSource, DeployMode.REMOTE );
+        ddlManager.createSource( "hr", Catalog.defaultSource.getAdapterName(), Catalog.defaultNamespaceId, AdapterType.SOURCE, defaultSource, DeployMode.REMOTE );
+
+
     }
 
 

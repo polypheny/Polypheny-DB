@@ -5,7 +5,7 @@ dependencies {
     compileOnly project(":core")
     compileOnly project(":plugins:sql-language")
 
-    implementation group: "net.sf.opencsv", name: "opencsv", version: opencsv_version  // Apache 2.0
+    //implementation group: "com.opencsv", name: "opencsv", version: opencsv_version  // Apache 2.0
     implementation group: "commons-io", name: "commons-io", version: commons_io_version  // Apache 2.0
     implementation group: "org.apache.poi", name: "poi", version: poi_version
     implementation group: "org.apache.poi", name: "poi-ooxml", version: poi_ooxml_version
@@ -21,6 +21,29 @@ compileJava {
 
 delombok {
     dependsOn(":plugins:sql-language:processResources")
+}
+
+
+sourceSets {
+    main {
+        java {
+            srcDirs = ["src/main/java"]
+        }
+        resources {
+            srcDirs = ["src/main/resources"]
+        }
+        output.resourcesDir = file(project.buildDir.absolutePath + "/classes")
+    }
+    test {
+        java {
+            srcDirs = ["src/test/java"]
+            destinationDirectory.set(file(project.buildDir.absolutePath + "/test-classes"))
+        }
+        resources {
+            srcDirs = ["src/test/resources"]
+        }
+        output.resourcesDir = file(project.buildDir.absolutePath + "/test-classes")
+    }
 }
 
 
@@ -41,5 +64,5 @@ java {
 
 licensee {
     allow('Apache-2.0')
-    allowUrl('http://opensource.org/licenses/BSD-3-Clause') // BSD-3
+    allow('BSD-3-Clause')
 }

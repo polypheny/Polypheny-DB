@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import java.util.Map;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexNode;
@@ -58,7 +58,7 @@ public class ParameterValueValidator extends AlgShuttleImpl {
 
 
     @Override
-    public AlgNode visit( LogicalProject project ) {
+    public AlgNode visit( LogicalRelProject project ) {
         ParameterValueValidator2 validator2 = new ParameterValueValidator2();
         validator2.apply( project.getChildExps() );
         return super.visit( project );

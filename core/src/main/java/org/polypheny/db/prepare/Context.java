@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,13 +33,11 @@ public interface Context {
     JavaTypeFactory getTypeFactory();
 
     /**
-     * Returns the root schema
+     * Returns the associated snapshot.
      */
     Snapshot getSnapshot();
 
     String getDefaultNamespaceName();
-
-    List<String> getDefaultSchemaPath();
 
     void updateSnapshot();
 
@@ -49,14 +47,12 @@ public interface Context {
 
     /**
      * Returns the path of the object being analyzed, or null.
-     *
+     * <p>
      * The object is being analyzed is typically a view. If it is already being analyzed further up the stack,
      * the view definition can be deduced to be cyclic.
      */
     List<String> getObjectPath();
 
     Statement getStatement();
-
-    long getCurrentUserId();
 
 }

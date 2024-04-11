@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,26 +27,29 @@ import java.util.List;
 import org.apache.calcite.linq4j.Enumerator;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.file.Condition;
+import org.polypheny.db.adapter.file.FileTranslatableEntity;
+import org.polypheny.db.adapter.file.Value;
+import org.polypheny.db.adapter.file.Value.InputValue;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.transaction.Transaction.MultimediaFlavor;
-import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 
 
-public class QfsEnumerator<E> implements Enumerator<E> {
+public class QfsEnumerator implements Enumerator<PolyValue[]> {
 
     private final DataContext dataContext;
     private final List<String> columns;
-    private final PolyType[] columnTypes;
-    private final Integer[] projectionMapping;
+    private final List<AlgDataTypeField> columnTypes;
+    private final List<Value> projectionMapping;
     private final Condition condition;
     private final Iterator<Path> iterator;
-    private E current;
+    private PolyValue[] current;
 
 
-    public QfsEnumerator( final DataContext dataContext, final String path, final Long[] columnIds, final Integer[] projectionMapping, final Condition condition ) {
+    public QfsEnumerator( FileTranslatableEntity entity, final DataContext dataContext, final String path, final Long[] columnIds, final List<Value> projectionMapping, final Condition condition ) {
         this.dataContext = dataContext;
         File root = new File( path );
 
@@ -57,31 +60,33 @@ public class QfsEnumerator<E> implements Enumerator<E> {
         }
 
         List<String> columns = new ArrayList<>();
-        List<PolyType> columnTypes = new ArrayList<>();
+        List<AlgDataTypeField> columnTypes = new ArrayList<>();
         this.projectionMapping = projectionMapping;
 
-        /*if ( condition == null && this.projectionMapping != null ) {
-            for ( int projection : this.projectionMapping ) {
-                long colId = columnIds[projection];
-                CatalogColumn col = Catalog.getInstance().getColumn( colId );
-                columns.add( col.name );
-                columnTypes.add( col.type );
+        if ( condition == null && this.projectionMapping != null ) {
+            for ( Value projection : this.projectionMapping ) {
+                long colId = columnIds[projection.getValue( List.of( current ), dataContext, 0 ).asNumber().intValue()];
+                entity.getTupleType().getFields().stream().filter( col -> col.getId() == colId ).findFirst().ifPresent( col -> {
+                    columns.add( col.getName() );
+                    columnTypes.add( col );
+                } );
             }
         } else {
             for ( long colId : columnIds ) {
-                CatalogColumn col = Catalog.getInstance().getColumn( colId );
-                columns.add( col.name );
-                columnTypes.add( col.type );
+                entity.getTupleType().getFields().stream().filter( col -> col.getId() == colId ).findFirst().ifPresent( col -> {
+                    columns.add( col.getName() );
+                    columnTypes.add( col );
+                } );
             }
-        }*/ // todo
+        }
         this.columns = columns;
-        this.columnTypes = columnTypes.toArray( new PolyType[0] );
+        this.columnTypes = columnTypes;
         this.condition = condition;
     }
 
 
     @Override
-    public E current() {
+    public PolyValue[] current() {
         return current;
     }
 
@@ -94,16 +99,12 @@ public class QfsEnumerator<E> implements Enumerator<E> {
             return false;
         }
         Path path = iterator.next();
-        PolyValue[] row = Pair.zip( getRow( path.toFile() ), columnTypes ).stream().map( p -> PolyTypeUtil.stringToObject( p.left.toString(), p.right ) ).toArray( PolyValue[]::new );
+        List<PolyValue> row = Pair.zip( List.of( getRow( path.toFile() ) ), columnTypes ).stream().map( p -> PolyTypeUtil.stringToObject( p.left.toString(), p.right ) ).toList();
         if ( condition != null && !condition.matches( row, columnTypes, dataContext ) ) {
             return moveNext();
         }
-        Object[] curr = project( row );
-        if ( curr.length == 1 ) {
-            current = (E) curr[0];
-        } else {
-            current = (E) curr;
-        }
+        List<PolyValue> curr = project( row );
+        current = curr.toArray( new PolyValue[0] );
         return true;
     }
 
@@ -148,14 +149,14 @@ public class QfsEnumerator<E> implements Enumerator<E> {
     }
 
 
-    private Object[] project( final Object[] row ) {
+    private List<PolyValue> project( final List<PolyValue> row ) {
         // If there is no condition, the projection has already been performed
         if ( this.projectionMapping == null || condition == null ) {
             return row;
         }
-        Object[] out = new Object[this.projectionMapping.length];
-        for ( int i = 0; i < this.projectionMapping.length; i++ ) {
-            out[i] = row[this.projectionMapping[i]];
+        List<PolyValue> out = new ArrayList<>( this.projectionMapping.size() );
+        for ( int i = 0; i < this.projectionMapping.size(); i++ ) {
+            out.set( i, row.get( ((InputValue) this.projectionMapping.get( i )).getIndex() ) );
         }
         return out;
     }

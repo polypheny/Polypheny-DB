@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 package org.polypheny.db.cypher.pattern;
 
 import java.util.List;
-import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import lombok.Getter;
 import org.polypheny.db.cypher.CypherPathLength;
@@ -60,7 +59,7 @@ public class CypherRelPattern extends CypherPattern {
 
 
     public List<String> getLabels() {
-        return relTypes.stream().map( StringPos::getImage ).collect( Collectors.toList() );
+        return relTypes.stream().map( StringPos::getImage ).toList();
     }
 
 
@@ -73,7 +72,7 @@ public class CypherRelPattern extends CypherPattern {
     public Pair<PolyString, PolyEdge> getPolyEdge( PolyString leftId, PolyString rightId ) {
         PolyDictionary properties = this.properties != null ? (PolyDictionary) this.properties.getComparable() : new PolyDictionary();
         EdgeDirection direction = left == right ? EdgeDirection.NONE : right ? EdgeDirection.LEFT_TO_RIGHT : EdgeDirection.RIGHT_TO_LEFT;
-        List<PolyString> labels = relTypes.stream().map( StringPos::getImage ).map( PolyString::of ).collect( Collectors.toList() );
+        List<PolyString> labels = relTypes.stream().map( StringPos::getImage ).map( PolyString::of ).toList();
 
         String name = null;
         if ( variable != null ) {

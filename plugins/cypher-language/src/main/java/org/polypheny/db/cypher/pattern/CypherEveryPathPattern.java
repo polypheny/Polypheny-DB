@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -78,7 +78,7 @@ public class CypherEveryPathPattern extends CypherPattern {
 
     @Override
     public List<PolyString> getUnderlyingLabels() {
-        return nodes.stream().flatMap( n -> n.getLabels().stream() ).collect( Collectors.toList() );
+        return nodes.stream().flatMap( n -> n.getLabels().stream() ).toList();
     }
 
 
@@ -178,7 +178,7 @@ public class CypherEveryPathPattern extends CypherPattern {
         List<Pair<PolyString, PolyNode>> polyNodes = getPolyNodes( context );
 
         List<Pair<PolyString, EdgeVariableHolder>> polyEdges = getPolyEdges( polyNodes );
-        PolyPath path = PolyPath.create( polyNodes, Pair.right( polyEdges ).stream().map( EdgeVariableHolder::asNamedEdge ).collect( Collectors.toList() ) );
+        PolyPath path = PolyPath.create( polyNodes, Pair.right( polyEdges ).stream().map( EdgeVariableHolder::asNamedEdge ).toList() );
 
         AlgDataType pathType = context.typeFactory.createPathType( path.getPathType( context.nodeType, context.edgeType ) );
 

@@ -1,9 +1,16 @@
-//import ca.coglinc.gradle.plugins.javacc.CompileJavaccTask
+buildscript {
+    dependencies {
+        // Protobuf
+        classpath group: "com.google.protobuf", name: "protobuf-gradle-plugin", version: protobuf_plugin_version
+    }
+}
 
 group "org.polypheny"
 
+
 apply plugin: "io.freefair.lombok"
 apply plugin: "com.google.protobuf"
+
 
 configurations {
     //javacc
@@ -16,20 +23,6 @@ configurations {
     compileOnly {
         extendsFrom annotationProcessor
     }
-}
-
-
-
-buildscript {
-    dependencies {
-        // JavaCC (https://github.com/johnmartel/javaccPlugin)
-        classpath group: "gradle.plugin.ca.coglinc2", name: "javacc-gradle-plugin", version: javacc_plugin_version
-        // Fmpp
-        classpath group: "net.sourceforge.fmpp", name: "fmpp", version: fmpp_plugin_version
-        // Protobuf
-        classpath group: "com.google.protobuf", name: "protobuf-gradle-plugin", version: protobuf_plugin_version
-    }
-    ant.taskdef(name: "fmpp", classname: "fmpp.tools.AntTask", classpath: buildscript.configurations.classpath.asPath)
 }
 
 
@@ -83,8 +76,8 @@ dependencies {
     api group: "io.activej", name: "activej-serializer", version: activej_serializer_version
 
     // --- Test Compile ---
-    testImplementation group: 'org.junit.platform', name: 'junit-platform-suite-engine', version: junit_suite_version
     testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter', version: junit_jupiter_version
+    testRuntimeOnly(group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: junit_jupiter_version)
     testImplementation group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version  // BSD 3-clause
 }
 
@@ -95,16 +88,11 @@ protobuf {
     }
 }
 
-tasks.withType(JavaCompile) {
-    options.annotationProcessorGeneratedSourcesDirectory = file("${buildDir}/generated/sources/annotationProcessor")
-}
-
 
 sourceSets {
     main {
         java {
-            srcDirs = ["src/main/java", "build/generated-sources", "build/generated/source/proto/main/java", "build/generated/sources/annotationProcessor"]
-            outputDir = file(project.buildDir.absolutePath + "/classes")
+            srcDirs = ["src/main/java", "build/generated/source/proto/main/java"] //  "build/generated/sources/annotationProcessor"
         }
         resources {
             srcDirs = ["src/main/resources"]
@@ -115,7 +103,7 @@ sourceSets {
     test {
         java {
             srcDirs = ["src/test/java"]
-            outputDir = file(project.buildDir.absolutePath + "/test-classes")
+            destinationDirectory.set(file(project.buildDir.absolutePath + "/test-classes"))
         }
         resources {
             // We need the main resources for the tests as well.
@@ -125,17 +113,15 @@ sourceSets {
     }
 }
 
-tasks.withType(JavaCompile) {
-    options.annotationProcessorPath = configurations.annotationProcessor
-}
 
-task generateJdbcVersionProperties(type: Copy) {
+tasks.register('generateVersionProperties', Copy) {
     from "src/main/resources/version"
     into project.buildDir.absolutePath + "/classes"
     expand(version: project.version, versionMajor: versionMajor, versionMinor: versionMinor, buildTimestamp: new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"))
 }
+
 compileJava {
-    dependsOn("generateJdbcVersionProperties")
+    dependsOn("generateVersionProperties")
     dependsOn(":config:processResources")
     dependsOn(":information:processResources")
     dependsOn("generateProto")
@@ -150,7 +136,9 @@ delombok {
 extractIncludeProto {
     dependsOn(":config:compileJava")
     dependsOn(":information:compileJava")
+    dependsOn(":util:compileJava")
 }
+
 
 
 /**
@@ -173,9 +161,7 @@ javadoc {
  */
 test {
     maxHeapSize = "2g" // Increase heap size (default is 512MB)
-    useJUnit {
-        excludeCategories 'org.polypheny.db.AdapterTestSuite'
-    }
+    useJUnitPlatform() // Use JUnit 5
 }
 
 
@@ -189,18 +175,25 @@ jar {
         attributes "Version": "$project.version"
     }
 }
-task sourcesJar(type: Jar, dependsOn: classes) {
-    classifier "sources"
+
+tasks.register('sourcesJar', Jar) {
+    dependsOn classes
+    archiveClassifier = "sources"
     from sourceSets.main.allSource
 }
-task javadocJar(type: Jar, dependsOn: javadoc) {
-    classifier "javadoc"
+
+tasks.register('javadocJar', Jar) {
+    dependsOn javadoc
+    archiveClassifier = "javadoc"
     from javadoc.destinationDir
 }
-task testJar(type: Jar, dependsOn: testClasses) {
-    classifier "tests"
+
+tasks.register('testJar', Jar) {
+    dependsOn testClasses
+    archiveClassifier = "tests"
     from sourceSets.test.output
 }
+
 artifacts {
     //archives jar // regular jar containing only the compiled source
     archives sourcesJar // jar file containing the java doc files

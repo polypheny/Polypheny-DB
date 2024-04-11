@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,7 +41,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.metadata.AlgMdUtil;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 
 
@@ -52,7 +52,7 @@ import org.polypheny.db.plan.AlgTraitSet;
  */
 public abstract class Union extends SetOp {
 
-    protected Union( AlgOptCluster cluster, AlgTraitSet traits, List<AlgNode> inputs, boolean all ) {
+    protected Union( AlgCluster cluster, AlgTraitSet traits, List<AlgNode> inputs, boolean all ) {
         super( cluster, traits, inputs, Kind.UNION, all );
     }
 
@@ -66,7 +66,7 @@ public abstract class Union extends SetOp {
 
 
     @Override
-    public double estimateRowCount( AlgMetadataQuery mq ) {
+    public double estimateTupleCount( AlgMetadataQuery mq ) {
         double dRows = AlgMdUtil.getUnionAllRowCount( mq, this );
         if ( !all ) {
             dRows *= 0.5;

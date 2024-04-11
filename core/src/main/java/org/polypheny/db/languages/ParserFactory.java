@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,12 +17,9 @@
 package org.polypheny.db.languages;
 
 import java.io.Reader;
-import org.polypheny.db.tools.Planner;
 
 /**
  * Factory for [language]AbstractParserImpl objects.
- *
- * A parser factory allows you to include a custom parser in {@link Planner} created through {@code Frameworks}.
  */
 public interface ParserFactory {
 

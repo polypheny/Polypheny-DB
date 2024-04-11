@@ -1,9 +1,26 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * This file incorporates code covered by the following terms:
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to you under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -24,7 +41,7 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Union;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.util.BuiltInMethod;
 
@@ -34,7 +51,7 @@ import org.polypheny.db.util.BuiltInMethod;
  */
 public class EnumerableUnion extends Union implements EnumerableAlg {
 
-    public EnumerableUnion( AlgOptCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, boolean all ) {
+    public EnumerableUnion( AlgCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, boolean all ) {
         super( cluster, traitSet, inputs, all );
     }
 
@@ -52,14 +69,14 @@ public class EnumerableUnion extends Union implements EnumerableAlg {
         for ( Ord<AlgNode> ord : Ord.zip( inputs ) ) {
             EnumerableAlg input = (EnumerableAlg) ord.e;
             final Result result = implementor.visitChild( this, ord.i, input, pref );
-            Expression childExp = builder.append( "child" + ord.i, result.block );
+            Expression childExp = builder.append( "child" + ord.i, result.block() );
 
             if ( unionExp == null ) {
                 unionExp = childExp;
             } else {
                 unionExp = all
                         ? Expressions.call( unionExp, BuiltInMethod.CONCAT.method, childExp )
-                        : Expressions.call( unionExp, BuiltInMethod.UNION.method, Expressions.list( childExp ).appendIfNotNull( result.physType.comparer() ) );
+                        : Expressions.call( unionExp, BuiltInMethod.UNION.method, Expressions.list( childExp ).appendIfNotNull( result.physType().comparer() ) );
             }
         }
 
@@ -68,7 +85,7 @@ public class EnumerableUnion extends Union implements EnumerableAlg {
                 PhysTypeImpl.of(
                         implementor.getTypeFactory(),
                         getTupleType(),
-                        pref.prefer( JavaRowFormat.CUSTOM ) );
+                        pref.prefer( JavaTupleFormat.CUSTOM ) );
         return implementor.result( physType, builder.toBlock() );
     }
 

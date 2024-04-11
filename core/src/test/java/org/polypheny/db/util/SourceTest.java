@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -124,9 +124,9 @@ public class SourceTest {
         String url = "file:" + ROOT_PREFIX + "dir%20name/test%20file.json";
         final Source foo = Sources.url( url );
         assertEquals(
-                url + " .file().getAbsolutePath()",
                 new File( ROOT_PREFIX + "dir name/test file.json" ).getAbsolutePath(),
-                foo.file().getAbsolutePath() );
+                foo.file().getAbsolutePath(),
+                url + " .file().getAbsolutePath()" );
     }
 
 
@@ -135,9 +135,9 @@ public class SourceTest {
         String url = "file:dir%20name/test%20file.json";
         final Source foo = Sources.url( url );
         assertEquals(
-                url + " .file().getAbsolutePath()",
                 "dir name/test file.json",
-                foo.file().getPath().replace( '\\', '/' ) );
+                foo.file().getPath().replace( '\\', '/' ),
+                url + " .file().getAbsolutePath()" );
     }
 
 
@@ -150,5 +150,6 @@ public class SourceTest {
         assertThat( bar.file().toString(), is( "bar" ) );
         assertThat( fooBar.relative( baz ), is( fooBar ) );
     }
+
 }
 

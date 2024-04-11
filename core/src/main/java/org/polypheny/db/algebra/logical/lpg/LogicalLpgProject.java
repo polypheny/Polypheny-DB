@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.lpg.LpgProject;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexNode;
@@ -36,7 +36,7 @@ public class LogicalLpgProject extends LpgProject {
     /**
      * Subclass of {@link LpgProject} not targeted at any particular engine or calling convention.
      */
-    public LogicalLpgProject( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, List<? extends RexNode> projects, List<PolyString> names ) {
+    public LogicalLpgProject( AlgCluster cluster, AlgTraitSet traits, AlgNode input, List<? extends RexNode> projects, List<PolyString> names ) {
         super( cluster, traits.replace( Convention.NONE ), input, projects, names );
 
         assert (this.names == null || this.projects == null) || this.names.size() == this.projects.size();

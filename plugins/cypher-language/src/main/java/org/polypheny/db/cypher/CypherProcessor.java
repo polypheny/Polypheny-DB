@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package org.polypheny.db.cypher;
 
+import java.util.Arrays;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.StopWatch;
@@ -31,7 +32,7 @@ import org.polypheny.db.cypher.parser.CypherParser.CypherParserConfig;
 import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.Node;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
@@ -104,7 +105,7 @@ public class CypherProcessor extends Processor {
 
         final AlgBuilder builder = AlgBuilder.create( statement );
         final RexBuilder rexBuilder = new RexBuilder( statement.getTransaction().getTypeFactory() );
-        final AlgOptCluster cluster = AlgOptCluster.createGraph( statement.getQueryProcessor().getPlanner(), rexBuilder, statement.getDataContext().getSnapshot() );
+        final AlgCluster cluster = AlgCluster.createGraph( statement.getQueryProcessor().getPlanner(), rexBuilder, statement.getDataContext().getSnapshot() );
 
         final CypherToAlgConverter cypherToAlgConverter = new CypherToAlgConverter( statement, builder, rexBuilder, cluster );
 
@@ -147,6 +148,12 @@ public class CypherProcessor extends Processor {
     @Override
     public AlgDataType getParameterRowType( Node left ) {
         return null;
+    }
+
+
+    @Override
+    public List<String> splitStatements( String statements ) {
+        return Arrays.stream( statements.split( ";" ) ).filter( q -> !q.trim().isEmpty() ).toList();
     }
 
 }

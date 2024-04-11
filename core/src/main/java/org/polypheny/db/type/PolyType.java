@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,8 +36,6 @@ package org.polypheny.db.type;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Sets;
 import java.math.BigDecimal;
 import java.sql.Types;
 import java.util.Arrays;
@@ -46,8 +44,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import lombok.Getter;
-import org.apache.calcite.avatica.util.TimeUnit;
 import org.polypheny.db.util.Util;
+import org.polypheny.db.util.temporal.TimeUnit;
 
 
 /**
@@ -128,101 +126,18 @@ public enum PolyType {
             Types.TIME,
             PolyTypeFamily.TIME ),
 
-    TIME_WITH_LOCAL_TIME_ZONE(
-            PrecScale.NO_NO | PrecScale.YES_NO,
-            false,
-            Types.OTHER,
-            PolyTypeFamily.TIME ),
-
     TIMESTAMP(
             PrecScale.NO_NO | PrecScale.YES_NO,
             false,
             Types.TIMESTAMP,
             PolyTypeFamily.TIMESTAMP ),
 
-    TIMESTAMP_WITH_LOCAL_TIME_ZONE(
-            PrecScale.NO_NO | PrecScale.YES_NO,
-            false,
-            Types.OTHER,
-            PolyTypeFamily.TIMESTAMP ),
-
-    INTERVAL_YEAR(
+    INTERVAL(
             PrecScale.NO_NO,
             false,
             Types.OTHER,
-            PolyTypeFamily.INTERVAL_YEAR_MONTH ),
+            PolyTypeFamily.INTERVAL_TIME ),
 
-    INTERVAL_YEAR_MONTH(
-            PrecScale.NO_NO,
-            false,
-            Types.OTHER,
-            PolyTypeFamily.INTERVAL_YEAR_MONTH ),
-
-    INTERVAL_MONTH(
-            PrecScale.NO_NO,
-            false,
-            Types.OTHER,
-            PolyTypeFamily.INTERVAL_YEAR_MONTH ),
-
-    INTERVAL_DAY(
-            PrecScale.NO_NO | PrecScale.YES_NO | PrecScale.YES_YES,
-            false,
-            Types.OTHER,
-            PolyTypeFamily.INTERVAL_DAY_TIME ),
-
-    INTERVAL_DAY_HOUR(
-            PrecScale.NO_NO | PrecScale.YES_NO | PrecScale.YES_YES,
-            false,
-            Types.OTHER,
-            PolyTypeFamily.INTERVAL_DAY_TIME ),
-
-    INTERVAL_DAY_MINUTE(
-            PrecScale.NO_NO | PrecScale.YES_NO | PrecScale.YES_YES,
-            false,
-            Types.OTHER,
-            PolyTypeFamily.INTERVAL_DAY_TIME ),
-
-    INTERVAL_DAY_SECOND(
-            PrecScale.NO_NO | PrecScale.YES_NO | PrecScale.YES_YES,
-            false,
-            Types.OTHER,
-            PolyTypeFamily.INTERVAL_DAY_TIME ),
-
-    INTERVAL_HOUR(
-            PrecScale.NO_NO | PrecScale.YES_NO | PrecScale.YES_YES,
-            false,
-            Types.OTHER,
-            PolyTypeFamily.INTERVAL_DAY_TIME ),
-
-    INTERVAL_HOUR_MINUTE(
-            PrecScale.NO_NO | PrecScale.YES_NO | PrecScale.YES_YES,
-            false,
-            Types.OTHER,
-            PolyTypeFamily.INTERVAL_DAY_TIME ),
-
-    INTERVAL_HOUR_SECOND(
-            PrecScale.NO_NO | PrecScale.YES_NO | PrecScale.YES_YES,
-            false,
-            Types.OTHER,
-            PolyTypeFamily.INTERVAL_DAY_TIME ),
-
-    INTERVAL_MINUTE(
-            PrecScale.NO_NO | PrecScale.YES_NO | PrecScale.YES_YES,
-            false,
-            Types.OTHER,
-            PolyTypeFamily.INTERVAL_DAY_TIME ),
-
-    INTERVAL_MINUTE_SECOND(
-            PrecScale.NO_NO | PrecScale.YES_NO | PrecScale.YES_YES,
-            false,
-            Types.OTHER,
-            PolyTypeFamily.INTERVAL_DAY_TIME ),
-
-    INTERVAL_SECOND(
-            PrecScale.NO_NO | PrecScale.YES_NO | PrecScale.YES_YES,
-            false,
-            Types.OTHER,
-            PolyTypeFamily.INTERVAL_DAY_TIME ),
 
     CHAR(
             PrecScale.NO_NO | PrecScale.YES_NO,
@@ -431,10 +346,7 @@ public enum PolyType {
     public static final List<PolyType> ALL_TYPES =
             ImmutableList.of(
                     BOOLEAN, INTEGER, VARCHAR, JSON, DATE, TIME, TIMESTAMP, NULL, DECIMAL, ANY, CHAR, BINARY, VARBINARY, FILE, IMAGE, VIDEO, AUDIO,
-                    TINYINT, SMALLINT, BIGINT, REAL, DOUBLE, SYMBOL, INTERVAL_YEAR, INTERVAL_YEAR_MONTH, INTERVAL_MONTH, INTERVAL_DAY,
-                    INTERVAL_DAY_HOUR, INTERVAL_DAY_MINUTE, INTERVAL_DAY_SECOND, INTERVAL_HOUR, INTERVAL_HOUR_MINUTE,
-                    INTERVAL_HOUR_SECOND, INTERVAL_MINUTE, INTERVAL_MINUTE_SECOND, INTERVAL_SECOND, TIME_WITH_LOCAL_TIME_ZONE,
-                    TIMESTAMP_WITH_LOCAL_TIME_ZONE, FLOAT, MULTISET, DISTINCT, STRUCTURED, ROW, CURSOR, COLUMN_LIST );
+                    TINYINT, SMALLINT, BIGINT, REAL, DOUBLE, SYMBOL, INTERVAL, FLOAT, MULTISET, DISTINCT, STRUCTURED, ROW, CURSOR, COLUMN_LIST );
 
     public static final List<PolyType> BOOLEAN_TYPES = ImmutableList.of( BOOLEAN );
 
@@ -454,7 +366,7 @@ public enum PolyType {
 
     public static final List<PolyType> STRING_TYPES = combine( CHAR_TYPES, BINARY_TYPES );
 
-    public static final List<PolyType> DATETIME_TYPES = ImmutableList.of( DATE, TIME, TIME_WITH_LOCAL_TIME_ZONE, TIMESTAMP, TIMESTAMP_WITH_LOCAL_TIME_ZONE );
+    public static final List<PolyType> DATETIME_TYPES = ImmutableList.of( DATE, TIME, TIMESTAMP );
 
     public static final List<PolyType> DOCUMENT_TYPES = ImmutableList.of( MAP, ARRAY, DOCUMENT );
 
@@ -466,26 +378,7 @@ public enum PolyType {
 
     public static final List<PolyType> BLOB_TYPES = ImmutableList.of( FILE, AUDIO, IMAGE, VIDEO );
 
-    public static final Set<PolyType> YEAR_INTERVAL_TYPES =
-            Sets.immutableEnumSet(
-                    PolyType.INTERVAL_YEAR,
-                    PolyType.INTERVAL_YEAR_MONTH,
-                    PolyType.INTERVAL_MONTH );
-
-    public static final Set<PolyType> DAY_INTERVAL_TYPES =
-            Sets.immutableEnumSet(
-                    PolyType.INTERVAL_DAY,
-                    PolyType.INTERVAL_DAY_HOUR,
-                    PolyType.INTERVAL_DAY_MINUTE,
-                    PolyType.INTERVAL_DAY_SECOND,
-                    PolyType.INTERVAL_HOUR,
-                    PolyType.INTERVAL_HOUR_MINUTE,
-                    PolyType.INTERVAL_HOUR_SECOND,
-                    PolyType.INTERVAL_MINUTE,
-                    PolyType.INTERVAL_MINUTE_SECOND,
-                    PolyType.INTERVAL_SECOND );
-
-    public static final Set<PolyType> INTERVAL_TYPES = Sets.immutableEnumSet( Iterables.concat( YEAR_INTERVAL_TYPES, DAY_INTERVAL_TYPES ) );
+    public static final List<PolyType> INTERVAL_TYPES = List.of( INTERVAL );
 
     private static final Map<Integer, PolyType> JDBC_TYPE_TO_NAME =
             ImmutableMap.<Integer, PolyType>builder()
@@ -506,16 +399,6 @@ public enum PolyType {
                     // TODO: provide real support for these eventually
                     .put( ExtraPolyTypes.NCHAR, CHAR )
                     .put( ExtraPolyTypes.NVARCHAR, VARCHAR )
-
-                    // TODO: additional types not yet supported. See ExtraSqlTypes.
-                    // .put(Types.LONGVARCHAR, Longvarchar)
-                    // .put(Types.CLOB, Clob)
-                    // .put(Types.LONGVARBINARY, Longvarbinary)
-                    // .put(Types.BLOB, Blob)
-                    // .put(Types.LONGNVARCHAR, Longnvarchar)
-                    // .put(Types.NCLOB, Nclob)
-                    // .put(Types.ROWID, Rowid)
-                    // .put(Types.SQLXML, Sqlxml)
 
                     .put( Types.BINARY, BINARY )
                     .put( Types.VARBINARY, VARBINARY )
@@ -541,15 +424,11 @@ public enum PolyType {
     private final boolean special;
     /**
      * -- GETTER --
-     *
-     * @return the ordinal from {@link Types} corresponding to this PolyType
      */
     private final int jdbcOrdinal;
     /**
      * -- GETTER --
      * Gets the SqlTypeFamily containing this PolyType.
-     *
-     * @return containing family, or null for none
      */
     private final PolyTypeFamily family;
 
@@ -568,14 +447,6 @@ public enum PolyType {
      * @return Type name, or null if not found
      */
     public static PolyType get( String name ) {
-        if ( false ) {
-            // The following code works OK, but the spurious exceptions are annoying.
-            try {
-                return PolyType.valueOf( name );
-            } catch ( IllegalArgumentException e ) {
-                return null;
-            }
-        }
         return VALUES_MAP.get( name );
     }
 
@@ -633,26 +504,11 @@ public enum PolyType {
      * @return default scale for this type if supported, otherwise -1 if scale is either unsupported or must be specified explicitly
      */
     public int getDefaultScale() {
-        switch ( this ) {
-            case DECIMAL:
-                return 0;
-            case INTERVAL_YEAR:
-            case INTERVAL_YEAR_MONTH:
-            case INTERVAL_MONTH:
-            case INTERVAL_DAY:
-            case INTERVAL_DAY_HOUR:
-            case INTERVAL_DAY_MINUTE:
-            case INTERVAL_DAY_SECOND:
-            case INTERVAL_HOUR:
-            case INTERVAL_HOUR_MINUTE:
-            case INTERVAL_HOUR_SECOND:
-            case INTERVAL_MINUTE:
-            case INTERVAL_MINUTE_SECOND:
-            case INTERVAL_SECOND:
-                return DEFAULT_INTERVAL_FRACTIONAL_SECOND_PRECISION;
-            default:
-                return -1;
-        }
+        return switch ( this ) {
+            case DECIMAL -> 0;
+            case INTERVAL -> DEFAULT_INTERVAL_FRACTIONAL_SECOND_PRECISION;
+            default -> -1;
+        };
     }
 
 
@@ -781,12 +637,11 @@ public enum PolyType {
                 }
 
                 // Decimal values must fit into 64 bits. So, the maximum value of a DECIMAL(19, 0) is 2^63 - 1, not 10^19 - 1.
-                switch ( limit ) {
-                    case OVERFLOW:
-                        final BigDecimal other = (BigDecimal) BIGINT.getLimit( sign, limit, beyond, -1, -1 );
-                        if ( decimal.compareTo( other ) == (sign ? 1 : -1) ) {
-                            decimal = other;
-                        }
+                if ( limit == Limit.OVERFLOW ) {
+                    final BigDecimal other = (BigDecimal) BIGINT.getLimit( sign, limit, beyond, -1, -1 );
+                    if ( decimal.compareTo( other ) == (sign ? 1 : -1) ) {
+                        decimal = other;
+                    }
                 }
 
                 // Apply scale.
@@ -817,9 +672,7 @@ public enum PolyType {
                         buf.append( "a" );
                         break;
                     case OVERFLOW:
-                        for ( int i = 0; i < precision; ++i ) {
-                            buf.append( "Z" );
-                        }
+                        buf.append( "Z".repeat( Math.max( 0, precision ) ) );
                         if ( beyond ) {
                             buf.append( "Z" );
                         }
@@ -989,35 +842,11 @@ public enum PolyType {
      * @return Minimum allowed precision
      */
     public int getMinPrecision() {
-        switch ( this ) {
-            case DECIMAL:
-            case JSON:
-            case VARCHAR:
-            case CHAR:
-            case VARBINARY:
-            case BINARY:
-            case TIME:
-            case TIME_WITH_LOCAL_TIME_ZONE:
-            case TIMESTAMP:
-            case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-                return 1;
-            case INTERVAL_YEAR:
-            case INTERVAL_YEAR_MONTH:
-            case INTERVAL_MONTH:
-            case INTERVAL_DAY:
-            case INTERVAL_DAY_HOUR:
-            case INTERVAL_DAY_MINUTE:
-            case INTERVAL_DAY_SECOND:
-            case INTERVAL_HOUR:
-            case INTERVAL_HOUR_MINUTE:
-            case INTERVAL_HOUR_SECOND:
-            case INTERVAL_MINUTE:
-            case INTERVAL_MINUTE_SECOND:
-            case INTERVAL_SECOND:
-                return MIN_INTERVAL_START_PRECISION;
-            default:
-                return -1;
-        }
+        return switch ( this ) {
+            case DECIMAL, JSON, VARCHAR, CHAR, VARBINARY, BINARY, TIME, TIMESTAMP -> 1;
+            case INTERVAL -> MIN_INTERVAL_START_PRECISION;
+            default -> -1;
+        };
     }
 
 
@@ -1028,25 +857,11 @@ public enum PolyType {
      * @return Minimum allowed scale
      */
     public int getMinScale() {
-        switch ( this ) {
+        return switch ( this ) {
             // TODO: Minimum numeric scale for decimal
-            case INTERVAL_YEAR:
-            case INTERVAL_YEAR_MONTH:
-            case INTERVAL_MONTH:
-            case INTERVAL_DAY:
-            case INTERVAL_DAY_HOUR:
-            case INTERVAL_DAY_MINUTE:
-            case INTERVAL_DAY_SECOND:
-            case INTERVAL_HOUR:
-            case INTERVAL_HOUR_MINUTE:
-            case INTERVAL_HOUR_SECOND:
-            case INTERVAL_MINUTE:
-            case INTERVAL_MINUTE_SECOND:
-            case INTERVAL_SECOND:
-                return MIN_INTERVAL_FRACTIONAL_SECOND_PRECISION;
-            default:
-                return -1;
-        }
+            case INTERVAL -> MIN_INTERVAL_FRACTIONAL_SECOND_PRECISION;
+            default -> -1;
+        };
     }
 
 
@@ -1054,29 +869,10 @@ public enum PolyType {
      * Returns {@code HOUR} for {@code HOUR TO SECOND} and {@code HOUR}, {@code SECOND} for {@code SECOND}.
      */
     public TimeUnit getStartUnit() {
-        switch ( this ) {
-            case INTERVAL_YEAR:
-            case INTERVAL_YEAR_MONTH:
-                return TimeUnit.YEAR;
-            case INTERVAL_MONTH:
-                return TimeUnit.MONTH;
-            case INTERVAL_DAY:
-            case INTERVAL_DAY_HOUR:
-            case INTERVAL_DAY_MINUTE:
-            case INTERVAL_DAY_SECOND:
-                return TimeUnit.DAY;
-            case INTERVAL_HOUR:
-            case INTERVAL_HOUR_MINUTE:
-            case INTERVAL_HOUR_SECOND:
-                return TimeUnit.HOUR;
-            case INTERVAL_MINUTE:
-            case INTERVAL_MINUTE_SECOND:
-                return TimeUnit.MINUTE;
-            case INTERVAL_SECOND:
-                return TimeUnit.SECOND;
-            default:
-                throw new AssertionError( this );
-        }
+        return switch ( this ) {
+            case INTERVAL -> TimeUnit.MONTH;
+            default -> throw new AssertionError( this );
+        };
     }
 
 
@@ -1084,41 +880,18 @@ public enum PolyType {
      * Returns {@code SECOND} for both {@code HOUR TO SECOND} and {@code SECOND}.
      */
     public TimeUnit getEndUnit() {
-        switch ( this ) {
-            case INTERVAL_YEAR:
-                return TimeUnit.YEAR;
-            case INTERVAL_YEAR_MONTH:
-            case INTERVAL_MONTH:
-                return TimeUnit.MONTH;
-            case INTERVAL_DAY:
-                return TimeUnit.DAY;
-            case INTERVAL_DAY_HOUR:
-            case INTERVAL_HOUR:
-                return TimeUnit.HOUR;
-            case INTERVAL_DAY_MINUTE:
-            case INTERVAL_HOUR_MINUTE:
-            case INTERVAL_MINUTE:
-                return TimeUnit.MINUTE;
-            case INTERVAL_DAY_SECOND:
-            case INTERVAL_HOUR_SECOND:
-            case INTERVAL_MINUTE_SECOND:
-            case INTERVAL_SECOND:
-                return TimeUnit.SECOND;
-            default:
-                throw new AssertionError( this );
-        }
+        return switch ( this ) {
+            case INTERVAL -> TimeUnit.MILLISECOND;
+            default -> throw new AssertionError( this );
+        };
     }
 
 
     public boolean isYearMonth() {
-        switch ( this ) {
-            case INTERVAL_YEAR:
-            case INTERVAL_YEAR_MONTH:
-            case INTERVAL_MONTH:
-                return true;
-            default:
-                return false;
-        }
+        return switch ( this ) {
+            case INTERVAL -> true;
+            default -> false;
+        };
     }
 
 
@@ -1169,8 +942,13 @@ public enum PolyType {
     }
 
 
-    public static Set<PolyType> availableTypes() {
-        return ImmutableSet.of( BOOLEAN, TINYINT, SMALLINT, INTEGER, JSON, BIGINT, DECIMAL, REAL, DOUBLE, DATE, TIME, TIMESTAMP, VARCHAR, FILE, IMAGE, VIDEO, AUDIO );
+    /**
+     * The set of types that are allowed for field in an entity (e.g. columns in a table).
+     *
+     * @return allowed field types
+     */
+    public static Set<PolyType> allowedFieldTypes() {
+        return ImmutableSet.of( BOOLEAN, TINYINT, SMALLINT, INTEGER, JSON, BIGINT, DECIMAL, REAL, DOUBLE, DATE, TIME, TIMESTAMP, VARCHAR, TEXT, FILE, IMAGE, VIDEO, AUDIO );
     }
 
 
@@ -1179,35 +957,16 @@ public enum PolyType {
      * Example: "DECIMAL" not "DECIMAL(7, 2)"; "INTEGER" not "JavaType(int)".
      */
     public String getTypeName() {
-        switch ( this ) {
-            case ARRAY:
-            case MULTISET:
-            case MAP:
-            case ROW:
-                return this.toString(); // e.g. "INTEGER ARRAY"
-            case INTERVAL_YEAR_MONTH:
-                return "INTERVAL_YEAR_TO_MONTH";
-            case INTERVAL_DAY_HOUR:
-                return "INTERVAL_DAY_TO_HOUR";
-            case INTERVAL_DAY_MINUTE:
-                return "INTERVAL_DAY_TO_MINUTE";
-            case INTERVAL_DAY_SECOND:
-                return "INTERVAL_DAY_TO_SECOND";
-            case INTERVAL_HOUR_MINUTE:
-                return "INTERVAL_HOUR_TO_MINUTE";
-            case INTERVAL_HOUR_SECOND:
-                return "INTERVAL_HOUR_TO_SECOND";
-            case INTERVAL_MINUTE_SECOND:
-                return "INTERVAL_MINUTE_TO_SECOND";
-            default:
-                return this.getName(); // e.g. "DECIMAL", "INTERVAL_YEAR_MONTH"
-        }
+        return switch ( this ) {
+            case ARRAY, MULTISET, MAP, ROW -> this.toString(); // e.g. "INTEGER ARRAY"
+            default -> this.getName(); // e.g. "DECIMAL", "INTERVAL_YEAR_MONTH"
+        };
     }
 
 
     /**
      * Flags indicating precision/scale combinations.
-     *
+     * <p>
      * Note: for intervals:
      *
      * <ul>

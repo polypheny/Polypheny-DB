@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,10 +27,10 @@ import org.polypheny.db.algebra.core.ModifyCollect;
 import org.polypheny.db.algebra.enumerable.EnumerableAlg;
 import org.polypheny.db.algebra.enumerable.EnumerableAlgImplementor;
 import org.polypheny.db.algebra.enumerable.EnumerableConvention;
-import org.polypheny.db.algebra.enumerable.JavaRowFormat;
+import org.polypheny.db.algebra.enumerable.JavaTupleFormat;
 import org.polypheny.db.algebra.enumerable.PhysType;
 import org.polypheny.db.algebra.enumerable.PhysTypeImpl;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.util.BuiltInMethod;
 
@@ -40,7 +40,7 @@ import org.polypheny.db.util.BuiltInMethod;
  */
 public class EnumerableModifyCollect extends ModifyCollect implements EnumerableAlg {
 
-    public EnumerableModifyCollect( AlgOptCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, boolean all ) {
+    public EnumerableModifyCollect( AlgCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, boolean all ) {
         super( cluster, traitSet, inputs, all );
     }
 
@@ -58,14 +58,14 @@ public class EnumerableModifyCollect extends ModifyCollect implements Enumerable
         for ( Ord<AlgNode> ord : Ord.zip( inputs ) ) {
             EnumerableAlg input = (EnumerableAlg) ord.e;
             final Result result = implementor.visitChild( this, ord.i, input, pref );
-            Expression childExp = builder.append( "child" + ord.i, result.block );
+            Expression childExp = builder.append( "child" + ord.i, result.block() );
 
             if ( unionExp == null ) {
                 unionExp = childExp;
             } else {
                 unionExp = all
                         ? Expressions.call( unionExp, BuiltInMethod.CONCAT.method, childExp )
-                        : Expressions.call( unionExp, BuiltInMethod.UNION.method, Expressions.list( childExp ).appendIfNotNull( result.physType.comparer() ) );
+                        : Expressions.call( unionExp, BuiltInMethod.UNION.method, Expressions.list( childExp ).appendIfNotNull( result.physType().comparer() ) );
             }
         }
         if ( all ) {
@@ -77,7 +77,7 @@ public class EnumerableModifyCollect extends ModifyCollect implements Enumerable
                 PhysTypeImpl.of(
                         implementor.getTypeFactory(),
                         getTupleType(),
-                        pref.prefer( JavaRowFormat.CUSTOM ) );
+                        pref.prefer( JavaTupleFormat.CUSTOM ) );
         return implementor.result( physType, builder.toBlock() );
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -105,7 +105,7 @@ public class PolyPath extends GraphObject {
 
 
     public int getVariants() {
-        return edges.stream().map( PolyEdge::getVariants ).reduce( 1, Math::multiplyExact );
+        return edges.stream().map( e -> ((PolyEdge) e).getVariants() ).reduce( 1, Math::multiplyExact );
     }
 
 
@@ -297,6 +297,12 @@ public class PolyPath extends GraphObject {
     }
 
 
+    @Override
+    public Object toJava() {
+        return this;
+    }
+
+
     @Slf4j
     public static class PolySegment extends GraphObject {
 
@@ -391,6 +397,12 @@ public class PolyPath extends GraphObject {
         @Override
         public @Nullable Long deriveByteSize() {
             return null;
+        }
+
+
+        @Override
+        public Object toJava() {
+            return this;
         }
 
     }

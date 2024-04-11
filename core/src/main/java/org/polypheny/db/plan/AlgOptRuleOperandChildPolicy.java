@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,7 +44,7 @@ public enum AlgOptRuleOperandChildPolicy {
     ANY,
 
     /**
-     * Signifies that operand has no children. Therefore it matches a leaf node, such as a table scan or VALUES operator.
+     * Signifies that operand has no children. Therefore it matches a leaf node, such as a table relScan or VALUES operator.
      *
      * {@code RelOptRuleOperand(Foo.class, NONE)} is equivalent to {@code RelOptRuleOperand(Foo.class)} but we prefer the former because it is more explicit.
      */

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 package org.polypheny.db.partition;
 
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.PartitionType;
 
 
@@ -23,26 +22,17 @@ public class PartitionManagerFactoryImpl extends PartitionManagerFactory {
 
     @Override
     public PartitionManager getPartitionManager( PartitionType partitionType ) {
-        switch ( partitionType ) {
-            case HASH:
-                return new HashPartitionManager();
-
-            case LIST:
-                return new ListPartitionManager();
-
-            case RANGE:
-                return new RangePartitionManager();
+        return switch ( partitionType ) {
+            case HASH -> new HashPartitionManager();
+            case LIST -> new ListPartitionManager();
+            case RANGE -> new RangePartitionManager();
 
             // TODO @HENNLO think about excluding "UDPF" here, these should only be used for internal Partition Functions
             // Or create an internal mapping from PARTITIONTYPE to teh handling partition manager
-            case TEMPERATURE:
-                return new TemperatureAwarePartitionManager();
+            case TEMPERATURE -> new TemperatureAwarePartitionManager();
+            case NONE -> new NonePartitionManager();
+        };
 
-            case NONE:
-                return new NonePartitionManager();
-        }
-
-        throw new GenericRuntimeException( "Unknown partition type: " + partitionType );
     }
 
 }

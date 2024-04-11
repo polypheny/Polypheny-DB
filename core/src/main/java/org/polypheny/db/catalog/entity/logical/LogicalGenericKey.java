@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,11 +27,11 @@ public class LogicalGenericKey extends LogicalKey {
 
     public LogicalGenericKey(
             @Deserialize("id") final long id,
-            @Deserialize("tableId") final long tableId,
+            @Deserialize("entityId") final long entityId,
             @Deserialize("namespaceId") final long namespaceId,
-            @Deserialize("columnIds") final List<Long> columnIds,
+            @Deserialize("fieldIds") final List<Long> fieldIds,
             @Deserialize("enforcementTime") EnforcementTime enforcementTime ) {
-        super( id, tableId, namespaceId, columnIds, enforcementTime );
+        super( id, entityId, namespaceId, fieldIds, enforcementTime );
     }
 
 }

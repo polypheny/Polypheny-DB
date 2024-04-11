@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,7 +47,7 @@ import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.rules.FilterCalcMergeRule;
 import org.polypheny.db.algebra.rules.FilterToCalcRule;
 import org.polypheny.db.algebra.rules.ProjectToCalcRule;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
@@ -59,16 +59,16 @@ import org.polypheny.db.schema.trait.ModelTraitDef;
 /**
  * A relational expression which computes project expressions and also filters.
  *
- * This relational expression combines the functionality of {@link LogicalProject} and {@link LogicalFilter}.
- * It should be created in the later stages of optimization, by merging consecutive {@link LogicalProject} and {@link LogicalFilter} nodes together.
+ * This relational expression combines the functionality of {@link LogicalRelProject} and {@link LogicalRelFilter}.
+ * It should be created in the later stages of optimization, by merging consecutive {@link LogicalRelProject} and {@link LogicalRelFilter} nodes together.
  *
  * The following rules relate to <code>LogicalCalc</code>:
  *
  * <ul>
- * <li>{@link FilterToCalcRule} creates this from a {@link LogicalFilter}</li>
- * <li>{@link ProjectToCalcRule} creates this from a {@link LogicalFilter}</li>
- * <li>{@link FilterCalcMergeRule} merges this with a {@link LogicalFilter}</li>
- * <li>{@link org.polypheny.db.algebra.rules.ProjectCalcMergeRule} merges this with a {@link LogicalProject}</li>
+ * <li>{@link FilterToCalcRule} creates this from a {@link LogicalRelFilter}</li>
+ * <li>{@link ProjectToCalcRule} creates this from a {@link LogicalRelFilter}</li>
+ * <li>{@link FilterCalcMergeRule} merges this with a {@link LogicalRelFilter}</li>
+ * <li>{@link org.polypheny.db.algebra.rules.ProjectCalcMergeRule} merges this with a {@link LogicalRelProject}</li>
  * <li>{@link org.polypheny.db.algebra.rules.CalcMergeRule} merges two {@code LogicalCalc}s</li>
  * </ul>
  */
@@ -77,13 +77,13 @@ public final class LogicalCalc extends Calc implements RelAlg {
     /**
      * Creates a LogicalCalc.
      */
-    public LogicalCalc( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode child, RexProgram program ) {
+    public LogicalCalc( AlgCluster cluster, AlgTraitSet traitSet, AlgNode child, RexProgram program ) {
         super( cluster, traitSet, child, program );
     }
 
 
     public static LogicalCalc create( final AlgNode input, final RexProgram program ) {
-        final AlgOptCluster cluster = input.getCluster();
+        final AlgCluster cluster = input.getCluster();
         final AlgMetadataQuery mq = cluster.getMetadataQuery();
         final AlgTraitSet traitSet = cluster.traitSet()
                 .replace( Convention.NONE )

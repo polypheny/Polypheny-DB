@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.polypheny.db.sql.language.ddl.altertable;
 
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -52,7 +53,7 @@ import org.polypheny.db.util.ImmutableNullableList;
 public class SqlAlterTableModifyPlacement extends SqlAlterTable {
 
     SqlIdentifier table;
-    SqlNodeList columnList;
+    SqlNodeList columns;
     SqlIdentifier storeName;
     List<Integer> partitionGroups;
     List<SqlIdentifier> partitionGroupNames;
@@ -61,13 +62,13 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
     public SqlAlterTableModifyPlacement(
             ParserPos pos,
             @NonNull SqlIdentifier table,
-            @NonNull SqlNodeList columnList,
+            @NonNull SqlNodeList columns,
             @NonNull SqlIdentifier storeName,
             List<Integer> partitionGroups,
             List<SqlIdentifier> partitionGroupNames ) {
         super( pos );
         this.table = table;
-        this.columnList = columnList;
+        this.columns = columns;
         this.storeName = Objects.requireNonNull( storeName );
         this.partitionGroups = partitionGroups;
         this.partitionGroupNames = partitionGroupNames;
@@ -76,13 +77,13 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
 
     @Override
     public List<Node> getOperandList() {
-        return ImmutableNullableList.of( table, columnList, storeName );
+        return ImmutableNullableList.of( table, columns, storeName );
     }
 
 
     @Override
     public List<SqlNode> getSqlOperandList() {
-        return ImmutableNullableList.of( table, columnList, storeName );
+        return ImmutableNullableList.of( table, columns, storeName );
     }
 
 
@@ -93,7 +94,7 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
         table.unparse( writer, leftPrec, rightPrec );
         writer.keyword( "MODIFY" );
         writer.keyword( "PLACEMENT" );
-        columnList.unparse( writer, leftPrec, rightPrec );
+        columns.unparse( writer, leftPrec, rightPrec );
         writer.keyword( "ON" );
         writer.keyword( "STORE" );
         storeName.unparse( writer, leftPrec, rightPrec );
@@ -129,7 +130,7 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
         }
 
         // Check if all columns exist
-        for ( SqlNode node : columnList.getSqlList() ) {
+        for ( SqlNode node : columns.getSqlList() ) {
             if ( getColumn( context, table.id, (SqlIdentifier) node ) == null ) {
                 throw new GenericRuntimeException( "Could not find column with name %s", String.join( ".", ((SqlIdentifier) node).names ) );
             }
@@ -139,18 +140,18 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
 
         DdlManager.getInstance().modifyPlacement(
                 table,
-                getColumns( context, table.id, columnList ).stream().map( c -> c.id ).collect( Collectors.toList() ),
+                getColumns( context, table.id, columns ).stream().map( c -> c.id ).collect( Collectors.toList() ),
                 partitionGroups,
                 partitionGroupNames.stream()
                         .map( SqlIdentifier::toString )
-                        .collect( Collectors.toList() ),
+                        .toList(),
                 store,
                 statement );
 
         if ( !partitionGroups.isEmpty() || !partitionGroupNames.isEmpty() ) {
-            List<Long> ids = partitionGroups.stream().map( id -> (long) id ).collect( Collectors.toList() );
+            List<Long> ids = new ArrayList<>( partitionGroups.stream().map( id -> (long) id ).toList() );
 
-            ids.addAll( partitionGroupNames.stream().map( SqlIdentifier::toString ).map( name -> Catalog.snapshot().alloc().getPartitionFromName( table.id, name ).orElseThrow().id ).collect( Collectors.toList() ) );
+            ids.addAll( partitionGroupNames.stream().map( SqlIdentifier::toString ).map( name -> Catalog.snapshot().alloc().getPartitionFromName( table.id, name ).orElseThrow().id ).toList() );
 
             DdlManager.getInstance().modifyPartitionPlacement(
                     table,

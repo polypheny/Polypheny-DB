@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,18 +16,33 @@
 
 package org.polypheny.db.webui.models.catalog.schema;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.webui.models.catalog.IdEntity;
 
+
+@EqualsAndHashCode(callSuper = true)
+@Value
 public class AllocationEntityModel extends IdEntity {
 
-    public final long logicalEntityId;
-    public final long placementId;
-    public final long partitionId;
+    @JsonProperty
+    public long logicalEntityId;
+
+    @JsonProperty
+    public long placementId;
+
+    @JsonProperty
+    public long partitionId;
 
 
-    public AllocationEntityModel( @Nullable Long id, long logicalEntityId, long placementId, long partitionId ) {
+    public AllocationEntityModel(
+            @JsonProperty("id") @Nullable Long id,
+            @JsonProperty("logicalEntityId") long logicalEntityId,
+            @JsonProperty("placementId") long placementId,
+            @JsonProperty("partitionId") long partitionId ) {
         super( id, null );
         this.logicalEntityId = logicalEntityId;
         this.placementId = placementId;

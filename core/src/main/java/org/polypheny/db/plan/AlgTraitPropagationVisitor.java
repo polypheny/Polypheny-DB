@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,11 +46,11 @@ import org.polypheny.db.util.Util;
 public class AlgTraitPropagationVisitor extends AlgVisitor {
 
     private final AlgTraitSet baseTraits;
-    private final AlgOptPlanner planner;
+    private final AlgPlanner planner;
 
 
     public AlgTraitPropagationVisitor(
-            AlgOptPlanner planner,
+            AlgPlanner planner,
             AlgTraitSet baseTraits ) {
         this.planner = planner;
         this.baseTraits = baseTraits;

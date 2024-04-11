@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,10 +19,10 @@ package org.polypheny.db.sql.language.utils;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.sql.ResultSet;
 import java.sql.Types;
@@ -239,30 +239,19 @@ public abstract class SqlTests {
 
 
     private static ColumnMetaData.Rep rep( int columnType ) {
-        switch ( columnType ) {
-            case Types.BOOLEAN:
-                return ColumnMetaData.Rep.BOOLEAN;
-            case Types.TINYINT:
-                return ColumnMetaData.Rep.BYTE;
-            case Types.SMALLINT:
-                return ColumnMetaData.Rep.SHORT;
-            case Types.INTEGER:
-                return ColumnMetaData.Rep.INTEGER;
-            case Types.BIGINT:
-                return ColumnMetaData.Rep.LONG;
-            case Types.REAL:
-                return ColumnMetaData.Rep.FLOAT;
-            case Types.DOUBLE:
-                return ColumnMetaData.Rep.DOUBLE;
-            case Types.TIME:
-                return ColumnMetaData.Rep.JAVA_SQL_TIME;
-            case Types.TIMESTAMP:
-                return ColumnMetaData.Rep.JAVA_SQL_TIMESTAMP;
-            case Types.DATE:
-                return ColumnMetaData.Rep.JAVA_SQL_DATE;
-            default:
-                return ColumnMetaData.Rep.OBJECT;
-        }
+        return switch ( columnType ) {
+            case Types.BOOLEAN -> ColumnMetaData.Rep.BOOLEAN;
+            case Types.TINYINT -> ColumnMetaData.Rep.BYTE;
+            case Types.SMALLINT -> ColumnMetaData.Rep.SHORT;
+            case Types.INTEGER -> ColumnMetaData.Rep.INTEGER;
+            case Types.BIGINT -> ColumnMetaData.Rep.LONG;
+            case Types.REAL -> ColumnMetaData.Rep.FLOAT;
+            case Types.DOUBLE -> ColumnMetaData.Rep.DOUBLE;
+            case Types.TIME -> ColumnMetaData.Rep.JAVA_SQL_TIME;
+            case Types.TIMESTAMP -> ColumnMetaData.Rep.JAVA_SQL_TIMESTAMP;
+            case Types.DATE -> ColumnMetaData.Rep.JAVA_SQL_DATE;
+            default -> ColumnMetaData.Rep.OBJECT;
+        };
     }
 
 
@@ -489,7 +478,7 @@ public abstract class SqlTests {
 
     /**
      * Type checker which compares types to a specified string.
-     *
+     * <p>
      * The string contains "NOT NULL" constraints, but does not contain collations and charsets. For example,
      *
      * <ul>
@@ -523,7 +512,7 @@ public abstract class SqlTests {
         if ( result instanceof Pattern ) {
             return new PatternResultChecker( (Pattern) result );
         } else if ( delta != 0 ) {
-            assertTrue( result instanceof Number );
+            assertInstanceOf( Number.class, result );
             return new ApproximateResultChecker( (Number) result, delta );
         } else {
             Set<String> refSet = new HashSet<>();

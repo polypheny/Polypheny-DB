@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,6 @@ import java.util.stream.IntStream;
 import lombok.NonNull;
 import org.polypheny.db.algebra.AlgInput;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.common.Scan;
@@ -36,9 +35,9 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.logistic.DataModel;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
@@ -52,7 +51,7 @@ import org.polypheny.db.util.ImmutableBitSet;
  */
 public abstract class RelScan<E extends Entity> extends Scan<E> implements RelAlg {
 
-    protected RelScan( AlgOptCluster cluster, AlgTraitSet traitSet, @NonNull E entity ) {
+    protected RelScan( AlgCluster cluster, AlgTraitSet traitSet, @NonNull E entity ) {
         super( cluster, traitSet.replace( ModelTrait.RELATIONAL ), entity );
     }
 
@@ -66,14 +65,14 @@ public abstract class RelScan<E extends Entity> extends Scan<E> implements RelAl
 
 
     @Override
-    public double estimateRowCount( AlgMetadataQuery mq ) {
-        return entity.getRowCount();
+    public double estimateTupleCount( AlgMetadataQuery mq ) {
+        return entity.getTupleCount();
     }
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
-        double dRows = entity.getRowCount();
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
+        double dRows = entity.getTupleCount();
         double dCpu = dRows + 1; // ensure non-zero cost
         double dIo = 0;
         return planner.getCostFactory().makeCost( dRows, dCpu, dIo );
@@ -85,7 +84,7 @@ public abstract class RelScan<E extends Entity> extends Scan<E> implements RelAl
         if ( entity.dataModel == DataModel.DOCUMENT ) {
             return DocumentType.ofCrossRelational();
         }
-        return entity.getRowType().asRelational();
+        return entity.getTupleType().asRelational();
     }
 
 
@@ -93,7 +92,7 @@ public abstract class RelScan<E extends Entity> extends Scan<E> implements RelAl
      * Returns an identity projection for the given table.
      */
     public static ImmutableList<Integer> identity( Entity entity ) {
-        return ImmutableList.copyOf( IntStream.range( 0, entity.getRowType().getFieldCount() ).boxed().collect( Collectors.toList() ) );
+        return ImmutableList.copyOf( IntStream.range( 0, entity.getTupleType().getFieldCount() ).boxed().collect( Collectors.toList() ) );
     }
 
 
@@ -150,12 +149,6 @@ public abstract class RelScan<E extends Entity> extends Scan<E> implements RelAl
         }
 
         return algBuilder.push( this ).project( exprList, nameList ).build();
-    }
-
-
-    @Override
-    public AlgNode accept( AlgShuttle shuttle ) {
-        return shuttle.visit( this );
     }
 
 

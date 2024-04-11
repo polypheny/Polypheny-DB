@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,9 @@ public abstract class MqlNode implements Node {
 
     protected final ParserPos pos;
 
+    @Nullable
+    public final String namespace;
+
     @Setter
     List<String> stores = new ArrayList<>();
 
@@ -50,8 +53,9 @@ public abstract class MqlNode implements Node {
     }
 
 
-    protected MqlNode( ParserPos pos ) {
+    protected MqlNode( ParserPos pos, @Nullable String namespace ) {
         this.pos = pos;
+        this.namespace = namespace;
     }
 
 
@@ -79,6 +83,12 @@ public abstract class MqlNode implements Node {
         } else {
             return false;
         }
+    }
+
+
+    @Override
+    public @Nullable String getNamespaceName() {
+        return namespace;
     }
 
 
@@ -128,17 +138,13 @@ public abstract class MqlNode implements Node {
 
     @Override
     public Kind getKind() {
-        switch ( getFamily() ) {
-            case DCL:
-                return Kind.OTHER;
-            case DDL:
-                return Kind.OTHER_DDL;
-            case DML:
-                return Kind.INSERT;
-            case DQL:
-                return Kind.SELECT;
-        }
-        return Kind.OTHER;
+        return switch ( getFamily() ) {
+            case DCL -> Kind.OTHER;
+            case DDL -> Kind.OTHER_DDL;
+            case DML -> Kind.INSERT;
+            case DQL -> Kind.SELECT;
+            default -> Kind.OTHER;
+        };
     }
 
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -105,7 +105,7 @@ public class TableFunctionImpl extends ReflectiveFunctionBase implements TableFu
      */
     public static TableFunction create( final Method method ) {
         if ( !Modifier.isStatic( method.getModifiers() ) ) {
-            Class clazz = method.getDeclaringClass();
+            Class<?> clazz = method.getDeclaringClass();
             if ( !classHasPublicZeroArgsConstructor( clazz ) ) {
                 throw Static.RESOURCE.requireDefaultConstructor( clazz.getName() ).ex();
             }
@@ -121,15 +121,14 @@ public class TableFunctionImpl extends ReflectiveFunctionBase implements TableFu
 
     @Override
     public AlgDataType getRowType( AlgDataTypeFactory typeFactory, List<Object> arguments ) {
-        return apply( arguments ).getRowType( typeFactory );
+        return apply( arguments ).getTupleType( typeFactory );
     }
 
 
     @Override
     public Type getElementType( List<Object> arguments ) {
         final Entity entity = apply( arguments );
-        if ( entity instanceof QueryableEntity ) {
-            QueryableEntity queryableTable = (QueryableEntity) entity;
+        if ( entity instanceof QueryableEntity queryableTable ) {
             return queryableTable.getElementType();
         } else if ( entity instanceof ScannableEntity ) {
             return Object[].class;

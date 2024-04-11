@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -87,7 +87,7 @@ public class ImmutableBitSetTest {
     private void assertToIterBitSet( String expected, ImmutableBitSet bitSet ) {
         StringBuilder buf = new StringBuilder();
         for ( int i : bitSet ) {
-            if ( buf.length() > 0 ) {
+            if ( !buf.isEmpty() ) {
                 buf.append( ", " );
             }
             buf.append( i );
@@ -102,10 +102,10 @@ public class ImmutableBitSetTest {
     @Test
     public void testToList() {
         assertThat( ImmutableBitSet.of().toList(), equalTo( Collections.<Integer>emptyList() ) );
-        assertThat( ImmutableBitSet.of( 5 ).toList(), equalTo( Arrays.asList( 5 ) ) );
+        assertThat( ImmutableBitSet.of( 5 ).toList(), equalTo( List.of( 5 ) ) );
         assertThat( ImmutableBitSet.of( 3, 5 ).toList(), equalTo( Arrays.asList( 3, 5 ) ) );
-        assertThat( ImmutableBitSet.of( 63 ).toList(), equalTo( Arrays.asList( 63 ) ) );
-        assertThat( ImmutableBitSet.of( 64 ).toList(), equalTo( Arrays.asList( 64 ) ) );
+        assertThat( ImmutableBitSet.of( 63 ).toList(), equalTo( List.of( 63 ) ) );
+        assertThat( ImmutableBitSet.of( 64 ).toList(), equalTo( List.of( 64 ) ) );
         assertThat( ImmutableBitSet.of( 3, 63 ).toList(), equalTo( Arrays.asList( 3, 63 ) ) );
         assertThat( ImmutableBitSet.of( 3, 64 ).toList(), equalTo( Arrays.asList( 3, 64 ) ) );
         assertThat( ImmutableBitSet.of( 0, 4, 2 ).toList(), equalTo( Arrays.asList( 0, 2, 4 ) ) );

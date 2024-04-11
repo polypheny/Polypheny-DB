@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,17 +19,19 @@ package org.polypheny.db.algebra.core.document;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import org.bson.types.ObjectId;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.logical.relational.LogicalValues;
+import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.snapshot.Snapshot;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexDynamicParam;
@@ -49,17 +51,16 @@ public abstract class DocumentValues extends AbstractAlgNode implements Document
     public final List<RexDynamicParam> dynamicDocuments;
 
 
-
     /**
      * Creates a {@link DocumentValues}.
      * {@link ModelTrait#DOCUMENT} node, which contains values.
      */
-    public DocumentValues( AlgOptCluster cluster, AlgTraitSet traitSet, List<PolyDocument> documents ) {
+    public DocumentValues( AlgCluster cluster, AlgTraitSet traitSet, List<PolyDocument> documents ) {
         this( cluster, traitSet, documents, new ArrayList<>() );
     }
 
 
-    public DocumentValues( AlgOptCluster cluster, AlgTraitSet traitSet, List<PolyDocument> documents, List<RexDynamicParam> dynamicDocuments ) {
+    public DocumentValues( AlgCluster cluster, AlgTraitSet traitSet, List<PolyDocument> documents, List<RexDynamicParam> dynamicDocuments ) {
         super( cluster, traitSet );
         this.rowType = DocumentType.ofId();
         this.documents = validate( documents );
@@ -86,7 +87,7 @@ public abstract class DocumentValues extends AbstractAlgNode implements Document
 
 
     public boolean isPrepared() {
-        return !dynamicDocuments.isEmpty();//documents.size() == 1 && documents.get( 0 ).asDocument().size() == 1 && documents.get( 0 ).asDocument().containsKey( PolyString.of( DocumentType.DOCUMENT_ID ) );
+        return !dynamicDocuments.isEmpty();
     }
 
 
@@ -104,9 +105,9 @@ public abstract class DocumentValues extends AbstractAlgNode implements Document
                     throw new GenericRuntimeException( "Error while transforming document to relational values" );
                 }
 
-                normalizedTuple.add( 0, rexBuilder.makeLiteral( PolyBinary.of( id.serialize().getBytes() ), AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.VARBINARY, DocumentType.ID_SIZE ), PolyType.VARBINARY ) );
+                normalizedTuple.add( 0, rexBuilder.makeLiteral( PolyBinary.of( id.serialize().getBytes() ), AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.TEXT ), PolyType.TEXT ) );
                 byte[] parsed = tuple.serialize().getBytes();
-                normalizedTuple.add( 1, rexBuilder.makeLiteral( PolyBinary.of( parsed ), AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.VARBINARY, DocumentType.DATA_SIZE ), PolyType.VARBINARY ) );
+                normalizedTuple.add( 1, rexBuilder.makeLiteral( PolyBinary.of( parsed ), AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.TEXT ), PolyType.TEXT ) );
                 normalized.add( ImmutableList.copyOf( normalizedTuple ) );
             }
         }
@@ -117,7 +118,9 @@ public abstract class DocumentValues extends AbstractAlgNode implements Document
 
     @Override
     public String algCompareString() {
-        return getClass().getCanonicalName() + "$" + documents.hashCode() + "$";
+        return getClass().getCanonicalName() + "$"
+                + (dynamicDocuments == null && documents != null ? documents.stream().map( PolyDocument::hashCode ).map( Objects::toString ).collect( Collectors.joining( "$" ) ) : "")
+                + (dynamicDocuments != null ? dynamicDocuments.stream().map( d -> d.name ).collect( Collectors.joining( "$" ) ) : "") + "&";
     }
 
 
@@ -127,11 +130,11 @@ public abstract class DocumentValues extends AbstractAlgNode implements Document
     }
 
 
-    public LogicalValues getRelationalEquivalent() {
+    public LogicalRelValues getRelationalEquivalent() {
         AlgTraitSet out = traitSet.replace( ModelTrait.RELATIONAL );
-        AlgOptCluster cluster = AlgOptCluster.create( getCluster().getPlanner(), getCluster().getRexBuilder(), traitSet, getCluster().getSnapshot() );
+        AlgCluster cluster = AlgCluster.create( getCluster().getPlanner(), getCluster().getRexBuilder(), traitSet, getCluster().getSnapshot() );
 
-        return new LogicalValues( cluster, out, DocumentType.ofRelational(), relationalize( documents, cluster.getRexBuilder() ) );
+        return new LogicalRelValues( cluster, out, DocumentType.ofRelational(), relationalize( documents, cluster.getRexBuilder() ) );
     }
 
 

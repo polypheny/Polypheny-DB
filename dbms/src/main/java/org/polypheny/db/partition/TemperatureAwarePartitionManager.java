@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,7 +44,7 @@ public class TemperatureAwarePartitionManager extends AbstractPartitionManager {
     public long getTargetPartitionId( LogicalTable table, PartitionProperty property, String columnValue ) {
         // Get partition manager
         PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
-        //PartitionProperty property = Catalog.getInstance().getSnapshot().alloc().getPartitionProperty( targetEntities.id ).orElseThrow();
+
         PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( ((TemperaturePartitionProperty) property).getInternalPartitionFunction() );
 
         return partitionManager.getTargetPartitionId( table, property, columnValue );
@@ -65,15 +65,15 @@ public class TemperatureAwarePartitionManager extends AbstractPartitionManager {
 
 
     @Override
-    public Map<Long, Map<Long, List<AllocationColumn>>> getAllPlacements( LogicalTable catalogTable, List<Long> partitionIds ) {
+    public Map<Long, Map<Long, List<AllocationColumn>>> getAllPlacements( LogicalTable table, List<Long> partitionIds ) {
         // Get partition manager
         PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
-        PartitionProperty property = Catalog.getInstance().getSnapshot().alloc().getPartitionProperty( catalogTable.id ).orElseThrow();
+        PartitionProperty property = Catalog.getInstance().getSnapshot().alloc().getPartitionProperty( table.id ).orElseThrow();
         PartitionManager partitionManager = partitionManagerFactory.getPartitionManager(
                 ((TemperaturePartitionProperty) property).getInternalPartitionFunction()
         );
 
-        return partitionManager.getAllPlacements( catalogTable, partitionIds );
+        return partitionManager.getAllPlacements( table, partitionIds );
     }
 
 
@@ -90,16 +90,8 @@ public class TemperatureAwarePartitionManager extends AbstractPartitionManager {
 
 
     @Override
-    public int getNumberOfPartitionsPerGroup( int numberOfPartitions ) {
-        return 1;
-    }
-
-
-    @Override
-    public boolean validatePartitionGroupSetup( List<List<String>> partitionGroupQualifiers, long numPartitionGroups, List<String> partitionGroupNames, LogicalColumn partitionColumn ) {
-        super.validatePartitionGroupSetup( partitionGroupQualifiers, numPartitionGroups, partitionGroupNames, partitionColumn );
-
-        return true;
+    public List<List<String>> validateAdjustPartitionGroupSetup( List<List<String>> partitionGroupQualifiers, long numPartitionGroups, List<String> partitionGroupNames, LogicalColumn partitionColumn ) {
+        return super.validateAdjustPartitionGroupSetup( partitionGroupQualifiers, numPartitionGroups, partitionGroupNames, partitionColumn );
     }
 
 
@@ -292,7 +284,7 @@ public class TemperatureAwarePartitionManager extends AbstractPartitionManager {
                 .sqlPrefix( "" )
                 .sqlSuffix( "PARTITIONS" )
                 .valueSeparation( "" )
-                .options( new ArrayList<>( Arrays.asList( "HASH" ) ) )
+                .options( new ArrayList<>( List.of( "HASH" ) ) )
                 .build() );
 
         rowsAfter.add( costRow );
@@ -301,7 +293,8 @@ public class TemperatureAwarePartitionManager extends AbstractPartitionManager {
         rowsAfter.add( unboundRow );
 
         // Bring all rows and columns together
-        PartitionFunctionInfo uiObject = PartitionFunctionInfo.builder()
+
+        return PartitionFunctionInfo.builder()
                 .functionTitle( FUNCTION_TITLE )
                 .description( "Automatically partitions data into HOT and COLD based on a selected cost model which is automatically applied to "
                         + "the values of the partition column. "
@@ -314,8 +307,6 @@ public class TemperatureAwarePartitionManager extends AbstractPartitionManager {
                 .rowsAfter( rowsAfter )
                 .headings( new ArrayList<>( Arrays.asList( "Partition Name", "Classification" ) ) )
                 .build();
-
-        return uiObject;
     }
 
 }

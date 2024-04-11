@@ -22,7 +22,7 @@ import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
 
@@ -50,13 +50,13 @@ public class DocumentAggregateCall {
     }
 
 
-    public AggregateCall toAggCall( AlgDataType rowType, AlgOptCluster cluster ) {
+    public AggregateCall toAggCall( AlgDataType rowType, AlgCluster cluster ) {
         int index = rowType.getFieldNames().indexOf( name );
         return AggregateCall.create( function, false, false, List.of( index ), -1, AlgCollations.EMPTY, getType( cluster ), name );
     }
 
 
-    private AlgDataType getType( AlgOptCluster cluster ) {
+    private AlgDataType getType( AlgCluster cluster ) {
         switch ( function.getKind() ) {
             case COUNT:
                 return cluster.getTypeFactory().createPolyType( PolyType.BIGINT );
@@ -69,7 +69,7 @@ public class DocumentAggregateCall {
     }
 
 
-    public Optional<AlgDataType> requiresCast( AlgOptCluster cluster ) {
+    public Optional<AlgDataType> requiresCast( AlgCluster cluster ) {
         switch ( function.getKind() ) {
             case COUNT:
                 return Optional.empty();

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,10 +31,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import javax.servlet.http.HttpServletRequest;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -61,15 +59,15 @@ import org.polypheny.db.restapi.models.requests.ResourcePostRequest;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
-import org.polypheny.db.type.entity.PolyBigDecimal;
 import org.polypheny.db.type.entity.PolyBoolean;
-import org.polypheny.db.type.entity.PolyDate;
-import org.polypheny.db.type.entity.PolyDouble;
-import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyString;
-import org.polypheny.db.type.entity.PolyTime;
-import org.polypheny.db.type.entity.PolyTimestamp;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
+import org.polypheny.db.type.entity.numerical.PolyDouble;
+import org.polypheny.db.type.entity.numerical.PolyLong;
+import org.polypheny.db.type.entity.temporal.PolyDate;
+import org.polypheny.db.type.entity.temporal.PolyTime;
+import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.TimeString;
@@ -89,6 +87,7 @@ public class RequestParser {
 
     private final static Pattern SORTING_ENTRY_PATTERN = Pattern.compile(
             "^(?<column>[a-zA-Z]\\w*(?:\\.[a-zA-Z]\\w*\\.[a-zA-Z]\\w*)?)(?:@(?<dir>ASC|DESC))?$" );
+    private final Catalog catalog;
 
 
     public RequestParser( final TransactionManager transactionManager, final Authenticator authenticator, final String userName, final String databaseName ) {
@@ -98,6 +97,7 @@ public class RequestParser {
 
     @VisibleForTesting
     RequestParser( Catalog catalog, TransactionManager transactionManager, Authenticator authenticator, String userName, String databaseName ) {
+        this.catalog = catalog;
         this.transactionManager = transactionManager;
         this.authenticator = authenticator;
         this.userName = userName;
@@ -263,7 +263,7 @@ public class RequestParser {
             throw new ParserException( ParserErrorCode.TABLE_LIST_MALFORMED_TABLE, tableName );
         }
 
-        LogicalTable table = Catalog.snapshot().rel().getTable( tableElements[0], tableElements[1] ).orElseThrow();
+        LogicalTable table = catalog.getSnapshot().rel().getTable( tableElements[0], tableElements[1] ).orElseThrow();
         if ( log.isDebugEnabled() ) {
             log.debug( "Finished parsing table \"{}\".", tableName );
         }
@@ -354,7 +354,7 @@ public class RequestParser {
         Set<Long> notYetAdded = new HashSet<>( validColumns );
         notYetAdded.removeAll( projectedColumns );
         for ( long columnId : notYetAdded ) {
-            LogicalColumn column = Catalog.snapshot().getNamespaces( null ).stream().map( n -> Catalog.snapshot().rel().getColumn( columnId ).orElseThrow() ).findFirst().orElseThrow();
+            LogicalColumn column = catalog.getSnapshot().getNamespaces( null ).stream().map( n -> catalog.getSnapshot().rel().getColumn( columnId ).orElseThrow() ).findFirst().orElseThrow();
             int calculatedPosition = tableOffsets.get( column.tableId ) + column.position - 1;
             RequestColumn requestColumn = new RequestColumn( column, calculatedPosition, calculatedPosition, null, null, false );
             columns.add( requestColumn );
@@ -377,7 +377,7 @@ public class RequestParser {
 
 
     private List<RequestColumn> getAggregateColumns( List<RequestColumn> requestColumns ) {
-        return requestColumns.stream().filter( RequestColumn::isAggregateColumn ).collect( Collectors.toList() );
+        return requestColumns.stream().filter( RequestColumn::isAggregateColumn ).toList();
     }
 
 
@@ -387,20 +387,14 @@ public class RequestParser {
             return null;
         }
 
-        switch ( function ) {
-            case "COUNT":
-                return OperatorRegistry.getAgg( OperatorName.COUNT );
-            case "MAX":
-                return OperatorRegistry.getAgg( OperatorName.MAX );
-            case "MIN":
-                return OperatorRegistry.getAgg( OperatorName.MIN );
-            case "AVG":
-                return OperatorRegistry.getAgg( OperatorName.AVG );
-            case "SUM":
-                return OperatorRegistry.getAgg( OperatorName.SUM );
-            default:
-                return null;
-        }
+        return switch ( function ) {
+            case "COUNT" -> OperatorRegistry.getAgg( OperatorName.COUNT );
+            case "MAX" -> OperatorRegistry.getAgg( OperatorName.MAX );
+            case "MIN" -> OperatorRegistry.getAgg( OperatorName.MIN );
+            case "AVG" -> OperatorRegistry.getAgg( OperatorName.AVG );
+            case "SUM" -> OperatorRegistry.getAgg( OperatorName.SUM );
+            default -> null;
+        };
     }
 
 
@@ -593,28 +587,28 @@ public class RequestParser {
         String rightHandSide;
         if ( filterString.startsWith( "<=" ) ) {
             callOperator = OperatorRegistry.get( OperatorName.LESS_THAN_OR_EQUAL );
-            rightHandSide = filterString.substring( 2, filterString.length() );
+            rightHandSide = filterString.substring( 2 );
         } else if ( filterString.startsWith( "<" ) ) {
             callOperator = OperatorRegistry.get( OperatorName.LESS_THAN );
-            rightHandSide = filterString.substring( 1, filterString.length() );
+            rightHandSide = filterString.substring( 1 );
         } else if ( filterString.startsWith( ">=" ) ) {
             callOperator = OperatorRegistry.get( OperatorName.GREATER_THAN_OR_EQUAL );
-            rightHandSide = filterString.substring( 2, filterString.length() );
+            rightHandSide = filterString.substring( 2 );
         } else if ( filterString.startsWith( ">" ) ) {
             callOperator = OperatorRegistry.get( OperatorName.GREATER_THAN );
-            rightHandSide = filterString.substring( 1, filterString.length() );
+            rightHandSide = filterString.substring( 1 );
         } else if ( filterString.startsWith( "=" ) ) {
             callOperator = OperatorRegistry.get( OperatorName.EQUALS );
-            rightHandSide = filterString.substring( 1, filterString.length() );
+            rightHandSide = filterString.substring( 1 );
         } else if ( filterString.startsWith( "!=" ) ) {
             callOperator = OperatorRegistry.get( OperatorName.NOT_EQUALS );
-            rightHandSide = filterString.substring( 2, filterString.length() );
+            rightHandSide = filterString.substring( 2 );
         } else if ( filterString.startsWith( "%" ) ) {
             callOperator = OperatorRegistry.get( OperatorName.LIKE );
-            rightHandSide = filterString.substring( 1, filterString.length() );
+            rightHandSide = filterString.substring( 1 );
         } else if ( filterString.startsWith( "!%" ) ) {
             callOperator = OperatorRegistry.get( OperatorName.NOT_LIKE );
-            rightHandSide = filterString.substring( 2, filterString.length() );
+            rightHandSide = filterString.substring( 2 );
         } else {
             log.warn( "Unable to parse filter operation comparator. Returning null." );
             throw new ParserException( ParserErrorCode.FILTER_GENERIC, filterString );
@@ -627,7 +621,7 @@ public class RequestParser {
     // TODO: REWRITE THIS METHOD
     @VisibleForTesting
     PolyValue parseLiteralValue( PolyType type, Object objectLiteral ) throws ParserException {
-        if ( !(objectLiteral instanceof String) ) {
+        if ( !(objectLiteral instanceof String literal) ) {
             if ( PolyType.FRACTIONAL_TYPES.contains( type ) ) {
                 if ( objectLiteral instanceof Number ) {
                     return PolyBigDecimal.of( BigDecimal.valueOf( ((Number) objectLiteral).doubleValue() ) );
@@ -644,7 +638,6 @@ public class RequestParser {
             throw new NotImplementedException( "Rest to Poly: " + objectLiteral );
         } else {
             PolyValue parsedLiteral;
-            String literal = (String) objectLiteral;
             if ( PolyType.BOOLEAN_TYPES.contains( type ) ) {
                 parsedLiteral = PolyBoolean.of( Boolean.valueOf( literal ) );
             } else if ( PolyType.INT_TYPES.contains( type ) ) {
@@ -664,11 +657,11 @@ public class RequestParser {
                         break;
                     case TIMESTAMP:
                         Instant instant = LocalDateTime.parse( literal ).toInstant( ZoneOffset.UTC );
-                        long millisecondsSinceEpoch = instant.toEpochMilli();// * 1000L + instant.getNano() / 1000000L;
+                        long millisecondsSinceEpoch = instant.toEpochMilli();
                         parsedLiteral = PolyTimestamp.of( millisecondsSinceEpoch );
                         break;
                     case TIME:
-                        parsedLiteral = PolyTime.of( new TimeString( literal ).getMillisOfDay() - TimeZone.getDefault().getRawOffset() );
+                        parsedLiteral = PolyTime.of( new TimeString( literal ).getMillisOfDay() );//- TimeZone.getDefault().getRawOffset() );
                         break;
                     default:
                         return null;
@@ -720,10 +713,6 @@ public class RequestParser {
 
         for ( Object objectColumnName : rowValuesMap.keySet() ) {
             String stringColumnName = (String) objectColumnName;
-            /*if ( possibleValue.startsWith( "_" ) ) {
-                log.debug( "FIX THIS MESSAGE: {}", possibleValue );
-                continue;
-            }*/
 
             // Make sure we actually have a column
             RequestColumn column = nameMapping.get( stringColumnName );
@@ -738,7 +727,7 @@ public class RequestParser {
             result.add( new Pair<>( column, parsedValue ) );
         }
 
-        // TODO js: Do I need logical or table scan indices here?
+        // TODO js: Do I need logical or table relScan indices here?
         result.sort( Comparator.comparingInt( p -> p.left.getLogicalIndex() ) );
 
         return result;

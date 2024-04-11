@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,16 +49,16 @@ import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 
 
 /**
- * Relational expression representing a scan of a CSV file.
+ * Relational expression representing a relScan of a CSV file.
  *
- * Like any table scan, it serves as a leaf node of a query tree.
+ * Like any table relScan, it serves as a leaf node of a query tree.
  */
 public class CsvScan extends RelScan<CsvTable> implements EnumerableAlg {
 
@@ -66,7 +66,7 @@ public class CsvScan extends RelScan<CsvTable> implements EnumerableAlg {
     final int[] fields;
 
 
-    protected CsvScan( AlgOptCluster cluster, CsvTable table, CsvTranslatableTable csvTable, int[] fields ) {
+    protected CsvScan( AlgCluster cluster, CsvTable table, CsvTranslatableTable csvTable, int[] fields ) {
         super( cluster, cluster.traitSetOf( EnumerableConvention.INSTANCE ), table );
         this.csvTable = csvTable;
         this.fields = fields;
@@ -90,7 +90,7 @@ public class CsvScan extends RelScan<CsvTable> implements EnumerableAlg {
 
     @Override
     public AlgDataType deriveRowType() {
-        final List<AlgDataTypeField> fieldList = entity.getRowType().getFields();
+        final List<AlgDataTypeField> fieldList = entity.getTupleType().getFields();
         final AlgDataTypeFactory.Builder builder = getCluster().getTypeFactory().builder();
         for ( int field : fields ) {
             builder.add( fieldList.get( field ) );
@@ -100,19 +100,19 @@ public class CsvScan extends RelScan<CsvTable> implements EnumerableAlg {
 
 
     @Override
-    public void register( AlgOptPlanner planner ) {
+    public void register( AlgPlanner planner ) {
         planner.addRule( CsvProjectScanRule.INSTANCE );
     }
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
-        // Multiply the cost by a factor that makes a scan more attractive if it has significantly fewer fields than the original scan.
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
+        // Multiply the cost by a factor that makes a relScan more attractive if it has significantly fewer fields than the original relScan.
         //
         // The "+ 2D" on top and bottom keeps the function fairly smooth.
         //
         // For example, if table has 3 fields, project has 1 field, then factor = (1 + 2) / (3 + 2) = 0.6
-        return super.computeSelfCost( planner, mq ).multiplyBy( ((double) fields.length + 2D) / ((double) entity.getRowType().getFieldCount() + 2D) );
+        return super.computeSelfCost( planner, mq ).multiplyBy( ((double) fields.length + 2D) / ((double) entity.getTupleType().getFieldCount() + 2D) );
     }
 
 
@@ -120,11 +120,7 @@ public class CsvScan extends RelScan<CsvTable> implements EnumerableAlg {
     public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
         PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getTupleType(), pref.preferArray() );
 
-        /*if ( table instanceof JsonTable ) {
-            return implementor.result( physType, Blocks.toBlock( Expressions.call( table.getExpression( JsonTable.class ), "enumerable" ) ) );
-        }*/
         return implementor.result( physType, Blocks.toBlock( Expressions.call( entity.asExpression( CsvTranslatableTable.class ), "project", implementor.getRootExpression(), Expressions.constant( fields ) ) ) );
     }
 
 }
-

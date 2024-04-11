@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,9 +36,9 @@ import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.lpg.LpgUnwind;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.BuiltInMethod;
@@ -49,13 +49,13 @@ public class EnumerableLpgUnwind extends LpgUnwind implements EnumerableAlg {
     /**
      * Creates a {@link EnumerableLpgUnwind}.
      */
-    protected EnumerableLpgUnwind( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, int index, String alias ) {
+    protected EnumerableLpgUnwind( AlgCluster cluster, AlgTraitSet traits, AlgNode input, int index, String alias ) {
         super( cluster, traits, input, index, alias );
     }
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         return super.computeSelfCost( planner, mq ).multiplyBy( 2 );
     }
 
@@ -71,15 +71,15 @@ public class EnumerableLpgUnwind extends LpgUnwind implements EnumerableAlg {
         BlockBuilder builder = new BlockBuilder();
         Result res = implementor.visitChild( this, 0, (EnumerableAlg) input, pref );
 
-        final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getTupleType(), pref.prefer( res.format ) );
+        final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getTupleType(), pref.prefer( res.format() ) );
 
-        Type outputJavaType = physType.getJavaRowType();
+        Type outputJavaType = physType.getJavaTupleType();
         final Type enumeratorType = Types.of( Enumerator.class, outputJavaType );
-        Type inputJavaType = res.physType.getJavaRowType();
+        Type inputJavaType = res.physType().getJavaTupleType();
 
         ParameterExpression inputEnumerator = Expressions.parameter( Types.of( Enumerator.class, inputJavaType ), "inputEnumerator" );
 
-        Expression inputEnumerable = builder.append( builder.newName( "inputEnumerable" + System.nanoTime() ), res.block, false );
+        Expression inputEnumerable = builder.append( builder.newName( "inputEnumerable" + System.nanoTime() ), res.block(), false );
 
         final ParameterExpression i_ = Expressions.parameter( int.class, "_i" );
         final ParameterExpression list_ = Expressions.parameter( Types.of( List.class, PolyValue.class ), "_callList" );
@@ -122,7 +122,6 @@ public class EnumerableLpgUnwind extends LpgUnwind implements EnumerableAlg {
         ConditionalStatement ifNotSet = EnumUtils.ifThen(
                 unset_,
                 Expressions.block(
-                        //Expressions.statement( Expressions.call( inputEnumerator, BuiltInMethod.ENUMERATOR_MOVE_NEXT.method ) ),
                         assignNextElement( list_, inputEnumerator ),
                         Expressions.statement( Expressions.assign( i_, Expressions.constant( 0 ) ) ),
                         Expressions.statement( Expressions.assign( unset_, Expressions.constant( false ) ) )

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,10 +45,9 @@ import org.apache.calcite.linq4j.tree.MethodCallExpression;
 import org.apache.calcite.linq4j.tree.NewExpression;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.logical.relational.LogicalFilter;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
-import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.BuiltInMethod;
@@ -61,11 +60,11 @@ import org.polypheny.db.util.BuiltInMethod;
  */
 class LixToAlgTranslator {
 
-    final AlgOptCluster cluster;
+    final AlgCluster cluster;
     final JavaTypeFactory typeFactory;
 
 
-    LixToAlgTranslator( AlgOptCluster cluster ) {
+    LixToAlgTranslator( AlgCluster cluster ) {
         this.cluster = cluster;
         this.typeFactory = (JavaTypeFactory) cluster.getTypeFactory();
     }
@@ -81,41 +80,22 @@ class LixToAlgTranslator {
                 throw new UnsupportedOperationException( "unknown method " + call.method );
             }
             AlgNode input;
-            switch ( method ) {
-                case SELECT:
+            return switch ( method ) {
+                case SELECT -> {
                     input = translate( call.targetExpression );
-                    return LogicalProject.create(
+                    yield LogicalRelProject.create(
                             input,
                             toRex( input, (FunctionExpression<?>) call.expressions.get( 0 ) ),
                             (List<String>) null );
-
-                case WHERE:
+                }
+                case WHERE -> {
                     input = translate( call.targetExpression );
-                    return LogicalFilter.create(
+                    yield LogicalRelFilter.create(
                             input,
                             toRex( (FunctionExpression<?>) call.expressions.get( 0 ), input ) );
-
-                case AS_QUERYABLE:
-                    return LogicalRelScan.create(
-                            cluster,
-                            null
-                            /*AlgOptEntityImpl.create(
-                                    null,
-                                    typeFactory.createJavaType( Types.toClass( Types.getElementType( call.targetExpression.getType() ) ) )
-                            )*/ );
-
-                case SCHEMA_GET_TABLE:
-                    return LogicalRelScan.create(
-                            cluster,
-                            null
-                            /*AlgOptEntityImpl.create(
-                                    null,
-                                    typeFactory.createJavaType( (Class) ((ConstantExpression) call.expressions.get( 1 )).value )
-                            )*/ );
-
-                default:
-                    throw new UnsupportedOperationException( "unknown method " + call.method );
-            }
+                }
+                default -> throw new UnsupportedOperationException( "unknown method " + call.method );
+            };
         }
         throw new UnsupportedOperationException( "unknown expression type " + expression.getNodeType() );
     }

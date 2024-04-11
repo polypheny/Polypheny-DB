@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -70,7 +70,7 @@ public abstract class ProjectScanRule extends AlgOptRule {
      */
     public static final ProjectScanRule INSTANCE =
             new ProjectScanRule(
-                    operand( Project.class, operandJ( RelScan.class, null, ProjectScanRule::test, none() ) ),
+                    operand( Project.class, operand( RelScan.class, null, ProjectScanRule::test, none() ) ),
                     AlgFactories.LOGICAL_BUILDER,
                     "ProjectScanRule" ) {
                 @Override
@@ -86,7 +86,7 @@ public abstract class ProjectScanRule extends AlgOptRule {
      */
     public static final ProjectScanRule INTERPRETER =
             new ProjectScanRule(
-                    operand( Project.class, operand( EnumerableInterpreter.class, operandJ( RelScan.class, null, ProjectScanRule::test, none() ) ) ),
+                    operand( Project.class, operand( EnumerableInterpreter.class, operand( RelScan.class, null, ProjectScanRule::test, none() ) ) ),
                     AlgFactories.LOGICAL_BUILDER,
                     "ProjectScanRule:interpreter" ) {
                 @Override

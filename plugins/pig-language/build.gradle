@@ -1,17 +1,16 @@
-import ca.coglinc.gradle.plugins.javacc.CompileJavaccTask
+import org.javacc.plugin.gradle.javacc.CompileJavaccTask
+
+plugins {
+    id "org.javacc.javacc" version "$javacc_plugin_version"
+}
 
 group "org.polypheny"
 
 
 configurations {
     javacc
-}
-
-
-buildscript {
-    dependencies {
-        // JavaCC (https://github.com/johnmartel/javaccPlugin)
-        classpath group: 'ca.coglinc2.javacc', name: 'ca.coglinc2.javacc.gradle.plugin', version: javacc_plugin_version
+    tests {
+        extendsFrom testRuntimeOnly
     }
 }
 
@@ -27,6 +26,8 @@ dependencies {
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
     testImplementation project(path: ":core")
+    testImplementation project(path: ":dbms", configuration: "test")
+    testImplementation project(path: ":dbms")
 
     testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter', version: junit_jupiter_version
     testImplementation group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version  // BSD 3-clause
@@ -50,7 +51,6 @@ sourceSets {
         java {
             //srcDirs = ["src/main/java","build/generated-sources"]
             srcDirs files("${buildDir}/generated-sources").builtBy(generateParser)
-            outputDir = file(project.buildDir.absolutePath + "/classes")
         }
         resources {
             srcDirs = ["src/main/resources"]
@@ -60,7 +60,7 @@ sourceSets {
     test {
         java {
             srcDirs = ["src/test/java"]
-            outputDir = file(project.buildDir.absolutePath + "/test-classes")
+            destinationDirectory.set(file(project.buildDir.absolutePath + "/test-classes"))
         }
         resources {
             srcDirs = ["src/test/resources"]
@@ -82,14 +82,21 @@ delombok {
     dependsOn(":webui:processResources")
 }
 
-
-/**
- * Tests
- */
-test {
-    include '**/PigletTest.class'
+task testJar(type: Jar, dependsOn: testClasses) {
+    archiveClassifier = 'tests'
+    from sourceSets.test.output
 }
 
+// due to gradle 7.6+
+configurations {
+    testClasses {
+        extendsFrom(testImplementation)
+    }
+}
+artifacts {
+    // due to gradle 7.6+
+    testClasses testJar
+}
 
 /**
  * JARs
@@ -112,6 +119,4 @@ javadoc {
 
 licensee {
     allow('Apache-2.0')
-
-    allowUrl('https://www.eclipse.org/org/documents/epl-v10.php') // EPL 1.0
 }

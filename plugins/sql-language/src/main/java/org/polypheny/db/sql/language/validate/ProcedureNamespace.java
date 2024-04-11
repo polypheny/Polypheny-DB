@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,7 +55,7 @@ public class ProcedureNamespace extends AbstractNamespace {
         } else if ( operator instanceof SqlUserDefinedTableMacro ) {
             assert type.getPolyType() == PolyType.CURSOR : "User-defined table macro should have CURSOR type, not " + type;
             final SqlUserDefinedTableMacro udf = (SqlUserDefinedTableMacro) operator;
-            return udf.getTable( validator.typeFactory, callBinding.sqlOperands() ).getRowType( validator.typeFactory );
+            return udf.getTable( validator.typeFactory, callBinding.sqlOperands() ).getTupleType( validator.typeFactory );
         }
         return type;
     }

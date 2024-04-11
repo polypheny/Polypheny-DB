@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -112,7 +112,7 @@ public class EthereumPlugin extends PolyPlugin {
             createInformationPage();
             enableInformationPage();
 
-            this.delegate = new RelationalScanDelegate( this, storeCatalog );
+            this.delegate = new RelationalScanDelegate( this, adapterCatalog );
         }
 
 
@@ -130,23 +130,23 @@ public class EthereumPlugin extends PolyPlugin {
 
         @Override
         public void updateNamespace( String name, long id ) {
-            currentNamespace = new EthereumNamespace( id, this.clientURL );
+            currentNamespace = new EthereumNamespace( id, adapterId, this.clientURL );
         }
 
 
         @Override
         public List<PhysicalEntity> createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation ) {
-            PhysicalTable table = storeCatalog.createTable(
+            PhysicalTable table = adapterCatalog.createTable(
                     logical.table.getNamespaceName(),
                     logical.table.name,
                     logical.columns.stream().collect( Collectors.toMap( c -> c.id, c -> c.name ) ),
                     logical.table,
                     logical.columns.stream().collect( Collectors.toMap( t -> t.id, t -> t ) ),
-                    allocation );
+                    logical.pkIds, allocation );
 
             EthereumTable physical = currentNamespace.createBlockchainTable( table, this );
 
-            storeCatalog.replacePhysical( physical );
+            adapterCatalog.replacePhysical( physical );
 
             return List.of( physical );
         }
@@ -278,11 +278,26 @@ public class EthereumPlugin extends PolyPlugin {
             }
         }
 
+
+        protected void updateNativePhysical( long allocId ) {
+            PhysicalTable table = this.adapterCatalog.fromAllocation( allocId );
+            adapterCatalog.replacePhysical( this.currentNamespace.createBlockchainTable( table, this ) );
+        }
+
+
+        @Override
+        public void renameLogicalColumn( long id, String newColumnName ) {
+            adapterCatalog.renameLogicalColumn( id, newColumnName );
+            adapterCatalog.fields.values().stream().filter( c -> c.id == id ).forEach( c -> updateNativePhysical( c.allocId ) );
+        }
+
     }
 
 
     @SuppressWarnings("unused")
     private interface Excludes {
+
+        void renameLogicalColumn( long id, String newColumnName );
 
         void refreshTable( long allocId );
 

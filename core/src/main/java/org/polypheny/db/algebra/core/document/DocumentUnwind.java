@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import lombok.Value;
 import lombok.experimental.NonFinal;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.SingleAlg;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 
 @EqualsAndHashCode(callSuper = true)
@@ -32,7 +32,7 @@ public class DocumentUnwind extends SingleAlg implements DocumentAlg {
     public String path;
 
 
-    protected DocumentUnwind( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, String path ) {
+    protected DocumentUnwind( AlgCluster cluster, AlgTraitSet traits, AlgNode input, String path ) {
         super( cluster, traits, input );
 
         this.path = path;
@@ -41,8 +41,8 @@ public class DocumentUnwind extends SingleAlg implements DocumentAlg {
 
     @Override
     public String algCompareString() {
-        return "$" + getClass().getSimpleName()
-                + "$" + path;
+        return getClass().getSimpleName() + "$"
+                + path + "&";
     }
 
 

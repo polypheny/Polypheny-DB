@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,9 +18,9 @@ package org.polypheny.db.catalog.entity.allocation;
 
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
-import java.io.Serializable;
 import lombok.Value;
 import org.polypheny.db.catalog.entity.PolyObject;
+import org.polypheny.db.type.entity.PolyValue;
 
 @Value
 public class AllocationPlacement implements PolyObject {
@@ -48,8 +48,8 @@ public class AllocationPlacement implements PolyObject {
 
 
     @Override
-    public Serializable[] getParameterArray() {
-        return new Serializable[0];
+    public PolyValue[] getParameterArray() {
+        return new PolyValue[0];
     }
 
 }

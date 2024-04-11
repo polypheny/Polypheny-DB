@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,7 +45,7 @@ import org.polypheny.db.algebra.AlgInput;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 
 
@@ -70,7 +70,7 @@ public abstract class SortExchange extends Exchange {
      * @param input Input relational expression
      * @param distribution Distribution specification
      */
-    protected SortExchange( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, AlgDistribution distribution, AlgCollation collation ) {
+    protected SortExchange( AlgCluster cluster, AlgTraitSet traitSet, AlgNode input, AlgDistribution distribution, AlgCollation collation ) {
         super( cluster, traitSet, input, distribution );
         this.collation = Objects.requireNonNull( collation );
 

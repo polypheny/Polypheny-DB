@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,7 +41,7 @@ import org.polypheny.db.util.Conformance;
 
 
 /**
- * This is a marker interface for a callback used to convert a tree of {@link AlgNode relational expressions} into a plan. Calling conventions typically have
+ * This is a marker interface for a callback used to convert a tree of {@link AlgNode algebra expressions} into a plan. Calling conventions typically have
  * their own protocol for walking over a tree, and correspondingly have their own implementors
  */
 public interface AlgImplementor {

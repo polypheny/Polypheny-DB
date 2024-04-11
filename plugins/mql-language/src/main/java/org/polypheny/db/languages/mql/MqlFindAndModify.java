@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,8 +50,8 @@ public class MqlFindAndModify extends MqlCollectionStatement implements MqlQuery
     private final BsonDocument let;
 
 
-    public MqlFindAndModify( ParserPos pos, String collection, BsonDocument document ) {
-        super( collection, pos );
+    public MqlFindAndModify( ParserPos pos, String collection, String namespace, BsonDocument document ) {
+        super( collection, namespace, pos );
         this.query = getDocumentOrNull( document, "query" );
         this.sort = getDocumentOrNull( document, "sort" );
         this.remove = getBoolean( document, "remove" );

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ package org.polypheny.db.adapter.index;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -28,18 +27,20 @@ import org.polypheny.db.algebra.exceptions.ConstraintViolationException;
 import org.polypheny.db.transaction.PUID;
 import org.polypheny.db.transaction.PUID.Type;
 import org.polypheny.db.transaction.PolyXid;
-import org.polypheny.db.type.entity.PolyInteger;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.util.Pair;
-import org.polypheny.db.util.PolyMode;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
+import org.polypheny.db.util.RunMode;
 
 
 public class CowHashIndexTest {
 
     @BeforeAll
     public static void init() {
-        PolyphenyHomeDirManager.setModeAndGetInstance( PolyMode.TEST );
+        if ( PolyphenyHomeDirManager.getMode() == null ) {
+            PolyphenyHomeDirManager.setModeAndGetInstance( RunMode.TEST );
+        }
     }
 
     @Test
@@ -160,7 +161,7 @@ public class CowHashIndexTest {
 
 
     public static List<PolyValue> asPolyValues( Integer... elements ) {
-        return List.copyOf( Arrays.asList( elements ) ).stream().map( PolyInteger::of ).collect( Collectors.toList() );
+        return List.copyOf( Arrays.asList( elements ) ).stream().map( value -> (PolyValue) PolyInteger.of( value ) ).toList();
     }
 
 }

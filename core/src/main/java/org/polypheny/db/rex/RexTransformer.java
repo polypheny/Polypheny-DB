@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,7 +47,7 @@ import org.polypheny.db.type.PolyTypeUtil;
 
 /**
  * Takes a tree of {@link RexNode} objects and transforms it into another in one sense equivalent tree. Nodes in tree will be modified and hence tree will not remain unchanged.
- *
+ * <p>
  * NOTE: You must validate the tree of RexNodes before using this class.
  */
 public class RexTransformer {
@@ -91,8 +91,7 @@ public class RexTransformer {
             return false;
         }
 
-        if ( node instanceof RexCall ) {
-            RexCall call = (RexCall) node;
+        if ( node instanceof RexCall call ) {
             return !transformableOperators.contains( call.getOperator() ) && isNullable( node );
         }
         return isNullable( node );
@@ -140,31 +139,26 @@ public class RexTransformer {
                                     OperatorRegistry.get( OperatorName.EQUALS ),
                                     operand,
                                     boolNode );
-                    RexNode andBoolNode =
-                            rexBuilder.makeCall(
+                    return rexBuilder.makeCall(
                                     OperatorRegistry.get( OperatorName.AND ),
                                     notNullNode,
                                     eqNode );
 
-                    return andBoolNode;
                 } else {
                     RexNode boolNode =
                             rexBuilder.makeLiteral(
                                     directlyUnderIs );
-                    RexNode andBoolNode =
-                            rexBuilder.makeCall(
+                    return rexBuilder.makeCall(
                                     OperatorRegistry.get( OperatorName.EQUALS ),
                                     node,
                                     boolNode );
-                    return andBoolNode;
                 }
             }
 
             // else continue as normal
         }
 
-        if ( node instanceof RexCall ) {
-            RexCall call = (RexCall) node;
+        if ( node instanceof RexCall call ) {
 
             // Transform children (if any) before transforming node itself.
             final ArrayList<RexNode> operands = new ArrayList<>();
@@ -215,12 +209,10 @@ public class RexTransformer {
                 }
 
                 if ( null != intoFinalAnd ) {
-                    RexNode andNullAndCheckNode =
-                            rexBuilder.makeCall(
+                    return rexBuilder.makeCall(
                                     OperatorRegistry.get( OperatorName.AND ),
                                     intoFinalAnd,
                                     call.clone( call.getType(), operands ) );
-                    return andNullAndCheckNode;
                 }
 
                 // if come here no need to do anything

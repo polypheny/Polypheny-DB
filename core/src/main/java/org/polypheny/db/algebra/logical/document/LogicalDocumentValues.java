@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,13 +21,11 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.document.DocumentValues;
 import org.polypheny.db.algebra.core.relational.RelationalTransformable;
-import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.logistic.DataModel;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexDynamicParam;
-import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.document.PolyDocument;
 
 
@@ -37,16 +35,16 @@ public class LogicalDocumentValues extends DocumentValues implements RelationalT
     /**
      * Java representation of multiple documents, which can be retrieved in the original BSON format form
      * or in the substantiated relational form, where the documents are bundled into a BSON string
-     *
+     * <p>
      * BSON format
      * <pre><code>
      *     "_id": ObjectId(23kdf232123)
      *     "key": "value",
      *     "key1": "value"
      * </pre></code>
-     *
+     * <p>
      * becomes
-     *
+     * <p>
      * Column format
      * <pre><code>
      *     "_id": ObjectId(23kdf232123)
@@ -61,34 +59,28 @@ public class LogicalDocumentValues extends DocumentValues implements RelationalT
      * @param traitSet the used traitSet
      * @param document the documents in their native BSON format
      */
-    public LogicalDocumentValues( AlgOptCluster cluster, AlgTraitSet traitSet, List<PolyDocument> document ) {
+    public LogicalDocumentValues( AlgCluster cluster, AlgTraitSet traitSet, List<PolyDocument> document ) {
         super( cluster, traitSet, document );
     }
 
 
-    public LogicalDocumentValues( AlgOptCluster cluster, AlgTraitSet traitSet, List<PolyDocument> documents, List<RexDynamicParam> dynamicDocuments ) {
+    public LogicalDocumentValues( AlgCluster cluster, AlgTraitSet traitSet, List<PolyDocument> documents, List<RexDynamicParam> dynamicDocuments ) {
         super( cluster, traitSet, documents, dynamicDocuments );
     }
 
 
-    public static AlgNode create( AlgOptCluster cluster, List<PolyDocument> documents ) {
+    public static AlgNode create( AlgCluster cluster, List<PolyDocument> documents ) {
         final AlgTraitSet traitSet = cluster.traitSetOf( Convention.NONE );
         return new LogicalDocumentValues( cluster, traitSet, documents );
     }
 
 
-    public static LogicalDocumentValues createOneTuple( AlgOptCluster cluster ) {
-        final AlgDataType rowType =
-                cluster.getTypeFactory()
-                        .builder()
-                        .add( "ZERO", null, PolyType.INTEGER )
-                        .nullable( false )
-                        .build();
+    public static LogicalDocumentValues createOneTuple( AlgCluster cluster ) {
         return new LogicalDocumentValues( cluster, cluster.traitSet(), List.of( new PolyDocument() ) );
     }
 
 
-    public static AlgNode createDynamic( AlgOptCluster cluster, List<RexDynamicParam> ids ) {
+    public static AlgNode createDynamic( AlgCluster cluster, List<RexDynamicParam> ids ) {
         final AlgTraitSet traitSet = cluster.traitSetOf( Convention.NONE );
         return new LogicalDocumentValues( cluster, traitSet, List.of( new PolyDocument() ), ids );
     }

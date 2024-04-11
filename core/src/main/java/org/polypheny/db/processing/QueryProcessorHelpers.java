@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -90,18 +90,13 @@ public class QueryProcessorHelpers {
         if ( !isDml ) {
             return null;
         }
-        switch ( sqlKind ) {
-            case INSERT:
-                return Modify.Operation.INSERT;
-            case DELETE:
-                return Modify.Operation.DELETE;
-            case MERGE:
-                return Modify.Operation.MERGE;
-            case UPDATE:
-                return Modify.Operation.UPDATE;
-            default:
-                return null;
-        }
+        return switch ( sqlKind ) {
+            case INSERT -> Modify.Operation.INSERT;
+            case DELETE -> Modify.Operation.DELETE;
+            case MERGE -> Modify.Operation.MERGE;
+            case UPDATE -> Modify.Operation.UPDATE;
+            default -> null;
+        };
     }
 
 

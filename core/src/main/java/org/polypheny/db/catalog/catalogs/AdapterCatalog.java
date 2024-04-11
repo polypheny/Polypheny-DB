@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
@@ -39,14 +41,13 @@ import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalField;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.schema.Namespace;
-import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.util.Pair;
 
 @Value
 @NonFinal
 @Slf4j
 @SerializeClass(subclasses = { DocAdapterCatalog.class, RelAdapterCatalog.class, GraphAdapterCatalog.class })
-public abstract class AdapterCatalog implements PolySerializable {
+public abstract class AdapterCatalog {
 
     IdBuilder idBuilder = IdBuilder.getInstance();
 
@@ -63,7 +64,7 @@ public abstract class AdapterCatalog implements PolySerializable {
     public ConcurrentMap<Long, AllocationEntity> allocations;
 
     @Serialize
-    public ConcurrentMap<Long, Set<Long>> allocToPhysicals;
+    public ConcurrentMap<Long, SortedSet<Long>> allocToPhysicals;
 
     @Serialize
     public ConcurrentMap<Pair<Long, Long>, PhysicalField> fields; // allocId, fieldId
@@ -79,7 +80,7 @@ public abstract class AdapterCatalog implements PolySerializable {
             Map<Long, Namespace> namespaces,
             Map<Long, PhysicalEntity> physicals,
             Map<Long, AllocationEntity> allocations,
-            Map<Long, Set<Long>> allocToPhysicals,
+            Map<Long, SortedSet<Long>> allocToPhysicals,
             Map<Pair<Long, Long>, PhysicalField> fields ) {
         this.adapterId = adapterId;
         this.namespaces = new ConcurrentHashMap<>( namespaces );
@@ -91,7 +92,7 @@ public abstract class AdapterCatalog implements PolySerializable {
 
 
     public Expression asExpression() {
-        return Expressions.call( Catalog.CATALOG_EXPRESSION, "getStoreSnapshot", Expressions.constant( adapterId ) );
+        return Expressions.call( Catalog.CATALOG_EXPRESSION, "getAdapterCatalog", Expressions.constant( adapterId ) );
     }
 
 
@@ -125,12 +126,12 @@ public abstract class AdapterCatalog implements PolySerializable {
         if ( entities == null ) {
             return null;
         }
-        return entities.stream().map( physicals::get ).collect( Collectors.toList() );
+        return entities.stream().map( physicals::get ).toList();
     }
 
 
     public void addPhysical( AllocationEntity allocation, PhysicalEntity... physicalEntities ) {
-        Set<Long> physicals = Arrays.stream( physicalEntities ).map( p -> p.id ).collect( Collectors.toSet() );
+        SortedSet<Long> physicals = Arrays.stream( physicalEntities ).sorted().map( p -> p.id ).collect( Collectors.toCollection( TreeSet::new ) );
 
         allocToPhysicals.put( allocation.id, physicals );
         allocations.put( allocation.id, allocation );
@@ -164,13 +165,10 @@ public abstract class AdapterCatalog implements PolySerializable {
             allocations.remove( physical.allocationId );
 
             // remove fields
-            List<PhysicalField> removeFields = fields.entrySet().stream().filter( f -> f.getValue().entityId == physicalId
-                    || f.getKey().getKey() == physical.allocationId ).map( Entry::getValue ).collect( Collectors.toList() );
+            List<PhysicalField> removeFields = fields.entrySet().stream().filter( f -> f.getKey().getKey() == physical.allocationId ).map( Entry::getValue ).toList();
             removeFields.forEach( field -> fields.remove( Pair.of( field.allocId, field.id ) ) );
         }
         physicals.forEach( this.physicals::remove );
-        physicals.forEach( allocToPhysicals::remove );
-
     }
 
 

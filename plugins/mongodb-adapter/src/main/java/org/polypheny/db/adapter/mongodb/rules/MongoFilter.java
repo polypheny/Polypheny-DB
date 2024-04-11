@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
@@ -49,10 +50,10 @@ import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
@@ -73,7 +74,7 @@ import org.polypheny.db.util.JsonBuilder;
  */
 public class MongoFilter extends Filter implements MongoAlg {
 
-    public MongoFilter( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode child, RexNode condition ) {
+    public MongoFilter( AlgCluster cluster, AlgTraitSet traitSet, AlgNode child, RexNode condition ) {
         super( cluster, traitSet, child, condition );
         assert getConvention() == CONVENTION;
         assert getConvention() == child.getConvention();
@@ -81,7 +82,7 @@ public class MongoFilter extends Filter implements MongoAlg {
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         return super.computeSelfCost( planner, mq ).multiplyBy( 0.1 );
     }
 
@@ -97,11 +98,8 @@ public class MongoFilter extends Filter implements MongoAlg {
         implementor.visitChild( 0, getInput() );
         // to not break the existing functionality for now we have to handle it this way
         Translator translator;
-        /*if ( implementor.getStaticRowType() != null && implementor.getStaticRowType() instanceof MongoRowType ) {
-            translator = new Translator( MongoRules.mongoFieldNames( getRowType() ), (MongoRowType) implementor.getStaticRowType(), implementor );
-        } else {*/
+
         translator = new Translator( MongoRules.mongoFieldNames( getTupleType() ), getTupleType(), implementor );
-        //}
         translator.translateMatch( condition, implementor );
     }
 
@@ -142,13 +140,14 @@ public class MongoFilter extends Filter implements MongoAlg {
         private void translateMatch( RexNode condition, Implementor implementor ) {
             BsonDocument value = translateFinalOr( condition );
             if ( !value.isEmpty() ) {
+                if ( !preProjections.isEmpty() ) {
+                    implementor.add( null, MongoAlg.Implementor.toJson( new BsonDocument( "$addFields", preProjections ) ) );
+                }
+
                 implementor.filter.add( value );
                 implementor.add( null, MongoAlg.Implementor.toJson( new BsonDocument( "$match", getFilter( value ) ) ) );
             }
 
-            if ( !preProjections.isEmpty() ) {
-                implementor.preProjections.add( preProjections );
-            }
         }
 
 
@@ -175,7 +174,13 @@ public class MongoFilter extends Filter implements MongoAlg {
                 this.map = new HashMap<>();
                 translateAnd( node );
 
-                mergeMaps( this.map, shallowCopy, "$or" );
+                String op = "$or";
+                if ( modifier != null ) {
+                    // we have a negation and have to flip the operator
+                    op = modifier.equals( "$not" ) ? "$and" : "$or";
+                }
+
+                mergeMaps( this.map, shallowCopy, op );
                 this.map = shallowCopy;
             }
 
@@ -220,7 +225,7 @@ public class MongoFilter extends Filter implements MongoAlg {
                 } else if ( entry.getKey().equals( "$or" ) || entry.getKey().equals( "$and" ) ) {
                     doc.put( entry.getKey(), new BsonArray( entry.getValue() ) );
                 } else {
-                    ands.addAll( entry.getValue().stream().map( e -> new BsonDocument( entry.getKey(), e ) ).collect( Collectors.toList() ) );
+                    ands.addAll( entry.getValue().stream().map( e -> new BsonDocument( entry.getKey(), e ) ).toList() );
                 }
             }
             if ( !ands.isEmpty() ) {
@@ -252,7 +257,12 @@ public class MongoFilter extends Filter implements MongoAlg {
                 Map<String, List<BsonValue>> shallowCopy = new HashMap<>( this.map );
                 this.map = new HashMap<>();
                 translateMatch2( node );
-                mergeMaps( this.map, shallowCopy, "$and" );
+                String op = "$and";
+                if ( modifier != null ) {
+                    // we have a negation and have to flip the operator
+                    op = "$or";
+                }
+                mergeMaps( this.map, shallowCopy, op );
                 this.map = shallowCopy;
             }
         }
@@ -260,7 +270,7 @@ public class MongoFilter extends Filter implements MongoAlg {
 
         /**
          * Returns whether {@code v0} is a stronger value for operator {@code key} than {@code v1}.
-         *
+         * <p>
          * For example, {@code stronger("$lt", 100, 200)} returns true, because "&lt; 100" is a more powerful condition than "&lt; 200".
          */
         private boolean stronger( String key, Object v0, Object v1 ) {
@@ -470,7 +480,7 @@ public class MongoFilter extends Filter implements MongoAlg {
         /**
          * Normally, negation can be handled by just prefixing with "$not":
          * key: value -> $not:{key:value}
-         *
+         * <p>
          * but especially for complex queries it has to be pushed into the statement
          * key: value -> key:{$not:value}
          *
@@ -844,11 +854,7 @@ public class MongoFilter extends Filter implements MongoAlg {
             }
 
             this.inExpr = true;
-            if ( op == null ) {
-                attachCondition( null, "$expr", new BsonDocument( "$eq", new BsonArray( Arrays.asList( l, r ) ) ) );
-            } else {
-                attachCondition( null, "$expr", new BsonDocument( op, new BsonArray( Arrays.asList( l, r ) ) ) );
-            }
+            attachCondition( null, "$expr", new BsonDocument( Objects.requireNonNullElse( op, "$eq" ), new BsonArray( Arrays.asList( l, r ) ) ) );
             this.inExpr = false;
             return true;
 
@@ -913,7 +919,7 @@ public class MongoFilter extends Filter implements MongoAlg {
 
         /**
          * Translates the RexCall into its appropriate form
-         *
+         * <p>
          * left:[right]
          *
          * @param left the corresponding field
@@ -1057,14 +1063,11 @@ public class MongoFilter extends Filter implements MongoAlg {
          * Translates a call to a binary operator. Returns whether successful.
          */
         private boolean translateBinary2( String op, RexNode left, RexNode right ) {
-            switch ( right.getKind() ) {
-                case LITERAL:
-                    return translateLiteral( op, left, (RexLiteral) right );
-                case DYNAMIC_PARAM:
-                    return translateDynamic( op, left, (RexDynamicParam) right );
-                default:
-                    return false;
-            }
+            return switch ( right.getKind() ) {
+                case LITERAL -> translateLiteral( op, left, (RexLiteral) right );
+                case DYNAMIC_PARAM -> translateDynamic( op, left, (RexDynamicParam) right );
+                default -> false;
+            };
         }
 
 
@@ -1095,6 +1098,15 @@ public class MongoFilter extends Filter implements MongoAlg {
                 case MQL_QUERY_VALUE:
                     return translateDocValue( op, (RexNameRef) left, right );
 
+                case ELEMENT_REF:
+                    if ( this.tempElem != null ) {
+                        translateOp2( op, getPhysicalName( (RexIndexRef) left ), right );
+                        return false;
+                    }
+
+                    translateElemMatch( (RexCall) left );
+                    return true;
+
                 // fall through
 
                 default:
@@ -1112,23 +1124,26 @@ public class MongoFilter extends Filter implements MongoAlg {
          * @return if the translation was possible
          */
         private boolean translateDynamic( String op, RexNode left, RexDynamicParam right ) {
-            switch ( left.getKind() ) {
-                case INPUT_REF:
+            return switch ( left.getKind() ) {
+                case INPUT_REF -> {
                     attachCondition( op, getPhysicalName( (RexIndexRef) left ), new BsonDynamic( right ) );
-                    return true;
-                case DISTANCE:
-                    return translateFunction( op, (RexCall) left, right );
-                case OTHER_FUNCTION:
-                    return translateItem( op, (RexCall) left, right );
-                case MOD:
-                    return translateMod( (RexCall) left, right );
-                case NAME_INDEX_REF:
-                    return translateDocValue( op, (RexNameRef) left, right );
-                case CAST:
-                    return translateDynamic( op, ((RexCall) left).operands.get( 0 ), right );
-            }
+                    yield true;
+                }
+                case ELEMENT_REF -> {
+                    if ( this.tempElem == null ) {
+                        yield false;
+                    }
+                    attachCondition( op, this.tempElem.unwrap( RexNameRef.class ).orElseThrow().getName(), new BsonDynamic( right ) );
+                    yield true;
+                }
+                case DISTANCE -> translateFunction( op, (RexCall) left, right );
+                case OTHER_FUNCTION -> translateItem( op, (RexCall) left, right );
+                case MOD -> translateMod( (RexCall) left, right );
+                case NAME_INDEX_REF -> translateDocValue( op, (RexNameRef) left, right );
+                case CAST -> translateDynamic( op, ((RexCall) left).operands.get( 0 ), right );
+                default -> false;
+            };
 
-            return false;
         }
 
 
@@ -1299,7 +1314,12 @@ public class MongoFilter extends Filter implements MongoAlg {
                     // $op : {keyValue}
                     adjustedRight = ((BsonKeyValue) adjustedRight).wrapValue( v -> new BsonDocument( modifier, v ) );
                 } else {
+                    if ( !adjustedRight.isDocument() || (adjustedRight instanceof BsonDynamic dynamic && !dynamic.isRegex()) ) {
+                        // $op : [value]
+                        modifier = "$ne";
+                    }
                     adjustedRight = new BsonDocument( modifier, adjustedRight );
+
                 }
             }
 

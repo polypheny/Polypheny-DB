@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ import org.polypheny.db.adapter.mongodb.util.RexToMongoTranslator;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.document.DocumentProject;
 import org.polypheny.db.catalog.logistic.DataModel;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.trait.ModelTrait;
@@ -44,7 +44,7 @@ public class MongoDocumentProject extends DocumentProject implements MongoAlg {
      * @param includes
      * @param excludes
      */
-    protected MongoDocumentProject( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, @NotNull Map<String, ? extends RexNode> includes, @NotNull List<String> excludes ) {
+    protected MongoDocumentProject( AlgCluster cluster, AlgTraitSet traits, AlgNode input, @NotNull Map<String, ? extends RexNode> includes, @NotNull List<String> excludes ) {
         super( cluster, traits, input, includes, excludes );
     }
 
@@ -54,7 +54,7 @@ public class MongoDocumentProject extends DocumentProject implements MongoAlg {
         implementor.visitChild( 0, getInput() );
         List<Pair<String, String>> projects = new ArrayList<>();
 
-        final RexToMongoTranslator translator = new RexToMongoTranslator( getCluster().getTypeFactory(), List.of(), implementor, DataModel.DOCUMENT );
+        final RexToMongoTranslator translator = new RexToMongoTranslator( List.of(), implementor, DataModel.DOCUMENT );
 
         // is it something which interacts with root?
         if ( excludes.isEmpty() && includes.size() == 1 && includes.containsKey( null ) ) {

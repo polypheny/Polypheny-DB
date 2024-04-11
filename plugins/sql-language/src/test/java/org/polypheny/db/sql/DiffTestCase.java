@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,9 @@
 package org.polypheny.db.sql;
 
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -52,9 +55,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.incava.diff.Diff;
 import org.incava.diff.Difference;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
 import org.polypheny.db.util.ReflectUtil;
 import org.polypheny.db.util.Util;
 
@@ -115,24 +115,6 @@ public abstract class DiffTestCase {
     }
 
 
-    @Before
-    public void setUp() {
-        // diffMasks.clear();
-        diffMasks = "";
-        ignorePatterns = "";
-        compiledIgnoreMatcher = null;
-        compiledDiffMatcher = null;
-    }
-
-
-    @After
-    public void tearDown() throws IOException {
-        if ( logOutputStream != null ) {
-            logOutputStream.close();
-            logOutputStream = null;
-        }
-    }
-
 
     /**
      * Initializes a diff-based test. Any existing .log and .dif files corresponding to this test case are deleted, and a new, empty .log file is created. The default log file location is a subdirectory under the
@@ -185,7 +167,7 @@ public abstract class DiffTestCase {
         logOutputStream = null;
 
         if ( !refFile.exists() ) {
-            Assert.fail( "Reference file " + refFile + " does not exist" );
+            fail( "Reference file " + refFile + " does not exist" );
         }
         diffFile( logFile, refFile );
     }
@@ -316,13 +298,13 @@ public abstract class DiffTestCase {
         if ( verbose ) {
             if ( inIde() ) {
                 // If we're in IntelliJ, it's worth printing the 'expected <...> actual <...>' string, becauase IntelliJ can format this intelligently. Otherwise, use the more concise diff format.
-                Assert.assertEquals( message, fileContents( refFile ), fileContents( logFile ) );
+                assertEquals( message, fileContents( refFile ), fileContents( logFile ) );
             } else {
                 String s = diff( refFile, logFile );
-                Assert.fail( message + '\n' + s + '\n' );
+                fail( message + '\n' + s + '\n' );
             }
         }
-        Assert.fail( message );
+        fail( message );
     }
 
 

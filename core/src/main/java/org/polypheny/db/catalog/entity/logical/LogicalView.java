@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ package org.polypheny.db.catalog.entity.logical;
 import com.google.common.collect.ImmutableMap;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
+import java.io.Serial;
 import java.util.List;
 import java.util.Map;
 import lombok.EqualsAndHashCode;
@@ -35,7 +36,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelViewScan;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.languages.QueryLanguage;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.view.ViewManager.ViewVisitor;
 
 @EqualsAndHashCode(callSuper = true)
@@ -44,6 +45,7 @@ import org.polypheny.db.view.ViewManager.ViewVisitor;
 @NonFinal
 public class LogicalView extends LogicalTable {
 
+    @Serial
     private static final long serialVersionUID = -4771308114962700515L;
 
     @Serialize
@@ -79,7 +81,7 @@ public class LogicalView extends LogicalTable {
     }
 
 
-    public AlgNode prepareView( AlgOptCluster cluster ) {
+    public AlgNode prepareView( AlgCluster cluster ) {
         AlgNode viewLogicalRoot = getDefinition();
         prepareView( viewLogicalRoot, cluster );
 
@@ -90,18 +92,18 @@ public class LogicalView extends LogicalTable {
     }
 
 
-    public void prepareView( AlgNode viewLogicalRoot, AlgOptCluster algOptCluster ) {
+    public void prepareView( AlgNode viewLogicalRoot, AlgCluster algCluster ) {
         if ( viewLogicalRoot instanceof AbstractAlgNode ) {
-            ((AbstractAlgNode) viewLogicalRoot).setCluster( algOptCluster );
+            ((AbstractAlgNode) viewLogicalRoot).setCluster( algCluster );
         }
         if ( viewLogicalRoot instanceof BiAlg ) {
-            prepareView( ((BiAlg) viewLogicalRoot).getLeft(), algOptCluster );
-            prepareView( ((BiAlg) viewLogicalRoot).getRight(), algOptCluster );
+            prepareView( ((BiAlg) viewLogicalRoot).getLeft(), algCluster );
+            prepareView( ((BiAlg) viewLogicalRoot).getRight(), algCluster );
         } else if ( viewLogicalRoot instanceof SingleAlg ) {
-            prepareView( ((SingleAlg) viewLogicalRoot).getInput(), algOptCluster );
+            prepareView( ((SingleAlg) viewLogicalRoot).getInput(), algCluster );
         }
         if ( viewLogicalRoot instanceof LogicalRelViewScan ) {
-            prepareView( ((LogicalRelViewScan) viewLogicalRoot).getAlgNode(), algOptCluster );
+            prepareView( ((LogicalRelViewScan) viewLogicalRoot).getAlgNode(), algCluster );
         }
     }
 

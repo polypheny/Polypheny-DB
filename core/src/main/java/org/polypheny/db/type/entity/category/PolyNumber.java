@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,8 +22,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.entity.PolyBigDecimal;
+import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 
 @Slf4j
 public abstract class PolyNumber extends PolyValue {
@@ -34,7 +35,7 @@ public abstract class PolyNumber extends PolyValue {
 
 
     public static int compareTo( PolyNumber b0, PolyNumber b1 ) {
-        if ( b0 == null || b1 == null ) {
+        if ( b0 == null || b1 == null || b0.isNull() || b1.isNull() ) {
             return -1;
         }
         if ( b0.isApprox() || b1.isApprox() ) {
@@ -45,13 +46,32 @@ public abstract class PolyNumber extends PolyValue {
 
 
     private boolean isApprox() {
-        return PolyType.APPROX_TYPES.contains( type );
+        return PolyType.APPROX_TYPES.contains( getType() ) || getType() == PolyType.DECIMAL;
     }
 
 
     @Override
     public boolean equals( Object o ) {
-        return super.equals( o );
+        if ( this == o ) {
+            return true;
+        }
+        if ( o == null ) {
+            return false;
+        }
+
+        if ( !(o instanceof PolyValue val) ) {
+            return false;
+        }
+
+        if ( val.isNull() ) {
+            return false;
+        }
+
+        if ( val.isNumber() ) {
+            return PolyNumber.compareTo( this, val.asNumber() ) == 0;
+        }
+
+        return false;
     }
 
 
@@ -116,6 +136,12 @@ public abstract class PolyNumber extends PolyValue {
             return null;
         }
         return doubleValue();
+    }
+
+
+    @Override
+    public @NotNull PolyBoolean asBoolean() {
+        return intValue() == 0 ? PolyBoolean.FALSE : PolyBoolean.TRUE;
     }
 
 

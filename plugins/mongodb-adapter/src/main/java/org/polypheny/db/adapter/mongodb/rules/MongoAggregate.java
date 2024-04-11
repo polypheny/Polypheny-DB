@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ package org.polypheny.db.adapter.mongodb.rules;
 import com.google.common.collect.Streams;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Objects;
 import org.polypheny.db.adapter.mongodb.MongoAlg;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.InvalidAlgException;
@@ -29,7 +29,7 @@ import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.sql.language.fun.SqlSingleValueAggFunction;
 import org.polypheny.db.sql.language.fun.SqlSumAggFunction;
@@ -39,11 +39,11 @@ import org.polypheny.db.util.Util;
 
 
 /**
- * Implementation of {@link Aggregate} relational expression in MongoDB.
+ * Implementation of {@link Aggregate} algebraic expression in MongoDB.
  */
 public class MongoAggregate extends Aggregate implements MongoAlg {
 
-    public MongoAggregate( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode child, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) throws InvalidAlgException {
+    public MongoAggregate( AlgCluster cluster, AlgTraitSet traitSet, AlgNode child, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) throws InvalidAlgException {
         super( cluster, traitSet, child, indicator, groupSet, groupSets, aggCalls );
         assert getConvention() == CONVENTION;
         assert getConvention() == child.getConvention();
@@ -53,11 +53,9 @@ public class MongoAggregate extends Aggregate implements MongoAlg {
                 throw new InvalidAlgException( "distinct aggregation not supported" );
             }
         }
-        switch ( getGroupType() ) {
-            case SIMPLE:
-                break;
-            default:
-                throw new InvalidAlgException( "unsupported group type: " + getGroupType() );
+        if ( Objects.requireNonNull( getGroupType() ) == Group.SIMPLE ) {
+        } else {
+            throw new InvalidAlgException( "unsupported group type: " + getGroupType() );
         }
     }
 
@@ -93,7 +91,12 @@ public class MongoAggregate extends Aggregate implements MongoAlg {
                 implementor.physicalMapper.add( inName );
                 ++i;
             }
-            list.add( "_id: " + Util.toString( keys, "{", ", ", "}" ) );
+            if ( keys.isEmpty() ) {
+                list.add( "_id: null" );
+            } else {
+                list.add( "_id: " + Util.toString( keys, "{", ", ", "}" ) );
+            }
+
         }
         for ( AggregateCall aggCall : aggCalls ) {
             list.add( MongoRules.maybeQuote( outNames.get( i++ ) ) + ": " + toMongo( aggCall.getAggregation(), inNames, aggCall.getArgList(), implementor ) );
@@ -101,7 +104,7 @@ public class MongoAggregate extends Aggregate implements MongoAlg {
         implementor.add( null, "{$group: " + Util.toString( list, "{", ", ", "}" ) + "}" );
         final List<String> fixups;
         if ( groupSet.cardinality() == 1 ) {
-            fixups = Streams.mapWithIndex( outNames.stream(), ( n, j ) -> MongoRules.maybeQuote( n ) + ": " + MongoRules.maybeQuote( "$" + (j == 0 ? "_id" : n) ) ).collect( Collectors.toList() );
+            fixups = Streams.mapWithIndex( outNames.stream(), ( n, j ) -> MongoRules.maybeQuote( n ) + ": " + MongoRules.maybeQuote( "$" + (j == 0 ? "_id" : n) ) ).toList();
         } else {
             fixups = new ArrayList<>();
             fixups.add( "_id: 0" );

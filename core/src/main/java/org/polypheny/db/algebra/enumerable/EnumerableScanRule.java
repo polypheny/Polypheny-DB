@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,14 +23,14 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
-import org.polypheny.db.algebra.logical.relational.LogicalTableFunctionScan;
+import org.polypheny.db.algebra.logical.relational.LogicalRelTableFunctionScan;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.tools.AlgBuilderFactory;
 
 
 /**
- * Planner rule that converts a {@link LogicalTableFunctionScan} relational expression {@link EnumerableConvention enumerable calling convention}.
+ * Planner rule that converts a {@link LogicalRelTableFunctionScan} relational expression {@link EnumerableConvention enumerable calling convention}.
  */
 public class EnumerableScanRule extends ConverterRule {
 

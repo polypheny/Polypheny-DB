@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,33 +18,32 @@ package org.polypheny.db.adapter.mongodb.rules;
 
 
 import java.util.List;
-import java.util.stream.Collectors;
 import org.bson.BsonDocument;
 import org.bson.BsonElement;
 import org.bson.BsonString;
 import org.polypheny.db.adapter.mongodb.MongoAlg;
 import org.polypheny.db.adapter.mongodb.MongoEntity;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.core.common.Scan;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.logistic.DataModel;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptRule;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.schema.trait.ModelTraitDef;
 import org.polypheny.db.util.Pair;
 
 
 /**
- * Relational expression representing a scan of a MongoDB collection.
- *
+ * Relational expression representing a relScan of a MongoDB collection.
+ * <p>
  * Additional operations might be applied, using the "find" or "aggregate" methods.</p>
  */
 public class MongoScan extends Scan<MongoEntity> implements MongoAlg {
-
 
 
     /**
@@ -54,9 +53,9 @@ public class MongoScan extends Scan<MongoEntity> implements MongoAlg {
      * @param traitSet Traits
      * @param table Table
      */
-    public MongoScan( AlgOptCluster cluster, AlgTraitSet traitSet, MongoEntity table ) {
+    public MongoScan( AlgCluster cluster, AlgTraitSet traitSet, MongoEntity table ) {
         super( cluster, traitSet, table );
-        this.rowType = table.getRowType( cluster.getTypeFactory() );
+        this.rowType = table.getTupleType( cluster.getTypeFactory() );
 
         assert getConvention() == CONVENTION;
     }
@@ -71,12 +70,12 @@ public class MongoScan extends Scan<MongoEntity> implements MongoAlg {
 
     @Override
     public AlgDataType deriveRowType() {
-        return super.deriveRowType();
+        return entity.getTupleType( getCluster().getTypeFactory() );
     }
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         // scans with a small project list are cheaper
         final float f = getTupleType().getFieldCount() / 100f;
         return super.computeSelfCost( planner, mq ).multiplyBy( .1 * f );
@@ -84,7 +83,7 @@ public class MongoScan extends Scan<MongoEntity> implements MongoAlg {
 
 
     @Override
-    public void register( AlgOptPlanner planner ) {
+    public void register( AlgPlanner planner ) {
         for ( AlgOptRule rule : MongoRules.RULES ) {
             planner.addRuleDuringRuntime( rule );
         }
@@ -93,8 +92,17 @@ public class MongoScan extends Scan<MongoEntity> implements MongoAlg {
 
     @Override
     public String algCompareString() {
-        return this.getClass().getSimpleName() + "$" +
-                entity.id + "&";
+        return this.getClass().getSimpleName() + "$"
+                + entity.id + "$"
+                + entity.getLayer() + "&";
+    }
+
+
+    @Override
+    public AlgWriter explainTerms( AlgWriter pw ) {
+        return super.explainTerms( pw )
+                .item( "collection", entity.id )
+                .item( "layer", entity.getLayer() );
     }
 
 
@@ -107,8 +115,8 @@ public class MongoScan extends Scan<MongoEntity> implements MongoAlg {
         if ( implementor.isDML() ) {
             return;
         }
-        if ( traitSet.getTrait( ModelTraitDef.INSTANCE ).getDataModel() == DataModel.RELATIONAL ) {
-            implementor.list.add( Pair.of( null, new BsonDocument( "$project", new BsonDocument( rowType.getFields().stream().map( p -> new BsonElement( p.getName(), new BsonString( "$" + p.getPhysicalName() ) ) ).collect( Collectors.toList() ) ) ).toJson() ) );
+        if ( traitSet.getTrait( ModelTraitDef.INSTANCE ).dataModel() == DataModel.RELATIONAL ) {
+            implementor.list.add( Pair.of( null, new BsonDocument( "$project", new BsonDocument( rowType.getFields().stream().map( p -> new BsonElement( MongoRules.maybeQuote( p.getName() ), new BsonString( "$" + p.getPhysicalName() ) ) ).toList() ) ).toJson() ) );
         }
     }
 

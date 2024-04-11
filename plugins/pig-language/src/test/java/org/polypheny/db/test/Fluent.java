@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,16 @@
 package org.polypheny.db.test;
 
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+
 import com.google.common.collect.Ordering;
+import java.io.StringReader;
+import java.io.StringWriter;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.function.Function;
 import org.polypheny.db.piglet.Ast;
 import org.polypheny.db.piglet.Ast.Program;
 import org.polypheny.db.piglet.Handler;
@@ -43,16 +52,6 @@ import org.polypheny.db.piglet.parser.PigletParser;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.tools.PigAlgBuilder;
 import org.polypheny.db.util.Util;
-
-import java.io.StringReader;
-import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.function.Function;
-
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
 
 
 /**
@@ -74,8 +73,8 @@ class Fluent {
 
 
     public Fluent explainContains( String expected ) throws ParseException {
+        final PigAlgBuilder builder = PigAlgBuilderTest.builder();
         final Program program = parseProgram( pig );
-        final PigAlgBuilder builder = PigAlgBuilder.create( PigRelBuilderTest.config().build() );
         new Handler( builder ).handle( program );
         assertThat( Util.toLinux( AlgOptUtil.toString( builder.peek() ) ), is( expected ) );
         return this;
@@ -114,7 +113,7 @@ class Fluent {
 
     public Fluent returns( Function<String, Void> checker ) throws ParseException {
         final Program program = parseProgram( pig );
-        final PigAlgBuilder builder = PigAlgBuilder.create( PigRelBuilderTest.config().build() );
+        final PigAlgBuilder builder = PigAlgBuilderTest.builder();
         final StringWriter sw = new StringWriter();
         new PolyphenyDbHandler( builder, sw ).handle( program );
         checker.apply( Util.toLinux( sw.toString() ) );

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,7 @@ import com.google.common.annotations.VisibleForTesting;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 
 
 /**
@@ -60,7 +61,7 @@ public abstract class TestUtil {
                 return;
             } else {
                 String message = "Expected:\n" + expected + "\nActual: null";
-                throw new RuntimeException( message + " " + expected + "!=" + null );
+                throw new GenericRuntimeException( message + " " + expected + "!=" + null );
             }
         }
         if ( (expected != null) && expected.equals( actual ) ) {
@@ -69,17 +70,17 @@ public abstract class TestUtil {
         String s = toJavaString( actual );
 
         String message = "Expected:\n" + expected + "\nActual:\n" + actual + "\nActual java:\n" + s + '\n';
-        throw new RuntimeException( message + " " + expected + "!=" + actual );
+        throw new GenericRuntimeException( message + " " + expected + "!=" + actual );
     }
 
 
     /**
      * Converts a string (which may contain quotes and newlines) into a java literal.
-     *
+     * <p>
      * For example, <code>string with "quotes" split across lines</code>
-     *
+     * <p>
      * becomes
-     *
+     * <p>
      * <code>"string with \"quotes\" split" + NL + "across lines"</code>
      */
     public static String quoteForJava( String s ) {
@@ -98,7 +99,7 @@ public abstract class TestUtil {
 
     /**
      * Converts a string (which may contain quotes and newlines) into a java literal.
-     *
+     * <p>
      * For example,
      * <code>string with "quotes" split across lines</code>
      * becomes
@@ -182,7 +183,7 @@ public abstract class TestUtil {
                 .replaceAll( "\\.", "\\\\." )
                 .replaceAll( "\\+", "\\\\+" )
                 .replaceAll( "\\{", "\\\\{" )
-                .replaceAll( "\\}", "\\\\}" )
+                .replaceAll( "}", "\\\\}" )
                 .replaceAll( "\\|", "\\\\||" )
                 .replaceAll( "[$]", "\\\\\\$" )
                 .replaceAll( "\\?", "\\\\?" )
@@ -190,7 +191,7 @@ public abstract class TestUtil {
                 .replaceAll( "\\(", "\\\\(" )
                 .replaceAll( "\\)", "\\\\)" )
                 .replaceAll( "\\[", "\\\\[" )
-                .replaceAll( "\\]", "\\\\]" );
+                .replaceAll( "]", "\\\\]" );
     }
 
 

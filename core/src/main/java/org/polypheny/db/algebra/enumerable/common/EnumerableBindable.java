@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,7 +37,7 @@ import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.interpreter.Node;
 import org.polypheny.db.interpreter.Row;
 import org.polypheny.db.interpreter.Sink;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.runtime.ArrayBindable;
@@ -54,7 +54,7 @@ import org.polypheny.db.type.entity.PolyValue;
  */
 public class EnumerableBindable extends ConverterImpl implements BindableAlg {
 
-    protected EnumerableBindable( AlgOptCluster cluster, AlgNode input ) {
+    protected EnumerableBindable( AlgCluster cluster, AlgNode input ) {
         super( cluster, ConventionTraitDef.INSTANCE, cluster.traitSetOf( BindableConvention.INSTANCE ), input );
     }
 
@@ -67,7 +67,8 @@ public class EnumerableBindable extends ConverterImpl implements BindableAlg {
 
     @Override
     public String algCompareString() {
-        return "EnumerableBindable$" + input.algCompareString() + "&";
+        return EnumerableBindable.class.getSimpleName() + "$"
+                + input.algCompareString() + "&";
     }
 
 
@@ -81,7 +82,7 @@ public class EnumerableBindable extends ConverterImpl implements BindableAlg {
     public Enumerable<PolyValue[]> bind( DataContext dataContext ) {
         final Map<String, Object> map = new HashMap<>();
         final Bindable<?> bindable = EnumerableInterpretable.toBindable( map, (EnumerableAlg) getInput(), Prefer.ARRAY, dataContext.getStatement() ).left;
-        final ArrayBindable arrayBindable = EnumerableInterpretable.box( bindable );
+        final ArrayBindable<PolyValue> arrayBindable = EnumerableInterpretable.box( bindable );
         dataContext.addAll( map );
         return arrayBindable.bind( dataContext );
     }

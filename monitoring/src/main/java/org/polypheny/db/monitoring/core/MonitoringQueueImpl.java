@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -47,7 +46,7 @@ public class MonitoringQueueImpl implements MonitoringQueue {
     private final MonitoringRepository statisticRepository;
     private MonitoringThreadPoolExecutor threadPoolWorkers;
 
-    private final BlockingQueue<Runnable> eventQueue;
+    private final BlockingQueue<Runnable> eventQueue = new LinkedBlockingQueue<>();
 
     private final int CORE_POOL_SIZE;
     private final int MAXIMUM_POOL_SIZE;
@@ -68,25 +67,32 @@ public class MonitoringQueueImpl implements MonitoringQueue {
             @NonNull MonitoringRepository statisticRepository ) {
         this.persistentRepository = persistentRepository;
         this.statisticRepository = statisticRepository;
-        this.eventQueue = new LinkedBlockingQueue<>();
         this.backgroundProcessingActive = backgroundProcessingActive;
 
         this.CORE_POOL_SIZE = RuntimeConfig.MONITORING_CORE_POOL_SIZE.getInteger();
         this.MAXIMUM_POOL_SIZE = RuntimeConfig.MONITORING_MAXIMUM_POOL_SIZE.getInteger();
         this.KEEP_ALIVE_TIME = RuntimeConfig.MONITORING_POOL_KEEP_ALIVE_TIME.getInteger();
 
-        if ( this.backgroundProcessingActive ) {
-            RuntimeConfig.MONITORING_CORE_POOL_SIZE.setRequiresRestart( true );
-            RuntimeConfig.MONITORING_MAXIMUM_POOL_SIZE.setRequiresRestart( true );
-            RuntimeConfig.MONITORING_POOL_KEEP_ALIVE_TIME.setRequiresRestart( true );
-
+        if ( !this.backgroundProcessingActive ) {
             threadPoolWorkers = new MonitoringThreadPoolExecutor(
                     CORE_POOL_SIZE,
                     MAXIMUM_POOL_SIZE,
                     KEEP_ALIVE_TIME,
                     TimeUnit.SECONDS,
                     eventQueue );
+            return;
         }
+
+        RuntimeConfig.MONITORING_CORE_POOL_SIZE.setRequiresRestart( true );
+        RuntimeConfig.MONITORING_MAXIMUM_POOL_SIZE.setRequiresRestart( true );
+        RuntimeConfig.MONITORING_POOL_KEEP_ALIVE_TIME.setRequiresRestart( true );
+
+        threadPoolWorkers = new MonitoringThreadPoolExecutor(
+                CORE_POOL_SIZE,
+                MAXIMUM_POOL_SIZE,
+                KEEP_ALIVE_TIME,
+                TimeUnit.SECONDS,
+                eventQueue );
 
         // Instantiated thread count
         this.threadCount = threadPoolWorkers.getPoolSize();
@@ -122,6 +128,8 @@ public class MonitoringQueueImpl implements MonitoringQueue {
     public synchronized void queueEvent( @NonNull MonitoringEvent event ) {
         if ( backgroundProcessingActive ) {
             threadPoolWorkers.execute( new MonitoringWorker( event ) );
+        } else {
+            eventQueue.add( new MonitoringWorker( event ) );
         }
     }
 
@@ -142,7 +150,7 @@ public class MonitoringQueueImpl implements MonitoringQueue {
         List<HashMap<String, String>> infoList = new ArrayList<>();
         List<MonitoringEvent> queueElements = new ArrayList<>();
 
-        threadPoolWorkers.getQueue().stream().limit( 100 ).collect( Collectors.toList() )
+        threadPoolWorkers.getQueue().stream().limit( 100 ).toList()
                 .forEach(
                         task -> queueElements.add(
                                 ((MonitoringWorker) task).getEvent()

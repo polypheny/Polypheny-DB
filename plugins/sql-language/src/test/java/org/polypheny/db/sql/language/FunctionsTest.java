@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,12 +20,12 @@ package org.polypheny.db.sql.language;
 import static org.apache.calcite.avatica.util.DateTimeUtils.ymdToUnixDate;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.AnyOf.anyOf;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.polypheny.db.functions.Functions.charLength;
 import static org.polypheny.db.functions.Functions.concat;
 import static org.polypheny.db.functions.Functions.greater;
@@ -39,26 +39,25 @@ import static org.polypheny.db.functions.Functions.upper;
 import static org.polypheny.db.functions.TemporalFunctions.addMonths;
 import static org.polypheny.db.functions.TemporalFunctions.subtractMonths;
 
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.avatica.util.DateTimeUtils;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.functions.Functions;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.runtime.Utilities;
-import org.polypheny.db.type.entity.PolyBigDecimal;
 import org.polypheny.db.type.entity.PolyBoolean;
-import org.polypheny.db.type.entity.PolyDate;
-import org.polypheny.db.type.entity.PolyDouble;
-import org.polypheny.db.type.entity.PolyInteger;
-import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
+import org.polypheny.db.type.entity.numerical.PolyDouble;
+import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.numerical.PolyLong;
+import org.polypheny.db.type.entity.temporal.PolyDate;
 
 
 /**
@@ -66,15 +65,16 @@ import org.polypheny.db.type.entity.PolyString;
  */
 public class FunctionsTest {
 
-    @Before
-    public void before() {
+    @BeforeAll
+    public static void before() {
+        //noinspection ResultOfMethodCallIgnored
         TestHelper.getInstance();
     }
 
 
     @Test
     public void testCharLength() {
-        assertEquals( 3, charLength( PolyString.of( "xyz" ) ) );
+        assertEquals( 3, charLength( PolyString.of( "xyz" ) ).intValue() );
     }
 
 
@@ -209,16 +209,16 @@ public class FunctionsTest {
 
 
     private void checkAddMonths( int y0, int m0, int d0, int y1, int m1, int d1, int months ) {
-        final PolyDate date0 = PolyDate.of( ymdToUnixDate( y0, m0, d0 ) );
-        final long date = addMonths( date0, PolyLong.of( months ) ).milliSinceEpoch;
-        final PolyDate date1 = PolyDate.of( ymdToUnixDate( y1, m1, d1 ) );
-        assertThat( (int) date, is( date1 ) );
+        final PolyDate date0 = PolyDate.ofDays( ymdToUnixDate( y0, m0, d0 ) );
+        final PolyDate date = addMonths( date0, PolyLong.of( months ) );
+        final PolyDate date1 = PolyDate.ofDays( ymdToUnixDate( y1, m1, d1 ) );
+        assertThat( date, is( date1 ) );
 
-        assertThat( subtractMonths( date1, date0 ), anyOf( is( months ), is( months + 1 ) ) );
-        assertThat( subtractMonths( addMonths( date1, PolyInteger.of( 1 ) ), date0 ), anyOf( is( months ), is( months + 1 ) ) );
-        assertThat( subtractMonths( date1, addMonths( date0, PolyInteger.of( 1 ) ) ), anyOf( is( months ), is( months - 1 ) ) );
-        assertThat( subtractMonths( d2ts( date1, 1 ), d2ts( date0, 0 ) ), anyOf( is( months ), is( months + 1 ) ) );
-        assertThat( subtractMonths( d2ts( date1, 0 ), d2ts( date0, 1 ) ), anyOf( is( months - 1 ), is( months ), is( months + 1 ) ) );
+        assertThat( subtractMonths( date1, date0 ), anyOf( is( PolyInteger.of( months ) ), is( PolyInteger.of( months + 1 ) ) ) );
+        assertThat( subtractMonths( addMonths( date1, PolyInteger.of( 1 ) ), date0 ), anyOf( is( PolyInteger.of( months ) ), is( PolyInteger.of( months + 1 ) ) ) );
+        assertThat( subtractMonths( date1, addMonths( date0, PolyInteger.of( 1 ) ) ), anyOf( is( PolyInteger.of( months ) ), is( PolyInteger.of( months - 1 ) ) ) );
+        assertThat( subtractMonths( d2ts( date1, 1 ), d2ts( date0, 0 ) ), anyOf( is( PolyInteger.of( months ) ), is( PolyInteger.of( months + 1 ) ) ) );
+        assertThat( subtractMonths( d2ts( date1, 0 ), d2ts( date0, 1 ) ), anyOf( is( PolyInteger.of( months - 1 ) ), is( PolyInteger.of( months ) ), is( PolyInteger.of( months + 1 ) ) ) );
     }
 
 
@@ -226,7 +226,7 @@ public class FunctionsTest {
      * Converts a date (days since epoch) and milliseconds (since midnight) into a timestamp (milliseconds since epoch).
      */
     private PolyDate d2ts( PolyDate date, int millis ) {
-        return PolyDate.of( date.milliSinceEpoch * DateTimeUtils.MILLIS_PER_DAY + millis );
+        return PolyDate.of( date.getDaysSinceEpoch() * DateTimeUtils.MILLIS_PER_DAY + millis );
     }
 
 
@@ -241,10 +241,10 @@ public class FunctionsTest {
 
 
     private void checkFloor( int x, int y, int result ) {
-        /*assertThat( Functions.floor( x, y ), is( result ) );
-        assertThat( Functions.floor( (long) x, (long) y ), is( (long) result ) );
-        assertThat( Functions.floor( (short) x, (short) y ), is( (short) result ) );
-        assertThat( Functions.floor( (byte) x, (byte) y ), is( (byte) result ) );*/
+        assertThat( Functions.floor( PolyInteger.of( x ), PolyInteger.of( y ) ), is( PolyInteger.of( result ) ) );
+        assertThat( Functions.floor( PolyLong.of( x ), PolyLong.of( y ) ), is( PolyLong.of( result ) ) );
+        // assertThat( Functions.floor( (short) x, (short) y ), is( (short) result ) );
+        // assertThat( Functions.floor( x, (byte) y ), is( (byte) result ) );
         assertThat( Functions.floor( PolyBigDecimal.of( x ), PolyBigDecimal.of( y ) ), is( PolyBigDecimal.of( result ) ) );
     }
 
@@ -261,11 +261,11 @@ public class FunctionsTest {
 
 
     private void checkCeil( int x, int y, int result ) {
-        /*assertThat( Functions.ceil( x, y ), is( result ) );
-        assertThat( Functions.ceil( (long) x, (long) y ), is( (long) result ) );
-        assertThat( Functions.ceil( (short) x, (short) y ), is( (short) result ) );
-        assertThat( Functions.ceil( (byte) x, (byte) y ), is( (byte) result ) );*/
-        assertThat( Functions.ceil( PolyBigDecimal.of( x ), PolyBigDecimal.of( y ) ), is( BigDecimal.valueOf( result ) ) );
+        assertThat( Functions.ceil( PolyInteger.of( x ), PolyInteger.of( y ) ), is( PolyInteger.of( result ) ) );
+        assertThat( Functions.ceil( PolyLong.of( x ), PolyLong.of( y ) ), is( PolyLong.of( result ) ) );
+        //assertThat( Functions.ceil( (short) x, (short) y ), is( (short) result ) );
+        //assertThat( Functions.ceil( (byte) x, (byte) y ), is( (byte) result ) );
+        assertThat( Functions.ceil( PolyInteger.of( x ), PolyInteger.of( y ) ), is( PolyInteger.of( result ) ) );
     }
 
 
@@ -324,28 +324,28 @@ public class FunctionsTest {
 
     @Test
     public void testSTruncateDouble() {
-        assertEquals( 12.345d, Functions.struncate( PolyDouble.of( 12.345d ), PolyInteger.of( 3 ) ).longValue(), 0.001 );
-        assertEquals( 12.340d, Functions.struncate( PolyDouble.of( 12.345d ), PolyInteger.of( 2 ) ).longValue(), 0.001 );
-        assertEquals( 12.300d, Functions.struncate( PolyDouble.of( 12.345d ), PolyInteger.of( 1 ) ).longValue(), 0.001 );
-        assertEquals( 12.000d, Functions.struncate( PolyDouble.of( 12.999d ), PolyInteger.of( 0 ) ).longValue(), 0.001 );
+        assertEquals( 12.345d, Functions.struncate( PolyDouble.of( 12.345d ), PolyInteger.of( 3 ) ).doubleValue(), 0.001 );
+        assertEquals( 12.340d, Functions.struncate( PolyDouble.of( 12.345d ), PolyInteger.of( 2 ) ).doubleValue(), 0.001 );
+        assertEquals( 12.300d, Functions.struncate( PolyDouble.of( 12.345d ), PolyInteger.of( 1 ) ).doubleValue(), 0.001 );
+        assertEquals( 12.000d, Functions.struncate( PolyDouble.of( 12.999d ), PolyInteger.of( 0 ) ).doubleValue(), 0.001 );
 
-        assertEquals( -12.345d, Functions.struncate( PolyDouble.of( -12.345d ), PolyInteger.of( 3 ) ).longValue(), 0.001 );
-        assertEquals( -12.340d, Functions.struncate( PolyDouble.of( -12.345d ), PolyInteger.of( 2 ) ).longValue(), 0.001 );
-        assertEquals( -12.300d, Functions.struncate( PolyDouble.of( -12.345d ), PolyInteger.of( 1 ) ).longValue(), 0.001 );
-        assertEquals( -12.000d, Functions.struncate( PolyDouble.of( -12.999d ), PolyInteger.of( 0 ) ).longValue(), 0.001 );
+        assertEquals( -12.345d, Functions.struncate( PolyDouble.of( -12.345d ), PolyInteger.of( 3 ) ).doubleValue(), 0.001 );
+        assertEquals( -12.340d, Functions.struncate( PolyDouble.of( -12.345d ), PolyInteger.of( 2 ) ).doubleValue(), 0.001 );
+        assertEquals( -12.300d, Functions.struncate( PolyDouble.of( -12.345d ), PolyInteger.of( 1 ) ).doubleValue(), 0.001 );
+        assertEquals( -12.000d, Functions.struncate( PolyDouble.of( -12.999d ), PolyInteger.of( 0 ) ).doubleValue(), 0.001 );
 
-        assertEquals( 12000d, Functions.struncate( PolyDouble.of( 12345d ), PolyInteger.of( -3 ) ).longValue(), 0.001 );
-        assertEquals( 12000d, Functions.struncate( PolyDouble.of( 12000d ), PolyInteger.of( -3 ) ).longValue(), 0.001 );
-        assertEquals( 12000d, Functions.struncate( PolyDouble.of( 12001d ), PolyInteger.of( -3 ) ).longValue(), 0.001 );
-        assertEquals( 10000d, Functions.struncate( PolyDouble.of( 12000d ), PolyInteger.of( -4 ) ).longValue(), 0.001 );
-        assertEquals( 0d, Functions.struncate( PolyDouble.of( 12000d ), PolyInteger.of( -5 ) ).longValue(), 0.001 );
-        assertEquals( 11000d, Functions.struncate( PolyDouble.of( 11999d ), PolyInteger.of( -3 ) ).longValue(), 0.001 );
+        assertEquals( 12000d, Functions.struncate( PolyDouble.of( 12345d ), PolyInteger.of( -3 ) ).doubleValue(), 0.001 );
+        assertEquals( 12000d, Functions.struncate( PolyDouble.of( 12000d ), PolyInteger.of( -3 ) ).doubleValue(), 0.001 );
+        assertEquals( 12000d, Functions.struncate( PolyDouble.of( 12001d ), PolyInteger.of( -3 ) ).doubleValue(), 0.001 );
+        assertEquals( 10000d, Functions.struncate( PolyDouble.of( 12000d ), PolyInteger.of( -4 ) ).doubleValue(), 0.001 );
+        assertEquals( 0d, Functions.struncate( PolyDouble.of( 12000d ), PolyInteger.of( -5 ) ).doubleValue(), 0.001 );
+        assertEquals( 11000d, Functions.struncate( PolyDouble.of( 11999d ), PolyInteger.of( -3 ) ).doubleValue(), 0.001 );
 
-        assertEquals( -12000d, Functions.struncate( PolyDouble.of( -12345d ), PolyInteger.of( -3 ) ).longValue(), 0.001 );
-        assertEquals( -12000d, Functions.struncate( PolyDouble.of( -12000d ), PolyInteger.of( -3 ) ).longValue(), 0.001 );
-        assertEquals( -11000d, Functions.struncate( PolyDouble.of( -11999d ), PolyInteger.of( -3 ) ).longValue(), 0.001 );
-        assertEquals( -10000d, Functions.struncate( PolyDouble.of( -12000d ), PolyInteger.of( -4 ) ).longValue(), 0.001 );
-        assertEquals( 0d, Functions.struncate( PolyDouble.of( -12000d ), PolyInteger.of( -5 ) ).longValue(), 0.001 );
+        assertEquals( -12000d, Functions.struncate( PolyDouble.of( -12345d ), PolyInteger.of( -3 ) ).doubleValue(), 0.001 );
+        assertEquals( -12000d, Functions.struncate( PolyDouble.of( -12000d ), PolyInteger.of( -3 ) ).doubleValue(), 0.001 );
+        assertEquals( -11000d, Functions.struncate( PolyDouble.of( -11999d ), PolyInteger.of( -3 ) ).doubleValue(), 0.001 );
+        assertEquals( -10000d, Functions.struncate( PolyDouble.of( -12000d ), PolyInteger.of( -4 ) ).doubleValue(), 0.001 );
+        assertEquals( 0d, Functions.struncate( PolyDouble.of( -12000d ), PolyInteger.of( -5 ) ).doubleValue(), 0.001 );
     }
 
 
@@ -595,7 +595,7 @@ public class FunctionsTest {
             assertThat( Functions.lt( PolyString.of( "1" ), PolyLong.of( 2L ) ), is( PolyBoolean.FALSE ) );
             fail( "'lt' on non-numeric different type is not possible" );
         } catch ( PolyphenyDbException e ) {
-            assertThat( e.getMessage(), is( "Invalid types for comparison: class org.polypheny.db.type.entity.PolyString < class org.polypheny.db.type.entity.PolyLong" ) );
+            assertThat( e.getMessage(), is( "Invalid types for comparison: class org.polypheny.db.type.entity.PolyString < class org.polypheny.db.type.entity.numerical.PolyLong" ) );
         }
     }
 
@@ -627,7 +627,7 @@ public class FunctionsTest {
             assertThat( Functions.le( PolyString.of( "2" ), PolyLong.of( 2L ) ), is( PolyBoolean.FALSE ) );
             fail( "'le' on non-numeric different type is not possible" );
         } catch ( PolyphenyDbException e ) {
-            assertThat( e.getMessage(), is( "Invalid types for comparison: class org.polypheny.db.type.entity.PolyString <= class org.polypheny.db.type.entity.PolyLong" ) );
+            assertThat( e.getMessage(), is( "Invalid types for comparison: class org.polypheny.db.type.entity.PolyString <= class org.polypheny.db.type.entity.numerical.PolyLong" ) );
         }
     }
 
@@ -651,7 +651,7 @@ public class FunctionsTest {
             assertThat( Functions.gt( PolyString.of( "2" ), PolyLong.of( 1L ) ), is( PolyBoolean.FALSE ) );
             fail( "'gt' on non-numeric different type is not possible" );
         } catch ( PolyphenyDbException e ) {
-            assertThat( e.getMessage(), is( "Invalid types for comparison: class org.polypheny.db.type.entity.PolyString > class org.polypheny.db.type.entity.PolyLong" ) );
+            assertThat( e.getMessage(), is( "Invalid types for comparison: class org.polypheny.db.type.entity.PolyString > class org.polypheny.db.type.entity.numerical.PolyLong" ) );
         }
     }
 
@@ -683,7 +683,7 @@ public class FunctionsTest {
             assertThat( Functions.ge( PolyString.of( "2" ), PolyLong.of( 2L ) ), is( PolyBoolean.FALSE ) );
             fail( "'ge' on non-numeric different type is not possible" );
         } catch ( PolyphenyDbException e ) {
-            assertThat( e.getMessage(), is( "Invalid types for comparison: class org.polypheny.db.type.entity.PolyString >= class org.polypheny.db.type.entity.PolyLong" ) );
+            assertThat( e.getMessage(), is( "Invalid types for comparison: class org.polypheny.db.type.entity.PolyString >= class org.polypheny.db.type.entity.numerical.PolyLong" ) );
         }
     }
 
@@ -709,7 +709,7 @@ public class FunctionsTest {
             Functions.plusAny( PolyString.of( "2" ), PolyLong.of( 2 ) );
             fail( "'plus' on non-numeric type is not possible" );
         } catch ( PolyphenyDbException e ) {
-            assertThat( e.getMessage(), is( "Invalid types for arithmetic: class org.polypheny.db.type.entity.PolyString + class org.polypheny.db.type.entity.PolyLong" ) );
+            assertThat( e.getMessage(), is( "Invalid types for arithmetic: class org.polypheny.db.type.entity.PolyString + class org.polypheny.db.type.entity.numerical.PolyLong" ) );
         }
     }
 
@@ -735,7 +735,7 @@ public class FunctionsTest {
             Functions.minusAny( PolyString.of( "2" ), PolyLong.of( 2L ) );
             fail( "'minus' on non-numeric type is not possible" );
         } catch ( PolyphenyDbException e ) {
-            assertThat( e.getMessage(), is( "Invalid types for arithmetic: class org.polypheny.db.type.entity.PolyString - class org.polypheny.db.type.entity.PolyLong" ) );
+            assertThat( e.getMessage(), is( "Invalid types for arithmetic: class org.polypheny.db.type.entity.PolyString - class org.polypheny.db.type.entity.numerical.PolyLong" ) );
         }
     }
 
@@ -761,7 +761,7 @@ public class FunctionsTest {
             Functions.multiplyAny( PolyString.of( "2" ), PolyLong.of( 2L ) );
             fail( "'multiply' on non-numeric type is not possible" );
         } catch ( PolyphenyDbException e ) {
-            assertThat( e.getMessage(), is( "Invalid types for arithmetic: class org.polypheny.db.type.entity.PolyString * class org.polypheny.db.type.entity.PolyLong" ) );
+            assertThat( e.getMessage(), is( "Invalid types for arithmetic: class org.polypheny.db.type.entity.PolyString * class org.polypheny.db.type.entity.numerical.PolyLong" ) );
         }
     }
 
@@ -787,7 +787,7 @@ public class FunctionsTest {
             Functions.divideAny( PolyString.of( "5" ), PolyLong.of( 2L ) );
             fail( "'divide' on non-numeric type is not possible" );
         } catch ( PolyphenyDbException e ) {
-            assertThat( e.getMessage(), is( "Invalid types for arithmetic: class org.polypheny.db.type.entity.PolyString / class org.polypheny.db.type.entity.PolyLong" ) );
+            assertThat( e.getMessage(), is( "Invalid types for arithmetic: class org.polypheny.db.type.entity.PolyString / class org.polypheny.db.type.entity.numerical.PolyLong" ) );
         }
     }
 
@@ -834,4 +834,3 @@ public class FunctionsTest {
     }
 
 }
-

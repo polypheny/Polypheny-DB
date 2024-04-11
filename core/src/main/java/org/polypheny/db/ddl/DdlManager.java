@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,9 +19,9 @@ package org.polypheny.db.ddl;
 
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import lombok.Value;
+import lombok.experimental.SuperBuilder;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.algebra.AlgCollation;
@@ -59,6 +59,9 @@ public abstract class DdlManager {
     public static DdlManager INSTANCE = null;
 
 
+    public static final List<String> blockedNamespaceNames = List.of( "namespace", "db", "schema", "graph", "database" );
+
+
     /**
      * Sets a new DdlManager and returns it.
      *
@@ -94,19 +97,34 @@ public abstract class DdlManager {
      * @param type the namespace type, RELATIONAL, DOCUMENT, etc.
      * @param ifNotExists whether to silently ignore if a namespace with this name does already exist
      * @param replace whether to replace an existing namespace with this name
+     * @param statement the query statement
      */
-    public abstract long createNamespace( String name, DataModel type, boolean ifNotExists, boolean replace );
+    public abstract long createNamespace( String name, DataModel type, boolean ifNotExists, boolean replace, Statement statement );
 
     /**
-     * Adds a new adapter (data store or data source)
+     * Adds a new data store(adapter)
      *
-     * @param uniqueName unique name of the newly created adapter
-     * @param adapterName name of adapter, which is used to create the adapter
-     * @param adapterType the specific {@link AdapterType} for the adapter to create
-     * @param config configuration for the adapter
-     * @param mode
+     * @param uniqueName unique name of the newly created store
+     * @param adapterName name of store, which is used to create the store
+     * @param adapterType the specific {@link AdapterType} for the store to create
+     * @param config configuration for the store
+     * @param mode the deploy mode
      */
-    public abstract void createAdapter( String uniqueName, String adapterName, AdapterType adapterType, Map<String, String> config, DeployMode mode );
+    public abstract void createStore( String uniqueName, String adapterName, AdapterType adapterType, Map<String, String> config, DeployMode mode );
+
+
+    /**
+     * Adds a new data source(adapter)
+     *
+     * @param uniqueName unique name of the newly created source
+     * @param adapterName name of source, which is used to create the source
+     * @param namespace the target namespace for the adapter
+     * @param adapterType the specific {@link AdapterType} for the source to create
+     * @param config configuration for the source
+     * @param mode the deploy mode
+     */
+    public abstract void createSource( String uniqueName, String adapterName, long namespace, AdapterType adapterType, Map<String, String> config, DeployMode mode );
+
 
     /**
      * Drop an adapter
@@ -161,7 +179,7 @@ public abstract class DdlManager {
      * @param onUpdate how to enforce the constraint on updated
      * @param onDelete how to enforce the constraint on delete
      */
-    public abstract void createForeignKey( LogicalTable table, LogicalTable refTable, List<String> columnNames, List<String> refColumnNames, String constraintName, ForeignKeyOption onUpdate, ForeignKeyOption onDelete );
+    public abstract void createForeignKey( LogicalTable table, LogicalTable refTable, List<String> columnNames, List<String> refColumnNames, String constraintName, ForeignKeyOption onUpdate, ForeignKeyOption onDelete, Statement statement );
 
     /**
      * Adds an index to a table
@@ -216,7 +234,7 @@ public abstract class DdlManager {
      * @param columnNames the names of the columns which are part of the constraint
      * @param constraintName the name of the unique constraint
      */
-    public abstract void createUniqueConstraint( LogicalTable table, List<String> columnNames, String constraintName );
+    public abstract void createUniqueConstraint( LogicalTable table, List<String> columnNames, String constraintName, Statement statement );
 
     /**
      * Drop a specific column in a table
@@ -379,14 +397,6 @@ public abstract class DdlManager {
     public abstract void dropColumnPlacement( LogicalTable table, LogicalColumn column, DataStore<?> store, Statement statement );
 
     /**
-     * Change the owner of a table
-     *
-     * @param table the table
-     * @param newOwnerName the name of the new owner
-     */
-    public abstract void alterTableOwner( LogicalTable table, String newOwnerName );
-
-    /**
      * Rename a table (changing the logical name of the table)
      *
      * @param table the table to be renamed
@@ -421,7 +431,7 @@ public abstract class DdlManager {
      * @param placementType which placement type should be used for the initial placements
      * @param statement the used statement
      */
-    public abstract void createTable( long namespaceId, String tableName, List<FieldInformation> columns, List<ConstraintInformation> constraints, boolean ifNotExists, List<DataStore<?>> stores, PlacementType placementType, Statement statement );
+    public abstract void createTable( long namespaceId, String tableName, List<FieldInformation> columns, List<ConstraintInformation> constraints, boolean ifNotExists, @Nullable List<DataStore<?>> stores, PlacementType placementType, Statement statement );
 
     /**
      * Create a new view
@@ -465,11 +475,6 @@ public abstract class DdlManager {
 
     /**
      * Adds a new constraint to a table
-     *
-     * @param information
-     * @param namespaceId
-     * @param columnIds
-     * @param tableId
      */
     public abstract void createConstraint( ConstraintInformation information, long namespaceId, List<Long> columnIds, long tableId );
 
@@ -595,7 +600,7 @@ public abstract class DdlManager {
         public @Nullable String foreignKeyColumnName;
 
 
-        public ConstraintInformation( String name, ConstraintType type, List<String> columnNames, String foreignKeyTable, String foreignKeyColumnName ) {
+        public ConstraintInformation( String name, ConstraintType type, List<String> columnNames, @Nullable String foreignKeyTable, @Nullable String foreignKeyColumnName ) {
             this.name = name;
             this.type = type;
             this.columnNames = columnNames;
@@ -619,6 +624,7 @@ public abstract class DdlManager {
     public static class ColumnTypeInformation {
 
         public PolyType type;
+        @Nullable
         public PolyType collectionType;
         public Integer precision;
         public Integer scale;
@@ -629,7 +635,7 @@ public abstract class DdlManager {
 
         public ColumnTypeInformation(
                 PolyType type,
-                PolyType collectionType,
+                @Nullable PolyType collectionType,
                 Integer precision,
                 Integer scale,
                 Integer dimension,
@@ -660,6 +666,7 @@ public abstract class DdlManager {
 
 
     @Value
+    @SuperBuilder(toBuilder = true)
     public static class PartitionInformation {
 
         public LogicalTable table;
@@ -704,11 +711,11 @@ public abstract class DdlManager {
             List<String> names = partitionGroupNames
                     .stream()
                     .map( Identifier::getSimple )
-                    .collect( Collectors.toList() );
+                    .toList();
             List<List<String>> qualifiers = partitionQualifierList
                     .stream()
-                    .map( qs -> qs.stream().map( PartitionInformation::getValueOfSqlNode ).collect( Collectors.toList() ) )
-                    .collect( Collectors.toList() );
+                    .map( qs -> qs.stream().map( PartitionInformation::getValueOfSqlNode ).toList() )
+                    .toList();
             return new PartitionInformation( table, typeName, columnName, names, numberOfPartitionGroups, numberOfPartitions, qualifiers, rawPartitionInformation );
         }
 

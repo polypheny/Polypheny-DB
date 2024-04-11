@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,30 +69,19 @@ public enum EthereumFieldType {
 
 
     public static EthereumFieldType getBlockchainFieldType( PolyType type ) {
-        switch ( type ) {
-            case BOOLEAN:
-                return EthereumFieldType.BOOLEAN;
-            case VARBINARY:
-                return EthereumFieldType.BYTE;
-            case INTEGER:
-                return EthereumFieldType.INT;
-            case BIGINT:
-                return EthereumFieldType.LONG;
-            case REAL:
-                return EthereumFieldType.FLOAT;
-            case DOUBLE:
-                return EthereumFieldType.DOUBLE;
-            case VARCHAR:
-                return EthereumFieldType.STRING;
-            case DATE:
-                return EthereumFieldType.DATE;
-            case TIME:
-                return EthereumFieldType.TIME;
-            case TIMESTAMP:
-                return EthereumFieldType.TIMESTAMP;
-            default:
-                throw new GenericRuntimeException( "Unsupported datatype: " + type.name() );
-        }
+        return switch ( type ) {
+            case BOOLEAN -> EthereumFieldType.BOOLEAN;
+            case VARBINARY -> EthereumFieldType.BYTE;
+            case INTEGER -> EthereumFieldType.INT;
+            case BIGINT -> EthereumFieldType.LONG;
+            case REAL -> EthereumFieldType.FLOAT;
+            case DOUBLE -> EthereumFieldType.DOUBLE;
+            case VARCHAR -> EthereumFieldType.STRING;
+            case DATE -> EthereumFieldType.DATE;
+            case TIME -> EthereumFieldType.TIME;
+            case TIMESTAMP -> EthereumFieldType.TIMESTAMP;
+            default -> throw new GenericRuntimeException( "Unsupported datatype: " + type.name() );
+        };
     }
 
 

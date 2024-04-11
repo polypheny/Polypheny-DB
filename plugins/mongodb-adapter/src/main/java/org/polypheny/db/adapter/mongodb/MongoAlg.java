@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,7 +40,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Setter;
 import org.bson.BsonArray;
@@ -51,10 +50,10 @@ import org.polypheny.db.adapter.mongodb.MongoPlugin.MongoStore;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
-import org.polypheny.db.algebra.core.relational.RelScan;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.entity.physical.PhysicalTable;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.util.Pair;
@@ -68,7 +67,7 @@ public interface MongoAlg extends AlgNode {
     void implement( Implementor implementor );
 
     /**
-     * Calling convention for relational operations that occur in MongoDB.
+     * Calling convention for algebra operations that occur in MongoDB.
      */
     Convention CONVENTION = MongoConvention.INSTANCE;//new Convention.Impl( "MONGO", MongoAlg.class );
 
@@ -98,7 +97,7 @@ public interface MongoAlg extends AlgNode {
 
         @Getter
         @Setter
-        private AlgDataType rowType;
+        private AlgDataType tupleType;
 
         @Setter
         @Getter
@@ -135,9 +134,10 @@ public interface MongoAlg extends AlgNode {
 
 
         public String getPhysicalName( String name ) {
-            int index = entity.physical.unwrap( PhysicalTable.class ).orElseThrow().columns.stream().map( c -> c.name ).collect( Collectors.toList() ).indexOf( name );
+            MongoEntity mongoEntity = entity.physical.unwrap( PhysicalEntity.class ).orElseThrow().unwrap( MongoEntity.class ).orElseThrow();
+            int index = mongoEntity.fields.stream().map( c -> c.logicalName ).toList().indexOf( name );
             if ( index != -1 ) {
-                return MongoStore.getPhysicalColumnName( entity.physical.unwrap( PhysicalTable.class ).orElseThrow().columns.stream().map( c -> c.id ).collect( Collectors.toList() ).get( index ) );
+                return MongoStore.getPhysicalColumnName( mongoEntity.fields.stream().map( c -> c.id ).toList().get( index ) );
             }
             throw new GenericRuntimeException( "This column is not part of the table." );
         }
@@ -145,7 +145,7 @@ public interface MongoAlg extends AlgNode {
 
         public void setEntity( MongoEntity entity ) {
             this.entity = entity;
-            this.rowType = entity.getRowType();
+            this.tupleType = entity.getTupleType();
         }
 
 
@@ -169,12 +169,12 @@ public interface MongoAlg extends AlgNode {
 
 
         public List<String> getPreProjects() {
-            return preProjections.stream().map( Implementor::toJson ).collect( Collectors.toList() );
+            return preProjections.stream().map( Implementor::toJson ).toList();
         }
 
 
         public List<String> getOperations() {
-            return operations.stream().map( Implementor::toJson ).collect( Collectors.toList() );
+            return operations.stream().map( Implementor::toJson ).toList();
         }
 
 
@@ -184,7 +184,7 @@ public interface MongoAlg extends AlgNode {
 
 
         @Override
-        public AlgNode visit( LogicalProject project ) {
+        public AlgNode visit( LogicalRelProject project ) {
             super.visit( project );
 
             return project;
@@ -192,7 +192,7 @@ public interface MongoAlg extends AlgNode {
 
 
         @Override
-        public AlgNode visit( RelScan<?> scan ) {
+        public AlgNode visit( LogicalRelScan scan ) {
             super.visit( scan );
 
             return scan;
@@ -200,14 +200,14 @@ public interface MongoAlg extends AlgNode {
 
 
         public List<String> getNecessaryPhysicalFields() {
-            return new ArrayList<>( entity.getRowType().getFieldNames() );
+            return new ArrayList<>( entity.getTupleType().getFieldNames() );
         }
 
 
         public List<String> reorderPhysical() {
-            // this is only needed if there is a basic scan without project or group,
+            // this is only needed if there is a basic relScan without project or group,
             // where we cannot be sure if the fields are all ordered as intended
-            return entity.getRowType().getFieldNames();
+            return entity.getTupleType().getFieldNames();
         }
 
     }

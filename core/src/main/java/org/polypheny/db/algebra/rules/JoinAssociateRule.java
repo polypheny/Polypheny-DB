@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,7 +40,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.volcano.AlgSubset;
@@ -87,7 +87,7 @@ public class JoinAssociateRule extends AlgOptRule {
         final AlgNode algA = bottomJoin.getLeft();
         final AlgNode algB = bottomJoin.getRight();
         final AlgSubset algC = call.alg( 2 );
-        final AlgOptCluster cluster = topJoin.getCluster();
+        final AlgCluster cluster = topJoin.getCluster();
         final RexBuilder rexBuilder = cluster.getRexBuilder();
 
         if ( algC.getConvention() != algA.getConvention() ) {
@@ -106,11 +106,6 @@ public class JoinAssociateRule extends AlgOptRule {
         final int cCount = algC.getTupleType().getFieldCount();
         final ImmutableBitSet aBitSet = ImmutableBitSet.range( 0, aCount );
         final ImmutableBitSet bBitSet = ImmutableBitSet.range( aCount, aCount + bCount );
-
-        if ( !topJoin.getSystemFieldList().isEmpty() ) {
-            // FIXME Enable this rule for joins with system fields
-            return;
-        }
 
         // If either join is not inner, we cannot proceed. (Is this too strict?)
         if ( topJoin.getJoinType() != JoinAlgType.INNER || bottomJoin.getJoinType() != JoinAlgType.INNER ) {

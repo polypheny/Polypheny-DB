@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.polypheny.db.catalog.logistic;
 
 import lombok.NonNull;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 
 public enum ForeignKeyOption {
     NONE( -1 ),
@@ -61,28 +62,6 @@ public enum ForeignKeyOption {
         } else if ( str.equalsIgnoreCase( "SET DEFAULT" ) ) {
             return ForeignKeyOption.SET_DEFAULT;
         }*/
-        throw new RuntimeException( "Unknown ForeignKeyOption with name: " + str );
-    }
-
-    public String foreignKeyOptionToString(  ) {
-
-        if ( this.id == -1 ) {
-            return "NONE";
-        }
-        if ( this.id == 1 ) {
-            return "RESTRICT";
-        }
-        /*if ( this.id == 0 ) {
-            return "CASCADE";
-        }
-        if ( this.id == 2 ) {
-            return "SET NULL";
-        }
-        if ( this.id == 4 ) {
-            return "SET DEFAULT";
-        }*/
-        else {
-            throw new RuntimeException( "Unknown ForeignKeyOption with id: " + this.id );
-        }
+        throw new GenericRuntimeException( "Unknown ForeignKeyOption with name: " + str );
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,12 +28,12 @@ import org.polypheny.db.adapter.annotations.AdapterSettingInteger;
 import org.polypheny.db.adapter.annotations.AdapterSettingList;
 import org.polypheny.db.adapter.annotations.AdapterSettingString;
 import org.polypheny.db.adapter.jdbc.sources.AbstractJdbcSource;
+import org.polypheny.db.adapter.postgres.PostgresqlSqlDialect;
 import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
 import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.prepare.Context;
-import org.polypheny.db.sql.language.dialect.PostgresqlSqlDialect;
 
 
 @Slf4j
@@ -60,7 +60,7 @@ import org.polypheny.db.sql.language.dialect.PostgresqlSqlDialect;
         description = "List of tables which should be imported. The names must to be separated by a comma.")
 public class PostgresqlSource extends AbstractJdbcSource {
 
-    public PostgresqlSource( long storeId, String uniqueName, final Map<String, String> settings ) {
+    public PostgresqlSource( final long storeId, final String uniqueName, final Map<String, String> settings ) {
         super(
                 storeId,
                 uniqueName,
@@ -102,15 +102,15 @@ public class PostgresqlSource extends AbstractJdbcSource {
 
     @Override
     public List<PhysicalEntity> createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation ) {
-        PhysicalTable table = storeCatalog.createTable(
+        PhysicalTable table = adapterCatalog.createTable(
                 logical.table.getNamespaceName(),
                 logical.table.name,
                 logical.columns.stream().collect( Collectors.toMap( c -> c.id, c -> c.name ) ),
                 logical.table,
                 logical.columns.stream().collect( Collectors.toMap( t -> t.id, t -> t ) ),
-                allocation );
+                logical.pkIds, allocation );
 
-        storeCatalog.replacePhysical( currentJdbcSchema.createJdbcTable( storeCatalog, table ) );
+        adapterCatalog.replacePhysical( currentJdbcSchema.createJdbcTable( table ) );
         return List.of( table );
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,14 +17,12 @@
 package org.polypheny.db.sql.language.parser;
 
 
-import org.junit.Test;
-import org.polypheny.db.languages.ParserFactory;
-import org.polypheny.db.languages.sql.parser.impl.SqlParserImpl;
+import org.junit.jupiter.api.Test;
 
 
 /**
  * Tests SQL parser extensions for DDL.
- *
+ * <p>
  * Remaining tasks:
  *
  * <ul>
@@ -34,11 +32,6 @@ import org.polypheny.db.languages.sql.parser.impl.SqlParserImpl;
  * </ul>
  */
 public class DdlParserTest extends SqlParserTest {
-
-    @Override
-    protected ParserFactory parserImplFactory() {
-        return SqlParserImpl.FACTORY;
-    }
 
 
     @Override
@@ -73,16 +66,17 @@ public class DdlParserTest extends SqlParserTest {
 
     @Test
     public void testCreateRelationalNamespace() {
-        sql( "create relational namespace x" ).ok( "CREATE RELATIONAL NAMESPACE `X`" );
+        sql( "create relational namespace x" ).ok( "CREATE NAMESPACE `X`" );
     }
 
 
     @Test
     public void testCreateOrReplaceSchema() { // Alias for create namespace
-        sql( "create or replace schema x" ).ok( "CREATE OR REPLACE SCHEMA `X`" );
+        sql( "create or replace schema x" ).ok( "CREATE OR REPLACE NAMESPACE `X`" );
     }
 
 
+    @Test
     public void testCreateOrReplaceNamespace() {
         sql( "create or replace namespace x" ).ok( "CREATE OR REPLACE NAMESPACE `X`" );
     }
@@ -118,16 +112,17 @@ public class DdlParserTest extends SqlParserTest {
 
     @Test
     public void testCreateTableOnStore() {
-        sql( "create table x (i int not null, j varchar(5) null) on storeId hsqldb1" )
+        sql( "create table x (i int not null, j varchar(5) null) on store hsqldb1" )
                 .ok( "CREATE TABLE `X` (`I` INTEGER NOT NULL, `J` VARCHAR(5)) ON STORE `HSQLDB1`" );
     }
 
 
     @Test
     public void testCreateTableAsSelect() {
-        final String expected = "CREATE TABLE `X` AS\n"
-                + "SELECT *\n"
-                + "FROM `EMP`";
+        final String expected = """
+                CREATE TABLE `X` AS
+                SELECT *
+                FROM `EMP`""";
         sql( "create table x as select * from emp" )
                 .ok( expected );
     }
@@ -135,9 +130,10 @@ public class DdlParserTest extends SqlParserTest {
 
     @Test
     public void testCreateTableIfNotExistsAsSelect() {
-        final String expected = "CREATE TABLE IF NOT EXISTS `X`.`Y` AS\n"
-                + "SELECT *\n"
-                + "FROM `EMP`";
+        final String expected = """
+                CREATE TABLE IF NOT EXISTS `X`.`Y` AS
+                SELECT *
+                FROM `EMP`""";
         sql( "create table if not exists x.y as select * from emp" )
                 .ok( expected );
     }
@@ -145,9 +141,10 @@ public class DdlParserTest extends SqlParserTest {
 
     @Test
     public void testCreateTableAsValues() {
-        final String expected = "CREATE TABLE `X` AS\n"
-                + "VALUES (ROW(1)),\n"
-                + "(ROW(2))";
+        final String expected = """
+                CREATE TABLE `X` AS
+                VALUES (ROW(1)),
+                (ROW(2))""";
         sql( "create table x as values 1, 2" )
                 .ok( expected );
     }
@@ -155,9 +152,10 @@ public class DdlParserTest extends SqlParserTest {
 
     @Test
     public void testCreateTableAsSelectColumnList() {
-        final String expected = "CREATE TABLE `X` (`A`, `B`) AS\n"
-                + "SELECT *\n"
-                + "FROM `EMP`";
+        final String expected = """
+                CREATE TABLE `X` (`A`, `B`) AS
+                SELECT *
+                FROM `EMP`""";
         sql( "create table x (a, b) as select * from emp" )
                 .ok( expected );
     }
@@ -172,11 +170,12 @@ public class DdlParserTest extends SqlParserTest {
 
     @Test
     public void testCreateTableVirtualColumn() {
-        final String sql = "create table if not exists x (\n"
-                + " i int not null,\n"
-                + " j int generated always as (i + 1) stored,\n"
-                + " k int as (j + 1) virtual,\n"
-                + " m int as (k + 1))";
+        final String sql = """
+                create table if not exists x (
+                 i int not null,
+                 j int generated always as (i + 1) stored,
+                 k int as (j + 1) virtual,
+                 m int as (k + 1))""";
         final String expected = "CREATE TABLE IF NOT EXISTS `X` "
                 + "(`I` INTEGER NOT NULL,"
                 + " `J` INTEGER AS (`I` + 1) STORED,"
@@ -190,21 +189,23 @@ public class DdlParserTest extends SqlParserTest {
     public void testCreateView() {
         final String sql = "create or replace view v as\n"
                 + "select * from (values (1, '2'), (3, '45')) as t (x, y)";
-        final String expected = "CREATE OR REPLACE VIEW `V` AS\n"
-                + "SELECT *\n"
-                + "FROM (VALUES (ROW(1, '2')),\n"
-                + "(ROW(3, '45'))) AS `T` (`X`, `Y`)";
+        final String expected = """
+                CREATE OR REPLACE VIEW `V` AS
+                SELECT *
+                FROM (VALUES (ROW(1, '2')),
+                (ROW(3, '45'))) AS `T` (`X`, `Y`)""";
         sql( sql ).ok( expected );
     }
 
 
     @Test
     public void testCreateOrReplaceFunction() {
-        final String sql = "create or replace function if not exists x.udf\n"
-                + " as 'org.polypheny.db.udf.TableFun.demoUdf'\n"
-                + "using jar 'file:/path/udf/udf-0.0.1-SNAPSHOT.jar',\n"
-                + " jar 'file:/path/udf/udf2-0.0.1-SNAPSHOT.jar',\n"
-                + " file 'file:/path/udf/logback.xml'";
+        final String sql = """
+                create or replace function if not exists x.udf
+                 as 'org.polypheny.db.udf.TableFun.demoUdf'
+                using jar 'file:/path/udf/udf-0.0.1-SNAPSHOT.jar',
+                 jar 'file:/path/udf/udf2-0.0.1-SNAPSHOT.jar',
+                 file 'file:/path/udf/logback.xml'""";
         final String expected = "CREATE OR REPLACE FUNCTION"
                 + " IF NOT EXISTS `X`.`UDF`"
                 + " AS 'org.polypheny.db.udf.TableFun.demoUdf'"

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -70,7 +70,7 @@ import org.polypheny.db.util.Util;
  */
 public class AlgMdTableReferences implements MetadataHandler<BuiltInMetadata.TableReferences> {
 
-    public static final AlgMetadataProvider SOURCE = ReflectiveAlgMetadataProvider.reflectiveSource( BuiltInMethod.TABLE_REFERENCES.method, new AlgMdTableReferences() );
+    public static final AlgMetadataProvider SOURCE = ReflectiveAlgMetadataProvider.reflectiveSource( new AlgMdTableReferences(), BuiltInMethod.TABLE_REFERENCES.method );
 
 
     protected AlgMdTableReferences() {

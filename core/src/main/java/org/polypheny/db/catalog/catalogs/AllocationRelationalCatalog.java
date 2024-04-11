@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -119,23 +119,10 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
 
 
     /**
-     * Adds a placement for a partition.
-     *
-     * @param namespaceId
-     * @param adapterId The adapter on which the table should be placed on
-     * @param tableId The table for which a partition placement shall be created
-     * @param placementType The type of placement
-     * @return
-     */
-    AllocationPartition addPartition( long namespaceId, long adapterId, long tableId, PlacementType placementType, DataPlacementRole role );
-
-    /**
      * Adds a new DataPlacement for a given table on a specific store
      *
      * @param adapterId adapter where placement should be located
-     * @param placementId
      * @param logicalId table to retrieve the placement from
-     * @return
      */
     AllocationTable addAllocation( long adapterId, long placementId, long partitionId, long logicalId );
 

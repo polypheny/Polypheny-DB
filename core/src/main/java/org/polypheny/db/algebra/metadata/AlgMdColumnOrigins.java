@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,9 +44,9 @@ import org.polypheny.db.algebra.core.Exchange;
 import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.Project;
+import org.polypheny.db.algebra.core.RelTableFunctionScan;
 import org.polypheny.db.algebra.core.SetOp;
 import org.polypheny.db.algebra.core.Sort;
-import org.polypheny.db.algebra.core.TableFunctionScan;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
@@ -60,7 +60,7 @@ import org.polypheny.db.util.BuiltInMethod;
  */
 public class AlgMdColumnOrigins implements MetadataHandler<BuiltInMetadata.ColumnOrigin> {
 
-    public static final AlgMetadataProvider SOURCE = ReflectiveAlgMetadataProvider.reflectiveSource( BuiltInMethod.COLUMN_ORIGIN.method, new AlgMdColumnOrigins() );
+    public static final AlgMetadataProvider SOURCE = ReflectiveAlgMetadataProvider.reflectiveSource( new AlgMdColumnOrigins(), BuiltInMethod.COLUMN_ORIGIN.method );
 
 
     private AlgMdColumnOrigins() {
@@ -181,7 +181,7 @@ public class AlgMdColumnOrigins implements MetadataHandler<BuiltInMetadata.Colum
     }
 
 
-    public Set<AlgColumnOrigin> getColumnOrigins( TableFunctionScan alg, AlgMetadataQuery mq, int iOutputColumn ) {
+    public Set<AlgColumnOrigin> getColumnOrigins( RelTableFunctionScan alg, AlgMetadataQuery mq, int iOutputColumn ) {
         final Set<AlgColumnOrigin> set = new HashSet<>();
         Set<AlgColumnMapping> mappings = alg.getColumnMappings();
         if ( mappings == null ) {
@@ -230,7 +230,7 @@ public class AlgMdColumnOrigins implements MetadataHandler<BuiltInMetadata.Colum
 
         // Detect the case where a physical table expression is performing projection, and say we don't know instead of making any assumptions.
         // (Theoretically we could try to map the projection using column names.)  This detection assumes the table expression doesn't handle rename as well.
-        if ( entity.getRowType() != alg.getTupleType() ) {
+        if ( entity.getTupleType() != alg.getTupleType() ) {
             return null;
         }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,14 +21,13 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.snapshot.LogicalRelSnapshot;
-import org.polypheny.db.cql.BooleanGroup.TableOpsBooleanOperator;
+import org.polypheny.db.cql.BooleanGroup.EntityOpsBooleanOperator;
 import org.polypheny.db.cql.exception.InvalidMethodInvocation;
 import org.polypheny.db.cql.exception.InvalidModifierException;
 import org.polypheny.db.rex.RexBuilder;
@@ -58,12 +57,12 @@ public class Combiner {
     }
 
 
-    public static Combiner createCombiner( BooleanGroup<TableOpsBooleanOperator> booleanGroup, TableIndex left, TableIndex right ) throws InvalidModifierException {
+    public static Combiner createCombiner( BooleanGroup<EntityOpsBooleanOperator> booleanGroup, EntityIndex left, EntityIndex right ) throws InvalidModifierException {
         log.debug( "Creating Combiner." );
         log.debug( "Setting default values for modifiers." );
 
         Map<String, Object> modifiers = new HashMap<>( modifiersLookupTable );
-        if ( booleanGroup.booleanOperator == TableOpsBooleanOperator.AND ) {
+        if ( booleanGroup.booleanOperator == EntityOpsBooleanOperator.AND ) {
             modifiers.put( "on", new String[]{ "all" } );
         } else {
             modifiers.put( "on", new String[]{ "none" } );
@@ -117,9 +116,9 @@ public class Combiner {
     }
 
 
-    private static CombinerType determineCombinerType( TableOpsBooleanOperator tableOpsBooleanOperator, String nullValue ) {
+    private static CombinerType determineCombinerType( EntityOpsBooleanOperator entityOpsBooleanOperator, String nullValue ) {
         log.debug( "Determining Combiner Type." );
-        if ( tableOpsBooleanOperator == TableOpsBooleanOperator.OR ) {
+        if ( entityOpsBooleanOperator == EntityOpsBooleanOperator.OR ) {
             if ( nullValue.equals( "both" ) ) {
                 return CombinerType.JOIN_FULL;
             } else if ( nullValue.equals( "left" ) ) {
@@ -133,7 +132,7 @@ public class Combiner {
     }
 
 
-    private static String[] getColumnsToJoinOn( TableIndex left, TableIndex right, String[] columnStrs ) throws InvalidModifierException {
+    private static String[] getColumnsToJoinOn( EntityIndex left, EntityIndex right, String[] columnStrs ) throws InvalidModifierException {
         assert columnStrs.length > 0;
 
         if ( log.isDebugEnabled() ) {
@@ -152,8 +151,8 @@ public class Combiner {
         List<String> columnList = Arrays.asList( columnStrs );
 
         LogicalRelSnapshot relSnapshot = Catalog.getInstance().getSnapshot().rel();
-        List<String> lColumnNames = relSnapshot.getColumns( leftCatalogTable.id ).stream().map( c -> c.name ).collect( Collectors.toList() );
-        List<String> rColumnNames = relSnapshot.getColumns( rightCatalogTable.id ).stream().map( c -> c.name ).collect( Collectors.toList() );
+        List<String> lColumnNames = relSnapshot.getColumns( leftCatalogTable.id ).stream().map( c -> c.name ).toList();
+        List<String> rColumnNames = relSnapshot.getColumns( rightCatalogTable.id ).stream().map( c -> c.name ).toList();
         if ( !new HashSet<>( lColumnNames ).containsAll( columnList ) || !new HashSet<>( rColumnNames ).containsAll( columnList ) ) {
             log.error( "Invalid Modifier Values. Cannot join tables '{}' and '{}' on columns {}",
                     leftCatalogTable.name, rightCatalogTable.name, columnList );
@@ -165,15 +164,15 @@ public class Combiner {
     }
 
 
-    private static String[] getCommonColumns( TableIndex table1, TableIndex table2 ) {
+    private static String[] getCommonColumns( EntityIndex table1, EntityIndex table2 ) {
         // TODO: Create a cache and check if in cache.
 
         if ( log.isDebugEnabled() ) {
             log.debug( "Getting Common Columns between '{}' and '{}'.", table1.fullyQualifiedName, table2.fullyQualifiedName );
         }
         LogicalRelSnapshot relSnapshot = Catalog.getInstance().getSnapshot().rel();
-        List<String> table1Columns = relSnapshot.getColumns( table1.catalogTable.id ).stream().map( c -> c.name ).collect( Collectors.toList() );
-        List<String> table2Columns = relSnapshot.getColumns( table2.catalogTable.id ).stream().map( c -> c.name ).collect( Collectors.toList() );
+        List<String> table1Columns = relSnapshot.getColumns( table1.catalogTable.id ).stream().map( c -> c.name ).toList();
+        List<String> table2Columns = relSnapshot.getColumns( table2.catalogTable.id ).stream().map( c -> c.name ).toList();
 
         return table1Columns.stream().filter( table2Columns::contains ).toArray( String[]::new );
     }

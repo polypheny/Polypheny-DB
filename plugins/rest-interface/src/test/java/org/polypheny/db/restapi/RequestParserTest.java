@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,63 +17,70 @@
 package org.polypheny.db.restapi;
 
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.HashMap;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import java.util.Optional;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
+import org.polypheny.db.catalog.snapshot.LogicalRelSnapshot;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.restapi.exception.UnauthorizedAccessException;
+import org.polypheny.db.sql.SqlLanguageDependent;
 import org.polypheny.db.util.Pair;
 
 
-public class RequestParserTest {
-
-    @Rule
-    public ExpectedException thrown = ExpectedException.none();
+public class RequestParserTest extends SqlLanguageDependent {
 
 
     @Test
     public void testBasicAuthorizationDecoding() {
         Pair<String, String> unibasDbis = RequestParser.decodeBasicAuthorization( "Basic dW5pYmFzOmRiaXM=" );
-        assertEquals( "Username was decoded incorrectly.", "unibas", unibasDbis.left );
-        assertEquals( "Password was decoded incorrectly.", "dbis", unibasDbis.right );
+        assertEquals( "unibas", unibasDbis.left, "Username was decoded incorrectly." );
+        assertEquals( "dbis", unibasDbis.right, "Password was decoded incorrectly." );
     }
 
 
     @Test
     public void testBasicAuthorizationDecodingGarbageHeader() {
-        thrown.expect( UnauthorizedAccessException.class );
-        thrown.expectMessage( "Basic Authorization header is not properly encoded." );
-        Pair<String, String> unibasDbis = RequestParser.decodeBasicAuthorization( "Basic dW5pY!mFzOmRi!" );
-        assertEquals( "Username was decoded incorrectly.", "unibas", unibasDbis.left );
-        assertEquals( "Password was decoded incorrectly.", "dbis", unibasDbis.right );
+        UnauthorizedAccessException thrown = assertThrows( UnauthorizedAccessException.class, () -> {
+            Pair<String, String> unibasDbis = RequestParser.decodeBasicAuthorization( "Basic dW5pY!mFzOmRi!" );
+            assertEquals( "unibas", unibasDbis.left, "Username was decoded incorrectly." );
+            assertEquals( "dbis", unibasDbis.right, "Password was decoded incorrectly." );
+        } );
+        assertEquals( "Basic Authorization header is not properly encoded.", thrown.getMessage() );
+
     }
 
 
     @Test
-    public void testParseCatalogTableName() throws UnknownTableException, UnknownSchemaException, UnknownDatabaseException {
-        Catalog mockedCatalog = mock( Catalog.class );
-        when( mockedCatalog.getTable( "schema1", "table1" ) ).thenReturn( null );
+    public void testParseCatalogTableName() {
+        Catalog catalog = mock( Catalog.class );
+        Snapshot mockSnapshot = mock( Snapshot.class );
+        LogicalRelSnapshot mockRelSnapshot = mock( LogicalRelSnapshot.class );
+        LogicalTable mockTable = mock( LogicalTable.class );
+
+        when( catalog.getSnapshot() ).thenReturn( mockSnapshot );
+        when( mockSnapshot.rel() ).thenReturn( mockRelSnapshot );
+
+        when( mockRelSnapshot.getTable( "schema1", "table1" ) ).thenReturn( Optional.of( mockTable ) );
         RequestParser requestParser = new RequestParser(
-                mockedCatalog,
+                catalog,
                 null,
                 null,
                 "username",
                 "testdb" );
         LogicalTable table = requestParser.parseCatalogTableName( "schema1.table1." );
-        verify( mockedCatalog ).getTable( "schema1", "table1" );
+        verify( mockSnapshot ).rel(); // check if the snapshot was called
+        verify( mockRelSnapshot ).getTable( "schema1", "table1" );
     }
 
 
@@ -81,7 +88,6 @@ public class RequestParserTest {
     public void testParseFilterOperation() {
         Catalog mockedCatalog = mock( Catalog.class );
         RequestParser requestParser = new RequestParser(
-                mockedCatalog,
                 null,
                 null,
                 "username",

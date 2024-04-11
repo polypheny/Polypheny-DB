@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,12 +35,11 @@ package org.polypheny.db.type;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFamily;
-
 import java.sql.Types;
 import java.util.Collection;
 import java.util.Map;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFamily;
 
 
 /**
@@ -64,7 +63,7 @@ public enum PolyTypeFamily implements AlgDataTypeFamily {
     TIMESTAMP,
     BOOLEAN,
     INTERVAL_YEAR_MONTH,
-    INTERVAL_DAY_TIME,
+    INTERVAL_TIME,
 
     // Secondary families.
 
@@ -89,10 +88,6 @@ public enum PolyTypeFamily implements AlgDataTypeFamily {
 
     private static final Map<Integer, PolyTypeFamily> JDBC_TYPE_TO_FAMILY =
             ImmutableMap.<Integer, PolyTypeFamily>builder()
-                    // Not present:
-                    // PolyType.MULTISET shares Types.ARRAY with PolyType.ARRAY;
-                    // PolyType.MAP has no corresponding JDBC type
-                    // PolyType.COLUMN_LIST has no corresponding JDBC type
                     .put( Types.BIT, NUMERIC )
                     .put( Types.TINYINT, NUMERIC )
                     .put( Types.SMALLINT, NUMERIC )
@@ -142,59 +137,35 @@ public enum PolyTypeFamily implements AlgDataTypeFamily {
      * @return collection of {@link PolyType}s included in this family
      */
     public Collection<PolyType> getTypeNames() {
-        switch ( this ) {
-            case CHARACTER:
-                return PolyType.CHAR_TYPES;
-            case BINARY:
-                return PolyType.BINARY_TYPES;
-            case NUMERIC:
-                return PolyType.NUMERIC_TYPES;
-            case DATE:
-                return ImmutableList.of( PolyType.DATE );
-            case TIME:
-                return ImmutableList.of( PolyType.TIME, PolyType.TIME_WITH_LOCAL_TIME_ZONE );
-            case TIMESTAMP:
-                return ImmutableList.of( PolyType.TIMESTAMP, PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE );
-            case BOOLEAN:
-                return PolyType.BOOLEAN_TYPES;
-            case INTERVAL_YEAR_MONTH:
-                return PolyType.YEAR_INTERVAL_TYPES;
-            case INTERVAL_DAY_TIME:
-                return PolyType.DAY_INTERVAL_TYPES;
-            case STRING:
-                return PolyType.STRING_TYPES;
-            case APPROXIMATE_NUMERIC:
-                return PolyType.APPROX_TYPES;
-            case EXACT_NUMERIC:
-                return PolyType.EXACT_TYPES;
-            case INTEGER:
-                return PolyType.INT_TYPES;
-            case DATETIME:
-                return PolyType.DATETIME_TYPES;
-            case DATETIME_INTERVAL:
-                return PolyType.INTERVAL_TYPES;
-            case GEO:
-                return ImmutableList.of( PolyType.GEOMETRY );
-            case MULTISET:
-                return ImmutableList.of( PolyType.MULTISET );
-            case ARRAY:
+        return switch ( this ) {
+            case CHARACTER -> PolyType.CHAR_TYPES;
+            case BINARY -> PolyType.BINARY_TYPES;
+            case NUMERIC -> PolyType.NUMERIC_TYPES;
+            case DATE -> ImmutableList.of( PolyType.DATE );
+            case TIME -> ImmutableList.of( PolyType.TIME );
+            case TIMESTAMP -> ImmutableList.of( PolyType.TIMESTAMP );
+            case BOOLEAN -> PolyType.BOOLEAN_TYPES;
+            case INTERVAL_YEAR_MONTH -> PolyType.INTERVAL_TYPES;
+            case INTERVAL_TIME -> PolyType.INTERVAL_TYPES;
+            case STRING -> PolyType.STRING_TYPES;
+            case APPROXIMATE_NUMERIC -> PolyType.APPROX_TYPES;
+            case EXACT_NUMERIC -> PolyType.EXACT_TYPES;
+            case INTEGER -> PolyType.INT_TYPES;
+            case DATETIME -> PolyType.DATETIME_TYPES;
+            case DATETIME_INTERVAL -> PolyType.INTERVAL_TYPES;
+            case GEO -> ImmutableList.of( PolyType.GEOMETRY );
+            case MULTISET -> ImmutableList.of( PolyType.MULTISET );
+            case ARRAY ->
                 //TODO NH: add array types
-                return ImmutableList.of( PolyType.ARRAY );
-            case MAP:
-                return ImmutableList.of( PolyType.MAP );
-            case NULL:
-                return ImmutableList.of( PolyType.NULL );
-            case ANY:
-                return PolyType.ALL_TYPES;
-            case CURSOR:
-                return ImmutableList.of( PolyType.CURSOR );
-            case COLUMN_LIST:
-                return ImmutableList.of( PolyType.COLUMN_LIST );
-            case MULTIMEDIA:
-                return ImmutableList.of( PolyType.FILE, PolyType.IMAGE, PolyType.VIDEO, PolyType.AUDIO );
-            default:
-                throw new IllegalArgumentException();
-        }
+                    ImmutableList.of( PolyType.ARRAY );
+            case MAP -> ImmutableList.of( PolyType.MAP );
+            case NULL -> ImmutableList.of( PolyType.NULL );
+            case ANY -> PolyType.ALL_TYPES;
+            case CURSOR -> ImmutableList.of( PolyType.CURSOR );
+            case COLUMN_LIST -> ImmutableList.of( PolyType.COLUMN_LIST );
+            case MULTIMEDIA -> ImmutableList.of( PolyType.FILE, PolyType.IMAGE, PolyType.VIDEO, PolyType.AUDIO );
+            default -> throw new IllegalArgumentException();
+        };
     }
 
 

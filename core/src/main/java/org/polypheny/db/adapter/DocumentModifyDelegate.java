@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,9 +38,9 @@ public class DocumentModifyDelegate extends DocumentScanDelegate implements Modi
 
     @Override
     public AlgNode getGraphModify( long allocId, LpgModify<?> modify, AlgBuilder builder ) {
-        return null;
+        // todo long term add a more natural way to do this
+        return Modifiable.getGraphModifySubstitute( modifiable, allocId, modify, builder );
     }
-
 
     @Override
     public void addColumn( Context context, long allocId, LogicalColumn column ) {

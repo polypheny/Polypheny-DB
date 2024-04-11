@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeImpl;
@@ -31,15 +32,15 @@ import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.schema.Namespace.Schema;
-import org.polypheny.db.schema.impl.AbstractNamespace;
+import org.polypheny.db.plan.Convention;
+import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.util.Source;
 import org.polypheny.db.util.Sources;
 import org.polypheny.db.util.Util;
 
-public class ExcelNamespace extends AbstractNamespace implements Schema {
+public class ExcelNamespace extends Namespace {
 
     private final URL directoryUrl;
     private final ExcelTable.Flavor flavor;
@@ -52,13 +53,13 @@ public class ExcelNamespace extends AbstractNamespace implements Schema {
      *
      * @param directoryUrl Directory that holds {@code .Excel} files
      */
-    public ExcelNamespace( long id, URL directoryUrl, ExcelTable.Flavor flavor ) {
-        this( id, directoryUrl, flavor, "" );
+    public ExcelNamespace( long id, long adapterId, URL directoryUrl, ExcelTable.Flavor flavor ) {
+        this( id, adapterId, directoryUrl, flavor, "" );
     }
 
 
-    public ExcelNamespace( long id, URL directoryUrl, ExcelTable.Flavor flavor, String sheet ) {
-        super( id );
+    public ExcelNamespace( long id, long adapterId, URL directoryUrl, ExcelTable.Flavor flavor, String sheet ) {
+        super( id, adapterId );
         this.directoryUrl = directoryUrl;
         this.flavor = flavor;
         this.sheet = sheet;
@@ -93,33 +94,22 @@ public class ExcelNamespace extends AbstractNamespace implements Schema {
     }
 
 
-
     /**
      * Creates different sub-type of table based on the "flavor" attribute.
      */
     private ExcelTable createTable( PhysicalTable table, Source source, AlgProtoDataType protoRowType, List<ExcelFieldType> fieldTypes, int[] fields, ExcelSource excelSource ) {
         if ( this.sheet.isEmpty() ) {
-            switch ( flavor ) {
-                case TRANSLATABLE:
-                    return new ExcelTranslatableTable( table, source, protoRowType, fieldTypes, fields, excelSource );
-                case SCANNABLE:
-                    return new ExcelScannableTable( table, source, protoRowType, fieldTypes, fields, excelSource );
-                case FILTERABLE:
-                    return new ExcelFilterableTable( table, source, protoRowType, fieldTypes, fields, excelSource );
-                default:
-                    throw new AssertionError( "Unknown flavor " + this.flavor );
-            }
+            return switch ( flavor ) {
+                case TRANSLATABLE -> new ExcelTranslatableTable( table, source, protoRowType, fieldTypes, fields, excelSource );
+                case SCANNABLE -> new ExcelScannableTable( table, source, protoRowType, fieldTypes, fields, excelSource );
+                case FILTERABLE -> new ExcelFilterableTable( table, source, protoRowType, fieldTypes, fields, excelSource );
+            };
         } else {
-            switch ( flavor ) {
-                case TRANSLATABLE:
-                    return new ExcelTranslatableTable( table, source, protoRowType, fieldTypes, fields, excelSource, this.sheet );
-                case SCANNABLE:
-                    return new ExcelScannableTable( table, source, protoRowType, fieldTypes, fields, excelSource, this.sheet );
-                case FILTERABLE:
-                    return new ExcelFilterableTable( table, source, protoRowType, fieldTypes, fields, excelSource, this.sheet );
-                default:
-                    throw new AssertionError( "Unknown flavor " + this.flavor );
-            }
+            return switch ( flavor ) {
+                case TRANSLATABLE -> new ExcelTranslatableTable( table, source, protoRowType, fieldTypes, fields, excelSource, this.sheet );
+                case SCANNABLE -> new ExcelScannableTable( table, source, protoRowType, fieldTypes, fields, excelSource, this.sheet );
+                case FILTERABLE -> new ExcelFilterableTable( table, source, protoRowType, fieldTypes, fields, excelSource, this.sheet );
+            };
         }
 
     }
@@ -128,18 +118,17 @@ public class ExcelNamespace extends AbstractNamespace implements Schema {
     private AlgDataType sqlType( AlgDataTypeFactory typeFactory, PolyType dataTypeName, Integer length, Integer scale, String typeString ) {
         // Fall back to ANY if type is unknown
         final PolyType polyType = Util.first( dataTypeName, PolyType.ANY );
-        switch ( polyType ) {
-            case ARRAY:
-                AlgDataType component = null;
-                if ( typeString != null && typeString.endsWith( " ARRAY" ) ) {
-                    // E.g. hsqldb gives "INTEGER ARRAY", so we deduce the component type "INTEGER".
-                    final String remaining = typeString.substring( 0, typeString.length() - " ARRAY".length() );
-                    component = parseTypeString( typeFactory, remaining );
-                }
-                if ( component == null ) {
-                    component = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.ANY ), true );
-                }
-                return typeFactory.createArrayType( component, -1 );
+        if ( polyType == PolyType.ARRAY ) {
+            AlgDataType component = null;
+            if ( typeString != null && typeString.endsWith( " ARRAY" ) ) {
+                // E.g. hsqldb gives "INTEGER ARRAY", so we deduce the component type "INTEGER".
+                final String remaining = typeString.substring( 0, typeString.length() - " ARRAY".length() );
+                component = parseTypeString( typeFactory, remaining );
+            }
+            if ( component == null ) {
+                component = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.ANY ), true );
+            }
+            return typeFactory.createArrayType( component, -1 );
         }
         if ( scale != null && length != null && length >= 0 && scale >= 0 && polyType.allowsPrecScale( true, true ) ) {
             return typeFactory.createPolyType( polyType, length, scale );
@@ -185,6 +174,12 @@ public class ExcelNamespace extends AbstractNamespace implements Schema {
         } catch ( IllegalArgumentException e ) {
             return typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.ANY ), true );
         }
+    }
+
+
+    @Override
+    protected @Nullable Convention getConvention() {
+        return null; // no convention
     }
 
 }

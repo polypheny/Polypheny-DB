@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,10 +24,8 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.TestHelper.MongoConnection;
 import org.polypheny.db.catalog.Catalog;
@@ -43,12 +41,11 @@ public class DdlTest extends MqlTestTemplate {
     final static String collectionName = "doc";
 
 
-
     @Test
     public void addCollectionTest() {
         String name = "testCollection";
 
-        LogicalNamespace namespace = Catalog.snapshot().getNamespace( database ).orElseThrow();
+        LogicalNamespace namespace = Catalog.snapshot().getNamespace( MqlTestTemplate.namespace ).orElseThrow();
 
         int size = Catalog.snapshot().doc().getCollections( namespace.id, null ).size();
 
@@ -68,15 +65,31 @@ public class DdlTest extends MqlTestTemplate {
     }
 
 
+    @Test
+    public void differentNamespaceSyntaxTest() {
+        String name = "testNamespaceSyntax";
+
+        execute( namespace + ".createCollection(\"" + name + "\")" );
+
+        execute( "db." + name + ".find({})" );
+
+        execute( name + ".find({})" );
+
+        execute( namespace + "." + name + ".find({})" );
+
+        execute( String.format( "%s.%s.drop()", namespace, name ) );
+
+    }
+
 
     @Test
     public void addPlacementTest() throws SQLException {
 
         String placement = "store1";
         try {
-            LogicalNamespace namespace = Catalog.snapshot().getNamespace( database ).orElseThrow();
+            LogicalNamespace namespace = Catalog.snapshot().getNamespace( MqlTestTemplate.namespace ).orElseThrow();
 
-            List<String> collectionNames = Catalog.snapshot().doc().getCollections( namespace.id, null ).stream().map( c -> c.name ).collect( Collectors.toList() );
+            List<String> collectionNames = Catalog.snapshot().doc().getCollections( namespace.id, null ).stream().map( c -> c.name ).toList();
             collectionNames.forEach( n -> execute( String.format( "db.%s.drop()", n ) ) );
 
             execute( "db.createCollection(\"" + collectionName + "\")" );
@@ -108,7 +121,7 @@ public class DdlTest extends MqlTestTemplate {
 
         execute( "db.createCollection(\"" + collectionName + "\")" );
 
-        LogicalNamespace namespace = Catalog.snapshot().getNamespace( database ).orElseThrow();
+        LogicalNamespace namespace = Catalog.snapshot().getNamespace( MqlTestTemplate.namespace ).orElseThrow();
 
         LogicalCollection collection = Catalog.snapshot().doc().getCollections( namespace.id, new Pattern( collectionName ) ).get( 0 );
 

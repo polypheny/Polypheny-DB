@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,11 @@
 
 package org.polypheny.db.cql.utils;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import java.util.concurrent.atomic.AtomicInteger;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.cql.exception.UnexpectedTypeException;
 import org.polypheny.db.cql.utils.Tree.NodeType;
 import org.polypheny.db.cql.utils.Tree.TraversalType;
@@ -76,26 +78,26 @@ public class TreeTest {
     @Test
     public void testGetInternalNode() {
         Integer internalNode = tree.getInternalNode();
-        Assert.assertEquals( 1, internalNode.intValue() );
+        assertEquals( 1, internalNode.intValue() );
     }
 
 
-    @Test(expected = UnexpectedTypeException.class)
+    @Test
     public void testGetInternalNodeThrowsUnexpectedTypeException() {
-        tree.left.left.getInternalNode();
+        assertThrows( UnexpectedTypeException.class, () -> tree.left.left.getInternalNode() );
     }
 
 
     @Test
     public void testGetExternalNode() {
         Integer externalNode = tree.left.left.getExternalNode();
-        Assert.assertEquals( 4, externalNode.intValue() );
+        assertEquals( 4, externalNode.intValue() );
     }
 
 
-    @Test(expected = UnexpectedTypeException.class)
+    @Test
     public void testGetExternalNodeThrowsUnexpectedTypeException() {
-        tree.getExternalNode();
+        assertThrows( UnexpectedTypeException.class, () -> tree.left.getExternalNode() );
     }
 
 
@@ -108,11 +110,11 @@ public class TreeTest {
             int expected;
             if ( nodeType == NodeType.DESTINATION_NODE ) {
                 expected = preorderTraversal[preorderTraversalIndex.get()];
-                Assert.assertEquals( expected, actual );
+                assertEquals( expected, actual );
                 preorderTraversalIndex.getAndIncrement();
             }
             expected = actualTraversal[actualTraversalIndex.get()];
-            Assert.assertEquals( expected, actual );
+            assertEquals( expected, actual );
             actualTraversalIndex.getAndIncrement();
 
             return true;
@@ -129,11 +131,11 @@ public class TreeTest {
             int expected;
             if ( nodeType == NodeType.DESTINATION_NODE ) {
                 expected = inorderTraversal[inorderTraversalIndex.get()];
-                Assert.assertEquals( expected, actual );
+                assertEquals( expected, actual );
                 inorderTraversalIndex.getAndIncrement();
             }
             expected = actualTraversal[actualTraversalIndex.get()];
-            Assert.assertEquals( expected, actual );
+            assertEquals( expected, actual );
             actualTraversalIndex.getAndIncrement();
 
             return true;
@@ -150,11 +152,11 @@ public class TreeTest {
             int expected;
             if ( nodeType == NodeType.DESTINATION_NODE ) {
                 expected = postorderTraversal[postorderTraversalIndex.get()];
-                Assert.assertEquals( expected, actual );
+                assertEquals( expected, actual );
                 postorderTraversalIndex.getAndIncrement();
             }
             expected = actualTraversal[actualTraversalIndex.get()];
-            Assert.assertEquals( expected, actual );
+            assertEquals( expected, actual );
             actualTraversalIndex.getAndIncrement();
 
             return true;
@@ -171,11 +173,11 @@ public class TreeTest {
             int expected;
             if ( nodeType == NodeType.DESTINATION_NODE ) {
                 expected = revPreorderTraversal[revPreorderTraversalIndex.get()];
-                Assert.assertEquals( expected, actual );
+                assertEquals( expected, actual );
                 revPreorderTraversalIndex.getAndIncrement();
             }
             expected = revActualTraversal[revActualTraversalIndex.get()];
-            Assert.assertEquals( expected, actual );
+            assertEquals( expected, actual );
             revActualTraversalIndex.getAndIncrement();
 
             return true;
@@ -192,11 +194,11 @@ public class TreeTest {
             int expected;
             if ( nodeType == NodeType.DESTINATION_NODE ) {
                 expected = revInorderTraversal[revInorderTraversalIndex.get()];
-                Assert.assertEquals( expected, actual );
+                assertEquals( expected, actual );
                 revInorderTraversalIndex.getAndIncrement();
             }
             expected = revActualTraversal[revActualTraversalIndex.get()];
-            Assert.assertEquals( expected, actual );
+            assertEquals( expected, actual );
             revActualTraversalIndex.getAndIncrement();
 
             return true;
@@ -213,11 +215,11 @@ public class TreeTest {
             int expected;
             if ( nodeType == NodeType.DESTINATION_NODE ) {
                 expected = revPostorderTraversal[revPostorderTraversalIndex.get()];
-                Assert.assertEquals( expected, actual );
+                assertEquals( expected, actual );
                 revPostorderTraversalIndex.getAndIncrement();
             }
             expected = revActualTraversal[revActualTraversalIndex.get()];
-            Assert.assertEquals( expected, actual );
+            assertEquals( expected, actual );
             revActualTraversalIndex.getAndIncrement();
 
             return true;

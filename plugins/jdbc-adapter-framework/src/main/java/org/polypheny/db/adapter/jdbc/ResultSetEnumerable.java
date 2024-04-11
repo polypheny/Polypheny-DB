@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,8 +63,10 @@ import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.numerical.PolyLong;
+import org.polypheny.db.type.entity.temporal.PolyDate;
+import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 import org.polypheny.db.util.Static;
 
 
@@ -279,24 +281,32 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
                 preparedStatement.setBoolean( i, value.asBoolean().value );
                 break;
             case DATE:
-                preparedStatement.setDate( i, value.asDate().asSqlDate() );
+                if ( connectionHandler.getDialect().handlesUtcIncorrectly() ) {
+                    preparedStatement.setDate( i, PolyDate.of( value.asDate().millisSinceEpoch ).asSqlDate( OFFSET ), Calendar.getInstance( TimeZone.getTimeZone( "UTC" ) ) );
+                } else {
+                    preparedStatement.setDate( i, value.asDate().asSqlDate() );
+                }
                 break;
             case TIME:
                 preparedStatement.setTime( i, value.asTime().asSqlTime(), Calendar.getInstance( TimeZone.getTimeZone( "UTC" ) ) );
                 break;
             case TIMESTAMP:
-                preparedStatement.setTimestamp( i, value.asTimestamp().asSqlTimestamp(), Calendar.getInstance( TimeZone.getTimeZone( "UTC" ) ) );
+                if ( connectionHandler.getDialect().handlesUtcIncorrectly() ) {
+                    preparedStatement.setTimestamp( i, PolyTimestamp.of( value.asTimestamp().millisSinceEpoch + OFFSET ).asSqlTimestamp() );
+                } else {
+                    preparedStatement.setTimestamp( i, value.asTimestamp().asSqlTimestamp(), Calendar.getInstance( TimeZone.getTimeZone( "UTC" ) ) );
+                }
                 break;
             case VARBINARY:
             case BINARY:
                 if ( !connectionHandler.getDialect().supportsComplexBinary() ) {
                     preparedStatement.setString( i, value.asBinary().toTypedJson() );
                 } else {
-                    preparedStatement.setBytes( i, value.asBinary().value.getBytes() );
+                    preparedStatement.setBytes( i, value.asBinary().value );
                 }
                 break;
             case ARRAY:
-                if ( connectionHandler.getDialect().supportsNestedArrays() ) {
+                if ( (type.getComponentType().getPolyType() == PolyType.ARRAY && connectionHandler.getDialect().supportsNestedArrays()) || (type.getComponentType().getPolyType() != PolyType.ARRAY) && connectionHandler.getDialect().supportsArrays() ) {
                     Array array = getArray( value, type, connectionHandler );
                     preparedStatement.setArray( i, array );
                     array.free(); // according to documentation this is advised to not hog the memory
@@ -374,9 +384,9 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
             setTimeoutIfPossible( preparedStatement );
             if ( preparedStatementEnricher.enrich( preparedStatement, connectionHandler ) ) {
                 // batch
-                preparedStatement.executeBatch();
-                int updateCount = preparedStatement.getUpdateCount();
-                return Linq4j.singletonEnumerator( new PolyValue[]{ PolyLong.of( updateCount ) } );
+                int[] count = preparedStatement.executeBatch();
+                //int updateCount = preparedStatement.getUpdateCount();
+                return Linq4j.singletonEnumerator( new PolyValue[]{ PolyLong.of( count.length ) } );
             } else {
                 if ( preparedStatement.execute() ) {
                     final ResultSet resultSet = preparedStatement.getResultSet();
@@ -481,11 +491,7 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
                     final Statement statement = savedResultSet.getStatement();
                     savedResultSet.close();
                     if ( statement != null ) {
-                        //final Connection connection = statement.getConnection();
                         statement.close();
-                        /*if ( connection != null ) {
-                            connection.close();
-                        }*/
                     }
                 } catch ( SQLException e ) {
                     // ignore
@@ -509,7 +515,6 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
             assert columnCount == primitives.length;
             if ( columnCount == 1 ) {
                 return () -> {
-                    //return metaData.getColumnType( 0 ) resultSet.getObject( 1 );
                     throw new NotImplementedException();
                 };
             }
@@ -540,4 +545,3 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
     }
 
 }
-

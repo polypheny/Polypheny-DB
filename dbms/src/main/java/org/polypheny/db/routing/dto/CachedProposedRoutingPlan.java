@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,11 @@
 
 package org.polypheny.db.routing.dto;
 
-import com.google.common.collect.ImmutableMap;
-import java.util.List;
-import java.util.Map;
 import lombok.Getter;
 import lombok.Setter;
-import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.routing.ColumnDistribution.RoutedDistribution;
+import org.polypheny.db.routing.FieldDistribution;
 import org.polypheny.db.routing.ProposedRoutingPlan;
 import org.polypheny.db.routing.Router;
 import org.polypheny.db.routing.RoutingPlan;
@@ -36,7 +34,10 @@ import org.polypheny.db.routing.RoutingPlan;
 public class CachedProposedRoutingPlan implements RoutingPlan {
 
     @Getter
-    public Map<Long, List<AllocationColumn>> physicalPlacementsOfPartitions; // PartitionId -> List<Pair<PlacementId, ColumnId>>
+    public RoutedDistribution routedDistribution; // PartitionId -> List<Pair<PlacementId, ColumnId>>
+    @Getter
+    public FieldDistribution fieldDistribution; // PartitionId -> List<AllocationColumn>
+
     protected String queryClass;
     protected String physicalQueryClass;
     protected AlgOptCost preCosts;
@@ -47,7 +48,8 @@ public class CachedProposedRoutingPlan implements RoutingPlan {
         this.queryClass = routingPlan.getQueryClass();
         this.preCosts = approximatedCosts;
         this.router = routingPlan.getRouter();
-        this.physicalPlacementsOfPartitions = ImmutableMap.copyOf( routingPlan.getPhysicalPlacementsOfPartitions() );
+        this.routedDistribution = routingPlan.getRoutedDistribution();
+        this.fieldDistribution = getFieldDistribution();
         this.physicalQueryClass = routingPlan.getPhysicalQueryClass();
     }
 

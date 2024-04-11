@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,12 +36,14 @@ package org.polypheny.db.rex;
 
 import java.util.AbstractList;
 import java.util.concurrent.CopyOnWriteArrayList;
+import lombok.Getter;
 import org.polypheny.db.algebra.type.AlgDataType;
 
 
 /**
  * Abstract base class for {@link RexIndexRef} and {@link RexLocalRef}.
  */
+@Getter
 public abstract class RexSlot extends RexVariable {
 
     protected final int index;
@@ -57,11 +59,6 @@ public abstract class RexSlot extends RexVariable {
         super( name, type );
         assert index >= 0;
         this.index = index;
-    }
-
-
-    public int getIndex() {
-        return index;
     }
 
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,9 +39,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.algebra.type.GraphType;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.entity.PolyInteger;
 import org.polypheny.db.type.entity.PolyList;
-import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
@@ -49,6 +47,8 @@ import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.type.entity.graph.PolyNode;
+import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.type.entity.relational.PolyMap;
 
 public class CrossModelFunctions {
@@ -182,7 +182,7 @@ public class CrossModelFunctions {
             PolyDocument doc = new PolyDocument( n.properties.entrySet().stream().collect( Collectors.toMap( Entry::getKey, Entry::getValue ) ) );
             doc.put( PolyString.of( DocumentType.DOCUMENT_ID ), PolyString.of( n.id.value.substring( 0, 23 ) ) );
             return new PolyValue[]{ doc };
-        } ).collect( Collectors.toList() ) );
+        } ).toList() );
 
     }
 
@@ -203,7 +203,7 @@ public class CrossModelFunctions {
         if ( !edge.properties.isEmpty() ) {
             context.addParameterValues( 0, idType, Collections.nCopies( edge.properties.size(), edge.id ) );
             context.addParameterValues( 1, labelType, new ArrayList<>( edge.properties.keySet() ) );
-            context.addParameterValues( 2, valueType, new ArrayList<>( edge.properties.values().stream().map( value -> PolyString.of( value.toString() ) ).collect( Collectors.toList() ) ) );
+            context.addParameterValues( 2, valueType, new ArrayList<>( edge.properties.values().stream().map( value -> PolyString.of( value.toString() ) ).toList() ) );
             drainInserts( enumerables.get( i ), edge.labels.size() );
             context.resetParameterValues();
         }
@@ -240,7 +240,7 @@ public class CrossModelFunctions {
         if ( !node.properties.isEmpty() ) {
             context.addParameterValues( 0, idType, Collections.nCopies( node.properties.size(), node.id ) );
             context.addParameterValues( 1, labelType, new ArrayList<>( node.properties.keySet() ) );
-            context.addParameterValues( 2, valueType, new ArrayList<>( node.properties.values().stream().map( e -> PolyString.of( e.toJson() ) ).collect( Collectors.toList() ) ) );
+            context.addParameterValues( 2, valueType, new ArrayList<>( node.properties.values().stream().map( e -> PolyString.of( e.toJson() ) ).toList() ) );
             drainInserts( enumerables.get( i ), node.properties.size() );
             context.resetParameterValues();
         }
@@ -256,7 +256,7 @@ public class CrossModelFunctions {
      */
     private static void nodeTableInsert( DataContext context, List<Function0<Enumerable<?>>> enumerables, int i, AlgDataType idType, AlgDataType labelType, PolyNode node ) {
         List<PolyValue> labels = new ArrayList<>( node.labels );
-        labels.add( 0, null ); // id + key (null ) is required for each node to enable label-less nodes
+        labels.add( 0, PolyString.of( "$" ) ); // id + key (null ) is required for each node to enable label-less nodes
         context.addParameterValues( 0, idType, Collections.nCopies( labels.size(), node.id ) );
         context.addParameterValues( 1, labelType, labels );
         drainInserts( enumerables.get( i ), labels.size() );
@@ -393,8 +393,8 @@ public class CrossModelFunctions {
         Map<Long, AlgDataType> typeBackup = context.getParameterTypes();
         JavaTypeFactory typeFactory = context.getStatement().getTransaction().getTypeFactory();
         AlgDataType idType = typeFactory.createPolyType( PolyType.VARCHAR, GraphType.ID_SIZE );
-        AlgDataType labelType = typeFactory.createPolyType( PolyType.VARCHAR, GraphType.LABEL_SIZE );
-        AlgDataType valueType = typeFactory.createPolyType( PolyType.VARCHAR, GraphType.VALUE_SIZE );
+        AlgDataType labelType = typeFactory.createPolyType( PolyType.TEXT );
+        AlgDataType valueType = typeFactory.createPolyType( PolyType.TEXT );
 
         context.resetParameterValues();
         for ( PolyType polyType : order ) {
@@ -461,8 +461,9 @@ public class CrossModelFunctions {
     }
 
 
+    @SuppressWarnings("unused")
     public static Enumerable<PolyValue[]> enumerableFromContext( DataContext context ) {
-        return Linq4j.asEnumerable( context.getParameterValues().stream().map( e -> e.values().toArray( PolyValue[]::new ) ).collect( Collectors.toList() ) );
+        return Linq4j.asEnumerable( context.getParameterValues().stream().map( e -> e.values().toArray( PolyValue[]::new ) ).toList() );
     }
 
 }

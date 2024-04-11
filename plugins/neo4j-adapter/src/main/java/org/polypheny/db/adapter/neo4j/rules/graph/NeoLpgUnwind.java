@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,10 +27,11 @@ import org.polypheny.db.adapter.neo4j.rules.NeoGraphAlg;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.lpg.LpgUnwind;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.type.entity.PolyString;
 
 public class NeoLpgUnwind extends LpgUnwind implements NeoGraphAlg {
 
@@ -41,13 +42,13 @@ public class NeoLpgUnwind extends LpgUnwind implements NeoGraphAlg {
      * @param traits Traits active for this node, including {@link org.polypheny.db.catalog.logistic.DataModel#GRAPH}
      * @param input Input algebraic expression
      */
-    public NeoLpgUnwind( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, int index, @Nullable String alias ) {
+    public NeoLpgUnwind( AlgCluster cluster, AlgTraitSet traits, AlgNode input, int index, @Nullable String alias ) {
         super( cluster, traits, input, index, alias );
     }
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         return super.computeSelfCost( planner, mq ).multiplyBy( 0.8 );
     }
 
@@ -55,7 +56,7 @@ public class NeoLpgUnwind extends LpgUnwind implements NeoGraphAlg {
     @Override
     public void implement( NeoGraphImplementor implementor ) {
         implementor.visitChild( 0, getInput() ); // todo fix subfield
-        implementor.add( unwind_( as_( literal_( implementor.getLast().getTupleType().getFieldNames().get( index ) ), literal_( alias ) ) ) );
+        implementor.add( unwind_( as_( literal_( PolyString.of( implementor.getLast().getTupleType().getFieldNames().get( index ) ) ), literal_( PolyString.of( alias ) ) ) ) );
     }
 
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -73,16 +73,16 @@ import org.polypheny.db.util.Util;
 
 /**
  * Utility to extract Predicates that are present in the (sub)plan starting at this node.
- *
+ * <p>
  * This should be used to infer whether same filters are applied on a given plan by materialized view rewriting rules.
- *
+ * <p>
  * The output predicates might contain references to columns produced by Scan operators ({@link RexTableIndexRef}). In turn, each Scan operator is identified uniquely by its qualified name and an identifier.
- *
+ * <p>
  * If the provider cannot infer the lineage for any of the expressions contain in any of the predicates, it will return null. Observe that this is different from the empty list of predicates, which means that there are not predicates in the (sub)plan.
  */
 public class AlgMdAllPredicates implements MetadataHandler<BuiltInMetadata.AllPredicates> {
 
-    public static final AlgMetadataProvider SOURCE = ReflectiveAlgMetadataProvider.reflectiveSource( BuiltInMethod.ALL_PREDICATES.method, new AlgMdAllPredicates() );
+    public static final AlgMetadataProvider SOURCE = ReflectiveAlgMetadataProvider.reflectiveSource( new AlgMdAllPredicates(), BuiltInMethod.ALL_PREDICATES.method );
 
 
     @Override
@@ -112,7 +112,7 @@ public class AlgMdAllPredicates implements MetadataHandler<BuiltInMetadata.AllPr
 
 
     /**
-     * Extract predicates for a table scan.
+     * Extract predicates for a table relScan.
      */
     public AlgOptPredicateList getAllPredicates( RelScan table, AlgMetadataQuery mq ) {
         return AlgOptPredicateList.EMPTY;

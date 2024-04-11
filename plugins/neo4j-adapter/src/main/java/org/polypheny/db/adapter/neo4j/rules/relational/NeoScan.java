@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,23 +24,23 @@ import static org.polypheny.db.adapter.neo4j.util.NeoStatements.match_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.node_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.with_;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import org.polypheny.db.adapter.neo4j.NeoEntity;
 import org.polypheny.db.adapter.neo4j.NeoRelationalImplementor;
 import org.polypheny.db.adapter.neo4j.rules.NeoRelAlg;
 import org.polypheny.db.adapter.neo4j.util.NeoStatements.NeoStatement;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.relational.RelScan;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.type.entity.PolyString;
 
 public class NeoScan extends RelScan<NeoEntity> implements NeoRelAlg {
 
 
-    public NeoScan( AlgOptCluster cluster, AlgTraitSet traitSet, NeoEntity neoEntity ) {
+    public NeoScan( AlgCluster cluster, AlgTraitSet traitSet, NeoEntity neoEntity ) {
         super( cluster, traitSet, neoEntity );
     }
 
@@ -56,12 +56,17 @@ public class NeoScan extends RelScan<NeoEntity> implements NeoRelAlg {
 
         implementor.add( match_( node_( PolyString.of( entity.name ), labels_( PolyString.of( entity.name ) ) ) ) );
 
-        if ( !implementor.isDml() ) {
+        if ( !implementor.isDml() || !implementor.isPrepared() ) {
             List<NeoStatement> mapping = entity
-                    .getRowType()
+                    .getTupleType()
                     .getFields()
-                    .stream().map( f -> as_( literal_( entity.name + "." + f.getPhysicalName() ), literal_( f.getName() ) ) )
-                    .collect( Collectors.toList() );
+                    .stream().map( f -> (NeoStatement) as_( literal_( PolyString.of( entity.name + "." + f.getPhysicalName() ) ), literal_( PolyString.of( f.getName() ) ) ) )
+                    .toList();
+
+            if ( implementor.isDml() ) {
+                mapping = new ArrayList<>( mapping );
+                mapping.add( literal_( PolyString.of( entity.name ) ) );
+            }
 
             implementor.add( with_( list_( mapping ) ) );
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,6 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.cottontail.CottontailConvention;
 import org.polypheny.db.adapter.cottontail.CottontailEntity;
 import org.polypheny.db.adapter.cottontail.algebra.CottontailAlg.CottontailImplementContext;
 import org.polypheny.db.adapter.cottontail.enumberable.CottontailDeleteEnumerable;
@@ -36,15 +35,15 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterImpl;
 import org.polypheny.db.algebra.enumerable.EnumerableAlg;
 import org.polypheny.db.algebra.enumerable.EnumerableAlgImplementor;
-import org.polypheny.db.algebra.enumerable.JavaRowFormat;
+import org.polypheny.db.algebra.enumerable.JavaTupleFormat;
 import org.polypheny.db.algebra.enumerable.PhysType;
 import org.polypheny.db.algebra.enumerable.PhysTypeImpl;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.type.ArrayType;
@@ -60,6 +59,7 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
             PolyType.SMALLINT,
             PolyType.INTEGER,
             PolyType.DOUBLE,
+            PolyType.DECIMAL,
             PolyType.FLOAT,
             PolyType.REAL,
             PolyType.BIGINT,
@@ -73,7 +73,7 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
      * @param traits the output traits of this converter
      * @param child child alg (provides input traits)
      */
-    public CottontailToEnumerableConverter( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child ) {
+    public CottontailToEnumerableConverter( AlgCluster cluster, AlgTraitSet traits, AlgNode child ) {
         super( cluster, ConventionTraitDef.INSTANCE, traits, child );
     }
 
@@ -85,7 +85,7 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         return super.computeSelfCost( planner, mq ).multiplyBy( .1 );
     }
 
@@ -97,9 +97,8 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
         cottontailContext.blockBuilder = list;
         cottontailContext.visitChild( 0, getInput() );
 
-        final CottontailConvention convention = (CottontailConvention) getInput().getConvention();
         final AlgDataType rowType = getTupleType();
-        final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), rowType, pref.prefer( JavaRowFormat.ARRAY ) );
+        final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), rowType, pref.prefer( JavaTupleFormat.ARRAY ) );
         final Expression enumerable;
 
         switch ( cottontailContext.queryType ) {
@@ -116,6 +115,11 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
                         "values",
                         Expressions.newArrayBounds( PolyValue.class, 1, Expressions.constant( fieldCount ) ) );
                 for ( int i = 0; i < fieldCount; i++ ) {
+                    if ( cottontailContext.dynamicParams.containsKey( getTupleType().getFieldNames().get( i ) ) ) {
+                        this.generateDynamicGet( builder, cottontailContext.dynamicParams.get( getTupleType().getFieldNames().get( i ) ), Expressions.arrayIndex( values_, Expressions.constant( i ) ) );
+                        continue;
+                    }
+
                     this.generateGet( rowType, builder, resultMap_, i, Expressions.arrayIndex( values_, Expressions.constant( i ) ) );
                 }
                 builder.add( Expressions.return_( null, values_ ) );
@@ -188,8 +192,6 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
                         "enumerable",
                         Expressions.call(
                                 CottontailDeleteEnumerable.CREATE_DELETE_METHOD,
-                                Expressions.constant( cottontailContext.tableName ),
-                                Expressions.constant( cottontailContext.schemaName ),
                                 expressionOrNullExpression( cottontailContext.filterBuilder ),
                                 DataContext.ROOT,
                                 cottontailContext.table.asExpression( CottontailEntity.class )
@@ -210,6 +212,11 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
         list.add( Expressions.return_( null, enumerable ) );
 
         return implementor.result( physType, list.toBlock() );
+    }
+
+
+    private void generateDynamicGet( BlockBuilder builder, Long dynamicIndex, Expression target ) {
+        builder.add( Expressions.statement( Expressions.assign( target, Expressions.call( CottontailEnumerableFactory.class, "getDynamicValue", DataContext.ROOT, Expressions.constant( dynamicIndex ) ) ) ) );
     }
 
 
@@ -251,6 +258,7 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
                 break;
             case CHAR:
             case VARCHAR:
+            case TEXT:
                 source = Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getStringData", Object.class ), getDataFromMap_ );
                 break;
             case NULL:
@@ -294,37 +302,19 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
             case ARRAY: {
                 ArrayType arrayType = (ArrayType) fieldType;
                 if ( arrayType.getDimension() == 1 && SUPPORTED_ARRAY_COMPONENT_TYPES.contains( arrayType.getComponentType().getPolyType() ) ) {
-                    switch ( arrayType.getComponentType().getPolyType() ) {
-                        case BOOLEAN:
-                            source = Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getBoolVector", Object.class ), getDataFromMap_ );
-                            break;
-                        case SMALLINT:
-                            source = Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getSmallIntVector", Object.class ), getDataFromMap_ );
-                            break;
-                        case TINYINT:
-                            source = Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getTinyIntVector", Object.class ), getDataFromMap_ );
-                            break;
-                        case INTEGER:
-                            source = Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getIntVector", Object.class ), getDataFromMap_ );
-                            break;
-                        case FLOAT:
-                        case REAL:
-                            source = Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getFloatVector", Object.class ), getDataFromMap_ );
-                            break;
-                        case DOUBLE:
-                            source = Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getDoubleVector", Object.class ), getDataFromMap_ );
-                            break;
-                        case BIGINT:
-                            source = Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getLongVector", Object.class ), getDataFromMap_ );
-                            break;
-                        default:
-                            throw new AssertionError( "No vector access method for inner type: " + arrayType.getPolyType() );
-                    }
+                    source = switch ( arrayType.getComponentType().getPolyType() ) {
+                        case BOOLEAN -> Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getBoolVector", Object.class ), getDataFromMap_ );
+                        case SMALLINT -> Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getSmallIntVector", Object.class ), getDataFromMap_ );
+                        case TINYINT -> Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getTinyIntVector", Object.class ), getDataFromMap_ );
+                        case INTEGER -> Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getIntVector", Object.class ), getDataFromMap_ );
+                        case FLOAT, REAL -> Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getFloatVector", Object.class ), getDataFromMap_ );
+                        case DOUBLE, DECIMAL -> Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getDoubleVector", Object.class ), getDataFromMap_ );
+                        case BIGINT -> Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getLongVector", Object.class ), getDataFromMap_ );
+                        default -> throw new AssertionError( "No vector access method for inner type: " + arrayType.getPolyType() );
+                    };
                 } else {
                     source = Expressions.call(
                             BuiltInMethod.PARSE_ARRAY_FROM_TEXT.method,
-                            Expressions.constant( fieldType.getComponentType().getPolyType() ),
-                            Expressions.constant( arrayType.getDimension() ),
                             Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getStringData", Object.class ), getDataFromMap_ )
                     );
                 }

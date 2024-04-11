@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -160,7 +160,7 @@ public abstract class SqlNode implements Node {
      * For the details of this algorithm, see {@link SqlCall#unparse}.
      *
      * @param writer Target writer
-     * @param leftPrec The precedence of the {@link SqlNode} immediately preceding this node in a depth-first scan of the parse tree
+     * @param leftPrec The precedence of the {@link SqlNode} immediately preceding this node in a depth-first relScan of the parse tree
      * @param rightPrec The precedence of the {@link SqlNode} immediately
      */
     public abstract void unparse( SqlWriter writer, int leftPrec, int rightPrec );

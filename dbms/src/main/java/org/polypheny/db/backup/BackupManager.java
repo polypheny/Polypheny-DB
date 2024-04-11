@@ -178,36 +178,36 @@ public class BackupManager {
         //go through all foreign keys, and check if the namespaceId equals the referencedKeySchemaId, and if not, add it to the namespaceDependencies map, with the namespaceId as key and the referencedKeySchemaId as value
         for ( Map.Entry<Long, List<LogicalForeignKey>> entry : foreignKeysPerTable.entrySet() ) {
             for ( LogicalForeignKey logicalForeignKey : entry.getValue() ) {
-                if ( logicalForeignKey.namespaceId != logicalForeignKey.referencedKeySchemaId ) {
+                if ( logicalForeignKey.namespaceId != logicalForeignKey.referencedKeyNamespaceId ) {
 
                     // Check for namespace dependencies
                     if ( namespaceDependencies.containsKey( logicalForeignKey.namespaceId ) ) {
                         List<Long> temp = namespaceDependencies.get( logicalForeignKey.namespaceId );
                         //only add it if it isn't already in the list??
-                        temp.add( logicalForeignKey.referencedKeySchemaId );
+                        temp.add( logicalForeignKey.referencedKeyNamespaceId );
                         namespaceDependencies.put( logicalForeignKey.namespaceId, temp );
                     } else {
                         List<Long> temp = new ArrayList<>();
-                        temp.add( logicalForeignKey.referencedKeySchemaId );
+                        temp.add( logicalForeignKey.referencedKeyNamespaceId );
                         namespaceDependencies.put( logicalForeignKey.namespaceId, temp );
                     }
 
                     // Check for table dependencies
-                    if ( tableDependencies.containsKey( logicalForeignKey.tableId ) ) {
-                        List<Long> temp = tableDependencies.get( logicalForeignKey.tableId );
-                        temp.add( logicalForeignKey.referencedKeyTableId );
-                        tableDependencies.put( logicalForeignKey.tableId, temp );
+                    if ( tableDependencies.containsKey( logicalForeignKey.entityId ) ) {
+                        List<Long> temp = tableDependencies.get( logicalForeignKey.entityId );
+                        temp.add( logicalForeignKey.referencedKeyEntityId );
+                        tableDependencies.put( logicalForeignKey.entityId, temp );
 
                         List<Pair<Long, Long>> temp2 = namespaceTableDependendencies.get( logicalForeignKey.namespaceId );
-                        temp2.add( new Pair<>( logicalForeignKey.referencedKeySchemaId, logicalForeignKey.referencedKeyTableId ) );
+                        temp2.add( new Pair<>( logicalForeignKey.referencedKeyNamespaceId, logicalForeignKey.referencedKeyEntityId ) );
                         namespaceTableDependendencies.put( logicalForeignKey.namespaceId, temp2 );
                     } else {
                         List<Long> temp = new ArrayList<>();
-                        temp.add( logicalForeignKey.referencedKeyTableId );
-                        tableDependencies.put( logicalForeignKey.tableId, temp );
+                        temp.add( logicalForeignKey.referencedKeyEntityId );
+                        tableDependencies.put( logicalForeignKey.entityId, temp );
 
                         List<Pair<Long, Long>> temp2 = new ArrayList<>();
-                        temp2.add( new Pair<>( logicalForeignKey.referencedKeySchemaId, logicalForeignKey.referencedKeyTableId ) );
+                        temp2.add( new Pair<>( logicalForeignKey.referencedKeyNamespaceId, logicalForeignKey.referencedKeyEntityId ) );
                         namespaceTableDependendencies.put( logicalForeignKey.namespaceId, temp2 );
                     }
 

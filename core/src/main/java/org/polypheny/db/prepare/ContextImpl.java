@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 package org.polypheny.db.prepare;
 
 
-import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Properties;
 import lombok.Getter;
@@ -31,39 +30,24 @@ import org.polypheny.db.config.PolyphenyDbConnectionConfig;
 import org.polypheny.db.config.PolyphenyDbConnectionConfigImpl;
 import org.polypheny.db.transaction.Statement;
 
+@Getter
 @Value
 public class ContextImpl implements Context {
 
-    @Getter
     @NonFinal
     Snapshot snapshot;
-    @Getter
     public JavaTypeFactory typeFactory;
-    @Getter
     public DataContext dataContext;
-    @Getter
     public Statement statement;
-    @Getter
     public String defaultNamespaceName;
-    @Getter
-    public long currentUserId;
 
 
-    public ContextImpl( Snapshot snapshot, DataContext dataContext, String defaultNamespaceName, long currentUserId, Statement statement ) {
+    public ContextImpl( Snapshot snapshot, DataContext dataContext, String defaultNamespaceName, Statement statement ) {
         this.snapshot = snapshot;
         this.typeFactory = dataContext.getTypeFactory();
         this.dataContext = dataContext;
         this.defaultNamespaceName = defaultNamespaceName;
         this.statement = statement;
-        this.currentUserId = currentUserId;
-    }
-
-
-    @Override
-    public List<String> getDefaultSchemaPath() {
-        return defaultNamespaceName == null
-                ? ImmutableList.of()
-                : ImmutableList.of( defaultNamespaceName );
     }
 
 

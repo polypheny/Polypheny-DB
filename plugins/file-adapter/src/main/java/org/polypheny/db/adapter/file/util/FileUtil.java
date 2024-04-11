@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,49 +16,73 @@
 
 package org.polypheny.db.adapter.file.util;
 
-import org.apache.commons.lang3.NotImplementedException;
+import java.util.ArrayList;
+import java.util.List;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.polypheny.db.adapter.file.FileAlg.FileImplementor;
+import org.polypheny.db.adapter.file.Value;
+import org.polypheny.db.adapter.file.Value.DynamicValue;
+import org.polypheny.db.adapter.file.Value.InputValue;
+import org.polypheny.db.adapter.file.Value.LiteralValue;
+import org.polypheny.db.algebra.enumerable.EnumUtils;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexDynamicParam;
+import org.polypheny.db.rex.RexIndexRef;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyValue;
 
 public class FileUtil {
 
-    public static Object toObject( PolyValue value ) {
-        return value == null ? null : value.toJson();
+    public static List<Value> getUpdates( final List<RexNode> exps, FileImplementor implementor ) {
+        List<Value> valueList = new ArrayList<>();
+        int offset;
+        boolean noCheck;
+        if ( exps.size() == implementor.getFileTable().columns.size() ) {
+            noCheck = true;
+            offset = 0;
+        } else {
+            noCheck = false;
+            offset = implementor.getFileTable().columns.size();
+        }
+        for ( int i = offset; i < implementor.getFileTable().columns.size() + offset; i++ ) {
+            if ( noCheck || exps.size() > i ) {
+                RexNode lit = exps.get( i );
+                if ( lit instanceof RexLiteral literal ) {
+                    valueList.add( new LiteralValue( null, literal.value ) );
+                } else if ( lit instanceof RexDynamicParam dynamicParam ) {
+                    valueList.add( new DynamicValue( null, dynamicParam.getIndex() ) );
+                } else if ( lit instanceof RexIndexRef indexRef ) {
+                    valueList.add( new InputValue( indexRef.getIndex(), indexRef.getIndex() ) );
+                } else if ( lit instanceof RexCall call && lit.getType().getPolyType() == PolyType.ARRAY ) {
+                    valueList.add( fromArrayRexCall( call ) );
+                } else {
+                    throw new GenericRuntimeException( "Could not implement " + lit.getClass().getSimpleName() + " " + lit );
+                }
+            }
+        }
+        return valueList;
     }
 
 
-    public static Object fromValue( PolyValue value ) {
-        if ( value == null ) {
-            return null;
+    public static Value fromArrayRexCall( final RexCall call ) {
+        List<PolyValue> arrayValues = new ArrayList<>();
+        for ( RexNode node : call.getOperands() ) {
+            arrayValues.add( ((RexLiteral) node).value );
         }
-        switch ( value.type ) {
-            case INTEGER:
-            case TINYINT:
-            case SMALLINT:
-                return value.asNumber().IntValue();
-            case REAL:
-            case FLOAT:
-                return value.asNumber().FloatValue();
-            case VARCHAR:
-            case CHAR:
-                return value.asString().value;
-            case BIGINT:
-            case DECIMAL:
-                return value.asNumber().BigDecimalValue();
-            case BINARY:
-            case VARBINARY:
-                return value.asBinary().value.getBytes();
-            case DOUBLE:
-                return value.asNumber().DoubleValue();
-            case BOOLEAN:
-                return value.asBoolean().value;
-            case DATE:
-                return value.asDate().getDaysSinceEpoch();
-            case TIME:
-                return value.asTime().ofDay;
-            case TIMESTAMP:
-                return value.asTimestamp().milliSinceEpoch;
+        return new LiteralValue( null, PolyList.of( arrayValues ) );
+    }
+
+
+    public static Expression getValuesExpression( final List<Value> values ) {
+        List<Expression> valueConstructors = new ArrayList<>();
+        for ( Value value : values ) {
+            valueConstructors.add( value.asExpression() );
         }
-        throw new NotImplementedException();
+        return EnumUtils.constantArrayList( valueConstructors, PolyValue.class );
     }
 
 }

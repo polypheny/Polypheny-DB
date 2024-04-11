@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,11 +33,13 @@
 
 package org.polypheny.db.adapter.csv;
 
-import au.com.bytecode.opencsv.CSVParser;
-import au.com.bytecode.opencsv.CSVReader;
+import com.opencsv.CSVParser;
+import com.opencsv.CSVParserBuilder;
+import com.opencsv.CSVReader;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.StringReader;
+import java.time.Duration;
 import java.util.ArrayDeque;
 import java.util.Queue;
 import org.apache.commons.io.input.Tailer;
@@ -96,8 +98,21 @@ class CsvStreamReader extends CSVReader implements Closeable {
         super( new StringReader( "" ) ); // dummy call to base constructor
         contentQueue = new ArrayDeque<>();
         TailerListener listener = new CsvContentListener( contentQueue );
-        tailer = Tailer.create( source.file(), listener, DEFAULT_MONITOR_DELAY, false, true, 4096 );
-        this.parser = new CSVParser( separator, quoteChar, escape, strictQuotes, ignoreLeadingWhiteSpace );
+        tailer = Tailer.builder()
+                .setFile( source.file() )
+                .setTailerListener( listener )
+                .setDelayDuration( Duration.ofMillis( DEFAULT_MONITOR_DELAY ) )
+                .setTailFromEnd( false )
+                .setReOpen( true )
+                .setBufferSize( 4096 )
+                .get();
+        this.parser = new CSVParserBuilder()
+                .withSeparator( separator )
+                .withQuoteChar( quoteChar )
+                .withEscapeChar( escape )
+                .withStrictQuotes( strictQuotes )
+                .withIgnoreLeadingWhiteSpace( ignoreLeadingWhiteSpace )
+                .build();
         this.skipLines = line;
         try {
             // wait for tailer to capture data
@@ -142,9 +157,9 @@ class CsvStreamReader extends CSVReader implements Closeable {
      * Reads the next line from the file.
      *
      * @return the next line from the file without trailing newline
-     * @throws IOException if bad things happen during the read
      */
-    private String getNextLine() throws IOException {
+    @Override
+    protected String getNextLine() {
         return contentQueue.poll();
     }
 
@@ -180,4 +195,3 @@ class CsvStreamReader extends CSVReader implements Closeable {
     }
 
 }
-

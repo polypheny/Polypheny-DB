@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -123,19 +123,14 @@ public class SqlItemOperator extends SqlSpecialOperator {
 
 
     private PolySingleOperandTypeChecker getChecker( AlgDataType operandType ) {
-        switch ( operandType.getPolyType() ) {
-            case ARRAY:
-                return OperandTypes.family( PolyTypeFamily.INTEGER );
-            case MAP:
-                return OperandTypes.family( operandType.unwrap( MapPolyType.class ).getKeyType().getPolyType().getFamily() );
-            case ANY:
-            case DYNAMIC_STAR:
-                return OperandTypes.or(
-                        OperandTypes.family( PolyTypeFamily.INTEGER ),
-                        OperandTypes.family( PolyTypeFamily.CHARACTER ) );
-            default:
-                throw new AssertionError( operandType.getPolyType() );
-        }
+        return switch ( operandType.getPolyType() ) {
+            case ARRAY -> OperandTypes.family( PolyTypeFamily.INTEGER );
+            case MAP -> OperandTypes.family( operandType.unwrap( MapPolyType.class ).orElseThrow().getKeyType().getPolyType().getFamily() );
+            case ANY, DYNAMIC_STAR -> OperandTypes.or(
+                    OperandTypes.family( PolyTypeFamily.INTEGER ),
+                    OperandTypes.family( PolyTypeFamily.CHARACTER ) );
+            default -> throw new AssertionError( operandType.getPolyType() );
+        };
     }
 
 
@@ -170,7 +165,7 @@ public class SqlItemOperator extends SqlSpecialOperator {
                     return typeFactory.createTypeWithNullability( operandType.getComponentType(), true );
                 }
             case MAP:
-                return typeFactory.createTypeWithNullability( operandType.unwrap( MapPolyType.class ).getValueType(), true );
+                return typeFactory.createTypeWithNullability( operandType.unwrap( MapPolyType.class ).orElseThrow().getValueType(), true );
             case ANY:
             case DYNAMIC_STAR:
                 return typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.ANY ), true );

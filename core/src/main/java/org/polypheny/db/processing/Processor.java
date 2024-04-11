@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,10 +66,10 @@ public abstract class Processor {
     PolyImplementation getImplementation( Statement statement, ExecutableStatement node, ParsedQueryContext context ) throws TransactionException {
         node.execute( statement.getPrepareContext(), statement, context );
         statement.getTransaction().commit();
-        //Catalog.getInstance().commit();
+
         return new PolyImplementation(
                 null,
-                context.getLanguage().getDataModel(),
+                context.getLanguage().dataModel(),
                 new ExecutionTimeMonitor(),
                 null,
                 Kind.CREATE_NAMESPACE, // technically correct, maybe change
@@ -86,9 +86,6 @@ public abstract class Processor {
 
     public abstract AlgDataType getParameterRowType( Node left );
 
-
-    public List<String> splitStatements( String statements ) {
-        throw new GenericRuntimeException( "splitStatements not implemented" );
-    }
+    public abstract List<String> splitStatements( String statements );
 
 }

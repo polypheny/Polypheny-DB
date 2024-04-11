@@ -1,9 +1,26 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * This file incorporates code covered by the following terms:
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to you under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -24,9 +41,9 @@ import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.metadata.AlgMdCollation;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexUtil;
@@ -40,16 +57,16 @@ public class EnumerableProject extends Project implements EnumerableAlg {
 
     /**
      * Creates an EnumerableProject.
+     * <p>
+     * Use create unless you know what you're doing.
      *
-     * Use {@link #create} unless you know what you're doing.
-     *
-     * @param cluster Cluster this relational expression belongs to
-     * @param traitSet Traits of this relational expression
-     * @param input Input relational expression
+     * @param cluster Cluster this algebra expression belongs to
+     * @param traitSet Traits of this algebra expression
+     * @param input Input algebra expression
      * @param projects List of expressions for the input columns
      * @param rowType Output row type
      */
-    public EnumerableProject( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, List<? extends RexNode> projects, AlgDataType rowType ) {
+    public EnumerableProject( AlgCluster cluster, AlgTraitSet traitSet, AlgNode input, List<? extends RexNode> projects, AlgDataType rowType ) {
         super( cluster, traitSet, input, projects, rowType );
         assert getConvention() instanceof EnumerableConvention;
     }
@@ -59,7 +76,7 @@ public class EnumerableProject extends Project implements EnumerableAlg {
      * Creates an EnumerableProject, specifying row type rather than field names.
      */
     public static EnumerableProject create( final AlgNode input, final List<? extends RexNode> projects, AlgDataType rowType ) {
-        final AlgOptCluster cluster = input.getCluster();
+        final AlgCluster cluster = input.getCluster();
         final AlgMetadataQuery mq = cluster.getMetadataQuery();
         final AlgTraitSet traitSet = input.getTraitSet().replace( EnumerableConvention.INSTANCE )
                 .replaceIfs( AlgCollationTraitDef.INSTANCE, () -> AlgMdCollation.project( mq, input, projects ) );
@@ -68,7 +85,7 @@ public class EnumerableProject extends Project implements EnumerableAlg {
 
 
     static AlgNode create( AlgNode child, List<? extends RexNode> projects, List<String> fieldNames ) {
-        final AlgOptCluster cluster = child.getCluster();
+        final AlgCluster cluster = child.getCluster();
         final AlgDataType rowType = RexUtil.createStructType( cluster.getTypeFactory(), projects, fieldNames, ValidatorUtil.F_SUGGESTER );
         return create( child, projects, rowType );
     }
@@ -81,7 +98,7 @@ public class EnumerableProject extends Project implements EnumerableAlg {
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         return planner.getCostFactory().makeInfiniteCost();
     }
 

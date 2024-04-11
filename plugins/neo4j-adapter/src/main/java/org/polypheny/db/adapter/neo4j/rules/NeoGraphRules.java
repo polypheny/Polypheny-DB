@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -74,7 +74,7 @@ public interface NeoGraphRules {
 
     class NeoGraphModifyRule extends NeoConverterRule {
 
-        public static NeoGraphModifyRule INSTANCE = new NeoGraphModifyRule( LpgModify.class, r -> true, "NeoGraphModifyRule" );
+        public static NeoGraphModifyRule INSTANCE = new NeoGraphModifyRule( LpgModify.class, r -> true, NeoGraphModifyRule.class.getSimpleName() );
 
 
         private <R extends AlgNode> NeoGraphModifyRule( Class<R> clazz, Predicate<? super R> supports, String description ) {
@@ -84,6 +84,12 @@ public interface NeoGraphRules {
 
         @Override
         public AlgNode convert( AlgNode alg ) {
+            LpgModify<?> mod = (LpgModify<?>) alg;
+
+            if ( !(mod.entity instanceof NeoGraph) ) {
+                return null;
+            }
+
             LpgModify<NeoGraph> modify = (LpgModify<NeoGraph>) alg;
             return new NeoLpgModify(
                     modify.getCluster(),
@@ -244,10 +250,9 @@ public interface NeoGraphRules {
                     aggregate.getCluster(),
                     aggregate.getTraitSet().replace( NeoConvention.INSTANCE ),
                     convert( aggregate.getInput(), NeoConvention.INSTANCE ),
-                    aggregate.indicator,
-                    aggregate.getGroupSet(),
-                    aggregate.getGroupSets(),
-                    aggregate.getAggCallList() );
+                    aggregate.groups,
+                    aggregate.aggCalls,
+                    aggregate.getTupleType() );
         }
 
     }
@@ -255,7 +260,7 @@ public interface NeoGraphRules {
 
     class NeoGraphMatchRule extends NeoConverterRule {
 
-        public static NeoGraphMatchRule INSTANCE = new NeoGraphMatchRule( LpgMatch.class, r -> true, "NeoGraphMatchRule" );
+        public static NeoGraphMatchRule INSTANCE = new NeoGraphMatchRule( LpgMatch.class, r -> true, NeoGraphMatchRule.class.getSimpleName() );
 
 
         private <R extends AlgNode> NeoGraphMatchRule( Class<R> clazz, Predicate<? super R> supports, String description ) {

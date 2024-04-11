@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import com.google.common.collect.ImmutableList;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.annotations.SerializeNullable;
-import java.io.Serializable;
+import java.io.Serial;
 import java.util.List;
 import javax.annotation.Nullable;
 import lombok.Getter;
@@ -31,6 +31,7 @@ import org.polypheny.db.catalog.entity.PolyObject;
 import org.polypheny.db.catalog.logistic.DataPlacementRole;
 import org.polypheny.db.catalog.logistic.PartitionType;
 import org.polypheny.db.catalog.logistic.PlacementType;
+import org.polypheny.db.type.entity.PolyValue;
 
 
 /**
@@ -39,6 +40,7 @@ import org.polypheny.db.catalog.logistic.PlacementType;
 @Value
 public class AllocationPartition implements PolyObject {
 
+    @Serial
     private static final long serialVersionUID = 8835793248417591036L;
 
     @Serialize
@@ -110,8 +112,8 @@ public class AllocationPartition implements PolyObject {
 
 
     @Override
-    public Serializable[] getParameterArray() {
-        return new Serializable[0];
+    public PolyValue[] getParameterArray() {
+        return new PolyValue[0];
     }
 
 }

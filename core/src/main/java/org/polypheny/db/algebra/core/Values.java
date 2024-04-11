@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import lombok.Getter;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgVisitor;
 import org.polypheny.db.algebra.AlgWriter;
@@ -46,10 +47,10 @@ import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptRule;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexDigestIncludeType;
 import org.polypheny.db.rex.RexLiteral;
@@ -60,24 +61,28 @@ import org.polypheny.db.util.Pair;
 /**
  * Relational expression whose value is a sequence of zero or more literal row values.
  */
+@Getter
 public abstract class Values extends AbstractAlgNode {
 
     public static final Predicate<? super Values> IS_EMPTY_J = Values::isEmpty;
 
-
+    /**
+     * -- GETTER --
+     * Returns the rows of literals represented by this Values relational expression.
+     */
     public final ImmutableList<ImmutableList<RexLiteral>> tuples;
 
 
     /**
      * Creates a new Values.
-     *
+     * <p>
      * Note that tuples passed in become owned by this alg (without a deep copy), so caller must not modify them after this call, otherwise bad things will happen.
      *
      * @param cluster Cluster that this relational expression belongs to
      * @param rowType Row type for tuples produced by this rel
      * @param tuples 2-dimensional array of tuple values to be produced; outer list contains tuples; each inner list is one tuple; all tuples must be of same length, conforming to rowType
      */
-    protected Values( AlgOptCluster cluster, AlgDataType rowType, ImmutableList<ImmutableList<RexLiteral>> tuples, AlgTraitSet traits ) {
+    protected Values( AlgCluster cluster, AlgDataType rowType, ImmutableList<ImmutableList<RexLiteral>> tuples, AlgTraitSet traits ) {
         super( cluster, traits );
         this.rowType = rowType;
         this.tuples = tuples;
@@ -87,7 +92,7 @@ public abstract class Values extends AbstractAlgNode {
 
     /**
      * Predicate, to be used when defining an operand of a {@link AlgOptRule}, that returns true if a Values contains zero tuples.
-     *
+     * <p>
      * This is the conventional way to represent an empty relational expression. There are several rules that recognize empty relational expressions and prune away that section of the tree.
      */
     public static boolean isEmpty( Values values ) {
@@ -97,19 +102,11 @@ public abstract class Values extends AbstractAlgNode {
 
     /**
      * Predicate, to be used when defining an operand of a {@link AlgOptRule}, that returns true if a Values contains one or more tuples.
-     *
+     * <p>
      * This is the conventional way to represent an empty relational expression. There are several rules that recognize empty relational expressions and prune away that section of the tree.
      */
     public static boolean isNotEmpty( Values values ) {
         return !isEmpty( values );
-    }
-
-
-    /**
-     * Returns the rows of literals represented by this Values relational expression.
-     */
-    public ImmutableList<ImmutableList<RexLiteral>> getTuples() {
-        return tuples;
     }
 
 
@@ -124,9 +121,7 @@ public abstract class Values extends AbstractAlgNode {
                 AlgDataType fieldType = pair.right.getType();
 
                 // TODO jvs 19-Feb-2006: strengthen this a bit.  For example, overflow, rounding, and padding/truncation must already have been dealt with.
-                if ( !RexLiteral.isNullLiteral( literal ) ) {
-                    assert PolyTypeUtil.canAssignFrom( fieldType, literal.getType() ) : "to " + fieldType + " from " + literal;
-                }
+                assert RexLiteral.isNullLiteral( literal ) || PolyTypeUtil.canAssignFrom( fieldType, literal.getType() ) : "to " + fieldType + " from " + literal;
             }
         }
         return true;
@@ -140,8 +135,8 @@ public abstract class Values extends AbstractAlgNode {
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
-        double dRows = mq.getRowCount( this );
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
+        double dRows = mq.getTupleCount( this );
 
         // Assume CPU is negligible since values are precomputed.
         double dCpu = 1;
@@ -152,7 +147,7 @@ public abstract class Values extends AbstractAlgNode {
 
     // implement AlgNode
     @Override
-    public double estimateRowCount( AlgMetadataQuery mq ) {
+    public double estimateTupleCount( AlgMetadataQuery mq ) {
         return tuples.size();
     }
 

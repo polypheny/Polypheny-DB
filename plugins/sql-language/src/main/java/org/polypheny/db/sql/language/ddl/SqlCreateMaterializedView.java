@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +21,11 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.Value;
 import org.apache.calcite.linq4j.Ord;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
@@ -53,20 +56,25 @@ import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.ImmutableNullableList;
 import org.polypheny.db.view.MaterializedViewManager;
 
+@EqualsAndHashCode(callSuper = true)
+@Value
 public class SqlCreateMaterializedView extends SqlCreate implements ExecutableStatement {
 
 
-    private final SqlIdentifier name;
-    private final SqlNodeList columnList;
+    SqlIdentifier name;
+    @Nullable
+    SqlNodeList columns;
     @Getter
-    private final SqlNode query;
-    private final List<SqlIdentifier> store;
-    private final String freshnessType;
-    private final Integer freshnessTime;
-    private final SqlIdentifier freshnessId;
+    SqlNode query;
+    @Nullable
+    List<SqlIdentifier> store;
+    @Nullable
+    String freshnessType;
+    Integer freshnessTime;
+    SqlIdentifier freshnessId;
 
     private static final SqlOperator OPERATOR = new SqlSpecialOperator( "CREATE MATERIALIZED VIEW", Kind.CREATE_MATERIALIZED_VIEW );
-    private Snapshot snapshot = Catalog.getInstance().getSnapshot();
+    Snapshot snapshot = Catalog.getInstance().getSnapshot();
 
 
     /**
@@ -77,18 +85,18 @@ public class SqlCreateMaterializedView extends SqlCreate implements ExecutableSt
             boolean replace,
             boolean ifNotExists,
             SqlIdentifier name,
-            SqlNodeList columnList,
+            @Nullable SqlNodeList columns,
             SqlNode query,
-            List<SqlIdentifier> store,
-            String freshnessType,
+            @Nullable List<SqlIdentifier> store,
+            @Nullable String freshnessType,
             Integer freshnessTime,
             SqlIdentifier freshnessId ) {
         super( OPERATOR, pos, replace, ifNotExists );
         this.name = Objects.requireNonNull( name );
-        this.columnList = columnList; // may be null
+        this.columns = columns;
         this.query = Objects.requireNonNull( query );
-        this.store = store; // ON STORE [storeId name]; may be null
-        this.freshnessType = freshnessType; // may be null, then standard values are used
+        this.store = store;
+        this.freshnessType = freshnessType;
         this.freshnessTime = freshnessTime;
         this.freshnessId = freshnessId;
     }
@@ -96,13 +104,13 @@ public class SqlCreateMaterializedView extends SqlCreate implements ExecutableSt
 
     @Override
     public List<Node> getOperandList() {
-        return ImmutableNullableList.of( name, columnList, query );
+        return ImmutableNullableList.of( name, columns, query );
     }
 
 
     @Override
     public List<SqlNode> getSqlOperandList() {
-        return ImmutableNullableList.of( name, columnList, query );
+        return ImmutableNullableList.of( name, columns, query );
     }
 
 
@@ -124,6 +132,7 @@ public class SqlCreateMaterializedView extends SqlCreate implements ExecutableSt
         }
 
         List<DataStore<?>> stores;
+        assert store != null;
         if ( !store.isEmpty() ) {
             List<DataStore<?>> storeList = new ArrayList<>();
             store.forEach( s -> storeList.add( getDataStoreInstance( s ) ) );
@@ -148,7 +157,7 @@ public class SqlCreateMaterializedView extends SqlCreate implements ExecutableSt
 
         List<String> columns = null;
 
-        if ( columnList != null ) {
+        if ( this.columns != null ) {
             columns = getColumnInfo();
         }
 
@@ -156,17 +165,12 @@ public class SqlCreateMaterializedView extends SqlCreate implements ExecutableSt
         MaterializedCriteria materializedCriteria = new MaterializedCriteria();
 
         if ( freshnessType != null ) {
-            switch ( freshnessType ) {
-                case "UPDATE":
-                    materializedCriteria = new MaterializedCriteria( CriteriaType.UPDATE, freshnessTime );
-                    break;
-                case "INTERVAL":
-                    materializedCriteria = new MaterializedCriteria( CriteriaType.INTERVAL, freshnessTime, getFreshnessType( freshnessId.toString().toLowerCase( Locale.ROOT ) ) );
-                    break;
-                case "MANUAL":
-                    materializedCriteria = new MaterializedCriteria( CriteriaType.MANUAL );
-                    break;
-            }
+            materializedCriteria = switch ( freshnessType ) {
+                case "UPDATE" -> new MaterializedCriteria( CriteriaType.UPDATE, freshnessTime );
+                case "INTERVAL" -> new MaterializedCriteria( CriteriaType.INTERVAL, freshnessTime, getFreshnessType( freshnessId.toString().toLowerCase( Locale.ROOT ) ) );
+                case "MANUAL" -> new MaterializedCriteria( CriteriaType.MANUAL );
+                default -> materializedCriteria;
+            };
         }
 
         boolean ordered = query.getKind().belongsTo( Kind.ORDER );
@@ -191,41 +195,23 @@ public class SqlCreateMaterializedView extends SqlCreate implements ExecutableSt
 
 
     private TimeUnit getFreshnessType( String freshnessId ) {
-        TimeUnit timeUnit;
-        switch ( freshnessId ) {
-            case "min":
-            case "minutes":
-                timeUnit = TimeUnit.MINUTES;
-                break;
-            case "hours":
-                timeUnit = TimeUnit.HOURS;
-                break;
-            case "sec":
-            case "seconds":
-                timeUnit = TimeUnit.SECONDS;
-                break;
-            case "days":
-            case "day":
-                timeUnit = TimeUnit.DAYS;
-                break;
-            case "millisec":
-            case "milliseconds":
-                timeUnit = TimeUnit.MILLISECONDS;
-                break;
-            default:
-                timeUnit = TimeUnit.MINUTES;
-                break;
-        }
-        return timeUnit;
+        return switch ( freshnessId ) {
+            case "min", "minutes" -> TimeUnit.MINUTES;
+            case "hours" -> TimeUnit.HOURS;
+            case "sec", "seconds" -> TimeUnit.SECONDS;
+            case "days", "day" -> TimeUnit.DAYS;
+            case "millisec", "milliseconds" -> TimeUnit.MILLISECONDS;
+            default -> TimeUnit.MINUTES;
+        };
     }
 
 
     private List<String> getColumnInfo() {
         List<String> columnName = new ArrayList<>();
 
-        for ( Ord<SqlNode> c : Ord.zip( columnList.getSqlList() ) ) {
-            if ( c.e instanceof SqlIdentifier ) {
-                SqlIdentifier sqlIdentifier = (SqlIdentifier) c.e;
+        assert columns != null;
+        for ( Ord<SqlNode> c : Ord.zip( columns.getSqlList() ) ) {
+            if ( c.e instanceof SqlIdentifier sqlIdentifier ) {
                 columnName.add( sqlIdentifier.getSimple() );
 
             } else {
@@ -244,9 +230,9 @@ public class SqlCreateMaterializedView extends SqlCreate implements ExecutableSt
             writer.keyword( "IF NOT EXISTS" );
         }
         name.unparse( writer, leftPrec, rightPrec );
-        if ( columnList != null ) {
+        if ( columns != null ) {
             SqlWriter.Frame frame = writer.startList( "(", ")" );
-            for ( SqlNode c : columnList.getSqlList() ) {
+            for ( SqlNode c : columns.getSqlList() ) {
                 writer.sep( "," );
                 c.unparse( writer, 0, 0 );
             }
@@ -256,7 +242,7 @@ public class SqlCreateMaterializedView extends SqlCreate implements ExecutableSt
         writer.newlineAndIndent();
         query.unparse( writer, 0, 0 );
 
-        if ( !store.isEmpty() ) {
+        if ( store != null && !store.isEmpty() ) {
             writer.keyword( "ON STORE" );
             for ( SqlIdentifier s : store ) {
                 s.unparse( writer, 0, 0 );

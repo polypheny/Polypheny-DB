@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,13 +18,13 @@ package org.polypheny.db.adapter;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -37,7 +37,6 @@ import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
-import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.docker.DockerContainer;
@@ -55,14 +54,13 @@ import org.polypheny.db.transaction.PolyXid;
 
 @Getter
 @Slf4j
-public abstract class Adapter<S extends AdapterCatalog> implements Scannable, Expressible {
+public abstract class Adapter<ACatalog extends AdapterCatalog> implements Scannable, Expressible {
 
     private final AdapterProperties properties;
     protected final DeployMode deployMode;
     protected String deploymentId;
-    @Getter
-    private final String adapterName;
-    public final S storeCatalog;
+    public final String adapterName;
+    public final ACatalog adapterCatalog;
 
 
     @Getter
@@ -80,8 +78,8 @@ public abstract class Adapter<S extends AdapterCatalog> implements Scannable, Ex
     private final Map<Long, Namespace> namespaces = new ConcurrentHashMap<>();
 
 
-    public Adapter( long adapterId, String uniqueName, Map<String, String> settings, S catalog ) {
-        this.storeCatalog = catalog;
+    public Adapter( long adapterId, String uniqueName, Map<String, String> settings, ACatalog catalog ) {
+        this.adapterCatalog = catalog;
         this.properties = getClass().getAnnotation( AdapterProperties.class );
         if ( getClass().getAnnotation( AdapterProperties.class ) == null ) {
             throw new GenericRuntimeException( "The used adapter does not annotate its properties correctly." );
@@ -113,12 +111,12 @@ public abstract class Adapter<S extends AdapterCatalog> implements Scannable, Ex
 
     @Override
     public Expression asExpression() {
-        return Expressions.call( AdapterManager.ADAPTER_MANAGER_EXPRESSION, "getAdapter", Expressions.constant( adapterId ) );
+        return Expressions.convert_( Expressions.call( Expressions.call( AdapterManager.ADAPTER_MANAGER_EXPRESSION, "getAdapter", Expressions.constant( adapterId ) ), "orElseThrow" ), Adapter.class );
     }
 
 
     public Expression getCatalogAsExpression() {
-        return Expressions.field( asExpression(), "storeCatalog" );
+        return Expressions.field( asExpression(), "adapterCatalog" );
     }
 
 
@@ -206,10 +204,15 @@ public abstract class Adapter<S extends AdapterCatalog> implements Scannable, Ex
             // we only need to check settings which apply to the used mode
             if ( !s.appliesTo
                     .stream()
-                    .map( setting -> setting.getModes( Arrays.asList( properties.usedModes() ) ) )
-                    .collect( Collectors.toList() ).contains( deployMode ) ) {
+                    .flatMap( setting -> setting.getModes( List.of( properties.usedModes() ) ).stream() )
+                    .toList().contains( deployMode ) ) {
                 continue;
             }
+            if ( !initialSetup && settings.containsKey( s.name ) && settings.get( s.name ).equals( s.getValue() ) ) {
+                // we can leave the setting as it is
+                return;
+            }
+
             if ( newSettings.containsKey( s.name ) ) {
                 if ( s.modifiable || initialSetup ) {
                     String newValue = newSettings.get( s.name );
@@ -264,16 +267,15 @@ public abstract class Adapter<S extends AdapterCatalog> implements Scannable, Ex
         );
         informationElements.add( physicalColumnNames );
 
-        Snapshot snapshot = Catalog.getInstance().getSnapshot();
         group.setRefreshFunction( () -> {
             physicalColumnNames.reset();
-            List<PhysicalEntity> physicalsOnAdapter = new ArrayList<>();//snapshot.physical().getPhysicalsOnAdapter( adapterId );
+            Collection<PhysicalEntity> physicalsOnAdapter = getAdapterCatalog().physicals.values();
 
             for ( PhysicalEntity entity : physicalsOnAdapter ) {
-                if ( entity.dataModel != DataModel.RELATIONAL ) {
+                if ( entity.dataModel != DataModel.RELATIONAL || entity.unwrap( PhysicalTable.class ).isEmpty() ) {
                     continue;
                 }
-                PhysicalTable physicalTable = (PhysicalTable) entity;
+                PhysicalTable physicalTable = entity.unwrap( PhysicalTable.class ).get();
 
                 for ( PhysicalColumn column : physicalTable.columns ) {
                     physicalColumnNames.addRow(

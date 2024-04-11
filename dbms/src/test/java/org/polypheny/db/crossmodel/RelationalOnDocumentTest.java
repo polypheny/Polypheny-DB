@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,12 @@
 
 package org.polypheny.db.crossmodel;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.sql.ResultSet;
 import java.util.List;
 import org.bson.BsonDocument;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
@@ -59,7 +60,7 @@ public class RelationalOnDocumentTest extends CrossModelTestTemplate {
             ResultSet result = s.executeQuery( String.format( "SELECT * FROM %s.%s", DATABASE_NAME, COLLECTION_NAME ) );
             List<Object[]> doc = TestHelper.convertResultSetToList( result );
             // contents of documents are non-deterministic, and we cannot compare them as usual through TestHelper.checkResultSet
-            Assertions.assertEquals( BsonDocument.parse( TEST_DATA ), BsonDocument.parse( (String) doc.get( 0 )[0] ) );
+            assertEquals( BsonDocument.parse( TEST_DATA ), BsonDocument.parse( (String) doc.get( 0 )[0] ) );
         } );
     }
 

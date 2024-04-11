@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.polypheny.db.adapter;
 
 import java.util.List;
 import lombok.Getter;
+import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.catalogs.DocAdapterCatalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
 import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
@@ -28,6 +29,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.prepare.Context;
+import org.polypheny.db.tools.AlgBuilder;
 
 public class DocumentScanDelegate implements Scannable {
 
@@ -50,21 +52,20 @@ public class DocumentScanDelegate implements Scannable {
 
 
     @Override
-    public void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities ) {
-        scannable.restoreTable( alloc, entities );
+    public void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities, Context context ) {
+        scannable.restoreTable( alloc, entities, context );
     }
 
 
     @Override
-    public void restoreGraph( AllocationGraph alloc, List<PhysicalEntity> entities ) {
-        Scannable.restoreGraphSubstitute( scannable, alloc, entities );
+    public void restoreGraph( AllocationGraph alloc, List<PhysicalEntity> entities, Context context ) {
+        Scannable.restoreGraphSubstitute( scannable, alloc, entities, context );
     }
 
 
-
     @Override
-    public void restoreCollection( AllocationCollection alloc, List<PhysicalEntity> entities ) {
-
+    public void restoreCollection( AllocationCollection alloc, List<PhysicalEntity> entities, Context context ) {
+        scannable.restoreCollection( alloc, entities, context );
     }
 
 
@@ -83,6 +84,12 @@ public class DocumentScanDelegate implements Scannable {
     @Override
     public void dropGraph( Context context, AllocationGraph allocation ) {
         Scannable.dropGraphSubstitute( scannable, context, allocation );
+    }
+
+
+    @Override
+    public AlgNode getGraphScan( long allocId, AlgBuilder builder ) {
+        return Scannable.getGraphScanSubstitute( scannable, allocId, builder );
     }
 
 

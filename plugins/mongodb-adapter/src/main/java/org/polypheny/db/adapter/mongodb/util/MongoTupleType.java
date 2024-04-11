@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package org.polypheny.db.adapter.mongodb.util;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Objects;
 import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -42,14 +42,8 @@ public class MongoTupleType implements Expressible {
         this.type = type;
         this.subs = subs;
         this.nullable = nullable;
-        this.name = name;
+        this.name = name == null ? null : name.split( "\\." )[name.split( "\\." ).length - 1];
     }
-
-
-    public MongoTupleType( MongoTupleType type ) {
-        this( type.name, type.type, List.of( type ), type.nullable );
-    }
-
 
     public static MongoTupleType from( AlgDataType type ) {
         if ( !type.isStruct() ) {
@@ -57,9 +51,8 @@ public class MongoTupleType implements Expressible {
         }
 
         List<MongoTupleType> types = new ArrayList<>();
-        switch ( type.getPolyType() ) {
-            case ROW:
-                type.getFields().forEach( field -> types.add( from( field ) ) );
+        if ( Objects.requireNonNull( type.getPolyType() ) == PolyType.ROW ) {
+            type.getFields().forEach( field -> types.add( from( field ) ) );
         }
         return new MongoTupleType( null, type.getPolyType(), types, type.isNullable() );
     }
@@ -67,9 +60,7 @@ public class MongoTupleType implements Expressible {
 
     private static MongoTupleType from( AlgDataTypeField field ) {
         List<MongoTupleType> types = new ArrayList<>();
-        switch ( field.getType().getPolyType() ) {
-            case ROW:
-                //f.forEach( field -> types.add( from( field ) ) );
+        if ( Objects.requireNonNull( field.getType().getPolyType() ) == PolyType.ROW ) {//f.forEach( field -> types.add( from( field ) ) );
         }
         return new MongoTupleType( field.getName(), field.getType().getPolyType(), types, field.getType().isNullable() );
     }
@@ -81,7 +72,7 @@ public class MongoTupleType implements Expressible {
                 MongoTupleType.class,
                 Expressions.constant( name ),
                 Expressions.constant( type ),
-                EnumUtils.expressionList( subs.stream().map( MongoTupleType::asExpression ).collect( Collectors.toList() ) ),
+                EnumUtils.expressionList( subs.stream().map( MongoTupleType::asExpression ).toList() ),
                 Expressions.constant( nullable ) );
     }
 
@@ -92,11 +83,7 @@ public class MongoTupleType implements Expressible {
 
 
     public boolean isStruct() {
-        switch ( type ) {
-            case ROW:
-                return true;
-        }
-        return false;
+        return Objects.requireNonNull( type ) == PolyType.ROW;
     }
 
 }

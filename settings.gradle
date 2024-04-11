@@ -1,4 +1,19 @@
+plugins {
+    id("org.gradle.toolchains.foojay-resolver") version "0.7.0"
+}
+
 rootProject.name = 'Polypheny-DB'
+
+toolchainManagement {
+    jvm {
+        javaRepositories {
+            repository("foojay") {
+                resolverClass = org.gradle.toolchains.foojay.FoojayToolchainResolver
+            }
+        }
+    }
+}
+
 
 // core modules
 include 'util'
@@ -12,10 +27,7 @@ include 'dbms'
 
 include 'plugins'
 
-// catalog
-// include 'plugins:mapdb-catalog'
-
-include 'plugins:mapdb-monitoring'
+include 'plugins:inmemory-monitoring'
 
 // language plugins
 include 'plugins:sql-language'
@@ -49,10 +61,3 @@ include 'plugins:excel-adapter'
 
 // other plugins
 include 'plugins:notebooks'
-
-// disabled adapter plugins
-//include 'plugins:pig-adapter'
-//include 'plugins:html-adapter'
-//include 'plugins:druid-adapter'
-//include 'plugins:elasticsearch-adapter'
-//include 'plugins:geode-adapter'

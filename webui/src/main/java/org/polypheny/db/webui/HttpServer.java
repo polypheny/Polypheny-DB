@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -346,7 +346,7 @@ public class HttpServer implements Runnable {
     private static void attachCatalogMetaRoutes( Javalin webuiServer, Crud crud ) {
         webuiServer.post( "/getSchemaTree", crud.catalogCrud::getSchemaTree );
 
-        webuiServer.get( "/getSnapshot", crud.catalogCrud::getSnapshot );
+        webuiServer.post( "/getSnapshot", crud.catalogCrud::getSnapshot );
 
         webuiServer.get( "/getTypeSchemas", crud.catalogCrud::getTypeNamespaces );
 

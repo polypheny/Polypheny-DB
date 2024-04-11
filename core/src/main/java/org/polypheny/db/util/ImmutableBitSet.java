@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -618,7 +618,7 @@ public class ImmutableBitSet implements Iterable<Integer>, Serializable, Compara
      * Creates a view onto this bit set as a list of integers.
      *
      * The {@code cardinality} and {@code get} methods are both O(n), but the iterator is efficient. The list is memory efficient, and the CPU cost
-     * breaks even (versus {@link #toList}) if you intend to scan it only once.
+     * breaks even (versus {@link #toList}) if you intend to relScan it only once.
      */
     public List<Integer> asList() {
         return new AbstractList<>() {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,23 +17,18 @@
 package org.polypheny.db.algebra.enumerable.common;
 
 
-import java.lang.reflect.Modifier;
 import java.util.List;
-import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.function.Function;
-import org.apache.calcite.linq4j.function.Function0;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
-import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.FunctionExpression;
 import org.apache.calcite.linq4j.tree.MethodCallExpression;
-import org.apache.calcite.linq4j.tree.ParameterExpression;
-import org.apache.calcite.linq4j.tree.Types;
+import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.common.ConstraintEnforcer;
 import org.polypheny.db.algebra.enumerable.EnumerableAlg;
 import org.polypheny.db.algebra.enumerable.EnumerableAlgImplementor;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.util.BuiltInMethod;
 
@@ -44,7 +39,7 @@ public class EnumerableConstraintEnforcer extends ConstraintEnforcer implements 
      * Left is the initial dml query, which modifies the entity
      * right is the control query, which tests if still all conditions are correct
      */
-    public EnumerableConstraintEnforcer( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode modify, AlgNode control, List<Class<? extends Exception>> exceptionClass, List<String> exceptionMessage ) {
+    public EnumerableConstraintEnforcer( AlgCluster cluster, AlgTraitSet traitSet, AlgNode modify, AlgNode control, List<Class<? extends Exception>> exceptionClass, List<String> exceptionMessage ) {
         super( cluster, traitSet, modify, control, exceptionClass, exceptionMessage );
     }
 
@@ -72,25 +67,23 @@ public class EnumerableConstraintEnforcer extends ConstraintEnforcer implements 
         Result modify = implementor.visitChild( this, 0, (EnumerableAlg) getLeft(), pref );
         Result control = implementor.visitChild( this, 1, (EnumerableAlg) getRight(), pref );
 
-        // Move into lambda
-        Expression executor = builder.append( builder.newName( "executor" + System.nanoTime() ), modify.block );
-
-        ParameterExpression exp = Expressions.parameter( Types.of( Function0.class, Enumerable.class ), builder.newName( "executor" + System.nanoTime() ) );
-
         // Move executor enumerable into a lambda so parameters get not prematurely
-        FunctionExpression<Function<?>> expCall = Expressions.lambda( Expressions.block( Expressions.return_( null, executor ) ) );
-        builder.add( Expressions.declare( Modifier.FINAL, exp, expCall ) );
+        FunctionExpression<Function<?>> expCall = Expressions.lambda( modify.block() );
+
+        // we wrap the control query into a lambda, so we can call it later with adjusted parameters
+        FunctionExpression<Function<?>> controlLambda = Expressions.lambda( control.block() );
 
         MethodCallExpression transformContext = Expressions.call(
                 BuiltInMethod.ENFORCE_CONSTRAINT.method,
-                exp,
-                builder.append( builder.newName( "control" + System.nanoTime() ), control.block ),
+                DataContext.ROOT,
+                expCall,
+                controlLambda,
                 Expressions.constant( this.getExceptionClasses() ),
                 Expressions.constant( this.getExceptionMessages() ) );
 
         builder.add( Expressions.return_( null, transformContext ) );
 
-        return implementor.result( modify.physType, builder.toBlock() );
+        return implementor.result( modify.physType(), builder.toBlock() );
     }
 
 }

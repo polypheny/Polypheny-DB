@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,9 @@ package org.polypheny.db.sql.language.ddl.altertable;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.ForeignKeyOption;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
@@ -102,14 +103,23 @@ public class SqlAlterTableAddForeignKey extends SqlAlterTable {
         LogicalTable logicalTable = getTableFailOnEmpty( context, table );
         LogicalTable refTable = getTableFailOnEmpty( context, referencesTable );
 
+        if ( logicalTable.entityType != EntityType.ENTITY ) {
+            throw new GenericRuntimeException( "Entity " + logicalTable.getNamespaceName() + "." + logicalTable.getName() + " is not an entity, which can used for constraints." );
+        }
+
+        if ( refTable.entityType != EntityType.ENTITY ) {
+            throw new GenericRuntimeException( "Entity " + refTable.getNamespaceName() + "." + refTable.getName() + " is not an entity, which can used for constraints." );
+        }
+
         DdlManager.getInstance().createForeignKey(
                 logicalTable,
                 refTable,
-                columnList.getList().stream().map( Node::toString ).collect( Collectors.toList() ),
-                referencesList.getList().stream().map( Node::toString ).collect( Collectors.toList() ),
+                columnList.getList().stream().map( Node::toString ).toList(),
+                referencesList.getList().stream().map( Node::toString ).toList(),
                 constraintName.getSimple(),
                 onUpdate,
-                onDelete );
+                onDelete,
+                statement );
 
     }
 

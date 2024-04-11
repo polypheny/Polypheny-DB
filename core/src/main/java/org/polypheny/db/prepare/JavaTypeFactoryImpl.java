@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,12 +66,10 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
-import org.polypheny.db.type.entity.PolyDate;
 import org.polypheny.db.type.entity.PolyInterval;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolySymbol;
-import org.polypheny.db.type.entity.PolyTimestamp;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyBlob;
 import org.polypheny.db.type.entity.category.PolyNumber;
@@ -81,6 +79,8 @@ import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.type.entity.graph.PolyNode;
 import org.polypheny.db.type.entity.graph.PolyPath;
 import org.polypheny.db.type.entity.relational.PolyMap;
+import org.polypheny.db.type.entity.temporal.PolyDate;
+import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 
@@ -198,9 +198,12 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
 
     @Override
     public Type getJavaClass( AlgDataType type ) {
-        if ( type instanceof JavaType ) {
-            JavaType javaType = (JavaType) type;
-            return javaType.getJavaClass();
+        if ( type instanceof JavaType javaType ) {
+            return PolyTemporal.class.isAssignableFrom( javaType.getJavaClass() )
+                    ? PolyTemporal.class
+                    : PolyNumber.class.isAssignableFrom( javaType.getJavaClass() )
+                            ? PolyNumber.class
+                            : javaType.getJavaClass();
         }
         if ( type.isStruct() && type.getFieldCount() == 1 && type.getPolyType() != PolyType.PATH ) {
             return getJavaClass( type.getFields().get( 0 ).getType() );
@@ -210,13 +213,13 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
                 case JSON:
                 case VARCHAR:
                 case CHAR:
+                case TEXT:
                     return PolyString.class;
                 case DOCUMENT:
                     return PolyValue.class;
                 case DATE:
                     return PolyDate.class;
                 case TIME:
-                case TIME_WITH_LOCAL_TIME_ZONE:
                     return PolyTemporal.class;
                 case DOUBLE:
                 case FLOAT: // sic
@@ -228,21 +231,8 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
                 case BIGINT:
                     return PolyNumber.class;
                 case TIMESTAMP:
-                case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
                     return PolyTimestamp.class;
-                case INTERVAL_YEAR:
-                case INTERVAL_YEAR_MONTH:
-                case INTERVAL_MONTH:
-                case INTERVAL_DAY:
-                case INTERVAL_DAY_HOUR:
-                case INTERVAL_DAY_MINUTE:
-                case INTERVAL_DAY_SECOND:
-                case INTERVAL_HOUR:
-                case INTERVAL_HOUR_MINUTE:
-                case INTERVAL_HOUR_SECOND:
-                case INTERVAL_MINUTE:
-                case INTERVAL_MINUTE_SECOND:
-                case INTERVAL_SECOND:
+                case INTERVAL:
                     return PolyInterval.class;
                 case BOOLEAN:
                     return PolyBoolean.class;

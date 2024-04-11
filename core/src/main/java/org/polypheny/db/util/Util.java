@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -147,7 +147,7 @@ public class Util {
      */
     private static final Pattern JAVA_ID_PATTERN = Pattern.compile( "[a-zA-Z_$][a-zA-Z0-9$]*" );
 
-    private static final Charset DEFAULT_CHARSET = Charsets.UTF_16;//Charset.forName( SaffronProperties.INSTANCE.defaultCharset().get() );
+    private static final Charset DEFAULT_CHARSET = Charsets.UTF_8;//Charset.forName( SaffronProperties.INSTANCE.defaultCharset().get() );
 
     /**
      * Maps classes to the map of their enum values. Uses a weak map so that classes are not prevented from being unloaded.
@@ -710,7 +710,7 @@ public class Util {
     public static RuntimeException needToImplement( Object o ) {
         String description = null;
         if ( o != null ) {
-            description = o.getClass().toString() + ": " + o.toString();
+            description = o.getClass() + ": " + o;
         }
         throw new UnsupportedOperationException( description );
     }
@@ -2030,7 +2030,7 @@ public class Util {
         for ( AlgCollation collation : entity.getCollations() ) {
             final AlgFieldCollation fieldCollation = collation.getFieldCollations().get( 0 );
             final int fieldIndex = fieldCollation.getFieldIndex();
-            if ( fieldIndex < entity.getRowType().getFieldCount() && entity.getRowType().getFieldNames().get( fieldIndex ).equals( columnName ) ) {
+            if ( fieldIndex < entity.getTupleType().getFieldCount() && entity.getTupleType().getFieldNames().get( fieldIndex ).equals( columnName ) ) {
                 return fieldCollation.direction.monotonicity();
             }
         }

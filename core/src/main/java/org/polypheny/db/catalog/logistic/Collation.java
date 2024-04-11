@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,12 @@
 
 package org.polypheny.db.catalog.logistic;
 
+import lombok.Getter;
 import lombok.NonNull;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
 
+@Getter
 public enum Collation {
     CASE_SENSITIVE( 1 ),
     CASE_INSENSITIVE( 2 );
@@ -32,18 +34,13 @@ public enum Collation {
     }
 
 
-    public int getId() {
-        return id;
-    }
-
-
     public static Collation getById( int id ) {
         for ( Collation c : values() ) {
             if ( c.id == id ) {
                 return c;
             }
         }
-        throw new RuntimeException( "Unknown Collation with id: " + id );
+        throw new GenericRuntimeException( "Unknown Collation with id: " + id );
     }
 
 
@@ -53,23 +50,7 @@ public enum Collation {
         } else if ( str.equalsIgnoreCase( "CASE INSENSITIVE" ) ) {
             return Collation.CASE_INSENSITIVE;
         }
-        throw new RuntimeException( "Unknown Collation with name: " + str );
-    }
-
-    public String collationToString(  ) {
-        try {
-            if ( this.id == 1 ) {
-                return "CASE SENSITIVE";
-            }
-            if ( this.id == 2 ) {
-                return "CASE INSENSITIVE";
-            }
-            else {
-                throw new GenericRuntimeException( "Collation not supported" );
-            }
-        } catch ( Exception e ) {
-            throw new RuntimeException( e );
-        }
+        throw new GenericRuntimeException( "Unknown Collation with name: " + str );
     }
 
 

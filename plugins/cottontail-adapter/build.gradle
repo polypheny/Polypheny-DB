@@ -1,3 +1,7 @@
+plugins {
+    id "org.jetbrains.kotlin.jvm" version "1.7.22"
+}
+
 group "org.polypheny"
 
 apply plugin: "kotlin"
@@ -55,7 +59,6 @@ sourceSets {
     main {
         java {
             srcDirs = ["src/main/java"]
-            outputDir = file(project.buildDir.absolutePath + "/classes")
         }
         resources {
             srcDirs = ["src/main/resources"]
@@ -65,7 +68,7 @@ sourceSets {
     test {
         java {
             srcDirs = ["src/test/java"]
-            outputDir = file(project.buildDir.absolutePath + "/test-classes")
+            destinationDirectory.set(file(project.buildDir.absolutePath + "/test-classes"))
         }
         resources {
             srcDirs = ["src/test/resources"]
@@ -85,7 +88,6 @@ jar {
         attributes "Version": "$project.version"
     }
     dependsOn(":plugins:cottontail-adapter:compileTestKotlin")
-
 }
 java {
     withJavadocJar()
@@ -103,12 +105,8 @@ licensee {
 
     allow('EPL-1.0')
 
-    allowUrl('http://opensource.org/licenses/BSD-3-Clause')
     allowUrl('https://golang.org/LICENSE')
-    allowUrl('https://www.eclipse.org/licenses/edl-v10.html')
-    allowUrl('http://www.opensource.org/licenses/bsd-license.php')
 
-    allowDependency('net.java.dev.jna', 'jna', '5.9.0') { because 'Dual license Lgpl before version 4.0, Apache after' }
     allowDependency('org.bouncycastle', 'bcpkix-jdk15on', '1.67') { because 'MIT license' }
     allowDependency('org.bouncycastle', 'bcprov-jdk15on', '1.67') { because 'MIT license' }
 
@@ -117,5 +115,3 @@ licensee {
 
     allowDependency('javax.annotation', 'javax.annotation-api', '1.3.2') { because 'CDDL license' }
 }
-
-

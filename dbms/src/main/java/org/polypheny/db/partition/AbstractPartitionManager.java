@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,13 +19,12 @@ package org.polypheny.db.partition;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.LogicalAdapter;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
+import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
@@ -46,10 +45,10 @@ public abstract class AbstractPartitionManager implements PartitionManager {
 
 
     @Override
-    public boolean probePartitionGroupDistributionChange( LogicalTable catalogTable, int storeId, long columnId, int threshold ) {
+    public boolean probePartitionGroupDistributionChange( LogicalTable table, int storeId, long columnId, int threshold ) {
         // Check for the specified columnId if we still have a ColumnPlacement for every partitionGroup
-        for ( Long partitionGroupId : Catalog.getInstance().getSnapshot().alloc().getPartitionProperty( catalogTable.id ).orElseThrow().partitionGroupIds ) {
-            List<AllocationColumn> ccps = catalog.getSnapshot().alloc().getColumnPlacementsByPartitionGroup( catalogTable.id, partitionGroupId, columnId );
+        for ( Long partitionIds : Catalog.getInstance().getSnapshot().alloc().getPartitionProperty( table.id ).orElseThrow().partitionIds ) {
+            List<AllocationColumn> ccps = catalog.getSnapshot().alloc().getColumnAllocsByPartitionGroup( table.id, partitionIds, columnId );
             if ( ccps.size() <= threshold ) {
                 for ( AllocationColumn placement : ccps ) {
                     if ( placement.adapterId == storeId ) {
@@ -75,8 +74,8 @@ public abstract class AbstractPartitionManager implements PartitionManager {
                 List<AllocationColumn> allocColumns = allocation.unwrap( AllocationTable.class ).orElseThrow().getColumns();
                 if( placementDistribution.containsKey( allocation.partitionId ) ){
                     List<AllocationColumn> existingAllocColumns = placementDistribution.get( allocation.partitionId );
-                    List<Long> existingColumnsIds = existingAllocColumns.stream().map( e -> e.columnId ).collect( Collectors.toList() );
-                    List<Long> allocColumnIds = allocColumns.stream().map( c -> c.columnId ).collect( Collectors.toList() );
+                    List<Long> existingColumnsIds = existingAllocColumns.stream().map( e -> e.columnId ).toList();
+                    List<Long> allocColumnIds = allocColumns.stream().map( c -> c.columnId ).toList();
                     // contains all already
                     if ( allocColumns.stream().map( c -> c.columnId ).allMatch( existingColumnsIds::contains ) ) {
                         continue;
@@ -87,21 +86,11 @@ public abstract class AbstractPartitionManager implements PartitionManager {
                         }
                     } else {
                         // contains additional -> add
-                        allocColumns = Stream.concat( existingAllocColumns.stream(), allocColumns.stream().filter( c -> !existingColumnsIds.contains( c.columnId ) ) ).collect( Collectors.toList() );
+                        allocColumns = Stream.concat( existingAllocColumns.stream(), allocColumns.stream().filter( c -> !existingColumnsIds.contains( c.columnId ) ) ).toList();
                     }
 
                 }
 
-                /*for ( LogicalColumn column : catalog.getSnapshot().rel().getColumns( catalogTable.id ) ) {
-                    List<AllocationPlacement> placements = new ArrayList<>( catalog.getSnapshot().alloc().getPlacementsOfColumn( column.id ) );
-                    if ( !placements.isEmpty() ) {
-                        // Get first column placement which contains partition
-                        relevantCcps.add( catalog.getSnapshot().alloc().getColumn( placements.get( 0 ).id, column.id ).orElseThrow() );
-                        if ( log.isDebugEnabled() ) {
-                            log.debug( "{} with part. {}", column.name, allocation.id );
-                        }
-                    }
-                }*/
                 placementDistribution.put( allocation.partitionId, allocColumns );
             }
         }
@@ -111,7 +100,7 @@ public abstract class AbstractPartitionManager implements PartitionManager {
 
 
     @Override
-    public boolean validatePartitionGroupSetup(
+    public List<List<String>> validateAdjustPartitionGroupSetup(
             List<List<String>> partitionGroupQualifiers,
             long numPartitionGroups,
             List<String> partitionGroupNames,
@@ -120,7 +109,7 @@ public abstract class AbstractPartitionManager implements PartitionManager {
         if ( numPartitionGroups == 0 && partitionGroupNames.size() < 2 ) {
             throw new GenericRuntimeException( "Partitioning of table failed! Can't partition table with less than 2 partitions/names" );
         }
-        return true;
+        return partitionGroupQualifiers;
     }
 
 
@@ -137,18 +126,18 @@ public abstract class AbstractPartitionManager implements PartitionManager {
 
 
     @Override
-    public Map<Long, Map<Long, List<AllocationColumn>>> getAllPlacements( LogicalTable catalogTable, List<Long> partitionIds ) {
+    public Map<Long, Map<Long, List<AllocationColumn>>> getAllPlacements( LogicalTable table, List<Long> partitionIds ) {
         Map<Long, Map<Long, List<AllocationColumn>>> adapterPlacements = new HashMap<>(); // placementId -> partitionId ; placements
         if ( partitionIds != null ) {
             for ( long partitionId : partitionIds ) {
-                List<LogicalAdapter> adapters = catalog.getSnapshot().alloc().getAdaptersByPartitionGroup( catalogTable.id, partitionId );
+                List<AllocationPlacement> placements = catalog.getSnapshot().alloc().getPlacementsFromLogical( table.id );
 
-                for ( LogicalAdapter adapter : adapters ) {
-                    if ( !adapterPlacements.containsKey( adapter.id ) ) {
-                        adapterPlacements.put( adapter.id, new HashMap<>() );
+                for ( AllocationPlacement placement : placements ) {
+                    if ( !adapterPlacements.containsKey( placement.id ) ) {
+                        adapterPlacements.put( placement.id, new HashMap<>() );
                     }
-                    List<AllocationColumn> placements = catalog.getSnapshot().alloc().getColumnPlacementsOnAdapterPerTable( adapter.id, catalogTable.id );
-                    adapterPlacements.get( placements.get( 0 ).placementId ).put( partitionId, placements );
+                    List<AllocationColumn> placementColumns = catalog.getSnapshot().alloc().getColumnPlacementsOnAdapterPerEntity( placement.adapterId, table.id );
+                    adapterPlacements.get( placement.id ).put( partitionId, placementColumns );
                 }
             }
         }

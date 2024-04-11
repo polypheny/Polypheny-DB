@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -159,7 +159,7 @@ public class ConfigList extends Config {
 
     private void dockerList( String key, final List<ConfigDocker> list ) {
         this.template = new ConfigDocker( "localhost", null );
-        this.list = list.stream().map( el -> (ConfigScalar) el ).collect( Collectors.toList() );
+        this.list = list.stream().map( el -> (ConfigScalar) el ).toList();
         this.defaultList = ImmutableList.copyOf( this.list );
     }
 

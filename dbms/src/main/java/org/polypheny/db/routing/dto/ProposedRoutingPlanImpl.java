@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,19 +16,16 @@
 
 package org.polypheny.db.routing.dto;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
 import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.routing.ColumnDistribution.RoutedDistribution;
 import org.polypheny.db.routing.ProposedRoutingPlan;
 import org.polypheny.db.routing.Router;
+import org.polypheny.db.routing.RoutingContext;
 import org.polypheny.db.tools.RoutedAlgBuilder;
 
 
@@ -43,27 +40,22 @@ public class ProposedRoutingPlanImpl implements ProposedRoutingPlan {
     protected String queryClass;
     protected String physicalQueryClass;
     protected Class<? extends Router> router;
-    protected Map<Long, List<AllocationColumn>> physicalPlacementsOfPartitions; // PartitionId -> List<AdapterId, CatalogColumnPlacementId>
+    protected RoutedDistribution routedDistribution; // PartitionId -> List<AdapterId, CatalogColumnPlacementId>
     protected AlgOptCost preCosts;
 
 
-    public ProposedRoutingPlanImpl( RoutedAlgBuilder routedAlgBuilder, AlgRoot logicalRoot, String queryClass, Class<? extends Router> routerClass ) {
-        this.physicalPlacementsOfPartitions = routedAlgBuilder.getPhysicalPlacementsOfPartitions();
+    public ProposedRoutingPlanImpl( RoutingContext context, RoutedAlgBuilder routedAlgBuilder, AlgRoot logicalRoot, String queryClass, Class<? extends Router> routerClass ) {
+        this.routedDistribution = context.getRoutedDistribution();
         this.queryClass = queryClass;
-        this.physicalQueryClass = queryClass + this.physicalPlacementsOfPartitions;
+        this.physicalQueryClass = queryClass + (context.getFieldDistribution() == null ? "" : context.getFieldDistribution().hashCode());
         this.router = routerClass;
         AlgNode alg = routedAlgBuilder.build();
         this.routedRoot = new AlgRoot( alg, logicalRoot.validatedRowType, logicalRoot.kind, logicalRoot.fields, logicalRoot.collation );
     }
 
 
-    public ProposedRoutingPlanImpl( RoutedAlgBuilder routedAlgBuilder, AlgRoot logicalRoot, String queryClass, CachedProposedRoutingPlan cachedPlan ) {
-        this.physicalPlacementsOfPartitions = cachedPlan.getPhysicalPlacementsOfPartitions();
-        this.queryClass = queryClass;
-        this.physicalQueryClass = queryClass + this.physicalPlacementsOfPartitions;
-        this.router = cachedPlan.getRouter();
-        AlgNode alg = routedAlgBuilder.build();
-        this.routedRoot = new AlgRoot( alg, logicalRoot.validatedRowType, logicalRoot.kind, logicalRoot.fields, logicalRoot.collation );
+    public ProposedRoutingPlanImpl( RoutingContext context, RoutedAlgBuilder routedAlgBuilder, AlgRoot logicalRoot, String queryClass, CachedProposedRoutingPlan cachedPlan ) {
+        this( context, routedAlgBuilder, logicalRoot, queryClass, cachedPlan.getRouter() );
     }
 
 
@@ -87,7 +79,7 @@ public class ProposedRoutingPlanImpl implements ProposedRoutingPlan {
 
     @Override
     public boolean isCacheable() {
-        return this.physicalPlacementsOfPartitions != null
+        return this.routedDistribution != null
                 && this.getPhysicalQueryClass() != null
                 && !this.routedRoot.kind.belongsTo( Kind.DML );
     }
@@ -106,27 +98,15 @@ public class ProposedRoutingPlanImpl implements ProposedRoutingPlan {
             return false;
         }
 
-        if ( physicalPlacementsOfPartitions == null && other.physicalPlacementsOfPartitions == null ) {
+        if ( routedDistribution == null && other.routedDistribution == null ) {
             return true;
         }
 
-        if ( this.physicalPlacementsOfPartitions == null || other.physicalPlacementsOfPartitions == null ) {
+        if ( this.routedDistribution == null || other.routedDistribution == null ) {
             return true;
         }
 
-        for ( Map.Entry<Long, List<AllocationColumn>> entry : this.physicalPlacementsOfPartitions.entrySet() ) {
-            final Long id = entry.getKey();
-            List<AllocationColumn> values = entry.getValue();
-
-            if ( !other.physicalPlacementsOfPartitions.containsKey( id ) ) {
-                return false;
-            } else {
-                if ( !new HashSet<>( values ).containsAll( other.physicalPlacementsOfPartitions.get( id ) ) ) {
-                    return false;
-                }
-            }
-        }
-        return true;
+        return this.routedDistribution.equals( other.routedDistribution );
     }
 
 
@@ -138,12 +118,8 @@ public class ProposedRoutingPlanImpl implements ProposedRoutingPlan {
      */
     @Override
     public int hashCode() {
-        if ( this.physicalPlacementsOfPartitions != null && !this.physicalPlacementsOfPartitions.isEmpty() ) {
-            return this.physicalPlacementsOfPartitions.values()
-                    .stream().flatMap( Collection::stream )
-                    .map( AllocationColumn::hashCode )
-                    .reduce( Integer::sum )
-                    .orElseThrow();
+        if ( this.routedDistribution != null ) {
+            return this.routedDistribution.hashCode();
         }
         return super.hashCode();
     }

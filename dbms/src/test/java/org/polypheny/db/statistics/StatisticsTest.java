@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -206,12 +206,14 @@ public class StatisticsTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT * FROM statisticschema.nation" ),
-                        NATION_TEST_DATA
-                );
+                        NATION_TEST_DATA,
+                        true );
+
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT * FROM statisticschema.region" ),
-                        REGION_TEST_DATA
-                );
+                        REGION_TEST_DATA,
+                        true );
+
             } finally {
                 connection.rollback();
             }
@@ -244,22 +246,24 @@ public class StatisticsTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT * FROM statisticschema.nation" ),
-                        NATION_TEST_DATA
-                );
+                        NATION_TEST_DATA,
+                        true );
+
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT * FROM statisticschema.region" ),
-                        REGION_TEST_DATA
-                );
+                        REGION_TEST_DATA,
+                        true );
+
                 waiter.await( 20, TimeUnit.SECONDS );
                 Snapshot snapshot = Catalog.getInstance().getSnapshot();
                 LogicalTable catalogTableNation = snapshot.rel().getTable( "statisticschema", "nation" ).orElseThrow();
                 LogicalTable catalogTableRegion = snapshot.rel().getTable( "statisticschema", "region" ).orElseThrow();
 
-                Long rowCountNation = StatisticsManager.getInstance().rowCountPerTable( catalogTableNation.id );
-                Long rowCountRegion = StatisticsManager.getInstance().rowCountPerTable( catalogTableRegion.id );
+                Long rowCountNation = StatisticsManager.getInstance().tupleCountPerEntity( catalogTableNation.id );
+                Long rowCountRegion = StatisticsManager.getInstance().tupleCountPerEntity( catalogTableRegion.id );
 
-                assertEquals( Integer.valueOf( 3 ), rowCountNation );
-                assertEquals( Integer.valueOf( 2 ), rowCountRegion );
+                assertEquals( 3, rowCountNation );
+                assertEquals( 2, rowCountRegion );
 
                 connection.commit();
             } catch ( InterruptedException e ) {
@@ -308,7 +312,7 @@ public class StatisticsTest {
                     continue;
                 }
                 LogicalTable catalogTableNation = Catalog.snapshot().rel().getTable( "statisticschema", "nationdelete" ).orElseThrow();
-                Long rowCount = StatisticsManager.getInstance().rowCountPerTable( catalogTableNation.id );
+                Long rowCount = StatisticsManager.getInstance().tupleCountPerEntity( catalogTableNation.id );
                 // potentially table exists not yet in statistics but in catalog
                 if ( rowCount != null && rowCount == target ) {
                     successfull = true;

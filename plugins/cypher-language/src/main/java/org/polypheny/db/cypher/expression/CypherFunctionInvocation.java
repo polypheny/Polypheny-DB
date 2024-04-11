@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ package org.polypheny.db.cypher.expression;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
-import java.util.stream.Collectors;
 import lombok.Getter;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -33,7 +32,7 @@ public class CypherFunctionInvocation extends CypherExpression {
     private final boolean distinct;
     private final List<CypherExpression> arguments;
 
-    private static final List<String> operatorNames = Arrays.stream( OperatorName.values() ).map( Enum::name ).collect( Collectors.toList() );
+    private static final List<String> operatorNames = Arrays.stream( OperatorName.values() ).map( Enum::name ).toList();
     private final OperatorName op;
 
 

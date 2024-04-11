@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,7 +58,7 @@ import org.polypheny.db.util.ImmutableBitSet;
  */
 public class AlgMdSelectivity implements MetadataHandler<BuiltInMetadata.Selectivity> {
 
-    public static final AlgMetadataProvider SOURCE = ReflectiveAlgMetadataProvider.reflectiveSource( BuiltInMethod.SELECTIVITY.method, new AlgMdSelectivity() );
+    public static final AlgMetadataProvider SOURCE = ReflectiveAlgMetadataProvider.reflectiveSource( new AlgMdSelectivity(), BuiltInMethod.SELECTIVITY.method );
 
 
     protected AlgMdSelectivity() {
@@ -81,7 +81,7 @@ public class AlgMdSelectivity implements MetadataHandler<BuiltInMetadata.Selecti
         int[] adjustments = new int[alg.getTupleType().getFieldCount()];
         RexBuilder rexBuilder = alg.getCluster().getRexBuilder();
         for ( AlgNode input : alg.getInputs() ) {
-            Double nRows = mq.getRowCount( input );
+            Double nRows = mq.getTupleCount( input );
             if ( nRows == null ) {
                 return null;
             }

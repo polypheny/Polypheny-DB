@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,10 @@ package org.polypheny.db.sql.language.ddl;
 
 import java.util.Optional;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.prepare.Context;
@@ -49,18 +51,29 @@ public class SqlDropTable extends SqlDropObject {
 
     @Override
     public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
-        final Optional<LogicalTable> table = searchEntity( context, name );
+        final Optional<? extends LogicalEntity> entity = searchEntity( context, name );
 
-        if ( table.isEmpty() ) {
+        if ( entity.isEmpty() ) {
             if ( ifExists ) {
                 // It is ok that there is no table with this name because "IF EXISTS" was specified
                 return;
             } else {
-                throw new GenericRuntimeException( "There exists no table with the name %s and 'IF EXISTS' was not specified", name );
+                throw new GenericRuntimeException( "There exists no entity with the name %s and 'IF EXISTS' was not specified", name );
             }
         }
 
-        DdlManager.getInstance().dropTable( table.get(), statement );
+        Optional<LogicalTable> optionalTable = entity.get().unwrap( LogicalTable.class );
+
+        if ( optionalTable.isEmpty() ) {
+            throw new GenericRuntimeException( "The entity with the name %s is not a relational entity % but of type: ", name, entity.get().dataModel );
+        }
+        LogicalTable table = optionalTable.get();
+
+        if ( table.entityType != EntityType.ENTITY && table.entityType != EntityType.SOURCE ) {
+            throw new GenericRuntimeException( "The entity with the name %s is of %s use the appropriate query.", name, table.entityType );
+        }
+
+        DdlManager.getInstance().dropTable( table, statement );
     }
 
 }

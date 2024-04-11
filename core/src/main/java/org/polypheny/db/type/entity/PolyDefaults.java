@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,18 @@ import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
 import org.polypheny.db.type.entity.category.PolyNumber;
+import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
+import org.polypheny.db.type.entity.numerical.PolyDouble;
+import org.polypheny.db.type.entity.numerical.PolyFloat;
+import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.numerical.PolyLong;
+import org.polypheny.db.type.entity.temporal.PolyDate;
+import org.polypheny.db.type.entity.temporal.PolyTime;
+import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 
+/**
+ * Default values for Polypheny-DB {@PolyValue}s.
+ */
 public interface PolyDefaults {
 
     Map<Type, PolyValue> DEFAULTS = new HashMap<>() {{

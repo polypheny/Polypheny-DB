@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,10 +25,14 @@ import java.util.Locale;
 import javax.annotation.Nullable;
 import lombok.Getter;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.CypherConnection;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.catalogs.AdapterCatalog;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.cypher.helper.TestEdge;
 import org.polypheny.db.cypher.helper.TestGraphObject;
 import org.polypheny.db.cypher.helper.TestLiteral;
@@ -44,6 +48,7 @@ import org.polypheny.db.type.entity.graph.PolyPath;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.models.results.GraphResult;
 
+@Slf4j
 public class CypherTestTemplate {
 
     private static final String GRAPH_NAME = "test";
@@ -91,6 +96,8 @@ public class CypherTestTemplate {
 
     public static void deleteData( String graph ) {
         execute( format( "DROP DATABASE %s IF EXISTS", graph ) );
+        Snapshot snapshot = Catalog.getInstance().getSnapshot();
+        AdapterCatalog adapterCatalog = Catalog.getInstance().getAdapterCatalog( 0 ).orElseThrow();
     }
 
 

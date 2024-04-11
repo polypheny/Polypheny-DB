@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.config.Config;
@@ -90,7 +89,7 @@ public class RoutingManager {
     public List<Router> getRouters() {
         return routerFactories.stream()
                 .map( RouterFactory::createInstance )
-                .collect( Collectors.toList() );
+                .toList();
     }
 
 

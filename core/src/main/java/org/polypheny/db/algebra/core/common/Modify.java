@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import lombok.experimental.SuperBuilder;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.catalog.entity.Entity;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 
 @SuperBuilder(toBuilder = true)
@@ -41,10 +41,9 @@ public abstract class Modify<E extends Entity> extends SingleAlg {
      * Creates a <code>SingleRel</code>.
      *
      * @param cluster Cluster this relational expression belongs to
-     * @param traits
      * @param input Input relational expression
      */
-    protected Modify( AlgOptCluster cluster, AlgTraitSet traits, E target, AlgNode input ) {
+    protected Modify( AlgCluster cluster, AlgTraitSet traits, E target, AlgNode input ) {
         super( cluster, traits, input );
         this.entity = target;
     }

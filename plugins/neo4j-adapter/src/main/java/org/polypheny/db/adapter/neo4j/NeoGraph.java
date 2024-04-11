@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package org.polypheny.db.adapter.neo4j;
 
-import java.io.Serializable;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -40,6 +39,7 @@ import org.neo4j.driver.Transaction;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.neo4j.Neo4jPlugin.Neo4jStore;
 import org.polypheny.db.adapter.neo4j.rules.graph.NeoLpgScan;
+import org.polypheny.db.adapter.neo4j.types.NestedPolyType;
 import org.polypheny.db.adapter.neo4j.util.NeoUtil;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.common.Modify;
@@ -54,7 +54,7 @@ import org.polypheny.db.catalog.entity.physical.PhysicalField;
 import org.polypheny.db.catalog.entity.physical.PhysicalGraph;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.functions.Functions;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexNode;
@@ -99,13 +99,12 @@ public class NeoGraph extends PhysicalGraph implements TranslatableEntity, Modif
     /**
      * Creates an {@link RelModify} algebra object, which is modifies this graph.
      *
-     * @param cluster
      * @param child the child nodes of the created algebra node
      * @param operation the modify operation
      */
     @Override
     public Modify<?> toModificationTable(
-            AlgOptCluster cluster,
+            AlgCluster cluster,
             AlgTraitSet traits,
             Entity table,
             AlgNode child,
@@ -127,7 +126,7 @@ public class NeoGraph extends PhysicalGraph implements TranslatableEntity, Modif
 
     @Override
     public Modify<?> toModificationGraph(
-            AlgOptCluster cluster,
+            AlgCluster cluster,
             AlgTraitSet traits,
             Entity graph,
             AlgNode child,
@@ -147,14 +146,8 @@ public class NeoGraph extends PhysicalGraph implements TranslatableEntity, Modif
 
 
     @Override
-    public AlgNode toAlg( AlgOptCluster cluster, AlgTraitSet traitSet ) {
+    public AlgNode toAlg( AlgCluster cluster, AlgTraitSet traitSet ) {
         return new NeoLpgScan( cluster, cluster.traitSetOf( NeoConvention.INSTANCE ).replace( ModelTrait.GRAPH ), this );
-    }
-
-
-    @Override
-    public Serializable[] getParameterArray() {
-        return new Serializable[0];
     }
 
 
@@ -194,7 +187,7 @@ public class NeoGraph extends PhysicalGraph implements TranslatableEntity, Modif
 
 
         @SuppressWarnings("UnusedDeclaration")
-        public Enumerable<PolyValue[]> execute( String query, List<PolyType> types, List<PolyType> componentTypes, Map<Long, Pair<PolyType, PolyType>> prepared ) {
+        public Enumerable<PolyValue[]> execute( String query, NestedPolyType types, Map<Long, Pair<PolyType, PolyType>> prepared ) {
             Transaction trx = getTrx();
 
             dataContext.getStatement().getTransaction().registerInvolvedAdapter( graph.store );
@@ -202,7 +195,7 @@ public class NeoGraph extends PhysicalGraph implements TranslatableEntity, Modif
             List<Result> results = new ArrayList<>();
             results.add( trx.run( query ) );
 
-            Function1<Record, PolyValue[]> getter = NeoQueryable.getter( types, componentTypes );
+            Function1<Record, PolyValue[]> getter = NeoQueryable.getter( types );
 
             return new AbstractEnumerable<>() {
                 @Override
@@ -230,7 +223,7 @@ public class NeoGraph extends PhysicalGraph implements TranslatableEntity, Modif
             Map<PolyString, PolyNode> polyNodes = trx.run( nodes ).list().stream().map( n -> NeoUtil.asPolyNode( n.get( 0 ).asNode() ) ).collect( Collectors.toMap( n -> n.id, n -> n ) );
             Map<PolyString, PolyEdge> polyEdges = trx.run( edges ).list().stream().map( e -> NeoUtil.asPolyEdge( e.get( 0 ).asRelationship() ) ).collect( Collectors.toMap( e -> e.id, e -> e ) );
 
-            return Functions.singletonEnumerable( new PolyGraph( PolyMap.of( polyNodes ), PolyMap.of( polyEdges ) ) );
+            return Functions.singletonEnumerable( new PolyValue[]{ new PolyGraph( PolyMap.of( polyNodes ), PolyMap.of( polyEdges ) ) } );
         }
 
 
@@ -238,12 +231,11 @@ public class NeoGraph extends PhysicalGraph implements TranslatableEntity, Modif
          * This method returns the functions, which transforms a given record into the corresponding object representation.
          *
          * @param types the types for which function is created
-         * @param componentTypes component types for collection types.
          * @return the function, which transforms the {@link Record}
          */
-        static <T> Function1<Record, T> getter( List<PolyType> types, List<PolyType> componentTypes ) {
+        static <T> Function1<Record, T> getter( NestedPolyType types ) {
             //noinspection unchecked
-            return (Function1<Record, T>) NeoUtil.getTypesFunction( types, componentTypes );
+            return (Function1<Record, T>) NeoUtil.getTypesFunction( types );
         }
 
 

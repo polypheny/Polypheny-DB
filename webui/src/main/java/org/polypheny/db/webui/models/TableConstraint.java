@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,20 +17,35 @@
 package org.polypheny.db.webui.models;
 
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 import java.util.StringJoiner;
+import lombok.Value;
+import lombok.experimental.NonFinal;
 
 
+@Value
 public class TableConstraint {
 
+    @JsonProperty
     public String name;
+
+    @JsonProperty
     public String type;
+
+    @NonFinal
     public boolean deferrable;
+
+    @NonFinal
     public boolean initially_deferred;
+
+    @JsonProperty
     public String[] columns;
 
 
-    public TableConstraint( final String name, final String type, List<String> columns ) {
+    @JsonCreator
+    public TableConstraint( @JsonProperty("name") final String name, @JsonProperty("type") final String type, @JsonProperty("columns") List<String> columns ) {
         this.name = name;
         this.type = type;
         this.columns = columns.toArray( new String[0] );
@@ -44,4 +59,5 @@ public class TableConstraint {
         }
         return new String[]{ this.name, this.type, joiner.toString() };
     }
+
 }

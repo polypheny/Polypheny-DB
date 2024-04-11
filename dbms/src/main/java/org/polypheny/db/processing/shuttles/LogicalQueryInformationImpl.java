@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.stream.Collectors;
 import lombok.Value;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.routing.LogicalQueryInformation;
@@ -74,12 +73,12 @@ public class LogicalQueryInformationImpl implements LogicalQueryInformation {
 
 
     private ImmutableSet<Long> buildAllScannedEntities() {
-        return ImmutableSet.copyOf( scannedEntities.values().stream().flatMap( Collection::stream ).collect( Collectors.toList() ) );
+        return ImmutableSet.copyOf( scannedEntities.values().stream().flatMap( Collection::stream ).toList() );
     }
 
 
     private ImmutableSet<Long> buildAllModifiedEntities() {
-        return ImmutableSet.copyOf( modifiedEntities.values().stream().flatMap( Collection::stream ).collect( Collectors.toList() ) );
+        return ImmutableSet.copyOf( modifiedEntities.values().stream().flatMap( Collection::stream ).toList() );
     }
 
 
@@ -89,7 +88,7 @@ public class LogicalQueryInformationImpl implements LogicalQueryInformation {
         return availableColumnsWithTable.entrySet().stream()
                 .filter( x -> x.getValue().equals( tableId ) && usedCols.containsKey( x.getKey() ) )
                 .map( Entry::getKey )
-                .collect( Collectors.toList() );
+                .toList();
     }
 
 
@@ -99,7 +98,7 @@ public class LogicalQueryInformationImpl implements LogicalQueryInformation {
         return availableColumnsWithTable.entrySet().stream()
                 .filter( x -> x.getValue().equals( tableId ) && usedCols.containsKey( x.getKey() ) )
                 .map( Entry::getKey )
-                .collect( Collectors.toList() );
+                .toList();
     }
 
 }

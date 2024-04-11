@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,11 +19,9 @@ package org.polypheny.db.catalog.entity.physical;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.annotations.SerializeNullable;
-import java.io.Serializable;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.SuperBuilder;
-import org.apache.calcite.linq4j.tree.Expression;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -89,19 +87,19 @@ public class PhysicalColumn extends PhysicalField {
             @Deserialize("name") final String name,
             @Deserialize("logicalName") final String logicalName,
             @Deserialize("allocId") final long allocId,
-            @Deserialize("entityId") final long tableId,
+            @Deserialize("logicalEntityId") final long logicalEntityId,
             @Deserialize("adapterId") final long adapterId,
             @Deserialize("position") final int position,
             @Deserialize("type") @NotNull final PolyType type,
-            @Deserialize("collectionsType") final PolyType collectionsType,
-            @Deserialize("length") final Integer length,
-            @Deserialize("scale") final Integer scale,
-            @Deserialize("dimension") final Integer dimension,
-            @Deserialize("cardinality") final Integer cardinality,
+            @Deserialize("collectionsType") final @Nullable PolyType collectionsType,
+            @Deserialize("length") final @Nullable Integer length,
+            @Deserialize("scale") final @Nullable Integer scale,
+            @Deserialize("dimension") final @Nullable Integer dimension,
+            @Deserialize("cardinality") final @Nullable Integer cardinality,
             @Deserialize("nullable") final boolean nullable,
-            @Deserialize("collation") final Collation collation,
-            @Deserialize("defaultValue") LogicalDefaultValue defaultValue ) {
-        super( id, name, logicalName, allocId, tableId, adapterId, DataModel.RELATIONAL, true );
+            @Deserialize("collation") final @Nullable Collation collation,
+            @Deserialize("defaultValue") @Nullable LogicalDefaultValue defaultValue ) {
+        super( id, name, logicalName, allocId, logicalEntityId, adapterId, DataModel.RELATIONAL, true );
         this.position = position;
         this.type = type;
         this.collectionsType = collectionsType;
@@ -142,43 +140,8 @@ public class PhysicalColumn extends PhysicalField {
     }
 
 
-    @Override
-    public Serializable[] getParameterArray() {
-        return new Serializable[0];
-    }
-
-
-    @Override
-    public Expression asExpression() {
-        return null;
-    }
-
-
-    @Override
-    public State getLayer() {
-        return State.PHYSICAL;
-    }
-
-
     public AlgDataType getAlgDataType( final AlgDataTypeFactory typeFactory ) {
-        // todo merge with LogicalColumn
-        AlgDataType elementType;
-        if ( this.length != null && this.scale != null && this.type.allowsPrecScale( true, true ) ) {
-            elementType = typeFactory.createPolyType( this.type, this.length, this.scale );
-        } else if ( this.length != null && this.type.allowsPrecNoScale() ) {
-            elementType = typeFactory.createPolyType( this.type, this.length );
-        } else {
-            assert this.type.allowsNoPrecNoScale();
-            elementType = typeFactory.createPolyType( this.type );
-        }
-
-        if ( collectionsType == PolyType.ARRAY ) {
-            elementType = typeFactory.createArrayType( elementType, cardinality != null ? cardinality : -1, dimension != null ? dimension : -1 );
-        } else if ( collectionsType == PolyType.MAP ) {
-            elementType = typeFactory.createMapType( typeFactory.createPolyType( PolyType.ANY ), elementType );
-        }
-
-        return typeFactory.createTypeWithNullability( elementType, nullable );
+        return LogicalColumn.getAlgDataType( typeFactory, this.length, this.scale, this.type, collectionsType, cardinality, dimension, nullable );
     }
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,30 +20,29 @@ import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.cypher.CypherResource.ResourceType;
 import org.polypheny.db.cypher.admin.CypherAdminAction;
 import org.polypheny.db.cypher.admin.CypherAdminCommand;
 import org.polypheny.db.cypher.admin.CypherAdminCommand.AccessType;
-import org.polypheny.db.cypher.admin.CypherAlterDatabase;
-import org.polypheny.db.cypher.admin.CypherAlterDatabaseAlias;
-import org.polypheny.db.cypher.admin.CypherCreateDatabase;
-import org.polypheny.db.cypher.admin.CypherCreateDatabaseAlias;
+import org.polypheny.db.cypher.admin.CypherAlterNamespace;
+import org.polypheny.db.cypher.admin.CypherAlterNamespaceAlias;
+import org.polypheny.db.cypher.admin.CypherCreateNamespace;
+import org.polypheny.db.cypher.admin.CypherCreateNamespaceAlias;
 import org.polypheny.db.cypher.admin.CypherCreateRole;
 import org.polypheny.db.cypher.admin.CypherDenyPrivilege;
 import org.polypheny.db.cypher.admin.CypherDropAlias;
-import org.polypheny.db.cypher.admin.CypherDropDatabase;
+import org.polypheny.db.cypher.admin.CypherDropNamespace;
 import org.polypheny.db.cypher.admin.CypherGrantPrivilege;
 import org.polypheny.db.cypher.admin.CypherRevokePrivilege;
 import org.polypheny.db.cypher.admin.CypherShowAllPrivileges;
 import org.polypheny.db.cypher.admin.CypherShowCurrentUser;
-import org.polypheny.db.cypher.admin.CypherShowDatabase;
+import org.polypheny.db.cypher.admin.CypherShowNamespace;
 import org.polypheny.db.cypher.admin.CypherShowRolePrivileges;
 import org.polypheny.db.cypher.admin.CypherShowUserPrivileges;
 import org.polypheny.db.cypher.admin.CypherShowUsers;
-import org.polypheny.db.cypher.admin.CypherStartDatabase;
-import org.polypheny.db.cypher.admin.CypherStopDatabase;
+import org.polypheny.db.cypher.admin.CypherStartNamespace;
+import org.polypheny.db.cypher.admin.CypherStopNamespace;
 import org.polypheny.db.cypher.admin.CypherWithGraph;
 import org.polypheny.db.cypher.clause.CypherCall;
 import org.polypheny.db.cypher.clause.CypherCase;
@@ -133,8 +132,8 @@ import org.polypheny.db.cypher.query.CypherUnion;
 import org.polypheny.db.cypher.remove.CypherRemoveItem;
 import org.polypheny.db.cypher.remove.CypherRemoveLabels;
 import org.polypheny.db.cypher.remove.CypherRemoveProperty;
-import org.polypheny.db.cypher.scope.CypherDbScope;
 import org.polypheny.db.cypher.scope.CypherGraphScope;
+import org.polypheny.db.cypher.scope.CypherNamespaceScope;
 import org.polypheny.db.cypher.set.CypherSetItem;
 import org.polypheny.db.cypher.set.CypherSetLabels;
 import org.polypheny.db.cypher.set.CypherSetProperty;
@@ -528,7 +527,7 @@ public interface CypherFactory {
         return new CypherTerminateTransaction( pos, idEither );
     }
 
-    static CypherSchemaCommand createConstraint( ParserPos pos, ConstraintType constraintType, boolean replace, boolean ifNotExists, String name, CypherVariable variable, StringPos parserPosStringPos, List<CypherProperty> properties, CypherSimpleEither options, boolean containsOn, ConstraintVersion constraintVersion ) {
+    static CypherSchemaCommand createConstraint( ParserPos pos, ConstraintType constraintType, boolean replace, boolean ifNotExists, String name, CypherVariable variable, StringPos parserPosStringPos, List<CypherProperty> properties, CypherSimpleEither<String, ?> options, boolean containsOn, ConstraintVersion constraintVersion ) {
         return new CypherCreateConstraint( pos, constraintType, replace, ifNotExists, name, variable, parserPosStringPos, properties, options, containsOn, constraintVersion );
     }
 
@@ -540,11 +539,11 @@ public interface CypherFactory {
         return new CypherDropConstraint( pos, name, ifExists );
     }
 
-    static CypherSchemaCommand createFulltextIndex( ParserPos pos, boolean replace, boolean ifNotExists, boolean isNode, String indexName, CypherVariable variable, List<StringPos> labels, List<CypherProperty> properties, CypherSimpleEither options ) {
+    static CypherSchemaCommand createFulltextIndex( ParserPos pos, boolean replace, boolean ifNotExists, boolean isNode, String indexName, CypherVariable variable, List<StringPos> labels, List<CypherProperty> properties, CypherSimpleEither<String, ?> options ) {
         return new CypherCreateIndex( pos, IndexType.FULL_TEXT, replace, ifNotExists, isNode, indexName, variable, labels, properties, options );
     }
 
-    static CypherSchemaCommand createLookupIndex( ParserPos pos, boolean replace, boolean ifNotExists, boolean isNode, String indexName, CypherVariable variable, StringPos funcName, CypherVariable funcParam, CypherSimpleEither options ) {
+    static CypherSchemaCommand createLookupIndex( ParserPos pos, boolean replace, boolean ifNotExists, boolean isNode, String indexName, CypherVariable variable, StringPos funcName, CypherVariable funcParam, CypherSimpleEither<String, ?> options ) {
         return new CypherCreateIndex( pos, IndexType.LOOKUP, replace, ifNotExists, isNode, indexName, variable, funcName, funcParam, options );
     }
 
@@ -560,12 +559,12 @@ public interface CypherFactory {
         return new CypherUseClause( pos, expression );
     }
 
-    static CypherAdminCommand addPlacement( ParserPos pos, CypherSimpleEither<String, CypherParameter> databaseName, CypherSimpleEither<String, CypherParameter> store ) {
-        return new CypherAddPlacement( pos, databaseName, store );
+    static CypherAdminCommand addPlacement( ParserPos pos, CypherSimpleEither<String, CypherParameter> namespaceName, CypherSimpleEither<String, CypherParameter> store ) {
+        return new CypherAddPlacement( pos, namespaceName, store );
     }
 
-    static CypherAdminCommand dropPlacement( ParserPos pos, CypherSimpleEither<String, CypherParameter> databaseName, CypherSimpleEither<String, CypherParameter> store ) {
-        return new CypherDropPlacement( pos, databaseName, store );
+    static CypherAdminCommand dropPlacement( ParserPos pos, CypherSimpleEither<String, CypherParameter> namespaceName, CypherSimpleEither<String, CypherParameter> store ) {
+        return new CypherDropPlacement( pos, namespaceName, store );
     }
 
     static CypherAdminCommand dropRole( ParserPos pos, CypherSimpleEither<String, CypherParameter> roleName, boolean ifExists ) {
@@ -652,8 +651,8 @@ public interface CypherFactory {
         return ImmutableList.of( new CypherPrivilegeQualifier( ParserPos.ZERO, ImmutableList.of(), CypherPrivilegeQualifier.QualifierType.ALL ) );
     }
 
-    static List<CypherPrivilegeQualifier> allDatabasesQualifier() {
-        return ImmutableList.of( new CypherPrivilegeQualifier( ParserPos.ZERO, ImmutableList.of(), CypherPrivilegeQualifier.QualifierType.ALL_DATABASES ) );
+    static List<CypherPrivilegeQualifier> allNamespacesQualifier() {
+        return ImmutableList.of( new CypherPrivilegeQualifier( ParserPos.ZERO, ImmutableList.of(), CypherPrivilegeQualifier.QualifierType.ALL_NAMESPACES ) );
     }
 
     static List<CypherPrivilegeQualifier> allUsersQualifier() {
@@ -673,8 +672,8 @@ public interface CypherFactory {
     }
 
 
-    static CypherPrivilegeType databasePrivilege( ParserPos pos, CypherAdminAction privilegeAction, List<CypherDbScope> databaseScopes, List<CypherPrivilegeQualifier> qualifiers ) {
-        return new CypherPrivilegeType( pos, Collections.singletonList( privilegeAction ), databaseScopes, null, qualifiers );
+    static CypherPrivilegeType namespacePrivilege( ParserPos pos, CypherAdminAction privilegeAction, List<CypherNamespaceScope> namespaceScopes, List<CypherPrivilegeQualifier> qualifiers ) {
+        return new CypherPrivilegeType( pos, Collections.singletonList( privilegeAction ), namespaceScopes, null, qualifiers );
     }
 
     static CypherResource allLabelsResource( ParserPos pos ) {
@@ -717,52 +716,52 @@ public interface CypherFactory {
         return new CypherWaitClause( wait, nanos );
     }
 
-    static CypherAdminCommand createDatabase( ParserPos pos, boolean replace, CypherSimpleEither<String, CypherParameter> databaseName, boolean ifNotExists, CypherWaitClause wait, CypherSimpleEither options, CypherSimpleEither<String, CypherParameter> store ) {
-        return new CypherCreateDatabase( pos, replace, databaseName, ifNotExists, wait, options, store );
+    static CypherAdminCommand createNamespace( ParserPos pos, boolean replace, CypherSimpleEither<String, CypherParameter> namespaceName, boolean ifNotExists, CypherWaitClause wait, CypherSimpleEither<String, CypherParameter> options, CypherSimpleEither<String, CypherParameter> store ) {
+        return new CypherCreateNamespace( pos, replace, namespaceName, ifNotExists, wait, options, store );
     }
 
-    static CypherAdminCommand dropDatabase( ParserPos pos, CypherSimpleEither<String, CypherParameter> databaseName, boolean ifExists, boolean dumpData, CypherWaitClause wait ) {
-        return new CypherDropDatabase( pos, databaseName, ifExists, dumpData, wait );
+    static CypherAdminCommand dropNamespace( ParserPos pos, CypherSimpleEither<String, CypherParameter> namespaceName, boolean ifExists, boolean dumpData, CypherWaitClause wait ) {
+        return new CypherDropNamespace( pos, namespaceName, ifExists, dumpData, wait );
     }
 
-    static CypherAdminCommand alterDatabase( ParserPos pos, CypherSimpleEither<String, CypherParameter> databaseName, boolean ifExists, AccessType accessType ) {
-        return new CypherAlterDatabase( pos, databaseName, ifExists, accessType );
+    static CypherAdminCommand alterNamespace( ParserPos pos, CypherSimpleEither<String, CypherParameter> namespaceName, boolean ifExists, AccessType accessType ) {
+        return new CypherAlterNamespace( pos, namespaceName, ifExists, accessType );
     }
 
-    static CypherAdminCommand startDatabase( ParserPos pos, CypherSimpleEither<String, CypherParameter> databaseName, CypherWaitClause wait ) {
-        return new CypherStartDatabase( pos, databaseName, wait );
+    static CypherAdminCommand startNamespace( ParserPos pos, CypherSimpleEither<String, CypherParameter> namespaceName, CypherWaitClause wait ) {
+        return new CypherStartNamespace( pos, namespaceName, wait );
     }
 
-    static CypherAdminCommand stopDatabase( ParserPos pos, CypherSimpleEither<String, CypherParameter> databaseName, CypherWaitClause wait ) {
-        return new CypherStopDatabase( pos, databaseName, wait );
+    static CypherAdminCommand stopNamespace( ParserPos pos, CypherSimpleEither<String, CypherParameter> namespaceName, CypherWaitClause wait ) {
+        return new CypherStopNamespace( pos, namespaceName, wait );
     }
 
-    static CypherWithGraph showDatabase( ParserPos pos, CypherDbScope scope, CypherYield yield, CypherReturnClause returnClause, CypherWhere where ) {
-        return new CypherShowDatabase( pos, scope, yield, returnClause, where );
+    static CypherWithGraph showNamespace( ParserPos pos, CypherNamespaceScope scope, CypherYield yield, CypherReturnClause returnClause, CypherWhere where ) {
+        return new CypherShowNamespace( pos, scope, yield, returnClause, where );
     }
 
-    static CypherDbScope databaseScope( ParserPos pos, CypherSimpleEither<String, CypherParameter> name, boolean isDefault, boolean isHome ) {
-        return new CypherDbScope( pos, name, isDefault, isHome, ScopeType.DEFAULT );
+    static CypherNamespaceScope namespaceScope( ParserPos pos, CypherSimpleEither<String, CypherParameter> name, boolean isDefault, boolean isHome ) {
+        return new CypherNamespaceScope( pos, name, isDefault, isHome, ScopeType.DEFAULT );
     }
 
-    static List<CypherDbScope> databaseScopes( ParserPos pos, List<CypherSimpleEither<String, CypherParameter>> names, ScopeType type ) {
-        return names.stream().map( n -> new CypherDbScope( pos, n, false, false, type ) ).collect( Collectors.toList() );
+    static List<CypherNamespaceScope> namespaceScopes( ParserPos pos, List<CypherSimpleEither<String, CypherParameter>> names, ScopeType type ) {
+        return names.stream().map( n -> new CypherNamespaceScope( pos, n, false, false, type ) ).toList();
     }
 
-    static CypherAdminCommand createDatabaseAlias( ParserPos pos, boolean replace, CypherSimpleEither<String, CypherParameter> aliasName, CypherSimpleEither<String, CypherParameter> targetName, boolean ifNotExists ) {
-        return new CypherCreateDatabaseAlias( pos, replace, aliasName, targetName, ifNotExists );
+    static CypherAdminCommand createNamespaceAlias( ParserPos pos, boolean replace, CypherSimpleEither<String, CypherParameter> aliasName, CypherSimpleEither<String, CypherParameter> targetName, boolean ifNotExists ) {
+        return new CypherCreateNamespaceAlias( pos, replace, aliasName, targetName, ifNotExists );
     }
 
     static CypherAdminCommand dropAlias( ParserPos pos, CypherSimpleEither<String, CypherParameter> aliasName, boolean ifExists ) {
         return new CypherDropAlias( pos, aliasName, ifExists );
     }
 
-    static CypherAdminCommand alterDatabaseAlias( ParserPos pos, CypherSimpleEither<String, CypherParameter> aliasName, CypherSimpleEither<String, CypherParameter> targetName, boolean ifExists ) {
-        return new CypherAlterDatabaseAlias( pos, aliasName, targetName, ifExists );
+    static CypherAdminCommand alterNamespaceAlias( ParserPos pos, CypherSimpleEither<String, CypherParameter> aliasName, CypherSimpleEither<String, CypherParameter> targetName, boolean ifExists ) {
+        return new CypherAlterNamespaceAlias( pos, aliasName, targetName, ifExists );
     }
 
     static List<CypherPrivilegeQualifier> functionQualifier( ParserPos pos, List<String> executables ) {
-        return executables.stream().map( e -> new CypherPrivilegeQualifier( pos, ImmutableList.of( e ), CypherPrivilegeQualifier.QualifierType.ALL ) ).collect( Collectors.toList() );
+        return executables.stream().map( e -> new CypherPrivilegeQualifier( pos, ImmutableList.of( e ), CypherPrivilegeQualifier.QualifierType.ALL ) ).toList();
     }
 
     static List<CypherPrivilegeQualifier> procedureQualifier( ParserPos pos, List<String> executables ) {
@@ -783,7 +782,7 @@ public interface CypherFactory {
     }
 
     static List<CypherPrivilegeQualifier> userQualifier( List<CypherSimpleEither<String, CypherParameter>> qualifiers ) {
-        return qualifiers.stream().map( q -> new CypherPrivilegeQualifier( ParserPos.ZERO, ImmutableList.of( q.getLeft() ), CypherPrivilegeQualifier.QualifierType.USER ) ).collect( Collectors.toList() );
+        return qualifiers.stream().map( q -> new CypherPrivilegeQualifier( ParserPos.ZERO, ImmutableList.of( q.getLeft() ), CypherPrivilegeQualifier.QualifierType.USER ) ).toList();
     }
 
     static CypherHint createJoinHint( ParserPos pos, List<CypherVariable> joinVariables ) {
@@ -823,7 +822,7 @@ public interface CypherFactory {
         return new CypherCreateIndex( pos, IndexType.OLD_SYNTAX, stringPos, properties );
     }
 
-    static CypherSchemaCommand createIndex( ParserPos pos, boolean replace, boolean ifNotExists, boolean isNode, String indexName, CypherVariable variable, StringPos stringPos, List<CypherProperty> properties, CypherSimpleEither options, IndexType indexType ) {
+    static CypherSchemaCommand createIndex( ParserPos pos, boolean replace, boolean ifNotExists, boolean isNode, String indexName, CypherVariable variable, StringPos stringPos, List<CypherProperty> properties, CypherSimpleEither<String, ?> options, IndexType indexType ) {
         return new CypherCreateIndex( pos, indexType, replace, ifNotExists, isNode, indexName, variable, ImmutableList.of( stringPos ), properties, options );
     }
 

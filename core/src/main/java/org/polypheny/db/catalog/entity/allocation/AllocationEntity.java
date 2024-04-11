@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,7 +60,7 @@ public abstract class AllocationEntity extends Entity {
             long namespaceId,
             long adapterId,
             DataModel type ) {
-        super( id, null, namespaceId, EntityType.ENTITY, type, true );
+        super( id, "$alloc$" + id, namespaceId, EntityType.ENTITY, type, true );
         this.adapterId = adapterId;
         this.logicalId = logicalId;
         this.partitionId = partitionId;
@@ -70,6 +70,12 @@ public abstract class AllocationEntity extends Entity {
 
     public State getLayer() {
         return State.ALLOCATION;
+    }
+
+
+    @Override
+    public double getTupleCount() {
+        return getTupleCount( logicalId );
     }
 
 

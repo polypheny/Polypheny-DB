@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,12 +39,12 @@ import org.polypheny.db.algebra.enumerable.EnumerableAlg.Prefer;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.interpreter.Compiler;
+import org.polypheny.db.interpreter.InterpretableAlg;
 import org.polypheny.db.interpreter.InterpretableConvention;
-import org.polypheny.db.interpreter.InterpretableRel;
 import org.polypheny.db.interpreter.Node;
 import org.polypheny.db.interpreter.Row;
 import org.polypheny.db.interpreter.Sink;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.plugins.PolyPluginManager;
@@ -60,15 +60,15 @@ import org.polypheny.db.util.Util;
 
 
 /**
- * Relational expression that converts an enumerable input to interpretable calling convention.
+ * Algebra expression that converts an enumerable input to interpretable calling convention.
  *
  * @see EnumerableConvention
  * @see BindableConvention
  */
 @Slf4j
-public class EnumerableInterpretable extends ConverterImpl implements InterpretableRel {
+public class EnumerableInterpretable extends ConverterImpl implements InterpretableAlg {
 
-    protected EnumerableInterpretable( AlgOptCluster cluster, AlgNode input ) {
+    protected EnumerableInterpretable( AlgCluster cluster, AlgNode input ) {
         super( cluster, ConventionTraitDef.INSTANCE, cluster.traitSetOf( InterpretableConvention.INSTANCE ), input );
     }
 

@@ -16,18 +16,13 @@
 
 package org.polypheny.db.backup.datagatherer;
 
-import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.DataOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.PolyImplementation;
@@ -45,20 +40,18 @@ import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
-import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyGraph;
-import org.polypheny.db.type.entity.graph.PolyNode;
-import org.polypheny.db.type.entity.relational.PolyMap;
 
 @Slf4j
 public class GatherEntriesTask implements Runnable {
+
     private TransactionManager transactionManager;
     private String query;
     private DataModel dataModel;
     private long namespaceId;
     private File dataFile;
+
 
     public GatherEntriesTask( TransactionManager transactionManager, String query, DataModel dataModel, long namespaceId, File dataFile ) {
         this.transactionManager = transactionManager;   //TODO(FF): is transactionmanager thread safe to pass it like this??
@@ -75,7 +68,6 @@ public class GatherEntriesTask implements Runnable {
         Transaction transaction;
         Statement statement = null;
         PolyImplementation result;
-
 
         switch ( dataModel ) {
             case RELATIONAL:
@@ -173,13 +165,11 @@ public class GatherEntriesTask implements Runnable {
                  */
 
                 // bufferedOutputStream, io way
-                try(
+                try (
                         //DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(dataFile), 32768));
-                        PrintWriter pOut = new PrintWriter( new DataOutputStream(new BufferedOutputStream(new FileOutputStream(dataFile), 32768)));
+                        PrintWriter pOut = new PrintWriter( new DataOutputStream( new BufferedOutputStream( new FileOutputStream( dataFile ), 32768 ) ) );
 
                         //BufferedWriter bOut = new BufferedWriter( new OutputStreamWriter( new BufferedOutputStream( new FileOutputStream( dataFile ), 32768 ) ) );
-
-
 
                         //DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(dataFile)));
 
@@ -192,7 +182,7 @@ public class GatherEntriesTask implements Runnable {
                     transaction = transactionManager.startTransaction( Catalog.defaultUserId, false, "Backup Entry-Gatherer" );
                     statement = transaction.createStatement();
                     //TODO(FF): be aware for writing into file with batches that you dont overwrite the entries already in the file (evtl you need to read the whole file again
-                    ExecutedContext executedQuery = LanguageManager.getINSTANCE().anyQuery( QueryContext.builder().language( QueryLanguage.from( "sql" ) ).query( query ).origin( "Backup Manager" ).transactionManager( transactionManager ).batch( BackupManager.batchSize ).namespaceId( namespaceId ).build(), statement ).get( 0 );
+                    ExecutedContext executedQuery = LanguageManager.getINSTANCE().anyQuery( QueryContext.builder().language( QueryLanguage.from( "sql" ) ).query( query ).origin( "Backup Manager" ).transactionManager( transactionManager ).batch( BackupManager.batchSize ).namespaceId( namespaceId ).transactions( new ArrayList<>( List.of( transaction ) ) ).statement( statement ).build() ).get( 0 );
                     //ExecutedContext executedQuery1 = LanguageManager.getINSTANCE().anyQuery( QueryContext.builder().language( QueryLanguage.from( "sql" ) ).query( query ).origin( "Backup Manager" ).transactionManager( transactionManager ).namespaceId( Catalog.defaultNamespaceId ).build(), statement ).get( 0 );
                     // in case of results
                     ResultIterator iter = executedQuery.getIterator();
@@ -208,7 +198,7 @@ public class GatherEntriesTask implements Runnable {
                         for ( List<PolyValue> row : resultsPerTable ) {
                             for ( PolyValue polyValue : row ) {
                                 String byteString = polyValue.serialize();
-                                byte[] byteBytes = polyValue.serialize().getBytes(StandardCharsets.UTF_8);
+                                byte[] byteBytes = polyValue.serialize().getBytes( StandardCharsets.UTF_8 );
                                 String jsonString = polyValue.toTypedJson();
 
                                 //out.write( byteBytes );
@@ -219,11 +209,10 @@ public class GatherEntriesTask implements Runnable {
                                 //out.write( byteString );
                                 out.newLine();
 
-
                                 //larger, testing easier, replace later
                                 PolyValue deserialized = PolyValue.deserialize( byteString );
                                 PolyValue deserialized2 = PolyValue.fromTypedJson( jsonString, PolyValue.class );
-                                int jhg=87;
+                                int jhg = 87;
                             }
                         }
                         // flush only batchwise? is this even possible? does it make sense?
@@ -233,7 +222,7 @@ public class GatherEntriesTask implements Runnable {
                     out.close();
                     transaction.commit();
 
-                } catch(Exception e){
+                } catch ( Exception e ) {
                     throw new GenericRuntimeException( "Error while collecting entries: " + e.getMessage() );
                 } catch ( TransactionException e ) {
                     throw new GenericRuntimeException( "Error while collecting entries: " + e.getMessage() );
@@ -242,17 +231,26 @@ public class GatherEntriesTask implements Runnable {
                 break;
 
             case DOCUMENT:
-                try(
+                try (
                         //DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(dataFile), 32768));
-                        PrintWriter pOut = new PrintWriter( new DataOutputStream(new BufferedOutputStream(new FileOutputStream(dataFile), 32768)));
+                        PrintWriter pOut = new PrintWriter( new DataOutputStream( new BufferedOutputStream( new FileOutputStream( dataFile ), 32768 ) ) );
                         //BufferedWriter bOut = new BufferedWriter( new OutputStreamWriter( new BufferedOutputStream( new FileOutputStream( dataFile ), 32768 ) ) );
-                )
-                {
+                ) {
                     BackupFileWriter out = new BackupFileWriter( dataFile );
                     // get a transaction and a statement
                     transaction = transactionManager.startTransaction( Catalog.defaultUserId, false, "Backup Entry-Gatherer" );
                     statement = transaction.createStatement();
-                    ExecutedContext executedQuery = LanguageManager.getINSTANCE().anyQuery( QueryContext.builder().language( QueryLanguage.from( "mql" ) ).query( query ).origin( "Backup Manager" ).transactionManager( transactionManager ).batch( BackupManager.batchSize ).namespaceId( namespaceId ).build(), statement ).get( 0 );
+                    ExecutedContext executedQuery = LanguageManager.getINSTANCE()
+                            .anyQuery(
+                                    QueryContext.builder()
+                                            .language( QueryLanguage.from( "mql" ) )
+                                            .query( query ).origin( "Backup Manager" )
+                                            .transactionManager( transactionManager )
+                                            .batch( BackupManager.batchSize )
+                                            .namespaceId( namespaceId )
+                                            .statement( statement )
+                                            .build()
+                                            .addTransaction( transaction ) ).get( 0 );
                     //ExecutedContext executedQuery1 = LanguageManager.getINSTANCE().anyQuery( QueryContext.builder().language( QueryLanguage.from( "mql" ) ).query( query ).origin( "Backup Manager" ).transactionManager( transactionManager ).namespaceId( namespaceId ).build(), statement ).get( 0 );
 
                     ResultIterator iter = executedQuery.getIterator();
@@ -268,13 +266,12 @@ public class GatherEntriesTask implements Runnable {
                                 //out.write( byteBytes );
                                 //out.write( byteString.getBytes( StandardCharsets.UTF_8 ) );
                                 //pOut.println( jsonString);
-                                out.write( jsonString);
+                                out.write( jsonString );
                                 //bOut.write( byteString );
                                 out.newLine();
                                 //out.writeChars( jsonString );
                             }
                         }
-
 
                         //out.writeChars( resultsPerCollection.toString() );
                         log.info( resultsPerCollection.toString() );
@@ -291,16 +288,26 @@ public class GatherEntriesTask implements Runnable {
                 break;
 
             case GRAPH:
-                try(
-                        DataOutputStream ouuut = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(dataFile), 32768));
+                try (
+                        DataOutputStream ouuut = new DataOutputStream( new BufferedOutputStream( new FileOutputStream( dataFile ), 32768 ) );
                         //BufferedWriter bOut = new BufferedWriter( new OutputStreamWriter( new BufferedOutputStream( new FileOutputStream( dataFile ), 32768 ) ) );
-                    )
-                {
+                ) {
                     BackupFileWriter out = new BackupFileWriter( dataFile );
                     // get a transaction and a statement
                     transaction = transactionManager.startTransaction( Catalog.defaultUserId, false, "Backup Entry-Gatherer" );
                     statement = transaction.createStatement();
-                    ExecutedContext executedQuery = LanguageManager.getINSTANCE().anyQuery( QueryContext.builder().language( QueryLanguage.from( "cypher" ) ).query( query ).origin( "Backup Manager" ).transactionManager( transactionManager ).batch( BackupManager.batchSize ).namespaceId( namespaceId ).build(), statement ).get( 0 );
+                    ExecutedContext executedQuery = LanguageManager.getINSTANCE()
+                            .anyQuery(
+                                    QueryContext.builder()
+                                            .language( QueryLanguage.from( "cypher" ) )
+                                            .query( query )
+                                            .origin( "Backup Manager" )
+                                            .transactionManager( transactionManager )
+                                            .batch( BackupManager.batchSize )
+                                            .namespaceId( namespaceId )
+                                            .statement( statement )
+                                            .build()
+                                            .addTransaction( transaction ) ).get( 0 );
                     //ExecutedContext executedQuery1 = LanguageManager.getINSTANCE().anyQuery( QueryContext.builder().language( QueryLanguage.from( "cypher" ) ).query( query ).origin( "Backup Manager" ).transactionManager( transactionManager ).namespaceId( namespaceId ).build(), statement ).get( 0 );
 
                     ResultIterator iter = executedQuery.getIterator();
@@ -325,7 +332,6 @@ public class GatherEntriesTask implements Runnable {
                                 PolyValue edge1 = PolyEdge.deserialize( edgeByte );
                                  */
 
-
                                 String typedJson = polyValue.asGraph().toTypedJson();
                                 //String bytestr = polyValue.asGraph().serialize();   //not implemented exception
 
@@ -340,11 +346,10 @@ public class GatherEntriesTask implements Runnable {
                                 PolyValue haha = PolyValue.deserialize( byteString );
                                 byte[] byteBytes = polyValue.serialize().getBytes( StandardCharsets.UTF_8 );
 
-
                                 //out.write( byteBytes );
                                 //out.write( byteString.getBytes( StandardCharsets.UTF_8 ) );
                                 //pOut.println( jsonString);
-                                out.write( jsonString);
+                                out.write( jsonString );
                                 //out.write( byteString );
                                 out.newLine();
                                 //out.writeChars( jsonString );
@@ -371,7 +376,8 @@ public class GatherEntriesTask implements Runnable {
 
     }
 
-    private void createFile(String path) {
+
+    private void createFile( String path ) {
 
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,8 @@ package org.polypheny.db.sql.language.ddl;
 
 import java.util.Optional;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.entity.logical.LogicalEntity;
+import org.polypheny.db.catalog.entity.logical.LogicalView;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.ddl.DdlManager;
@@ -50,9 +51,9 @@ public class SqlDropView extends SqlDropObject {
 
     @Override
     public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
-        final Optional<LogicalTable> table = searchEntity( context, name );
+        final Optional<? extends LogicalEntity> entity = searchEntity( context, name );
 
-        if ( table.isEmpty() ) {
+        if ( entity.isEmpty() ) {
             if ( ifExists ) {
                 // It is ok that there is no view with this name because "IF EXISTS" was specified
                 return;
@@ -61,11 +62,19 @@ public class SqlDropView extends SqlDropObject {
             }
         }
 
-        if ( table.get().entityType != EntityType.VIEW ) {
-            throw new GenericRuntimeException( "Not Possible to use DROP VIEW because " + table.get().name + " is not a View." );
+        Optional<LogicalView> optionalView = entity.get().unwrap( LogicalView.class );
+
+        if ( optionalView.isEmpty() ) {
+            throw new GenericRuntimeException( "Not possible to use DROP VIEW because " + name + " is not a view." );
         }
 
-        DdlManager.getInstance().dropView( table.get(), statement );
+        LogicalView view = optionalView.get();
+
+        if ( view.entityType != EntityType.VIEW ) {
+            throw new GenericRuntimeException( "Not possible to use DROP VIEW because " + view.name + " is not a view." );
+        }
+
+        DdlManager.getInstance().dropView( view, statement );
 
 
     }

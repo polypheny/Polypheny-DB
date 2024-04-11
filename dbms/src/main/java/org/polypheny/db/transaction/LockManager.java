@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,11 +19,13 @@ package org.polypheny.db.transaction;
 
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.transaction.EntityAccessMap.EntityIdentifier;
 import org.polypheny.db.transaction.EntityAccessMap.EntityIdentifier.NamespaceLevel;
 import org.polypheny.db.transaction.Lock.LockMode;
@@ -31,6 +33,7 @@ import org.polypheny.db.util.DeadlockException;
 
 
 // Based on code taken from https://github.com/dstibrany/LockManager
+@Slf4j
 public class LockManager {
 
     public static final LockManager INSTANCE = new LockManager();
@@ -61,7 +64,7 @@ public class LockManager {
      * Used in traditional transactional workload to lck all entities that will eagerly receive any update
      */
     private void handlePrimaryLocks( @NonNull Collection<Entry<EntityIdentifier, LockMode>> idAccessMap, @NonNull TransactionImpl transaction ) throws DeadlockException {
-        Iterator<Entry<EntityIdentifier, LockMode>> iter = idAccessMap.iterator();
+        Iterator<Entry<EntityIdentifier, LockMode>> iter = idAccessMap.stream().sorted( ( a, b ) -> Math.toIntExact( a.getKey().entityId - b.getKey().entityId ) ).iterator();
         Entry<EntityIdentifier, LockMode> pair;
         while ( iter.hasNext() ) {
             pair = iter.next();
@@ -70,7 +73,7 @@ public class LockManager {
             Lock lock = lockTable.get( pair.getKey() );
 
             try {
-                if ( hasLock( transaction, pair.getKey() ) && (pair.getValue() == lock.getMode()) ) {
+                if ( hasLock( transaction, pair.getKey() ) && pair.getValue() == lock.getMode() ) {
                     continue;
                 } else if ( pair.getValue() == Lock.LockMode.SHARED && hasLock( transaction, pair.getKey() ) && lock.getMode() == Lock.LockMode.EXCLUSIVE ) {
                     continue;
@@ -127,11 +130,11 @@ public class LockManager {
 
 
     public boolean hasLock( @NonNull TransactionImpl transaction, @NonNull EntityAccessMap.EntityIdentifier entityIdentifier ) {
-        Set<Lock> lockList = transaction.getLocks();
-        if ( lockList == null ) {
+        Set<Lock> locks = transaction.getLocks();
+        if ( locks == null ) {
             return false;
         }
-        for ( Lock txnLock : lockList ) {
+        for ( Lock txnLock : locks ) {
             if ( txnLock == lockTable.get( entityIdentifier ) ) {
                 return true;
             }
@@ -142,6 +145,11 @@ public class LockManager {
 
     Lock.LockMode getLockMode( @NonNull EntityAccessMap.EntityIdentifier entityIdentifier ) {
         return lockTable.get( entityIdentifier ).getMode();
+    }
+
+
+    public Map<EntityIdentifier, Lock> getLocks() {
+        return Map.copyOf( lockTable );
     }
 
 }

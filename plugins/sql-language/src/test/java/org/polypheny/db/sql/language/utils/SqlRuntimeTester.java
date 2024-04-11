@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,7 @@
 package org.polypheny.db.sql.language.utils;
 
 
-import static org.junit.Assert.assertNotNull;
-
+import org.junit.jupiter.api.Assertions;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlTestFactory;
 import org.polypheny.db.sql.language.parser.SqlParserUtil;
@@ -74,7 +73,7 @@ public class SqlRuntimeTester extends AbstractSqlTester {
         if ( runtime ) {
             stage = SqlTests.Stage.RUNTIME;
             SqlNode validated = validator.validateSql( sqlNode );
-            assertNotNull( validated );
+            Assertions.assertNotNull( validated );
             try {
                 check( sap.sql, SqlTests.ANY_TYPE_CHECKER, SqlTests.ANY_PARAMETER_CHECKER, SqlTests.ANY_RESULT_CHECKER );
             } catch ( Throwable ex ) {

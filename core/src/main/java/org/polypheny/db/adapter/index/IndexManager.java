@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -146,7 +146,7 @@ public class IndexManager {
 
     public void restoreIndexes() throws TransactionException {
         for ( final LogicalIndex index : Catalog.getInstance().getSnapshot().rel().getIndexes() ) {
-            if ( index.location == 0 ) {
+            if ( index.location < 0 ) {
                 addIndex( index );
             }
         }
@@ -168,7 +168,7 @@ public class IndexManager {
                 .filter( it -> it.canProvide( method, unique, persistent ) )
                 .findFirst()
                 .orElseThrow( IllegalArgumentException::new );
-        final LogicalTable table = statement.getTransaction().getSnapshot().rel().getTable( key.tableId ).orElseThrow();
+        final LogicalTable table = statement.getTransaction().getSnapshot().rel().getTable( key.entityId ).orElseThrow();
         final LogicalPrimaryKey pk = statement.getTransaction().getSnapshot().rel().getPrimaryKey( table.primaryKey ).orElseThrow();
         final Index index = factory.create(
                 id,
@@ -178,8 +178,8 @@ public class IndexManager {
                 persistent,
                 Catalog.getInstance().getSnapshot().getNamespace( key.namespaceId ).orElseThrow(),
                 table,
-                key.getColumnNames(),
-                pk.getColumnNames() );
+                key.getFieldNames(),
+                pk.getFieldNames() );
         indexById.put( id, index );
         indexByName.put( name, index );
         final Transaction tx = statement.getTransaction();

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,13 +20,13 @@ import org.polypheny.db.adapter.neo4j.NeoRelationalImplementor;
 import org.polypheny.db.adapter.neo4j.rules.NeoRelAlg;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Filter;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 
 public class NeoFilter extends Filter implements NeoRelAlg {
 
-    public NeoFilter( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, RexNode condition ) {
+    public NeoFilter( AlgCluster cluster, AlgTraitSet traits, AlgNode child, RexNode condition ) {
         super( cluster, traits, child, condition );
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,6 +50,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.function.Consumer;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
@@ -59,6 +61,7 @@ import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.TransformedEnumerator;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgProducingVisitor.AlgConsumingVisitor;
 import org.polypheny.db.algebra.AlgVisitor;
 import org.polypheny.db.algebra.rules.CalcSplitRule;
 import org.polypheny.db.algebra.rules.FilterScanRule;
@@ -66,22 +69,19 @@ import org.polypheny.db.algebra.rules.ProjectScanRule;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.hep.HepPlanner;
 import org.polypheny.db.plan.hep.HepProgram;
 import org.polypheny.db.plan.hep.HepProgramBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
-import org.polypheny.db.util.ReflectUtil;
-import org.polypheny.db.util.ReflectiveVisitDispatcher;
-import org.polypheny.db.util.ReflectiveVisitor;
 import org.polypheny.db.util.Util;
 
 
 /**
  * Interpreter.
- *
+ * <p>
  * Contains the context for interpreting relational expressions. In particular it holds working state while the data flow graph is being assembled.
  */
 @Slf4j
@@ -105,7 +105,7 @@ public class Interpreter extends AbstractEnumerable<PolyValue[]> implements Auto
     }
 
 
-    private AlgNode optimize( AlgNode rootRel ) {
+    private AlgNode optimize( AlgNode rootAlg ) {
         final HepProgram hepProgram =
                 new HepProgramBuilder()
                         .addRuleInstance( CalcSplitRule.INSTANCE )
@@ -115,9 +115,9 @@ public class Interpreter extends AbstractEnumerable<PolyValue[]> implements Auto
                         .addRuleInstance( ProjectScanRule.INTERPRETER )
                         .build();
         final HepPlanner planner = new HepPlanner( hepProgram );
-        planner.setRoot( rootRel );
-        rootRel = planner.findBestExp();
-        return rootRel;
+        planner.setRoot( rootAlg );
+        rootAlg = planner.findBestExp();
+        return rootAlg;
     }
 
 
@@ -158,6 +158,7 @@ public class Interpreter extends AbstractEnumerable<PolyValue[]> implements Auto
     @Override
     public void close() {
     }
+
 
     /**
      * Information about a node registered in the data flow graph.
@@ -277,7 +278,7 @@ public class Interpreter extends AbstractEnumerable<PolyValue[]> implements Auto
      */
     private static class DuplicatingSink implements Sink {
 
-        private List<ArrayDeque<Row<PolyValue>>> queues;
+        private final List<ArrayDeque<Row<PolyValue>>> queues;
 
 
         private DuplicatingSink( List<ArrayDeque<Row<PolyValue>>> queues ) {
@@ -302,40 +303,48 @@ public class Interpreter extends AbstractEnumerable<PolyValue[]> implements Auto
 
     /**
      * Walks over a tree of {@link AlgNode} and, for each, creates a {@link Node} that can be executed in the interpreter.
-     *
+     * <p>
      * The compiler looks for methods of the form "visit(XxxRel)". A "visit" method must create an appropriate {@link Node} and put it into the {@link #node} field.
-     *
+     * <p>
      * If you wish to handle more kinds of relational expressions, add extra "visit" methods in this or a sub-class, and they will be found and called via reflection.
      */
-    static class CompilerImpl extends AlgVisitor implements Compiler, ReflectiveVisitor {
+    static class CompilerImpl extends AlgVisitor implements Compiler, AlgConsumingVisitor {
 
         final ScalarCompiler scalarCompiler;
-        private final ReflectiveVisitDispatcher<CompilerImpl, AlgNode> dispatcher = ReflectUtil.createDispatcher( CompilerImpl.class, AlgNode.class );
         protected final Interpreter interpreter;
-        protected AlgNode rootRel;
+        protected AlgNode rootAlg;
         protected AlgNode alg;
         protected Node node;
         final Map<AlgNode, NodeInfo<PolyValue>> nodes = new LinkedHashMap<>();
         final Map<AlgNode, List<AlgNode>> algInputs = new HashMap<>();
         final Multimap<AlgNode, Edge> outEdges = LinkedHashMultimap.create();
 
-        private static final String REWRITE_METHOD_NAME = "rewrite";
-        private static final String VISIT_METHOD_NAME = "visit";
+        //private static final String REWRITE_METHOD_NAME = "rewrite";
+        //private static final String VISIT_METHOD_NAME = "visit";
 
 
-        CompilerImpl( Interpreter interpreter, AlgOptCluster cluster ) {
+        CompilerImpl( Interpreter interpreter, AlgCluster cluster ) {
             this.interpreter = interpreter;
             this.scalarCompiler = new JaninoRexCompiler( cluster.getRexBuilder() );
         }
+
+
+        @Getter
+        final ImmutableMap<Class<? extends AlgNode>, Consumer<AlgNode>> handlers = ImmutableMap.of();
+
+        @Getter
+        final Consumer<AlgNode> defaultHandler = a -> {
+            throw new AssertionError( "interpreter: no implementation for " + a.getClass() );
+        };
 
 
         /**
          * Visits the tree, starting from the root {@code p}.
          */
         Pair<AlgNode, Map<AlgNode, NodeInfo<PolyValue>>> visitRoot( AlgNode p ) {
-            rootRel = p;
+            rootAlg = p;
             visit( p, 0, null );
-            return Pair.of( rootRel, nodes );
+            return Pair.of( rootAlg, nodes );
         }
 
 
@@ -343,15 +352,15 @@ public class Interpreter extends AbstractEnumerable<PolyValue[]> implements Auto
         public void visit( AlgNode p, int ordinal, AlgNode parent ) {
             for ( ; ; ) {
                 alg = null;
-                boolean found = dispatcher.invokeVisitor( this, p, REWRITE_METHOD_NAME );
+                /*boolean found = dispatcher.invokeVisitor( this, p, REWRITE_METHOD_NAME );
                 if ( !found ) {
-                    throw new AssertionError( "interpreter: no implementation for rewrite" );
-                }
+                    throw new AssertionError( "interpreter: no implementation for rewrite" ); // this was never used
+                }*/
                 if ( alg == null ) {
                     break;
                 }
                 if ( RuntimeConfig.DEBUG.getBoolean() ) {
-                    System.out.println( "Interpreter: rewrite " + p + " to " + alg );
+                    log.warn( "Interpreter: rewrite " + p + " to " + alg );
                 }
                 p = alg;
                 if ( parent != null ) {
@@ -362,7 +371,7 @@ public class Interpreter extends AbstractEnumerable<PolyValue[]> implements Auto
                     }
                     inputs.set( ordinal, p );
                 } else {
-                    rootRel = p;
+                    rootAlg = p;
                 }
             }
 
@@ -381,11 +390,12 @@ public class Interpreter extends AbstractEnumerable<PolyValue[]> implements Auto
             }
 
             node = null;
-            boolean found = dispatcher.invokeVisitor( this, p, VISIT_METHOD_NAME );
-            if ( !found ) {
-                if ( p instanceof InterpretableRel ) {
-                    InterpretableRel interpretableRel = (InterpretableRel) p;
-                    node = interpretableRel.implement( new InterpretableRel.InterpreterImplementor( this, null ) );
+            boolean found = findHandler( p.getClass() ) != null;
+            if ( found ) {
+                this.handle( p );
+            } else {
+                if ( p instanceof InterpretableAlg interpretableAlg ) {
+                    node = interpretableAlg.implement( new InterpretableAlg.InterpreterImplementor( this, null ) );
                 } else {
                     // Probably need to add a visit(XxxRel) method to CoreCompiler.
                     throw new AssertionError( "interpreter: no implementation for " + p.getClass() );
@@ -405,7 +415,7 @@ public class Interpreter extends AbstractEnumerable<PolyValue[]> implements Auto
 
         /**
          * Fallback rewrite method.
-         *
+         * <p>
          * Overriding methods (each with a different sub-class of {@link AlgNode} as its argument type) sets the {@link #alg} field if intends to rewrite.
          */
         public void rewrite( AlgNode r ) {

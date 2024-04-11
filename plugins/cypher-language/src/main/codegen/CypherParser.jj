@@ -63,7 +63,7 @@ import org.polypheny.db.cypher.CypherSimpleEither;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.cypher.mapprojection.CypherMPItem;
 import org.polypheny.db.cypher.CypherCallResultItem;
-import org.polypheny.db.cypher.scope.CypherDbScope;
+import org.polypheny.db.cypher.scope.CypherNamespaceScope;
 import org.polypheny.db.cypher.CypherFactory;
 import org.polypheny.db.cypher.expression.CypherGate.Gate;
 import org.polypheny.db.cypher.scope.CypherGraphScope;
@@ -1764,7 +1764,10 @@ CypherClause MatchClause() :
     CypherWhere where = null;
 }
 {
-    ( optionalT=<OPTIONAL> { optional = true; } )? t=<MATCH> ("(*)" {fullScan = true;} | patterns=PatternList() hints=Hints()) ( where=WhereClause() )?
+    ( optionalT=<OPTIONAL> { optional = true; } )? t=<MATCH> (
+    LOOKAHEAD( 3 ) <LPAREN> <TIMES> <RPAREN> {fullScan = true;} |
+    ( patterns=PatternList() hints=Hints() ))
+    ( where=WhereClause() )?
     {
         return CypherFactory.createMatch( pos( optionalT != null ? optionalT : t ), optional, patterns, pos( t.next ), hints, where, fullScan );
     }
@@ -2978,7 +2981,7 @@ CypherWithGraph CreateCommand( CypherUseClause useClause ) throws Exception:
     start=<CREATE> (<OR> <REPLACE> { replace = true; })? (
         statement=CreateRole( start, replace )
         | statement=CreateUser( start, replace )
-        | statement=CreateDatabase( start, replace )
+        | statement=createNamespace( start, replace )
         | statement=CreatePlacement( start, replace )
         | statement=CreateConstraint( start, replace )
         | statement=CreateIndex( start, replace )
@@ -3017,8 +3020,8 @@ CypherWithGraph CommandWithUseGraph( CypherUseClause useClause ) throws Exceptio
         | s=DenyPrivilege()
         | s=RevokeCommand()
         | s=GrantCommand()
-        | s=StartDatabase()
-        | s=StopDatabase()
+        | s=startNamespace()
+        | s=stopNamespace()
     )
     {
         return CypherFactory.useGraph( s, useClause );
@@ -3035,7 +3038,7 @@ CypherWithGraph DropCommand() throws Exception:
     (
         s=DropRole( start )
         | s=DropUser( start )
-        | s=DropDatabase( start )
+        | s=dropNamespace( start )
         | s=DropConstraint( start )
         | s=DropIndex( start )
         | s=DropAlias( start )
@@ -3054,7 +3057,7 @@ CypherWithGraph AlterCommand() throws Exception:
 {
     start=<ALTER>
     (
-        s=AlterDatabase( start )
+        s=alterNamespace( start )
         | s=AlterAlias( start )
         | s=AlterCurrentUser( start )
         | s=AlterUser( start )
@@ -3093,7 +3096,7 @@ CypherStatement ShowCommand( CypherUseClause useClause ) :
         | showCommandType=<REL> statement=ShowRelCommand( start, useClause )
         | showCommandType=<BUILT> <IN> statement=ShowFunctions( start, useClause, ShowCommandFilterType.BUILT_IN )
         | statement=ShowIndexesAllowBrief( start, useClause, ShowCommandFilterType.ALL )
-        | statement=ShowDatabase( start, useClause )
+        | statement=showNamespace( start, useClause )
         | statement=ShowCurrentUser( start, useClause )
         | statement=ShowConstraintsAllowBriefAndYield( start, useClause, ShowCommandFilterType.ALL )
         | statement=ShowProcedures( start, useClause )
@@ -4491,7 +4494,7 @@ CypherPrivilegeType privilege(Token start) throws Exception:
         | privilege=showPrivilege(start)
         | privilege=setPrivilege(start)
         | privilege=removePrivilege(start)
-        | privilege=databasePrivilege(start)
+        | privilege=namespacePrivilege(start)
         | privilege=dbmsPrivilege(start)
         | privilege=writePrivilege(start)
         | privilege=qualifiedGraphPrivileges(start)
@@ -4520,7 +4523,7 @@ CypherPrivilegeType allPrivilege(Token start) throws Exception:
              }
              | <DATABASE> {
                 assertValidType( t, type, "DATABASE" );
-                return CypherFactory.databasePrivilege( pos(start), CypherFactory.privilegeAction( ActionType.DATABASE_ALL ), CypherFactory.databaseScopes( pos( t ), null, ScopeType.DEFAULT ), CypherFactory.allDatabasesQualifier() );
+                return CypherFactory.namespacePrivilege( pos(start), CypherFactory.privilegeAction( ActionType.DATABASE_ALL ), CypherFactory.namespaceScopes( pos( t ), null, ScopeType.DEFAULT ), CypherFactory.allNamespacesQualifier() );
              }
         )
         | t=<HOME> (
@@ -4530,7 +4533,7 @@ CypherPrivilegeType allPrivilege(Token start) throws Exception:
             }
             | <DATABASE> {
                 assertValidType( t, type, "DATABASE" );
-                return CypherFactory.databasePrivilege( pos(start), CypherFactory.privilegeAction( ActionType.DATABASE_ALL ), CypherFactory.databaseScopes( pos( t ), null, ScopeType.HOME ), CypherFactory.allDatabasesQualifier() );
+                return CypherFactory.namespacePrivilege( pos(start), CypherFactory.privilegeAction( ActionType.DATABASE_ALL ), CypherFactory.namespaceScopes( pos( t ), null, ScopeType.HOME ), CypherFactory.allNamespacesQualifier() );
             }
         )
         | t=<DBMS> {
@@ -4543,7 +4546,7 @@ CypherPrivilegeType allPrivilege(Token start) throws Exception:
         }
         | (t=<DATABASE> | t=<DATABASES>) (<TIMES> { scopeType = ScopeType.ALL; } | names=SymbolicDatabaseNameStringOrParameterList()) {
             assertValidType( t, type, "DATABASE" );
-            return CypherFactory.databasePrivilege( pos(start), CypherFactory.privilegeAction( ActionType.DATABASE_ALL ), CypherFactory.databaseScopes( pos( t ), names, scopeType ), CypherFactory.allDatabasesQualifier() );
+            return CypherFactory.namespacePrivilege( pos(start), CypherFactory.privilegeAction( ActionType.DATABASE_ALL ), CypherFactory.namespaceScopes( pos( t ), names, scopeType ), CypherFactory.allNamespacesQualifier() );
         }
     )
 }
@@ -4552,7 +4555,7 @@ CypherPrivilegeType createPrivilege(Token start):
 {
     CypherPrivilegeType privilege = null;
     CypherAdminAction action = null;
-    List<CypherDbScope> databases = null;
+    List<CypherNamespaceScope> databases = null;
     List<CypherGraphScope> graphs = null;
     List<CypherPrivilegeQualifier> qualifier = new ArrayList();
 }
@@ -4568,7 +4571,7 @@ CypherPrivilegeType createPrivilege(Token start):
                    | (<RELATIONSHIP>)? (<TYPE> | <TYPES>) { action = CypherFactory.privilegeAction( ActionType.CREATE_RELTYPE ); }
                    | (<PROPERTY>)? (<NAME> | <NAMES>) { action = CypherFactory.privilegeAction( ActionType.CREATE_PROPERTYKEY ); }
                )
-           ) <ON> databases=DatabaseScopeList() { privilege = CypherFactory.databasePrivilege( pos(start), action, databases, CypherFactory.allDatabasesQualifier() ); }
+           ) <ON> databases=DatabaseScopeList() { privilege = CypherFactory.namespacePrivilege( pos(start), action, databases, CypherFactory.allNamespacesQualifier() ); }
        ) | (
            (
                <DATABASE> { action = CypherFactory.privilegeAction( ActionType.DATABASE_CREATE ); }
@@ -4583,7 +4586,7 @@ CypherPrivilegeType dropPrivilege(Token start):
 {
     CypherPrivilegeType privilege = null;
     CypherAdminAction action = null;
-    List<CypherDbScope> databases = null;
+    List<CypherNamespaceScope> databases = null;
 }
 {
     <DROP>
@@ -4592,7 +4595,7 @@ CypherPrivilegeType dropPrivilege(Token start):
            (
                (<INDEX> | <INDEXES>) { action = CypherFactory.privilegeAction( ActionType.INDEX_DROP ); }
                | (<CONSTRAINT> | <CONSTRAINTS>) { action = CypherFactory.privilegeAction( ActionType.CONSTRAINT_DROP ); }
-           ) <ON> databases=DatabaseScopeList() { privilege = CypherFactory.databasePrivilege( pos(start), action, databases, CypherFactory.allDatabasesQualifier() ); }
+           ) <ON> databases=DatabaseScopeList() { privilege = CypherFactory.namespacePrivilege( pos(start), action, databases, CypherFactory.allNamespacesQualifier() ); }
        ) | (
            (
                <DATABASE> { action = CypherFactory.privilegeAction( ActionType.DATABASE_DROP ); }
@@ -4607,8 +4610,8 @@ CypherPrivilegeType showPrivilege(Token start):
 {
     CypherPrivilegeType privilege = null;
     CypherAdminAction action = null;
-    List<CypherDbScope> databases = null;
-    List<CypherPrivilegeQualifier> qualifier = CypherFactory.allDatabasesQualifier();
+    List<CypherNamespaceScope> databases = null;
+    List<CypherPrivilegeQualifier> qualifier = CypherFactory.allNamespacesQualifier();
     List<CypherSimpleEither<String, CypherParameter>>qualifiers = null;
 }
 {
@@ -4620,7 +4623,7 @@ CypherPrivilegeType showPrivilege(Token start):
                 | (<CONSTRAINT> | <CONSTRAINTS>) { action = CypherFactory.privilegeAction( ActionType.CONSTRAINT_SHOW ); }
                 | (<TRANSACTION> | <TRANSACTIONS>) { action = CypherFactory.privilegeAction( ActionType.TRANSACTION_SHOW ); qualifier = CypherFactory.allUsersQualifier(); }
                     ( <LPAREN> (<TIMES> | qualifiers=SymbolicNameOrStringParameterList() { qualifier = CypherFactory.userQualifier(qualifiers); } ) <RPAREN> )?
-            ) <ON> databases=DatabaseScopeList() { privilege = CypherFactory.databasePrivilege( pos(start), action, databases, qualifier ); }
+            ) <ON> databases=DatabaseScopeList() { privilege = CypherFactory.namespacePrivilege( pos(start), action, databases, qualifier ); }
         ) | (
             (
                 <PRIVILEGE> { action = CypherFactory.privilegeAction( ActionType.PRIVILEGE_SHOW ); }
@@ -4689,11 +4692,11 @@ CypherPrivilegeType writePrivilege(Token start):
     }
 }
 
-CypherPrivilegeType databasePrivilege(Token start):
+CypherPrivilegeType namespacePrivilege(Token start):
 {
     CypherAdminAction action = null;
-    List<CypherDbScope> databases = null;
-    List<CypherPrivilegeQualifier> qualifier = CypherFactory.allDatabasesQualifier();
+    List<CypherNamespaceScope> databases = null;
+    List<CypherPrivilegeQualifier> qualifier = CypherFactory.allNamespacesQualifier();
     List<CypherSimpleEither<String, CypherParameter>>qualifiers = null;
 }
 {
@@ -4709,7 +4712,7 @@ CypherPrivilegeType databasePrivilege(Token start):
     )
     <ON> databases=DatabaseScopeList()
     {
-        return CypherFactory.databasePrivilege( pos(start), action, databases, qualifier );
+        return CypherFactory.namespacePrivilege( pos(start), action, databases, qualifier );
     }
 }
 
@@ -4886,7 +4889,7 @@ List<CypherPrivilegeQualifier> graphQualifier():
 
 // Database commands
 
-CypherAdminCommand CreateDatabase( Token start, boolean replace ):
+CypherAdminCommand createNamespace( Token start, boolean replace ):
 {
     CypherSimpleEither<String, CypherParameter> databaseName = null;
     boolean ifNotExists = false;
@@ -4901,7 +4904,7 @@ CypherAdminCommand CreateDatabase( Token start, boolean replace ):
     ( optionz = Options() )?
     ( wait = WaitClause() )?
     {
-       return CypherFactory.createDatabase( pos( start ), replace, databaseName, ifNotExists, wait, optionz, store );
+       return CypherFactory.createNamespace( pos( start ), replace, databaseName, ifNotExists, wait, optionz, store );
     }
 }
 
@@ -4940,7 +4943,7 @@ CypherAdminCommand DropPlacement( Token start ):
     }
 }
 
-CypherAdminCommand DropDatabase( Token start ):
+CypherAdminCommand dropNamespace( Token start ):
 {
     CypherSimpleEither<String, CypherParameter> databaseName = null;
     boolean ifExists = false;
@@ -4948,16 +4951,16 @@ CypherAdminCommand DropDatabase( Token start ):
     boolean dumpData = false;
 }
 {
-    <DATABASE> databaseName=SymbolicDatabaseNameStringOrParameter()
+    (<DATABASE>|<NAMESPACE>) databaseName=SymbolicDatabaseNameStringOrParameter()
     ( <IF> <EXISTS> { ifExists = true; } )?
     ( ( <DUMP> { dumpData = true; } | <DESTROY> ) <DATA> )?
     ( wait = WaitClause() )?
     {
-        return CypherFactory.dropDatabase( pos( start ), databaseName, ifExists, dumpData, wait );
+        return CypherFactory.dropNamespace( pos( start ), databaseName, ifExists, dumpData, wait );
     }
 }
 
-CypherAdminCommand AlterDatabase( Token start ):
+CypherAdminCommand alterNamespace( Token start ):
 {
     CypherSimpleEither<String, CypherParameter> databaseName = null;
     boolean ifExists = false;
@@ -4969,11 +4972,11 @@ CypherAdminCommand AlterDatabase( Token start ):
     ( <IF> <EXISTS> { ifExists = true; } )?
     <SET> <ACCESS> <READ> ( <ONLY> { accessType = AccessType.READ_ONLY; } | <WRITE> )
     {
-        return CypherFactory.alterDatabase( pos( start ), databaseName, ifExists, accessType );
+        return CypherFactory.alterNamespace( pos( start ), databaseName, ifExists, accessType );
     }
 }
 
-CypherAdminCommand StartDatabase():
+CypherAdminCommand startNamespace():
 {
     Token start;
     CypherSimpleEither<String, CypherParameter> databaseName;
@@ -4982,11 +4985,11 @@ CypherAdminCommand StartDatabase():
 {
     start=<START> <DATABASE> databaseName=SymbolicDatabaseNameStringOrParameter() ( wait=WaitClause() )?
     {
-      return CypherFactory.startDatabase( pos( start ), databaseName, wait );
+      return CypherFactory.startNamespace( pos( start ), databaseName, wait );
     }
 }
 
-CypherAdminCommand StopDatabase():
+CypherAdminCommand stopNamespace():
 {
     Token start;
     CypherSimpleEither<String, CypherParameter> databaseName;
@@ -4995,7 +4998,7 @@ CypherAdminCommand StopDatabase():
 {
     start=<STOP> <DATABASE> databaseName=SymbolicDatabaseNameStringOrParameter() ( wait=WaitClause() )?
     {
-      return CypherFactory.stopDatabase( pos( start ), databaseName, wait );
+      return CypherFactory.stopNamespace( pos( start ), databaseName, wait );
     }
 }
 
@@ -5018,9 +5021,9 @@ CypherWaitClause WaitClause():
     }
 }
 
-CypherWithGraph ShowDatabase( Token start, CypherUseClause useClause ):
+CypherWithGraph showNamespace( Token start, CypherUseClause useClause ):
 {
-    CypherDbScope scope;
+    CypherNamespaceScope scope;
     CypherYield yield = null;
     CypherReturnClause returnClause = null;
     CypherWhere where = null;
@@ -5032,11 +5035,11 @@ CypherWithGraph ShowDatabase( Token start, CypherUseClause useClause ):
             | ( where=WhereClause() )
         )?
    {
-        return CypherFactory.useGraph( CypherFactory.showDatabase( pos( start ), scope, yield, returnClause, where), useClause );
+        return CypherFactory.useGraph( CypherFactory.showNamespace( pos( start ), scope, yield, returnClause, where), useClause );
    }
 }
 
-CypherDbScope DatabaseScope():
+CypherNamespaceScope DatabaseScope():
 {
     Token start = null;
     CypherSimpleEither<String, CypherParameter> name = null;
@@ -5051,11 +5054,11 @@ CypherDbScope DatabaseScope():
         | start=<HOME> <DATABASE> { isHome = true; }
     )
   {
-    return CypherFactory.databaseScope( pos( start ), name, isDefault, isHome );
+    return CypherFactory.namespaceScope( pos( start ), name, isDefault, isHome );
   }
 }
 
-List<CypherDbScope> DatabaseScopeList():
+List<CypherNamespaceScope> DatabaseScopeList():
 {
     Token start = null;
     List<CypherSimpleEither<String, CypherParameter>> names = null;
@@ -5068,7 +5071,7 @@ List<CypherDbScope> DatabaseScopeList():
         | start=<HOME> <DATABASE> { type = ScopeType.HOME; }
     )
   {
-    return CypherFactory.databaseScopes( pos( start ), names, type );
+    return CypherFactory.namespaceScopes( pos( start ), names, type );
   }
 }
 
@@ -5101,7 +5104,7 @@ CypherAdminCommand CreateAlias( Token start, boolean replace ):
     ( <IF> <NOT> <EXISTS> { ifNotExists = true; } )?
     <FOR> <DATABASE> targetName=SymbolicDatabaseNameStringOrParameter()
     {
-       return CypherFactory.createDatabaseAlias( pos( start ), replace, aliasName, targetName, ifNotExists );
+       return CypherFactory.createNamespaceAlias( pos( start ), replace, aliasName, targetName, ifNotExists );
     }
 }
 
@@ -5131,7 +5134,7 @@ CypherAdminCommand AlterAlias( Token start ):
     (<IF> <EXISTS> { ifExists = true; })?
     <SET> <DATABASE> <TARGET> targetName=SymbolicDatabaseNameStringOrParameter()
     {
-        return CypherFactory.alterDatabaseAlias( pos( start ), aliasName, targetName, ifExists );
+        return CypherFactory.alterNamespaceAlias( pos( start ), aliasName, targetName, ifExists );
     }
 }
 

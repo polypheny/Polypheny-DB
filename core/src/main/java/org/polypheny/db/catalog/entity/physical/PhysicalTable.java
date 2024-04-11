@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ package org.polypheny.db.catalog.entity.physical;
 import com.google.common.collect.ImmutableList;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
-import java.io.Serializable;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -36,6 +35,7 @@ import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.catalogs.AdapterCatalog;
 import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.type.entity.PolyValue;
 
 @EqualsAndHashCode(callSuper = true)
 @Value
@@ -56,14 +56,15 @@ public class PhysicalTable extends PhysicalEntity {
             @Deserialize("columns") List<PhysicalColumn> columns,
             @Deserialize("namespaceId") long namespaceId,
             @Deserialize("namespaceName") String namespaceName,
+            @Deserialize("uniqueFieldIds") List<Long> uniqueFieldIds,
             @Deserialize("adapterId") long adapterId ) {
-        super( id, allocationId, logicalId, name, namespaceId, namespaceName, DataModel.RELATIONAL, adapterId );
+        super( id, allocationId, logicalId, name, namespaceId, namespaceName, uniqueFieldIds, DataModel.RELATIONAL, adapterId );
         this.columns = ImmutableList.copyOf( columns.stream().sorted( Comparator.comparingInt( a -> a.position ) ).collect( Collectors.toList() ) );
     }
 
 
     @Override
-    public AlgDataType getRowType() {
+    public AlgDataType getTupleType() {
         return buildProto().apply( AlgDataTypeFactory.DEFAULT );
     }
 
@@ -71,7 +72,7 @@ public class PhysicalTable extends PhysicalEntity {
     public AlgProtoDataType buildProto() {
         final AlgDataTypeFactory.Builder fieldInfo = AlgDataTypeFactory.DEFAULT.builder();
 
-        for ( PhysicalColumn column : columns.stream().sorted( Comparator.comparingInt( a -> a.position ) ).collect( Collectors.toList() ) ) {
+        for ( PhysicalColumn column : columns.stream().sorted( Comparator.comparingInt( a -> a.position ) ).toList() ) {
             AlgDataType sqlType = column.getAlgDataType( AlgDataTypeFactory.DEFAULT );
             fieldInfo.add( column.id, column.logicalName, column.name, sqlType ).nullable( column.nullable );
         }
@@ -81,8 +82,8 @@ public class PhysicalTable extends PhysicalEntity {
 
 
     @Override
-    public Serializable[] getParameterArray() {
-        return new Serializable[0];
+    public PolyValue[] getParameterArray() {
+        return new PolyValue[0];
     }
 
 
@@ -97,7 +98,6 @@ public class PhysicalTable extends PhysicalEntity {
     }
 
 
-
     public List<Long> getColumnIds() {
         return columns.stream().map( c -> c.id ).collect( Collectors.toList() );
     }
@@ -105,7 +105,12 @@ public class PhysicalTable extends PhysicalEntity {
 
     @Override
     public PhysicalEntity normalize() {
-        return new PhysicalTable( id, allocationId, logicalId, name, columns, namespaceId, namespaceName, adapterId );
+        return new PhysicalTable( id, allocationId, logicalId, name, columns, namespaceId, namespaceName, uniqueFieldIds, adapterId );
+    }
+
+
+    public ImmutableList<Long> getPrimaryColumns() {
+        return Catalog.snapshot().rel().getPrimaryKey( Catalog.snapshot().rel().getTable( logicalId ).orElseThrow().primaryKey ).orElseThrow().fieldIds;
     }
 
 }

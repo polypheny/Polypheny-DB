@@ -1,4 +1,8 @@
-import ca.coglinc.gradle.plugins.javacc.CompileJavaccTask
+import org.javacc.plugin.gradle.javacc.CompileJavaccTask
+
+plugins {
+    id "org.javacc.javacc" version "$javacc_plugin_version"
+}
 
 group "org.polypheny"
 
@@ -6,13 +10,6 @@ configurations {
     javacc
     tests {
         extendsFrom testRuntimeOnly
-    }
-}
-
-
-buildscript {
-    dependencies {
-        classpath group: "gradle.plugin.ca.coglinc2", name: "javacc-gradle-plugin", version: javacc_plugin_version
     }
 }
 
@@ -45,7 +42,6 @@ sourceSets {
         java {
             // srcDirs = ["src/main/java", "build/generated-sources"]
             srcDirs files("${buildDir}/generated-sources").builtBy(generateParser)
-            outputDir = file(project.buildDir.absolutePath + "/classes")
         }
         resources {
             srcDirs = ["src/main/resources"]
@@ -55,7 +51,7 @@ sourceSets {
     test {
         java {
             srcDirs = ["src/test/java"]
-            outputDir = file(project.buildDir.absolutePath + "/test-classes")
+            destinationDirectory.set(file(project.buildDir.absolutePath + "/test-classes"))
         }
         resources {
             srcDirs = ["src/test/resources"]
@@ -110,7 +106,4 @@ java {
 
 licensee {
     allow('Apache-2.0')
-
-    allowUrl('https://www.eclipse.org/org/documents/epl-v10.php') // EPL 1.0
-
 }

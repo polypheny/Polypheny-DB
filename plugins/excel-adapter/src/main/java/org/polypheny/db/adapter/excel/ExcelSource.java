@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -89,7 +89,7 @@ public class ExcelSource extends DataSource<RelAdapterCatalog> {
     public String sheetName;
 
 
-    public ExcelSource( long storeId, String uniqueName, Map<String, String> settings ) {
+    public ExcelSource( final long storeId, final String uniqueName, final Map<String, String> settings ) {
         super( storeId, uniqueName, settings, true, new RelAdapterCatalog( storeId ) );
 
         this.connectionMethod = settings.containsKey( "method" ) ? ConnectionMethod.from( settings.get( "method" ) ) : ConnectionMethod.UPLOAD;
@@ -105,7 +105,7 @@ public class ExcelSource extends DataSource<RelAdapterCatalog> {
         addInformationExportedColumns();
         enableInformationPage();
 
-        this.delegate = new RelationalScanDelegate( this, storeCatalog );
+        this.delegate = new RelationalScanDelegate( this, adapterCatalog );
     }
 
 
@@ -129,23 +129,23 @@ public class ExcelSource extends DataSource<RelAdapterCatalog> {
 
     @Override
     public void updateNamespace( String name, long id ) {
-        currentNamespace = new ExcelNamespace( id, excelDir, Flavor.SCANNABLE, this.sheetName );
+        currentNamespace = new ExcelNamespace( id, adapterId, excelDir, Flavor.SCANNABLE, this.sheetName );
     }
 
 
     @Override
     public List<PhysicalEntity> createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation ) {
-        PhysicalTable table = storeCatalog.createTable(
+        PhysicalTable table = adapterCatalog.createTable(
                 logical.table.getNamespaceName(),
                 logical.table.name,
                 logical.columns.stream().collect( Collectors.toMap( c -> c.id, c -> c.name ) ),
                 logical.table,
                 logical.columns.stream().collect( Collectors.toMap( t -> t.id, t -> t ) ),
-                allocation );
+                logical.pkIds, allocation );
 
         ExcelTable physical = currentNamespace.createExcelTable( table, this );
 
-        storeCatalog.replacePhysical( physical );
+        adapterCatalog.replacePhysical( physical );
 
         return List.of( physical );
     }

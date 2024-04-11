@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 import lombok.Data;
 import org.jetbrains.annotations.NotNull;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.nodes.IntervalQualifier;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
@@ -35,8 +36,7 @@ public class DocumentType implements AlgDataType, AlgDataTypeFamily {
 
     public static final String DOCUMENT_ID = "_id";
     public static final String DOCUMENT_DATA = "_data";
-    public static final Integer ID_SIZE = 2024;
-    public static final Integer DATA_SIZE = 12024;
+
     public StructKind structKind;
 
     public final List<AlgDataTypeField> fixed;
@@ -75,9 +75,21 @@ public class DocumentType implements AlgDataType, AlgDataTypeFamily {
 
     public static AlgDataType ofRelational() {
         return new AlgRecordType( List.of(
-                new AlgDataTypeFieldImpl( -1L, DOCUMENT_ID, 0, AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.VARBINARY, ID_SIZE ) ),
-                new AlgDataTypeFieldImpl( -1L, DOCUMENT_DATA, 1, AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.VARBINARY, DATA_SIZE ) )
+                getRelationalId(),
+                getRelationalData()
         ) );
+    }
+
+
+    @NotNull
+    private static AlgDataTypeFieldImpl getRelationalData() {
+        return new AlgDataTypeFieldImpl( -1L, DOCUMENT_DATA, 1, AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.TEXT ) );
+    }
+
+
+    @NotNull
+    public static AlgDataTypeFieldImpl getRelationalId() {
+        return new AlgDataTypeFieldImpl( -1L, DOCUMENT_ID, 0, AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.TEXT ) );
     }
 
 
@@ -105,9 +117,7 @@ public class DocumentType implements AlgDataType, AlgDataTypeFamily {
 
     private String computeDigest() {
         assert fixed != null;
-        return getClass().getSimpleName() +
-                fixed.stream().map( f -> f.getType().getFullTypeString() ).collect( Collectors.joining( "$" ) ) +
-                String.join( "$", excluded );
+        return DataModel.DOCUMENT.name();
     }
 
 
@@ -130,12 +140,6 @@ public class DocumentType implements AlgDataType, AlgDataTypeFamily {
 
 
     @Override
-    public AlgDataType asGraph() {
-        throw new UnsupportedOperationException();
-    }
-
-
-    @Override
     public List<AlgDataTypeField> getFields() {
         return fixed;
     }
@@ -143,13 +147,13 @@ public class DocumentType implements AlgDataType, AlgDataTypeFamily {
 
     @Override
     public List<String> getFieldNames() {
-        return getFields().stream().map( AlgDataTypeField::getName ).collect( Collectors.toList() );
+        return getFields().stream().map( AlgDataTypeField::getName ).toList();
     }
 
 
     @Override
     public List<Long> getFieldIds() {
-        return fixed.stream().map( AlgDataTypeField::getId ).collect( Collectors.toList() );
+        return fixed.stream().map( AlgDataTypeField::getId ).toList();
     }
 
 

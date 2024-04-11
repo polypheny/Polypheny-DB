@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,8 +37,6 @@ package org.polypheny.db.adapter.jdbc;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
-import lombok.NonNull;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.ColumnMetaData.Rep;
 import org.apache.calcite.linq4j.Enumerable;
@@ -59,11 +57,10 @@ import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.schema.TableType;
 import org.polypheny.db.schema.impl.AbstractEntityQueryable;
 import org.polypheny.db.schema.types.ModifiableTable;
 import org.polypheny.db.schema.types.QueryableEntity;
@@ -93,13 +90,10 @@ public class JdbcTable extends PhysicalTable implements TranslatableEntity, Scan
 
     private JdbcSchema jdbcSchema;
 
-    private final TableType jdbcTableType;
-
 
     public JdbcTable(
             JdbcSchema jdbcSchema,
-            PhysicalTable physical,
-            @NonNull TableType jdbcTableType ) {
+            PhysicalTable physical ) {
         super(
                 physical.id,
                 physical.allocationId,
@@ -108,9 +102,9 @@ public class JdbcTable extends PhysicalTable implements TranslatableEntity, Scan
                 physical.columns,
                 physical.namespaceId,
                 physical.namespaceName,
+                physical.uniqueFieldIds,
                 physical.adapterId );
         this.jdbcSchema = jdbcSchema;
-        this.jdbcTableType = jdbcTableType;
     }
 
 
@@ -120,13 +114,13 @@ public class JdbcTable extends PhysicalTable implements TranslatableEntity, Scan
 
 
     private List<Pair<ColumnMetaData.Rep, Integer>> fieldClasses( final JavaTypeFactory typeFactory ) {
-        final AlgDataType rowType = getRowType();
+        final AlgDataType rowType = getTupleType();
         return rowType.getFields().stream().map( f -> {
             final AlgDataType type = f.getType();
             final Class<?> clazz = (Class<?>) typeFactory.getJavaClass( type );
             final Rep rep = Util.first( Rep.of( clazz ), Rep.OBJECT );
             return Pair.of( rep, type.getPolyType().getJdbcOrdinal() );
-        } ).collect( Collectors.toList() );
+        } ).toList();
     }
 
 
@@ -175,7 +169,7 @@ public class JdbcTable extends PhysicalTable implements TranslatableEntity, Scan
 
 
     @Override
-    public AlgNode toAlg( AlgOptCluster cluster, AlgTraitSet traitSet ) {
+    public AlgNode toAlg( AlgCluster cluster, AlgTraitSet traitSet ) {
         jdbcSchema.getConvention().register( cluster.getPlanner() );
         return new JdbcScan( cluster, this, jdbcSchema.getConvention() );
     }
@@ -200,7 +194,7 @@ public class JdbcTable extends PhysicalTable implements TranslatableEntity, Scan
 
     @Override
     public Modify<?> toModificationTable(
-            AlgOptCluster cluster,
+            AlgCluster cluster,
             AlgTraitSet algTraits,
             Entity table,
             AlgNode input,

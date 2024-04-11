@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ package org.polypheny.db.algebra.logical.common;
 import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.common.BatchIterator;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.transaction.Statement;
 
@@ -32,7 +32,7 @@ public class LogicalBatchIterator extends BatchIterator {
      * @param traits The trait set
      * @param input Input relational expression
      */
-    protected LogicalBatchIterator( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input ) {
+    protected LogicalBatchIterator( AlgCluster cluster, AlgTraitSet traits, AlgNode input ) {
         super( cluster, traits, input );
     }
 

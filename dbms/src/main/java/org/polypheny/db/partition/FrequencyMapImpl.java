@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,14 +32,14 @@ import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalAdapter;
+import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.allocation.AllocationPartition;
+import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
 import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
-import org.polypheny.db.catalog.logistic.DataPlacementRole;
 import org.polypheny.db.catalog.logistic.PartitionType;
-import org.polypheny.db.catalog.logistic.PlacementType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
@@ -161,10 +161,10 @@ public class FrequencyMapImpl extends FrequencyMap {
         PartitionProperty property = catalog.getSnapshot().alloc().getPartitionProperty( table.id ).orElseThrow();
 
         // Get percentage of tables which can remain in HOT
-        long numberOfPartitionsInHot = (property.partitionIds.size() * ((TemperaturePartitionProperty) property).getHotAccessPercentageIn()) / 100;
+        long numberOfPartitionsInHot = ((long) property.partitionIds.size() * ((TemperaturePartitionProperty) property).getHotAccessPercentageIn()) / 100;
 
         // These are the tables than can remain in HOT
-        long allowedTablesInHot = (property.partitionIds.size() * ((TemperaturePartitionProperty) property).getHotAccessPercentageOut()) / 100;
+        long allowedTablesInHot = ((long) property.partitionIds.size() * ((TemperaturePartitionProperty) property).getHotAccessPercentageOut()) / 100;
 
         if ( numberOfPartitionsInHot == 0 ) {
             numberOfPartitionsInHot = 1;
@@ -326,38 +326,34 @@ public class FrequencyMapImpl extends FrequencyMap {
 
 
     private void createHotTables( LogicalTable table, List<Long> partitionsFromColdToHot, List<Long> partitionsFromHotToCold, Map<DataStore<?>, List<Long>> partitionsToRemoveFromStore, Statement statement, DataMigrator dataMigrator, LogicalAdapter logicalAdapter ) {
-        Adapter<?> adapter = AdapterManager.getInstance().getAdapter( logicalAdapter.id );
-        if ( adapter instanceof DataStore ) {
-            DataStore<?> store = (DataStore<?>) adapter;
+        Adapter<?> adapter = AdapterManager.getInstance().getAdapter( logicalAdapter.id ).orElseThrow();
+        if ( adapter instanceof DataStore<?> store ) {
 
             List<Long> hotPartitionsToCreate = filterList( table.namespaceId, logicalAdapter.id, table.id, partitionsFromColdToHot );
             //List<Long> coldPartitionsToDelete = filterList( catalogAdapter.id, table.id, partitionsFromHotToCold );
 
             // If this storeId contains both Groups HOT {@literal &}  COLD do nothing
-            if ( hotPartitionsToCreate.size() != 0 ) {
+            if ( !hotPartitionsToCreate.isEmpty() ) {
                 Catalog.getInstance().getSnapshot().alloc().getPartitionsOnDataPlacement( store.getAdapterId(), table.id );
 
-                for ( long partitionId : hotPartitionsToCreate ) {
-                    catalog.getAllocRel( table.namespaceId ).addPartition(
-                            table.namespaceId,
-                            store.getAdapterId(),
-                            table.id,
-                            PlacementType.AUTOMATIC,
-                            DataPlacementRole.UP_TO_DATE );
-                }
 
                 store.createTable( statement.getPrepareContext(), LogicalTableWrapper.of( null, null, null ), AllocationTableWrapper.of( null, null ) );
 
                 List<LogicalColumn> logicalColumns = new ArrayList<>();
-                catalog.getSnapshot().alloc().getColumnPlacementsOnAdapterPerTable( store.getAdapterId(), table.id ).forEach( cp -> logicalColumns.add( catalog.getSnapshot().rel().getColumn( cp.columnId ).orElseThrow() ) );
+                catalog.getSnapshot().alloc().getColumnPlacementsOnAdapterPerEntity( store.getAdapterId(), table.id ).forEach( cp -> logicalColumns.add( catalog.getSnapshot().rel().getColumn( cp.columnId ).orElseThrow() ) );
 
-                dataMigrator.copyData(
-                        statement.getTransaction(),
-                        catalog.getSnapshot().getAdapter( store.getAdapterId() ).orElseThrow(),
-                        table,
-                        logicalColumns,
-                        null
-                        /*hotPartitionsToCreate*/ );
+                AllocationPlacement placement = catalog.getSnapshot().alloc().getPlacement( store.getAdapterId(), table.id ).orElseThrow();
+
+                for ( long id : hotPartitionsToCreate ) {
+                    AllocationEntity entity = Catalog.snapshot().alloc().getAlloc( placement.id, id ).orElseThrow();
+                    dataMigrator.copyData(
+                            statement.getTransaction(),
+                            catalog.getSnapshot().getAdapter( store.getAdapterId() ).orElseThrow(),
+                            table,
+                            logicalColumns,
+                            entity );
+                    /*hotPartitionsToCreate*/
+                }
 
                 if ( !partitionsToRemoveFromStore.containsKey( store ) ) {
                     partitionsToRemoveFromStore.put( store, partitionsFromHotToCold );
@@ -366,7 +362,7 @@ public class FrequencyMapImpl extends FrequencyMap {
                             store,
                             Stream.of( partitionsToRemoveFromStore.get( store ), partitionsFromHotToCold )
                                     .flatMap( Collection::stream )
-                                    .collect( Collectors.toList() )
+                                    .toList()
                     );
                 }
             }

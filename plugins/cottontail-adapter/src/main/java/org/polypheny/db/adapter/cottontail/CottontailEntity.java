@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,23 +18,22 @@ package org.polypheny.db.adapter.cottontail;
 
 import java.lang.reflect.Type;
 import java.util.List;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.Value;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Queryable;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.cottontail.CottontailPlugin.CottontailStore;
 import org.polypheny.db.adapter.cottontail.algebra.CottontailScan;
 import org.polypheny.db.adapter.cottontail.enumberable.CottontailQueryEnumerable;
-import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
-import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.snapshot.Snapshot;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexNode;
@@ -51,42 +50,42 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc.QueryMessage;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Scan;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.SchemaName;
 
-
+@EqualsAndHashCode(callSuper = true)
+@Value
 public class CottontailEntity extends PhysicalTable implements TranslatableEntity, ModifiableTable, QueryableEntity {
 
-    private final PhysicalTable table;
-    private final CottontailStore store;
-    private AlgProtoDataType protoRowType;
+    CottontailStore store;
     @Getter
-    private CottontailNamespace cottontailNamespace;
+    CottontailNamespace cottontailNamespace;
 
     @Getter
-    private EntityName entityName;
+    EntityName entityName;
 
     @Getter
-    private final String physicalSchemaName;
+    String physicalSchemaName;
     @Getter
-    private final String physicalTableName;
-    private final List<String> physicalColumnNames;
+    String physicalTableName;
+    List<String> physicalColumnNames;
 
 
-    protected CottontailEntity(
+    public CottontailEntity(
             CottontailNamespace cottontailNamespace,
             String physicalSchemaName,
             PhysicalTable physical,
             CottontailStore cottontailStore ) {
-        super( physical.id,
+        super(
+                physical.id,
                 physical.allocationId,
                 physical.logicalId,
                 physical.name,
                 physical.columns,
                 physical.namespaceId,
                 physical.namespaceName,
+                physical.uniqueFieldIds,
                 physical.adapterId );
 
         this.store = cottontailStore;
         this.cottontailNamespace = cottontailNamespace;
-        this.table = physical;
 
         this.physicalSchemaName = physicalSchemaName;
         this.physicalTableName = physical.name;
@@ -98,21 +97,15 @@ public class CottontailEntity extends PhysicalTable implements TranslatableEntit
                 .build();
     }
 
-
-    public String getPhysicalColumnName( String logicalColumnName ) {
-        return this.physicalColumnNames.get( this.table.columns.indexOf( logicalColumnName ) );
-    }
-
-
     @Override
     public String toString() {
-        return "CottontailTable {" + physicalSchemaName + "." + physicalTableName + "}";
+        return "CottontailTable {" + physicalTableName + "}";
     }
 
 
     @Override
     public Modify<?> toModificationTable(
-            AlgOptCluster cluster,
+            AlgCluster cluster,
             AlgTraitSet algTraits,
             Entity table,
             AlgNode input,
@@ -137,8 +130,8 @@ public class CottontailEntity extends PhysicalTable implements TranslatableEntit
 
 
     @Override
-    public AlgNode toAlg( AlgOptCluster cluster, AlgTraitSet traitSet ) {
-        return new CottontailScan( cluster, this, traitSet, this.cottontailNamespace.getConvention() );
+    public AlgNode toAlg( AlgCluster cluster, AlgTraitSet traitSet ) {
+        return new CottontailScan( cluster, this, this.cottontailNamespace.getConvention() );
     }
 
 
@@ -168,7 +161,6 @@ public class CottontailEntity extends PhysicalTable implements TranslatableEntit
 
         @Override
         public Enumerator<PolyValue[]> enumerator() {
-            final JavaTypeFactory typeFactory = dataContext.getTypeFactory();
             final CottontailEntity cottontailTable = entity;
             final long txId = cottontailTable.cottontailNamespace.getWrapper().beginOrContinue( this.dataContext.getStatement().getTransaction() );
             final Query query = Query.newBuilder()
@@ -180,7 +172,7 @@ public class CottontailEntity extends PhysicalTable implements TranslatableEntit
                     .build();
             return new CottontailQueryEnumerable(
                     cottontailTable.cottontailNamespace.getWrapper().query( queryMessage ),
-                    new CottontailQueryEnumerable.RowTypeParser( cottontailTable.getRowType(), cottontailTable.physicalColumnNames )
+                    new CottontailQueryEnumerable.RowTypeParser( cottontailTable.getTupleType(), cottontailTable.physicalColumnNames )
             ).enumerator();
         }
 

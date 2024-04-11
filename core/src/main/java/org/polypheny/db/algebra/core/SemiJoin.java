@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,9 +40,9 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.metadata.AlgMdUtil;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexNode;
@@ -70,7 +70,7 @@ public class SemiJoin extends EquiJoin {
      * @param leftKeys left keys of the semijoin
      * @param rightKeys right keys of the semijoin
      */
-    public SemiJoin( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode left, AlgNode right, RexNode condition, ImmutableList<Integer> leftKeys, ImmutableList<Integer> rightKeys ) {
+    public SemiJoin( AlgCluster cluster, AlgTraitSet traitSet, AlgNode left, AlgNode right, RexNode condition, ImmutableList<Integer> leftKeys, ImmutableList<Integer> rightKeys ) {
         super( cluster, traitSet, left, right, condition, leftKeys, rightKeys, ImmutableSet.of(), JoinAlgType.INNER );
     }
 
@@ -79,7 +79,7 @@ public class SemiJoin extends EquiJoin {
      * Creates a SemiJoin.
      */
     public static SemiJoin create( AlgNode left, AlgNode right, RexNode condition, ImmutableList<Integer> leftKeys, ImmutableList<Integer> rightKeys ) {
-        final AlgOptCluster cluster = left.getCluster();
+        final AlgCluster cluster = left.getCluster();
         return new SemiJoin( cluster, cluster.traitSetOf( Convention.NONE ), left, right, condition, leftKeys, rightKeys );
     }
 
@@ -94,14 +94,14 @@ public class SemiJoin extends EquiJoin {
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         // REVIEW jvs:  Just for now...
         return planner.getCostFactory().makeTinyCost();
     }
 
 
     @Override
-    public double estimateRowCount( AlgMetadataQuery mq ) {
+    public double estimateTupleCount( AlgMetadataQuery mq ) {
         return Util.first( AlgMdUtil.getSemiJoinRowCount( mq, left, right, joinType, condition ), 1D );
     }
 
@@ -118,8 +118,7 @@ public class SemiJoin extends EquiJoin {
                 null,
                 JoinAlgType.INNER,
                 getCluster().getTypeFactory(),
-                null,
-                ImmutableList.of() );
+                null );
     }
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,12 +20,9 @@ import java.util.List;
 import javax.annotation.Nullable;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
-import org.polypheny.db.algebra.core.DocumentAggregateCall;
+import org.polypheny.db.algebra.core.LaxAggregateCall;
 import org.polypheny.db.algebra.core.document.DocumentAggregate;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.algebra.type.DocumentType;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexNameRef;
@@ -36,7 +33,7 @@ public class LogicalDocumentAggregate extends DocumentAggregate {
     /**
      * Subclass of {@link DocumentAggregate} not targeted at any particular engine or calling convention.
      */
-    protected LogicalDocumentAggregate( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, @Nullable RexNameRef group, List<DocumentAggregateCall> aggCalls ) {
+    protected LogicalDocumentAggregate( AlgCluster cluster, AlgTraitSet traits, AlgNode child, @Nullable RexNameRef group, List<LaxAggregateCall> aggCalls ) {
         super( cluster, traits, child, group, aggCalls );
     }
 
@@ -44,29 +41,18 @@ public class LogicalDocumentAggregate extends DocumentAggregate {
     /**
      * Creates a LogicalAggregate.
      */
-    public static LogicalDocumentAggregate create( final AlgNode input, @Nullable RexNameRef group, List<DocumentAggregateCall> aggCalls ) {
+    public static LogicalDocumentAggregate create( final AlgNode input, @Nullable RexNameRef group, List<LaxAggregateCall> aggCalls ) {
         return create_( input, group, aggCalls );
     }
 
 
-    private static LogicalDocumentAggregate create_( final AlgNode input, @Nullable RexNameRef group, List<DocumentAggregateCall> aggCalls ) {
-        final AlgOptCluster cluster = input.getCluster();
+    private static LogicalDocumentAggregate create_( final AlgNode input, @Nullable RexNameRef group, List<LaxAggregateCall> aggCalls ) {
+        final AlgCluster cluster = input.getCluster();
         final AlgTraitSet traitSet = cluster.traitSetOf( Convention.NONE );
         return new LogicalDocumentAggregate( cluster, traitSet, input, group, aggCalls );
     }
 
 
-    @Override
-    protected AlgDataType deriveRowType() {
-        AlgDataTypeFactory.Builder builder = getCluster().getTypeFactory().builder();
-        builder.add( "_id", null, DocumentType.ofDoc() );
-
-        for ( DocumentAggregateCall aggCall : aggCalls ) {
-            builder.add( aggCall.name, null, DocumentType.ofDoc() );
-        }
-
-        return builder.build();
-    }
 
 
     @Override

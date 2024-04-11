@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.exceptions.ConstraintViolationException;
@@ -42,12 +41,12 @@ import org.polypheny.db.util.Pair;
 @Slf4j
 class CoWHashIndex extends Index {
 
-    private Map<List<PolyValue>, List<PolyValue>> index = new HashMap<>();
+    private final Map<List<PolyValue>, List<PolyValue>> index = new HashMap<>();
     private boolean initialized = false;
 
-    private Map<PolyXid, Map<List<PolyValue>, List<PolyValue>>> cowIndex = new HashMap<>();
-    private Map<PolyXid, List<DeferredIndexUpdate>> cowOpLog = new HashMap<>();
-    private Map<PolyXid, List<Pair<List<PolyValue>, List<PolyValue>>>> barrierIndex = new HashMap<>();
+    private final Map<PolyXid, Map<List<PolyValue>, List<PolyValue>>> cowIndex = new HashMap<>();
+    private final Map<PolyXid, List<DeferredIndexUpdate>> cowOpLog = new HashMap<>();
+    private final Map<PolyXid, List<Pair<List<PolyValue>, List<PolyValue>>>> barrierIndex = new HashMap<>();
 
 
     public CoWHashIndex(
@@ -98,7 +97,7 @@ class CoWHashIndex extends Index {
     @Override
     void commit( PolyXid xid ) {
         begin( xid );
-        if ( barrierIndex.get( xid ).size() > 0 ) {
+        if ( !barrierIndex.get( xid ).isEmpty() ) {
             throw new IllegalStateException( "Attempted index commit without invoking barrier first" );
         }
         for ( final DeferredIndexUpdate update : this.cowOpLog.get( xid ) ) {
@@ -197,8 +196,6 @@ class CoWHashIndex extends Index {
 
     @Override
     public Values getAsValues( PolyXid xid, AlgBuilder builder, AlgDataType rowType, List<PolyValue> key ) {
-        log.error( "{}", index.values().stream().findFirst().get().stream().map( Object::getClass ).collect( Collectors.toList() ) );
-        log.error( "{}", key.stream().map( Object::getClass ).collect( Collectors.toList() ) );
         final Map<List<PolyValue>, List<PolyValue>> ci = cowIndex.get( xid );
         final RexBuilder rexBuilder = builder.getRexBuilder();
         List<PolyValue> raw = index.get( key );

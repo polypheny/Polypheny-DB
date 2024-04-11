@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,9 +23,9 @@ import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.CompatibilityLevel;
 import io.activej.serializer.CorruptedDataException;
-import io.activej.serializer.SimpleSerializerDef;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
+import io.activej.serializer.def.SimpleSerializerDef;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -34,10 +34,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.BiPredicate;
-import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.NonNull;
 import org.apache.calcite.linq4j.tree.Expression;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
@@ -54,10 +54,12 @@ public class PolyGraph extends GraphObject {
 
     @Serialize
     @JsonProperty
+    @NotNull
     private final PolyMap<PolyString, PolyNode> nodes;
 
     @Serialize
     @JsonProperty
+    @NotNull
     private final PolyMap<PolyString, PolyEdge> edges;
 
 
@@ -118,7 +120,7 @@ public class PolyGraph extends GraphObject {
         // Retrieve hop as de-referenced segments, which store the full information of nodes and edges
         List<List<PolySegment>> segments = pattern.getDerefSegments();
 
-        List<List<TreePart>> trees = segments.stream().map( this::buildMatchingTree ).collect( Collectors.toList() );
+        List<List<TreePart>> trees = segments.stream().map( this::buildMatchingTree ).toList();
 
         List<List<Pair<PolyString, PolyString>>> namedPathIds = buildIdPaths( trees );
 
@@ -169,10 +171,10 @@ public class PolyGraph extends GraphObject {
             for ( Pair<PolyString, PolyString> namedId : namedPathId ) {
                 if ( i % 2 == 0 ) {
                     element = this.nodes.get( namedId.right ).copyNamed( namedId.left );
-                    nodes.add( (PolyNode) element );
+                    nodes.add( element.asNode() );
                 } else {
                     element = this.edges.get( namedId.right ).copyNamed( namedId.left );
-                    edges.add( (PolyEdge) element );
+                    edges.add( element.asEdge() );
                 }
                 path.add( element );
                 names.add( null );
@@ -186,7 +188,7 @@ public class PolyGraph extends GraphObject {
 
 
     private List<List<Pair<PolyString, PolyString>>> buildIdPaths( List<List<TreePart>> trees ) {
-        return trees.stream().flatMap( tree -> tree.stream().map( t -> t.getPath( new LinkedList<>() ) ) ).collect( Collectors.toList() );
+        return trees.stream().flatMap( tree -> tree.stream().map( t -> t.getPath( new LinkedList<>() ) ) ).toList();
     }
 
 
@@ -212,7 +214,7 @@ public class PolyGraph extends GraphObject {
 
             for ( TreePart part : last ) {
                 // only loop matching connections
-                for ( PolyEdge edge : edges.values().stream().filter( e -> filter.test( e, part ) ).collect( Collectors.toList() ) ) {
+                for ( PolyEdge edge : edges.values().stream().filter( e -> filter.test( e, part ) ).toList() ) {
                     PolyNode left = nodes.get( edge.source );
                     PolyNode right = nodes.get( edge.target );
                     // then check if it matches pattern of segment either ()->() or ()-() depending if direction is specified
@@ -295,6 +297,12 @@ public class PolyGraph extends GraphObject {
     @Override
     public @Nullable Long deriveByteSize() {
         return null;
+    }
+
+
+    @Override
+    public Object toJava() {
+        return this;
     }
 
 

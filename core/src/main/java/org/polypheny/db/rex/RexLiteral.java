@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,34 +47,33 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Value;
-import org.apache.calcite.avatica.util.TimeUnit;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.entity.PolyBigDecimal;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
+import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.util.Collation;
-import org.polypheny.db.util.CompositeList;
 import org.polypheny.db.util.NlsString;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.TimestampString;
 import org.polypheny.db.util.Unsafe;
 import org.polypheny.db.util.Util;
+import org.polypheny.db.util.temporal.TimeUnit;
 
 
 /**
  * Constant value in a row-expression.
- *
+ * <p>
  * There are several methods for creating literals in {@link RexBuilder}: {@link RexBuilder#makeLiteral(boolean)} and so forth.
- *
+ * <p>
  * How is the value stored? In that respect, the class is somewhat of a black box. There is a {@link #getValue} method which returns the value as an object, but the type of that value is implementation detail,
  * and it is best that your code does not depend upon that knowledge. It is better to use task-oriented methods such as {@link #getValue} and {@link #toJavaString}.
- *
+ * <p>
  * The allowable types and combinations are:
  *
  * <table>
@@ -120,21 +119,12 @@ import org.polypheny.db.util.Util;
  * <td>{@link TimestampString}; also {@link Calendar} (UTC time zone) and {@link Long} (milliseconds since POSIX epoch)</td>
  * </tr>
  * <tr>
- * <td>{@link PolyType#INTERVAL_DAY},
- * {@link PolyType#INTERVAL_DAY_HOUR},
- * {@link PolyType#INTERVAL_DAY_MINUTE},
- * {@link PolyType#INTERVAL_DAY_SECOND},
- * {@link PolyType#INTERVAL_HOUR},
- * {@link PolyType#INTERVAL_HOUR_MINUTE},
- * {@link PolyType#INTERVAL_HOUR_SECOND},
- * {@link PolyType#INTERVAL_MINUTE},
- * {@link PolyType#INTERVAL_MINUTE_SECOND},
- * {@link PolyType#INTERVAL_SECOND}</td>
+ * <td>{@link PolyType#INTERVAL},
  * <td>Interval, for example <code>INTERVAL '4:3:2' HOUR TO SECOND</code></td>
  * <td>{@link BigDecimal}; also {@link Long} (milliseconds)</td>
  * </tr>
  * <tr>
- * <td>{@link PolyType#INTERVAL_YEAR}, {@link PolyType#INTERVAL_YEAR_MONTH}, {@link PolyType#INTERVAL_MONTH}</td>
+ * <td> {@link PolyType#INTERVAL}</td>
  * <td>Interval, for example <code>INTERVAL '2-3' YEAR TO MONTH</code></td>
  * <td>{@link BigDecimal}; also {@link Integer} (months)</td>
  * </tr>
@@ -194,7 +184,6 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
             System.err.println( polyType );
             throw new IllegalArgumentException();
         }
-//        Preconditions.checkArgument( valueMatchesType( value, typeName, true ) );
         Preconditions.checkArgument( (value != null) || type.isNullable() );
         Preconditions.checkArgument( polyType != PolyType.ANY );
         this.digest = computeDigest( RexDigestIncludeType.OPTIONAL );
@@ -211,12 +200,12 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
 
     /**
      * Returns a string which concisely describes the definition of this rex literal. Two literals are equivalent if and only if their digests are the same.
-     *
+     * <p>
      * The digest does not contain the expression's identity, but does include the identity of children.
-     *
+     * <p>
      * Technically speaking 1:INT differs from 1:FLOAT, so we need data type in the literal's digest, however we want to avoid extra verbosity of the {@link AlgNode#getDigest()} for readability purposes, so we omit type info in certain cases.
      * For instance, 1:INT becomes 1 (INT is implied by default), however 1:BIGINT always holds the type
-     *
+     * <p>
      * Here's a non-exhaustive list of the "well known cases":
      * <ul>
      * <li>Hide "NOT NULL" for not null literals</li>
@@ -274,79 +263,38 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
         if ( value == null || value.isNull() ) {
             return true;
         }
-        switch ( typeName ) {
-            case BOOLEAN:
+        return switch ( typeName ) {
+            case BOOLEAN ->
                 // Unlike SqlLiteral, we do not allow boolean null.
-                return value.isBoolean();
-            case NULL:
-                return false; // value should have been null
-            case INTEGER: // not allowed -- use Decimal
-            case TINYINT:
-            case SMALLINT:
-            case DECIMAL:
-            case DOUBLE:
-            case FLOAT:
-            case REAL:
-            case BIGINT:
-                return value.isNumber();
-            case DATE:
-                return value.isDate();
-            case TIME:
-            case TIME_WITH_LOCAL_TIME_ZONE:
-                return value.isTime();
-            case TIMESTAMP:
-            case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-                return value.isTimestamp();
-            case INTERVAL_YEAR:
-            case INTERVAL_YEAR_MONTH:
-            case INTERVAL_MONTH:
-            case INTERVAL_DAY:
-            case INTERVAL_DAY_HOUR:
-            case INTERVAL_DAY_MINUTE:
-            case INTERVAL_DAY_SECOND:
-            case INTERVAL_HOUR:
-            case INTERVAL_HOUR_MINUTE:
-            case INTERVAL_HOUR_SECOND:
-            case INTERVAL_MINUTE:
-            case INTERVAL_MINUTE_SECOND:
-            case INTERVAL_SECOND:
+                    value.isBoolean();
+            case NULL -> false; // value should have been null
+            // not allowed -- use Decimal
+            case INTEGER, TINYINT, SMALLINT, DECIMAL, DOUBLE, FLOAT, REAL, BIGINT -> value.isNumber();
+            case DATE -> value.isDate();
+            case TIME -> value.isTime();
+            case TIMESTAMP -> value.isTimestamp();
+            case INTERVAL ->
                 // The value of a DAY-TIME interval (whatever the start and end units, even say HOUR TO MINUTE) is in milliseconds (perhaps fractional milliseconds). The value of a YEAR-MONTH interval is in months.
-                return value.isInterval();
-            case VARBINARY: // not allowed -- use Binary
-                if ( strict ) {
-                    throw Util.unexpected( typeName );
-                }
-                // fall through
-            case BINARY:
-                return value.isBinary();
-            case VARCHAR:
-            case CHAR:
+                    value.isInterval();
+            case VARBINARY -> // not allowed -- use Binary
+                    value.isBinary();
+            case BINARY -> value.isBinary();
+            case VARCHAR, CHAR ->
                 // A SqlLiteral's charset and collation are optional; not so a RexLiteral.
-                return value.isString();
-            case SYMBOL:
-                return value.isSymbol();
-            case ROW:
-            case MULTISET:
-            case ARRAY:
-                return value.isList();
-            case ANY:
+                    value.isString();
+            case SYMBOL -> value.isSymbol();
+            case ROW, MULTISET, ARRAY -> value.isList();
+            case ANY ->
                 // Literal of type ANY is not legal. "CAST(2 AS ANY)" remains an integer literal surrounded by a cast function.
-                return false;
-            case GRAPH:
-                return value.isGraph();
-            case NODE:
-                return value.isNode();
-            case EDGE:
-                return value.isEdge();
-            case PATH:
-                return value.isPath();
-            case MAP:
-                return value.isMap();
-            case DOCUMENT:
-                return true;
-            default:
-                throw Util.unexpected( typeName );
-        }
+                    false;
+            case GRAPH -> value.isGraph();
+            case NODE -> value.isNode();
+            case EDGE -> value.isEdge();
+            case PATH -> value.isPath();
+            case MAP -> value.isMap();
+            case DOCUMENT -> true;
+            default -> throw Util.unexpected( typeName );
+        };
     }
 
 
@@ -358,7 +306,7 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
         }
         StringWriter sw = new StringWriter();
         PrintWriter pw = new PrintWriter( sw );
-        printAsJava( value, pw, typeName, false, includeType );
+        printAsJava( value, pw, typeName, false );
         pw.flush();
 
         if ( includeType != RexDigestIncludeType.NO_TYPE ) {
@@ -377,7 +325,7 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
     /**
      * Computes if data type can be omitted from the digset.
      * For instance, {@code 1:BIGINT} has to keep data type while {@code 1:INT} should be represented as just {@code 1}.
-     *
+     * <p>
      * Implementation assumption: this method should be fast. In fact might call {@link NlsString#getValue()} which could decode the string, however we rely on the cache there.
      *
      * @param value value of the literal
@@ -425,46 +373,7 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
     }
 
 
-    /**
-     * Returns a list of the time units covered by an interval type such as HOUR TO SECOND. Adds MILLISECOND if the end is SECOND, to deal with fractional seconds.
-     */
-    private static List<TimeUnit> getTimeUnits( PolyType typeName ) {
-        final TimeUnit start = typeName.getStartUnit();
-        final TimeUnit end = typeName.getEndUnit();
-        final ImmutableList<TimeUnit> list = TIME_UNITS.subList( start.ordinal(), end.ordinal() + 1 );
-        if ( end == TimeUnit.SECOND ) {
-            return CompositeList.of( list, ImmutableList.of( TimeUnit.MILLISECOND ) );
-        }
-        return list;
-    }
-
-
-    public String intervalString( BigDecimal v ) {
-        final List<TimeUnit> timeUnits = getTimeUnits( type.getPolyType() );
-        final StringBuilder b = new StringBuilder();
-        for ( TimeUnit timeUnit : timeUnits ) {
-            final BigDecimal[] result = v.divideAndRemainder( timeUnit.multiplier );
-            if ( b.length() > 0 ) {
-                b.append( timeUnit.separator );
-            }
-            final int width = b.length() == 0 ? -1 : width( timeUnit ); // don't pad 1st
-            pad( b, result[0].toString(), width );
-            v = result[1];
-        }
-        if ( Util.last( timeUnits ) == TimeUnit.MILLISECOND ) {
-            while ( b.toString().matches( ".*\\.[0-9]*0" ) ) {
-                if ( b.toString().endsWith( ".0" ) ) {
-                    b.setLength( b.length() - 2 ); // remove ".0"
-                } else {
-                    b.setLength( b.length() - 1 ); // remove "0"
-                }
-            }
-        }
-        return b.toString();
-    }
-
-
-    private static void pad( StringBuilder b, String s, int width ) {
+    public static void pad( StringBuilder b, String s, int width ) {
         if ( width >= 0 ) {
             b.append( "0".repeat( Math.max( 0, width - s.length() ) ) );
         }
@@ -472,31 +381,18 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
     }
 
 
-    private static int width( TimeUnit timeUnit ) {
-        switch ( timeUnit ) {
-            case MILLISECOND:
-                return 3;
-            case HOUR:
-            case MINUTE:
-            case SECOND:
-                return 2;
-            default:
-                return -1;
-        }
-    }
-
-
-    /**
-     * Prints the value this literal as a Java string constant.
-     */
-    public void printAsJava( PrintWriter pw ) {
-        printAsJava( value, pw, polyType, true, RexDigestIncludeType.NO_TYPE );
+    public static int width( TimeUnit timeUnit ) {
+        return switch ( timeUnit ) {
+            case MILLISECOND -> 3;
+            case HOUR, MINUTE, SECOND -> 2;
+            default -> -1;
+        };
     }
 
 
     /**
      * Prints a value as a Java string. The value must be consistent with the type, as per {@link #valueMatchesType}.
-     *
+     * <p>
      * Typical return values:
      *
      * <ul>
@@ -510,9 +406,8 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
      * @param value Value
      * @param pw Writer to write to
      * @param typeName Type family
-     * @param includeType if representation should include data type
      */
-    private static void printAsJava( PolyValue value, PrintWriter pw, PolyType typeName, boolean java, RexDigestIncludeType includeType ) {
+    private static void printAsJava( PolyValue value, PrintWriter pw, PolyType typeName, boolean java ) {
         switch ( typeName ) {
             case VARCHAR:
             case CHAR:
@@ -541,7 +436,17 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
                 pw.print( value.asNumber().bigDecimalValue() );
                 pw.print( 'L' );
                 break;
+            case INTEGER, SMALLINT, TINYINT:
+                assert value.isNumber();
+                pw.print( value.asNumber().intValue() );
+                break;
+            case REAL:
+                assert value.isNumber();
+                pw.print( value.asNumber().floatValue() );
+                pw.print( 'R' );
+                break;
             case BINARY:
+            case VARBINARY:
                 assert value.isBinary();
                 pw.print( "X'" );
                 pw.print( value.asBinary().value );
@@ -562,33 +467,19 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
                 pw.print( value.toJson() );
                 break;
             case TIME:
-            case TIME_WITH_LOCAL_TIME_ZONE:
                 assert value.isTime();
                 pw.print( value.toJson() );
                 break;
             case TIMESTAMP:
-            case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
                 assert value.isTimestamp();
-                pw.print( value.toJson() );
+                pw.print( value.asTimestamp() );
                 break;
-            case INTERVAL_YEAR:
-            case INTERVAL_YEAR_MONTH:
-            case INTERVAL_MONTH:
-            case INTERVAL_DAY:
-            case INTERVAL_DAY_HOUR:
-            case INTERVAL_DAY_MINUTE:
-            case INTERVAL_DAY_SECOND:
-            case INTERVAL_HOUR:
-            case INTERVAL_HOUR_MINUTE:
-            case INTERVAL_HOUR_SECOND:
-            case INTERVAL_MINUTE:
-            case INTERVAL_MINUTE_SECOND:
-            case INTERVAL_SECOND:
+            case INTERVAL:
                 assert value.isInterval();
-                pw.print( value.asInterval().getValue().toString() );
+                pw.print( value.asInterval().getMonths() + "-" + value.asInterval().getMillis() );
                 break;
             case ARRAY:
-                pw.print( value.asList().stream().map( PolyValue::toString ).collect( Collectors.toList() ) );
+                pw.print( value.asList().stream().map( e -> e == null ? "" : e.toString() ).toList() );
                 break;
             case MULTISET:
             case ROW:
@@ -702,8 +593,7 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
         if ( node instanceof RexLiteral ) {
             return ((RexLiteral) node).value;
         }
-        if ( node instanceof RexCall ) {
-            final RexCall call = (RexCall) node;
+        if ( node instanceof RexCall call ) {
             final Operator operator = call.getOperator();
             if ( operator.getOperatorName() == OperatorName.CAST ) {
                 return findValue( call.getOperands().get( 0 ) );
@@ -754,6 +644,23 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
         return this.digest.equals( o.digest )
                 ? 0 : this.digest.length() > o.digest.length()
                 ? 1 : -1;
+    }
+
+
+    /**
+     * Returns the value of this literal with the possibility to handle some edge cases. Like for parameterization.
+     *
+     * @param type the type to convert the value to
+     * @return the value of this literal
+     */
+    public PolyValue getValue( AlgDataType type ) {
+        if ( value == null ) {
+            return null;
+        }
+        if ( PolyType.EXACT_TYPES.contains( type.getPolyType() ) && (PolyType.APPROX_TYPES.contains( value.type ) || PolyType.DECIMAL == value.type) ) {
+            return PolyValue.convert( value, type.getPolyType() );
+        }
+        return value;
     }
 
 }

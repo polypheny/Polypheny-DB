@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,11 +27,11 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.volcano.VolcanoPlanner;
@@ -60,9 +60,9 @@ class PlannerTests {
     };
 
 
-    static AlgOptCluster newCluster( VolcanoPlanner planner ) {
+    static AlgCluster newCluster( VolcanoPlanner planner ) {
         final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
-        return AlgOptCluster.create( planner, new RexBuilder( typeFactory ), planner.emptyTraitSet(), Catalog.snapshot() );
+        return AlgCluster.create( planner, new RexBuilder( typeFactory ), planner.emptyTraitSet(), Catalog.snapshot() );
     }
 
 
@@ -74,14 +74,14 @@ class PlannerTests {
         final String label;
 
 
-        TestLeafAlg( AlgOptCluster cluster, AlgTraitSet traits, String label ) {
+        TestLeafAlg( AlgCluster cluster, AlgTraitSet traits, String label ) {
             super( cluster, traits );
             this.label = label;
         }
 
 
         @Override
-        public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+        public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
             return planner.getCostFactory().makeInfiniteCost();
         }
 
@@ -114,13 +114,13 @@ class PlannerTests {
      */
     abstract static class TestSingleAlg extends SingleAlg {
 
-        TestSingleAlg( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input ) {
+        TestSingleAlg( AlgCluster cluster, AlgTraitSet traits, AlgNode input ) {
             super( cluster, traits, input );
         }
 
 
         @Override
-        public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+        public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
             return planner.getCostFactory().makeInfiniteCost();
         }
 
@@ -144,7 +144,7 @@ class PlannerTests {
      */
     static class NoneSingleAlg extends TestSingleAlg {
 
-        NoneSingleAlg( AlgOptCluster cluster, AlgNode input ) {
+        NoneSingleAlg( AlgCluster cluster, AlgNode input ) {
             super( cluster, cluster.traitSetOf( Convention.NONE ), input );
         }
 
@@ -163,7 +163,7 @@ class PlannerTests {
      */
     static class NoneLeafAlg extends TestLeafAlg {
 
-        NoneLeafAlg( AlgOptCluster cluster, String label ) {
+        NoneLeafAlg( AlgCluster cluster, String label ) {
             super( cluster, cluster.traitSetOf( Convention.NONE ), label );
         }
 
@@ -183,13 +183,13 @@ class PlannerTests {
      */
     static class PhysLeafAlg extends TestLeafAlg {
 
-        PhysLeafAlg( AlgOptCluster cluster, String label ) {
+        PhysLeafAlg( AlgCluster cluster, String label ) {
             super( cluster, cluster.traitSetOf( PHYS_CALLING_CONVENTION ), label );
         }
 
 
         @Override
-        public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+        public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
             return planner.getCostFactory().makeTinyCost();
         }
 
@@ -209,13 +209,13 @@ class PlannerTests {
      */
     static class PhysSingleAlg extends TestSingleAlg {
 
-        PhysSingleAlg( AlgOptCluster cluster, AlgNode input ) {
+        PhysSingleAlg( AlgCluster cluster, AlgNode input ) {
             super( cluster, cluster.traitSetOf( PHYS_CALLING_CONVENTION ), input );
         }
 
 
         @Override
-        public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+        public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
             return planner.getCostFactory().makeTinyCost();
         }
 

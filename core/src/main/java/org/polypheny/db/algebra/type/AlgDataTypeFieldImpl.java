@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,8 @@ package org.polypheny.db.algebra.type;
 import java.io.Serializable;
 import lombok.Getter;
 import lombok.Value;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Triple;
 
@@ -86,10 +88,9 @@ public class AlgDataTypeFieldImpl extends Triple<String, Long, AlgDataType> impl
         if ( this == obj ) {
             return true;
         }
-        if ( !(obj instanceof AlgDataTypeFieldImpl) ) {
+        if ( !(obj instanceof AlgDataTypeFieldImpl that) ) {
             return false;
         }
-        AlgDataTypeFieldImpl that = (AlgDataTypeFieldImpl) obj;
         return this.index == that.index
                 && this.name.equals( that.name )
                 && this.type.equals( that.type );
@@ -105,6 +106,12 @@ public class AlgDataTypeFieldImpl extends Triple<String, Long, AlgDataType> impl
     @Override
     public boolean isDynamicStar() {
         return type.getPolyType() == PolyType.DYNAMIC_STAR;
+    }
+
+
+    @Override
+    public Expression asExpression() {
+        return Expressions.new_( AlgDataTypeField.class, Expressions.constant( id ), Expressions.constant( name ), Expressions.constant( physicalName ), Expressions.constant( index ), type.asExpression() );
     }
 
 }

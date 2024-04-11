@@ -6,7 +6,7 @@ dependencies {
     compileOnly project(":dbms")
     compileOnly project(":plugins:sql-language")
 
-    implementation group: "net.sf.opencsv", name: "opencsv", version: opencsv_version  // Apache 2.0
+    implementation group: "com.opencsv", name: "opencsv", version: opencsv_version  // Apache 2.0
     implementation group: "commons-io", name: "commons-io", version: commons_io_version  // Apache 2.0
 
 
@@ -25,7 +25,6 @@ sourceSets {
     main {
         java {
             srcDirs = ["src/main/java"]
-            outputDir = file(project.buildDir.absolutePath + "/classes")
         }
         resources {
             srcDirs = ["src/main/resources"]
@@ -35,7 +34,7 @@ sourceSets {
     test {
         java {
             srcDirs = ["src/test/java"]
-            outputDir = file(project.buildDir.absolutePath + "/test-classes")
+            destinationDirectory.set(file(project.buildDir.absolutePath + "/test-classes"))
         }
         resources {
             srcDirs = ["src/test/resources"]

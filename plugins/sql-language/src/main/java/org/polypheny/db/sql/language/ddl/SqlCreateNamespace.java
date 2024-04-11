@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -77,6 +77,9 @@ public class SqlCreateNamespace extends SqlCreate implements ExecutableStatement
         if ( replace ) {
             writer.keyword( "OR REPLACE" );
         }
+        if ( type != null && type != DataModel.RELATIONAL ) {
+            writer.keyword( type.name() );
+        }
         writer.keyword( "NAMESPACE" );
         if ( ifNotExists ) {
             writer.keyword( "IF NOT EXISTS" );
@@ -87,7 +90,7 @@ public class SqlCreateNamespace extends SqlCreate implements ExecutableStatement
 
     @Override
     public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
-        DdlManager.getInstance().createNamespace( name.getSimple(), type, ifNotExists, replace );
+        DdlManager.getInstance().createNamespace( name.getSimple(), type, ifNotExists, replace, statement );
     }
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,10 @@
 
 package org.polypheny.db.catalog;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import java.sql.SQLException;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
@@ -49,6 +53,13 @@ public class RestoreTest {
     }
 
 
+    @AfterAll
+    public static void tearDown() throws SQLException {
+        TestHelper.executeSQL( "DROP TABLE IF EXISTS constraint_test" );
+        TestHelper.executeSQL( "DROP TABLE IF EXISTS constraint_test2" );
+    }
+
+
     @Test
     public void foreignTableKeyTest() {
         TestHelper.executeSql(
@@ -57,7 +68,7 @@ public class RestoreTest {
                 ( c, s ) -> c.commit()
         );
         LogicalTable table = Catalog.snapshot().rel().getTable( "public", "constraint_test2" ).orElseThrow();
-        assert Catalog.snapshot().rel().getForeignKeys( table.id ).size() == 1;
+        assertEquals( Catalog.snapshot().rel().getForeignKeys( table.id ).size(), 1 );
     }
 
 

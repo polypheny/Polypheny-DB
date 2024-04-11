@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ public class NullInitializerExpressionFactory implements InitializerExpressionFa
 
     @Override
     public ColumnStrategy generationStrategy( Entity table, int iColumn ) {
-        return table.getRowType().getFields().get( iColumn ).getType().isNullable()
+        return table.getTupleType().getFields().get( iColumn ).getType().isNullable()
                 ? ColumnStrategy.NULLABLE
                 : ColumnStrategy.NOT_NULLABLE;
     }

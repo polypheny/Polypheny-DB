@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 import lombok.Getter;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.constant.Kind;
@@ -45,9 +44,9 @@ public class SqlIdentifier extends SqlNode implements Identifier {
 
     /**
      * Array of the components of this compound identifier.
-     *
+     * <p>
      * The empty string represents the wildcard "*", to distinguish it from a real "*" (presumably specified using quotes).
-     *
+     * <p>
      * It's convenient to have this member public, and it's convenient to have this member not-final, but it's a shame it's public and not-final.
      * If you assign to this member, please use {@link #setNames(java.util.List, java.util.List)}.
      * And yes, we'd like to make identifiers immutable one day.
@@ -58,6 +57,7 @@ public class SqlIdentifier extends SqlNode implements Identifier {
     /**
      * This identifier's collation (if any).
      */
+    @Getter
     final SqlCollation collation;
 
     /**
@@ -158,7 +158,7 @@ public class SqlIdentifier extends SqlNode implements Identifier {
     public static List<String> toStar( List<String> names ) {
         return Lists.transform(
                 names,
-                s -> s.equals( "" )
+                s -> s.isEmpty()
                         ? "*"
                         : s.equals( "*" )
                                 ? "\"*\""
@@ -308,7 +308,7 @@ public class SqlIdentifier extends SqlNode implements Identifier {
         for ( String name : names ) {
             if ( i != 0 || names.size() != 3 || writer.getDialect().supportsColumnNamesWithSchema() ) {
                 writer.sep( "." );
-                if ( name.equals( "" ) ) {
+                if ( name.isEmpty() ) {
                     writer.print( "*" );
                 } else {
                     writer.identifier( name );
@@ -345,10 +345,9 @@ public class SqlIdentifier extends SqlNode implements Identifier {
 
     @Override
     public boolean equalsDeep( Node node, Litmus litmus ) {
-        if ( !(node instanceof SqlIdentifier) ) {
+        if ( !(node instanceof SqlIdentifier that) ) {
             return litmus.fail( "{} != {}", this, node );
         }
-        SqlIdentifier that = (SqlIdentifier) node;
         if ( this.names.size() != that.names.size() ) {
             return litmus.fail( "{} != {}", this, node );
         }
@@ -363,18 +362,13 @@ public class SqlIdentifier extends SqlNode implements Identifier {
 
     @Override
     public @Nullable String getEntity() {
-        return names.stream().collect( Collectors.joining( "." ) );
+        return String.join( ".", names );
     }
 
 
     @Override
     public <R> R accept( NodeVisitor<R> visitor ) {
         return visitor.visit( this );
-    }
-
-
-    public SqlCollation getCollation() {
-        return collation;
     }
 
 
@@ -390,7 +384,7 @@ public class SqlIdentifier extends SqlNode implements Identifier {
      */
     @Override
     public boolean isStar() {
-        return Util.last( names ).equals( "" );
+        return Util.last( names ).isEmpty();
     }
 
 
@@ -406,7 +400,7 @@ public class SqlIdentifier extends SqlNode implements Identifier {
     @Override
     public Monotonicity getMonotonicity( SqlValidatorScope scope ) {
         // for "star" column, whether it's static or dynamic return not_monotonic directly.
-        if ( Util.last( names ).equals( "" ) || DynamicRecordType.isDynamicStarColName( Util.last( names ) ) ) {
+        if ( Util.last( names ).isEmpty() || DynamicRecordType.isDynamicStarColName( Util.last( names ) ) ) {
             return Monotonicity.NOT_MONOTONIC;
         }
 

@@ -17,13 +17,9 @@
 package org.polypheny.db.backup.datainserter;
 
 import java.io.BufferedInputStream;
-import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.InputStreamReader;
-import java.util.List;
-import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.backup.BackupManager;
@@ -33,7 +29,6 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.QueryLanguage;
-import org.polypheny.db.processing.ImplementationContext;
 import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
 import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.transaction.Statement;
@@ -133,7 +128,16 @@ public class InsertEntriesTask implements Runnable{
                             query = String.format( "INSERT INTO %s.%s VALUES %s", namespaceName, entityName, relValues );
 
                             log.info( query );
-                            ExecutedContext executedQuery = LanguageManager.getINSTANCE().anyQuery( QueryContext.builder().language( QueryLanguage.from( "sql" ) ).query( query ).origin( "Backup Manager" ).transactionManager( transactionManager ).namespaceId( namespaceId ).build(), statement ).get( 0 );
+                            ExecutedContext executedQuery = LanguageManager.getINSTANCE()
+                                    .anyQuery(
+                                            QueryContext.builder()
+                                                    .language( QueryLanguage.from( "sql" ) )
+                                                    .query( query ).origin( "Backup Manager" )
+                                                    .transactionManager( transactionManager )
+                                                    .statement( statement )
+                                                    .namespaceId( namespaceId )
+                                                    .build()
+                                                    .addTransaction( transaction ) ).get( 0 );
                             batchCounter = 0;
                             relValues = "";
                         }
@@ -145,7 +149,16 @@ public class InsertEntriesTask implements Runnable{
                         query = String.format( "INSERT INTO %s.%s VALUES %s", namespaceName, entityName, relValues );
 
                         log.info( "rest: " + query );
-                        ExecutedContext executedQuery = LanguageManager.getINSTANCE().anyQuery( QueryContext.builder().language( QueryLanguage.from( "sql" ) ).query( query ).origin( "Backup Manager" ).transactionManager( transactionManager ).namespaceId( namespaceId ).build(), statement ).get( 0 );
+                        ExecutedContext executedQuery = LanguageManager.getINSTANCE()
+                                .anyQuery(
+                                        QueryContext.builder()
+                                                .language( QueryLanguage.from( "sql" ) )
+                                                .query( query )
+                                                .origin( "Backup Manager" )
+                                                .transactionManager( transactionManager )
+                                                .namespaceId( namespaceId )
+                                                .statement( statement )
+                                                .build().addTransaction( transaction ) ).get( 0 );
                        // ImplementationContext lol =  LanguageManager.getINSTANCE().anyPrepareQuery( QueryContext.builder().language( QueryLanguage.from( "sql" ) ).query( query ).origin( "Backup Manager" ).transactionManager( transactionManager ).namespaceId( namespaceId ).build(), statement ).get( 0 );
                         //lol.getStatement()
                         //statementTrue - values iifüege wie obe
@@ -178,7 +191,16 @@ public class InsertEntriesTask implements Runnable{
 
                             query = String.format( "db.%s.insertMany([%s])", entityName, docValues );
                             log.info( query );
-                            ExecutedContext executedQuery = LanguageManager.getINSTANCE().anyQuery( QueryContext.builder().language( QueryLanguage.from( "mql" ) ).query( query ).origin( "Backup Manager" ).transactionManager( transactionManager ).namespaceId( namespaceId ).build(), statement ).get( 0 );
+                            ExecutedContext executedQuery = LanguageManager.getINSTANCE()
+                                    .anyQuery(
+                                            QueryContext.builder()
+                                                    .language( QueryLanguage.from( "mql" ) )
+                                                    .query( query ).origin( "Backup Manager" )
+                                                    .transactionManager( transactionManager )
+                                                    .namespaceId( namespaceId )
+                                                    .statement( statement )
+                                                    .build()
+                                                    .addTransaction( transaction ) ).get( 0 );
                             batchCounter = 0;
                             docValues = "";
                             query = "";
@@ -192,7 +214,15 @@ public class InsertEntriesTask implements Runnable{
 
                         query = String.format( "db.%s.insertMany([%s])", entityName, docValues );
                         log.info( "rest: " + query );
-                        ExecutedContext executedQuery = LanguageManager.getINSTANCE().anyQuery( QueryContext.builder().language( QueryLanguage.from( "mql" ) ).query( query ).origin( "Backup Manager" ).transactionManager( transactionManager ).namespaceId( namespaceId ).build(), statement ).get( 0 );
+                        ExecutedContext executedQuery = LanguageManager.getINSTANCE()
+                                .anyQuery(
+                                        QueryContext.builder()
+                                                .language( QueryLanguage.from( "mql" ) )
+                                                .query( query ).origin( "Backup Manager" )
+                                                .transactionManager( transactionManager )
+                                                .namespaceId( namespaceId )
+                                                .statement( statement )
+                                                .build().addTransaction( transaction ) ).get( 0 );
                         batchCounter = 0;
                         docValues = "";
                         query = "";

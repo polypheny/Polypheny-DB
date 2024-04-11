@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,6 +41,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.List;
+import lombok.Setter;
 import org.apache.calcite.linq4j.function.Function1;
 import org.codehaus.commons.compiler.CompileException;
 import org.codehaus.janino.ClassBodyEvaluator;
@@ -49,6 +50,7 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.runtime.Hook;
 import org.polypheny.db.runtime.Utilities;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 
 
@@ -61,6 +63,7 @@ public class RexExecutable {
 
     private final Function1<DataContext, Object[]> compiledFunction;
     private final String code;
+    @Setter
     private DataContext dataContext;
 
 
@@ -78,18 +81,13 @@ public class RexExecutable {
             cbe.setImplementedInterfaces( new Class[]{ Function1.class, Serializable.class } );
             cbe.setParentClassLoader( RexExecutable.class.getClassLoader() );
             cbe.cook( new Scanner( null, new StringReader( code ) ) );
-            Class c = cbe.getClazz();
+            Class<?> c = cbe.getClazz();
             //noinspection unchecked
-            final Constructor<Function1<DataContext, Object[]>> constructor = c.getConstructor();
+            final Constructor<Function1<DataContext, Object[]>> constructor = (Constructor<Function1<DataContext, Object[]>>) c.getConstructor();
             return constructor.newInstance();
         } catch ( CompileException | IOException | InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e ) {
             throw new GenericRuntimeException( "While compiling " + reason, e );
         }
-    }
-
-
-    public void setDataContext( DataContext dataContext ) {
-        this.dataContext = dataContext;
     }
 
 
@@ -117,8 +115,8 @@ public class RexExecutable {
     }
 
 
-    public Object[] execute() {
-        return compiledFunction.apply( dataContext );
+    public PolyValue[] execute() {
+        return (PolyValue[]) compiledFunction.apply( dataContext );
     }
 
 

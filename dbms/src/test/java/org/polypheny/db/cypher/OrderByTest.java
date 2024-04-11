@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 
 package org.polypheny.db.cypher;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -80,15 +82,15 @@ public class OrderByTest extends CypherTestTemplate {
 
         GraphResult res = execute( "MATCH (n) RETURN n.name, n.age ORDER BY n.age ASC" );
 
-        assert containsRows( res, true, true,
+        assertTrue( containsRows( res, true, true,
                 Row.of( TestLiteral.from( "Kira" ), TestLiteral.from( 3 ) ),
-                Row.of( TestLiteral.from( "Max" ), TestLiteral.from( null ) ) );
+                Row.of( TestLiteral.from( "Max" ), TestLiteral.from( null ) ) ) );
 
         res = execute( "MATCH (n) RETURN n.name, n.age ORDER BY n.age DESC" );
 
-        assert containsRows( res, true, true,
+        assertTrue( containsRows( res, true, true,
                 Row.of( TestLiteral.from( "Max" ), TestLiteral.from( null ) ),
-                Row.of( TestLiteral.from( "Kira" ), TestLiteral.from( 3 ) ) );
+                Row.of( TestLiteral.from( "Kira" ), TestLiteral.from( 3 ) ) ) );
 
     }
 

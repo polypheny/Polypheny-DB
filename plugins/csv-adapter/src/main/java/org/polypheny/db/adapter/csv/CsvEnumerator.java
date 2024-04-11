@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,8 @@
 package org.polypheny.db.adapter.csv;
 
 
-import au.com.bytecode.opencsv.CSVReader;
+import com.opencsv.CSVReader;
+import com.opencsv.exceptions.CsvValidationException;
 import java.io.IOException;
 import java.io.Reader;
 import java.text.ParseException;
@@ -50,16 +51,16 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyBoolean;
-import org.polypheny.db.type.entity.PolyDate;
-import org.polypheny.db.type.entity.PolyDouble;
-import org.polypheny.db.type.entity.PolyFloat;
-import org.polypheny.db.type.entity.PolyInteger;
-import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyString;
-import org.polypheny.db.type.entity.PolyTime;
-import org.polypheny.db.type.entity.PolyTimestamp;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.numerical.PolyDouble;
+import org.polypheny.db.type.entity.numerical.PolyFloat;
+import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.numerical.PolyLong;
+import org.polypheny.db.type.entity.temporal.PolyDate;
+import org.polypheny.db.type.entity.temporal.PolyTime;
+import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 import org.polypheny.db.util.Source;
 
 
@@ -114,7 +115,7 @@ class CsvEnumerator implements Enumerator<PolyValue[]> {
                 this.reader = openCsv( source );
             }
             this.reader.readNext(); // skip header row
-        } catch ( IOException e ) {
+        } catch ( IOException | CsvValidationException e ) {
             throw new GenericRuntimeException( e );
         }
     }
@@ -182,7 +183,7 @@ class CsvEnumerator implements Enumerator<PolyValue[]> {
                     fieldTypes.add( fieldType );
                 }
             }
-        } catch ( IOException e ) {
+        } catch ( IOException | CsvValidationException e ) {
             // ignore
         }
         if ( names.isEmpty() ) {
@@ -240,7 +241,7 @@ class CsvEnumerator implements Enumerator<PolyValue[]> {
                 current = rowConverter.convertRow( strings );
                 return true;
             }
-        } catch ( IOException e ) {
+        } catch ( IOException | CsvValidationException e ) {
             throw new GenericRuntimeException( e );
         }
     }
@@ -417,4 +418,3 @@ class CsvEnumerator implements Enumerator<PolyValue[]> {
     }
 
 }
-

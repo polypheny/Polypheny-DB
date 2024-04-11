@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 
@@ -42,7 +43,8 @@ public class PolyphenyHomeDirManager {
     private File home;
     private final List<File> dirs = new ArrayList<>();
     private final List<File> deleteOnExit = new ArrayList<>();
-    private static PolyMode mode;
+    @Getter
+    private static RunMode mode;
 
 
     public static PolyphenyHomeDirManager getInstance() {
@@ -81,7 +83,7 @@ public class PolyphenyHomeDirManager {
     }
 
 
-    public static PolyphenyHomeDirManager setModeAndGetInstance( PolyMode mode ) {
+    public static PolyphenyHomeDirManager setModeAndGetInstance( RunMode mode ) {
         if ( PolyphenyHomeDirManager.mode != null ) {
             throw new RuntimeException( "Could not set the mode." );
         }
@@ -93,14 +95,11 @@ public class PolyphenyHomeDirManager {
     private String getPrefix() {
         VersionCollector collector = VersionCollector.INSTANCE;
 
-        switch ( mode ) {
-            case PRODUCTION:
-                return collector.version;
-            case BENCHMARK:
-                return String.format( "%s-%s", collector.version, collector.hash );
-            default:
-                return String.format( "%s-%s", collector.version, collector.branch );
-        }
+        return switch ( mode ) {
+            case PRODUCTION -> collector.getVersion();
+            case BENCHMARK -> String.format( "%s-%s", collector.getVersion(), collector.getHash() );
+            default -> String.format( "%s-%s", collector.getVersion(), collector.getHash() );
+        };
     }
 
 
@@ -253,6 +252,7 @@ public class PolyphenyHomeDirManager {
         return registerNewFolder( this.home, folder );
     }
 
+
     public File registerNewGlobalFolder( String testBackup ) {
         return registerNewFolder( this.root, testBackup );
     }
@@ -266,8 +266,5 @@ public class PolyphenyHomeDirManager {
     public File getRootPath() {
         return home;
     }
-
-
-
 
 }

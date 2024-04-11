@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.polypheny.db.cypher.CypherTestTemplate.execute;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
@@ -27,11 +28,19 @@ import org.polypheny.db.TestHelper;
 public class AllocCatalogTest {
 
     public static String name = "allocCatalogTest";
+    private TestHelper helper;
 
 
     @BeforeEach
     public void buildUp() {
-        TestHelper.getInstance();
+        helper = TestHelper.getInstance();
+    }
+
+
+    @AfterEach
+    public void tearDown() {
+        execute( format( "DROP DATABASE %s IF EXISTS", name ) );
+        helper.checkAllTrxClosed();
     }
 
 

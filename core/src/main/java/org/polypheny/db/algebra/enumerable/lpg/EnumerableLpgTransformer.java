@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ import org.polypheny.db.algebra.enumerable.EnumUtils;
 import org.polypheny.db.algebra.enumerable.EnumerableAlg;
 import org.polypheny.db.algebra.enumerable.EnumerableAlgImplementor;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.BuiltInMethod;
@@ -48,9 +48,9 @@ import org.polypheny.db.util.BuiltInMethod;
 public class EnumerableLpgTransformer extends LpgTransformer implements EnumerableAlg {
 
     /**
-     * Creates an <code>AbstractRelNode</code>.
+     * Creates an <code>AbstractAlgNode</code>.
      */
-    public EnumerableLpgTransformer( AlgOptCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, AlgDataType rowType, List<PolyType> operationOrder, Operation operation ) {
+    public EnumerableLpgTransformer( AlgCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, AlgDataType rowType, List<PolyType> operationOrder, Operation operation ) {
         super( cluster, traitSet, inputs, rowType, operationOrder, operation );
     }
 
@@ -70,7 +70,7 @@ public class EnumerableLpgTransformer extends LpgTransformer implements Enumerab
             inputs.add( implementor.visitChild( this, i, (EnumerableAlg) input, pref ) );
             i++;
         }
-        List<Expression> enumerables = inputs.stream().map( j -> attachLambdaEnumerable( j.block ) ).collect( Collectors.toList() );
+        List<Expression> enumerables = inputs.stream().map( j -> attachLambdaEnumerable( j.block() ) ).collect( Collectors.toList() );
 
         MethodCallExpression splitter = Expressions.call(
                 BuiltInMethod.SPLIT_GRAPH_MODIFY.method,
@@ -81,7 +81,7 @@ public class EnumerableLpgTransformer extends LpgTransformer implements Enumerab
 
         builder.add( Expressions.return_( null, builder.append( "splitter" + System.nanoTime(), splitter ) ) );
 
-        return implementor.result( inputs.get( 0 ).physType, builder.toBlock() );
+        return implementor.result( inputs.get( 0 ).physType(), builder.toBlock() );
     }
 
 

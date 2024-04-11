@@ -1,0 +1,46 @@
+name: Polypheny-DB Plugin Matrix CI
+
+on:
+    push:
+    pull_request:
+        types: [ opened, synchronize, reopened, ready_for_review ]
+
+jobs:
+    build:
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
+        runs-on: ${{ matrix.os }}
+        strategy:
+            fail-fast: false
+            matrix:
+                java: [ 17, 21 ]
+                os: [ macos-latest, ubuntu-latest, windows-latest ]
+        name: Java ${{ matrix.java }} @ ${{ matrix.os }}
+        steps:
+            -   name: Checkout
+                uses: actions/checkout@v4
+            -   name: Set up JDK
+                uses: actions/setup-java@v4
+                with:
+                    distribution: 'temurin'
+                    java-version: ${{ matrix.java }}
+            -   name: Set env variable
+                run: |
+                    echo "POLYPHENY_HOME=$GITHUB_WORKSPACE" >> $GITHUB_ENV
+            -   name: Assemble
+                uses: nick-fields/retry@v2
+                with:
+                    max_attempts: 1
+                    timeout_minutes: 60
+                    command: ./gradlew assemble
+            -   name: Build Plugins
+                uses: nick-fields/retry@v2
+                with:
+                    max_attempts: 1
+                    timeout_minutes: 60
+                    command: ./gradlew assemblePlugins
+            -   name: Execute tests
+                uses: nick-fields/retry@v2
+                with:
+                    max_attempts: 1
+                    timeout_minutes: 30
+                    command: ./gradlew -p plugins test

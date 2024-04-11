@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ import org.polypheny.db.catalog.catalogs.LogicalCatalog;
 import org.polypheny.db.catalog.catalogs.LogicalGraphCatalog;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.catalog.util.CatalogEvent;
 import org.polypheny.db.type.PolySerializable;
 
 @Value
@@ -69,8 +70,8 @@ public class GraphCatalog implements PolySerializable, LogicalGraphCatalog {
     PropertyChangeSupport listeners = new PropertyChangeSupport( this );
 
 
-    public void change() {
-        listeners.firePropertyChange( "change", null, null );
+    public void change( CatalogEvent event, Object oldValue, Object newValue ) {
+        listeners.firePropertyChange( event.name(), oldValue, newValue );
     }
 
 
@@ -88,13 +89,13 @@ public class GraphCatalog implements PolySerializable, LogicalGraphCatalog {
 
     @Override
     public void addGraphAlias( long graphId, String alias, boolean ifNotExists ) {
-        change();
+        change( CatalogEvent.LOGICAL_GRAPH_ENTITY_RENAMED, null, alias );
     }
 
 
     @Override
     public void removeGraphAlias( long graphId, String alias, boolean ifExists ) {
-        change();
+        change( CatalogEvent.LOGICAL_GRAPH_ENTITY_RENAMED, alias, null );
     }
 
 
@@ -102,7 +103,7 @@ public class GraphCatalog implements PolySerializable, LogicalGraphCatalog {
     public LogicalGraph addGraph( long id, String name, boolean modifiable ) {
         LogicalGraph graph = new LogicalGraph( id, name, modifiable, logicalNamespace.caseSensitive );
         graphs.put( id, graph );
-        change();
+        change( CatalogEvent.LOGICAL_GRAPH_ENTITY_CREATED, null, graph );
         return graph;
     }
 
@@ -110,7 +111,7 @@ public class GraphCatalog implements PolySerializable, LogicalGraphCatalog {
     @Override
     public void deleteGraph( long id ) {
         graphs.remove( id );
-        change();
+        change( CatalogEvent.LOGICAL_GRAPH_ENTITY_DROPPED, id, null );
     }
 
 }

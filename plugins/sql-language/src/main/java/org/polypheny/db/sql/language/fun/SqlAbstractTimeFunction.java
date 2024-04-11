@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,7 +60,7 @@ public class SqlAbstractTimeFunction extends SqlFunction {
         if ( opBinding.getOperandCount() == 1 ) {
             AlgDataType type = opBinding.getOperandType( 0 );
             if ( PolyTypeUtil.isNumeric( type ) ) {
-                precision = opBinding.getOperandLiteralValue( 0, PolyType.INTEGER ).asInteger().value;
+                precision = opBinding.getOperandLiteralValue( 0, PolyType.INTEGER ).asNumber().intValue();
             }
         }
         assert precision >= 0;

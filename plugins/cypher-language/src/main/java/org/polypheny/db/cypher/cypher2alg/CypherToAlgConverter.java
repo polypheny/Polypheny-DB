@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -73,7 +73,7 @@ import org.polypheny.db.cypher.pattern.CypherPattern;
 import org.polypheny.db.cypher.query.CypherSingleQuery;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
@@ -96,10 +96,10 @@ public class CypherToAlgConverter {
     private final AlgBuilder algBuilder;
     private final Statement statement;
     private final RexBuilder rexBuilder;
-    private final AlgOptCluster cluster;
+    private final AlgCluster cluster;
 
 
-    public CypherToAlgConverter( Statement statement, AlgBuilder builder, RexBuilder rexBuilder, AlgOptCluster cluster ) {
+    public CypherToAlgConverter( Statement statement, AlgBuilder builder, RexBuilder rexBuilder, AlgCluster cluster ) {
         this.snapshot = statement.getTransaction().getSnapshot();
         this.statement = statement;
         this.algBuilder = builder;
@@ -108,13 +108,13 @@ public class CypherToAlgConverter {
     }
 
 
-    public AlgRoot convert( CypherNode query, ParsedQueryContext parsedContext, AlgOptCluster cluster ) {
+    public AlgRoot convert( CypherNode query, ParsedQueryContext parsedContext, AlgCluster cluster ) {
         long namespaceId = parsedContext.getNamespaceId();
 
         LogicalEntity entity = getEntity( namespaceId, query );
 
         if ( query.isFullScan() ) {
-            // simple full graph scan
+            // simple full graph relScan
             return AlgRoot.of( buildFullScan( (LogicalGraph) entity ), Kind.SELECT );
         }
 
@@ -246,7 +246,7 @@ public class CypherToAlgConverter {
             List<String> missingNames = clause
                     .getSortFields()
                     .stream().filter( n -> !rowType.getFieldNames().contains( n ) )
-                    .collect( Collectors.toList() );
+                    .toList();
 
             if ( !missingNames.isEmpty() ) {
                 // hidden names are used for sort but are not yet present
@@ -339,18 +339,6 @@ public class CypherToAlgConverter {
         for ( CypherPattern pattern : clause.getPatterns() ) {
             convertPattern( pattern, context );
         }
-
-        /*AlgNode node = context.pop();
-        if ( !context.stack.isEmpty() ) {
-            // multiple patternValues, which need to be merged into one "graph"
-            List<AlgNode> nodes = new ArrayList<>();
-            nodes.add( node );
-            while ( !context.stack.isEmpty() ) {
-                nodes.add( context.pop() );
-            }
-            assert nodes.stream().allMatch( n -> n instanceof LogicalGraphValues );
-            node = LogicalGraphValues.merge( nodes.stream().map( n -> (LogicalGraphValues) n ).collect( Collectors.toList() ) );
-        }*/
         context.combineValues();
     }
 
@@ -403,7 +391,7 @@ public class CypherToAlgConverter {
 
     public static class CypherContext {
 
-        public final AlgOptCluster cluster;
+        public final AlgCluster cluster;
         public final AlgBuilder algBuilder;
         public final RexBuilder rexBuilder;
 
@@ -431,7 +419,7 @@ public class CypherToAlgConverter {
         private CypherContext(
                 CypherNode original,
                 LogicalEntity graph,
-                AlgOptCluster cluster,
+                AlgCluster cluster,
                 AlgBuilder algBuilder,
                 RexBuilder rexBuilder,
                 Snapshot snapshot ) {
@@ -468,7 +456,7 @@ public class CypherToAlgConverter {
             addDefaultScanIfNecessary();
             List<Pair<PolyString, RexNode>> matches = getMatches();
 
-            List<RexCall> calls = Pair.right( matches ).stream().map( r -> (RexCall) r ).collect( Collectors.toList() );
+            List<RexCall> calls = Pair.right( matches ).stream().map( r -> (RexCall) r ).toList();
 
             stack.add( new LogicalLpgMatch( cluster, cluster.traitSet(), stack.pop(), calls, Pair.left( matches ) ) );
             clearVariables();
@@ -662,7 +650,7 @@ public class CypherToAlgConverter {
                         cluster.traitSet(),
                         List.of(),
                         List.of(),
-                        ImmutableList.of( ImmutableList.copyOf( nameAndValues.stream().map( e -> (RexLiteral) e.getValue() ).collect( Collectors.toList() ) ) ),
+                        ImmutableList.of( ImmutableList.copyOf( nameAndValues.stream().map( e -> (RexLiteral) e.getValue() ).toList() ) ),
                         new AlgRecordType( fields ) );
             } else {
                 throw new UnsupportedOperationException();
@@ -707,7 +695,7 @@ public class CypherToAlgConverter {
                         cluster.traitSet(),
                         nodes,
                         nodeType,
-                        edges.stream().map( t -> Pair.of( t.left, t.right.edge ) ).collect( Collectors.toList() ),
+                        edges.stream().map( t -> Pair.of( t.left, t.right.edge ) ).toList(),
                         edgeType ) );
 
                 add( new LogicalLpgModify( cluster, cluster.traitSet(), graph, pop(), Modify.Operation.INSERT, null, null ) );
@@ -759,7 +747,7 @@ public class CypherToAlgConverter {
 
                 List<Pair<PolyString, RexNode>> nodesAndEdges = Stream.concat( newNodes.stream(), newEdges.stream() ).collect( Collectors.toList() );
 
-                AtomicLong id = new AtomicLong(); // todo dl maybe move into values
+                AtomicLong id = new AtomicLong();
                 List<PolyString> adjustedNames = Pair.left( nodesAndEdges ).stream()
                         .map( n -> Objects.requireNonNullElseGet( n.value, () -> "EXPR$" + id.getAndIncrement() ) )
                         .map( Object::toString )

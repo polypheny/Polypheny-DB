@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,6 +41,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
+import org.polypheny.db.schema.trait.ModelTrait;
+import org.polypheny.db.schema.trait.ModelTraitDef;
 import org.polypheny.db.util.Pair;
 
 
@@ -136,6 +138,9 @@ public final class AlgTraitSet extends AbstractList<AlgTrait<?>> {
             //noinspection unchecked
             return (T) getTrait( index );
         }
+        if ( traitDef == ModelTraitDef.INSTANCE ) {
+            return (T) ModelTrait.RELATIONAL;
+        }
 
         return null;
     }
@@ -167,7 +172,7 @@ public final class AlgTraitSet extends AbstractList<AlgTrait<?>> {
      * @return the old RelTrait at the index
      */
     public AlgTraitSet replace( int index, AlgTrait<?> trait ) {
-        assert traits[index].getTraitDef() == trait.getTraitDef() : "RelTrait has different RelTraitDef than replacement";
+        assert traits[index].getTraitDef() == trait.getTraitDef() : "AlgTrait has different RelTraitDef than replacement";
 
         AlgTrait<?> canonizedTrait = canonize( trait );
         if ( traits[index] == canonizedTrait ) {

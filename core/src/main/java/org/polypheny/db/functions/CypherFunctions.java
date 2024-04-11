@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -106,13 +106,14 @@ public class CypherFunctions {
     }
 
 
+
     /**
      * Transforms the relational normalized edges into {@link PolyEdge}s
      *
      * @param edge the normalized edges
      */
     @SuppressWarnings("unused")
-    public static Enumerable<PolyEdge[]> toEdge( Enumerable<?> edge ) {
+    public static Enumerable<PolyEdge[]> toEdge( Enumerable<PolyValue[]> edge ) {
         List<PolyEdge[]> edges = new ArrayList<>();
 
         PolyString oldId = null;
@@ -121,17 +122,16 @@ public class CypherFunctions {
         Set<PolyString> oldLabels = new HashSet<>();
         Map<PolyString, PolyValue> oldProps = new HashMap<>();
 
-        for ( Object value : edge ) {
-            Object[] o = (Object[]) value;
-            PolyString id = (PolyString) o[0];
-            PolyString label = (PolyString) o[1];
-            PolyString sourceId = (PolyString) o[2];
-            PolyString targetId = (PolyString) o[3];
+        for ( PolyValue[] value : edge ) {
+            PolyString id = value[0].asString();
+            PolyString label = value[1].asString();
+            PolyString sourceId = value[2].asString();
+            PolyString targetId = value[3].asString();
             // id is 4
-            PolyString key = (PolyString) o[5];
-            PolyString val = (PolyString) o[6];
+            PolyString key = value[5] == null ? PolyString.of( null ) : value[5].asString();
+            PolyString val = value[6] == null ? PolyString.of( null ) : value[6].asString();
 
-            if ( id != null && !id.isNull() && !id.equals( oldId ) ) {
+            if ( !id.isNull() && !id.equals( oldId ) ) {
                 if ( oldId != null && !oldId.isNull() ) {
                     edges.add( new PolyEdge[]{ new PolyEdge( oldId, new PolyDictionary( oldProps ), PolyList.of( oldLabels ), oldSourceId, oldTargetId, EdgeDirection.LEFT_TO_RIGHT, null ) } );
                 }
@@ -143,7 +143,7 @@ public class CypherFunctions {
             }
             oldLabels.add( label );
 
-            if ( key != null && !key.isNull() ) {
+            if ( !key.isNull() ) {
                 // id | key | value | source | target
                 // 13 | null| null | 12      | 10 ( no key value present )
                 oldProps.put( key, val );
@@ -164,22 +164,21 @@ public class CypherFunctions {
      * @param node the normalized nodes
      */
     @SuppressWarnings("unused")
-    public static Enumerable<PolyNode[]> toNode( Enumerable<?> node ) {
+    public static Enumerable<PolyNode[]> toNode( Enumerable<PolyValue[]> node ) {
         List<PolyNode[]> nodes = new ArrayList<>();
 
         PolyString oldId = null;
         Set<PolyString> oldLabels = new HashSet<>();
         Map<PolyString, PolyValue> oldProps = new HashMap<>();
 
-        for ( Object value : node ) {
-            Object[] o = (Object[]) value;
-            PolyString id = (PolyString) o[0];
-            PolyString label = (PolyString) o[1];
+        for ( PolyValue[] value : node ) {
+            PolyString id = value[0].asString();
+            PolyString label = value[1].asString();
             // id is 2
-            PolyString key = (PolyString) o[3];
-            PolyString val = (PolyString) o[4];
+            PolyString key = value[3] == null ? PolyString.of( null ) : value[3].asString();
+            PolyString val = value[4] == null ? PolyString.of( null ) : value[4].asString();
 
-            if ( id != null && !id.isNull() && !id.equals( oldId ) ) {
+            if ( !id.isNull() && !id.equals( oldId ) ) {
                 if ( oldId != null ) {
                     nodes.add( new PolyNode[]{ new PolyNode( oldId, new PolyDictionary( oldProps ), PolyList.of( oldLabels ), null ) } );
                 }
@@ -187,11 +186,11 @@ public class CypherFunctions {
                 oldLabels = new HashSet<>();
                 oldProps = new HashMap<>();
             }
-            if ( label != null && !label.isNull() && !label.value.equals( "$" ) ) {
+            if ( !label.isNull() && !label.value.equals( "$" ) ) {
                 // eventually no labels
                 oldLabels.add( label );
             }
-            if ( key != null && !key.isNull() ) {
+            if ( !key.isNull() ) {
                 // eventually no properties present
                 oldProps.put( key, val );
             }
@@ -304,6 +303,12 @@ public class CypherFunctions {
 
         if ( obj.isList() ) {
             return obj.asList();
+        } else if ( obj.isString() ) {
+            try {
+                return (PolyList<?>) PolyValue.fromJson( obj.asString().value );
+            } catch ( Exception ignored ) {
+                // ignore
+            }
         }
         return PolyList.of( obj );
     }
@@ -391,7 +396,7 @@ public class CypherFunctions {
      */
     @SuppressWarnings("unused")
     public static GraphPropertyHolder removeLabels( GraphPropertyHolder target, List<String> labels ) {
-        target.labels.removeAll( labels );
+        target.labels.removeAll( labels.stream().map( PolyString::of ).toList() );
         return target;
     }
 
@@ -405,7 +410,7 @@ public class CypherFunctions {
      */
     @SuppressWarnings("unused")
     public static GraphPropertyHolder removeProperty( GraphPropertyHolder target, String key ) {
-        target.properties.remove( key );
+        target.properties.remove( PolyString.of( key ) );
         return target;
     }
 

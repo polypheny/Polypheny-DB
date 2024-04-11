@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import org.polypheny.db.plugins.PolyPlugin;
 import org.polypheny.db.plugins.PolyPluginManager;
 import org.polypheny.db.webui.crud.LanguageCrud;
 
+@SuppressWarnings("unused")
 @Slf4j
 public class CqlLanguagePlugin extends PolyPlugin {
 
@@ -44,7 +45,15 @@ public class CqlLanguagePlugin extends PolyPlugin {
 
     @Override
     public void start() {
-        QueryLanguage language = new QueryLanguage( DataModel.RELATIONAL, NAME, List.of( NAME ), null, CqlProcessor::new, null, CqlQueryBuilder::splitter );
+        QueryLanguage language = new QueryLanguage(
+                DataModel.RELATIONAL,
+                NAME,
+                List.of( NAME ),
+                null,
+                CqlProcessor::new,
+                null,
+                LanguageManager::toQueryNodes,
+                c -> c );
         LanguageManager.getINSTANCE().addQueryLanguage( language );
         PolyPluginManager.AFTER_INIT.add( () -> LanguageCrud.addToResult( language, LanguageCrud::getRelResult ) );
     }

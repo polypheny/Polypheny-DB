@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ package org.polypheny.db.sql.language.ddl.altertable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
@@ -141,7 +140,7 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
                 table,
                 columns,
                 partitionGroupsList,
-                partitionGroupNamesList.stream().map( SqlIdentifier::toString ).collect( Collectors.toList() ),
+                partitionGroupNamesList.stream().map( SqlIdentifier::toString ).toList(),
                 storeInstance,
                 statement );
 

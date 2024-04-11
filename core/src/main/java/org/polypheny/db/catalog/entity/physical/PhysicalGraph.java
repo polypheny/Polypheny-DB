@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 package org.polypheny.db.catalog.entity.physical;
 
 import io.activej.serializer.annotations.Deserialize;
-import java.io.Serializable;
+import java.util.List;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.NonFinal;
@@ -25,6 +25,7 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.type.entity.PolyValue;
 
 @EqualsAndHashCode(callSuper = true)
 @Value
@@ -37,13 +38,13 @@ public class PhysicalGraph extends PhysicalEntity {
             @Deserialize("logicalId") long logicalId,
             @Deserialize("name") String name,
             @Deserialize("adapterId") long adapterId ) {
-        super( id, allocationId, logicalId, name, id, name, DataModel.GRAPH, adapterId ); // for graph both name and namespaceName are the same
+        super( id, allocationId, logicalId, name, id, name, List.of(), DataModel.GRAPH, adapterId ); // for graph both name and namespaceName are the same
     }
 
 
     @Override
-    public Serializable[] getParameterArray() {
-        return new Serializable[0];
+    public PolyValue[] getParameterArray() {
+        return new PolyValue[0];
     }
 
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 package org.polypheny.db.languages.mql.parser;
 
 import java.io.Reader;
-import java.io.StringReader;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -75,30 +74,6 @@ public class MqlParser implements Parser {
 
 
     /**
-     * Parses a SQL expression.
-     *
-     * @throws NodeParseException if there is a parse error
-     */
-    public MqlNode parseExpression() throws NodeParseException {
-        try {
-            MqlNode node = parser.parseMqlExpressionEof();
-            if ( node instanceof MqlCollectionStatement && limit != null ) {
-                ((MqlCollectionStatement) node).setLimit( limit );
-            }
-            return node;
-        } catch ( Throwable ex ) {
-            if ( ex instanceof PolyphenyDbContextException ) {
-                final String originalMql = parser.getOriginalMql();
-                if ( originalMql != null ) {
-                    ((PolyphenyDbContextException) ex).setOriginalStatement( originalMql );
-                }
-            }
-            throw parser.normalizeException( ex );
-        }
-    }
-
-
-    /**
      * Parses a <code>SELECT</code> statement.
      *
      * @throws NodeParseException if there is a parse error
@@ -123,15 +98,6 @@ public class MqlParser implements Parser {
 
 
     /**
-     * Parses a <code>SELECT</code> statement and reuses parser.
-     */
-    public MqlNode parseQuery( String query ) throws NodeParseException {
-        parser.ReInit( new StringReader( query ) );
-        return parseQuery();
-    }
-
-
-    /**
      * Parses an SQL statement.
      *
      * @return top-level SqlNode representing stmt
@@ -146,14 +112,6 @@ public class MqlParser implements Parser {
      */
     public static ConfigBuilder configBuilder() {
         return new ConfigBuilder();
-    }
-
-
-    /**
-     * Builder for a {@link MqlParserConfig} that starts with an existing {@code Config}.
-     */
-    public static ConfigBuilder configBuilder( MqlParserConfig mqlParserConfig ) {
-        return new ConfigBuilder().setConfig( mqlParserConfig );
     }
 
 
@@ -188,21 +146,6 @@ public class MqlParser implements Parser {
 
 
         /**
-         * Sets configuration identical to a given {@link MqlParserConfig}.
-         */
-        public ConfigBuilder setConfig( MqlParserConfig mqlParserConfig ) {
-            this.parserFactory = mqlParserConfig.parserFactory();
-            return this;
-        }
-
-
-        public ConfigBuilder setParserFactory( ParserFactory factory ) {
-            this.parserFactory = Objects.requireNonNull( factory );
-            return this;
-        }
-
-
-        /**
          * Builds a {@link MqlParserConfig}.
          */
         public MqlParserConfig build() {
@@ -216,22 +159,12 @@ public class MqlParser implements Parser {
      * Implementation of {@link MqlParserConfig}.
      * Called by builder; all values are in private final fields.
      */
-    private static class ConfigImpl implements MqlParserConfig {
-
-        private final ParserFactory parserFactory;
-
+    private record ConfigImpl(ParserFactory parserFactory) implements MqlParserConfig {
 
         private ConfigImpl( ParserFactory parserFactory ) {
             this.parserFactory = Objects.requireNonNull( parserFactory );
         }
 
-
-        @Override
-        public ParserFactory parserFactory() {
-            return parserFactory;
-        }
-
     }
 
 }
-

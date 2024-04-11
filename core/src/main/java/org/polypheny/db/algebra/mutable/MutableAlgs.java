@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,10 +50,10 @@ import org.polypheny.db.algebra.core.Intersect;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.Minus;
 import org.polypheny.db.algebra.core.Project;
+import org.polypheny.db.algebra.core.RelTableFunctionScan;
 import org.polypheny.db.algebra.core.Sample;
 import org.polypheny.db.algebra.core.SemiJoin;
 import org.polypheny.db.algebra.core.Sort;
-import org.polypheny.db.algebra.core.TableFunctionScan;
 import org.polypheny.db.algebra.core.Uncollect;
 import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.core.Values;
@@ -61,11 +61,11 @@ import org.polypheny.db.algebra.core.Window;
 import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalCalc;
-import org.polypheny.db.algebra.logical.relational.LogicalCorrelate;
-import org.polypheny.db.algebra.logical.relational.LogicalExchange;
+import org.polypheny.db.algebra.logical.relational.LogicalRelCorrelate;
+import org.polypheny.db.algebra.logical.relational.LogicalRelExchange;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
-import org.polypheny.db.algebra.logical.relational.LogicalSort;
-import org.polypheny.db.algebra.logical.relational.LogicalTableFunctionScan;
+import org.polypheny.db.algebra.logical.relational.LogicalRelSort;
+import org.polypheny.db.algebra.logical.relational.LogicalRelTableFunctionScan;
 import org.polypheny.db.algebra.logical.relational.LogicalWindow;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptUtil;
@@ -225,13 +225,13 @@ public abstract class MutableAlgs {
                 return algBuilder.build();
             case SORT:
                 final MutableSort sort = (MutableSort) node;
-                return LogicalSort.create( fromMutable( sort.input, algBuilder ), sort.collation, sort.offset, sort.fetch );
+                return LogicalRelSort.create( fromMutable( sort.input, algBuilder ), sort.collation, sort.offset, sort.fetch );
             case CALC:
                 final MutableCalc calc = (MutableCalc) node;
                 return LogicalCalc.create( fromMutable( calc.input, algBuilder ), calc.program );
             case EXCHANGE:
                 final MutableExchange exchange = (MutableExchange) node;
-                return LogicalExchange.create( fromMutable( exchange.getInput(), algBuilder ), exchange.distribution );
+                return LogicalRelExchange.create( fromMutable( exchange.getInput(), algBuilder ), exchange.distribution );
             case COLLECT: {
                 final MutableCollect collect = (MutableCollect) node;
                 final AlgNode child = fromMutable( collect.getInput(), algBuilder );
@@ -261,7 +261,7 @@ public abstract class MutableAlgs {
                 return new Sample( sample.cluster, fromMutable( sample.getInput(), algBuilder ), sample.params );
             case TABLE_FUNCTION_SCAN:
                 final MutableTableFunctionScan tableFunctionScan = (MutableTableFunctionScan) node;
-                return LogicalTableFunctionScan.create(
+                return LogicalRelTableFunctionScan.create(
                         tableFunctionScan.cluster,
                         fromMutables( tableFunctionScan.getInputs(), algBuilder ),
                         tableFunctionScan.rexCall,
@@ -282,7 +282,7 @@ public abstract class MutableAlgs {
                 return algBuilder.build();
             case CORRELATE:
                 final MutableCorrelate correlate = (MutableCorrelate) node;
-                return LogicalCorrelate.create(
+                return LogicalRelCorrelate.create(
                         fromMutable( correlate.getLeft(), algBuilder ),
                         fromMutable( correlate.getRight(), algBuilder ),
                         correlate.correlationId,
@@ -390,16 +390,16 @@ public abstract class MutableAlgs {
             final MutableAlg input = toMutable( sample.getInput() );
             return MutableSample.of( input, sample.getSamplingParameters() );
         }
-        if ( alg instanceof TableFunctionScan ) {
-            final TableFunctionScan tableFunctionScan = (TableFunctionScan) alg;
-            final List<MutableAlg> inputs = toMutables( tableFunctionScan.getInputs() );
+        if ( alg instanceof RelTableFunctionScan ) {
+            final RelTableFunctionScan relTableFunctionScan = (RelTableFunctionScan) alg;
+            final List<MutableAlg> inputs = toMutables( relTableFunctionScan.getInputs() );
             return MutableTableFunctionScan.of(
-                    tableFunctionScan.getCluster(),
-                    tableFunctionScan.getTupleType(),
+                    relTableFunctionScan.getCluster(),
+                    relTableFunctionScan.getTupleType(),
                     inputs,
-                    tableFunctionScan.getCall(),
-                    tableFunctionScan.getElementType(),
-                    tableFunctionScan.getColumnMappings() );
+                    relTableFunctionScan.getCall(),
+                    relTableFunctionScan.getElementType(),
+                    relTableFunctionScan.getColumnMappings() );
         }
         // It is necessary that SemiJoin is placed in front of Join here, since SemiJoin is a sub-class of Join.
         if ( alg instanceof SemiJoin ) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import javax.annotation.Nullable;
 import lombok.Value;
@@ -120,12 +119,12 @@ public class ResultIterator implements AutoCloseable {
         if ( transformer == null ) {
             return (List<D>) StreamSupport
                     .stream( iterable.spliterator(), false )
-                    .collect( Collectors.toList() );
+                    .toList();
         }
         return StreamSupport
                 .stream( iterable.spliterator(), false )
                 .map( transformer )
-                .collect( Collectors.toList() );
+                .toList();
     }
 
 

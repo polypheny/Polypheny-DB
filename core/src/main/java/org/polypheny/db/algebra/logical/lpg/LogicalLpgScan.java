@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package org.polypheny.db.algebra.logical.lpg;
 
-import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Set;
 import org.polypheny.db.algebra.AlgNode;
@@ -24,14 +23,14 @@ import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.lpg.LpgScan;
 import org.polypheny.db.algebra.core.relational.RelationalTransformable;
-import org.polypheny.db.algebra.logical.relational.LogicalJoin;
+import org.polypheny.db.algebra.logical.relational.LogicalRelJoin;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
@@ -43,7 +42,7 @@ public class LogicalLpgScan extends LpgScan<Entity> implements RelationalTransfo
     /**
      * Subclass of {@link LpgScan} not targeted at any particular engine or calling convention.
      */
-    public LogicalLpgScan( AlgOptCluster cluster, AlgTraitSet traitSet, Entity graph, AlgDataType rowType ) {
+    public LogicalLpgScan( AlgCluster cluster, AlgTraitSet traitSet, Entity graph, AlgDataType rowType ) {
         super( cluster, traitSet.replace( ModelTrait.GRAPH ), graph );
         this.rowType = rowType;
     }
@@ -63,7 +62,7 @@ public class LogicalLpgScan extends LpgScan<Entity> implements RelationalTransfo
                 builder.makeInputRef( nodes.getTupleType().getFields().get( 0 ).getType(), 0 ),
                 builder.makeInputRef( nodesProperty.getTupleType().getFields().get( 0 ).getType(), nodes.getTupleType().getFields().size() ) );
 
-        LogicalJoin nodeJoin = new LogicalJoin( getCluster(), out, nodes, nodesProperty, nodeCondition, Set.of(), JoinAlgType.LEFT, false, ImmutableList.of() );
+        LogicalRelJoin nodeJoin = new LogicalRelJoin( getCluster(), out, nodes, nodesProperty, nodeCondition, Set.of(), JoinAlgType.LEFT, false );
 
         if ( entities.size() == 2 ) {
             return List.of( nodeJoin );
@@ -77,7 +76,7 @@ public class LogicalLpgScan extends LpgScan<Entity> implements RelationalTransfo
                 builder.makeInputRef( edges.getTupleType().getFields().get( 0 ).getType(), 0 ),
                 builder.makeInputRef( edgesProperty.getTupleType().getFields().get( 0 ).getType(), edges.getTupleType().getFields().size() ) );
 
-        LogicalJoin edgeJoin = new LogicalJoin( getCluster(), out, edges, edgesProperty, edgeCondition, Set.of(), JoinAlgType.LEFT, false, ImmutableList.of() );
+        LogicalRelJoin edgeJoin = new LogicalRelJoin( getCluster(), out, edges, edgesProperty, edgeCondition, Set.of(), JoinAlgType.LEFT, false );
 
         return List.of( nodeJoin, edgeJoin );
     }

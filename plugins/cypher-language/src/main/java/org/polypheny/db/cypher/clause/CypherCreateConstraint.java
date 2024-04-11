@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.polypheny.db.cypher.clause;
 
 import java.util.List;
 import lombok.Getter;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.cypher.ConstraintType;
 import org.polypheny.db.cypher.ConstraintVersion;
 import org.polypheny.db.cypher.CypherSimpleEither;
@@ -42,7 +43,7 @@ public class CypherCreateConstraint extends CypherSchemaCommand implements Execu
     private final CypherVariable variable;
     private final StringPos parserPosStringPos;
     private final List<CypherProperty> properties;
-    private final CypherSimpleEither options;
+    private final CypherSimpleEither<?, ?> options;
     private final boolean containsOn;
     private final ConstraintVersion constraintVersion;
 
@@ -56,7 +57,7 @@ public class CypherCreateConstraint extends CypherSchemaCommand implements Execu
             CypherVariable variable,
             StringPos parserPosStringPos,
             List<CypherProperty> properties,
-            CypherSimpleEither options,
+            CypherSimpleEither<?, ?> options,
             boolean containsOn,
             ConstraintVersion constraintVersion ) {
         super( pos );
@@ -75,11 +76,7 @@ public class CypherCreateConstraint extends CypherSchemaCommand implements Execu
 
     @Override
     public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
-        if ( constraintType != ConstraintType.UNIQUE ) {
-            throw new UnsupportedOperationException( "Only unique constraints are supported at the moment." );
-        }
-
-        //DdlManager.getInstance().createConstraint(  );
+        throw new GenericRuntimeException( "Constraints are not supported yet for graph data." );
     }
 
 }

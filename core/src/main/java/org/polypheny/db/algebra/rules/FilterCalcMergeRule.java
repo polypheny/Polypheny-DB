@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,7 +37,7 @@ package org.polypheny.db.algebra.rules;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.logical.relational.LogicalCalc;
-import org.polypheny.db.algebra.logical.relational.LogicalFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.rex.RexBuilder;
@@ -47,7 +47,7 @@ import org.polypheny.db.tools.AlgBuilderFactory;
 
 
 /**
- * Planner rule that merges a {@link LogicalFilter} and a {@link LogicalCalc}. The result is a {@link LogicalCalc}
+ * Planner rule that merges a {@link LogicalRelFilter} and a {@link LogicalCalc}. The result is a {@link LogicalCalc}
  * whose filter condition is the logical AND of the two.
  *
  * @see FilterMergeRule
@@ -69,7 +69,7 @@ public class FilterCalcMergeRule extends AlgOptRule {
 
     @Override
     public void onMatch( AlgOptRuleCall call ) {
-        final LogicalFilter filter = call.alg( 0 );
+        final LogicalRelFilter filter = call.alg( 0 );
         final LogicalCalc calc = call.alg( 1 );
 
         // Don't merge a filter onto a calc which contains windowed aggregates.

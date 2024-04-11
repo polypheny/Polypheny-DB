@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,10 @@ package org.polypheny.db.sql.language.ddl.altertable;
 
 import java.util.List;
 import java.util.Objects;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.EntityType;
@@ -40,15 +43,20 @@ import org.polypheny.db.util.ImmutableNullableList;
 /**
  * Parse tree for {@code ALTER TABLE name ADD COLUMN columnPhysical AS columnLogical} statement.
  */
+@EqualsAndHashCode(callSuper = true)
 @Slf4j
+@Value
 public class SqlAlterSourceTableAddColumn extends SqlAlterTable {
 
-    private final SqlIdentifier table;
-    private final SqlIdentifier columnPhysical;
-    private final SqlIdentifier columnLogical;
-    private final SqlNode defaultValue; // Can be null
-    private final SqlIdentifier beforeColumnName; // Can be null
-    private final SqlIdentifier afterColumnName; // Can be null
+    SqlIdentifier table;
+    SqlIdentifier columnPhysical;
+    SqlIdentifier columnLogical;
+    @Nullable
+    SqlNode defaultValue;
+    @Nullable
+    SqlIdentifier beforeColumnName;
+    @Nullable
+    SqlIdentifier afterColumnName;
 
 
     public SqlAlterSourceTableAddColumn(
@@ -56,9 +64,9 @@ public class SqlAlterSourceTableAddColumn extends SqlAlterTable {
             SqlIdentifier table,
             SqlIdentifier columnPhysical,
             SqlIdentifier columnLogical,
-            SqlNode defaultValue,
-            SqlIdentifier beforeColumnName,
-            SqlIdentifier afterColumnName ) {
+            @Nullable SqlNode defaultValue,
+            @Nullable SqlIdentifier beforeColumnName,
+            @Nullable SqlIdentifier afterColumnName ) {
         super( pos );
         this.table = Objects.requireNonNull( table );
         this.columnPhysical = Objects.requireNonNull( columnPhysical );

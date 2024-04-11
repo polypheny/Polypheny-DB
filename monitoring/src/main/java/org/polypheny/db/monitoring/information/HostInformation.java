@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,12 +17,15 @@
 package org.polypheny.db.monitoring.information;
 
 
+import java.net.Inet6Address;
+import java.net.NetworkInterface;
+import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import lombok.Getter;
-import org.apache.commons.lang3.SystemUtils;
 import org.polypheny.db.information.InformationGraph;
 import org.polypheny.db.information.InformationGraph.GraphData;
 import org.polypheny.db.information.InformationGraph.GraphType;
@@ -35,7 +38,6 @@ import oshi.SystemInfo;
 import oshi.hardware.GlobalMemory;
 import oshi.hardware.HWDiskStore;
 import oshi.hardware.HardwareAbstractionLayer;
-import oshi.hardware.NetworkIF;
 import oshi.software.os.OSProcess;
 import oshi.software.os.OperatingSystem;
 import oshi.software.os.OperatingSystem.ProcessSorting;
@@ -105,22 +107,36 @@ public class HostInformation {
         im.addGroup( storageGroup );
 
         InformationTable storageInformation = new InformationTable( storageGroup, Arrays.asList( "Name", "Model", "Size" ) );
-        for ( HWDiskStore diskStore : hardwareAbstractionLayer.getDiskStores() ) {
-            storageInformation.addRow( diskStore.getName(), diskStore.getModel(), humanReadableByteCount( diskStore.getSize(), false ) );
+        try {
+            for ( HWDiskStore diskStore : hardwareAbstractionLayer.getDiskStores() ) {
+                storageInformation.addRow( diskStore.getName(), diskStore.getModel(), humanReadableByteCount( diskStore.getSize(), false ) );
+            }
+            im.registerInformation( storageInformation );
+        } catch ( UnsatisfiedLinkError ignore ) {
+            // This happens on Linux systems without udev library
         }
-        im.registerInformation( storageInformation );
 
         //
         // Network
         InformationGroup networkGroup = new InformationGroup( page, "Network Interfaces" ).setOrder( 6 );
         im.addGroup( networkGroup );
 
-        InformationTable networkInformation = new InformationTable( networkGroup, Arrays.asList( "Name", "IPv4" ) );
-        for ( NetworkIF networkIF : hardwareAbstractionLayer.getNetworkIFs() ) {
-            networkInformation.addRow( networkIF.getDisplayName(), String.join( ".", networkIF.getIPv4addr() ) );
-        }
-        im.registerInformation( networkInformation );
+        InformationTable networkInformation2 = new InformationTable( networkGroup, Arrays.asList( "Name", "IPv4" ) );
 
+        try {
+            NetworkInterface.networkInterfaces()
+                    .forEach( networkInterface ->
+                            networkInformation2.addRow(
+                                    networkInterface.getDisplayName(),
+                                    networkInterface.getInterfaceAddresses().stream()
+                                            .filter( i -> !i.getAddress().isLinkLocalAddress() && !(i.getAddress() instanceof Inet6Address) )
+                                            .map( i -> i.getAddress().getHostAddress() )
+                                            .collect( Collectors.joining( ", " ) )
+                            )
+                    );
+        } catch ( SocketException ignore ) {
+        }
+        im.registerInformation( networkInformation2 );
 
 /*
         //
@@ -143,25 +159,16 @@ public class HostInformation {
 */
 
         //Memory Information
-        InformationGroup memoryGroup = new InformationGroup( page, "Memory" ).setOrder( 5 );
+        final double div = Math.pow( 1024, 3 );
+        InformationGroup memoryGroup = new InformationGroup( page, "Memory in GiB" ).setOrder( 5 );
         im.addGroup( memoryGroup );
-
-        final int base;
-        if ( SystemUtils.IS_OS_MAC ) {
-            base = 1000;
-        } else {
-            base = 1024;
-        }
-        final double div = Math.pow( base, 3 );
-
         GlobalMemory mem = hardwareAbstractionLayer.getMemory();
         final String[] labels = new String[]{ "used", "free" };
         InformationGraph memoryGraph = new InformationGraph( memoryGroup, GraphType.PIE, labels );
         this.usedFreeProvider = () -> Pair.of( mem.getTotal() - mem.getAvailable(), mem.getAvailable() );
-        memoryGroup.setRefreshFunction( () -> {
-            Pair<Long, Long> usedFree = usedFreeProvider.get();
-            memoryGraph.updateGraph( labels, new GraphData<>( "memory", new Double[]{ usedFree.left / div, usedFree.right / div } ) );
-        } );
+        memoryGroup.setRefreshFunction( () ->
+                memoryGraph.updateGraph( labels, new GraphData<>( "memory", new Double[]{ (mem.getTotal() - mem.getAvailable()) / div, mem.getAvailable() / div } ) )
+        );
         im.registerInformation( memoryGraph );
 
         //

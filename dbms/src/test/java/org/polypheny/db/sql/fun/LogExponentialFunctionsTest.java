@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,16 +27,12 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
-import org.polypheny.db.excluded.FileExcluded;
-import org.polypheny.db.excluded.MonetdbExcluded;
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Slf4j
 @Tag("adapter")
-@Tag("monetdb")
 public class LogExponentialFunctionsTest {
 
 
@@ -237,7 +233,6 @@ public class LogExponentialFunctionsTest {
 
 
     @Test
-    @Tag("fileExcluded")
     public void sqrtTest() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();

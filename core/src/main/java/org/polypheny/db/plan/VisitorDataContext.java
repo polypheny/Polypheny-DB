@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,10 +41,9 @@ import org.apache.calcite.linq4j.QueryProvider;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.logical.relational.LogicalFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
-import org.polypheny.db.nodes.Function;
 import org.polypheny.db.nodes.Function.FunctionType;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.rex.RexCall;
@@ -52,6 +51,7 @@ import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 
@@ -146,7 +146,7 @@ public class VisitorDataContext implements DataContext {
     }
 
 
-    public static DataContext of( AlgNode targetRel, LogicalFilter queryRel ) {
+    public static DataContext of( AlgNode targetRel, LogicalRelFilter queryRel ) {
         return of( targetRel.getTupleType(), queryRel.getCondition() );
     }
 
@@ -170,9 +170,9 @@ public class VisitorDataContext implements DataContext {
 
     public static DataContext of( AlgDataType rowType, List<Pair<RexIndexRef, RexNode>> usageList ) {
         final int size = rowType.getFields().size();
-        final Object[] values = new Object[size];
+        final PolyValue[] values = new PolyValue[size];
         for ( Pair<RexIndexRef, RexNode> elem : usageList ) {
-            Pair<Integer, ?> value = getValue( elem.getKey(), elem.getValue() );
+            Pair<Integer, PolyValue> value = getValue( elem.getKey(), elem.getValue() );
             if ( value == null ) {
                 log.warn( "{} is not handled for {} for checking implication", elem.getKey(), elem.getValue() );
                 return null;
@@ -184,7 +184,7 @@ public class VisitorDataContext implements DataContext {
     }
 
 
-    public static Pair<Integer, ?> getValue( RexNode inputRef, RexNode literal ) {
+    public static Pair<Integer, PolyValue> getValue( RexNode inputRef, RexNode literal ) {
         inputRef = removeCast( inputRef );
         literal = removeCast( literal );
 
@@ -199,37 +199,15 @@ public class VisitorDataContext implements DataContext {
             }
 
             switch ( type.getPolyType() ) {
-                case INTEGER:
-                    return Pair.of( index, rexLiteral.getValue() );
-                case DOUBLE:
-                    return Pair.of( index, rexLiteral.getValue() );
-                case REAL:
-                    return Pair.of( index, rexLiteral.getValue() );
-                case BIGINT:
-                    return Pair.of( index, rexLiteral.getValue() );
-                case SMALLINT:
-                    return Pair.of( index, rexLiteral.getValue() );
-                case TINYINT:
-                    return Pair.of( index, rexLiteral.getValue() );
-                case DECIMAL:
-                    return Pair.of( index, rexLiteral.getValue() );
-                case DATE:
-                case TIME:
-                    return Pair.of( index, rexLiteral.getValue() );
-                case TIMESTAMP:
-                    return Pair.of( index, rexLiteral.getValue() );
-                case CHAR:
-                    return Pair.of( index, rexLiteral.getValue() );
-                case VARCHAR:
+                case INTEGER, DOUBLE, REAL, BIGINT, SMALLINT, TINYINT, DECIMAL, DATE, TIME, TIMESTAMP, CHAR, VARCHAR:
                     return Pair.of( index, rexLiteral.getValue() );
                 default:
                     // TODO: Support few more supported cases
                     log.warn( "{} for value of class {} is being handled in default way", type.getPolyType(), rexLiteral.getValue().getClass() );
                     if ( rexLiteral.getValue().isString() ) {
-                        return Pair.of( index, rexLiteral.getValue().asString().value );
-                    } else {
-                        return Pair.of( index, rexLiteral.getValue() );
+                        return Pair.of( index, PolyString.of( rexLiteral.getValue().asString().value ) );
                     }
+                    return Pair.of( index, rexLiteral.getValue() );
             }
         }
 
@@ -239,10 +217,9 @@ public class VisitorDataContext implements DataContext {
 
 
     private static RexNode removeCast( RexNode inputRef ) {
-        if ( inputRef instanceof RexCall ) {
-            final RexCall castedRef = (RexCall) inputRef;
+        if ( inputRef instanceof RexCall castedRef ) {
             final Operator operator = castedRef.getOperator();
-            if ( ((Function) operator).getFunctionType() == FunctionType.CAST ) {
+            if ( operator.getFunctionType() == FunctionType.CAST ) {
                 inputRef = castedRef.getOperands().get( 0 );
             }
         }

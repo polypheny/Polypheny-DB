@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -190,7 +190,7 @@ public class MongoDynamic {
                                 .stream()
                                 .flatMap( d -> d.getValue().stream() )
                                 .filter( w -> w.key.equals( doc.getFirstKey() ) )
-                                .collect( Collectors.toList() ) ) );
+                                .toList() ) );
     }
 
 
@@ -309,7 +309,7 @@ public class MongoDynamic {
             Function<Document, ? extends WriteModel<Document>> constructor ) {
         return parameterValues.stream()
                 .map( value -> constructor.apply( BsonUtil.asDocument( insert( value ) ) ) )
-                .collect( Collectors.toList() );
+                .toList();
     }
 
 
@@ -355,16 +355,7 @@ public class MongoDynamic {
      * Helper class which holds replace information for a BsonDocument, which has one or multiple dynamic children
      * and defines how the child can be replaced.
      */
-    static class ArrayWrapper implements Wrapper {
-
-        final int index;
-        final BsonArray array;
-
-
-        ArrayWrapper( int index, BsonArray array ) {
-            this.index = index;
-            this.array = array;
-        }
+    record ArrayWrapper(int index, BsonArray array) implements Wrapper {
 
 
         @Override
@@ -375,19 +366,7 @@ public class MongoDynamic {
     }
 
 
-    static class KeyWrapper implements Wrapper {
-
-        final int index;
-        final BsonDocument document;
-
-        final List<DocWrapper> children;
-
-
-        KeyWrapper( int index, BsonDocument document, List<DocWrapper> children ) {
-            this.index = index;
-            this.document = document;
-            this.children = children;
-        }
+    record KeyWrapper(int index, BsonDocument document, List<DocWrapper> children) implements Wrapper {
 
 
         @Override

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,16 +32,16 @@ import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 
 
 /**
- * Relational expression representing a scan of a Google Sheet.
+ * Relational expression representing a relScan of a Google Sheet.
  *
- * Like any table scan, it serves as a leaf node of a query tree.
+ * Like any table relScan, it serves as a leaf node of a query tree.
  */
 public class GoogleSheetTableScanProject extends RelScan<GoogleSheetTable> implements EnumerableAlg {
 
@@ -49,7 +49,7 @@ public class GoogleSheetTableScanProject extends RelScan<GoogleSheetTable> imple
     final int[] fields;
 
 
-    protected GoogleSheetTableScanProject( AlgOptCluster cluster, GoogleSheetTable table, GoogleSheetTable googleSheetTable, int[] fields ) {
+    protected GoogleSheetTableScanProject( AlgCluster cluster, GoogleSheetTable table, GoogleSheetTable googleSheetTable, int[] fields ) {
         super( cluster, cluster.traitSetOf( EnumerableConvention.INSTANCE ), table );
         this.googleSheetTable = googleSheetTable;
         this.fields = fields;
@@ -73,7 +73,7 @@ public class GoogleSheetTableScanProject extends RelScan<GoogleSheetTable> imple
 
     @Override
     public AlgDataType deriveRowType() {
-        final List<AlgDataTypeField> fieldList = entity.getRowType().getFields();
+        final List<AlgDataTypeField> fieldList = entity.getTupleType().getFields();
         final AlgDataTypeFactory.Builder builder = getCluster().getTypeFactory().builder();
         for ( int field : fields ) {
             builder.add( fieldList.get( field ) );
@@ -83,13 +83,13 @@ public class GoogleSheetTableScanProject extends RelScan<GoogleSheetTable> imple
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
-        return super.computeSelfCost( planner, mq ).multiplyBy( ((double) fields.length + 2D) / ((double) entity.getRowType().getFieldCount() + 2D) );
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
+        return super.computeSelfCost( planner, mq ).multiplyBy( ((double) fields.length + 2D) / ((double) entity.getTupleType().getFieldCount() + 2D) );
     }
 
 
     @Override
-    public void register( AlgOptPlanner planner ) {
+    public void register( AlgPlanner planner ) {
         planner.addRule( GoogleSheetProjectTableScanRule.INSTANCE );
     }
 

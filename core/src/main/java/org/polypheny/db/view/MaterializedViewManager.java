@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,6 +44,8 @@ public abstract class MaterializedViewManager {
     public boolean isCreatingMaterialized = false;
     public boolean isUpdatingMaterialized = false;
 
+    public static final String materializedPk = "mat_id";
+
 
     public static MaterializedViewManager setAndGetInstance( MaterializedViewManager transaction ) {
         if ( INSTANCE != null ) {
@@ -62,7 +64,7 @@ public abstract class MaterializedViewManager {
     }
 
 
-    public abstract void deleteMaterializedViewFromInfo( Long tableId );
+    public abstract void deleteMaterializedViewFromInfo( long tableId );
 
     public abstract void addData(
             Transaction transaction,
@@ -70,23 +72,23 @@ public abstract class MaterializedViewManager {
             @NonNull AlgRoot algRoot,
             @NonNull LogicalMaterializedView materializedView );
 
-    public abstract void notifyModifiedTables( Transaction transaction, Collection<Long> ids );
+    public abstract void notifyModifiedEntities( Transaction transaction, Collection<Long> ids );
 
     public abstract void updateData( Transaction transaction, long viewId );
 
     public abstract void updateCommittedXid( PolyXid xid );
 
-    public abstract void updateMaterializedTime( Long materializedId );
+    public abstract void updateMaterializedTime( long materializedId );
 
-    public abstract void addMaterializedInfo( Long materializedId, MaterializedCriteria matViewCriteria );
+    public abstract void addMaterializedInfo( long materializedId, MaterializedCriteria matViewCriteria );
 
 
     /**
-     * to track updates on tables for materialized views with update freshness
+     * to track updates on entities for materialized views with update freshness
      */
-    public static class TableUpdateVisitor extends AlgShuttleImpl {
+    @Getter
+    public static class EntityUpdateVisitor extends AlgShuttleImpl {
 
-        @Getter
         private final List<Long> ids = new ArrayList<>();
 
 

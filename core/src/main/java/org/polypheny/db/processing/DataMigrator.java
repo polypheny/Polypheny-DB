@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 package org.polypheny.db.processing;
 
 import java.util.List;
-import java.util.Map;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.catalog.entity.LogicalAdapter;
 import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
@@ -31,6 +30,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.partition.properties.PartitionProperty;
+import org.polypheny.db.routing.ColumnDistribution;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 
@@ -42,39 +42,21 @@ public interface DataMigrator {
             LogicalAdapter store,
             LogicalTable source,
             List<LogicalColumn> columns,
+            AllocationEntity target );
+
+    void copyData(
+            Transaction transaction,
+            LogicalAdapter store,
+            LogicalTable source,
+            List<LogicalColumn> columns,
             AllocationPlacement target );
 
     /**
-     * Currently used to transfer data if partitioned table is about to be merged.
-     * For Table Partitioning use {@link #copyAllocationData(Transaction, LogicalAdapter, List, PartitionProperty, List, LogicalTable)}  } instead
-     *
-     * @param transaction Transactional scope
-     * @param store Target Store where data should be migrated to
-     * @param sourceTable Source Table from where data is queried
-     * @param targetTable Source Table from where data is queried
-     * @param columns Necessary columns on target
-     * @param placementDistribution Pre-computed mapping of partitions and the necessary column placements
-     * @param targetPartitionIds Target Partitions where data should be inserted
-     */
-    void copySelectiveData(
-            Transaction transaction,
-            LogicalAdapter store,
-            LogicalTable sourceTable,
-            LogicalTable targetTable,
-            List<LogicalColumn> columns,
-            Map<Long, List<AllocationColumn>> placementDistribution,
-            List<Long> targetPartitionIds );
-
-    /**
-     * Currently used to to transfer data if unpartitioned is about to be partitioned.
-     * For Table Merge use {@link #copySelectiveData(Transaction, LogicalAdapter, LogicalTable, LogicalTable, List, Map, List)}   } instead
+     * Currently used to transfer data if unpartitioned is about to be partitioned.
      *
      * @param transaction Transactional scope
      * @param store Target Store where data should be migrated to
      * @param sourceTables Source Table from where data is queried
-     * @param targetProperty
-     * @param targetTables
-     * @param table
      */
     void copyAllocationData(
             Transaction transaction,
@@ -89,16 +71,16 @@ public interface DataMigrator {
     //is used within copyData
     void executeQuery(
             List<AllocationColumn> columns,
-            AlgRoot sourceRel,
+            AlgRoot sourceAlg,
             Statement sourceStatement,
             Statement targetStatement,
-            AlgRoot targetRel,
+            AlgRoot targetAlg,
             boolean isMaterializedView,
             boolean doesSubstituteOrderBy );
 
     AlgRoot buildDeleteStatement( Statement statement, List<AllocationColumn> to, AllocationEntity allocation );
 
-    AlgRoot getSourceIterator( Statement statement, LogicalTable table, Map<Long, List<AllocationColumn>> placementDistribution );
+    AlgRoot getSourceIterator( Statement statement, ColumnDistribution columnDistribution );
 
 
     void copyGraphData( AllocationGraph to, LogicalGraph from, Transaction transaction );

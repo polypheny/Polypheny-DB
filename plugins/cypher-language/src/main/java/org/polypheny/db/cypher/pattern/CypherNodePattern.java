@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,7 +47,7 @@ public class CypherNodePattern extends CypherPattern {
         super( pos );
         this.variable = variable;
         this.labels = PolyList.copyOf( labels.stream().map( StringPos::getImage ).map( PolyString::of ).collect( Collectors.toList() ) );
-        this.positions = labels.stream().map( StringPos::getPos ).collect( Collectors.toList() );
+        this.positions = labels.stream().map( StringPos::getPos ).toList();
         this.properties = properties;
         this.predicate = predicate;
     }

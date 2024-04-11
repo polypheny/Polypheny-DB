@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.TimeZone;
 import java.util.stream.Collectors;
-import org.apache.calcite.avatica.util.TimeUnit;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.FunctionCategory;
@@ -46,7 +45,7 @@ import org.polypheny.db.nodes.IntervalQualifier;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.nodes.OperatorImpl;
 import org.polypheny.db.nodes.validate.Validator;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.schema.AggregateFunction;
 import org.polypheny.db.schema.Function;
@@ -90,6 +89,7 @@ import org.polypheny.db.type.inference.ReturnTypes;
 import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.Optionality;
 import org.polypheny.db.util.Util;
+import org.polypheny.db.util.temporal.TimeUnit;
 import org.slf4j.Logger;
 
 public class SqlTypeUtil {
@@ -110,7 +110,7 @@ public class SqlTypeUtil {
 
 
     /**
-     * Converts an instance of RelDataType to an instance of SqlDataTypeSpec.
+     * Converts an instance of AlgDataType to an instance of SqlDataTypeSpec.
      *
      * @param type type descriptor
      * @return corresponding parse representation
@@ -231,7 +231,7 @@ public class SqlTypeUtil {
             QueryLanguage language,
             Validator validator,
             Snapshot snapshot,
-            AlgOptCluster cluster,
+            AlgCluster cluster,
             RexConvertletTable convertletTable,
             Config config ) {
         if ( language == QueryLanguage.from( "sql" ) ) {
@@ -245,7 +245,7 @@ public class SqlTypeUtil {
     private SqlToAlgConverter getSqlToRelConverter(
             SqlValidator validator,
             Snapshot snapshot,
-            AlgOptCluster cluster,
+            AlgCluster cluster,
             SqlRexConvertletTable convertletTable,
             Config config ) {
         return new SqlToAlgConverter( validator, snapshot, cluster, convertletTable, config );

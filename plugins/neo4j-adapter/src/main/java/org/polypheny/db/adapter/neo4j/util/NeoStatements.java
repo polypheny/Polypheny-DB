@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,12 +25,14 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import lombok.Getter;
 import org.polypheny.db.adapter.neo4j.util.NeoStatements.ElementStatement.ElementType;
+import org.polypheny.db.catalog.entity.physical.PhysicalField;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.graph.GraphObject;
 import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.type.entity.graph.PolyEdge;
@@ -212,6 +214,7 @@ public interface NeoStatements {
         return new CollectionStatement( "properties", identifier );
     }
 
+
     class NodeStatement extends ElementStatement {
 
         private final PolyString identifier;
@@ -223,7 +226,7 @@ public interface NeoStatements {
 
 
         protected NodeStatement( PolyString identifier, LabelsStatement labels, ListStatement<?> properties ) {
-            this.identifier = identifier == null ? PolyString.of( "" ) : identifier;
+            this.identifier = identifier == null || identifier.isNull() ? PolyString.of( "" ) : identifier;
             this.labels = labels;
             this.properties = properties;
         }
@@ -282,7 +285,7 @@ public interface NeoStatements {
 
 
         protected EdgeStatement( @Nullable PolyString identifier, PolyString range, LabelsStatement labelsStatement, ListStatement<PropertyStatement> properties, EdgeDirection direction ) {
-            this.identifier = identifier == null ? PolyString.of( "" ) : identifier;
+            this.identifier = identifier == null || identifier.isNull() ? PolyString.of( "" ) : identifier;
             assert labelsStatement.labels.size() <= 1 : "Edges only allow one label.";
             this.label = labelsStatement;
             this.properties = properties;
@@ -387,8 +390,8 @@ public interface NeoStatements {
         List<ElementStatement> elements = new ArrayList<>();
         for ( GraphObject object : path.getPath() ) {
             elements.add( i % 2 == 0
-                    ? node_( (PolyNode) object, mappingLabel, addId )
-                    : edge_( (PolyEdge) object, addId ) );
+                    ? node_( object.asNode(), mappingLabel, addId )
+                    : edge_( object.asEdge(), addId ) );
             i++;
         }
 
@@ -427,6 +430,14 @@ public interface NeoStatements {
         return new PropertyStatement( PolyString.of( key ), value );
     }
 
+    static List<PropertyStatement> identityProperties_( List<? extends PhysicalField> fields ) {
+        List<PropertyStatement> props = new ArrayList<>();
+        for ( PhysicalField field : fields ) {
+            props.add( property_( PolyString.of( field.name ), identifier_( field.logicalName ) ) );
+        }
+        return props;
+    }
+
     static List<PropertyStatement> properties_( PolyDictionary properties ) {
         List<PropertyStatement> props = new ArrayList<>();
         for ( Entry<PolyString, PolyValue> entry : properties.entrySet() ) {
@@ -435,14 +446,18 @@ public interface NeoStatements {
         return props;
     }
 
-    static NeoStatement _literalOrString( Object value ) {
-        if ( value instanceof String ) {
+    static NeoStatement _literalOrString( PolyValue value ) {
+        if ( value.isString() ) {
             return string_( value );
-        } else if ( value instanceof List ) {
-            return literal_( String.format( "[%s]", ((List<Object>) value).stream().map( value1 -> _literalOrString( value1 ).build() ).collect( Collectors.joining( ", " ) ) ) );
+        } else if ( value.isList() ) {
+            return literal_( PolyString.of( String.format( "[%s]", value.asList().stream().map( value1 -> _literalOrString( (PolyValue) value1 ).build() ).collect( Collectors.joining( ", " ) ) ) ) );
         } else {
             return literal_( value );
         }
+    }
+
+    static NeoStatement identifier_( String identifier ) {
+        return new LiteralStatement( identifier );
     }
 
     class LabelsStatement extends NeoStatement {
@@ -518,12 +533,12 @@ public interface NeoStatements {
 
     }
 
-    static LiteralStatement literal_( Object value ) {
+    static LiteralStatement literal_( PolyValue value ) {
         return new LiteralStatement( value == null ? null : value.toString() );
     }
 
-    static LiteralStatement string_( Object value ) {
-        return new LiteralStatement( value == null ? null : "'" + value + "'" );
+    static LiteralStatement string_( PolyValue value ) {
+        return new LiteralStatement( value == null || value.isNull() ? null : "'" + value + "'" );
     }
 
     static LiteralStatement literal_( RexLiteral literal ) {
@@ -531,10 +546,10 @@ public interface NeoStatements {
         if ( PolyTypeFamily.CHARACTER.contains( literal.getType() ) ) {
             prePostFix = "\"";
         }
-        return literal_( String.format( "%s%s%s",
+        return literal_( PolyString.of( String.format( "%s%s%s",
                 prePostFix,
                 NeoUtil.rexAsString( literal, null, false ),
-                prePostFix ) );
+                prePostFix ) ) );
 
     }
 
@@ -756,7 +771,7 @@ public interface NeoStatements {
 
     }
 
-    static LimitStatement limit_( int limit ) {
+    static LimitStatement limit_( PolyNumber limit ) {
         return new LimitStatement( literal_( limit ) );
     }
 
@@ -768,7 +783,7 @@ public interface NeoStatements {
 
     }
 
-    static SkipStatement skip_( int offset ) {
+    static SkipStatement skip_( PolyNumber offset ) {
         return new SkipStatement( literal_( offset ) );
     }
 

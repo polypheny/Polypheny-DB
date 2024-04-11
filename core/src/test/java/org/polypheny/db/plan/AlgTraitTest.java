@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,10 +34,11 @@
 package org.polypheny.db.plan;
 
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.function.Supplier;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
@@ -53,13 +54,13 @@ public class AlgTraitTest {
 
 
     private void assertCanonical( String message, Supplier<List<AlgCollation>> collation ) {
-        AlgTrait trait1 = AlgCompositeTrait.of( COLLATION, collation.get() );
-        AlgTrait trait2 = AlgCompositeTrait.of( COLLATION, collation.get() );
+        AlgTrait<?> trait1 = AlgCompositeTrait.of( COLLATION, collation.get() );
+        AlgTrait<?> trait2 = AlgCompositeTrait.of( COLLATION, collation.get() );
 
-        Assertions.assertEquals(
-                "RelCompositeTrait.of should return the same instance for " + message,
+        assertEquals(
                 trait1 + " @" + Integer.toHexString( System.identityHashCode( trait1 ) ),
-                trait2 + " @" + Integer.toHexString( System.identityHashCode( trait2 ) ) );
+                trait2 + " @" + Integer.toHexString( System.identityHashCode( trait2 ) ),
+                "AlgCompositeTrait.of should return the same instance for " + message );
     }
 
 

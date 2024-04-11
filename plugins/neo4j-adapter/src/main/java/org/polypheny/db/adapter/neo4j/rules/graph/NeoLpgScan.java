@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,11 +20,9 @@ import org.polypheny.db.adapter.neo4j.NeoGraph;
 import org.polypheny.db.adapter.neo4j.NeoGraphImplementor;
 import org.polypheny.db.adapter.neo4j.rules.NeoGraphAlg;
 import org.polypheny.db.algebra.core.lpg.LpgScan;
-import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.schema.trait.ModelTrait;
-import org.polypheny.db.type.PolyType;
 
 public class NeoLpgScan extends LpgScan<NeoGraph> implements NeoGraphAlg {
 
@@ -35,7 +33,7 @@ public class NeoLpgScan extends LpgScan<NeoGraph> implements NeoGraphAlg {
      * @param cluster Cluster this expression belongs to
      * @param traitSet Traits active for this node, including {@link ModelTrait#GRAPH}
      */
-    public NeoLpgScan( AlgOptCluster cluster, AlgTraitSet traitSet, NeoGraph graph ) {
+    public NeoLpgScan( AlgCluster cluster, AlgTraitSet traitSet, NeoGraph graph ) {
         super( cluster, traitSet, graph );
     }
 
@@ -44,13 +42,8 @@ public class NeoLpgScan extends LpgScan<NeoGraph> implements NeoGraphAlg {
     public void implement( NeoGraphImplementor implementor ) {
         implementor.setGraph( entity );
 
-        if ( rowType.getFields().size() == 1 ) {
-            AlgDataTypeField field = rowType.getFields().get( 0 );
-            if ( field.getType().getPolyType() == PolyType.GRAPH ) {
-                implementor.setAll( true );
-            }
-        }
-
+        implementor.setAll( true );
     }
+
 
 }

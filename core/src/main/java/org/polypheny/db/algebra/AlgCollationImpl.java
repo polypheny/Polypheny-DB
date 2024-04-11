@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,7 +41,7 @@ import java.util.Iterator;
 import javax.annotation.Nonnull;
 import lombok.Getter;
 import org.polypheny.db.plan.AlgMultipleTrait;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTrait;
 import org.polypheny.db.runtime.Utilities;
 import org.polypheny.db.util.Util;
@@ -50,9 +50,9 @@ import org.polypheny.db.util.Util;
 /**
  * Simple implementation of {@link AlgCollation}.
  */
+@Getter
 public class AlgCollationImpl implements AlgCollation {
 
-    @Getter
     private final ImmutableList<AlgFieldCollation> fieldCollations;
 
 
@@ -77,8 +77,7 @@ public class AlgCollationImpl implements AlgCollation {
         if ( this == obj ) {
             return true;
         }
-        if ( obj instanceof AlgCollationImpl ) {
-            AlgCollationImpl that = (AlgCollationImpl) obj;
+        if ( obj instanceof AlgCollationImpl that ) {
             return this.fieldCollations.equals( that.fieldCollations );
         }
         return false;
@@ -110,7 +109,7 @@ public class AlgCollationImpl implements AlgCollation {
 
 
     @Override
-    public void register( AlgOptPlanner planner ) {
+    public void register( AlgPlanner planner ) {
     }
 
 

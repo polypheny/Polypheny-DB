@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,25 +18,26 @@ package org.polypheny.db.sql;
 
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.logical.relational.LogicalJoin;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelJoin;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgOptUtil.Logic;
@@ -47,6 +48,7 @@ import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexTransformer;
+import org.polypheny.db.schemas.HrSnapshot;
 import org.polypheny.db.sql.language.SqlToAlgTestBase;
 import org.polypheny.db.type.PolyType;
 
@@ -54,7 +56,7 @@ import org.polypheny.db.type.PolyType;
 /**
  * Tests transformations on rex nodes.
  */
-public class RexTransformerTest {
+public class RexTransformerTest extends SqlLanguageDependent {
 
     RexBuilder rexBuilder = null;
     RexNode x;
@@ -62,45 +64,45 @@ public class RexTransformerTest {
     RexNode z;
     RexNode trueRex;
     RexNode falseRex;
-    AlgDataType boolRelDataType;
+    AlgDataType boolAlgDataType;
     AlgDataTypeFactory typeFactory;
 
 
     /**
-     * Converts a SQL string to a relational expression using mock schema.
+     * Converts a SQL string to an algebraic expression using mock schema.
      */
     private static AlgNode toAlg( String sql ) {
         final SqlToAlgTestBase test = new SqlToAlgTestBase() {
         };
-        return test.createTester().convertSqlToAlg( sql ).alg;
+        return test.createTester().convertSqlToAlg( sql, new HrSnapshot() ).alg;
     }
 
 
-    @Before
+    @BeforeEach
     public void setUp() {
         typeFactory = new JavaTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
         rexBuilder = new RexBuilder( typeFactory );
-        boolRelDataType = typeFactory.createPolyType( PolyType.BOOLEAN );
+        boolAlgDataType = typeFactory.createPolyType( PolyType.BOOLEAN );
 
         x = new RexIndexRef(
                 0,
-                typeFactory.createTypeWithNullability( boolRelDataType, true ) );
+                typeFactory.createTypeWithNullability( boolAlgDataType, true ) );
         y = new RexIndexRef(
                 1,
-                typeFactory.createTypeWithNullability( boolRelDataType, true ) );
+                typeFactory.createTypeWithNullability( boolAlgDataType, true ) );
         z = new RexIndexRef(
                 2,
-                typeFactory.createTypeWithNullability( boolRelDataType, true ) );
+                typeFactory.createTypeWithNullability( boolAlgDataType, true ) );
         trueRex = rexBuilder.makeLiteral( true );
         falseRex = rexBuilder.makeLiteral( false );
     }
 
 
-    @After
+    @AfterEach
     public void testDown() {
         typeFactory = null;
         rexBuilder = null;
-        boolRelDataType = null;
+        boolAlgDataType = null;
         x = y = z = trueRex = falseRex = null;
     }
 
@@ -286,7 +288,7 @@ public class RexTransformerTest {
 
     @Test
     public void testSimpleIdentifier() {
-        RexNode node = rexBuilder.makeInputRef( boolRelDataType, 0 );
+        RexNode node = rexBuilder.makeInputRef( boolAlgDataType, 0 );
         check( Boolean.TRUE, node, "=(IS TRUE($0), true)" );
     }
 
@@ -348,14 +350,15 @@ public class RexTransformerTest {
      */
     @Test
     public void testSplitJoinCondition() {
-        final String sql = "select * \n"
-                + "from emp a \n"
-                + "INNER JOIN dept b \n"
-                + "ON CAST(a.empno AS int) <> b.deptno";
+        final String sql = """
+                select *\s
+                from emp a\s
+                INNER JOIN dept b\s
+                ON CAST(a.empno AS int) <> b.deptno""";
 
         final AlgNode algNode = toAlg( sql );
-        final LogicalProject project = (LogicalProject) algNode;
-        final LogicalJoin join = (LogicalJoin) project.getInput( 0 );
+        final LogicalRelProject project = (LogicalRelProject) algNode;
+        final LogicalRelJoin join = (LogicalRelJoin) project.getInput( 0 );
         final List<RexNode> leftJoinKeys = new ArrayList<>();
         final List<RexNode> rightJoinKeys = new ArrayList<>();
         final ArrayList<AlgDataTypeField> sysFieldList = new ArrayList<>();
@@ -369,9 +372,12 @@ public class RexTransformerTest {
                 null,
                 null );
 
-        assertThat( remaining.toString(), is( "<>(CAST($0):INTEGER NOT NULL, $9)" ) );
+        assertThat( remaining.toString(), is( "<>($0, $4)" ) );
         assertThat( leftJoinKeys.isEmpty(), is( true ) );
         assertThat( rightJoinKeys.isEmpty(), is( true ) );
+
+        // reset mock
+        Catalog.getInstance().updateSnapshot();
     }
 
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,7 +40,7 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterImpl;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.runtime.ArrayBindable;
@@ -52,7 +52,7 @@ import org.polypheny.db.type.entity.PolyValue;
  */
 public class InterpretableConverter extends ConverterImpl implements ArrayBindable {
 
-    protected InterpretableConverter( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input ) {
+    protected InterpretableConverter( AlgCluster cluster, AlgTraitSet traits, AlgNode input ) {
         super( cluster, ConventionTraitDef.INSTANCE, traits, input );
     }
 

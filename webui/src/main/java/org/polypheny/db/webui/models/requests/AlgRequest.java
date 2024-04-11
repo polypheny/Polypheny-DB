@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.polypheny.db.webui.models.requests;
 
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.jackson.Jacksonized;
 import org.polypheny.db.webui.models.UIAlgNode;
@@ -26,17 +27,26 @@ import org.polypheny.db.webui.models.UIAlgNode;
 @SuperBuilder
 public class AlgRequest extends UIRequest {
 
+    @JsonProperty
     public UIAlgNode topNode;
+    @JsonProperty
     public boolean useCache;
     /**
      * TRUE if information about the query execution should be added to the Query Analyzer (InformationManager)
      */
+    @JsonProperty
     public boolean analyze;
+    @JsonProperty
     public boolean createView;
+    @JsonProperty
     public String viewName;
+    @JsonProperty
     public String store;
+    @JsonProperty
     public String freshness;
+    @JsonProperty
     public String interval;
+    @JsonProperty
     public String timeUnit;
 
 }

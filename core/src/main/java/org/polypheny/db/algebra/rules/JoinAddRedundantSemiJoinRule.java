@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,7 +40,7 @@ import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.JoinInfo;
 import org.polypheny.db.algebra.core.SemiJoin;
-import org.polypheny.db.algebra.logical.relational.LogicalJoin;
+import org.polypheny.db.algebra.logical.relational.LogicalRelJoin;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.tools.AlgBuilderFactory;
@@ -51,11 +51,11 @@ import org.polypheny.db.tools.AlgBuilderFactory;
  *
  * LogicalJoin(X, Y) &rarr; LogicalJoin(SemiJoin(X, Y), Y)
  *
- * The constructor is parameterized to allow any sub-class of {@link org.polypheny.db.algebra.core.Join}, not just {@link LogicalJoin}.
+ * The constructor is parameterized to allow any sub-class of {@link org.polypheny.db.algebra.core.Join}, not just {@link LogicalRelJoin}.
  */
 public class JoinAddRedundantSemiJoinRule extends AlgOptRule {
 
-    public static final JoinAddRedundantSemiJoinRule INSTANCE = new JoinAddRedundantSemiJoinRule( LogicalJoin.class, AlgFactories.LOGICAL_BUILDER );
+    public static final JoinAddRedundantSemiJoinRule INSTANCE = new JoinAddRedundantSemiJoinRule( LogicalRelJoin.class, AlgFactories.LOGICAL_BUILDER );
 
 
     /**
@@ -68,40 +68,40 @@ public class JoinAddRedundantSemiJoinRule extends AlgOptRule {
 
     @Override
     public void onMatch( AlgOptRuleCall call ) {
-        Join origJoinRel = call.alg( 0 );
-        if ( origJoinRel.isSemiJoinDone() ) {
+        Join origJoinAlg = call.alg( 0 );
+        if ( origJoinAlg.isSemiJoinDone() ) {
             return;
         }
 
         // can't process outer joins using semijoins
-        if ( origJoinRel.getJoinType() != JoinAlgType.INNER ) {
+        if ( origJoinAlg.getJoinType() != JoinAlgType.INNER ) {
             return;
         }
 
         // determine if we have a valid join condition
-        final JoinInfo joinInfo = origJoinRel.analyzeCondition();
-        if ( joinInfo.leftKeys.size() == 0 ) {
+        final JoinInfo joinInfo = origJoinAlg.analyzeCondition();
+        if ( joinInfo.leftKeys.isEmpty() ) {
             return;
         }
 
         AlgNode semiJoin =
                 SemiJoin.create(
-                        origJoinRel.getLeft(),
-                        origJoinRel.getRight(),
-                        origJoinRel.getCondition(),
+                        origJoinAlg.getLeft(),
+                        origJoinAlg.getRight(),
+                        origJoinAlg.getCondition(),
                         joinInfo.leftKeys,
                         joinInfo.rightKeys );
 
-        AlgNode newJoinRel =
-                origJoinRel.copy(
-                        origJoinRel.getTraitSet(),
-                        origJoinRel.getCondition(),
+        AlgNode newJoinAlg =
+                origJoinAlg.copy(
+                        origJoinAlg.getTraitSet(),
+                        origJoinAlg.getCondition(),
                         semiJoin,
-                        origJoinRel.getRight(),
+                        origJoinAlg.getRight(),
                         JoinAlgType.INNER,
                         true );
 
-        call.transformTo( newJoinRel );
+        call.transformTo( newJoinAlg );
     }
 
 }

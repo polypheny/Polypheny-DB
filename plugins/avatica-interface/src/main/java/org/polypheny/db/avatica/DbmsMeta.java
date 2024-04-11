@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,6 @@ package org.polypheny.db.avatica;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import java.io.Serializable;
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.sql.Connection;
@@ -45,8 +43,8 @@ import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
+import javax.annotation.Nonnull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaParameter;
 import org.apache.calcite.avatica.AvaticaSeverity;
@@ -69,7 +67,6 @@ import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.commons.lang3.NotImplementedException;
-import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
@@ -82,16 +79,16 @@ import org.polypheny.db.catalog.entity.PolyObject;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn.PrimitiveCatalogColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalForeignKey;
-import org.polypheny.db.catalog.entity.logical.LogicalForeignKey.LogicalForeignKeyColumn;
-import org.polypheny.db.catalog.entity.logical.LogicalForeignKey.LogicalForeignKeyColumn.PrimitiveCatalogForeignKeyColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalForeignKey.LogicalForeignKeyField;
+import org.polypheny.db.catalog.entity.logical.LogicalForeignKey.LogicalForeignKeyField.PrimitiveCatalogForeignKeyColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalIndex;
-import org.polypheny.db.catalog.entity.logical.LogicalIndex.LogicalIndexColumn;
-import org.polypheny.db.catalog.entity.logical.LogicalIndex.LogicalIndexColumn.PrimitiveCatalogIndexColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalIndex.LogicalIndexField;
+import org.polypheny.db.catalog.entity.logical.LogicalIndex.LogicalIndexField.PrimitiveCatalogIndexColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace.PrimitiveCatalogSchema;
 import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey;
-import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey.LogicalPrimaryKeyColumn;
-import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey.LogicalPrimaryKeyColumn.PrimitiveCatalogPrimaryKeyColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey.LogicalPrimaryKeyField;
+import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey.LogicalPrimaryKeyField.PrimitiveCatalogPrimaryKeyColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.logical.LogicalTable.PrimitiveCatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -99,6 +96,7 @@ import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.EntityType.PrimitiveTableType;
 import org.polypheny.db.catalog.logistic.Pattern;
+import org.polypheny.db.functions.TemporalFunctions;
 import org.polypheny.db.iface.AuthenticationException;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.information.InformationGroup;
@@ -108,6 +106,7 @@ import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.Node;
+import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.routing.ExecutionTimeMonitor;
@@ -115,20 +114,20 @@ import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.entity.PolyBigDecimal;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
-import org.polypheny.db.type.entity.PolyDate;
-import org.polypheny.db.type.entity.PolyDouble;
-import org.polypheny.db.type.entity.PolyFloat;
-import org.polypheny.db.type.entity.PolyInteger;
 import org.polypheny.db.type.entity.PolyList;
-import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyString;
-import org.polypheny.db.type.entity.PolyTime;
-import org.polypheny.db.type.entity.PolyTimestamp;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
+import org.polypheny.db.type.entity.numerical.PolyDouble;
+import org.polypheny.db.type.entity.numerical.PolyFloat;
+import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.numerical.PolyLong;
+import org.polypheny.db.type.entity.temporal.PolyDate;
+import org.polypheny.db.type.entity.temporal.PolyTime;
+import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 import org.polypheny.db.util.LimitIterator;
 import org.polypheny.db.util.Pair;
 
@@ -136,17 +135,11 @@ import org.polypheny.db.util.Pair;
 @Slf4j
 public class DbmsMeta implements ProtobufMeta {
 
-    /**
-     * Special value for {@code Statement#getLargeMaxRows()} that means fetch an unlimited number of rows in a single batch.
-     *
-     * Any other negative value will return an unlimited number of rows but will do it in the default batch size, namely 100.
-     */
-    public static final int UNLIMITED_COUNT = -2;
-
     public static final boolean SEND_FIRST_FRAME_WITH_RESPONSE = false;
+    public static final JavaTypeFactoryImpl TYPE_FACTORY = new JavaTypeFactoryImpl();
 
     private final ConcurrentMap<String, PolyConnectionHandle> openConnections = new ConcurrentHashMap<>();
-    private final ConcurrentMap<String, PolyStatementHandle> openStatements = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, PolyStatementHandle<Object>> openStatements = new ConcurrentHashMap<>();
 
     final Calendar calendar = Unsafe.localCalendar();
     private final Catalog catalog = Catalog.getInstance();
@@ -200,7 +193,6 @@ public class DbmsMeta implements ProtobufMeta {
             final StatementHandle statementHandle,
             Map<String, Object> internalParameters,
             List<ColumnMetaData> columns,
-            CursorFactory cursorFactory,
             final Iterable<PolyValue[]> firstFrame ) {
         final PolySignature signature =
                 new PolySignature(
@@ -209,8 +201,7 @@ public class DbmsMeta implements ProtobufMeta {
                         internalParameters,
                         null,
                         columns,
-                        cursorFactory,
-                        null,
+                        CursorFactory.LIST,
                         ImmutableList.of(),
                         -1,
                         null,
@@ -223,36 +214,33 @@ public class DbmsMeta implements ProtobufMeta {
                     }
                 };
         // changed with th branch
-        return MetaResultSet.create( ch.id, statementHandle.id, true, signature, Meta.Frame.create( 0, false, StreamSupport.stream( firstFrame.spliterator(), false ).collect( Collectors.toList() ) ) );
+        List<Object> list = StreamSupport.stream( firstFrame.spliterator(), false ).map( vs -> (Object) Arrays.stream( vs ).map( v -> v == null ? null : v.toJava() ).toArray( Object[]::new ) ).toList();
+        return MetaResultSet.create( ch.id, statementHandle.id, true, signature, Meta.Frame.create( 0, false, list ) );
     }
 
 
-    private <E> MetaResultSet createMetaResultSet( final ConnectionHandle ch, final StatementHandle statementHandle, Enumerable<E> enumerable, Class<?> clazz, String... names ) {
+    private MetaResultSet createMetaResultSet( final ConnectionHandle ch, final StatementHandle statementHandle, Enumerable<PolyValue[]> enumerable, Class<?> clazz, String... names ) {
         final List<ColumnMetaData> columns = new ArrayList<>();
-        final List<Field> fields = new ArrayList<>();
-        //final List<String> fieldNames = new ArrayList<>();
+
+        int i = 0;
         for ( String name : names ) {
-            final int index = fields.size();
             final String fieldName = AvaticaUtils.toCamelCase( name );
-            final Field field;
+            final Class<?> type;
             try {
-                field = clazz.getField( fieldName );
-            } catch ( NoSuchFieldException e ) {
+                type = clazz.isRecord() ? clazz.getMethod( fieldName ).getReturnType() : clazz.getField( fieldName ).getType();
+            } catch ( NoSuchFieldException | NoSuchMethodException e ) {
                 throw new GenericRuntimeException( e );
             }
-            columns.add( MetaImpl.columnMetaData( name, index, field.getType(), false ) );
-            fields.add( field );
-            //fieldNames.add( fieldName );
+            columns.add( MetaImpl.columnMetaData( name, i, type, false ) );
+            i++;
         }
-        //noinspection unchecked
-        final Iterable<PolyValue[]> iterable = (Iterable<PolyValue[]>) enumerable;
-        //return createMetaResultSet( ch, statementHandle, Collections.emptyMap(), columns, CursorFactory.record( clazz, fields, fieldNames ), new Frame( 0, true, iterable ) );
-        return createMetaResultSet( ch, statementHandle, new HashMap<>(), columns, CursorFactory.LIST, iterable );
+
+        return createMetaResultSet( ch, statementHandle, new HashMap<>(), columns, enumerable );
     }
 
 
-    private Enumerable<Object> toEnumerable( final List<? extends PolyObject> entities ) {
-        final List<Object> objects = new LinkedList<>();
+    private Enumerable<PolyValue[]> toEnumerable( final List<? extends PolyObject> entities ) {
+        final List<PolyValue[]> objects = new ArrayList<>();
         for ( PolyObject entity : entities ) {
             objects.add( entity.getParameterArray() );
         }
@@ -262,7 +250,7 @@ public class DbmsMeta implements ProtobufMeta {
 
     /**
      * Returns a map of static database properties.
-     *
+     * <p>
      * The provider can omit properties whose value is the same as the default.
      */
     @Override
@@ -316,14 +304,14 @@ public class DbmsMeta implements ProtobufMeta {
     }
 
 
-    @NotNull
+    @Nonnull
     private List<LogicalTable> getLogicalTables( Pat schemaPattern, Pat tablePattern ) {
         return getLogicalTables( (schemaPattern == null || schemaPattern.s == null) ? null : new Pattern( schemaPattern.s ),
                 (tablePattern == null || tablePattern.s == null) ? null : new Pattern( tablePattern.s ) );
     }
 
 
-    @NotNull
+    @Nonnull
     private List<LogicalTable> getLogicalTables( Pattern schemaPattern, Pattern tablePattern ) {
         //List<LogicalNamespace> namespaces = catalog.getSnapshot().getNamespaces( schemaPattern );
 
@@ -341,7 +329,7 @@ public class DbmsMeta implements ProtobufMeta {
             final List<LogicalColumn> columns = getLogicalTables( schemaPattern, tablePattern ).stream().flatMap( t -> catalog.getSnapshot().rel().getColumns(
                     (tablePattern == null || tablePattern.s == null) ? null : new Pattern( tablePattern.s ),
                     (columnPattern == null || columnPattern.s == null) ? null : new Pattern( columnPattern.s )
-            ).stream() ).collect( Collectors.toList() );
+            ).stream() ).toList();
             StatementHandle statementHandle = createStatement( ch );
             return createMetaResultSet(
                     ch,
@@ -409,7 +397,7 @@ public class DbmsMeta implements ProtobufMeta {
                 log.trace( "getCatalogs( ConnectionHandle {} )", ch );
             }
             //final List<CatalogDatabase> databases = Linq4j.asEnumerable( new String[]{ "APP", "system", "public" } );
-            List<Object> databases = Collections.singletonList( new Serializable[]{ Catalog.DATABASE_NAME, "system", Catalog.defaultNamespaceName } );
+            List<PolyValue[]> databases = Collections.singletonList( new PolyValue[]{ PolyString.of( Catalog.DATABASE_NAME ), PolyString.of( "system" ), PolyString.of( Catalog.DEFAULT_NAMESPACE_NAME ) } );
             StatementHandle statementHandle = createStatement( ch );
             return createMetaResultSet(
                     ch,
@@ -433,11 +421,11 @@ public class DbmsMeta implements ProtobufMeta {
             if ( log.isTraceEnabled() ) {
                 log.trace( "getTableTypes( ConnectionHandle {} )", ch );
             }
-            final List<Object> objects = new LinkedList<>();
+            final List<PolyValue[]> objects = new LinkedList<>();
             for ( EntityType tt : EntityType.values() ) {
                 objects.add( tt.getParameterArray() );
             }
-            Enumerable<Object> enumerable = Linq4j.asEnumerable( objects );
+            Enumerable<PolyValue[]> enumerable = Linq4j.asEnumerable( objects );
             StatementHandle statementHandle = createStatement( ch );
             return createMetaResultSet(
                     ch,
@@ -547,9 +535,8 @@ public class DbmsMeta implements ProtobufMeta {
             }
             final Pattern tablePattern = table == null ? null : new Pattern( table );
             final Pattern schemaPattern = schema == null ? null : new Pattern( schema );
-            final Pattern databasePattern = database == null ? null : new Pattern( database );
             final List<LogicalTable> catalogEntities = getLogicalTables( schemaPattern, tablePattern );
-            List<LogicalPrimaryKeyColumn> primaryKeyColumns = new LinkedList<>();
+            List<LogicalPrimaryKeyField> primaryKeyColumns = new LinkedList<>();
             for ( LogicalTable catalogTable : catalogEntities ) {
                 if ( catalogTable.primaryKey != null ) {
                     final LogicalPrimaryKey primaryKey = catalog.getSnapshot().rel().getPrimaryKey( catalogTable.primaryKey ).orElseThrow();
@@ -584,12 +571,11 @@ public class DbmsMeta implements ProtobufMeta {
             }
             final Pattern tablePattern = table == null ? null : new Pattern( table );
             final Pattern schemaPattern = schema == null ? null : new Pattern( schema );
-            final Pattern databasePattern = database == null ? null : new Pattern( database );
             final List<LogicalTable> catalogEntities = getLogicalTables( schemaPattern, tablePattern );
-            List<LogicalForeignKeyColumn> foreignKeyColumns = new LinkedList<>();
+            List<LogicalForeignKeyField> foreignKeyColumns = new LinkedList<>();
             for ( LogicalTable catalogTable : catalogEntities ) {
                 List<LogicalForeignKey> importedKeys = catalog.getSnapshot().rel().getForeignKeys( catalogTable.id );
-                importedKeys.forEach( catalogForeignKey -> foreignKeyColumns.addAll( catalogForeignKey.getCatalogForeignKeyColumns() ) );
+                importedKeys.forEach( catalogForeignKey -> foreignKeyColumns.addAll( catalogForeignKey.getCatalogForeignKeyFields() ) );
             }
             StatementHandle statementHandle = createStatement( ch );
             return createMetaResultSet(
@@ -629,10 +615,10 @@ public class DbmsMeta implements ProtobufMeta {
             final Pattern schemaPattern = schema == null ? null : new Pattern( schema );
 
             final List<LogicalTable> catalogEntities = getLogicalTables( schemaPattern, tablePattern );
-            List<LogicalForeignKeyColumn> foreignKeyColumns = new LinkedList<>();
+            List<LogicalForeignKeyField> foreignKeyColumns = new LinkedList<>();
             for ( LogicalTable catalogTable : catalogEntities ) {
                 List<LogicalForeignKey> exportedKeys = catalog.getSnapshot().rel().getExportedKeys( catalogTable.id );
-                exportedKeys.forEach( catalogForeignKey -> foreignKeyColumns.addAll( catalogForeignKey.getCatalogForeignKeyColumns() ) );
+                exportedKeys.forEach( catalogForeignKey -> foreignKeyColumns.addAll( catalogForeignKey.getCatalogForeignKeyFields() ) );
             }
             StatementHandle statementHandle = createStatement( ch );
             return createMetaResultSet(
@@ -685,28 +671,28 @@ public class DbmsMeta implements ProtobufMeta {
             }
             final StatementHandle statementHandle = createStatement( ch );
             final AlgDataTypeSystem typeSystem = AlgDataTypeSystem.DEFAULT;
-            final List<Object> objects = new LinkedList<>();
+            final List<PolyValue[]> objects = new ArrayList<>();
             for ( PolyType polyType : PolyType.values() ) {
                 objects.add(
-                        new Serializable[]{
-                                polyType.getName(),
-                                polyType.getJdbcOrdinal(),
-                                typeSystem.getMaxPrecision( polyType ),
-                                typeSystem.getLiteral( polyType, true ),
-                                typeSystem.getLiteral( polyType, false ),
+                        new PolyValue[]{
+                                PolyString.of( polyType.getName() ),
+                                PolyInteger.of( polyType.getJdbcOrdinal() ),
+                                PolyInteger.of( typeSystem.getMaxPrecision( polyType ) ),
+                                PolyString.of( typeSystem.getLiteral( polyType, true ) ),
+                                PolyString.of( typeSystem.getLiteral( polyType, false ) ),
                                 null,
-                                (short) DatabaseMetaData.typeNullable, // All types are nullable
-                                typeSystem.isCaseSensitive( polyType ),
-                                (short) DatabaseMetaData.typeSearchable, // Making all type searchable; we may want to be specific and declare under PolyType
-                                false,
-                                false,
-                                typeSystem.isAutoincrement( polyType ),
-                                polyType.getName(),
-                                (short) polyType.getMinScale(),
-                                (short) typeSystem.getMaxScale( polyType ),
+                                PolyInteger.of( DatabaseMetaData.typeNullable ), // All types are nullable
+                                PolyBoolean.of( typeSystem.isCaseSensitive( polyType ) ),
+                                PolyInteger.of( DatabaseMetaData.typeSearchable ), // Making all type searchable; we may want to be specific and declare under PolyType
+                                PolyBoolean.FALSE,
+                                PolyBoolean.FALSE,
+                                PolyBoolean.of( typeSystem.isAutoincrement( polyType ) ),
+                                PolyString.of( polyType.getName() ),
+                                PolyInteger.of( polyType.getMinScale() ),
+                                PolyInteger.of( typeSystem.getMaxScale( polyType ) ),
                                 null,
                                 null,
-                                typeSystem.getNumTypeRadix( polyType ) == 0 ? null : typeSystem.getNumTypeRadix( polyType ) } );
+                                PolyInteger.of( typeSystem.getNumTypeRadix( polyType ) == 0 ? null : typeSystem.getNumTypeRadix( polyType ) ) } );
             }
             return createMetaResultSet(
                     ch,
@@ -736,25 +722,25 @@ public class DbmsMeta implements ProtobufMeta {
 
 
     @Override
-    public MetaResultSet getIndexInfo( final ConnectionHandle ch, final String database, final String schema, final String table, final boolean unique, final boolean approximate ) {
+    public MetaResultSet getIndexInfo( final ConnectionHandle ch, final String database, final String namespace, final String table, final boolean unique, final boolean approximate ) {
         final PolyConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
-                log.trace( "getIndexInfo( ConnectionHandle {}, String {}, String {}, String {}, boolean {}, boolean {} )", ch, database, schema, table, unique, approximate );
+                log.trace( "getIndexInfo( ConnectionHandle {}, String {}, String {}, String {}, boolean {}, boolean {} )", ch, database, namespace, table, unique, approximate );
             }
             final Pattern tablePattern = table == null ? null : new Pattern( table );
-            final Pattern schemaPattern = schema == null ? null : new Pattern( schema );
-            final List<LogicalTable> catalogEntities = getLogicalTables( schemaPattern, tablePattern );
-            List<LogicalIndexColumn> logicalIndexColumns = new LinkedList<>();
-            for ( LogicalTable catalogTable : catalogEntities ) {
-                List<LogicalIndex> logicalIndexInfos = catalog.getSnapshot().rel().getIndexes( catalogTable.id, unique );
-                logicalIndexInfos.forEach( info -> logicalIndexColumns.addAll( info.getCatalogIndexColumns() ) );
+            final Pattern namespacePattern = namespace == null ? null : new Pattern( namespace );
+            final List<LogicalTable> entities = getLogicalTables( namespacePattern, tablePattern );
+            List<LogicalIndexField> logicalIndexFields = new ArrayList<>();
+            for ( LogicalTable entity : entities ) {
+                List<LogicalIndex> logicalIndexInfos = catalog.getSnapshot().rel().getIndexes( entity.id, unique );
+                logicalIndexInfos.forEach( info -> logicalIndexFields.addAll( info.getIndexFields() ) );
             }
             StatementHandle statementHandle = createStatement( ch );
             return createMetaResultSet(
                     ch,
                     statementHandle,
-                    toEnumerable( logicalIndexColumns ),
+                    toEnumerable( logicalIndexFields ),
                     PrimitiveCatalogIndexColumn.class,
                     // According to JDBC standard:
                     "TABLE_CAT",    // The name of the database in which the specified table resides.
@@ -923,7 +909,7 @@ public class DbmsMeta implements ProtobufMeta {
                     } else {
                         values.get( i ).add( toPolyValue( TypedValue.fromProto( v ) ) );
                     }
-                    types.add( (int) i, toPolyAlgType( TypedValue.fromProto( v ), connection.getCurrentTransaction().getTypeFactory() ) ); // todo dl optimize
+                    types.add( (int) i, toPolyAlgType( TypedValue.fromProto( v ), TYPE_FACTORY ) );
                 }
             }
 
@@ -952,8 +938,8 @@ public class DbmsMeta implements ProtobufMeta {
 
     /**
      * Creates an iterable for a result set.
-     *
-     * The default implementation just returns {@code iterable}, which it requires to be not null; derived classes may instead choose to execute the relational
+     * <p>
+     * The default implementation just returns {@code iterable}, which it requires to be not null; derived classes may instead choose to execute the algebra
      * expression in {@code signature}.
      */
     @Override
@@ -1011,7 +997,6 @@ public class DbmsMeta implements ProtobufMeta {
                     avaticaParameters,
                     ImmutableMap.of(),
                     parameterRowType,
-                    null,
                     null,
                     null,
                     ImmutableList.of(),
@@ -1118,7 +1103,7 @@ public class DbmsMeta implements ProtobufMeta {
 
     /**
      * Returns a frame of rows.
-     *
+     * <p>
      * The frame describes whether there may be another frame. If there is not another frame, the current iteration is done when we have finished the rows in the this frame.
      *
      * @param h Statement handle
@@ -1138,6 +1123,10 @@ public class DbmsMeta implements ProtobufMeta {
 
             final PolySignature signature = statementHandle.getSignature();
             final Iterator<Object> iterator;
+            if ( statementHandle.getStatement() == null ) {
+                // this is a hotfix for catalog methods of dbmsmeta todo dl diff in jdbc bench
+                return new Frame( 0, true, new ArrayList<>() );
+            }
             if ( statementHandle.getOpenResultSet() == null ) {
                 final Iterable<Object> iterable = createExternalIterable( statementHandle.getStatement().getDataContext(), signature );
                 iterator = iterable.iterator();
@@ -1148,7 +1137,7 @@ public class DbmsMeta implements ProtobufMeta {
                 statementHandle.getExecutionStopWatch().resume();
             }
 
-            final List rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( iterator, fetchMaxRowCount ), new ArrayList<>() );
+            final List<?> rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( iterator, fetchMaxRowCount ), new ArrayList<>() );
             statementHandle.getExecutionStopWatch().suspend();
             boolean done = fetchMaxRowCount == 0 || rows.size() < fetchMaxRowCount;
 
@@ -1163,7 +1152,7 @@ public class DbmsMeta implements ProtobufMeta {
                     log.error( "Exception while closing result iterator", e );
                 }
             }
-            return new Meta.Frame( offset, done, rows );
+            return new Meta.Frame( offset, done, (Iterable<Object>) rows );
         }
     }
 
@@ -1316,35 +1305,22 @@ public class DbmsMeta implements ProtobufMeta {
         }
 
         Object jdbc = value.toJdbc( calendar );
-        switch ( value.type ) {
-            case FLOAT:
-                return PolyFloat.of( (Number) jdbc );
-            case INTEGER:
-                return PolyInteger.of( (Number) jdbc );
-            case LONG:
-                return PolyLong.of( (Number) jdbc );
-            case STRING:
-                return PolyString.of( (String) jdbc );
-            case BOOLEAN:
-                return PolyBoolean.of( (Boolean) jdbc );
-            case JAVA_SQL_DATE:
-                return PolyDate.of( (Date) jdbc );
-            case JAVA_SQL_TIME:
-                return PolyTime.of( (Time) jdbc );
-            case JAVA_SQL_TIMESTAMP:
-                return PolyTimestamp.of( (Timestamp) jdbc );
-            case NUMBER:
-                return PolyBigDecimal.of( (BigDecimal) jdbc );
-            case DOUBLE:
-                return PolyDouble.of( (Double) jdbc );
-            case SHORT:
-                return PolyInteger.of( (Short) jdbc );
-            case BYTE:
-                return PolyInteger.of( (byte) jdbc );
-            case BYTE_STRING:
-                return PolyBinary.of( (byte[]) jdbc );
-        }
-        throw new NotImplementedException( "dbms to poly " + value.type );
+        return switch ( value.type ) {
+            case FLOAT -> PolyFloat.of( (Number) jdbc );
+            case INTEGER -> PolyInteger.of( (Number) jdbc );
+            case LONG -> PolyLong.of( (Number) jdbc );
+            case STRING -> PolyString.of( (String) jdbc );
+            case BOOLEAN -> PolyBoolean.of( (Boolean) jdbc );
+            case JAVA_SQL_DATE -> PolyDate.of( (Date) jdbc );
+            case JAVA_SQL_TIME -> PolyTime.of( (Time) jdbc );
+            case JAVA_SQL_TIMESTAMP -> PolyTimestamp.of( ((Timestamp) jdbc).getTime() + TemporalFunctions.LOCAL_TZ.getRawOffset() );
+            case NUMBER -> PolyBigDecimal.of( (BigDecimal) jdbc );
+            case DOUBLE -> PolyDouble.of( (Double) jdbc );
+            case SHORT -> PolyInteger.of( (Short) jdbc );
+            case BYTE -> PolyInteger.of( (byte) jdbc );
+            case BYTE_STRING -> PolyBinary.of( (byte[]) jdbc );
+            default -> throw new NotImplementedException( "dbms to poly " + value.type );
+        };
     }
 
 
@@ -1382,9 +1358,7 @@ public class DbmsMeta implements ProtobufMeta {
 
                     Object[] objects = new Object[row.length];
                     for ( int i = 0, rowLength = objects.length; i < rowLength; i++ ) {
-                        //if ( ((PolyValue[]) row)[i] != null ) {
                         objects[i] = transform.get( i ).apply( row[i] );
-                        //}
                     }
                     return objects;
                 } );
@@ -1446,7 +1420,7 @@ public class DbmsMeta implements ProtobufMeta {
                 log.trace( "createStatement( ConnectionHandle {} )", ch );
             }
 
-            final PolyStatementHandle<?> statement;
+            final PolyStatementHandle<Object> statement;
 
             final int id = statementIdGenerator.getAndIncrement();
             statement = new PolyStatementHandle<>( connection, id );
@@ -1461,7 +1435,7 @@ public class DbmsMeta implements ProtobufMeta {
 
     /**
      * Closes a statement.
-     *
+     * <p>
      * If the statement handle is not known, or is already closed, does nothing.
      *
      * @param statementHandle Statement handle
@@ -1530,7 +1504,7 @@ public class DbmsMeta implements ProtobufMeta {
         }
         String defaultSchemaName = connectionParameters.get( "schema" );
         if ( defaultSchemaName == null || defaultSchemaName.isEmpty() ) {
-            defaultSchemaName = Catalog.defaultNamespaceName;
+            defaultSchemaName = Catalog.DEFAULT_NAMESPACE_NAME;
         }
 
         // Create transaction
@@ -1654,7 +1628,7 @@ public class DbmsMeta implements ProtobufMeta {
 
             try {
                 transaction.commit();
-            } catch ( TransactionException e ) {
+            } catch ( Throwable e ) {
                 throw new GenericRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
             } finally {
                 connection.endCurrentTransaction();
@@ -1695,7 +1669,7 @@ public class DbmsMeta implements ProtobufMeta {
 
     /**
      * Synchronizes client and server view of connection properties.
-     *
+     * <p>
      * Note: this interface is considered "experimental" and may undergo further changes as this functionality is extended to other aspects of state management for
      * {@link Connection}, {@link Statement}, and {@link ResultSet}.
      */

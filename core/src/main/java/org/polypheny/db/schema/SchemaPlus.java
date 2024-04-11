@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,14 +33,6 @@
 
 package org.polypheny.db.schema;
 
-import com.google.common.collect.ImmutableList;
-import java.util.Optional;
-import org.jetbrains.annotations.NotNull;
-import org.polypheny.db.algebra.type.AlgProtoDataType;
-import org.polypheny.db.catalog.logistic.DataModel;
-import org.polypheny.db.schema.Namespace.Schema;
-
-
 /**
  * Extension to the {@link Namespace} interface.
  *
@@ -54,15 +46,18 @@ import org.polypheny.db.schema.Namespace.Schema;
  * given by the system. The purpose of SchemaPlus is to expose to user code, in a read only manner, some of the extra
  * information about schemas that Polypheny-DB builds up when a schema is registered.
  */
-public interface SchemaPlus extends Namespace, Schema {
+public abstract class SchemaPlus extends Namespace {
 
 
-    PolyphenyDbSchema polyphenyDbSchema();
+    public SchemaPlus( long id, long adapterId ) {
+        super( id, adapterId );
+    }
+
 
     /**
      * Returns the parent schema, or null if this schema has no parent.
      */
-    SchemaPlus getParentSchema();
+    abstract SchemaPlus getParentSchema();
 
     /**
      * Returns the name of this schema.
@@ -70,44 +65,7 @@ public interface SchemaPlus extends Namespace, Schema {
      * The name must not be null, and must be unique within its parent.
      * The root schema is typically named "".
      */
-    String getName();
+    abstract String getName();
 
-    // override with stricter return
-    @Override
-    SchemaPlus getSubNamespace( String name );
-
-    /**
-     * Adds a schema as a sub-schema of this schema, and returns the wrapped object.
-     */
-    SchemaPlus add( String name, Namespace namespace, DataModel dataModel );
-
-    /**
-     * Adds a table to this schema.
-     */
-    void add( String name, Entity entity );
-
-    /**
-     * Adds a function to this schema.
-     */
-    void add( String name, Function function );
-
-    /**
-     * Adds a type to this schema.
-     */
-    void add( String name, AlgProtoDataType type );
-
-    @Override
-    boolean isMutable();
-
-    /**
-     * Returns an underlying object.
-     */
-    @NotNull <T> Optional<T> unwrap( Class<T> clazz );
-
-    void setPath( ImmutableList<ImmutableList<String>> path );
-
-    void setCacheEnabled( boolean cache );
-
-    boolean isCacheEnabled();
 
 }

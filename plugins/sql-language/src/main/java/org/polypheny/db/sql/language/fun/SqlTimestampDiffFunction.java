@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 package org.polypheny.db.sql.language.fun;
 
 
-import org.apache.calcite.avatica.util.TimeUnit;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
@@ -61,10 +60,7 @@ public class SqlTimestampDiffFunction extends SqlFunction {
     private static final PolyReturnTypeInference RETURN_TYPE_INFERENCE =
             opBinding -> {
                 final AlgDataTypeFactory typeFactory = opBinding.getTypeFactory();
-                PolyType polyType =
-                        opBinding.getOperandLiteralValue( 0, PolyType.TIME ).asTime().timeUnit == TimeUnit.NANOSECOND
-                                ? PolyType.BIGINT
-                                : PolyType.INTEGER;
+                PolyType polyType = PolyType.BIGINT;
                 return typeFactory.createTypeWithNullability(
                         typeFactory.createPolyType( polyType ),
                         opBinding.getOperandType( 1 ).isNullable() || opBinding.getOperandType( 2 ).isNullable() );

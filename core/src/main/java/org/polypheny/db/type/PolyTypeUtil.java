@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,7 +37,6 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
-import com.google.gson.Gson;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.nio.charset.Charset;
@@ -48,9 +47,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.reflect.TypeUtils;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
@@ -62,16 +59,6 @@ import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.validate.Validator;
 import org.polypheny.db.nodes.validate.ValidatorScope;
 import org.polypheny.db.rex.RexUtil;
-import org.polypheny.db.type.entity.PolyBigDecimal;
-import org.polypheny.db.type.entity.PolyBoolean;
-import org.polypheny.db.type.entity.PolyDate;
-import org.polypheny.db.type.entity.PolyDouble;
-import org.polypheny.db.type.entity.PolyFloat;
-import org.polypheny.db.type.entity.PolyInteger;
-import org.polypheny.db.type.entity.PolyLong;
-import org.polypheny.db.type.entity.PolyString;
-import org.polypheny.db.type.entity.PolyTime;
-import org.polypheny.db.type.entity.PolyTimestamp;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Collation;
 import org.polypheny.db.util.NumberUtil;
@@ -92,7 +79,7 @@ public abstract class PolyTypeUtil {
      * @see Mappings#isIdentity(List, int)
      */
     public static ImmutableList<Integer> identity( int count ) {
-        return ImmutableList.copyOf( IntStream.range( 0, count ).boxed().collect( Collectors.toList() ) );
+        return ImmutableList.copyOf( IntStream.range( 0, count ).boxed().toList() );
     }
 
 
@@ -363,16 +350,12 @@ public abstract class PolyTypeUtil {
         if ( typeName == null ) {
             return false;
         }
-        switch ( typeName ) {
-            case VARCHAR:
-            case VARBINARY:
+        return switch ( typeName ) {
 
-                // TODO angel 8-June-2005: Multiset should be LOB
-            case MULTISET:
-                return true;
-            default:
-                return false;
-        }
+            // TODO angel 8-June-2005: Multiset should be LOB
+            case VARCHAR, VARBINARY, MULTISET -> true;
+            default -> false;
+        };
     }
 
 
@@ -384,15 +367,10 @@ public abstract class PolyTypeUtil {
         if ( typeName == null ) {
             return false;
         }
-        switch ( typeName ) {
-            case TINYINT:
-            case SMALLINT:
-            case INTEGER:
-            case BIGINT:
-                return true;
-            default:
-                return false;
-        }
+        return switch ( typeName ) {
+            case TINYINT, SMALLINT, INTEGER, BIGINT -> true;
+            default -> false;
+        };
     }
 
 
@@ -428,16 +406,10 @@ public abstract class PolyTypeUtil {
         if ( typeName == null ) {
             return false;
         }
-        switch ( typeName ) {
-            case TINYINT:
-            case SMALLINT:
-            case INTEGER:
-            case BIGINT:
-            case DECIMAL:
-                return true;
-            default:
-                return false;
-        }
+        return switch ( typeName ) {
+            case TINYINT, SMALLINT, INTEGER, BIGINT, DECIMAL -> true;
+            default -> false;
+        };
     }
 
 
@@ -454,18 +426,13 @@ public abstract class PolyTypeUtil {
      */
     public static long maxValue( AlgDataType type ) {
         assert PolyTypeUtil.isIntType( type );
-        switch ( type.getPolyType() ) {
-            case TINYINT:
-                return Byte.MAX_VALUE;
-            case SMALLINT:
-                return Short.MAX_VALUE;
-            case INTEGER:
-                return Integer.MAX_VALUE;
-            case BIGINT:
-                return Long.MAX_VALUE;
-            default:
-                throw Util.unexpected( type.getPolyType() );
-        }
+        return switch ( type.getPolyType() ) {
+            case TINYINT -> Byte.MAX_VALUE;
+            case SMALLINT -> Short.MAX_VALUE;
+            case INTEGER -> Integer.MAX_VALUE;
+            case BIGINT -> Long.MAX_VALUE;
+            default -> throw Util.unexpected( type.getPolyType() );
+        };
     }
 
 
@@ -477,14 +444,10 @@ public abstract class PolyTypeUtil {
         if ( typeName == null ) {
             return false;
         }
-        switch ( typeName ) {
-            case FLOAT:
-            case REAL:
-            case DOUBLE:
-                return true;
-            default:
-                return false;
-        }
+        return switch ( typeName ) {
+            case FLOAT, REAL, DOUBLE -> true;
+            default -> false;
+        };
     }
 
 
@@ -549,24 +512,16 @@ public abstract class PolyTypeUtil {
             return 0;
         }
 
-        switch ( typeName ) {
-            case CHAR:
-            case VARCHAR:
-                return (int) Math.ceil( ((double) type.getPrecision()) * type.getCharset().newEncoder().maxBytesPerChar() );
-
-            case BINARY:
-            case VARBINARY:
-                return type.getPrecision();
-
-            case MULTISET:
+        return switch ( typeName ) {
+            case CHAR, VARCHAR -> (int) Math.ceil( ((double) type.getPrecision()) * type.getCharset().newEncoder().maxBytesPerChar() );
+            case BINARY, VARBINARY -> type.getPrecision();
+            case MULTISET ->
 
                 // TODO: Need a better way to tell fennel this number. This a very generic place and implementation details
                 //  like this doesnt belong here. Waiting to change this once we have blob support
-                return 4096;
-
-            default:
-                return 0;
-        }
+                    4096;
+            default -> 0;
+        };
     }
 
 
@@ -577,19 +532,13 @@ public abstract class PolyTypeUtil {
      */
     public static long getMinValue( AlgDataType type ) {
         PolyType typeName = type.getPolyType();
-        switch ( typeName ) {
-            case TINYINT:
-                return Byte.MIN_VALUE;
-            case SMALLINT:
-                return Short.MIN_VALUE;
-            case INTEGER:
-                return Integer.MIN_VALUE;
-            case BIGINT:
-            case DECIMAL:
-                return NumberUtil.getMinUnscaled( type.getPrecision() ).longValue();
-            default:
-                throw new AssertionError( "getMinValue(" + typeName + ")" );
-        }
+        return switch ( typeName ) {
+            case TINYINT -> Byte.MIN_VALUE;
+            case SMALLINT -> Short.MIN_VALUE;
+            case INTEGER -> Integer.MIN_VALUE;
+            case BIGINT, DECIMAL -> NumberUtil.getMinUnscaled( type.getPrecision() ).longValue();
+            default -> throw new AssertionError( "getMinValue(" + typeName + ")" );
+        };
     }
 
 
@@ -600,19 +549,13 @@ public abstract class PolyTypeUtil {
      */
     public static long getMaxValue( AlgDataType type ) {
         PolyType typeName = type.getPolyType();
-        switch ( typeName ) {
-            case TINYINT:
-                return Byte.MAX_VALUE;
-            case SMALLINT:
-                return Short.MAX_VALUE;
-            case INTEGER:
-                return Integer.MAX_VALUE;
-            case BIGINT:
-            case DECIMAL:
-                return NumberUtil.getMaxUnscaled( type.getPrecision() ).longValue();
-            default:
-                throw new AssertionError( "getMaxValue(" + typeName + ")" );
-        }
+        return switch ( typeName ) {
+            case TINYINT -> Byte.MAX_VALUE;
+            case SMALLINT -> Short.MAX_VALUE;
+            case INTEGER -> Integer.MAX_VALUE;
+            case BIGINT, DECIMAL -> NumberUtil.getMaxUnscaled( type.getPrecision() ).longValue();
+            default -> throw new AssertionError( "getMaxValue(" + typeName + ")" );
+        };
     }
 
 
@@ -911,7 +854,7 @@ public abstract class PolyTypeUtil {
 
     /**
      * Returns whether two types are equal, ignoring nullability.
-     *
+     * <p>
      * They need not come from the same factory.
      *
      * @param factory Type factory
@@ -966,7 +909,7 @@ public abstract class PolyTypeUtil {
                 .map( Number::intValue )
                 .map( fields::get )
                 .map( AlgDataTypeField::getType )
-                .collect( Collectors.toList() );
+                .toList();
     }
 
 
@@ -1040,14 +983,10 @@ public abstract class PolyTypeUtil {
         }
 
         // We can implicitly convert from character to date
-        if ( family1 == PolyTypeFamily.CHARACTER
+        return family1 == PolyTypeFamily.CHARACTER
                 && canConvertStringInCompare( family2 )
                 || family2 == PolyTypeFamily.CHARACTER
-                && canConvertStringInCompare( family1 ) ) {
-            return true;
-        }
-
-        return false;
+                && canConvertStringInCompare( family1 );
     }
 
 
@@ -1161,13 +1100,12 @@ public abstract class PolyTypeUtil {
      * Returns whether a character data type can be implicitly converted to a given family in a compare operation.
      */
     private static boolean canConvertStringInCompare( AlgDataTypeFamily family ) {
-        if ( family instanceof PolyTypeFamily ) {
-            PolyTypeFamily polyTypeFamily = (PolyTypeFamily) family;
+        if ( family instanceof PolyTypeFamily polyTypeFamily ) {
             switch ( polyTypeFamily ) {
                 case DATE:
                 case TIME:
                 case TIMESTAMP:
-                case INTERVAL_DAY_TIME:
+                case INTERVAL_TIME:
                 case INTERVAL_YEAR_MONTH:
                 case NUMERIC:
                 case APPROXIMATE_NUMERIC:
@@ -1256,40 +1194,10 @@ public abstract class PolyTypeUtil {
                 return char.class;
             case VARCHAR:
                 return String.class;
-            case BINARY:
+            case BINARY, INTERVAL, NULL, ANY, SYMBOL, MULTISET, ARRAY, MAP, DISTINCT, STRUCTURED, ROW, OTHER, CURSOR, COLUMN_LIST, DYNAMIC_STAR, GEOMETRY:
                 break;
             case VARBINARY:
                 return byte[].class;
-            case TIME_WITH_LOCAL_TIME_ZONE:
-            case INTERVAL_SECOND:
-            case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-            case INTERVAL_YEAR:
-            case INTERVAL_YEAR_MONTH:
-            case INTERVAL_MONTH:
-            case INTERVAL_DAY:
-            case INTERVAL_DAY_HOUR:
-            case INTERVAL_DAY_MINUTE:
-            case INTERVAL_DAY_SECOND:
-            case INTERVAL_HOUR:
-            case INTERVAL_HOUR_MINUTE:
-            case INTERVAL_HOUR_SECOND:
-            case INTERVAL_MINUTE:
-            case INTERVAL_MINUTE_SECOND:
-            case NULL:
-            case ANY:
-            case SYMBOL:
-            case MULTISET:
-            case ARRAY:
-            case MAP:
-            case DISTINCT:
-            case STRUCTURED:
-            case ROW:
-            case OTHER:
-            case CURSOR:
-            case COLUMN_LIST:
-            case DYNAMIC_STAR:
-            case GEOMETRY:
-                break;
         }
         return Object.class;
     }
@@ -1319,39 +1227,11 @@ public abstract class PolyTypeUtil {
      * @param polyType PolyType to know how to convert the string
      * @return The converted object
      */
-    public static PolyValue stringToObject( final String s, final PolyType polyType ) {
+    public static PolyValue stringToObject( final String s, final AlgDataTypeField polyType ) {
         if ( s == null || s.isEmpty() ) {
             return null;
         }
-        Gson gson = new Gson();
-        switch ( polyType ) {
-            case BOOLEAN:
-                return PolyBoolean.of( gson.fromJson( s, Boolean.class ) );
-            case TINYINT:
-            case SMALLINT:
-            case INTEGER:
-                return PolyInteger.of( Integer.parseInt( s ) );
-            case TIME:
-                return PolyTime.of( Integer.parseInt( s ) );
-            case DATE:
-                return PolyDate.of( Integer.parseInt( s ) );
-            case TIMESTAMP:
-                return PolyTimestamp.of( Long.parseLong( s ) );
-            case BIGINT:
-                return PolyLong.of( Long.parseLong( s ) );
-            case DOUBLE:
-                return PolyDouble.of( Double.parseDouble( s ) );
-            case REAL:
-            case FLOAT:
-                return PolyFloat.of( Float.parseFloat( s ) );
-            case DECIMAL:
-                return PolyBigDecimal.of( new BigDecimal( s ) );
-            case VARCHAR:
-                return PolyString.of( s );
-            //case ARRAY:
-            default:
-                throw new NotImplementedException();
-        }
+        return PolyValue.fromTypedJson( s, PolyValue.class );
     }
 
 }

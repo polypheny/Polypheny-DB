@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.polypheny.db.sql.language.dialect;
 
 
+import org.polypheny.db.algebra.constant.NullCollation;
 import org.polypheny.db.sql.language.SqlDialect;
 
 
@@ -30,7 +31,7 @@ public class AnsiSqlDialect extends SqlDialect {
      */
     public static final SqlDialect DEFAULT =
             new AnsiSqlDialect( emptyContext()
-                    .withDatabaseProduct( DatabaseProduct.UNKNOWN )
+                    .withNullCollation( NullCollation.HIGH )
                     .withIdentifierQuoteString( "`" ) );
 
 
@@ -39,7 +40,7 @@ public class AnsiSqlDialect extends SqlDialect {
      */
     public static final SqlDialect NULL_DIALECT =
             new AnsiSqlDialect( emptyContext()
-                    .withDatabaseProduct( DatabaseProduct.UNKNOWN )
+                    .withNullCollation( NullCollation.HIGH )
                     .withIdentifierQuoteString( "`" ) ) {
                 @Override
                 public boolean supportsNestedArrays() {

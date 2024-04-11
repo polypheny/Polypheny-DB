@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,7 +49,8 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceTemplate;
-import org.polypheny.db.util.PolyMode;
+import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.util.RunMode;
 
 public abstract class Catalog implements ExtensionPoint {
 
@@ -59,7 +60,7 @@ public abstract class Catalog implements ExtensionPoint {
     public static AdapterTemplate defaultStore;
     public static AdapterTemplate defaultSource;
     public static long defaultUserId = 0;
-    public static String defaultNamespaceName = "public";
+    public static String DEFAULT_NAMESPACE_NAME = "public";
     public static long defaultNamespaceId = 0;
     public static boolean resetDocker;
 
@@ -70,16 +71,16 @@ public abstract class Catalog implements ExtensionPoint {
     private static Catalog INSTANCE = null;
     public static boolean resetCatalog;
     public static boolean memoryCatalog;
-    public static PolyMode mode;
+    public static RunMode mode;
 
     public static final Expression CATALOG_EXPRESSION = Expressions.call( Catalog.class, "getInstance" );
 
     public static final Expression SNAPSHOT_EXPRESSION = Expressions.call( Catalog.class, "snapshot" );
-    public static final Function<Long, Expression> PHYSICAL_EXPRESSION = id -> Expressions.call( CATALOG_EXPRESSION, "getStoreSnapshot", Expressions.constant( id ) );
+    public static final Function<Long, Expression> PHYSICAL_EXPRESSION = id -> Expressions.call( CATALOG_EXPRESSION, "getAdapterCatalog", Expressions.constant( id ) );
 
 
     public static Catalog setAndGetInstance( Catalog catalog ) {
-        if ( INSTANCE != null ) {
+        if ( INSTANCE != null && Catalog.mode != RunMode.TEST ) {
             throw new GenericRuntimeException( "Setting the Catalog, when already set is not permitted." );
         }
         INSTANCE = catalog;
@@ -123,7 +124,7 @@ public abstract class Catalog implements ExtensionPoint {
 
     public abstract AllocationGraphCatalog getAllocGraph( long namespaceId );
 
-    public abstract <S extends AdapterCatalog> Optional<S> getStoreSnapshot( long id );
+    public abstract <S extends AdapterCatalog> Optional<S> getAdapterCatalog( long id );
 
     public abstract void addStoreSnapshot( AdapterCatalog snapshot );
 
@@ -192,7 +193,7 @@ public abstract class Catalog implements ExtensionPoint {
      * @param clazz The class name of the adapter
      * @param type The type of adapter
      * @param settings The configuration of the adapter
-     * @param mode
+     * @param mode The deploy mode of the adapter
      * @return The id of the newly added adapter
      */
     public abstract long createAdapter( String uniqueName, String clazz, AdapterType type, Map<String, String> settings, DeployMode mode );
@@ -274,7 +275,7 @@ public abstract class Catalog implements ExtensionPoint {
     public abstract PropertyChangeListener getChangeListener();
 
 
-    public abstract void restore();
+    public abstract void restore( Transaction transaction );
 
 
     public abstract void attachCommitConstraint( Supplier<Boolean> constraintChecker, String description );

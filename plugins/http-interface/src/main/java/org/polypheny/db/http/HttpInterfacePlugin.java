@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -139,7 +139,7 @@ public class HttpInterfacePlugin extends PolyPlugin {
                 } ) );
             } ).start( port );*/
 
-            this.server = Javalin.create( config -> {
+            server = Javalin.create( config -> {
                 config.jsonMapper( new JavalinJackson( new ObjectMapper() {
                     {
                         setSerializationInclusion( JsonInclude.Include.NON_NULL );
@@ -169,7 +169,7 @@ public class HttpInterfacePlugin extends PolyPlugin {
 
 
         public void addRoute( QueryLanguage language ) {
-            for ( String route : language.getOtherNames() ) {
+            for ( String route : language.otherNames() ) {
                 log.info( "Added HTTP Route: /{}", route );
                 server.post( route, ctx -> anyQuery( language, ctx ) );
             }
@@ -273,7 +273,7 @@ public class HttpInterfacePlugin extends PolyPlugin {
                 DecimalFormat df = new DecimalFormat( "0.0", symbols );
                 statementsTable.reset();
                 for ( Map.Entry<QueryLanguage, AtomicLong> entry : statementCounters.entrySet() ) {
-                    statementsTable.addRow( entry.getKey().getSerializedName(), df.format( total == 0 ? 0 : (entry.getValue().longValue() / total) * 100 ) + " %", entry.getValue().longValue() );
+                    statementsTable.addRow( entry.getKey().serializedName(), df.format( total == 0 ? 0 : (entry.getValue().longValue() / total) * 100 ) + " %", entry.getValue().longValue() );
                 }
             }
 

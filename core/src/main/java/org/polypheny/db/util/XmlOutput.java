@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -382,7 +382,7 @@ public class XmlOutput {
         boolean cdataEnd = false;
 
         // Scan the string for special characters
-        // If special characters are found, scan the string for ']]>'
+        // If special characters are found, relScan the string for ']]>'
         if ( stringHasXMLSpecials( data ) ) {
             specials = true;
             if ( data.contains( "]]>" ) ) {
@@ -532,7 +532,7 @@ public class XmlOutput {
      * CDATA section.  Note that MSXML has a nasty bug whereby whitespace characters outside of a CDATA section are lost when parsing.
      * To avoid hitting this bug, this method treats many whitespace characters as "special".
      *
-     * @param input the String to scan for XML special characters.
+     * @param input the String to relScan for XML special characters.
      * @return true if the String contains any such characters.
      */
     private static boolean stringHasXMLSpecials( String input ) {

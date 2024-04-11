@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ import org.apache.calcite.linq4j.function.Function2;
 import org.apache.calcite.linq4j.function.Functions;
 import org.polypheny.db.languages.Parser;
 import org.polypheny.db.plan.AlgImplementor;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.prepare.Prepare;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -79,7 +79,7 @@ public abstract class PolyphenyDbTrace {
      * </ul>
      */
     public static Logger getPlannerTracer() {
-        return LoggerFactory.getLogger( AlgOptPlanner.class.getName() );
+        return LoggerFactory.getLogger( AlgPlanner.class.getName() );
     }
 
 

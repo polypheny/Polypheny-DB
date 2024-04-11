@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,8 +40,8 @@ public class MqlCreateView extends MqlNode implements ExecutableStatement {
     private final BsonArray pipeline;
 
 
-    public MqlCreateView( ParserPos pos, String name, String source, BsonArray pipeline ) {
-        super( pos );
+    public MqlCreateView( ParserPos pos, String name, String namespace, String source, BsonArray pipeline ) {
+        super( pos, namespace );
         this.source = source;
         this.name = name;
         this.pipeline = pipeline;
@@ -50,7 +50,7 @@ public class MqlCreateView extends MqlNode implements ExecutableStatement {
 
     @Override
     public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
-        Long database = parsedQueryContext.getQueryNode().orElseThrow().getNamespaceId();
+        long database = parsedQueryContext.getQueryNode().orElseThrow().getNamespaceId();
 
         long schemaId = context.getSnapshot().getNamespace( database ).orElseThrow().id;
 

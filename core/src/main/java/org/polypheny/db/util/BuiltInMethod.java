@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,8 +51,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TimeZone;
-import org.apache.calcite.avatica.util.DateTimeUtils;
-import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.EnumerableDefaults;
@@ -71,7 +69,6 @@ import org.apache.calcite.linq4j.tree.FunctionExpression;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.java.ReflectiveSchema;
 import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.enumerable.AggregateLambdaFactory;
@@ -102,10 +99,10 @@ import org.polypheny.db.algebra.metadata.BuiltInMetadata.Parallelism;
 import org.polypheny.db.algebra.metadata.BuiltInMetadata.PercentageOriginalRows;
 import org.polypheny.db.algebra.metadata.BuiltInMetadata.PopulationSize;
 import org.polypheny.db.algebra.metadata.BuiltInMetadata.Predicates;
-import org.polypheny.db.algebra.metadata.BuiltInMetadata.RowCount;
 import org.polypheny.db.algebra.metadata.BuiltInMetadata.Selectivity;
 import org.polypheny.db.algebra.metadata.BuiltInMetadata.Size;
 import org.polypheny.db.algebra.metadata.BuiltInMetadata.TableReferences;
+import org.polypheny.db.algebra.metadata.BuiltInMetadata.TupleCount;
 import org.polypheny.db.algebra.metadata.BuiltInMetadata.UniqueKeys;
 import org.polypheny.db.algebra.metadata.Metadata;
 import org.polypheny.db.catalog.snapshot.Snapshot;
@@ -114,11 +111,11 @@ import org.polypheny.db.functions.CypherFunctions;
 import org.polypheny.db.functions.Functions;
 import org.polypheny.db.functions.Functions.FlatProductInputType;
 import org.polypheny.db.functions.MqlFunctions;
-import org.polypheny.db.functions.RefactorFunctions;
 import org.polypheny.db.functions.TemporalFunctions;
 import org.polypheny.db.interpreter.Context;
 import org.polypheny.db.interpreter.Row;
 import org.polypheny.db.interpreter.Scalar;
+import org.polypheny.db.nodes.TimeUnitRange;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.runtime.ArrayBindable;
 import org.polypheny.db.runtime.BinarySearch;
@@ -128,18 +125,13 @@ import org.polypheny.db.runtime.Enumerables;
 import org.polypheny.db.runtime.RandomFunction;
 import org.polypheny.db.runtime.SortedMultiMap;
 import org.polypheny.db.runtime.Utilities;
-import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.types.QueryableEntity;
 import org.polypheny.db.schema.types.ScannableEntity;
-import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyBoolean;
-import org.polypheny.db.type.entity.PolyDate;
 import org.polypheny.db.type.entity.PolyInterval;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyString;
-import org.polypheny.db.type.entity.PolyTime;
-import org.polypheny.db.type.entity.PolyTimestamp;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.category.PolyTemporal;
@@ -148,6 +140,9 @@ import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.type.entity.graph.PolyNode;
 import org.polypheny.db.type.entity.graph.PolyPath;
+import org.polypheny.db.type.entity.temporal.PolyDate;
+import org.polypheny.db.type.entity.temporal.PolyTime;
+import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 
 
 /**
@@ -157,8 +152,8 @@ public enum BuiltInMethod {
     SWITCH_CONTEXT( DataContext.class, "switchContext" ),
     BATCH( Functions.class, "batch", DataContext.class, Enumerable.class ),
     STREAM_RIGHT( Functions.class, "streamRight", DataContext.class, Enumerable.class, Function0.class, List.class ),
-    ENFORCE_CONSTRAINT( Functions.class, "enforceConstraint", Function0.class, Enumerable.class, List.class, List.class ),
-    PARSE_ARRAY_FROM_TEXT( Functions.class, "reparse", PolyType.class, Long.class, String.class ),
+    ENFORCE_CONSTRAINT( Functions.class, "enforceConstraint", DataContext.class, Function0.class, Function0.class, List.class, List.class ),
+    PARSE_ARRAY_FROM_TEXT( Functions.class, "reparse", String.class ),
     QUERYABLE_SELECT( Queryable.class, "select", FunctionExpression.class ),
     QUERYABLE_AS_ENUMERABLE( Queryable.class, "asEnumerable" ),
     QUERYABLE_TABLE_AS_QUERYABLE( QueryableEntity.class, "asQueryable", DataContext.class, Snapshot.class ),
@@ -168,19 +163,12 @@ public enum BuiltInMethod {
     BATCH_ITERATOR_GET_ENUM( BatchIteratorEnumerable.class, "getEnumerable" ),
     INTO( ExtendedEnumerable.class, "into", Collection.class ),
     REMOVE_ALL( ExtendedEnumerable.class, "removeAll", Collection.class ),
-    SCHEMA_GET_SUB_SCHEMA( Namespace.class, "getSubNamespace", String.class ),
 
-    SCHEMA_GET_TABLE( Namespace.class, "getEntity", String.class ),
     SCHEMA_PLUS_UNWRAP( SchemaPlus.class, "unwrapOrThrow", Class.class ),
-    /*SCHEMAS_ENUMERABLE_SCANNABLE( Schemas.class, "enumerable", ScannableEntity.class, DataContext.class ),
-    SCHEMAS_ENUMERABLE_FILTERABLE( Schemas.class, "enumerable", FilterableEntity.class, DataContext.class ),
-    SCHEMAS_ENUMERABLE_PROJECTABLE_FILTERABLE( Schemas.class, "enumerable", ProjectableFilterableEntity.class, DataContext.class ),
-    SCHEMAS_QUERYABLE( Schemas.class, "queryable", DataContext.class, Snapshot.class, Class.class, String.class ),*/
-    REFLECTIVE_SCHEMA_GET_TARGET( ReflectiveSchema.class, "getTarget" ),
     DATA_CONTEXT_GET( DataContext.class, "get", String.class ),
     DATA_CONTEXT_GET_PARAMETER_VALUE( DataContext.class, "getParameterValue", long.class ),
     DATA_CONTEXT_GET_ROOT_SCHEMA( DataContext.class, "getSnapshot" ),
-    //JDBC_SCHEMA_DATA_SOURCE( JdbcSchema.class, "getDataSource" ),
+
     ROW_VALUE( Row.class, "getObject", int.class ),
     ROW_AS_COPY( Row.class, "asCopy", Object[].class ),
     JOIN( ExtendedEnumerable.class, "hashJoin", Enumerable.class, Function1.class, Function1.class, Function2.class, EqualityComparer.class, boolean.class,
@@ -188,7 +176,6 @@ public enum BuiltInMethod {
     MERGE_JOIN( EnumerableDefaults.class, "mergeJoin", Enumerable.class, Enumerable.class, Function1.class, Function1.class, Function2.class, boolean.class, boolean.class ),
     SLICE0( Enumerables.class, "slice0", Enumerable.class ),
     SEMI_JOIN( EnumerableDefaults.class, "semiJoin", Enumerable.class, Enumerable.class, Function1.class, Function1.class ),
-    // THETA_JOIN( Functions.class, "thetaJoin", Enumerable.class, Enumerable.class, Predicate2.class, Function2.class, boolean.class, boolean.class ), // todo fix
     SINGLE_SUM( Functions.class, "singleSum", Enumerable.class ),
     CORRELATE_JOIN( ExtendedEnumerable.class, "correlateJoin", JoinType.class, Function1.class, Function2.class ),
     SELECT( ExtendedEnumerable.class, "select", Function1.class ),
@@ -221,11 +208,6 @@ public enum BuiltInMethod {
     ARRAY( Functions.class, "array", Object[].class ),
     FLAT_PRODUCT( Functions.class, "flatProduct", int[].class, boolean.class, FlatProductInputType[].class ),
     LIST_N( PolyList.class, "ofArray", PolyValue[].class ),
-    LIST2( ComparableList.class, "of", Object.class, Object.class ),
-    LIST3( ComparableList.class, "of", Object.class, Object.class, Object.class ),
-    LIST4( ComparableList.class, "of", Object.class, Object.class, Object.class, Object.class ),
-    LIST5( ComparableList.class, "of", Object.class, Object.class, Object.class, Object.class, Object.class ),
-    LIST6( ComparableList.class, "of", Object.class, Object.class, Object.class, Object.class, Object.class, Object.class ),
     COMPARABLE_EMPTY_LIST( ComparableList.class, "COMPARABLE_EMPTY_LIST", true ),
     IDENTITY_COMPARER( org.apache.calcite.linq4j.function.Functions.class, "identityComparer" ),
     IDENTITY_SELECTOR( org.apache.calcite.linq4j.function.Functions.class, "identitySelector" ),
@@ -274,7 +256,7 @@ public enum BuiltInMethod {
     ANY_ITEM( Functions.class, "itemOptional", Map.class, PolyValue.class ),
     UPPER( Functions.class, "upper", PolyString.class ),
     LOWER( Functions.class, "lower", PolyString.class ),
-    JSONIZE( Functions.class, "jsonize", Object.class ),
+    JSONIZE( Functions.class, "toJson", PolyValue.class ),
     JSON_VALUE_EXPRESSION( Functions.class, "jsonValueExpression", PolyString.class ),
     JSON_VALUE_EXPRESSION_EXCLUDE( Functions.class, "jsonValueExpressionExclude", PolyString.class, List.class ),
     JSON_STRUCTURED_VALUE_EXPRESSION( Functions.class, "jsonStructuredValueExpression", Object.class ),
@@ -325,26 +307,26 @@ public enum BuiltInMethod {
     BIT_AND( Functions.class, "bitAnd", long.class, long.class ),
     BIT_OR( Functions.class, "bitOr", long.class, long.class ),
     SCANNABLE_TABLE_SCAN( ScannableEntity.class, "scan", DataContext.class ),
-    STRING_TO_BOOLEAN( Functions.class, "toBoolean", String.class ),
-    INTERNAL_TO_DATE( Functions.class, "internalToDate", int.class ),
-    INTERNAL_TO_TIME( Functions.class, "internalToTime", int.class ),
-    INTERNAL_TO_TIMESTAMP( Functions.class, "internalToTimestamp", long.class ),
-    STRING_TO_DATE( DateTimeUtils.class, "dateStringToUnixDate", String.class ),
-    STRING_TO_TIME( DateTimeUtils.class, "timeStringToUnixDate", String.class ),
-    STRING_TO_TIMESTAMP( DateTimeUtils.class, "timestampStringToUnixDate", String.class ),
-    STRING_TO_TIME_WITH_LOCAL_TIME_ZONE( Functions.class, "toTimeWithLocalTimeZone", String.class ),
-    TIME_STRING_TO_TIME_WITH_LOCAL_TIME_ZONE( Functions.class, "toTimeWithLocalTimeZone", String.class, TimeZone.class ),
-    STRING_TO_TIMESTAMP_WITH_LOCAL_TIME_ZONE( Functions.class, "toTimestampWithLocalTimeZone", String.class ),
-    TIMESTAMP_STRING_TO_TIMESTAMP_WITH_LOCAL_TIME_ZONE( Functions.class, "toTimestampWithLocalTimeZone", String.class, TimeZone.class ),
-    TIME_WITH_LOCAL_TIME_ZONE_TO_TIME( Functions.class, "timeWithLocalTimeZoneToTime", int.class, TimeZone.class ),
-    TIME_WITH_LOCAL_TIME_ZONE_TO_TIMESTAMP( Functions.class, "timeWithLocalTimeZoneToTimestamp", String.class, int.class, TimeZone.class ),
-    TIME_WITH_LOCAL_TIME_ZONE_TO_TIMESTAMP_WITH_LOCAL_TIME_ZONE( Functions.class, "timeWithLocalTimeZoneToTimestampWithLocalTimeZone", String.class, int.class ),
-    TIME_WITH_LOCAL_TIME_ZONE_TO_STRING( Functions.class, "timeWithLocalTimeZoneToString", int.class, TimeZone.class ),
-    TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_DATE( Functions.class, "timestampWithLocalTimeZoneToDate", long.class, TimeZone.class ),
-    TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_TIME( Functions.class, "timestampWithLocalTimeZoneToTime", long.class, TimeZone.class ),
-    TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_TIME_WITH_LOCAL_TIME_ZONE( Functions.class, "timestampWithLocalTimeZoneToTimeWithLocalTimeZone", long.class ),
-    TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_TIMESTAMP( Functions.class, "timestampWithLocalTimeZoneToTimestamp", long.class, TimeZone.class ),
-    TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_STRING( Functions.class, "timestampWithLocalTimeZoneToString", long.class, TimeZone.class ),
+    STRING_TO_BOOLEAN( Functions.class, "toBoolean", PolyString.class ),
+    INTERNAL_TO_DATE( TemporalFunctions.class, "internalToDate", PolyNumber.class ),
+    INTERNAL_TO_TIME( TemporalFunctions.class, "internalToTime", PolyNumber.class ),
+    INTERNAL_TO_TIMESTAMP( TemporalFunctions.class, "internalToTimestamp", PolyNumber.class ),
+    STRING_TO_DATE( TemporalFunctions.class, "dateStringToUnixDate", PolyString.class ),
+    STRING_TO_TIME( TemporalFunctions.class, "timeStringToUnixDate", PolyString.class ),
+    STRING_TO_TIMESTAMP( TemporalFunctions.class, "timestampStringToUnixDate", PolyString.class ),
+    STRING_TO_TIME_WITH_LOCAL_TIME_ZONE( TemporalFunctions.class, "toTimeWithLocalTimeZone", PolyString.class ),
+    TIME_STRING_TO_TIME_WITH_LOCAL_TIME_ZONE( TemporalFunctions.class, "toTimeWithLocalTimeZone", PolyString.class, TimeZone.class ),
+    STRING_TO_TIMESTAMP_WITH_LOCAL_TIME_ZONE( TemporalFunctions.class, "toTimestampWithLocalTimeZone", PolyString.class ),
+    TIMESTAMP_STRING_TO_TIMESTAMP_WITH_LOCAL_TIME_ZONE( TemporalFunctions.class, "toTimestampWithLocalTimeZone", PolyString.class, TimeZone.class ),
+    TIME_WITH_LOCAL_TIME_ZONE_TO_TIME( TemporalFunctions.class, "timeWithLocalTimeZoneToTime", PolyNumber.class, TimeZone.class ),
+    TIME_WITH_LOCAL_TIME_ZONE_TO_TIMESTAMP( TemporalFunctions.class, "timeWithLocalTimeZoneToTimestamp", PolyString.class, PolyNumber.class, TimeZone.class ),
+    TIME_WITH_LOCAL_TIME_ZONE_TO_TIMESTAMP_WITH_LOCAL_TIME_ZONE( TemporalFunctions.class, "timeWithLocalTimeZoneToTimestampWithLocalTimeZone", PolyString.class, PolyNumber.class ),
+    TIME_WITH_LOCAL_TIME_ZONE_TO_STRING( TemporalFunctions.class, "timeWithLocalTimeZoneToString", PolyNumber.class, TimeZone.class ),
+    TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_DATE( TemporalFunctions.class, "timestampWithLocalTimeZoneToDate", PolyNumber.class, TimeZone.class ),
+    TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_TIME( TemporalFunctions.class, "timestampWithLocalTimeZoneToTime", PolyNumber.class, TimeZone.class ),
+    TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_TIME_WITH_LOCAL_TIME_ZONE( TemporalFunctions.class, "timestampWithLocalTimeZoneToTimeWithLocalTimeZone", PolyNumber.class ),
+    TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_TIMESTAMP( TemporalFunctions.class, "timestampWithLocalTimeZoneToTimestamp", PolyNumber.class, TimeZone.class ),
+    TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_STRING( TemporalFunctions.class, "timestampWithLocalTimeZoneToString", PolyNumber.class, TimeZone.class ),
     UNIX_DATE_TO_STRING( TemporalFunctions.class, "unixDateToString", PolyDate.class ),
     UNIX_TIME_TO_STRING( TemporalFunctions.class, "unixTimeToString", PolyTime.class ),
     UNIX_TIMESTAMP_TO_STRING( TemporalFunctions.class, "unixTimestampToString", PolyTimestamp.class ),
@@ -355,13 +337,17 @@ public enum BuiltInMethod {
     UNIX_DATE_CEIL( TemporalFunctions.class, "unixDateCeil", TimeUnitRange.class, PolyDate.class ),
     UNIX_TIMESTAMP_FLOOR( TemporalFunctions.class, "unixTimestampFloor", TimeUnitRange.class, PolyTimestamp.class ),
     UNIX_TIMESTAMP_CEIL( TemporalFunctions.class, "unixTimestampCeil", TimeUnitRange.class, PolyTimestamp.class ),
-    CURRENT_TIMESTAMP( Functions.class, "currentTimestamp", DataContext.class ),
-    CURRENT_TIME( Functions.class, "currentTime", DataContext.class ),
-    CURRENT_DATE( Functions.class, "currentDate", DataContext.class ),
-    LOCAL_TIMESTAMP( Functions.class, "localTimestamp", DataContext.class ),
-    LOCAL_TIME( Functions.class, "localTime", DataContext.class ),
-    TIME_ZONE( Functions.class, "timeZone", DataContext.class ),
-    BOOLEAN_TO_STRING( Functions.class, "toString", boolean.class ),
+    CURRENT_TIMESTAMP( TemporalFunctions.class, "currentTimestamp", DataContext.class ),
+    CURRENT_TIME( TemporalFunctions.class, "currentTime", DataContext.class ),
+    CURRENT_DATE( TemporalFunctions.class, "currentDate", DataContext.class ),
+    LOCAL_TIMESTAMP( TemporalFunctions.class, "localTimestamp", DataContext.class ),
+    LOCAL_TIME( TemporalFunctions.class, "localTime", DataContext.class ),
+    TIME_ZONE( TemporalFunctions.class, "timeZone", DataContext.class ),
+    BOOLEAN_TO_STRING( Functions.class, "toString", PolyBoolean.class ),
+
+    MILLIS_SINCE_EPOCH( PolyTemporal.class, "getMillisSinceEpoch" ),
+
+    MILLIS_SINCE_EPOCH_POLY( PolyTemporal.class, "getPolyMillisSinceEpoch" ),
 
     JDBC_DEEP_ARRAY_TO_POLY_LIST( Functions.class, "arrayToPolyList", java.sql.Array.class, Function1.class, int.class ),
     JDBC_ARRAY_TO_LIST( Functions.class, "arrayToList", java.sql.Array.class ),
@@ -374,14 +360,12 @@ public enum BuiltInMethod {
     COMPARE_NULLS_LAST( Utilities.class, "compareNullsLast", Comparable.class, Comparable.class ),
     ROUND_LONG( Functions.class, "round", long.class, long.class ),
     ROUND_INT( Functions.class, "round", int.class, int.class ),
-    DATE_TO_LONG( Functions.class, "dateToLong", java.util.Date.class ),
-    DATE_TO_LONG_OPTIONAL( Functions.class, "dateToLongOptional", java.util.Date.class ),
-    TIME_TO_LONG( Functions.class, "timeToLong", Time.class ),
-    TIME_TO_LONG_OPTIONAL( Functions.class, "timeToLongOptional", Time.class ),
-    //TIMESTAMP_TO_LONG( Functions.class, "toLong", java.util.Date.class ),
-    TIMESTAMP_TO_LONG_OFFSET( Functions.class, "toLong", java.util.Date.class, TimeZone.class ),
-    //TIMESTAMP_TO_LONG_OPTIONAL( Functions.class, "toLongOptional", Timestamp.class ),
-    TIMESTAMP_TO_LONG_OPTIONAL_OFFSET( Functions.class, "toLongOptional", Timestamp.class ),
+    DATE_TO_LONG( TemporalFunctions.class, "dateToLong", java.util.Date.class ),
+    DATE_TO_LONG_OPTIONAL( TemporalFunctions.class, "dateToLongOptional", java.util.Date.class ),
+    TIME_TO_LONG( TemporalFunctions.class, "timeToLong", Time.class ),
+    TIME_TO_LONG_OPTIONAL( TemporalFunctions.class, "timeToLongOptional", Time.class ),
+    TIMESTAMP_TO_LONG_OFFSET( TemporalFunctions.class, "toLong", java.util.Date.class, TimeZone.class ),
+    TIMESTAMP_TO_LONG_OPTIONAL_OFFSET( TemporalFunctions.class, "toLongOptional", Timestamp.class ),
     SEQUENCE_CURRENT_VALUE( Functions.class, "sequenceCurrentValue", String.class ),
     SEQUENCE_NEXT_VALUE( Functions.class, "sequenceNextValue", String.class ),
     SLICE( Functions.class, "slice", List.class ),
@@ -409,7 +393,7 @@ public enum BuiltInMethod {
     COLLATIONS( Collation.class, "collations" ),
     DISTRIBUTION( Distribution.class, "distribution" ),
     NODE_TYPES( NodeTypes.class, "getNodeTypes" ),
-    ROW_COUNT( RowCount.class, "getRowCount" ),
+    TUPLE_COUNT( TupleCount.class, "getTupleCount" ),
     MAX_ROW_COUNT( MaxRowCount.class, "getMaxRowCount" ),
     MIN_ROW_COUNT( MinRowCount.class, "getMinRowCount" ),
     DISTINCT_ROW_COUNT( DistinctRowCount.class, "getDistinctRowCount", ImmutableBitSet.class, RexNode.class ),
@@ -439,7 +423,6 @@ public enum BuiltInMethod {
     AGG_LAMBDA_FACTORY_ACC_SINGLE_GROUP_RESULT_SELECTOR( AggregateLambdaFactory.class, "singleGroupResultSelector", Function1.class ),
     RESULTSET_GETBYTES( ResultSet.class, "getBytes", int.class ),
     RESULTSET_GETBINARYSTREAM( ResultSet.class, "getBinaryStream", int.class ),
-    UNWRAP_INTERVAL( RefactorFunctions.class, "unwrap", PolyInterval.class ),
     /// MQL BUILT-IN METHODS
     MQL_EQ( MqlFunctions.class, "docEq", PolyValue.class, PolyValue.class ),
     MQL_GT( MqlFunctions.class, "docGt", PolyValue.class, PolyValue.class ),
@@ -497,7 +480,8 @@ public enum BuiltInMethod {
 
     X_MODEL_ITEM( CrossModelFunctions.class, "docItem", String.class, String.class ),
     SINGLE_TO_ARRAY_ENUMERABLE( Functions.class, "singleToArray", Enumerable.class ),
-    X_MODEL_GRAPH_ONLY_LABEL( CrossModelFunctions.class, "cypherOnlyLabelGraph", PolyValue.class, PolyString.class );
+    X_MODEL_GRAPH_ONLY_LABEL( CrossModelFunctions.class, "cypherOnlyLabelGraph", PolyValue.class, PolyString.class ),
+    TO_JSON( PolyValue.class, "toPolyJson" );
 
     private static final String toIntOptional = "toIntOptional";
     public final Method method;

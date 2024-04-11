@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,6 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.ResultIterator;
 import org.polypheny.db.TestHelper;
@@ -37,8 +36,6 @@ import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.excluded.CottontailExcluded;
-import org.polypheny.db.excluded.FileExcluded;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
@@ -104,8 +101,6 @@ public class SelectTest {
 
 
     @Test
-    @Tag("fileExcluded")
-    @Tag("cottontailExcluded")
     public void nestedSelect() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -208,14 +203,14 @@ public class SelectTest {
     }
 
 
-    @Test // todo dl move
+    @Test
     public void getRowsTest() {
         Transaction trx = TestHelper.getInstance().getTransaction();
         org.polypheny.db.transaction.Statement statement = trx.createStatement();
 
         AlgBuilder builder = AlgBuilder.create( statement );
 
-        AlgNode scan = builder.scan( "public", "TableC" ).build();
+        AlgNode scan = builder.relScan( "public", "TableC" ).build();
         PolyImplementation impl = statement.getQueryProcessor().prepareQuery( AlgRoot.of( scan, Kind.SELECT ), false );
 
         ResultIterator iter = impl.execute( statement, 2 );
@@ -247,7 +242,8 @@ public class SelectTest {
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( sql ),
-                        expectedResult
+                        expectedResult,
+                        true
                 );
             }
         }

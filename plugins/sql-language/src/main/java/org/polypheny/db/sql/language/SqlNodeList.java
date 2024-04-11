@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
-import java.util.stream.Collectors;
+import lombok.Getter;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.languages.OperatorRegistry;
@@ -52,6 +52,7 @@ public class SqlNodeList extends SqlNode implements NodeList {
 
 
     private final List<Node> list;
+    @Getter
     private final List<SqlNode> sqlList;
 
 
@@ -71,8 +72,7 @@ public class SqlNodeList extends SqlNode implements NodeList {
     public SqlNodeList( Collection<? extends SqlNode> collection, ParserPos pos ) {
         super( pos );
         list = new ArrayList<>( collection );
-        // todo dl this is dangerous
-        sqlList = collection.stream().map( e -> (SqlNode) e ).collect( Collectors.toList() );
+        sqlList = new ArrayList<>( collection.stream().map( e -> (SqlNode) e ).toList() );
     }
 
 
@@ -86,11 +86,6 @@ public class SqlNodeList extends SqlNode implements NodeList {
     @Override
     public List<Node> getList() {
         return list;
-    }
-
-
-    public List<SqlNode> getSqlList() {
-        return sqlList;
     }
 
 
@@ -183,10 +178,9 @@ public class SqlNodeList extends SqlNode implements NodeList {
 
     @Override
     public boolean equalsDeep( Node node, Litmus litmus ) {
-        if ( !(node instanceof SqlNodeList) ) {
+        if ( !(node instanceof SqlNodeList that) ) {
             return litmus.fail( "{} != {}", this, node );
         }
-        SqlNodeList that = (SqlNodeList) node;
         if ( this.size() != that.size() ) {
             return litmus.fail( "{} != {}", this, node );
         }
@@ -209,9 +203,7 @@ public class SqlNodeList extends SqlNode implements NodeList {
 
     public static boolean isEmptyList( final Node node ) {
         if ( node instanceof SqlNodeList ) {
-            if ( 0 == ((SqlNodeList) node).size() ) {
-                return true;
-            }
+            return 0 == ((SqlNodeList) node).size();
         }
         return false;
     }

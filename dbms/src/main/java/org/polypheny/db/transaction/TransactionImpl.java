@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -172,12 +172,12 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
                     .getConstraintAlg( logicalTables, statement, EnforcementTime.ON_COMMIT );
             List<PolyImplementation> results = infos
                     .stream()
-                    .map( s -> processor.prepareQuery( AlgRoot.of( s.getControl(), Kind.SELECT ), s.getControl().getCluster().getTypeFactory().builder().build(), false, true, false ) ).collect( Collectors.toList() );
+                    .map( s -> processor.prepareQuery( AlgRoot.of( s.control(), Kind.SELECT ), s.control().getCluster().getTypeFactory().builder().build(), false, true, false ) ).toList();
             List<List<?>> rows = results.stream().map( r -> r.execute( statement, -1 ).getAllRowsAndClose() ).filter( r -> !r.isEmpty() ).collect( Collectors.toList() );
             if ( !rows.isEmpty() ) {
                 int index = ((List<PolyNumber>) rows.get( 0 ).get( 0 )).get( 1 ).intValue();
                 rollback();
-                throw new TransactionException( infos.get( 0 ).getErrorMessages().get( index ) + "\nThere are violated constraints, the transaction was rolled back!" );
+                throw new TransactionException( infos.get( 0 ).errorMessages().get( index ) + "\nThere are violated constraints, the transaction was rolled back!" );
             }
         }
 
@@ -203,6 +203,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
         }
 
         Catalog.getInstance().commit();
+
         // Free resources hold by statements
         statements.forEach( Statement::close );
 
@@ -260,7 +261,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
         // note dl, while caching the processors works in most cases,
         // it can lead to validator bleed when using multiple simultaneous insert for example
         // caching therefore is not possible atm
-        return language.getProcessorSupplier().get();
+        return language.processorSupplier().get();
     }
 
 

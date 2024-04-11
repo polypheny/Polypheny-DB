@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,7 +42,8 @@ public class PartnerConnection {
 
     public <E> void broadcast( E msg ) {
         List<WsMessageContext> invalid = new ArrayList<>();
-        for ( WsMessageContext context : contexts ) {
+
+        for ( WsMessageContext context : List.copyOf( contexts ) ) { // Copy to avoid ConcurrentModificationException
             if ( !context.session.isOpen() ) {
                 invalid.add( context );
                 continue;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,7 +42,7 @@ public class EnumerableModifyToStreamerRule extends AlgOptRule {
      * and prepared {@link Modify}, which can be useful if the executing store is not able to perform the {@link Scan} query natively.
      */
     private EnumerableModifyToStreamerRule( Class<? extends Modify<?>> modify ) {
-        super( operandJ( modify, Convention.NONE, r -> !r.streamed, any() ), "Enumerable" + modify.getSimpleName() + "ToStreamerRule" );
+        super( operand( modify, Convention.NONE, r -> !r.streamed, any() ), "Enumerable" + modify.getSimpleName() + "ToStreamerRule" );
     }
 
 

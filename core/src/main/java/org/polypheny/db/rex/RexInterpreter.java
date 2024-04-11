@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,17 +42,19 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.IntPredicate;
-import org.apache.calcite.avatica.util.DateTimeUtils;
-import org.apache.calcite.avatica.util.TimeUnit;
-import org.apache.calcite.avatica.util.TimeUnitRange;
-import org.polypheny.db.algebra.metadata.NullSentinel;
-import org.polypheny.db.util.NlsString;
+import org.polypheny.db.nodes.TimeUnitRange;
+import org.polypheny.db.type.entity.PolyBoolean;
+import org.polypheny.db.type.entity.PolyNull;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 import org.polypheny.db.util.Util;
+import org.polypheny.db.util.temporal.DateTimeUtils;
+import org.polypheny.db.util.temporal.TimeUnit;
 
 
 /**
  * Evaluates {@link RexNode} expressions.
- *
+ * <p>
  * Caveats:
  * <ul>
  * <li>It uses interpretation, so it is not very efficient.</li>
@@ -60,11 +62,11 @@ import org.polypheny.db.util.Util;
  * <li>It is not well tested.</li>
  * </ul>
  */
-public class RexInterpreter implements RexVisitor<Comparable<?>> {
+public class RexInterpreter implements RexVisitor<PolyValue> {
 
-    private static final NullSentinel N = NullSentinel.INSTANCE;
+    private static final PolyNull N = PolyNull.NULL;
 
-    private final Map<RexNode, Comparable<?>> environment;
+    private final Map<RexNode, PolyValue> environment;
 
 
     /**
@@ -72,7 +74,7 @@ public class RexInterpreter implements RexVisitor<Comparable<?>> {
      *
      * @param environment Values of certain expressions (usually {@link RexIndexRef}s)
      */
-    private RexInterpreter( Map<RexNode, Comparable<?>> environment ) {
+    private RexInterpreter( Map<RexNode, PolyValue> environment ) {
         this.environment = ImmutableMap.copyOf( environment );
     }
 
@@ -80,12 +82,8 @@ public class RexInterpreter implements RexVisitor<Comparable<?>> {
     /**
      * Evaluates an expression in an environment.
      */
-    public static Comparable<?> evaluate( RexNode e, Map<RexNode, Comparable<?>> map ) {
-        final Comparable<?> v = e.accept( new RexInterpreter( map ) );
-        if ( false ) {
-            System.out.println( "evaluate " + e + " on " + map + " returns " + v );
-        }
-        return v;
+    public static PolyValue evaluate( RexNode e, Map<RexNode, PolyValue> map ) {
+        return e.accept( new RexInterpreter( map ) );
     }
 
 
@@ -94,8 +92,8 @@ public class RexInterpreter implements RexVisitor<Comparable<?>> {
     }
 
 
-    private Comparable<?> getOrUnbound( RexNode e ) {
-        final Comparable<?> comparable = environment.get( e );
+    private PolyValue getOrUnbound( RexNode e ) {
+        final PolyValue comparable = environment.get( e );
         if ( comparable != null ) {
             return comparable;
         }
@@ -104,94 +102,100 @@ public class RexInterpreter implements RexVisitor<Comparable<?>> {
 
 
     @Override
-    public Comparable<?> visitIndexRef( RexIndexRef inputRef ) {
+    public PolyValue visitIndexRef( RexIndexRef inputRef ) {
         return getOrUnbound( inputRef );
     }
 
 
     @Override
-    public Comparable<?> visitLocalRef( RexLocalRef localRef ) {
+    public PolyValue visitLocalRef( RexLocalRef localRef ) {
         throw unbound( localRef );
     }
 
 
     @Override
-    public Comparable<?> visitLiteral( RexLiteral literal ) {
+    public PolyValue visitLiteral( RexLiteral literal ) {
         return Util.first( literal.getValue(), N );
     }
 
 
     @Override
-    public Comparable<?> visitOver( RexOver over ) {
+    public PolyValue visitOver( RexOver over ) {
         throw unbound( over );
     }
 
 
     @Override
-    public Comparable<?> visitCorrelVariable( RexCorrelVariable correlVariable ) {
+    public PolyValue visitCorrelVariable( RexCorrelVariable correlVariable ) {
         return getOrUnbound( correlVariable );
     }
 
 
     @Override
-    public Comparable<?> visitDynamicParam( RexDynamicParam dynamicParam ) {
+    public PolyValue visitDynamicParam( RexDynamicParam dynamicParam ) {
         return getOrUnbound( dynamicParam );
     }
 
 
     @Override
-    public Comparable<?> visitRangeRef( RexRangeRef rangeRef ) {
+    public PolyValue visitRangeRef( RexRangeRef rangeRef ) {
         throw unbound( rangeRef );
     }
 
 
     @Override
-    public Comparable<?> visitFieldAccess( RexFieldAccess fieldAccess ) {
+    public PolyValue visitFieldAccess( RexFieldAccess fieldAccess ) {
         return getOrUnbound( fieldAccess );
     }
 
 
     @Override
-    public Comparable<?> visitSubQuery( RexSubQuery subQuery ) {
+    public PolyValue visitSubQuery( RexSubQuery subQuery ) {
         throw unbound( subQuery );
     }
 
 
     @Override
-    public Comparable<?> visitTableInputRef( RexTableIndexRef fieldRef ) {
+    public PolyValue visitTableInputRef( RexTableIndexRef fieldRef ) {
         throw unbound( fieldRef );
     }
 
 
     @Override
-    public Comparable<?> visitPatternFieldRef( RexPatternFieldRef fieldRef ) {
+    public PolyValue visitPatternFieldRef( RexPatternFieldRef fieldRef ) {
         throw unbound( fieldRef );
     }
 
 
     @Override
-    public Comparable<?> visitNameRef( RexNameRef nameRef ) {
+    public PolyValue visitNameRef( RexNameRef nameRef ) {
         throw unbound( nameRef );
     }
 
 
     @Override
-    public Comparable<?> visitCall( RexCall call ) {
-        final List<Comparable<?>> values = new ArrayList<>( call.operands.size() );
+    public PolyValue visitElementRef( RexElementRef rexElementRef ) {
+        throw unbound( rexElementRef );
+    }
+
+
+    @Override
+    public PolyValue visitCall( RexCall call ) {
+        final List<PolyValue> values = new ArrayList<>( call.operands.size() );
         for ( RexNode operand : call.operands ) {
             values.add( operand.accept( this ) );
         }
         switch ( call.getKind() ) {
             case IS_NOT_DISTINCT_FROM:
                 if ( containsNull( values ) ) {
-                    return values.get( 0 ).equals( values.get( 1 ) );
+                    return PolyBoolean.of( values.get( 0 ).equals( values.get( 1 ) ) );
                 }
                 // falls through EQUALS
             case EQUALS:
                 return compare( values, c -> c == 0 );
             case IS_DISTINCT_FROM:
                 if ( containsNull( values ) ) {
-                    return !values.get( 0 ).equals( values.get( 1 ) );
+                    return PolyBoolean.of( !values.get( 0 ).equals( values.get( 1 ) ) );
                 }
                 // falls through NOT_EQUALS
             case NOT_EQUALS:
@@ -205,37 +209,37 @@ public class RexInterpreter implements RexVisitor<Comparable<?>> {
             case LESS_THAN_OR_EQUAL:
                 return compare( values, c -> c <= 0 );
             case AND:
-                return values.stream().map( Truthy::of ).min( Comparator.naturalOrder() ).orElseThrow().toComparable();
+                return values.stream().map( Truthy::of ).min( Comparator.naturalOrder() ).orElseThrow().toPolyValue();
             case OR:
-                return values.stream().map( Truthy::of ).max( Comparator.naturalOrder() ).orElseThrow().toComparable();
+                return values.stream().map( Truthy::of ).max( Comparator.naturalOrder() ).orElseThrow().toPolyValue();
             case NOT:
                 return not( values.get( 0 ) );
             case CASE:
                 return case_( values );
             case IS_TRUE:
-                return values.get( 0 ).equals( true );
+                return PolyBoolean.of( values.get( 0 ).isNotNull() && values.get( 0 ).asBoolean().value );
             case IS_NOT_TRUE:
-                return !values.get( 0 ).equals( true );
+                return PolyBoolean.of( values.get( 0 ).isNull() || !values.get( 0 ).asBoolean().value );
             case IS_NULL:
-                return values.get( 0 ).equals( N );
+                return PolyBoolean.of( values.get( 0 ).equals( N ) );
             case IS_NOT_NULL:
-                return !values.get( 0 ).equals( N );
+                return PolyBoolean.of( !values.get( 0 ).equals( N ) );
             case IS_FALSE:
-                return values.get( 0 ).equals( false );
+                return PolyBoolean.of( values.get( 0 ).isNull() || !values.get( 0 ).asBoolean().value );
             case IS_NOT_FALSE:
-                return !values.get( 0 ).equals( false );
+                return PolyBoolean.of( values.get( 0 ).isNotNull() && values.get( 0 ).asBoolean().value );
             case PLUS_PREFIX:
                 return values.get( 0 );
             case MINUS_PREFIX:
-                return containsNull( values ) ? N : number( values.get( 0 ) ).negate();
+                return containsNull( values ) ? N : values.get( 0 ).asNumber().negate();
             case PLUS:
-                return containsNull( values ) ? N : number( values.get( 0 ) ).add( number( values.get( 1 ) ) );
+                return containsNull( values ) ? N : values.get( 0 ).asNumber().plus( values.get( 1 ).asNumber() );
             case MINUS:
-                return containsNull( values ) ? N : number( values.get( 0 ) ).subtract( number( values.get( 1 ) ) );
+                return containsNull( values ) ? N : values.get( 0 ).asNumber().subtract( values.get( 1 ).asNumber() );
             case TIMES:
-                return containsNull( values ) ? N : number( values.get( 0 ) ).multiply( number( values.get( 1 ) ) );
+                return containsNull( values ) ? N : values.get( 0 ).asNumber().multiply( values.get( 1 ).asNumber() );
             case DIVIDE:
-                return containsNull( values ) ? N : number( values.get( 0 ) ).divide( number( values.get( 1 ) ) );
+                return containsNull( values ) ? N : values.get( 0 ).asNumber().divide( values.get( 1 ).asNumber() );
             case CAST:
                 return cast( call, values );
             case COALESCE:
@@ -251,26 +255,26 @@ public class RexInterpreter implements RexVisitor<Comparable<?>> {
     }
 
 
-    private Comparable<?> extract( RexCall call, List<Comparable<?>> values ) {
-        final Comparable<?> v = values.get( 1 );
+    private PolyValue extract( RexCall call, List<PolyValue> values ) {
+        final PolyValue v = values.get( 1 );
         if ( v == N ) {
             return N;
         }
-        final TimeUnitRange timeUnitRange = (TimeUnitRange) values.get( 0 );
-        final int v2;
-        if ( v instanceof Long ) {
+        final TimeUnitRange timeUnitRange = values.get( 0 ).asSymbol().asEnum( TimeUnitRange.class );
+        final long v2;
+        if ( v.isTimestamp() ) {
             // TIMESTAMP
-            v2 = (int) (((Long) v) / TimeUnit.DAY.multiplier.longValue());
+            v2 = (v.asTimestamp().getMillisSinceEpoch() / TimeUnit.DAY.multiplier.longValue());
         } else {
             // DATE
-            v2 = (Integer) v;
+            v2 = v.asDate().asDate().getDaysSinceEpoch();
         }
-        return DateTimeUtils.unixDateExtract( timeUnitRange, v2 );
+        return PolyTimestamp.of( DateTimeUtils.unixDateExtract( timeUnitRange, v2 ) );
     }
 
 
-    private Comparable<?> coalesce( RexCall call, List<Comparable<?>> values ) {
-        for ( Comparable<?> value : values ) {
+    private PolyValue coalesce( RexCall call, List<PolyValue> values ) {
+        for ( PolyValue value : values ) {
             if ( value != N ) {
                 return value;
             }
@@ -279,27 +283,25 @@ public class RexInterpreter implements RexVisitor<Comparable<?>> {
     }
 
 
-    private Comparable<?> ceil( RexCall call, List<Comparable<?>> values ) {
+    private PolyValue ceil( RexCall call, List<PolyValue> values ) {
         if ( values.get( 0 ) == N ) {
             return N;
         }
-        final Long v = (Long) values.get( 0 );
-        final TimeUnitRange unit = (TimeUnitRange) values.get( 1 );
+        final Long v = values.get( 0 ).asNumber().LongValue();
+        final TimeUnitRange unit = values.get( 1 ).asSymbol().asEnum( TimeUnitRange.class );
         switch ( unit ) {
             case YEAR:
             case MONTH:
-                switch ( call.getKind() ) {
-                    case FLOOR:
-                        return DateTimeUtils.unixTimestampFloor( unit, v );
-                    default:
-                        return DateTimeUtils.unixTimestampCeil( unit, v );
-                }
+                return switch ( call.getKind() ) {
+                    case FLOOR -> PolyTimestamp.of( DateTimeUtils.unixTimestampFloor( unit, v ) );
+                    default -> PolyTimestamp.of( DateTimeUtils.unixTimestampCeil( unit, v ) );
+                };
         }
         final TimeUnitRange subUnit = subUnit( unit );
         for ( long v2 = v; ; ) {
             final int e = DateTimeUtils.unixTimestampExtract( subUnit, v2 );
             if ( e == 0 ) {
-                return v2;
+                return PolyTimestamp.of( v2 );
             }
             v2 -= unit.startUnit.multiplier.longValue();
         }
@@ -307,16 +309,14 @@ public class RexInterpreter implements RexVisitor<Comparable<?>> {
 
 
     private TimeUnitRange subUnit( TimeUnitRange unit ) {
-        switch ( unit ) {
-            case QUARTER:
-                return TimeUnitRange.MONTH;
-            default:
-                return TimeUnitRange.DAY;
-        }
+        return switch ( unit ) {
+            case QUARTER -> TimeUnitRange.MONTH;
+            default -> TimeUnitRange.DAY;
+        };
     }
 
 
-    private Comparable<?> cast( RexCall call, List<Comparable<?>> values ) {
+    private PolyValue cast( RexCall call, List<PolyValue> values ) {
         if ( values.get( 0 ) == N ) {
             return N;
         }
@@ -324,20 +324,20 @@ public class RexInterpreter implements RexVisitor<Comparable<?>> {
     }
 
 
-    private Comparable<?> not( Comparable<?> value ) {
-        if ( value.equals( true ) ) {
-            return false;
-        } else if ( value.equals( false ) ) {
-            return true;
+    private PolyValue not( PolyValue value ) {
+        if ( value.isBoolean() && value.isNotNull() && value.asBoolean().value.equals( true ) ) {
+            return PolyBoolean.FALSE;
+        } else if ( value.isBoolean() && value.isNotNull() && value.asBoolean().value.equals( false ) ) {
+            return PolyBoolean.TRUE;
         } else {
             return N;
         }
     }
 
 
-    private Comparable<?> case_( List<Comparable<?>> values ) {
+    private PolyValue case_( List<PolyValue> values ) {
         final int size;
-        final Comparable<?> elseValue;
+        final PolyValue elseValue;
         if ( values.size() % 2 == 0 ) {
             size = values.size();
             elseValue = N;
@@ -346,7 +346,7 @@ public class RexInterpreter implements RexVisitor<Comparable<?>> {
             elseValue = Util.last( values );
         }
         for ( int i = 0; i < size; i += 2 ) {
-            if ( values.get( i ).equals( true ) ) {
+            if ( values.get( i ).isBoolean() && !values.get( i ).isNull() && values.get( i ).asBoolean().value.equals( true ) ) {
                 return values.get( i + 1 );
             }
         }
@@ -365,41 +365,20 @@ public class RexInterpreter implements RexVisitor<Comparable<?>> {
     }
 
 
-    private Comparable<?> compare( List<Comparable<?>> values, IntPredicate p ) {
+    private PolyValue compare( List<PolyValue> values, IntPredicate p ) {
         if ( containsNull( values ) ) {
             return N;
         }
-        Comparable<?> v0 = values.get( 0 );
-        Comparable<?> v1 = values.get( 1 );
+        PolyValue v0 = values.get( 0 );
+        PolyValue v1 = values.get( 1 );
 
-        if ( v0 instanceof Number && v1 instanceof NlsString ) {
-            try {
-                v1 = new BigDecimal( ((NlsString) v1).getValue() );
-            } catch ( NumberFormatException e ) {
-                return false;
-            }
-        }
-        if ( v1 instanceof Number && v0 instanceof NlsString ) {
-            try {
-                v0 = new BigDecimal( ((NlsString) v0).getValue() );
-            } catch ( NumberFormatException e ) {
-                return false;
-            }
-        }
-        if ( v0 instanceof Number ) {
-            v0 = number( v0 );
-        }
-        if ( v1 instanceof Number ) {
-            v1 = number( v1 );
-        }
-        //noinspection unchecked
-        final int c = ((Comparable) v0).compareTo( v1 );
-        return p.test( c );
+        final int c = v0.compareTo( v1 );
+        return PolyBoolean.of( p.test( c ) );
     }
 
 
-    private boolean containsNull( List<Comparable<?>> values ) {
-        for ( Comparable<?> value : values ) {
+    private boolean containsNull( List<PolyValue> values ) {
+        for ( PolyValue value : values ) {
             if ( value == N ) {
                 return true;
             }
@@ -416,22 +395,17 @@ public class RexInterpreter implements RexVisitor<Comparable<?>> {
         FALSE, UNKNOWN, TRUE;
 
 
-        static Truthy of( Comparable<?> c ) {
-            return c.equals( true ) ? TRUE : c.equals( false ) ? FALSE : UNKNOWN;
+        static Truthy of( PolyValue c ) {
+            return c.isNull() || !c.isBoolean() ? UNKNOWN : (c.asBoolean().value ? TRUE : FALSE);
         }
 
 
-        Comparable<?> toComparable() {
-            switch ( this ) {
-                case TRUE:
-                    return true;
-                case FALSE:
-                    return false;
-                case UNKNOWN:
-                    return N;
-                default:
-                    throw new AssertionError();
-            }
+        PolyValue toPolyValue() {
+            return switch ( this ) {
+                case TRUE -> PolyBoolean.TRUE;
+                case FALSE -> PolyBoolean.FALSE;
+                case UNKNOWN -> N;
+            };
         }
     }
 

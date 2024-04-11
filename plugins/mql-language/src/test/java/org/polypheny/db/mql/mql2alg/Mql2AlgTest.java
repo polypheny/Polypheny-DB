@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,21 +18,21 @@ package org.polypheny.db.mql.mql2alg;
 
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.languages.mql2alg.MqlToAlgConverter;
 import org.polypheny.db.mql.mql.MqlTest;
-import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.Contexts;
+import org.polypheny.db.plan.AlgCluster;
+import org.polypheny.db.plan.volcano.VolcanoPlanner;
 import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.rex.RexBuilder;
-import org.polypheny.db.test.MockAlgOptPlanner;
 
 
 public abstract class Mql2AlgTest extends MqlTest {
 
     private static final AlgDataTypeFactory factory;
-    private static final AlgOptCluster cluster;
+    private static final AlgCluster cluster;
     final static MqlToAlgConverter MQL_TO_ALG_CONVERTER;
 
     private static final Snapshot snapshot;
@@ -40,8 +40,8 @@ public abstract class Mql2AlgTest extends MqlTest {
 
     static {
         factory = AlgDataTypeFactory.DEFAULT;
-        cluster = AlgOptCluster.create( new MockAlgOptPlanner( Contexts.empty() ), new RexBuilder( factory ), null, null );
-        snapshot = new MockCatalogReaderDocument( factory, false ).getSnapshot();
+        cluster = AlgCluster.create( new VolcanoPlanner(), new RexBuilder( factory ), null, null );
+        snapshot = Catalog.snapshot();
         MQL_TO_ALG_CONVERTER = new MqlToAlgConverter( snapshot, cluster );
     }
 

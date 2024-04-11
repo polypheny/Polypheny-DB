@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,7 +41,6 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.plugins.PolyPluginManager;
 import org.polypheny.db.prepare.Context;
-import org.polypheny.db.sql.language.dialect.HsqldbSqlDialect;
 import org.polypheny.db.transaction.PUID;
 import org.polypheny.db.transaction.PUID.Type;
 import org.polypheny.db.transaction.PolyXid;
@@ -102,13 +101,9 @@ public class HsqldbStore extends AbstractJdbcStore {
 
     @Override
     public String addIndex( Context context, LogicalIndex index, AllocationTable allocation ) {
-        // List<AllocationColumn> ccps = context.getSnapshot().alloc().getColumnPlacementsOnAdapterPerTable( getAdapterId(), catalogIndex.key.tableId );
-        // List<CatalogPartitionPlacement> partitionPlacements = new ArrayList<>();
-        // partitionIds.forEach( id -> partitionPlacements.add( context.getSnapshot().alloc().getPartitionPlacement( getAdapterId(), id ) ) );
+        PhysicalTable physical = adapterCatalog.fromAllocation( allocation.id );
 
-        String physicalIndexName = getPhysicalIndexName( index.key.tableId, index.id );
-        PhysicalTable physical = storeCatalog.fromAllocation( allocation.id );
-        // for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
+        String physicalIndexName = getPhysicalIndexName( physical.id, index.id );
 
         StringBuilder builder = new StringBuilder();
         builder.append( "CREATE " );
@@ -118,7 +113,7 @@ public class HsqldbStore extends AbstractJdbcStore {
             builder.append( "INDEX " );
         }
 
-        builder.append( dialect.quoteIdentifier( physicalIndexName ) );//+ "_" + partitionPlacement.partitionId ) );
+        builder.append( dialect.quoteIdentifier( physicalIndexName ) );
         builder.append( " ON " )
                 .append( dialect.quoteIdentifier( physical.namespaceName ) )
                 .append( "." )
@@ -126,7 +121,7 @@ public class HsqldbStore extends AbstractJdbcStore {
 
         builder.append( "(" );
         boolean first = true;
-        for ( long columnId : index.key.columnIds ) {
+        for ( long columnId : index.key.fieldIds ) {
             if ( !first ) {
                 builder.append( ", " );
             }
@@ -135,20 +130,20 @@ public class HsqldbStore extends AbstractJdbcStore {
         }
         builder.append( ")" );
         executeUpdate( builder, context );
-        //}
         return physicalIndexName;
-        // Catalog.getInstance().getLogicalRel( catalogIndex.key.namespaceId ).setIndexPhysicalName( catalogIndex.id, physicalIndexName );
     }
 
 
     @Override
     public void dropIndex( Context context, LogicalIndex index, long allocId ) {
 
-        PhysicalTable table = storeCatalog.fromAllocation( allocId );
+        PhysicalTable physical = adapterCatalog.fromAllocation( allocId );
+
+        String physicalIndexName = getPhysicalIndexName( physical.id, index.id );
 
         StringBuilder builder = new StringBuilder();
         builder.append( "DROP INDEX " );
-        builder.append( dialect.quoteIdentifier( index.physicalName + "_" + table.id ) );
+        builder.append( dialect.quoteIdentifier( physicalIndexName ) );
         executeUpdate( builder, context );
 
     }
@@ -197,48 +192,32 @@ public class HsqldbStore extends AbstractJdbcStore {
         if ( type.getFamily() == PolyTypeFamily.MULTIMEDIA ) {
             return "BLOB(" + RuntimeConfig.UI_UPLOAD_SIZE_MB.getInteger() + "M)";
         }
-        switch ( type ) {
-            case BOOLEAN:
-                return "BOOLEAN";
-            case VARBINARY:
-                return "VARBINARY";
-            case TINYINT:
-                return "TINYINT";
-            case SMALLINT:
-                return "SMALLINT";
-            case INTEGER:
-                return "INT";
-            case BIGINT:
-                return "BIGINT";
-            case REAL:
-                return "REAL";
-            case DOUBLE:
-                return "FLOAT";
-            case DECIMAL:
-                return "DECIMAL";
-            case VARCHAR:
-                return "VARCHAR";
-            case DATE:
-                return "DATE";
-            case TIME:
-                return "TIME";
-            case TIMESTAMP:
-                return "TIMESTAMP";
-            case ARRAY:
-                return "LONGVARCHAR";
-            case JSON:
-            case NODE:
-            case EDGE:
-            case DOCUMENT:
-                return "LONGVARCHAR";
-        }
-        throw new GenericRuntimeException( "Unknown type: " + type.name() );
+        return switch ( type ) {
+            case BOOLEAN -> "BOOLEAN";
+            case VARBINARY -> "VARBINARY";
+            case TINYINT -> "TINYINT";
+            case SMALLINT -> "SMALLINT";
+            case INTEGER -> "INT";
+            case BIGINT -> "BIGINT";
+            case REAL -> "REAL";
+            case DOUBLE -> "FLOAT";
+            case DECIMAL -> "DECIMAL";
+            case VARCHAR -> "VARCHAR";
+            case DATE -> "DATE";
+            case TIME -> "TIME";
+            case TIMESTAMP -> "TIMESTAMP";
+            case ARRAY -> "LONGVARCHAR";
+            case TEXT -> "VARCHAR(200000)"; // clob can sadly not be used as pk which puts arbitrary limit on the value
+            case JSON, NODE, EDGE, DOCUMENT -> "LONGVARCHAR";
+            default -> throw new GenericRuntimeException( "Unknown type: " + type.name() );
+        };
     }
 
 
     @Override
-    public String getDefaultPhysicalNamespaceName() {
+    public String getDefaultPhysicalSchemaName() {
         return "PUBLIC";
     }
+
 
 }

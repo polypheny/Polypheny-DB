@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,22 +24,20 @@ import org.apache.calcite.linq4j.tree.ParameterExpression;
 /**
  * Context, which holds the Expressions used for unwinding
  */
+@Getter
 public class UnwindContext {
 
-    @Getter
     @Setter
     boolean useUnwind = false;
 
-    @Getter
     ParameterExpression _i;
 
-    @Getter
     ParameterExpression _list;
 
-    @Getter
     ParameterExpression _unset;
 
 
+    @SuppressWarnings("unused")
     public void activateUnwind( ParameterExpression _i, ParameterExpression _list, ParameterExpression _unset ) {
         useUnwind = true;
         this._i = _i;

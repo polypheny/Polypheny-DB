@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -130,7 +130,7 @@ public class AlgOptRuleOperand {
 
 
     /**
-     * @return relational expression class matched by this operand
+     * @return algebra expression class matched by this operand
      */
     public Class<? extends AlgNode> getMatchedClass() {
         return clazz;
@@ -148,7 +148,7 @@ public class AlgOptRuleOperand {
 
 
     /**
-     * Returns whether a relational expression matches this operand. It must be of the right class and trait.
+     * Returns whether an algebra expression matches this operand. It must be of the right class and trait.
      */
     public boolean matches( AlgNode alg ) {
         if ( !clazz.isInstance( alg ) ) {

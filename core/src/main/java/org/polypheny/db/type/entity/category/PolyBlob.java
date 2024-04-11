@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -121,6 +121,12 @@ public class PolyBlob extends PolyValue {
     }
 
 
+    @Override
+    public Object toJava() {
+        return value;
+    }
+
+
     public InputStream asBinaryStream() {
         if ( stream != null ) {
             return stream;
@@ -150,6 +156,16 @@ public class PolyBlob extends PolyValue {
 
     public String as64String() {
         return Base64.encodeBytes( asByteArray() );
+    }
+
+
+    public boolean isHandle() {
+        throw new UnsupportedOperationException( "Not yet implemented" );
+    }
+
+
+    public FileInputHandle getHandle() {
+        throw new UnsupportedOperationException( "Not yet implemented" );
     }
 
 }

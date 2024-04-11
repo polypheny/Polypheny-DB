@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ public class DocResult extends Result<String, FieldDefinition> {
             @JsonProperty("header") FieldDefinition[] header,
             @JsonProperty("exception") Throwable exception,
             @JsonProperty("query") String query,
+            @JsonProperty("queryType") QueryType queryType,
             @JsonProperty("xid") String xid,
             @JsonProperty("error") String error,
             @JsonProperty("currentPage") int currentPage,
@@ -50,6 +51,7 @@ public class DocResult extends Result<String, FieldDefinition> {
                 header,
                 exception,
                 query,
+                queryType,
                 xid,
                 error,
                 currentPage,
@@ -59,6 +61,5 @@ public class DocResult extends Result<String, FieldDefinition> {
                 affectedTuples );
     }
 
-    // public Throwable exception;
 
 }

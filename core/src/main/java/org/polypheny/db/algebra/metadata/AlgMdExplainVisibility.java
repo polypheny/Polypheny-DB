@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,7 +44,7 @@ import org.polypheny.db.util.BuiltInMethod;
  */
 public class AlgMdExplainVisibility implements MetadataHandler<BuiltInMetadata.ExplainVisibility> {
 
-    public static final AlgMetadataProvider SOURCE = ReflectiveAlgMetadataProvider.reflectiveSource( BuiltInMethod.EXPLAIN_VISIBILITY.method, new AlgMdExplainVisibility() );
+    public static final AlgMetadataProvider SOURCE = ReflectiveAlgMetadataProvider.reflectiveSource( new AlgMdExplainVisibility(), BuiltInMethod.EXPLAIN_VISIBILITY.method );
 
 
     private AlgMdExplainVisibility() {

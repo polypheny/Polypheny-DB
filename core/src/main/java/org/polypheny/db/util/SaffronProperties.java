@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -83,7 +83,7 @@ public interface SaffronProperties {
      * {@link Validator}.
      */
     @Resource("saffron.default.charset")
-    @Default("ISO-8859-1")
+    @Default("UTF-8")
     StringProp defaultCharset();
 
     /**
@@ -94,7 +94,7 @@ public interface SaffronProperties {
      * {@code org.polypheny.db.sql.SqlLiteral#SqlLiteral}
      */
     @Resource("saffron.default.nationalcharset")
-    @Default("ISO-8859-1")
+    @Default("UTF-8")
     StringProp defaultNationalCharset();
 
     /**
@@ -104,7 +104,7 @@ public interface SaffronProperties {
      * {@code org.polypheny.db.sql.SqlLiteral#SqlLiteral}
      */
     @Resource("saffron.default.collation.name")
-    @Default("ISO-8859-1$en_US")
+    @Default("UTF-8$en_US")
     StringProp defaultCollation();
 
     /**

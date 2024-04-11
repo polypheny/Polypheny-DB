@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,13 +27,13 @@ import org.polypheny.db.adapter.neo4j.rules.relational.NeoProject;
 import org.polypheny.db.adapter.neo4j.rules.relational.NeoValues;
 import org.polypheny.db.adapter.neo4j.util.NeoUtil;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.UnsupportedFromInsertShuttle;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.core.relational.RelModify;
+import org.polypheny.db.algebra.util.UnsupportedRelFromInsertShuttle;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.schema.types.ModifiableTable;
@@ -68,8 +68,8 @@ public interface NeoRules {
         public static NeoModifyRule INSTANCE = new NeoModifyRule( RelModify.class, NeoModifyRule::supports, "NeoModifyRule" );
 
 
-        private static boolean supports( RelModify modify ) {
-            return !modify.isInsert() || !UnsupportedFromInsertShuttle.contains( modify );
+        private static boolean supports( RelModify<?> modify ) {
+            return !modify.isInsert() || !UnsupportedRelFromInsertShuttle.contains( modify );
         }
 
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ package org.polypheny.db.algebra;
 
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.SortedSetMultimap;
 import java.util.ArrayDeque;
@@ -46,7 +47,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.SortedSet;
+import java.util.function.Consumer;
+import lombok.Getter;
 import org.apache.calcite.linq4j.Ord;
+import org.polypheny.db.algebra.AlgProducingVisitor.AlgConsumingVisitor;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Collect;
 import org.polypheny.db.algebra.core.CorrelationId;
@@ -76,22 +80,22 @@ import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgSort;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgTransformer;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgUnwind;
-import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
 import org.polypheny.db.algebra.logical.relational.LogicalCalc;
-import org.polypheny.db.algebra.logical.relational.LogicalCorrelate;
-import org.polypheny.db.algebra.logical.relational.LogicalFilter;
-import org.polypheny.db.algebra.logical.relational.LogicalIntersect;
-import org.polypheny.db.algebra.logical.relational.LogicalJoin;
-import org.polypheny.db.algebra.logical.relational.LogicalMatch;
-import org.polypheny.db.algebra.logical.relational.LogicalMinus;
 import org.polypheny.db.algebra.logical.relational.LogicalModifyCollect;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalRelCorrelate;
+import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalRelIntersect;
+import org.polypheny.db.algebra.logical.relational.LogicalRelJoin;
+import org.polypheny.db.algebra.logical.relational.LogicalRelMatch;
+import org.polypheny.db.algebra.logical.relational.LogicalRelMinus;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
-import org.polypheny.db.algebra.logical.relational.LogicalSort;
-import org.polypheny.db.algebra.logical.relational.LogicalTableFunctionScan;
-import org.polypheny.db.algebra.logical.relational.LogicalUnion;
-import org.polypheny.db.algebra.logical.relational.LogicalValues;
+import org.polypheny.db.algebra.logical.relational.LogicalRelSort;
+import org.polypheny.db.algebra.logical.relational.LogicalRelTableFunctionScan;
+import org.polypheny.db.algebra.logical.relational.LogicalRelUnion;
+import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.stream.LogicalChi;
 import org.polypheny.db.algebra.stream.LogicalDelta;
@@ -100,7 +104,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.StructKind;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexCorrelVariable;
@@ -121,9 +125,6 @@ import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.ImmutableBitSet.Builder;
 import org.polypheny.db.util.Pair;
-import org.polypheny.db.util.ReflectUtil;
-import org.polypheny.db.util.ReflectiveVisitDispatcher;
-import org.polypheny.db.util.ReflectiveVisitor;
 import org.polypheny.db.util.Util;
 import org.polypheny.db.util.mapping.Mappings;
 
@@ -152,16 +153,16 @@ import org.polypheny.db.util.mapping.Mappings;
  *   FtrsIndexScanRel(table=[T], index=[clustered])
  * </code></pre></blockquote>
  * <p>
- * The index scan produces a flattened row type <code>(boolean, smallint, bigint, double)</code> (the boolean is a null
+ * The index relScan produces a flattened row type <code>(boolean, smallint, bigint, double)</code> (the boolean is a null
  * indicator for c1), and the projection picks out the desired attributes (omitting <code>$0</code> and
- * <code>$1</code> altogether). After optimization, the projection might be pushed down into the index scan,
+ * <code>$1</code> altogether). After optimization, the projection might be pushed down into the index relScan,
  * resulting in a final tree like
  *
  * <blockquote><pre><code>
  * FtrsIndexScanRel(table=[T], index=[clustered], projection=[3, 2])
  * </code></pre></blockquote>
  */
-public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
+public class AlgStructuredTypeFlattener implements AlgConsumingVisitor {
 
     private final AlgBuilder algBuilder;
     private final RexBuilder rexBuilder;
@@ -172,13 +173,68 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     private int iRestructureInput;
     private AlgDataType flattenedRootType;
     boolean restructured;
-    private final AlgOptCluster cluster;
+    private final AlgCluster cluster;
+
+    @Getter
+    private ImmutableMap<Class<? extends AlgNode>, Consumer<AlgNode>> handlers = ImmutableMap.copyOf(
+            new HashMap<>() {{
+                put( LogicalRelModify.class, a -> rewriteAlg( (LogicalRelModify) a ) );
+                put( LogicalRelScan.class, a -> rewriteAlg( (LogicalRelScan) a ) );
+                put( LogicalRelTableFunctionScan.class, a -> rewriteAlg( (LogicalRelTableFunctionScan) a ) );
+                put( LogicalRelValues.class, a -> rewriteAlg( (LogicalRelValues) a ) );
+                put( LogicalRelProject.class, a -> rewriteAlg( (LogicalRelProject) a ) );
+                put( LogicalCalc.class, a -> rewriteAlg( (LogicalCalc) a ) );
+                put( LogicalRelMatch.class, a -> rewriteAlg( (LogicalRelMatch) a ) );
+                put( LogicalChi.class, a -> rewriteAlg( (LogicalChi) a ) );
+                put( LogicalDelta.class, a -> rewriteAlg( (LogicalDelta) a ) );
+                put( LogicalConditionalExecute.class, a -> rewriteAlg( (LogicalConditionalExecute) a ) );
+                put( LogicalContextSwitcher.class, a -> rewriteAlg( (LogicalContextSwitcher) a ) );
+                put( LogicalStreamer.class, a -> rewriteAlg( (LogicalStreamer) a ) );
+                put( LogicalBatchIterator.class, a -> rewriteAlg( (LogicalBatchIterator) a ) );
+                put( LogicalLpgTransformer.class, a -> rewriteAlg( (LogicalLpgTransformer) a ) );
+                put( LogicalDocumentTransformer.class, a -> rewriteAlg( (LogicalDocumentTransformer) a ) );
+                put( LogicalDocumentProject.class, a -> rewriteAlg( (LogicalDocumentProject) a ) );
+                put( LogicalDocumentFilter.class, a -> rewriteAlg( (LogicalDocumentFilter) a ) );
+                put( LogicalDocumentAggregate.class, a -> rewriteAlg( (LogicalDocumentAggregate) a ) );
+                put( LogicalDocumentModify.class, a -> rewriteAlg( (LogicalDocumentModify) a ) );
+                put( LogicalDocumentUnwind.class, a -> rewriteAlg( (LogicalDocumentUnwind) a ) );
+                put( LogicalDocumentSort.class, a -> rewriteAlg( (LogicalDocumentSort) a ) );
+                put( LogicalDocumentScan.class, a -> rewriteAlg( (LogicalDocumentScan) a ) );
+                put( LogicalConstraintEnforcer.class, a -> rewriteAlg( (LogicalConstraintEnforcer) a ) );
+                put( LogicalTransformer.class, a -> rewriteAlg( (LogicalTransformer) a ) );
+                put( LogicalLpgModify.class, a -> rewriteAlg( (LogicalLpgModify) a ) );
+                put( LogicalLpgScan.class, a -> rewriteAlg( (LogicalLpgScan) a ) );
+                put( LogicalLpgProject.class, a -> rewriteAlg( (LogicalLpgProject) a ) );
+                put( LogicalLpgMatch.class, a -> rewriteAlg( (LogicalLpgMatch) a ) );
+                put( LogicalLpgFilter.class, a -> rewriteAlg( (LogicalLpgFilter) a ) );
+                put( LogicalLpgSort.class, a -> rewriteAlg( (LogicalLpgSort) a ) );
+                put( LogicalLpgAggregate.class, a -> rewriteAlg( (LogicalLpgAggregate) a ) );
+                put( LogicalLpgUnwind.class, a -> rewriteAlg( (LogicalLpgUnwind) a ) );
+                put( LogicalRelAggregate.class, a -> rewriteAlg( (LogicalRelAggregate) a ) );
+                put( LogicalRelCorrelate.class, a -> rewriteAlg( (LogicalRelCorrelate) a ) );
+                put( LogicalRelFilter.class, a -> rewriteAlg( (LogicalRelFilter) a ) );
+                put( LogicalRelIntersect.class, a -> rewriteAlg( (LogicalRelIntersect) a ) );
+                put( LogicalRelJoin.class, a -> rewriteAlg( (LogicalRelJoin) a ) );
+                put( LogicalRelMinus.class, a -> rewriteAlg( (LogicalRelMinus) a ) );
+                put( LogicalModifyCollect.class, a -> rewriteAlg( (LogicalModifyCollect) a ) );
+                put( LogicalRelSort.class, a -> rewriteAlg( (LogicalRelSort) a ) );
+                put( LogicalRelUnion.class, a -> rewriteAlg( (LogicalRelUnion) a ) );
+                put( Uncollect.class, a -> rewriteAlg( (Uncollect) a ) );
+                put( Collect.class, a -> rewriteAlg( (Collect) a ) );
+                put( Sample.class, a -> rewriteAlg( (Sample) a ) );
+                put( SelfFlatteningAlg.class, a -> rewriteAlg( (SelfFlatteningAlg) a ) );
+            }}
+    );
+
+
+    @Getter
+    Consumer<AlgNode> defaultHandler = this::rewrite;
 
 
     public AlgStructuredTypeFlattener(
             AlgBuilder algBuilder,
             RexBuilder rexBuilder,
-            AlgOptCluster cluster,
+            AlgCluster cluster,
             boolean restructure ) {
         this.algBuilder = algBuilder;
         this.rexBuilder = rexBuilder;
@@ -187,7 +243,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     }
 
 
-    public void updateRelInMap( SortedSetMultimap<AlgNode, CorrelationId> mapRefRelToCorVar ) {
+    public void updateAlgInMap( SortedSetMultimap<AlgNode, CorrelationId> mapRefRelToCorVar ) {
         for ( AlgNode alg : Lists.newArrayList( mapRefRelToCorVar.keySet() ) ) {
             if ( oldTonewAlgMap.containsKey( alg ) ) {
                 SortedSet<CorrelationId> corVarSet = mapRefRelToCorVar.removeAll( alg );
@@ -197,13 +253,13 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     }
 
 
-    public void updateRelInMap( SortedMap<CorrelationId, LogicalCorrelate> mapCorVarToCorRel ) {
+    public void updateAlgInMap( SortedMap<CorrelationId, LogicalRelCorrelate> mapCorVarToCorRel ) {
         for ( CorrelationId corVar : mapCorVarToCorRel.keySet() ) {
-            LogicalCorrelate oldRel = mapCorVarToCorRel.get( corVar );
+            LogicalRelCorrelate oldRel = mapCorVarToCorRel.get( corVar );
             if ( oldTonewAlgMap.containsKey( oldRel ) ) {
                 AlgNode newAlg = oldTonewAlgMap.get( oldRel );
-                assert newAlg instanceof LogicalCorrelate;
-                mapCorVarToCorRel.put( corVar, (LogicalCorrelate) newAlg );
+                assert newAlg instanceof LogicalRelCorrelate;
+                mapCorVarToCorRel.put( corVar, (LogicalRelCorrelate) newAlg );
             }
         }
     }
@@ -378,80 +434,67 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     }
 
 
-    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalConditionalExecute alg ) {
         LogicalConditionalExecute newAlg = LogicalConditionalExecute.create( alg.getLeft(), alg.getRight(), alg );
         setNewForOldAlg( alg, newAlg );
     }
 
 
-    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalContextSwitcher alg ) {
         rewriteGeneric( alg );
     }
 
 
-    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalStreamer alg ) {
         rewriteGeneric( alg );
     }
 
 
-    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalBatchIterator alg ) {
         rewriteGeneric( alg );
     }
 
 
-    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalLpgTransformer alg ) {
         rewriteGeneric( alg );
     }
 
 
-    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalDocumentTransformer alg ) {
         rewriteGeneric( alg );
     }
 
 
-    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalDocumentProject alg ) {
         rewriteGeneric( alg );
     }
 
 
-    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalDocumentFilter alg ) {
         rewriteGeneric( alg );
     }
 
 
-    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalDocumentAggregate alg ) {
         rewriteGeneric( alg );
     }
 
 
-    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalDocumentModify alg ) {
         rewriteGeneric( alg );
     }
 
 
-    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalDocumentUnwind alg ) {
         rewriteGeneric( alg );
     }
 
 
-    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalDocumentSort alg ) {
         rewriteGeneric( alg );
     }
 
 
-    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalDocumentScan scan ) {
         AlgNode alg = scan;
         if ( scan.entity.isPhysical() ) {
@@ -461,7 +504,6 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     }
 
 
-    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalConstraintEnforcer alg ) {
         LogicalConstraintEnforcer newAlg = LogicalConstraintEnforcer.create(
                 alg.getLeft(),
@@ -472,19 +514,16 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     }
 
 
-    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalTransformer alg ) {
         rewriteGeneric( alg );
     }
 
 
-    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalLpgModify alg ) {
         rewriteGeneric( alg );
     }
 
 
-    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalLpgScan scan ) {
         AlgNode alg = scan;
         if ( scan.entity.isPhysical() ) {
@@ -494,43 +533,36 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     }
 
 
-    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalLpgProject project ) {
         rewriteGeneric( project );
     }
 
 
-    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalLpgMatch match ) {
         rewriteGeneric( match );
     }
 
 
-    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalLpgFilter filter ) {
         rewriteGeneric( filter );
     }
 
 
-    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalLpgSort sort ) {
         rewriteGeneric( sort );
     }
 
 
-    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalLpgAggregate aggregate ) {
         rewriteGeneric( aggregate );
     }
 
 
-    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalLpgUnwind unwind ) {
         rewriteGeneric( unwind );
     }
 
 
-    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalRelModify alg ) {
         LogicalRelModify newAlg =
                 LogicalRelModify.create(
@@ -544,8 +576,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     }
 
 
-    @SuppressWarnings("unused")
-    public void rewriteAlg( LogicalAggregate alg ) {
+    public void rewriteAlg( LogicalRelAggregate alg ) {
         AlgDataType inputType = alg.getInput().getTupleType();
         for ( AlgDataTypeField field : inputType.getFields() ) {
             if ( field.getType().isStruct() ) {
@@ -558,7 +589,6 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     }
 
 
-    @SuppressWarnings("unused")
     public void rewriteAlg( Sort alg ) {
         AlgCollation oldCollation = alg.getCollation();
         final AlgNode oldChild = alg.getInput();
@@ -575,13 +605,12 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
             }
         }
         AlgCollation newCollation = RexUtil.apply( mapping, oldCollation );
-        Sort newAlg = LogicalSort.create( newChild, newCollation, alg.offset, alg.fetch );
+        Sort newAlg = LogicalRelSort.create( newChild, newCollation, alg.offset, alg.fetch );
         setNewForOldAlg( alg, newAlg );
     }
 
 
-    @SuppressWarnings("unused")
-    public void rewriteAlg( LogicalFilter alg ) {
+    public void rewriteAlg( LogicalRelFilter alg ) {
         AlgNode newAlg =
                 alg.copy(
                         alg.getTraitSet(),
@@ -591,10 +620,9 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     }
 
 
-    @SuppressWarnings("unused")
-    public void rewriteAlg( LogicalJoin alg ) {
-        LogicalJoin newAlg =
-                LogicalJoin.create(
+    public void rewriteAlg( LogicalRelJoin alg ) {
+        LogicalRelJoin newAlg =
+                LogicalRelJoin.create(
                         getNewForOldRel( alg.getLeft() ),
                         getNewForOldRel( alg.getRight() ),
                         alg.getCondition().accept( new RewriteRexShuttle() ),
@@ -604,8 +632,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     }
 
 
-    @SuppressWarnings("unused")
-    public void rewriteAlg( LogicalCorrelate alg ) {
+    public void rewriteAlg( LogicalRelCorrelate alg ) {
         Builder newPos = ImmutableBitSet.builder();
         for ( int pos : alg.getRequiredColumns() ) {
             AlgDataType corrFieldType = alg.getLeft().getTupleType().getFields().get( pos ).getType();
@@ -614,8 +641,8 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
             }
             newPos.set( getNewForOldInput( pos ) );
         }
-        LogicalCorrelate newAlg =
-                LogicalCorrelate.create(
+        LogicalRelCorrelate newAlg =
+                LogicalRelCorrelate.create(
                         getNewForOldRel( alg.getLeft() ),
                         getNewForOldRel( alg.getRight() ),
                         alg.getCorrelationId(),
@@ -625,64 +652,54 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     }
 
 
-    @SuppressWarnings("unused")
     public void rewriteAlg( Collect alg ) {
         rewriteGeneric( alg );
     }
 
 
-    @SuppressWarnings("unused")
     public void rewriteAlg( Uncollect alg ) {
         rewriteGeneric( alg );
     }
 
 
-    @SuppressWarnings("unused")
-    public void rewriteAlg( LogicalIntersect alg ) {
+    public void rewriteAlg( LogicalRelIntersect alg ) {
         rewriteGeneric( alg );
     }
 
 
-    @SuppressWarnings("unused")
-    public void rewriteAlg( LogicalMinus alg ) {
+    public void rewriteAlg( LogicalRelMinus alg ) {
         rewriteGeneric( alg );
     }
 
 
-    @SuppressWarnings("unused")
-    public void rewriteAlg( LogicalUnion alg ) {
+    public void rewriteAlg( LogicalRelUnion alg ) {
         rewriteGeneric( alg );
     }
 
 
-    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalModifyCollect alg ) {
         rewriteGeneric( alg );
     }
 
 
-    @SuppressWarnings("unused")
-    public void rewriteAlg( LogicalValues alg ) {
+    public void rewriteAlg( LogicalRelValues alg ) {
         // NOTE: UDT instances require invocation of a constructor method, which can't be represented by
         // the tuples stored in a LogicalValues, so we don't have to worry about them here.
         rewriteGeneric( alg );
     }
 
 
-    @SuppressWarnings("unused")
-    public void rewriteAlg( LogicalTableFunctionScan alg ) {
+    public void rewriteAlg( LogicalRelTableFunctionScan alg ) {
         rewriteGeneric( alg );
     }
 
 
-    @SuppressWarnings("unused")
     public void rewriteAlg( Sample alg ) {
         rewriteGeneric( alg );
     }
 
 
-    @SuppressWarnings("unused")
-    public void rewriteAlg( LogicalProject alg ) {
+    public void rewriteAlg( LogicalRelProject alg ) {
         final List<Pair<RexNode, String>> flattenedExpList = new ArrayList<>();
         flattenProjections(
                 new RewriteRexShuttle(),
@@ -699,12 +716,11 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     }
 
 
-    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalCalc alg ) {
         // Translate the child.
         final AlgNode newInput = getNewForOldRel( alg.getInput() );
 
-        final AlgOptCluster cluster = alg.getCluster();
+        final AlgCluster cluster = alg.getCluster();
         RexProgramBuilder programBuilder =
                 new RexProgramBuilder(
                         newInput.getTupleType(),
@@ -747,7 +763,6 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     }
 
 
-    @SuppressWarnings("unused")
     public void rewriteAlg( SelfFlatteningAlg alg ) {
         alg.flattenRel( this );
     }
@@ -775,7 +790,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
                     (fieldNames == null || fieldNames.get( i ) == null)
                             ? ("$" + i)
                             : fieldNames.get( i );
-            if ( !prefix.equals( "" ) ) {
+            if ( !prefix.isEmpty() ) {
                 fieldName = prefix + "$" + fieldName;
             }
             if ( exp.getType().getStructKind() != StructKind.SEMI ) {
@@ -787,8 +802,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
 
     private void flattenProjection( RewriteRexShuttle shuttle, RexNode exp, String fieldName, List<Pair<RexNode, String>> flattenedExps ) {
         if ( exp.getType().isStruct() ) {
-            if ( exp instanceof RexIndexRef ) {
-                RexIndexRef inputRef = (RexIndexRef) exp;
+            if ( exp instanceof RexIndexRef inputRef ) {
 
                 // Expand to range
                 AlgDataType flattenedType = PolyTypeUtil.flattenRecordType( rexBuilder.getTypeFactory(), exp.getType(), null );
@@ -823,8 +837,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
                 int j = 0;
                 RexNode newExp = exp;
                 List<RexNode> oldOperands = ((RexCall) exp).getOperands();
-                if ( oldOperands.get( 0 ) instanceof RexIndexRef ) {
-                    final RexIndexRef inputRef = (RexIndexRef) oldOperands.get( 0 );
+                if ( oldOperands.get( 0 ) instanceof RexIndexRef inputRef ) {
                     final Ord<AlgDataType> newField = getNewFieldForOldInput( inputRef.getIndex() );
                     newExp = rexBuilder.makeCall(
                             exp.getType(),
@@ -859,15 +872,13 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
 
     private boolean isConstructor( RexNode rexNode ) {
         // TODO jvs 11-Feb-2005:  share code with SqlToRelConverter
-        if ( !(rexNode instanceof RexCall) ) {
+        if ( !(rexNode instanceof RexCall call) ) {
             return false;
         }
-        RexCall call = (RexCall) rexNode;
         return call.getOperator().getName().equalsIgnoreCase( "row" ) || (call.isA( Kind.NEW_SPECIFICATION ));
     }
 
 
-    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalRelScan alg ) {
         if ( alg.entity.unwrap( TranslatableEntity.class ).isEmpty() ) {
             rewriteGeneric( alg );
@@ -888,20 +899,17 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     }
 
 
-    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalDelta alg ) {
         rewriteGeneric( alg );
     }
 
 
-    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalChi alg ) {
         rewriteGeneric( alg );
     }
 
 
-    @SuppressWarnings("unused")
-    public void rewriteAlg( LogicalMatch alg ) {
+    public void rewriteAlg( LogicalRelMatch alg ) {
         rewriteGeneric( alg );
     }
 
@@ -936,11 +944,6 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
      */
     private class RewriteAlgVisitor extends AlgVisitor {
 
-        private final ReflectiveVisitDispatcher<AlgStructuredTypeFlattener,
-                AlgNode> dispatcher =
-                ReflectUtil.createDispatcher(
-                        AlgStructuredTypeFlattener.class,
-                        AlgNode.class );
 
 
         @Override
@@ -949,21 +952,20 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
             super.visit( p, ordinal, parent );
 
             currentAlg = p;
-            final String visitMethodName = "rewriteAlg";
-            boolean found =
-                    dispatcher.invokeVisitor(
-                            AlgStructuredTypeFlattener.this,
-                            currentAlg,
-                            visitMethodName );
-            currentAlg = null;
-            if ( !found ) {
-                if ( p.getInputs().size() == 0 ) {
+
+            boolean found = AlgStructuredTypeFlattener.this.findHandler( currentAlg.getClass() ) != null;
+
+            if ( found ) {
+                AlgStructuredTypeFlattener.this.handle( currentAlg );
+            } else {
+                if ( p.getInputs().isEmpty() ) {
                     // For leaves, it's usually safe to assume that no transformation is required
                     rewriteGeneric( p );
                 } else {
-                    throw new AssertionError( "no '" + visitMethodName + "' method found for class " + p.getClass().getName() );
+                    throw new AssertionError( "no 'rewriteAlg' method found for class " + p.getClass().getName() );
                 }
             }
+            currentAlg = null;
         }
 
     }
@@ -1004,10 +1006,9 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
                 int ordinal = fieldAccess.getField().getIndex();
                 accessOrdinals.push( ordinal );
                 iInput += calculateFlattenedOffset( refExp.getType(), ordinal );
-                if ( refExp instanceof RexIndexRef ) {
+                if ( refExp instanceof RexIndexRef inputRef ) {
                     // Consecutive field accesses over some input can be removed since by now the input is
                     // flattened (no struct types). We just have to create a new RexInputRef with the correct ordinal and type.
-                    RexIndexRef inputRef = (RexIndexRef) refExp;
                     final Ord<AlgDataType> newField = getNewFieldForOldInput( inputRef.getIndex() );
                     iInput += newField.i;
                     return new RexIndexRef( iInput, removeDistinct( newField.e ) );
@@ -1015,9 +1016,8 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
                     AlgDataType refType = PolyTypeUtil.flattenRecordType( rexBuilder.getTypeFactory(), refExp.getType(), null );
                     refExp = rexBuilder.makeCorrel( refType, ((RexCorrelVariable) refExp).id );
                     return rexBuilder.makeFieldAccess( refExp, iInput );
-                } else if ( refExp instanceof RexCall ) {
+                } else if ( refExp instanceof RexCall call ) {
                     // Field accesses over calls cannot be simplified since the result of the call may be a struct type.
-                    RexCall call = (RexCall) refExp;
                     RexNode newRefExp = visitCall( call );
                     for ( Integer ord : accessOrdinals ) {
                         newRefExp = rexBuilder.makeFieldAccess( newRefExp, ord );

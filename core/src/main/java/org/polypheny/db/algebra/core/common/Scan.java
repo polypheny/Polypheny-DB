@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import lombok.Getter;
 import lombok.experimental.SuperBuilder;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.catalog.entity.Entity;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 
 @Getter
@@ -31,15 +31,20 @@ public abstract class Scan<E extends Entity> extends AbstractAlgNode {
 
 
     /**
-     * Creates an <code>AbstractRelNode</code>.
+     * Creates an <code>AbstractAlgNode</code>.
      *
-     * @param cluster
-     * @param traitSet
+     * @param cluster the cluster this node uses to optimize itself
+     * @param traitSet traits that describes the traits of the node
      */
-    public Scan( AlgOptCluster cluster, AlgTraitSet traitSet, E entity ) {
+    public Scan( AlgCluster cluster, AlgTraitSet traitSet, E entity ) {
         super( cluster, traitSet );
         this.entity = entity;
     }
 
+
+    @Override
+    public boolean containsScan() {
+        return true;
+    }
 
 }

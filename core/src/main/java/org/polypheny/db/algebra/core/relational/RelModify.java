@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,10 +30,10 @@ import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.catalog.entity.Entity;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.trait.ModelTrait;
@@ -87,7 +87,7 @@ public abstract class RelModify<E extends Entity> extends Modify<E> implements R
      * @param flattened Whether set flattens the input row type
      */
     protected RelModify(
-            AlgOptCluster cluster,
+            AlgCluster cluster,
             AlgTraitSet traitSet,
             E table,
             AlgNode input,
@@ -146,20 +146,8 @@ public abstract class RelModify<E extends Entity> extends Modify<E> implements R
         }
 
         final AlgDataTypeFactory typeFactory = getCluster().getTypeFactory();
-        final AlgDataType rowType = entity.getRowType();
+        final AlgDataType rowType = entity.getTupleType();
         switch ( operation ) {
-            /*case UPDATE:
-                inputRowType =
-                        typeFactory.createJoinType(
-                                rowType,
-                                getCatalogReader().createTypeFromProjection( rowType, updateColumnList ) );
-                break;
-            case MERGE:
-                inputRowType =
-                        typeFactory.createJoinType(
-                                typeFactory.createJoinType( rowType, rowType ),
-                                getCatalogReader().createTypeFromProjection( rowType, updateColumnList ) );
-                break;*/ // todo dl rewrite
             default:
                 inputRowType = rowType;
                 break;
@@ -186,9 +174,9 @@ public abstract class RelModify<E extends Entity> extends Modify<E> implements R
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         // REVIEW jvs: Just for now...
-        double rowCount = mq.getRowCount( this );
+        double rowCount = mq.getTupleCount( this );
         return planner.getCostFactory().makeCost( rowCount, 0, 0 );
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
@@ -43,9 +42,9 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.entity.physical.PhysicalCollection;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
@@ -66,7 +65,7 @@ class MongoTableModify extends RelModify<MongoEntity> implements MongoAlg {
 
 
     protected MongoTableModify(
-            AlgOptCluster cluster,
+            AlgCluster cluster,
             AlgTraitSet traitSet,
             MongoEntity entity,
             AlgNode input,
@@ -80,7 +79,7 @@ class MongoTableModify extends RelModify<MongoEntity> implements MongoAlg {
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         return super.computeSelfCost( planner, mq ).multiplyBy( .1 );
     }
 
@@ -148,7 +147,7 @@ class MongoTableModify extends RelModify<MongoEntity> implements MongoAlg {
         ((MongoAlg) input).implement( condImplementor );
         implementor.filter = condImplementor.filter;
         //assert condImplementor.getStaticRowType() instanceof MongoRowType;
-        AlgDataType rowType = condImplementor.getRowType();
+        AlgDataType rowType = condImplementor.getTupleType();
         int pos = 0;
         BsonDocument doc = new BsonDocument();
         List<BsonDocument> docDocs = new ArrayList<>();
@@ -159,8 +158,7 @@ class MongoTableModify extends RelModify<MongoEntity> implements MongoAlg {
                 doc.append(
                         physicalName,//getPhysicalName( getUpdateColumns().get( pos ), implementor ),
                         BsonUtil.getAsBson( (RexLiteral) el, bucket ) );
-            } else if ( el instanceof RexCall ) {
-                RexCall call = ((RexCall) el);
+            } else if ( el instanceof RexCall call ) {
                 if ( Arrays.asList( Kind.PLUS, Kind.PLUS, Kind.TIMES, Kind.DIVIDE ).contains( call.op.getKind() ) ) {
                     doc.append(
                             physicalName,//rowType.getPhysicalName( getUpdateColumns().get( pos ), implementor ),
@@ -180,7 +178,7 @@ class MongoTableModify extends RelModify<MongoEntity> implements MongoAlg {
                 doc.append(
                         physicalName,//rowType.getPhysicalName( getUpdateColumns().get( pos ), implementor ),
                         new BsonString(
-                                "$" + physicalName ) );//rowType.getPhysicalName( ((RexFieldAccess) el).getField().getName(), implementor ) ) );
+                                "$" + rowType.getFields().get( el.unwrap( RexFieldAccess.class ).orElseThrow().getField().getIndex() ).getPhysicalName() ) );//rowType.getPhysicalName( ((RexFieldAccess) el).getField().getName(), implementor ) ) );
             }
             pos++;
         }
@@ -294,10 +292,9 @@ class MongoTableModify extends RelModify<MongoEntity> implements MongoAlg {
 
         int pos = 0;
         for ( RexNode operand : call.operands ) {
-            if ( !(operand instanceof RexCall) ) {
+            if ( !(operand instanceof RexCall op) ) {
                 doc.append( "$set", new BsonDocument( keys.get( pos ), BsonUtil.getAsBson( (RexLiteral) operand, bucket ) ) );
             } else {
-                RexCall op = (RexCall) operand;
                 implementor.isDocumentUpdate = true;
                 switch ( op.getKind() ) {
                     case PLUS:
@@ -328,7 +325,7 @@ class MongoTableModify extends RelModify<MongoEntity> implements MongoAlg {
                 .stream()
                 .map( n -> ((RexLiteral) n).getValue() )
                 .map( n -> name + "." + n )
-                .collect( Collectors.toList() );
+                .toList();
     }
 
 
@@ -337,7 +334,7 @@ class MongoTableModify extends RelModify<MongoEntity> implements MongoAlg {
                 .stream()
                 .filter( PolyValue::isDocument )
                 .map( d -> BsonDocument.parse( d.toTypedJson() ) )
-                .collect( Collectors.toList() );
+                .toList();
     }
 
 
@@ -389,7 +386,7 @@ class MongoTableModify extends RelModify<MongoEntity> implements MongoAlg {
         MongoEntity entity = implementor.getEntity();
         GridFSBucket bucket = implementor.getBucket();
         //noinspection AssertWithSideEffects
-        assert input.getTupleType().getFieldCount() == this.getEntity().getRowType().getFieldCount();
+        assert input.getTupleType().getFieldCount() == this.getEntity().getTupleType().getFieldCount();
         implementor.setEntity( entity );
 
         int pos = 0;
@@ -402,7 +399,7 @@ class MongoTableModify extends RelModify<MongoEntity> implements MongoAlg {
                 doc.append( physicalName, BsonUtil.getAsBson( (RexLiteral) rexNode, bucket ) );
             } else if ( rexNode instanceof RexCall ) {
                 PolyType type = this.entity
-                        .getRowType( getCluster().getTypeFactory() )
+                        .getTupleType( getCluster().getTypeFactory() )
                         .getFields()
                         .get( pos )
                         .getType()
@@ -441,7 +438,7 @@ class MongoTableModify extends RelModify<MongoEntity> implements MongoAlg {
                     return getBsonArray( (RexCall) operand, type, bucket );
                 }
                 throw new RuntimeException( "The given RexCall could not be transformed correctly." );
-            } ).collect( Collectors.toList() ) );
+            } ).toList() );
             return array;
         }
         throw new RuntimeException( "The given RexCall could not be transformed correctly." );
@@ -459,8 +456,8 @@ class MongoTableModify extends RelModify<MongoEntity> implements MongoAlg {
             valRowType = values.getTupleType();
         }
 
-        List<String> columnNames = entity.getRowType().getFieldNames();
-        List<Long> columnIds = entity.getRowType().getFieldIds();
+        List<String> columnNames = entity.getTupleType().getFieldNames();
+        List<Long> columnIds = entity.getTupleType().getFieldIds();
         for ( ImmutableList<RexLiteral> literals : values.tuples ) {
             BsonDocument doc = new BsonDocument();
             int pos = 0;
@@ -472,7 +469,7 @@ class MongoTableModify extends RelModify<MongoEntity> implements MongoAlg {
                             BsonUtil.getAsBson( literal, bucket ) );
                 } else {
                     doc.append(
-                            rowType.getFieldNames().get( pos ),
+                            valRowType.getFieldNames().get( pos ),
                             BsonUtil.getAsBson( literal, bucket ) );
                 }
                 pos++;

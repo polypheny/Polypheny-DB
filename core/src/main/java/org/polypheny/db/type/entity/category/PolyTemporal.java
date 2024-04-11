@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,21 +16,22 @@
 
 package org.polypheny.db.type.entity.category;
 
+import java.math.BigDecimal;
+import java.math.MathContext;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
-import lombok.EqualsAndHashCode;
-import lombok.Value;
 import lombok.experimental.NonFinal;
 import org.apache.calcite.avatica.util.DateTimeUtils;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
+import org.polypheny.db.type.entity.numerical.PolyLong;
 
-@EqualsAndHashCode(callSuper = true)
-@Value
 @NonFinal
-public abstract class PolyTemporal extends PolyValue {
+public abstract class PolyTemporal extends PolyNumber {
 
-    public abstract Long getMilliSinceEpoch();
+    public static Expression MILLIS_OF_DAY = PolyLong.of( DateTimeUtils.MILLIS_PER_DAY ).asExpression();
 
 
     public PolyTemporal( PolyType type ) {
@@ -38,21 +39,111 @@ public abstract class PolyTemporal extends PolyValue {
     }
 
 
-    public long getDaysSinceEpoch() {
-        long days = getMilliSinceEpoch() / DateTimeUtils.MILLIS_PER_DAY;
-        return days;
+    public abstract Long getMillisSinceEpoch();
+
+
+    @SuppressWarnings("unused")
+    public PolyLong getPolyMillisSinceEpoch() {
+        return PolyLong.of( getMillisSinceEpoch() );
+    }
+
+
+    public Long getDaysSinceEpoch() {
+        return getMillisSinceEpoch() == null ? null : getMillisSinceEpoch() / DateTimeUtils.MILLIS_PER_DAY;
     }
 
 
     public Calendar toCalendar() {
         GregorianCalendar cal = new GregorianCalendar();
-        cal.setTimeInMillis( getMilliSinceEpoch() );
+        cal.setTimeInMillis( getMillisSinceEpoch() );
         return cal;
     }
 
 
-    public int getMillisOfDay() {
-        return (int) (getMilliSinceEpoch() % DateTimeUtils.MILLIS_PER_DAY);
+    public Long getMillisOfDay() {
+        return getMillisSinceEpoch() == null ? null : (getMillisSinceEpoch() % DateTimeUtils.MILLIS_PER_DAY);
+    }
+
+
+    @Override
+    public boolean isNumber() {
+        return true;
+    }
+
+
+    @Override
+    public @NotNull PolyNumber asNumber() {
+        return PolyLong.of( getMillisSinceEpoch() );
+    }
+
+
+    @Override
+    public int intValue() {
+        return getMillisSinceEpoch().intValue();
+    }
+
+
+    @Override
+    public long longValue() {
+        return getMillisSinceEpoch();
+    }
+
+
+    @Override
+    public float floatValue() {
+        return getMillisSinceEpoch().floatValue();
+    }
+
+
+    @Override
+    public double doubleValue() {
+        return getMillisSinceEpoch().doubleValue();
+    }
+
+
+    @Override
+    public BigDecimal bigDecimalValue() {
+        return BigDecimal.valueOf( getMillisSinceEpoch() );
+    }
+
+
+    @Override
+    public PolyNumber increment() {
+        return PolyLong.of( getMillisSinceEpoch() + 1 );
+    }
+
+
+    @Override
+    @NotNull
+    public PolyNumber divide( @NotNull PolyNumber other ) {
+        return PolyBigDecimal.of( bigDecimalValue().divide( other.bigDecimalValue(), MathContext.DECIMAL64 ) );
+    }
+
+
+    @Override
+    @NotNull
+    public PolyNumber multiply( @NotNull PolyNumber other ) {
+        return other.isDecimal() ? PolyBigDecimal.of( bigDecimalValue().multiply( other.bigDecimalValue() ) ) : PolyLong.of( getMillisSinceEpoch() * other.longValue() );
+    }
+
+
+    @Override
+    @NotNull
+    public PolyNumber plus( @NotNull PolyNumber b1 ) {
+        return b1.isDecimal() ? PolyBigDecimal.of( bigDecimalValue().add( b1.bigDecimalValue() ) ) : PolyLong.of( getMillisSinceEpoch() + b1.longValue() );
+    }
+
+
+    @Override
+    @NotNull
+    public PolyNumber subtract( @NotNull PolyNumber b1 ) {
+        return b1.isDecimal() ? PolyBigDecimal.of( bigDecimalValue().subtract( b1.bigDecimalValue() ) ) : PolyLong.of( getMillisSinceEpoch() - b1.longValue() );
+    }
+
+
+    @Override
+    public PolyNumber negate() {
+        return PolyLong.of( -getMillisSinceEpoch() );
     }
 
 }

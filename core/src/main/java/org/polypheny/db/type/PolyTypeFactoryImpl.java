@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,6 +61,9 @@ public class PolyTypeFactoryImpl extends AlgDataTypeFactoryImpl {
     public AlgDataType createPolyType( PolyType typeName ) {
         if ( typeName.allowsPrec() ) {
             return createPolyType( typeName, typeSystem.getDefaultPrecision( typeName ) );
+        }
+        if ( typeName == PolyType.ARRAY ) {
+            return new ArrayType( new BasicPolyType( AlgDataTypeSystem.DEFAULT, PolyType.ANY ), true );
         }
         assertBasic( typeName );
         AlgDataType newType = new BasicPolyType( typeSystem, typeName );
@@ -153,11 +156,9 @@ public class PolyTypeFactoryImpl extends AlgDataTypeFactoryImpl {
         assert charset != null;
         assert collation != null;
         AlgDataType newType;
-        if ( type instanceof BasicPolyType ) {
-            BasicPolyType sqlType = (BasicPolyType) type;
+        if ( type instanceof BasicPolyType sqlType ) {
             newType = sqlType.createWithCharsetAndCollation( charset, collation );
-        } else if ( type instanceof JavaType ) {
-            JavaType javaType = (JavaType) type;
+        } else if ( type instanceof JavaType javaType ) {
             newType = new JavaType( javaType.getJavaClass(), javaType.isNullable(), charset, collation );
         } else {
             throw Util.needToImplement( "need to implement " + type );
@@ -507,7 +508,7 @@ public class PolyTypeFactoryImpl extends AlgDataTypeFactoryImpl {
 
 
     private AlgDataType copyMapType( AlgDataType type, boolean nullable ) {
-        MapPolyType mt = type.unwrap( MapPolyType.class );
+        MapPolyType mt = type.unwrap( MapPolyType.class ).orElseThrow();
         AlgDataType keyType = copyType( mt.getKeyType() );
         AlgDataType valueType = copyType( mt.getValueType() );
         return new MapPolyType( keyType, valueType, nullable );
@@ -524,10 +525,9 @@ public class PolyTypeFactoryImpl extends AlgDataTypeFactoryImpl {
         } else if ( ((ArrayType) type).getCardinality() == -1 && ((ArrayType) type).getDimension() == -1 ) {
             type = super.canonize( type );
         }
-        if ( !(type instanceof ObjectPolyType) ) {
+        if ( !(type instanceof ObjectPolyType objectType) ) {
             return type;
         }
-        ObjectPolyType objectType = (ObjectPolyType) type;
         if ( !objectType.isNullable() ) {
             objectType.setFamily( objectType );
         } else {

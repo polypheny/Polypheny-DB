@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,15 +24,10 @@ import java.util.List;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper.MongoConnection;
-import org.polypheny.db.excluded.CottontailExcluded;
-import org.polypheny.db.excluded.FileExcluded;
-import org.polypheny.db.excluded.MonetdbExcluded;
 import org.polypheny.db.webui.models.results.DocResult;
 
 @Tag("adapter")
-@Tag("fileExcluded")
 public class AggregateTest extends MqlTestTemplate {
 
 
@@ -160,7 +155,6 @@ public class AggregateTest extends MqlTestTemplate {
 
 
     @Test
-    @Tag("monetdbExcluded") // MonetClob instead of String
     public void countTest() {
         List<String> expected = MongoConnection.arrayToDoc( ImmutableList.of(
                         new Object[]{ 3 } ),
@@ -242,17 +236,16 @@ public class AggregateTest extends MqlTestTemplate {
 
     //$limit
     @Test
-    @Tag("cottontailExcluded")
     public void limitTest() {
         List<String> expected = ImmutableList.of(
                 "{\"test\":\"val1\",\"key\":1}" );
         insertMany( DATA_1 );
 
-        DocResult result = aggregate( $limit( 1 ) );
+        DocResult result = aggregate( $sort( document( kv( string( "key" ), 1 ) ) ), $limit( 1 ) );
 
         MongoConnection.checkDocResultSet( result, expected, true, true );
 
-        result = aggregate( $limit( 2 ) );
+        result = aggregate( $sort( document( kv( string( "key" ), 1 ) ) ), $limit( 2 ) );
 
         expected = ImmutableList.of(
                 "{\"test\":\"val1\",\"key\":1}",
@@ -346,8 +339,6 @@ public class AggregateTest extends MqlTestTemplate {
 
 
     @Test
-    @Tag("cottontailExcluded") // cottontail does not support skips/offset queries
-    // without a limit therefore this test cannot be performed correctly using this adapter
     public void skipTest() {
         List<String> expected = ImmutableList.of(
                 "{\"test\":1.3,\"key\":{\"key\":\"val\"}}",
@@ -355,14 +346,15 @@ public class AggregateTest extends MqlTestTemplate {
 
         insertMany( DATA_0 );
 
-        DocResult result = aggregate( $skip( 1 ) );
+        // we sort to assure correct order
+        DocResult result = aggregate( $sort( document( kv( string( "key" ), 1 ) ) ), $skip( 1 ) );
 
         MongoConnection.checkDocResultSet( result, expected, true, true );
 
         expected = ImmutableList.of(
                 "{\"test\":\"test\",\"key\":13}" );
 
-        result = aggregate( $skip( 2 ) );
+        result = aggregate( $sort( document( kv( string( "key" ), 1 ) ) ), $skip( 2 ) );
 
         MongoConnection.checkDocResultSet( result, expected, true, true );
     }

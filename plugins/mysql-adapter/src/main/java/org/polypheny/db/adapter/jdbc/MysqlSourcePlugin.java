@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,7 @@ import org.polypheny.db.plugins.PolyPlugin;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.sql.language.dialect.MysqlSqlDialect;
 
+@SuppressWarnings("unused")
 public class MysqlSourcePlugin extends PolyPlugin {
 
 
@@ -90,24 +91,24 @@ public class MysqlSourcePlugin extends PolyPlugin {
             description = "List of tables which should be imported. The names must to be separated by a comma.")
     public static class MysqlSource extends AbstractJdbcSource {
 
-        public MysqlSource( long storeId, String uniqueName, final Map<String, String> settings ) {
+        public MysqlSource( final long storeId, final String uniqueName, final Map<String, String> settings ) {
             super( storeId, uniqueName, settings, "org.mariadb.jdbc.Driver", MysqlSqlDialect.DEFAULT, false );
         }
 
 
         @Override
         public List<PhysicalEntity> createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation ) {
-            PhysicalTable table = storeCatalog.createTable(
+            PhysicalTable table = adapterCatalog.createTable(
                     logical.table.getNamespaceName(),
                     logical.table.name,
                     logical.columns.stream().collect( Collectors.toMap( c -> c.id, c -> c.name ) ),
                     logical.table,
                     logical.columns.stream().collect( Collectors.toMap( t -> t.id, t -> t ) ),
-                    allocation );
+                    logical.pkIds, allocation );
 
-            JdbcTable physical = currentJdbcSchema.createJdbcTable( storeCatalog, table );
+            JdbcTable physical = currentJdbcSchema.createJdbcTable( table );
 
-            storeCatalog.replacePhysical( physical );
+            adapterCatalog.replacePhysical( physical );
 
             return List.of( physical );
         }

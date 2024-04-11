@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 package org.polypheny.db.monitoring.events;
 
 
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
@@ -37,7 +37,7 @@ public class QueryEvent extends StatementEvent {
 
     @Override
     public <T extends MonitoringDataPoint> List<Class<T>> getMetrics() {
-        return Arrays.asList( (Class<T>) QueryDataPointImpl.class );
+        return List.of( (Class<T>) QueryDataPointImpl.class );
     }
 
 
@@ -47,7 +47,7 @@ public class QueryEvent extends StatementEvent {
         if ( updatePostCosts ) {
             MonitoringServiceProvider.getInstance().updateQueryPostCosts( this.physicalQueryClass, this.executionTime );
         }
-        return Arrays.asList( queryDataPoint );
+        return Collections.singletonList( queryDataPoint );
     }
 
 }

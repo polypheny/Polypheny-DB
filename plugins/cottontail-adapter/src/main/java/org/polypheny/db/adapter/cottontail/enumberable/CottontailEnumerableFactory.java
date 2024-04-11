@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -96,8 +96,8 @@ public class CottontailEnumerableFactory {
             String schema,
             Map<Object, String> projection,
             Map<String, String> orderBy,
-            Function1<Map<Long, PolyValue>, Integer> limitBuilder,
-            Function1<Map<Long, PolyValue>, Integer> offsetBuilder,
+            Function1<Map<Long, PolyValue>, PolyValue> limitBuilder,
+            Function1<Map<Long, PolyValue>, PolyValue> offsetBuilder,
             Function1<Map<Long, PolyValue>, Where> whereBuilder,
             DataContext dataContext,
             Function1<Tuple, PolyValue[]> rowParser,
@@ -119,12 +119,12 @@ public class CottontailEnumerableFactory {
 
             Integer limit = null;
             if ( limitBuilder != null ) {
-                limit = limitBuilder.apply( parameterValues );
+                limit = limitBuilder.apply( parameterValues ).asNumber().intValue();
             }
 
             Integer offset = null;
             if ( offsetBuilder != null ) {
-                offset = offsetBuilder.apply( parameterValues );
+                offset = offsetBuilder.apply( parameterValues ).asNumber().intValue();
             }
 
             final Query query = buildSingleQuery( from, schema, projection, orderBy, limit, offset, whereBuilder, parameterValues );
@@ -135,12 +135,12 @@ public class CottontailEnumerableFactory {
 
                 Integer limit = null;
                 if ( limitBuilder != null ) {
-                    limit = limitBuilder.apply( parameterValues );
+                    limit = limitBuilder.apply( parameterValues ).asNumber().intValue();
                 }
 
                 Integer offset = null;
                 if ( offsetBuilder != null ) {
-                    offset = offsetBuilder.apply( parameterValues );
+                    offset = offsetBuilder.apply( parameterValues ).asNumber().intValue();
                 }
 
                 final Query query = buildSingleQuery( from, schema, projection, orderBy, limit, offset, whereBuilder, parameterValues );
@@ -179,7 +179,7 @@ public class CottontailEnumerableFactory {
             queryBuilder.setSkip( offset );
         }
 
-        /* Parse and translate projection clause (if available). */
+        // Parse and translate projection clause (if available).
         if ( projection != null && !projection.isEmpty() ) {
             final Projection.Builder projBuilder = queryBuilder.getProjectionBuilder();
             for ( Entry<Object, String> p : projection.entrySet() ) {
@@ -187,18 +187,17 @@ public class CottontailEnumerableFactory {
                 if ( key instanceof String ) {
                     projBuilder.addElementsBuilder().setColumn( ColumnName.newBuilder().setName( (String) key ) );
                 } else if ( key instanceof Function1 ) {
-                    /* Not exactly beautiful i know ;-) */
                     projBuilder.addElements( ((Function1<Map<Long, PolyValue>, ProjectionElement>) key).apply( parameterValues ) );
                 }
             }
         }
 
-        /* Add WHERE clause to query. */
+        // Add WHERE clause to query.
         if ( whereBuilder != null ) {
             queryBuilder.setWhere( whereBuilder.apply( parameterValues ) );
         }
 
-        /* Add ORDER BY to query. */
+        // Add ORDER BY to query.
         if ( order != null && !order.isEmpty() ) {
             final Order.Builder orderBuilder = queryBuilder.getOrderBuilder();
             for ( Entry<String, String> p : order.entrySet() ) {
@@ -221,10 +220,10 @@ public class CottontailEnumerableFactory {
             CottontailEntity entity
     ) {
         CottontailWrapper wrapper = entity.getCottontailNamespace().getWrapper();
-        /* Begin or continue Cottontail DB transaction. */
+        // Begin or continue Cottontail DB transaction.
         final long txId = wrapper.beginOrContinue( dataContext.getStatement().getTransaction() );
 
-        /* Build INSERT messages and create enumerable. */
+        // Build INSERT messages and create enumerable.
         final CottontailGrpc.From from_ = CottontailTypeUtil.fromFromTableAndSchema( from, schema );
         final List<InsertMessage> insertMessages = new ArrayList<>( values.size() );
         for ( Map<String, CottontailGrpc.Literal> value : values ) {
@@ -372,6 +371,12 @@ public class CottontailEnumerableFactory {
         builder.setFrom( from_ );
 
         return builder.build();
+    }
+
+
+    @SuppressWarnings("unused")
+    public static PolyValue getDynamicValue( DataContext dataContext, long index ) {
+        return dataContext.getParameterValues().get( 0 ).get( index );
     }
 
 }

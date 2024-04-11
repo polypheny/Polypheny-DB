@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,12 +20,11 @@ package org.polypheny.db.sql;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -38,10 +37,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import org.apache.calcite.avatica.util.ByteString;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.metadata.NullSentinel;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
@@ -58,18 +56,21 @@ import org.polypheny.db.rex.RexLocalRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexProgram;
 import org.polypheny.db.rex.RexProgramBuilder;
+import org.polypheny.db.rex.RexProgramBuilderBase;
 import org.polypheny.db.rex.RexSimplify;
 import org.polypheny.db.rex.RexUnknownAs;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.sql.language.SqlOperator;
 import org.polypheny.db.sql.language.SqlSpecialOperator;
-import org.polypheny.db.test.PolyphenyDbAssert;
-import org.polypheny.db.test.RexProgramBuilderBase;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeAssignmentRules;
+import org.polypheny.db.type.entity.PolyBoolean;
+import org.polypheny.db.type.entity.PolyNull;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.inference.ReturnTypes;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.ImmutableBitSet;
+import org.polypheny.db.util.PolyphenyDbAssert;
 import org.polypheny.db.util.TestUtil;
 import org.polypheny.db.util.TimeString;
 import org.polypheny.db.util.TimestampString;
@@ -87,12 +88,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
      */
     public RexProgramTest() {
         super();
-    }
-
-
-    @Override
-    @Before
-    public void setUp() {
+        SqlLanguageDependent.setupSqlAndSchema();
         super.setUp();
     }
 
@@ -132,7 +128,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
         } else {
             actual = node + ":" + node.getType() + (node.getType().isNullable() ? "" : " NOT NULL");
         }
-        assertEquals( message, expected, actual );
+        assertEquals( expected, actual, message );
     }
 
 
@@ -332,7 +328,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
                         typeFactory.createPolyType( PolyType.INTEGER ),
                         typeFactory.createPolyType( PolyType.INTEGER ) );
         List<String> names = Arrays.asList( "x", "y" );
-        AlgDataType inputRowType = typeFactory.createStructType( null, types, names );
+        AlgDataType inputRowType = typeFactory.createStructType( types.stream().map( t -> (Long) null ).toList(), types, names );
         final RexProgramBuilder builder = new RexProgramBuilder( inputRowType, rexBuilder );
         // $t0 = x
         // $t1 = y
@@ -614,9 +610,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
         assertThat(
                 RexUtil.isLosslessCast( rexBuilder.makeCast( bigIntType, rexBuilder.makeInputRef( intType, 0 ) ) ),
                 is( true ) );
-        assertThat(
-                RexUtil.isLosslessCast( rexBuilder.makeCast( intType, rexBuilder.makeInputRef( intType, 0 ) ) ),
-                is( true ) );
+        //assertThat( RexUtil.isLosslessCast( rexBuilder.makeCast( intType, rexBuilder.makeInputRef( intType, 0 ) ) ),is( true ) ); // the cast operator is not even create, as it is unnecessary for the same type
         assertThat(
                 RexUtil.isLosslessCast( rexBuilder.makeCast( charType6, rexBuilder.makeInputRef( smallIntType, 0 ) ) ),
                 is( true ) );
@@ -637,13 +631,13 @@ public class RexProgramTest extends RexProgramBuilderBase {
 
     @Test
     public void removeRedundantCast() {
-        checkSimplify( cast( vInt(), nullable( tInt() ) ), "?0:ROW.int0" );
+        checkSimplifyUnchanged( cast( vInt(), nullable( tInt() ) ) ); // cast is not produced, therefore no simplification possible
         checkSimplifyUnchanged( cast( vInt(), tInt() ) );
         checkSimplify( cast( vIntNotNull(), nullable( tInt() ) ), "?0:ROW.notNullInt0" );
-        checkSimplify( cast( vIntNotNull(), tInt() ), "?0:ROW.notNullInt0" );
+        checkSimplifyUnchanged( cast( vIntNotNull(), tInt() ) ); // cast is not produced, therefore no simplification possible
 
         // Nested int int cast is removed
-        checkSimplify( cast( cast( vVarchar(), tInt() ), tInt() ), "CAST(?0:ROW.varchar0):INTEGER NOT NULL" );
+        checkSimplifyUnchanged( cast( cast( vVarchar(), tInt() ), tInt() ) );
         checkSimplifyUnchanged( cast( cast( vVarchar(), tInt() ), tVarchar() ) );
     }
 
@@ -652,7 +646,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
     public void testNoCommonReturnTypeFails() {
         try {
             final RexNode node = coalesce( vVarchar( 1 ), vInt( 2 ) );
-            fail( "expected exception, got " + node );
+            Assertions.fail( "expected exception, got " + node );
         } catch ( IllegalArgumentException e ) {
             final String expected = "Cannot infer return type for COALESCE; operand types: [VARCHAR, INTEGER]";
             assertThat( e.getMessage(), is( expected ) );
@@ -1559,10 +1553,10 @@ public class RexProgramTest extends RexProgramBuilderBase {
 
     @Test
     public void fieldAccessEqualsHashCode() {
-        assertEquals( "vBool() instances should be equal", vBool(), vBool() );
-        assertEquals( "vBool().hashCode()", vBool().hashCode(), vBool().hashCode() );
-        assertNotSame( "vBool() is expected to produce new RexFieldAccess", vBool(), vBool() );
-        assertNotEquals( "vBool(0) != vBool(1)", vBool( 0 ), vBool( 1 ) );
+        assertEquals( vBool(), vBool(), "vBool() instances should be equal" );
+        assertEquals( vBool().hashCode(), vBool().hashCode(), "vBool().hashCode()" );
+        assertNotSame( vBool(), vBool(), "vBool() is expected to produce new RexFieldAccess" );
+        assertNotEquals( vBool( 0 ), vBool( 1 ), "vBool(0) != vBool(1)" );
     }
 
 
@@ -1638,7 +1632,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
 
         RexCall result = (RexCall) simplify.simplifyUnknownAs( caseNode, RexUnknownAs.UNKNOWN );
         assertThat( result.getType().isNullable(), is( false ) );
-        assertThat( result.getType().getPolyType(), is( PolyType.CHAR ) );
+        assertThat( result.getType().getPolyType(), is( PolyType.VARCHAR ) );
         assertThat( result, is( caseNode ) );
     }
 
@@ -1838,7 +1832,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
                                         && literal.value.asString().value.length()
                                         > toType.getPrecision())
                                         || (literal.getPolyType() == PolyType.BINARY
-                                        && literal.value.asBinary().value.length()
+                                        && literal.value.asBinary().length()
                                         > toType.getPrecision());
                         boolean couldSimplify = !cast.equals( simplified );
                         final String reason = (expectedSimplify
@@ -1858,7 +1852,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
         assertNode( "cast(literal int not null)", "42:INTEGER NOT NULL", cast( literal( 42 ), tInt() ) );
         assertNode( "cast(literal int)", "42:INTEGER NOT NULL", cast( literal( 42 ), nullable( tInt() ) ) );
 
-        assertNode( "abstractCast(literal int not null)", "CAST(42):INTEGER NOT NULL", abstractCast( literal( 42 ), tInt() ) );
+        //assertNode( "abstractCast(literal int not null)", "CAST(42):INTEGER NOT NULL", abstractCast( literal( 42 ), tInt() ) );// cast to same types is removed
         assertNode( "abstractCast(literal int)", "CAST(42):INTEGER", abstractCast( literal( 42 ), nullable( tInt() ) ) );
     }
 
@@ -1877,11 +1871,11 @@ public class RexProgramTest extends RexProgramBuilderBase {
         checkSimplifyUnchanged( cast( literalAbc, varcharType ) );
         checkSimplify( cast( literalOne, varcharType ), "'1':VARCHAR(10)" );
         checkSimplifyUnchanged( cast( literalAbc, booleanType ) );
-        checkSimplify( cast( literalOne, booleanType ), "false" ); // different from Hive
+        checkSimplify( cast( literalOne, booleanType ), "true" ); // different from Hive
         checkSimplifyUnchanged( cast( literalAbc, dateType ) );
         checkSimplify( cast( literalOne, dateType ), "1970-01-02" ); // different from Hive
         checkSimplifyUnchanged( cast( literalAbc, timestampType ) );
-        checkSimplify( cast( literalOne, timestampType ), "1970-01-01 00:00:00" ); // different from Hive
+        checkSimplify( cast( literalOne, timestampType ), "1970-01-01 00:00:00.001" ); // different from Hive
     }
 
 
@@ -1891,44 +1885,19 @@ public class RexProgramTest extends RexProgramBuilderBase {
         final RexLiteral literalDate = rexBuilder.makeDateLiteral( new DateString( "2011-07-20" ) );
         final RexLiteral literalTime = rexBuilder.makeTimeLiteral( new TimeString( "12:34:56" ), 0 );
         final RexLiteral literalTimestamp = rexBuilder.makeTimestampLiteral( new TimestampString( "2011-07-20 12:34:56" ), 0 );
-        final RexLiteral literalTimeLTZ = rexBuilder.makeTimeWithLocalTimeZoneLiteral( new TimeString( 1, 23, 45 ), 0 );
         final RexLiteral timeLTZChar1 = rexBuilder.makeLiteral( "12:34:45 America/Los_Angeles" );
         final RexLiteral timeLTZChar2 = rexBuilder.makeLiteral( "12:34:45 UTC" );
         final RexLiteral timeLTZChar3 = rexBuilder.makeLiteral( "12:34:45 GMT+01" );
         final RexLiteral timestampLTZChar1 = rexBuilder.makeLiteral( "2011-07-20 12:34:56 Asia/Tokyo" );
         final RexLiteral timestampLTZChar2 = rexBuilder.makeLiteral( "2011-07-20 12:34:56 GMT+01" );
         final RexLiteral timestampLTZChar3 = rexBuilder.makeLiteral( "2011-07-20 12:34:56 UTC" );
-        final RexLiteral literalTimestampLTZ = rexBuilder.makeTimestampWithLocalTimeZoneLiteral( new TimestampString( 2011, 7, 20, 8, 23, 45 ), 0 );
 
         final AlgDataType dateType = typeFactory.createPolyType( PolyType.DATE );
         final AlgDataType timeType = typeFactory.createPolyType( PolyType.TIME );
         final AlgDataType timestampType = typeFactory.createPolyType( PolyType.TIMESTAMP );
-        final AlgDataType timeLTZType = typeFactory.createPolyType( PolyType.TIME_WITH_LOCAL_TIME_ZONE );
-        final AlgDataType timestampLTZType = typeFactory.createPolyType( PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE );
         final AlgDataType varCharType = typeFactory.createPolyType( PolyType.VARCHAR, 40 );
 
-        checkSimplify( cast( timeLTZChar1, timeLTZType ), "20:34:45:TIME_WITH_LOCAL_TIME_ZONE(0)" );
-        checkSimplify( cast( timeLTZChar2, timeLTZType ), "12:34:45:TIME_WITH_LOCAL_TIME_ZONE(0)" );
-        checkSimplify( cast( timeLTZChar3, timeLTZType ), "11:34:45:TIME_WITH_LOCAL_TIME_ZONE(0)" );
-        checkSimplifyUnchanged( cast( literalTimeLTZ, timeLTZType ) );
-        checkSimplify( cast( timestampLTZChar1, timestampLTZType ), "2011-07-20 03:34:56:TIMESTAMP_WITH_LOCAL_TIME_ZONE(0)" );
-        checkSimplify( cast( timestampLTZChar2, timestampLTZType ), "2011-07-20 11:34:56:TIMESTAMP_WITH_LOCAL_TIME_ZONE(0)" );
-        checkSimplify( cast( timestampLTZChar3, timestampLTZType ), "2011-07-20 12:34:56:TIMESTAMP_WITH_LOCAL_TIME_ZONE(0)" );
-        checkSimplifyUnchanged( cast( literalTimestampLTZ, timestampLTZType ) );
-        checkSimplify( cast( literalDate, timestampLTZType ), "2011-07-20 07:00:00:TIMESTAMP_WITH_LOCAL_TIME_ZONE(0)" );
-        checkSimplify( cast( literalTime, timestampLTZType ), "2011-07-20 19:34:56:TIMESTAMP_WITH_LOCAL_TIME_ZONE(0)" );
-        checkSimplify( cast( literalTimestamp, timestampLTZType ), "2011-07-20 19:34:56:TIMESTAMP_WITH_LOCAL_TIME_ZONE(0)" );
         checkSimplify( cast( literalTimestamp, dateType ), "2011-07-20" );
-        checkSimplify( cast( literalTimestampLTZ, dateType ), "2011-07-20" );
-        checkSimplify( cast( literalTimestampLTZ, timeType ), "01:23:45" );
-        checkSimplify( cast( literalTimestampLTZ, timestampType ), "2011-07-20 01:23:45" );
-        checkSimplify( cast( literalTimeLTZ, timeType ), "17:23:45" );
-        checkSimplify( cast( literalTime, timeLTZType ), "20:34:56:TIME_WITH_LOCAL_TIME_ZONE(0)" );
-        checkSimplify( cast( literalTimestampLTZ, timeLTZType ), "08:23:45:TIME_WITH_LOCAL_TIME_ZONE(0)" );
-        checkSimplify( cast( literalTimeLTZ, varCharType ), "'17:23:45 America/Los_Angeles':VARCHAR(40)" );
-        checkSimplify( cast( literalTimestampLTZ, varCharType ), "'2011-07-20 01:23:45 America/Los_Angeles':VARCHAR(40)" );
-        checkSimplify( cast( literalTimeLTZ, timestampType ), "2011-07-19 18:23:45" );
-        checkSimplify( cast( literalTimeLTZ, timestampLTZType ), "2011-07-20 01:23:45:TIMESTAMP_WITH_LOCAL_TIME_ZONE(0)" );
     }
 
 
@@ -2036,7 +2005,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
 
     private void assertTypeAndToString( RexNode rexNode, String representation, String type ) {
         assertEquals( representation, rexNode.toString() );
-        assertEquals( "type of " + rexNode, type, rexNode.getType().toString() + (rexNode.getType().isNullable() ? "" : " NOT NULL") );
+        assertEquals( type, rexNode.getType().toString() + (rexNode.getType().isNullable() ? "" : " NOT NULL"), "type of " + rexNode );
     }
 
 
@@ -2251,14 +2220,14 @@ public class RexProgramTest extends RexProgramBuilderBase {
 
     @Test
     public void testInterpreter() {
-        assertThat( eval( trueLiteral ), is( true ) );
-        assertThat( eval( nullInt ), is( NullSentinel.INSTANCE ) );
-        assertThat( eval( eq( nullInt, nullInt ) ), is( NullSentinel.INSTANCE ) );
-        assertThat( eval( eq( this.trueLiteral, nullInt ) ), is( NullSentinel.INSTANCE ) );
-        assertThat( eval( eq( falseLiteral, trueLiteral ) ), is( false ) );
-        assertThat( eval( ne( falseLiteral, trueLiteral ) ), is( true ) );
-        assertThat( eval( ne( falseLiteral, nullInt ) ), is( NullSentinel.INSTANCE ) );
-        assertThat( eval( and( this.trueLiteral, falseLiteral ) ), is( false ) );
+        assertThat( eval( trueLiteral ), is( PolyBoolean.TRUE ) );
+        assertThat( eval( nullInt ), is( PolyNull.NULL ) );
+        assertThat( eval( eq( nullInt, nullInt ) ), is( PolyNull.NULL ) );
+        assertThat( eval( eq( this.trueLiteral, nullInt ) ), is( PolyNull.NULL ) );
+        assertThat( eval( eq( falseLiteral, trueLiteral ) ), is( PolyBoolean.FALSE ) );
+        assertThat( eval( ne( falseLiteral, trueLiteral ) ), is( PolyBoolean.TRUE ) );
+        assertThat( eval( ne( falseLiteral, nullInt ) ), is( PolyNull.NULL ) );
+        assertThat( eval( and( this.trueLiteral, falseLiteral ) ), is( PolyBoolean.FALSE ) );
     }
 
 
@@ -2352,7 +2321,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
     }
 
 
-    private Comparable eval( RexNode e ) {
+    private PolyValue eval( RexNode e ) {
         return RexInterpreter.evaluate( e, ImmutableMap.of() );
     }
 

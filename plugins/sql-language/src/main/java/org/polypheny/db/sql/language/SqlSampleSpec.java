@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.polypheny.db.sql.language;
 
 
+import lombok.Getter;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -100,6 +101,7 @@ public abstract class SqlSampleSpec extends PolyValue {
     /**
      * Sample specification that orders substitution.
      */
+    @Getter
     public static class SqlSubstitutionSampleSpec extends SqlSampleSpec {
 
         private final String name;
@@ -107,11 +109,6 @@ public abstract class SqlSampleSpec extends PolyValue {
 
         private SqlSubstitutionSampleSpec( String name ) {
             this.name = name;
-        }
-
-
-        public String getName() {
-            return name;
         }
 
 
@@ -125,6 +122,12 @@ public abstract class SqlSampleSpec extends PolyValue {
             return null;
         }
 
+
+        @Override
+        public Object toJava() {
+            return this;
+        }
+
     }
 
 
@@ -134,8 +137,18 @@ public abstract class SqlSampleSpec extends PolyValue {
     public static class SqlTableSampleSpec extends SqlSampleSpec {
 
         private final boolean isBernoulli;
+        /**
+         * -- GETTER --
+         * Returns sampling percentage. Range is 0.0 to 1.0, exclusive
+         */
+        @Getter
         private final float samplePercentage;
         private final boolean isRepeatable;
+        /**
+         * -- GETTER --
+         * Seed to produce repeatable samples.
+         */
+        @Getter
         private final int repeatableSeed;
 
 
@@ -164,26 +177,10 @@ public abstract class SqlSampleSpec extends PolyValue {
 
 
         /**
-         * Returns sampling percentage. Range is 0.0 to 1.0, exclusive
-         */
-        public float getSamplePercentage() {
-            return samplePercentage;
-        }
-
-
-        /**
          * Indicates whether repeatable seed should be used.
          */
         public boolean isRepeatable() {
             return isRepeatable;
-        }
-
-
-        /**
-         * Seed to produce repeatable samples.
-         */
-        public int getRepeatableSeed() {
-            return repeatableSeed;
         }
 
 
@@ -206,6 +203,12 @@ public abstract class SqlSampleSpec extends PolyValue {
         @Override
         public @Nullable Long deriveByteSize() {
             return null;
+        }
+
+
+        @Override
+        public Object toJava() {
+            return this;
         }
 
     }

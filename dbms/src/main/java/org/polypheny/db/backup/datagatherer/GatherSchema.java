@@ -17,21 +17,30 @@
 package org.polypheny.db.backup.datagatherer;
 
 import com.google.common.collect.ImmutableMap;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.backup.BackupInformationObject;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.entity.LogicalConstraint;
-import org.polypheny.db.catalog.entity.logical.*;
+import org.polypheny.db.catalog.entity.logical.LogicalCollection;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalEntity;
+import org.polypheny.db.catalog.entity.logical.LogicalForeignKey;
+import org.polypheny.db.catalog.entity.logical.LogicalGraph;
+import org.polypheny.db.catalog.entity.logical.LogicalIndex;
+import org.polypheny.db.catalog.entity.logical.LogicalMaterializedView;
+import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.entity.logical.LogicalView;
 import org.polypheny.db.catalog.impl.PolyCatalog;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 
 @Slf4j
@@ -167,7 +176,7 @@ public class GatherSchema {
                 //keysPerTable.put( tableId, tableKeys );
 
                 //primary keys (for the table)
-                List<LogicalPrimaryKey> pkk = snapshot.rel().getPrimaryKeys().stream().filter( k -> k.tableId == tableId ).collect( Collectors.toList() );
+                List<LogicalPrimaryKey> pkk = snapshot.rel().getPrimaryKeys().stream().filter( k -> k.entityId == tableId ).collect( Collectors.toList() );
                 primaryKeysPerTable.put( tableId, pkk );
 
                 // foreign keys

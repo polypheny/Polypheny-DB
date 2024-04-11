@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,8 +37,8 @@ package org.polypheny.db.algebra.rules;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.logical.relational.LogicalCalc;
-import org.polypheny.db.algebra.logical.relational.LogicalFilter;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
@@ -49,15 +49,15 @@ import org.polypheny.db.tools.AlgBuilderFactory;
 
 
 /**
- * Planner rule that converts a {@link LogicalFilter} to a {@link LogicalCalc}.
+ * Planner rule that converts a {@link LogicalRelFilter} to a {@link LogicalCalc}.
  *
  * The rule does <em>NOT</em> fire if the child is a
- * {@link LogicalFilter} or a
- * {@link LogicalProject} (we assume they they
+ * {@link LogicalRelFilter} or a
+ * {@link LogicalRelProject} (we assume they they
  * will be converted using {@link FilterToCalcRule} or
  * {@link ProjectToCalcRule}) or a
  * {@link LogicalCalc}. This
- * {@link LogicalFilter} will eventually be
+ * {@link LogicalRelFilter} will eventually be
  * converted by {@link FilterCalcMergeRule}.
  */
 public class FilterToCalcRule extends AlgOptRule {
@@ -71,13 +71,13 @@ public class FilterToCalcRule extends AlgOptRule {
      * @param algBuilderFactory Builder for relational expressions
      */
     public FilterToCalcRule( AlgBuilderFactory algBuilderFactory ) {
-        super( operand( LogicalFilter.class, any() ), algBuilderFactory, null );
+        super( operand( LogicalRelFilter.class, any() ), algBuilderFactory, null );
     }
 
 
     @Override
     public void onMatch( AlgOptRuleCall call ) {
-        final LogicalFilter filter = call.alg( 0 );
+        final LogicalRelFilter filter = call.alg( 0 );
         final AlgNode alg = filter.getInput();
 
         final LogicalCalc calc = from( filter, alg );
@@ -85,7 +85,7 @@ public class FilterToCalcRule extends AlgOptRule {
     }
 
 
-    public static LogicalCalc from( LogicalFilter filter, AlgNode alg ) {
+    public static LogicalCalc from( LogicalRelFilter filter, AlgNode alg ) {
         // Create a program containing a filter.
         final RexBuilder rexBuilder = filter.getCluster().getRexBuilder();
         final AlgDataType inputRowType = alg.getTupleType();

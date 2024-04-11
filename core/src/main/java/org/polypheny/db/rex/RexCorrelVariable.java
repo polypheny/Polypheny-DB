@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,7 +41,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 
 
 /**
- * Reference to the current row of a correlating relational expression.
+ * Reference to the current row of a correlating algebra expression.
  *
  * Correlating variables are introduced when performing nested loop joins.
  * Each row is received from one side of the join, a correlating variable is assigned a value, and the other side of the join is restarted.

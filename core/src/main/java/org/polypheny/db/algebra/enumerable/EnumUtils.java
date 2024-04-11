@@ -1,9 +1,26 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * This file incorporates code covered by the following terms:
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to you under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -51,6 +68,7 @@ import org.polypheny.db.algebra.constant.SemiJoinType;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.impl.Expressible;
 import org.polypheny.db.functions.Functions;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
@@ -62,7 +80,6 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Pair;
-import org.polypheny.db.util.Util;
 
 
 /**
@@ -160,18 +177,18 @@ public class EnumUtils {
 
         // Generate all fields.
         final List<Expression> expressions = new ArrayList<>();
-        final int outputFieldCount = physType.getRowType().getFieldCount();
+        final int outputFieldCount = physType.getTupleType().getFieldCount();
         for ( Ord<PhysType> ord : Ord.zip( inputPhysTypes ) ) {
             final PhysType inputPhysType = ord.e.makeNullable( joinType.generatesNullsOn( ord.i ) );
             // If input item is just a primitive, we do not generate specialized primitive apply override since it won't be called anyway
             // Function<T> always operates on boxed arguments
-            final ParameterExpression parameter = Expressions.parameter( Primitive.box( inputPhysType.getJavaRowType() ), EnumUtils.LEFT_RIGHT.get( ord.i ) );
+            final ParameterExpression parameter = Expressions.parameter( Primitive.box( inputPhysType.getJavaTupleType() ), EnumUtils.LEFT_RIGHT.get( ord.i ) );
             parameters.add( parameter );
             if ( expressions.size() == outputFieldCount ) {
                 // For instance, if semi-join needs to return just the left inputs
                 break;
             }
-            final int fieldCount = inputPhysType.getRowType().getFieldCount();
+            final int fieldCount = inputPhysType.getTupleType().getFieldCount();
             for ( int i = 0; i < fieldCount; i++ ) {
                 Expression expression = inputPhysType.fieldReference( parameter, i, physType.getJavaFieldType( expressions.size() ) );
                 if ( joinType.generatesNullsOn( ord.i ) ) {
@@ -238,23 +255,6 @@ public class EnumUtils {
     }
 
 
-    static Type toInternal( AlgDataType type ) {
-        switch ( type.getPolyType() ) {
-            /*case DATE:
-            case TIME:
-                return type.isNullable() ? Integer.class : int.class;
-            case TIMESTAMP:
-                return type.isNullable() ? Long.class : long.class;*/
-            default:
-                return null; // we don't care; use the default storage type
-        }
-    }
-
-
-    static List<Type> internalTypes( List<? extends RexNode> operandList ) {
-        return Util.transform( operandList, node -> toInternal( node.getType() ) );
-    }
-
 
     static Expression enforce( final Type storageType, final Expression e ) {
         if ( storageType != null && e.type != storageType ) {
@@ -312,7 +312,7 @@ public class EnumUtils {
      * @param clazz Type of values
      * @return expression
      */
-    public static <T> MethodCallExpression constantArrayList( List<T> values, Class<?> clazz ) {
+    public static <T> MethodCallExpression constantArrayList( List<T> values, Type clazz ) {
         return Expressions.call( BuiltInMethod.ARRAYS_AS_LIST.method, Expressions.newArrayInit( clazz, constantList( values ) ) );
     }
 
@@ -354,12 +354,12 @@ public class EnumUtils {
 
 
     public static Expression foldAnd( List<Expression> expressions ) {
-        return Expressions.call( PolyBoolean.class, "of", Expressions.foldAnd( expressions.stream().map( e -> e.type == PolyBoolean.class ? Expressions.field( e, "value" ) : e ).collect( Collectors.toList() ) ) );
+        return Expressions.call( PolyBoolean.class, "of", Expressions.foldAnd( expressions.stream().map( e -> e.type == PolyBoolean.class ? Expressions.field( e, "value" ) : e ).toList() ) );
     }
 
 
     public static Expression foldOr( List<Expression> expressions ) {
-        return Expressions.call( PolyBoolean.class, "of", Expressions.foldOr( expressions.stream().map( e -> e.type == PolyBoolean.class ? Expressions.field( e, "value" ) : e ).collect( Collectors.toList() ) ) );
+        return Expressions.call( PolyBoolean.class, "of", Expressions.foldOr( expressions.stream().map( e -> e.type == PolyBoolean.class ? Expressions.field( e, "value" ) : e ).toList() ) );
     }
 
 
@@ -403,10 +403,16 @@ public class EnumUtils {
     @NotNull
     public static Expression convertPolyValue( PolyType outputType, Expression operand ) {
         Class<?> clazz = PolyValue.classFrom( outputType );
-        if ( Types.isAssignableFrom( operand.type, clazz ) ) {
+        if ( Types.isAssignableFrom( clazz, operand.type ) ) {
             return operand;
         }
         return Expressions.call( clazz, "convert", operand );
+    }
+
+
+    @NotNull
+    public static Expression convertPolyValue( Type type, Expression operand ) {
+        return Expressions.call( type, "convert", operand );
     }
 
 
@@ -434,8 +440,8 @@ public class EnumUtils {
             PhysType rightPhysType,
             RexNode condition ) {
         final BlockBuilder builder = new BlockBuilder();
-        final ParameterExpression left_ = Expressions.parameter( leftPhysType.getJavaRowType(), "left" );
-        final ParameterExpression right_ = Expressions.parameter( rightPhysType.getJavaRowType(), "right" );
+        final ParameterExpression left_ = Expressions.parameter( leftPhysType.getJavaTupleType(), "left" );
+        final ParameterExpression right_ = Expressions.parameter( rightPhysType.getJavaTupleType(), "right" );
         final RexProgramBuilder program = new RexProgramBuilder(
                 implementor.getTypeFactory().builder()
                         .addAll( left.getTupleType().getFields() )
@@ -455,6 +461,10 @@ public class EnumUtils {
         return Expressions.lambda( Predicate2.class, builder.toBlock(), left_, right_ );
     }
 
+
+    public static Expression convertAlgFields( List<AlgDataTypeField> fields ) {
+        return Expressions.newArrayInit( PolyType.class, fields.stream().map( Expressible::asExpression ).toList() );
+    }
 
 }
 

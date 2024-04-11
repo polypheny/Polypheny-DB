@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,18 +33,23 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.exception.ConfigRuntimeException;
+import org.polypheny.db.util.PolyphenyHomeDirManager;
+import org.polypheny.db.util.RunMode;
 
 
 public class ConfigManagerTest implements ConfigListener {
 
-    private ConfigManager cm;
+    private final ConfigManager cm;
     private boolean wasRestarted = false;
 
 
-    static {
+    @BeforeAll
+    public static void setupTestEnvironment() {
+        PolyphenyHomeDirManager.setModeAndGetInstance( RunMode.TEST );
         ConfigManager cm = ConfigManager.getInstance();
 
         // Check if the correct file will be accessed
@@ -56,7 +61,7 @@ public class ConfigManagerTest implements ConfigListener {
         } catch ( IOException e ) {
             e.printStackTrace();
         }
-        cm.setApplicationConfFile( testFile.toFile() );
+        ConfigManager.setApplicationConfFile( testFile.toFile() );
 
         WebUiPage p = new WebUiPage( "p", "page1", "page1descr" );
         WebUiGroup g1 = new WebUiGroup( "g1", "p", 2 ).withTitle( "group1" );

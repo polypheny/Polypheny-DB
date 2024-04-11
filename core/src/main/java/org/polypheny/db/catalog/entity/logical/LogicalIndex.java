@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,24 +20,30 @@ package org.polypheny.db.catalog.entity.logical;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.annotations.SerializeNullable;
+import java.io.Serial;
 import java.io.Serializable;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import lombok.experimental.SuperBuilder;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.PolyObject;
 import org.polypheny.db.catalog.logistic.IndexType;
+import org.polypheny.db.type.entity.PolyBoolean;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.numerical.PolyLong;
 
 
 @EqualsAndHashCode(callSuper = false)
 @Value
 @SuperBuilder(toBuilder = true)
-public class LogicalIndex implements PolyObject {
+public class LogicalIndex implements Serializable {
 
+    @Serial
     private static final long serialVersionUID = -318228681682792406L;
 
     @Serialize
@@ -52,7 +58,7 @@ public class LogicalIndex implements PolyObject {
     @Serialize
     public IndexType type;
     @Serialize
-    public long location;
+    public long location; // -1 is Polypheny
     @Serialize
     public String method;
     @Serialize
@@ -88,87 +94,51 @@ public class LogicalIndex implements PolyObject {
 
 
     // Used for creating ResultSets
-    public List<LogicalIndexColumn> getCatalogIndexColumns() {
+    public List<LogicalIndexField> getIndexFields() {
         int i = 1;
-        List<LogicalIndexColumn> list = new LinkedList<>();
-        for ( String columnName : key.getColumnNames() ) {
-            list.add( new LogicalIndexColumn( id, i++, columnName, this ) );
+        List<LogicalIndexField> list = new ArrayList<>();
+        for ( String fieldName : key.getFieldNames() ) {
+            list.add( new LogicalIndexField( id, i++, fieldName, this ) );
         }
         return list;
     }
 
 
-    public Serializable[] getParameterArray( int ordinalPosition, String columnName ) {
-        return new Serializable[]{
-                Catalog.DATABASE_NAME,
-                key.getSchemaName(),
-                key.getTableName(),
-                !unique,
+    public PolyValue[] getParameterArray( int ordinalPosition, String columnName ) {
+        return new PolyValue[]{
+                PolyString.of( Catalog.DATABASE_NAME ),
+                PolyString.of( key.getSchemaName() ),
+                PolyString.of( key.getTableName() ),
+                PolyBoolean.of( !unique ),
                 null,
-                name,
-                0,
-                ordinalPosition,
-                columnName,
+                PolyString.of( name ),
+                PolyInteger.of( 0 ),
+                PolyInteger.of( ordinalPosition ),
+                PolyString.of( columnName ),
                 null,
-                -1,
+                PolyInteger.of( -1 ),
                 null,
                 null,
-                location,
-                type.getId() };
+                PolyLong.of( location ),
+                PolyInteger.of( type.getId() ) };
     }
-
-
-    @Override
-    public Serializable[] getParameterArray() {
-        return new Serializable[0];
-    }
-
-
-    @Override
-    public Visibility getVisibility() {
-        return PolyObject.super.getVisibility();
-    }
-
 
     // Used for creating ResultSets
-    @RequiredArgsConstructor
-    @Value
-    public static class LogicalIndexColumn implements PolyObject {
 
+
+    public record LogicalIndexField(long indexId, int ordinalPosition, String fieldName, LogicalIndex index) implements PolyObject {
+
+        @Serial
         private static final long serialVersionUID = -5596459769680478780L;
-
-        public long indexId;
-        public int ordinalPosition;
-
-        public String columnName;
-
-        public LogicalIndex index;
 
 
         @Override
-        public Serializable[] getParameterArray() {
-            return index.getParameterArray( ordinalPosition, columnName );
+        public PolyValue[] getParameterArray() {
+            return index.getParameterArray( ordinalPosition, fieldName );
         }
 
 
-        @RequiredArgsConstructor
-        public static class PrimitiveCatalogIndexColumn {
-
-            public final String tableCat;
-            public final String tableSchem;
-            public final String tableName;
-            public final boolean nonUnique;
-            public final String indexQualifier;
-            public final String indexName;
-            public final int type;
-            public final int ordinalPosition;
-            public final String columnName;
-            public final Integer ascOrDesc;
-            public final int cardinality;
-            public final String pages;
-            public final String filterCondition;
-            public final int location;
-            public final int indexType;
+        public record PrimitiveCatalogIndexColumn(String tableCat, String tableSchem, String tableName, boolean nonUnique, String indexQualifier, String indexName, int type, int ordinalPosition, String columnName, Integer ascOrDesc, int cardinality, String pages, String filterCondition, int location, int indexType) {
 
         }
 

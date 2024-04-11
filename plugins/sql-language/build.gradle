@@ -1,4 +1,8 @@
-import ca.coglinc.gradle.plugins.javacc.CompileJavaccTask
+import org.javacc.plugin.gradle.javacc.CompileJavaccTask
+
+plugins {
+    id "org.javacc.javacc" version "$javacc_plugin_version"
+}
 
 group "org.polypheny"
 
@@ -11,23 +15,13 @@ configurations {
 }
 
 
-buildscript {
-    dependencies {
-        // JavaCC (https://github.com/johnmartel/javaccPlugin)
-        classpath group: "gradle.plugin.ca.coglinc2", name: "javacc-gradle-plugin", version: javacc_plugin_version
-        // Fmpp
-        //classpath group: "net.sourceforge.fmpp", name: "fmpp", version: fmpp_plugin_version
-    }
-    //ant.taskdef(name: "fmpp", classname:"fmpp.tools.AntTask", classpath: buildscript.configurations.classpath.asPath)
-}
-
 dependencies {
     compileOnly project(":core")
     compileOnly project(":monitoring")
     compileOnly project(":dbms")
     compileOnly project(":webui")
 
-    javacc group: "net.java.dev.javacc", name: "javacc", version: javacc_version  // BSD 2-clause
+    javacc group: "net.java.dev.javacc", name: "javacc", version: javacc_sql_version  // BSD 2-clause 4.1 breaks Expected
 
     implementation(group: "io.javalin", name: "javalin", version: javalin_version) {  // Apache 2.0
         exclude(group: "org.slf4j")
@@ -35,8 +29,6 @@ dependencies {
     }
 
     implementation group: "com.konghq", name: "unirest-java", version: unirest_version  // MIT
-    implementation group: "net.sf.opencsv", name: "opencsv", version: opencsv_version  // Apache 2.0
-
 
     implementation group: "com.j256.simplemagic", name: "simplemagic", version: simplemagic_version // ISC
 
@@ -47,9 +39,12 @@ dependencies {
     testImplementation project(path: ":core", configuration: "tests")
     testImplementation project(path: ":core")
 
+    testImplementation group: "org.mongodb", name: "mongodb-driver-sync", version: mongodb_driver_sync_version  // Apache 2.0
+
     testImplementation group: "com.jayway.jsonpath", name: "json-path", version: json_path_version  // Apache 2.0
 
     testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter', version: junit_jupiter_version
+    testRuntimeOnly(group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: junit_jupiter_version)
     testImplementation group: "org.incava", name: "java-diff", version: java_diff_version  // Apache 2.0
 }
 
@@ -57,18 +52,8 @@ dependencies {
 /**
  * Compile Pipeline
  */
-task generateFmppSources {
-    inputs.dir("src/main/codegen/templates")
-    outputs.dir(project.buildDir.absolutePath + "/generated-sources/fmpp")
-    doLast {
-        ant.fmpp(configuration: "src/main/codegen/config.fmpp",
-                sourceRoot: "src/main/codegen/templates",
-                outputRoot: project.buildDir.absolutePath + "/generated-sources/fmpp/sql")
-    }
-}
 task generateParser (type: CompileJavaccTask) {
     getConventionMapping().map("classpath", { configurations.javacc })
-    arguments = [static: "false", lookahead: "2"]
     inputDirectory = file("src/main/codegen")
     outputDirectory = file(project.buildDir.absolutePath + "/generated-sources/org/polypheny/db/languages/sql/parser/impl")
 }
@@ -91,7 +76,6 @@ sourceSets {
         java {
             //srcDirs = ["src/main/java","build/generated-sources"]
             srcDirs files("${buildDir}/generated-sources").builtBy(generateParser)
-            outputDir = file(project.buildDir.absolutePath + "/classes")
         }
         resources {
             srcDirs = ["src/main/resources"]
@@ -102,7 +86,7 @@ sourceSets {
     test {
         java {
             srcDirs = ["src/test/java"]
-            outputDir = file(project.buildDir.absolutePath + "/test-classes")
+            destinationDirectory.set(file(project.buildDir.absolutePath + "/test-classes"))
         }
         resources {
             // We need the main resources for the tests as well.
@@ -139,15 +123,15 @@ jar {
     }
 }
 task sourcesJar(type: Jar, dependsOn: classes) {
-    classifier "sources"
+    archiveClassifier = "sources"
     from sourceSets.main.allSource
 }
 task javadocJar(type: Jar, dependsOn: javadoc) {
-    classifier "javadoc"
+    archiveClassifier = "javadoc"
     from javadoc.destinationDir
 }
 task testJar(type: Jar, dependsOn: testClasses) {
-    classifier 'tests'
+    archiveClassifier = 'tests'
     from sourceSets.test.output
 }
 artifacts {
@@ -171,13 +155,11 @@ artifacts {
 
 licensee {
     allow('Apache-2.0')
-
     allow('MIT')
 
-    allowUrl('https://www.eclipse.org/org/documents/epl-v10.php') // EPL 1.0
+    allowDependency('com.j256.simplemagic', 'simplemagic', '1.17') { because 'ISC license' }
 
     allowDependency('javax.servlet', 'javax.servlet-api', '3.1.0') {
         because 'Servlet-api.jar and javax.servlet-*.jar are under the CDDL license, the original source code for this can be found at http://www.eclipse.org/jetty/downloads.php'
     }
-
 }

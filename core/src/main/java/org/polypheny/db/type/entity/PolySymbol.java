@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package org.polypheny.db.type.entity;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -29,11 +31,14 @@ import org.polypheny.db.type.PolyType;
 @Value
 public class PolySymbol extends PolyValue {
 
+    @JsonProperty
     public Enum<?> value;
+    @JsonProperty
     public Object object;
 
 
-    public PolySymbol( Enum<?> value, Object o ) {
+    @JsonCreator
+    public PolySymbol( @JsonProperty("value") Enum<?> value, @JsonProperty("object") Object o ) {
         super( PolyType.SYMBOL );
         this.value = value;
         this.object = o;
@@ -47,6 +52,11 @@ public class PolySymbol extends PolyValue {
 
     public static PolySymbol of( Object value ) {
         return new PolySymbol( null, value );
+    }
+
+
+    public <T extends Enum<T>> T asEnum( Class<T> clazz ) {
+        return clazz.cast( value );
     }
 
 
@@ -77,5 +87,16 @@ public class PolySymbol extends PolyValue {
         return null;
     }
 
+
+    @Override
+    public Object toJava() {
+        return value;
+    }
+
+
+    @Override
+    public String toString() {
+        return value.name();
+    }
 
 }

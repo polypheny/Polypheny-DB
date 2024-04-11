@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,12 +42,12 @@ import org.polypheny.db.util.Pair;
 
 public class CowMultiHashIndex extends Index {
 
-    private Map<List<PolyValue>, Set<List<PolyValue>>> index = new HashMap<>();
+    private final Map<List<PolyValue>, Set<List<PolyValue>>> index = new HashMap<>();
     private boolean initialized = false;
 
-    private Map<PolyXid, Map<List<PolyValue>, Set<List<PolyValue>>>> cowIndex = new HashMap<>();
-    private Map<PolyXid, List<DeferredIndexUpdate>> cowOpLog = new HashMap<>();
-    private Map<PolyXid, List<Triple<List<PolyValue>, List<PolyValue>, Boolean>>> barrierIndex = new HashMap<>();
+    private final Map<PolyXid, Map<List<PolyValue>, Set<List<PolyValue>>>> cowIndex = new HashMap<>();
+    private final Map<PolyXid, List<DeferredIndexUpdate>> cowOpLog = new HashMap<>();
+    private final Map<PolyXid, List<Triple<List<PolyValue>, List<PolyValue>, Boolean>>> barrierIndex = new HashMap<>();
 
 
     public CowMultiHashIndex( long id, String name, LogicalNamespace schema, LogicalTable table, List<String> columns, List<String> targetColumns ) {

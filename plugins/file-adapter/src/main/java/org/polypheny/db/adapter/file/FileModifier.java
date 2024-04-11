@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,28 +18,20 @@ package org.polypheny.db.adapter.file;
 
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.List;
-import org.apache.commons.io.IOUtils;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.file.FileAlg.FileImplementor.Operation;
-import org.polypheny.db.adapter.file.FilePlugin.FileStore;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.entity.PolyLong;
-import org.polypheny.db.util.DateString;
-import org.polypheny.db.util.FileInputHandle;
-import org.polypheny.db.util.TimeString;
-import org.polypheny.db.util.TimestampString;
+import org.polypheny.db.type.entity.PolyNull;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.numerical.PolyLong;
 
 
 public class FileModifier extends FileEnumerator {
 
-    private final Object[] insertValues;
+    private final List<List<PolyValue>> insertValues;
     private boolean inserted = false;
 
 
@@ -48,12 +40,12 @@ public class FileModifier extends FileEnumerator {
             final String rootPath,
             final Long partitionId,
             final Long[] columnIds,
-            final PolyType[] columnTypes,
+            final FileTranslatableEntity entity,
             final List<Long> pkIds,
             final DataContext dataContext,
-            final Object[] insertValues,
+            final List<List<PolyValue>> insertValues,
             final Condition condition ) {
-        super( operation, rootPath, partitionId, columnIds, columnTypes, pkIds, null, dataContext, condition, null );
+        super( operation, rootPath, partitionId, columnIds, entity, pkIds, null, dataContext, condition, null );
         this.insertValues = insertValues;
     }
 
@@ -68,35 +60,34 @@ public class FileModifier extends FileEnumerator {
     @Override
     public boolean moveNext() {
         try {
-            outer:
             for ( ; ; ) {
                 if ( dataContext.getStatement().getTransaction().getCancelFlag().get() || inserted ) {
                     return false;
                 }
                 int insertPosition;
-                for ( insertPosition = 0; insertPosition < insertValues.length; insertPosition++ ) {
-                    Object[] currentRow = (Object[]) insertValues[insertPosition];
+                for ( insertPosition = 0; insertPosition < insertValues.size(); insertPosition++ ) {
+                    List<PolyValue> currentRow = insertValues.get( insertPosition );
                     int hash = hashRow( currentRow );
-                    for ( int i = 0; i < currentRow.length; i++ ) {
-                        Object value = currentRow[i];
+                    for ( int i = 0; i < currentRow.size(); i++ ) {
+                        PolyValue value = currentRow.get( i );
                         if ( value == null ) {
-                            continue;
+                            value = PolyNull.NULL;
                         }
 
                         File newFile = new File( columnFolders.get( i ), getNewFileName( Operation.INSERT, String.valueOf( hash ) ) );
-                        if ( value instanceof FileInputHandle ) {
+                        if ( !value.isNull() && value.isBlob() && value.asBlob().isHandle() ) {
                             if ( newFile.exists() ) {
                                 if ( !newFile.delete() ) {
                                     throw new GenericRuntimeException( "Could not delete file" );
                                 }
                             }
-                            ((FileInputHandle) value).materializeAsFile( newFile.toPath() );
+                            value.asBlob().getHandle().materializeAsFile( newFile.toPath() );
                             continue;
                         }
                         write( newFile, value );
                     }
                 }
-                current = new PolyLong[]{ PolyLong.of( Long.valueOf( insertPosition ) ) };
+                current = new PolyLong[]{ PolyLong.of( insertPosition ) };
                 inserted = true;
                 return true;
             }
@@ -106,30 +97,11 @@ public class FileModifier extends FileEnumerator {
     }
 
 
-    static void write( File newFile, Object value ) throws IOException {
+    static void write( File newFile, PolyValue value ) throws IOException {
         if ( !newFile.createNewFile() ) {
             throw new GenericRuntimeException( "Primary key conflict! You are trying to insert a row with a primary key that already exists." );
         }
-        if ( value instanceof byte[] ) {
-            Files.write( newFile.toPath(), (byte[]) value );
-        } else if ( value instanceof InputStream ) {
-            //see https://attacomsian.com/blog/java-convert-inputstream-to-outputstream
-            try ( InputStream is = (InputStream) value; FileOutputStream os = new FileOutputStream( newFile ) ) {
-                IOUtils.copyLarge( is, os );
-            }
-        } else if ( FileHelper.isSqlDateOrTimeOrTS( value ) ) {
-            Long l = FileHelper.sqlToLong( value );
-            Files.write( newFile.toPath(), l.toString().getBytes( FileStore.CHARSET ) );
-        } else if ( value instanceof TimestampString ) {
-            Files.write( newFile.toPath(), ("" + ((TimestampString) value).getMillisSinceEpoch()).getBytes( StandardCharsets.UTF_8 ) );
-        } else if ( value instanceof DateString ) {
-            Files.write( newFile.toPath(), ("" + ((DateString) value).getDaysSinceEpoch()).getBytes( StandardCharsets.UTF_8 ) );
-        } else if ( value instanceof TimeString ) {
-            Files.write( newFile.toPath(), ("" + ((TimeString) value).getMillisOfDay()).getBytes( StandardCharsets.UTF_8 ) );
-        } else {
-            String writeString = value.toString();
-            Files.write( newFile.toPath(), writeString.getBytes( FileStore.CHARSET ) );
-        }
+        Files.writeString( newFile.toPath(), value.toTypedJson(), FileStore.CHARSET );
     }
 
 
@@ -138,10 +110,5 @@ public class FileModifier extends FileEnumerator {
         //insertPosition = 0;
     }
 
-
-    @Override
-    public void close() {
-
-    }
 
 }

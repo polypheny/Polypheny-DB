@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +39,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import lombok.Getter;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
@@ -58,15 +59,19 @@ import org.polypheny.db.util.Pair;
 public class RexProgramBuilder {
 
     private final RexBuilder rexBuilder;
+    /**
+     * -- GETTER --
+     * Returns the rowtype of the input to the program
+     */
+    @Getter
     private final AlgDataType inputRowType;
     private final List<RexNode> exprList = new ArrayList<>();
     private final Map<Pair<RexNode, String>, RexLocalRef> exprMap = new HashMap<>();
     private final List<RexLocalRef> localRefList = new ArrayList<>();
     private final List<RexLocalRef> projectRefList = new ArrayList<>();
     private final List<String> projectNameList = new ArrayList<>();
-    private final RexSimplify simplify;
     private RexLocalRef conditionRef = null;
-    private boolean validating;
+    private final boolean validating;
 
 
     /**
@@ -83,7 +88,6 @@ public class RexProgramBuilder {
     private RexProgramBuilder( AlgDataType inputRowType, RexBuilder rexBuilder, RexSimplify simplify ) {
         this.inputRowType = Objects.requireNonNull( inputRowType );
         this.rexBuilder = Objects.requireNonNull( rexBuilder );
-        this.simplify = simplify; // may be null
         this.validating = assertionsAreEnabled();
 
         // Pre-create an expression for each input field.
@@ -166,7 +170,7 @@ public class RexProgramBuilder {
 
     private void validate( final RexNode expr, final int fieldOrdinal ) {
         final RexVisitor<Void> validator =
-                new RexVisitorImpl<Void>( true ) {
+                new RexVisitorImpl<>( true ) {
                     @Override
                     public Void visitIndexRef( RexIndexRef input ) {
                         final int index = input.getIndex();
@@ -604,7 +608,7 @@ public class RexProgramBuilder {
      * Merges two programs together, and normalizes the result.
      *
      * @param topProgram Top program. Its expressions are in terms of the outputs of the bottom program.
-     * @param bottomProgram Bottom program. Its expressions are in terms of the result fields of the relational expression's input
+     * @param bottomProgram Bottom program. Its expressions are in terms of the result fields of the algebra expression's input
      * @param rexBuilder Rex builder
      * @return Merged program
      * @see #mergePrograms(RexProgram, RexProgram, RexBuilder, boolean)
@@ -779,14 +783,6 @@ public class RexProgramBuilder {
         assert index < fields.size();
         final AlgDataTypeField field = fields.get( index );
         return new RexLocalRef( index, field.getType() );
-    }
-
-
-    /**
-     * Returns the rowtype of the input to the program
-     */
-    public AlgDataType getInputRowType() {
-        return inputRowType;
     }
 
 
@@ -994,7 +990,7 @@ public class RexProgramBuilder {
      */
     private static class UpdateRefShuttle extends RexShuttle {
 
-        private List<RexLocalRef> newRefs;
+        private final List<RexLocalRef> newRefs;
 
 
         private UpdateRefShuttle( List<RexLocalRef> newRefs ) {

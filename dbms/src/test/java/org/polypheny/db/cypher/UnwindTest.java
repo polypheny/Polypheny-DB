@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 package org.polypheny.db.cypher;
 
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.webui.models.results.GraphResult;
@@ -72,7 +71,6 @@ public class UnwindTest extends CypherTestTemplate {
 
 
     @Test
-    @Disabled
     public void nodePropertyUnwind() {
         execute( "CREATE (n {key: [3,1]})" );
         GraphResult res = execute( "MATCH (n) UNWIND n.key AS x RETURN x" );

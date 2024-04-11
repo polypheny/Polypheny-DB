@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,13 +18,12 @@ package org.polypheny.db.catalog.catalogs;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Streams;
-import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.annotations.Deserialize;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
+import java.util.SortedSet;
 import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -42,7 +41,7 @@ import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalField;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
-import org.polypheny.db.type.PolySerializable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.util.Pair;
 
 @Getter
@@ -52,11 +51,9 @@ import org.polypheny.db.util.Pair;
 @NonFinal
 public class RelAdapterCatalog extends AdapterCatalog {
 
-    public BinarySerializer<GraphAdapterCatalog> serializer = PolySerializable.buildSerializer( GraphAdapterCatalog.class );
-
 
     public RelAdapterCatalog( long adapterId ) {
-        this( adapterId, Map.of(), Map.of(), Map.of(), Map.of(), Map.of() );
+        this( adapterId, Map.of(), Map.of(), Map.of(), Map.of() );
     }
 
 
@@ -64,8 +61,7 @@ public class RelAdapterCatalog extends AdapterCatalog {
             @Deserialize("adapterId") long adapterId,
             @Deserialize("physicals") Map<Long, PhysicalEntity> physicals,
             @Deserialize("allocations") Map<Long, AllocationEntity> allocations,
-            @Deserialize("columns") Map<Pair<Long, Long>, PhysicalColumn> columns,
-            @Deserialize("allocToPhysicals") Map<Long, Set<Long>> allocToPhysicals,
+            @Deserialize("allocToPhysicals") Map<Long, SortedSet<Long>> allocToPhysicals,
             @Deserialize("fields") Map<Pair<Long, Long>, PhysicalField> fields ) {
         super( adapterId, Map.of(), physicals, allocations, allocToPhysicals, fields );
     }
@@ -104,11 +100,11 @@ public class RelAdapterCatalog extends AdapterCatalog {
     }
 
 
-    public PhysicalTable createTable( String namespaceName, String tableName, Map<Long, String> columnNames, LogicalTable logical, Map<Long, LogicalColumn> lColumns, AllocationTableWrapper wrapper ) {
+    public PhysicalTable createTable( String namespaceName, String tableName, Map<Long, String> columnNames, LogicalTable logical, Map<Long, LogicalColumn> lColumns, List<Long> pkIds, AllocationTableWrapper wrapper ) {
         AllocationTable allocation = wrapper.table;
         List<AllocationColumn> columns = wrapper.columns;
         List<PhysicalColumn> pColumns = Streams.mapWithIndex( columns.stream(), ( c, i ) -> new PhysicalColumn( columnNames.get( c.columnId ), logical.id, allocation.id, allocation.adapterId, (int) i, lColumns.get( c.columnId ) ) ).collect( Collectors.toList() );
-        PhysicalTable table = new PhysicalTable( IdBuilder.getInstance().getNewPhysicalId(), allocation.id, allocation.logicalId, tableName, pColumns, logical.namespaceId, namespaceName, allocation.adapterId );
+        PhysicalTable table = new PhysicalTable( IdBuilder.getInstance().getNewPhysicalId(), allocation.id, allocation.logicalId, tableName, pColumns, logical.namespaceId, namespaceName, pkIds, allocation.adapterId );
         pColumns.forEach( this::addColumn );
         addPhysical( allocation, table );
         return table;
@@ -130,9 +126,8 @@ public class RelAdapterCatalog extends AdapterCatalog {
         PhysicalColumn old = getColumn( newCol.id, allocId );
         PhysicalColumn column = new PhysicalColumn( old.name, newCol.tableId, allocId, old.adapterId, old.position, newCol );
         PhysicalTable table = fromAllocation( allocId );
-        List<PhysicalColumn> pColumn = new ArrayList<>( table.columns );
-        pColumn.remove( old );
-        pColumn.add( column );
+        addColumn( column );
+        List<PhysicalColumn> pColumn = new ArrayList<>( table.columns ).stream().map( c -> c.id == column.id ? column : c ).toList();
         addPhysical( getAlloc( table.allocationId ), table.toBuilder().columns( ImmutableList.copyOf( pColumn ) ).build() );
 
         return column;
@@ -140,7 +135,11 @@ public class RelAdapterCatalog extends AdapterCatalog {
 
 
     public PhysicalTable fromAllocation( long id ) {
-        return getPhysicalsFromAllocs( id ).get( 0 ).unwrap( PhysicalTable.class ).orElseThrow();
+        List<PhysicalEntity> allocs = getPhysicalsFromAllocs( id );
+        if ( allocs == null || allocs.isEmpty() ) {
+            throw new GenericRuntimeException( "No physical table found for allocation with id %s", id );
+        }
+        return allocs.get( 0 ).unwrap( PhysicalTable.class ).orElseThrow();
     }
 
 
@@ -159,9 +158,5 @@ public class RelAdapterCatalog extends AdapterCatalog {
     }
 
 
-    @Override
-    public PolySerializable copy() {
-        return PolySerializable.deserialize( serialize(), RelAdapterCatalog.class );
-    }
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import java.util.Map;
 import javax.annotation.Nullable;
 import lombok.Getter;
 import lombok.experimental.Accessors;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.avatica.Meta.CursorFactory;
@@ -52,15 +53,16 @@ import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.runtime.Typed;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.entity.PolyInteger;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
+import org.polypheny.db.type.entity.numerical.PolyInteger;
 
 
 @Getter
+@Slf4j
 public class PolyImplementation {
 
-    public final AlgDataType rowType;
+    public final AlgDataType tupleType;
     private final long maxRowCount = -1;
     private final Kind kind;
     private Bindable<PolyValue[]> bindable;
@@ -68,7 +70,7 @@ public class PolyImplementation {
     private final ExecutionTimeMonitor executionTimeMonitor;
     private CursorFactory cursorFactory;
     private final Convention resultConvention;
-    private List<ColumnMetaData> columns;
+    private List<ColumnMetaData> fields;
     private final PreparedResult<PolyValue> preparedResult;
     private final Statement statement;
 
@@ -80,9 +82,9 @@ public class PolyImplementation {
     /**
      * {@link PolyImplementation} should serve as a jack-of-all-trades results implementation of the results of a query.
      * It should minimize the needed variables to be instantiated and defer access of more complex information
-     * on access e.g. {@link #getColumns()}
+     * on access e.g. {@link #getFields()}
      *
-     * @param rowType defines the types of the result
+     * @param tupleType defines the types of the result
      * @param dataModel type of the
      * @param executionTimeMonitor to keep track of different execution times
      * @param preparedResult nullable result, which holds all info from the execution
@@ -91,7 +93,7 @@ public class PolyImplementation {
      * @param resultConvention the nullable result convention
      */
     public PolyImplementation(
-            @Nullable AlgDataType rowType,
+            @Nullable AlgDataType tupleType,
             DataModel dataModel,
             ExecutionTimeMonitor executionTimeMonitor,
             @Nullable PreparedResult<PolyValue> preparedResult,
@@ -108,12 +110,12 @@ public class PolyImplementation {
         this.isDDL = Kind.DDL.contains( kind );
 
         if ( this.isDDL ) {
-            this.columns = ImmutableList.of();
+            this.fields = ImmutableList.of();
             Builder builder = statement.getTransaction().getTypeFactory().builder();
             builder.add( "ROWTYPE", null, PolyType.BIGINT );
-            this.rowType = builder.build();
+            this.tupleType = builder.build();
         } else {
-            this.rowType = rowType;
+            this.tupleType = tupleType;
         }
     }
 
@@ -157,7 +159,7 @@ public class PolyImplementation {
 
         cursorFactory = resultConvention == BindableConvention.INSTANCE
                 ? CursorFactory.ARRAY
-                : CursorFactory.deduce( getColumns(), getResultClass() );
+                : CursorFactory.deduce( getFields(), getResultClass() );
 
         return cursorFactory;
     }
@@ -184,30 +186,24 @@ public class PolyImplementation {
     }
 
 
-    public List<ColumnMetaData> getColumns() {
-        if ( columns != null ) {
-            return columns;
+    public List<ColumnMetaData> getFields() {
+        if ( fields != null ) {
+            return fields;
         }
 
-        final AlgDataType x;
-        switch ( kind ) {
-            case INSERT:
-            case DELETE:
-            case UPDATE:
-            case EXPLAIN:
+        final AlgDataType x = switch ( kind ) {
+            case INSERT, DELETE, UPDATE, EXPLAIN ->
                 // FIXME: getValidatedNodeType is wrong for DML
-                x = AlgOptUtil.createDmlRowType( kind, statement.getTransaction().getTypeFactory() );
-                break;
-            default:
-                x = rowType;
-        }
+                    AlgOptUtil.createDmlRowType( kind, statement.getTransaction().getTypeFactory() );
+            default -> tupleType;
+        };
         final List<ColumnMetaData> columns = QueryProcessorHelpers.getColumnMetaDataList(
                 statement.getTransaction().getTypeFactory(),
                 x,
                 QueryProcessorHelpers.makeStruct( statement.getTransaction().getTypeFactory(), x ),
                 preparedResult.getFieldOrigins() );
 
-        this.columns = columns;
+        this.fields = columns;
         return columns;
 
     }
@@ -226,7 +222,7 @@ public class PolyImplementation {
                 isTimed,
                 isIndex,
                 isAnalyzed,
-                rowType,
+                tupleType,
                 executionTimeMonitor,
                 this );
     }
@@ -270,29 +266,7 @@ public class PolyImplementation {
     }
 
 
-    public int getRowsChanged( Statement statement ) throws Exception {
-        if ( Kind.DDL.contains( getKind() ) ) {
-            return 1;
-        } else if ( Kind.DML.contains( getKind() ) ) {
-            int rowsChanged;
-            try {
-                Iterator<?> iterator = enumerable( statement.getDataContext() ).iterator();
-                rowsChanged = getRowsChanged( statement, iterator, MonitoringType.from( getKind() ) );
-            } catch ( RuntimeException e ) {
-                if ( e.getCause() != null ) {
-                    throw new GenericRuntimeException( e.getCause().getMessage(), e );
-                } else {
-                    throw new GenericRuntimeException( e.getMessage(), e );
-                }
-            }
-            return rowsChanged;
-        } else {
-            throw new Exception( "Unknown result type: " + getKind() );
-        }
-    }
-
-
-    public static int getRowsChanged( Statement statement, Iterator<?> iterator, MonitoringType kind ) throws Exception {
+    public static int getRowsChanged( Statement statement, Iterator<?> iterator, MonitoringType kind ) {
         int rowsChanged = -1;
         Object object;
         while ( iterator.hasNext() ) {
@@ -304,11 +278,7 @@ public class PolyImplementation {
             } else if ( object != null ) {
                 num = ((PolyNumber) object).intValue();
             } else {
-                throw new Exception( "Result is null" );
-            }
-            // Check if num is equal for all adapters
-            if ( rowsChanged != -1 && rowsChanged != num ) {
-                //throw new QueryExecutionException( "The number of changed rows is not equal for all stores!" );
+                throw new GenericRuntimeException( "Result is null" );
             }
             rowsChanged = num;
         }

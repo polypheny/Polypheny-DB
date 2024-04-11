@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,34 +16,32 @@
 
 package org.polypheny.db.util;
 
-
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.util.Properties;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+
 
 @Slf4j
 @Getter
 public class VersionCollector {
 
-
     public static final String VERSION = "version";
     public static final String BRANCH = "branch";
-
     public static final String HASH = "hash";
 
     public static VersionCollector INSTANCE = new VersionCollector();
 
+    @Getter(AccessLevel.NONE) // Do not create a Getter
     private final Properties versionProperties = new Properties();
 
-    final String version;
+    private final String version;
+    private final String branch;
+    private final String hash;
 
-    final String branch;
-
-    final String hash;
-
-    public boolean inJar = false;
+    private boolean inJar = false;
 
 
     private VersionCollector() {
@@ -56,15 +54,14 @@ public class VersionCollector {
                 // Possibly this also is the case during debugging, therefore we save in bin/main instead of bin/test.
                 inputStream = new FileInputStream( "version.properties" );
             }
-
             versionProperties.load( inputStream );
         } catch ( Exception e ) {
             useDefaults();
         }
+
         version = versionProperties.getProperty( VERSION );
         branch = versionProperties.getProperty( BRANCH );
         hash = versionProperties.getProperty( HASH );
-
     }
 
 

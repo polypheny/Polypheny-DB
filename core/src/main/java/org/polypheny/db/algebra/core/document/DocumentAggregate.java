@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,9 +25,11 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.SingleAlg;
-import org.polypheny.db.algebra.core.DocumentAggregateCall;
+import org.polypheny.db.algebra.core.LaxAggregateCall;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.DocumentType;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNameRef;
 import org.polypheny.db.schema.trait.ModelTrait;
@@ -36,9 +38,9 @@ import org.polypheny.db.schema.trait.ModelTrait;
 public class DocumentAggregate extends SingleAlg implements DocumentAlg {
 
     @NotNull
-    public final List<DocumentAggregateCall> aggCalls;
+    public final List<LaxAggregateCall> aggCalls;
 
-    @Nullable // null means "group by all columns in input row"
+    @Nullable // null means "group by all fields in the input tuple"
     private final RexNameRef group;
 
 
@@ -46,7 +48,7 @@ public class DocumentAggregate extends SingleAlg implements DocumentAlg {
      * Creates a {@link DocumentAggregate}.
      * {@link ModelTrait#DOCUMENT} native node of an aggregate.
      */
-    protected DocumentAggregate( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, @Nullable RexNameRef group, List<DocumentAggregateCall> aggCalls ) {
+    protected DocumentAggregate( AlgCluster cluster, AlgTraitSet traits, AlgNode child, @Nullable RexNameRef group, List<LaxAggregateCall> aggCalls ) {
         super( cluster, traits, child );
         this.group = group;
         this.aggCalls = ImmutableList.copyOf( aggCalls );
@@ -65,6 +67,19 @@ public class DocumentAggregate extends SingleAlg implements DocumentAlg {
                 input.algCompareString() + "$" +
                 (group != null ? group.hashCode() : "") + "$" +
                 aggCalls.stream().map( Objects::toString ).collect( Collectors.joining( " $ " ) ) + "&";
+    }
+
+
+    @Override
+    protected AlgDataType deriveRowType() {
+        AlgDataTypeFactory.Builder builder = getCluster().getTypeFactory().builder();
+        builder.add( "_id", null, DocumentType.ofDoc() );
+
+        for ( LaxAggregateCall aggCall : aggCalls ) {
+            builder.add( aggCall.name, null, DocumentType.ofDoc() );
+        }
+
+        return builder.build();
     }
 
 

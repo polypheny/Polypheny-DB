@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
+import lombok.Getter;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.adapter.jdbc.rel2sql.SqlImplementor;
@@ -66,21 +67,23 @@ import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.core.relational.RelModify;
-import org.polypheny.db.algebra.logical.relational.LogicalValues;
+import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.algebra.metadata.AlgMdUtil;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.nodes.Function;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTrait;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
+import org.polypheny.db.plan.volcano.AlgSubset;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
@@ -105,7 +108,7 @@ import org.slf4j.Logger;
 
 
 /**
- * Rules and relational operators for {@link JdbcConvention} calling convention.
+ * Rules and algebra operators for {@link JdbcConvention} calling convention.
  */
 public class JdbcRules {
 
@@ -172,7 +175,7 @@ public class JdbcRules {
         public JdbcJoinRule( JdbcConvention out, AlgBuilderFactory algBuilderFactory ) {
             super(
                     Join.class,
-                    (Predicate<AlgNode>) r -> true,
+                    out.dialect::supportsJoin,
                     Convention.NONE,
                     out,
                     algBuilderFactory,
@@ -208,6 +211,9 @@ public class JdbcRules {
             if ( convertInputTraits && !canJoinOnCondition( join.getCondition() ) ) {
                 return null;
             }
+            if ( containsAggregateSubquery( join.getLeft() ) || containsAggregateSubquery( join.getRight() ) ) {
+                return null;
+            }
             try {
                 return new JdbcJoin(
                         join.getCluster(),
@@ -224,9 +230,14 @@ public class JdbcRules {
         }
 
 
+        private boolean containsAggregateSubquery( AlgNode input ) {
+            return input instanceof Aggregate || (input instanceof AlgSubset subset && subset.getOriginal() instanceof Aggregate);
+        }
+
+
         /**
          * Returns whether a condition is supported by {@link JdbcJoin}.
-         *
+         * <p>
          * Corresponds to the capabilities of {@link SqlImplementor#convertConditionToSqlNode}.
          *
          * @param node Condition
@@ -263,6 +274,7 @@ public class JdbcRules {
             }
         }
 
+
     }
 
 
@@ -275,7 +287,7 @@ public class JdbcRules {
          * Creates a JdbcJoin.
          */
         public JdbcJoin(
-                AlgOptCluster cluster,
+                AlgCluster cluster,
                 AlgTraitSet traitSet,
                 AlgNode left,
                 AlgNode right,
@@ -298,18 +310,18 @@ public class JdbcRules {
 
 
         @Override
-        public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+        public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
             // We always "build" the
-            double rowCount = mq.getRowCount( this );
+            double rowCount = mq.getTupleCount( this );
 
             return planner.getCostFactory().makeCost( rowCount, 0, 0 );
         }
 
 
         @Override
-        public double estimateRowCount( AlgMetadataQuery mq ) {
-            final double leftRowCount = left.estimateRowCount( mq );
-            final double rightRowCount = right.estimateRowCount( mq );
+        public double estimateTupleCount( AlgMetadataQuery mq ) {
+            final double leftRowCount = left.estimateTupleCount( mq );
+            final double rightRowCount = right.estimateTupleCount( mq );
             return Math.max( leftRowCount, rightRowCount );
         }
 
@@ -364,7 +376,7 @@ public class JdbcRules {
         private final RexProgram program;
 
 
-        public JdbcCalc( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, RexProgram program ) {
+        public JdbcCalc( AlgCluster cluster, AlgTraitSet traitSet, AlgNode input, RexProgram program ) {
             super( cluster, traitSet, input );
             assert getConvention() instanceof JdbcConvention;
             this.program = program;
@@ -379,15 +391,15 @@ public class JdbcRules {
 
 
         @Override
-        public double estimateRowCount( AlgMetadataQuery mq ) {
+        public double estimateTupleCount( AlgMetadataQuery mq ) {
             return AlgMdUtil.estimateFilteredRows( getInput(), program, mq );
         }
 
 
         @Override
-        public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
-            double dRows = mq.getRowCount( this );
-            double dCpu = mq.getRowCount( getInput() ) * program.getExprCount();
+        public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
+            double dRows = mq.getTupleCount( this );
+            double dCpu = mq.getTupleCount( getInput() ) * program.getExprCount();
             double dIo = 0;
             return planner.getCostFactory().makeCost( dRows, dCpu, dIo );
         }
@@ -425,7 +437,7 @@ public class JdbcRules {
          */
         public JdbcProjectRule( final JdbcConvention out, AlgBuilderFactory algBuilderFactory ) {
             super( Project.class, project -> supports( out, project ),
-                    Convention.NONE, out, algBuilderFactory, "JdbcProjectRule." + out );
+                    Convention.NONE, out, algBuilderFactory, JdbcProjectRule.class.getSimpleName() + "." + out );
         }
 
 
@@ -435,11 +447,25 @@ public class JdbcRules {
                     && !userDefinedFunctionInProject( project )
                     && !knnFunctionInProject( project )
                     && !multimediaFunctionInProject( project )
+                    && !contains( project, List.of( OperatorName.INITCAP ) )
                     && !DocumentRules.containsJson( project )
                     && !DocumentRules.containsDocument( project )
                     && !UnsupportedRexCallVisitor.containsModelItem( project.getProjects() )
+                    && out.dialect.supportsProject( project )
                     && (out.dialect.supportsNestedArrays() || !itemOperatorInProject( project ));
 
+        }
+
+
+        private static boolean contains( Project project, List<OperatorName> operatorNames ) {
+            for ( RexNode node : project.getChildExps() ) {
+                if ( node instanceof RexCall call ) {
+                    if ( operatorNames.contains( call.op.getOperatorName() ) ) {
+                        return true;
+                    }
+                }
+            }
+            return false;
         }
 
 
@@ -512,7 +538,7 @@ public class JdbcRules {
      */
     public static class JdbcProject extends Project implements JdbcAlg {
 
-        public JdbcProject( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, List<? extends RexNode> projects, AlgDataType rowType ) {
+        public JdbcProject( AlgCluster cluster, AlgTraitSet traitSet, AlgNode input, List<? extends RexNode> projects, AlgDataType rowType ) {
             super( cluster, traitSet, input, projects, rowType );
             assert getConvention() instanceof JdbcConvention;
         }
@@ -525,7 +551,7 @@ public class JdbcRules {
 
 
         @Override
-        public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+        public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
             return super.computeSelfCost( planner, mq ).multiplyBy( JdbcConvention.COST_MULTIPLIER );
         }
 
@@ -551,12 +577,24 @@ public class JdbcRules {
             super( Filter.class,
                     filter -> (
                             !userDefinedFunctionInFilter( filter )
+                                    && !containUnsupportedArray( filter, out )
                                     && !knnFunctionInFilter( filter )
                                     && !multimediaFunctionInFilter( filter )
                                     && !DocumentRules.containsJson( filter )
                                     && !DocumentRules.containsDocument( filter )
+                                    && out.dialect.supportsFilter( filter )
                                     && (out.dialect.supportsNestedArrays() || (!itemOperatorInFilter( filter ) && isStringComparableArrayType( filter )))),
-                    Convention.NONE, out, algBuilderFactory, "JdbcFilterRule." + out );
+                    Convention.NONE, out, algBuilderFactory, JdbcFilterRule.class.getSimpleName() + "." + out );
+        }
+
+
+        private static boolean containUnsupportedArray( Filter filter, JdbcConvention out ) {
+            if ( out.dialect.supportsNestedArrays() ) {
+                return false;
+            }
+            UnsupportedIdentifierVisitor visitor = new UnsupportedIdentifierVisitor( type -> type.getPolyType() == PolyType.ARRAY && !out.dialect.supportsNestedArrays() );
+            filter.getCondition().accept( visitor );
+            return visitor.isContainsUnsupportedIdentifier();
         }
 
 
@@ -635,6 +673,31 @@ public class JdbcRules {
                     filter.getCondition() );
         }
 
+
+        private static class UnsupportedIdentifierVisitor extends RexVisitorImpl<Void> {
+
+
+            private final java.util.function.Function<AlgDataType, Boolean> isApplicable;
+            @Getter
+            private boolean containsUnsupportedIdentifier = false;
+
+
+            protected UnsupportedIdentifierVisitor( java.util.function.Function<AlgDataType, Boolean> isApplicable ) {
+                super( true );
+                this.isApplicable = isApplicable;
+            }
+
+
+            @Override
+            public Void visitIndexRef( RexIndexRef inputRef ) {
+                if ( isApplicable.apply( inputRef.type ) ) {
+                    containsUnsupportedIdentifier = true;
+                }
+                return super.visitIndexRef( inputRef );
+            }
+
+        }
+
     }
 
 
@@ -643,7 +706,7 @@ public class JdbcRules {
      */
     public static class JdbcFilter extends Filter implements JdbcAlg {
 
-        public JdbcFilter( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, RexNode condition ) {
+        public JdbcFilter( AlgCluster cluster, AlgTraitSet traitSet, AlgNode input, RexNode condition ) {
             super( cluster, traitSet, input, condition );
             assert getConvention() instanceof JdbcConvention;
         }
@@ -673,7 +736,7 @@ public class JdbcRules {
          * Creates a JdbcAggregateRule.
          */
         public JdbcAggregateRule( JdbcConvention out, AlgBuilderFactory algBuilderFactory ) {
-            super( Aggregate.class, (Predicate<AlgNode>) r -> true, Convention.NONE, out, algBuilderFactory, "JdbcAggregateRule." + out );
+            super( Aggregate.class, out.dialect::supportsAggregate, Convention.NONE, out, algBuilderFactory, "JdbcAggregateRule." + out );
         }
 
 
@@ -718,7 +781,7 @@ public class JdbcRules {
     public static class JdbcAggregate extends Aggregate implements JdbcAlg {
 
         public JdbcAggregate(
-                AlgOptCluster cluster,
+                AlgCluster cluster,
                 AlgTraitSet traitSet,
                 AlgNode input,
                 boolean indicator,
@@ -773,7 +836,7 @@ public class JdbcRules {
          * Creates a JdbcSortRule.
          */
         public JdbcSortRule( JdbcConvention out, AlgBuilderFactory algBuilderFactory ) {
-            super( Sort.class, (Predicate<AlgNode>) r -> true, Convention.NONE, out, algBuilderFactory, "JdbcSortRule." + out );
+            super( Sort.class, out.dialect::supportsSort, Convention.NONE, out, algBuilderFactory, "JdbcSortRule." + out );
         }
 
 
@@ -812,7 +875,7 @@ public class JdbcRules {
      */
     public static class JdbcSort extends Sort implements JdbcAlg {
 
-        public JdbcSort( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, AlgCollation collation, RexNode offset, RexNode fetch ) {
+        public JdbcSort( AlgCluster cluster, AlgTraitSet traitSet, AlgNode input, AlgCollation collation, RexNode offset, RexNode fetch ) {
             super( cluster, traitSet, input, collation, null, offset, fetch );
             assert getConvention() instanceof JdbcConvention;
             assert getConvention() == input.getConvention();
@@ -862,7 +925,7 @@ public class JdbcRules {
      */
     public static class JdbcUnion extends Union implements JdbcAlg {
 
-        public JdbcUnion( AlgOptCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, boolean all ) {
+        public JdbcUnion( AlgCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, boolean all ) {
             super( cluster, traitSet, inputs, all );
         }
 
@@ -874,7 +937,7 @@ public class JdbcRules {
 
 
         @Override
-        public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+        public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
             return super.computeSelfCost( planner, mq ).multiplyBy( .1 );
         }
 
@@ -919,7 +982,7 @@ public class JdbcRules {
      */
     public static class JdbcIntersect extends Intersect implements JdbcAlg {
 
-        public JdbcIntersect( AlgOptCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, boolean all ) {
+        public JdbcIntersect( AlgCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, boolean all ) {
             super( cluster, traitSet, inputs, all );
             assert !all;
         }
@@ -970,7 +1033,7 @@ public class JdbcRules {
      */
     public static class JdbcMinus extends Minus implements JdbcAlg {
 
-        public JdbcMinus( AlgOptCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, boolean all ) {
+        public JdbcMinus( AlgCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, boolean all ) {
             super( cluster, traitSet, inputs, all );
             assert !all;
         }
@@ -1043,7 +1106,7 @@ public class JdbcRules {
 
 
         public JdbcTableModify(
-                AlgOptCluster cluster,
+                AlgCluster cluster,
                 AlgTraitSet traitSet,
                 JdbcTable table,
                 AlgNode input,
@@ -1066,7 +1129,7 @@ public class JdbcRules {
 
 
         @Override
-        public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+        public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
             double cost = super.computeSelfCost( planner, mq ).getCosts();
             return super.computeSelfCost( planner, mq ).multiplyBy( .1 );
         }
@@ -1103,7 +1166,7 @@ public class JdbcRules {
          * Creates a JdbcValuesRule.
          */
         private JdbcValuesRule( JdbcConvention out, AlgBuilderFactory algBuilderFactory ) {
-            super( LogicalValues.class, (Predicate<AlgNode>) r -> true, Convention.NONE, out, algBuilderFactory, "JdbcValuesRule." + out );
+            super( LogicalRelValues.class, (Predicate<AlgNode>) r -> true, Convention.NONE, out, algBuilderFactory, "JdbcValuesRule." + out );
         }
 
 
@@ -1121,7 +1184,7 @@ public class JdbcRules {
      */
     public static class JdbcValues extends Values implements JdbcAlg {
 
-        JdbcValues( AlgOptCluster cluster, AlgDataType rowType, ImmutableList<ImmutableList<RexLiteral>> tuples, AlgTraitSet traitSet ) {
+        JdbcValues( AlgCluster cluster, AlgDataType rowType, ImmutableList<ImmutableList<RexLiteral>> tuples, AlgTraitSet traitSet ) {
             super( cluster, rowType, tuples, traitSet );
         }
 

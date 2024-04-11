@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -153,7 +153,7 @@ public class SqlAlterTableAddPartitions extends SqlAlterTable {
                                 partitionGroupNamesList.stream().map( n -> (Identifier) n ).collect( Collectors.toList() ),
                                 numPartitionGroups,
                                 numPartitions,
-                                partitionQualifierList.stream().map( l -> l.stream().map( e -> (Node) e ).collect( Collectors.toList() ) ).collect( Collectors.toList() ),
+                                partitionQualifierList.stream().map( l -> l.stream().map( e -> (Node) e ).toList() ).toList(),
                                 rawPartitionInformation ),
                         null,
                         statement );

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,14 +18,16 @@ package org.polypheny.db.adapter.mongodb.rules;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import org.polypheny.db.adapter.mongodb.MongoAlg;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.DocumentAggregateCall;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.core.LaxAggregateCall;
 import org.polypheny.db.algebra.core.document.DocumentAggregate;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNameRef;
 import org.polypheny.db.schema.trait.ModelTrait;
@@ -45,7 +47,7 @@ public class MongoDocumentAggregate extends DocumentAggregate implements MongoAl
      * @param child Input of this expression
      * @param aggCalls Aggregate calls
      */
-    protected MongoDocumentAggregate( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, RexNameRef group, List<DocumentAggregateCall> aggCalls ) {
+    protected MongoDocumentAggregate( AlgCluster cluster, AlgTraitSet traits, AlgNode child, RexNameRef group, List<LaxAggregateCall> aggCalls ) {
         super( cluster, traits, child, group, aggCalls );
     }
 
@@ -65,27 +67,25 @@ public class MongoDocumentAggregate extends DocumentAggregate implements MongoAl
         list.add( "_id: " + inName );
         //implementor.physicalMapper.add( inName );
 
-        for ( DocumentAggregateCall aggCall : aggCalls ) {
+        for ( LaxAggregateCall aggCall : aggCalls ) {
             list.add( MongoRules.maybeQuote( aggCall.name ) + ": " + toMongo( aggCall ) );
         }
         implementor.add( null, "{$group: " + Util.toString( list, "{", ", ", "}" ) + "}" );
     }
 
 
-    private void handleSpecificAggregate( Implementor implementor, List<String> list, DocumentAggregateCall call ) {
+    private void handleSpecificAggregate( Implementor implementor, List<String> list, LaxAggregateCall call ) {
 
-        switch ( call.function.getKind() ) {
-            case COUNT:
-                implementor.add( null, "{$count: \"" + call.name + "\" }" );
-                break;
-            default:
-                throw new GenericRuntimeException( "unknown aggregate " + call.function );
+        if ( Objects.requireNonNull( call.function.getKind() ) == Kind.COUNT ) {
+            implementor.add( null, "{$count: \"" + call.name + "\" }" );
+        } else {
+            throw new GenericRuntimeException( "unknown aggregate " + call.function );
         }
 
     }
 
 
-    private String toMongo( DocumentAggregateCall aggCall ) {
+    private String toMongo( LaxAggregateCall aggCall ) {
         if ( aggCall.function.getOperatorName() == OperatorName.COUNT ) {
             if ( aggCall.getInput().isEmpty() ) {
                 return "{$sum: 1}";

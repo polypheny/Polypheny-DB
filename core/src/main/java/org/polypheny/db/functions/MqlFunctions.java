@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,13 +33,13 @@ import org.bson.BsonValue;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.schema.document.DocumentUtil;
 import org.polypheny.db.type.entity.PolyBoolean;
-import org.polypheny.db.type.entity.PolyInteger;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.document.PolyDocument;
+import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.util.Pair;
 
 
@@ -374,7 +374,7 @@ public class MqlFunctions {
     /**
      * Retrieves an element in the underlying array
      *
-     * @param input the array to scan
+     * @param input the array to relScan
      * @param index the element, which is retrieved, negative starts form behind
      * @return the element at the specified position, else null
      */
@@ -394,7 +394,7 @@ public class MqlFunctions {
     /**
      * Retrieves an element in the underlying array
      *
-     * @param input the array to scan
+     * @param input the array to relScan
      * @param index the element, which is retrieved, negative starts form behind
      * @return the element at the specified position, else null
      */
@@ -407,7 +407,7 @@ public class MqlFunctions {
     /**
      * Retrieves an element in the underlying array
      *
-     * @param input the array to scan
+     * @param input the array to relScan
      * @param index the element, which is retrieved, negative starts form behind
      * @return the element at the specified position, else null
      */
@@ -627,7 +627,7 @@ public class MqlFunctions {
     /**
      * Removes the provided filter from the doc
      *
-     * @param doc the document to scan
+     * @param doc the document to relScan
      * @param excluded the element to exclude
      */
     private static void excludeBson( PolyValue doc, List<List<PolyString>> excluded ) {

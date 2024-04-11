@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,18 +45,22 @@ import org.polypheny.db.prepare.Context;
 import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.util.Triple;
+
 
 public interface Scannable {
 
-    static PhysicalTable createSubstitutionTable( Scannable scannable, Context context, LogicalEntity logical, AllocationEntity allocation, String name, List<Triple<String, Integer, PolyType>> nameLength ) {
+    static PhysicalTable createSubstitutionTable( Scannable scannable, Context context, LogicalEntity logical, AllocationEntity allocation, String name, List<ColumnContext> nameLength, int amountPk ) {
+        return createSubstitutionEntity( scannable, context, logical, allocation, name, nameLength, amountPk ).unwrap( PhysicalTable.class ).orElseThrow();
+    }
+
+    static PhysicalEntity createSubstitutionEntity( Scannable scannable, Context context, LogicalEntity logical, AllocationEntity allocation, String name, List<ColumnContext> columnsInformations, int amountPk ) {
         IdBuilder builder = IdBuilder.getInstance();
         LogicalTable table = new LogicalTable( builder.getNewLogicalId(), name + logical.id, logical.namespaceId, logical.entityType, null, logical.modifiable );
         List<LogicalColumn> columns = new ArrayList<>();
 
         int i = 0;
-        for ( Triple<String, Integer, PolyType> col : nameLength ) {
-            LogicalColumn column = new LogicalColumn( builder.getNewFieldId(), col.getLeft(), table.id, table.namespaceId, i, col.getRight(), null, col.getMiddle(), null, null, null, false, Collation.getDefaultCollation(), null );
+        for ( ColumnContext col : columnsInformations ) {
+            LogicalColumn column = new LogicalColumn( builder.getNewFieldId(), col.name, table.id, table.namespaceId, i, col.type, null, col.precision, null, null, null, col.nullable, Collation.getDefaultCollation(), null );
             columns.add( column );
             i++;
         }
@@ -68,31 +72,36 @@ public interface Scannable {
             AllocationColumn alloc = new AllocationColumn( logical.namespaceId, allocSubTable.placementId, allocSubTable.logicalId, column.id, PlacementType.AUTOMATIC, column.position, allocation.adapterId );
             allocColumns.add( alloc );
         }
-        // we use first as pk
-        scannable.createTable( context, LogicalTableWrapper.of( table, columns, List.of( columns.get( 0 ).id ) ), AllocationTableWrapper.of( allocSubTable, allocColumns ) );
-        return scannable.getCatalog().getPhysicalsFromAllocs( allocSubTable.id ).get( 0 ).unwrap( PhysicalTable.class ).orElseThrow();
+        // we use the provided first x columns from amountPk as pks (still requires them to be ordered and first first)
+        scannable.createTable( context, LogicalTableWrapper.of( table, columns, columns.subList( 0, amountPk ).stream().map( c -> c.id ).toList() ), AllocationTableWrapper.of( allocSubTable, allocColumns ) );
+        return scannable.getCatalog().getPhysicalsFromAllocs( allocSubTable.id ).get( 0 );
     }
+
 
     AdapterCatalog getCatalog();
 
-    static void restoreGraphSubstitute( Scannable scannable, AllocationGraph alloc, List<PhysicalEntity> entities ) {
+
+    static void restoreGraphSubstitute( Scannable scannable, AllocationGraph alloc, List<PhysicalEntity> entities, Context context ) {
         throw new GenericRuntimeException( "todo restore" );
     }
 
-    static void restoreCollectionSubstitute( Scannable scannable, AllocationCollection alloc, List<PhysicalEntity> entities ) {
+
+    static void restoreCollectionSubstitute( Scannable scannable, AllocationCollection alloc, List<PhysicalEntity> entities, Context context ) {
         throw new GenericRuntimeException( "todo restore" );
     }
 
 
     default AlgNode getRelScan( long allocId, AlgBuilder builder ) {
         PhysicalEntity entity = getCatalog().getPhysicalsFromAllocs( allocId ).get( 0 );
-        return builder.scan( entity ).build();
+        return builder.relScan( entity ).build();
     }
+
 
     default AlgNode getGraphScan( long allocId, AlgBuilder builder ) {
         PhysicalEntity entity = getCatalog().getPhysicalsFromAllocs( allocId ).get( 0 );
         return builder.lpgScan( entity ).build();
     }
+
 
     static AlgNode getGraphScanSubstitute( Scannable scannable, long allocId, AlgBuilder builder ) {
         builder.clear();
@@ -100,20 +109,22 @@ public interface Scannable {
         if ( physicals == null ) {
             throw new GenericRuntimeException( "This should not happen." );
         }
-        builder.scan( physicals.get( 0 ) );//node
-        builder.scan( physicals.get( 1 ) );//node Props
-        builder.scan( physicals.get( 2 ) );//edge
-        builder.scan( physicals.get( 3 ) );//edge Props
+        builder.relScan( physicals.get( 0 ) );//node
+        builder.relScan( physicals.get( 1 ) );//node Props
+        builder.relScan( physicals.get( 2 ) );//edge
+        builder.relScan( physicals.get( 3 ) );//edge Props
 
         builder.transform( ModelTrait.GRAPH, GraphType.of(), false, null );
 
         return builder.build();
     }
 
+
     default AlgNode getDocumentScan( long allocId, AlgBuilder builder ) {
         PhysicalEntity entity = getCatalog().getPhysicalsFromAllocs( allocId ).get( 0 );
         return builder.documentScan( entity ).build();
     }
+
 
     default List<List<PhysicalEntity>> createTable( Context context, LogicalTableWrapper logical, List<AllocationTableWrapper> allocations ) {
         List<List<PhysicalEntity>> entities = new ArrayList<>();
@@ -123,26 +134,31 @@ public interface Scannable {
         return entities;
     }
 
+
     static AlgNode getDocumentScanSubstitute( Scannable scannable, long allocId, AlgBuilder builder ) {
         builder.clear();
-        PhysicalTable table = scannable.getCatalog().getPhysicalsFromAllocs( allocId ).get( 0 ).unwrap( PhysicalTable.class ).orElseThrow();
-        builder.scan( table );
+        PhysicalEntity table = scannable.getCatalog().getPhysicalsFromAllocs( allocId ).get( 0 ).unwrap( PhysicalEntity.class ).orElseThrow();
+        builder.relScan( table );
         AlgDataType rowType = DocumentType.ofId();
         builder.transform( ModelTrait.DOCUMENT, rowType, false, null );
         return builder.build();
     }
 
+
     List<PhysicalEntity> createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation );
 
-    void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities );
 
-    void restoreGraph( AllocationGraph alloc, List<PhysicalEntity> entities );
+    void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities, Context context );
 
 
-    void restoreCollection( AllocationCollection alloc, List<PhysicalEntity> entities );
+    void restoreGraph( AllocationGraph alloc, List<PhysicalEntity> entities, Context context );
+
+
+    void restoreCollection( AllocationCollection alloc, List<PhysicalEntity> entities, Context context );
 
 
     void dropTable( Context context, long allocId );
+
 
     /**
      * Default method for creating a new graph on the {@link DataStore}.
@@ -151,30 +167,32 @@ public interface Scannable {
      */
     List<PhysicalEntity> createGraph( Context context, LogicalGraph logical, AllocationGraph allocation );
 
+
     static List<PhysicalEntity> createGraphSubstitute( Scannable scannable, Context context, LogicalGraph logical, AllocationGraph allocation ) {
-        PhysicalTable node = createSubstitutionTable( scannable, context, logical, allocation, "_node_", List.of(
-                Triple.of( "id", GraphType.ID_SIZE, PolyType.VARCHAR ),
-                Triple.of( "label", GraphType.LABEL_SIZE, PolyType.VARCHAR ) ) );
+        PhysicalEntity node = createSubstitutionEntity( scannable, context, logical, allocation, "_node_", List.of(
+                new ColumnContext( "id", GraphType.ID_SIZE, PolyType.VARCHAR, false ),
+                new ColumnContext( "label", null, PolyType.TEXT, false ) ), 2 );
 
-        PhysicalTable nProperties = createSubstitutionTable( scannable, context, logical, allocation, "_nProperties_", List.of(
-                Triple.of( "id", GraphType.ID_SIZE, PolyType.VARCHAR ),
-                Triple.of( "key", GraphType.KEY_SIZE, PolyType.VARCHAR ),
-                Triple.of( "value", GraphType.VALUE_SIZE, PolyType.VARCHAR ) ) );
+        PhysicalEntity nProperties = createSubstitutionEntity( scannable, context, logical, allocation, "_nProperties_", List.of(
+                new ColumnContext( "id", GraphType.ID_SIZE, PolyType.VARCHAR, false ),
+                new ColumnContext( "key", null, PolyType.TEXT, false ),
+                new ColumnContext( "value", null, PolyType.TEXT, true ) ), 2 );
 
-        PhysicalTable edge = createSubstitutionTable( scannable, context, logical, allocation, "_edge_", List.of(
-                Triple.of( "id", GraphType.ID_SIZE, PolyType.VARCHAR ),
-                Triple.of( "label", GraphType.LABEL_SIZE, PolyType.VARCHAR ),
-                Triple.of( "_l_id_", GraphType.ID_SIZE, PolyType.VARCHAR ),
-                Triple.of( "_r_id_", GraphType.ID_SIZE, PolyType.VARCHAR ) ) );
+        PhysicalEntity edge = createSubstitutionEntity( scannable, context, logical, allocation, "_edge_", List.of(
+                new ColumnContext( "id", GraphType.ID_SIZE, PolyType.VARCHAR, false ),
+                new ColumnContext( "label", null, PolyType.TEXT, true ),
+                new ColumnContext( "_l_id_", GraphType.ID_SIZE, PolyType.VARCHAR, true ),
+                new ColumnContext( "_r_id_", GraphType.ID_SIZE, PolyType.VARCHAR, true ) ), 1 );
 
-        PhysicalTable eProperties = createSubstitutionTable( scannable, context, logical, allocation, "_eProperties_", List.of(
-                Triple.of( "id", GraphType.ID_SIZE, PolyType.VARCHAR ),
-                Triple.of( "key", GraphType.KEY_SIZE, PolyType.VARCHAR ),
-                Triple.of( "value", GraphType.VALUE_SIZE, PolyType.VARCHAR ) ) );
+        PhysicalEntity eProperties = createSubstitutionEntity( scannable, context, logical, allocation, "_eProperties_", List.of(
+                new ColumnContext( "id", GraphType.ID_SIZE, PolyType.VARCHAR, false ),
+                new ColumnContext( "key", null, PolyType.TEXT, false ),
+                new ColumnContext( "value", null, PolyType.TEXT, true ) ), 2 );
 
         scannable.getCatalog().addPhysical( allocation, node, nProperties, edge, eProperties );
         return List.of( node, nProperties, edge, eProperties );
     }
+
 
     /**
      * Default method for dropping an existing graph on the {@link DataStore}.
@@ -188,9 +206,11 @@ public interface Scannable {
         List<PhysicalEntity> physicals = scannable.getCatalog().getPhysicalsFromAllocs( allocation.id );
 
         for ( PhysicalEntity physical : physicals ) {
-            scannable.dropTable( context, physical.id );
+            scannable.dropTable( context, physical.allocationId );
         }
+        scannable.getCatalog().removeAllocAndPhysical( allocation.id );
     }
+
 
     /**
      * Default method for creating a new collection on the {@link DataStore}.
@@ -199,14 +219,16 @@ public interface Scannable {
      */
     List<PhysicalEntity> createCollection( Context context, LogicalCollection logical, AllocationCollection allocation );
 
+
     static List<PhysicalEntity> createCollectionSubstitute( Scannable scannable, Context context, LogicalCollection logical, AllocationCollection allocation ) {
-        PhysicalTable doc = createSubstitutionTable( scannable, context, logical, allocation, "_doc_", List.of(
-                Triple.of( DocumentType.DOCUMENT_ID, DocumentType.DATA_SIZE, PolyType.VARCHAR ),
-                Triple.of( DocumentType.DOCUMENT_DATA, DocumentType.DATA_SIZE, PolyType.VARCHAR ) ) );
+        PhysicalEntity doc = createSubstitutionEntity( scannable, context, logical, allocation, "_doc_", List.of(
+                new ColumnContext( DocumentType.DOCUMENT_ID, null, PolyType.TEXT, false ),
+                new ColumnContext( DocumentType.DOCUMENT_DATA, null, PolyType.TEXT, false ) ), 1 );
 
         scannable.getCatalog().addPhysical( allocation, doc );
         return List.of( doc );
     }
+
 
     /**
      * Default method for dropping an existing collection on the {@link DataStore}.
@@ -215,11 +237,21 @@ public interface Scannable {
      */
     void dropCollection( Context context, AllocationCollection allocation );
 
+
     static void dropCollectionSubstitute( Scannable scannable, Context context, AllocationCollection allocation ) {
-        scannable.dropTable( context, allocation.id );
+        List<PhysicalEntity> entities = scannable.getCatalog().getPhysicalsFromAllocs( allocation.id );
+        for ( PhysicalEntity entity : entities ) {
+            scannable.dropTable( context, entity.allocationId );
+        }
+        scannable.getCatalog().removeAllocAndPhysical( allocation.id );
     }
 
 
     void renameLogicalColumn( long id, String newColumnName );
+
+
+    record ColumnContext(String name, Integer precision, PolyType type, boolean nullable) {
+
+    }
 
 }

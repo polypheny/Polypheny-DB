@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ import com.google.common.annotations.VisibleForTesting;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.constant.Kind;
@@ -84,7 +83,8 @@ public class MongoLanguagePlugin extends PolyPlugin {
                 MqlParserImpl.FACTORY,
                 MqlProcessor::new,
                 null,
-                MongoLanguagePlugin::anyQuerySplitter );
+                MongoLanguagePlugin::anyQuerySplitter,
+                c -> c );
         LanguageManager.getINSTANCE().addQueryLanguage( language );
 
         PolyPluginManager.AFTER_INIT.add( () -> LanguageCrud.addToResult( language, LanguageCrud::getDocResult ) );
@@ -125,7 +125,7 @@ public class MongoLanguagePlugin extends PolyPlugin {
                         .transactionManager( context.getTransactionManager() )
                         .origin( context.getOrigin() )
                         .informationTarget( context.getInformationTarget() )
-                        .build() ).map( LanguageManager::toQueryNodes ).collect( Collectors.toList() );
+                        .build() ).map( LanguageManager::toQueryNodes ).toList();
 
         for ( List<ParsedQueryContext> toCreateQuery : toCreateQueries ) {
             for ( int i = toCreateQueries.size() - 1; i >= 0; i-- ) {
@@ -134,6 +134,11 @@ public class MongoLanguagePlugin extends PolyPlugin {
         }
 
         return queries;
+    }
+
+
+    public String preprocessing( String query, QueryContext context ) {
+        return query;
     }
 
 

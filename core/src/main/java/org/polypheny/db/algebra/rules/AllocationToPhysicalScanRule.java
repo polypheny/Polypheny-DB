@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package org.polypheny.db.algebra.rules;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.algebra.AlgNode;
@@ -25,10 +27,11 @@ import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
+import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.trait.ModelTraitDef;
 import org.polypheny.db.tools.AlgBuilder;
 
@@ -52,27 +55,18 @@ public class AllocationToPhysicalScanRule extends AlgOptRule {
             return;
         }
 
-        AlgNode newAlg;
+        AlgNode newAlg = switch ( scan.entity.dataModel ) {
+            case RELATIONAL -> handleRelationalEntity( call, scan, oAlloc.get() );
+            case DOCUMENT -> handleDocumentEntity( call, scan, oAlloc.get() );
+            case GRAPH -> handleGraphEntity( call, scan, oAlloc.get() );
+        };
 
-        switch ( scan.entity.dataModel ) {
-            case RELATIONAL:
-                newAlg = handleRelationalEntity( call, scan, oAlloc.get() );
-                break;
-            case DOCUMENT:
-                newAlg = handleDocumentEntity( call, scan, oAlloc.get() );
-                break;
-            case GRAPH:
-                newAlg = handleGraphEntity( call, scan, oAlloc.get() );
-                break;
-            default:
-                throw new GenericRuntimeException( "Could not transform allocation to physical" );
-        }
         call.transformTo( newAlg );
     }
 
 
     private static AlgNode handleGraphEntity( AlgOptRuleCall call, Scan<?> scan, AllocationEntity alloc ) {
-        AlgNode alg = AdapterManager.getInstance().getAdapter( alloc.adapterId ).getGraphScan( alloc.id, call.builder() );
+        AlgNode alg = AdapterManager.getInstance().getAdapter( alloc.adapterId ).orElseThrow().getGraphScan( alloc.id, call.builder() );
 
         if ( scan.getModel() != scan.entity.dataModel ) {
             // cross-model queries need a transformer first, we let another rule handle that
@@ -86,7 +80,7 @@ public class AllocationToPhysicalScanRule extends AlgOptRule {
 
 
     private static AlgNode handleDocumentEntity( AlgOptRuleCall call, Scan<?> scan, AllocationEntity alloc ) {
-        AlgNode alg = AdapterManager.getInstance().getAdapter( alloc.adapterId ).getDocumentScan( alloc.id, call.builder() );
+        AlgNode alg = AdapterManager.getInstance().getAdapter( alloc.adapterId ).orElseThrow().getDocumentScan( alloc.id, call.builder() );
 
         if ( scan.getModel() != scan.entity.dataModel ) {
             // cross-model queries need a transformer first, we let another rule handle that
@@ -97,8 +91,12 @@ public class AllocationToPhysicalScanRule extends AlgOptRule {
 
 
     private AlgNode handleRelationalEntity( AlgOptRuleCall call, Scan<?> scan, AllocationEntity alloc ) {
-        AlgNode alg = AdapterManager.getInstance().getAdapter( alloc.adapterId ).getRelScan( alloc.id, call.builder() );
+        AlgNode alg = AdapterManager.getInstance().getAdapter( alloc.adapterId ).orElseThrow().getRelScan( alloc.id, call.builder() );
         if ( scan.getModel() == scan.entity.dataModel ) {
+            if ( scan.getTupleType().getFieldCount() != alg.getTupleType().getFieldCount() ) {
+                alg = reduce( alg, scan, call.builder() );
+            }
+
             alg = attachReorder( alg, scan, call.builder() );
         }
 
@@ -107,6 +105,19 @@ public class AllocationToPhysicalScanRule extends AlgOptRule {
             alg = call.builder().push( alg ).transform( scan.getTraitSet().getTrait( ModelTraitDef.INSTANCE ), scan.getTupleType(), true, null ).build();
         }
         return alg;
+    }
+
+
+    private AlgNode reduce( AlgNode current, Scan<?> scan, AlgBuilder builder ) {
+        builder.push( current );
+
+        List<RexNode> projects = new ArrayList<>();
+        for ( AlgDataTypeField field : scan.getTupleType().getFields() ) {
+            if ( current.getTupleType().getField( field.getName(), true, false ) != null ) {
+                projects.add( builder.field( field.getName() ) );
+            }
+        }
+        return builder.project( projects ).build();
     }
 
 

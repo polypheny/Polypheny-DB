@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,8 +35,8 @@ import org.polypheny.db.transaction.Statement;
 
 public class MqlAddPlacement extends MqlCollectionStatement implements ExecutableStatement {
 
-    public MqlAddPlacement( ParserPos pos, String collection, List<String> stores ) {
-        super( collection, pos );
+    public MqlAddPlacement( ParserPos pos, String collection, String namespace, List<String> stores ) {
+        super( collection, namespace, pos );
         this.stores = stores;
     }
 
@@ -55,10 +55,10 @@ public class MqlAddPlacement extends MqlCollectionStatement implements Executabl
 
         List<DataStore<?>> dataStores = stores
                 .stream()
-                .map( store -> (DataStore<?>) adapterManager.getAdapter( store ) )
+                .map( store -> adapterManager.getStore( store ).orElseThrow() )
                 .collect( Collectors.toList() );
 
-        if ( statement.getTransaction().getSnapshot().alloc().getFromLogical( collections.get( 0 ).id ).stream().anyMatch( p -> dataStores.stream().map( Adapter::getAdapterId ).collect( Collectors.toList() ).contains( p ) ) ) {
+        if ( statement.getTransaction().getSnapshot().alloc().getFromLogical( collections.get( 0 ).id ).stream().anyMatch( p -> dataStores.stream().map( Adapter::getAdapterId ).toList().contains( p ) ) ) {
             throw new GenericRuntimeException( "Error while adding a new collection placement, placement already present." );
         }
 

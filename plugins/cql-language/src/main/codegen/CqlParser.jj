@@ -13,11 +13,11 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.cql.BooleanGroup.ColumnOpsBooleanOperator;
-import org.polypheny.db.cql.BooleanGroup.TableOpsBooleanOperator;
+import org.polypheny.db.cql.BooleanGroup.FieldOpsBooleanOperator;
+import org.polypheny.db.cql.BooleanGroup.EntityOpsBooleanOperator;
 import org.polypheny.db.cql.BooleanGroup;
 import org.polypheny.db.cql.ColumnFilter;
-import org.polypheny.db.cql.ColumnIndex;
+import org.polypheny.db.cql.FieldIndex;
 import org.polypheny.db.cql.Comparator;
 import org.polypheny.db.cql.CqlQuery;
 import org.polypheny.db.cql.CqlQueryBuilder;
@@ -25,7 +25,7 @@ import org.polypheny.db.cql.Filter;
 import org.polypheny.db.cql.LiteralFilter;
 import org.polypheny.db.cql.Modifier;
 import org.polypheny.db.cql.Relation;
-import org.polypheny.db.cql.TableIndex;
+import org.polypheny.db.cql.EntityIndex;
 import org.polypheny.db.cql.exception.InvalidMethodInvocation;
 import org.polypheny.db.cql.exception.InvalidModifierException;
 import org.polypheny.db.cql.exception.UnknownIndexException;
@@ -36,9 +36,9 @@ public class  CqlParser {
 
     private CqlQueryBuilder cqlQueryBuilder;
 
-    public CqlParser( String cqlQueryStr, String databaseName ) {
+    public CqlParser( String cqlQueryStr, String namespaceName ) {
         this( new BufferedReader( new StringReader( cqlQueryStr ) ) );
-        this.cqlQueryBuilder = new CqlQueryBuilder( databaseName );
+        this.cqlQueryBuilder = new CqlQueryBuilder( namespaceName );
     }
 
 }
@@ -116,23 +116,23 @@ CqlQuery parse() :
 
 void QUERY_RELATION() :
 {
-    TableIndex tableIndex = null;
-    BooleanGroup<TableOpsBooleanOperator> tableOpsBooleanGroup = null;
+    EntityIndex entityIndex = null;
+    BooleanGroup<EntityOpsBooleanOperator> tableOpsBooleanGroup = null;
 }
 {
     < RELATION >
     { log.debug( "Query Relation parsing started." ); }
-    tableIndex = TABLE_INDEX()
+    entityIndex = TABLE_INDEX()
     {
-        cqlQueryBuilder.addTable( tableIndex );
+        cqlQueryBuilder.addEntity( entityIndex );
     }
     (
         LOOKAHEAD( 2 )
         tableOpsBooleanGroup = TABLE_OPS_BOOLEAN_GROUP()
-        tableIndex = TABLE_INDEX()
+        entityIndex = TABLE_INDEX()
         {
             try {
-                cqlQueryBuilder.combineRelationWith( tableIndex, tableOpsBooleanGroup );
+                cqlQueryBuilder.combineRelationWith( entityIndex, tableOpsBooleanGroup );
             } catch ( InvalidModifierException e ) {
                 throw new Error( e.getMessage() );
             }
@@ -143,7 +143,7 @@ void QUERY_RELATION() :
 
 void QUERY_FILTERS() :
 {
-    BooleanGroup<ColumnOpsBooleanOperator> columnOpsBooleanGroup = null;
+    BooleanGroup<FieldOpsBooleanOperator> columnOpsBooleanGroup = null;
 }
 {
     SEARCH_CLAUSE()
@@ -159,9 +159,9 @@ void QUERY_FILTERS() :
 void SEARCH_CLAUSE() :
 {
     Filter filter = null;
-    ColumnIndex left = null;
+    FieldIndex left = null;
     Relation relation = null;
-    ColumnIndex rightColumnIndex = null;
+    FieldIndex rightFieldIndex = null;
     String rightSearchTerm = null;
 }
 {
@@ -173,9 +173,9 @@ void SEARCH_CLAUSE() :
     relation = RELATION()
     (
         LOOKAHEAD( 2 )
-        rightColumnIndex = COLUMN_INDEX()
+        rightFieldIndex = COLUMN_INDEX()
         {
-            filter = new ColumnFilter( left, relation, rightColumnIndex );
+            filter = new ColumnFilter( left, relation, rightFieldIndex );
         }
     |
         rightSearchTerm = IDENTIFIER()
@@ -190,19 +190,19 @@ void SEARCH_CLAUSE() :
 
 void SORTING() :
 {
-    ColumnIndex columnIndex = null;
+    FieldIndex fieldIndex = null;
     Map<String, Modifier> modifiers = null;
 }
 {
     < SORT_BY >
     { log.debug( "Sort Specification parsing started." ); }
     (
-        columnIndex = COLUMN_INDEX()
+        fieldIndex = COLUMN_INDEX()
         [
             modifiers = MODIFIERS()
         ]
         {
-            cqlQueryBuilder.addSortSpecification( columnIndex, modifiers );
+            cqlQueryBuilder.addSortSpecification( fieldIndex, modifiers );
             modifiers = null;
         }
     )+
@@ -211,14 +211,14 @@ void SORTING() :
 
 void PROJECT() :
 {
-    ColumnIndex columnIndex = null;
+    FieldIndex fieldIndex = null;
     Map<String, Modifier> modifiers = null;
 }
 {
     < PROJECT >
     { log.debug( "Projection specification parsing started." ); }
     (
-        columnIndex = COLUMN_INDEX()
+        fieldIndex = COLUMN_INDEX()
         [
             modifiers = MODIFIERS()
         ]
@@ -226,16 +226,16 @@ void PROJECT() :
             if ( modifiers == null ) {
                 modifiers = new TreeMap<String, Modifier>( String.CASE_INSENSITIVE_ORDER );
             }
-            cqlQueryBuilder.addProjection( columnIndex, modifiers );
+            cqlQueryBuilder.addProjection( fieldIndex, modifiers );
             modifiers = null;
         }
     )+
     { log.debug( "Projection specification parsing completed." ); }
 }
 
-TableIndex TABLE_INDEX() :
+EntityIndex TABLE_INDEX() :
 {
-    TableIndex tableIndex = null;
+    EntityIndex entityIndex = null;
     Token tableToken = null;
     Token aliasToken = null;
 }
@@ -247,70 +247,70 @@ TableIndex TABLE_INDEX() :
     ]
     {
         try {
-            tableIndex = cqlQueryBuilder.addTableIndex( tableToken.image );
+            entityIndex = cqlQueryBuilder.addEntityIndex( tableToken.image );
         } catch ( UnknownIndexException e ) {
             throw new Error( e.getMessage() );
         }
-        return tableIndex;
+        return entityIndex;
     }
 }
 
-ColumnIndex COLUMN_INDEX() :
+FieldIndex COLUMN_INDEX() :
 {
-    ColumnIndex columnIndex = null;
+    FieldIndex fieldIndex = null;
     Token columnToken = null;
 }
 {
     columnToken = < COLUMN_NAME >
     {
         try {
-            columnIndex = cqlQueryBuilder.addColumnIndex( columnToken.image );
+            fieldIndex = cqlQueryBuilder.addFieldIndex( columnToken.image );
         } catch ( UnknownIndexException e ) {
             throw new Error( e.getMessage() );
         }
-        return columnIndex;
+        return fieldIndex;
     }
 }
 
-BooleanGroup<TableOpsBooleanOperator> TABLE_OPS_BOOLEAN_GROUP() :
+BooleanGroup<EntityOpsBooleanOperator> TABLE_OPS_BOOLEAN_GROUP() :
 {
-    BooleanGroup<TableOpsBooleanOperator> booleanGroup = null;
-    TableOpsBooleanOperator tableOpsBooleanOperator = null;
+    BooleanGroup<EntityOpsBooleanOperator> booleanGroup = null;
+    EntityOpsBooleanOperator entityOpsBooleanOperator = null;
     Map<String, Modifier> modifiers = null;
 }
 {
-    tableOpsBooleanOperator = TABLE_OPS_BOOLEAN_OPERATOR()
+    entityOpsBooleanOperator = TABLE_OPS_BOOLEAN_OPERATOR()
     [
         modifiers = MODIFIERS()
         {
-            booleanGroup = new BooleanGroup<TableOpsBooleanOperator>( tableOpsBooleanOperator, modifiers );
+            booleanGroup = new BooleanGroup<EntityOpsBooleanOperator>( entityOpsBooleanOperator, modifiers );
         }
     ]
     {
         if ( modifiers == null ) {
-            booleanGroup = new BooleanGroup<TableOpsBooleanOperator>( tableOpsBooleanOperator );
+            booleanGroup = new BooleanGroup<EntityOpsBooleanOperator>( entityOpsBooleanOperator );
         }
         return booleanGroup;
     }
 }
 
-BooleanGroup<ColumnOpsBooleanOperator> COLUMN_OPS_BOOLEAN_GROUP() :
+BooleanGroup<FieldOpsBooleanOperator> COLUMN_OPS_BOOLEAN_GROUP() :
 {
-    BooleanGroup<ColumnOpsBooleanOperator> booleanGroup = null;
-    ColumnOpsBooleanOperator columnOpsBooleanOperator = null;
+    BooleanGroup<FieldOpsBooleanOperator> booleanGroup = null;
+    FieldOpsBooleanOperator fieldOpsBooleanOperator = null;
     Map<String, Modifier> modifiers = null;
 }
 {
-    columnOpsBooleanOperator = COLUMN_OPS_BOOLEAN_OPERATOR()
+    fieldOpsBooleanOperator = COLUMN_OPS_BOOLEAN_OPERATOR()
     [
         modifiers = MODIFIERS()
         {
-            booleanGroup = new BooleanGroup<ColumnOpsBooleanOperator>( columnOpsBooleanOperator, modifiers );
+            booleanGroup = new BooleanGroup<FieldOpsBooleanOperator>( fieldOpsBooleanOperator, modifiers );
         }
     ]
     {
         if ( modifiers == null ) {
-            booleanGroup = new BooleanGroup<ColumnOpsBooleanOperator>( columnOpsBooleanOperator );
+            booleanGroup = new BooleanGroup<FieldOpsBooleanOperator>( fieldOpsBooleanOperator );
         }
         return booleanGroup;
     }
@@ -403,41 +403,41 @@ String IDENTIFIER() :
     { return identifier; }
 }
 
-TableOpsBooleanOperator TABLE_OPS_BOOLEAN_OPERATOR() :
+EntityOpsBooleanOperator TABLE_OPS_BOOLEAN_OPERATOR() :
 {
-    TableOpsBooleanOperator tableOpsBooleanOperator = null;
+    EntityOpsBooleanOperator entityOpsBooleanOperator = null;
 }
 {
     (
         < BOOLEAN_AND >
-        { tableOpsBooleanOperator = TableOpsBooleanOperator.AND; }
+        { entityOpsBooleanOperator = EntityOpsBooleanOperator.AND; }
     |
         < BOOLEAN_OR >
-        { tableOpsBooleanOperator = TableOpsBooleanOperator.OR; }
+        { entityOpsBooleanOperator = EntityOpsBooleanOperator.OR; }
     )
-    { return tableOpsBooleanOperator; }
+    { return entityOpsBooleanOperator; }
 }
 
-ColumnOpsBooleanOperator COLUMN_OPS_BOOLEAN_OPERATOR() :
+FieldOpsBooleanOperator COLUMN_OPS_BOOLEAN_OPERATOR() :
 {
-    ColumnOpsBooleanOperator columnOpsBooleanOperator = null;
+    FieldOpsBooleanOperator fieldOpsBooleanOperator = null;
 }
 {
     (
         < BOOLEAN_AND >
-        { columnOpsBooleanOperator = ColumnOpsBooleanOperator.AND; }
+        { fieldOpsBooleanOperator = FieldOpsBooleanOperator.AND; }
     |
         < BOOLEAN_OR >
-        { columnOpsBooleanOperator = ColumnOpsBooleanOperator.OR; }
+        { fieldOpsBooleanOperator = FieldOpsBooleanOperator.OR; }
     |
         < BOOLEAN_NOT >
-        { columnOpsBooleanOperator = ColumnOpsBooleanOperator.NOT; }
+        { fieldOpsBooleanOperator = FieldOpsBooleanOperator.NOT; }
     |
         < BOOLEAN_PROX >
-        { columnOpsBooleanOperator = ColumnOpsBooleanOperator.PROX; }
+        { fieldOpsBooleanOperator = FieldOpsBooleanOperator.PROX; }
     )
     {
-        return columnOpsBooleanOperator;
+        return fieldOpsBooleanOperator;
     }
 }
 

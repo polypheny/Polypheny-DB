@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,13 @@
 
 package org.polypheny.db;
 
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.google.common.collect.ImmutableList;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import java.lang.reflect.Field;
@@ -40,8 +41,11 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import kong.unirest.HttpRequest;
 import kong.unirest.HttpResponse;
@@ -53,21 +57,28 @@ import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.Assertions;
+import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.IdBuilder;
+import org.polypheny.db.catalog.impl.PolyCatalog;
 import org.polypheny.db.functions.Functions;
+import org.polypheny.db.processing.caching.ImplementationCache;
+import org.polypheny.db.processing.caching.QueryPlanCache;
+import org.polypheny.db.processing.caching.RoutingPlanCache;
+import org.polypheny.db.routing.Router;
+import org.polypheny.db.routing.RoutingManager;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionManager;
-import org.polypheny.db.type.entity.PolyDouble;
-import org.polypheny.db.type.entity.PolyFloat;
-import org.polypheny.db.type.entity.PolyInteger;
 import org.polypheny.db.type.entity.PolyList;
-import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.numerical.PolyDouble;
+import org.polypheny.db.type.entity.numerical.PolyFloat;
+import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.util.Pair;
-import org.polypheny.db.util.PolyMode;
+import org.polypheny.db.util.RunMode;
 import org.polypheny.db.webui.HttpServer;
 import org.polypheny.db.webui.models.results.DocResult;
 import org.polypheny.db.webui.models.results.GraphResult;
@@ -95,8 +106,8 @@ public class TestHelper {
         log.info( "Starting Polypheny-DB..." );
 
         Runnable runnable = () -> {
-            polyphenyDb.mode = PolyMode.TEST;
-            String defaultStoreName = System.getProperty( "storeId.default" );
+            PolyphenyDb.mode = RunMode.TEST;
+            String defaultStoreName = System.getProperty( "store.default" );
             if ( defaultStoreName != null ) {
                 polyphenyDb.defaultStoreName = defaultStoreName;
             }
@@ -149,10 +160,33 @@ public class TestHelper {
         } else if ( value instanceof String ) {
             return PolyString.of( (String) value );
         } else if ( value instanceof Collection ) {
-            return PolyList.of( ((List<?>) value).stream().map( TestHelper::toPolyValue ).collect( Collectors.toList() ) );
+            return PolyList.of( ((List<?>) value).stream().map( TestHelper::toPolyValue ).toList() );
         }
 
         throw new NotImplementedException();
+    }
+
+
+    public static void checkResultSetWithDelay( int tries, int waitSeconds, DelayedSupplier<ResultSet> resultSet, ImmutableList<Object[]> expected ) {
+        checkResultSetWithDelay( tries, waitSeconds, resultSet, expected, false );
+    }
+
+
+    public static void checkResultSetWithDelay( int tries, int waitSeconds, DelayedSupplier<ResultSet> resultSet, ImmutableList<Object[]> expected, boolean ignoreOrder ) {
+        try {
+            TimeUnit.SECONDS.sleep( waitSeconds );
+            try {
+                checkResultSet( resultSet.get(), expected, ignoreOrder );
+            } catch ( Throwable e ) {
+                if ( tries > 0 ) {
+                    checkResultSetWithDelay( tries - 1, waitSeconds, resultSet, expected, ignoreOrder );
+                } else {
+                    throw new RuntimeException( e );
+                }
+            }
+        } catch ( InterruptedException interruptedException ) {
+            log.error( "Interrupted exception", interruptedException );
+        }
     }
 
 
@@ -164,6 +198,74 @@ public class TestHelper {
     @AfterAll
     public static void tearDown() {
         //LOG.info( "shutdown - closing DB connection" );
+    }
+
+
+    public static void addHsqldb( String name, Statement statement ) throws SQLException {
+        executeSQL( statement, "ALTER ADAPTERS ADD \"" + name + "\" USING 'Hsqldb' AS 'Store'"
+                + " WITH '{maxConnections:\"25\",trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
+    }
+
+
+    public static void addCsv( String name, Statement statement ) throws SQLException {
+        executeSQL( statement, "ALTER ADAPTERS ADD \"" + name + "\" USING 'Csv' AS 'Store'"
+                + " WITH '{}'" );
+    }
+
+
+    public static void dropAdapter( String name, Statement statement ) throws SQLException {
+        executeSQL( statement, "ALTER ADAPTERS DROP \"" + name + "\"" );
+    }
+
+
+    public static void executeSQL( Statement statement, String sql ) throws SQLException {
+        statement.execute( sql );
+    }
+
+
+    public static void executeSQL( String sql ) throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
+            try ( Statement statement = jdbcConnection.connection.createStatement() ) {
+                statement.execute( sql );
+            }
+        }
+    }
+
+
+    /**
+     * Surprisingly often when testing the used ids are in a similar range and quite low, which can result in unexpected behaviour,
+     * where tests seem to work but shouldn't.
+     */
+    public void randomizeCatalogIds() {
+        Random random = new Random();
+        int max = 200;
+        Supplier<Integer> offset = () -> random.nextInt( max );
+
+        try {
+            PolyCatalog catalog = (PolyCatalog) Catalog.getInstance();
+            Field field = catalog.getClass().getDeclaredField( "idBuilder" );
+            field.setAccessible( true );
+            field.set( catalog, new IdBuilder(
+                    new AtomicLong( catalog.idBuilder.getSnapshotId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getNamespaceId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getEntityId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getFieldId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getUserId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getAllocId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getPhysicalId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getIndexId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getKeyId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getAdapterId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getAdapterTemplateId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getInterfaceId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getConstraintId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getGroupId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getPartitionId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getPlacementId().longValue() + offset.get() )
+            ) );
+        } catch ( NoSuchFieldException | IllegalAccessException e ) {
+            throw new RuntimeException( e );
+        }
     }
 
 
@@ -193,10 +295,10 @@ public class TestHelper {
             int j = 0;
             while ( j < expectedRow.length ) {
                 if ( expectedRow.length >= j + 1 ) {
-                    int columnType = rsmd.getColumnType( j + 1 );
+                    int columnType = rsmd.getColumnType( j + 1 ); // this leads to errors if expected is different aka expected is decimal and actual is integer
                     if ( columnType == Types.BINARY ) {
                         if ( expectedRow[j] == null ) {
-                            Assertions.assertNull( row[j], "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "': " );
+                            assertNull( row[j], "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "': " );
                         } else {
                             assertEquals(
                                     new String( (byte[]) expectedRow[j] ),
@@ -213,20 +315,20 @@ public class TestHelper {
                                 double diff = Math.abs( (double) expectedRow[j] - (double) row[j] );
                                 assertTrue( diff < EPSILON,
                                         "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "': The difference between the expected double and the received double exceeds the epsilon. Difference: " + (diff - EPSILON) );
-                            } else if ( columnType == Types.DECIMAL ) { // Decimals are exact // but not for calculations?
+                            } else if ( columnType == Types.DECIMAL || (expectedRow[j] instanceof Float || expectedRow[j] instanceof Double) ) { // Decimals are exact // but not for calculations?
                                 BigDecimal expectedResult = new BigDecimal( expectedRow[j].toString() );
-                                double diff = Math.abs( expectedResult.doubleValue() - ((BigDecimal) row[j]).doubleValue() );
+                                BigDecimal actualResult = new BigDecimal( row[j].toString() );
+                                double diff = Math.abs( expectedResult.doubleValue() - actualResult.doubleValue() );
                                 if ( isConvertingDecimals ) {
                                     assertTrue( diff < EPSILON,
                                             "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "': The difference between the expected decimal and the received decimal exceeds the epsilon. Difference: " + (diff - EPSILON) );
                                 } else {
-                                    assertEquals( 0, expectedResult.doubleValue() - ((BigDecimal) row[j]).doubleValue(), 0.0, "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'" );
+                                    assertEquals( 0, expectedResult.doubleValue() - actualResult.doubleValue(), 0.0, "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'" );
                                 }
                             } else if ( expectedRow[j] != null && row[j] != null && expectedRow[j] instanceof Number && row[j] instanceof Number ) {
                                 assertEquals( ((Number) expectedRow[j]).longValue(), ((Number) row[j]).longValue(), "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'" );
                             } else {
                                 assertEquals(
-
                                         expectedRow[j],
                                         row[j],
                                         "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'"
@@ -234,7 +336,6 @@ public class TestHelper {
                             }
                         } else {
                             assertEquals(
-
                                     expectedRow[j],
                                     row[j],
                                     "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'"
@@ -258,7 +359,7 @@ public class TestHelper {
         List<?> resultList = (List<?>) row[j];
 
         if ( expectedRow[j] == null ) {
-            Assertions.assertNull( resultList, "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "': " );
+            assertNull( resultList, "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "': " );
             return;
         }
 
@@ -270,7 +371,6 @@ public class TestHelper {
                     resultList.get( k ),
                     "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "' at position: " + k + 1 );
         }
-
     }
 
 
@@ -330,6 +430,33 @@ public class TestHelper {
             return lhsStr.compareTo( rhsStr );
         } );
         return list;
+    }
+
+
+    public void resetCaches() {
+        ImplementationCache.INSTANCE.reset();
+        QueryPlanCache.INSTANCE.reset();
+        RoutingPlanCache.INSTANCE.reset();
+        RoutingManager.getInstance().getRouters().forEach( Router::resetCaches );
+    }
+
+
+    public void checkAllTrxClosed() {
+        checkTrxStatus( 0 );
+    }
+
+
+    public void checkTrxStatus( int expected ) {
+        long count = transactionManager.getNumberOfActiveTransactions();
+        if ( count != expected ) {
+            fail( "There are still " + count + " active transactions, while there should be " + expected );
+            throw new RuntimeException( "There are still " + count + " active transactions, while there should be " + expected );
+        }
+    }
+
+
+    public boolean storeSupportsIndex() {
+        return !AdapterManager.getInstance().getStore( "hsqldb" ).orElseThrow().getAvailableIndexMethods().isEmpty();
     }
 
 
@@ -424,7 +551,7 @@ public class TestHelper {
                 }
                 parsedResults.add( doc );
             }
-            List<BsonValue> parsedExpected = expected.stream().map( e -> e != null ? BsonDocument.parse( e ) : null ).collect( Collectors.toList() );
+            List<BsonValue> parsedExpected = expected.stream().map( e -> e != null ? (BsonValue) BsonDocument.parse( e ) : null ).toList();
 
             if ( unordered ) {
                 assertTrue( areDocumentEqual( parsedExpected, parsedResults ),
@@ -454,9 +581,9 @@ public class TestHelper {
          * This is needed because the order of the elements in the result is not guaranteed
          * The document model does not guarantee specific types like 8.0 and 8 are treated as equal
          *
-         * @param parsedExpected
-         * @param parsedResults
-         * @return
+         * @param parsedExpected list of expected documents
+         * @param parsedResults list of actual documents
+         * @return true if all elements of parsedExpected are in parsedResults and vice versa
          */
         private static boolean areDocumentEqual( List<BsonValue> parsedExpected, List<BsonValue> parsedResults ) {
             for ( BsonValue bsonValue : parsedExpected ) {
@@ -507,7 +634,6 @@ public class TestHelper {
                 return bsonValue.asNumber().doubleValue() == parsedResult.asNumber().doubleValue();
             }
             return false;
-
         }
 
 
@@ -544,7 +670,6 @@ public class TestHelper {
                         + "}" );
             }
             return docs;
-
         }
 
     }
@@ -652,5 +777,21 @@ public class TestHelper {
 
     }
 
+
+    @FunctionalInterface
+    public interface DelayedSupplier<T extends ResultSet> extends Supplier<T> {
+
+        @Override
+        default T get() {
+            try {
+                return getThrows();
+            } catch ( final SQLException e ) {
+                throw new RuntimeException( e );
+            }
+        }
+
+        T getThrows() throws SQLException;
+
+    }
 
 }

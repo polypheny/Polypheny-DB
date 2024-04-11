@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -676,7 +676,7 @@ public class SqlWindow extends SqlCall implements Window {
                         case DATE:
                         case TIME:
                         case TIMESTAMP:
-                            if ( PolyTypeFamily.INTERVAL_DAY_TIME != bndTypeFam && PolyTypeFamily.INTERVAL_YEAR_MONTH != bndTypeFam ) {
+                            if ( PolyTypeFamily.INTERVAL_TIME != bndTypeFam && PolyTypeFamily.INTERVAL_YEAR_MONTH != bndTypeFam ) {
                                 throw validator.newValidationError( boundVal, Static.RESOURCE.orderByRangeMismatch() );
                             }
                             break;

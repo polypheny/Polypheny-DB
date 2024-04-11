@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,12 +31,13 @@ import org.polypheny.db.adapter.mongodb.bson.BsonKeyValue;
 import org.polypheny.db.adapter.mongodb.rules.MongoRules;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.operators.OperatorName;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
+import org.polypheny.db.rex.RexFieldAccess;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNameRef;
@@ -50,7 +51,6 @@ import org.polypheny.db.util.Util;
  */
 public class RexToMongoTranslator extends RexVisitorImpl<String> {
 
-    private final AlgDataTypeFactory typeFactory;
     private final List<String> inFields;
 
     static final Map<Operator, String> MONGO_OPERATORS = new HashMap<>();
@@ -62,6 +62,7 @@ public class RexToMongoTranslator extends RexVisitorImpl<String> {
         MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.MULTIPLY ), "$multiply" );
         MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.MOD ), "$mod" );
         MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.PLUS ), "$add" );
+        MONGO_OPERATORS.put( OperatorRegistry.get( QueryLanguage.from( "mql" ), OperatorName.PLUS ), "$add" );
         MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.MINUS ), "$subtract" );
         // Boolean
         MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.AND ), "$and" );
@@ -100,10 +101,9 @@ public class RexToMongoTranslator extends RexVisitorImpl<String> {
     private final DataModel model;
 
 
-    public RexToMongoTranslator( AlgDataTypeFactory typeFactory, List<String> inFields, Implementor implementor, DataModel model ) {
+    public RexToMongoTranslator( List<String> inFields, Implementor implementor, DataModel model ) {
         super( true );
         this.implementor = implementor;
-        this.typeFactory = typeFactory;
         this.inFields = inFields;
         this.model = model;
     }
@@ -114,7 +114,7 @@ public class RexToMongoTranslator extends RexVisitorImpl<String> {
         if ( literal.getValue() == null ) {
             return "null";
         }
-        return "{$literal: " + literal.value.toJson() + "}";
+        return "{$literal: " + (literal.value.isString() ? literal.value.asString().toQuotedJson() : literal.value.toJson()) + "}";
     }
 
 
@@ -166,9 +166,7 @@ public class RexToMongoTranslator extends RexVisitorImpl<String> {
         if ( call.getOperator().getOperatorName() == OperatorName.ITEM ) {
             final RexNode op1 = call.operands.get( 1 );
             // normal
-            if ( op1 instanceof RexLiteral && op1.getType().
-
-                    getPolyType() == PolyType.INTEGER ) {
+            if ( op1 instanceof RexLiteral && op1.getType().getPolyType() == PolyType.INTEGER ) {
                 return "{$arrayElemAt:[" + strings.get( 0 ) + "," + (((RexLiteral) op1).value.asNumber().intValue() - 1) + "]}";
             }
             // prepared
@@ -213,9 +211,6 @@ public class RexToMongoTranslator extends RexVisitorImpl<String> {
         if ( special != null ) {
             return special;
         }
-        /*if ( call.op.getOperatorName() == OperatorName.MQL ) {
-            return call.operands.get( 0 ).accept( this );
-        }*/
 
         if ( call.op.getOperatorName() == OperatorName.SIGN ) {
             // x < 0, -1
@@ -223,24 +218,24 @@ public class RexToMongoTranslator extends RexVisitorImpl<String> {
             // x > 0, 1
             StringBuilder sb = new StringBuilder();
             String oper = call.operands.get( 0 ).accept( this );
-            sb.append( "{\"$switch\":\n"
-                    + "            {\n"
-                    + "              \"branches\": [\n"
-                    + "                {\n"
-                    + "                  \"case\": { \"$lt\" : [ " );
+            sb.append( """
+                    {"$switch":
+                                {
+                                  "branches": [
+                                    {
+                                      "case": { "$lt" : [\s""" );
             sb.append( oper );
-            sb.append( ", 0 ] },\n"
-                    + "                  \"then\": -1.0"
-                    + "                },\n"
-                    + "                {\n"
-                    + "                  \"case\": { \"$gt\" : [ " );
+            sb.append( """
+                    , 0 ] },
+                                      "then": -1.0                },
+                                    {
+                                      "case": { "$gt" : [\s""" );
             sb.append( oper );
-            sb.append( ", 0 ] },\n"
-                    + "                  \"then\": 1.0"
-                    + "                },\n"
-                    + "              ],\n"
-                    + "              \"default\": 0.0"
-                    + "            }}" );
+            sb.append( """
+                    , 0 ] },
+                                      "then": 1.0                },
+                                  ],
+                                  "default": 0.0            }}""" );
 
             return sb.toString();
         }
@@ -258,7 +253,7 @@ public class RexToMongoTranslator extends RexVisitorImpl<String> {
     public String handleSpecialCases( RexCall call ) {
         if ( call.getType().getPolyType() == PolyType.ARRAY ) {
             BsonArray array = new BsonArray();
-            array.addAll( translateList( call.operands ).stream().map( BsonString::new ).collect( Collectors.toList() ) );
+            array.addAll( translateList( call.operands ).stream().map( BsonString::new ).toList() );
             return array.toString();
         } else if ( call.isA( Kind.MQL_ITEM ) ) {
             RexNode leftPre = call.operands.get( 0 );
@@ -275,14 +270,13 @@ public class RexToMongoTranslator extends RexVisitorImpl<String> {
             return "{\"$slice\":[ " + left + "," + skip + "," + return_ + "]}";
         } else if ( call.isA( Kind.MQL_EXCLUDE ) ) {
             String parent = implementor
-                    .getRowType()
+                    .getTupleType()
                     .getFieldNames()
                     .get( ((RexIndexRef) call.operands.get( 0 )).getIndex() );
 
-            if ( !(call.operands.get( 1 ) instanceof RexCall) || call.operands.size() != 2 ) {
+            if ( !(call.operands.get( 1 ) instanceof RexCall excludes) || call.operands.size() != 2 ) {
                 return null;
             }
-            RexCall excludes = (RexCall) call.operands.get( 1 );
             List<String> fields = new ArrayList<>();
             for ( RexNode operand : excludes.operands ) {
                 if ( !(operand instanceof RexCall) ) {
@@ -309,9 +303,9 @@ public class RexToMongoTranslator extends RexVisitorImpl<String> {
 
     @NotNull
     private String handleAddFieldsFunctions( RexCall call ) {
-        String names = call.operands.get( 0 ).accept( this );
-        String value = call.operands.get( 1 ).accept( this );
-        if ( call.operands.get( 0 ).isA( Kind.DYNAMIC_PARAM ) ) {
+        String names = call.operands.get( 1 ).accept( this );
+        String value = call.operands.get( 2 ).accept( this );
+        if ( call.operands.get( 1 ).isA( Kind.DYNAMIC_PARAM ) ) {
             BsonKeyValue kv = new BsonKeyValue( BsonDynamic.changeType( BsonDynamic.addFunction( BsonDocument.parse( names ), "joinPoint" ), PolyType.VARCHAR ), BsonDocument.parse( value ) );
             return "{\"$addFields\": {" + MongoRules.maybeQuote( kv.placeholderKey ) + ":" + kv.toJson() + "}}";
         }
@@ -330,19 +324,18 @@ public class RexToMongoTranslator extends RexVisitorImpl<String> {
     }
 
 
-    private String stripQuotes( String s ) {
-        return s.startsWith( "'" ) && s.endsWith( "'" )
-                ? s.substring( 1, s.length() - 1 )
-                : s;
-    }
-
-
     public List<String> translateList( List<RexNode> list ) {
         final List<String> strings = new ArrayList<>();
         for ( RexNode node : list ) {
             strings.add( node.accept( this ) );
         }
         return strings;
+    }
+
+
+    @Override
+    public String visitFieldAccess( RexFieldAccess fieldAccess ) {
+        return MongoRules.maybeQuote( "$" + fieldAccess.getField().getName() );
     }
 
 }

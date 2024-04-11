@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,14 +38,15 @@ import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import org.polypheny.db.algebra.core.RelTableFunctionScan;
 import org.polypheny.db.algebra.metadata.AlgColumnMapping;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.rex.RexNode;
 
 
 /**
- * Mutable equivalent of {@link org.polypheny.db.algebra.core.TableFunctionScan}.
+ * Mutable equivalent of {@link RelTableFunctionScan}.
  */
 public class MutableTableFunctionScan extends MutableMultiAlg {
 
@@ -54,7 +55,7 @@ public class MutableTableFunctionScan extends MutableMultiAlg {
     public final Set<AlgColumnMapping> columnMappings;
 
 
-    private MutableTableFunctionScan( AlgOptCluster cluster, AlgDataType rowType, List<MutableAlg> inputs, RexNode rexCall, Type elementType, Set<AlgColumnMapping> columnMappings ) {
+    private MutableTableFunctionScan( AlgCluster cluster, AlgDataType rowType, List<MutableAlg> inputs, RexNode rexCall, Type elementType, Set<AlgColumnMapping> columnMappings ) {
         super( cluster, rowType, MutableAlgType.TABLE_FUNCTION_SCAN, inputs );
         this.rexCall = rexCall;
         this.elementType = elementType;
@@ -72,7 +73,7 @@ public class MutableTableFunctionScan extends MutableMultiAlg {
      * @param elementType Element type of the collection that will implement this table
      * @param columnMappings Column mappings associated with this function
      */
-    public static MutableTableFunctionScan of( AlgOptCluster cluster, AlgDataType rowType, List<MutableAlg> inputs, RexNode rexCall, Type elementType, Set<AlgColumnMapping> columnMappings ) {
+    public static MutableTableFunctionScan of( AlgCluster cluster, AlgDataType rowType, List<MutableAlg> inputs, RexNode rexCall, Type elementType, Set<AlgColumnMapping> columnMappings ) {
         return new MutableTableFunctionScan( cluster, rowType, inputs, rexCall, elementType, columnMappings );
     }
 

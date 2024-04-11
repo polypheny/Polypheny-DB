@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,7 +40,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.SetOp;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.rex.RexIndexRef;
@@ -48,7 +48,7 @@ import org.polypheny.db.tools.AlgBuilderFactory;
 
 
 /**
- * Planner rule that pushes a {@link LogicalProject} past a {@link SetOp}.
+ * Planner rule that pushes a {@link LogicalRelProject} past a {@link SetOp}.
  *
  * The children of the {@code SetOp} will project only the {@link RexIndexRef}s referenced in the original {@code LogicalProject}.
  */
@@ -70,7 +70,7 @@ public class ProjectSetOpTransposeRule extends AlgOptRule {
      */
     public ProjectSetOpTransposeRule( PushProjector.ExprCondition preserveExprCondition, AlgBuilderFactory algBuilderFactory ) {
         super(
-                operand( LogicalProject.class, operand( SetOp.class, any() ) ),
+                operand( LogicalRelProject.class, operand( SetOp.class, any() ) ),
                 algBuilderFactory, null );
         this.preserveExprCondition = preserveExprCondition;
     }
@@ -79,7 +79,7 @@ public class ProjectSetOpTransposeRule extends AlgOptRule {
     // implement RelOptRule
     @Override
     public void onMatch( AlgOptRuleCall call ) {
-        LogicalProject origProj = call.alg( 0 );
+        LogicalRelProject origProj = call.alg( 0 );
         SetOp setOp = call.alg( 1 );
 
         // cannot push project past a distinct

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ package org.polypheny.db.catalog.entity.logical;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.annotations.SerializeNullable;
-import java.io.Serializable;
+import java.io.Serial;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -40,6 +40,8 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.schema.ColumnStrategy;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
 
 @EqualsAndHashCode(callSuper = false)
 @SuperBuilder(toBuilder = true)
@@ -47,11 +49,13 @@ import org.polypheny.db.schema.ColumnStrategy;
 @NonFinal
 public class LogicalTable extends LogicalEntity {
 
+    @Serial
     private static final long serialVersionUID = 4653390333258552102L;
 
     @Serialize
     @SerializeNullable
     public Long primaryKey;
+
 
     public LogicalTable(
             @Deserialize("id") final long id,
@@ -71,30 +75,29 @@ public class LogicalTable extends LogicalEntity {
 
     // Used for creating ResultSets
     @Override
-    public Serializable[] getParameterArray() {
-        return new Serializable[]{
-                "APP",
-                getNamespaceName(),
-                name,
-                entityType.name(),
-                "",
+    public PolyValue[] getParameterArray() {
+        return new PolyValue[]{
+                PolyString.of( Catalog.DATABASE_NAME ),
+                PolyString.of( getNamespaceName() ),
+                PolyString.of( name ),
+                PolyString.of( entityType.name() ),
+                PolyString.of( "" ),
                 null,
                 null,
                 null,
                 null,
                 null,
-                "pa"
+                PolyString.of( Catalog.USER_NAME )
 
         };
     }
 
 
-
     @Override
-    public AlgDataType getRowType() {
+    public AlgDataType getTupleType() {
         final AlgDataTypeFactory.Builder fieldInfo = AlgDataTypeFactory.DEFAULT.builder();
 
-        for ( LogicalColumn column : Catalog.getInstance().getSnapshot().rel().getColumns( id ).stream().sorted( Comparator.comparingInt( a -> a.position ) ).collect( Collectors.toList() ) ) {
+        for ( LogicalColumn column : Catalog.getInstance().getSnapshot().rel().getColumns( id ).stream().sorted( Comparator.comparingInt( a -> a.position ) ).toList() ) {
             AlgDataType sqlType = column.getAlgDataType( AlgDataTypeFactory.DEFAULT );
             fieldInfo.add( column.id, column.name, null, sqlType ).nullable( column.nullable );
         }

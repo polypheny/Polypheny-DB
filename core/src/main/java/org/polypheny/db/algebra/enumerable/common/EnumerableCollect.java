@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,10 +25,10 @@ import org.polypheny.db.algebra.core.Collect;
 import org.polypheny.db.algebra.enumerable.EnumerableAlg;
 import org.polypheny.db.algebra.enumerable.EnumerableAlgImplementor;
 import org.polypheny.db.algebra.enumerable.EnumerableConvention;
-import org.polypheny.db.algebra.enumerable.JavaRowFormat;
+import org.polypheny.db.algebra.enumerable.JavaTupleFormat;
 import org.polypheny.db.algebra.enumerable.PhysType;
 import org.polypheny.db.algebra.enumerable.PhysTypeImpl;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.util.BuiltInMethod;
 
@@ -38,7 +38,7 @@ import org.polypheny.db.util.BuiltInMethod;
  */
 public class EnumerableCollect extends Collect implements EnumerableAlg {
 
-    public EnumerableCollect( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode child, String fieldName ) {
+    public EnumerableCollect( AlgCluster cluster, AlgTraitSet traitSet, AlgNode child, String fieldName ) {
         super( cluster, traitSet, child, fieldName );
         assert getConvention() instanceof EnumerableConvention;
         assert getConvention() == child.getConvention();
@@ -56,11 +56,9 @@ public class EnumerableCollect extends Collect implements EnumerableAlg {
         final BlockBuilder builder = new BlockBuilder();
         final EnumerableAlg child = (EnumerableAlg) getInput();
         final Result result = implementor.visitChild( this, 0, child, Prefer.ARRAY );
-        final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getTupleType(), JavaRowFormat.LIST );
+        final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getTupleType(), JavaTupleFormat.LIST );
 
-        // final Enumerable<Employee> child = <<child adapter>>;
-        // final List<Employee> list = child.toList();
-        Expression child_ = builder.append( "child", result.block );
+        Expression child_ = builder.append( "child", result.block() );
         Expression list_ = builder.append( "list", Expressions.call( child_, BuiltInMethod.ENUMERABLE_TO_LIST.method ) );
 
         builder.add( Expressions.return_( null, Expressions.call( BuiltInMethod.SINGLETON_ENUMERABLE.method, list_ ) ) );

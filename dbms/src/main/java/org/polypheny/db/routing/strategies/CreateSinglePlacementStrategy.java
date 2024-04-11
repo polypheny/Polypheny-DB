@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,10 +31,10 @@ import org.polypheny.db.catalog.snapshot.Snapshot;
 public class CreateSinglePlacementStrategy implements CreatePlacementStrategy {
 
     @Override
-    public List<DataStore<?>> getDataStoresForNewColumn( LogicalColumn addedColumn ) {
+    public List<DataStore<?>> getDataStoresForNewRelField( LogicalColumn addedField ) {
         Snapshot snapshot = Catalog.getInstance().getSnapshot();
-        List<AllocationEntity> allocations = snapshot.alloc().getFromLogical( addedColumn.tableId );
-        return ImmutableList.of( AdapterManager.getInstance().getStore( allocations.get( 0 ).adapterId ) );
+        List<AllocationEntity> allocations = snapshot.alloc().getFromLogical( addedField.tableId );
+        return ImmutableList.of( AdapterManager.getInstance().getStore( allocations.get( 0 ).adapterId ).orElseThrow() );
     }
 
 
@@ -44,7 +44,7 @@ public class CreateSinglePlacementStrategy implements CreatePlacementStrategy {
         for ( DataStore<?> store : availableStores.values() ) {
             return ImmutableList.of( store );
         }
-        throw new GenericRuntimeException( "No suitable data storeId found" );
+        throw new GenericRuntimeException( "No suitable data store found" );
     }
 
 }

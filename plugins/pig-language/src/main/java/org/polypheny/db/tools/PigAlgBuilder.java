@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,7 +45,7 @@ import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.Context;
 import org.polypheny.db.plan.Contexts;
 import org.polypheny.db.rex.RexBuilder;
@@ -62,43 +62,34 @@ public class PigAlgBuilder extends AlgBuilder {
     private String lastAlias;
 
 
-    private PigAlgBuilder( Context context, AlgOptCluster cluster, Snapshot snapshot ) {
+    private PigAlgBuilder( Context context, AlgCluster cluster, Snapshot snapshot ) {
         super( context, cluster, snapshot );
     }
 
 
-    /**
-     * Creates a PigRelBuilder.
-     */
-    public static PigAlgBuilder create( FrameworkConfig config ) {
-        final AlgBuilder algBuilder = AlgBuilder.create( config );
-        return new PigAlgBuilder( config.getContext(), algBuilder.cluster, algBuilder.snapshot );
-    }
-
-
-    public static PigAlgBuilder create( Statement statement, AlgOptCluster cluster ) {
+    public static PigAlgBuilder create( Statement statement, AlgCluster cluster ) {
         return new PigAlgBuilder( Contexts.EMPTY_CONTEXT, cluster, statement.getTransaction().getSnapshot() );
     }
 
 
     public static PigAlgBuilder create( Statement statement ) {
         final RexBuilder rexBuilder = new RexBuilder( statement.getTransaction().getTypeFactory() );
-        final AlgOptCluster cluster = AlgOptCluster.create( statement.getQueryProcessor().getPlanner(), rexBuilder, null, statement.getTransaction().getSnapshot() );
+        final AlgCluster cluster = AlgCluster.create( statement.getQueryProcessor().getPlanner(), rexBuilder, null, statement.getTransaction().getSnapshot() );
         return create( statement, cluster );
     }
 
 
     @Override
-    public PigAlgBuilder scan( String... tableNames ) {
+    public PigAlgBuilder relScan( String... tableNames ) {
         lastAlias = null;
-        return (PigAlgBuilder) super.scan( tableNames );
+        return (PigAlgBuilder) super.relScan( tableNames );
     }
 
 
     @Override
-    public PigAlgBuilder scan( List<String> tableNames ) {
+    public PigAlgBuilder relScan( List<String> tableNames ) {
         lastAlias = null;
-        return (PigAlgBuilder) super.scan( tableNames );
+        return (PigAlgBuilder) super.relScan( tableNames );
     }
 
 
@@ -116,7 +107,7 @@ public class PigAlgBuilder extends AlgBuilder {
      * @return This builder
      */
     public PigAlgBuilder load( String path, RexNode loadFunction, AlgDataType rowType ) {
-        scan( path.replace( ".csv", "" ) ); // TODO: use a UDT
+        relScan( path.replace( ".csv", "" ) ); // TODO: use a UDT
         return this;
     }
 

@@ -24,7 +24,7 @@ import org.polypheny.db.backup.webui.models.ElementModel;
 import org.polypheny.db.backup.webui.models.ManifestModel;
 import org.polypheny.db.backup.webui.models.StatusModel;
 import org.polypheny.db.backup.webui.models.StatusModel.Code;
-import org.polypheny.db.type.entity.PolyTimestamp;
+import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 import org.polypheny.db.webui.ConfigService.HandlerType;
 import org.polypheny.db.webui.HttpServer;
 
@@ -91,7 +91,7 @@ public class BackupCrud {
 
     public void getCurrentStructure( Context context ) {
         // context.json( ElementModel.fromBackupObject( backupManager.getBackupInformationObject() ) ); todo ff enable after implementing in ElementModel
-        context.json( ManifestModel.getDummy().getElements() );
+        context.json( ManifestModel.getDummy().elements() );
     }
 
 

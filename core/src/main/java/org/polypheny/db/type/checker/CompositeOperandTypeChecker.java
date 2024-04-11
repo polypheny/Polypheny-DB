@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -155,7 +155,7 @@ public class CompositeOperandTypeChecker implements PolyOperandTypeChecker {
             case OR:
             default:
                 final List<OperandCountRange> ranges =
-                        new AbstractList<OperandCountRange>() {
+                        new AbstractList<>() {
                             @Override
                             public OperandCountRange get( int index ) {
                                 return allowedRules.get( index ).getOperandCountRange();
@@ -173,23 +173,24 @@ public class CompositeOperandTypeChecker implements PolyOperandTypeChecker {
                         new OperandCountRange() {
                             @Override
                             public boolean isValidCount( int count ) {
-                                switch ( composition ) {
-                                    case AND:
+                                return switch ( composition ) {
+                                    case AND -> {
                                         for ( OperandCountRange range : ranges ) {
                                             if ( !range.isValidCount( count ) ) {
-                                                return false;
+                                                yield false;
                                             }
                                         }
-                                        return true;
-                                    case OR:
-                                    default:
+                                        yield true;
+                                    }
+                                    default -> {
                                         for ( OperandCountRange range : ranges ) {
                                             if ( range.isValidCount( count ) ) {
-                                                return true;
+                                                yield true;
                                             }
                                         }
-                                        return false;
-                                }
+                                        yield false;
+                                    }
+                                };
                             }
 
 

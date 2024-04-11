@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,12 +23,16 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
+import lombok.EqualsAndHashCode;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.catalogs.LogicalGraphCatalog;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.catalog.snapshot.LogicalGraphSnapshot;
 
+@Slf4j
+@EqualsAndHashCode
 public class LogicalGraphSnapshotImpl implements LogicalGraphSnapshot {
 
     private final ImmutableMap<Long, LogicalGraph> graphs;
@@ -68,5 +72,6 @@ public class LogicalGraphSnapshotImpl implements LogicalGraphSnapshot {
 
         return graphNames.values().stream().filter( g -> g.caseSensitive ? g.name.matches( graphName.toRegex() ) : g.name.toLowerCase().matches( graphName.toRegex().toLowerCase() ) ).collect( Collectors.toList() );
     }
+
 
 }

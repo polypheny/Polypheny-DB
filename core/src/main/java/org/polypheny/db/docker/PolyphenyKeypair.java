@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package org.polypheny.db.docker;
 
+import java.io.File;
 import java.io.IOException;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
@@ -48,7 +49,7 @@ final class PolyphenyKeypair {
     }
 
 
-    void saveToDiskOverwrite( String certfile, String keyfile ) throws IOException {
+    void saveToDiskOverwrite( File certfile, File keyfile ) throws IOException {
         PolyphenyCertificateUtils.saveAsPemOverwrite( certfile, "CERTIFICATE", cert.toASN1Structure().getEncoded( "DER" ) );
 
         // XXX: If we would save pkinfo1 directly, it would not be
@@ -60,7 +61,7 @@ final class PolyphenyKeypair {
     }
 
 
-    static PolyphenyKeypair loadFromDisk( String certfile, String keyfile, String uuid ) throws IOException {
+    static PolyphenyKeypair loadFromDisk( File certfile, File keyfile, String uuid ) throws IOException {
         byte[] rawKey = PolyphenyCertificateUtils.loadPemFromFile( keyfile, "PRIVATE KEY" );
         AsymmetricKeyParameter sk = PrivateKeyFactory.createKey( rawKey );
 

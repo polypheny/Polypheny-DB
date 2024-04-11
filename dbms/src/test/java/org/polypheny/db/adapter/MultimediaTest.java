@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@
 package org.polypheny.db.adapter;
 
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import com.google.common.collect.ImmutableList;
 import java.sql.Connection;
 import java.sql.Date;
@@ -29,8 +31,8 @@ import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -40,13 +42,17 @@ import org.polypheny.db.TestHelper.JdbcConnection;
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Tag("adapter")
+@Slf4j
 public class MultimediaTest {
+
+
+    private static TestHelper helper;
+
 
     @BeforeAll
     public static void start() throws SQLException {
         // Ensures that Polypheny-DB is running
-        // noinspection ResultOfMethodCallIgnored
-        TestHelper.getInstance();
+        helper = TestHelper.getInstance();
 
         try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
             Connection connection = jdbcConnection.getConnection();
@@ -68,12 +74,13 @@ public class MultimediaTest {
                 connection.commit();
             }
         }
+        helper.checkAllTrxClosed();
     }
 
 
     @Test
-    public void testFileStore() throws SQLException {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
+    public void testMultimediaFiles() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 try {
@@ -84,10 +91,10 @@ public class MultimediaTest {
 
                     // check inserts
                     int insertCount = statement.executeUpdate( "INSERT INTO preparedTest (a,b) VALUES (1,2),(3,4),(5,null)" );
-                    Assertions.assertEquals( 3, insertCount );
+                    assertEquals( 3, insertCount );
                     // insert only into one column
                     insertCount = statement.executeUpdate( "INSERT INTO preparedTest (a) VALUES (6)" );
-                    Assertions.assertEquals( 1, insertCount );
+                    assertEquals( 1, insertCount );
 
                     // test conditions
                     ResultSet rs = statement.executeQuery( "SELECT * FROM preparedTest  WHERE a = 3" );

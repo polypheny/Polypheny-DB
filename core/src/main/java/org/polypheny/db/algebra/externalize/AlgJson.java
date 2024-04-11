@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,7 +51,7 @@ import org.polypheny.db.algebra.AlgInput;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.CorrelationId;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
@@ -145,7 +145,7 @@ public class AlgJson {
 
 
     /**
-     * Converts a type name to a class. E.g. {@code getClass("LogicalProject")} returns {@link LogicalProject}.class.
+     * Converts a type name to a class. E.g. {@code getClass("LogicalProject")} returns {@link LogicalRelProject}.class.
      */
     public Class typeNameToClass( String type ) {
         if ( !type.contains( "." ) ) {

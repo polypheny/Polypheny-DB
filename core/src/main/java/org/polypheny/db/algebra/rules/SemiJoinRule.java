@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,8 +43,8 @@ import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinInfo;
 import org.polypheny.db.algebra.core.Project;
-import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptUtil;
@@ -56,7 +56,7 @@ import org.polypheny.db.util.ImmutableBitSet;
 
 
 /**
- * Planner rule that creates a {@code SemiJoinRule} from a {@link org.polypheny.db.algebra.core.Join} on top of a {@link LogicalAggregate}.
+ * Planner rule that creates a {@code SemiJoinRule} from a {@link org.polypheny.db.algebra.core.Join} on top of a {@link LogicalRelAggregate}.
  */
 public abstract class SemiJoinRule extends AlgOptRule {
 
@@ -80,7 +80,7 @@ public abstract class SemiJoinRule extends AlgOptRule {
                 operand(
                         projectClass,
                         some(
-                                operandJ(
+                                operand(
                                         joinClass,
                                         null,
                                         IS_LEFT_OR_INNER,
@@ -93,19 +93,19 @@ public abstract class SemiJoinRule extends AlgOptRule {
 
     protected SemiJoinRule( Class<Join> joinClass, Class<Aggregate> aggregateClass, AlgBuilderFactory algBuilderFactory, String description ) {
         super(
-                operandJ(
+                operand(
                         joinClass,
                         null,
                         IS_LEFT_OR_INNER,
                         some(
                                 operand( AlgNode.class, any() ),
-                                operandJ( aggregateClass, null, IS_EMPTY_AGGREGATE, any() ) ) ),
+                                operand( aggregateClass, null, IS_EMPTY_AGGREGATE, any() ) ) ),
                 algBuilderFactory, description );
     }
 
 
     protected void perform( AlgOptRuleCall call, Project project, Join join, AlgNode left, Aggregate aggregate ) {
-        final AlgOptCluster cluster = join.getCluster();
+        final AlgCluster cluster = join.getCluster();
         final RexBuilder rexBuilder = cluster.getRexBuilder();
         if ( project != null ) {
             final ImmutableBitSet bits = AlgOptUtil.InputFinder.bits( project.getProjects(), null );

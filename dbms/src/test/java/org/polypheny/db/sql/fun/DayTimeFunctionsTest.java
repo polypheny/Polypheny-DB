@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,11 +31,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
-import org.polypheny.db.excluded.FileExcluded;
-import org.polypheny.db.excluded.MonetdbExcluded;
 
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
@@ -95,7 +92,6 @@ public class DayTimeFunctionsTest {
 
 
     @Test
-    @Tag("monetdbExcluded")
     public void dateTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -287,8 +283,6 @@ public class DayTimeFunctionsTest {
 
 
     @Test
-    @Tag("monetdbExcluded")
-    @Tag("fileExcluded")
     public void timeStampTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -310,8 +304,6 @@ public class DayTimeFunctionsTest {
 
 
     @Test
-    @Tag("monetdbExcluded")
-    @Tag("fileExcluded")
     public void timeStampExtractTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -334,8 +326,6 @@ public class DayTimeFunctionsTest {
 
 
     @Test
-    @Tag("monetdbExcluded")
-    @Tag("fileExcluded")
     public void timeStampQuarterTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -358,8 +348,6 @@ public class DayTimeFunctionsTest {
 
 
     @Test
-    @Tag("monetdbExcluded")
-    @Tag("fileExcluded")
     public void timeStampMonthTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -382,8 +370,6 @@ public class DayTimeFunctionsTest {
 
 
     @Test
-    @Tag("monetdbExcluded")
-    @Tag("fileExcluded")
     public void timeStampWeekTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -406,8 +392,6 @@ public class DayTimeFunctionsTest {
 
 
     @Test
-    @Tag("monetdbExcluded")
-    @Tag("fileExcluded")
     public void timeStampDoyTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -430,8 +414,6 @@ public class DayTimeFunctionsTest {
 
 
     @Test
-    @Tag("monetdbExcluded")
-    @Tag("fileExcluded")
     public void timeStampDomTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -454,8 +436,6 @@ public class DayTimeFunctionsTest {
 
 
     @Test
-    @Tag("monetdbExcluded")
-    @Tag("fileExcluded")
     public void timeStampDowTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -478,8 +458,6 @@ public class DayTimeFunctionsTest {
 
 
     @Test
-    @Tag("monetdbExcluded")
-    @Tag("fileExcluded")
     public void timeStampHourTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -502,8 +480,6 @@ public class DayTimeFunctionsTest {
 
 
     @Test
-    @Tag("monetdbExcluded")
-    @Tag("fileExcluded")
     public void timeStampMinuteTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -526,8 +502,6 @@ public class DayTimeFunctionsTest {
 
 
     @Test
-    @Tag("monetdbExcluded")
-    @Tag("fileExcluded")
     public void timeStampSecondsTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -550,8 +524,6 @@ public class DayTimeFunctionsTest {
 
 
     @Test
-    @Tag("monetdbExcluded")
-    @Tag("fileExcluded")
     public void timeStampFloorTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -575,8 +547,6 @@ public class DayTimeFunctionsTest {
 
 
     @Test
-    @Tag("monetdbExcluded")
-    @Tag("fileExcluded")
     public void timeStampAddTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,21 +16,11 @@
 
 package org.polypheny.db.webui.models.catalog;
 
-import lombok.Value;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.polypheny.db.type.PolyType;
 
-@Value
-public class PolyTypeModel {
 
-    public String name;
-
-    public int signatures;
-
-
-    public PolyTypeModel( String name, int signatures ) {
-        this.name = name;
-        this.signatures = signatures;
-    }
+public record PolyTypeModel(@JsonProperty("name") String name, @JsonProperty("signatures") int signatures) {
 
 
     public static PolyTypeModel from( PolyType type ) {

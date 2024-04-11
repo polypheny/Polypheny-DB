@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,14 +24,11 @@ import com.google.common.collect.ImmutableList;
 import java.util.Arrays;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper.MongoConnection;
-import org.polypheny.db.excluded.FileExcluded;
 import org.polypheny.db.mql.MqlTestTemplate;
 import org.polypheny.db.webui.models.results.DocResult;
 
 @Tag("adapter")
-@Tag("fileExcluded") // todo fix error with filter in file
 public class UnsupportedDmlTest extends MqlTestTemplate {
 
     @Test

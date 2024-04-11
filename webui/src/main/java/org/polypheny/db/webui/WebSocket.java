@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,7 +38,9 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.processing.QueryContext;
+import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.entity.graph.PolyGraph;
+import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.crud.LanguageCrud;
 import org.polypheny.db.webui.models.requests.AlgRequest;
 import org.polypheny.db.webui.models.requests.GraphRequest;
@@ -110,9 +112,11 @@ public class WebSocket implements Consumer<WsConfig> {
         switch ( request.type ) {
             case "GraphRequest":
                 GraphRequest graphRequest = ctx.messageAsClass( GraphRequest.class );
-                PolyGraph graph = LanguageCrud.getGraph( Catalog.snapshot().getNamespace( graphRequest.namespace ).orElseThrow().name, crud.getTransactionManager(), ctx.session );
+                Pair<PolyXid, PolyGraph> xidGraph = LanguageCrud.getGraph( Catalog.snapshot().getNamespace( graphRequest.namespace ).orElseThrow().name, crud.getTransactionManager(), ctx.session );
 
-                ctx.send( graph.toJson() );
+                xIds.add( xidGraph.left.toString() );
+
+                ctx.send( xidGraph.right.toJson() );
 
                 break;
             case "QueryRequest":
@@ -126,14 +130,12 @@ public class WebSocket implements Consumer<WsConfig> {
                                 .isAnalysed( queryRequest.analyze )
                                 .usesCache( queryRequest.cache )
                                 .namespaceId( LanguageCrud.getNamespaceIdOrDefault( queryRequest.namespace ) )
-                                .origin( POLYPHENY_UI ).batch( queryRequest.noLimit ? -1 : crud.getPageSize() )
+                                .origin( POLYPHENY_UI )
+                                .batch( queryRequest.noLimit ? -1 : crud.getPageSize() )
                                 .transactionManager( crud.getTransactionManager() )
                                 .informationTarget( i -> i.setSession( ctx.session ) ).build(), queryRequest );
 
                 for ( Result<?, ?> result : results ) {
-                    if ( !(result instanceof RelationalResult) ) {
-                        continue;
-                    }
                     if ( result.xid != null ) {
                         xIds.add( result.xid );
                     }
@@ -159,13 +161,11 @@ public class WebSocket implements Consumer<WsConfig> {
                     UIRequest uiRequest = ctx.messageAsClass( UIRequest.class );
                     try {
                         LogicalNamespace namespace = Catalog.getInstance().getSnapshot().getNamespace( uiRequest.namespace ).orElse( null );
-                        switch ( namespace == null ? DataModel.RELATIONAL : namespace.dataModel ) {
-                            case RELATIONAL:
-                                result = crud.getTable( uiRequest );
-                                break;
-                            case DOCUMENT:
+                        result = switch ( namespace == null ? DataModel.RELATIONAL : namespace.dataModel ) {
+                            case RELATIONAL -> crud.getTable( uiRequest );
+                            case DOCUMENT -> {
                                 String entity = Catalog.snapshot().doc().getCollection( uiRequest.entityId ).map( c -> c.name ).orElse( "" );
-                                result = LanguageCrud.anyQueryResult(
+                                yield LanguageCrud.anyQueryResult(
                                         QueryContext.builder()
                                                 .query( String.format( "db.%s.find({})", entity ) )
                                                 .language( QueryLanguage.from( "mongo" ) )
@@ -173,22 +173,20 @@ public class WebSocket implements Consumer<WsConfig> {
                                                 .batch( uiRequest.noLimit ? -1 : crud.getPageSize() )
                                                 .transactionManager( crud.getTransactionManager() )
                                                 .informationTarget( i -> i.setSession( ctx.session ) )
-                                                .namespaceId( namespace == null ? Catalog.defaultNamespaceId : namespace.id )
+                                                .namespaceId( namespace.id )
                                                 .build(), uiRequest ).get( 0 );
-                                break;
-                            case GRAPH:
-                                result = LanguageCrud.anyQueryResult(
-                                        QueryContext.builder()
-                                                .query( "MATCH (n) RETURN n" )
-                                                .language( QueryLanguage.from( "cypher" ) )
-                                                .origin( POLYPHENY_UI )
-                                                .batch( uiRequest.noLimit ? -1 : crud.getPageSize() )
-                                                .namespaceId( namespace == null ? Catalog.defaultNamespaceId : namespace.id )
-                                                .transactionManager( crud.getTransactionManager() )
-                                                .informationTarget( i -> i.setSession( ctx.session ) )
-                                                .build(), uiRequest ).get( 0 );
-                                break;
-                        }
+                            }
+                            case GRAPH -> LanguageCrud.anyQueryResult(
+                                    QueryContext.builder()
+                                            .query( "MATCH (n) RETURN n" )
+                                            .language( QueryLanguage.from( "cypher" ) )
+                                            .origin( POLYPHENY_UI )
+                                            .batch( uiRequest.noLimit ? -1 : crud.getPageSize() )
+                                            .namespaceId( namespace.id )
+                                            .transactionManager( crud.getTransactionManager() )
+                                            .informationTarget( i -> i.setSession( ctx.session ) )
+                                            .build(), uiRequest ).get( 0 );
+                        };
                         if ( result == null ) {
                             throw new GenericRuntimeException( "Could not load data." );
                         }

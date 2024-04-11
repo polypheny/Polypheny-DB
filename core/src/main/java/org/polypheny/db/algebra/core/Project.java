@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,6 @@ package org.polypheny.db.algebra.core;
 
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -45,14 +44,13 @@ import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.SingleAlg;
-import org.polypheny.db.algebra.constant.ExplainLevel;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexChecker;
 import org.polypheny.db.rex.RexIndexRef;
@@ -69,9 +67,9 @@ import org.polypheny.db.util.mapping.Mappings;
 
 
 /**
- * Relational expression that computes a set of 'select expressions' from its input relational expression.
+ * Relational expression that computes a set of 'select expressions' from its input algebra expression.
  *
- * @see LogicalProject
+ * @see LogicalRelProject
  */
 public abstract class Project extends SingleAlg {
 
@@ -81,13 +79,13 @@ public abstract class Project extends SingleAlg {
     /**
      * Creates a Project.
      *
-     * @param cluster Cluster that this relational expression belongs to
-     * @param traits Traits of this relational expression
-     * @param input Input relational expression
+     * @param cluster Cluster that this algebra expression belongs to
+     * @param traits Traits of this algebra expression
+     * @param input Input algebra expression
      * @param projects List of expressions for the input columns
      * @param rowType Output row type
      */
-    protected Project( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, List<? extends RexNode> projects, AlgDataType rowType ) {
+    protected Project( AlgCluster cluster, AlgTraitSet traits, AlgNode input, List<? extends RexNode> projects, AlgDataType rowType ) {
         super( cluster, traits, input );
         assert rowType != null;
         this.exps = ImmutableList.copyOf( projects );
@@ -172,21 +170,13 @@ public abstract class Project extends SingleAlg {
         if ( !Util.isDistinct( rowType.getFieldNames() ) ) {
             return litmus.fail( "field names not distinct: {}", rowType );
         }
-        //CHECKSTYLE: IGNORE 1
-        if ( false && !Util.isDistinct( Lists.transform( exps, RexNode::toString ) ) ) {
-            // Projecting the same expression twice is usually a bad idea, because it may create expressions downstream which are equivalent but which look different.
-            // We can't ban duplicate projects, because we need to allow
-            //
-            //  SELECT a, b FROM c UNION SELECT x, x FROM z
-            return litmus.fail( "duplicate expressions: {}", exps );
-        }
         return litmus.succeed();
     }
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
-        double dRows = mq.getRowCount( getInput() );
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
+        double dRows = mq.getTupleCount( getInput() );
         double dCpu = dRows * exps.size();
         double dIo = 0;
         return planner.getCostFactory().makeCost( dRows, dCpu, dIo );
@@ -209,13 +199,6 @@ public abstract class Project extends SingleAlg {
             }
         }
 
-        // If we're generating a digest, include the rowtype. If two projects differ in return type, we don't want to regard them as equivalent, otherwise we will try to put rels
-        // of different types into the same planner equivalence set.
-        //CHECKSTYLE: IGNORE 2
-        if ( (pw.getDetailLevel() == ExplainLevel.DIGEST_ATTRIBUTES) && false ) {
-            pw.item( "type", rowType );
-        }
-
         return pw;
     }
 
@@ -232,7 +215,7 @@ public abstract class Project extends SingleAlg {
 
     /**
      * Returns a mapping of a set of project expressions.
-     *
+     * <p>
      * The mapping is an inverse surjection.
      * Every target has a source field, but a source field may appear as zero, one, or more target fields.
      * Thus you can safely call {@link org.polypheny.db.util.mapping.Mappings.TargetMapping#getTarget(int)}.
@@ -258,7 +241,7 @@ public abstract class Project extends SingleAlg {
 
     /**
      * Returns a partial mapping of a set of project expressions.
-     *
+     * <p>
      * The mapping is an inverse function. Every target has a source field, but a source might have 0, 1 or more targets.
      * Project expressions that do not consist of a mapping are ignored.
      *
@@ -329,10 +312,14 @@ public abstract class Project extends SingleAlg {
 
     @Override
     public String algCompareString() {
-        return this.getClass().getSimpleName() + "$" +
-                input.algCompareString() + "$" +
-                (exps != null ? exps.stream().map( Objects::hashCode ).map( Objects::toString ).collect( Collectors.joining( "$" ) ) : "") + "$" +
-                rowType.toString() + "&";
+        String types = "";
+        if ( exps != null ) {
+            types = "$" + exps.stream().map( e -> e.accept( new AlgComparatorBuilder() ) ).collect( Collectors.joining( "$" ) );
+        }
+        return this.getClass().getSimpleName() + "$" + input.algCompareString() + "$" +
+                (exps != null ? exps.stream().map( Objects::hashCode ).map( Objects::toString )
+                        .collect( Collectors.joining( "$" ) ) : "") + "$" +
+                rowType.toString() + types + "&";
     }
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,7 +37,7 @@ package org.polypheny.db.algebra.mutable;
 import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 
 
 /**
@@ -48,7 +48,7 @@ abstract class MutableSetOp extends MutableMultiAlg {
     protected final boolean all;
 
 
-    protected MutableSetOp( AlgOptCluster cluster, AlgDataType rowType, MutableAlgType type, List<MutableAlg> inputs, boolean all ) {
+    protected MutableSetOp( AlgCluster cluster, AlgDataType rowType, MutableAlgType type, List<MutableAlg> inputs, boolean all ) {
         super( cluster, rowType, type, inputs );
         this.all = all;
     }

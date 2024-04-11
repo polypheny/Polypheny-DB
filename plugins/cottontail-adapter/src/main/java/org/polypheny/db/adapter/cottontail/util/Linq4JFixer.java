@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,19 +21,19 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.calcite.avatica.util.ByteString;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.type.entity.PolyBigDecimal;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
-import org.polypheny.db.type.entity.PolyDate;
-import org.polypheny.db.type.entity.PolyDouble;
-import org.polypheny.db.type.entity.PolyFloat;
-import org.polypheny.db.type.entity.PolyInteger;
 import org.polypheny.db.type.entity.PolyList;
-import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyString;
-import org.polypheny.db.type.entity.PolyTime;
-import org.polypheny.db.type.entity.PolyTimestamp;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
+import org.polypheny.db.type.entity.numerical.PolyDouble;
+import org.polypheny.db.type.entity.numerical.PolyFloat;
+import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.numerical.PolyLong;
+import org.polypheny.db.type.entity.temporal.PolyDate;
+import org.polypheny.db.type.entity.temporal.PolyTime;
+import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 import org.vitrivr.cottontail.client.language.basics.Distances;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.AtomicBooleanOperand;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.AtomicBooleanPredicate;
@@ -146,12 +146,14 @@ public class Linq4JFixer {
      * @param data The data, expected to be {@link Double}.
      * @return {@link PolyDouble}
      */
+    @SuppressWarnings("unused")
     public static PolyDouble getDoubleData( Object data ) {
         if ( !(data instanceof Double) ) {
             return null;
         }
         return PolyDouble.of( (Double) data );
     }
+
 
     /**
      * Converts the given object and returns it as {@link Integer} object.
@@ -163,7 +165,7 @@ public class Linq4JFixer {
         if ( !(data instanceof Integer) ) {
             return null;
         }
-        return PolyDate.of( (Integer) data );
+        return PolyDate.ofDays( (Integer) data );
     }
 
 
@@ -181,6 +183,7 @@ public class Linq4JFixer {
     }
 
 
+    @SuppressWarnings("unused")
     public static PolyFloat getRealData( Object data ) {
         if ( data == null ) {
             return null;
@@ -189,6 +192,7 @@ public class Linq4JFixer {
     }
 
 
+    @SuppressWarnings("unused")
     public static PolyLong getBigIntData( Object data ) {
         if ( data == null ) {
             return null;
@@ -197,6 +201,7 @@ public class Linq4JFixer {
     }
 
 
+    @SuppressWarnings("unused")
     public static PolyInteger getIntData( Object data ) {
         if ( data == null ) {
             return null;
@@ -205,13 +210,13 @@ public class Linq4JFixer {
     }
 
 
+    @SuppressWarnings("unused")
     public static PolyBoolean getBoolData( Object data ) {
         if ( data == null ) {
             return null;
         }
         return PolyBoolean.of( (Boolean) data );
     }
-
 
 
     public static PolyList<PolyBoolean> getBoolVector( Object data ) {
@@ -222,31 +227,31 @@ public class Linq4JFixer {
         for ( boolean v : ((boolean[]) data) ) {
             list.add( PolyBoolean.of( v ) );
         }
-        return PolyList.of( list );
+        return PolyList.copyOf( list );
     }
 
 
-    public static List<Byte> getTinyIntVector( Object data ) {
+    public static PolyList<PolyInteger> getTinyIntVector( Object data ) {
         if ( data == null ) {
             return null;
         }
-        final List<Byte> list = new ArrayList<>( ((int[]) data).length );
+        final List<PolyInteger> list = new ArrayList<>( ((int[]) data).length );
         for ( int v : ((int[]) data) ) {
-            list.add( (byte) v );
+            list.add( PolyInteger.of( v ) );
         }
-        return list;
+        return PolyList.copyOf( list );
     }
 
 
-    public static List<Short> getSmallIntVector( Object data ) {
+    public static PolyList<PolyInteger> getSmallIntVector( Object data ) {
         if ( data == null ) {
             return null;
         }
-        final List<Short> list = new ArrayList<>( ((int[]) data).length );
+        final List<PolyInteger> list = new ArrayList<>( ((int[]) data).length );
         for ( int v : ((int[]) data) ) {
-            list.add( (short) v );
+            list.add( PolyInteger.of( v ) );
         }
-        return list;
+        return PolyList.copyOf( list );
     }
 
 
@@ -258,7 +263,7 @@ public class Linq4JFixer {
         for ( int v : ((int[]) data) ) {
             list.add( PolyInteger.of( v ) );
         }
-        return PolyList.of( list );
+        return PolyList.copyOf( list );
     }
 
 
@@ -270,7 +275,7 @@ public class Linq4JFixer {
         for ( long v : ((long[]) data) ) {
             list.add( PolyLong.of( v ) );
         }
-        return PolyList.of( list );
+        return PolyList.copyOf( list );
     }
 
 
@@ -282,7 +287,7 @@ public class Linq4JFixer {
         for ( float v : ((float[]) data) ) {
             list.add( PolyFloat.of( v ) );
         }
-        return PolyList.of( list );
+        return PolyList.copyOf( list );
     }
 
 
@@ -294,7 +299,7 @@ public class Linq4JFixer {
         for ( double v : ((double[]) data) ) {
             list.add( PolyDouble.of( v ) );
         }
-        return PolyList.of( list );
+        return PolyList.copyOf( list );
     }
 
 
@@ -362,10 +367,10 @@ public class Linq4JFixer {
      * @param alias The alias to use for the resulting column.
      * @return The resulting {@link Function} expression.
      */
-    public static Projection.ProjectionElement generateKnn( String p, Vector q, Object distance, String alias ) {
+    public static Projection.ProjectionElement generateKnn( String p, Vector q, PolyValue distance, String alias ) {
         final Projection.ProjectionElement.Builder builder = Projection.ProjectionElement.newBuilder();
         builder.setFunction( Function.newBuilder()
-                .setName( getDistance( (String) distance ) )
+                .setName( getDistance( distance ) )
                 .addArguments( Expression.newBuilder().setColumn( ColumnName.newBuilder().setName( p ) ) )
                 .addArguments( Expression.newBuilder().setLiteral( Literal.newBuilder().setVectorData( q ) ) ) );
         if ( alias != null ) {
@@ -382,27 +387,15 @@ public class Linq4JFixer {
      * @param norm The name of the distance to execute.
      * @return The corresponding {@link FunctionName}
      */
-    public static FunctionName getDistance( String norm ) {
-        final String value;
-        switch ( norm.toUpperCase() ) {
-            case "L1":
-                value = Distances.L1.getFunctionName();
-                break;
-            case "L2":
-                value = Distances.L2.getFunctionName();
-                break;
-            case "L2SQUARED":
-                value = Distances.L2SQUARED.getFunctionName();
-                break;
-            case "CHISQUARED":
-                value = Distances.CHISQUARED.getFunctionName();
-                break;
-            case "COSINE":
-                value = Distances.COSINE.getFunctionName();
-                break;
-            default:
-                throw new IllegalArgumentException( "Unknown norm: " + norm );
-        }
+    public static FunctionName getDistance( PolyValue norm ) {
+        final String value = switch ( norm.asString().value.toUpperCase() ) {
+            case "L1" -> Distances.L1.getFunctionName();
+            case "L2" -> Distances.L2.getFunctionName();
+            case "L2SQUARED" -> Distances.L2SQUARED.getFunctionName();
+            case "CHISQUARED" -> Distances.CHISQUARED.getFunctionName();
+            case "COSINE" -> Distances.COSINE.getFunctionName();
+            default -> throw new IllegalArgumentException( "Unknown norm: " + norm );
+        };
         return FunctionName.newBuilder().setName( value ).build();
     }
 

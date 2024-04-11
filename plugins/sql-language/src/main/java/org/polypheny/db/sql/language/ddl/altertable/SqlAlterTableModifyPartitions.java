@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,11 +23,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationPartition;
 import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
@@ -100,30 +98,28 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
-        Catalog catalog = Catalog.getInstance();
         LogicalTable table = getTableFailOnEmpty( context, this.table );
 
         if ( table.entityType != EntityType.ENTITY ) {
             throw new GenericRuntimeException( "Not possible to use ALTER TABLE because " + table.name + " is not a table." );
         }
 
-        if ( !statement.getTransaction().getSnapshot().alloc().getPartitionProperty( table.id ).orElseThrow().isPartitioned ) {
+        List<AllocationPartition> partitions = statement.getTransaction().getSnapshot().alloc().getPartitionsFromLogical( table.id );
+        if ( partitions.size() < 2 ) {
             throw new GenericRuntimeException( "Table '%s' is not partitioned", table.name );
         }
-
-        long tableId = table.id;
 
         if ( partitionGroups.isEmpty() && partitionGroupNames.isEmpty() ) {
             throw new GenericRuntimeException( "Empty Partition Placement is not allowed for partitioned table '" + table.name + "'" );
         }
 
-        DataStore<?> storeInstance = AdapterManager.getInstance().getStore( storeName.getSimple() );
-        if ( storeInstance == null ) {
+        Optional<DataStore<?>> optStoreInstance = AdapterManager.getInstance().getStore( storeName.getSimple() );
+        if ( optStoreInstance.isEmpty() ) {
             throw CoreUtil.newContextException(
                     storeName.getPos(),
                     RESOURCE.unknownStoreName( storeName.getSimple() ) );
         }
-        long storeId = storeInstance.getAdapterId();
+        long storeId = optStoreInstance.get().getAdapterId();
         // Check whether this placement already exists
         Optional<AllocationPlacement> optionalPlacement = statement.getTransaction().getSnapshot().alloc().getPlacement( storeId, table.id );
         if ( optionalPlacement.isEmpty() ) {
@@ -136,21 +132,21 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
 
         // If index partitions are specified
         if ( !partitionGroups.isEmpty() && partitionGroupNames.isEmpty() ) {
+            List<Long> partitionIds = partitions.stream().map( p -> p.id ).sorted().toList();
             //First convert specified index to correct partitionId
             for ( int partitionId : partitionGroups ) {
                 // Check if specified partition index is even part of table and if so get corresponding uniquePartId
                 try {
-                    partitionList.add( statement.getTransaction().getSnapshot().alloc().getPartitionProperty( table.id ).orElseThrow().partitionGroupIds.get( partitionId ) );
+                    partitionList.add( partitionIds.get( partitionId ) );
                 } catch ( IndexOutOfBoundsException e ) {
                     throw new GenericRuntimeException( "Specified Partition-Index: '%s' is not part of table '%s', has only %s partitions",
-                            partitionId, table.name, statement.getTransaction().getSnapshot().alloc().getPartitionProperty( table.id ).orElseThrow().numPartitionGroups );
+                            partitionId, table.name, partitions.size() );
                 }
             }
         } else if ( !partitionGroupNames.isEmpty() && partitionGroups.isEmpty() ) {
             // If name partitions are specified
             // List<AllocationEntity> entities = catalog.getSnapshot().alloc().getAllocsOfPlacement( optionalPlacement.get().id );
-            List<AllocationPartition> partitions = catalog.getSnapshot().alloc().getPartitionsFromLogical( tableId );
-            for ( String partitionName : partitionGroupNames.stream().map( Object::toString ).collect( Collectors.toList() ) ) {
+            for ( String partitionName : partitionGroupNames.stream().map( Object::toString ).toList() ) {
                 Optional<AllocationPartition> optionalPartition = partitions.stream().filter( p -> partitionName.equals( p.name ) ).findAny();
 
                 if ( optionalPartition.isEmpty() ) {
@@ -160,18 +156,10 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
             }
         }
 
-        // Check if in-memory dataPartitionPlacement Map should even be changed and therefore start costly partitioning
-        // Avoid unnecessary partitioning when the placement is already partitioned in the same way it has been specified
-        /*if ( tempPartitionList.equals( catalog.getSnapshot().alloc().getPartitionGroupsOnDataPlacement( storeId, tableId ) ) ) {
-            log.info( "The data placement for table: '{}' on storeId: '{}' already contains all specified partitions of statement: {}",
-                    table.name, storeName, partitionGroupList );
-            return;
-        }*/ // todo dl
-        // Update
         DdlManager.getInstance().modifyPartitionPlacement(
                 table,
                 partitionList,
-                storeInstance,
+                optStoreInstance.get(),
                 statement
         );
     }

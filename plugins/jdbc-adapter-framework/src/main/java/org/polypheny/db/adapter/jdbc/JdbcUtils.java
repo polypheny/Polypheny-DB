@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,16 +66,17 @@ import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.sql.language.SqlDialectFactory;
-import org.polypheny.db.type.entity.PolyBigDecimal;
+import org.polypheny.db.sql.language.SqlDialectRegistry;
 import org.polypheny.db.type.entity.PolyBoolean;
-import org.polypheny.db.type.entity.PolyDate;
-import org.polypheny.db.type.entity.PolyDouble;
-import org.polypheny.db.type.entity.PolyFloat;
-import org.polypheny.db.type.entity.PolyInteger;
 import org.polypheny.db.type.entity.PolyString;
-import org.polypheny.db.type.entity.PolyTime;
-import org.polypheny.db.type.entity.PolyTimestamp;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
+import org.polypheny.db.type.entity.numerical.PolyDouble;
+import org.polypheny.db.type.entity.numerical.PolyFloat;
+import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.temporal.PolyDate;
+import org.polypheny.db.type.entity.temporal.PolyTime;
+import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 import org.polypheny.db.util.Pair;
 
 
@@ -118,7 +119,7 @@ public final class JdbcUtils {
                 List<?> key = ImmutableList.of( productName, productVersion, dialectFactory );
                 SqlDialect dialect = map.get( key );
                 if ( dialect == null ) {
-                    dialect = dialectFactory.create( metaData );
+                    dialect = SqlDialectRegistry.getDialect( productName ).orElseThrow();
                     map.put( key, dialect );
                     if ( dialectMap == null ) {
                         dialectMap = new IdentityHashMap<>();
@@ -201,15 +202,12 @@ public final class JdbcUtils {
         private PolyValue value( int i ) throws SQLException {
             // MySQL returns timestamps shifted into local time. Using getTimestamp(int, Calendar) with a UTC calendar
             // should prevent this, but does not. So we shift explicitly.
-            switch ( types[i] ) {
-                case Types.TIMESTAMP:
-                    return PolyTimestamp.of( shift( resultSet.getTimestamp( i + 1 ) ) );
-                case Types.TIME:
-                    return PolyTime.of( shift( resultSet.getTime( i + 1 ) ) );
-                case Types.DATE:
-                    return PolyDate.of( shift( resultSet.getDate( i + 1 ) ) );
-            }
-            return getPolyValue( i );
+            return switch ( types[i] ) {
+                case Types.TIMESTAMP -> PolyTimestamp.of( shift( resultSet.getTimestamp( i + 1 ) ) );
+                case Types.TIME -> PolyTime.of( shift( resultSet.getTime( i + 1 ) ) );
+                case Types.DATE -> PolyDate.of( shift( resultSet.getDate( i + 1 ) ) );
+                default -> getPolyValue( i );
+            };
 
             //return (PolyValue) reps[i].jdbcGet( resultSet, i + 1 );
         }

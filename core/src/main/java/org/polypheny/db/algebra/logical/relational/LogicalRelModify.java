@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.catalog.entity.Entity;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexNode;
@@ -40,7 +40,7 @@ public final class LogicalRelModify extends RelModify<Entity> {
      * Use {@link #create} unless you know what you're doing.
      */
     public LogicalRelModify(
-            AlgOptCluster cluster,
+            AlgCluster cluster,
             AlgTraitSet traitSet,
             Entity table,
             AlgNode input,
@@ -73,7 +73,7 @@ public final class LogicalRelModify extends RelModify<Entity> {
             List<String> updateColumns,
             List<? extends RexNode> sourceExpressions,
             boolean flattened ) {
-        final AlgOptCluster cluster = input.getCluster();
+        final AlgCluster cluster = input.getCluster();
         final AlgTraitSet traitSet = cluster.traitSetOf( Convention.NONE );
         return new LogicalRelModify( cluster, traitSet, table, input, operation, updateColumns, sourceExpressions, flattened );
     }

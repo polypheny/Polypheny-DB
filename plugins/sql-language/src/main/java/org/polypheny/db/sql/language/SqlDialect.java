@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,27 +18,31 @@ package org.polypheny.db.sql.language;
 
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableSet;
 import java.sql.ResultSet;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.Locale;
-import java.util.Objects;
 import java.util.Set;
-import java.util.function.Supplier;
 import java.util.regex.Pattern;
-import javax.annotation.Nonnull;
+import lombok.NonNull;
+import lombok.Value;
+import lombok.With;
+import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.SqlType;
-import org.apache.calcite.avatica.util.DateTimeUtils;
-import org.apache.calcite.avatica.util.TimeUnit;
-import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.apache.calcite.linq4j.function.Experimental;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.NullCollation;
+import org.polypheny.db.algebra.core.Aggregate;
+import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.Join;
+import org.polypheny.db.algebra.core.Project;
+import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
@@ -46,20 +50,27 @@ import org.polypheny.db.algebra.type.AlgDataTypeSystemImpl;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Operator;
+import org.polypheny.db.nodes.TimeUnitRange;
 import org.polypheny.db.sql.language.dialect.JethroDataSqlDialect;
+import org.polypheny.db.sql.language.dialect.JethroDataSqlDialect.JethroInfo;
 import org.polypheny.db.sql.language.util.SqlBuilder;
 import org.polypheny.db.sql.language.util.SqlTypeUtil;
 import org.polypheny.db.type.BasicPolyType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.util.temporal.DateTimeUtils;
+import org.polypheny.db.util.temporal.TimeUnit;
 
 
 /**
  * <code>SqlDialect</code> encapsulates the differences between dialects of SQL.
- *
+ * <p>
  * It is used by classes such as {@link SqlWriter} and {@link SqlBuilder}.
  */
 @Slf4j
+@Value
+@NonFinal
 public class SqlDialect {
 
     /**
@@ -121,12 +132,18 @@ public class SqlDialect {
                     .build();
 
 
-    private final String identifierQuoteString;
-    private final String identifierEndQuoteString;
-    private final String identifierEscapedQuote;
-    private final DatabaseProduct databaseProduct;
-    protected final NullCollation nullCollation;
-    private final AlgDataTypeSystem dataTypeSystem;
+    @NonNull
+    String name;
+
+    String identifierQuoteString;
+    String identifierEndQuoteString;
+    String identifierEscapedQuote;
+
+    @NonNull
+    protected NullCollation nullCollation;
+
+    @NonNull
+    AlgDataTypeSystem dataTypeSystem;
 
 
     /**
@@ -135,13 +152,13 @@ public class SqlDialect {
      * @param context All the information necessary to create a dialect
      */
     public SqlDialect( Context context ) {
-        this.nullCollation = Objects.requireNonNull( context.nullCollation() );
-        this.dataTypeSystem = Objects.requireNonNull( context.dataTypeSystem() );
-        this.databaseProduct = Objects.requireNonNull( context.databaseProduct() );
-        String identifierQuoteString = context.identifierQuoteString();
+        this.name = context.name;
+        this.nullCollation = context.nullCollation;
+        this.dataTypeSystem = context.dataTypeSystem;
+        String identifierQuoteString = context.identifierQuoteString;
         if ( identifierQuoteString != null ) {
             identifierQuoteString = identifierQuoteString.trim();
-            if ( identifierQuoteString.equals( "" ) ) {
+            if ( identifierQuoteString.isEmpty() ) {
                 identifierQuoteString = null;
             }
         }
@@ -163,12 +180,8 @@ public class SqlDialect {
      * Creates an empty context. Use {@link #EMPTY_CONTEXT} if possible.
      */
     protected static Context emptyContext() {
-        return new ContextImpl(
-                DatabaseProduct.UNKNOWN,
-                null,
-                null,
-                -1,
-                -1,
+        return new Context(
+                "UNKNOWN",
                 null,
                 NullCollation.HIGH,
                 AlgDataTypeSystemImpl.DEFAULT,
@@ -186,7 +199,7 @@ public class SqlDialect {
 
     /**
      * Encloses an identifier in quotation marks appropriate for the current SQL dialect.
-     *
+     * <p>
      * For example, <code>quoteIdentifier("emp")</code> yields a string containing <code>"emp"</code> in Oracle, and a string containing
      * <code> [emp]</code> in Access.
      *
@@ -204,7 +217,7 @@ public class SqlDialect {
 
     /**
      * Encloses an identifier in quotation marks appropriate for the current SQL dialect, writing the result to a {@link StringBuilder}.
-     *
+     * <p>
      * For example, <code>quoteIdentifier("emp")</code> yields a string containing <code>"emp"</code> in Oracle, and a string containing
      * <code>[emp]</code> in Access.
      *
@@ -271,7 +284,11 @@ public class SqlDialect {
 
 
     public void unparseCall( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
-        ((SqlOperator) call.getOperator()).unparse( writer, call, leftPrec, rightPrec );
+        if ( OperatorName.PI == call.getOperator().getOperatorName() ) {
+            writer.literal( "PI()" );
+        } else {
+            ((SqlOperator) call.getOperator()).unparse( writer, call, leftPrec, rightPrec );
+        }
     }
 
 
@@ -347,10 +364,12 @@ public class SqlDialect {
     public void unparseSqlIntervalLiteral( SqlWriter writer, SqlIntervalLiteral literal, int leftPrec, int rightPrec ) {
         SqlIntervalLiteral.IntervalValue interval = (SqlIntervalLiteral.IntervalValue) literal.getValue();
         writer.keyword( "INTERVAL" );
-        if ( interval.getSign() == -1 ) {
+        if ( interval.isNegative() || interval.millis < 0 || interval.months < 0 ) {
             writer.print( "-" );
         }
-        writer.literal( "'" + literal.getValue().toString() + "'" );
+        String intervalStr = literal.getValue().toString();
+        intervalStr = intervalStr.startsWith( "-" ) ? intervalStr.substring( 1 ) : intervalStr;
+        writer.literal( "'" + intervalStr + "'" );
         unparseSqlIntervalQualifier( writer, interval.getIntervalQualifier(), AlgDataTypeSystem.DEFAULT );
     }
 
@@ -402,40 +421,14 @@ public class SqlDialect {
     };
 
 
-    /**
-     * Converts a string literal back into a string. For example, <code>'can''t run'</code> becomes <code>can't run</code>.
-     */
-    public String unquoteStringLiteral( String val ) {
-        if ( (val != null)
-                && (val.charAt( 0 ) == '\'')
-                && (val.charAt( val.length() - 1 ) == '\'') ) {
-            if ( val.length() > 2 ) {
-                val = FakeUtil.replace( val, "''", "'" );
-                return val.substring( 1, val.length() - 1 );
-            } else {
-                // zero length string
-                return "";
-            }
-        }
-        return val;
-    }
-
-
     protected boolean allowsAs() {
         return true;
     }
 
 
-    // -- behaviors --
-    protected boolean requiresAliasForFromItems() {
-        return false;
-    }
-
-
     /**
      * Returns whether a qualified table in the FROM clause has an implicit alias which consists of just the table name.
-     *
-     * For example, in {@link DatabaseProduct#ORACLE}
+     * <p>
      *
      * <blockquote>SELECT * FROM sales.emp</blockquote>
      *
@@ -447,7 +440,7 @@ public class SqlDialect {
      *
      * <blockquote>SELECT emp.empno FROM sales.emp</blockquote>
      *
-     * is valid. But {@link DatabaseProduct#DB2} does not have an implicit alias, so the previous query it not valid; you need to write
+     * is valid. But some dbs do not have an implicit alias, so the previous query it not valid; you need to write
      *
      * <blockquote>SELECT sales.emp.empno FROM sales.emp</blockquote>
      *
@@ -460,10 +453,10 @@ public class SqlDialect {
 
     /**
      * Converts a timestamp to a SQL timestamp literal, e.g. {@code TIMESTAMP '2009-12-17 12:34:56'}.
-     *
+     * <p>
      * Timestamp values do not have a time zone. We therefore interpret them as the number of milliseconds after the UTC epoch, and the formatted
      * value is that time in UTC.
-     *
+     * <p>
      * In particular,
      *
      * <blockquote><code>quoteTimestampLiteral(new Timestamp(0));</code></blockquote>
@@ -489,15 +482,10 @@ public class SqlDialect {
 
 
     public boolean supportsAggregateFunction( Kind kind ) {
-        switch ( kind ) {
-            case COUNT:
-            case SUM:
-            case SUM0:
-            case MIN:
-            case MAX:
-                return true;
-        }
-        return false;
+        return switch ( kind ) {
+            case COUNT, SUM, SUM0, MIN, MAX -> true;
+            default -> false;
+        };
     }
 
 
@@ -517,50 +505,16 @@ public class SqlDialect {
     }
 
 
+    public boolean supportsArrays() {
+        return false;
+    }
+
+
     /**
      * Returns whether this dialect supports column names of level 3 (SchemaName.TableName.ColumnName).
      */
     public boolean supportsColumnNamesWithSchema() {
         return true;
-    }
-
-
-    /**
-     * Returns whether this dialect supports a given function or operator.
-     * It only applies to built-in scalar functions and operators, since user-defined functions and procedures should be read by JdbcSchema.
-     */
-    public boolean supportsFunction( SqlOperator operator, AlgDataType type, List<AlgDataType> paramTypes ) {
-        switch ( operator.kind ) {
-            case AND:
-            case BETWEEN:
-            case CASE:
-            case CAST:
-            case CEIL:
-            case COALESCE:
-            case DIVIDE:
-            case EQUALS:
-            case FLOOR:
-            case GREATER_THAN:
-            case GREATER_THAN_OR_EQUAL:
-            case IN:
-            case IS_NULL:
-            case IS_NOT_NULL:
-            case LESS_THAN:
-            case LESS_THAN_OR_EQUAL:
-            case MINUS:
-            case MOD:
-            case NOT:
-            case NOT_IN:
-            case NOT_EQUALS:
-            case NVL:
-            case OR:
-            case PLUS:
-            case ROW:
-            case TIMES:
-                return true;
-            default:
-                return BUILT_IN_OPERATORS_LIST.contains( operator );
-        }
     }
 
 
@@ -614,7 +568,7 @@ public class SqlDialect {
      */
     public SqlNode rewriteSingleValueExpr( SqlNode aggCall ) {
         if ( log.isDebugEnabled() ) {
-            log.debug( "SINGLE_VALUE rewrite not supported for {}", databaseProduct );
+            log.debug( "SINGLE_VALUE rewrite not supported for {}", name );
         }
         return aggCall;
     }
@@ -654,9 +608,9 @@ public class SqlDialect {
 
     /**
      * Converts an offset and fetch into SQL.
-     *
+     * <p>
      * At least one of {@code offset} and {@code fetch} must be provided.
-     *
+     * <p>
      * Common options:
      * <ul>
      * <li>{@code OFFSET offset ROWS FETCH NEXT fetch ROWS ONLY} (ANSI standard SQL, Oracle, PostgreSQL, and the default)</li>
@@ -731,37 +685,24 @@ public class SqlDialect {
 
 
     /**
-     * Returns how NULL values are sorted if an ORDER BY item does not contain NULLS ASCENDING or NULLS DESCENDING.
-     */
-    public NullCollation getNullCollation() {
-        return nullCollation;
-    }
-
-
-    /**
      * Returns whether NULL values are sorted first or last, in this dialect, in an ORDER BY item of a given direction.
      */
     public AlgFieldCollation.NullDirection defaultNullDirection( AlgFieldCollation.Direction direction ) {
-        switch ( direction ) {
-            case ASCENDING:
-            case STRICTLY_ASCENDING:
-                return getNullCollation().last( false )
-                        ? AlgFieldCollation.NullDirection.LAST
-                        : AlgFieldCollation.NullDirection.FIRST;
-            case DESCENDING:
-            case STRICTLY_DESCENDING:
-                return getNullCollation().last( true )
-                        ? AlgFieldCollation.NullDirection.LAST
-                        : AlgFieldCollation.NullDirection.FIRST;
-            default:
-                return AlgFieldCollation.NullDirection.UNSPECIFIED;
-        }
+        return switch ( direction ) {
+            case ASCENDING, STRICTLY_ASCENDING -> nullCollation.last( false )
+                    ? AlgFieldCollation.NullDirection.LAST
+                    : AlgFieldCollation.NullDirection.FIRST;
+            case DESCENDING, STRICTLY_DESCENDING -> nullCollation.last( true )
+                    ? AlgFieldCollation.NullDirection.LAST
+                    : AlgFieldCollation.NullDirection.FIRST;
+            default -> AlgFieldCollation.NullDirection.UNSPECIFIED;
+        };
     }
 
 
     /**
      * Returns whether the dialect supports VALUES in a sub-query with and an "AS t(column, ...)" values to define column names.
-     *
+     * <p>
      * Currently, only Oracle does not. For this, we generate "SELECT v0 AS c0, v1 AS c1 ... UNION ALL ...". We may need to refactor this method when we
      * support VALUES for other dialects.
      */
@@ -791,6 +732,53 @@ public class SqlDialect {
     }
 
 
+    public Expression getExpression( AlgDataType fieldType, Expression child ) {
+        return switch ( fieldType.getPolyType() ) {
+            case TEXT -> Expressions.call( PolyString.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( child, String.class ) );
+            default -> child;
+        };
+
+    }
+
+
+    public SqlNode rewriteMinMax( SqlNode node ) {
+        return node;
+    }
+
+
+    public boolean supportsProject( Project project ) {
+        return true;
+    }
+
+
+    public boolean supportsFilter( Filter filter ) {
+        return true;
+    }
+
+
+    public boolean supportsSort( Sort sort ) {
+        return true;
+    }
+
+
+    public boolean supportsAggregate( Aggregate aggregate ) {
+        return true;
+    }
+
+
+    public boolean supportsJoin( Join join ) {
+        return true;
+    }
+
+
+    /**
+     * Some databases handle UTC time incorrectly and shift the time by the timezone offset.
+     */
+    public boolean handlesUtcIncorrectly() {
+        return false;
+    }
+
+
     public enum IntervalParameterStrategy {CAST, MULTIPLICATION, NONE}
 
 
@@ -803,13 +791,6 @@ public class SqlDialect {
      * A few utility functions copied from org.polypheny.db.util.Util. We have copied them because we wish to keep SqlDialect's dependencies to a minimum.
      */
     public static class FakeUtil {
-
-        public static Error newInternal( Throwable e, String s ) {
-            String message = "Internal error: \u0000" + s;
-            AssertionError ae = new AssertionError( message );
-            ae.initCause( e );
-            return ae;
-        }
 
 
         /**
@@ -856,370 +837,21 @@ public class SqlDialect {
 
 
     /**
-     * Rough list of flavors of database.
-     *
-     * These values cannot help you distinguish between features that exist in different versions or ports of a database, but they are sufficient
-     * to drive a {@code switch} statement if behavior is broadly different between say, MySQL and Oracle.
-     *
-     * If possible, you should not refer to particular database at all; write extend the dialect to describe the particular capability, for example,
-     * whether the database allows expressions to appear in the GROUP BY clause.
-     */
-    public enum DatabaseProduct {
-        ACCESS( "Access", "\"", NullCollation.HIGH ),
-        BIG_QUERY( "Google BigQuery", "`", NullCollation.LOW ),
-        POLYPHENYDB( "Polypheny-DB", "\"", NullCollation.HIGH ),
-        MSSQL( "Microsoft SQL Server", "[", NullCollation.HIGH ),
-        MYSQL( "MySQL", "`", NullCollation.LOW ),
-        ORACLE( "Oracle", "\"", NullCollation.HIGH ),
-        DERBY( "Apache Derby", null, NullCollation.HIGH ),
-        DB2( "IBM DB2", null, NullCollation.HIGH ),
-        FIREBIRD( "Firebird", null, NullCollation.HIGH ),
-        H2( "H2", "\"", NullCollation.HIGH ),
-        HIVE( "Apache Hive", null, NullCollation.LOW ),
-        INFORMIX( "Informix", null, NullCollation.HIGH ),
-        INGRES( "Ingres", null, NullCollation.HIGH ),
-        JETHRO( "JethroData", "\"", NullCollation.LOW ),
-        LUCIDDB( "LucidDB", "\"", NullCollation.HIGH ),
-        INTERBASE( "Interbase", null, NullCollation.HIGH ),
-        PHOENIX( "Phoenix", "\"", NullCollation.HIGH ),
-        POSTGRESQL( "PostgreSQL", "\"", NullCollation.HIGH ),
-        NETEZZA( "Netezza", "\"", NullCollation.HIGH ),
-        INFOBRIGHT( "Infobright", "`", NullCollation.HIGH ),
-        NEOVIEW( "Neoview", null, NullCollation.HIGH ),
-        SYBASE( "Sybase", null, NullCollation.HIGH ),
-        TERADATA( "Teradata", "\"", NullCollation.HIGH ),
-        HSQLDB( "Hsqldb", null, NullCollation.HIGH ),
-        VERTICA( "Vertica", "\"", NullCollation.HIGH ),
-        SQLSTREAM( "SQLstream", "\"", NullCollation.HIGH ),
-        MONETDB( "MonetDB", "\"", NullCollation.HIGH ),
-
-        /**
-         * Paraccel, now called Actian Matrix. Redshift is based on this, so presumably the dialect capabilities are similar.
-         */
-        PARACCEL( "Paraccel", "\"", NullCollation.HIGH ),
-        REDSHIFT( "Redshift", "\"", NullCollation.HIGH ),
-
-        /**
-         * Placeholder for the unknown database.
-         *
-         * Its dialect is useful for generating generic SQL. If you need to do something database-specific like quoting identifiers, don't rely
-         * on this dialect to do what you want.
-         */
-        UNKNOWN( "Unknown", "`", NullCollation.HIGH );
-
-        private final Supplier<SqlDialect> dialect;
-
-
-        DatabaseProduct( String databaseProductName, String quoteString, NullCollation nullCollation ) {
-            Objects.requireNonNull( databaseProductName );
-            Objects.requireNonNull( nullCollation );
-            dialect = Suppliers.memoize( () -> {
-                final SqlDialect dialect = SqlDialectFactoryImpl.simple( DatabaseProduct.this );
-                if ( dialect != null ) {
-                    return dialect;
-                }
-                return new SqlDialect( SqlDialect.EMPTY_CONTEXT
-                        .withDatabaseProduct( DatabaseProduct.this )
-                        .withDatabaseProductName( databaseProductName )
-                        .withIdentifierQuoteString( quoteString )
-                        .withNullCollation( nullCollation ) );
-            } );
-        }
-
-
-        /**
-         * Returns a dummy dialect for this database.
-         *
-         * Since databases have many versions and flavors, this dummy dialect is at best an approximation. If you want exact information, better to
-         * use a dialect created from an actual connection's metadata (see {@link SqlDialectFactory#create(java.sql.DatabaseMetaData)}).
-         *
-         * @return Dialect representing lowest-common-denominator behavior for all versions of this database
-         */
-        public SqlDialect getDialect() {
-            return dialect.get();
-        }
-    }
-
-
-    /**
      * Information for creating a dialect.
-     *
+     * <p>
      * It is immutable; to "set" a property, call one of the "with" methods, which returns a new context with the desired property value.
      */
-    public interface Context {
 
-        @Nonnull
-        DatabaseProduct databaseProduct();
-
-        Context withDatabaseProduct( @Nonnull DatabaseProduct databaseProduct );
-
-        String databaseProductName();
-
-        Context withDatabaseProductName( String databaseProductName );
-
-        String databaseVersion();
-
-        Context withDatabaseVersion( String databaseVersion );
-
-        int databaseMajorVersion();
-
-        Context withDatabaseMajorVersion( int databaseMajorVersion );
-
-        int databaseMinorVersion();
-
-        Context withDatabaseMinorVersion( int databaseMinorVersion );
-
-        String identifierQuoteString();
-
-        Context withIdentifierQuoteString( String identifierQuoteString );
-
-        @Nonnull
-        NullCollation nullCollation();
-
-        Context withNullCollation( @Nonnull NullCollation nullCollation );
-
-        @Nonnull
-        AlgDataTypeSystem dataTypeSystem();
-
-        Context withDataTypeSystem( @Nonnull AlgDataTypeSystem dataTypeSystem );
-
-        JethroDataSqlDialect.JethroInfo jethroInfo();
-
-        Context withJethroInfo( JethroDataSqlDialect.JethroInfo jethroInfo );
+    @With
+    public record Context(
+            @NonNull String name,
+            String identifierQuoteString,
+            @NonNull NullCollation nullCollation,
+            @NonNull AlgDataTypeSystem dataTypeSystem,
+            @NonNull JethroInfo jethroInfo
+    ) {
 
     }
 
-
-    /**
-     * Implementation of Context.
-     */
-    private static class ContextImpl implements Context {
-
-        private final DatabaseProduct databaseProduct;
-        private final String databaseProductName;
-        private final String databaseVersion;
-        private final int databaseMajorVersion;
-        private final int databaseMinorVersion;
-        private final String identifierQuoteString;
-        private final NullCollation nullCollation;
-        private final AlgDataTypeSystem dataTypeSystem;
-        private final JethroDataSqlDialect.JethroInfo jethroInfo;
-
-
-        private ContextImpl(
-                DatabaseProduct databaseProduct,
-                String databaseProductName,
-                String databaseVersion,
-                int databaseMajorVersion,
-                int databaseMinorVersion,
-                String identifierQuoteString,
-                NullCollation nullCollation,
-                AlgDataTypeSystem dataTypeSystem,
-                JethroDataSqlDialect.JethroInfo jethroInfo ) {
-            this.databaseProduct = Objects.requireNonNull( databaseProduct );
-            this.databaseProductName = databaseProductName;
-            this.databaseVersion = databaseVersion;
-            this.databaseMajorVersion = databaseMajorVersion;
-            this.databaseMinorVersion = databaseMinorVersion;
-            this.identifierQuoteString = identifierQuoteString;
-            this.nullCollation = Objects.requireNonNull( nullCollation );
-            this.dataTypeSystem = Objects.requireNonNull( dataTypeSystem );
-            this.jethroInfo = Objects.requireNonNull( jethroInfo );
-        }
-
-
-        @Override
-        @Nonnull
-        public DatabaseProduct databaseProduct() {
-            return databaseProduct;
-        }
-
-
-        @Override
-        public Context withDatabaseProduct( @Nonnull DatabaseProduct databaseProduct ) {
-            return new ContextImpl(
-                    databaseProduct,
-                    databaseProductName,
-                    databaseVersion,
-                    databaseMajorVersion,
-                    databaseMinorVersion,
-                    identifierQuoteString,
-                    nullCollation,
-                    dataTypeSystem,
-                    jethroInfo );
-        }
-
-
-        @Override
-        public String databaseProductName() {
-            return databaseProductName;
-        }
-
-
-        @Override
-        public Context withDatabaseProductName( String databaseProductName ) {
-            return new ContextImpl(
-                    databaseProduct,
-                    databaseProductName,
-                    databaseVersion,
-                    databaseMajorVersion,
-                    databaseMinorVersion,
-                    identifierQuoteString,
-                    nullCollation,
-                    dataTypeSystem,
-                    jethroInfo );
-        }
-
-
-        @Override
-        public String databaseVersion() {
-            return databaseVersion;
-        }
-
-
-        @Override
-        public Context withDatabaseVersion( String databaseVersion ) {
-            return new ContextImpl(
-                    databaseProduct,
-                    databaseProductName,
-                    databaseVersion,
-                    databaseMajorVersion,
-                    databaseMinorVersion,
-                    identifierQuoteString,
-                    nullCollation,
-                    dataTypeSystem,
-                    jethroInfo );
-        }
-
-
-        @Override
-        public int databaseMajorVersion() {
-            return databaseMajorVersion;
-        }
-
-
-        @Override
-        public Context withDatabaseMajorVersion( int databaseMajorVersion ) {
-            return new ContextImpl(
-                    databaseProduct,
-                    databaseProductName,
-                    databaseVersion,
-                    databaseMajorVersion,
-                    databaseMinorVersion,
-                    identifierQuoteString,
-                    nullCollation,
-                    dataTypeSystem,
-                    jethroInfo );
-        }
-
-
-        @Override
-        public int databaseMinorVersion() {
-            return databaseMinorVersion;
-        }
-
-
-        @Override
-        public Context withDatabaseMinorVersion( int databaseMinorVersion ) {
-            return new ContextImpl(
-                    databaseProduct,
-                    databaseProductName,
-                    databaseVersion,
-                    databaseMajorVersion,
-                    databaseMinorVersion,
-                    identifierQuoteString,
-                    nullCollation,
-                    dataTypeSystem,
-                    jethroInfo );
-        }
-
-
-        @Override
-        public String identifierQuoteString() {
-            return identifierQuoteString;
-        }
-
-
-        @Override
-        public Context withIdentifierQuoteString( String identifierQuoteString ) {
-            return new ContextImpl(
-                    databaseProduct,
-                    databaseProductName,
-                    databaseVersion,
-                    databaseMajorVersion,
-                    databaseMinorVersion,
-                    identifierQuoteString,
-                    nullCollation,
-                    dataTypeSystem,
-                    jethroInfo );
-        }
-
-
-        @Override
-        @Nonnull
-        public NullCollation nullCollation() {
-            return nullCollation;
-        }
-
-
-        @Override
-        public Context withNullCollation( @Nonnull NullCollation nullCollation ) {
-            return new ContextImpl(
-                    databaseProduct,
-                    databaseProductName,
-                    databaseVersion,
-                    databaseMajorVersion,
-                    databaseMinorVersion,
-                    identifierQuoteString,
-                    nullCollation,
-                    dataTypeSystem,
-                    jethroInfo );
-        }
-
-
-        @Override
-        @Nonnull
-        public AlgDataTypeSystem dataTypeSystem() {
-            return dataTypeSystem;
-        }
-
-
-        @Override
-        public Context withDataTypeSystem( @Nonnull AlgDataTypeSystem dataTypeSystem ) {
-            return new ContextImpl(
-                    databaseProduct,
-                    databaseProductName,
-                    databaseVersion,
-                    databaseMajorVersion,
-                    databaseMinorVersion,
-                    identifierQuoteString,
-                    nullCollation,
-                    dataTypeSystem,
-                    jethroInfo );
-        }
-
-
-        @Override
-        @Nonnull
-        public JethroDataSqlDialect.JethroInfo jethroInfo() {
-            return jethroInfo;
-        }
-
-
-        @Override
-        public Context withJethroInfo( JethroDataSqlDialect.JethroInfo jethroInfo ) {
-            return new ContextImpl(
-                    databaseProduct,
-                    databaseProductName,
-                    databaseVersion,
-                    databaseMajorVersion,
-                    databaseMinorVersion,
-                    identifierQuoteString,
-                    nullCollation,
-                    dataTypeSystem,
-                    jethroInfo );
-        }
-
-    }
 
 }

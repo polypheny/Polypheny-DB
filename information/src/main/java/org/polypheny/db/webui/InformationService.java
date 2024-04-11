@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ import org.polypheny.db.information.InformationResponse;
 
 
 /**
- * RESTful server for requesting data from the information manager. It is primarily used by the Polypheny-UI.
+ * Information service, which provides information about the system.
  */
 @Slf4j
 public class InformationService implements InformationObserver {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,10 +44,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.nodes.Function;
 import org.polypheny.db.nodes.Function.FunctionType;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.rex.RexBuilder;
@@ -58,6 +58,7 @@ import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.rex.RexVisitorImpl;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 
 
@@ -105,7 +106,7 @@ public class RexImplicationChecker {
         }
 
         if ( log.isDebugEnabled() ) {
-            log.debug( "Checking if {} => {}", first.toString(), second.toString() );
+            log.debug( "Checking if {} => {}", first, second.toString() );
         }
 
         // Get DNF
@@ -166,13 +167,12 @@ public class RexImplicationChecker {
         if ( implies2( first, second ) ) {
             return true;
         }
-        switch ( first.getKind() ) {
-            case AND:
-                for ( RexNode f : AlgOptUtil.conjunctions( first ) ) {
-                    if ( implies2( f, second ) ) {
-                        return true;
-                    }
+        if ( Objects.requireNonNull( first.getKind() ) == Kind.AND ) {
+            for ( RexNode f : AlgOptUtil.conjunctions( first ) ) {
+                if ( implies2( f, second ) ) {
+                    return true;
                 }
+            }
         }
         return false;
     }
@@ -192,23 +192,16 @@ public class RexImplicationChecker {
         }
 
         // Several things imply "IS NOT NULL"
-        switch ( second.getKind() ) {
-            case IS_NOT_NULL:
-                // Suppose we know that first is strong in second; that is, the if second is null, then first will be null.
-                // Then, first being not null implies that second is not null.
-                //
-                // For example, first is "x > y", second is "x".
-                // If we know that "x > y" is not null, we know that "x" is not null.
-                final RexNode operand = ((RexCall) second).getOperands().get( 0 );
-                final Strong strong = new Strong() {
-                    @Override
-                    public boolean isNull( RexNode node ) {
-                        return node.equals( operand ) || super.isNull( node );
-                    }
-                };
-                if ( strong.isNull( first ) ) {
-                    return true;
-                }
+        if ( Objects.requireNonNull( second.getKind() ) == Kind.IS_NOT_NULL ) {
+            // Suppose we know that first is strong in second; that is, the if second is null, then first will be null.
+            // Then, first being not null implies that second is not null.
+            //
+            // For example, first is "x > y", second is "x".
+            // If we know that "x > y" is not null, we know that "x" is not null.
+            final Strong strong = getStrong( (RexCall) second );
+            if ( strong.isNull( first ) ) {
+                return true;
+            }
         }
 
         final InputUsageFinder firstUsageFinder = new InputUsageFinder();
@@ -256,6 +249,19 @@ public class RexImplicationChecker {
     }
 
 
+    @NotNull
+    private static Strong getStrong( RexCall second ) {
+        final RexNode operand = second.getOperands().get( 0 );
+        final Strong strong = new Strong() {
+            @Override
+            public boolean isNull( RexNode node ) {
+                return node.equals( operand ) || super.isNull( node );
+            }
+        };
+        return strong;
+    }
+
+
     private boolean isSatisfiable( RexNode second, DataContext dataValues ) {
         if ( dataValues == null ) {
             return false;
@@ -264,7 +270,7 @@ public class RexImplicationChecker {
         ImmutableList<RexNode> constExps = ImmutableList.of( second );
         final RexExecutable exec = executor.getExecutable( builder, constExps, rowType );
 
-        Object[] result;
+        PolyValue[] result;
         exec.setDataContext( dataValues );
         try {
             result = exec.execute();
@@ -274,7 +280,7 @@ public class RexImplicationChecker {
             log.warn( "Exception thrown while checking if => {}: {}", second, e.getMessage() );
             return false;
         }
-        return result != null && result.length == 1 && result[0] instanceof Boolean && (Boolean) result[0];
+        return result != null && result.length == 1 && result[0].isBoolean() && result[0].asBoolean().value;
     }
 
 
@@ -352,13 +358,10 @@ public class RexImplicationChecker {
 
 
     private boolean isSupportedUnaryOperators( Kind kind ) {
-        switch ( kind ) {
-            case IS_NOT_NULL:
-            case IS_NULL:
-                return true;
-            default:
-                return false;
-        }
+        return switch ( kind ) {
+            case IS_NOT_NULL, IS_NULL -> true;
+            default -> false;
+        };
     }
 
 
@@ -412,7 +415,7 @@ public class RexImplicationChecker {
 
     /**
      * Visitor that builds a usage map of inputs used by an expression.
-     *
+     * <p>
      * E.g: for x &gt; 10 AND y &lt; 20 AND x = 40, usage map is as follows:
      * <ul>
      * <li>key: x value: {(&gt;, 10),(=, 40), usageCount = 2}
@@ -489,10 +492,9 @@ public class RexImplicationChecker {
 
 
         private static RexNode removeCast( RexNode inputRef ) {
-            if ( inputRef instanceof RexCall ) {
-                final RexCall castedRef = (RexCall) inputRef;
+            if ( inputRef instanceof RexCall castedRef ) {
                 final Operator operator = castedRef.getOperator();
-                if ( ((Function) operator).getFunctionType() == FunctionType.CAST ) {
+                if ( operator.getFunctionType() == FunctionType.CAST ) {
                     inputRef = castedRef.getOperands().get( 0 );
                 }
             }

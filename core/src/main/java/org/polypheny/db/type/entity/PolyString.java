@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,9 +24,9 @@ import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.CompatibilityLevel;
 import io.activej.serializer.CorruptedDataException;
-import io.activej.serializer.SimpleSerializerDef;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
+import io.activej.serializer.def.SimpleSerializerDef;
 import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Objects;
@@ -34,16 +34,18 @@ import java.util.stream.Collectors;
 import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
-import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.ObjectUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Util;
 
 @Value
 public class PolyString extends PolyValue {
+
+    public static final Charset DEFAULT_CHARSET = Charsets.UTF_8;
 
     @Serialize
     @JsonProperty
@@ -53,7 +55,7 @@ public class PolyString extends PolyValue {
 
 
     public PolyString( @JsonProperty("value") @Deserialize("value") String value ) {
-        this( value, Charsets.UTF_16 );
+        this( value, DEFAULT_CHARSET );
     }
 
 
@@ -65,12 +67,12 @@ public class PolyString extends PolyValue {
 
 
     public static PolyString of( String value, @Nullable String charset ) {
-        return new PolyString( value, charset == null ? Charsets.UTF_16 : Charset.forName( charset ) );
+        return new PolyString( value, charset == null ? DEFAULT_CHARSET : Charset.forName( charset ) );
     }
 
 
     public static PolyString of( String value, @Nullable Charset charset ) {
-        return new PolyString( value, charset == null ? Charsets.UTF_16 : charset );
+        return new PolyString( value, charset == null ? DEFAULT_CHARSET : charset );
     }
 
 
@@ -86,12 +88,12 @@ public class PolyString extends PolyValue {
 
     @Override
     public @Nullable String toJson() {
-        return value == null ? JsonToken.VALUE_NULL.asString() : value;
+        return value == null ? JsonToken.VALUE_NULL.asString() : value.replace( "\\", "\\\\" ).replace( "\"", "\\\"" );
     }
 
 
     public @Nullable String toQuotedJson() {
-        return value == null ? JsonToken.VALUE_NULL.asString() : "\"" + value + "\"";
+        return value == null ? JsonToken.VALUE_NULL.asString() : "\"" + value.replace( "\\", "\\\\" ).replace( "\"", "\\\"" ) + "\"";
     }
 
 
@@ -100,20 +102,27 @@ public class PolyString extends PolyValue {
     }
 
 
-    public static PolyString convert( Object value ) {
+    public static PolyString convert( @Nullable PolyValue value ) {
         if ( value == null ) {
             return null;
         }
-        if ( value instanceof PolyValue ) {
-            if ( ((PolyValue) value).isString() ) {
-                return ((PolyValue) value).asString();
-            } else if ( ((PolyValue) value).isDocument() ) {
-                return PolyString.of( ((PolyValue) value).asDocument().toJson() );
-            } else {
-                return PolyString.of( ((PolyValue) value).toJson() );
-            }
+
+        if ( value.isString() ) {
+            return value.asString();
+        } else if ( value.isDocument() ) {
+            return PolyString.of( value.asDocument().toJson() );
+        } else if ( value.isNumber() ) {
+            return PolyString.of( value.toJson() );
+        } else if ( value.isBoolean() ) {
+            return PolyString.of( value.asBoolean().value.toString() );
         }
-        throw new NotImplementedException( "convert value to string" );
+
+        throw new GenericRuntimeException( getConvertError( value, PolyString.class ) );
+    }
+
+
+    public static PolyString convert( char value ) {
+        return PolyString.of( String.valueOf( value ) );
     }
 
 
@@ -170,6 +179,12 @@ public class PolyString extends PolyValue {
 
 
     @Override
+    public Object toJava() {
+        return value;
+    }
+
+
+    @Override
     public PolySerializable copy() {
         return null;
     }
@@ -185,6 +200,30 @@ public class PolyString extends PolyValue {
             return value;
         }
         return new String( value.getBytes( this.charset ), charset );
+    }
+
+
+    public String toPrefixedString() {
+        StringBuilder ret = new StringBuilder();
+        if ( null != charset && charset != PolyString.DEFAULT_CHARSET ) {
+            ret.append( "_" );
+            ret.append( prettyCharset( charset ) );
+        }
+        ret.append( "'" );
+        ret.append( Util.replace( getValue(), "'", "''" ) );
+        ret.append( "'" );
+
+        return ret.toString();
+    }
+
+
+    private String prettyCharset( Charset charset ) {
+        if ( Charsets.UTF_8.equals( charset ) ) {
+            return "UTF8";
+        } else if ( Charsets.UTF_16.equals( charset ) ) {
+            return "UTF16";
+        }
+        return charset.displayName();
     }
 
 

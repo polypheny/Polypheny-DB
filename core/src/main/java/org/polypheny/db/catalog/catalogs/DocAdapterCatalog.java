@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,11 @@
 
 package org.polypheny.db.catalog.catalogs;
 
-import com.google.common.collect.ImmutableList;
-import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.annotations.Deserialize;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.SortedSet;
 import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -41,15 +39,12 @@ import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalField;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
-import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.util.Pair;
 
 @Getter
 @EqualsAndHashCode(callSuper = true)
 @Value
 public class DocAdapterCatalog extends AdapterCatalog {
-
-    public BinarySerializer<DocAdapterCatalog> serializer = PolySerializable.buildSerializer( DocAdapterCatalog.class );
 
 
     public DocAdapterCatalog( long adapterId ) {
@@ -66,11 +61,6 @@ public class DocAdapterCatalog extends AdapterCatalog {
             }
         }
         for ( PhysicalColumn u : updates ) {
-            PhysicalTable table = physicals.get( u.entityId ).unwrap( PhysicalTable.class ).orElseThrow();
-            List<PhysicalColumn> newColumns = new ArrayList<>( table.columns );
-            newColumns.remove( u );
-            newColumns.add( u );
-            physicals.put( table.id, table.toBuilder().columns( ImmutableList.copyOf( newColumns ) ).build() );
             fields.put( Pair.of( u.allocId, u.id ), u );
         }
     }
@@ -81,7 +71,7 @@ public class DocAdapterCatalog extends AdapterCatalog {
             @Deserialize("physicals") Map<Long, PhysicalEntity> physicals,
             @Deserialize("allocations") Map<Long, AllocationEntity> allocations,
             @Deserialize("fields") Map<Pair<Long, Long>, PhysicalField> fields,
-            @Deserialize("allocToPhysicals") Map<Long, Set<Long>> allocToPhysicals ) {
+            @Deserialize("allocToPhysicals") Map<Long, SortedSet<Long>> allocToPhysicals ) {
         super( adapterId, Map.of(), physicals, allocations, allocToPhysicals, fields );
     }
 
@@ -97,11 +87,7 @@ public class DocAdapterCatalog extends AdapterCatalog {
             int position,
             LogicalColumn logicalColumn ) {
         PhysicalColumn column = new PhysicalColumn( name, logicalColumn.tableId, allocId, adapterId, position, logicalColumn );
-        PhysicalTable table = fromAllocation( allocId, PhysicalTable.class );
-        List<PhysicalColumn> columns = new ArrayList<>( table.columns );
-        columns.add( position - 1, column );
         addColumn( column );
-        addPhysical( getAlloc( table.allocationId ), table.toBuilder().columns( ImmutableList.copyOf( columns ) ).build() );
         return column;
     }
 
@@ -117,16 +103,11 @@ public class DocAdapterCatalog extends AdapterCatalog {
 
 
     public List<? extends PhysicalField> getFields( long allocId ) {
-        return fields.values().stream().filter( f -> f.allocId == allocId ).collect( Collectors.toList() );
+        return fields.values().stream().filter( f -> f.allocId == allocId ).toList();
     }
 
 
     public void dropColumn( long allocId, long columnId ) {
-        PhysicalColumn column = fields.get( Pair.of( allocId, columnId ) ).unwrap( PhysicalColumn.class ).orElseThrow();
-        PhysicalTable table = fromAllocation( allocId, PhysicalTable.class );
-        List<PhysicalColumn> pColumns = new ArrayList<>( table.columns );
-        pColumns.remove( column );
-        addPhysical( getAlloc( allocId ), table.toBuilder().columns( ImmutableList.copyOf( pColumns ) ).build() );
         fields.remove( Pair.of( allocId, columnId ) );
     }
 
@@ -134,15 +115,9 @@ public class DocAdapterCatalog extends AdapterCatalog {
     public PhysicalColumn updateColumnType( long allocId, LogicalColumn newCol ) {
         PhysicalColumn old = getColumn( newCol.id, allocId );
         PhysicalColumn column = new PhysicalColumn( old.name, newCol.tableId, allocId, old.adapterId, old.position, newCol );
-        PhysicalTable table = fromAllocation( allocId, PhysicalTable.class );
-        List<PhysicalColumn> pColumn = new ArrayList<>( table.columns );
-        pColumn.remove( old );
-        pColumn.add( column );
-        addPhysical( getAlloc( table.allocationId ), table.toBuilder().columns( ImmutableList.copyOf( pColumn ) ).build() );
-
+        addColumn( column );
         return column;
     }
-
 
     public PhysicalTable createTable(
             String namespaceName,
@@ -150,12 +125,13 @@ public class DocAdapterCatalog extends AdapterCatalog {
             Map<Long, String> columnNames,
             LogicalTable logical,
             Map<Long, LogicalColumn> logicalColumns,
+            List<Long> pkIds,
             AllocationTableWrapper wrapper ) {
         AllocationTable allocation = wrapper.table;
         List<AllocationColumn> columns = wrapper.columns;
         List<PhysicalColumn> pColumns = columns.stream().map( c -> new PhysicalColumn( columnNames.get( c.columnId ), logical.id, allocation.id, allocation.adapterId, c.position, logicalColumns.get( c.columnId ) ) ).collect( Collectors.toList() );
         long physicalId = IdBuilder.getInstance().getNewPhysicalId();
-        PhysicalTable table = new PhysicalTable( physicalId, allocation.id, allocation.logicalId, tableName, pColumns, logical.namespaceId, namespaceName, allocation.adapterId );
+        PhysicalTable table = new PhysicalTable( physicalId, allocation.id, allocation.logicalId, tableName, pColumns, logical.namespaceId, namespaceName, pkIds, allocation.adapterId );
         pColumns.forEach( this::addColumn );
         addPhysical( allocation, table );
         return table;
@@ -169,10 +145,5 @@ public class DocAdapterCatalog extends AdapterCatalog {
         return collection;
     }
 
-
-    @Override
-    public PolySerializable copy() {
-        return PolySerializable.deserialize( serialize(), DocAdapterCatalog.class );
-    }
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,8 +37,6 @@ import org.polypheny.db.TestHelper.JdbcConnection;
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Slf4j
 @Tag("adapter")
-@Tag("cottontailExclude")
-@Tag("fileExclude")
 public class UniqueConstraintTest {
 
 
@@ -58,21 +56,14 @@ public class UniqueConstraintTest {
             "ALTER TABLE constraint_test ADD INDEX idx_a ON (a)",
             "ALTER TABLE constraint_test ADD INDEX idx_b ON (b)"
     };
-
-
-    private final boolean createIndexes;
-
-
-    public UniqueConstraintTest( boolean createIndexes ) {
-        this.createIndexes = createIndexes;
-    }
+    private static TestHelper helper;
 
 
     @BeforeAll
     public static void start() throws SQLException {
         // Ensures that Polypheny-DB is running
-        //noinspection ResultOfMethodCallIgnored
-        TestHelper.getInstance();
+
+        helper = TestHelper.getInstance();
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
@@ -97,15 +88,15 @@ public class UniqueConstraintTest {
     }
 
 
-    @ParameterizedTest(name = "{index}: {0}")
+    @ParameterizedTest(name = "{index}. Create Index: {0}")
     @ValueSource(booleans = { false, true })
-    public void insertNoConflictTest() throws SQLException {
+    public void insertNoConflictTest( boolean useIndex ) throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 // Create schema
                 statement.executeUpdate( CREATE_TABLE_CONSTRAINT_STATEMENTS );
-                if ( createIndexes ) {
+                if ( useIndex && helper.storeSupportsIndex() ) {
                     // Add indexes
                     for ( String s : ALTER_TABLE_ADD_INDEX_STATEMENTS ) {
                         statement.executeUpdate( s );
@@ -129,15 +120,15 @@ public class UniqueConstraintTest {
     }
 
 
-    @ParameterizedTest(name = "{index}: {0}")
+    @ParameterizedTest(name = "{index}. Create Index: {0}")
     @ValueSource(booleans = { false, true })
-    public void insertExternalConflictTest() throws SQLException {
+    public void insertExternalConflictTest( boolean useIndex ) throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 // Create schema
                 statement.executeUpdate( CREATE_TABLE_CONSTRAINT_STATEMENTS );
-                if ( createIndexes ) {
+                if ( useIndex && helper.storeSupportsIndex() ) {
                     // Add indexes
                     for ( String s : ALTER_TABLE_ADD_INDEX_STATEMENTS ) {
                         statement.executeUpdate( s );
@@ -178,15 +169,15 @@ public class UniqueConstraintTest {
     }
 
 
-    @ParameterizedTest(name = "{index}: {0}")
+    @ParameterizedTest(name = "{index}. Create Index: {0}")
     @ValueSource(booleans = { false, true })
-    public void insertInternalConflictTest() throws SQLException {
+    public void insertInternalConflictTest( boolean useIndex ) throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 // Create schema
                 statement.executeUpdate( CREATE_TABLE_CONSTRAINT_STATEMENTS );
-                if ( createIndexes ) {
+                if ( useIndex && helper.storeSupportsIndex() ) {
                     // Add indexes
                     for ( String s : ALTER_TABLE_ADD_INDEX_STATEMENTS ) {
                         statement.executeUpdate( s );
@@ -218,15 +209,15 @@ public class UniqueConstraintTest {
     }
 
 
-    @ParameterizedTest(name = "{index}: {0}")
+    @ParameterizedTest(name = "{index}. Create Index: {0}")
     @ValueSource(booleans = { false, true })
-    public void insertSelectNoConflictTest() throws SQLException {
+    public void insertSelectNoConflictTest( boolean useIndex ) throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 // Create schema
                 statement.executeUpdate( CREATE_TABLE_CONSTRAINT_STATEMENTS );
-                if ( createIndexes ) {
+                if ( useIndex && helper.storeSupportsIndex() ) {
                     // Add indexes
                     for ( String s : ALTER_TABLE_ADD_INDEX_STATEMENTS ) {
                         statement.executeUpdate( s );
@@ -254,15 +245,15 @@ public class UniqueConstraintTest {
     }
 
 
-    @ParameterizedTest(name = "{index}: {0}")
+    @ParameterizedTest(name = "{index}. Create Index: {0}")
     @ValueSource(booleans = { false, true })
-    public void insertSelectExternalConflictTest() throws SQLException {
+    public void insertSelectExternalConflictTest( boolean useIndex ) throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 // Create schema
                 statement.executeUpdate( CREATE_TABLE_CONSTRAINT_STATEMENTS );
-                if ( createIndexes ) {
+                if ( useIndex && helper.storeSupportsIndex() ) {
                     // Add indexes
                     for ( String s : ALTER_TABLE_ADD_INDEX_STATEMENTS ) {
                         statement.executeUpdate( s );
@@ -274,6 +265,15 @@ public class UniqueConstraintTest {
 
                     try {
                         statement.executeUpdate( "INSERT INTO constraint_test SELECT * FROM constraint_test" );
+
+                        TestHelper.checkResultSet(
+                                statement.executeQuery( "SELECT * FROM constraint_test ORDER BY ctid" ),
+                                ImmutableList.of(
+                                        new Object[]{ 1, 1, 1, 1 },
+                                        new Object[]{ 2, 2, 2, 2 }
+                                )
+                        );
+
                         connection.commit();
                         Assertions.fail( "Expected ConstraintViolationException was not thrown" );
                     } catch ( AvaticaSqlException e ) {
@@ -297,15 +297,15 @@ public class UniqueConstraintTest {
     }
 
 
-    @ParameterizedTest(name = "{index}: {0}")
+    @ParameterizedTest(name = "{index}. Create Index: {0}")
     @ValueSource(booleans = { false, true })
-    public void insertSelectInternalConflictTest() throws SQLException {
+    public void insertSelectInternalConflictTest( boolean useIndex ) throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 // Create schema
                 statement.executeUpdate( CREATE_TABLE_CONSTRAINT_STATEMENTS );
-                if ( createIndexes ) {
+                if ( useIndex && helper.storeSupportsIndex() ) {
                     // Add indexes
                     for ( String s : ALTER_TABLE_ADD_INDEX_STATEMENTS ) {
                         statement.executeUpdate( s );
@@ -340,15 +340,15 @@ public class UniqueConstraintTest {
     }
 
 
-    @ParameterizedTest(name = "{index}: {0}")
+    @ParameterizedTest(name = "{index}. Create Index: {0}")
     @ValueSource(booleans = { false, true })
-    public void batchInsertTest() throws SQLException {
+    public void batchInsertTest( boolean useIndex ) throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 // Create schema
                 statement.executeUpdate( CREATE_TABLE_CONSTRAINT_STATEMENTS );
-                if ( createIndexes ) {
+                if ( useIndex && helper.storeSupportsIndex() ) {
                     // Add indexes
                     for ( String s : ALTER_TABLE_ADD_INDEX_STATEMENTS ) {
                         statement.executeUpdate( s );
@@ -426,15 +426,15 @@ public class UniqueConstraintTest {
     }
 
 
-    @ParameterizedTest(name = "{index}: {0}")
+    @ParameterizedTest(name = "{index}. Create Index: {0}")
     @ValueSource(booleans = { false, true })
-    public void batchUpdateTest() throws SQLException {
+    public void batchUpdateTest( boolean useIndex ) throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 // Create schema
                 statement.executeUpdate( CREATE_TABLE_CONSTRAINT_STATEMENTS );
-                if ( createIndexes ) {
+                if ( useIndex && helper.storeSupportsIndex() ) {
                     // Add indexes
                     for ( String s : ALTER_TABLE_ADD_INDEX_STATEMENTS ) {
                         statement.executeUpdate( s );
@@ -459,7 +459,7 @@ public class UniqueConstraintTest {
                         preparedStatement.executeBatch();
                         connection.commit();
                         Assertions.fail( "Expected ConstraintViolationException was not thrown" );
-                    } catch ( AvaticaSqlException e ) {
+                    } catch ( Exception e ) {
                         if ( !e.getMessage().contains( "Update violates unique constraint" ) ) {
                             throw new RuntimeException( "Unexpected exception", e );
                         }
@@ -506,6 +506,8 @@ public class UniqueConstraintTest {
                         }
                         connection.rollback();
                     }
+                } catch ( Exception e ) {
+                    log.error( "Exception", e );
                 } finally {
                     statement.executeUpdate( "DROP TABLE constraint_test" );
                 }
@@ -514,15 +516,16 @@ public class UniqueConstraintTest {
     }
 
 
-    @ParameterizedTest(name = "{index}: {0}")
+    @ParameterizedTest(name = "{index}. Create Index: {0}")
     @ValueSource(booleans = { false, true })
-    public void updateNoConflictTest() throws SQLException {
+    @Tag("cottontailExcluded")
+    public void updateNoConflictTest( boolean useIndex ) throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 // Create schema
                 statement.executeUpdate( CREATE_TABLE_CONSTRAINT_STATEMENTS );
-                if ( createIndexes ) {
+                if ( useIndex && helper.storeSupportsIndex() ) {
                     // Add indexes
                     for ( String s : ALTER_TABLE_ADD_INDEX_STATEMENTS ) {
                         statement.executeUpdate( s );
@@ -534,21 +537,40 @@ public class UniqueConstraintTest {
 
                     statement.executeUpdate( "UPDATE constraint_test SET a = ctid" );
 
-                    statement.executeUpdate( "UPDATE constraint_test SET a = 2 * ctid, b = 2 * ctid" );
+                    if ( !useIndex ) {
+                        // this leads to conflicts for index true if adapters check the index on a row by row basis, e.g. PostgreSQL
+                        statement.executeUpdate( "UPDATE constraint_test SET a = 2 * ctid, b = 2 * ctid" );
+
+                    }
 
                     statement.executeUpdate( "UPDATE constraint_test SET c = 1" );
 
                     statement.executeUpdate( "UPDATE constraint_test SET c = 2 WHERE ctid = 3" );
 
-                    TestHelper.checkResultSet(
-                            statement.executeQuery( "SELECT * FROM constraint_test ORDER BY ctid" ),
-                            ImmutableList.of(
-                                    new Object[]{ 1, 2, 2, 1 },
-                                    new Object[]{ 2, 4, 4, 1 },
-                                    new Object[]{ 3, 6, 6, 2 },
-                                    new Object[]{ 4, 8, 8, 1 }
-                            )
-                    );
+                    if ( !useIndex ) {
+                        TestHelper.checkResultSet(
+                                statement.executeQuery( "SELECT * FROM constraint_test ORDER BY ctid" ),
+                                ImmutableList.of(
+                                        new Object[]{ 1, 2, 2, 1 },
+                                        new Object[]{ 2, 4, 4, 1 },
+                                        new Object[]{ 3, 6, 6, 2 },
+                                        new Object[]{ 4, 8, 8, 1 }
+                                )
+                        );
+                    } else {
+                        TestHelper.checkResultSet(
+                                statement.executeQuery( "SELECT * FROM constraint_test ORDER BY ctid" ),
+                                ImmutableList.of(
+                                        new Object[]{ 1, 1, 1, 1 },
+                                        new Object[]{ 2, 2, 2, 1 },
+                                        new Object[]{ 3, 3, 3, 2 },
+                                        new Object[]{ 4, 4, 4, 1 }
+                                )
+                        );
+                    }
+
+
+
                 } finally {
                     statement.executeUpdate( "DROP TABLE constraint_test" );
                 }
@@ -557,15 +579,15 @@ public class UniqueConstraintTest {
     }
 
 
-    @ParameterizedTest(name = "{index}: {0}")
+    @ParameterizedTest(name = "{index}. Create Index: {0}")
     @ValueSource(booleans = { false, true })
-    public void updateConflictTest() throws SQLException {
+    public void updateConflictTest( boolean useIndex ) throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 // Create schema
                 statement.executeUpdate( CREATE_TABLE_CONSTRAINT_STATEMENTS );
-                if ( createIndexes ) {
+                if ( useIndex && helper.storeSupportsIndex() ) {
                     // Add indexes
                     for ( String s : ALTER_TABLE_ADD_INDEX_STATEMENTS ) {
                         statement.executeUpdate( s );

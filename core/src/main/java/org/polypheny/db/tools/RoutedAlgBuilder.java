@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,55 +16,38 @@
 
 package org.polypheny.db.tools;
 
-import com.google.common.collect.ImmutableMap;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import lombok.Getter;
+import lombok.Setter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.catalog.snapshot.Snapshot;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.Context;
 import org.polypheny.db.plan.Contexts;
-import org.polypheny.db.processing.DeepCopyShuttle;
 import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.routing.FieldDistribution;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.entity.document.PolyDocument;
 
 
 /**
- * Extension of RelBuilder for routed plans with some more information.
+ * Extension of AlgBuilder for routed plans with some more information.
  */
+@Setter
 @Getter
 public class RoutedAlgBuilder extends AlgBuilder {
 
-    protected Map<Long, List<AllocationColumn>> physicalPlacementsOfPartitions = new HashMap<>(); // PartitionId -> List<AllocationColumn>
+    protected FieldDistribution fieldDistribution; // PartitionId -> List<AllocationColumn>
 
 
-    public RoutedAlgBuilder( Context context, AlgOptCluster cluster, Snapshot snapshot ) {
+    public RoutedAlgBuilder( Context context, AlgCluster cluster, Snapshot snapshot ) {
         super( context, cluster, snapshot );
     }
 
 
-    public static RoutedAlgBuilder create( Statement statement, AlgOptCluster cluster ) {
+    public static RoutedAlgBuilder create( Statement statement, AlgCluster cluster ) {
         return new RoutedAlgBuilder( Contexts.EMPTY_CONTEXT, cluster, statement.getTransaction().getSnapshot() );
-    }
-
-
-    public static RoutedAlgBuilder createCopy( Statement statement, AlgOptCluster cluster, RoutedAlgBuilder builder ) {
-        final RoutedAlgBuilder newBuilder = RoutedAlgBuilder.create( statement, cluster );
-        newBuilder.getPhysicalPlacementsOfPartitions().putAll( ImmutableMap.copyOf( builder.getPhysicalPlacementsOfPartitions() ) );
-
-        if ( builder.stackSize() > 0 ) {
-            for ( int i = 0; i < builder.stackSize(); i++ ) {
-                final AlgNode node = builder.peek( i ).accept( new DeepCopyShuttle() );
-                newBuilder.push( node );
-            }
-        }
-
-        return newBuilder;
     }
 
 
@@ -76,8 +59,8 @@ public class RoutedAlgBuilder extends AlgBuilder {
 
 
     @Override
-    public RoutedAlgBuilder scan( List<String> tableNames ) {
-        super.scan( tableNames );
+    public RoutedAlgBuilder relScan( List<String> tableNames ) {
+        super.relScan( tableNames );
         return this;
     }
 
@@ -93,11 +76,6 @@ public class RoutedAlgBuilder extends AlgBuilder {
     public RoutedAlgBuilder documents( List<PolyDocument> documents, AlgDataType rowType ) {
         super.documents( documents, rowType );
         return this;
-    }
-
-
-    public void addPhysicalInfo( Map<Long, List<AllocationColumn>> partitionColumns ) {
-        physicalPlacementsOfPartitions.putAll( partitionColumns );
     }
 
 

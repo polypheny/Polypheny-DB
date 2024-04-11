@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,19 +22,18 @@ import lombok.experimental.Accessors;
 import org.polypheny.db.languages.ParserPos;
 
 
+@Getter
 public abstract class MqlCollectionStatement extends MqlNode {
 
-    @Getter
-    private final String collection;
+    public final String collection;
 
     @Setter
-    @Getter
     @Accessors(chain = true)
     private Integer limit = null;
 
 
-    public MqlCollectionStatement( String collection, ParserPos pos ) {
-        super( pos );
+    public MqlCollectionStatement( String collection, String namespace, ParserPos pos ) {
+        super( pos, namespace );
         this.collection = collection;
     }
 

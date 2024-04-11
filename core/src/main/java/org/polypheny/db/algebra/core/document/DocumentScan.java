@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.core.common.Scan;
 import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.catalog.entity.Entity;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.schema.trait.ModelTrait;
 
@@ -33,7 +33,7 @@ public abstract class DocumentScan<E extends Entity> extends Scan<E> implements 
      * Creates a {@link DocumentScan}.
      * {@link ModelTrait#DOCUMENT} node, which scans the content of a collection.
      */
-    public DocumentScan( AlgOptCluster cluster, AlgTraitSet traitSet, E collection ) {
+    public DocumentScan( AlgCluster cluster, AlgTraitSet traitSet, E collection ) {
         super( cluster, traitSet.replace( ModelTrait.DOCUMENT ), collection );
         this.rowType = DocumentType.ofId();
     }
@@ -43,13 +43,18 @@ public abstract class DocumentScan<E extends Entity> extends Scan<E> implements 
     public AlgWriter explainTerms( AlgWriter pw ) {
         return super.explainTerms( pw )
                 .item( "table", entity.id )
+                .item( "name", entity.name )
                 .item( "layer", entity.getLayer() );
     }
 
 
     @Override
     public String algCompareString() {
-        return "$" + getClass().getSimpleName() + "$" + entity.id + "$";
+        // need the name for cross-model queries
+        return getClass().getSimpleName() + "$"
+                + entity.id + "$"
+                + entity.name + "$"
+                + entity.getLayer() + "&";
     }
 
 

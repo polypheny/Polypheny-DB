@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,9 +19,10 @@ package org.polypheny.db.cql.utils;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.util.NoSuchElementException;
 import org.junit.jupiter.api.Test;
-import org.polypheny.db.cql.ColumnIndex;
-import org.polypheny.db.cql.TableIndex;
+import org.polypheny.db.cql.EntityIndex;
+import org.polypheny.db.cql.FieldIndex;
 import org.polypheny.db.cql.exception.UnknownIndexException;
 import org.polypheny.db.cql.utils.helper.CqlTestHelper;
 
@@ -30,31 +31,30 @@ public class IndexTest extends CqlTestHelper {
 
     @Test
     public void testCreateColumnIndex() throws UnknownIndexException {
-        ColumnIndex index = ColumnIndex.createIndex( "test", "testtable", "tbigint" );
+        FieldIndex index = FieldIndex.createIndex( "test", "testtable", "tbigint" );
         assertEquals( index.fullyQualifiedName, "test.testtable.tbigint" );
     }
 
 
     @Test
     public void testCreateColumnIndexThrowsUnknownIndexException() throws UnknownIndexException {
-        UnknownIndexException thrown = assertThrows( UnknownIndexException.class, () -> {
-            ColumnIndex.createIndex( "hello", "world", "!" );
+        NoSuchElementException thrown = assertThrows( NoSuchElementException.class, () -> {
+            FieldIndex.createIndex( "hello", "world", "!" );
         } );
-        ColumnIndex.createIndex( "hello", "world", "!" );
     }
 
 
     @Test
     public void testCreateTableIndex() throws UnknownIndexException {
-        TableIndex index = TableIndex.createIndex( "test", "testtable" );
+        EntityIndex index = EntityIndex.createIndex( "test", "testtable" );
         assertEquals( index.fullyQualifiedName, "test.testtable" );
     }
 
 
     @Test
     public void testCreateTableIndexThrowsUnknownIndexException() throws UnknownIndexException {
-        UnknownIndexException thrown = assertThrows( UnknownIndexException.class, () -> {
-            TableIndex.createIndex( "hello", "world" );
+        NoSuchElementException thrown = assertThrows( NoSuchElementException.class, () -> {
+            EntityIndex.createIndex( "hello", "world" );
         } );
     }
 

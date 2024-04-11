@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,27 +17,19 @@
 package org.polypheny.db.adapter.cottontail;
 
 
-import com.google.common.collect.ImmutableMap;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.Getter;
 import lombok.NonNull;
-import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.cottontail.CottontailPlugin.CottontailStore;
-import org.polypheny.db.catalog.entity.Entity;
-import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.schema.Namespace;
-import org.polypheny.db.schema.Namespace.Schema;
-import org.polypheny.db.schema.SchemaVersion;
-import org.polypheny.db.schema.impl.AbstractNamespace;
 import org.vitrivr.cottontail.grpc.CottontailGrpc;
 
 
-public class CottontailNamespace extends AbstractNamespace implements Schema {
+public class CottontailNamespace extends Namespace {
 
     @Getter
-    private final CottontailConvention convention;
+    private final CottontailConvention convention = CottontailConvention.INSTANCE;
 
     private final Map<String, CottontailEntity> tableMap;
     private final Map<String, String> physicalToLogicalTableNameMap;
@@ -56,14 +48,12 @@ public class CottontailNamespace extends AbstractNamespace implements Schema {
     private CottontailNamespace(
             long id,
             @NonNull CottontailWrapper wrapper,
-            CottontailConvention convention,
             Map<String, CottontailEntity> tableMap,
             Map<String, String> physicalToLogicalTableNameMap,
             CottontailStore cottontailStore,
             String name ) {
-        super( id );
+        super( id, cottontailStore.adapterId );
         this.wrapper = wrapper;
-        this.convention = convention;
         this.tableMap = tableMap;
         this.physicalToLogicalTableNameMap = physicalToLogicalTableNameMap;
         this.cottontailStore = cottontailStore;
@@ -75,12 +65,10 @@ public class CottontailNamespace extends AbstractNamespace implements Schema {
     public CottontailNamespace(
             long id,
             CottontailWrapper wrapper,
-            CottontailConvention convention,
             CottontailStore cottontailStore,
             String name ) {
-        super( id );
+        super( id, cottontailStore.adapterId );
         this.wrapper = wrapper;
-        this.convention = convention;
         this.cottontailStore = cottontailStore;
         this.tableMap = new HashMap<>();
         this.physicalToLogicalTableNameMap = new HashMap<>();
@@ -95,9 +83,7 @@ public class CottontailNamespace extends AbstractNamespace implements Schema {
             CottontailWrapper wrapper,
             CottontailStore cottontailStore
     ) {
-        final Expression expression = null;//Schemas.subSchemaExpression( snapshot, name, CottontailSchema.class );
-        final CottontailConvention convention = CottontailConvention.of( name, expression );
-        return new CottontailNamespace( id, wrapper, convention, cottontailStore, name );
+        return new CottontailNamespace( id, wrapper, cottontailStore, name );
     }
 
 
@@ -106,34 +92,5 @@ public class CottontailNamespace extends AbstractNamespace implements Schema {
         dataContext.getStatement().getTransaction().registerInvolvedAdapter( this.cottontailStore );
     }
 
-
-    @Override
-    public boolean isMutable() {
-        return true;
-    }
-
-
-    @Override
-    public Namespace snapshot( SchemaVersion version ) {
-        return new CottontailNamespace(
-                this.id,
-                this.wrapper,
-                this.convention,
-                this.tableMap,
-                this.physicalToLogicalTableNameMap,
-                this.cottontailStore,
-                this.name );
-    }
-
-    @Override
-    public Expression getExpression( Snapshot snapshot, long id ) {
-        return null;
-    }
-
-
-    @Override
-    protected Map<String, Entity> getTables() {
-        return ImmutableMap.copyOf( this.tableMap );
-    }
 
 }

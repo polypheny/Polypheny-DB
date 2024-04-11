@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +39,7 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexLocalRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexVisitorImpl;
+import org.polypheny.db.type.PathType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
@@ -53,9 +54,9 @@ public class Translator extends RexVisitorImpl<String> {
     private final String mappingLabel;
     private final boolean useBrackets;
 
-    private static List<OperatorName> binaries = Arrays.stream( OperatorName.values() )
+    private static final List<OperatorName> binaries = Arrays.stream( OperatorName.values() )
             .filter( o -> o.getClazz() == BinaryOperator.class )
-            .collect( Collectors.toList() );
+            .toList();
 
 
     public Translator(
@@ -93,16 +94,17 @@ public class Translator extends RexVisitorImpl<String> {
 
 
     private String adjustGraph( AlgDataType type, String name ) {
+        if ( type instanceof PathType && (name == null || name.startsWith( "$" ) && name.endsWith( "$" )) ) {
+            return "*";
+        }
         if ( !useBrackets ) {
             return name;
         }
-        switch ( type.getPolyType() ) {
-            case NODE:
-                return String.format( "(%s)", name );
-            case EDGE:
-                return String.format( "-[%s]-", name );
-        }
-        return name;
+        return switch ( type.getPolyType() ) {
+            case NODE -> String.format( "(%s)", name );
+            case EDGE -> String.format( "-[%s]-", name );
+            default -> name;
+        };
     }
 
 
@@ -159,7 +161,7 @@ public class Translator extends RexVisitorImpl<String> {
             return handleBinaries( call );
         }
 
-        List<String> ops = call.operands.stream().map( o -> o.accept( this ) ).collect( Collectors.toList() );
+        List<String> ops = call.operands.stream().map( o -> o.accept( this ) ).toList();
 
         return getFinalFunction( call, ops );
     }
@@ -188,13 +190,7 @@ public class Translator extends RexVisitorImpl<String> {
         RexNode leftRex = call.operands.get( 0 );
         RexNode rightRex = call.operands.get( 1 );
         String left = leftRex.accept( this );
-        if ( leftRex.isA( Kind.LITERAL ) && PolyType.STRING_TYPES.contains( leftRex.getType().getPolyType() ) ) {
-            left = String.format( "'%s'", left );
-        }
         String right = rightRex.accept( this );
-        if ( rightRex.isA( Kind.LITERAL ) && PolyType.STRING_TYPES.contains( rightRex.getType().getPolyType() ) ) {
-            right = String.format( "'%s'", right );
-        }
 
         return getFinalFunction( call, List.of( left, right ) );
 
@@ -202,7 +198,6 @@ public class Translator extends RexVisitorImpl<String> {
 
 
     private String handleExtractFromPath( RexCall call ) {
-        //AlgDataTypeField field = beforeFields.get( ((RexInputRef) call.operands.get( 0 )).getIndex() );
         assert call.operands.get( 1 ).isA( Kind.LITERAL );
 
         return ((RexLiteral) call.operands.get( 1 )).value.asString().value;
@@ -212,15 +207,15 @@ public class Translator extends RexVisitorImpl<String> {
     private String handleSetProperties( RexCall call ) {
         String identifier = call.operands.get( 0 ).accept( this );
         List<PolyValue> rexKeys = ((RexLiteral) call.operands.get( 1 )).value.asList();
-        List<String> keys = rexKeys.stream().map( l -> l.asString().value ).collect( Collectors.toList() );
+        List<String> keys = rexKeys.stream().map( l -> l.asString().value ).toList();
         List<PolyValue> rexValues = ((RexLiteral) call.operands.get( 2 )).value.asList().value;
         List<String> values = rexValues.stream().map( l -> {
-            String literal = l.asString().value;
+            String literal = l.toJson();
             if ( l.isString() ) {
                 return String.format( "'%s'", literal );
             }
             return literal;
-        } ).collect( Collectors.toList() );
+        } ).toList();
 
         boolean replace = ((RexLiteral) call.operands.get( 3 )).value.asBoolean().value;
 
@@ -242,7 +237,7 @@ public class Translator extends RexVisitorImpl<String> {
 
     private String handleSetProperty( RexCall call ) {
         String identifier = call.operands.get( 0 ).accept( this );
-        String key = call.operands.get( 1 ).accept( this );
+        String key = call.operands.get( 1 ).unwrap( RexLiteral.class ).orElseThrow().value.asString().value;
         RexLiteral rex = (RexLiteral) call.operands.get( 2 );
         String literal = NeoUtil.rexAsString( rex, null, true );
         if ( PolyType.STRING_TYPES.contains( rex.getType().getPolyType() ) ) {
@@ -255,7 +250,7 @@ public class Translator extends RexVisitorImpl<String> {
     private String handleSetLabels( RexCall call ) {
         String identifier = call.operands.get( 0 ).accept( this );
         List<PolyValue> rexLabels = ((RexLiteral) call.operands.get( 1 )).value.asList();
-        List<String> labels = rexLabels.stream().map( l -> ":" + l.asString().value ).collect( Collectors.toList() );
+        List<String> labels = rexLabels.stream().map( l -> ":" + l.asString().value ).toList();
         return identifier + String.join( "", labels );
     }
 

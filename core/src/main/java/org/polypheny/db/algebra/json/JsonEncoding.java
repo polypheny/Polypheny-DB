@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,9 +17,12 @@
 package org.polypheny.db.algebra.json;
 
 
+import lombok.Getter;
+
 /**
  * Supported json encodings that could be passed to a {@code JsonValueExpression}.
  */
+@Getter
 public enum JsonEncoding {
     UTF8( "UTF8" ),
     UTF16( "UTF16" ),
@@ -30,11 +33,6 @@ public enum JsonEncoding {
 
     JsonEncoding( String standardName ) {
         this.standardName = standardName;
-    }
-
-
-    public String getStandardName() {
-        return standardName;
     }
 
 

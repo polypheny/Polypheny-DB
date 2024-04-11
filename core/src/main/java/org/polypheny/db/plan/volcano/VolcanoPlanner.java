@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,6 +57,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.util.Spaces;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -82,16 +83,15 @@ import org.polypheny.db.algebra.rules.SortRemoveRule;
 import org.polypheny.db.algebra.rules.UnionToDistinctRule;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.plan.AbstractAlgOptPlanner;
+import org.polypheny.db.plan.AbstractAlgPlanner;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptCostFactory;
 import org.polypheny.db.plan.AlgOptListener;
-import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptRuleOperand;
-import org.polypheny.db.plan.AlgOptSchema;
 import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTrait;
 import org.polypheny.db.plan.AlgTraitDef;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -108,7 +108,7 @@ import org.polypheny.db.util.Util;
  * VolcanoPlanner optimizes queries by transforming expressions selectively according to a dynamic programming algorithm.
  */
 @Slf4j
-public class VolcanoPlanner extends AbstractAlgOptPlanner {
+public class VolcanoPlanner extends AbstractAlgPlanner {
 
     protected static final double COST_IMPROVEMENT = .5;
 
@@ -168,17 +168,12 @@ public class VolcanoPlanner extends AbstractAlgOptPlanner {
      * The importance of algebra expressions.
      *
      * The map contains only RelNodes whose importance has been overridden using
-     * {@link AlgOptPlanner#setImportance(AlgNode, double)}. Other RelNodes are presumed to have 'normal' importance.
+     * {@link AlgPlanner#setImportance(AlgNode, double)}. Other RelNodes are presumed to have 'normal' importance.
      *
      * If a {@link AlgNode} has 0 importance, all {@link AlgOptRuleCall}s using it are ignored, and future
      * RelOptRuleCalls are not queued up.
      */
     final Map<AlgNode, Double> algImportances = new HashMap<>();
-
-    /**
-     * List of all schemas which have been registered.
-     */
-    private final Set<AlgOptSchema> registeredSchemas = new HashSet<>();
 
     /**
      * Holds rule calls waiting to be fired.
@@ -198,7 +193,7 @@ public class VolcanoPlanner extends AbstractAlgOptPlanner {
     private int nextSetId = 0;
 
     /**
-     * Incremented every time a algebra expression is registered or two sets are merged.
+     * Incremented every time an algebra expression is registered or two sets are merged.
      * Tells us whether anything is going on.
      */
     private int registerCount;
@@ -218,6 +213,7 @@ public class VolcanoPlanner extends AbstractAlgOptPlanner {
     /**
      * Whether the planner can accept new rules.
      */
+    @Setter
     private boolean locked;
 
     final Map<AlgNode, Provenance> provenances = new HashMap<>();
@@ -491,7 +487,7 @@ public class VolcanoPlanner extends AbstractAlgOptPlanner {
 
     /**
      * Finds the most efficient expression to implement the query given via
-     * {@link AlgOptPlanner#setRoot(AlgNode)}.
+     * {@link AlgPlanner#setRoot(AlgNode)}.
      *
      * The algorithm executes repeatedly in a series of phases. In each phase the exact rules that may be fired varies.
      * The mapping of phases to rule sets is maintained in the {@link #ruleQueue}.
@@ -839,15 +835,6 @@ public class VolcanoPlanner extends AbstractAlgOptPlanner {
         addRule( ModelSwitcherRule.MODEL_SWITCHER_RULE_REL_GRAPH );
         addRule( ModelSwitcherRule.MODEL_SWITCHER_RULE_DOC_REL );
         addRule( ModelSwitcherRule.MODEL_SWITCHER_RULE_DOC_GRAPH );
-
-        // Document
-        // addRule( DocumentToEnumerableRule.PROJECT_TO_ENUMERABLE );
-        // addRule( DocumentToEnumerableRule.FILTER_TO_ENUMERABLE );
-        // addRule( DocumentToEnumerableRule.AGGREGATE_TO_ENUMERABLE );
-        // addRule( DocumentToEnumerableRule.SORT_TO_ENUMERABLE );
-        // addRule( MergeDocumentFilterRule.INSTANCE );
-
-        // Relational
     }
 
 
@@ -870,12 +857,6 @@ public class VolcanoPlanner extends AbstractAlgOptPlanner {
         addRule( SortRemoveRule.INSTANCE );
 
         // todo: rule which makes Project({OrdinalRef}) disappear
-    }
-
-
-    @Override
-    public void registerSchema( AlgOptSchema schema ) {
-        registeredSchemas.add( schema );
     }
 
 
@@ -1108,7 +1089,7 @@ public class VolcanoPlanner extends AbstractAlgOptPlanner {
                         pw.print( ", importance=" + importance );
                     }
                     AlgMetadataQuery mq = alg.getCluster().getMetadataQuery();
-                    pw.print( ", rowcount=" + mq.getRowCount( alg ) );
+                    pw.print( ", rowcount=" + mq.getTupleCount( alg ) );
                     pw.println( ", cumulative cost=" + getCost( alg, mq ) );
                 }
             }
@@ -1246,7 +1227,6 @@ public class VolcanoPlanner extends AbstractAlgOptPlanner {
 
     @Override
     public void addRuleDuringRuntime( AlgOptRule rule ) {
-        // we register dynamically so we might to register twice todo dl maybe add convention cache for faster aboard
         if ( getRuleByDescription( rule.toString() ) != null || !addRule( rule ) ) {
             return;
         }
@@ -1274,8 +1254,7 @@ public class VolcanoPlanner extends AbstractAlgOptPlanner {
         int changeCount = 0;
         for ( AlgNode input : inputs ) {
             ++i;
-            if ( input instanceof AlgSubset ) {
-                final AlgSubset subset = (AlgSubset) input;
+            if ( input instanceof AlgSubset subset ) {
                 AlgSubset newSubset = canonize( subset );
                 if ( newSubset != subset ) {
                     alg.replaceInput( i, newSubset );
@@ -1553,10 +1532,10 @@ public class VolcanoPlanner extends AbstractAlgOptPlanner {
     }
 
 
-    // implement RelOptPlanner
+    // implement AlgOptPlanner
     @Override
     public void addListener( AlgOptListener newListener ) {
-        // TODO jvs 6-Apr-2006:  new superclass AbstractRelOptPlanner now defines a multicast listener; just need to hook it in
+        // TODO jvs 6-Apr-2006:  new superclass AbstractAlgOptPlanner now defines a multicast listener; just need to hook it in
         if ( listener != null ) {
             throw Util.needToImplement( "multiple VolcanoPlanner listeners" );
         }
@@ -1632,17 +1611,6 @@ public class VolcanoPlanner extends AbstractAlgOptPlanner {
             final String token = matcher.group(); // e.g. "Subset#23."
             plan = plan.replace( token, "Subset#{" + i++ + "}." );
         }
-    }
-
-
-    /**
-     * Sets whether this planner is locked. A locked planner does not accept new rules.
-     * {@link #addRule(AlgOptRule)} will do nothing and return false.
-     *
-     * @param locked Whether planner is locked
-     */
-    public void setLocked( boolean locked ) {
-        this.locked = locked;
     }
 
 
@@ -1729,4 +1697,3 @@ public class VolcanoPlanner extends AbstractAlgOptPlanner {
     }
 
 }
-

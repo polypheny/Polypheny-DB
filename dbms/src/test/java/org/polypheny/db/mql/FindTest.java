@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,13 +24,10 @@ import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper.MongoConnection;
-import org.polypheny.db.excluded.FileExcluded;
 import org.polypheny.db.webui.models.results.DocResult;
 
 @Tag("adapter")
-@Tag("fileExcluded")
 public class FindTest extends MqlTestTemplate {
 
     private final List<String> DATA_0 = Arrays.asList(

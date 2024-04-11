@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
@@ -78,8 +77,8 @@ public class RangePartitionManager extends AbstractPartitionManager {
 
 
     @Override
-    public boolean validatePartitionGroupSetup( List<List<String>> partitionGroupQualifiers, long numPartitionGroups, List<String> partitionGroupNames, LogicalColumn partitionColumn ) {
-        super.validatePartitionGroupSetup( partitionGroupQualifiers, numPartitionGroups, partitionGroupNames, partitionColumn );
+    public List<List<String>> validateAdjustPartitionGroupSetup( List<List<String>> partitionGroupQualifiers, long numPartitionGroups, List<String> partitionGroupNames, LogicalColumn partitionColumn ) {
+        partitionGroupQualifiers = new ArrayList<>( super.validateAdjustPartitionGroupSetup( partitionGroupQualifiers, numPartitionGroups, partitionGroupNames, partitionColumn ) );
 
         if ( partitionColumn.type.getFamily() != PolyTypeFamily.NUMERIC ) {
             throw new GenericRuntimeException( "You cannot specify RANGE partitioning for a non-numeric type. Detected ExpressionType: " + partitionColumn.type + " for column: '" + partitionColumn.name + "'" );
@@ -122,7 +121,7 @@ public class RangePartitionManager extends AbstractPartitionManager {
                 lowerBound = temp;
 
                 // Rearrange List values lower < upper
-                partitionGroupQualifiers.set( i, Stream.of( partitionGroupQualifiers.get( i ).get( 1 ), partitionGroupQualifiers.get( i ).get( 0 ) ).collect( Collectors.toList() ) );
+                partitionGroupQualifiers.set( i, Stream.of( partitionGroupQualifiers.get( i ).get( 1 ), partitionGroupQualifiers.get( i ).get( 0 ) ).toList() );
 
             } else if ( upperBound == lowerBound ) {
                 throw new GenericRuntimeException( "No Range specified. Lower and upper bound are equal:" + lowerBound + " = " + upperBound );
@@ -138,7 +137,7 @@ public class RangePartitionManager extends AbstractPartitionManager {
                     contestingLowerBound = temp;
 
                     List<String> list = Stream.of( partitionGroupQualifiers.get( k + 1 ).get( 1 ), partitionGroupQualifiers.get( k + 1 ).get( 0 ) )
-                            .collect( Collectors.toList() );
+                            .toList();
                     partitionGroupQualifiers.set( k + 1, list );
 
                 } else if ( contestingUpperBound == contestingLowerBound ) {
@@ -154,7 +153,7 @@ public class RangePartitionManager extends AbstractPartitionManager {
 
         }
 
-        return true;
+        return partitionGroupQualifiers;
     }
 
 
@@ -227,7 +226,7 @@ public class RangePartitionManager extends AbstractPartitionManager {
 
         rowsAfter.add( unboundRow );
 
-        PartitionFunctionInfo uiObject = PartitionFunctionInfo.builder()
+        return PartitionFunctionInfo.builder()
                 .functionTitle( FUNCTION_TITLE )
                 .description( "Partitions data based on a defined numeric range. A partition is therefore responsible for all values residing in that range. "
                         + "INFO: Note that this partition function provides an 'UNBOUND' partition capturing all values that are not covered by one of the specified ranges." )
@@ -238,8 +237,6 @@ public class RangePartitionManager extends AbstractPartitionManager {
                 .rowsAfter( rowsAfter )
                 .headings( new ArrayList<>( Arrays.asList( "Partition Name", "MIN", "MAX" ) ) )
                 .build();
-
-        return uiObject;
     }
 
 

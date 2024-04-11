@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,7 +41,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.stream.Collectors;
 import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Aggregate;
@@ -62,9 +61,9 @@ import org.polypheny.db.util.mapping.Mappings.TargetMapping;
 
 /**
  * Planner rule that recognizes a {@link Aggregate} on top of a {@link Project} and if possible aggregate through the project or removes the project.
- *
+ * <p>
  * This is only possible when the grouping expressions and arguments to the aggregate functions are field references (i.e. not expressions).
- *
+ * <p>
  * In some cases, this rule has the effect of trimming: the aggregate will use fewer columns than the project did.
  */
 public class AggregateProjectMergeRule extends AlgOptRule {
@@ -103,10 +102,10 @@ public class AggregateProjectMergeRule extends AlgOptRule {
         final Map<Integer, Integer> map = new HashMap<>();
         for ( int source : interestingFields ) {
             final RexNode rex = project.getProjects().get( source );
-            if ( !(rex instanceof RexIndexRef) ) {
+            if ( rex.unwrap( RexIndexRef.class ).isEmpty() ) {
                 return null;
             }
-            map.put( source, ((RexIndexRef) rex).getIndex() );
+            map.put( source, rex.unwrap( RexIndexRef.class ).get().getIndex() );
         }
 
         final ImmutableBitSet newGroupSet = aggregate.getGroupSet().permute( map );
@@ -128,7 +127,7 @@ public class AggregateProjectMergeRule extends AlgOptRule {
         // Add a project if the group set is not in the same order or contains duplicates.
         final AlgBuilder algBuilder = call.builder();
         algBuilder.push( newAggregate );
-        final List<Integer> newKeys = aggregate.getGroupSet().asList().stream().map( map::get ).collect( Collectors.toList() );
+        final List<Integer> newKeys = aggregate.getGroupSet().asList().stream().map( map::get ).toList();
         if ( !newKeys.equals( newGroupSet.asList() ) ) {
             final List<Integer> posList = new ArrayList<>();
             for ( int newKey : newKeys ) {

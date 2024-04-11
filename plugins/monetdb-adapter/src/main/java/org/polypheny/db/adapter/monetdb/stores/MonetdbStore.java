@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.adapter.jdbc.connection.TransactionalConnectionFactory;
 import org.polypheny.db.adapter.jdbc.stores.AbstractJdbcStore;
+import org.polypheny.db.adapter.monetdb.MonetdbSqlDialect;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalIndex;
@@ -48,7 +49,6 @@ import org.polypheny.db.docker.DockerInstance;
 import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.plugins.PolyPluginManager;
 import org.polypheny.db.prepare.Context;
-import org.polypheny.db.sql.language.dialect.MonetdbSqlDialect;
 import org.polypheny.db.transaction.PUID;
 import org.polypheny.db.transaction.PUID.Type;
 import org.polypheny.db.transaction.PolyXid;
@@ -78,7 +78,7 @@ public class MonetdbStore extends AbstractJdbcStore {
     private DockerContainer container;
 
 
-    public MonetdbStore( long storeId, String uniqueName, final Map<String, String> settings ) {
+    public MonetdbStore( final long storeId, final String uniqueName, final Map<String, String> settings ) {
         super( storeId, uniqueName, settings, MonetdbSqlDialect.DEFAULT, true );
     }
 
@@ -90,7 +90,7 @@ public class MonetdbStore extends AbstractJdbcStore {
 
         if ( settings.getOrDefault( "deploymentId", "" ).isEmpty() ) {
             if ( settings.getOrDefault( "password", "polypheny" ).equals( "polypheny" ) ) {
-                settings.put( "password", PasswordGenerator.generatePassword( 256 ) );
+                settings.put( "password", PasswordGenerator.generatePassword() );
                 updateSettings( settings );
             }
 
@@ -177,15 +177,13 @@ public class MonetdbStore extends AbstractJdbcStore {
         if ( !this.dialect.supportsNestedArrays() && newCol.collectionsType != null ) {
             return;
         }
-        PhysicalColumn column = storeCatalog.updateColumnType( allocId, newCol );
+        PhysicalColumn column = adapterCatalog.updateColumnType( allocId, newCol );
 
-        PhysicalTable table = storeCatalog.getTable( allocId );
+        PhysicalTable table = adapterCatalog.fromAllocation( allocId );
         // MonetDB does not support updating the column type directly. We need to do a work-around
-        //LogicalTable catalogTable = Catalog.getInstance().getTable( catalogColumn.tableId );
+
         String tmpColName = column.name + "tmp";
         StringBuilder builder;
-
-        //for ( CatalogPartitionPlacement partitionPlacement : catalog.getPartitionPlacementsByTableOnAdapter( columnPlacement.adapterId, columnPlacement.tableId ) ) {
 
         // (1) Create a temporary column `alter table tabX add column colXtemp NEW_TYPE;`
         builder = new StringBuilder();
@@ -253,9 +251,10 @@ public class MonetdbStore extends AbstractJdbcStore {
                 .append( dialect.quoteIdentifier( table.name ) );
         builder.append( " DROP COLUMN " )
                 .append( dialect.quoteIdentifier( tmpColName ) );
+
         executeUpdate( builder, context );
-        //}
-        //Catalog.getInstance().updateColumnPlacementPhysicalPosition( getAdapterId(), catalogColumn.id );
+
+        updateNativePhysical( allocId );
     }
 
 
@@ -303,46 +302,28 @@ public class MonetdbStore extends AbstractJdbcStore {
         if ( type.getFamily() == PolyTypeFamily.MULTIMEDIA ) {
             return "BLOB";
         }
-        switch ( type ) {
-            case BOOLEAN:
-                return "BOOLEAN";
-            case VARBINARY:
-                return "VARCHAR";//throw new GenericRuntimeException( "Unsupported datatype: " + type.name() );
-            case TINYINT:
-                return "TINYINT";
-            case SMALLINT:
-                return "SMALLINT";
-            case INTEGER:
-                return "INT";
-            case BIGINT:
-                return "BIGINT";
-            case REAL:
-                return "REAL";
-            case DOUBLE:
-                return "DOUBLE";
-            case DECIMAL:
-                return "DECIMAL";
-            case VARCHAR:
-                return "VARCHAR";
-            case JSON:
-                return "TEXT";
-            case DATE:
-                return "DATE";
-            case TIME:
-                return "TIME";
-            case TIMESTAMP:
-                return "TIMESTAMP";
-            case ARRAY:
-                return "TEXT";
-            case TEXT:
-                return "TEXT";
-        }
-        throw new GenericRuntimeException( "Unknown type: " + type.name() );
+        return switch ( type ) {
+            case BOOLEAN -> "BOOLEAN";
+            case VARBINARY -> "VARCHAR";//throw new GenericRuntimeException( "Unsupported datatype: " + type.name() );
+            case TINYINT -> "SMALLINT"; // there seems to be an issue with tinyints and the jdbc driver
+            case SMALLINT -> "SMALLINT";
+            case INTEGER -> "INT";
+            case BIGINT -> "BIGINT";
+            case REAL -> "REAL";
+            case DOUBLE -> "DOUBLE";
+            case DECIMAL -> "DECIMAL";
+            case VARCHAR -> "VARCHAR";
+            case JSON, ARRAY, TEXT -> "TEXT";
+            case DATE -> "DATE";
+            case TIME -> "TIME";
+            case TIMESTAMP -> "TIMESTAMP";
+            default -> throw new GenericRuntimeException( "Unknown type: " + type.name() );
+        };
     }
 
 
     @Override
-    public String getDefaultPhysicalNamespaceName() {
+    public String getDefaultPhysicalSchemaName() {
         return "public";
     }
 
@@ -358,8 +339,8 @@ public class MonetdbStore extends AbstractJdbcStore {
         }
 
         HostAndPort hp = container.connectToContainer( 50000 );
-        this.host = hp.getHost();
-        this.port = hp.getPort();
+        this.host = hp.host();
+        this.port = hp.port();
 
         return testConnection();
     }
@@ -401,5 +382,6 @@ public class MonetdbStore extends AbstractJdbcStore {
 
         return false;
     }
+
 
 }

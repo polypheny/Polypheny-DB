@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 package org.polypheny.db.schema.trait;
 
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitDef;
 
 
@@ -39,13 +39,13 @@ public class ModelTraitDef extends AlgTraitDef<ModelTrait> {
 
 
     @Override
-    public AlgNode convert( AlgOptPlanner planner, AlgNode alg, ModelTrait toTrait, boolean allowInfiniteCostConverters ) {
+    public AlgNode convert( AlgPlanner planner, AlgNode alg, ModelTrait toTrait, boolean allowInfiniteCostConverters ) {
         return null;
     }
 
 
     @Override
-    public boolean canConvert( AlgOptPlanner planner, ModelTrait fromTrait, ModelTrait toTrait ) {
+    public boolean canConvert( AlgPlanner planner, ModelTrait fromTrait, ModelTrait toTrait ) {
         return false;
     }
 

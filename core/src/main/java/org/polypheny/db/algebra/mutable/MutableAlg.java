@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,7 +41,7 @@ import java.util.Objects;
 import org.apache.calcite.avatica.util.Spaces;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 
 
 /**
@@ -77,7 +77,7 @@ public abstract class MutableAlg {
     @SuppressWarnings("unchecked")
     protected static final Equivalence<List<?>> PAIRWISE_STRING_EQUIVALENCE = (Equivalence) STRING_EQUIVALENCE.pairwise();
 
-    public final AlgOptCluster cluster;
+    public final AlgCluster cluster;
     public final AlgDataType rowType;
     protected final MutableAlgType type;
 
@@ -85,7 +85,7 @@ public abstract class MutableAlg {
     protected int ordinalInParent;
 
 
-    protected MutableAlg( AlgOptCluster cluster, AlgDataType rowType, MutableAlgType type ) {
+    protected MutableAlg( AlgCluster cluster, AlgDataType rowType, MutableAlgType type ) {
         this.cluster = Objects.requireNonNull( cluster );
         this.rowType = Objects.requireNonNull( rowType );
         this.type = Objects.requireNonNull( type );

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ import org.polypheny.db.adapter.file.FileConvention;
 import org.polypheny.db.adapter.file.FileSchema;
 import org.polypheny.db.adapter.file.FileTranslatableEntity;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.UnsupportedFromInsertShuttle;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Filter;
@@ -37,9 +37,8 @@ import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.enumerable.EnumerableConvention;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
-import org.polypheny.db.nodes.Function;
-import org.polypheny.db.nodes.Operator;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
+import org.polypheny.db.algebra.util.UnsupportedRelFromInsertShuttle;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -47,6 +46,7 @@ import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexUtil.FieldAccessFinder;
 import org.polypheny.db.rex.RexVisitorImpl;
 import org.polypheny.db.schema.document.DocumentRules;
 import org.polypheny.db.schema.types.ModifiableTable;
@@ -81,6 +81,20 @@ public class FileRules {
 
 
         private static boolean supports( RelModify<?> node ) {
+            if ( node.isInsert() && node.containsScan() ) {
+                // insert from select is not implemented
+                return false;
+            }
+            if ( node.getSourceExpressions() != null ) {
+                FieldAccessFinder fieldAccessFinder = new FieldAccessFinder();
+                for ( RexNode node1 : node.getSourceExpressions() ) {
+                    node1.accept( fieldAccessFinder );
+                    if ( !fieldAccessFinder.getFieldAccessList().isEmpty() ) {
+                        return false;
+                    }
+                }
+            }
+
             if ( node.getSourceExpressions() != null ) {
                 return !UnsupportedRexCallVisitor.containsModelItem( node.getSourceExpressions() );
             }
@@ -96,7 +110,7 @@ public class FileRules {
                 return false;
             }
 
-            if ( modify.isInsert() && UnsupportedFromInsertShuttle.contains( modify ) ) {
+            if ( modify.isInsert() && UnsupportedRelFromInsertShuttle.contains( modify ) ) {
                 return false;
             }
 
@@ -111,11 +125,9 @@ public class FileRules {
             Optional<ModifiableTable> oModifiableTable = modify.getEntity().unwrap( ModifiableTable.class );
 
             if ( oModifiableTable.isEmpty() ) {
-                log.warn( "Returning null during conversion" );
                 return null;
             }
             if ( modify.getEntity().unwrap( FileTranslatableEntity.class ).isEmpty() ) {
-                log.warn( "Returning null during conversion" );
                 return null;
             }
 
@@ -163,9 +175,12 @@ public class FileRules {
 
 
         public FileProjectRule( FileConvention out, AlgBuilderFactory algBuilderFactory ) {
-            super( Project.class, p -> !functionInProject( p ) && !UnsupportedRexCallVisitor.containsModelItem( p.getProjects() ), Convention.NONE, out, algBuilderFactory, "FileProjectRule:" + out.getName() );
+            super( Project.class, p ->
+                    !functionInProject( p )
+                            && !UnsupportedRexCallVisitor.containsModelItem( p.getProjects() ), Convention.NONE, out, algBuilderFactory, "FileProjectRule:" + out.getName() );
             this.convention = out;
         }
+
 
 
         /**
@@ -176,10 +191,10 @@ public class FileRules {
          */
         @Override
         public boolean matches( AlgOptRuleCall call ) {
-            if ( call.alg( 0 ) instanceof LogicalProject && ((LogicalProject) call.alg( 0 )).getProjects().size() > 0 ) {
+            if ( call.alg( 0 ) instanceof LogicalRelProject && !((LogicalRelProject) call.alg( 0 )).getProjects().isEmpty() ) {
                 //RexInputRef occurs in a select query, RexLiteral/RexCall/RexDynamicParam occur in insert/update/delete queries
                 boolean isSelect = true;
-                for ( RexNode node : ((LogicalProject) call.alg( 0 )).getProjects() ) {
+                for ( RexNode node : ((LogicalRelProject) call.alg( 0 )).getProjects() ) {
                     if ( node instanceof RexIndexRef ) {
                         continue;
                     }
@@ -210,7 +225,7 @@ public class FileRules {
 
 
         private static boolean functionInProject( Project project ) {
-            CheckingFunctionVisitor visitor = new CheckingFunctionVisitor();
+            CheckingFunctionVisitor visitor = new CheckingFunctionVisitor( project );
             for ( RexNode node : project.getChildExps() ) {
                 node.accept( visitor );
                 if ( visitor.containsFunction() ) {
@@ -316,7 +331,7 @@ public class FileRules {
 
 
         private static boolean functionInFilter( Filter filter ) {
-            CheckingFunctionVisitor visitor = new CheckingFunctionVisitor();
+            CheckingFunctionVisitor visitor = new CheckingFunctionVisitor( filter );
             for ( RexNode node : filter.getChildExps() ) {
                 node.accept( visitor );
                 if ( visitor.containsFunction() ) {
@@ -335,19 +350,22 @@ public class FileRules {
         @Accessors(fluent = true)
         private boolean containsFunction = false;
 
+        private boolean isProject;
 
-        CheckingFunctionVisitor() {
+
+        CheckingFunctionVisitor( AlgNode node ) {
             super( true );
+            isProject = node instanceof LogicalRelProject;
         }
 
 
         @Override
         public Void visitCall( RexCall call ) {
-            Operator operator = call.getOperator();
-            if ( operator instanceof Function ) {
-                containsFunction = true;
+            if ( !isProject && call.getKind() == Kind.EQUALS ) {
+                return super.visitCall( call );
             }
-            return super.visitCall( call );
+            containsFunction = true;
+            return null;
         }
 
     }

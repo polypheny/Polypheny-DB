@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,19 +34,19 @@
 package org.polypheny.db.algebra.core;
 
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import java.util.List;
+import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.BiAlg;
 import org.polypheny.db.algebra.constant.SemiJoinType;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Litmus;
@@ -55,12 +55,12 @@ import org.polypheny.db.util.ValidatorUtil;
 
 /**
  * A relational operator that performs nested-loop joins.
- *
+ * <p>
  * It behaves like a kind of {@link org.polypheny.db.algebra.core.Join}, but works by setting variables in its environment and
  * restarting its right-hand input.
- *
+ * <p>
  * Correlate is not a join since: typical rules should not match Correlate.
- *
+ * <p>
  * A Correlate is used to represent a correlated query. One implementation strategy is to de-correlate the expression.
  *
  * <table>
@@ -78,6 +78,7 @@ import org.polypheny.db.util.ValidatorUtil;
  *
  * @see CorrelationId
  */
+@Getter
 public abstract class Correlate extends BiAlg {
 
     protected final CorrelationId correlationId;
@@ -95,7 +96,7 @@ public abstract class Correlate extends BiAlg {
      * @param requiredColumns Set of columns that are used by correlation
      * @param joinType Join type
      */
-    protected Correlate( AlgOptCluster cluster, AlgTraitSet traits, AlgNode left, AlgNode right, CorrelationId correlationId, ImmutableBitSet requiredColumns, SemiJoinType joinType ) {
+    protected Correlate( AlgCluster cluster, AlgTraitSet traits, AlgNode left, AlgNode right, CorrelationId correlationId, ImmutableBitSet requiredColumns, SemiJoinType joinType ) {
         super( cluster, traits, left, right );
         this.joinType = joinType;
         this.correlationId = correlationId;
@@ -119,29 +120,18 @@ public abstract class Correlate extends BiAlg {
     public abstract Correlate copy( AlgTraitSet traitSet, AlgNode left, AlgNode right, CorrelationId correlationId, ImmutableBitSet requiredColumns, SemiJoinType joinType );
 
 
-    public SemiJoinType getJoinType() {
-        return joinType;
-    }
-
-
     @Override
     protected AlgDataType deriveRowType() {
-        switch ( joinType ) {
-            case LEFT:
-            case INNER:
-                return ValidatorUtil.deriveJoinRowType(
-                        left.getTupleType(),
-                        right.getTupleType(),
-                        joinType.toJoinType(),
-                        getCluster().getTypeFactory(),
-                        null,
-                        ImmutableList.of() );
-            case ANTI:
-            case SEMI:
-                return left.getTupleType();
-            default:
-                throw new IllegalStateException( "Unknown join type " + joinType );
-        }
+        return switch ( joinType ) {
+            case LEFT, INNER -> ValidatorUtil.deriveJoinRowType(
+                    left.getTupleType(),
+                    right.getTupleType(),
+                    joinType.toJoinType(),
+                    getCluster().getTypeFactory(),
+                    null );
+            case ANTI, SEMI -> left.getTupleType();
+            default -> throw new IllegalStateException( "Unknown join type " + joinType );
+        };
     }
 
 
@@ -154,29 +144,9 @@ public abstract class Correlate extends BiAlg {
     }
 
 
-    /**
-     * Returns the correlating expressions.
-     *
-     * @return correlating expressions
-     */
-    public CorrelationId getCorrelationId() {
-        return correlationId;
-    }
-
-
     @Override
     public String getCorrelVariable() {
         return correlationId.getName();
-    }
-
-
-    /**
-     * Returns the required columns in left relation required for the correlation in the right.
-     *
-     * @return columns in left relation required for the correlation in the right
-     */
-    public ImmutableBitSet getRequiredColumns() {
-        return requiredColumns;
     }
 
 
@@ -187,22 +157,22 @@ public abstract class Correlate extends BiAlg {
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
-        double rowCount = mq.getRowCount( this );
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
+        double rowCount = mq.getTupleCount( this );
 
-        final double rightRowCount = right.estimateRowCount( mq );
-        final double leftRowCount = left.estimateRowCount( mq );
+        final double rightRowCount = right.estimateTupleCount( mq );
+        final double leftRowCount = left.estimateTupleCount( mq );
         if ( Double.isInfinite( leftRowCount ) || Double.isInfinite( rightRowCount ) ) {
             return planner.getCostFactory().makeInfiniteCost();
         }
 
-        Double restartCount = mq.getRowCount( getLeft() );
+        Double restartCount = mq.getTupleCount( getLeft() );
         // RelMetadataQuery.getCumulativeCost(getRight()); does not work for
         // RelSubset, so we ask planner to cost-estimate right relation
         AlgOptCost rightCost = planner.getCost( getRight(), mq );
         AlgOptCost rescanCost = rightCost.multiplyBy( Math.max( 1.0, restartCount - 1 ) );
 
-        return planner.getCostFactory().makeCost( rowCount /* generate results */ + leftRowCount /* scan left results */, 0, 0 ).plus( rescanCost );
+        return planner.getCostFactory().makeCost( rowCount /* generate results */ + leftRowCount /* relScan left results */, 0, 0 ).plus( rescanCost );
     }
 
 

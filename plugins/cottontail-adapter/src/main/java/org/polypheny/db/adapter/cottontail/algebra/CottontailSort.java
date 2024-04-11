@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,14 +31,17 @@ import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.util.BuiltInMethod;
 import org.vitrivr.cottontail.grpc.CottontailGrpc;
 
@@ -48,14 +51,14 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc;
  */
 public class CottontailSort extends Sort implements CottontailAlg {
 
-    public CottontailSort( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, AlgCollation collation, RexNode offset, RexNode fetch ) {
+    public CottontailSort( AlgCluster cluster, AlgTraitSet traits, AlgNode child, AlgCollation collation, RexNode offset, RexNode fetch ) {
         super( cluster, traits, child, collation, null, offset, fetch );
     }
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
-        final double rowCount = mq.getRowCount( this ) + 0.01;
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
+        final double rowCount = mq.getTupleCount( this ) + 0.01;
         return planner.getCostFactory().makeCost( rowCount, 0, 0 );
     }
 
@@ -70,7 +73,7 @@ public class CottontailSort extends Sort implements CottontailAlg {
             context.offsetBuilder = numberBuilderBuilder( this.offset );
         }
         if ( this.collation != null && !this.collation.getFieldCollations().isEmpty() ) {
-            context.sortMap = sortMapBuilder( this.collation, context, getTupleType().getFieldNames() );
+            context.sortMap = sortMapBuilder( this.collation, context, getTupleType().getFields() );
         }
     }
 
@@ -86,32 +89,20 @@ public class CottontailSort extends Sort implements CottontailAlg {
      *
      * @param node The {@link AlgCollation} node to implement.
      * @param context The {@link CottontailImplementContext} instance.
-     * @param columnNames List of column names.
      * @return {@link ParameterExpression}
      */
-    private static ParameterExpression sortMapBuilder( AlgCollation node, CottontailImplementContext context, List<String> columnNames ) {
+    private static ParameterExpression sortMapBuilder( AlgCollation node, CottontailImplementContext context, List<AlgDataTypeField> columns ) {
         final BlockBuilder builder = context.blockBuilder;
         final ParameterExpression orderMap_ = Expressions.variable( Map.class, builder.newName( "orderMap" ) );
         final NewExpression orderMapCreator = Expressions.new_( LinkedHashMap.class );
         builder.add( Expressions.declare( Modifier.FINAL, orderMap_, orderMapCreator ) );
         for ( AlgFieldCollation c : node.getFieldCollations() ) {
-            final String logicalName = columnNames.get( c.getFieldIndex() );
-            String physicalName;
-            try {
-                physicalName = context.table.getPhysicalColumnName( logicalName );
-            } catch ( IndexOutOfBoundsException e ) {
-                physicalName = logicalName; /* Case of column being calculated and there being no physical column. */
-            }
-            final Expression sortOrder;
-            switch ( c.direction ) {
-                case DESCENDING:
-                case STRICTLY_DESCENDING:
-                    sortOrder = Expressions.constant( CottontailGrpc.Order.Direction.DESCENDING.toString() );
-                    break;
-                default:
-                    sortOrder = Expressions.constant( CottontailGrpc.Order.Direction.ASCENDING.toString() );
-                    break;
-            }
+            final AlgDataTypeField column = columns.get( c.getFieldIndex() );
+            String physicalName = (column.getPhysicalName() == null ? context.getPhysicalName( column.getName() ) : column.getPhysicalName());
+            final Expression sortOrder = switch ( c.direction ) {
+                case DESCENDING, STRICTLY_DESCENDING -> Expressions.constant( CottontailGrpc.Order.Direction.DESCENDING.toString() );
+                default -> Expressions.constant( CottontailGrpc.Order.Direction.ASCENDING.toString() );
+            };
             builder.add( Expressions.statement( Expressions.call( orderMap_, BuiltInMethod.MAP_PUT.method, Expressions.constant( physicalName ), sortOrder ) ) );
         }
         return orderMap_;
@@ -130,9 +121,9 @@ public class CottontailSort extends Sort implements CottontailAlg {
 
         Expression expr;
         if ( node instanceof RexLiteral ) {
-            expr = Expressions.constant( ((RexLiteral) node).getValue() );
+            expr = ((RexLiteral) node).getValue().asExpression();
         } else if ( node instanceof RexDynamicParam ) {
-            expr = Expressions.call( dynamicParameterMap_, BuiltInMethod.MAP_GET.method, Expressions.constant( ((RexDynamicParam) node).getIndex() ) );
+            expr = Expressions.convert_( Expressions.call( dynamicParameterMap_, BuiltInMethod.MAP_GET.method, PolyBigDecimal.of( ((RexDynamicParam) node).getIndex() ).asExpression() ), PolyValue.class );
         } else {
             throw new GenericRuntimeException( "Node statement is neither a Literal nor a Dynamic Parameter." );
         }

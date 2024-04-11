@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,8 +46,7 @@ import org.polypheny.db.util.Wrapper;
  * Table.
  *
  * The typical way for a table to be created is when Polypheny-DB interrogates a user-defined schema in order to validate
- * names appearing in a SQL query. Polypheny-DB finds the schema by calling {@link Namespace#getSubNamespace(String)} on the
- * connection's root schema, then gets a table by calling {@link Namespace#getEntity(String)}.
+ * names appearing in a SQL query.
  *
  * Note that a table does not know its name. It is in fact possible for a table to be used more than once, perhaps under
  * multiple names or under multiple schemas. (Compare with the <a href="http://en.wikipedia.org/wiki/Inode">i-node</a> concept
@@ -70,7 +69,7 @@ public interface Entity {
      * @param typeFactory Type factory with which to create the type
      * @return Row type
      */
-    AlgDataType getRowType( AlgDataTypeFactory typeFactory );
+    AlgDataType getTupleType( AlgDataTypeFactory typeFactory );
 
     default AlgDataTypeFactory getTypeFactory() {
         return new JavaTypeFactoryImpl();
@@ -89,11 +88,6 @@ public interface Entity {
     Long getPartitionId();
 
     Long getAdapterId();
-
-    /**
-     * Type of table.
-     */
-    TableType getJdbcTableType();
 
     /**
      * Determines whether the given {@code column} has been rolled up.

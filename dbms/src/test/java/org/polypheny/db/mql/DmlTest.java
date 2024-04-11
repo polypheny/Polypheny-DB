@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,15 +22,12 @@ import static org.polypheny.db.TestHelper.MongoConnection.toDoc;
 import com.google.common.collect.ImmutableList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper.MongoConnection;
-import org.polypheny.db.excluded.FileExcluded;
 import org.polypheny.db.webui.models.results.DocResult;
 
 
@@ -79,7 +76,6 @@ public class DmlTest extends MqlTestTemplate {
 
 
     @Test
-    @Tag("fileExcluded")
     public void insertManyTest() {
         List<String> data = Arrays.asList( "{\"test\":1}", "{\"test\":2}", "{\"test\":3}" );
         insertMany( data );
@@ -96,7 +92,6 @@ public class DmlTest extends MqlTestTemplate {
 
 
     @Test
-    @Tag("fileExcluded")
     public void updateTest() {
         List<String> data = List.of( "{\"test\":1}", "{\"test\":2}", "{\"test\":3}" );
         insertMany( data );
@@ -117,10 +112,9 @@ public class DmlTest extends MqlTestTemplate {
 
 
     @Test
-    @Tag("fileExcluded")
     public void updateIdTest() {
         List<Object> data = Arrays.asList( 1, 2, 3 );
-        insertMany( data.stream().map( d -> toDoc( "test", d ) ).collect( Collectors.toList() ) );
+        insertMany( data.stream().map( d -> toDoc( "test", d ) ).toList() );
 
         DocResult result = find( "{}", "{}" );
 
@@ -144,7 +138,7 @@ public class DmlTest extends MqlTestTemplate {
                                     return d;
                                 } )
                                 .map( d -> toDoc( "test", d ) )
-                                .collect( Collectors.toList() ), true, true ) );
+                                .toList(), true, true ) );
     }
 
 

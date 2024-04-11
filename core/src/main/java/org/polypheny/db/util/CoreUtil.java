@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -89,26 +89,15 @@ public class CoreUtil {
      * @return Java-level name, or null if SQL-level name is unknown
      */
     public static String translateCharacterSetName( String name ) {
-        switch ( name ) {
-            case "BIG5":
-                return "Big5";
-            case "LATIN1":
-                return "ISO-8859-1";
-            case "GB2312":
-            case "GBK":
-                return name;
-            case "UTF8":
-                return "UTF-8";
-            case "UTF16":
-                return Charsets.UTF_16.name();
-            case "UTF-16BE":
-            case "UTF-16LE":
-            case "ISO-8859-1":
-            case "UTF-8":
-                return name;
-            default:
-                return null;
-        }
+        return switch ( name ) {
+            case "BIG5" -> "Big5";
+            case "LATIN1" -> "ISO-8859-1";
+            case "GB2312", "GBK" -> name;
+            case "UTF8" -> "UTF-8";
+            case "UTF16" -> Charsets.UTF_16.name();
+            case "UTF-16BE", "UTF-16LE", "ISO-8859-1", "UTF-8" -> name;
+            default -> null;
+        };
     }
 
 

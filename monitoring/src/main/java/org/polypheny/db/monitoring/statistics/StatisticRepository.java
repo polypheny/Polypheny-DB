@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,21 +56,21 @@ public class StatisticRepository implements MonitoringRepository {
 
     private void updateDdlStatistics( DdlDataPoint dataPoint, StatisticsManager statisticsManager ) {
         if ( dataPoint.getMonitoringType() == MonitoringType.TRUNCATE ) {
-            statisticsManager.updateRowCountPerTable(
+            statisticsManager.updateRowCountPerEntity(
                     dataPoint.getTableId(),
                     0,
                     dataPoint.getMonitoringType() );
-            statisticsManager.tablesToUpdate(
+            statisticsManager.entitiesToUpdate(
                     dataPoint.getTableId(),
                     null,
                     dataPoint.getMonitoringType(),
                     dataPoint.getNamespaceId() );
         }
         if ( dataPoint.getMonitoringType() == MonitoringType.DROP_TABLE ) {
-            statisticsManager.deleteTableToUpdate( dataPoint.getTableId() );
+            statisticsManager.deleteEntityToUpdate( dataPoint.getTableId() );
         }
         if ( dataPoint.getMonitoringType() == MonitoringType.DROP_COLUMN ) {
-            statisticsManager.tablesToUpdate(
+            statisticsManager.entitiesToUpdate(
                     dataPoint.getTableId(),
                     Collections.singletonMap( dataPoint.getColumnId(), null ),
                     dataPoint.getMonitoringType(),
@@ -87,12 +87,12 @@ public class StatisticRepository implements MonitoringRepository {
 
             if ( isOneTable ) {
                 long tableId = values.stream().findFirst().get();
-                if ( catalog.getSnapshot().getLogicalEntity( tableId ) != null ) {
-                    statisticsManager.setTableCalls( tableId, dataPoint.getMonitoringType() );
+                if ( catalog.getSnapshot().getLogicalEntity( tableId ).isPresent() ) {
+                    statisticsManager.setEntityCalls( tableId, dataPoint.getMonitoringType() );
 
                     // RowCount from UI is only used if there is no other possibility
-                    if ( statisticsManager.rowCountPerTable( tableId ) == null || statisticsManager.rowCountPerTable( tableId ) == 0 ) {
-                        statisticsManager.updateRowCountPerTable( tableId, dataPoint.getRowCount(), MonitoringType.SET_ROW_COUNT );
+                    if ( statisticsManager.tupleCountPerEntity( tableId ) == null || statisticsManager.tupleCountPerEntity( tableId ) == 0 ) {
+                        statisticsManager.updateRowCountPerEntity( tableId, dataPoint.getRowCount(), MonitoringType.SET_ROW_COUNT );
                     }
 
                     if ( dataPoint.getIndexSize() != null ) {
@@ -102,7 +102,7 @@ public class StatisticRepository implements MonitoringRepository {
             } else {
                 for ( long id : values ) {
                     if ( catalog.getSnapshot().getLogicalEntity( id ).isPresent() ) {
-                        statisticsManager.setTableCalls( id, dataPoint.getMonitoringType() );
+                        statisticsManager.setEntityCalls( id, dataPoint.getMonitoringType() );
                     }
                 }
             }
@@ -121,29 +121,29 @@ public class StatisticRepository implements MonitoringRepository {
         Catalog catalog = Catalog.getInstance();
         if ( isOneTable ) {
             long tableId = values.stream().findFirst().get();
-            statisticsManager.setTableCalls( tableId, dataPoint.getMonitoringType() );
+            statisticsManager.setEntityCalls( tableId, dataPoint.getMonitoringType() );
 
             if ( catalog.getSnapshot().getLogicalEntity( tableId ).isEmpty() ) {
                 return;
             }
             if ( dataPoint.getMonitoringType() == MonitoringType.INSERT ) {
                 long added = dataPoint.getRowCount();
-                statisticsManager.tablesToUpdate(
+                statisticsManager.entitiesToUpdate(
                         tableId,
                         dataPoint.getChangedValues(),
                         dataPoint.getMonitoringType(),
                         catalog.getSnapshot().getLogicalEntity( tableId ).orElseThrow().namespaceId );
-                statisticsManager.updateRowCountPerTable( tableId, added, dataPoint.getMonitoringType() );
+                statisticsManager.updateRowCountPerEntity( tableId, added, dataPoint.getMonitoringType() );
             } else if ( dataPoint.getMonitoringType() == MonitoringType.DELETE ) {
                 long deleted = dataPoint.getRowCount();
-                statisticsManager.updateRowCountPerTable( tableId, deleted, dataPoint.getMonitoringType() );
+                statisticsManager.updateRowCountPerEntity( tableId, deleted, dataPoint.getMonitoringType() );
                 // After a delete, it is not clear what exactly was deleted, so the statistics of the table are updated
-                statisticsManager.tablesToUpdate( tableId );
+                statisticsManager.entitiesToUpdate( tableId );
             }
         } else {
             for ( long id : values ) {
                 if ( catalog.getSnapshot().getLogicalEntity( id ).isPresent() ) {
-                    statisticsManager.setTableCalls( id, dataPoint.getMonitoringType() );
+                    statisticsManager.setEntityCalls( id, dataPoint.getMonitoringType() );
                 }
 
             }

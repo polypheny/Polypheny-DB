@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -529,7 +529,7 @@ public abstract class ReturnTypes {
      */
     public static final PolyReturnTypeInference SCOPE = opBinding -> {
         CallBinding callBinding = (CallBinding) opBinding;
-        return callBinding.getValidator().getNamespace( callBinding.getCall() ).getRowType();
+        return callBinding.getValidator().getNamespace( callBinding.getCall() ).getTupleType();
     };
 
     /**

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,9 @@ package org.polypheny.db.hsqldb.stores;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.plugins.PluginContext;
 import org.polypheny.db.plugins.PolyPlugin;
+import org.polypheny.db.sql.language.SqlDialectRegistry;
 
+@SuppressWarnings("unused")
 public class HsqldbPlugin extends PolyPlugin {
 
 
@@ -38,12 +40,14 @@ public class HsqldbPlugin extends PolyPlugin {
 
     @Override
     public void afterCatalogInit() {
+        SqlDialectRegistry.registerDialect( "HSQLDB", HsqldbSqlDialect.DEFAULT );
         this.id = AdapterManager.addAdapterTemplate( HsqldbStore.class, ADAPTER_NAME, HsqldbStore::new );
     }
 
 
     @Override
     public void stop() {
+        SqlDialectRegistry.unregisterDialect( "HSQLDB" );
         AdapterManager.removeAdapterTemplate( this.id );
     }
 

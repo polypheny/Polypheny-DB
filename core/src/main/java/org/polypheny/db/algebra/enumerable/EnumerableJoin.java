@@ -1,9 +1,26 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * This file incorporates code covered by the following terms:
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to you under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -18,6 +35,7 @@ package org.polypheny.db.algebra.enumerable;
 
 
 import com.google.common.collect.ImmutableList;
+import java.util.Objects;
 import java.util.Set;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -32,9 +50,9 @@ import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.JoinInfo;
 import org.polypheny.db.algebra.metadata.AlgMdCollation;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.trait.ModelTrait;
@@ -49,10 +67,10 @@ public class EnumerableJoin extends EquiJoin implements EnumerableAlg {
 
     /**
      * Creates an EnumerableJoin.
-     *
+     * <p>
      * Use {@link #create} unless you know what you're doing.
      */
-    protected EnumerableJoin( AlgOptCluster cluster, AlgTraitSet traits, AlgNode left, AlgNode right, RexNode condition, ImmutableList<Integer> leftKeys, ImmutableList<Integer> rightKeys, Set<CorrelationId> variablesSet, JoinAlgType joinType ) throws InvalidAlgException {
+    protected EnumerableJoin( AlgCluster cluster, AlgTraitSet traits, AlgNode left, AlgNode right, RexNode condition, ImmutableList<Integer> leftKeys, ImmutableList<Integer> rightKeys, Set<CorrelationId> variablesSet, JoinAlgType joinType ) throws InvalidAlgException {
         super( cluster, traits, left, right, condition, leftKeys, rightKeys, variablesSet, joinType );
     }
 
@@ -61,7 +79,7 @@ public class EnumerableJoin extends EquiJoin implements EnumerableAlg {
      * Creates an EnumerableJoin.
      */
     public static EnumerableJoin create( AlgNode left, AlgNode right, RexNode condition, ImmutableList<Integer> leftKeys, ImmutableList<Integer> rightKeys, Set<CorrelationId> variablesSet, JoinAlgType joinType ) throws InvalidAlgException {
-        final AlgOptCluster cluster = left.getCluster();
+        final AlgCluster cluster = left.getCluster();
         final AlgMetadataQuery mq = cluster.getMetadataQuery();
         final AlgTraitSet traitSet = cluster.traitSetOf( EnumerableConvention.INSTANCE )
                 .replace( ModelTrait.RELATIONAL )
@@ -84,24 +102,22 @@ public class EnumerableJoin extends EquiJoin implements EnumerableAlg {
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
-        double rowCount = mq.getRowCount( this );
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
+        double rowCount = mq.getTupleCount( this );
 
         // Joins can be flipped, and for many algorithms, both versions are viable and have the same cost.
         // To make the results stable between versions of the planner, make one of the versions slightly more expensive.
-        switch ( joinType ) {
-            case RIGHT:
+        if ( Objects.requireNonNull( joinType ) == JoinAlgType.RIGHT ) {
+            rowCount = addEpsilon( rowCount );
+        } else {
+            if ( AlgNodes.COMPARATOR.compare( left, right ) > 0 ) {
                 rowCount = addEpsilon( rowCount );
-                break;
-            default:
-                if ( AlgNodes.COMPARATOR.compare( left, right ) > 0 ) {
-                    rowCount = addEpsilon( rowCount );
-                }
+            }
         }
 
         // Cheaper if the smaller number of rows is coming from the LHS. Model this by adding L log L to the cost.
-        final double rightRowCount = right.estimateRowCount( mq );
-        final double leftRowCount = left.estimateRowCount( mq );
+        final double rightRowCount = right.estimateTupleCount( mq );
+        final double leftRowCount = left.estimateTupleCount( mq );
         if ( Double.isInfinite( leftRowCount ) ) {
             rowCount = leftRowCount;
         } else {
@@ -142,11 +158,12 @@ public class EnumerableJoin extends EquiJoin implements EnumerableAlg {
     public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
         BlockBuilder builder = new BlockBuilder();
         final Result leftResult = implementor.visitChild( this, 0, (EnumerableAlg) left, pref );
-        Expression leftExpression = builder.append( "left" + System.nanoTime(), leftResult.block );
+        Expression leftExpression = builder.append( "left" + System.nanoTime(), leftResult.block() );
         final Result rightResult = implementor.visitChild( this, 1, (EnumerableAlg) right, pref );
-        Expression rightExpression = builder.append( "right" + System.nanoTime(), rightResult.block );
+        // we need this false flag to avoid that the enumerables are reused which would lead to the same enumerable being accessed from both sides
+        Expression rightExpression = builder.append( "right" + System.nanoTime(), rightResult.block(), false );
         final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getTupleType(), pref.preferArray() );
-        final PhysType keyPhysType = leftResult.physType.project( leftKeys, JavaRowFormat.LIST );
+        final PhysType keyPhysType = leftResult.physType().project( leftKeys, JavaTupleFormat.LIST );
         return implementor.result(
                 physType,
                 builder.append(
@@ -155,9 +172,9 @@ public class EnumerableJoin extends EquiJoin implements EnumerableAlg {
                                         BuiltInMethod.JOIN.method,
                                         Expressions.list(
                                                         rightExpression,
-                                                        leftResult.physType.generateAccessor( leftKeys ),
-                                                        rightResult.physType.generateAccessor( rightKeys ),
-                                                        EnumUtils.joinSelector( joinType, physType, ImmutableList.of( leftResult.physType, rightResult.physType ) ) )
+                                                        leftResult.physType().generateAccessor( leftKeys ),
+                                                        rightResult.physType().generateAccessor( rightKeys ),
+                                                        EnumUtils.joinSelector( joinType, physType, ImmutableList.of( leftResult.physType(), rightResult.physType() ) ) )
                                                 .append( Util.first( keyPhysType.comparer(), Expressions.constant( null ) ) )
                                                 .append( Expressions.constant( joinType.generatesNullsOnLeft() ) )
                                                 .append( Expressions.constant( joinType.generatesNullsOnRight() ) )

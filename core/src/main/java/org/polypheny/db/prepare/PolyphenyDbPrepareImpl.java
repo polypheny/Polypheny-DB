@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -102,11 +102,11 @@ import org.polypheny.db.nodes.BinaryOperator;
 import org.polypheny.db.nodes.ExecutableStatement;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCostFactory;
-import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Contexts;
 import org.polypheny.db.plan.ConventionTraitDef;
@@ -116,7 +116,6 @@ import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.runtime.Hook;
 import org.polypheny.db.schema.trait.ModelTraitDef;
-import org.polypheny.db.tools.Frameworks.PrepareAction;
 import org.polypheny.db.type.ExtraPolyTypes;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Util;
@@ -262,15 +261,15 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
     /**
      * Factory method for cluster.
      */
-    protected AlgOptCluster createCluster( AlgOptPlanner planner, RexBuilder rexBuilder, AlgTraitSet traitSet, Snapshot snapshot ) {
-        return AlgOptCluster.create( planner, rexBuilder, traitSet, snapshot );
+    protected AlgCluster createCluster( AlgPlanner planner, RexBuilder rexBuilder, AlgTraitSet traitSet, Snapshot snapshot ) {
+        return AlgCluster.create( planner, rexBuilder, traitSet, snapshot );
     }
 
 
     /**
      * Creates a query planner and initializes it with a default set of rules.
      */
-    protected AlgOptPlanner createPlanner( final Context prepareContext, org.polypheny.db.plan.Context externalContext, AlgOptCostFactory costFactory ) {
+    protected AlgPlanner createPlanner( final Context prepareContext, org.polypheny.db.plan.Context externalContext, AlgOptCostFactory costFactory ) {
         if ( externalContext == null ) {
             externalContext = Contexts.of( prepareContext.config() );
         }
@@ -423,44 +422,8 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
      */
     private static String getTypeName( AlgDataType type ) {
         final PolyType polyType = type.getPolyType();
-        switch ( polyType ) {
-            /*
-            case ARRAY:
-            case MULTISET:
-            case MAP:
-            case ROW:
-                return type.toString(); // e.g. "INTEGER ARRAY"
-             */
-            case INTERVAL_YEAR_MONTH:
-                return "INTERVAL_YEAR_TO_MONTH";
-            case INTERVAL_DAY_HOUR:
-                return "INTERVAL_DAY_TO_HOUR";
-            case INTERVAL_DAY_MINUTE:
-                return "INTERVAL_DAY_TO_MINUTE";
-            case INTERVAL_DAY_SECOND:
-                return "INTERVAL_DAY_TO_SECOND";
-            case INTERVAL_HOUR_MINUTE:
-                return "INTERVAL_HOUR_TO_MINUTE";
-            case INTERVAL_HOUR_SECOND:
-                return "INTERVAL_HOUR_TO_SECOND";
-            case INTERVAL_MINUTE_SECOND:
-                return "INTERVAL_MINUTE_TO_SECOND";
-            default:
-                return polyType.getName(); // e.g. "DECIMAL", "INTERVAL_YEAR_MONTH"
-        }
-    }
-
-
-    /**
-     * Executes a prepare action.
-     */
-    public <R> R perform( PrepareAction<R> action ) {
-        final Context prepareContext = action.getConfig().getPrepareContext();
-        final JavaTypeFactory typeFactory = prepareContext.getTypeFactory();
-        final RexBuilder rexBuilder = new RexBuilder( typeFactory );
-        final AlgOptPlanner planner = createPlanner( prepareContext, action.getConfig().getContext(), action.getConfig().getCostFactory() );
-        final AlgOptCluster cluster = createCluster( planner, rexBuilder, null, prepareContext.getDataContext().getSnapshot() );
-        return action.apply( cluster, prepareContext.getDataContext().getSnapshot() );
+        // e.g. "DECIMAL", "INTERVAL_YEAR_MONTH"
+        return polyType.getName();
     }
 
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,18 +34,20 @@ import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.jsontype.TypeDeserializer;
 import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.google.common.collect.Lists;
 import io.activej.serializer.BinaryInput;
 import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.CompatibilityLevel;
 import io.activej.serializer.CorruptedDataException;
-import io.activej.serializer.SimpleSerializerDef;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
+import io.activej.serializer.def.SimpleSerializerDef;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
@@ -65,23 +67,44 @@ import org.polypheny.db.util.Pair;
 
 @Slf4j
 @EqualsAndHashCode(callSuper = true)
-@Value(staticConstructor = "copyOf")
+@Value
 @JsonSerialize(using = PolyListSerializer.class)
 @JsonDeserialize(using = PolyListDeserializer.class)
 public class PolyList<E extends PolyValue> extends PolyValue implements List<E> {
 
     public static final PolyList<?> EMPTY_LIST = new PolyList<>();
 
-    @Delegate
     @Serialize
     @JsonIgnore
+    @Delegate
     public List<E> value;
 
 
+    /**
+     * Creates a PolyList, which is the PolyValue implementation of a List,
+     * where the List, as well as all the elements are comparable.
+     *
+     * @param value The value of the PolyList
+     */
     @JsonCreator
     public PolyList( @JsonProperty("value") @Deserialize("value") List<E> value ) {
         super( PolyType.ARRAY );
         this.value = new ArrayList<>( value );
+    }
+
+
+    public static <E extends PolyValue> PolyList<E> copyOf( List<E> value ) {
+        return new PolyList<>( value );
+    }
+
+
+    public static <E extends PolyValue> PolyList<E> copyOf( Iterable<E> value ) {
+        return copyOf( Lists.newArrayList( value ) );
+    }
+
+
+    public static <E extends PolyValue> PolyList<E> copyOf( Iterator<E> iterator ) {
+        return copyOf( Lists.newArrayList( iterator ) );
     }
 
 
@@ -92,13 +115,13 @@ public class PolyList<E extends PolyValue> extends PolyValue implements List<E> 
 
 
     @Override
-    public @Nullable String toTypedJson() {
+    public @NotNull String toTypedJson() {
         try {
             return JSON_WRAPPER.writerFor( new TypeReference<PolyList<PolyValue>>() {
             } ).writeValueAsString( this );
         } catch ( JsonProcessingException e ) {
             log.warn( "Error on serializing typed JSON." );
-            return null;
+            return PolyNull.NULL.toTypedJson();
         }
     }
 
@@ -115,6 +138,12 @@ public class PolyList<E extends PolyValue> extends PolyValue implements List<E> 
         }
 
         throw new GenericRuntimeException( "Could not convert List" );
+    }
+
+
+    @Override
+    public String toString() {
+        return value == null ? "null" : value.toString();
     }
 
 
@@ -159,13 +188,13 @@ public class PolyList<E extends PolyValue> extends PolyValue implements List<E> 
 
     @Override
     public Expression asExpression() {
-        return Expressions.call( PolyList.class, "ofExpression", value.stream().map( e -> e == null ? Expressions.constant( null ) : e.asExpression() ).collect( Collectors.toList() ) );
+        return Expressions.call( PolyList.class, "ofExpression", value.stream().map( e -> e == null ? Expressions.constant( null ) : e.asExpression() ).toList() );
     }
 
 
     @Override
     public @Nullable String toJson() {
-        return value == null ? JsonToken.VALUE_NULL.asString() : "[" + value.stream().map( e -> e.isString() ? e.asString().toQuotedJson() : e.toJson() ).collect( Collectors.joining( "," ) ) + "]";
+        return value == null ? JsonToken.VALUE_NULL.asString() : "[" + value.stream().map( e -> e == null ? JsonToken.VALUE_NULL.asString() : e.isString() ? e.asString().toQuotedJson() : e.toJson() ).collect( Collectors.joining( "," ) ) + "]";
     }
 
 
@@ -198,6 +227,12 @@ public class PolyList<E extends PolyValue> extends PolyValue implements List<E> 
     @Override
     public @Nullable Long deriveByteSize() {
         return null;
+    }
+
+
+    @Override
+    public Object toJava() {
+        return value == null ? null : value.stream().map( PolyValue::toJava ).collect( Collectors.toList() );
     }
 
 
@@ -261,7 +296,6 @@ public class PolyList<E extends PolyValue> extends PolyValue implements List<E> 
                 return new PolyList<>( (List<PolyValue>) null );
             }
 
-
             List<PolyValue> values = new ArrayList<>();
             ArrayNode elements = node.withArray( "_es" );
             for ( JsonNode element : elements ) {
@@ -300,9 +334,8 @@ public class PolyList<E extends PolyValue> extends PolyValue implements List<E> 
             }
             gen.writeBoolean( false );
 
-
-            gen.writeFieldName( "@class" );
-            gen.writeString( PolyList.class.getCanonicalName() );
+            gen.writeFieldName( "@type" );
+            gen.writeString( "LIST" );
             gen.writeFieldName( "_es" );
             gen.writeStartArray();
             for ( PolyValue value : values ) {

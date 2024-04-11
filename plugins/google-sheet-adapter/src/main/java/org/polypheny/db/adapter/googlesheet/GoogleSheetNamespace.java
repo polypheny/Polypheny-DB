@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,14 +23,15 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import lombok.Getter;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeImpl;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
-import org.polypheny.db.schema.Namespace.Schema;
-import org.polypheny.db.schema.impl.AbstractNamespace;
+import org.polypheny.db.plan.Convention;
+import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.util.Util;
@@ -39,7 +40,7 @@ import org.polypheny.db.util.Util;
 /**
  * Schema mapped onto a Google Sheet URL. Each table in the schema is a sheet in the URL.
  */
-public class GoogleSheetNamespace extends AbstractNamespace implements Schema {
+public class GoogleSheetNamespace extends Namespace {
 
     private final URL sheetsURL;
     private final int querySize;
@@ -54,8 +55,8 @@ public class GoogleSheetNamespace extends AbstractNamespace implements Schema {
      * @param sheetsURL - the url of the Google Sheet
      * @param querySize - the size of each query while scanning
      */
-    public GoogleSheetNamespace( long id, URL sheetsURL, int querySize, GoogleSheetSource source ) {
-        super( id );
+    public GoogleSheetNamespace( long id, long adapterId, URL sheetsURL, int querySize, GoogleSheetSource source ) {
+        super( id, adapterId );
         this.sheetsURL = sheetsURL;
         this.querySize = querySize;
         this.source = source;
@@ -88,18 +89,17 @@ public class GoogleSheetNamespace extends AbstractNamespace implements Schema {
     private AlgDataType sqlType( AlgDataTypeFactory typeFactory, PolyType dataTypeName, Integer length, Integer scale, String typeString ) {
         // Fall back to ANY if type is unknown
         final PolyType polyType = Util.first( dataTypeName, PolyType.ANY );
-        switch ( polyType ) {
-            case ARRAY:
-                AlgDataType component = null;
-                if ( typeString != null && typeString.endsWith( " ARRAY" ) ) {
-                    // E.g. hsqldb gives "INTEGER ARRAY", so we deduce the component type "INTEGER".
-                    final String remaining = typeString.substring( 0, typeString.length() - " ARRAY".length() );
-                    component = parseTypeString( typeFactory, remaining );
-                }
-                if ( component == null ) {
-                    component = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.ANY ), true );
-                }
-                return typeFactory.createArrayType( component, -1 );
+        if ( polyType == PolyType.ARRAY ) {
+            AlgDataType component = null;
+            if ( typeString != null && typeString.endsWith( " ARRAY" ) ) {
+                // E.g. hsqldb gives "INTEGER ARRAY", so we deduce the component type "INTEGER".
+                final String remaining = typeString.substring( 0, typeString.length() - " ARRAY".length() );
+                component = parseTypeString( typeFactory, remaining );
+            }
+            if ( component == null ) {
+                component = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.ANY ), true );
+            }
+            return typeFactory.createArrayType( component, -1 );
         }
         if ( scale != null && length != null && length >= 0 && scale >= 0 && polyType.allowsPrecScale( true, true ) ) {
             return typeFactory.createPolyType( polyType, length, scale );
@@ -145,6 +145,12 @@ public class GoogleSheetNamespace extends AbstractNamespace implements Schema {
         } catch ( IllegalArgumentException e ) {
             return typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.ANY ), true );
         }
+    }
+
+
+    @Override
+    protected @Nullable Convention getConvention() {
+        return null; // No convention
     }
 
 }

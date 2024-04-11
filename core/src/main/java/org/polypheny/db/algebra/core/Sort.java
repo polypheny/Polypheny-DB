@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,7 @@ import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import lombok.Getter;
 import org.apache.calcite.linq4j.Ord;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.AlgCollation;
@@ -46,12 +47,14 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
+import org.polypheny.db.schema.trait.ModelTraitDef;
 import org.polypheny.db.util.Util;
 
 
@@ -60,6 +63,16 @@ import org.polypheny.db.util.Util;
  */
 public abstract class Sort extends SingleAlg {
 
+    /**
+     * Returns the array of {@link AlgFieldCollation}s asked for by the sort specification, from most significant to least significant.
+     * <p>
+     * See also {@link AlgMetadataQuery#collations(AlgNode)}, which lists all known collations. For example,
+     * <code>ORDER BY time_id</code> might also be sorted by
+     * <code>the_year, the_month</code> because of a known monotonicity constraint among the columns. {@code getCollation} would return
+     * <code>[time_id]</code> and {@code collations} would return
+     * <code>[ [time_id], [the_year, the_month] ]</code>.
+     */
+    @Getter
     public final AlgCollation collation;
     protected final ImmutableList<RexNode> fieldExps;
     public final RexNode offset;
@@ -74,7 +87,7 @@ public abstract class Sort extends SingleAlg {
      * @param child input relational expression
      * @param collation array of sort specifications
      */
-    public Sort( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, AlgCollation collation ) {
+    public Sort( AlgCluster cluster, AlgTraitSet traits, AlgNode child, AlgCollation collation ) {
         this( cluster, traits, child, collation, null, null, null );
     }
 
@@ -89,13 +102,13 @@ public abstract class Sort extends SingleAlg {
      * @param offset Expression for number of rows to discard before returning first row
      * @param fetch Expression for number of rows to fetch
      */
-    public Sort( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, AlgCollation collation, @Nullable List<RexNode> fieldExpr, RexNode offset, RexNode fetch ) {
+    public Sort( AlgCluster cluster, AlgTraitSet traits, AlgNode child, AlgCollation collation, @Nullable List<RexNode> fieldExpr, RexNode offset, RexNode fetch ) {
         super( cluster, traits, child );
         this.collation = collation;
         this.offset = offset;
         this.fetch = fetch;
 
-        assert traits.containsIfApplicable( collation ) : "traits=" + traits + ", collation=" + collation;
+        assert Objects.requireNonNull( getTraitSet().getTrait( ModelTraitDef.INSTANCE ) ).dataModel() == DataModel.DOCUMENT || traits.containsIfApplicable( collation ) : "traits=" + traits + ", collation=" + collation;
         assert !(fetch == null && offset == null && collation.getFieldCollations().isEmpty()) : "trivial sort";
 
         if ( fieldExpr != null ) {
@@ -122,9 +135,9 @@ public abstract class Sort extends SingleAlg {
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         // Higher cost if rows are wider discourages pushing a project through a sort.
-        final double rowCount = mq.getRowCount( this );
+        final double rowCount = mq.getTupleCount( this );
         final double bytesPerRow = getTupleType().getFieldCount() * 4;
         final double cpu = Util.nLogN( rowCount ) * bytesPerRow;
         return planner.getCostFactory().makeCost( rowCount, cpu, 0 );
@@ -147,20 +160,6 @@ public abstract class Sort extends SingleAlg {
             return this;
         }
         return copy( traitSet, getInput(), collation, ImmutableList.copyOf( fieldExps ), offset, fetch );
-    }
-
-
-    /**
-     * Returns the array of {@link AlgFieldCollation}s asked for by the sort specification, from most significant to least significant.
-     *
-     * See also {@link AlgMetadataQuery#collations(AlgNode)}, which lists all known collations. For example,
-     * <code>ORDER BY time_id</code> might also be sorted by
-     * <code>the_year, the_month</code> because of a known monotonicity constraint among the columns. {@code getCollation} would return
-     * <code>[time_id]</code> and {@code collations} would return
-     * <code>[ [time_id], [the_year, the_month] ]</code>.
-     */
-    public AlgCollation getCollation() {
-        return collation;
     }
 
 

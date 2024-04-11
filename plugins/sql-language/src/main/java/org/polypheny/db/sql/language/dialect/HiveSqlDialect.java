@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,6 @@ public class HiveSqlDialect extends SqlDialect {
 
     public static final SqlDialect DEFAULT =
             new HiveSqlDialect( EMPTY_CONTEXT
-                    .withDatabaseProduct( DatabaseProduct.HIVE )
                     .withNullCollation( NullCollation.LOW ) );
 
     private final boolean emulateNullDirection;
@@ -49,9 +48,7 @@ public class HiveSqlDialect extends SqlDialect {
         super( context );
         // Since 2.1.0, Hive natively supports "NULLS FIRST" and "NULLS LAST".
         // See https://issues.apache.org/jira/browse/HIVE-12994.
-        emulateNullDirection = (context.databaseMajorVersion() < 2)
-                || (context.databaseMajorVersion() == 2
-                && context.databaseMinorVersion() < 1);
+        emulateNullDirection = true;
     }
 
 

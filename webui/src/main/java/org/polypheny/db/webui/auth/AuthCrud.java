@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,7 +41,7 @@ public class AuthCrud {
     public void register( RegisterRequest registerRequest, WsMessageContext context ) {
         String id = registerRequest.source;
         if ( id != null ) {
-            log.warn( "Partner " + id + " already registered" );
+            log.debug( "Partner " + id + " already registered" );
             if ( connections.containsKey( UUID.fromString( id ) ) ) {
                 connections.get( UUID.fromString( id ) ).addContext( context );
             } else {
@@ -53,7 +53,7 @@ public class AuthCrud {
         }
 
         PartnerConnection status = new PartnerConnection( context );
-        log.warn( "New partner with id " + status.id + " registered" );
+        log.debug( "New partner with id " + status.id + " registered" );
         connections.put( status.id, status );
         context.send( new RegisterRequest( status.id.toString() ) );
     }

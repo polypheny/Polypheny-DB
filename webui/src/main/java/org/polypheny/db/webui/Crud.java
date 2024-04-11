@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.polypheny.db.webui;
 
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
@@ -185,6 +186,7 @@ import org.polypheny.db.webui.models.PartitionFunctionModel;
 import org.polypheny.db.webui.models.PartitionFunctionModel.FieldType;
 import org.polypheny.db.webui.models.PartitionFunctionModel.PartitionFunctionColumn;
 import org.polypheny.db.webui.models.PathAccessRequest;
+import org.polypheny.db.webui.models.PlacementFieldsModel;
 import org.polypheny.db.webui.models.PlacementModel;
 import org.polypheny.db.webui.models.PlacementModel.RelationalStore;
 import org.polypheny.db.webui.models.QueryInterfaceModel;
@@ -242,7 +244,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         this.authCrud = new AuthCrud( this );
 
         Catalog.afterInit( () -> Catalog.getInstance().addObserver( this ) );
-
     }
 
 
@@ -287,16 +288,16 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
         TriFunction<ExecutedContext, UIRequest, Statement, ResultBuilder<?, ?, ?, ?>> builder = LanguageCrud.getToResult( language );
 
-        Statement statement = transaction.createStatement();
         ImplementationContext implementationContext = LanguageManager.getINSTANCE().anyPrepareQuery(
                 QueryContext.builder()
                         .query( query.toString() )
                         .language( language )
+                        .transactions( List.of( transaction ) )
                         .origin( transaction.getOrigin() )
                         .batch( request.noLimit ? -1 : getPageSize() )
                         .transactionManager( transactionManager )
-                        .build(), statement ).get( 0 );
-        resultBuilder = (RelationalResultBuilder<?, ?>) builder.apply( implementationContext.execute( statement ), request, statement );//.executeSqlSelect( transaction.createStatement(), request, query.toString(), request.noLimit, this );
+                        .build(), transaction ).get( 0 );
+        resultBuilder = (RelationalResultBuilder<?, ?>) builder.apply( implementationContext.execute( implementationContext.getStatement() ), request, implementationContext.getStatement() );
 
         // determine if it is a view or a table
         LogicalTable table = Catalog.snapshot().rel().getTable( request.entityId ).orElseThrow();
@@ -312,7 +313,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         List<String> primaryColumns;
         if ( table.primaryKey != null ) {
             LogicalPrimaryKey primaryKey = Catalog.snapshot().rel().getPrimaryKey( table.primaryKey ).orElseThrow();
-            primaryColumns = new ArrayList<>( primaryKey.getColumnNames() );
+            primaryColumns = new ArrayList<>( primaryKey.getFieldNames() );
         } else {
             primaryColumns = new ArrayList<>();
         }
@@ -366,18 +367,11 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         long namespaceId = request.namespaceId != null ? request.namespaceId : Catalog.defaultNamespaceId;
         LogicalNamespace namespace = Catalog.snapshot().getNamespace( namespaceId ).orElseThrow();
 
-        List<? extends LogicalEntity> entities = List.of();
-        switch ( namespace.dataModel ) {
-            case RELATIONAL:
-                entities = Catalog.snapshot().rel().getTables( namespace.id, null );
-                break;
-            case DOCUMENT:
-                entities = Catalog.snapshot().doc().getCollections( namespace.id, null );
-                break;
-            case GRAPH:
-                entities = Catalog.snapshot().graph().getGraphs( null );
-                break;
-        }
+        List<? extends LogicalEntity> entities = switch ( namespace.dataModel ) {
+            case RELATIONAL -> Catalog.snapshot().rel().getTables( namespace.id, null );
+            case DOCUMENT -> Catalog.snapshot().doc().getCollections( namespace.id, null );
+            case GRAPH -> Catalog.snapshot().graph().getGraphs( null );
+        };
 
         List<DbTable> result = new ArrayList<>();
         for ( LogicalEntity e : entities ) {
@@ -543,8 +537,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
     /**
      * Initialize a multipart request, so that the values can be fetched with request.raw().getPart( name )
-     *
-     * @param ctx Spark request
      */
     private void initMultipart( final Context ctx ) {
         //see https://stackoverflow.com/questions/34746900/sparkjava-upload-file-didt-work-in-spark-java-framework
@@ -619,11 +611,13 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 .query( query )
                 .language( language )
                 .origin( ORIGIN )
+                .statement( statement )
+                .transactions( new ArrayList<>( List.of( transaction ) ) )
                 .transactionManager( transactionManager )
                 .build();
 
         UIRequest request = UIRequest.builder().build();
-        Result<?, ?> result = LanguageCrud.anyQueryResult( context, request ).get( 0 );//executeSqlUpdate( statement, transaction, query );
+        Result<?, ?> result = LanguageCrud.anyQueryResult( context, request ).get( 0 );
         ctx.json( result );
 
     }
@@ -845,7 +839,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         }
 
         LogicalPrimaryKey pk = Catalog.snapshot().rel().getPrimaryKey( table.primaryKey ).orElseThrow();
-        for ( long colId : pk.columnIds ) {
+        for ( long colId : pk.fieldIds ) {
             LogicalColumn col = columns.get( colId );
             String condition;
             if ( filter.containsKey( col.name ) ) {
@@ -942,6 +936,8 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         Result<?, ?> result = LanguageCrud.anyQueryResult(
                 QueryContext.builder()
                         .query( query )
+                        .statement( statement )
+                        .transactions( List.of( transaction ) )
                         .language( language )
                         .origin( ORIGIN )
                         .transactionManager( transactionManager )
@@ -993,7 +989,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         List<String> primaryColumns;
         if ( table.primaryKey != null ) {
             LogicalPrimaryKey primaryKey = Catalog.snapshot().rel().getPrimaryKey( table.primaryKey ).orElseThrow();
-            primaryColumns = new ArrayList<>( primaryKey.getColumnNames() );
+            primaryColumns = new ArrayList<>( primaryKey.getFieldNames() );
         } else {
             primaryColumns = new ArrayList<>();
         }
@@ -1011,9 +1007,12 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                             .dimension( logicalColumn.dimension )
                             .cardinality( logicalColumn.cardinality )
                             .primary( primaryColumns.contains( logicalColumn.name ) )
-                            .defaultValue( defaultValue ).build() );
+                            .defaultValue( defaultValue )
+                            .build() );
         }
-        RelationalResultBuilder<?, ?> result = RelationalResult.builder().header( cols.toArray( new UiColumnDefinition[0] ) );
+        RelationalResultBuilder<?, ?> result = RelationalResult
+                .builder()
+                .header( cols.toArray( new UiColumnDefinition[0] ) );
         if ( table.entityType == EntityType.ENTITY ) {
             result.type( ResultType.TABLE );
         } else if ( table.entityType == EntityType.MATERIALIZED_VIEW ) {
@@ -1029,12 +1028,12 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     void getDataSourceColumns( final Context ctx ) {
         UIRequest request = ctx.bodyAsClass( UIRequest.class );
 
-        LogicalTable tablee = Catalog.snapshot().rel().getTable( request.entityId ).orElseThrow();
+        LogicalTable table = Catalog.snapshot().rel().getTable( request.entityId ).orElseThrow();
 
-        if ( tablee.entityType == EntityType.VIEW ) {
+        if ( table.entityType == EntityType.VIEW ) {
 
             List<UiColumnDefinition> columns = new ArrayList<>();
-            List<LogicalColumn> cols = Catalog.snapshot().rel().getColumns( tablee.id );
+            List<LogicalColumn> cols = Catalog.snapshot().rel().getColumns( table.id );
             for ( LogicalColumn col : cols ) {
                 columns.add( UiColumnDefinition.builder()
                         .name( col.name )
@@ -1053,16 +1052,16 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             }
             ctx.json( RelationalResult.builder().header( columns.toArray( new UiColumnDefinition[0] ) ).type( ResultType.VIEW ).build() );
         } else {
-            List<AllocationEntity> allocs = Catalog.snapshot().alloc().getFromLogical( tablee.id );
-            if ( Catalog.snapshot().alloc().getFromLogical( tablee.id ).size() != 1 ) {
+            List<AllocationEntity> allocs = Catalog.snapshot().alloc().getFromLogical( table.id );
+            if ( Catalog.snapshot().alloc().getFromLogical( table.id ).size() != 1 ) {
                 throw new GenericRuntimeException( "The table has an unexpected number of placements!" );
             }
 
             long adapterId = allocs.get( 0 ).adapterId;
-            LogicalPrimaryKey primaryKey = Catalog.snapshot().rel().getPrimaryKey( tablee.primaryKey ).orElseThrow();
-            List<String> pkColumnNames = primaryKey.getColumnNames();
+            LogicalPrimaryKey primaryKey = Catalog.snapshot().rel().getPrimaryKey( table.primaryKey ).orElseThrow();
+            List<String> pkColumnNames = primaryKey.getFieldNames();
             List<UiColumnDefinition> columns = new ArrayList<>();
-            for ( AllocationColumn ccp : Catalog.snapshot().alloc().getColumnPlacementsOnAdapterPerTable( adapterId, tablee.id ) ) {
+            for ( AllocationColumn ccp : Catalog.snapshot().alloc().getColumnPlacementsOnAdapterPerEntity( adapterId, table.id ) ) {
                 LogicalColumn col = Catalog.snapshot().rel().getColumn( ccp.columnId ).orElseThrow();
                 columns.add( UiColumnDefinition.builder()
                         .name( col.name )
@@ -1095,9 +1094,8 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         }
         List<RelationalResult> exportedColumns = new ArrayList<>();
         for ( Long adapterId : adapterIds ) {
-            Adapter<?> adapter = AdapterManager.getInstance().getAdapter( adapterId );
-            if ( adapter instanceof DataSource<?> ) {
-                DataSource<?> dataSource = (DataSource<?>) adapter;
+            Adapter<?> adapter = AdapterManager.getInstance().getAdapter( adapterId ).orElseThrow();
+            if ( adapter instanceof DataSource<?> dataSource ) {
                 for ( Entry<String, List<ExportedColumn>> entry : dataSource.getExportedColumns().entrySet() ) {
                     List<UiColumnDefinition> columnList = new ArrayList<>();
                     for ( ExportedColumn col : entry.getValue() ) {
@@ -1431,7 +1429,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         // get primary key
         if ( table.primaryKey != null ) {
             LogicalPrimaryKey primaryKey = Catalog.snapshot().rel().getPrimaryKey( table.primaryKey ).orElseThrow();
-            for ( String columnName : primaryKey.getColumnNames() ) {
+            for ( String columnName : primaryKey.getFieldNames() ) {
                 if ( !temp.containsKey( "" ) ) {
                     temp.put( "", new ArrayList<>() );
                 }
@@ -1447,7 +1445,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         List<LogicalConstraint> constraints = Catalog.snapshot().rel().getConstraints( table.id );
         for ( LogicalConstraint logicalConstraint : constraints ) {
             if ( logicalConstraint.type == ConstraintType.UNIQUE ) {
-                temp.put( logicalConstraint.name, new ArrayList<>( logicalConstraint.key.getColumnNames() ) );
+                temp.put( logicalConstraint.name, new ArrayList<>( logicalConstraint.key.getFieldNames() ) );
             }
         }
         for ( Map.Entry<String, List<String>> entry : temp.entrySet() ) {
@@ -1469,17 +1467,10 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     void dropConstraint( final Context ctx ) {
         ConstraintRequest request = ctx.bodyAsClass( ConstraintRequest.class );
 
-        String[] t = request.table.split( "\\." );
-        String tableId = String.format( "\"%s\".\"%s\"", t[0], t[1] );
+        long entityId = request.entityId;
+        String fullEntityName = getFullEntityName( entityId );
 
-        String query;
-        if ( request.constraint.type.equals( "PRIMARY KEY" ) ) {
-            query = String.format( "ALTER TABLE %s DROP PRIMARY KEY", tableId );
-        } else if ( request.constraint.type.equals( "FOREIGN KEY" ) ) {
-            query = String.format( "ALTER TABLE %s DROP FOREIGN KEY \"%s\"", tableId, request.constraint.name );
-        } else {
-            query = String.format( "ALTER TABLE %s DROP CONSTRAINT \"%s\"", tableId, request.constraint.name );
-        }
+        String query = getDropConstraintQuery( request, fullEntityName );
         QueryLanguage language = QueryLanguage.from( "sql" );
         Result<?, ?> res = LanguageCrud.anyQueryResult(
                 QueryContext.builder()
@@ -1492,14 +1483,27 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     }
 
 
+    private static String getDropConstraintQuery( ConstraintRequest request, String fullEntityName ) {
+        String query;
+        if ( request.constraint.type.equals( ConstraintType.PRIMARY.name() ) ) {
+            query = String.format( "ALTER TABLE %s DROP PRIMARY KEY", fullEntityName );
+        } else if ( request.constraint.type.equals( ConstraintType.FOREIGN.name() ) ) {
+            query = String.format( "ALTER TABLE %s DROP FOREIGN KEY \"%s\"", fullEntityName, request.constraint.name );
+        } else {
+            query = String.format( "ALTER TABLE %s DROP CONSTRAINT \"%s\"", fullEntityName, request.constraint.name );
+        }
+        return query;
+    }
+
+
     /**
      * Add a primary key to a table
      */
     void addPrimaryKey( final Context ctx ) {
         ConstraintRequest request = ctx.bodyAsClass( ConstraintRequest.class );
 
-        String[] t = request.table.split( "\\." );
-        String tableId = String.format( "\"%s\".\"%s\"", t[0], t[1] );
+        long entityId = request.entityId;
+        String tableId = getFullEntityName( entityId );
 
         RelationalResult result;
         if ( request.constraint.columns.length < 1 ) {
@@ -1531,8 +1535,8 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     void addUniqueConstraint( final Context ctx ) {
         ConstraintRequest request = ctx.bodyAsClass( ConstraintRequest.class );
 
-        String[] t = request.table.split( "\\." );
-        String tableId = String.format( "\"%s\".\"%s\"", t[0], t[1] );
+        long entityId = request.entityId;
+        String tableName = getFullEntityName( entityId );
 
         Result<?, ?> result;
         if ( request.constraint.columns.length > 0 ) {
@@ -1540,7 +1544,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             for ( String s : request.constraint.columns ) {
                 joiner.add( "\"" + s + "\"" );
             }
-            String query = "ALTER TABLE " + tableId + " ADD CONSTRAINT \"" + request.constraint.name + "\" UNIQUE " + joiner;
+            String query = "ALTER TABLE " + tableName + " ADD CONSTRAINT \"" + request.constraint.name + "\" UNIQUE " + joiner;
             QueryLanguage language = QueryLanguage.from( "sql" );
             result = LanguageCrud.anyQueryResult(
                     QueryContext.builder()
@@ -1579,14 +1583,14 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         for ( LogicalIndex logicalIndex : logicalIndices ) {
             String[] arr = new String[5];
             String storeUniqueName;
-            if ( logicalIndex.location == 0 ) {
+            if ( logicalIndex.location < 0 ) {
                 // a polystore index
                 storeUniqueName = "Polypheny-DB";
             } else {
                 storeUniqueName = Catalog.snapshot().getAdapter( logicalIndex.location ).orElseThrow().uniqueName;
             }
             arr[0] = logicalIndex.name;
-            arr[1] = String.join( ", ", logicalIndex.key.getColumnNames() );
+            arr[1] = String.join( ", ", logicalIndex.key.getFieldNames() );
             arr[2] = storeUniqueName;
             arr[3] = logicalIndex.methodDisplayName;
             arr[4] = logicalIndex.type.name();
@@ -1596,7 +1600,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         // Get functional indexes
         List<AllocationEntity> allocs = Catalog.snapshot().alloc().getFromLogical( table.id );
         for ( AllocationEntity alloc : allocs ) {
-            Adapter<?> adapter = AdapterManager.getInstance().getAdapter( alloc.adapterId );
+            Adapter<?> adapter = AdapterManager.getInstance().getAdapter( alloc.adapterId ).orElseThrow();
             DataStore<?> store;
             if ( adapter instanceof DataStore<?> ) {
                 store = (DataStore<?>) adapter;
@@ -1608,7 +1612,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 arr[0] = "";
                 arr[1] = String.join( ", ", fif.getColumnNames() );
                 arr[2] = store.getUniqueName();
-                arr[3] = fif.methodDisplayName;
+                arr[3] = fif.methodDisplayName();
                 arr[4] = "FUNCTIONAL";
                 data.add( arr );
             }
@@ -1709,16 +1713,16 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         PlacementModel p = new PlacementModel( snapshot.alloc().getFromLogical( table.id ).size() > 1, snapshot.alloc().getPartitionGroupNames( table.id ), table.entityType );
         if ( table.entityType != EntityType.VIEW ) {
             long pkid = table.primaryKey;
-            List<Long> pkColumnIds = snapshot.rel().getPrimaryKey( pkid ).orElseThrow().columnIds;
+            List<Long> pkColumnIds = snapshot.rel().getPrimaryKey( pkid ).orElseThrow().fieldIds;
             LogicalColumn pkColumn = snapshot.rel().getColumn( pkColumnIds.get( 0 ) ).orElseThrow();
             List<AllocationColumn> pkPlacements = snapshot.alloc().getColumnFromLogical( pkColumn.id ).orElseThrow();
             for ( AllocationColumn placement : pkPlacements ) {
-                Adapter<?> adapter = AdapterManager.getInstance().getAdapter( placement.adapterId );
+                Adapter<?> adapter = AdapterManager.getInstance().getAdapter( placement.adapterId ).orElseThrow();
                 PartitionProperty property = snapshot.alloc().getPartitionProperty( table.id ).orElseThrow();
                 p.addAdapter( new RelationalStore(
                         adapter.getUniqueName(),
                         adapter.getUniqueName(),
-                        snapshot.alloc().getColumnPlacementsOnAdapterPerTable( adapter.getAdapterId(), table.id ),
+                        snapshot.alloc().getColumnPlacementsOnAdapterPerEntity( adapter.getAdapterId(), table.id ),
                         snapshot.alloc().getPartitionGroupsIndexOnDataPlacement( placement.adapterId, placement.logicalTableId ),
                         property.numPartitionGroups,
                         property.partitionType ) );
@@ -1734,27 +1738,27 @@ public class Crud implements InformationObserver, PropertyChangeListener {
      * Index method: either 'ADD' or 'DROP'
      */
     void addDropPlacement( final Context ctx ) {
-        IndexModel index = ctx.bodyAsClass( IndexModel.class );
-        if ( !index.getMethod().equalsIgnoreCase( "ADD" ) && !index.getMethod().equalsIgnoreCase( "DROP" ) && !index.getMethod().equalsIgnoreCase( "MODIFY" ) ) {
+        PlacementFieldsModel placementFields = ctx.bodyAsClass( PlacementFieldsModel.class );
+        if ( placementFields.method() == null ) {
             ctx.json( RelationalResult.builder().error( "Invalid request" ).build() );
             return;
         }
         StringJoiner columnJoiner = new StringJoiner( ",", "(", ")" );
         int counter = 0;
-        if ( !index.getMethod().equalsIgnoreCase( "DROP" ) ) {
-            for ( long col : index.columnIds ) {
-                columnJoiner.add( "\"" + Catalog.snapshot().rel().getColumn( col ).orElseThrow().name + "\"" );
+        if ( placementFields.method() != PlacementFieldsModel.Method.DROP ) {
+            for ( String name : placementFields.fieldNames() ) {
+                columnJoiner.add( "\"" + name + "\"" );
                 counter++;
             }
         }
         String columnListStr = counter > 0 ? columnJoiner.toString() : "";
         String query = String.format(
                 "ALTER TABLE \"%s\".\"%s\" %s PLACEMENT %s ON STORE \"%s\"",
-                index.getNamespaceId(),
-                index.getEntityId(),
-                index.getMethod().toUpperCase(),
+                Catalog.snapshot().getNamespace( placementFields.namespaceId() ).orElseThrow().name,
+                Catalog.snapshot().rel().getTable( placementFields.entityId() ).orElseThrow().name,
+                placementFields.method().name(),
                 columnListStr,
-                index.getStoreUniqueName() );
+                placementFields.adapterName() );
         QueryLanguage language = QueryLanguage.from( "sql" );
         Result<?, ?> res = LanguageCrud.anyQueryResult(
                 QueryContext.builder()
@@ -1776,23 +1780,12 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         List<PartitionFunctionColumn> constructedRow = new ArrayList<>();
 
         for ( PartitionFunctionInfoColumn currentColumn : columnList ) {
-            FieldType type;
-            switch ( currentColumn.getFieldType() ) {
-                case STRING:
-                    type = FieldType.STRING;
-                    break;
-                case INTEGER:
-                    type = FieldType.INTEGER;
-                    break;
-                case LIST:
-                    type = FieldType.LIST;
-                    break;
-                case LABEL:
-                    type = FieldType.LABEL;
-                    break;
-                default:
-                    throw new GenericRuntimeException( "Unknown Field ExpressionType: " + currentColumn.getFieldType() );
-            }
+            FieldType type = switch ( currentColumn.getFieldType() ) {
+                case STRING -> FieldType.STRING;
+                case INTEGER -> FieldType.INTEGER;
+                case LIST -> FieldType.LIST;
+                case LABEL -> FieldType.LABEL;
+            };
 
             if ( type.equals( FieldType.LIST ) ) {
                 constructedRow.add( new PartitionFunctionColumn( type, currentColumn.getOptions(), currentColumn.getDefaultValue() )
@@ -1802,16 +1795,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                         .setSqlSuffix( currentColumn.getSqlSuffix() ) );
             } else {
 
-                String defaultValue = currentColumn.getDefaultValue();
-
-                // Used specifically for Temp-Partitioning since number of selected partitions remains 2 but chunks change
-                // enables user to use selected "number of partitions" being used as default value for "number of internal data chunks"
-                if ( request.method.equals( PartitionType.TEMPERATURE ) ) {
-
-                    if ( type.equals( FieldType.STRING ) && currentColumn.getDefaultValue().equals( "-04071993" ) ) {
-                        defaultValue = String.valueOf( request.numPartitions );
-                    }
-                }
+                String defaultValue = getDefaultValue( request, currentColumn, type );
 
                 constructedRow.add( new PartitionFunctionColumn( type, defaultValue )
                         .setModifiable( currentColumn.isModifiable() )
@@ -1822,6 +1806,21 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         }
 
         return constructedRow;
+    }
+
+
+    private static String getDefaultValue( PartitioningRequest request, PartitionFunctionInfoColumn currentColumn, FieldType type ) {
+        String defaultValue = currentColumn.getDefaultValue();
+
+        // Used specifically for Temp-Partitioning since number of selected partitions remains 2 but chunks change
+        // enables user to use selected "number of partitions" being used as default value for "number of internal data chunks"
+        if ( request.method.equals( PartitionType.TEMPERATURE ) ) {
+
+            if ( type.equals( FieldType.STRING ) && currentColumn.getDefaultValue().equals( "-04071993" ) ) {
+                defaultValue = String.valueOf( request.numPartitions );
+            }
+        }
+        return defaultValue;
     }
 
 
@@ -1993,7 +1992,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             IndexAdapterModel poly = new IndexAdapterModel(
                     -1L,
                     "Polypheny-DB",
-                    IndexManager.getAvailableIndexMethods().stream().map( IndexMethodModel::from ).collect( Collectors.toList() ) );
+                    IndexManager.getAvailableIndexMethods().stream().map( IndexMethodModel::from ).toList() );
             filtered.add( poly );
         }
         ctx.json( filtered );
@@ -2018,9 +2017,9 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         Adapter<?> adapter = adapterGson.fromJson( ctx.body(), Adapter.class );
         try {
             if ( adapter instanceof DataStore ) {
-                AdapterManager.getInstance().getStore( adapter.getAdapterId() ).updateSettings( adapter.getCurrentSettings() );
+                AdapterManager.getInstance().getStore( adapter.getAdapterId() ).orElseThrow().updateSettings( adapter.getCurrentSettings() );
             } else if ( adapter instanceof DataSource ) {
-                AdapterManager.getInstance().getSource( adapter.getAdapterId() ).updateSettings( adapter.getCurrentSettings() );
+                AdapterManager.getInstance().getSource( adapter.getAdapterId() ).orElseThrow().updateSettings( adapter.getCurrentSettings() );
             }
             Catalog.getInstance().commit();
         } catch ( Throwable t ) {
@@ -2053,7 +2052,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
      * Get available adapters
      */
     private void getAvailableAdapters( Context ctx, AdapterType adapterType ) {
-        List<AdapterInformation> adapters = AdapterManager.getInstance().getAvailableAdapters( adapterType );
+        List<AdapterInformation> adapters = AdapterManager.getInstance().getAdapterTemplates( adapterType );
         ctx.json( adapters.toArray( new AdapterInformation[0] ) );
     }
 
@@ -2080,37 +2079,53 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     /**
      * Deploy a new adapter
      */
-    void addAdapter( final Context ctx ) {
-        AdapterModel a = ctx.bodyAsClass( AdapterModel.class );
+    void addAdapter( final Context ctx ) throws ServletException, IOException {
+        initMultipart( ctx );
+        String body = "";
+        Map<String, InputStream> inputStreams = new HashMap<>();
+
+        // collect all files e.g. csv files
+        for ( Part part : ctx.req.getParts() ) {
+            if ( part.getName().equals( "body" ) ) {
+                body = IOUtils.toString( ctx.req.getPart( "body" ).getInputStream(), StandardCharsets.UTF_8 );
+            } else {
+                inputStreams.put( part.getName(), part.getInputStream() );
+            }
+        }
+
+        AdapterModel a = HttpServer.mapper.readValue( body, AdapterModel.class );
         Map<String, String> settings = new HashMap<>();
 
         ConnectionMethod method = ConnectionMethod.UPLOAD;
         if ( a.settings.containsKey( "method" ) ) {
-            method = ConnectionMethod.valueOf( a.settings.get( "method" ).getValue().toUpperCase() );
+            method = ConnectionMethod.valueOf( a.settings.get( "method" ).value().toUpperCase() );
         }
         AdapterTemplate adapter = AdapterManager.getAdapterTemplate( a.adapterName, a.type );
         Map<String, AbstractAdapterSetting> allSettings = adapter.settings.stream().collect( Collectors.toMap( e -> e.name, e -> e ) );
 
         for ( AdapterSettingValueModel entry : a.settings.values() ) {
-            AbstractAdapterSetting set = allSettings.get( entry.getName() );
+            AbstractAdapterSetting set = allSettings.get( entry.name() );
             if ( set == null ) {
                 continue;
             }
-            if ( set instanceof AbstractAdapterSettingDirectory ) {
-                AbstractAdapterSettingDirectory setting = ((AbstractAdapterSettingDirectory) set);
+            if ( set instanceof AbstractAdapterSettingDirectory setting ) {
                 if ( method == ConnectionMethod.LINK ) {
                     Exception e = handleLinkFiles( ctx, a, setting, allSettings );
                     if ( e != null ) {
                         ctx.json( RelationalResult.builder().exception( e ).build() );
                         return;
                     }
+                    settings.put( set.name, entry.value() );
                 } else {
-                    handleUploadFiles( null, a, setting );
+                    List<String> fileNames = HttpServer.mapper.readValue( entry.value(), new TypeReference<>() {
+                    } );
+                    String directory = handleUploadFiles( inputStreams, fileNames, setting, a );
+                    settings.put( set.name, directory );
                 }
-                settings.put( set.name, entry.getValue() );
+
 
             } else {
-                settings.put( set.name, entry.getValue() );
+                settings.put( set.name, entry.value() );
             }
         }
 
@@ -2151,8 +2166,8 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     }
 
 
-    private static void handleUploadFiles( Map<String, InputStream> inputStreams, AdapterModel a, AbstractAdapterSettingDirectory setting ) {
-        for ( String fileName : setting.fileNames ) {
+    private static String handleUploadFiles( Map<String, InputStream> inputStreams, List<String> fileNames, AbstractAdapterSettingDirectory setting, AdapterModel a ) {
+        for ( String fileName : fileNames ) {
             setting.inputStreams.put( fileName, inputStreams.get( fileName ) );
         }
         File path = PolyphenyHomeDirManager.getInstance().registerNewFolder( "data/csv/" + a.name );
@@ -2164,7 +2179,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 throw new GenericRuntimeException( e );
             }
         }
-        setting.setDirectory( path.getAbsolutePath() );
+        return path.getAbsolutePath();
     }
 
 
@@ -2262,14 +2277,14 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 // get foreign keys
                 List<LogicalForeignKey> foreignKeys = Catalog.snapshot().rel().getForeignKeys( table.id );
                 for ( LogicalForeignKey logicalForeignKey : foreignKeys ) {
-                    for ( int i = 0; i < logicalForeignKey.getReferencedKeyColumnNames().size(); i++ ) {
+                    for ( int i = 0; i < logicalForeignKey.getReferencedKeyFieldNames().size(); i++ ) {
                         fKeys.add( ForeignKey.builder()
-                                .targetSchema( logicalForeignKey.getReferencedKeySchemaName() )
-                                .targetTable( logicalForeignKey.getReferencedKeyTableName() )
-                                .targetColumn( logicalForeignKey.getReferencedKeyColumnNames().get( i ) )
+                                .targetSchema( logicalForeignKey.getReferencedKeyNamespaceName() )
+                                .targetTable( logicalForeignKey.getReferencedKeyEntityName() )
+                                .targetColumn( logicalForeignKey.getReferencedKeyFieldNames().get( i ) )
                                 .sourceSchema( logicalForeignKey.getSchemaName() )
                                 .sourceTable( logicalForeignKey.getTableName() )
-                                .sourceColumn( logicalForeignKey.getColumnNames().get( i ) )
+                                .sourceColumn( logicalForeignKey.getFieldNames().get( i ) )
                                 .fkName( logicalForeignKey.name )
                                 .onUpdate( logicalForeignKey.updateRule.toString() )
                                 .onDelete( logicalForeignKey.deleteRule.toString() )
@@ -2287,7 +2302,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 // get primary key with its columns
                 if ( table.primaryKey != null ) {
                     LogicalPrimaryKey primaryKey = Catalog.snapshot().rel().getPrimaryKey( table.primaryKey ).orElseThrow();
-                    for ( String columnName : primaryKey.getColumnNames() ) {
+                    for ( String columnName : primaryKey.getFieldNames() ) {
                         dbTable.addPrimaryKeyField( columnName );
                     }
                 }
@@ -2297,10 +2312,10 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 for ( LogicalConstraint logicalConstraint : logicalConstraints ) {
                     if ( logicalConstraint.type == ConstraintType.UNIQUE ) {
                         // TODO: unique constraints can be over multiple columns.
-                        if ( logicalConstraint.key.getColumnNames().size() == 1 &&
+                        if ( logicalConstraint.key.getFieldNames().size() == 1 &&
                                 logicalConstraint.key.getSchemaName().equals( dbTable.getSchema() ) &&
                                 logicalConstraint.key.getTableName().equals( dbTable.getTableName() ) ) {
-                            dbTable.addUniqueColumn( logicalConstraint.key.getColumnNames().get( 0 ) );
+                            dbTable.addUniqueColumn( logicalConstraint.key.getFieldNames().get( 0 ) );
                         }
                         // table.addUnique( new ArrayList<>( catalogConstraint.key.columnNames ));
                     }
@@ -2310,10 +2325,10 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 List<LogicalIndex> logicalIndices = Catalog.snapshot().rel().getIndexes( table.id, true );
                 for ( LogicalIndex logicalIndex : logicalIndices ) {
                     // TODO: unique indexes can be over multiple columns.
-                    if ( logicalIndex.key.getColumnNames().size() == 1 &&
+                    if ( logicalIndex.key.getFieldNames().size() == 1 &&
                             logicalIndex.key.getSchemaName().equals( dbTable.getSchema() ) &&
                             logicalIndex.key.getTableName().equals( dbTable.getTableName() ) ) {
-                        dbTable.addUniqueColumn( logicalIndex.key.getColumnNames().get( 0 ) );
+                        dbTable.addUniqueColumn( logicalIndex.key.getFieldNames().get( 0 ) );
                     }
                     // table.addUnique( new ArrayList<>( catalogIndex.key.columnNames ));
                 }
@@ -2404,9 +2419,9 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             return RelationalResult.builder().error( e.getMessage() ).build();
         }
 
-        // Wrap {@link AlgNode} into a RelRoot
+        // Wrap {@link AlgNode} into a AlgRoot
         final AlgDataType rowType = result.getTupleType();
-        final List<Pair<Integer, String>> fields = Pair.zip( IntStream.range( 0, rowType.getFieldCount() ).boxed().collect( Collectors.toList() ), rowType.getFieldNames() );
+        final List<Pair<Integer, String>> fields = Pair.zip( IntStream.range( 0, rowType.getFieldCount() ).boxed().toList(), rowType.getFieldNames() );
         final AlgCollation collation =
                 result instanceof Sort
                         ? ((Sort) result).collation
@@ -2424,11 +2439,11 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
             if ( request.freshness != null ) {
                 viewType = "Materialized View";
-                DataStore<?> store = (DataStore<?>) AdapterManager.getInstance().getAdapter( request.store );
+                DataStore<?> store = AdapterManager.getInstance().getStore( request.store ).orElseThrow();
                 List<DataStore<?>> stores = new ArrayList<>();
                 stores.add( store );
 
-                PlacementType placementType = store == null ? PlacementType.AUTOMATIC : PlacementType.MANUAL;
+                PlacementType placementType = PlacementType.MANUAL;
 
                 List<String> columns = new ArrayList<>();
                 root.alg.getTupleType().getFields().forEach( f -> columns.add( f.getName() ) );
@@ -2520,9 +2535,9 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             return RelationalResult.builder().error( e.getMessage() ).build();
         }
 
-        UiColumnDefinition[] header = new UiColumnDefinition[polyImplementation.getRowType().getFieldCount()];
+        UiColumnDefinition[] header = new UiColumnDefinition[polyImplementation.getTupleType().getFieldCount()];
         int counter = 0;
-        for ( AlgDataTypeField col : polyImplementation.getRowType().getFields() ) {
+        for ( AlgDataTypeField col : polyImplementation.getTupleType().getFields() ) {
             header[counter++] = UiColumnDefinition.builder()
                     .name( col.getName() )
                     .dataType( col.getType().getFullTypeString() )
@@ -2653,7 +2668,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
      * Get all supported data types of the DBMS.
      */
     public void getTypeInfo( final Context ctx ) {
-        ctx.json( PolyType.availableTypes().stream().map( PolyTypeModel::from ).collect( Collectors.toList() ) );
+        ctx.json( PolyType.allowedFieldTypes().stream().map( PolyTypeModel::from ).collect( Collectors.toList() ) );
     }
 
 
@@ -2702,13 +2717,14 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
 
     void getFile( final Context ctx ) {
-        getFile( ctx, ".polypheny/tmp/", true );
+        getFile( ctx, "tmp", true );
     }
 
 
     private File getFile( Context ctx, String location, boolean sendBack ) {
         String fileName = ctx.pathParam( "file" );
-        File f = new File( System.getProperty( "user.home" ), location + fileName );
+        File folder = PolyphenyHomeDirManager.getInstance().registerNewFolder( location );
+        File f = PolyphenyHomeDirManager.getInstance().registerNewFile( folder, fileName );
         if ( !f.exists() ) {
             ctx.status( 404 );
             ctx.result( "" );
@@ -2834,22 +2850,22 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         if ( request.filter != null ) {
             query += " " + filterTable( request.filter );
         }
-        Statement statement = transaction.createStatement();
+
         QueryLanguage language = QueryLanguage.from( "sql" );
         ImplementationContext context = LanguageManager.getINSTANCE().anyPrepareQuery(
                 QueryContext.builder()
                         .query( query )
                         .language( language )
                         .origin( ORIGIN )
-                        .transactionManager( transactionManager ).build(), statement ).get( 0 );
-        List<List<PolyValue>> values = context.execute( statement ).getIterator().getNextBatch();
+                        .transactionManager( transactionManager ).build(), transaction ).get( 0 );
+        List<List<PolyValue>> values = context.execute( context.getStatement() ).getIterator().getNextBatch();
         // We expect the result to be in the first column of the first row
         if ( values.isEmpty() || values.get( 0 ).isEmpty() ) {
             return 0;
         } else {
             PolyNumber number = values.get( 0 ).get( 0 ).asNumber();
-            if ( statement.getMonitoringEvent() != null ) {
-                StatementEvent eventData = statement.getMonitoringEvent();
+            if ( context.getStatement().getMonitoringEvent() != null ) {
+                StatementEvent eventData = context.getStatement().getMonitoringEvent();
                 eventData.setRowCount( number.longValue() );
             }
             return number.longValue();
@@ -3044,7 +3060,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         Map<String, Object> dockerInstance = DockerManager.getInstance().getDockerInstances()
                 .values()
                 .stream()
-                .filter( d -> d.getHost().equals( hostname ) )
+                .filter( d -> d.getHost().hostname().equals( hostname ) )
                 .map( DockerInstance::getMap )
                 .findFirst()
                 .orElse( Map.of() );
@@ -3116,7 +3132,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
     /**
      * Helper method to zip a directory
-     * from https://stackoverflow.com/questions/2403830
      */
     private static void zipDirectory( String basePath, File dir, ZipOutputStream zipOut ) throws IOException {
         byte[] buffer = new byte[4096];
@@ -3148,7 +3163,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 .values()
                 .stream()
                 .map( PluginStatus::from )
-                .collect( Collectors.toList() ) );
+                .toList() );
     }
 
 
@@ -3157,19 +3172,5 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         authCrud.broadcast( SnapshotModel.from( Catalog.snapshot() ) );
     }
 
-
-    public static class QueryExecutionException extends Exception {
-
-
-        QueryExecutionException( String message, Throwable t ) {
-            super( message, t );
-        }
-
-
-        QueryExecutionException( Throwable t ) {
-            super( t );
-        }
-
-    }
 
 }

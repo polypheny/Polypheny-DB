@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -80,8 +80,8 @@ public class SqlUnnestOperator extends SqlFunctionalOperator implements UnnestOp
 
             assert type instanceof ArrayType || type instanceof MultisetPolyType || type instanceof MapPolyType;
             if ( type instanceof MapPolyType ) {
-                builder.add( null, UnnestOperator.MAP_KEY_COLUMN_NAME, null, type.unwrap( MapPolyType.class ).getKeyType() );
-                builder.add( null, UnnestOperator.MAP_VALUE_COLUMN_NAME, null, type.unwrap( MapPolyType.class ).getValueType() );
+                builder.add( null, UnnestOperator.MAP_KEY_COLUMN_NAME, null, type.unwrap( MapPolyType.class ).orElseThrow().getKeyType() );
+                builder.add( null, UnnestOperator.MAP_VALUE_COLUMN_NAME, null, type.unwrap( MapPolyType.class ).orElseThrow().getValueType() );
             } else {
                 if ( type.getComponentType().isStruct() ) {
                     builder.addAll( type.getComponentType().getFields() );
