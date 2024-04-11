@@ -28,12 +28,12 @@ import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.protointerface.statements.StatementManager;
 
-public class MonitoringPage {
+class MonitoringPage {
 
     @Setter
     private ClientManager clientManager;
 
-    private Set<StatementManager> statementManagers;
+    private final Set<StatementManager> statementManagers = new HashSet<>();
     private final InformationPage informationPage;
     private final InformationGroup interfaceGroup;
     private final InformationTable statementsTable;
@@ -43,9 +43,7 @@ public class MonitoringPage {
     private final InformationTable connectionListTable;
 
 
-    public MonitoringPage( String uniqueName, String description ) {
-        statementManagers = new HashSet<>();
-
+    MonitoringPage( String uniqueName, String description ) {
         InformationManager informationManager = InformationManager.getInstance();
 
         informationPage = new InformationPage( uniqueName, description )
@@ -75,13 +73,13 @@ public class MonitoringPage {
     }
 
 
-    public void update() {
+    private void update() {
         connectionsTable.reset();
         connectionsTable.addRow( "Open Connections", clientManager.getClientCount() );
 
         statementsTable.reset();
         AtomicInteger statementCount = new AtomicInteger();
-        statementManagers.forEach(m -> statementCount.addAndGet( m.openStatementCount() ) );
+        statementManagers.forEach( m -> statementCount.addAndGet( m.openStatementCount() ) );
         statementsTable.addRow( "Open Statements", statementCount.get() );
 
         connectionListTable.reset();
@@ -105,12 +103,12 @@ public class MonitoringPage {
     }
 
 
-    public void addStatementManager( StatementManager statementManager ) {
+    void addStatementManager( StatementManager statementManager ) {
         statementManagers.add( statementManager );
     }
 
 
-    public void removeStatementManager( StatementManager statementManager ) {
+    void removeStatementManager( StatementManager statementManager ) {
         statementManagers.remove( statementManager );
     }
 
@@ -123,4 +121,5 @@ public class MonitoringPage {
         im.removeGroup( interfaceGroup );
         im.removePage( informationPage );
     }
+
 }

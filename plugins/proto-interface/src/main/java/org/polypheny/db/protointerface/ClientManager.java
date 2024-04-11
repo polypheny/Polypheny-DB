@@ -40,7 +40,7 @@ import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 
 @Slf4j
-public class ClientManager {
+class ClientManager {
 
     private final ConcurrentHashMap<String, PIClient> clients;
     private final Authenticator authenticator;
@@ -48,7 +48,7 @@ public class ClientManager {
     private final MonitoringPage monitoringPage;
 
 
-    public ClientManager( PIPlugin.ProtoInterface protoInterface ) {
+    ClientManager( PIPlugin.ProtoInterface protoInterface ) {
         this.clients = new ConcurrentHashMap<>();
         this.authenticator = protoInterface.getAuthenticator();
         this.transactionManager = protoInterface.getTransactionManager();
@@ -57,7 +57,7 @@ public class ClientManager {
     }
 
 
-    public void unregisterConnection( PIClient client ) {
+    void unregisterConnection( PIClient client ) {
         synchronized ( client ) {
             client.prepareForDisposal();
             clients.remove( client.getClientUUID() );
@@ -65,7 +65,7 @@ public class ClientManager {
     }
 
 
-    public LogicalUser getUser( ConnectionRequest connectionRequest, Transport t ) throws AuthenticationException {
+    private LogicalUser getUser( ConnectionRequest connectionRequest, Transport t ) throws AuthenticationException {
         if ( connectionRequest.hasUsername() ) {
             String username = connectionRequest.getUsername();
             if ( !connectionRequest.hasPassword() ) {
@@ -90,7 +90,7 @@ public class ClientManager {
     }
 
 
-    public String registerConnection( ConnectionRequest connectionRequest, Transport t ) throws AuthenticationException, TransactionException, PIServiceException {
+    String registerConnection( ConnectionRequest connectionRequest, Transport t ) throws AuthenticationException, TransactionException, PIServiceException {
         byte[] raw = new byte[32];
         new SecureRandom().nextBytes( raw );
         String uuid = Base64.getUrlEncoder().encodeToString( raw );
@@ -119,12 +119,12 @@ public class ClientManager {
     }
 
 
-    public Stream<Entry<String, PIClient>> getClients() {
+    Stream<Entry<String, PIClient>> getClients() {
         return clients.entrySet().stream();
     }
 
 
-    public int getClientCount() {
+    int getClientCount() {
         return clients.size();
     }
 
@@ -151,7 +151,7 @@ public class ClientManager {
     }
 
 
-    public PIClient getClient( String clientUUID ) throws PIServiceException {
+    PIClient getClient( String clientUUID ) throws PIServiceException {
         return clients.get( clientUUID );
     }
 

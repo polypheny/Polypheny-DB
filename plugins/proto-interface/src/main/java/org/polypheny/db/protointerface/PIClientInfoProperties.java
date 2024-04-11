@@ -19,12 +19,11 @@ package org.polypheny.db.protointerface;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
-import lombok.AllArgsConstructor;
 
-public class PIClientInfoProperties extends Properties {
+class PIClientInfoProperties extends Properties {
 
     private static final int MAX_STRING_LENGTH = 2147483647;
-    public static final List<ClientInfoPropertiesDefault> DEFAULTS = Arrays.asList(
+    static final List<ClientInfoPropertiesDefault> DEFAULTS = Arrays.asList(
             new ClientInfoPropertiesDefault(
                     "ApplicationName",
                     "",
@@ -52,19 +51,13 @@ public class PIClientInfoProperties extends Properties {
     );
 
 
-    public PIClientInfoProperties() {
+    PIClientInfoProperties() {
         super();
         DEFAULTS.forEach( p -> setProperty( p.key, p.default_value ) );
     }
 
 
-    @AllArgsConstructor
-    public static class ClientInfoPropertiesDefault {
-
-        String key;
-        String default_value;
-        int maxlength;
-        String description;
+    record ClientInfoPropertiesDefault(String key, String default_value, int maxLength, String description) {
 
     }
 

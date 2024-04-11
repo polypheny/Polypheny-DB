@@ -61,10 +61,10 @@ import org.polypheny.db.protointerface.proto.Type;
 import org.polypheny.db.protointerface.proto.TypesResponse;
 import org.polypheny.db.type.PolyType;
 
-public class DbMetaRetriever {
+class DbMetaRetriever {
 
     // Namespace search by name and type
-    public static NamespacesResponse searchNamespaces( String namespacePattern, String namespaceType ) {
+    static NamespacesResponse searchNamespaces( String namespacePattern, String namespaceType ) {
         List<LogicalNamespace> namespaces = getLogicalNamespaces( namespacePattern, namespaceType );
         NamespacesResponse.Builder responseBuilder = NamespacesResponse.newBuilder();
         namespaces.forEach( namespace -> responseBuilder.addNamespaces( getNamespaceMeta( namespace ) ) );
@@ -102,7 +102,7 @@ public class DbMetaRetriever {
 
 
     // Entity search by namespace
-    public static EntitiesResponse searchEntities( String namespaceName, String entityPattern ) {
+    static EntitiesResponse searchEntities( String namespaceName, String entityPattern ) {
         EntitiesResponse.Builder responseBuilder = EntitiesResponse.newBuilder();
         LogicalNamespace namespace = Catalog.getInstance().getSnapshot().getNamespace( namespaceName ).orElseThrow();
         switch ( namespace.getDataModel() ) {
@@ -247,29 +247,24 @@ public class DbMetaRetriever {
     }
 
 
-    public static List<Entity> getDocumentEntities( long namespaceId, String entityPattern ) {
+    static List<Entity> getDocumentEntities( long namespaceId, String entityPattern ) {
         return null;
     }
 
 
-    public static List<Entity> getGraphEntities( long namespaceId, String entityPattern ) {
+    static List<Entity> getGraphEntities( long namespaceId, String entityPattern ) {
         return null;
     }
 
 
-    private static List<LogicalIndex> getLogicalIndexesOf( long entityId, boolean unique ) {
-        return Catalog.getInstance().getSnapshot().rel().getIndexes( entityId, unique );
-    }
-
-
-    public static synchronized DefaultNamespaceResponse getDefaultNamespace() {
+    static synchronized DefaultNamespaceResponse getDefaultNamespace() {
         return DefaultNamespaceResponse.newBuilder()
                 .setDefaultNamespace( Catalog.DEFAULT_NAMESPACE_NAME )
                 .build();
     }
 
 
-    public static synchronized TableTypesResponse getTableTypes() {
+    static synchronized TableTypesResponse getTableTypes() {
         List<String> tableTypes = Arrays.stream( EntityType.values() ).map( EntityType::name ).toList();
         TableTypesResponse.Builder responseBuilder = TableTypesResponse.newBuilder();
         tableTypes.forEach( tableType -> responseBuilder.addTableTypes( getTableTypeMeta( tableType ) ) );
@@ -282,7 +277,7 @@ public class DbMetaRetriever {
     }
 
 
-    public static synchronized TypesResponse getTypes() {
+    static synchronized TypesResponse getTypes() {
         TypesResponse.Builder responseBuilder = TypesResponse.newBuilder();
         Arrays.stream( PolyType.values() ).forEach( polyType -> responseBuilder.addTypes( getTypeMeta( polyType ) ) );
         return responseBuilder.build();
@@ -306,19 +301,13 @@ public class DbMetaRetriever {
     }
 
 
-    public static String getSqlKeywords() {
-        // TODO: get data after functionality is implemented
-        return "";
-    }
-
-
-    public static ProceduresResponse getProcedures( String languageName, String procedureNamePattern ) {
+    static ProceduresResponse getProcedures( String languageName, String procedureNamePattern ) {
         // TODO: get data after functionality is implemented
         return ProceduresResponse.newBuilder().build();
     }
 
 
-    public static ClientInfoPropertyMetaResponse getClientInfoProperties() {
+    static ClientInfoPropertyMetaResponse getClientInfoProperties() {
         List<ClientInfoPropertyMeta> propertyInfoMetas = PIClientInfoProperties.DEFAULTS.stream()
                 .map( DbMetaRetriever::getClientInfoPropertyMeta ).collect( Collectors.toList() );
         return ClientInfoPropertyMetaResponse.newBuilder()
@@ -329,15 +318,15 @@ public class DbMetaRetriever {
 
     private static ClientInfoPropertyMeta getClientInfoPropertyMeta( PIClientInfoProperties.ClientInfoPropertiesDefault clientInfoPropertiesDefault ) {
         return ClientInfoPropertyMeta.newBuilder()
-                .setKey( clientInfoPropertiesDefault.key )
-                .setDefaultValue( clientInfoPropertiesDefault.default_value )
-                .setMaxlength( clientInfoPropertiesDefault.maxlength )
-                .setDescription( clientInfoPropertiesDefault.description )
+                .setKey( clientInfoPropertiesDefault.key() )
+                .setDefaultValue( clientInfoPropertiesDefault.default_value() )
+                .setMaxlength( clientInfoPropertiesDefault.maxLength() )
+                .setDescription( clientInfoPropertiesDefault.description() )
                 .build();
     }
 
 
-    public static FunctionsResponse getFunctions( QueryLanguage language, FunctionCategory functionCategory ) {
+    static FunctionsResponse getFunctions( QueryLanguage language, FunctionCategory functionCategory ) {
         List<Function> functions = OperatorRegistry.getMatchingOperators( language ).values().stream()
                 .filter( o -> o instanceof org.polypheny.db.nodes.Function )
                 .map( org.polypheny.db.nodes.Function.class::cast )
@@ -358,7 +347,7 @@ public class DbMetaRetriever {
     }
 
 
-    public static DbmsVersionResponse getDbmsVersion() {
+    static DbmsVersionResponse getDbmsVersion() {
         try {
             String versionName = PolyphenyDb.class.getPackage().getImplementationVersion();
             if ( versionName == null ) {

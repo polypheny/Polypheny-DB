@@ -44,12 +44,11 @@ public class PIClient {
     @Getter
     @Setter
     private LogicalNamespace namespace;
-    private boolean isActive;
     @Getter
     private final MonitoringPage monitoringPage;
 
 
-    public PIClient(
+    PIClient(
             String clientUUID,
             LogicalUser catalogUser,
             TransactionManager transactionManager,
@@ -63,7 +62,6 @@ public class PIClient {
         this.catalogUser = catalogUser;
         this.transactionManager = transactionManager;
         this.isAutoCommit = isAutoCommit;
-        this.isActive = true;
         this.monitoringPage = monitoringPage;
         monitoringPage.addStatementManager( statementManager );
     }
@@ -87,7 +85,7 @@ public class PIClient {
     }
 
 
-    public void commitCurrentTransaction() throws PIServiceException {
+    void commitCurrentTransaction() throws PIServiceException {
         synchronized ( this ) {
             commitCurrentTransactionUnsynchronized();
         }
@@ -108,7 +106,7 @@ public class PIClient {
     }
 
 
-    public void rollbackCurrentTransaction() throws PIServiceException {
+    void rollbackCurrentTransaction() throws PIServiceException {
         synchronized ( this ) {
             if ( hasNoTransaction() ) {
                 return;
@@ -134,24 +132,12 @@ public class PIClient {
     }
 
 
-    public void prepareForDisposal() {
+    void prepareForDisposal() {
         statementManager.closeAll();
         if ( !hasNoTransaction() ) {
             rollbackCurrentTransaction();
         }
         monitoringPage.removeStatementManager( statementManager );
-    }
-
-
-    public void setIsActive() {
-        isActive = true;
-    }
-
-
-    public boolean returnAndResetIsActive() {
-        boolean oldIsActive = isActive;
-        isActive = false;
-        return oldIsActive;
     }
 
 }

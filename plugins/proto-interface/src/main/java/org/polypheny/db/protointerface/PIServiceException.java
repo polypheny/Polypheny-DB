@@ -19,9 +19,10 @@ package org.polypheny.db.protointerface;
 import java.sql.SQLException;
 import java.util.Optional;
 import lombok.Getter;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.protointerface.proto.ErrorDetails;
 
-public class PIServiceException extends RuntimeException {
+public class PIServiceException extends GenericRuntimeException {
 
     @Getter
     private String state;
@@ -51,11 +52,6 @@ public class PIServiceException extends RuntimeException {
 
     public PIServiceException( String reason ) {
         super( reason );
-    }
-
-
-    public PIServiceException() {
-        super();
     }
 
 

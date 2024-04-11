@@ -45,7 +45,7 @@ import org.polypheny.db.util.PolyphenyHomeDirManager;
 import org.polypheny.db.util.Util;
 
 @Slf4j
-public class PIServer {
+class PIServer {
 
     private final ServerSocketChannel server;
     private final static AtomicLong ID_COUNTER = new AtomicLong();
@@ -160,7 +160,7 @@ public class PIServer {
     }
 
 
-    public void shutdown() throws InterruptedException, IOException {
+    void shutdown() throws InterruptedException, IOException {
         if ( log.isTraceEnabled() ) {
             log.trace( "proto-interface server shutdown requested" );
         }
