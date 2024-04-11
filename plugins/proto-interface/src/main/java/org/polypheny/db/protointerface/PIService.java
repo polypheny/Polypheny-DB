@@ -202,27 +202,24 @@ class PIService {
         Thread handle = null;
         try {
             while ( true ) {
-                CompletableFuture<?> next;
-
-                // New request available for processing
-                if ( !waiting.isEmpty() ) {
-                    response = new CompletableFuture<>();
-                    CompletableFuture<Response> finalResponse = response;
-                    Request req = waiting.remove();
-                    handle = new Thread( () -> handleRequest( req, finalResponse ), String.format( "ProtoConnection%dRequest%dHandler", connectionId, req.getId() ) );
-                    handle.setUncaughtExceptionHandler( ( t, e ) -> finalResponse.completeExceptionally( e ) );
-                    handle.start();
-                }
-
                 if ( response == null ) {
-                    // currently processing nothing. wait for new request
-                    next = request;
-                } else {
-                    // currently processing a request. wait for result or new request
-                    next = CompletableFuture.anyOf( request, response );
+                    Request req = waiting.poll();
+                    if ( req != null ) {
+                        response = new CompletableFuture<>();
+                        CompletableFuture<Response> finalResponse = response;
+                        handle = new Thread( () -> handleRequest( req, finalResponse ), String.format( "ProtoConnection%dRequest%dHandler", connectionId, req.getId() ) );
+                        handle.setUncaughtExceptionHandler( ( t, e ) -> finalResponse.completeExceptionally( e ) );
+                        handle.start();
+                    }
                 }
 
-                next.get();
+                // Wait for next event
+                if ( response == null ) {
+                    request.get();
+                } else {
+                    CompletableFuture.anyOf( request, response ).get();
+                }
+
                 if ( request.isDone() ) {
                     waiting.add( request.get() );
                     request = waitForRequest();
