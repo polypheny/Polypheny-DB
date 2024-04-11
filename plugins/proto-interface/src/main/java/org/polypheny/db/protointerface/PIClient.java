@@ -70,12 +70,12 @@ public class PIClient {
 
 
     public Transaction getCurrentOrCreateNewTransaction() {
-        synchronized ( this ) {
-            if ( currentTransaction == null || !currentTransaction.isActive() ) {
+        //synchronized ( this ) {
+            if ( hasNoTransaction() ) {
                 currentTransaction = transactionManager.startTransaction( catalogUser.id, namespace.id, false, "PrismInterface" );
             }
             return currentTransaction;
-        }
+        //}
     }
 
 
@@ -88,9 +88,9 @@ public class PIClient {
 
 
     public void commitCurrentTransaction() throws PIServiceException {
-        synchronized ( this ) {
+        //synchronized ( this ) {
             commitCurrentTransactionUnsynchronized();
-        }
+        //}
     }
 
 
@@ -103,28 +103,29 @@ public class PIClient {
         } catch ( TransactionException e ) {
             throw new PIServiceException( "Committing current transaction failed: " + e.getMessage() );
         } finally {
-            endCurrentTransaction();
+            clearCurrentTransaction();
         }
     }
 
 
     public void rollbackCurrentTransaction() throws PIServiceException {
-        synchronized ( this ) {
+        //synchronized ( this ) {
             if ( hasNoTransaction() ) {
                 return;
             }
             try {
+                currentTransaction.getCancelFlag().set( true );
                 currentTransaction.rollback();
             } catch ( TransactionException e ) {
                 throw new PIServiceException( "Rollback of current transaction failed: " + e.getLocalizedMessage() );
             } finally {
-                endCurrentTransaction();
+                clearCurrentTransaction();
             }
-        }
+        //}
     }
 
 
-    private void endCurrentTransaction() {
+    private void clearCurrentTransaction() {
         currentTransaction = null;
     }
 
@@ -136,9 +137,7 @@ public class PIClient {
 
     public void prepareForDisposal() {
         statementManager.closeAll();
-        if ( !hasNoTransaction() ) {
-            rollbackCurrentTransaction();
-        }
+        rollbackCurrentTransaction();
         monitoringPage.removeStatementManager( statementManager );
     }
 

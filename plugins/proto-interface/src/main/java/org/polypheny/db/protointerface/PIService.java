@@ -203,6 +203,8 @@ public class PIService {
         try {
             while ( true ) {
                 CompletableFuture<?> next;
+
+                // New request available for processing
                 if ( !waiting.isEmpty() ) {
                     response = new CompletableFuture<>();
                     CompletableFuture<Response> finalResponse = response;
@@ -211,9 +213,12 @@ public class PIService {
                     handle.setUncaughtExceptionHandler( ( t, e ) -> finalResponse.completeExceptionally( e ) );
                     handle.start();
                 }
+
                 if ( response == null ) {
+                    // currently processing nothing. wait for new request
                     next = request;
                 } else {
+                    // currently processing a request. wait for result or new request
                     next = CompletableFuture.anyOf( request, response );
                 }
 
@@ -255,7 +260,6 @@ public class PIService {
             if ( uuid != null ) {
                 clientManager.unregisterConnection( clientManager.getClient( uuid ) );
             }
-
             Util.closeNoThrow( con );
         }
     }
@@ -271,7 +275,7 @@ public class PIService {
     }
 
 
-    private Response handleMessage( Request req ) throws TransactionException, AuthenticationException, IOException {
+    private Response handleMessage( Request req ) throws IOException {
         return switch ( req.getTypeCase() ) {
             case DBMS_VERSION_REQUEST -> getDbmsVersion( req.getDbmsVersionRequest(), new ResponseMaker<>( req, "dbms_version_response" ) );
             case LANGUAGE_REQUEST -> throw new NotImplementedException( "Currently not used" );
