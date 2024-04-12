@@ -208,7 +208,7 @@ public class DdlManagerImpl extends DdlManager {
     @Override
     public void createStore( String uniqueName, String adapterName, AdapterType adapterType, Map<String, String> config, DeployMode mode ) {
         uniqueName = uniqueName.toLowerCase();
-        Adapter<?> adapter = AdapterManager.getInstance().addAdapter( adapterName, uniqueName, adapterType, mode, config );
+        AdapterManager.getInstance().addAdapter( adapterName, uniqueName, adapterType, mode, config );
     }
 
 
@@ -478,12 +478,12 @@ public class DdlManagerImpl extends DdlManager {
                 columnName,
                 table.id,
                 position,
-                type.type,
-                type.collectionType,
-                type.precision,
-                type.scale,
-                type.dimension,
-                type.cardinality,
+                type.type(),
+                type.collectionType(),
+                type.precision(),
+                type.scale(),
+                type.dimension(),
+                type.cardinality(),
                 nullable,
                 Collation.getDefaultCollation()
         );
@@ -1087,14 +1087,16 @@ public class DdlManagerImpl extends DdlManager {
 
         LogicalColumn logicalColumn = catalog.getSnapshot().rel().getColumn( table.id, columnName ).orElseThrow();
 
+        checkValidType( type );
+
         catalog.getLogicalRel( table.namespaceId ).setColumnType(
                 logicalColumn.id,
-                type.type,
-                type.collectionType,
-                type.precision,
-                type.scale,
-                type.dimension,
-                type.cardinality );
+                type.type(),
+                type.collectionType(),
+                type.precision(),
+                type.scale(),
+                type.dimension(),
+                type.cardinality() );
         catalog.updateSnapshot();
         for ( AllocationColumn allocationColumn : catalog.getSnapshot().alloc().getColumnFromLogical( logicalColumn.id ).orElseThrow() ) {
             for ( AllocationEntity allocation : catalog.getSnapshot().alloc().getAllocsOfPlacement( allocationColumn.placementId ) ) {
@@ -1109,6 +1111,14 @@ public class DdlManagerImpl extends DdlManager {
 
         // Reset plan cache implementation cache & routing cache
         statement.getQueryProcessor().resetCaches();
+    }
+
+
+    private static void checkValidType( ColumnTypeInformation type ) {
+        // check arrays to be correctly typed
+        if ( type.type() == PolyType.ARRAY && type.collectionType() == null ) {
+            throw new GenericRuntimeException( "Array type must specify a collection type" );
+        }
     }
 
 
@@ -1635,17 +1645,17 @@ public class DdlManagerImpl extends DdlManager {
 
         for ( FieldInformation column : columns ) {
             catalog.getLogicalRel( namespaceId ).addColumn(
-                    column.name,
+                    column.name(),
                     view.id,
-                    column.position,
-                    column.typeInformation.type,
-                    column.typeInformation.collectionType,
-                    column.typeInformation.precision,
-                    column.typeInformation.scale,
-                    column.typeInformation.dimension,
-                    column.typeInformation.cardinality,
-                    column.typeInformation.nullable,
-                    column.collation );
+                    column.position(),
+                    column.typeInformation().type(),
+                    column.typeInformation().collectionType(),
+                    column.typeInformation().precision(),
+                    column.typeInformation().scale(),
+                    column.typeInformation().dimension(),
+                    column.typeInformation().cardinality(),
+                    column.typeInformation().nullable(),
+                    column.collation() );
         }
 
         catalog.updateSnapshot();
@@ -1712,11 +1722,11 @@ public class DdlManagerImpl extends DdlManager {
         Map<String, LogicalColumn> ids = new LinkedHashMap<>();
 
         for ( FieldInformation field : fields ) {
-            ids.put( field.name, addColumn( namespaceId, field.name, field.typeInformation, field.collation, field.defaultValue, view.id, field.position ) );
+            ids.put( field.name(), addColumn( namespaceId, field.name(), field.typeInformation(), field.collation(), field.defaultValue(), view.id, field.position() ) );
         }
 
         // Sets previously created primary key
-        long pkId = ids.get( fields.get( fields.size() - 1 ).name ).id;
+        long pkId = ids.get( fields.get( fields.size() - 1 ).name() ).id;
         catalog.getLogicalRel( namespaceId ).addPrimaryKey( view.id, List.of( pkId ) );
         catalog.getLogicalRel( view.namespaceId ).addConstraint( view.id, ConstraintType.PRIMARY.name(), List.of( pkId ), ConstraintType.PRIMARY );
 
@@ -2020,7 +2030,7 @@ public class DdlManagerImpl extends DdlManager {
 
         Map<String, LogicalColumn> ids = new HashMap<>();
         for ( FieldInformation information : fields ) {
-            ids.put( information.name, addColumn( namespaceId, information.name, information.typeInformation, information.collation, information.defaultValue, logical.id, information.position ) );
+            ids.put( information.name(), addColumn( namespaceId, information.name(), information.typeInformation(), information.collation(), information.defaultValue(), logical.id, information.position() ) );
         }
 
         List<Long> pkIds = new ArrayList<>();
@@ -2672,17 +2682,20 @@ public class DdlManagerImpl extends DdlManager {
 
     private LogicalColumn addColumn( long namespaceId, String columnName, ColumnTypeInformation typeInformation, Collation collation, PolyValue defaultValue, long tableId, int position ) {
         columnName = adjustNameIfNeeded( columnName, namespaceId );
+        // check arrays to be correctly typed
+        checkValidType( typeInformation );
+
         LogicalColumn addedColumn = catalog.getLogicalRel( namespaceId ).addColumn(
                 columnName,
                 tableId,
                 position,
-                typeInformation.type,
-                typeInformation.collectionType,
-                typeInformation.precision,
-                typeInformation.scale,
-                typeInformation.dimension,
-                typeInformation.cardinality,
-                typeInformation.nullable,
+                typeInformation.type(),
+                typeInformation.collectionType(),
+                typeInformation.precision(),
+                typeInformation.scale(),
+                typeInformation.dimension(),
+                typeInformation.cardinality(),
+                typeInformation.nullable(),
                 collation
         );
 

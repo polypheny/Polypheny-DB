@@ -54,25 +54,17 @@ import org.polypheny.db.util.Util;
  *
  * Currently it only supports simple datatypes like CHAR, VARCHAR and DOUBLE, with optional precision and scale.
  */
+@Getter
 public class SqlDataTypeSpec extends SqlNode implements DataTypeSpec {
 
-    @Getter
     private final SqlIdentifier collectionsTypeName;
-    @Getter
     private final SqlIdentifier typeName;
-    @Getter
     private final SqlIdentifier baseTypeName;
-    @Getter
     private final int scale;
-    @Getter
     private final int precision;
-    @Getter
     private final int dimension;
-    @Getter
     private final int cardinality;
-    @Getter
     private final String charSetName;
-    @Getter
     private final TimeZone timeZone;
 
     /**
@@ -80,7 +72,6 @@ public class SqlDataTypeSpec extends SqlNode implements DataTypeSpec {
      * <p>
      * Nullable is nullable! Null means "not specified". E.g. {@code CAST(x AS INTEGER)} preserves has the same nullability as {@code x}.
      */
-    @Getter
     private Boolean nullable;
 
 

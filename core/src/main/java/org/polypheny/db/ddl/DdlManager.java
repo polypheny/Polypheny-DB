@@ -564,23 +564,7 @@ public abstract class DdlManager {
      * Helper class which holds all information required for creating a column,
      * decoupled from a specific query language
      */
-    @Value
-    public static class FieldInformation {
-
-        public String name;
-        public ColumnTypeInformation typeInformation;
-        public Collation collation;
-        public PolyValue defaultValue;
-        public int position;
-
-
-        public FieldInformation( String name, ColumnTypeInformation typeInformation, Collation collation, PolyValue defaultValue, int position ) {
-            this.name = name;
-            this.typeInformation = typeInformation;
-            this.collation = collation;
-            this.defaultValue = defaultValue;
-            this.position = position;
-        }
+    public record FieldInformation(String name, ColumnTypeInformation typeInformation, Collation collation, PolyValue defaultValue, int position) {
 
     }
 
@@ -620,18 +604,8 @@ public abstract class DdlManager {
      * Helper class, which holds all type information for a column
      * decoupled from the used query language
      */
-    @Value
-    public static class ColumnTypeInformation {
 
-        public PolyType type;
-        @Nullable
-        public PolyType collectionType;
-        public Integer precision;
-        public Integer scale;
-        public Integer dimension;
-        public Integer cardinality;
-        public Boolean nullable;
-
+    public record ColumnTypeInformation(PolyType type, @Nullable PolyType collectionType, Integer precision, Integer scale, Integer dimension, Integer cardinality, Boolean nullable) {
 
         public ColumnTypeInformation(
                 PolyType type,

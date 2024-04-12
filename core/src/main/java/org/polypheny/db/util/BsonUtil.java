@@ -19,6 +19,7 @@ package org.polypheny.db.util;
 import com.mongodb.client.gridfs.GridFSBucket;
 import java.io.PushbackInputStream;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
@@ -29,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -193,12 +195,12 @@ public class BsonUtil {
         }
         return switch ( type ) {
             case BIGINT -> handleBigInt( obj );
-            case DECIMAL -> handleDecimal( obj );
+            case DECIMAL -> handleDecimal( obj, Optional.empty() );
             case TINYINT -> handleTinyInt( obj );
             case SMALLINT -> handleSmallInt( obj );
             case INTEGER -> handleInteger( obj );
             case FLOAT, REAL -> new BsonDouble( Double.parseDouble( obj.toString() ) );
-            case DOUBLE -> handleDouble( obj );
+            case DOUBLE -> handleDouble( obj, Optional.empty() );
             case DATE -> handleDate( obj );
             case TIME -> handleTime( obj );
             case TIMESTAMP -> handleTimestamp( obj );
@@ -220,7 +222,7 @@ public class BsonUtil {
      * @param bucket the bucket can be used to retrieve multimedia objects
      * @return the transformer method, which can be used to get the correct BsonValues
      */
-    public static Function<PolyValue, BsonValue> getBsonTransformer( Queue<PolyType> types, GridFSBucket bucket ) {
+    public static Function<PolyValue, BsonValue> getBsonTransformer( Queue<Pair<PolyType, Optional<Integer>>> types, GridFSBucket bucket ) {
         Function<PolyValue, BsonValue> function = getBsonTransformerPrimitive( types, bucket );
         return ( o ) -> {
             if ( o == null || o.isNull() ) {
@@ -240,15 +242,16 @@ public class BsonUtil {
      * @param bucket the bucket can be used to retrieve multimedia objects
      * @return the transformer method, which can be used to get the correct BsonValues
      */
-    private static Function<PolyValue, BsonValue> getBsonTransformerPrimitive( Queue<PolyType> types, GridFSBucket bucket ) {
-        return switch ( Objects.requireNonNull( types.poll() ) ) {
+    private static Function<PolyValue, BsonValue> getBsonTransformerPrimitive( Queue<Pair<PolyType, Optional<Integer>>> types, GridFSBucket bucket ) {
+        Pair<PolyType, Optional<Integer>> type = types.poll();
+        return switch ( Objects.requireNonNull( type.left ) ) {
             case BIGINT -> BsonUtil::handleBigInt;
-            case DECIMAL -> BsonUtil::handleDecimal;
+            case DECIMAL -> obj -> handleDecimal( obj, type.right );
             case TINYINT -> BsonUtil::handleTinyInt;
             case SMALLINT -> BsonUtil::handleSmallInt;
             case INTEGER -> BsonUtil::handleInteger;
-            case FLOAT, REAL -> BsonUtil::handleNonDouble;
-            case DOUBLE -> BsonUtil::handleDouble;
+            case FLOAT, REAL -> obj -> handleNonDouble( obj, type.right );
+            case DOUBLE -> obj -> handleDouble( obj, type.right );
             case DATE -> BsonUtil::handleDate;
             case TIME -> BsonUtil::handleTime;
             case TIMESTAMP -> BsonUtil::handleTimestamp;
@@ -272,7 +275,7 @@ public class BsonUtil {
     }
 
 
-    private static BsonValue handleNonDouble( PolyValue obj ) {
+    private static BsonValue handleNonDouble( PolyValue obj, Optional<Integer> precision ) {
         return new BsonDouble( Double.parseDouble( obj.toString() ) );
     }
 
@@ -305,7 +308,7 @@ public class BsonUtil {
     }
 
 
-    private static BsonValue handleDouble( PolyValue obj ) {
+    private static BsonValue handleDouble( PolyValue obj, Optional<Integer> precision ) {
         return new BsonDouble( obj.asNumber().DoubleValue() );
     }
 
@@ -326,8 +329,10 @@ public class BsonUtil {
     }
 
 
-    private static BsonValue handleDecimal( PolyValue obj ) {
-        return new BsonDecimal128( new Decimal128( obj.asNumber().BigDecimalValue() ) );
+    private static BsonValue handleDecimal( PolyValue obj, Optional<Integer> precision ) {
+        BigDecimal decimal = obj.asNumber().BigDecimalValue();
+        decimal = precision.isPresent() ? decimal.setScale( precision.get(), RoundingMode.HALF_UP ) : decimal;
+        return new BsonDecimal128( new Decimal128( decimal ) );
     }
 
 
