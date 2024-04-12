@@ -180,7 +180,7 @@ public class StatementManager {
         }
         //synchronized ( statementToClose ) {
             openStatements.remove( statementId );
-            statementToClose.closeResults();
+            statementToClose.close();
         //}
     }
 

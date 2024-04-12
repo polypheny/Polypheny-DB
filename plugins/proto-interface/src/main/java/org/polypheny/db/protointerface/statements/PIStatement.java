@@ -68,6 +68,8 @@ public abstract class PIStatement {
     }
 
 
+    public abstract void close();
+
     public abstract PolyImplementation getImplementation();
 
     public abstract void setImplementation( PolyImplementation implementation );

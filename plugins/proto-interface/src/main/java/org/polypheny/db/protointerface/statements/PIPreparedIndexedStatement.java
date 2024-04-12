@@ -54,8 +54,7 @@ public class PIPreparedIndexedStatement extends PIPreparedStatement {
 
 
     public List<Long> executeBatch( List<List<PolyValue>> valuesBatch ) {
-        List<Long> updateCounts = new LinkedList<>();
-        synchronized ( this ) {
+        List<Long> updateCounts = new LinkedList<>();//synchronized ( this ) {
             if ( statement == null ) {
                 statement = client.getCurrentOrCreateNewTransaction().createStatement();
             } else {
@@ -71,14 +70,14 @@ public class PIPreparedIndexedStatement extends PIPreparedStatement {
             }
             StatementProcessor.implement( this );
             updateCounts.add( StatementProcessor.executeAndGetResult( this ).getScalar() );
-        }
+        //}
         return updateCounts;
     }
 
 
     @SuppressWarnings("Duplicates")
     public StatementResult execute( List<PolyValue> values, int fetchSize ) {
-        synchronized ( this ) {
+        //synchronized ( this ) {
             if ( statement == null ) {
                 statement = client.getCurrentOrCreateNewTransaction().createStatement();
             } else {
@@ -93,7 +92,13 @@ public class PIPreparedIndexedStatement extends PIPreparedStatement {
             }
             StatementProcessor.implement( this );
             return StatementProcessor.executeAndGetResult( this, fetchSize );
-        }
+        //}
+    }
+
+    @Override
+    public void close() {
+        statement.close();
+        closeResults();
     }
 
 

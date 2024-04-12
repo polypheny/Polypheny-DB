@@ -30,26 +30,25 @@ import org.polypheny.db.transaction.TransactionManager;
 public class PIClient {
 
     @Getter
-    private String clientUUID;
-    private LogicalUser catalogUser;
+    private final String clientUUID;
+    private final LogicalUser catalogUser;
     private Transaction currentTransaction;
-    private TransactionManager transactionManager;
+    private final TransactionManager transactionManager;
     @Getter
-    private StatementManager statementManager;
+    private final StatementManager statementManager;
     @Getter
-    private PIClientInfoProperties PIClientInfoProperties;
+    private final PIClientInfoProperties PIClientInfoProperties;
     @Getter
     @Setter
     private boolean isAutoCommit;
     @Getter
     @Setter
     private LogicalNamespace namespace;
-    private boolean isActive;
     @Getter
-    private MonitoringPage monitoringPage;
+    private final MonitoringPage monitoringPage;
 
 
-    public PIClient(
+    PIClient(
             String clientUUID,
             LogicalUser catalogUser,
             TransactionManager transactionManager,
@@ -63,19 +62,18 @@ public class PIClient {
         this.catalogUser = catalogUser;
         this.transactionManager = transactionManager;
         this.isAutoCommit = isAutoCommit;
-        this.isActive = true;
         this.monitoringPage = monitoringPage;
         monitoringPage.addStatementManager( statementManager );
     }
 
 
     public Transaction getCurrentOrCreateNewTransaction() {
-        synchronized ( this ) {
-            if ( currentTransaction == null || !currentTransaction.isActive() ) {
+        //synchronized ( this ) {
+            if ( hasNoTransaction() ) {
                 currentTransaction = transactionManager.startTransaction( catalogUser.id, namespace.id, false, "PrismInterface" );
             }
             return currentTransaction;
-        }
+        //}
     }
 
 
@@ -88,9 +86,9 @@ public class PIClient {
 
 
     public void commitCurrentTransaction() throws PIServiceException {
-        synchronized ( this ) {
+        //synchronized ( this ) {
             commitCurrentTransactionUnsynchronized();
-        }
+        //}
     }
 
 
@@ -103,28 +101,29 @@ public class PIClient {
         } catch ( TransactionException e ) {
             throw new PIServiceException( "Committing current transaction failed: " + e.getMessage() );
         } finally {
-            endCurrentTransaction();
+            clearCurrentTransaction();
         }
     }
 
 
     public void rollbackCurrentTransaction() throws PIServiceException {
-        synchronized ( this ) {
+        //synchronized ( this ) {
             if ( hasNoTransaction() ) {
                 return;
             }
             try {
+                currentTransaction.getCancelFlag().set( true );
                 currentTransaction.rollback();
             } catch ( TransactionException e ) {
                 throw new PIServiceException( "Rollback of current transaction failed: " + e.getLocalizedMessage() );
             } finally {
-                endCurrentTransaction();
+                clearCurrentTransaction();
             }
-        }
+        //}
     }
 
 
-    private void endCurrentTransaction() {
+    private void clearCurrentTransaction() {
         currentTransaction = null;
     }
 
@@ -134,24 +133,10 @@ public class PIClient {
     }
 
 
-    public void prepareForDisposal() {
+    void prepareForDisposal() {
         statementManager.closeAll();
-        if ( !hasNoTransaction() ) {
-            rollbackCurrentTransaction();
-        }
+        rollbackCurrentTransaction();
         monitoringPage.removeStatementManager( statementManager );
-    }
-
-
-    public void setIsActive() {
-        isActive = true;
-    }
-
-
-    public boolean returnAndResetIsActive() {
-        boolean oldIsActive = isActive;
-        isActive = false;
-        return oldIsActive;
     }
 
 }
