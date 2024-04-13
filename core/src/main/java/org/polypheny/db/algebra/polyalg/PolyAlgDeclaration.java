@@ -42,6 +42,7 @@ import org.polypheny.db.algebra.polyalg.arguments.ListArg;
 import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArg;
 import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.algebra.polyalg.arguments.RexArg;
+import org.polypheny.db.algebra.polyalg.arguments.StringArg;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.plan.AlgCluster;
 
@@ -236,6 +237,7 @@ public class PolyAlgDeclaration {
          */
         ANY( AnyArg.class ),
         INTEGER( IntArg.class ),
+        STRING( StringArg.class ),
 
         /**
          * A boolean flag, either "true" or "false".
@@ -249,7 +251,9 @@ public class PolyAlgDeclaration {
         AGGREGATE( AggArg.class ),
         ENTITY( EntityArg.class ),
 
-        JOIN_TYPE_ENUM( EnumArg.class, true ),
+        // Every new enum also needs to be added to the PolyAlgToAlgConverter like any other new ParamType
+        JOIN_TYPE_ENUM( EnumArg.class ),
+        MODIFY_OP_ENUM( EnumArg.class ),
 
         /**
          * A specific field (= column in the relational data model).
@@ -272,17 +276,15 @@ public class PolyAlgDeclaration {
         CORR_ID( CorrelationArg.class );
 
         private final Class<? extends PolyAlgArg> argClass;
-        private final boolean isEnum;
 
 
         ParamType( Class<? extends PolyAlgArg> argClass ) {
-            this( argClass, false );
+            this.argClass = argClass;
         }
 
 
-        ParamType( Class<? extends PolyAlgArg> argClass, boolean isEnum ) {
-            this.argClass = argClass;
-            this.isEnum = isEnum;
+        public boolean isEnum() {
+            return this.argClass == EnumArg.class;
         }
 
     }

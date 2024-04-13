@@ -118,6 +118,23 @@ public class PolyAlgRegistry {
                 .param( Parameter.builder().name( "condition" ).type( ParamType.SIMPLE_REX ).defaultValue( RexArg.NULL ).build() )
                 .build() );
 
+        declarations.put( LogicalRelModify.class, PolyAlgDeclaration.builder()
+                .creator( LogicalRelModify::create ).model( DataModel.RELATIONAL )
+                .opName( "MODIFY" ).numInputs( 1 ).opTags( logRelTags )
+                .param( Parameter.builder().name( "table" ).alias( "target" ).type( ParamType.ENTITY ).build() )
+                .param( Parameter.builder().name( "operation" ).type( ParamType.MODIFY_OP_ENUM ).build() )
+                .param( Parameter.builder().name( "targets" ).alias( "columns" ).isMultiValued( true ).type( ParamType.STRING ).defaultValue( ListArg.EMPTY ).build() )
+                .param( Parameter.builder().name( "sources" ).isMultiValued( true ).type( ParamType.SIMPLE_REX ).defaultValue( ListArg.EMPTY ).build() )
+                .param( Parameter.builder().name( "flattened" ).type( ParamType.BOOLEAN ).defaultValue( BooleanArg.FALSE ).build() )
+                .build() );
+
+        declarations.put( LogicalRelValues.class, PolyAlgDeclaration.builder()
+                .creator( LogicalRelValues::create ).model( DataModel.RELATIONAL )
+                .opName( "VALUES" ).numInputs( 0 ).opTags( logRelTags )
+                .param( Parameter.builder().name( "names" ).isMultiValued( true ).type( ParamType.STRING ).build() )
+                .param( Parameter.builder().name( "tuples" ).isMultiValued( true ).type( ParamType.SIMPLE_REX ).build() )
+                .build() );
+
     }
 
 

@@ -17,10 +17,12 @@
 package org.polypheny.db.algebra.polyalg;
 
 
+import com.google.common.collect.ImmutableList;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.polypheny.db.algebra.AlgNode;
@@ -173,6 +175,28 @@ public class PolyAlgUtils {
             }
         }
         return outerList;
+    }
+
+    public static <T extends PolyAlgArg, E> List<List<E>> getNestedListArgAsList( ListArg<ListArg> outerListArg, Function<T, E> mapper) {
+        List<List<E>> outerList = new ArrayList<>();
+        for ( List<T> list : outerListArg.map( ListArg::getArgs ) ) {
+            if ( list.isEmpty() ) {
+                outerList.add( List.of() );
+            } else {
+                outerList.add( list.stream().map( mapper ).toList() );
+            }
+        }
+        return outerList;
+    }
+
+    public static <T> ImmutableList<ImmutableList<T>> toImmutableNestedList(List<List<T>> nestedList) {
+        ImmutableList.Builder<ImmutableList<T>> builder = ImmutableList.builder();
+
+        for (List<T> innerList : nestedList) {
+            builder.add(ImmutableList.copyOf(innerList));
+        }
+
+        return builder.build();
     }
 
 
@@ -351,6 +375,7 @@ public class PolyAlgUtils {
             PrintWriter pw = new PrintWriter( sw );
             int clauseCount = 0;
             if ( !window.partitionKeys.isEmpty() ) {
+                clauseCount++;
                 pw.print( "PARTITION BY " );
                 for ( int i = 0; i < window.partitionKeys.size(); i++ ) {
                     if ( i > 0 ) {

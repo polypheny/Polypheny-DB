@@ -34,6 +34,7 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.CorrelationId;
 import org.polypheny.db.algebra.core.Sort;
+import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration;
@@ -53,6 +54,7 @@ import org.polypheny.db.algebra.polyalg.arguments.ListArg;
 import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArg;
 import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.algebra.polyalg.arguments.RexArg;
+import org.polypheny.db.algebra.polyalg.arguments.StringArg;
 import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgAliasedArgument;
 import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgExpression;
 import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgExpressionExtension;
@@ -226,10 +228,12 @@ public class PolyAlgToAlgConverter {
 
     private PolyAlgArg convertExpression( Parameter p, PolyAlgExpression exp, String alias, Context ctx ) {
         //System.out.println( "PolyAlgExpression: " + exp.toString() + " AS " + alias);
-        return switch ( p.getType() ) {
+        ParamType pType = p.getType();
+        return switch ( pType ) {
             case ANY -> new AnyArg( exp.toString() );
             case INTEGER -> new IntArg( exp.toInt() );
             case BOOLEAN -> new BooleanArg( exp.toBoolean() );
+            case STRING -> new StringArg( exp.toString() );
             case SIMPLE_REX -> {
                 RexNode node = convertRexNode( exp, ctx );
                 yield new RexArg( node, alias == null ? exp.getDefaultAlias() : alias );
@@ -237,6 +241,7 @@ public class PolyAlgToAlgConverter {
             case AGGREGATE -> new AggArg( convertAggCall( exp, alias, ctx ) );
             case ENTITY -> new EntityArg( convertEntity( exp, ctx.dataModel ) );
             case JOIN_TYPE_ENUM -> new EnumArg<>( exp.toEnum( JoinType.class ), ParamType.JOIN_TYPE_ENUM );
+            case MODIFY_OP_ENUM -> new EnumArg<>( exp.toEnum( Modify.Operation.class ), ParamType.MODIFY_OP_ENUM );
             case FIELD -> new FieldArg( ctx.getFieldOrdinal( exp.toIdentifier() ) );
             case EMPTY_LIST -> ListArg.EMPTY;
             case COLLATION -> new CollationArg( convertCollation( exp, ctx ) );
@@ -261,8 +266,7 @@ public class PolyAlgToAlgConverter {
         Operator operator = exp.getOperator();
         if ( operator.getOperatorName() == OperatorName.CAST ) {
             RexNode child = convertRexNode( exp.getOnlyChild(), ctx );
-            RexNode cast = new RexCall( exp.getAlgDataTypeForCast(), operator, ImmutableList.of( child ) );
-            return cast;
+            return new RexCall( exp.getAlgDataTypeForCast(), operator, ImmutableList.of( child ) );
         }
         // TODO: handle other special kinds of calls (Kind.NEW_SPECIFICATION can also specify cast type...)
         List<RexNode> operands = exp.getChildExps().stream().map( e -> convertRexNode( e, ctx ) ).toList();
@@ -299,6 +303,9 @@ public class PolyAlgToAlgConverter {
         } else {
             if ( literal.getType() == LiteralType.DYNAMIC_PARAM ) {
                 return builder.makeDynamicParam( type, literal.toDynamicParam() );
+            }
+            if (literal.getType() == LiteralType.NULL) {
+                return builder.makeNullLiteral( type );
             }
             String str = literal.toUnquotedString();
             return switch ( type.getPolyType() ) {

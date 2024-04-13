@@ -143,7 +143,7 @@ public class PolyAlgExpression extends PolyAlgNode {
 
     public <T extends Enum<T>> T toEnum( Class<T> enumClass ) {
         if ( !isSingleLiteral() ) {
-            throw new GenericRuntimeException( "Not a valid integer: " + this );
+            throw new GenericRuntimeException( "Not a valid enum: " + this );
         }
         return Enum.valueOf( enumClass, literals.get( 0 ).toString() );
     }
