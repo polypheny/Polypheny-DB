@@ -28,40 +28,37 @@ public class PolyAlgLiteral extends PolyAlgNode {
 
     private final String str;
     @Getter
-    private final boolean isNumber;
-    @Getter
-    private final boolean isQuoted;
-    @Getter
-    private final boolean isBoolean;
+    private final LiteralType type;
 
 
-    public PolyAlgLiteral( String str, boolean isNumber, boolean isQuoted, boolean isBoolean, ParserPos pos ) {
+    public PolyAlgLiteral( String str, LiteralType type, ParserPos pos ) {
         super( pos );
-
         this.str = str;
-        this.isNumber = isNumber;
-        this.isQuoted = isQuoted;
-        this.isBoolean = isBoolean;
+        this.type = type;
+    }
+
+
+    public void checkType( LiteralType type ) {
+        if ( this.type != type ) {
+            throw new GenericRuntimeException( "Not a valid " + this.type + ": '" + str + "'" );
+        }
     }
 
 
     public int toInt() {
-        if ( !this.isNumber ) {
-            throw new GenericRuntimeException( "Not a valid integer" );
-        }
+        checkType( LiteralType.NUMBER );
         return Integer.parseInt( str );
     }
 
 
     public boolean toBoolean() {
-        return Boolean.parseBoolean( str ) || str.equals( "1" );
+        checkType( LiteralType.BOOLEAN );
+        return Boolean.parseBoolean( str );
     }
 
 
     public Number toNumber() {
-        if ( !this.isNumber ) {
-            throw new GenericRuntimeException( "Not a valid number" );
-        }
+        checkType( LiteralType.NUMBER );
 
         Number num;
         double dbl = Double.parseDouble( str );
@@ -74,6 +71,7 @@ public class PolyAlgLiteral extends PolyAlgNode {
 
 
     public AlgFieldCollation.Direction toDirection() {
+        checkType( LiteralType.DIRECTION );
         return switch ( str.toUpperCase( Locale.ROOT ) ) {
             case "ASC" -> Direction.ASCENDING;
             case "DESC" -> Direction.DESCENDING;
@@ -86,6 +84,7 @@ public class PolyAlgLiteral extends PolyAlgNode {
 
 
     public AlgFieldCollation.NullDirection toNullDirection() {
+        checkType( LiteralType.NULL_DIRECTION );
         return NullDirection.valueOf( str.toUpperCase( Locale.ROOT ) );
     }
 
@@ -97,10 +96,32 @@ public class PolyAlgLiteral extends PolyAlgNode {
 
 
     public String toUnquotedString() {
-        if ( isQuoted ) {
+        if ( type == LiteralType.QUOTED ) {
             return str.substring( 1, str.length() - 1 );
         }
         return str;
+    }
+
+
+    public int toDynamicParam() {
+        checkType( LiteralType.DYNAMIC_PARAM );
+        return Integer.parseInt( str.substring( 1 ) ); // str looks like "?0"
+    }
+
+
+    public enum LiteralType {
+
+        QUOTED,
+        NUMBER,
+        BOOLEAN,
+        NULL,
+        DIRECTION, // AlgFieldCollation.Direction
+        NULL_DIRECTION, // AlgFieldCollation.NullDirection
+        DYNAMIC_PARAM,
+        STRING; // This is the least specific type and is used e.g. for field or entity names
+
+        public static LiteralType DEFAULT = STRING;
+
     }
 
 }

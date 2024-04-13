@@ -40,6 +40,7 @@ import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.relational.RelAlg;
+import org.polypheny.db.algebra.polyalg.PolyAlgUtils;
 import org.polypheny.db.algebra.polyalg.arguments.AggArg;
 import org.polypheny.db.algebra.polyalg.arguments.FieldArg;
 import org.polypheny.db.algebra.polyalg.arguments.ListArg;
@@ -100,6 +101,20 @@ public final class LogicalRelAggregate extends Aggregate implements RelAlg {
         final AlgCluster cluster = input.getCluster();
         final AlgTraitSet traitSet = cluster.traitSetOf( Convention.NONE );
         return new LogicalRelAggregate( cluster, traitSet, input, indicator, groupSet, groupSets, aggCalls );
+    }
+
+
+    public static LogicalRelAggregate create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+        ListArg<FieldArg> group = args.getListArg( "group", FieldArg.class );
+        ListArg<AggArg> aggs = args.getListArg( "aggs", AggArg.class );
+        List<List<FieldArg>> groups = PolyAlgUtils.getNestedListArgAsList( args.getListArg( "groups", ListArg.class ) );
+        List<ImmutableBitSet> groupSets = groups.stream().map(
+                g -> ImmutableBitSet.of(
+                        g.stream().map( FieldArg::getField ).toList()
+                )
+        ).toList();
+
+        return create( children.get( 0 ), ImmutableBitSet.of( group.map( FieldArg::getField ) ), groupSets, aggs.map( AggArg::getAgg ) );
     }
 
 

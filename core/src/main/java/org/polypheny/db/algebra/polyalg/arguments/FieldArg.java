@@ -17,18 +17,21 @@
 package org.polypheny.db.algebra.polyalg.arguments;
 
 import java.util.List;
+import lombok.Getter;
 import lombok.NonNull;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.ParamType;
-import org.polypheny.db.algebra.polyalg.PolyAlgUtils;
 
 public class FieldArg implements PolyAlgArg {
 
+    @Getter
     private final int field;
+
 
     public FieldArg( int field ) {
         this.field = field;
     }
+
 
     @Override
     public ParamType getType() {
@@ -38,7 +41,7 @@ public class FieldArg implements PolyAlgArg {
 
     @Override
     public String toPolyAlg( AlgNode context, @NonNull List<String> inputFieldNames ) {
-        if (inputFieldNames.size() > field) {
+        if ( inputFieldNames.size() > field ) {
             return inputFieldNames.get( field );
         }
         return Integer.toString( field );

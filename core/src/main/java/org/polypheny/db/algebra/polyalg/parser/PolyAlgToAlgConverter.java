@@ -16,6 +16,8 @@
 
 package org.polypheny.db.algebra.polyalg.parser;
 
+import com.google.common.collect.ImmutableList;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -29,12 +31,16 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.JoinType;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.CorrelationId;
 import org.polypheny.db.algebra.core.Sort;
+import org.polypheny.db.algebra.fun.AggFunction;
+import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.ParamType;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.Parameter;
 import org.polypheny.db.algebra.polyalg.PolyAlgRegistry;
+import org.polypheny.db.algebra.polyalg.arguments.AggArg;
 import org.polypheny.db.algebra.polyalg.arguments.AnyArg;
 import org.polypheny.db.algebra.polyalg.arguments.BooleanArg;
 import org.polypheny.db.algebra.polyalg.arguments.CollationArg;
@@ -49,7 +55,10 @@ import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.algebra.polyalg.arguments.RexArg;
 import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgAliasedArgument;
 import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgExpression;
+import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgExpressionExtension;
+import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgExpressionExtension.ExtensionType;
 import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgLiteral;
+import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgLiteral.LiteralType;
 import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgNamedArgument;
 import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgNode;
 import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgNodeList;
@@ -64,10 +73,15 @@ import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.tools.AlgBuilder;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.TimeString;
+import org.polypheny.db.util.TimestampString;
 
 /**
  * Converter class, which transforms PolyAlg in its PolyAlgNode form to an equal AlgNode
@@ -101,7 +115,7 @@ public class PolyAlgToAlgConverter {
 
 
     private AlgNode buildNode( PolyAlgOperator operator ) {
-        PolyAlgDeclaration decl = Objects.requireNonNull( PolyAlgRegistry.getDeclaration( operator.getOpName() ) );
+        PolyAlgDeclaration decl = Objects.requireNonNull( PolyAlgRegistry.getDeclaration( operator.getOpName() ), "'" + operator.getOpName() + "' is not a registered PolyAlg Operator." );
 
         List<AlgNode> children = operator.getChildren().stream()
                 .map( this::buildNode )
@@ -201,8 +215,11 @@ public class PolyAlgToAlgConverter {
     private PolyAlgArg convertArg( Parameter p, PolyAlgAliasedArgument aliasedArg, Context ctx ) {
         if ( aliasedArg.getArg() instanceof PolyAlgExpression ) {
             return convertExpression( p, (PolyAlgExpression) aliasedArg.getArg(), aliasedArg.getAlias(), ctx );
+        } else if ( aliasedArg.getArg() instanceof PolyAlgNodeList ) {
+            return buildList( p, (PolyAlgNodeList) aliasedArg.getArg(), aliasedArg.getAlias(), ctx );
+            //throw new GenericRuntimeException( "Nested PolyAlgNodeLists are currently not supported" );
         } else {
-            throw new GenericRuntimeException( "Nested PolyAlgNodeLists are currently not supported" );
+            throw new GenericRuntimeException( "This PolyAlgNode type is currently not supported" );
         }
     }
 
@@ -215,13 +232,9 @@ public class PolyAlgToAlgConverter {
             case BOOLEAN -> new BooleanArg( exp.toBoolean() );
             case SIMPLE_REX -> {
                 RexNode node = convertRexNode( exp, ctx );
-                yield new RexArg( node, alias == null ? exp.toString() : alias );
+                yield new RexArg( node, alias == null ? exp.getDefaultAlias() : alias );
             }
-            case AGGREGATE -> {
-                // AggregateCall agg = new AggregateCall();
-                // return new AggArg( agg );
-                throw new GenericRuntimeException( "Aggregate argument not yet implemented" );
-            }
+            case AGGREGATE -> new AggArg( convertAggCall( exp, alias, ctx ) );
             case ENTITY -> new EntityArg( convertEntity( exp, ctx.dataModel ) );
             case JOIN_TYPE_ENUM -> new EnumArg<>( exp.toEnum( JoinType.class ), ParamType.JOIN_TYPE_ENUM );
             case FIELD -> new FieldArg( ctx.getFieldOrdinal( exp.toIdentifier() ) );
@@ -235,27 +248,71 @@ public class PolyAlgToAlgConverter {
 
     private RexNode convertRexNode( PolyAlgExpression exp, Context ctx ) {
         if ( exp.isCall() ) {
-            Operator operator = exp.getOperator();
-            List<RexNode> operands = exp.getChildExps().stream().map( e -> convertRexNode( e, ctx ) ).toList();
-            return builder.makeCall( operator, operands );
+            return convertRexCall( exp, ctx );
         } else if ( exp.isSingleLiteral() ) {
             PolyAlgLiteral literal = exp.getLiterals().get( 0 );
-
-            // TODO: handle all cases of non-call RexNodes
-            if ( literal.isQuoted() ) {
-                return builder.makeLiteral( literal.toUnquotedString() );
-            } else if ( literal.isNumber() ) {
-                return AlgBuilder.literal( literal.toNumber(), builder );
-            } else if ( literal.isBoolean() ) {
-                return AlgBuilder.literal( literal.toBoolean(), builder );
-            } else {
-                String str = literal.toString();
-                int idx = ctx.getFieldOrdinal( str );
-                return RexIndexRef.of( idx, ctx.fields );
-            }
-
+            return convertRexLiteral( literal, exp.getAlgDataType(), ctx );
         }
         throw new GenericRuntimeException( "Invalid RexNode: " + exp );
+    }
+
+
+    private RexNode convertRexCall( PolyAlgExpression exp, Context ctx ) {
+        Operator operator = exp.getOperator();
+        if ( operator.getOperatorName() == OperatorName.CAST ) {
+            RexNode child = convertRexNode( exp.getOnlyChild(), ctx );
+            RexNode cast = new RexCall( exp.getAlgDataTypeForCast(), operator, ImmutableList.of( child ) );
+            return cast;
+        }
+        // TODO: handle other special kinds of calls (Kind.NEW_SPECIFICATION can also specify cast type...)
+        List<RexNode> operands = exp.getChildExps().stream().map( e -> convertRexNode( e, ctx ) ).toList();
+
+        return builder.makeCall( operator, operands );
+    }
+
+
+    /**
+     * Converts a PolyAlgLiteral into an appropriate RexNode.
+     * This does not have to be a RexLiteral, but can also be a RexIndexRef or RexDynamicParam.
+     *
+     * @param literal the PolyAlgLiteral to be converted
+     * @param type the AlgDataType specified in the PolyAlgebra
+     * @param ctx Context
+     * @return A RexNode representing the specified PolyAlgLiteral
+     */
+    private RexNode convertRexLiteral( PolyAlgLiteral literal, AlgDataType type, Context ctx ) {
+        // TODO: handle all cases of non-call RexNodes
+        if ( type == null ) {
+            // no explicit type information, so we can only guess which one from the LiteralType the parser detected:
+            return switch ( literal.getType() ) {
+                case QUOTED -> builder.makeLiteral( literal.toUnquotedString() );
+                case NUMBER -> AlgBuilder.literal( literal.toNumber(), builder );
+                case BOOLEAN -> AlgBuilder.literal( literal.toBoolean(), builder );
+                case NULL -> AlgBuilder.literal( null, builder );
+                case STRING -> {
+                    String str = literal.toString();
+                    int idx = ctx.getFieldOrdinal( str );
+                    yield RexIndexRef.of( idx, ctx.fields );
+                }
+                default -> throw new GenericRuntimeException( "Invalid Literal: '" + literal + "'" );
+            };
+        } else {
+            if ( literal.getType() == LiteralType.DYNAMIC_PARAM ) {
+                return builder.makeDynamicParam( type, literal.toDynamicParam() );
+            }
+            String str = literal.toUnquotedString();
+            return switch ( type.getPolyType() ) {
+                case BOOLEAN -> builder.makeLiteral( literal.toBoolean() );
+                case TINYINT, SMALLINT, INTEGER, BIGINT, DECIMAL -> builder.makeExactLiteral( new BigDecimal( str ), type );
+                case FLOAT, REAL, DOUBLE -> builder.makeApproxLiteral( new BigDecimal( str ), type );
+                case DATE -> builder.makeDateLiteral( new DateString( str ) );
+                case TIME -> builder.makeTimeLiteral( new TimeString( str ), type.getPrecision() );
+                case TIMESTAMP -> builder.makeTimestampLiteral( new TimestampString( str ), type.getPrecision() );
+                case CHAR, VARCHAR -> builder.makeLiteral( PolyString.of( str ), type, type.getPolyType() );
+                case NULL -> builder.constantNull();
+                default -> throw new GenericRuntimeException( "Unsupported type: " + type.getFullTypeString() );
+            };
+        }
 
     }
 
@@ -304,6 +361,34 @@ public class PolyAlgToAlgConverter {
     }
 
 
+    private AggregateCall convertAggCall( PolyAlgExpression exp, String name, Context ctx ) {
+        AggFunction f = exp.getAggFunction();
+        List<Integer> args = new ArrayList<>();
+        AlgDataType type = null;
+        boolean isDistinct = false;
+        for ( PolyAlgExpression child : exp.getChildExps() ) {
+            String fieldName = child.getLastLiteral().toString();
+            if ( child.getLiterals().size() == 2 && child.getLiterals().get( 0 ).toString().equals( "DISTINCT" ) ) {
+                isDistinct = true;
+            }
+            args.add( ctx.getFieldOrdinal( fieldName ) );
+            if ( type == null ) {
+                type = ctx.getDataTypeFromFieldName( fieldName );
+            }
+        }
+
+        int filter = -1;
+        PolyAlgExpressionExtension extension = exp.getExtension( ExtensionType.FILTER );
+        if ( extension != null ) {
+            PolyAlgLiteral filterLiteral = extension.getLiterals().get( 0 );
+            filter = ctx.getFieldOrdinal( filterLiteral.toString() );
+        }
+        boolean isApproximate = exp.getExtension( ExtensionType.APPROXIMATE ) != null;
+        return AggregateCall.create( f, isDistinct, isApproximate, args, filter, AlgCollations.EMPTY, // TODO: parse WITHIN for Collation
+                0, ctx.children.get( 0 ), type, name ); // type can be null with this create method
+    }
+
+
     private static final class Context {
 
         private final List<AlgNode> children;
@@ -340,9 +425,23 @@ public class PolyAlgToAlgConverter {
         private int getFieldOrdinal( String fieldName ) {
             int idx = fieldNames.indexOf( fieldName );
             if ( idx < 0 ) {
-                throw new GenericRuntimeException( "Invalid field name" );
+                throw new GenericRuntimeException( "Invalid field name: '" + fieldName + "'" );
             }
             return idx;
+        }
+
+
+        private AlgDataType getDataTypeFromFieldName( String fieldName ) {
+            int ord = getFieldOrdinal( fieldName );
+            int offset = 0;
+            for ( AlgNode child : children ) {
+                int count = child.getTupleType().getFieldCount();
+                if ( ord < offset + count ) {
+                    return child.getTupleType().getFields().get( ord - offset ).getType();
+                }
+                offset += count;
+            }
+            throw new GenericRuntimeException( "Invalid field index" );
         }
 
     }

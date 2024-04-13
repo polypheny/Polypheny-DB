@@ -21,12 +21,13 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.StringJoiner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.Syntax;
+import org.polypheny.db.algebra.polyalg.arguments.ListArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArg;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexCorrelVariable;
 import org.polypheny.db.rex.RexDigestIncludeType;
@@ -56,11 +57,8 @@ public class PolyAlgUtils {
 
 
     static {
-        StringJoiner joiner = new StringJoiner( "|", "CAST\\(([^)]+)\\):(", ")" );
-        for ( PolyType type : PolyType.values() ) {
-            joiner.add( type.getName() );
-        }
-        CAST_PATTERN = Pattern.compile( joiner.toString() ); // matches group "my_field" in "CAST(my_field):INTEGER"
+        // matches group "my_field" in "CAST(my_field AS INTEGER)"
+        CAST_PATTERN = Pattern.compile( "^CAST\\(([^ )]+) AS.+\\)$", Pattern.CASE_INSENSITIVE );
     }
 
 
@@ -111,15 +109,39 @@ public class PolyAlgUtils {
     }
 
 
+    public static String joinMultiValuedWithBrackets( List<String> values ) {
+        String str = String.join( ", ", values );
+        return "[" + str + "]";
+    }
+
+
+    /**
+     * Returns a list corresponding to the arguments of implicit PROJECT operator required to rename the fieldNames
+     * of child to the corresponding fieldNames in inputFieldNames.
+     * If the projection is non-trivial, the returned list will have length {@code child.getTupleType().getFieldCount()}.
+     *
+     * @param child the child whose implicit projections should be generated
+     * @param inputFieldNames the names of the fields of all children after renaming
+     * @param startIndex index of the first field of child in inputFieldNames
+     * @return string list of all projection arguments or null if no projections are required.
+     */
     public static List<String> getAuxProjections( AlgNode child, List<String> inputFieldNames, int startIndex ) {
         List<String> projections = new ArrayList<>();
         List<String> names = child.getTupleType().getFieldNames();
+        boolean isTrivial = true;
+
         for ( int i = 0; i < names.size(); i++ ) {
             String name = names.get( i );
             String uniqueName = inputFieldNames.get( startIndex + i );
+            String p = name;
             if ( !name.equals( uniqueName ) ) {
-                projections.add( name + " AS " + uniqueName );
+                isTrivial = false;
+                p += " AS " + uniqueName;
             }
+            projections.add( p );
+        }
+        if ( isTrivial ) {
+            return null;
         }
         return projections;
     }
@@ -138,6 +160,19 @@ public class PolyAlgUtils {
     public static List<String> uniquifiedInputFieldNames( AlgNode context ) {
         List<String> names = getInputFieldNamesList( context );
         return ValidatorUtil.uniquify( names, ValidatorUtil.ATTEMPT_SUGGESTER, true );
+    }
+
+
+    public static <T extends PolyAlgArg> List<List<T>> getNestedListArgAsList( ListArg<ListArg> outerListArg ) {
+        List<List<T>> outerList = new ArrayList<>();
+        for ( List<T> list : outerListArg.map( ListArg::getArgs ) ) {
+            if ( list.isEmpty() ) {
+                outerList.add( List.of() );
+            } else {
+                outerList.add( list );
+            }
+        }
+        return outerList;
     }
 
 
@@ -176,7 +211,7 @@ public class PolyAlgUtils {
 
         @Override
         public String visitCall( RexCall call ) {
-            // This code closely follows call.toString(), but uses the visitor for nested RexNodes
+            // This code follows call.toString(), but uses the visitor for nested RexNodes
 
             boolean withType = call.isA( Kind.CAST ) || call.isA( Kind.NEW_SPECIFICATION );
             final StringBuilder sb = new StringBuilder( call.op.getName() );
@@ -185,12 +220,12 @@ public class PolyAlgUtils {
             } else {
                 sb.append( "(" );
                 appendOperands( call, sb );
+                if ( withType ) {
+                    System.out.println( ">>> " + call.op.getName() + " | " + call.operands.get( 0 ).getType().getFullTypeString() );
+                    sb.append( " AS " ); // this is different to the syntax of type specification for literals to be closer to SQL syntax
+                    sb.append( call.type.getFullTypeString() );
+                }
                 sb.append( ")" );
-            }
-            if ( withType ) {
-                sb.append( ":" );
-                // NOTE jvs 16-Jan-2005:  for digests, it is very important to use the full type string.
-                sb.append( call.type.getFullTypeString() );
             }
             return sb.toString();
         }
@@ -225,7 +260,7 @@ public class PolyAlgUtils {
 
         @Override
         public String visitDynamicParam( RexDynamicParam dynamicParam ) {
-            return "===dynamicParam=== " + dynamicParam;
+            return dynamicParam.getName();
         }
 
 
@@ -316,9 +351,6 @@ public class PolyAlgUtils {
             PrintWriter pw = new PrintWriter( sw );
             int clauseCount = 0;
             if ( !window.partitionKeys.isEmpty() ) {
-                if ( clauseCount++ > 0 ) {
-                    pw.print( ' ' );
-                }
                 pw.print( "PARTITION BY " );
                 for ( int i = 0; i < window.partitionKeys.size(); i++ ) {
                     if ( i > 0 ) {

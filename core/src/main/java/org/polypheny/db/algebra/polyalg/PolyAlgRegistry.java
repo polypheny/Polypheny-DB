@@ -68,10 +68,10 @@ public class PolyAlgRegistry {
                 .build() );
 
         declarations.put( LogicalRelAggregate.class, PolyAlgDeclaration.builder()
-                .model( DataModel.RELATIONAL )
+                .creator( LogicalRelAggregate::create ).model( DataModel.RELATIONAL )
                 .opName( "AGG" ).numInputs( 1 ).opTags( logRelTags )
                 .param( Parameter.builder().name( "group" ).type( ParamType.FIELD ).isMultiValued( true ).defaultValue( ListArg.EMPTY ).build() )  // select count(*) has no group
-                .param( Parameter.builder().name( "groups" ).type( ParamType.ANY ).isMultiValued( true ).defaultValue( ListArg.EMPTY ).build() )
+                .param( Parameter.builder().name( "groups" ).type( ParamType.FIELD ).isMultiValued( true ).defaultValue( ListArg.EMPTY ).build() )
                 .param( Parameter.builder().name( "aggs" ).type( ParamType.AGGREGATE ).isMultiValued( true ).defaultValue( ListArg.EMPTY ).build() )
                 .build() );
 

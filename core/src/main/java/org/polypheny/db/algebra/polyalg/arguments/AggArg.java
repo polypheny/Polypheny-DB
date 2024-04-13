@@ -17,7 +17,10 @@
 package org.polypheny.db.algebra.polyalg.arguments;
 
 import java.util.List;
+import lombok.Getter;
 import lombok.NonNull;
+import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.AggregateCall;
@@ -26,6 +29,7 @@ import org.polypheny.db.algebra.polyalg.PolyAlgUtils;
 
 public class AggArg implements PolyAlgArg {
 
+    @Getter
     private final AggregateCall agg;
 
 
@@ -42,7 +46,7 @@ public class AggArg implements PolyAlgArg {
 
     @Override
     public String toPolyAlg( AlgNode context, @NonNull List<String> inputFieldNames ) {
-        String str = agg.toString( inputFieldNames.isEmpty() ? null : inputFieldNames );
+        String str = aggToString( inputFieldNames );
         String name = agg.getName();
         if ( name == null ) {
             // TODO: make sure agg.getName() is never null
@@ -51,9 +55,42 @@ public class AggArg implements PolyAlgArg {
             if ( i != -1 ) {
                 i += instance.getGroupSet().asList().size();
             }
-            name = "$ffff" + i;
+            name = "$f" + i;
         }
         return PolyAlgUtils.appendAlias( str, name );
+    }
+
+
+    private String aggToString( List<String> inputFieldNames ) {
+        StringBuilder buf = new StringBuilder( agg.getAggregation().toString() );
+        buf.append( "(" );
+        List<Integer> argList = agg.getArgList();
+        AlgCollation collation = agg.getCollation();
+
+        if ( agg.isDistinct() ) {
+            buf.append( argList.isEmpty() ? "DISTINCT" : "DISTINCT " );
+        }
+        int i = -1;
+        for ( Integer arg : argList ) {
+            if ( ++i > 0 ) {
+                buf.append( ", " );
+            }
+            buf.append( inputFieldNames.get( arg ) );
+        }
+        buf.append( ")" );
+        if ( agg.isApproximate() ) {
+            buf.append( " APPROXIMATE" );
+        }
+        if ( !collation.equals( AlgCollations.EMPTY ) ) {
+            buf.append( " WITHIN GROUP (" );
+            buf.append( collation );
+            buf.append( ")" );
+        }
+        if ( agg.hasFilter() ) {
+            buf.append( " FILTER " );
+            buf.append( inputFieldNames.get( agg.filterArg ) );
+        }
+        return buf.toString();
     }
 
 }

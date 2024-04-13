@@ -14,12 +14,16 @@ import java.io.Reader;
 import org.polypheny.db.languages.ParserFactory;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgLiteral;
+import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgLiteral.LiteralType;
 import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgAliasedArgument;
 import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgNamedArgument;
 import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgNode;
+import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgDataType;
 import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgOperator;
 import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgNodeList;
 import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgExpression;
+import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgExpressionExtension;
+import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgExpressionExtension.ExtensionType;
 import java.util.Arrays;
 import java.util.List;
 import java.util.ArrayList;
@@ -35,10 +39,6 @@ public class PolyAlgParserImpl extends PolyAlgAbstractParserImpl {
     public static final ParserFactory FACTORY = new ParserFactory() {
         public PolyAlgAbstractParserImpl getParser(Reader reader) {
             final PolyAlgParserImpl parser = new PolyAlgParserImpl(reader);
-            /*if (reader instanceof SourceStringReader) {
-                final String mql = ((SourceStringReader) reader).getSourceString();
-                parser.setOriginalMql(mql);
-            }*/
           return parser;
         }
     };
@@ -46,7 +46,6 @@ public class PolyAlgParserImpl extends PolyAlgAbstractParserImpl {
     /** Main entry point. */
     public static void parse(String str) {
         PolyAlgParserImpl parser = new PolyAlgParserImpl(new StringReader(str));
-
 
         try {
           parser.Input();
@@ -132,13 +131,28 @@ TOKEN :
 | <RBRACK: "]">
 | <SEP: ",">
 | <EQUALS: "=">
+| <PLUS: "+">
+| <MINUS: "-">
 | <COLON: ":">
 | <AS: "AS">
-| <BOOL: (<TRUE> | <FALSE>)>
-| <#TRUE: "TRUE">
-| <#FALSE: "FALSE">
-| <IDENTIFIER: (<LETTER> | <IDENTIFIER_SYMBOL>) (<LETTER> | <DIGIT> | <IDENTIFIER_SYMBOL>)*>
-| <NUMBER: (<DIGIT>)+ (".")? (<DIGIT>)*>
+| <BOOL: "TRUE" | "FALSE">
+| <NULL: "NULL">
+| <NOT_NULL: "NOT NULL">
+| <DIR: "ASC" | "DESC" | "SASC" | "SDESC" | "CLU">
+| <NULL_DIR: "FIRST" | "LAST" | "UNSPECIFIED">
+| <FILTER: "FILTER"> // see AggregateCall
+| <APPROX: "APPROXIMATE">
+| <OVER: "OVER">
+| <IDENTIFIER: (<LETTER> | <IDENTIFIER_SYMBOL>) (<LETTER> | <DIGIT> | <IDENTIFIER_SYMBOL> | <MINUS>)*>
+
+| <UNSIGNED_INT: (<DIGIT>)+ >
+| <UNSIGNED_APPROX_DECIMAL: (<UNSIGNED_INT> | <UNSIGNED_DECIMAL>) <EXPONENT> >
+| <UNSIGNED_DECIMAL:
+      (<DIGIT>)+(".")?(<DIGIT>)*
+      | "."(<DIGIT>)+
+      >
+| <DYNAMIC_PARAM: "?" <UNSIGNED_INT> >
+| <#EXPONENT: ["e","E"] (["+","-"])? (["0"-"9"])+ >
 | <#LETTER: ["_","a"-"z","A"-"Z","ö", "Ö", "ä", "Ä", "ü", "Ü", "à", "À", "ç","Ç", "á", "Á", "è", "È","í","Í", "î", "Î","ó","Ó","ò", "ô", "Ô", "Ò" , "í", "Í", "ë", "Ë", "â", "Â", "ï", "Ï", "é", "É", "ñ", "Ñ", "ß"] >
 | <#DIGIT: ["0"-"9"]>
 | <#IDENTIFIER_SYMBOL: ["#", "@", "$", "."]>
@@ -252,7 +266,7 @@ PolyAlgNode ListArgument() : // we return a PolyAlgNodeList instead of a List<Po
     PolyAlgNode n;
 }
 {
-     <LBRACK> n = AliasedArgument() {args.add(n);} (<SEP> n = AliasedArgument() {args.add(n);})* <RBRACK>
+     <LBRACK> [n = AliasedArgument() {args.add(n);} (<SEP> n = AliasedArgument() {args.add(n);})*] <RBRACK>
      {return new PolyAlgNodeList(args, getPos());}
 }
 
@@ -262,79 +276,96 @@ PolyAlgExpression Expression():
     List<PolyAlgExpression> childExps = null;
     Token t;
     PolyAlgLiteral l;
-    String cast = null;
+    PolyAlgDataType type = null;
     PolyAlgExpression exp = null;
+    List<PolyAlgExpressionExtension> extensions = new ArrayList<>();
+    PolyAlgExpressionExtension extension;
 }
 {
-    (l = Literal() {literals.add(l);})+ [<LPAR> [childExps = ChildExpressions()] <RPAR>] [<COLON> t = <IDENTIFIER> {cast = t.image;}]  // TODO: handle OVER
-    {return new PolyAlgExpression(literals, childExps, cast, getPos());}
+    (l = Literal() {literals.add(l);})+
+        [<LPAR> [childExps = ChildExpressions()] {if (childExps == null) childExps = List.of();}<RPAR>]
+        [<COLON> type = DataType()]  // TODO: handle OVER
+        (extension = ExpressionExtension() {extensions.add(extension);})*
+    {return new PolyAlgExpression(literals, childExps, type, extensions, getPos());}
     |
     <LPAR> [exp = Expression()] <RPAR>  // optional outer parentheses
-    {return exp == null ? new PolyAlgExpression(List.of(), null, null, getPos()) : exp;}
+    {return exp == null ? new PolyAlgExpression(List.of(), null, null, List.of(), getPos()) : exp;}
 }
-
-/*PolyAlgNode OuterExpression() : // outer expressions cannot contain separators, as they could not always be differentiated from a ListArgument
-{
-    PolyAlgNode n = new PolyAlgLiteral();  // only temporary
-}
-{
-    (
-        AnyExpression()
-        |
-        <LPAR> OuterExpression() <RPAR>  // optional outer parentheses
-    )
-
-
-
-
-    {return n;}
-}*/
 
 List<PolyAlgExpression> ChildExpressions() : // List of expressions separated by <SEP>
 {
     List<PolyAlgExpression> exps = new ArrayList<>();
     PolyAlgExpression e;
+    PolyAlgDataType cast;
 }
 {
-    e = Expression() {exps.add(e);} (<SEP> e = Expression() {exps.add(e);})*
+    e = Expression() {exps.add(e);}
+        [<AS> cast = DataType() {e.setCast(cast);}] // cast type specification only makes sense if CAST(...) has 1 child expression
+        (<SEP> e = Expression() {exps.add(e);})*
     {return exps;}
+}
 
-    /*((
-        <LPAR> InnerExpression() <RPAR>
+PolyAlgExpressionExtension ExpressionExtension() :
+{
+    List<PolyAlgLiteral> literals = new ArrayList<>();
+    PolyAlgLiteral l;
+    ExtensionType type;
+}
+{
+    (
+        <FILTER> l = Literal() {literals.add(l); type = ExtensionType.FILTER;}
         |
-        <LCURL> InnerExpression() <RCURL>
+        <APPROX> {type = ExtensionType.APPROXIMATE;}
         |
-        Literal()
-        |
-        <AS>  // inner expressions can contain <AS>, since we know it cannot be an alias for an argument
-    ) (<SEP>)* )*  // inner expressions can contain separators!*/
+        <OVER> <LPAR> (l = Literal() {literals.add(l);})* <RPAR> {type = ExtensionType.OVER;}
+    )
+    {return new PolyAlgExpressionExtension(literals, type); }
+
 }
 
 
 PolyAlgLiteral Literal() :
 {
-    Token t;
-    boolean isNumber = false;
-    boolean isBoolean = false;
-    boolean isQuoted = false;
-
+    String num;
+    Token t = null;
+    LiteralType type = LiteralType.DEFAULT;
 }
 {
     (
         t = <IDENTIFIER>
         |
-        t = <NUMBER> {isNumber = true;}
+        LOOKAHEAD(2) num = Number() {return new PolyAlgLiteral(num, LiteralType.NUMBER, getPos());}
+        |
+        t = <BOOL> {type = LiteralType.BOOLEAN;}
+        |
+        t = <NULL> {type = LiteralType.NULL;} | t = <NOT_NULL>
+        |
+        t = <QUOTED> {type = LiteralType.QUOTED;}
         |
         t = <SYMBOL>
         |
-        t = <QUOTED> {isQuoted = true;}
+        t = <EQUALS> | t = <PLUS> | t = <MINUS>
+        // | t = <MULTI_WORD_OP>
         |
-        t = <EQUALS>
-        |
-        t = <BOOL> {isBoolean = true;}
+        t = <DYNAMIC_PARAM> {type = LiteralType.DYNAMIC_PARAM;}
     )
-    {return new PolyAlgLiteral(t.image, isNumber, isQuoted, isBoolean, getPos());}
+    {return new PolyAlgLiteral(t.image, type, getPos());}
 
+}
+
+PolyAlgDataType DataType() :
+{
+    String type;
+    Token t;
+    List<Integer> args = new ArrayList<>();
+    boolean nullable = true;
+}
+{
+    t = <IDENTIFIER> {type = t.image;} [<LPAR>
+        t = <UNSIGNED_INT> {args.add(Integer.parseInt(t.image));} (<SEP> t = <UNSIGNED_INT> {args.add(Integer.parseInt(t.image));})*
+    <RPAR>]
+    [<NULL> | <NOT_NULL> {nullable = false;} ]
+    {return new PolyAlgDataType(type, args, nullable, getPos());}
 }
 
 String OpName() :
@@ -344,6 +375,8 @@ String OpName() :
 {
     (
         t = <IDENTIFIER>
+        |
+        t = <FILTER>
     )
     {return t.image;}
 }
@@ -369,4 +402,30 @@ String ParamName() :
 {
     name = OpName()
     {return name;}
+}
+
+String UnsignedNumber() :
+{
+    Token t;
+    String str;
+}
+{
+    (
+        t = <UNSIGNED_INT>
+        |
+        t = <UNSIGNED_DECIMAL>
+        |
+        t = <UNSIGNED_APPROX_DECIMAL>
+    )
+    { return t.image;}
+}
+
+String Number() :
+{
+    String num;
+}
+{
+    [<PLUS>] num = UnsignedNumber() {return num;}
+    |
+    <MINUS> num = UnsignedNumber() {return "-" + num;}
 }

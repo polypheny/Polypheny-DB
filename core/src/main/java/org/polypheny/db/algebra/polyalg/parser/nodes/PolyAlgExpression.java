@@ -16,12 +16,18 @@
 
 package org.polypheny.db.algebra.polyalg.parser.nodes;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.StringJoiner;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.Setter;
+import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgExpressionExtension.ExtensionType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
@@ -36,10 +42,15 @@ public class PolyAlgExpression extends PolyAlgNode {
 
     private final List<PolyAlgLiteral> literals;
     private final List<PolyAlgExpression> childExps;
-    private final String cast;
+    private final PolyAlgDataType dataType; // the normal data type specification which is indicated by : after literals
+    private final Map<ExtensionType, PolyAlgExpressionExtension> extensions;
+    @Setter
+    private PolyAlgDataType cast; // unlike this.type, this.cast appears in the form CAST(field as INTEGER)
 
 
-    public PolyAlgExpression( @NonNull List<PolyAlgLiteral> literals, List<PolyAlgExpression> childExps, String cast, ParserPos pos ) {
+    public PolyAlgExpression(
+            @NonNull List<PolyAlgLiteral> literals, List<PolyAlgExpression> childExps, PolyAlgDataType dataType,
+            @NonNull List<PolyAlgExpressionExtension> extensions, ParserPos pos ) {
         super( pos );
         if ( literals.isEmpty() ) {
             throw new GenericRuntimeException( "Expression must have at least one literal" );
@@ -47,7 +58,11 @@ public class PolyAlgExpression extends PolyAlgNode {
 
         this.literals = literals;
         this.childExps = childExps;
-        this.cast = cast;
+        this.dataType = dataType;
+        this.extensions = new HashMap<>();
+        for ( PolyAlgExpressionExtension ext : extensions ) {
+            this.extensions.put( ext.getType(), ext );
+        }
 
     }
 
@@ -59,12 +74,46 @@ public class PolyAlgExpression extends PolyAlgNode {
 
 
     public boolean isSingleLiteral() {
-        return !isCall() && literals.size() == 1;
+        return !isCall() && !hasExtensions() && literals.size() == 1;
     }
 
 
-    public boolean hasCast() {
-        return cast != null;
+    public boolean hasDataType() {
+        return dataType != null;
+    }
+
+
+    public boolean hasExtensions() {
+        return !extensions.isEmpty();
+    }
+
+
+    public PolyAlgExpressionExtension getExtension( ExtensionType type ) {
+        return extensions.get( type );
+    }
+
+
+    /**
+     * Return the explicitly stated AlgDataType for this PolyAlgExpression or {@code null} if it has none.
+     *
+     * @return the stated AlgDataType of this expression
+     */
+    public AlgDataType getAlgDataType() {
+        return dataType == null ? null : dataType.toAlgDataType();
+    }
+
+
+    /**
+     * Return the explicitly stated AlgDataType to be used in the CAST operator.
+     *
+     * @return the stated AlgDataType of this expression
+     */
+    public AlgDataType getAlgDataTypeForCast() {
+        PolyAlgDataType cast = getOnlyChild().getCast();
+        if ( cast == null ) {
+            throw new GenericRuntimeException( "No AlgDataType to cast to was specified" );
+        }
+        return cast.toAlgDataType();
     }
 
 
@@ -118,6 +167,27 @@ public class PolyAlgExpression extends PolyAlgNode {
     }
 
 
+    public PolyAlgLiteral getLastLiteral() {
+        return literals.get( literals.size() - 1 );
+    }
+
+
+    public PolyAlgExpression getOnlyChild() {
+        if ( childExps.size() != 1 ) {
+            throw new GenericRuntimeException( "Unexpected number of child expressions: " + childExps.size() );
+        }
+        return childExps.get( 0 );
+    }
+
+
+    public String getDefaultAlias() {
+        if ( isCall() && getOperator().getOperatorName() == OperatorName.CAST ) {
+            return getOnlyChild().getDefaultAlias();
+        }
+        return toString();
+    }
+
+
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
@@ -131,8 +201,15 @@ public class PolyAlgExpression extends PolyAlgNode {
             }
             sb.append( "(" ).append( joiner ).append( ")" );
         }
-        if ( hasCast() ) {
-            sb.append( ":" ).append( cast );
+        if ( hasDataType() ) {
+            sb.append( ":" ).append( dataType );
+        }
+        if ( hasExtensions() ) {
+            StringJoiner joiner = new StringJoiner( " " );
+            for ( PolyAlgExpressionExtension extension : extensions.values() ) {
+                joiner.add( extension.toString() );
+            }
+            sb.append( joiner );
         }
         return sb.toString();
     }
@@ -140,22 +217,26 @@ public class PolyAlgExpression extends PolyAlgNode {
 
     public Operator getOperator() {
         String str = getLiteralsAsString();
+        OperatorName opName = OperatorName.getFromGeneralName( str.toUpperCase( Locale.ROOT ) );
+        if ( opName == null ) {
+            throw new GenericRuntimeException( "Operator '" + str + "' is not yet supported" );
+        }
+        return OperatorRegistry.get( OperatorName.getFromGeneralName( str.toUpperCase( Locale.ROOT ) ) );
+    }
+
+
+    public AggFunction getAggFunction() {
+        String str = getLiteralsAsString();
         return switch ( str.toUpperCase( Locale.ROOT ) ) {
-            case "+" -> OperatorRegistry.get( OperatorName.PLUS );
-            case "-" -> OperatorRegistry.get( OperatorName.MINUS );
-            case "*" -> OperatorRegistry.get( OperatorName.MULTIPLY );
-            case "/" -> OperatorRegistry.get( OperatorName.DIVIDE );
-            case "=" -> OperatorRegistry.get( OperatorName.EQUALS );
-            case "!=", "<>" -> OperatorRegistry.get( OperatorName.NOT_EQUALS );
-            case ">" -> OperatorRegistry.get( OperatorName.GREATER_THAN );
-            case ">=" -> OperatorRegistry.get( OperatorName.GREATER_THAN_OR_EQUAL );
-            case "<" -> OperatorRegistry.get( OperatorName.LESS_THAN );
-            case "<=" -> OperatorRegistry.get( OperatorName.LESS_THAN_OR_EQUAL );
-            case "AND" -> OperatorRegistry.get( OperatorName.AND );
-            case "OR" -> OperatorRegistry.get( OperatorName.OR );
-            case "NOT" -> OperatorRegistry.get( OperatorName.NOT );
-            default -> throw new IllegalArgumentException( "Operator '" + str + "' is not yet supported" );
+            case "COUNT" -> OperatorRegistry.getAgg( OperatorName.COUNT );
+            case "SUM" -> OperatorRegistry.getAgg( OperatorName.SUM );
+            case "MAX" -> OperatorRegistry.getAgg( OperatorName.MAX );
+            case "MIN" -> OperatorRegistry.getAgg( OperatorName.MIN );
+            case "AVG" -> OperatorRegistry.getAgg( OperatorName.AVG );
+            default -> throw new IllegalArgumentException( "Aggregate Function '" + str + "' is not yet supported" );
         };
     }
 
+
 }
+

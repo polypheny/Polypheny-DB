@@ -378,12 +378,12 @@ public abstract class AbstractAlgNode implements AlgNode {
                     List.of();
             inputIdx += child.getTupleType().getFieldCount();
 
-            if ( projections.isEmpty() ) {
+            if ( projections == null ) {
                 child.buildPolyAlgebra( sb, nextPrefix );
             } else {
                 sb.append( nextPrefix )
                         .append( PolyAlgRegistry.getDeclaration( LogicalRelProject.class ).opName ).append( "#" )  // TODO: select Project depending on data model, logical / physical
-                        .append( "[" ).append( PolyAlgUtils.joinMultiValued( projections, true ) ).append( "]" )
+                        .append( PolyAlgUtils.joinMultiValuedWithBrackets( projections ) )
                         .append( "(\n" );
                 child.buildPolyAlgebra( sb, nextPrefix == null ? null : nextPrefix + INDENT );
                 sb.append( ")" );

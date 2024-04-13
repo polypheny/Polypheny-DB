@@ -17,10 +17,13 @@
 package org.polypheny.db.algebra.operators;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import lombok.Getter;
 import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.fun.TrimFunction;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.nodes.BinaryOperator;
 import org.polypheny.db.nodes.Call;
 import org.polypheny.db.nodes.Function;
@@ -1442,6 +1445,7 @@ public enum OperatorName {
 
     @Getter
     private final Class<? extends Operator> clazz;
+    private static Map<String, OperatorName> nameLookup = null;
 
 
     OperatorName( Class<? extends Operator> clazz ) {
@@ -1456,4 +1460,26 @@ public enum OperatorName {
             MQL_LT,
             MQL_LTE
     );
+
+
+    public static OperatorName getFromGeneralName( String name ) {
+        if ( nameLookup == null ) {
+            buildNameLookup();
+        }
+        return nameLookup.get( name );
+    }
+
+
+    private static void buildNameLookup() {
+        nameLookup = new HashMap<>();
+        for ( OperatorName opName : OperatorName.values() ) {
+            Operator op = OperatorRegistry.get( opName );
+            if ( op != null ) {
+                String strName = op.getName();
+                if ( !strName.isEmpty() && !nameLookup.containsKey( strName ) ) {
+                    nameLookup.put( strName, opName );
+                }
+            }
+        }
+    }
 }
