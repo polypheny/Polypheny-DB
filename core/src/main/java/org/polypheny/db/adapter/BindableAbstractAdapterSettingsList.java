@@ -44,7 +44,7 @@ public class BindableAbstractAdapterSettingsList<T extends ConfigObject> extends
 
 
     public BindableAbstractAdapterSettingsList( String name, String nameAlias, boolean canBeNull, String subOf, boolean required, boolean modifiable, List<T> options, Function<T, String> mapper, Class<T> clazz ) {
-        super( name, canBeNull, subOf, required, modifiable, options.stream().map( ( el ) -> String.valueOf( el.getId() ) ).collect( Collectors.toList() ), new ArrayList<>(), null, 1000 );
+        super( name, canBeNull, subOf, required, modifiable, options.stream().map( el -> String.valueOf( el.getId() ) ).toList(), new ArrayList<>(), null, 1000 );
         this.mapper = mapper;
         this.clazz = clazz;
         this.dynamic = true;
@@ -82,7 +82,7 @@ public class BindableAbstractAdapterSettingsList<T extends ConfigObject> extends
 
     public void refreshFromConfig() {
         if ( boundConfig != null ) {
-            options = boundConfig.getList( clazz ).stream().map( ( el ) -> String.valueOf( el.id ) ).collect( Collectors.toList() );
+            options = boundConfig.getList( clazz ).stream().map( el -> String.valueOf( el.id ) ).toList();
             alias = boundConfig.getList( clazz ).stream().collect( Collectors.toMap( ConfigObject::getId, mapper ) );
         }
     }

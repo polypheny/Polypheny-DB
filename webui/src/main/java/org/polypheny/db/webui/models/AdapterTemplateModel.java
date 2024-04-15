@@ -66,7 +66,18 @@ public record AdapterTemplateModel(@JsonProperty String adapterName, @JsonProper
     }
 
 
-    public record AdapterSettingsModel(@JsonProperty AdapterSettingType type, @JsonProperty String name, @JsonProperty String defaultValue, @JsonProperty String description, @JsonProperty List<DeploySetting> appliesTo, @JsonProperty List<String> options, @JsonProperty boolean required, @JsonProperty boolean canBeNull, @JsonProperty String subOf, @JsonProperty List<String> fileNames) {
+    public record AdapterSettingsModel(
+            @JsonProperty AdapterSettingType type,
+            @JsonProperty String name,
+            @JsonProperty String defaultValue,
+            @JsonProperty String description,
+            @JsonProperty List<DeploySetting> appliesTo,
+            @JsonProperty List<String> options,
+            @JsonProperty boolean required,
+            @JsonProperty boolean canBeNull,
+            @JsonProperty String subOf,
+            @JsonProperty List<String> fileNames
+    ) {
 
 
         public static AdapterSettingsModel from( AbstractAdapterSetting setting ) {

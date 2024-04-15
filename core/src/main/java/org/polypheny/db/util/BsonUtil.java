@@ -42,6 +42,7 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.commons.lang3.NotImplementedException;
 import org.bson.BsonArray;
+import org.bson.BsonBinary;
 import org.bson.BsonBoolean;
 import org.bson.BsonDecimal128;
 import org.bson.BsonDocument;
@@ -85,6 +86,8 @@ public class BsonUtil {
     private final static List<String> stops = new ArrayList<>();
     public static final String DOC_MONTH_KEY = "m";
     public static final String DOC_MILLIS_KEY = "ms";
+    public static final String DOC_MEDIA_TYPE_KEY = "_type";
+    public static final String DOC_MEDIA_ID_KEY = "_id";
 
 
     static {
@@ -314,10 +317,13 @@ public class BsonUtil {
 
 
     private static BsonValue handleMultimedia( GridFSBucket bucket, PolyValue o ) {
+        if ( o.isBinary() ) {
+            return new BsonBinary( o.asBinary().value );
+        }
         ObjectId id = bucket.uploadFromStream( "_", o.asBlob().asBinaryStream() );
         return new BsonDocument()
-                .append( "_type", new BsonString( "s" ) )
-                .append( "_id", new BsonString( id.toString() ) );
+                .append( DOC_MEDIA_TYPE_KEY, new BsonString( "s" ) )
+                .append( DOC_MEDIA_ID_KEY, new BsonString( id.toString() ) );
     }
 
 
