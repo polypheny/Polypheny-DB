@@ -21,7 +21,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 
 @JsonInclude
-public record CreateDockerResponse(@JsonProperty HandshakeInfo handshake, @JsonProperty List<DockerInstanceInfo> instances) {
+public record CreateDockerResponse( @JsonProperty HandshakeInfo handshake, @JsonProperty List<DockerInstanceInfo> instances ) {
 
     public CreateDockerResponse( HandshakeInfo handshake, List<DockerInstanceInfo> instances ) {
         this.handshake = handshake;

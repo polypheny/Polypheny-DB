@@ -268,7 +268,7 @@ public final class DockerContainer {
     }
 
 
-    public record HostAndPort(String host, int port) {
+    public record HostAndPort( String host, int port ) {
 
     }
 

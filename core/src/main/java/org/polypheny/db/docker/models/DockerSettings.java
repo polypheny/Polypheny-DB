@@ -18,6 +18,6 @@ package org.polypheny.db.docker.models;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public record DockerSettings(@JsonProperty String defaultRegistry) {
+public record DockerSettings( @JsonProperty String defaultRegistry ) {
 
 }

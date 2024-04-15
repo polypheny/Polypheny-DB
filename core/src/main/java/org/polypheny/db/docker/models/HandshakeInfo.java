@@ -18,8 +18,8 @@ package org.polypheny.db.docker.models;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public record HandshakeInfo(@JsonProperty long id, @JsonProperty DockerHost host, @JsonProperty String runCommand, @JsonProperty String execCommand,
-                            @JsonProperty String status, @JsonProperty String lastErrorMessage,
-                            @JsonProperty boolean containerExistsGuess) {
+public record HandshakeInfo( @JsonProperty long id, @JsonProperty DockerHost host, @JsonProperty String runCommand, @JsonProperty String execCommand,
+                             @JsonProperty String status, @JsonProperty String lastErrorMessage,
+                             @JsonProperty boolean containerExistsGuess ) {
 
 }

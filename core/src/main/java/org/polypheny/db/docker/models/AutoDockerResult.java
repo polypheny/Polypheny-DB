@@ -19,6 +19,6 @@ package org.polypheny.db.docker.models;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 
-public record AutoDockerResult(@JsonProperty AutoDockerStatus status, @JsonProperty List<DockerInstanceInfo> instances) {
+public record AutoDockerResult( @JsonProperty AutoDockerStatus status, @JsonProperty List<DockerInstanceInfo> instances ) {
 
 }

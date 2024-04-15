@@ -20,6 +20,6 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonInclude
-public record UpdateDockerResponse(@JsonProperty HandshakeInfo handshake, @JsonProperty DockerInstanceInfo instance) {
+public record UpdateDockerResponse( @JsonProperty HandshakeInfo handshake, @JsonProperty DockerInstanceInfo instance ) {
 
 }

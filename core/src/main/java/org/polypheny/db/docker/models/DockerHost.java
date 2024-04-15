@@ -21,8 +21,8 @@ import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.docker.DockerUtils;
 import org.polypheny.db.docker.exceptions.DockerUserException;
 
-public record DockerHost(@JsonProperty String hostname, @JsonProperty String alias, @JsonProperty String registry,
-                         @JsonProperty int communicationPort, @JsonProperty int handshakePort, @JsonProperty int proxyPort) {
+public record DockerHost( @JsonProperty String hostname, @JsonProperty String alias, @JsonProperty String registry,
+                          @JsonProperty int communicationPort, @JsonProperty int handshakePort, @JsonProperty int proxyPort ) {
 
     public String getRegistryOrDefault() {
         return registry.isEmpty() ?

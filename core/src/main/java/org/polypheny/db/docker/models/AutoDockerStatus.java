@@ -18,6 +18,6 @@ package org.polypheny.db.docker.models;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public record AutoDockerStatus(@JsonProperty boolean available, @JsonProperty boolean connected, @JsonProperty boolean running, @JsonProperty String status) {
+public record AutoDockerStatus( @JsonProperty boolean available, @JsonProperty boolean connected, @JsonProperty boolean running, @JsonProperty String status ) {
 
 }

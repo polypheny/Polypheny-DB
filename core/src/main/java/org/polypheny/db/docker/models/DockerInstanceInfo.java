@@ -18,6 +18,6 @@ package org.polypheny.db.docker.models;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public record DockerInstanceInfo(@JsonProperty int id, @JsonProperty boolean connected, @JsonProperty int numberOfContainers, @JsonProperty DockerHost host) {
+public record DockerInstanceInfo( @JsonProperty int id, @JsonProperty boolean connected, @JsonProperty int numberOfContainers, @JsonProperty DockerHost host ) {
 
 }

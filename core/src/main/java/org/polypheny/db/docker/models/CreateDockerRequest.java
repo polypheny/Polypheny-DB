@@ -22,8 +22,8 @@ import org.polypheny.db.docker.DockerUtils;
 import org.polypheny.db.docker.exceptions.DockerUserException;
 
 
-public record CreateDockerRequest(@JsonProperty String hostname, @JsonProperty String alias, @JsonProperty String registry,
-                                  @JsonProperty Integer communicationPort, @JsonProperty Integer handshakePort, @JsonProperty Integer proxyPort) {
+public record CreateDockerRequest( @JsonProperty String hostname, @JsonProperty String alias, @JsonProperty String registry,
+                                   @JsonProperty Integer communicationPort, @JsonProperty Integer handshakePort, @JsonProperty Integer proxyPort ) {
 
     private static int checkPortIsValid( Integer port, int defaultValue ) {
         if ( port == null ) {

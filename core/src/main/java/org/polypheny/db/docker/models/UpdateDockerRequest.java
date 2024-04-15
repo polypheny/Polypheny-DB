@@ -18,6 +18,6 @@ package org.polypheny.db.docker.models;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public record UpdateDockerRequest(@JsonProperty int id, @JsonProperty String hostname, @JsonProperty String alias, @JsonProperty String registry) {
+public record UpdateDockerRequest( @JsonProperty int id, @JsonProperty String hostname, @JsonProperty String alias, @JsonProperty String registry ) {
 
 }

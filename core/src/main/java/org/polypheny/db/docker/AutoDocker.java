@@ -197,7 +197,7 @@ public final class AutoDocker {
         while ( true ) {
             String handshakeStatus = HandshakeManager.getInstance().getHandshake( handshake.id() ).orElseThrow().status();
             if ( handshakeStatus.equals( "FAILED" ) || handshakeStatus.equals( "SUCCESS" ) ) {
-                if (handshakeStatus.equals( "FAILED" )) {
+                if ( handshakeStatus.equals( "FAILED" ) ) {
                     status = HandshakeManager.getInstance().getHandshake( handshake.id() ).orElseThrow().lastErrorMessage();
                 }
                 handshake = null;
