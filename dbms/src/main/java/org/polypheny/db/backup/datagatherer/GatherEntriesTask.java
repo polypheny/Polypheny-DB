@@ -316,41 +316,16 @@ public class GatherEntriesTask implements Runnable {
                         List<List<PolyValue>> graphPerNamespace = iter.getNextBatch();
                         for ( List<PolyValue> entry : graphPerNamespace ) {
                             for ( PolyValue polyValue : entry ) {
-                                PolyGraph polyGraph = polyValue.asGraph();
 
-                                /*
-                                PolyMap<PolyString, PolyNode> nodes = polyGraph.getNodes();
-                                PolyMap<PolyString, PolyEdge> edges = polyGraph.getEdges();
-                                String edgejson = edges.get( 0 ).toTypedJson();
-                                String nodejson = nodes.get( 0 ).toTypedJson();
-                                String edgeByte = edges.get( 0 ).serialize();
-                                String nodeByte = nodes.get( 0 ).serialize();
-
-                                PolyNode node = PolyNode.fromTypedJson( nodejson, PolyNode.class );
-                                PolyEdge edge = PolyNode.fromTypedJson( edgejson, PolyEdge.class );
-                                PolyValue node1 = PolyNode.deserialize( nodeByte );
-                                PolyValue edge1 = PolyEdge.deserialize( edgeByte );
-                                 */
-
-                                String typedJson = polyValue.asGraph().toTypedJson();
-                                //String bytestr = polyValue.asGraph().serialize();   //not implemented exception
-
-                                //PolyValue dd = PolyGraph.deserialize( bytestr );  //get exception
-                                PolyValue aa = PolyGraph.fromTypedJson( typedJson, PolyGraph.class );   //is null
-                                PolyValue aaa = PolyGraph.fromTypedJson( typedJson, PolyValue.class );  //au null
-
-                                String jsonString = polyValue.toTypedJson();
-                                PolyValue test = PolyValue.fromTypedJson( jsonString, PolyValue.class );
-
-                                String byteString = polyValue.serialize();  //not implemented exception
-                                PolyValue haha = PolyValue.deserialize( byteString );
+                                String byteString = polyValue.serialize();
                                 byte[] byteBytes = polyValue.serialize().getBytes( StandardCharsets.UTF_8 );
+                                String jsonString = polyValue.toTypedJson();
 
                                 //out.write( byteBytes );
                                 //out.write( byteString.getBytes( StandardCharsets.UTF_8 ) );
                                 //pOut.println( jsonString);
                                 out.write( jsonString );
-                                //out.write( byteString );
+                                //bOut.write( byteString );
                                 out.newLine();
                                 //out.writeChars( jsonString );
                             }

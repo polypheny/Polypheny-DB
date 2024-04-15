@@ -145,6 +145,7 @@ public class GatherEntries {
 
                     String fileName = String.format( "graph_%s.txt", graphNamespaceId.toString() );
                     File graphData = homeDirManager.registerNewFile( getDataFolder(), fileName );
+                    filePaths.add( String.format( "%s/%s", dataFolderPath, fileName ) );
                     EntityInfo entityInfo = new EntityInfo( filePaths, "graph", "graph", graphNamespaceId, DataModel.GRAPH );
                     entityInfoList.add( entityInfo );
                     executorService.submit( new GatherEntriesTask( transactionManager, query, DataModel.GRAPH, graphNamespaceId, graphData ) );

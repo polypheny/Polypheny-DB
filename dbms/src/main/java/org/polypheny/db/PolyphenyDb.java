@@ -42,6 +42,7 @@ import org.polypheny.db.StatusNotificationService.ErrorConfig;
 import org.polypheny.db.StatusNotificationService.StatusType;
 import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.adapter.java.AdapterTemplate;
+import org.polypheny.db.backup.BackupManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -391,6 +392,9 @@ public class PolyphenyDb {
 
         // Initialize interface manager
         QueryInterfaceManager.initialize( transactionManager, authenticator );
+
+        // Initialize backup manager
+        BackupManager backupManager = BackupManager.setAndGetInstance( new BackupManager(transactionManager) );
 
         // Call DockerManager once to remove old containers
         DockerManager.getInstance();
