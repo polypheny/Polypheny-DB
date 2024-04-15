@@ -169,16 +169,4 @@ public abstract class RelScan<E extends Entity> extends Scan<E> implements RelAl
     }
 
 
-    @Override
-    public PolyAlgDeclaration getPolyAlgDeclaration() {
-        return PolyAlgRegistry.getDeclaration( RelScan.class );
-    }
-
-
-    @Override
-    public PolyAlgArgs collectAttributes() {
-        PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
-        return args.put( 0, new EntityArg( entity ) );
-    }
-
 }

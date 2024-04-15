@@ -26,6 +26,8 @@ import org.polypheny.db.algebra.core.relational.RelationalTransformable;
 import org.polypheny.db.algebra.logical.relational.LogicalRelJoin;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.algebra.polyalg.arguments.EntityArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.snapshot.Snapshot;
@@ -45,6 +47,17 @@ public class LogicalLpgScan extends LpgScan<Entity> implements RelationalTransfo
     public LogicalLpgScan( AlgCluster cluster, AlgTraitSet traitSet, Entity graph, AlgDataType rowType ) {
         super( cluster, traitSet.replace( ModelTrait.GRAPH ), graph );
         this.rowType = rowType;
+    }
+
+
+    public static LogicalLpgScan create( AlgCluster cluster, final Entity entity ) {
+        // TODO: is traitSet correct like this?
+        return new LogicalLpgScan( cluster, cluster.traitSet().replace( ModelTrait.GRAPH ), entity, entity.getTupleType() );
+    }
+
+
+    public static LogicalLpgScan create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+        return create( cluster, args.getArg( 0, EntityArg.class ).getEntity() );
     }
 
 
@@ -91,6 +104,14 @@ public class LogicalLpgScan extends LpgScan<Entity> implements RelationalTransfo
     @Override
     public AlgNode accept( AlgShuttle shuttle ) {
         return shuttle.visit( this );
+    }
+
+
+    @Override
+    public PolyAlgArgs collectAttributes() {
+
+        PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
+        return args.put( 0, new EntityArg( entity ) );
     }
 
 }

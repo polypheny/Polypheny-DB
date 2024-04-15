@@ -69,6 +69,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.Entity;
+import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
@@ -347,15 +348,11 @@ public class PolyAlgToAlgConverter {
             throw exception;
         }
 
-        return switch ( dataModel ) {
-            case RELATIONAL -> snapshot.rel().getTable( namespaceName, entityName ).orElseThrow( () -> exception );
-            case DOCUMENT -> snapshot.doc().getCollection(
-                            snapshot.getNamespace( namespaceName ).orElseThrow( () -> exception ).id,
-                            entityName )
-                    .orElseThrow( () -> exception );
-            case GRAPH -> snapshot.graph().getGraph(
-                            snapshot.getNamespace( namespaceName ).orElseThrow( () -> exception ).id )
-                    .orElseThrow( () -> exception );
+        LogicalNamespace ns = snapshot.getNamespace( namespaceName ).orElseThrow( () -> exception );
+        return switch ( ns.dataModel ) {
+            case RELATIONAL -> snapshot.rel().getTable( ns.id, entityName ).orElseThrow( () -> exception );
+            case DOCUMENT -> snapshot.doc().getCollection( ns.id, entityName ).orElseThrow( () -> exception );
+            case GRAPH -> snapshot.graph().getGraph( ns.id ).orElseThrow( () -> exception );
         };
     }
 

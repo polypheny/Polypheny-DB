@@ -42,7 +42,11 @@ public class EntityArg implements PolyAlgArg {
 
     @Override
     public String toPolyAlg( AlgNode context, @NonNull List<String> inputFieldNames ) {
-        return entity.getNamespaceName() + "." + entity.name;
+        try {
+            return entity.getNamespaceName() + "." + entity.name;
+        } catch ( UnsupportedOperationException e ) {
+            return entity.name + "." + entity.id;
+        }
     }
 
 
