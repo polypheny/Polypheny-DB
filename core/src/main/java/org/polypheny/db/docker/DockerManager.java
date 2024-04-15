@@ -116,6 +116,7 @@ public final class DockerManager {
                 ConfigManager.getInstance().getConfig( "runtime/dockerInstances" ).setConfigObjectList( configList.stream().map( ConfigDocker::toMap ).collect( Collectors.toList() ), ConfigDocker.class );
             }
             dockerInstances.put( configDocker.getId(), new DockerInstance( configDocker.getId(), host ) );
+            Catalog.getInstance().updateSnapshot();
         }
     }
 
@@ -144,6 +145,7 @@ public final class DockerManager {
                 }
             } );
             ConfigManager.getInstance().getConfig( "runtime/dockerInstances" ).setConfigObjectList( configs.stream().map( ConfigDocker::toMap ).collect( Collectors.toList() ), ConfigDocker.class );
+            Catalog.getInstance().updateSnapshot();
 
             return new UpdateDockerResponse( maybeHandshake.orElse( null ), dockerInstance.getInfo() );
         }
@@ -159,6 +161,7 @@ public final class DockerManager {
             // TODO: racy, someone else could modify runtime/dockerInstances elsewhere
             List<ConfigDocker> newList = RuntimeConfig.DOCKER_INSTANCES.getList( ConfigDocker.class ).stream().filter( c -> c.getId() != id ).collect( Collectors.toList() );
             ConfigManager.getInstance().getConfig( "runtime/dockerInstances" ).setConfigObjectList( newList.stream().map( ConfigDocker::toMap ).collect( Collectors.toList() ), ConfigDocker.class );
+            Catalog.getInstance().updateSnapshot();
         }
     }
 
