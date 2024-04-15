@@ -84,7 +84,6 @@ public record AdapterTemplateModel( @JsonProperty String adapterName, @JsonPrope
             @JsonProperty boolean modifiable,
             @JsonProperty List<String> options,
             @JsonProperty List<String> fileNames,
-            @JsonProperty Boolean dynamic,
             @JsonProperty Integer position,
             @JsonProperty List<DeploySetting> appliesTo
     ) {
@@ -113,7 +112,6 @@ public record AdapterTemplateModel( @JsonProperty String adapterName, @JsonPrope
                             ? ((AbstractAdapterSettingList) setting).options
                             : null,
                     List.of(),
-                    null,
                     null,
                     setting.appliesTo
             );
