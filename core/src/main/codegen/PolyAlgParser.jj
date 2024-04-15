@@ -24,6 +24,7 @@ import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgNodeList;
 import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgExpression;
 import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgExpressionExtension;
 import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgExpressionExtension.ExtensionType;
+import org.polypheny.db.algebra.core.CorrelationId;
 import java.util.Arrays;
 import java.util.List;
 import java.util.ArrayList;
@@ -332,7 +333,7 @@ PolyAlgLiteral Literal() :
 }
 {
     (
-        t = <IDENTIFIER>
+        t = <IDENTIFIER> {if (t.image.startsWith(CorrelationId.CORREL_PREFIX)) type = LiteralType.CORRELATION_VAR;}
         |
         LOOKAHEAD(2) num = Number() {return new PolyAlgLiteral(num, LiteralType.NUMBER, getPos());}
         |

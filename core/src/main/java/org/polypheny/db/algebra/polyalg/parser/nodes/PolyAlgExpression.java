@@ -163,7 +163,7 @@ public class PolyAlgExpression extends PolyAlgNode {
 
 
     public String getLiteralsAsString() {
-        return String.join( "", getLiteralsAsStrings() );
+        return String.join( " ", getLiteralsAsStrings() );
     }
 
 

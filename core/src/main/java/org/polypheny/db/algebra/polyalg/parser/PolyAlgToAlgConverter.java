@@ -29,10 +29,10 @@ import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
-import org.polypheny.db.algebra.constant.JoinType;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.CorrelationId;
+import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.fun.AggFunction;
@@ -240,7 +240,7 @@ public class PolyAlgToAlgConverter {
             }
             case AGGREGATE -> new AggArg( convertAggCall( exp, alias, ctx ) );
             case ENTITY -> new EntityArg( convertEntity( exp, ctx.dataModel ) );
-            case JOIN_TYPE_ENUM -> new EnumArg<>( exp.toEnum( JoinType.class ), ParamType.JOIN_TYPE_ENUM );
+            case JOIN_TYPE_ENUM -> new EnumArg<>( exp.toEnum( JoinAlgType.class ), ParamType.JOIN_TYPE_ENUM );
             case MODIFY_OP_ENUM -> new EnumArg<>( exp.toEnum( Modify.Operation.class ), ParamType.MODIFY_OP_ENUM );
             case FIELD -> new FieldArg( ctx.getFieldOrdinal( exp.toIdentifier() ) );
             case EMPTY_LIST -> ListArg.EMPTY;
@@ -286,6 +286,14 @@ public class PolyAlgToAlgConverter {
      */
     private RexNode convertRexLiteral( PolyAlgLiteral literal, AlgDataType type, Context ctx ) {
         // TODO: handle all cases of non-call RexNodes
+
+        // first handle cases where explicit type doesn't matter
+        if ( literal.getType() == LiteralType.CORRELATION_VAR ) {
+            Pair<CorrelationId, String> pair = literal.toCorrelationFieldAccess();
+            RexNode corr = builder.makeCorrel( ctx.getChildTupleType( 0 ), pair.left );
+            return builder.makeFieldAccess( corr, pair.right, true );
+        }
+
         if ( type == null ) {
             // no explicit type information, so we can only guess which one from the LiteralType the parser detected:
             return switch ( literal.getType() ) {
@@ -304,7 +312,7 @@ public class PolyAlgToAlgConverter {
             if ( literal.getType() == LiteralType.DYNAMIC_PARAM ) {
                 return builder.makeDynamicParam( type, literal.toDynamicParam() );
             }
-            if (literal.getType() == LiteralType.NULL) {
+            if ( literal.getType() == LiteralType.NULL ) {
                 return builder.makeNullLiteral( type );
             }
             String str = literal.toUnquotedString();
@@ -449,6 +457,11 @@ public class PolyAlgToAlgConverter {
                 offset += count;
             }
             throw new GenericRuntimeException( "Invalid field index" );
+        }
+
+
+        public AlgDataType getChildTupleType( int idx ) {
+            return children.get( idx ).getTupleType();
         }
 
     }

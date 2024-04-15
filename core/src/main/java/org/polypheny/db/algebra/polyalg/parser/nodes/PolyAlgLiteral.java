@@ -18,11 +18,14 @@ package org.polypheny.db.algebra.polyalg.parser.nodes;
 
 import java.util.Locale;
 import lombok.Getter;
+import lombok.NonNull;
 import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.AlgFieldCollation.Direction;
 import org.polypheny.db.algebra.AlgFieldCollation.NullDirection;
+import org.polypheny.db.algebra.core.CorrelationId;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.util.Pair;
 
 public class PolyAlgLiteral extends PolyAlgNode {
 
@@ -31,7 +34,7 @@ public class PolyAlgLiteral extends PolyAlgNode {
     private final LiteralType type;
 
 
-    public PolyAlgLiteral( String str, LiteralType type, ParserPos pos ) {
+    public PolyAlgLiteral( @NonNull String str, @NonNull LiteralType type, ParserPos pos ) {
         super( pos );
         this.str = str;
         this.type = type;
@@ -89,6 +92,16 @@ public class PolyAlgLiteral extends PolyAlgNode {
     }
 
 
+    public Pair<CorrelationId, String> toCorrelationFieldAccess() {
+        checkType( LiteralType.CORRELATION_VAR );
+        String[] parts = str.split( "\\.", 2 );
+        if ( parts.length != 2 ) {
+            throw new GenericRuntimeException( "Missing field access in '" + str + "'" );
+        }
+        return Pair.of( new CorrelationId( parts[0] ), parts[1] );
+    }
+
+
     @Override
     public String toString() {
         return str;
@@ -118,6 +131,7 @@ public class PolyAlgLiteral extends PolyAlgNode {
         DIRECTION, // AlgFieldCollation.Direction
         NULL_DIRECTION, // AlgFieldCollation.NullDirection
         DYNAMIC_PARAM,
+        CORRELATION_VAR,
         STRING; // This is the least specific type and is used e.g. for field or entity names
 
         public static LiteralType DEFAULT = STRING;
