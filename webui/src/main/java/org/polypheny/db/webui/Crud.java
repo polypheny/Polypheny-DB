@@ -3057,7 +3057,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
 
     void getHandshakes( final Context ctx ) {
-        ctx.json( HandshakeManager.getInstance().getHandshakes() );
+        ctx.json( HandshakeManager.getInstance().getActiveHandshakes() );
     }
 
 
@@ -3083,7 +3083,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
     void cancelHandshake( final Context ctx ) {
         long id = Long.parseLong( ctx.pathParam( "id" ) );
-        if ( HandshakeManager.getInstance().cancelHandshake( id ) ) {
+        if ( HandshakeManager.getInstance().cancelAndRemoveHandshake( id ) ) {
             ctx.status( 200 );
         } else {
             ctx.status( 404 );
@@ -3094,7 +3094,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     void deleteHandshake( final Context ctx ) {
         long id = Long.parseLong( ctx.pathParam( "id" ) );
         if ( HandshakeManager.getInstance().cancelAndRemoveHandshake( id ) ) {
-            ctx.status( 200 ).json( HandshakeManager.getInstance().getHandshakes() );
+            ctx.status( 200 ).json( HandshakeManager.getInstance().getActiveHandshakes() );
         } else {
             ctx.status( 404 );
         }

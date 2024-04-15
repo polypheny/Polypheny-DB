@@ -101,17 +101,6 @@ public final class HandshakeManager {
     }
 
 
-    public boolean cancelHandshake( long id ) {
-        synchronized ( this ) {
-            Handshake h = handshakes.get( id );
-            if ( h != null ) {
-                h.cancel();
-            }
-            return h != null;
-        }
-    }
-
-
     public boolean cancelAndRemoveHandshake( long id ) {
         synchronized ( this ) {
             Handshake h = handshakes.remove( id );
@@ -126,7 +115,7 @@ public final class HandshakeManager {
     void cancelHandshakes( String hostname ) {
         synchronized ( this ) {
             List<Long> ids = handshakes.values().stream().filter( h -> h.host.hostname().equals( hostname ) ).map( Handshake::getId ).toList();
-            ids.forEach( this::cancelHandshake );
+            ids.forEach( this::cancelAndRemoveHandshake );
         }
     }
 
@@ -139,9 +128,11 @@ public final class HandshakeManager {
     }
 
 
-    public List<HandshakeInfo> getHandshakes() {
+    public List<HandshakeInfo> getActiveHandshakes() {
         synchronized ( this ) {
-            return handshakes.values().stream().map( Handshake::serializeHandshake ).toList();
+            return handshakes.values().stream()
+                    .map( Handshake::serializeHandshake )
+                    .filter( h -> !h.status().equals( "CANCELLED" ) && !h.status().equals( "SUCCESS" ) ).toList();
         }
     }
 
@@ -211,7 +202,7 @@ public final class HandshakeManager {
                     }
                     Runnable doHandshake = () -> {
                         if ( client.doHandshake() ) {
-                            log.info( "Handshake with " + host.hostname() + " successful" );
+                            log.info( "Handshake with {} successful", host.hostname() );
                         }
                     };
                     handshakeThread = new Thread( doHandshake, "HandshakeThread" );

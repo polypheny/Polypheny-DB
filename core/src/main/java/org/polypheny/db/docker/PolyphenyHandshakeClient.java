@@ -143,7 +143,6 @@ final class PolyphenyHandshakeClient {
 
 
     void prepareNextTry() {
-        // TODO: merge into doHandshake somehow
         synchronized ( this ) {
             if ( this.state == State.SUCCESS || this.state == State.RUNNING || this.state == State.FAILED ) {
                 return;
