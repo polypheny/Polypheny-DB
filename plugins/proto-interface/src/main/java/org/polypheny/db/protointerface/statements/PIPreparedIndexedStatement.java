@@ -55,21 +55,21 @@ public class PIPreparedIndexedStatement extends PIPreparedStatement {
 
     public List<Long> executeBatch( List<List<PolyValue>> valuesBatch ) {
         List<Long> updateCounts = new LinkedList<>();//synchronized ( this ) {
-            if ( statement == null ) {
-                statement = client.getCurrentOrCreateNewTransaction().createStatement();
-            } else {
-                statement.getDataContext().resetParameterValues();
-            }
-            List<AlgDataType> types = valuesBatch.stream()
-                    .map( v -> v.get( 0 ).getType() )
-                    .map( v -> statement.getTransaction().getTypeFactory().createPolyType( v ) )
-                    .toList();
-            int i = 0;
-            for ( List<PolyValue> column : valuesBatch ) {
-                statement.getDataContext().addParameterValues( i, types.get( i++ ), column );
-            }
-            StatementProcessor.implement( this );
-            updateCounts.add( StatementProcessor.executeAndGetResult( this ).getScalar() );
+        if ( statement == null ) {
+            statement = client.getCurrentOrCreateNewTransaction().createStatement();
+        } else {
+            statement.getDataContext().resetParameterValues();
+        }
+        List<AlgDataType> types = valuesBatch.stream()
+                .map( v -> v.get( 0 ).getType() )
+                .map( v -> statement.getTransaction().getTypeFactory().createPolyType( v ) )
+                .toList();
+        int i = 0;
+        for ( List<PolyValue> column : valuesBatch ) {
+            statement.getDataContext().addParameterValues( i, types.get( i++ ), column );
+        }
+        StatementProcessor.implement( this );
+        updateCounts.add( StatementProcessor.executeAndGetResult( this ).getScalar() );
         //}
         return updateCounts;
     }
@@ -78,22 +78,25 @@ public class PIPreparedIndexedStatement extends PIPreparedStatement {
     @SuppressWarnings("Duplicates")
     public StatementResult execute( List<PolyValue> values, int fetchSize ) {
         //synchronized ( this ) {
-            if ( statement == null ) {
-                statement = client.getCurrentOrCreateNewTransaction().createStatement();
-            } else {
-                statement.getDataContext().resetParameterValues();
+        if ( statement == null ) {
+            statement = client.getCurrentOrCreateNewTransaction().createStatement();
+        } else if ( !statement.getTransaction().isActive() ) {
+            statement = client.getCurrentOrCreateNewTransaction().createStatement(); // todo @gartens: check how those commited transactions should be handled
+        } else {
+            statement.getDataContext().resetParameterValues();
+        }
+        long index = 0;
+        for ( PolyValue value : values ) {
+            if ( value != null ) {
+                AlgDataType algDataType = statement.getTransaction().getTypeFactory().createPolyType( value.getType() );
+                statement.getDataContext().addParameterValues( index++, algDataType, List.of( value ) );
             }
-            long index = 0;
-            for ( PolyValue value : values ) {
-                if ( value != null ) {
-                    AlgDataType algDataType = statement.getTransaction().getTypeFactory().createPolyType( value.getType() );
-                    statement.getDataContext().addParameterValues( index++, algDataType, List.of( value ) );
-                }
-            }
-            StatementProcessor.implement( this );
-            return StatementProcessor.executeAndGetResult( this, fetchSize );
+        }
+        StatementProcessor.implement( this );
+        return StatementProcessor.executeAndGetResult( this, fetchSize );
         //}
     }
+
 
     @Override
     public void close() {
