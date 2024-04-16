@@ -21,9 +21,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import com.google.common.collect.ImmutableMap;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Wrapper;
+import java.util.ArrayList;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeAll;
@@ -57,6 +60,7 @@ public class EvaluationTest {
         testHelper = TestHelper.getInstance();
     }
 
+    /*
     @Test
     public void testingForEvaluation() {
         TransactionManager transactionManager = testHelper.getTransactionManager();
@@ -94,6 +98,145 @@ public class EvaluationTest {
         deleteBasicDocData();
     }
 
+     */
+
+    @Test
+    public void startEvaluation() {
+
+        startMeasure( "batchSize1", "s", "simple" );
+        //startMeasure( "batchSize1", "m", "simple" );
+        //startMeasure( "batchSize1", "l", "simple" );
+
+        assertEquals( 2, 2, "Wrong number of tables" );
+
+    }
+
+
+    /**
+     * Start the measurement for the backup creation and insertion time
+     * @param parameter What backup parameter is measured (e.g. batchSize)
+     * @param scale The scale of the data (s|m|l)
+     * @param complexity The complexity of the data (simple|complex)
+     * @throws IOException when something goes wrong with creating a filewriter
+     */
+    private static void startMeasure ( String parameter, String scale, String complexity ) {
+        TransactionManager transactionManager = testHelper.getTransactionManager();
+        BackupManager backupManager = BackupManager.getINSTANCE();
+
+        //parameter: e.g. batchsize, scaling: [s|m|l], complexity: [simple|complex], type: [collection|insertion]
+        // file title: e.g. batchSize10_s_simple_collection
+        String fileName = "";
+
+        ArrayList<Long> measuredTime = new ArrayList<Long>();
+        WriteToCSV writeToCSV = new WriteToCSV();
+
+        switch ( scale ) {
+            case "s":
+                if ( complexity.equals( "simple" )) {
+                    //collection
+                    addSimpleRelEvalData( 6 );
+
+                    fileName = String.format( "%s_%s_%s_collection", parameter, scale, complexity);
+                    measuredTime = measureBackupCreationTime( backupManager );
+                    writeToCSV.writeToCSV( measuredTime, fileName );
+
+                    deleteSimpleRelEvalData();
+                    measuredTime.clear();
+
+                    //insertion
+                    fileName = String.format( "%s_%s_%s_insertion", parameter, scale, complexity);
+                    measuredTime = measureBackupInsertionTime( backupManager );
+                    writeToCSV.writeToCSV( measuredTime, fileName );
+
+                    measuredTime.clear();
+                } else if ( complexity.equals( "complex" ) ) {
+                    //addComplexRelEvalData( 6 );
+                }
+
+                break;
+
+
+            case "m":
+                if ( complexity.equals( "simple" )) {
+                    //collection
+                    addSimpleRelEvalData( 60 );
+
+                    fileName = String.format( "%s_%s_%s_collection", parameter, scale, complexity);
+                    measuredTime = measureBackupCreationTime( backupManager );
+                    writeToCSV.writeToCSV( measuredTime, fileName );
+
+                    deleteSimpleRelEvalData();
+                    measuredTime.clear();
+
+                    //insertion
+                    fileName = String.format( "%s_%s_%s_insertion", parameter, scale, complexity);
+                    measuredTime = measureBackupInsertionTime( backupManager );
+                    writeToCSV.writeToCSV( measuredTime, fileName );
+
+                    measuredTime.clear();
+                } else if ( complexity.equals( "complex" ) ) {
+                    //addComplexRelEvalData( 6 );
+                }
+                break;
+
+
+            case "l":
+                if ( complexity.equals( "simple" )) {
+                    //collection
+                    addSimpleRelEvalData( 600 );
+
+                    fileName = String.format( "%s_%s_%s_collection", parameter, scale, complexity);
+                    measuredTime = measureBackupCreationTime( backupManager );
+                    writeToCSV.writeToCSV( measuredTime, fileName );
+
+                    deleteSimpleRelEvalData();
+                    measuredTime.clear();
+
+                    //insertion
+                    fileName = String.format( "%s_%s_%s_insertion", parameter, scale, complexity);
+                    measuredTime = measureBackupInsertionTime( backupManager );
+                    writeToCSV.writeToCSV( measuredTime, fileName );
+
+                    measuredTime.clear();
+                } else if ( complexity.equals( "complex" ) ) {
+                    //addComplexRelEvalData( 6 );
+                }
+                break;
+
+
+            default:
+                break;
+        }
+
+    }
+
+
+    private static ArrayList<Long> measureBackupCreationTime ( BackupManager backupManager) {
+        ArrayList<Long> measuredTime = new ArrayList<Long>();
+        long startTime;
+        long elapsedTime;
+        for(int i=0; i< 100; i++){
+            startTime = System.nanoTime();
+            backupManager.startDataGathering();
+            elapsedTime = System.nanoTime() - startTime;
+            measuredTime.add(elapsedTime);
+        }
+        return measuredTime;
+    }
+
+    private static ArrayList<Long> measureBackupInsertionTime ( BackupManager backupManager ) {
+        ArrayList<Long> measuredTime = new ArrayList<Long>();
+        long startTime;
+        long elapsedTime;
+        for(int i=0; i< 100; i++){
+            startTime = System.nanoTime();
+            backupManager.startInserting();
+            elapsedTime = System.nanoTime() - startTime;
+            measuredTime.add(elapsedTime);
+        }
+        return measuredTime;
+    }
+
     //------------------------------------------------------------------------
 
     private static void addBasicRelTestData() {
@@ -123,6 +266,44 @@ public class EvaluationTest {
         }
     }
 
+
+    /**
+     * Add simple relational evaluation data - simple structure
+     * @param nbrRows number of rows to add
+     */
+    private static void addSimpleRelEvalData( int nbrRows ) {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( "CREATE NAMESPACE reli" );
+                statement.executeUpdate( "CREATE TABLE reli.album(albumId INTEGER NOT NULL, albumName VARCHAR(255), nbrSongs INTEGER,PRIMARY KEY (albumId))" );
+                for ( int i = 0; i < nbrRows; i++ ) {
+                    statement.executeUpdate( "INSERT INTO reli.album VALUES (" + i + ", 'Best Album Ever!', 10)" );
+                }
+                connection.commit();
+            }
+        } catch ( SQLException e ) {
+            log.error( "Exception while adding test data", e );
+        }
+    }
+
+
+    /**
+     * Delete simple relational evaluation data
+     */
+    private static void deleteSimpleRelEvalData () {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( "DROP TABLE reli.album" );
+                statement.executeUpdate( "DROP SCHEMA reli" );
+                connection.commit();
+            }
+        } catch ( SQLException e ) {
+            log.error( "Exception while deleting old data", e );
+        }
+    }
+
     //------------------------------------------------------------------------
 
     private static void addBasicGraphData() {
@@ -139,7 +320,7 @@ public class EvaluationTest {
 
         //create graph
         executeGraph( format( "CREATE DATABASE %s", GRAPH_NAME ) );
-        executeGraph( format( "USE GRAPH %s", GRAPH_NAME ) );
+        //executeGraph( format( "USE GRAPH %s", GRAPH_NAME ) );
 
         executeGraph( SINGLE_NODE_PERSON_1, GRAPH_NAME );
         executeGraph( SINGLE_NODE_PERSON_2, GRAPH_NAME );
@@ -175,7 +356,7 @@ public class EvaluationTest {
 
 
     public static void initDatabase( String database ) {
-        MongoConnection.executeGetResponse( "use " + database );
+        //MongoConnection.executeGetResponse( "use " + database );
     }
 
     public static void dropDatabase( String database ) {
