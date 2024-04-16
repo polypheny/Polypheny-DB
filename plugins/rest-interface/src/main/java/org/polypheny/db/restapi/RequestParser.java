@@ -35,6 +35,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.servlet.http.HttpServletRequest;
 import lombok.AllArgsConstructor;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.NotImplementedException;
@@ -747,6 +748,7 @@ public class RequestParser {
 
 
     @AllArgsConstructor
+    @Getter
     public static class Filters {
 
         public final Map<RequestColumn, List<Pair<Operator, PolyValue>>> literalFilters;
