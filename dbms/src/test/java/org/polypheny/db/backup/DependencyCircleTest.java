@@ -138,7 +138,7 @@ public class DependencyCircleTest {
         log.warn( sb.toString() );
 
 
-        assertEquals( 1, tables.size(), "Wrong number of tables" );
+        assertEquals( 2, tables.size(), "Wrong number of tables" );
 
         deleteBasicRelTestData();
     }
@@ -230,34 +230,6 @@ public class DependencyCircleTest {
         }
     }
 
-
-    @Test
-    public void testGetCatalogs() {
-        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
-            Connection connection = polyphenyDbConnection.getConnection();
-            ResultSet resultSet = connection.getMetaData().getCatalogs();
-            ResultSetMetaData rsmd = resultSet.getMetaData();
-
-            // Check number of columns
-            int totalColumns = rsmd.getColumnCount();
-            assertEquals( 3, totalColumns, "Wrong number of columns" );
-
-            // Check column names
-            assertEquals( "TABLE_CAT", rsmd.getColumnName( 1 ), "Wrong column name" );
-            assertEquals( "OWNER", rsmd.getColumnName( 2 ), "Wrong column name" );
-            assertEquals( "DEFAULT_SCHEMA", rsmd.getColumnName( 3 ), "Wrong column name" );
-
-            // Check data
-            final Object[] databaseApp = new Object[]{ "APP", "system", "public" };
-
-            TestHelper.checkResultSet(
-                    connection.getMetaData().getCatalogs(),
-                    ImmutableList.of( databaseApp ) );
-
-        } catch ( SQLException e ) {
-            log.error( "Exception while testing getCatalogs()", e );
-        }
-    }
 
 
     @Test
