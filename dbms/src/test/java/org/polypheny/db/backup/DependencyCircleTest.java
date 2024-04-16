@@ -19,11 +19,13 @@ package org.polypheny.db.backup;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -31,6 +33,8 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
+import org.polypheny.db.catalog.entity.logical.LogicalEntity;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.transaction.TransactionManager;
 
 
@@ -117,9 +121,26 @@ public class DependencyCircleTest {
         TransactionManager transactionManager = testHelper.getTransactionManager();
         BackupManager backupManager = BackupManager.getINSTANCE();
 
-        backupManager.startDataGathering();
+        addBasicRelTestData();
 
-        assertEquals( 4, backupManager.getBackupInformationObject().getTables().get( 0 ).size() );
+        backupManager.startDataGathering();
+        BackupInformationObject bupobj = backupManager.getBackupInformationObject();
+
+        // go through all tables in the bupobj and add the table names to a string, which will be printed
+        StringBuilder sb = new StringBuilder();
+        ImmutableMap<Long, List<LogicalEntity>> tables = bupobj.getTables();
+        for ( Long key : tables.keySet() ) {
+            List<LogicalEntity> tableList = tables.get( key );
+            for ( LogicalEntity entity : tableList ) {
+                sb.append( entity.name ).append( "\n" );
+            }
+        }
+        log.warn( sb.toString() );
+
+
+        assertEquals( 1, tables.size(), "Wrong number of tables" );
+
+        deleteBasicRelTestData();
     }
 
 
@@ -175,6 +196,33 @@ public class DependencyCircleTest {
                 statement.executeUpdate( "DROP SCHEMA reli" );
                 statement.executeUpdate( "DROP SCHEMA temp" );
                 statement.executeUpdate( "DROP SCHEMA lol" );
+                connection.commit();
+            }
+        } catch ( SQLException e ) {
+            log.error( "Exception while deleting old data", e );
+        }
+    }
+
+    private static void addBasicRelTestData() {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( "CREATE NAMESPACE reli" );
+                statement.executeUpdate( "CREATE TABLE reli.album(albumId INTEGER NOT NULL, albumName VARCHAR(255), nbrSongs INTEGER,PRIMARY KEY (albumId))" );
+                statement.executeUpdate( "INSERT INTO reli.album VALUES (1, 'Best Album Ever!', 10), (2, 'Pretty Decent Album...', 15), (3, 'Your Ears will Bleed!', 13)" );
+                connection.commit();
+            }
+        } catch ( SQLException e ) {
+            log.error( "Exception while adding test data", e );
+        }
+    }
+
+    private static void deleteBasicRelTestData() {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( "DROP TABLE reli.album" );
+                statement.executeUpdate( "DROP SCHEMA reli" );
                 connection.commit();
             }
         } catch ( SQLException e ) {

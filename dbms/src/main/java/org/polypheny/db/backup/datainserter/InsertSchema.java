@@ -17,6 +17,7 @@
 package org.polypheny.db.backup.datainserter;
 
 import com.google.common.collect.ImmutableMap;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +35,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.ConstraintType;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.languages.LanguageManager;
@@ -189,24 +191,24 @@ public class InsertSchema {
             //only insert namespaces that are marked to be inserted
             if ( ns.getValue().getToBeInserted() ) {
                 //query = "CREATE " + ns.getValue().getEntityObject().dataModel.toString() + " NAMESPACE " + ns.getValue().getEntityObject().name + ";";
-                query = String.format( "CREATE %s NAMESPACE %s11", ns.getValue().getEntityObject().dataModel.toString(), ns.getValue().getEntityObject().name );
+                query = String.format( "CREATE %s NAMESPACE %s", ns.getValue().getEntityObject().dataModel.toString(), ns.getValue().getEntityObject().name );
 
                 //TODO(FF): execute query in polypheny, alter owner, set case sensitivity (how?)
                 if ( !ns.getValue().getEntityObject().name.equals( "public" ) ) {
 
                     switch ( ns.getValue().getEntityObject().dataModel ) {
                         case RELATIONAL:
-                            query = String.format( "CREATE %s NAMESPACE %s11", ns.getValue().getEntityObject().dataModel.toString(), ns.getValue().getEntityObject().name );
+                            query = String.format( "CREATE %s NAMESPACE %s", ns.getValue().getEntityObject().dataModel.toString(), ns.getValue().getEntityObject().name );
                             executeStatementInPolypheny( query, ns.getKey(), ns.getValue().getEntityObject().dataModel );
                             break;
 
                         case DOCUMENT:
-                            query = String.format( "CREATE %s NAMESPACE %s11", ns.getValue().getEntityObject().dataModel.toString(), ns.getValue().getEntityObject().name );
+                            query = String.format( "CREATE %s NAMESPACE %s", ns.getValue().getEntityObject().dataModel.toString(), ns.getValue().getEntityObject().name );
                             executeStatementInPolypheny( query, ns.getKey(), DataModel.RELATIONAL );
                             break;
 
                         case GRAPH:
-                            query = String.format( "CREATE DATABASE %s11", ns.getValue().getEntityObject().name );
+                            query = String.format( "CREATE DATABASE %s", ns.getValue().getEntityObject().name );
                             executeStatementInPolypheny( query, ns.getKey(), ns.getValue().getEntityObject().dataModel );
                             break;
                         default:
@@ -273,18 +275,21 @@ public class InsertSchema {
 
                     // go through all constraints per table
                     for ( LogicalConstraint constraint : constraintsList ) {
-                        String tableName = table.getNameForQuery();
-                        String constraintName = constraint.name;
-                        String listOfCols = new String();
+                        if ( constraint.type.equals( ConstraintType.UNIQUE ) ) {
+                            String tableName = table.getNameForQuery();
+                            String constraintName = constraint.name;
+                            String listOfCols = new String();
 
-                        List<Long> colIDs = constraint.getKey().fieldIds;
+                            List<Long> colIDs = constraint.getKey().fieldIds;
 
-                        // get all column-names used in the constraint from the columns
-                        listOfCols = getListOfCol( colIDs, logicalColumns );
+                            // get all column-names used in the constraint from the columns
+                            listOfCols = getListOfCol( colIDs, logicalColumns );
 
-                        query = String.format( "ALTER TABLE %s11.%s11 ADD CONSTRAINT %s UNIQUE (%s)", namespaceName, tableName, constraintName, listOfCols );
-                        log.info( query );
-                        executeStatementInPolypheny( query, nsID, DataModel.RELATIONAL );
+                            query = String.format( "ALTER TABLE %s.%s ADD CONSTRAINT %s UNIQUE (%s)", namespaceName, tableName, constraintName, listOfCols );
+                            log.info( query );
+                            executeStatementInPolypheny( query, nsID, DataModel.RELATIONAL );
+                        }
+
                     }
                 }
             }
@@ -318,7 +323,7 @@ public class InsertSchema {
                         String deleteAction = foreignKey.deleteRule.name();
                         //enforcementTime (on commit) - right now is manually set to the same thing everywhere (in the rest of polypheny)
 
-                        query = String.format( "ALTER TABLE %s11.%s11 ADD CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s11.%s11 (%s) ON UPDATE %s ON DELETE %s", namespaceName, tableName, constraintName, listOfCols, referencedNamespaceName, referencedTableName, referencedListOfCols, updateAction, deleteAction );
+                        query = String.format( "ALTER TABLE %s.%s ADD CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s.%s (%s) ON UPDATE %s ON DELETE %s", namespaceName, tableName, constraintName, listOfCols, referencedNamespaceName, referencedTableName, referencedListOfCols, updateAction, deleteAction );
                         log.info( query );
                         executeStatementInPolypheny( query, nsId, DataModel.RELATIONAL );
                     }
@@ -347,7 +352,7 @@ public class InsertSchema {
                 // only create collections that should be inserted
                 if ( collection.getToBeInserted() ) {
                     // only create tables that don't (exist by default in polypheny)
-                    query = String.format( "db.createCollection(\"%s11\")", collection.getNameForQuery() );
+                    query = String.format( "db.createCollection(\"%s\")", collection.getNameForQuery() );
                     log.info( query );
                     executeStatementInPolypheny( query, nsID, DataModel.DOCUMENT );
                 }
@@ -359,7 +364,7 @@ public class InsertSchema {
 
 
     private void setGraphStore() {
-        //query:CREATE PLACEMENT OF graf11 ON STORE 0 (comes from error message from trying to insert it via ui)
+        //query:CREATE PLACEMENT OF graf ON STORE 0 (comes from error message from trying to insert it via ui)
         //TODO(FF): how do i know on which store the graph is on? how do i set this with the create query?????
 
     }
@@ -410,9 +415,9 @@ public class InsertSchema {
 
         // create the primary key constraint statement for the table
         if ( !(pksPerTable.isEmpty()) ) {
-            List<String> colNamesForPK = pksPerTable.get( 0 ).getFieldNames(); //FIXME(FF): index out of bounds (if there are no pks at all)
             String listOfCols = new String();
-            for ( String colName : colNamesForPK ) {
+            for ( long columnId : pksPerTable.get( 0 ).fieldIds ) {
+                String colName =  colsPerTable.stream().filter( e -> e.getId() == columnId ).findFirst().get().getName();
                 listOfCols = listOfCols + colName + ", ";
             }
             if ( !listOfCols.isEmpty() ) {
@@ -423,8 +428,8 @@ public class InsertSchema {
 
         //query to create one table (from the list of tables, from the list of namespaces)
         //TODO(FF): ON STORE storename PARTITION BY partionionInfo
-        //query = String.format( "CREATE TABLE %s11.%s11 (%s, %s)", namespaceName, table.getNameForQuery(), columnDefinitions, pkConstraint );
-        query = String.format( "CREATE TABLE %s11.%s11 (%s%s)", namespaceName, table.getNameForQuery(), columnDefinitions, pkConstraint );
+        //query = String.format( "CREATE TABLE %s.%s (%s, %s)", namespaceName, table.getNameForQuery(), columnDefinitions, pkConstraint );
+        query = String.format( "CREATE TABLE %s.%s (%s%s)", namespaceName, table.getNameForQuery(), columnDefinitions, pkConstraint );
         log.info( query );
 
         return query;
@@ -435,8 +440,7 @@ public class InsertSchema {
         String columnDefinitionString = new String();
         String colName = col.getName();
         String colDataType = col.getType().toString();
-        String colNullable = String.valueOf( col.nullable );
-
+        String colNullable = "";
         String defaultValue = new String();
         if ( !(col.defaultValue == null) ) {
 
@@ -476,13 +480,15 @@ public class InsertSchema {
 
         String caseSensitivity = new String();
         if ( !(col.collation == null) ) {
-            caseSensitivity = String.format( "COLLATE %s", col.collation.toString() );
+            // Remove the "_" from the collation enum standard
+            String collation = col.collation.toString().replaceAll( "_", " " );
+            caseSensitivity = String.format( "COLLATE %s", collation);
         }
 
-        if ( colNullable.equals( "NULL" ) ) {
+        if ( col.nullable ) {
             colNullable = "";
-        } else if ( colNullable.equals( "NOT NULL" ) ) {
-            colNullable = String.format( " %s ", colNullable );
+        } else if ( !col.nullable ) {
+            colNullable = " NOT NULL ";
         } else {
             throw new GenericRuntimeException( "During backup schema insertions not supported nullable value detected" + colNullable );
         }

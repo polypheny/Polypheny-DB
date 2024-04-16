@@ -236,6 +236,7 @@ public class AlgMetadataQuery {
                 rowCountHandler = revise( e.algClass, TupleCount.DEF );
             } catch ( CyclicMetadataException e ) {
                 log.warn( "Cyclic metadata detected while computing row count for {}", alg );
+                return 100D;
             }
         }
     }
