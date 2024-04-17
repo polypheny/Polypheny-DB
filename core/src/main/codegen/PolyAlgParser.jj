@@ -356,7 +356,8 @@ PolyAlgLiteral Literal() :
         t = <SYMBOL>
         |
         t = <EQUALS> | t = <PLUS> | t = <MINUS>
-        // | t = <MULTI_WORD_OP>
+        |
+        t = <DIR> {type = LiteralType.DIRECTION;} | t = <NULL_DIR> {type = LiteralType.NULL_DIRECTION;}
         |
         t = <DYNAMIC_PARAM> {type = LiteralType.DYNAMIC_PARAM;}
         |

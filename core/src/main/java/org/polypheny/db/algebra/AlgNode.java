@@ -253,6 +253,12 @@ public interface AlgNode extends AlgOptNode, Cloneable {
         buildPolyAlgebra( sb, null );
     }
 
+    default String buildPolyAlgebra() {
+        StringBuilder sb = new StringBuilder();
+        buildPolyAlgebra(sb);
+        return sb.toString();
+    }
+
     /**
      * Recursively constructs a JSON object structure that represents the tree rooted at this AlgNode using the provided ObjectMapper.
      *

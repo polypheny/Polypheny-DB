@@ -56,8 +56,14 @@ import org.polypheny.db.rex.RexVisitor;
 import org.polypheny.db.rex.RexWindow;
 import org.polypheny.db.rex.RexWindowBound;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.graph.GraphPropertyHolder;
+import org.polypheny.db.type.entity.graph.PolyDictionary;
+import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyNode;
+import org.polypheny.db.type.entity.graph.PolyPath;
 import org.polypheny.db.type.entity.relational.PolyMap;
 import org.polypheny.db.util.ValidatorUtil;
 
@@ -153,7 +159,7 @@ public class PolyAlgUtils {
         if ( isTrivial ) {
             return null;
         }
-        return new ListArg<>( from, StringArg::new, to,false );
+        return new ListArg<>( from, StringArg::new, to, false );
     }
 
 
@@ -185,7 +191,8 @@ public class PolyAlgUtils {
         return outerList;
     }
 
-    public static <T extends PolyAlgArg, E> List<List<E>> getNestedListArgAsList( ListArg<ListArg> outerListArg, Function<T, E> mapper) {
+
+    public static <T extends PolyAlgArg, E> List<List<E>> getNestedListArgAsList( ListArg<ListArg> outerListArg, Function<T, E> mapper ) {
         List<List<E>> outerList = new ArrayList<>();
         for ( List<T> list : outerListArg.map( ListArg::getArgs ) ) {
             if ( list.isEmpty() ) {
@@ -197,11 +204,12 @@ public class PolyAlgUtils {
         return outerList;
     }
 
-    public static <T> ImmutableList<ImmutableList<T>> toImmutableNestedList(List<List<T>> nestedList) {
+
+    public static <T> ImmutableList<ImmutableList<T>> toImmutableNestedList( List<List<T>> nestedList ) {
         ImmutableList.Builder<ImmutableList<T>> builder = ImmutableList.builder();
 
-        for (List<T> innerList : nestedList) {
-            builder.add(ImmutableList.copyOf(innerList));
+        for ( List<T> innerList : nestedList ) {
+            builder.add( ImmutableList.copyOf( innerList ) );
         }
 
         return builder.build();
@@ -222,8 +230,8 @@ public class PolyAlgUtils {
         argNode.put( "type", ParamType.LIST.name() );
         argNode.set( "value", projections.serialize( context, inputFieldNames, mapper ) );
 
-        node.set("arguments", mapper.createObjectNode().set( decl.getPos( 0 ).getName(), argNode ));
-        node.set("inputs", mapper.createArrayNode().add( child.serializePolyAlgebra( mapper ) ));
+        node.set( "arguments", mapper.createObjectNode().set( decl.getPos( 0 ).getName(), argNode ) );
+        node.set( "inputs", mapper.createArrayNode().add( child.serializePolyAlgebra( mapper ) ) );
         return node;
     }
 
@@ -387,7 +395,7 @@ public class PolyAlgUtils {
                         includeType = RexDigestIncludeType.NO_TYPE;
                     }
                 }
-                sb.append( visitLiteral( (RexLiteral) operand, includeType) );
+                sb.append( visitLiteral( (RexLiteral) operand, includeType ) );
             }
         }
 
@@ -454,40 +462,103 @@ public class PolyAlgUtils {
             return bound.toString( this );
         }
 
+
         private String visitLiteral( RexLiteral literal, RexDigestIncludeType includeType ) {
             PolyValue value = literal.value;
-            if (value.isNode()) {
-                return visitPolyNode((PolyNode) value);
+            if ( value.isNode() ) {
+                return visitPolyNode( (PolyNode) value, true );
+            } else if ( value.isPath() ) {
+                return visitPolyPath( (PolyPath) value, true );
+            } else if ( value.isEdge() ) {
+                return visitPolyEdge( (PolyEdge) value, true );
+
             }
             return literal.computeDigest( includeType );
         }
 
-        private String visitPolyNode( PolyNode node) {
-            String name = node.variableName.isNull() ? "" : node.variableName.toString();
-            String labels = node.labels.toString();
-            if (node.labels.size() < 2) {
-                labels = labels.substring( 1, labels.length()-1 );
-            }
-            String properties = node.properties.map.toString();
-            if (properties.equals( "{}" )) {
-                properties = "";
-            }
+
+        private String visitPolyNode( PolyNode node, boolean withPrefix ) {
 
             StringBuilder sb = new StringBuilder();
-            String prefix = "PolyNode";
-             sb.append(prefix).append( "(" ).append( name );
-             if ( !labels.isEmpty() ) {
-                 sb.append( ":" ).append( labels );
-             }
-             if (sb.length() > prefix.length() + 1 && !properties.isEmpty()) {
-                 sb.append( " " );
-             }
-             sb.append( properties ).append( ")" );
+            String prefix = withPrefix ? "PolyNode " : "";
+            sb.append( prefix ).append( "(" )
+                    .append( visitGraphLabelProps( node.labels, node.properties, node.variableName ) )
+                    .append( ")" );
             return sb.toString();
 
         }
 
-        private <K extends PolyValue, V extends PolyValue> String visitPolyMap( PolyMap<K, V> map) {
+
+        private String visitPolyPath( PolyPath path, boolean withPrefix ) {
+            /*String nodes = path.getNodes().value.stream().map( this::visitPolyNode ).collect( Collectors.joining( ", " ) );
+            String edges = path.getEdges().value.stream().map( this::visitPolyEdge ).collect( Collectors.joining( ", " ) );
+            String names = path.getNames().value.stream().map( PolyString::toString ).collect( Collectors.joining( ", " ) );
+            String propertyHolders = path.getPath().value.stream().map( GraphObject::toString ).collect( Collectors.joining( ", " ) );
+            String varName = path.variableName == null ? "" : path.variableName.toString();
+
+            return "PolyPath(" +
+                    "\nnodes: " + nodes +
+                    "\nedges: " + edges +
+                    "\nnames: " + names +
+                    "\npropertyHolders: " + propertyHolders +
+                    "\nvarName: " + varName + "\n)";*/
+
+            StringBuilder sb = new StringBuilder( withPrefix ? "PolyPath " : "" );
+            for ( GraphPropertyHolder holder : path.getPath() ) {
+                if ( holder.isNode() ) {
+                    sb.append( visitPolyNode( (PolyNode) holder, false ) );
+                } else if ( holder.isEdge() ) {
+                    sb.append( visitPolyEdge( (PolyEdge) holder, false ) );
+                }
+            }
+            return sb.toString();
+        }
+
+
+        private String visitPolyEdge( PolyEdge edge, boolean withPrefix ) {
+
+            String left = "-", right = "-";
+            switch ( edge.direction ) {
+                case LEFT_TO_RIGHT -> right += ">";
+                case RIGHT_TO_LEFT -> left = "<" + left;
+                case NONE -> {
+                }
+            }
+
+            StringBuilder sb = new StringBuilder();
+            String prefix = withPrefix ? "PolyEdge " : "";
+            sb.append( prefix ).append( left ).append( "[" )
+                    .append( visitGraphLabelProps( edge.labels, edge.properties, edge.variableName ) )
+                    .append( "]" ).append( right );
+            return sb.toString();
+        }
+
+
+        private String visitGraphLabelProps( PolyList<PolyString> lbls, PolyDictionary props, PolyString varName ) {
+            String name = varName.isNull() ? "" : varName.toString();
+            String labels = lbls.toString();
+            if ( lbls.size() < 2 ) {
+                labels = labels.substring( 1, labels.length() - 1 );
+            }
+            String properties = props.map.toString();
+            if ( properties.equals( "{}" ) ) {
+                properties = "";
+            }
+            String s = name;
+
+            if ( !labels.isEmpty() ) {
+                s += ":" + labels;
+            }
+            if ( !s.isEmpty() && !properties.isEmpty() ) {
+                s += " ";
+            }
+            s += properties;
+            return s;
+
+        }
+
+
+        private <K extends PolyValue, V extends PolyValue> String visitPolyMap( PolyMap<K, V> map ) {
             return map.toString();
         }
 

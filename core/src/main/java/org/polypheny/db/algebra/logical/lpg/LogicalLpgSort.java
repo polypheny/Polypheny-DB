@@ -101,9 +101,15 @@ public class LogicalLpgSort extends LpgSort {
                 collation.getFieldCollations(),
                 CollationArg::new );
 
-        args.put( "sort", collArg )
-                .put( "limit", new IntArg( Integer.parseInt( getRexSkip().toString() ) ) )
-                .put( "skip", new IntArg( Integer.parseInt( offset.toString() ) ) );
+        args.put( "sort", collArg );
+
+        if ( fetch != null ) {
+            args.put( "limit", new IntArg( Integer.parseInt( fetch.toString() ) ) );
+        }
+        if ( offset != null ) {
+            args.put( "skip", new IntArg( Integer.parseInt( offset.toString() ) ) );
+        }
+
         return args;
     }
 
