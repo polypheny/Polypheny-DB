@@ -20,6 +20,8 @@ import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.lpg.LpgFilter;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
+import org.polypheny.db.algebra.polyalg.arguments.RexArg;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
@@ -33,6 +35,12 @@ public class LogicalLpgFilter extends LpgFilter {
      */
     public LogicalLpgFilter( AlgCluster cluster, AlgTraitSet traits, AlgNode input, RexNode condition ) {
         super( cluster, traits, input, condition );
+    }
+
+
+    public static LogicalLpgFilter create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+        RexArg condition = args.getArg( "condition", RexArg.class );
+        return new LogicalLpgFilter( cluster, cluster.traitSet(), children.get( 0 ), condition.getNode() );
     }
 
 
@@ -51,6 +59,14 @@ public class LogicalLpgFilter extends LpgFilter {
     @Override
     public AlgNode accept( AlgShuttle shuttle ) {
         return shuttle.visit( this );
+    }
+
+
+    @Override
+    public PolyAlgArgs collectAttributes() {
+        PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
+        args.put( "condition", new RexArg( getCondition() ) );
+        return args;
     }
 
 }

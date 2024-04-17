@@ -29,6 +29,7 @@ import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgExpressionExtension.ExtensionType;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Operator;
@@ -181,10 +182,21 @@ public class PolyAlgExpression extends PolyAlgNode {
 
 
     public String getDefaultAlias() {
-        if ( isCall() && getOperator().getOperatorName() == OperatorName.CAST ) {
+        if ( isCastOperator() ) {
             return getOnlyChild().getDefaultAlias();
         }
         return toString();
+    }
+
+
+    public boolean isCastOperator() {
+        if ( isCall() ) {
+            try {
+                return getOperator( DataModel.RELATIONAL ).getOperatorName() == OperatorName.CAST;
+            } catch ( GenericRuntimeException ignored ) {
+            }
+        }
+        return false;
     }
 
 
@@ -215,13 +227,13 @@ public class PolyAlgExpression extends PolyAlgNode {
     }
 
 
-    public Operator getOperator() {
+    public Operator getOperator( DataModel model ) {
         String str = getLiteralsAsString();
-        OperatorName opName = OperatorName.getFromGeneralName( str.toUpperCase( Locale.ROOT ) );
-        if ( opName == null ) {
+        Operator op = OperatorRegistry.getFromName( model, str.toUpperCase( Locale.ROOT ) );
+        if ( op == null ) {
             throw new GenericRuntimeException( "Operator '" + str + "' is not yet supported" );
         }
-        return OperatorRegistry.get( OperatorName.getFromGeneralName( str.toUpperCase( Locale.ROOT ) ) );
+        return op;
     }
 
 

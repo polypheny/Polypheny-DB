@@ -67,7 +67,6 @@ import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgNodeList;
 import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgOperator;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -264,7 +263,7 @@ public class PolyAlgToAlgConverter {
 
 
     private RexNode convertRexCall( PolyAlgExpression exp, Context ctx ) {
-        Operator operator = exp.getOperator();
+        Operator operator = exp.getOperator(ctx.dataModel);
         if ( operator.getOperatorName() == OperatorName.CAST ) {
             RexNode child = convertRexNode( exp.getOnlyChild(), ctx );
             return new RexCall( exp.getAlgDataTypeForCast(), operator, ImmutableList.of( child ) );
@@ -302,6 +301,7 @@ public class PolyAlgToAlgConverter {
                 case NUMBER -> AlgBuilder.literal( literal.toNumber(), builder );
                 case BOOLEAN -> AlgBuilder.literal( literal.toBoolean(), builder );
                 case NULL -> AlgBuilder.literal( null, builder );
+                case POLY_VALUE -> builder.makeLiteral( literal.toPolyValue() );
                 case STRING -> {
                     String str = literal.toString();
                     int idx = ctx.getFieldOrdinal( str );
@@ -316,6 +316,7 @@ public class PolyAlgToAlgConverter {
             if ( literal.getType() == LiteralType.NULL ) {
                 return builder.makeNullLiteral( type );
             }
+
             String str = literal.toUnquotedString();
             return switch ( type.getPolyType() ) {
                 case BOOLEAN -> builder.makeLiteral( literal.toBoolean() );
@@ -326,6 +327,7 @@ public class PolyAlgToAlgConverter {
                 case TIMESTAMP -> builder.makeTimestampLiteral( new TimestampString( str ), type.getPrecision() );
                 case CHAR, VARCHAR -> builder.makeLiteral( PolyString.of( str ), type, type.getPolyType() );
                 case NULL -> builder.constantNull();
+                case NODE -> builder.makeLiteral( literal.toPolyValue(), type );
                 default -> throw new GenericRuntimeException( "Unsupported type: " + type.getFullTypeString() );
             };
         }
@@ -337,22 +339,21 @@ public class PolyAlgToAlgConverter {
         String[] names = exp.toIdentifier().split( "\\.", 3 );
         GenericRuntimeException exception = new GenericRuntimeException( "Invalid entity name: " + String.join( ".", names ) );
         String namespaceName;
-        String entityName;
+        String entityName = null;
         if ( names.length == 2 ) {
             namespaceName = names[0];
             entityName = names[1];
         } else if ( names.length == 1 ) {
-            namespaceName = Catalog.DEFAULT_NAMESPACE_NAME;
-            entityName = names[0];
+            namespaceName = names[0];
         } else {
             throw exception;
         }
 
-        LogicalNamespace ns = snapshot.getNamespace( namespaceName ).orElseThrow( () -> exception );
+        LogicalNamespace ns = snapshot.getNamespace( namespaceName ).orElseThrow( () -> new GenericRuntimeException("no namespace named " + namespaceName) );
         return switch ( ns.dataModel ) {
             case RELATIONAL -> snapshot.rel().getTable( ns.id, entityName ).orElseThrow( () -> exception );
             case DOCUMENT -> snapshot.doc().getCollection( ns.id, entityName ).orElseThrow( () -> exception );
-            case GRAPH -> snapshot.graph().getGraph( ns.id ).orElseThrow( () -> exception );
+            case GRAPH -> snapshot.graph().getGraph( ns.id ).orElseThrow( () -> new GenericRuntimeException("no graph with id " + ns.id) );
         };
     }
 

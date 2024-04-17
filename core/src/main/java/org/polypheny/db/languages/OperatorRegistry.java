@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.nodes.BinaryOperator;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.util.Pair;
@@ -36,6 +37,7 @@ import org.polypheny.db.util.Pair;
 public class OperatorRegistry {
 
     private static final Map<QueryLanguage, Map<OperatorName, Operator>> registry = new HashMap<>();
+    private static Map<Pair<QueryLanguage, String>, Operator> nameLookup = null;
 
 
     static {
@@ -174,6 +176,48 @@ public class OperatorRegistry {
 
     public static void remove( QueryLanguage language ) {
         registry.remove( language );
+    }
+
+
+    /**
+     * Returns the operator registered with a QueryLanguage of the given DataModel
+     * and name equal to operator.getName().
+     * Calling this method the first time creates a lookup table based on the current state of the registry.
+     * If new operators are registered after that point, they cannot be found.
+     *
+     * @param model the data model of the query language the operator was registered with
+     * @param name the name of the operator
+     * @return the specified operator or {@code null} if no such operator is registered.
+     */
+    public static Operator getFromName( DataModel model, String name ) {
+        if ( nameLookup == null ) {
+            buildNameLookup();
+        }
+        QueryLanguage ql = switch ( model ) {
+            case RELATIONAL -> null;
+            case DOCUMENT -> QueryLanguage.from( "mongo" );
+            case GRAPH -> QueryLanguage.from( "cypher" );
+        };
+        return nameLookup.get( Pair.of( ql, name ) );
+    }
+
+
+    private static void buildNameLookup() {
+        nameLookup = new HashMap<>();
+        for ( Map.Entry<Pair<QueryLanguage, OperatorName>, Operator> entry : OperatorRegistry.getAllOperators().entrySet() ) {
+            QueryLanguage ql = entry.getKey().left;
+            Operator op = entry.getValue();
+
+            if ( op != null ) {
+                String strName = op.getName();
+                Pair<QueryLanguage, String> key = Pair.of( ql, strName );
+
+                if ( !strName.isEmpty() && !nameLookup.containsKey( key ) ) {
+                    nameLookup.put( key, op );
+                    // TODO: handle duplicate op names
+                }
+            }
+        }
     }
 
 }

@@ -22,6 +22,10 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.lpg.LpgProject;
+import org.polypheny.db.algebra.polyalg.arguments.ListArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
+import org.polypheny.db.algebra.polyalg.arguments.RexArg;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
@@ -40,6 +44,14 @@ public class LogicalLpgProject extends LpgProject {
         super( cluster, traits.replace( Convention.NONE ), input, projects, names );
 
         assert (this.names == null || this.projects == null) || this.names.size() == this.projects.size();
+    }
+
+
+    public static LogicalLpgProject create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+        ListArg<RexArg> projects = args.getListArg( "projects", RexArg.class );
+        return new LogicalLpgProject( cluster, children.get( 0 ).getTraitSet(), children.get( 0 ),
+                projects.map( RexArg::getNode ),
+                projects.map( r -> PolyString.of( r.getAlias() ) ) );
     }
 
 
@@ -66,6 +78,18 @@ public class LogicalLpgProject extends LpgProject {
     @Override
     public AlgNode accept( AlgShuttle shuttle ) {
         return shuttle.visit( this );
+    }
+
+
+    @Override
+    public PolyAlgArgs collectAttributes() {
+        PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
+        PolyAlgArg projectsArg = new ListArg<>( projects, RexArg::new,
+                names.stream().map( PolyString::toString ).toList(),
+                args.getDecl().canUnpackValues() );
+
+        args.put( "projects", projectsArg );
+        return args;
     }
 
 }

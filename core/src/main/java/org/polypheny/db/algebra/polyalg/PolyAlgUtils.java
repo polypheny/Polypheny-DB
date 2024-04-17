@@ -51,6 +51,10 @@ import org.polypheny.db.rex.RexVisitor;
 import org.polypheny.db.rex.RexWindow;
 import org.polypheny.db.rex.RexWindowBound;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.graph.PolyNode;
+import org.polypheny.db.type.entity.relational.PolyMap;
 import org.polypheny.db.util.ValidatorUtil;
 
 public class PolyAlgUtils {
@@ -229,7 +233,7 @@ public class PolyAlgUtils {
 
         @Override
         public String visitLiteral( RexLiteral literal ) {
-            return literal.computeDigest( RexDigestIncludeType.OPTIONAL );
+            return visitLiteral( literal, RexDigestIncludeType.OPTIONAL );
         }
 
 
@@ -245,7 +249,6 @@ public class PolyAlgUtils {
                 sb.append( "(" );
                 appendOperands( call, sb );
                 if ( withType ) {
-                    System.out.println( ">>> " + call.op.getName() + " | " + call.operands.get( 0 ).getType().getFullTypeString() );
                     sb.append( " AS " ); // this is different to the syntax of type specification for literals to be closer to SQL syntax
                     sb.append( call.type.getFullTypeString() );
                 }
@@ -365,7 +368,7 @@ public class PolyAlgUtils {
                         includeType = RexDigestIncludeType.NO_TYPE;
                     }
                 }
-                sb.append( ((RexLiteral) operand).computeDigest( includeType ) );
+                sb.append( visitLiteral( (RexLiteral) operand, includeType) );
             }
         }
 
@@ -430,6 +433,43 @@ public class PolyAlgUtils {
         private String visitRexWindowBound( RexWindowBound bound ) {
             // at this point it is simply much easier to rely on the toString method of the RexWindowBound subclasses.
             return bound.toString( this );
+        }
+
+        private String visitLiteral( RexLiteral literal, RexDigestIncludeType includeType ) {
+            PolyValue value = literal.value;
+            if (value.isNode()) {
+                return visitPolyNode((PolyNode) value);
+            }
+            return literal.computeDigest( includeType );
+        }
+
+        private String visitPolyNode( PolyNode node) {
+            String name = node.variableName.isNull() ? "" : node.variableName.toString();
+            String labels = node.labels.toString();
+            if (node.labels.size() < 2) {
+                labels = labels.substring( 1, labels.length()-1 );
+            }
+            String properties = node.properties.map.toString();
+            if (properties.equals( "{}" )) {
+                properties = "";
+            }
+
+            StringBuilder sb = new StringBuilder();
+            String prefix = "PolyNode";
+             sb.append(prefix).append( "(" ).append( name );
+             if ( !labels.isEmpty() ) {
+                 sb.append( ":" ).append( labels );
+             }
+             if (sb.length() > prefix.length() + 1 && !properties.isEmpty()) {
+                 sb.append( " " );
+             }
+             sb.append( properties ).append( ")" );
+            return sb.toString();
+
+        }
+
+        private <K extends PolyValue, V extends PolyValue> String visitPolyMap( PolyMap<K, V> map) {
+            return map.toString();
         }
 
     }

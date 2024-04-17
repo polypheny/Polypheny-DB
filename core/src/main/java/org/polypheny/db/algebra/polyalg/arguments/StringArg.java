@@ -25,6 +25,8 @@ import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.ParamType;
 @Getter
 public class StringArg implements PolyAlgArg {
 
+    public static final StringArg NULL = new StringArg( null );
+
     private final String arg;
 
 
@@ -41,6 +43,9 @@ public class StringArg implements PolyAlgArg {
 
     @Override
     public String toPolyAlg( AlgNode context, @NonNull List<String> inputFieldNames ) {
+        if ( arg == null ) {
+            return "";
+        }
         return arg;
     }
 

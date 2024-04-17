@@ -45,7 +45,7 @@ public class EntityArg implements PolyAlgArg {
         try {
             return entity.getNamespaceName() + "." + entity.name;
         } catch ( UnsupportedOperationException e ) {
-            return entity.name + "." + entity.id;
+            return entity.name;
         }
     }
 

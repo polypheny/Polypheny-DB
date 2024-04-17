@@ -20,6 +20,10 @@ import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.lpg.LpgMatch;
+import org.polypheny.db.algebra.polyalg.arguments.ListArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
+import org.polypheny.db.algebra.polyalg.arguments.RexArg;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexCall;
@@ -37,6 +41,14 @@ public class LogicalLpgMatch extends LpgMatch {
     }
 
 
+    public static LogicalLpgMatch create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+        ListArg<RexArg> matchesArg = args.getListArg( "matches", RexArg.class );
+        List<RexCall> matches = matchesArg.map( r -> (RexCall) r.getNode() );
+        List<PolyString> names = matchesArg.map( r -> PolyString.of( r.getAlias() ) );
+        return new LogicalLpgMatch( cluster, cluster.traitSet(), children.get( 0 ), matches, names );
+    }
+
+
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         return new LogicalLpgMatch( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), matches, names );
@@ -46,6 +58,19 @@ public class LogicalLpgMatch extends LpgMatch {
     @Override
     public AlgNode accept( AlgShuttle shuttle ) {
         return shuttle.visit( this );
+    }
+
+
+    @Override
+    public PolyAlgArgs collectAttributes() {
+        PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
+        PolyAlgArg matchesArg = new ListArg<>(
+                matches, RexArg::new,
+                names.stream().map( PolyString::toString ).toList(),
+                args.getDecl().canUnpackValues() );
+
+        args.put( "matches", matchesArg );
+        return args;
     }
 
 }

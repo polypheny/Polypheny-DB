@@ -11,6 +11,8 @@ package org.polypheny.db.algebra.polyalg.parser;
 
 import java.io.StringReader;
 import java.io.Reader;
+import java.util.HashMap;
+import java.util.Map;
 import org.polypheny.db.languages.ParserFactory;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgLiteral;
@@ -25,6 +27,12 @@ import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgExpression;
 import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgExpressionExtension;
 import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgExpressionExtension.ExtensionType;
 import org.polypheny.db.algebra.core.CorrelationId;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.numerical.PolyDouble;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.graph.PolyDictionary;
+import org.polypheny.db.type.entity.graph.PolyNode;
 import java.util.Arrays;
 import java.util.List;
 import java.util.ArrayList;
@@ -144,6 +152,7 @@ TOKEN :
 | <FILTER: "FILTER"> // see AggregateCall
 | <APPROX: "APPROXIMATE">
 | <OVER: "OVER">
+| <POLY_NODE: "PolyNode">
 | <IDENTIFIER: (<LETTER> | <IDENTIFIER_SYMBOL>) (<LETTER> | <DIGIT> | <IDENTIFIER_SYMBOL> | <MINUS>)*>
 
 | <UNSIGNED_INT: (<DIGIT>)+ >
@@ -330,6 +339,7 @@ PolyAlgLiteral Literal() :
     String num;
     Token t = null;
     LiteralType type = LiteralType.DEFAULT;
+    PolyValue polyValue;
 }
 {
     (
@@ -349,9 +359,60 @@ PolyAlgLiteral Literal() :
         // | t = <MULTI_WORD_OP>
         |
         t = <DYNAMIC_PARAM> {type = LiteralType.DYNAMIC_PARAM;}
+        |
+        polyValue = SpecialPolyValue() {return new PolyAlgLiteral(polyValue, LiteralType.POLY_VALUE, getPos());}
+
     )
     {return new PolyAlgLiteral(t.image, type, getPos());}
 
+}
+
+PolyValue SpecialPolyValue() :
+{
+    PolyValue value = null;
+}
+{
+    (
+        value = PolyNode()
+    )
+
+    {return value;}
+}
+
+PolyValue PolyNode() :
+{
+    Token t;
+    Map<PolyString, PolyValue> properties = new HashMap<>();
+    PolyString name = null;
+    List<PolyString> labels = new ArrayList<>();
+    Token key = null;
+    PolyValue value = null;
+}
+{
+    <POLY_NODE> <LPAR>
+        [t = <IDENTIFIER> {name = new PolyString( t.image );}]
+
+        [<COLON>
+            t = <IDENTIFIER> {labels.add(new PolyString( t.image ));}
+            |
+            (<LBRACK>
+                t = <IDENTIFIER> {labels.add(new PolyString( t.image ));}
+                (<SEP> t = <IDENTIFIER> {labels.add(new PolyString( t.image ));})*
+            <RBRACK>)
+        ]
+
+        [<LCURL>[
+                key = <IDENTIFIER> <EQUALS> (
+                    t = <IDENTIFIER> {value = new PolyString(t.image);}
+                    |
+                    t = <UNSIGNED_INT> {value = new PolyInteger(Integer.parseInt(t.image));}
+                    |
+                    t = <UNSIGNED_DECIMAL> {value = new PolyDouble(Double.parseDouble(t.image));}
+                )
+                {properties.put(new PolyString( key.image ), value);}
+        ]<RCURL>]
+    <RPAR>
+    {return new PolyNode(PolyDictionary.ofDict(properties), labels, name);}
 }
 
 PolyAlgDataType DataType() :

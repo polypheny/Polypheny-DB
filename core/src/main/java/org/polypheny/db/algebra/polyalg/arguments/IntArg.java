@@ -17,16 +17,21 @@
 package org.polypheny.db.algebra.polyalg.arguments;
 
 import java.util.List;
+import lombok.Getter;
 import lombok.NonNull;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.ParamType;
 
 public class IntArg implements PolyAlgArg {
 
-    private final int arg;
+    public static final IntArg ZERO = new IntArg( 0 );
+    public static final IntArg NULL = new IntArg( null );
+
+    @Getter
+    private final Integer arg;
 
 
-    public IntArg( int arg ) {
+    public IntArg( Integer arg ) {
         this.arg = arg;
     }
 
@@ -39,6 +44,9 @@ public class IntArg implements PolyAlgArg {
 
     @Override
     public String toPolyAlg( AlgNode context, @NonNull List<String> inputFieldNames ) {
+        if ( arg == null ) {
+            return "";
+        }
         return Integer.toString( arg );
     }
 

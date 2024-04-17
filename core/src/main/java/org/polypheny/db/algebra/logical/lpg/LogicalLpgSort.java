@@ -18,12 +18,19 @@ package org.polypheny.db.algebra.logical.lpg;
 
 import com.google.common.collect.ImmutableList;
 import java.math.BigDecimal;
+import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.lpg.LpgSort;
+import org.polypheny.db.algebra.polyalg.arguments.CollationArg;
+import org.polypheny.db.algebra.polyalg.arguments.IntArg;
+import org.polypheny.db.algebra.polyalg.arguments.ListArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexLiteral;
@@ -40,6 +47,14 @@ public class LogicalLpgSort extends LpgSort {
         super( cluster, traitSet, input, collation,
                 skip != null ? cluster.getRexBuilder().makeExactLiteral( new BigDecimal( skip ) ) : null,
                 limit != null ? cluster.getRexBuilder().makeExactLiteral( new BigDecimal( limit ) ) : null );
+    }
+
+
+    public static LogicalLpgSort create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+        ListArg<CollationArg> collations = args.getListArg( "sort", CollationArg.class );
+        IntArg limit = args.getArg( "limit", IntArg.class );
+        IntArg skip = args.getArg( "skip", IntArg.class );
+        return new LogicalLpgSort( cluster, cluster.traitSet(), AlgCollations.of( collations.map( CollationArg::getColl ) ), children.get( 0 ), limit.getArg(), skip.getArg() );
     }
 
 
@@ -75,6 +90,21 @@ public class LogicalLpgSort extends LpgSort {
     @Override
     public AlgNode accept( AlgShuttle shuttle ) {
         return shuttle.visit( this );
+    }
+
+
+    @Override
+    public PolyAlgArgs collectAttributes() {
+        PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
+
+        PolyAlgArg collArg = new ListArg<>(
+                collation.getFieldCollations(),
+                CollationArg::new );
+
+        args.put( "sort", collArg )
+                .put( "limit", new IntArg( Integer.parseInt( getRexSkip().toString() ) ) )
+                .put( "skip", new IntArg( Integer.parseInt( offset.toString() ) ) );
+        return args;
     }
 
 }

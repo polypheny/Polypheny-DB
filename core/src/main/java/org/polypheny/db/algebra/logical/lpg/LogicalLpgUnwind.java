@@ -22,6 +22,9 @@ import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.lpg.LpgUnwind;
+import org.polypheny.db.algebra.polyalg.arguments.IntArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
+import org.polypheny.db.algebra.polyalg.arguments.StringArg;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 
@@ -38,6 +41,13 @@ public class LogicalLpgUnwind extends LpgUnwind {
     }
 
 
+    public static LogicalLpgUnwind create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+        return new LogicalLpgUnwind( cluster, children.get( 0 ).getTraitSet(), children.get( 0 ),
+                args.getArg( "index", IntArg.class ).getArg(),
+                args.getArg( "alias", StringArg.class ).getArg() );
+    }
+
+
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         return new LogicalLpgUnwind( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), index, alias );
@@ -47,6 +57,14 @@ public class LogicalLpgUnwind extends LpgUnwind {
     @Override
     public AlgNode accept( AlgShuttle shuttle ) {
         return shuttle.visit( this );
+    }
+
+
+    @Override
+    public PolyAlgArgs collectAttributes() {
+        PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
+        return args.put( "index", new IntArg( index ) )
+                .put( "alias", new StringArg( alias ) );
     }
 
 }

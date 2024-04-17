@@ -25,18 +25,21 @@ import org.polypheny.db.algebra.AlgFieldCollation.NullDirection;
 import org.polypheny.db.algebra.core.CorrelationId;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 
 public class PolyAlgLiteral extends PolyAlgNode {
 
+    private final Object object;
     private final String str;
     @Getter
     private final LiteralType type;
 
 
-    public PolyAlgLiteral( @NonNull String str, @NonNull LiteralType type, ParserPos pos ) {
+    public PolyAlgLiteral( @NonNull Object o, @NonNull LiteralType type, ParserPos pos ) {
         super( pos );
-        this.str = str;
+        this.object = o;
+        this.str = o.toString();
         this.type = type;
     }
 
@@ -122,6 +125,12 @@ public class PolyAlgLiteral extends PolyAlgNode {
     }
 
 
+    public PolyValue toPolyValue() {
+        checkType( LiteralType.POLY_VALUE );
+        return (PolyValue) object;
+    }
+
+
     public enum LiteralType {
 
         QUOTED,
@@ -132,6 +141,7 @@ public class PolyAlgLiteral extends PolyAlgNode {
         NULL_DIRECTION, // AlgFieldCollation.NullDirection
         DYNAMIC_PARAM,
         CORRELATION_VAR,
+        POLY_VALUE,
         STRING; // This is the least specific type and is used e.g. for field or entity names
 
         public static LiteralType DEFAULT = STRING;

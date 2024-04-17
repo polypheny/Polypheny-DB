@@ -773,6 +773,22 @@ public class RexBuilder {
 
 
     /**
+     * Creates a literal for the specified PolyValue with no precision or scale.
+     */
+    public RexLiteral makeLiteral( PolyValue o ) {
+        return makeLiteral( o, typeFactory.createPolyType( o.getType() ) );
+    }
+
+
+    /**
+     * Creates a literal for the specified PolyValue and AlgDataType
+     */
+    public RexLiteral makeLiteral( PolyValue o, AlgDataType type ) {
+        return new RexLiteral( o, type, o.getType() );
+    }
+
+
+    /**
      * Creates a boolean literal.
      */
     public RexLiteral makeLiteral( boolean b ) {

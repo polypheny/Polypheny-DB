@@ -21,6 +21,8 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.SetOp;
 import org.polypheny.db.algebra.core.Union;
+import org.polypheny.db.algebra.polyalg.arguments.BooleanArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 
@@ -35,6 +37,10 @@ public class LogicalLpgUnion extends Union {
     }
 
 
+    public static LogicalLpgUnion create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+        return new LogicalLpgUnion( cluster, children.get( 0 ).getTraitSet(), children, args.getArg( "all", BooleanArg.class ).toBool() );
+    }
+
     @Override
     public SetOp copy( AlgTraitSet traitSet, List<AlgNode> inputs, boolean all ) {
         return new LogicalLpgUnion( inputs.get( 0 ).getCluster(), traitSet, inputs, all );
@@ -45,5 +51,13 @@ public class LogicalLpgUnion extends Union {
     public AlgNode accept( AlgShuttle shuttle ) {
         return shuttle.visit( this );
     }
+
+
+    @Override
+    public PolyAlgArgs collectAttributes() {
+        PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
+        return args.put( "all", new BooleanArg( all ) );
+    }
+
 
 }
