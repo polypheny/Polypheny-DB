@@ -26,6 +26,7 @@ import org.polypheny.db.backup.BackupManager;
 import org.polypheny.db.backup.datasaver.manifest.BackupManifest;
 import org.polypheny.db.backup.datasaver.manifest.EntityInfo;
 import org.polypheny.db.backup.datasaver.manifest.ManifestReader;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
@@ -62,9 +63,10 @@ public class InsertEntries {
                     File file = homeDirManager.getHomeFile( path ).get();
                     log.info( path );
                     if ( file.isFile() && file.exists() ) {
+                        long nsId = Catalog.snapshot().getNamespace( entityInfo.getNamespaceName() ).orElseThrow().id;
                         log.info( "insertEntries - file exists: " + file.getPath() );
                         //TransactionManager transactionManager, File dataFile, DataModel dataModel, Long namespaceId, String namespaceName, String tableName, int nbrCols
-                        executorService.submit( new InsertEntriesTask( transactionManager, file, entityInfo.getDataModel(), entityInfo.getNamespaceId(), entityInfo.getNamespaceName(), entityInfo.getEntityName(), entityInfo.getNbrCols() ) );
+                        executorService.submit( new InsertEntriesTask( transactionManager, file, entityInfo.getDataModel(), nsId, entityInfo.getNamespaceName(), entityInfo.getEntityName(), entityInfo.getNbrCols() ) );
                     } else {
                         log.warn( "Insert Entries for Backup: " + path + " does not exist, but is listed in manifest" );
                     }

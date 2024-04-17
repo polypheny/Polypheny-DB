@@ -20,14 +20,11 @@ import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import com.google.common.collect.ImmutableMap;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.sql.Wrapper;
 import java.util.ArrayList;
-import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
@@ -36,11 +33,9 @@ import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.CypherConnection;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.TestHelper.MongoConnection;
-import org.polypheny.db.backup.BackupInformationObject;
 import org.polypheny.db.backup.BackupManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.catalogs.AdapterCatalog;
-import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.webui.models.results.DocResult;
@@ -137,7 +132,7 @@ public class EvaluationTest {
                     addSimpleRelEvalData( 6 );
 
                     fileName = String.format( "%s_%s_%s_collection", parameter, scale, complexity);
-                    measuredTime = measureBackupCreationTime( backupManager );
+                    measuredTime = measureBackupCreationTime( backupManager, complexity );
                     writeToCSV.writeToCSV( measuredTime, fileName );
 
                     deleteSimpleRelEvalData();
@@ -145,7 +140,7 @@ public class EvaluationTest {
 
                     //insertion
                     fileName = String.format( "%s_%s_%s_insertion", parameter, scale, complexity);
-                    measuredTime = measureBackupInsertionTime( backupManager );
+                    measuredTime = measureBackupInsertionTime( backupManager, complexity );
                     writeToCSV.writeToCSV( measuredTime, fileName );
 
                     measuredTime.clear();
@@ -162,7 +157,7 @@ public class EvaluationTest {
                     addSimpleRelEvalData( 60 );
 
                     fileName = String.format( "%s_%s_%s_collection", parameter, scale, complexity);
-                    measuredTime = measureBackupCreationTime( backupManager );
+                    measuredTime = measureBackupCreationTime( backupManager, complexity );
                     writeToCSV.writeToCSV( measuredTime, fileName );
 
                     deleteSimpleRelEvalData();
@@ -170,7 +165,7 @@ public class EvaluationTest {
 
                     //insertion
                     fileName = String.format( "%s_%s_%s_insertion", parameter, scale, complexity);
-                    measuredTime = measureBackupInsertionTime( backupManager );
+                    measuredTime = measureBackupInsertionTime( backupManager, complexity );
                     writeToCSV.writeToCSV( measuredTime, fileName );
 
                     measuredTime.clear();
@@ -186,7 +181,7 @@ public class EvaluationTest {
                     addSimpleRelEvalData( 600 );
 
                     fileName = String.format( "%s_%s_%s_collection", parameter, scale, complexity);
-                    measuredTime = measureBackupCreationTime( backupManager );
+                    measuredTime = measureBackupCreationTime( backupManager, complexity );
                     writeToCSV.writeToCSV( measuredTime, fileName );
 
                     deleteSimpleRelEvalData();
@@ -194,7 +189,7 @@ public class EvaluationTest {
 
                     //insertion
                     fileName = String.format( "%s_%s_%s_insertion", parameter, scale, complexity);
-                    measuredTime = measureBackupInsertionTime( backupManager );
+                    measuredTime = measureBackupInsertionTime( backupManager, complexity );
                     writeToCSV.writeToCSV( measuredTime, fileName );
 
                     measuredTime.clear();
@@ -211,28 +206,39 @@ public class EvaluationTest {
     }
 
 
-    private static ArrayList<Long> measureBackupCreationTime ( BackupManager backupManager) {
+    private static ArrayList<Long> measureBackupCreationTime ( BackupManager backupManager, String complexity ) {
         ArrayList<Long> measuredTime = new ArrayList<Long>();
         long startTime;
         long elapsedTime;
-        for(int i=0; i< 100; i++){
+        for(int i=0; i< 10; i++){
             startTime = System.nanoTime();
             backupManager.startDataGathering();
             elapsedTime = System.nanoTime() - startTime;
             measuredTime.add(elapsedTime);
+            //todo: can (and do i have to) delete old backup data & reset bupInofrmationObject??
         }
         return measuredTime;
     }
 
-    private static ArrayList<Long> measureBackupInsertionTime ( BackupManager backupManager ) {
+    private static ArrayList<Long> measureBackupInsertionTime ( BackupManager backupManager, String complexity ) {
         ArrayList<Long> measuredTime = new ArrayList<Long>();
         long startTime;
         long elapsedTime;
-        for(int i=0; i< 100; i++){
+        for(int i=0; i< 10; i++){
             startTime = System.nanoTime();
             backupManager.startInserting();
             elapsedTime = System.nanoTime() - startTime;
             measuredTime.add(elapsedTime);
+            switch ( complexity ) {
+                case "simple":
+                    deleteSimpleRelEvalData();
+                    break;
+                case "complex":
+                    //deleteComplexRelEvalData();
+                    break;
+                default:
+                    break;
+            }
         }
         return measuredTime;
     }
@@ -295,7 +301,7 @@ public class EvaluationTest {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
             Connection connection = jdbcConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate( "DROP TABLE reli.album" );
+                statement.executeUpdate( "DROP TABLE reli.album" ); //TODO: delete this?
                 statement.executeUpdate( "DROP SCHEMA reli" );
                 connection.commit();
             }

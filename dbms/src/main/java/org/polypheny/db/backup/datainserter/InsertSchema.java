@@ -342,8 +342,9 @@ public class InsertSchema {
         //FIXME(FF): collections are not wrapped yet!!
         // go through all collections per namespace and create and execute a query
         for ( Map.Entry<Long, List<BackupEntityWrapper<LogicalEntity>>> collectionsPerNs : wrappedCollections.entrySet() ) {
-            Long nsID = collectionsPerNs.getKey();
-            String namespaceName = backupInformationObject.getWrappedNamespaces().get( nsID ).getNameForQuery();
+            Long nsIDOriginal = collectionsPerNs.getKey();
+            String namespaceName = backupInformationObject.getWrappedNamespaces().get( nsIDOriginal ).getNameForQuery();
+            long nsId = Catalog.snapshot().getNamespace( namespaceName ).orElseThrow().id;
 
             List<BackupEntityWrapper<LogicalEntity>> collectionsList = collectionsPerNs.getValue();
 
@@ -354,7 +355,7 @@ public class InsertSchema {
                     // only create tables that don't (exist by default in polypheny)
                     query = String.format( "db.createCollection(\"%s\")", collection.getNameForQuery() );
                     log.info( query );
-                    executeStatementInPolypheny( query, nsID, DataModel.DOCUMENT );
+                    executeStatementInPolypheny( query, nsId, DataModel.DOCUMENT );
                 }
             }
         }

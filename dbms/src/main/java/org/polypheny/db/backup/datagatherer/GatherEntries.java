@@ -142,11 +142,12 @@ public class GatherEntries {
                     List<String> filePaths = new ArrayList<>();
                     String query = "MATCH (*) RETURN n";
                     //executeQuery2( query, DataModel.GRAPH, graphNamespaceId );
+                    String nsName = Catalog.snapshot().getNamespace( graphNamespaceId ).orElseThrow().name;
 
                     String fileName = String.format( "graph_%s.txt", graphNamespaceId.toString() );
                     File graphData = homeDirManager.registerNewFile( getDataFolder(), fileName );
                     filePaths.add( String.format( "%s/%s", dataFolderPath, fileName ) );
-                    EntityInfo entityInfo = new EntityInfo( filePaths, "graph", "graph", graphNamespaceId, DataModel.GRAPH );
+                    EntityInfo entityInfo = new EntityInfo( filePaths, nsName, nsName, graphNamespaceId, DataModel.GRAPH );
                     entityInfoList.add( entityInfo );
                     executorService.submit( new GatherEntriesTask( transactionManager, query, DataModel.GRAPH, graphNamespaceId, graphData ) );
                 }
