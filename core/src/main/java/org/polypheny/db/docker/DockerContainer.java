@@ -204,7 +204,7 @@ public final class DockerContainer {
                 client.close();
             } );
         } catch ( IOException e ) {
-            log.info( "startProxyForConnection3", e );
+            log.info( "startProxyForConnection", e );
             client.close();
             Util.closeNoThrow( local );
         }
