@@ -92,7 +92,7 @@ class MonitoringPage {
         PIClient client = clientEntry.getValue();
         String txId = "-";
         if ( !client.hasNoTransaction() ) {
-            txId = String.valueOf( client.getCurrentOrCreateNewTransaction().getId() );
+            txId = String.valueOf( client.getOrCreateNewTransaction().getId() );
         }
         connectionListTable.addRow(
                 uuid,

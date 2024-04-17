@@ -115,7 +115,7 @@ public class StatementProcessor {
 
 
     public static void prepare( PIPreparedStatement piStatement ) {
-        Transaction transaction = piStatement.getClient().getCurrentOrCreateNewTransaction();
+        Transaction transaction = piStatement.getClient().getOrCreateNewTransaction();
         String query = piStatement.getQuery();
         QueryLanguage queryLanguage = piStatement.getLanguage();
 
