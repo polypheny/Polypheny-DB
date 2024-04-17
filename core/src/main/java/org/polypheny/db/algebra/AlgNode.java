@@ -34,8 +34,8 @@
 package org.polypheny.db.algebra;
 
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -252,6 +252,14 @@ public interface AlgNode extends AlgOptNode, Cloneable {
     default void buildPolyAlgebra( StringBuilder sb ) {
         buildPolyAlgebra( sb, null );
     }
+
+    /**
+     * Recursively constructs a JSON object structure that represents the tree rooted at this AlgNode using the provided ObjectMapper.
+     *
+     * @param mapper the ObjectMapper used for creating JsonNodes.
+     * @return a ObjectNode representing the AlgNode tree rooted at this node.
+     */
+    ObjectNode serializePolyAlgebra( ObjectMapper mapper );
 
     /**
      * Retrieves the PolyAlgDeclaration for this AlgNode implementation.

@@ -205,7 +205,7 @@ public class PolyAlgDeclaration {
 
 
         public boolean isCompatible( ParamType type ) {
-            return this.type == type || (isMultiValued && type == ParamType.EMPTY_LIST);
+            return this.type == type || (isMultiValued && type == ParamType.LIST);
         }
 
 
@@ -247,7 +247,7 @@ public class PolyAlgDeclaration {
         /**
          * A serialized RexNode
          */
-        SIMPLE_REX( RexArg.class ),
+        REX( RexArg.class ),
         AGGREGATE( AggArg.class ),
         ENTITY( EntityArg.class ),
 
@@ -261,9 +261,9 @@ public class PolyAlgDeclaration {
         FIELD( FieldArg.class ),
 
         /**
-         * A list with no elements.
+         * The type of ListArg itself (should only return this value as type if it has no elements).
          */
-        EMPTY_LIST( ListArg.class ),
+        LIST( ListArg.class ),
 
         /**
          *

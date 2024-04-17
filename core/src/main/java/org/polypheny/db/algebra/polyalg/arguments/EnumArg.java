@@ -16,6 +16,8 @@
 
 package org.polypheny.db.algebra.polyalg.arguments;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.List;
 import lombok.Getter;
 import lombok.NonNull;
@@ -46,6 +48,22 @@ public class EnumArg<E extends Enum<E>> implements PolyAlgArg {
     @Override
     public String toPolyAlg( AlgNode context, @NonNull List<String> inputFieldNames ) {
         return arg.name();
+    }
+
+
+    @Override
+    public ObjectNode serialize( AlgNode context, @NonNull List<String> inputFieldNames, ObjectMapper mapper ) {
+        ObjectNode node = mapper.createObjectNode();
+        node.put( "arg", arg.name() );
+        node.put( "enum", arg.getDeclaringClass().getSimpleName() );
+        return node;
+    }
+
+
+    @Override
+    public ObjectNode serializeWrapped( AlgNode context, @NonNull List<String> inputFieldNames, ObjectMapper mapper ) {
+        ObjectNode node = PolyAlgArg.super.serializeWrapped( context, inputFieldNames, mapper );
+        return node.put( "isEnum", true );
     }
 
 }

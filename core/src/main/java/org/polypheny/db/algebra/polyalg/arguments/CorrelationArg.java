@@ -16,6 +16,8 @@
 
 package org.polypheny.db.algebra.polyalg.arguments;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.List;
 import lombok.Getter;
 import lombok.NonNull;
@@ -43,6 +45,11 @@ public class CorrelationArg implements PolyAlgArg {
     @Override
     public String toPolyAlg( AlgNode context, @NonNull List<String> inputFieldNames ) {
         return String.valueOf( corrId.getId() );
+    }
+
+    @Override
+    public ObjectNode serialize( AlgNode context, @NonNull List<String> inputFieldNames, ObjectMapper mapper ) {
+        return mapper.createObjectNode().put( "arg", corrId.getId() );
     }
 
 }

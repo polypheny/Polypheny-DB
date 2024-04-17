@@ -16,6 +16,8 @@
 
 package org.polypheny.db.algebra.polyalg.arguments;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.List;
 import lombok.NonNull;
 import org.polypheny.db.algebra.AlgNode;
@@ -50,4 +52,8 @@ public class BooleanArg implements PolyAlgArg {
         return Boolean.toString( bool );
     }
 
+    @Override
+    public ObjectNode serialize( AlgNode context, @NonNull List<String> inputFieldNames, ObjectMapper mapper ) {
+        return mapper.createObjectNode().put( "arg", bool );
+    }
 }

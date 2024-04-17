@@ -17,6 +17,8 @@
 package org.polypheny.db.processing;
 
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import java.lang.reflect.Type;
@@ -256,18 +258,26 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     }
 
     private void testPolyAlgParserDuringDevelopment(AlgNode alg) {
-        /*TransactionManager tm = TransactionManagerImpl.getInstance();
-        Transaction transaction = tm.startTransaction( statement.getTransaction().getUser().getId(), false,  "PolyAlg Tester");*/
         AlgDataTypeFactory factory = AlgDataTypeFactory.DEFAULT;
         AlgCluster cluster = AlgCluster.create( new VolcanoPlanner(), new RexBuilder( factory ), null, null );
         Snapshot snapshot = Catalog.snapshot();
+
+        System.out.println( "===== Logical Query Plan as JSON =====" );
+        ObjectMapper objectMapper = new ObjectMapper();
+        ObjectNode objectNode = alg.serializePolyAlgebra(objectMapper);
+        try {
+            String jsonString = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(objectNode);
+            System.out.println(jsonString);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
 
         StringBuilder sb = new StringBuilder();
         alg.buildPolyAlgebra( sb, "" );
 
         String polyAlg = sb.toString();
-        System.out.println( "===== Logical Query Plan =====" );
+        System.out.println( "\n===== Logical Query Plan =====" );
         System.out.println( polyAlg );
         System.out.print( "----> " );
         try {

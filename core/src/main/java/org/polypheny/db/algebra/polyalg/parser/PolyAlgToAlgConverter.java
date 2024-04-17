@@ -234,7 +234,7 @@ public class PolyAlgToAlgConverter {
             case INTEGER -> new IntArg( exp.toInt() );
             case BOOLEAN -> new BooleanArg( exp.toBoolean() );
             case STRING -> new StringArg( exp.toString() );
-            case SIMPLE_REX -> {
+            case REX -> {
                 RexNode node = convertRexNode( exp, ctx );
                 yield new RexArg( node, alias == null ? exp.getDefaultAlias() : alias );
             }
@@ -243,7 +243,7 @@ public class PolyAlgToAlgConverter {
             case JOIN_TYPE_ENUM -> new EnumArg<>( exp.toEnum( JoinAlgType.class ), ParamType.JOIN_TYPE_ENUM );
             case MODIFY_OP_ENUM -> new EnumArg<>( exp.toEnum( Modify.Operation.class ), ParamType.MODIFY_OP_ENUM );
             case FIELD -> new FieldArg( ctx.getFieldOrdinal( exp.toIdentifier() ) );
-            case EMPTY_LIST -> ListArg.EMPTY;
+            case LIST -> ListArg.EMPTY;
             case COLLATION -> new CollationArg( convertCollation( exp, ctx ) );
             case CORR_ID -> new CorrelationArg( new CorrelationId( exp.toString() ) );
             default -> throw new IllegalStateException( "Unexpected value: " + p.getType() );

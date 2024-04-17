@@ -16,6 +16,8 @@
 
 package org.polypheny.db.algebra.polyalg.arguments;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.List;
 import lombok.Getter;
 import lombok.NonNull;
@@ -32,7 +34,6 @@ public class RexArg implements PolyAlgArg {
     private final RexNode node;
     @Getter
     private final String alias;
-    private boolean omitTrue = false;
 
 
     /**
@@ -54,15 +55,9 @@ public class RexArg implements PolyAlgArg {
     }
 
 
-    public RexArg( RexNode node, boolean omitTrue ) {
-        this( node );
-        this.omitTrue = omitTrue;
-    }
-
-
     @Override
     public ParamType getType() {
-        return ParamType.SIMPLE_REX;
+        return ParamType.REX;
     }
 
 
@@ -74,13 +69,21 @@ public class RexArg implements PolyAlgArg {
 
     private String rexAsString( @NonNull List<String> inputFieldNames ) {
         String str = node == null ? "" : node.toString();
-        if ( omitTrue && str.equals( "true" ) ) {
-            return "";
-        }
         if ( inputFieldNames.isEmpty() || node == null ) {
             return str;
         }
         return PolyAlgUtils.digestWithNames( node, inputFieldNames );
+    }
+
+
+    @Override
+    public ObjectNode serialize( AlgNode context, @NonNull List<String> inputFieldNames, ObjectMapper mapper ) {
+        ObjectNode node = mapper.createObjectNode();
+        node.put( "rex", rexAsString( inputFieldNames ) );
+        if (alias != null) {
+            node.put( "alias", alias );
+        }
+        return node;
     }
 
 }

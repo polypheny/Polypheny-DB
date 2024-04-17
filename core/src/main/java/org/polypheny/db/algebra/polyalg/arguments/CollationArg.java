@@ -16,6 +16,8 @@
 
 package org.polypheny.db.algebra.polyalg.arguments;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.List;
 import lombok.Getter;
 import lombok.NonNull;
@@ -57,6 +59,24 @@ public class CollationArg implements PolyAlgArg {
             }
         }
         return str;
+    }
+
+    @Override
+    public ObjectNode serialize( AlgNode context, @NonNull List<String> inputFieldNames, ObjectMapper mapper ) {
+        ObjectNode node = serialize( coll, inputFieldNames, mapper );
+        node.put( "arg", toPolyAlg( context, inputFieldNames ) ); // might be useful as a preview
+        return node;
+    }
+
+    public static ObjectNode serialize( AlgFieldCollation coll, @NonNull List<String> inputFieldNames, ObjectMapper mapper ) {
+        ObjectNode node = mapper.createObjectNode();
+        if (coll != null) {
+            int idx = coll.getFieldIndex();
+            node.put("field", inputFieldNames.size() > idx ? inputFieldNames.get( idx ) : Integer.toString( idx ));
+            node.put("direction", coll.direction.shortString);
+            node.put("nullDirection", coll.nullDirection.toString());
+        }
+        return node;
     }
 
 }

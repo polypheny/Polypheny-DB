@@ -16,11 +16,15 @@
 
 package org.polypheny.db.algebra.polyalg.arguments;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.List;
 import lombok.Getter;
 import lombok.NonNull;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgCollations;
+import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.AggregateCall;
@@ -91,6 +95,32 @@ public class AggArg implements PolyAlgArg {
             buf.append( inputFieldNames.get( agg.filterArg ) );
         }
         return buf.toString();
+    }
+
+    @Override
+    public ObjectNode serialize( AlgNode context, @NonNull List<String> inputFieldNames, ObjectMapper mapper ) {
+        ObjectNode node = mapper.createObjectNode();
+        node.put( "arg", toPolyAlg( context, inputFieldNames ) ); // might be useful as a preview
+        if (agg != null) {
+            node.put( "distinct", agg.isDistinct() );
+            node.put("approximate", agg.isApproximate());
+
+            ArrayNode argList = mapper.createArrayNode();
+            for (int idx : agg.getArgList()) {
+                argList.add( inputFieldNames.get( idx ) );
+            }
+            node.set( "argList", argList );
+
+            ArrayNode collList = mapper.createArrayNode();
+            for ( AlgFieldCollation coll : agg.getCollation().getFieldCollations() ) {
+                collList.add( CollationArg.serialize( coll, inputFieldNames, mapper ) );
+            }
+            node.set( "collList", collList );
+            if (agg.hasFilter()) {
+                node.put( "filter", inputFieldNames.get( agg.filterArg ) );
+            }
+        }
+        return node;
     }
 
 }

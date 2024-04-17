@@ -34,6 +34,9 @@
 package org.polypheny.db.algebra;
 
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import java.io.PrintWriter;
@@ -57,7 +60,9 @@ import org.polypheny.db.algebra.metadata.MetadataFactory;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration;
 import org.polypheny.db.algebra.polyalg.PolyAlgRegistry;
 import org.polypheny.db.algebra.polyalg.PolyAlgUtils;
+import org.polypheny.db.algebra.polyalg.arguments.ListArg;
 import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
+import org.polypheny.db.algebra.polyalg.arguments.StringArg;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.plan.AlgCluster;
@@ -363,7 +368,7 @@ public abstract class AbstractAlgNode implements AlgNode {
 
         PolyAlgDeclaration decl = getPolyAlgDeclaration();
         sb.append( prefix == null ? "" : prefix ).append( decl.opName );
-        sb.append( collectAttributes().serializeArguments( this, inputFieldNames ) );
+        sb.append( collectAttributes().toPolyAlgebra( this, inputFieldNames ) );
 
         int size = getInputs().size();
         if ( size == 0 ) {
@@ -373,9 +378,9 @@ public abstract class AbstractAlgNode implements AlgNode {
         sb.append( "(\n" );
         int inputIdx = 0;
         for ( AlgNode child : getInputs() ) {
-            List<String> projections = makeFieldsUnique ?
+            ListArg<StringArg> projections = makeFieldsUnique ?
                     PolyAlgUtils.getAuxProjections( child, inputFieldNames, inputIdx ) :
-                    List.of();
+                    null;
             inputIdx += child.getTupleType().getFieldCount();
 
             if ( projections == null ) {
@@ -383,7 +388,7 @@ public abstract class AbstractAlgNode implements AlgNode {
             } else {
                 sb.append( nextPrefix )
                         .append( PolyAlgRegistry.getDeclaration( LogicalRelProject.class ).opName ).append( "#" )  // TODO: select Project depending on data model, logical / physical
-                        .append( PolyAlgUtils.joinMultiValuedWithBrackets( projections ) )
+                        .append( projections.toPolyAlg( this, inputFieldNames ) )
                         .append( "(\n" );
                 child.buildPolyAlgebra( sb, nextPrefix == null ? null : nextPrefix + INDENT );
                 sb.append( ")" );
@@ -395,6 +400,38 @@ public abstract class AbstractAlgNode implements AlgNode {
             }
         }
         sb.append( ")" );
+    }
+
+    @Override
+    public ObjectNode serializePolyAlgebra( ObjectMapper mapper ) {
+        ObjectNode node = mapper.createObjectNode();
+
+        boolean makeFieldsUnique = !(this instanceof SetOp); // set operations like UNION require duplicate field names
+        List<String> inputFieldNames = makeFieldsUnique ?
+                PolyAlgUtils.uniquifiedInputFieldNames( this ) :
+                PolyAlgUtils.getInputFieldNamesList( this );
+
+        node.put( "opName", getPolyAlgDeclaration().opName );
+        node.set("arguments", collectAttributes().serialize( this, inputFieldNames, mapper ));
+
+        ArrayNode inputs = mapper.createArrayNode();
+
+        int inputIdx = 0;
+        for ( AlgNode child : getInputs() ) {
+            ListArg<StringArg> projections = makeFieldsUnique ?
+                    PolyAlgUtils.getAuxProjections( child, inputFieldNames, inputIdx ) :
+                    null;
+            inputIdx += child.getTupleType().getFieldCount();
+
+            if ( projections == null ) {
+                inputs.add( child.serializePolyAlgebra( mapper ) );
+            } else {
+                inputs.add(PolyAlgUtils.wrapInRename(child, projections, this, inputFieldNames, mapper));
+            }
+        }
+        node.set( "inputs", inputs );
+
+        return node;
     }
 
 

@@ -33,7 +33,18 @@ import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgSort;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgUnion;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgUnwind;
-import org.polypheny.db.algebra.logical.relational.*;
+import org.polypheny.db.algebra.logical.relational.LogicalCalc;
+import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalRelIntersect;
+import org.polypheny.db.algebra.logical.relational.LogicalRelJoin;
+import org.polypheny.db.algebra.logical.relational.LogicalRelMinus;
+import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
+import org.polypheny.db.algebra.logical.relational.LogicalRelSort;
+import org.polypheny.db.algebra.logical.relational.LogicalRelUnion;
+import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.OperatorTag;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.ParamType;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.Parameter;
@@ -64,7 +75,7 @@ public class PolyAlgRegistry {
         declarations.put( LogicalRelProject.class, PolyAlgDeclaration.builder()
                 .creator( LogicalRelProject::create ).model( DataModel.RELATIONAL )
                 .opName( "PROJECT" ).opAliases( List.of( "P", "PROJECT#" ) ).numInputs( 1 ).opTags( logTags )
-                .param( Parameter.builder().name( "projects" ).isMultiValued( true ).type( ParamType.SIMPLE_REX ).build() )
+                .param( Parameter.builder().name( "projects" ).isMultiValued( true ).type( ParamType.REX ).build() )
                 .build() );
         declarations.put( LogicalRelScan.class, PolyAlgDeclaration.builder()
                 .creator( LogicalRelScan::create ).model( DataModel.RELATIONAL )
@@ -74,7 +85,7 @@ public class PolyAlgRegistry {
         declarations.put( LogicalRelFilter.class, PolyAlgDeclaration.builder()
                 .creator( LogicalRelFilter::create ).model( DataModel.RELATIONAL )
                 .opName( "FILTER" ).numInputs( 1 ).opTags( logTags )
-                .param( Parameter.builder().name( "condition" ).type( ParamType.SIMPLE_REX ).build() )
+                .param( Parameter.builder().name( "condition" ).type( ParamType.REX ).build() )
                 .param( Parameter.builder().name( "variables" ).type( ParamType.CORR_ID ).isMultiValued( true ).defaultValue( ListArg.EMPTY ).build() )
                 .build() );
         declarations.put( LogicalRelAggregate.class, PolyAlgDeclaration.builder()
@@ -103,13 +114,13 @@ public class PolyAlgRegistry {
                 .creator( LogicalRelSort::create ).model( DataModel.RELATIONAL )
                 .opName( "SORT" ).numInputs( 1 ).opTags( logTags )
                 .param( Parameter.builder().name( "sort" ).aliases( List.of( "collation", "order" ) ).type( ParamType.COLLATION ).isMultiValued( true ).defaultValue( ListArg.EMPTY ).build() )
-                .param( Parameter.builder().name( "limit" ).alias( "fetch" ).type( ParamType.SIMPLE_REX ).defaultValue( RexArg.NULL ).build() )
-                .param( Parameter.builder().name( "offset" ).type( ParamType.SIMPLE_REX ).defaultValue( RexArg.NULL ).build() )
+                .param( Parameter.builder().name( "limit" ).alias( "fetch" ).type( ParamType.REX ).defaultValue( RexArg.NULL ).build() )
+                .param( Parameter.builder().name( "offset" ).type( ParamType.REX ).defaultValue( RexArg.NULL ).build() )
                 .build() );
         declarations.put( LogicalRelJoin.class, PolyAlgDeclaration.builder()
                 .creator( LogicalRelJoin::create ).model( DataModel.RELATIONAL )
                 .opName( "JOIN" ).numInputs( 2 ).opTags( logTags )
-                .param( Parameter.builder().name( "condition" ).alias( "on" ).type( ParamType.SIMPLE_REX ).build() )
+                .param( Parameter.builder().name( "condition" ).alias( "on" ).type( ParamType.REX ).build() )
                 .param( Parameter.builder().name( "type" ).type( ParamType.JOIN_TYPE_ENUM ).defaultValue( new EnumArg<>( JoinAlgType.INNER, ParamType.JOIN_TYPE_ENUM ) ).build() )
                 .param( Parameter.builder().name( "variables" ).type( ParamType.CORR_ID ).isMultiValued( true ).defaultValue( ListArg.EMPTY ).build() )
                 .param( Parameter.builder().name( "semiJoinDone" ).type( ParamType.BOOLEAN ).defaultValue( BooleanArg.FALSE ).build() )
@@ -117,9 +128,9 @@ public class PolyAlgRegistry {
         declarations.put( LogicalCalc.class, PolyAlgDeclaration.builder()
                 .model( DataModel.RELATIONAL )
                 .opName( "CALC" ).numInputs( 1 ).opTags( logTags )
-                .param( Parameter.builder().name( "exps" ).type( ParamType.SIMPLE_REX ).isMultiValued( true ).build() )
-                .param( Parameter.builder().name( "projects" ).type( ParamType.SIMPLE_REX ).isMultiValued( true ).build() )
-                .param( Parameter.builder().name( "condition" ).type( ParamType.SIMPLE_REX ).defaultValue( RexArg.NULL ).build() )
+                .param( Parameter.builder().name( "exps" ).type( ParamType.REX ).isMultiValued( true ).build() )
+                .param( Parameter.builder().name( "projects" ).type( ParamType.REX ).isMultiValued( true ).build() )
+                .param( Parameter.builder().name( "condition" ).type( ParamType.REX ).defaultValue( RexArg.NULL ).build() )
                 .build() );
         declarations.put( LogicalRelModify.class, PolyAlgDeclaration.builder()
                 .creator( LogicalRelModify::create ).model( DataModel.RELATIONAL )
@@ -127,14 +138,14 @@ public class PolyAlgRegistry {
                 .param( Parameter.builder().name( "table" ).alias( "target" ).type( ParamType.ENTITY ).build() )
                 .param( Parameter.builder().name( "operation" ).type( ParamType.MODIFY_OP_ENUM ).build() )
                 .param( Parameter.builder().name( "targets" ).alias( "columns" ).isMultiValued( true ).type( ParamType.STRING ).defaultValue( ListArg.EMPTY ).build() )
-                .param( Parameter.builder().name( "sources" ).isMultiValued( true ).type( ParamType.SIMPLE_REX ).defaultValue( ListArg.EMPTY ).build() )
+                .param( Parameter.builder().name( "sources" ).isMultiValued( true ).type( ParamType.REX ).defaultValue( ListArg.EMPTY ).build() )
                 .param( Parameter.builder().name( "flattened" ).type( ParamType.BOOLEAN ).defaultValue( BooleanArg.FALSE ).build() )
                 .build() );
         declarations.put( LogicalRelValues.class, PolyAlgDeclaration.builder()
                 .creator( LogicalRelValues::create ).model( DataModel.RELATIONAL )
                 .opName( "VALUES" ).numInputs( 0 ).opTags( logTags )
                 .param( Parameter.builder().name( "names" ).isMultiValued( true ).type( ParamType.STRING ).build() )
-                .param( Parameter.builder().name( "tuples" ).isMultiValued( true ).type( ParamType.SIMPLE_REX ).build() )
+                .param( Parameter.builder().name( "tuples" ).isMultiValued( true ).type( ParamType.REX ).build() )
                 .build() );
 
         // DOCUMENT
@@ -146,15 +157,15 @@ public class PolyAlgRegistry {
         declarations.put( LogicalDocumentFilter.class, PolyAlgDeclaration.builder()
                 .creator( LogicalDocumentFilter::create ).model( DataModel.DOCUMENT )
                 .opName( "DOC_FILTER" ).numInputs( 1 ).opTags( logTags )
-                .param( Parameter.builder().name( "condition" ).type( ParamType.SIMPLE_REX ).build() )
+                .param( Parameter.builder().name( "condition" ).type( ParamType.REX ).build() )
                 .build() );
         declarations.put( LogicalDocumentSort.class, PolyAlgDeclaration.builder()
                 .creator( LogicalDocumentSort::create ).model( DataModel.DOCUMENT )
                 .opName( "DOC_SORT" ).numInputs( 1 ).opTags( logTags )
                 .param( Parameter.builder().name( "sort" ).aliases( List.of( "collation", "order" ) ).type( ParamType.COLLATION ).isMultiValued( true ).defaultValue( ListArg.EMPTY ).build() )
-                .param( Parameter.builder().name( "targets" ).isMultiValued( true ).type( ParamType.SIMPLE_REX ).defaultValue( ListArg.EMPTY ).build() )
-                .param( Parameter.builder().name( "limit" ).alias( "fetch" ).type( ParamType.SIMPLE_REX ).defaultValue( RexArg.NULL ).build() )
-                .param( Parameter.builder().name( "offset" ).type( ParamType.SIMPLE_REX ).defaultValue( RexArg.NULL ).build() )
+                .param( Parameter.builder().name( "targets" ).isMultiValued( true ).type( ParamType.REX ).defaultValue( ListArg.EMPTY ).build() )
+                .param( Parameter.builder().name( "limit" ).alias( "fetch" ).type( ParamType.REX ).defaultValue( RexArg.NULL ).build() )
+                .param( Parameter.builder().name( "offset" ).type( ParamType.REX ).defaultValue( RexArg.NULL ).build() )
                 .build() );
         declarations.put( LogicalDocumentUnwind.class, PolyAlgDeclaration.builder()
                 .creator( LogicalDocumentUnwind::create ).model( DataModel.DOCUMENT )
@@ -171,17 +182,17 @@ public class PolyAlgRegistry {
         declarations.put( LogicalLpgMatch.class, PolyAlgDeclaration.builder()
                 .creator( LogicalLpgMatch::create ).model( DataModel.GRAPH )
                 .opName( "LPG_MATCH" ).numInputs( 1 ).opTags( logTags )
-                .param( Parameter.builder().name( "matches" ).isMultiValued( true ).type( ParamType.SIMPLE_REX ).build() )
+                .param( Parameter.builder().name( "matches" ).isMultiValued( true ).type( ParamType.REX ).build() )
                 .build() );
         declarations.put( LogicalLpgFilter.class, PolyAlgDeclaration.builder()
                 .creator( LogicalLpgFilter::create ).model( DataModel.GRAPH )
                 .opName( "LPG_FILTER" ).numInputs( 1 ).opTags( logTags )
-                .param( Parameter.builder().name( "condition" ).type( ParamType.SIMPLE_REX ).build() )
+                .param( Parameter.builder().name( "condition" ).type( ParamType.REX ).build() )
                 .build() );
         declarations.put( LogicalLpgProject.class, PolyAlgDeclaration.builder()
                 .creator( LogicalLpgProject::create ).model( DataModel.GRAPH )
                 .opName( "LPG_PROJECT" ).numInputs( 1 ).opTags( logTags )
-                .param( Parameter.builder().name( "projects" ).isMultiValued( true ).type( ParamType.SIMPLE_REX ).build() )
+                .param( Parameter.builder().name( "projects" ).isMultiValued( true ).type( ParamType.REX ).build() )
                 .build() );
         declarations.put( LogicalLpgSort.class, PolyAlgDeclaration.builder()
                 .creator( LogicalLpgSort::create ).model( DataModel.GRAPH )

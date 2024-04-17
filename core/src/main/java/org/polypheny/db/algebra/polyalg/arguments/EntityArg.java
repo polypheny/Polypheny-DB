@@ -16,6 +16,8 @@
 
 package org.polypheny.db.algebra.polyalg.arguments;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.List;
 import lombok.Getter;
 import lombok.NonNull;
@@ -48,6 +50,19 @@ public class EntityArg implements PolyAlgArg {
             return entity.name;
         }
     }
+
+    @Override
+    public ObjectNode serialize( AlgNode context, @NonNull List<String> inputFieldNames, ObjectMapper mapper ) {
+        ObjectNode node = mapper.createObjectNode();
+        node.put( "arg", toPolyAlg( context, inputFieldNames ) );
+        if (entity != null) {
+            node.put("namespaceId", entity.namespaceId);
+            node.put("id", entity.id);
+        }
+        return node;
+    }
+
+
 
 
 }

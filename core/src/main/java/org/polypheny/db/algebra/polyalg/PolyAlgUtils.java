@@ -17,6 +17,8 @@
 package org.polypheny.db.algebra.polyalg;
 
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -28,8 +30,11 @@ import java.util.regex.Pattern;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.Syntax;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
+import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.ParamType;
 import org.polypheny.db.algebra.polyalg.arguments.ListArg;
 import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArg;
+import org.polypheny.db.algebra.polyalg.arguments.StringArg;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexCorrelVariable;
 import org.polypheny.db.rex.RexDigestIncludeType;
@@ -51,7 +56,6 @@ import org.polypheny.db.rex.RexVisitor;
 import org.polypheny.db.rex.RexWindow;
 import org.polypheny.db.rex.RexWindowBound;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.graph.PolyNode;
 import org.polypheny.db.type.entity.relational.PolyMap;
@@ -122,34 +126,34 @@ public class PolyAlgUtils {
 
 
     /**
-     * Returns a list corresponding to the arguments of implicit PROJECT operator required to rename the fieldNames
+     * Returns a ListArg (with unpackValues = false) corresponding to the projects argument of an implicit PROJECT operator required to rename the fieldNames
      * of child to the corresponding fieldNames in inputFieldNames.
-     * If the projection is non-trivial, the returned list will have length {@code child.getTupleType().getFieldCount()}.
+     * If the projection is non-trivial, the returned ListArg will contain {@code child.getTupleType().getFieldCount()} entries.
      *
      * @param child the child whose implicit projections should be generated
      * @param inputFieldNames the names of the fields of all children after renaming
      * @param startIndex index of the first field of child in inputFieldNames
-     * @return string list of all projection arguments or null if no projections are required.
+     * @return ListArg representing the projects argument or null if no projections are required.
      */
-    public static List<String> getAuxProjections( AlgNode child, List<String> inputFieldNames, int startIndex ) {
-        List<String> projections = new ArrayList<>();
+    public static ListArg<StringArg> getAuxProjections( AlgNode child, List<String> inputFieldNames, int startIndex ) {
+        List<String> from = new ArrayList<>();
+        List<String> to = new ArrayList<>();
         List<String> names = child.getTupleType().getFieldNames();
         boolean isTrivial = true;
 
         for ( int i = 0; i < names.size(); i++ ) {
             String name = names.get( i );
             String uniqueName = inputFieldNames.get( startIndex + i );
-            String p = name;
+            from.add( name );
+            to.add( uniqueName );
             if ( !name.equals( uniqueName ) ) {
                 isTrivial = false;
-                p += " AS " + uniqueName;
             }
-            projections.add( p );
         }
         if ( isTrivial ) {
             return null;
         }
-        return projections;
+        return new ListArg<>( from, StringArg::new, to,false );
     }
 
 
@@ -206,6 +210,21 @@ public class PolyAlgUtils {
 
     public static String digestWithNames( RexNode expr, List<String> inputFieldNames ) {
         return expr.accept( new NameReplacer( inputFieldNames ) );
+    }
+
+
+    public static ObjectNode wrapInRename( AlgNode child, ListArg<StringArg> projections, AlgNode context, List<String> inputFieldNames, ObjectMapper mapper ) {
+        ObjectNode node = mapper.createObjectNode();
+        PolyAlgDeclaration decl = PolyAlgRegistry.getDeclaration( LogicalRelProject.class );
+        node.put( "opName", decl.opName + "#" );
+
+        ObjectNode argNode = mapper.createObjectNode();
+        argNode.put( "type", ParamType.LIST.name() );
+        argNode.set( "value", projections.serialize( context, inputFieldNames, mapper ) );
+
+        node.set("arguments", mapper.createObjectNode().set( decl.getPos( 0 ).getName(), argNode ));
+        node.set("inputs", mapper.createArrayNode().add( child.serializePolyAlgebra( mapper ) ));
+        return node;
     }
 
 

@@ -16,6 +16,8 @@
 
 package org.polypheny.db.algebra.polyalg.arguments;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,7 +43,7 @@ public class PolyAlgArgs {
     }
 
 
-    public String serializeArguments( AlgNode context, List<String> inputFieldNames ) {
+    public String toPolyAlgebra( AlgNode context, List<String> inputFieldNames ) {
         StringJoiner joiner = new StringJoiner( ", ", "[", "]" );
 
         for ( Parameter p : decl.posParams ) {
@@ -59,6 +61,17 @@ public class PolyAlgArgs {
             }
         }
         return joiner.toString();
+    }
+
+
+    public ObjectNode serialize( AlgNode context, List<String> inputFieldNames, ObjectMapper mapper ) {
+        ObjectNode node = mapper.createObjectNode();
+        for (Map.Entry<Parameter, PolyAlgArg> entry : args.entrySet()) {
+            Parameter parameter = entry.getKey();
+            PolyAlgArg arg = entry.getValue();
+            node.set( parameter.getName(), arg.serializeWrapped( context, inputFieldNames, mapper ) );
+        }
+        return node;
     }
 
 
