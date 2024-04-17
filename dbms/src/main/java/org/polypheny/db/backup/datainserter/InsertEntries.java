@@ -21,6 +21,7 @@ import java.nio.file.Path;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.backup.BackupManager;
 import org.polypheny.db.backup.datasaver.manifest.BackupManifest;
@@ -104,7 +105,7 @@ public class InsertEntries {
                  */
 
             executorService.shutdown();
-            //executorService.awaitTermination(10, TimeUnit.SECONDS);
+            executorService.awaitTermination(10, TimeUnit.MINUTES);
             log.info( "executor service was shut down" );
 
         } catch ( Exception e ) {
