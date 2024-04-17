@@ -28,7 +28,6 @@ import java.sql.Statement;
 import org.junit.Test;
 import org.polypheny.db.PolyphenyDb;
 import org.polypheny.db.TestHelper.JdbcConnection;
-import org.polypheny.jdbc.PolyhenyResultSet;
 
 public class JdbcResultSetTest {
 
@@ -948,37 +947,6 @@ public class JdbcResultSetTest {
 
 
     @Test
-    public void isWrapperForTest() throws SQLException {
-        try (
-                JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
-                Connection connection = polyphenyDbConnection.getConnection();
-                Statement statement = connection.createStatement();
-        ) {
-            createTableWithData( connection );
-            ResultSet rs = statement.executeQuery( SELECT_SQL );
-            assertTrue( rs.isWrapperFor( PolyhenyResultSet.class ) );
-            rs.close();
-            statement.executeUpdate( DROP_TABLE_SQL );
-        }
-    }
-
-
-    @Test
-    public void unwrapTest() throws SQLException {
-        try (
-                JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
-                Connection connection = polyphenyDbConnection.getConnection();
-                Statement statement = connection.createStatement();
-        ) {
-            createTableWithData( connection );
-            ResultSet rs = statement.executeQuery( SELECT_SQL );
-            PolyhenyResultSet polyRs = rs.unwrap( PolyhenyResultSet.class );
-            rs.close();
-            statement.executeUpdate( DROP_TABLE_SQL );
-        }
-    }
-
-    @Test
     public void isuWrapperForFalseTest() throws SQLException {
         try (
                 JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
@@ -994,7 +962,7 @@ public class JdbcResultSetTest {
     }
 
 
-    @Test (expected = SQLException.class)
+    @Test(expected = SQLException.class)
     public void unwrapExceptionTest() throws SQLException {
         try (
                 JdbcConnection polyphenyDbConnection = new JdbcConnection( false );

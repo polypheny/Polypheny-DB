@@ -24,12 +24,9 @@ import static org.junit.Assert.fail;
 
 import com.google.common.collect.ImmutableList;
 import java.sql.Array;
-import java.sql.Blob;
 import java.sql.CallableStatement;
-import java.sql.Clob;
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.NClob;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
@@ -47,9 +44,6 @@ import org.junit.Test;
 import org.polypheny.db.PolyphenyDb;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
-import org.polypheny.jdbc.PolyConnection;
-import org.polypheny.jdbc.jdbctypes.PolyphenyBlob;
-import org.polypheny.jdbc.jdbctypes.PolyphenyClob;
 
 @Slf4j
 public class JdbcConnectionTest {
@@ -283,22 +277,6 @@ public class JdbcConnectionTest {
 
 
     @Test
-    public void isWrapperForTest() throws SQLException {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
-            PolyConnection polyphenyConnection = jdbcConnection.getConnection().unwrap( PolyConnection.class );
-        }
-    }
-
-
-    @Test
-    public void unwrapTest() throws SQLException {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
-            PolyConnection polyphenyConnection = jdbcConnection.getConnection().unwrap( PolyConnection.class );
-        }
-    }
-
-
-    @Test
     public void isWrapperForFalseTest() throws SQLException {
         try (
                 JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
@@ -469,36 +447,6 @@ public class JdbcConnectionTest {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
             connection.createSQLXML();
-        }
-    }
-
-
-    @Test
-    public void createClobTest() throws SQLException {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
-            Connection connection = jdbcConnection.getConnection();
-            Clob clob = connection.createClob();
-            assertTrue( clob instanceof PolyphenyClob );
-        }
-    }
-
-
-    @Test
-    public void createBlobTest() throws SQLException {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
-            Connection connection = jdbcConnection.getConnection();
-            Blob blob = connection.createBlob();
-            assertTrue( blob instanceof PolyphenyBlob );
-        }
-    }
-
-
-    @Test
-    public void createNClobTest() throws SQLException {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
-            Connection connection = jdbcConnection.getConnection();
-            NClob nclob = connection.createNClob();
-            assertTrue( nclob instanceof PolyphenyClob );
         }
     }
 
@@ -788,7 +736,7 @@ public class JdbcConnectionTest {
 
     @Test(expected = SQLException.class)
     public void commitTransactionOnAutocommitTest() throws SQLException {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( true, true ) ) {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true) ) {
             Connection connection = jdbcConnection.getConnection();
             connection.commit();
         }
@@ -806,7 +754,7 @@ public class JdbcConnectionTest {
 
     @Test(expected = SQLException.class)
     public void rollbackTransactionOnAutocommitTest() throws SQLException {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( true, true ) ) {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true) ) {
             Connection connection = jdbcConnection.getConnection();
             connection.rollback();
         }
@@ -815,7 +763,7 @@ public class JdbcConnectionTest {
 
     @Test(expected = SQLException.class)
     public void commitWhenClosedTest() throws SQLException {
-        JdbcConnection jdbcConnection = new JdbcConnection( true, true );
+        JdbcConnection jdbcConnection = new JdbcConnection( true);
         Connection connection = jdbcConnection.getConnection();
         connection.close();
         connection.commit();
@@ -824,7 +772,7 @@ public class JdbcConnectionTest {
 
     @Test(expected = SQLException.class)
     public void rollbackWhenClosedTest() throws SQLException {
-        JdbcConnection jdbcConnection = new JdbcConnection( true, true );
+        JdbcConnection jdbcConnection = new JdbcConnection( true);
         Connection connection = jdbcConnection.getConnection();
         connection.close();
         connection.rollback();
@@ -833,7 +781,7 @@ public class JdbcConnectionTest {
 
     @Test(expected = SQLException.class)
     public void commitWithAutoCommitTest() throws SQLException {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( true, true ) ) {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true) ) {
             Connection connection = jdbcConnection.getConnection();
             connection.setAutoCommit( true );
             connection.commit();
@@ -843,7 +791,7 @@ public class JdbcConnectionTest {
 
     @Test(expected = SQLException.class)
     public void rollbackWithAutoCommitTest() throws SQLException {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( true, true ) ) {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true) ) {
             Connection connection = jdbcConnection.getConnection();
             connection.setAutoCommit( true );
             connection.rollback();

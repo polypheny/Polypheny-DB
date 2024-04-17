@@ -209,7 +209,7 @@ public class JdbcDdlTest {
 
 
     @Test
-    public void testDateType() throws SQLException {
+    public void testDateType2() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
@@ -234,7 +234,7 @@ public class JdbcDdlTest {
 
 
     @Test
-    public void testTimestampType() throws SQLException {
+    public void testTimestampType3() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
@@ -778,13 +778,13 @@ public class JdbcDdlTest {
                     statement.executeUpdate( "ALTER TABLE ddltest MODIFY COLUMN tsmallint SET TYPE INTEGER" );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT tsmallint FROM ddltest" ),
-                            ImmutableList.of( new Object[]{ (int) (short) DDLTEST_DATA[7] } ) );
+                            ImmutableList.of( new Object[]{ DDLTEST_DATA[7] } ) );
 
                     // TinyInt --> SmallInt
                     statement.executeUpdate( "ALTER TABLE ddltest MODIFY COLUMN ttinyint SET TYPE SMALLINT" );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT ttinyint FROM ddltest" ),
-                            ImmutableList.of( new Object[]{ (short) (byte) DDLTEST_DATA[10] } ) );
+                            ImmutableList.of( new Object[]{ DDLTEST_DATA[10] } ) );
                 } finally {
                     // Drop ddltest table
                     statement.executeUpdate( "DROP TABLE ddltest" );

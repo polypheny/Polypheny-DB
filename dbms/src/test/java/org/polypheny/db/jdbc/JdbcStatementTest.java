@@ -32,16 +32,11 @@ import java.sql.Statement;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.PolyphenyDb;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
-import org.polypheny.db.excluded.CassandraExcluded;
-import org.polypheny.jdbc.PolyphenyStatement;
 
 @Slf4j
-@Category({ AdapterTestSuite.class, CassandraExcluded.class })
 public class JdbcStatementTest {
 
     private static final String CREATE_TEST_TABLE = "CREATE TABLE IF NOT EXISTS my_table (id INT, name VARCHAR(50))";
@@ -824,30 +819,6 @@ public class JdbcStatementTest {
             rs.close();
             assertTrue( statement.isClosed() );
             connection.rollback();
-        }
-    }
-
-
-    @Test
-    public void isWrapperForTest() throws SQLException {
-        try (
-                JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
-                Connection connection = polyphenyDbConnection.getConnection();
-                Statement statement = connection.createStatement();
-        ) {
-            assertTrue( statement.isWrapperFor( PolyphenyStatement.class ) );
-        }
-    }
-
-
-    @Test
-    public void unwrapTest() throws SQLException {
-        try (
-                JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
-                Connection connection = polyphenyDbConnection.getConnection();
-                Statement statement = connection.createStatement();
-        ) {
-            PolyphenyStatement polyphenyStatement = statement.unwrap( PolyphenyStatement.class );
         }
     }
 

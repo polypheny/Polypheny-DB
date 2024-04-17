@@ -75,6 +75,7 @@ dependencies {
     }  // Apache 2.0
 
     testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter', version: junit_jupiter_version
+    testImplementation('junit:junit:4.4')
     testRuntimeOnly(group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: junit_jupiter_version)
     testImplementation group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version  // BSD 3-clause
 
