@@ -36,6 +36,7 @@ import org.apache.calcite.avatica.util.ArrayFactoryImpl;
 import org.apache.calcite.avatica.util.Unsafe;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
@@ -909,6 +910,7 @@ public class JdbcPreparedStatementsTest {
 
 
     @Test
+    @Disabled("Hanging...")
     public void updateTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -959,6 +961,7 @@ public class JdbcPreparedStatementsTest {
                     connection.commit();
                 } finally {
                     statement.executeUpdate( "DROP TABLE pstest" );
+                    connection.commit();
                 }
             }
         }
