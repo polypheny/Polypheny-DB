@@ -34,6 +34,7 @@ import org.polypheny.db.docker.DockerContainer;
 import org.polypheny.db.docker.DockerContainer.HostAndPort;
 import org.polypheny.db.docker.DockerInstance;
 import org.polypheny.db.docker.DockerManager;
+import org.polypheny.db.docker.models.DockerInstanceInfo;
 import org.polypheny.db.notebooks.model.JupyterSessionManager;
 import org.polypheny.db.plugins.PluginContext;
 import org.polypheny.db.plugins.PolyPlugin;
@@ -122,7 +123,7 @@ public class NotebooksPlugin extends PolyPlugin {
 
 
     private void getDockerInstances( Context ctx ) {
-        List<Map<String, Object>> result = DockerManager.getInstance().getDockerInstances().values().stream().filter( DockerInstance::isConnected ).map( DockerInstance::getMap ).toList();
+        List<DockerInstanceInfo> result = DockerManager.getInstance().getDockerInstances().values().stream().map( DockerInstance::getInfo ).filter( DockerInstanceInfo::connected ).toList();
         ctx.status( 200 ).json( result );
     }
 
@@ -199,7 +200,7 @@ public class NotebooksPlugin extends PolyPlugin {
     }
 
 
-    public void pluginStatus( Context ctx, Crud crud ) {
+    public void pluginStatus( Context ctx ) {
         if ( pluginLoaded ) {
             ctx.status( 200 );
         } else {

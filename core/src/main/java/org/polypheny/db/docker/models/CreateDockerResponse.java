@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,27 +14,18 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.docker;
+package org.polypheny.db.docker.models;
 
-import lombok.Getter;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.List;
 
-@Getter
-public final class DockerStatus {
+@JsonInclude
+public record CreateDockerResponse( @JsonProperty HandshakeInfo handshake, @JsonProperty List<DockerInstanceInfo> instances ) {
 
-    private final boolean successful;
-    private final String errorMessage;
-    private final int instanceId;
-
-
-    public DockerStatus( int instanceId, boolean successful ) {
-        this( instanceId, successful, "" );
-    }
-
-
-    public DockerStatus( int instanceId, boolean successful, String errorMessage ) {
-        this.instanceId = instanceId;
-        this.successful = successful;
-        this.errorMessage = errorMessage;
+    public CreateDockerResponse( HandshakeInfo handshake, List<DockerInstanceInfo> instances ) {
+        this.handshake = handshake;
+        this.instances = instances;
     }
 
 }

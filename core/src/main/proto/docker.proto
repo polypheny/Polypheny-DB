@@ -31,9 +31,7 @@ message StringList {
 // because we never store messages.  The exception is the message_id, version
 // and upgrade field numbers for both Request and Response are fixed, as are
 // the VersionRequest, VersionResponse, UpgradeRequest and UpgradeResponse
-// messages.  If they are ever changed in a backwards incompatible way, the
-// handshake protocol version number must be increased.  For everything else it
-// is sufficient to simply increment the negotiated version.
+// messages.  All other fields can be changed if the version is increased.
 message Request {
   uint64 message_id = 1;
   oneof inner_message {
