@@ -97,10 +97,54 @@ public class EvaluationTest {
 
     @Test
     public void startEvaluation() {
+        /*
 
-        startMeasure( "batchSize1", "s", "simple", "allModels" );
-        //startMeasure( "batchSize1", "m", "simple" );
-        //startMeasure( "batchSize1", "l", "simple" );
+        startMeasure( "batchSize5", "s", "simple", "rel", 5 );
+        startMeasure( "batchSize500", "s", "simple", "rel", 500 );
+        startMeasure( "batchSize5000", "s", "simple", "rel", 5000 );
+
+        startMeasure( "batchSize5", "m", "simple", "rel", 5 );
+        startMeasure( "batchSize500", "m", "simple", "rel", 500 );
+        startMeasure( "batchSize5000", "m", "simple", "rel", 5000 );
+
+        startMeasure( "batchSize5", "l", "simple", "rel", 5 );
+        startMeasure( "batchSize500", "l", "simple", "rel", 500 );
+        startMeasure( "batchSize5000", "l", "simple", "rel", 5000 );
+
+
+
+         */
+
+        //startMeasure( "batchSize5", "s", "simple", "graph", 5 );//yes
+        //startMeasure( "batchSize500", "s", "simple", "graph", 500 );//yes
+        //startMeasure( "batchSize1000", "s", "simple", "graph", 1000 );//yes
+
+        //startMeasure( "batchSize5", "m", "simple", "graph", 5 );//yes
+        //startMeasure( "batchSize500", "m", "simple", "graph", 500 );//yes
+        //startMeasure( "batchSize1000", "m", "simple", "graph", 1000 );//yes
+
+        //todo: first failed on first insertion (or writing to file): kong.unirest.UnirestException: java.net.SocketTimeoutException: Read timed out (evtl s file uusläse?)
+        //startMeasure( "batchSize5", "l", "simple", "graph", 5 );
+        //startMeasure( "batchSize500", "l", "simple", "graph", 500 );
+        //startMeasure( "batchSize1000", "l", "simple", "graph", 1000 );
+
+        /*
+
+        startMeasure( "batchSize5", "s", "simple", "doc", 5 );
+        startMeasure( "batchSize500", "s", "simple", "doc", 500 );
+        startMeasure( "batchSize5000", "s", "simple", "doc", 5000 );
+
+        startMeasure( "batchSize5", "m", "simple", "doc", 5 );
+        startMeasure( "batchSize500", "m", "simple", "doc", 500 );
+        startMeasure( "batchSize5000", "m", "simple", "doc", 5000 );
+
+        startMeasure( "batchSize500", "l", "simple", "doc", 500 );
+        startMeasure( "batchSize5000", "l", "simple", "doc", 5000 );
+        startMeasure( "batchSize5", "l", "simple", "doc", 5 );
+
+         */
+
+
 
         assertEquals( 2, 2, "Wrong number of tables" );
 
@@ -108,6 +152,7 @@ public class EvaluationTest {
 
     @Test public void relTest() throws InterruptedException {
         BackupManager backupManager = BackupManager.getINSTANCE();
+        //backupManager.setBatchSize( 10 );
         addBasicRelData( 6 );
         /*
         List<Object[]> data = List.of(
@@ -124,7 +169,9 @@ public class EvaluationTest {
 
          */
 
-        backupManager.startDataGathering();
+        backupManager.startDataGathering( -1 );
+
+
 
         assertEquals( 2, 2, "Wrong number of tables" );
         //Thread.sleep( 5000 );
@@ -134,15 +181,29 @@ public class EvaluationTest {
     public void docTest() {
         BackupManager backupManager = BackupManager.getINSTANCE();
         addBasicDocData(5);
-        backupManager.startDataGathering();
+        backupManager.startDataGathering( -1 );
+
+        deleteBasicDocData();
+        backupManager.startInserting();
+        deleteBasicDocData();
+        backupManager.startInserting();
+        deleteBasicDocData();
+        backupManager.startInserting();
         assertEquals( 2, 2, "Wrong number of tables" );
     }
 
     @Test
     public void graphTest() throws InterruptedException {
         BackupManager backupManager = BackupManager.getINSTANCE();
-        addBasicGraphData(5);
-        backupManager.startDataGathering();
+        addBasicGraphData(10);
+        backupManager.startDataGathering( -1 );
+
+        deleteBasicGraphData();
+        backupManager.startInserting();
+        deleteBasicGraphData();
+        backupManager.startInserting();
+        deleteBasicGraphData();
+        backupManager.startInserting();
         assertEquals( 2, 2, "Wrong number of tables" );
         //Thread.sleep( 5000 );
     }
@@ -155,9 +216,10 @@ public class EvaluationTest {
      * @param scale The scale of the data (s|m|l)
      * @param complexity The complexity of the data (simple|complex)
      * @param dataModel The data model to be tested (rel|doc|graph|allModels)
+     * @param batchSize
      * @throws IOException when something goes wrong with creating a filewriter
      */
-    private static void startMeasure ( String parameter, String scale, String complexity, String dataModel ) {
+    private static void startMeasure ( String parameter, String scale, String complexity, String dataModel, int batchSize ) {
         TransactionManager transactionManager = testHelper.getTransactionManager();
         BackupManager backupManager = BackupManager.getINSTANCE();
         int nbrEntries = 0;
@@ -170,14 +232,14 @@ public class EvaluationTest {
                 nbrEntries = 500;
                 break;
             case "l":
-                nbrEntries = 5000;
+                nbrEntries = 1000;
                 break;
             default:
                 break;
         }
 
-        //parameter: e.g. batchsize, scaling: [s|m|l], complexity: [simple|complex], type: [collection|insertion]
-        // file title: e.g. batchSize10_s_simple_collection
+        //parameter: e.g. batchsize, scaling: [s|m|l], complexity: [simple|complex], type: [collection|insertion], dataModel: [rel|doc|graph|allModels]
+        // file title: e.g. rel_batchSize10_s_simple_collection
         String fileName = "";
 
         ArrayList<Long> measuredTime = new ArrayList<Long>();
@@ -189,16 +251,16 @@ public class EvaluationTest {
                     //collection
                     addBasicRelData( nbrEntries );
 
-                    fileName = String.format( "%s_%s_%s_collection", parameter, scale, complexity);
-                    measuredTime = measureBackupCreationTime( backupManager, complexity, rel );
+                    fileName = String.format( "%s_%s_%s_%s_collection", dataModel, parameter, scale, complexity);
+                    measuredTime = measureBackupCreationTime( backupManager, complexity,  dataModel, batchSize );
                     writeToCSV.writeToCSV( measuredTime, fileName );
 
                     deleteBasicRelData();
                     measuredTime.clear();
 
                     //insertion
-                    fileName = String.format( "%s_%s_%s_insertion", parameter, scale, complexity);
-                    measuredTime = measureBackupInsertionTime( backupManager, complexity, "rel" );
+                    fileName = String.format( "%s_%s_%s_%s_insertion", dataModel, parameter, scale, complexity);
+                    measuredTime = measureBackupInsertionTime( backupManager, complexity, dataModel );
                     writeToCSV.writeToCSV( measuredTime, fileName );
 
                     measuredTime.clear();
@@ -214,16 +276,16 @@ public class EvaluationTest {
                     //collection
                     addBasicDocData( nbrEntries );
 
-                    fileName = String.format( "%s_%s_%s_collection", parameter, scale, complexity);
-                    measuredTime = measureBackupCreationTime( backupManager, complexity, rel );
+                    fileName = String.format( "%s_%s_%s_%s_collection", dataModel, parameter, scale, complexity);
+                    measuredTime = measureBackupCreationTime( backupManager, complexity, dataModel, batchSize );
                     writeToCSV.writeToCSV( measuredTime, fileName );
 
-                    deleteBasicRelData();
+                    deleteBasicDocData();
                     measuredTime.clear();
 
                     //insertion
-                    fileName = String.format( "%s_%s_%s_insertion", parameter, scale, complexity);
-                    measuredTime = measureBackupInsertionTime( backupManager, complexity, "rel" );
+                    fileName = String.format( "%s_%s_%s_%s_insertion", dataModel, parameter, scale, complexity);
+                    measuredTime = measureBackupInsertionTime( backupManager, complexity, dataModel );
                     writeToCSV.writeToCSV( measuredTime, fileName );
 
                     measuredTime.clear();
@@ -238,16 +300,16 @@ public class EvaluationTest {
                     //collection
                     addBasicGraphData( nbrEntries );
 
-                    fileName = String.format( "%s_%s_%s_collection", parameter, scale, complexity);
-                    measuredTime = measureBackupCreationTime( backupManager, complexity, rel );
+                    fileName = String.format( "%s_%s_%s_%s_collection", dataModel, parameter, scale, complexity);
+                    measuredTime = measureBackupCreationTime( backupManager, complexity, dataModel, batchSize );
                     writeToCSV.writeToCSV( measuredTime, fileName );
 
-                    deleteBasicRelData();
+                    deleteBasicGraphData();
                     measuredTime.clear();
 
                     //insertion
-                    fileName = String.format( "%s_%s_%s_insertion", parameter, scale, complexity);
-                    measuredTime = measureBackupInsertionTime( backupManager, complexity, "rel" );
+                    fileName = String.format( "%s_%s_%s_%s_insertion", dataModel, parameter, scale, complexity);
+                    measuredTime = measureBackupInsertionTime( backupManager, complexity, dataModel );
                     writeToCSV.writeToCSV( measuredTime, fileName );
 
                     measuredTime.clear();
@@ -258,21 +320,26 @@ public class EvaluationTest {
 
             case "allModels":
             default:
+                if ( dataModel.isEmpty() ) {
+                    dataModel = "allModels";
+                }
                 if ( complexity.equals( "simple" )) {
                     addBasicRelData( nbrEntries );
                     addBasicDocData( nbrEntries );
                     addBasicGraphData( nbrEntries );
 
-                    fileName = String.format( "%s_%s_%s_collection", parameter, scale, complexity);
-                    measuredTime = measureBackupCreationTime( backupManager, complexity, rel );
+                    fileName = String.format( "%s_%s_%s_%s_collection", dataModel, parameter, scale, complexity);
+                    measuredTime = measureBackupCreationTime( backupManager, complexity, dataModel, batchSize );
                     writeToCSV.writeToCSV( measuredTime, fileName );
 
                     deleteBasicRelData();
+                    deleteBasicDocData();
+                    deleteBasicGraphData();
                     measuredTime.clear();
 
                     //insertion
-                    fileName = String.format( "%s_%s_%s_insertion", parameter, scale, complexity);
-                    measuredTime = measureBackupInsertionTime( backupManager, complexity, "rel" );
+                    fileName = String.format( "%s_%s_%s_%s_insertion", dataModel, parameter, scale, complexity);
+                    measuredTime = measureBackupInsertionTime( backupManager, complexity, dataModel );
                     writeToCSV.writeToCSV( measuredTime, fileName );
 
                     measuredTime.clear();
@@ -285,58 +352,83 @@ public class EvaluationTest {
     }
 
 
-    private static ArrayList<Long> measureBackupCreationTime ( BackupManager backupManager, String complexity, String dataModel ) {
-        //todo: check data model everywhere and add data models here
+    private static ArrayList<Long> measureBackupCreationTime ( BackupManager backupManager, String complexity, String dataModel, int batchSize ) {
         ArrayList<Long> measuredTime = new ArrayList<Long>();
         long startTime;
         long elapsedTime;
         // es warmup mache vorhär, evtl eif 2, 3mol mässe vorhär - das au schriibe
-        backupManager.startDataGathering();
-        backupManager.startDataGathering();
-        for(int i=0; i< 10; i++){
+        backupManager.startDataGathering( batchSize );
+        backupManager.startDataGathering( batchSize );
+        backupManager.startDataGathering( batchSize );
+        for(int i=0; i< 50; i++){
             startTime = System.nanoTime();
-            backupManager.startDataGathering();
+            backupManager.startDataGathering( batchSize );
             elapsedTime = System.nanoTime() - startTime;
             measuredTime.add(elapsedTime);
-            //todo: can (and do i have to) delete old backup data & reset bupInofrmationObject??
+            log.info( "Time" + dataModel+complexity + ": " + elapsedTime);
+            //todo print elapsed time
+            //can (and do i have to) delete old backup data & reset bupInofrmationObject?? - no
         }
         return measuredTime;
     }
 
+
+    /**
+     * Measure the time it takes to insert the backup data
+     * @param backupManager the backup manager
+     * @param complexity the complexity of the data can be (simple|complex)
+     * @param dataModel the data model to be tested (rel|doc|graph|allModels)
+     * @return a list of the measured time in nanoseconds
+     */
     private static ArrayList<Long> measureBackupInsertionTime ( BackupManager backupManager, String complexity, String dataModel ) {
-        //todo: check data model everywhere and add data models here
         ArrayList<Long> measuredTime = new ArrayList<Long>();
         long startTime;
         long elapsedTime;
+        //parameter: e.g. batchsize, scaling: [s|m|l], complexity: [simple|complex], type: [collection|insertion], dataModel: [rel|doc|graph|allModels]
+        // file title: e.g. rel_batchSize10_s_simple_collection
 
-        // warmup runs
-        for(int i=0; i<= 2; i++){
+        // warmup runs, 2
+        for(int i=0; i<= 3; i++){
             backupManager.startInserting();
-            switch ( complexity ) {
-                case "simple":
+            switch ( dataModel ) {
+                case "rel":
                     deleteBasicRelData();
                     break;
-                case "complex":
-                    //deleteComplexRelEvalData();
+                case "doc":
+                    deleteBasicDocData();
                     break;
+                case "graph":
+                    deleteBasicGraphData();
+                    break;
+                case "allModels":
                 default:
+                    deleteBasicRelData();
+                    deleteBasicDocData();
+                    deleteBasicGraphData();
                     break;
             }
         }
 
-        for(int i=0; i< 10; i++){
+        for(int i=0; i< 50; i++){
             startTime = System.nanoTime();
             backupManager.startInserting();
             elapsedTime = System.nanoTime() - startTime;
             measuredTime.add(elapsedTime);
-            switch ( complexity ) {
-                case "simple":
+            switch ( dataModel ) {
+                case "rel":
                     deleteBasicRelData();
                     break;
-                case "complex":
-                    //deleteComplexRelEvalData();
+                case "doc":
+                    deleteBasicDocData();
                     break;
+                case "graph":
+                    deleteBasicGraphData();
+                    break;
+                case "allModels":
                 default:
+                    deleteBasicRelData();
+                    deleteBasicDocData();
+                    deleteBasicGraphData();
                     break;
             }
         }
@@ -475,28 +567,44 @@ public class EvaluationTest {
         String nodesString = "";
         String edgesString = "";
 
-        for (int i = 0; i < nbrNodes; i++) {
-            String nString = "n" + i;
-            nodesString += String.format( "(%s:Person {name: 'Ann', age: 45, depno: 13}), ", nString);
-
-            // connect two nodes with an edge
-            if ( i%2 != 0 ) {
-                String j = String.valueOf( i-1 );
-                String eString = "n" + j;
-                edgesString += String.format( "(%s)-[:KNOWS {since: 1994}]->(%s), ", eString, nString);
-            }
-        }
-        // remove the last ", " from the string
-        nodesString = nodesString.substring( 0, nodesString.length() - 2 );
-        edgesString = edgesString.substring( 0, edgesString.length() - 2 );
-        String query = String.format( "CREATE %s, %s", nodesString, edgesString );
-        log.info( query );
-
         //create graph
         executeGraph( format( "CREATE DATABASE %s", GRAPH_NAME ) );
         executeGraph( format( "USE GRAPH %s", GRAPH_NAME ) );
+        log.info( "started creating nodes and edges to insert" );
 
-        executeGraph( query, GRAPH_NAME );
+        // divide nbr nodes by 3, so that we have 3 times as many nodes as edges
+        int nbrNodesReal = (nbrNodes/3)*2;
+        int nbrEdges = (nbrNodes/3) - 1;
+
+
+        for (int i = 0; i < nbrNodes; i++) {
+            String nString = "n" + i;
+            //nodesString += String.format( "(%s:Person {name: 'Ann', age: 45, depno: 13}), ", nString);
+            String nodeQuery = String.format( "CREATE (%s:Person {name: 'Ann'})", nString );
+            executeGraph( nodeQuery, GRAPH_NAME );
+        }
+
+        /*
+        // connect two nodes with an edge
+        for ( int i = 0; i < nbrEdges; i++ ) {
+            if ( i%2 != 0 ) {
+                String nString = "n" + i;
+                String j = String.valueOf( i-1 );
+                String eString = "n" + j;
+                //edgesString += String.format( "(%s)-[:KNOWS {since: 1994}]->(%s), ", eString, nString);
+                String edgeQuery = String.format( "CREATE (%s)-[:KNOWS {since: 1994}]->(%s)", eString, nString );
+                executeGraph( edgeQuery, GRAPH_NAME );
+            }
+        }
+
+         */
+        // remove the last ", " from the string
+        //nodesString = nodesString.substring( 0, nodesString.length() - 2 );
+        //edgesString = edgesString.substring( 0, edgesString.length() - 2 );
+        //String query = String.format( "CREATE %s, %s", nodesString, edgesString );
+        //log.info( query );
+
+        //executeGraph( query, GRAPH_NAME );
     }
 
 
@@ -513,9 +621,9 @@ public class EvaluationTest {
         for ( int i = 0; i < nbrDocs; i++ ) {
             executeDoc( "db.doc1.insert({name: 'Max" + i + "', age: 31, depno: 13})", "doctest" );
         }
-        executeDoc( "db.doc1.insert({name: 'Max', age: 31, depno: 13})", "doctest" );
-        executeDoc( "db.doc1.insert({name: 'Hans', age: 45, depno: 13})", "doctest" );
-        executeDoc( "db.doc1.insert({name: 'Ann', age: 45, depno: 13})", "doctest" );
+        //executeDoc( "db.doc1.insert({name: 'Max', age: 31, depno: 13})", "doctest" );
+        //executeDoc( "db.doc1.insert({name: 'Hans', age: 45, depno: 13})", "doctest" );
+        //executeDoc( "db.doc1.insert({name: 'Ann', age: 45, depno: 13})", "doctest" );
     }
 
     private static void deleteBasicDocData() {

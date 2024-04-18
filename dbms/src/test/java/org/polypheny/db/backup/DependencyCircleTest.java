@@ -18,11 +18,8 @@ package org.polypheny.db.backup;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
@@ -34,7 +31,6 @@ import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
-import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.transaction.TransactionManager;
 
 
@@ -120,10 +116,11 @@ public class DependencyCircleTest {
     public void testGatherData() {
         TransactionManager transactionManager = testHelper.getTransactionManager();
         BackupManager backupManager = BackupManager.getINSTANCE();
+        int setBatchSize = -1;
 
         addBasicRelTestData();
 
-        backupManager.startDataGathering();
+        backupManager.startDataGathering( setBatchSize );
         BackupInformationObject bupobj = backupManager.getBackupInformationObject();
 
         // go through all tables in the bupobj and add the table names to a string, which will be printed
@@ -253,7 +250,7 @@ public class DependencyCircleTest {
         }
 
         backupManager = BackupManager.getINSTANCE();
-        backupManager.startDataGathering();
+        backupManager.startDataGathering( -1 );
 
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
