@@ -61,7 +61,7 @@ public class BackupManager {
     @Getter
     private BackupInformationObject backupInformationObject;
     public static TransactionManager transactionManager = null;
-    public static int batchSize = -1;  //#rows (100 for the beginning)
+    public static int batchSize = 1;  //#rows (100 for the beginning)
     public static int threadNumber = 8; //#cores (#cpu's) for now
     //private final Logger logger;
 
@@ -91,7 +91,7 @@ public class BackupManager {
 
         InformationAction startBackupAction = new InformationAction( informationGroupOverview, "Start", parameters -> {
             //IndexManager.getInstance().resetCounters();
-            startDataGathering();
+            startDataGathering( -1 );
             System.out.println( "gather" );
             return "Successfully started backup";
         } );
@@ -136,7 +136,12 @@ public class BackupManager {
      * It starts the wrapping process of the schema data.
      * It also starts the process of saving the data to a file (resp. it is started in the GatherEntries class)
      */
-    public void startDataGathering() {
+    public void startDataGathering( int setBatchSize ) {
+
+        // if setBatchSize is -1, the default value is used
+        if ( ! (setBatchSize == -1) ) {
+            batchSize = setBatchSize;
+        }
         this.backupInformationObject = new BackupInformationObject();
         GatherSchema gatherSchema = new GatherSchema();
 
