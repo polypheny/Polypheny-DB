@@ -392,7 +392,6 @@ public class PolyAlgToAlgConverter {
     private AggregateCall convertAggCall( PolyAlgExpression exp, String name, Context ctx ) {
         AggFunction f = exp.getAggFunction();
         List<Integer> args = new ArrayList<>();
-        AlgDataType type = null;
         boolean isDistinct = false;
         for ( PolyAlgExpression child : exp.getChildExps() ) {
             String fieldName = child.getLastLiteral().toString();
@@ -400,9 +399,6 @@ public class PolyAlgToAlgConverter {
                 isDistinct = true;
             }
             args.add( ctx.getFieldOrdinal( fieldName ) );
-            if ( type == null ) {
-                type = ctx.getDataTypeFromFieldName( fieldName );
-            }
         }
 
         int filter = -1;
@@ -413,7 +409,7 @@ public class PolyAlgToAlgConverter {
         }
         boolean isApproximate = exp.getExtension( ExtensionType.APPROXIMATE ) != null;
         return AggregateCall.create( f, isDistinct, isApproximate, args, filter, AlgCollations.EMPTY, // TODO: parse WITHIN for Collation
-                0, ctx.children.get( 0 ), type, name ); // type can be null with this create method
+                0, ctx.children.get( 0 ), null, name ); // type can be null with this create method
     }
 
 

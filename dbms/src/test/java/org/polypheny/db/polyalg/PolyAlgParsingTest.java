@@ -128,7 +128,6 @@ public class PolyAlgParsingTest {
     }
 
 
-    @Disabled("Fails because of non-critical type mismatch")
     @Test
     public void aggregatePolyAlgTest() throws NodeParseException {
         String polyAlg = """
