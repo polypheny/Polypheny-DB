@@ -36,8 +36,13 @@ public class PlainTransport implements Transport {
 
 
     PlainTransport( SocketChannel con ) throws IOException {
+        this( con, VERSION );
+    }
+
+
+    protected PlainTransport( SocketChannel con, String version ) throws IOException {
         this.con = con;
-        exchangeVersion( VERSION );
+        exchangeVersion( version );
     }
 
 

@@ -29,8 +29,7 @@ public class UnixTransport extends PlainTransport {
 
 
     UnixTransport( SocketChannel con ) throws IOException {
-        super( con );
-        exchangeVersion( VERSION );
+        super( con, VERSION );
     }
 
 
