@@ -54,6 +54,8 @@ plugin {
     dependsOn(":plugins:cottontail-adapter:compileTestKotlin")
 }
 
+test.dependsOn(":dbms:shadowJar")
+
 
 sourceSets {
     main {
