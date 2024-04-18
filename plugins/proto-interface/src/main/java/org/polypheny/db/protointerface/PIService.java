@@ -279,7 +279,7 @@ class PIService {
         return switch ( req.getTypeCase() ) {
             case DBMS_VERSION_REQUEST -> getDbmsVersion( req.getDbmsVersionRequest(), new ResponseMaker<>( req, "dbms_version_response" ) );
             case LANGUAGE_REQUEST -> throw new NotImplementedException( "Currently not used" );
-            case DEFAULT_NAMESPACE_REQUEST -> getDefaultNamespace( req.getDefaultNamespaceRequest(), new ResponseMaker<>( req, "databases_response" ) );
+            case DEFAULT_NAMESPACE_REQUEST -> getDefaultNamespace( req.getDefaultNamespaceRequest(), new ResponseMaker<>( req, "default_namespace_response" ) );
             case TABLE_TYPES_REQUEST -> getTableTypes( req.getTableTypesRequest(), new ResponseMaker<>( req, "table_types_response" ) );
             case TYPES_REQUEST -> getTypes( req.getTypesRequest(), new ResponseMaker<>( req, "types_response" ) );
             case USER_DEFINED_TYPES_REQUEST -> throw new NotImplementedException();

@@ -55,8 +55,8 @@ public class PIPreparedIndexedStatement extends PIPreparedStatement {
 
     public List<Long> executeBatch( List<List<PolyValue>> valuesBatch ) {
         List<Long> updateCounts = new LinkedList<>();//synchronized ( this ) {
-        if ( statement == null ) {
-            statement = client.getCurrentOrCreateNewTransaction().createStatement();
+        if ( statement == null || client.hasNoTransaction() ) {
+            statement = client.getOrCreateNewTransaction().createStatement();
         } else {
             statement.getDataContext().resetParameterValues();
         }
@@ -78,10 +78,8 @@ public class PIPreparedIndexedStatement extends PIPreparedStatement {
     @SuppressWarnings("Duplicates")
     public StatementResult execute( List<PolyValue> values, int fetchSize ) {
         //synchronized ( this ) {
-        if ( statement == null ) {
-            statement = client.getCurrentOrCreateNewTransaction().createStatement();
-        } else if ( !statement.getTransaction().isActive() ) {
-            statement = client.getCurrentOrCreateNewTransaction().createStatement(); // todo @gartens: check how those commited transactions should be handled
+        if ( statement == null || client.hasNoTransaction() ) {
+            statement = client.getOrCreateNewTransaction().createStatement();
         } else {
             statement.getDataContext().resetParameterValues();
         }

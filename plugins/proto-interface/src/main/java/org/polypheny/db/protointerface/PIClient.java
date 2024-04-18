@@ -67,7 +67,7 @@ public class PIClient {
     }
 
 
-    public Transaction getCurrentOrCreateNewTransaction() {
+    public Transaction getOrCreateNewTransaction() {
         //synchronized ( this ) {
             if ( hasNoTransaction() ) {
                 currentTransaction = transactionManager.startTransaction( catalogUser.id, namespace.id, false, "PrismInterface" );

@@ -25,8 +25,11 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 
 public class UnixTransport extends PlainTransport {
 
+    private final static String VERSION = "unix-v1@polypheny.com";
+
+
     UnixTransport( SocketChannel con ) throws IOException {
-        super( con );
+        super( con, VERSION );
     }
 
 

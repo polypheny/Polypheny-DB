@@ -41,9 +41,6 @@ public abstract class PIPreparedStatement extends PIStatement implements Signatu
         return parameterMetas;
     }
 
-
-
-
     protected PIPreparedStatement(
             int id,
             @NotNull PIClient client,
