@@ -47,7 +47,6 @@ import org.pf4j.DefaultPluginDescriptor;
 import org.pf4j.DefaultPluginFactory;
 import org.pf4j.DefaultPluginLoader;
 import org.pf4j.DefaultPluginManager;
-import org.pf4j.DevelopmentPluginRepository;
 import org.pf4j.JarPluginLoader;
 import org.pf4j.ManifestPluginDescriptorFinder;
 import org.pf4j.Plugin;
@@ -55,7 +54,6 @@ import org.pf4j.PluginClassLoader;
 import org.pf4j.PluginDescriptor;
 import org.pf4j.PluginFactory;
 import org.pf4j.PluginLoader;
-import org.pf4j.PluginRepository;
 import org.pf4j.PluginState;
 import org.pf4j.PluginWrapper;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -95,7 +93,7 @@ public class PolyPluginManager extends DefaultPluginManager {
         final File jarFile = new File( PolyPluginManager.class.getProtectionDomain().getCodeSource().getLocation().getPath() );
         File pluginsFolder = PolyphenyHomeDirManager.getInstance().registerNewFolder( "plugins" );
         if ( jarFile.isFile() ) {  // Run with JAR file
-            // Copy plugins bundled into the jar file to the designated plugins folder.
+            // Copy plugins bundled into the jar file to the designated plugins' folder.
             // Overwrites existing plugins with same name (name includes version number).
             try {
                 final JarFile jar = new JarFile( jarFile );

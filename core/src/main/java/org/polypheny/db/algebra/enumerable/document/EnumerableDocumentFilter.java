@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,11 +30,6 @@ public class EnumerableDocumentFilter extends DocumentFilter implements Enumerab
     /**
      * Creates a {@link DocumentFilter}.
      * {@link ModelTrait#DOCUMENT} native node of a filter.
-     *
-     * @param cluster
-     * @param traits
-     * @param input
-     * @param condition
      */
     protected EnumerableDocumentFilter( AlgCluster cluster, AlgTraitSet traits, AlgNode input, RexNode condition ) {
         super( cluster, traits, input, condition );

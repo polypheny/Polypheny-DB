@@ -71,7 +71,8 @@ public class QueryProcessorHelpers {
                 : type.getPrecision();
     }
 
-    public static int getScale(AlgDataType type) {
+
+    public static int getScale( AlgDataType type ) {
         return type.getScale() == AlgDataType.SCALE_NOT_SPECIFIED
                 ? 0
                 : type.getScale();

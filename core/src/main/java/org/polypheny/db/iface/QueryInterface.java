@@ -154,6 +154,7 @@ public abstract class QueryInterface implements Runnable, PropertyChangeListener
 
     }
 
+
     public static class QueryInterfaceSettingLong extends QueryInterfaceSetting {
 
         public final Long defaultValue;

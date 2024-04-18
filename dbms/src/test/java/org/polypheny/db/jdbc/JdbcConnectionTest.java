@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -85,10 +85,10 @@ public class JdbcConnectionTest {
         String insert = "INSERT INTO test VALUES (time '11:59:32')";
         String select = "SELECT * FROM test";
         try ( Connection con = jdbcConnect( url );
-                Statement statemnet = con.createStatement() ) {
-            statemnet.execute( tableDdl );
-            statemnet.execute( insert );
-            ResultSet rs = statemnet.executeQuery( select );
+                Statement statement = con.createStatement() ) {
+            statement.execute( tableDdl );
+            statement.execute( insert );
+            ResultSet rs = statement.executeQuery( select );
             TestHelper.checkResultSet( rs, ImmutableList.of( new Object[]{ Time.valueOf( "11:59:32" ) } ) );
         }
     }
@@ -736,7 +736,7 @@ public class JdbcConnectionTest {
 
     @Test(expected = SQLException.class)
     public void commitTransactionOnAutocommitTest() throws SQLException {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( true) ) {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
             connection.commit();
         }
@@ -754,7 +754,7 @@ public class JdbcConnectionTest {
 
     @Test(expected = SQLException.class)
     public void rollbackTransactionOnAutocommitTest() throws SQLException {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( true) ) {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
             connection.rollback();
         }
@@ -763,7 +763,7 @@ public class JdbcConnectionTest {
 
     @Test(expected = SQLException.class)
     public void commitWhenClosedTest() throws SQLException {
-        JdbcConnection jdbcConnection = new JdbcConnection( true);
+        JdbcConnection jdbcConnection = new JdbcConnection( true );
         Connection connection = jdbcConnection.getConnection();
         connection.close();
         connection.commit();
@@ -772,7 +772,7 @@ public class JdbcConnectionTest {
 
     @Test(expected = SQLException.class)
     public void rollbackWhenClosedTest() throws SQLException {
-        JdbcConnection jdbcConnection = new JdbcConnection( true);
+        JdbcConnection jdbcConnection = new JdbcConnection( true );
         Connection connection = jdbcConnection.getConnection();
         connection.close();
         connection.rollback();
@@ -781,7 +781,7 @@ public class JdbcConnectionTest {
 
     @Test(expected = SQLException.class)
     public void commitWithAutoCommitTest() throws SQLException {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( true) ) {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
             connection.setAutoCommit( true );
             connection.commit();
@@ -791,7 +791,7 @@ public class JdbcConnectionTest {
 
     @Test(expected = SQLException.class)
     public void rollbackWithAutoCommitTest() throws SQLException {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( true) ) {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
             connection.setAutoCommit( true );
             connection.rollback();
@@ -799,4 +799,3 @@ public class JdbcConnectionTest {
     }
 
 }
-
