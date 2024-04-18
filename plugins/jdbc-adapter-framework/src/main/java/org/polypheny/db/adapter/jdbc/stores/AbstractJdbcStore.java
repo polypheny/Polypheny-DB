@@ -262,12 +262,17 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
             PolyType collectionsType = column.collectionsType == PolyType.ARRAY ? null : column.collectionsType; // nested array was not suppored
 
             builder.append( " " ).append( getTypeString( type ) );
-            if ( column.length != null && doesTypeUseLength( type ) ) {
-                builder.append( "(" ).append( column.length );
-                if ( column.scale != null ) {
-                    builder.append( "," ).append( column.scale );
+            if ( doesTypeUseLength( type ) ) {
+                if ( column.length == null && dialect.handleMissingLength( type ).isPresent() ) {
+                    builder.append( dialect.handleMissingLength( type ).get() );
+                } else if ( column.length != null ) {
+                    builder.append( "(" ).append( column.length );
+                    if ( column.scale != null ) {
+                        builder.append( "," ).append( column.scale );
+                    }
+                    builder.append( ")" );
                 }
-                builder.append( ")" );
+
             }
             if ( collectionsType != null ) {
                 builder.append( " " ).append( getTypeString( column.collectionsType ) );

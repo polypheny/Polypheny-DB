@@ -198,7 +198,7 @@ class MongoEnumerator implements Enumerator<PolyValue[]> {
             }
             case FILE, AUDIO, IMAGE, VIDEO -> handleMultimedia( o, type );
             case INTERVAL -> new PolyInterval( o.asDocument().get( BsonUtil.DOC_MILLIS_KEY ).asNumber().longValue(), o.asDocument().get( BsonUtil.DOC_MONTH_KEY ).asNumber().longValue() );
-            case BINARY -> PolyBinary.of( o.asBinary().getData() );
+            case BINARY, VARBINARY -> PolyBinary.of( o.asBinary().getData() );
             case TIMESTAMP -> PolyTimestamp.of( o.asNumber().longValue() );
             case TIME -> PolyTime.of( o.asNumber().longValue() );
             case DATE -> PolyDate.of( o.asNumber().longValue() );

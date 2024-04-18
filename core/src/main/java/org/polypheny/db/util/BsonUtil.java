@@ -68,6 +68,7 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.runtime.ComparableList;
 import org.polypheny.db.runtime.PolyCollections.FlatMap;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyNull;
@@ -208,7 +209,7 @@ public class BsonUtil {
             case TIME -> handleTime( obj );
             case TIMESTAMP -> handleTimestamp( obj );
             case BOOLEAN -> new BsonBoolean( obj.asBoolean().value );
-            case BINARY -> new BsonString( new ByteString( obj.asBinary().value ).toBase64String() );
+            case BINARY, VARBINARY -> new BsonBinary( obj.asBinary().value );
             case AUDIO, IMAGE, VIDEO, FILE -> handleMultimedia( bucket, obj );
             case INTERVAL -> handleInterval( obj );
             case JSON -> handleDocument( obj );
@@ -259,7 +260,7 @@ public class BsonUtil {
             case TIME -> BsonUtil::handleTime;
             case TIMESTAMP -> BsonUtil::handleTimestamp;
             case BOOLEAN -> BsonUtil::handleBoolean;
-            case BINARY -> BsonUtil::handleBinary;
+            case BINARY, VARBINARY -> BsonUtil::handleBinary;
             case AUDIO, IMAGE, VIDEO, FILE -> ( o ) -> handleMultimedia( bucket, o );
             case INTERVAL -> BsonUtil::handleInterval;
             case JSON -> BsonUtil::handleDocument;
@@ -284,7 +285,15 @@ public class BsonUtil {
 
 
     private static BsonValue handleBinary( Object obj ) {
-        return new BsonString( ((ByteString) obj).toBase64String() );
+        if ( obj instanceof PolyBinary polyBinary ) {
+            return new BsonBinary( polyBinary.value );
+        } else if ( obj instanceof ByteString byteString ) {
+            return new BsonBinary( byteString.getBytes() );
+        } else if ( obj instanceof byte[] bytes ) {
+            return new BsonBinary( bytes );
+        }
+        throw new GenericRuntimeException( "The provided object is not a binary object." );
+
     }
 
 

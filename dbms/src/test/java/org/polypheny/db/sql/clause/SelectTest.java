@@ -83,6 +83,19 @@ public class SelectTest {
     }
 
 
+    @Test
+    public void selectNullTest() throws SQLException {
+        String select = "SELECT NULL";
+
+        try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.execute( select );
+            }
+        }
+    }
+
+
     @AfterAll
     public static void stop() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {

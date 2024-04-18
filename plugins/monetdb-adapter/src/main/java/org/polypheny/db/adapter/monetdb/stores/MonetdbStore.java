@@ -304,7 +304,7 @@ public class MonetdbStore extends AbstractJdbcStore {
         }
         return switch ( type ) {
             case BOOLEAN -> "BOOLEAN";
-            case VARBINARY -> "VARCHAR";//throw new GenericRuntimeException( "Unsupported datatype: " + type.name() );
+            case VARBINARY, BINARY -> "TEXT";
             case TINYINT -> "SMALLINT"; // there seems to be an issue with tinyints and the jdbc driver
             case SMALLINT -> "SMALLINT";
             case INTEGER -> "INT";

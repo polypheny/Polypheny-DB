@@ -418,11 +418,11 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                 if ( dialect.supportsComplexBinary() ) {
                     poly = Expressions.call( PolyBinary.class, methodName, Expressions.convert_( source, byte[].class ) );
                 } else {
-                    poly = Expressions.call( PolyBinary.class, "fromTypedJson", Expressions.convert_( source, String.class ), Expressions.constant( PolyBinary.class ) );
+                    poly = dialect.handleRetrieval( fieldType, source );
                 }
                 break;
             case TEXT:
-                poly = dialect.getExpression( fieldType, source );
+                poly = dialect.handleRetrieval( fieldType, source );
                 break;
             case FILE:
             case AUDIO:

@@ -18,6 +18,7 @@ package org.polypheny.db.adapter.postgres;
 
 
 import java.util.Objects;
+import java.util.Optional;
 import org.apache.calcite.avatica.SqlType;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
@@ -94,6 +95,15 @@ public class PostgresqlSqlDialect extends SqlDialect {
     @Override
     public boolean supportsArrays() {
         return true;
+    }
+
+
+    @Override
+    public Optional<String> handleMissingLength( PolyType type ) {
+        return switch ( type ) {
+            case VARBINARY, VARCHAR, BINARY -> Optional.of( "VARYING" );
+            default -> Optional.empty();
+        };
     }
 
 

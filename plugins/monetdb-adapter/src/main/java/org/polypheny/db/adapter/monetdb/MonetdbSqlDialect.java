@@ -103,17 +103,17 @@ public class MonetdbSqlDialect extends SqlDialect {
                 castSpec = "_SMALLINT";
                 break;
             case ARRAY:
-                // We need to flag the type with a underscore to flag the type (the underscore is removed in the unparse method)
+                // We need to flag the type with an underscore to flag the type (the underscore is removed in the unparse method)
                 castSpec = "_TEXT";
                 break;
-            case VARBINARY:
+            case VARBINARY, BINARY:
                 castSpec = "_TEXT";
                 break;
             case FILE:
             case IMAGE:
             case VIDEO:
             case AUDIO:
-                // We need to flag the type with a underscore to flag the type (the underscore is removed in the unparse method)
+                // We need to flag the type with an underscore to flag the type (the underscore is removed in the unparse method)
                 castSpec = "_BLOB";
                 break;
             default:
@@ -125,13 +125,13 @@ public class MonetdbSqlDialect extends SqlDialect {
 
 
     @Override
-    public Expression getExpression( AlgDataType fieldType, Expression child ) {
+    public Expression handleRetrieval( AlgDataType fieldType, Expression child ) {
         return switch ( fieldType.getPolyType() ) {
-            case TEXT -> {
+            case TEXT, VARBINARY -> {
                 UnaryExpression client = Expressions.convert_( child, MonetClob.class );
-                yield super.getExpression( fieldType, Expressions.call( MonetdbSqlDialect.class, "toString", client ) );
+                yield super.handleRetrieval( fieldType, Expressions.call( MonetdbSqlDialect.class, "toString", client ) );
             }
-            default -> super.getExpression( fieldType, child );
+            default -> super.handleRetrieval( fieldType, child );
         };
     }
 
