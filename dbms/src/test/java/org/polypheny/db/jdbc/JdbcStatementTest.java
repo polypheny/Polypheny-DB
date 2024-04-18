@@ -16,12 +16,13 @@
 
 package org.polypheny.db.jdbc;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.common.collect.ImmutableList;
 import java.sql.Connection;
@@ -30,12 +31,16 @@ import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.sql.Statement;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.PolyphenyDb;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 
+
+@SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
+@Tag("adapter")
 @Slf4j
 public class JdbcStatementTest {
 
@@ -44,7 +49,7 @@ public class JdbcStatementTest {
     private static final String INSERT_TEST_DATA = "INSERT INTO my_table values(1, 'A'), (2, 'B'), (3, 'C'), (4, 'D')";
 
 
-    @BeforeClass
+    @BeforeAll
     public static void start() {
         // Ensures that Polypheny-DB is running
         //noinspection ResultOfMethodCallIgnored
@@ -114,17 +119,19 @@ public class JdbcStatementTest {
     }
 
 
-    @Test(expected = SQLException.class)
-    public void simpleInvalidUpdateThrowsExceptionTest() throws SQLException {
-        try (
-                JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
-                Connection connection = polyphenyDbConnection.getConnection();
-                Statement statement = connection.createStatement();
-        ) {
-            statement.execute( CREATE_TEST_TABLE );
-            int rowsChanged = statement.executeUpdate( "SELECT * FROM my_table" );
-            connection.rollback();
-        }
+    @Test
+    public void simpleInvalidUpdateThrowsExceptionTest() {
+        assertThrows( SQLException.class, () -> {
+            try (
+                    JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
+                    Connection connection = polyphenyDbConnection.getConnection();
+                    Statement statement = connection.createStatement();
+            ) {
+                statement.execute( CREATE_TEST_TABLE );
+                int rowsChanged = statement.executeUpdate( "SELECT * FROM my_table" );
+                connection.rollback();
+            }
+        } );
     }
 
 
@@ -143,17 +150,19 @@ public class JdbcStatementTest {
     }
 
 
-    @Test(expected = SQLException.class)
-    public void simpleInvalidQueryThrowsExceptionTest() throws SQLException {
-        try (
-                JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
-                Connection connection = polyphenyDbConnection.getConnection();
-                Statement statement = connection.createStatement();
-        ) {
-            statement.execute( CREATE_TEST_TABLE );
-            statement.executeQuery( INSERT_TEST_DATA );
-            connection.rollback();
-        }
+    @Test
+    public void simpleInvalidQueryThrowsExceptionTest() {
+        assertThrows( SQLException.class, () -> {
+            try (
+                    JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
+                    Connection connection = polyphenyDbConnection.getConnection();
+                    Statement statement = connection.createStatement();
+            ) {
+                statement.execute( CREATE_TEST_TABLE );
+                statement.executeQuery( INSERT_TEST_DATA );
+                connection.rollback();
+            }
+        } );
     }
 
 
@@ -258,16 +267,18 @@ public class JdbcStatementTest {
     }
 
 
-    @Test(expected = SQLException.class)
-    public void invalidMaxFieldSizeTest() throws SQLException {
-        int maxFieldSize = -8;
-        try (
-                JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
-                Connection connection = polyphenyDbConnection.getConnection();
-                Statement statement = connection.createStatement();
-        ) {
-            statement.setMaxFieldSize( maxFieldSize );
-        }
+    @Test
+    public void invalidMaxFieldSizeTest() {
+        assertThrows( SQLException.class, () -> {
+            int maxFieldSize = -8;
+            try (
+                    JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
+                    Connection connection = polyphenyDbConnection.getConnection();
+                    Statement statement = connection.createStatement();
+            ) {
+                statement.setMaxFieldSize( maxFieldSize );
+            }
+        } );
     }
 
 
@@ -362,15 +373,17 @@ public class JdbcStatementTest {
     }
 
 
-    @Test(expected = SQLFeatureNotSupportedException.class)
-    public void setCursorNameNotSupportedTest() throws SQLException {
-        try (
-                JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
-                Connection connection = polyphenyDbConnection.getConnection();
-                Statement statement = connection.createStatement();
-        ) {
-            statement.setCursorName( "foo" );
-        }
+    @Test
+    public void setCursorNameNotSupportedTest() {
+        assertThrows( SQLFeatureNotSupportedException.class, () -> {
+            try (
+                    JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
+                    Connection connection = polyphenyDbConnection.getConnection();
+                    Statement statement = connection.createStatement();
+            ) {
+                statement.setCursorName( "foo" );
+            }
+        } );
     }
 
 
@@ -404,29 +417,33 @@ public class JdbcStatementTest {
     }
 
 
-    @Test(expected = SQLException.class)
-    public void setIllegalFetchDirectionTest1() throws SQLException {
-        try (
-                JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
-                Connection connection = polyphenyDbConnection.getConnection();
-                Statement statement = connection.createStatement();
-        ) {
-            statement.setFetchDirection( ResultSet.FETCH_REVERSE );
-            assertEquals( ResultSet.FETCH_REVERSE, statement.getFetchDirection() );
-        }
+    @Test
+    public void setIllegalFetchDirectionTest1() {
+        assertThrows( SQLException.class, () -> {
+            try (
+                    JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
+                    Connection connection = polyphenyDbConnection.getConnection();
+                    Statement statement = connection.createStatement();
+            ) {
+                statement.setFetchDirection( ResultSet.FETCH_REVERSE );
+                assertEquals( ResultSet.FETCH_REVERSE, statement.getFetchDirection() );
+            }
+        } );
     }
 
 
-    @Test(expected = SQLException.class)
+    @Test
     public void setIllegalFetchDirectionTest2() throws SQLException {
-        try (
-                JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
-                Connection connection = polyphenyDbConnection.getConnection();
-                Statement statement = connection.createStatement();
-        ) {
-            statement.setFetchDirection( ResultSet.FETCH_UNKNOWN );
-            assertEquals( ResultSet.FETCH_UNKNOWN, statement.getFetchDirection() );
-        }
+        assertThrows( SQLException.class, () -> {
+            try (
+                    JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
+                    Connection connection = polyphenyDbConnection.getConnection();
+                    Statement statement = connection.createStatement();
+            ) {
+                statement.setFetchDirection( ResultSet.FETCH_UNKNOWN );
+                assertEquals( ResultSet.FETCH_UNKNOWN, statement.getFetchDirection() );
+            }
+        } );
     }
 
 
@@ -609,145 +626,165 @@ public class JdbcStatementTest {
     }
 
 
-    @Test(expected = SQLFeatureNotSupportedException.class)
-    public void getMoreResultsWithInvalidBehaviourKeepThrowsExceptionTest() throws SQLException {
-        try (
-                JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
-                Connection connection = polyphenyDbConnection.getConnection();
-                Statement statement = connection.createStatement();
-        ) {
-            statement.execute( CREATE_TEST_TABLE );
-            statement.execute( INSERT_TEST_DATA );
-            assertEquals( 0, statement.getMaxRows() );
-            statement.executeQuery( "SELECT * FROM my_table" );
-            assertFalse( statement.getMoreResults( Statement.KEEP_CURRENT_RESULT ) );
-            connection.rollback();
-        }
+    @Test
+    public void getMoreResultsWithInvalidBehaviourKeepThrowsExceptionTest() {
+        assertThrows( SQLFeatureNotSupportedException.class, () -> {
+            try (
+                    JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
+                    Connection connection = polyphenyDbConnection.getConnection();
+                    Statement statement = connection.createStatement();
+            ) {
+                statement.execute( CREATE_TEST_TABLE );
+                statement.execute( INSERT_TEST_DATA );
+                assertEquals( 0, statement.getMaxRows() );
+                statement.executeQuery( "SELECT * FROM my_table" );
+                assertFalse( statement.getMoreResults( Statement.KEEP_CURRENT_RESULT ) );
+                connection.rollback();
+            }
+        } );
     }
 
 
-    @Test(expected = SQLFeatureNotSupportedException.class)
-    public void getMoreResultsWithInvalidBehaviourCloseThrowsExceptionTest() throws SQLException {
-        try (
-                JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
-                Connection connection = polyphenyDbConnection.getConnection();
-                Statement statement = connection.createStatement();
-        ) {
-            statement.execute( CREATE_TEST_TABLE );
-            statement.execute( INSERT_TEST_DATA );
-            assertEquals( 0, statement.getMaxRows() );
-            statement.executeQuery( "SELECT * FROM my_table" );
-            assertFalse( statement.getMoreResults( Statement.CLOSE_ALL_RESULTS ) );
-            connection.rollback();
-        }
+    @Test
+    public void getMoreResultsWithInvalidBehaviourCloseThrowsExceptionTest() {
+        assertThrows( SQLFeatureNotSupportedException.class, () -> {
+            try (
+                    JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
+                    Connection connection = polyphenyDbConnection.getConnection();
+                    Statement statement = connection.createStatement();
+            ) {
+                statement.execute( CREATE_TEST_TABLE );
+                statement.execute( INSERT_TEST_DATA );
+                assertEquals( 0, statement.getMaxRows() );
+                statement.executeQuery( "SELECT * FROM my_table" );
+                assertFalse( statement.getMoreResults( Statement.CLOSE_ALL_RESULTS ) );
+                connection.rollback();
+            }
+        } );
     }
 
 
-    @Test(expected = SQLException.class)
-    public void getMoreResultsWithINonsenseThrowsExceptionTest() throws SQLException {
-        try (
-                JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
-                Connection connection = polyphenyDbConnection.getConnection();
-                Statement statement = connection.createStatement();
-        ) {
-            statement.execute( CREATE_TEST_TABLE );
-            statement.execute( INSERT_TEST_DATA );
-            assertEquals( 0, statement.getMaxRows() );
-            statement.executeQuery( "SELECT * FROM my_table" );
-            assertFalse( statement.getMoreResults( 1234 ) );
-            connection.rollback();
-        }
+    @Test
+    public void getMoreResultsWithINonsenseThrowsExceptionTest() {
+        assertThrows( SQLException.class, () -> {
+            try (
+                    JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
+                    Connection connection = polyphenyDbConnection.getConnection();
+                    Statement statement = connection.createStatement();
+            ) {
+                statement.execute( CREATE_TEST_TABLE );
+                statement.execute( INSERT_TEST_DATA );
+                assertEquals( 0, statement.getMaxRows() );
+                statement.executeQuery( "SELECT * FROM my_table" );
+                assertFalse( statement.getMoreResults( 1234 ) );
+                connection.rollback();
+            }
+        } );
     }
 
 
-    @Test(expected = SQLFeatureNotSupportedException.class)
-    public void getGeneratedKeysTest() throws SQLException {
-        try (
-                JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
-                Connection connection = polyphenyDbConnection.getConnection();
-                Statement statement = connection.createStatement();
-        ) {
+    @Test
+    public void getGeneratedKeysTest() {
+        assertThrows( SQLFeatureNotSupportedException.class, () -> {
+            try (
+                    JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
+                    Connection connection = polyphenyDbConnection.getConnection();
+                    Statement statement = connection.createStatement();
+            ) {
 
-            statement.getGeneratedKeys();
-        }
+                statement.getGeneratedKeys();
+            }
+        } );
     }
 
 
-    @Test(expected = SQLFeatureNotSupportedException.class)
-    public void executeLargeUpdateWithAutogeneratedKeysTest() throws SQLException {
-        try (
-                JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
-                Connection connection = polyphenyDbConnection.getConnection();
-                Statement statement = connection.createStatement();
-        ) {
+    @Test
+    public void executeLargeUpdateWithAutogeneratedKeysTest() {
+        assertThrows( SQLFeatureNotSupportedException.class, () -> {
+            try (
+                    JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
+                    Connection connection = polyphenyDbConnection.getConnection();
+                    Statement statement = connection.createStatement();
+            ) {
 
-            statement.executeLargeUpdate( "INSERT INTO my_table (id, name) VALUES (1, 'John')", 1 );
-        }
+                statement.executeLargeUpdate( "INSERT INTO my_table (id, name) VALUES (1, 'John')", 1 );
+            }
+        } );
     }
 
 
-    @Test(expected = SQLFeatureNotSupportedException.class)
-    public void executeUpdateWithColumnIndexesTest() throws SQLException {
-        try (
-                JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
-                Connection connection = polyphenyDbConnection.getConnection();
-                Statement statement = connection.createStatement();
-        ) {
+    @Test
+    public void executeUpdateWithColumnIndexesTest() {
+        assertThrows( SQLFeatureNotSupportedException.class, () -> {
+            try (
+                    JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
+                    Connection connection = polyphenyDbConnection.getConnection();
+                    Statement statement = connection.createStatement();
+            ) {
 
-            statement.executeUpdate( "INSERT INTO my_table (id, name) VALUES (2, 'Jane')", new int[]{ 1 } );
-        }
+                statement.executeUpdate( "INSERT INTO my_table (id, name) VALUES (2, 'Jane')", new int[]{ 1 } );
+            }
+        } );
     }
 
 
-    @Test(expected = SQLFeatureNotSupportedException.class)
-    public void executeUpdateWithColumnNamesTest() throws SQLException {
-        try (
-                JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
-                Connection connection = polyphenyDbConnection.getConnection();
-                Statement statement = connection.createStatement();
-        ) {
+    @Test
+    public void executeUpdateWithColumnNamesTest() {
+        assertThrows( SQLFeatureNotSupportedException.class, () -> {
+            try (
+                    JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
+                    Connection connection = polyphenyDbConnection.getConnection();
+                    Statement statement = connection.createStatement();
+            ) {
 
-            statement.executeUpdate( "INSERT INTO my_table (id, name) VALUES (3, 'Doe')", new String[]{ "id" } );
-        }
+                statement.executeUpdate( "INSERT INTO my_table (id, name) VALUES (3, 'Doe')", new String[]{ "id" } );
+            }
+        } );
     }
 
 
-    @Test(expected = SQLFeatureNotSupportedException.class)
-    public void executeWithIntTest() throws SQLException {
-        try (
-                JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
-                Connection connection = polyphenyDbConnection.getConnection();
-                Statement statement = connection.createStatement();
-        ) {
+    @Test
+    public void executeWithIntTest() {
+        assertThrows( SQLFeatureNotSupportedException.class, () -> {
+            try (
+                    JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
+                    Connection connection = polyphenyDbConnection.getConnection();
+                    Statement statement = connection.createStatement();
+            ) {
 
-            statement.execute( "INSERT INTO my_table (id, name) VALUES (4, 'Smith')", 1 );
-        }
+                statement.execute( "INSERT INTO my_table (id, name) VALUES (4, 'Smith')", 1 );
+            }
+        } );
     }
 
 
-    @Test(expected = SQLFeatureNotSupportedException.class)
-    public void executeWithIntArrayTest() throws SQLException {
-        try (
-                JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
-                Connection connection = polyphenyDbConnection.getConnection();
-                Statement statement = connection.createStatement();
-        ) {
+    @Test
+    public void executeWithIntArrayTest() {
+        assertThrows( SQLFeatureNotSupportedException.class, () -> {
+            try (
+                    JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
+                    Connection connection = polyphenyDbConnection.getConnection();
+                    Statement statement = connection.createStatement();
+            ) {
 
-            statement.execute( "INSERT INTO my_table (id, name) VALUES (5, 'Brown')", new int[]{ 1 } );
-        }
+                statement.execute( "INSERT INTO my_table (id, name) VALUES (5, 'Brown')", new int[]{ 1 } );
+            }
+        } );
     }
 
 
-    @Test(expected = SQLFeatureNotSupportedException.class)
-    public void executeWithStringArrayTest() throws SQLException {
-        try (
-                JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
-                Connection connection = polyphenyDbConnection.getConnection();
-                Statement statement = connection.createStatement();
-        ) {
+    @Test
+    public void executeWithStringArrayTest() {
+        assertThrows( SQLFeatureNotSupportedException.class, () -> {
+            try (
+                    JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
+                    Connection connection = polyphenyDbConnection.getConnection();
+                    Statement statement = connection.createStatement();
+            ) {
 
-            statement.execute( "INSERT INTO my_table (id, name) VALUES (6, 'Taylor')", new String[]{ "id" } );
-        }
+                statement.execute( "INSERT INTO my_table (id, name) VALUES (6, 'Taylor')", new String[]{ "id" } );
+            }
+        } );
     }
 
 
@@ -835,15 +872,17 @@ public class JdbcStatementTest {
     }
 
 
-    @Test(expected = SQLException.class)
-    public void unwrapExceptionTest() throws SQLException {
-        try (
-                JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
-                Connection connection = polyphenyDbConnection.getConnection();
-                Statement statement = connection.createStatement();
-        ) {
-            PolyphenyDb polyDb = statement.unwrap( PolyphenyDb.class );
-        }
+    @Test
+    public void unwrapExceptionTest() {
+        assertThrows( SQLException.class, () -> {
+            try (
+                    JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
+                    Connection connection = polyphenyDbConnection.getConnection();
+                    Statement statement = connection.createStatement();
+            ) {
+                PolyphenyDb polyDb = statement.unwrap( PolyphenyDb.class );
+            }
+        } );
     }
 
 }

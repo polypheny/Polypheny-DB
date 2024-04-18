@@ -23,15 +23,14 @@ dependencies {
 
     implementation group: "org.slf4j", name: "log4j-over-slf4j", version: slf4j_api_version
 
+
     // --- Test Compile ---
-    // The line below causes issues, because it leads to executing :dbms:compileTestJava, even when building with -xtest
-    //testImplementation project(path: ":dbms", configuration: "test")
+    testImplementation project(path: ":dbms", configuration: "test")
     testImplementation project(path: ":dbms")
     testImplementation project(path: ":core", configuration: "tests")
     testImplementation project(path: ":core")
 
     testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter', version: junit_jupiter_version
-
 }
 
 compileKotlin {

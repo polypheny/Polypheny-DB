@@ -16,19 +16,24 @@
 
 package org.polypheny.db.jdbc;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import org.junit.Test;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.PolyphenyDb;
 import org.polypheny.db.TestHelper.JdbcConnection;
 
+
+@SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
+@Tag("adapter")
 public class JdbcResultSetTest {
 
     private static final String TABLE_SQL = "CREATE TABLE IF NOT EXISTS resultset_test (id INT, hex_value VARCHAR(2))";
@@ -115,8 +120,9 @@ public class JdbcResultSetTest {
                 Statement statement = connection.createStatement() ) {
             createTableWithData( connection );
             ResultSet rs = statement.executeQuery( SELECT_SQL );
-            while ( rs.next() )
-                ;
+            while ( rs.next() ) {
+                // intentionally empty, do nothing
+            }
             assertTrue( rs.isAfterLast() );
             rs.close();
             statement.executeUpdate( DROP_TABLE_SQL );
@@ -202,17 +208,19 @@ public class JdbcResultSetTest {
     }
 
 
-    @Test(expected = SQLException.class)
-    public void getCursorNameThrowsExceptionTest() throws SQLException {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( true );
-                Connection connection = jdbcConnection.getConnection();
-                Statement statement = connection.createStatement() ) {
-            createTableWithData( connection );
-            ResultSet rs = statement.executeQuery( SELECT_SQL );
-            rs.getCursorName();
-            rs.close();
-            statement.executeUpdate( DROP_TABLE_SQL );
-        }
+    @Test
+    public void getCursorNameThrowsExceptionTest() {
+        assertThrows( SQLException.class, () -> {
+            try ( JdbcConnection jdbcConnection = new JdbcConnection( true );
+                    Connection connection = jdbcConnection.getConnection();
+                    Statement statement = connection.createStatement() ) {
+                createTableWithData( connection );
+                ResultSet rs = statement.executeQuery( SELECT_SQL );
+                rs.getCursorName();
+                rs.close();
+                statement.executeUpdate( DROP_TABLE_SQL );
+            }
+        } );
     }
 
 
@@ -231,18 +239,20 @@ public class JdbcResultSetTest {
     }
 
 
-    @Test(expected = SQLException.class)
-    public void beforeFirstThrowsWhenForwardOnlyTest() throws SQLException {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( true );
-                Connection connection = jdbcConnection.getConnection();
-                Statement statement = connection.createStatement() ) {
-            createTableWithData( connection );
-            ResultSet rs = statement.executeQuery( SELECT_SQL );
-            rs.next();
-            rs.beforeFirst();
-            rs.close();
-            statement.executeUpdate( DROP_TABLE_SQL );
-        }
+    @Test
+    public void beforeFirstThrowsWhenForwardOnlyTest() {
+        assertThrows( SQLException.class, () -> {
+            try ( JdbcConnection jdbcConnection = new JdbcConnection( true );
+                    Connection connection = jdbcConnection.getConnection();
+                    Statement statement = connection.createStatement() ) {
+                createTableWithData( connection );
+                ResultSet rs = statement.executeQuery( SELECT_SQL );
+                rs.next();
+                rs.beforeFirst();
+                rs.close();
+                statement.executeUpdate( DROP_TABLE_SQL );
+            }
+        } );
     }
 
 
@@ -263,17 +273,19 @@ public class JdbcResultSetTest {
     }
 
 
-    @Test(expected = SQLException.class)
-    public void afterLastThrowsWhenForwardOnlyTest() throws SQLException {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( true );
-                Connection connection = jdbcConnection.getConnection();
-                Statement statement = connection.createStatement() ) {
-            createTableWithData( connection );
-            ResultSet rs = statement.executeQuery( SELECT_SQL );
-            rs.afterLast();
-            rs.close();
-            statement.executeUpdate( DROP_TABLE_SQL );
-        }
+    @Test
+    public void afterLastThrowsWhenForwardOnlyTest() {
+        assertThrows( SQLException.class, () -> {
+            try ( JdbcConnection jdbcConnection = new JdbcConnection( true );
+                    Connection connection = jdbcConnection.getConnection();
+                    Statement statement = connection.createStatement() ) {
+                createTableWithData( connection );
+                ResultSet rs = statement.executeQuery( SELECT_SQL );
+                rs.afterLast();
+                rs.close();
+                statement.executeUpdate( DROP_TABLE_SQL );
+            }
+        } );
     }
 
 
@@ -293,19 +305,21 @@ public class JdbcResultSetTest {
     }
 
 
-    @Test(expected = SQLException.class)
-    public void firstThrowsWhenForwardOnlyTest() throws SQLException {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( true );
-                Connection connection = jdbcConnection.getConnection();
-                Statement statement = connection.createStatement() ) {
-            createTableWithData( connection );
-            ResultSet rs = statement.executeQuery( SELECT_SQL );
-            assertFalse( rs.isFirst() );
-            rs.first();
-            assertTrue( rs.isFirst() );
-            rs.close();
-            statement.executeUpdate( DROP_TABLE_SQL );
-        }
+    @Test
+    public void firstThrowsWhenForwardOnlyTest() {
+        assertThrows( SQLException.class, () -> {
+            try ( JdbcConnection jdbcConnection = new JdbcConnection( true );
+                    Connection connection = jdbcConnection.getConnection();
+                    Statement statement = connection.createStatement() ) {
+                createTableWithData( connection );
+                ResultSet rs = statement.executeQuery( SELECT_SQL );
+                assertFalse( rs.isFirst() );
+                rs.first();
+                assertTrue( rs.isFirst() );
+                rs.close();
+                statement.executeUpdate( DROP_TABLE_SQL );
+            }
+        } );
     }
 
 
@@ -326,17 +340,19 @@ public class JdbcResultSetTest {
     }
 
 
-    @Test(expected = SQLException.class)
-    public void lastThrowsWhenForwardOnlyTest() throws SQLException {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( true );
-                Connection connection = jdbcConnection.getConnection();
-                Statement statement = connection.createStatement() ) {
-            createTableWithData( connection );
-            ResultSet rs = statement.executeQuery( SELECT_SQL );
-            rs.last();
-            rs.close();
-            statement.executeUpdate( DROP_TABLE_SQL );
-        }
+    @Test
+    public void lastThrowsWhenForwardOnlyTest() {
+        assertThrows( SQLException.class, () -> {
+            try ( JdbcConnection jdbcConnection = new JdbcConnection( true );
+                    Connection connection = jdbcConnection.getConnection();
+                    Statement statement = connection.createStatement() ) {
+                createTableWithData( connection );
+                ResultSet rs = statement.executeQuery( SELECT_SQL );
+                rs.last();
+                rs.close();
+                statement.executeUpdate( DROP_TABLE_SQL );
+            }
+        } );
     }
 
 
@@ -357,34 +373,38 @@ public class JdbcResultSetTest {
     }
 
 
-    @Test(expected = SQLException.class)
-    public void readingBeforeFirstThrowsException() throws SQLException {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( true );
-                Connection connection = jdbcConnection.getConnection();
-                Statement statement = connection.createStatement( ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY ) ) {
-            createTableWithData( connection );
-            ResultSet rs = statement.executeQuery( SELECT_SQL );
-            assertTrue( rs.isBeforeFirst() );
-            rs.getInt( 1 );
-            rs.close();
-            statement.executeUpdate( DROP_TABLE_SQL );
-        }
+    @Test
+    public void readingBeforeFirstThrowsException() {
+        assertThrows( SQLException.class, () -> {
+            try ( JdbcConnection jdbcConnection = new JdbcConnection( true );
+                    Connection connection = jdbcConnection.getConnection();
+                    Statement statement = connection.createStatement( ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY ) ) {
+                createTableWithData( connection );
+                ResultSet rs = statement.executeQuery( SELECT_SQL );
+                assertTrue( rs.isBeforeFirst() );
+                rs.getInt( 1 );
+                rs.close();
+                statement.executeUpdate( DROP_TABLE_SQL );
+            }
+        } );
     }
 
 
-    @Test(expected = SQLException.class)
-    public void readingAfterLastThrowsException() throws SQLException {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( true );
-                Connection connection = jdbcConnection.getConnection();
-                Statement statement = connection.createStatement( ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY ) ) {
-            createTableWithData( connection );
-            ResultSet rs = statement.executeQuery( SELECT_SQL );
-            rs.afterLast();
-            assertTrue( rs.isAfterLast() );
-            rs.getInt( 1 );
-            rs.close();
-            statement.executeUpdate( DROP_TABLE_SQL );
-        }
+    @Test
+    public void readingAfterLastThrowsException() {
+        assertThrows( SQLException.class, () -> {
+            try ( JdbcConnection jdbcConnection = new JdbcConnection( true );
+                    Connection connection = jdbcConnection.getConnection();
+                    Statement statement = connection.createStatement( ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY ) ) {
+                createTableWithData( connection );
+                ResultSet rs = statement.executeQuery( SELECT_SQL );
+                rs.afterLast();
+                assertTrue( rs.isAfterLast() );
+                rs.getInt( 1 );
+                rs.close();
+                statement.executeUpdate( DROP_TABLE_SQL );
+            }
+        } );
     }
 
 
@@ -423,17 +443,19 @@ public class JdbcResultSetTest {
     }
 
 
-    @Test(expected = SQLException.class)
-    public void absoluteThrowsWhenForwardOnlyTest() throws SQLException {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( true );
-                Connection connection = jdbcConnection.getConnection();
-                Statement statement = connection.createStatement() ) {
-            createTableWithData( connection );
-            ResultSet rs = statement.executeQuery( SELECT_SQL );
-            rs.absolute( 5 );
-            rs.close();
-            statement.executeUpdate( DROP_TABLE_SQL );
-        }
+    @Test
+    public void absoluteThrowsWhenForwardOnlyTest() {
+        assertThrows( SQLException.class, () -> {
+            try ( JdbcConnection jdbcConnection = new JdbcConnection( true );
+                    Connection connection = jdbcConnection.getConnection();
+                    Statement statement = connection.createStatement() ) {
+                createTableWithData( connection );
+                ResultSet rs = statement.executeQuery( SELECT_SQL );
+                rs.absolute( 5 );
+                rs.close();
+                statement.executeUpdate( DROP_TABLE_SQL );
+            }
+        } );
     }
 
 
@@ -532,17 +554,19 @@ public class JdbcResultSetTest {
     }
 
 
-    @Test(expected = SQLException.class)
-    public void relativeThrowsWhenForwardOnlyTest() throws SQLException {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( true );
-                Connection connection = jdbcConnection.getConnection();
-                Statement statement = connection.createStatement() ) {
-            createTableWithData( connection );
-            ResultSet rs = statement.executeQuery( SELECT_SQL );
-            rs.relative( 5 );
-            rs.close();
-            statement.executeUpdate( DROP_TABLE_SQL );
-        }
+    @Test
+    public void relativeThrowsWhenForwardOnlyTest() {
+        assertThrows( SQLException.class, () -> {
+            try ( JdbcConnection jdbcConnection = new JdbcConnection( true );
+                    Connection connection = jdbcConnection.getConnection();
+                    Statement statement = connection.createStatement() ) {
+                createTableWithData( connection );
+                ResultSet rs = statement.executeQuery( SELECT_SQL );
+                rs.relative( 5 );
+                rs.close();
+                statement.executeUpdate( DROP_TABLE_SQL );
+            }
+        } );
     }
 
 
@@ -649,17 +673,19 @@ public class JdbcResultSetTest {
     }
 
 
-    @Test(expected = SQLException.class)
-    public void illegalFetchDirectionThrowsExceptionTest() throws SQLException {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( true );
-                Connection connection = jdbcConnection.getConnection();
-                Statement statement = connection.createStatement() ) {
-            createTableWithData( connection );
-            ResultSet rs = statement.executeQuery( SELECT_SQL );
-            rs.setFetchDirection( ResultSet.FETCH_REVERSE );
-            rs.close();
-            statement.executeUpdate( DROP_TABLE_SQL );
-        }
+    @Test
+    public void illegalFetchDirectionThrowsExceptionTest() {
+        assertThrows( SQLException.class, () -> {
+            try ( JdbcConnection jdbcConnection = new JdbcConnection( true );
+                    Connection connection = jdbcConnection.getConnection();
+                    Statement statement = connection.createStatement() ) {
+                createTableWithData( connection );
+                ResultSet rs = statement.executeQuery( SELECT_SQL );
+                rs.setFetchDirection( ResultSet.FETCH_REVERSE );
+                rs.close();
+                statement.executeUpdate( DROP_TABLE_SQL );
+            }
+        } );
     }
 
 
@@ -708,17 +734,19 @@ public class JdbcResultSetTest {
     }
 
 
-    @Test(expected = SQLException.class)
-    public void illegalFetchSizeThrowsExceptionTest() throws SQLException {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( true );
-                Connection connection = jdbcConnection.getConnection();
-                Statement statement = connection.createStatement() ) {
-            createTableWithData( connection );
-            ResultSet rs = statement.executeQuery( SELECT_SQL );
-            rs.setFetchSize( -42 );
-            rs.close();
-            statement.executeUpdate( DROP_TABLE_SQL );
-        }
+    @Test
+    public void illegalFetchSizeThrowsExceptionTest() {
+        assertThrows( SQLException.class, () -> {
+            try ( JdbcConnection jdbcConnection = new JdbcConnection( true );
+                    Connection connection = jdbcConnection.getConnection();
+                    Statement statement = connection.createStatement() ) {
+                createTableWithData( connection );
+                ResultSet rs = statement.executeQuery( SELECT_SQL );
+                rs.setFetchSize( -42 );
+                rs.close();
+                statement.executeUpdate( DROP_TABLE_SQL );
+            }
+        } );
     }
 
 
@@ -778,143 +806,163 @@ public class JdbcResultSetTest {
     }
 
 
-    @Test(expected = SQLException.class)
-    public void updatedNotSupportedTest() throws SQLException {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( true );
-                Connection connection = jdbcConnection.getConnection();
-                Statement statement = connection.createStatement() ) {
-            createTableWithData( connection );
-            ResultSet rs = statement.executeQuery( SELECT_SQL );
-            rs.rowUpdated();
-            rs.close();
-            statement.executeUpdate( DROP_TABLE_SQL );
-        }
+    @Test
+    public void updatedNotSupportedTest() {
+        assertThrows( SQLException.class, () -> {
+            try ( JdbcConnection jdbcConnection = new JdbcConnection( true );
+                    Connection connection = jdbcConnection.getConnection();
+                    Statement statement = connection.createStatement() ) {
+                createTableWithData( connection );
+                ResultSet rs = statement.executeQuery( SELECT_SQL );
+                rs.rowUpdated();
+                rs.close();
+                statement.executeUpdate( DROP_TABLE_SQL );
+            }
+        } );
     }
 
 
-    @Test(expected = SQLException.class)
-    public void insertedNotSupportedTest() throws SQLException {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( true );
-                Connection connection = jdbcConnection.getConnection();
-                Statement statement = connection.createStatement() ) {
-            createTableWithData( connection );
-            ResultSet rs = statement.executeQuery( SELECT_SQL );
-            rs.rowInserted();
-            rs.close();
-            statement.executeUpdate( DROP_TABLE_SQL );
-        }
+    @Test
+    public void insertedNotSupportedTest() {
+        assertThrows( SQLException.class, () -> {
+            try ( JdbcConnection jdbcConnection = new JdbcConnection( true );
+                    Connection connection = jdbcConnection.getConnection();
+                    Statement statement = connection.createStatement() ) {
+                createTableWithData( connection );
+                ResultSet rs = statement.executeQuery( SELECT_SQL );
+                rs.rowInserted();
+                rs.close();
+                statement.executeUpdate( DROP_TABLE_SQL );
+            }
+        } );
     }
 
 
-    @Test(expected = SQLException.class)
-    public void deletedNotSupportedTest() throws SQLException {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( true );
-                Connection connection = jdbcConnection.getConnection();
-                Statement statement = connection.createStatement() ) {
-            createTableWithData( connection );
-            ResultSet rs = statement.executeQuery( SELECT_SQL );
-            rs.deleteRow();
-            rs.close();
-            statement.executeUpdate( DROP_TABLE_SQL );
-        }
+    @Test
+    public void deletedNotSupportedTest() {
+        assertThrows( SQLException.class, () -> {
+            try ( JdbcConnection jdbcConnection = new JdbcConnection( true );
+                    Connection connection = jdbcConnection.getConnection();
+                    Statement statement = connection.createStatement() ) {
+                createTableWithData( connection );
+                ResultSet rs = statement.executeQuery( SELECT_SQL );
+                rs.deleteRow();
+                rs.close();
+                statement.executeUpdate( DROP_TABLE_SQL );
+            }
+        } );
     }
 
 
-    @Test(expected = SQLException.class)
-    public void insertThrowsWhenReadOnlyTest() throws SQLException {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( true );
-                Connection connection = jdbcConnection.getConnection();
-                Statement statement = connection.createStatement() ) {
-            createTableWithData( connection );
-            ResultSet rs = statement.executeQuery( SELECT_SQL );
-            rs.insertRow();
-            rs.close();
-            statement.executeUpdate( DROP_TABLE_SQL );
-        }
+    @Test
+    public void insertThrowsWhenReadOnlyTest() {
+        assertThrows( SQLException.class, () -> {
+            try ( JdbcConnection jdbcConnection = new JdbcConnection( true );
+                    Connection connection = jdbcConnection.getConnection();
+                    Statement statement = connection.createStatement() ) {
+                createTableWithData( connection );
+                ResultSet rs = statement.executeQuery( SELECT_SQL );
+                rs.insertRow();
+                rs.close();
+                statement.executeUpdate( DROP_TABLE_SQL );
+            }
+        } );
     }
 
 
-    @Test(expected = SQLException.class)
-    public void updateThrowsWhenReadOnly() throws SQLException {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( true );
-                Connection connection = jdbcConnection.getConnection();
-                Statement statement = connection.createStatement() ) {
-            createTableWithData( connection );
-            ResultSet rs = statement.executeQuery( SELECT_SQL );
-            rs.updateRow();
-            rs.close();
-            statement.executeUpdate( DROP_TABLE_SQL );
-        }
+    @Test
+    public void updateThrowsWhenReadOnly() {
+        assertThrows( SQLException.class, () -> {
+            try ( JdbcConnection jdbcConnection = new JdbcConnection( true );
+                    Connection connection = jdbcConnection.getConnection();
+                    Statement statement = connection.createStatement() ) {
+                createTableWithData( connection );
+                ResultSet rs = statement.executeQuery( SELECT_SQL );
+                rs.updateRow();
+                rs.close();
+                statement.executeUpdate( DROP_TABLE_SQL );
+            }
+        } );
     }
 
 
-    @Test(expected = SQLException.class)
-    public void deleteThrowsWhenReadOnly() throws SQLException {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( true );
-                Connection connection = jdbcConnection.getConnection();
-                Statement statement = connection.createStatement() ) {
-            createTableWithData( connection );
-            ResultSet rs = statement.executeQuery( SELECT_SQL );
-            rs.deleteRow();
-            rs.close();
-            statement.executeUpdate( DROP_TABLE_SQL );
-        }
+    @Test
+    public void deleteThrowsWhenReadOnly() {
+        assertThrows( SQLException.class, () -> {
+            try ( JdbcConnection jdbcConnection = new JdbcConnection( true );
+                    Connection connection = jdbcConnection.getConnection();
+                    Statement statement = connection.createStatement() ) {
+                createTableWithData( connection );
+                ResultSet rs = statement.executeQuery( SELECT_SQL );
+                rs.deleteRow();
+                rs.close();
+                statement.executeUpdate( DROP_TABLE_SQL );
+            }
+        } );
     }
 
 
-    @Test(expected = SQLException.class)
-    public void refreshThrowsWhenReadOnly() throws SQLException {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( true );
-                Connection connection = jdbcConnection.getConnection();
-                Statement statement = connection.createStatement() ) {
-            createTableWithData( connection );
-            ResultSet rs = statement.executeQuery( SELECT_SQL );
-            rs.refreshRow();
-            rs.close();
-            statement.executeUpdate( DROP_TABLE_SQL );
-        }
+    @Test
+    public void refreshThrowsWhenReadOnly() {
+        assertThrows( SQLException.class, () -> {
+            try ( JdbcConnection jdbcConnection = new JdbcConnection( true );
+                    Connection connection = jdbcConnection.getConnection();
+                    Statement statement = connection.createStatement() ) {
+                createTableWithData( connection );
+                ResultSet rs = statement.executeQuery( SELECT_SQL );
+                rs.refreshRow();
+                rs.close();
+                statement.executeUpdate( DROP_TABLE_SQL );
+            }
+        } );
     }
 
 
-    @Test(expected = SQLException.class)
-    public void cancelThrowsWhenReadOnly() throws SQLException {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( true );
-                Connection connection = jdbcConnection.getConnection();
-                Statement statement = connection.createStatement() ) {
-            createTableWithData( connection );
-            ResultSet rs = statement.executeQuery( SELECT_SQL );
-            rs.cancelRowUpdates();
-            rs.close();
-            statement.executeUpdate( DROP_TABLE_SQL );
-        }
+    @Test
+    public void cancelThrowsWhenReadOnly() {
+        assertThrows( SQLException.class, () -> {
+            try ( JdbcConnection jdbcConnection = new JdbcConnection( true );
+                    Connection connection = jdbcConnection.getConnection();
+                    Statement statement = connection.createStatement() ) {
+                createTableWithData( connection );
+                ResultSet rs = statement.executeQuery( SELECT_SQL );
+                rs.cancelRowUpdates();
+                rs.close();
+                statement.executeUpdate( DROP_TABLE_SQL );
+            }
+        } );
     }
 
 
-    @Test(expected = SQLException.class)
-    public void moveToInsertRowThrowsWhenReadOnly() throws SQLException {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( true );
-                Connection connection = jdbcConnection.getConnection();
-                Statement statement = connection.createStatement() ) {
-            createTableWithData( connection );
-            ResultSet rs = statement.executeQuery( SELECT_SQL );
-            rs.moveToInsertRow();
-            rs.close();
-            statement.executeUpdate( DROP_TABLE_SQL );
-        }
+    @Test
+    public void moveToInsertRowThrowsWhenReadOnly() {
+        assertThrows( SQLException.class, () -> {
+            try ( JdbcConnection jdbcConnection = new JdbcConnection( true );
+                    Connection connection = jdbcConnection.getConnection();
+                    Statement statement = connection.createStatement() ) {
+                createTableWithData( connection );
+                ResultSet rs = statement.executeQuery( SELECT_SQL );
+                rs.moveToInsertRow();
+                rs.close();
+                statement.executeUpdate( DROP_TABLE_SQL );
+            }
+        } );
     }
 
 
-    @Test(expected = SQLException.class)
-    public void moveToCurrentRowThrowsWhenReadOnly() throws SQLException {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( true );
-                Connection connection = jdbcConnection.getConnection();
-                Statement statement = connection.createStatement() ) {
-            createTableWithData( connection );
-            ResultSet rs = statement.executeQuery( SELECT_SQL );
-            rs.moveToCurrentRow();
-            rs.close();
-            statement.executeUpdate( DROP_TABLE_SQL );
-        }
+    @Test
+    public void moveToCurrentRowThrowsWhenReadOnly() {
+        assertThrows( SQLException.class, () -> {
+            try ( JdbcConnection jdbcConnection = new JdbcConnection( true );
+                    Connection connection = jdbcConnection.getConnection();
+                    Statement statement = connection.createStatement() ) {
+                createTableWithData( connection );
+                ResultSet rs = statement.executeQuery( SELECT_SQL );
+                rs.moveToCurrentRow();
+                rs.close();
+                statement.executeUpdate( DROP_TABLE_SQL );
+            }
+        } );
     }
 
 
@@ -962,19 +1010,21 @@ public class JdbcResultSetTest {
     }
 
 
-    @Test(expected = SQLException.class)
-    public void unwrapExceptionTest() throws SQLException {
-        try (
-                JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
-                Connection connection = polyphenyDbConnection.getConnection();
-                Statement statement = connection.createStatement();
-        ) {
-            createTableWithData( connection );
-            ResultSet rs = statement.executeQuery( SELECT_SQL );
-            PolyphenyDb polyDb = rs.unwrap( PolyphenyDb.class );
-            rs.close();
-            statement.executeUpdate( DROP_TABLE_SQL );
-        }
+    @Test
+    public void unwrapExceptionTest() {
+        assertThrows( SQLException.class, () -> {
+            try (
+                    JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
+                    Connection connection = polyphenyDbConnection.getConnection();
+                    Statement statement = connection.createStatement();
+            ) {
+                createTableWithData( connection );
+                ResultSet rs = statement.executeQuery( SELECT_SQL );
+                PolyphenyDb polyDb = rs.unwrap( PolyphenyDb.class );
+                rs.close();
+                statement.executeUpdate( DROP_TABLE_SQL );
+            }
+        } );
     }
 
 }
