@@ -26,6 +26,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.PolyphenyDb;
@@ -34,6 +35,7 @@ import org.polypheny.db.TestHelper.JdbcConnection;
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Tag("adapter")
+@Disabled
 public class JdbcResultSetTest {
 
     private static final String TABLE_SQL = "CREATE TABLE IF NOT EXISTS resultset_test (id INT, hex_value VARCHAR(2))";

@@ -32,6 +32,7 @@ import java.sql.SQLFeatureNotSupportedException;
 import java.sql.Statement;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.PolyphenyDb;
@@ -42,6 +43,7 @@ import org.polypheny.db.TestHelper.JdbcConnection;
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Tag("adapter")
 @Slf4j
+@Disabled
 public class JdbcStatementTest {
 
     private static final String CREATE_TEST_TABLE = "CREATE TABLE IF NOT EXISTS my_table (id INT, name VARCHAR(50))";

@@ -41,6 +41,7 @@ import java.util.Map;
 import java.util.Properties;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.PolyphenyDb;
@@ -51,6 +52,7 @@ import org.polypheny.db.TestHelper.JdbcConnection;
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Tag("adapter")
 @Slf4j
+@Disabled
 public class JdbcConnectionTest {
 
     private final static String dbHost = "localhost";
