@@ -22,23 +22,62 @@ import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.SocketChannel;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Optional;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.util.Util;
 
 public class PlainTransport implements Transport {
 
+    private final static String VERSION = "plain-v1@polypheny.com";
+
     protected final SocketChannel con;
 
 
     PlainTransport( SocketChannel con ) throws IOException {
         this.con = con;
+        exchangeVersion( VERSION );
     }
 
 
     @Override
     public Optional<String> getPeer() {
         return Optional.empty();
+    }
+
+
+    void exchangeVersion( String protocol ) throws IOException {
+        if ( !protocol.matches( "\\A[a-z0-9@.-]+\\z" ) ) {
+            throw new IOException( "Invalid version name" );
+        }
+        byte len = (byte) (protocol.length() + 1); // Trailing '\n'
+        if ( len <= 0 ) {
+            throw new IOException( "Version too long" );
+        }
+        ByteBuffer bb = ByteBuffer.allocate( 1 + len ); // Leading size
+        bb.put( len );
+        bb.put( protocol.getBytes( StandardCharsets.US_ASCII ) );
+        bb.put( (byte) '\n' );
+        bb.rewind();
+        writeEntireBuffer( bb );
+        byte[] response = readProtocolResponse( len );
+        if ( !Arrays.equals( bb.array(), response ) ) {
+            throw new IOException( "Invalid client version" );
+        }
+    }
+
+
+    private byte[] readProtocolResponse( byte len ) throws IOException {
+        ByteBuffer bb = ByteBuffer.allocate( 1 + len ); // Leading size
+        ByteBuffer length = bb.slice( 0, 1 );
+        bb.position( 1 );
+        readEntireBuffer( length );
+        if ( length.get() != len ) {
+            throw new IOException( "Invalid version response length" );
+        }
+        readEntireBuffer( bb );
+        return bb.array();
     }
 
 
@@ -102,6 +141,7 @@ public class PlainTransport implements Transport {
             con.setOption( StandardSocketOptions.TCP_NODELAY, true );
             return new PlainTransport( con );
         } catch ( IOException e ) {
+            Util.closeNoThrow( con );
             throw new GenericRuntimeException( e );
         }
     }
