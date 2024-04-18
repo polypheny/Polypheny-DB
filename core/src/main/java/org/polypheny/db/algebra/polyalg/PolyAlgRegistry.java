@@ -22,7 +22,9 @@ import java.util.List;
 import java.util.Map;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.JoinAlgType;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentAggregate;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentFilter;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentSort;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentUnwind;
@@ -90,7 +92,7 @@ public class PolyAlgRegistry {
                 .build() );
         declarations.put( LogicalRelAggregate.class, PolyAlgDeclaration.builder()
                 .creator( LogicalRelAggregate::create ).model( DataModel.RELATIONAL )
-                .opName( "AGG" ).numInputs( 1 ).opTags( logTags )
+                .opName( "AGG" ).opAlias( "AGGREGATE" ).numInputs( 1 ).opTags( logTags )
                 .param( Parameter.builder().name( "group" ).type( ParamType.FIELD ).isMultiValued( true ).defaultValue( ListArg.EMPTY ).build() )  // select count(*) has no group
                 .param( Parameter.builder().name( "groups" ).type( ParamType.FIELD ).isMultiValued( true ).defaultValue( ListArg.EMPTY ).build() )
                 .param( Parameter.builder().name( "aggs" ).type( ParamType.AGGREGATE ).isMultiValued( true ).defaultValue( ListArg.EMPTY ).build() )
@@ -171,6 +173,18 @@ public class PolyAlgRegistry {
                 .creator( LogicalDocumentUnwind::create ).model( DataModel.DOCUMENT )
                 .opName( "DOC_UNWIND" ).numInputs( 1 ).opTags( logTags )
                 .param( Parameter.builder().name( "path" ).type( ParamType.STRING ).build() )
+                .build() );
+        declarations.put( LogicalDocumentProject.class, PolyAlgDeclaration.builder()
+                .creator( LogicalDocumentProject::create ).model( DataModel.DOCUMENT )
+                .opName( "DOC_PROJECT" ).numInputs( 1 ).opTags( logTags )
+                .param( Parameter.builder().name( "includes" ).isMultiValued( true ).type( ParamType.REX ).defaultValue( ListArg.EMPTY ).build() )
+                .param( Parameter.builder().name( "excludes" ).isMultiValued( true ).type( ParamType.STRING ).defaultValue( ListArg.EMPTY ).build() )
+                .build() );
+        declarations.put( LogicalDocumentAggregate.class, PolyAlgDeclaration.builder()
+                .creator( LogicalDocumentAggregate::create ).model( DataModel.DOCUMENT )
+                .opName( "DOC_AGG" ).opAlias( "DOC_AGGREGATE" ).numInputs( 1 ).opTags( logTags )
+                .param( Parameter.builder().name( "group" ).type( ParamType.REX ).defaultValue( RexArg.NULL ).build() )
+                .param( Parameter.builder().name( "aggs" ).isMultiValued( true ).type( ParamType.LAX_AGGREGATE ).defaultValue( ListArg.EMPTY ).build() )
                 .build() );
 
         // GRAPH

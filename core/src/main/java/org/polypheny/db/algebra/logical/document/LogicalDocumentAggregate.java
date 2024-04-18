@@ -22,6 +22,10 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.LaxAggregateCall;
 import org.polypheny.db.algebra.core.document.DocumentAggregate;
+import org.polypheny.db.algebra.polyalg.arguments.LaxAggArg;
+import org.polypheny.db.algebra.polyalg.arguments.ListArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
+import org.polypheny.db.algebra.polyalg.arguments.RexArg;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
@@ -46,13 +50,19 @@ public class LogicalDocumentAggregate extends DocumentAggregate {
     }
 
 
+    public static LogicalDocumentAggregate create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+        RexArg group = args.getArg( "group", RexArg.class );
+        ListArg<LaxAggArg> aggs = args.getListArg( "aggs", LaxAggArg.class );
+
+        return create( children.get( 0 ), (RexNameRef) group.getNode(), aggs.map( LaxAggArg::getAgg ) );
+    }
+
+
     private static LogicalDocumentAggregate create_( final AlgNode input, @Nullable RexNameRef group, List<LaxAggregateCall> aggCalls ) {
         final AlgCluster cluster = input.getCluster();
         final AlgTraitSet traitSet = cluster.traitSetOf( Convention.NONE );
         return new LogicalDocumentAggregate( cluster, traitSet, input, group, aggCalls );
     }
-
-
 
 
     @Override
@@ -64,6 +74,18 @@ public class LogicalDocumentAggregate extends DocumentAggregate {
     @Override
     public AlgNode accept( AlgShuttle shuttle ) {
         return shuttle.visit( this );
+    }
+
+
+    @Override
+    public PolyAlgArgs collectAttributes() {
+        PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
+
+        if ( getGroup().isPresent() ) {
+            args.put( "group", new RexArg( getGroup().get() ) );
+        }
+        args.put( "aggs", new ListArg<>( aggCalls, LaxAggArg::new ) );
+        return args;
     }
 
 }

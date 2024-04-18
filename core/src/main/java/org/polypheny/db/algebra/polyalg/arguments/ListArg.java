@@ -19,7 +19,9 @@ package org.polypheny.db.algebra.polyalg.arguments;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import lombok.Getter;
 import lombok.NonNull;
@@ -76,6 +78,14 @@ public class ListArg<E extends PolyAlgArg> implements PolyAlgArg {
         this( rawArgs.stream().map( converter ).toList(), aliases, unpackValues );
     }
 
+    public <T> ListArg( Map<String, T> rawArgs, Function<T, E> converter ) {
+        this( rawArgs, converter, false);
+    }
+
+    public <T> ListArg( Map<String, T> rawArgs, Function<T, E> converter, boolean unpackValues ) {
+        this( new ArrayList<>( rawArgs.values() ), converter, new ArrayList<>( rawArgs.keySet() ), unpackValues );
+    }
+
 
     @Override
     public ParamType getType() {
@@ -106,26 +116,27 @@ public class ListArg<E extends PolyAlgArg> implements PolyAlgArg {
         return PolyAlgUtils.joinMultiValued( strArgs, unpackValues );
     }
 
+
     @Override
     public ObjectNode serialize( AlgNode context, @NonNull List<String> inputFieldNames, ObjectMapper mapper ) {
         ObjectNode node = mapper.createObjectNode();
         ArrayNode argsNode = mapper.createArrayNode();
 
         String type = containsListArg ? ParamType.LIST.name() : getType().name();
-        for (int i = 0; i < args.size(); i++) {
+        for ( int i = 0; i < args.size(); i++ ) {
             E element = this.args.get( i );
             ObjectNode elementNode = element.serializeWrapped( context, inputFieldNames, mapper );
 
-            if (aliases != null) {
+            if ( aliases != null ) {
                 ObjectNode innerArg = (ObjectNode) elementNode.get( "value" );
-                if (!innerArg.has( "alias" )) {
+                if ( !innerArg.has( "alias" ) ) {
                     innerArg.put( "alias", aliases.get( i ) );
                 }
             }
             argsNode.add( elementNode );
         }
-        node.put("innerType", type); // redundant, but might be useful since all children must have the same type
-        node.set("args", argsNode);
+        node.put( "innerType", type ); // redundant, but might be useful since all children must have the same type
+        node.set( "args", argsNode );
 
         return node;
     }
@@ -136,7 +147,7 @@ public class ListArg<E extends PolyAlgArg> implements PolyAlgArg {
         ObjectNode node = PolyAlgArg.super.serializeWrapped( context, inputFieldNames, mapper );
 
         // overwrite type, since on this level we are not interested in the inner type
-        return node.put("type", ParamType.LIST.name());
+        return node.put( "type", ParamType.LIST.name() );
     }
 
 
