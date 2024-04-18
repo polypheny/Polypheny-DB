@@ -47,28 +47,28 @@ public class PlainTransport implements Transport {
     }
 
 
-    void exchangeVersion( String protocol ) throws IOException {
-        if ( !protocol.matches( "\\A[a-z0-9@.-]+\\z" ) ) {
+    void exchangeVersion( String version ) throws IOException {
+        if ( !version.matches( "\\A[a-z0-9@.-]+\\z" ) ) {
             throw new IOException( "Invalid version name" );
         }
-        byte len = (byte) (protocol.length() + 1); // Trailing '\n'
+        byte len = (byte) (version.length() + 1); // Trailing '\n'
         if ( len <= 0 ) {
             throw new IOException( "Version too long" );
         }
         ByteBuffer bb = ByteBuffer.allocate( 1 + len ); // Leading size
         bb.put( len );
-        bb.put( protocol.getBytes( StandardCharsets.US_ASCII ) );
+        bb.put( version.getBytes( StandardCharsets.US_ASCII ) );
         bb.put( (byte) '\n' );
         bb.rewind();
         writeEntireBuffer( bb );
-        byte[] response = readProtocolResponse( len );
+        byte[] response = readVersionResponse( len );
         if ( !Arrays.equals( bb.array(), response ) ) {
             throw new IOException( "Invalid client version" );
         }
     }
 
 
-    private byte[] readProtocolResponse( byte len ) throws IOException {
+    private byte[] readVersionResponse( byte len ) throws IOException {
         ByteBuffer bb = ByteBuffer.allocate( 1 + len ); // Leading size
         ByteBuffer length = bb.slice( 0, 1 );
         bb.position( 1 );
