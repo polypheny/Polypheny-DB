@@ -270,66 +270,68 @@ public class InsertEntriesTask implements Runnable{
                     transaction.commit();
                     break;
                 case GRAPH:
+                    //FIXME: edges and nodes are matched via their original id, which is now reinserted into the new nodes (and edges) as an invisible '_id'. But if you create a backup from data that was already once inserted, you get duplicate key '_id' errors
+                    //TODO: only one direction for edges implemented, direction is not checked, is always source -> target
                     // not batched
                     transaction = transactionManager.startTransaction( Catalog.defaultUserId, false, "Backup Entry-Inserter" );
                     String graphValues = "";
+                    PolyValue deserialized = null;
+                    
                     while ( (inLine = in.readLine()) != null ) {
-                        PolyValue deserialized = PolyValue.fromTypedJson( inLine, PolyGraph.class ); //--> deserialized is null??
-                        String value = deserialized.toJson();
-                        graphValues += value + ", ";
-                        int nodeCounter = 0;
-                        // id of the node and the created label of the node
-                        HashMap<PolyString, String> nodeMap = new HashMap<>();
+                        deserialized = PolyValue.fromTypedJson( inLine, PolyGraph.class ); //--> deserialized is null??
+                    }
+
+                    int nodeCounter = 0;
+                    // id of the node and the created label of the node
+                    HashMap<PolyString, String> nodeMap = new HashMap<>();
+                    String nodesString = "";
+                    String edgesString = "";
+
+                    @NotNull PolyGraph graph = deserialized.asGraph();
+                    @NotNull PolyMap<PolyString, PolyNode> nodes = graph.getNodes();
+                    @NotNull PolyMap<PolyString, PolyEdge> edges = graph.getEdges();
+                    //List<PolyNode> nodes = deserialized.asList().stream().filter( v -> v.isNode() ).map( v -> v.asNode() ).collect( Collectors.toList() );
+
+                    // go through and create all nodes
+                    for (PolyNode node : nodes.values()) {
+                        String labels = getLabels( node.labels );
+                        String properties = getProperties( node.properties );
+
+                        String nString = "n" + String.valueOf( nodeCounter );
+                        nodeMap.put( node.id, nString );
+                        nodeCounter++;
                         batchCounter++;
-                        String nodesString = "";
-                        String edgesString = "";
-                        //query = String.format( "db.%s.insertOne(%s)", entityName, value );
 
-                        @NotNull PolyGraph graph = deserialized.asGraph();
-                        @NotNull PolyMap<PolyString, PolyNode> nodes = graph.getNodes();
-                        @NotNull PolyMap<PolyString, PolyEdge> edges = graph.getEdges();
-                        //List<PolyNode> nodes = deserialized.asList().stream().filter( v -> v.isNode() ).map( v -> v.asNode() ).collect( Collectors.toList() );
+                        nodesString += String.format( "(%s:%s {_id:'%s', %s}), ", nString, labels, node.id, properties );
 
-                        // go through and create all nodes
-                        for (PolyNode node : nodes.values()) {
-                            String labels = getLabels( node.labels );
-                            String properties = getProperties( node.properties );
+                        // if the batch size is reached, execute the query
+                        if (batchCounter == BackupManager.batchSize) {
+                            // remove the last ", " from the string
+                            nodesString = nodesString.substring( 0, nodesString.length() - 2 );
+                            query = String.format( "CREATE %s", nodesString );
+                            log.info( query );
+                            ExecutedContext executedQuery = LanguageManager.getINSTANCE()
+                                    .anyQuery(
+                                            QueryContext.builder()
+                                                    .language( QueryLanguage.from( "cypher" ) )
+                                                    .query( query ).origin( "Backup - Insert Graph Entries" )
+                                                    .transactionManager( transactionManager )
+                                                    .namespaceId( namespaceId )
+                                                    .build()
+                                                    .addTransaction( transaction ) ).get( 0 );
 
-                            // remove the "-" from the id
-                            String nString = "n" + String.valueOf( nodeCounter );
-                            nodeMap.put( node.id, nString );
-                            nodeCounter++;
-
-                            nodesString += String.format( "(%s:%s {_id:'%s', %s}), ", nString, labels, node.id, properties );
-
+                            batchCounter = 0;
+                            nodesString = "";
+                            query = "";
                         }
 
-                        // go through all edges
-                        for ( PolyEdge edge : edges.values() ) {
-                            String labels = getLabels( edge.labels );
-                            String properties = getProperties( edge.properties );
-                            String source = nodeMap.get( edge.source );
-                            String target = nodeMap.get( edge.target );
+                    }
 
-                            if ( !properties.isEmpty() ) {
-                                properties = String.format( "'%s', %s", edge.id, properties );
-                            } else {
-                                properties = String.format( "'%s'", edge.id );
-                            }
-
-                            edgesString += String.format( "(%s)-[:%s {_id:%s}]->(%s), ", source, labels, properties, target );
-
-                        }
-
+                    // create the nodes that are left from not completed batch
+                    if (batchCounter != 0) {
                         // remove the last ", " from the string
                         nodesString = nodesString.substring( 0, nodesString.length() - 2 );
                         query = String.format( "CREATE %s", nodesString );
-                        if ( !edgesString.isEmpty() ) {
-                            // remove the last ", " from the string
-                            edgesString = edgesString.substring( 0, edgesString.length() - 2 );
-                            query += ", " + edgesString;
-                        }
-
                         log.info( query );
                         ExecutedContext executedQuery = LanguageManager.getINSTANCE()
                                 .anyQuery(
@@ -341,57 +343,86 @@ public class InsertEntriesTask implements Runnable{
                                                 .build()
                                                 .addTransaction( transaction ) ).get( 0 );
 
-
-                        /*
-                        if (batchCounter == BackupManager.batchSize) {
-                            // remove the last ", " from the string
-                            graphValues = graphValues.substring( 0, graphValues.length() - 2 );
-                            log.info( graphValues );
-
-                            query = String.format( "db.%s.insertMany([%s])", entityName, graphValues );
-                            log.info( query );
-                            ExecutedContext executedQuery2 = LanguageManager.getINSTANCE()
-                                    .anyQuery(
-                                            QueryContext.builder()
-                                                    .language( QueryLanguage.from( "mql" ) )
-                                                    .query( query ).origin( "Backup Manager" )
-                                                    .transactionManager( transactionManager )
-                                                    .namespaceId( namespaceId )
-                                                    //.statement( statement )
-                                                    .build()
-                                                    .addTransaction( transaction ) ).get( 0 );
-                            batchCounter = 0;
-                            graphValues = "";
-                            query = "";
-                        }
-
-                         */
-
-                    }
-
-                    /*
-                    if (batchCounter != 0) {
-                        //statement = transaction.createStatement();
-                        // remove the last ", " from the string
-                        graphValues = graphValues.substring( 0, graphValues.length() - 2 );
-
-                        query = String.format( "db.%s.insertMany([%s])", entityName, graphValues );
-                        log.info( "rest: " + query );
-                        ExecutedContext executedQuery = LanguageManager.getINSTANCE()
-                                .anyQuery(
-                                        QueryContext.builder()
-                                                .language( QueryLanguage.from( "mql" ) )
-                                                .query( query ).origin( "Backup Manager" )
-                                                .transactionManager( transactionManager )
-                                                .namespaceId( namespaceId )
-                                                //.statement( statement )
-                                                .build().addTransaction( transaction ) ).get( 0 );
                         batchCounter = 0;
-                        graphValues = "";
+                        nodesString = "";
                         query = "";
                     }
 
-                     */
+
+                    // go through all edges
+                    String matchString = "";
+                    for ( PolyEdge edge : edges.values() ) {
+                        String labels = getLabels( edge.labels );
+                        String properties = getProperties( edge.properties );
+                        String source = nodeMap.get( edge.source );
+                        String target = nodeMap.get( edge.target );
+                        batchCounter++;
+
+                        if ( !properties.isEmpty() ) {
+                            properties = String.format( "'%s', %s", edge.id, properties );
+                        } else {
+                            properties = String.format( "'%s'", edge.id );
+                        }
+
+                        matchString += String.format( "(%s {_id: '%s'}), (%s {_id: '%s'}), ", source, edge.source, target, edge.target );
+                        edgesString += String.format( "(%s)-[:%s {_id:%s}]->(%s), ", source, labels, properties, target );
+
+                        if (batchCounter == BackupManager.batchSize) {
+                            if ( !edgesString.isEmpty() ) {
+                                // remove the last ", " from the string
+                                edgesString = edgesString.substring( 0, edgesString.length() - 2 );
+                                matchString = matchString.substring( 0, matchString.length() - 2 );
+                                query = String.format( "MATCH %s CREATE %s", matchString, edgesString );
+
+                                log.info( query );
+                                ExecutedContext executedQuery = LanguageManager.getINSTANCE()
+                                        .anyQuery(
+                                                QueryContext.builder()
+                                                        .language( QueryLanguage.from( "cypher" ) )
+                                                        .query( query ).origin( "Backup - Insert Graph Entries" )
+                                                        .transactionManager( transactionManager )
+                                                        .namespaceId( namespaceId )
+                                                        .build()
+                                                        .addTransaction( transaction ) ).get( 0 );
+
+                                batchCounter = 0;
+                                edgesString = "";
+                                matchString = "";
+                                labels = "";
+                                properties = "";
+                                source = "";
+                                target = "";
+                                query = "";
+                            }
+                        }
+
+                    }
+
+                    // create the edges that are left from not completed batch
+                    if (batchCounter != 0) {
+                        if ( !edgesString.isEmpty() ) {
+                            // remove the last ", " from the string
+                            edgesString = edgesString.substring( 0, edgesString.length() - 2 );
+                            matchString = matchString.substring( 0, matchString.length() - 2 );
+                            query = String.format( "MATCH %s CREATE %s", matchString, edgesString );
+
+                            log.info( query );
+                            ExecutedContext executedQuery = LanguageManager.getINSTANCE()
+                                    .anyQuery(
+                                            QueryContext.builder()
+                                                    .language( QueryLanguage.from( "cypher" ) )
+                                                    .query( query ).origin( "Backup - Insert Graph Entries" )
+                                                    .transactionManager( transactionManager )
+                                                    .namespaceId( namespaceId )
+                                                    .build()
+                                                    .addTransaction( transaction ) ).get( 0 );
+
+                            batchCounter = 0;
+                            edgesString = "";
+                            matchString = "";
+                            query = "";
+                        }
+                    }
 
                     transaction.commit();
                     break;
