@@ -289,7 +289,7 @@ ij_java_spaces_within_if_parentheses = true
 ij_java_spaces_within_method_call_parentheses = true
 ij_java_spaces_within_method_parentheses = true
 ij_java_spaces_within_parentheses = false
-ij_java_spaces_within_record_header = false
+ij_java_spaces_within_record_header = true
 ij_java_spaces_within_switch_parentheses = true
 ij_java_spaces_within_synchronized_parentheses = true
 ij_java_spaces_within_try_parentheses = true
@@ -768,7 +768,7 @@ ij_html_text_wrap = normal
 [{*.http,*.rest}]
 indent_size = 0
 ij_visual_guides = none
-ij_http request_call_parameters_wrap = normal
+ij_http-request_call_parameters_wrap = normal
 
 [{*.jsf,*.jsp,*.jspf,*.tag,*.tagf,*.xjsp}]
 ij_continuation_indent_size = 8

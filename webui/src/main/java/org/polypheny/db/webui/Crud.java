@@ -28,6 +28,7 @@ import com.google.gson.JsonParseException;
 import com.j256.simplemagic.ContentInfo;
 import com.j256.simplemagic.ContentInfoUtil;
 import io.javalin.http.Context;
+import io.javalin.http.HttpCode;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.BufferedReader;
@@ -122,17 +123,21 @@ import org.polypheny.db.catalog.logistic.PartitionType;
 import org.polypheny.db.catalog.logistic.PlacementType;
 import org.polypheny.db.catalog.snapshot.LogicalRelSnapshot;
 import org.polypheny.db.catalog.snapshot.Snapshot;
-import org.polypheny.db.config.ConfigDocker;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.docker.AutoDocker;
 import org.polypheny.db.docker.DockerInstance;
 import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.docker.DockerSetupHelper;
-import org.polypheny.db.docker.DockerSetupHelper.DockerReconnectResult;
-import org.polypheny.db.docker.DockerSetupHelper.DockerSetupResult;
-import org.polypheny.db.docker.DockerSetupHelper.DockerUpdateResult;
 import org.polypheny.db.docker.HandshakeManager;
+import org.polypheny.db.docker.exceptions.DockerUserException;
+import org.polypheny.db.docker.models.CreateDockerResponse;
+import org.polypheny.db.docker.models.AutoDockerResult;
+import org.polypheny.db.docker.models.CreateDockerRequest;
+import org.polypheny.db.docker.models.DockerSettings;
+import org.polypheny.db.docker.models.UpdateDockerRequest;
+import org.polypheny.db.docker.models.HandshakeInfo;
+import org.polypheny.db.docker.models.InstancesAndAutoDocker;
 import org.polypheny.db.iface.QueryInterface;
 import org.polypheny.db.iface.QueryInterfaceManager;
 import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceInformation;
@@ -2951,86 +2956,83 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     }
 
 
-    void addDockerInstance( final Context ctx ) {
-        Map<String, Object> config = gson.fromJson( ctx.body(), Map.class );
-        DockerSetupResult res = DockerSetupHelper.newDockerInstance(
-                (String) config.getOrDefault( "host", "" ),
-                (String) config.getOrDefault( "alias", "" ),
-                (String) config.getOrDefault( "registry", "" ),
-                ((Double) config.getOrDefault( "communicationPort", (double) ConfigDocker.COMMUNICATION_PORT )).intValue(),
-                ((Double) config.getOrDefault( "handshakePort", (double) ConfigDocker.HANDSHAKE_PORT )).intValue(),
-                ((Double) config.getOrDefault( "proxyPort", (double) ConfigDocker.PROXY_PORT )).intValue(),
-                true
-        );
+    void createDockerInstance( final Context ctx ) {
+        try {
+            CreateDockerRequest req = ctx.bodyAsClass( CreateDockerRequest.class );
+            Optional<HandshakeInfo> res = DockerSetupHelper.newDockerInstance(
+                    req.hostname(),
+                    req.alias(),
+                    req.registry(),
+                    req.communicationPort(),
+                    req.handshakePort(),
+                    req.proxyPort(),
+                    true
+            );
 
-        Map<String, Object> json = new HashMap<>( res.getMap() );
-        json.put( "instances", DockerManager.getInstance().getDockerInstances().values().stream().map( DockerInstance::getMap ).collect( Collectors.toList() ) );
-        ctx.json( json );
-    }
-
-
-    void testDockerInstance( final Context ctx ) {
-        int dockerId = Integer.parseInt( ctx.pathParam( "dockerId" ) );
-
-        Optional<DockerInstance> maybeDockerInstance = DockerManager.getInstance().getInstanceById( dockerId );
-        if ( maybeDockerInstance.isPresent() ) {
-            ctx.json( maybeDockerInstance.get().probeDockerStatus() );
-        } else {
-            ctx.json( Map.of(
-                    "successful", false,
-                    "errorMessage", "No instance with that id"
-            ) );
-            ctx.status( 404 );
+            ctx.json( new CreateDockerResponse( res.orElse( null ), DockerManager.getInstance().getDockerInstancesMap() ) );
+        } catch ( DockerUserException e ) {
+            ctx.status( e.getStatus() ).result( e.getMessage() );
         }
     }
 
 
     void getDockerInstances( final Context ctx ) {
-        ctx.json( DockerManager.getInstance().getDockerInstances().values().stream().map( DockerInstance::getMap ).collect( Collectors.toList() ) );
+        ctx.json( DockerManager.getInstance().getDockerInstancesMap() );
     }
 
 
     void getDockerInstance( final Context ctx ) {
-        int dockerId = Integer.parseInt( ctx.pathParam( "dockerId" ) );
+        try {
+            int dockerId = Integer.parseInt( ctx.pathParam( "dockerId" ) );
 
-        Map<String, Object> res = DockerManager.getInstance().getInstanceById( dockerId ).map( DockerInstance::getMap ).orElse( Map.of() );
-
-        ctx.json( res );
+            ctx.json( DockerManager.getInstance().getInstanceById( dockerId ).map( DockerInstance::getInfo ).orElseThrow( () -> new DockerUserException( 404, "No Docker instance with that id" ) ) );
+        } catch ( NumberFormatException e ) {
+            ctx.status( HttpCode.BAD_REQUEST ).result( "Malformed dockerId value" );
+        } catch ( DockerUserException e ) {
+            ctx.status( e.getStatus() ).result( e.getMessage() );
+        }
     }
 
 
     void updateDockerInstance( final Context ctx ) {
-        Map<String, String> config = gson.fromJson( ctx.body(), Map.class );
+        UpdateDockerRequest request = ctx.bodyAsClass( UpdateDockerRequest.class );
 
-        DockerUpdateResult res = DockerSetupHelper.updateDockerInstance( Integer.parseInt( config.getOrDefault( "id", "-1" ) ), config.getOrDefault( "hostname", "" ), config.getOrDefault( "alias", "" ), config.getOrDefault( "registry", "" ) );
-
-        ctx.json( res.getMap() );
+        try {
+            ctx.json( DockerSetupHelper.updateDockerInstance( request.id(), request.hostname(), request.alias(), request.registry() ) );
+        } catch ( DockerUserException e ) {
+            ctx.status( e.getStatus() ).result( e.getMessage() );
+        }
     }
 
 
     void reconnectToDockerInstance( final Context ctx ) {
-        Map<String, String> config = gson.fromJson( ctx.body(), Map.class );
-
-        DockerReconnectResult res = DockerSetupHelper.reconnectToInstance( Integer.parseInt( config.getOrDefault( "id", "-1" ) ) );
-
-        ctx.json( res.getMap() );
+        try {
+            ctx.json( DockerSetupHelper.reconnectToInstance( Integer.parseInt( ctx.pathParam( "dockerId" ) ) ) );
+        } catch ( DockerUserException e ) {
+            ctx.status( e.getStatus() ).result( e.getMessage() );
+        }
     }
 
 
-    void removeDockerInstance( final Context ctx ) {
-        Map<String, String> config = gson.fromJson( ctx.body(), Map.class );
-        int id = Integer.parseInt( config.getOrDefault( "id", "-1" ) );
-        if ( id == -1 ) {
-            throw new GenericRuntimeException( "Invalid id" );
+    void pingDockerInstance( final Context ctx ) {
+        try {
+            DockerManager.getInstance().getInstanceById( Integer.parseInt( ctx.pathParam( "dockerId" ) ) ).orElseThrow( () -> new DockerUserException( 404, "No instance with that id" ) ).ping();
+        } catch ( DockerUserException e ) {
+            ctx.status( e.getStatus() ).result( e.getMessage() );
         }
+    }
 
-        String res = DockerSetupHelper.removeDockerInstance( id );
 
-        ctx.json( Map.of(
-                "error", res,
-                "instances", DockerManager.getInstance().getDockerInstances().values().stream().map( DockerInstance::getMap ).collect( Collectors.toList() ),
-                "status", AutoDocker.getInstance().getStatus()
-        ) );
+    void deleteDockerInstance( final Context ctx ) {
+        try {
+            DockerSetupHelper.removeDockerInstance( Integer.parseInt( ctx.pathParam( "dockerId" ) ) );
+
+            ctx.json( new InstancesAndAutoDocker( DockerManager.getInstance().getDockerInstancesMap(), AutoDocker.getInstance().getStatus() ) );
+        } catch ( NumberFormatException e ) {
+            ctx.status( HttpCode.BAD_REQUEST ).result( "Malformed id value" );
+        } catch ( DockerUserException e ) {
+            ctx.status( e.getStatus() ).result( e.getMessage() );
+        }
     }
 
 
@@ -3040,41 +3042,48 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
 
     void doAutoHandshake( final Context ctx ) {
-        boolean success = AutoDocker.getInstance().doAutoConnect();
-        ctx.json( Map.of(
-                "success", success,
-                "status", AutoDocker.getInstance().getStatus(),
-                "instances", DockerManager.getInstance().getDockerInstances().values().stream().map( DockerInstance::getMap ).collect( Collectors.toList() )
-        ) );
+        try {
+            AutoDocker.getInstance().doAutoConnect();
+            ctx.json(
+                    new AutoDockerResult(
+                            AutoDocker.getInstance().getStatus(),
+                            DockerManager.getInstance().getDockerInstancesMap()
+                    )
+            );
+        } catch ( DockerUserException e ) {
+            ctx.status( e.getStatus() ).result( e.getMessage() );
+        }
     }
 
 
-    void startHandshake( final Context ctx ) {
-        String hostname = ctx.body();
-        ctx.json( HandshakeManager.getInstance().restartOrGetHandshake( hostname ) );
+    void getHandshakes( final Context ctx ) {
+        ctx.json( HandshakeManager.getInstance().getActiveHandshakes() );
     }
 
 
     void getHandshake( final Context ctx ) {
-        String hostname = ctx.pathParam( "hostname" );
-        Map<String, Object> dockerInstance = DockerManager.getInstance().getDockerInstances()
-                .values()
-                .stream()
-                .filter( d -> d.getHost().hostname().equals( hostname ) )
-                .map( DockerInstance::getMap )
-                .findFirst()
-                .orElse( Map.of() );
-        ctx.json( Map.of(
-                        "handshake", HandshakeManager.getInstance().getHandshake( hostname ),
-                        "instance", dockerInstance
-                )
-        );
+        long id = Long.parseLong( ctx.pathParam( "id" ) );
+        Optional<HandshakeInfo> maybeHandshake = HandshakeManager.getInstance().getHandshake( id );
+        if ( maybeHandshake.isPresent() ) {
+            ctx.json( maybeHandshake.get() );
+        } else {
+            ctx.status( 404 ).result( "No handshake with that id" );
+        }
+    }
+
+
+    void restartHandshake( final Context ctx ) {
+        try {
+            ctx.json( HandshakeManager.getInstance().restartHandshake( Long.parseLong( ctx.pathParam( "id" ) ) ) );
+        } catch ( DockerUserException e ) {
+            ctx.status( e.getStatus() ).result( e.getMessage() );
+        }
     }
 
 
     void cancelHandshake( final Context ctx ) {
-        String hostname = ctx.body();
-        if ( HandshakeManager.getInstance().cancelHandshake( hostname ) ) {
+        long id = Long.parseLong( ctx.pathParam( "id" ) );
+        if ( HandshakeManager.getInstance().cancelAndRemoveHandshake( id ) ) {
             ctx.status( 200 );
         } else {
             ctx.status( 404 );
@@ -3082,18 +3091,27 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     }
 
 
-    void getDockerSettings( final Context ctx ) {
-        ctx.json( Map.of(
-                "registry", RuntimeConfig.DOCKER_CONTAINER_REGISTRY.getString()
-        ) );
+    void deleteHandshake( final Context ctx ) {
+        long id = Long.parseLong( ctx.pathParam( "id" ) );
+        if ( HandshakeManager.getInstance().cancelAndRemoveHandshake( id ) ) {
+            ctx.status( 200 ).json( HandshakeManager.getInstance().getActiveHandshakes() );
+        } else {
+            ctx.status( 404 );
+        }
     }
 
 
-    void changeDockerSettings( final Context ctx ) {
-        Map<String, String> config = gson.fromJson( ctx.body(), Map.class );
-        String newRegistry = config.get( "registry" );
-        if ( newRegistry != null ) {
-            RuntimeConfig.DOCKER_CONTAINER_REGISTRY.setString( newRegistry );
+    void getDockerSettings( final Context ctx ) {
+        ctx.json(
+                new DockerSettings( RuntimeConfig.DOCKER_CONTAINER_REGISTRY.getString() )
+        );
+    }
+
+
+    void updateDockerSettings( final Context ctx ) {
+        DockerSettings settings = ctx.bodyAsClass( DockerSettings.class );
+        if ( settings.defaultRegistry() != null ) {
+            RuntimeConfig.DOCKER_CONTAINER_REGISTRY.setString( settings.defaultRegistry() );
         }
         getDockerSettings( ctx );
     }

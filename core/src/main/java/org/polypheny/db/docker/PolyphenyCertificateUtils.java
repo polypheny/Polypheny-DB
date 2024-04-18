@@ -74,8 +74,7 @@ final class PolyphenyCertificateUtils {
 
 
     static void saveAsPemOverwrite( File file, String description, byte[] data ) throws IOException {
-        String encoded = encodeToPem( description, data );
-        overWriteFile( file, encoded );
+        overWriteFile( file, encodeToPem( description, data ) );
     }
 
 
