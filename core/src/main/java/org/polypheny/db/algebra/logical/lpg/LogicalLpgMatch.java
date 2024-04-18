@@ -41,11 +41,16 @@ public class LogicalLpgMatch extends LpgMatch {
     }
 
 
+    public static LogicalLpgMatch create( AlgNode input, List<RexCall> matches, List<PolyString> names ) {
+        return new LogicalLpgMatch( input.getCluster(), input.getTraitSet(), input, matches, names );
+    }
+
+
     public static LogicalLpgMatch create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
         ListArg<RexArg> matchesArg = args.getListArg( "matches", RexArg.class );
         List<RexCall> matches = matchesArg.map( r -> (RexCall) r.getNode() );
         List<PolyString> names = matchesArg.map( r -> PolyString.of( r.getAlias() ) );
-        return new LogicalLpgMatch( cluster, cluster.traitSet(), children.get( 0 ), matches, names );
+        return create( children.get( 0 ), matches, names );
     }
 
 

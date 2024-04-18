@@ -47,11 +47,14 @@ public class LogicalLpgProject extends LpgProject {
     }
 
 
+    public static LogicalLpgProject create( AlgNode input, List<? extends RexNode> projects, List<PolyString> names ) {
+        return new LogicalLpgProject( input.getCluster(), input.getTraitSet(), input, projects, names );
+    }
+
+
     public static LogicalLpgProject create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
         ListArg<RexArg> projects = args.getListArg( "projects", RexArg.class );
-        return new LogicalLpgProject( cluster, children.get( 0 ).getTraitSet(), children.get( 0 ),
-                projects.map( RexArg::getNode ),
-                projects.map( r -> PolyString.of( r.getAlias() ) ) );
+        return create( children.get( 0 ), projects.map( RexArg::getNode ), projects.map( r -> PolyString.of( r.getAlias() ) ) );
     }
 
 

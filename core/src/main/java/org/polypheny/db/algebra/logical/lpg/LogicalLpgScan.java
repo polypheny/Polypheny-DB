@@ -51,8 +51,7 @@ public class LogicalLpgScan extends LpgScan<Entity> implements RelationalTransfo
 
 
     public static LogicalLpgScan create( AlgCluster cluster, final Entity entity ) {
-        // TODO: is traitSet correct like this?
-        return new LogicalLpgScan( cluster, cluster.traitSet().replace( ModelTrait.GRAPH ), entity, entity.getTupleType() );
+        return new LogicalLpgScan( cluster, cluster.traitSet(), entity, entity.getTupleType() );
     }
 
 

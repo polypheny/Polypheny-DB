@@ -25,6 +25,7 @@ import org.polypheny.db.algebra.polyalg.arguments.BooleanArg;
 import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.plan.Convention;
 
 
 public class LogicalLpgUnion extends Union {
@@ -37,9 +38,17 @@ public class LogicalLpgUnion extends Union {
     }
 
 
-    public static LogicalLpgUnion create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
-        return new LogicalLpgUnion( cluster, children.get( 0 ).getTraitSet(), children, args.getArg( "all", BooleanArg.class ).toBool() );
+    public static LogicalLpgUnion create( List<AlgNode> inputs, boolean all ) {
+        final AlgCluster cluster = inputs.get( 0 ).getCluster();
+        final AlgTraitSet traitSet = cluster.traitSetOf( Convention.NONE );
+        return new LogicalLpgUnion( cluster, traitSet, inputs, all );
     }
+
+
+    public static LogicalLpgUnion create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+        return create( children, args.getArg( "all", BooleanArg.class ).toBool() );
+    }
+
 
     @Override
     public SetOp copy( AlgTraitSet traitSet, List<AlgNode> inputs, boolean all ) {

@@ -41,8 +41,13 @@ public class LogicalLpgUnwind extends LpgUnwind {
     }
 
 
+    public static LogicalLpgUnwind create( AlgNode input, int index, String alias ) {
+        return new LogicalLpgUnwind( input.getCluster(), input.getTraitSet(), input, index, alias );
+    }
+
+
     public static LogicalLpgUnwind create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
-        return new LogicalLpgUnwind( cluster, children.get( 0 ).getTraitSet(), children.get( 0 ),
+        return create( children.get( 0 ),
                 args.getArg( "index", IntArg.class ).getArg(),
                 args.getArg( "alias", StringArg.class ).getArg() );
     }

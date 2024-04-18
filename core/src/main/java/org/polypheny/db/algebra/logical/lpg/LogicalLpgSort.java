@@ -21,6 +21,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgCollationTraitDef;
 import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
@@ -33,6 +34,7 @@ import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArg;
 import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 
@@ -50,11 +52,19 @@ public class LogicalLpgSort extends LpgSort {
     }
 
 
+    public static LogicalLpgSort create( AlgCollation collation, AlgNode input, Integer skip, Integer limit ) {
+        // TODO: traitset correctly modified?
+        collation = AlgCollationTraitDef.INSTANCE.canonize( collation );
+        AlgTraitSet traitSet = input.getTraitSet().replace( Convention.NONE ).replace( collation );
+        return new LogicalLpgSort( input.getCluster(), traitSet, collation, input, skip, limit );
+    }
+
+
     public static LogicalLpgSort create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
         ListArg<CollationArg> collations = args.getListArg( "sort", CollationArg.class );
         IntArg limit = args.getArg( "limit", IntArg.class );
         IntArg skip = args.getArg( "skip", IntArg.class );
-        return new LogicalLpgSort( cluster, cluster.traitSet(), AlgCollations.of( collations.map( CollationArg::getColl ) ), children.get( 0 ), limit.getArg(), skip.getArg() );
+        return create( AlgCollations.of( collations.map( CollationArg::getColl ) ), children.get( 0 ), limit.getArg(), skip.getArg() );
     }
 
 
