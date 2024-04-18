@@ -29,7 +29,9 @@ import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.polyalg.arguments.EntityArg;
 import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.Entity;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.AlgCluster;
@@ -110,7 +112,8 @@ public class LogicalLpgScan extends LpgScan<Entity> implements RelationalTransfo
     public PolyAlgArgs collectAttributes() {
 
         PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
-        return args.put( 0, new EntityArg( entity ) );
+        return args.put( 0,
+                new EntityArg( entity, Catalog.snapshot(), DataModel.GRAPH ) );
     }
 
 }

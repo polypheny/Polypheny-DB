@@ -25,7 +25,9 @@ import org.polypheny.db.algebra.core.relational.RelationalTransformable;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.polyalg.arguments.EntityArg;
 import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.Entity;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptRule;
@@ -68,7 +70,7 @@ public class LogicalDocumentScan extends DocumentScan<Entity> implements Relatio
     @Override
     public PolyAlgArgs collectAttributes() {
         PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
-        return args.put( 0, new EntityArg( entity ) );
+        return args.put( 0, new EntityArg( entity, Catalog.snapshot(), DataModel.DOCUMENT ) );
     }
 
 }

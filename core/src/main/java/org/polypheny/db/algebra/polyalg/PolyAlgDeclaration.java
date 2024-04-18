@@ -38,6 +38,7 @@ import org.polypheny.db.algebra.polyalg.arguments.EntityArg;
 import org.polypheny.db.algebra.polyalg.arguments.EnumArg;
 import org.polypheny.db.algebra.polyalg.arguments.FieldArg;
 import org.polypheny.db.algebra.polyalg.arguments.IntArg;
+import org.polypheny.db.algebra.polyalg.arguments.LaxAggArg;
 import org.polypheny.db.algebra.polyalg.arguments.ListArg;
 import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArg;
 import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
@@ -249,6 +250,7 @@ public class PolyAlgDeclaration {
          */
         REX( RexArg.class ),
         AGGREGATE( AggArg.class ),
+        LAX_AGGREGATE( LaxAggArg.class ),
         ENTITY( EntityArg.class ),
 
         // Every new enum also needs to be added to the PolyAlgToAlgConverter like any other new ParamType

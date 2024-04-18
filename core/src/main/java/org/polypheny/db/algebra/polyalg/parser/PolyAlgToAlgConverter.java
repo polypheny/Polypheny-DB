@@ -33,6 +33,7 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.CorrelationId;
 import org.polypheny.db.algebra.core.JoinAlgType;
+import org.polypheny.db.algebra.core.LaxAggregateCall;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.fun.AggFunction;
@@ -50,6 +51,7 @@ import org.polypheny.db.algebra.polyalg.arguments.EntityArg;
 import org.polypheny.db.algebra.polyalg.arguments.EnumArg;
 import org.polypheny.db.algebra.polyalg.arguments.FieldArg;
 import org.polypheny.db.algebra.polyalg.arguments.IntArg;
+import org.polypheny.db.algebra.polyalg.arguments.LaxAggArg;
 import org.polypheny.db.algebra.polyalg.arguments.ListArg;
 import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArg;
 import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
@@ -68,6 +70,7 @@ import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgOperator;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.entity.Entity;
+import org.polypheny.db.catalog.entity.logical.LogicalGraph.SubstitutionGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
@@ -77,6 +80,7 @@ import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexIndexRef;
+import org.polypheny.db.rex.RexNameRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.type.entity.PolyString;
@@ -227,7 +231,6 @@ public class PolyAlgToAlgConverter {
 
 
     private PolyAlgArg convertExpression( Parameter p, PolyAlgExpression exp, String alias, Context ctx ) {
-        //System.out.println( "PolyAlgExpression: " + exp.toString() + " AS " + alias);
         ParamType pType = p.getType();
         return switch ( pType ) {
             case ANY -> new AnyArg( exp.toString() );
@@ -239,7 +242,8 @@ public class PolyAlgToAlgConverter {
                 yield new RexArg( node, alias == null ? exp.getDefaultAlias() : alias );
             }
             case AGGREGATE -> new AggArg( convertAggCall( exp, alias, ctx ) );
-            case ENTITY -> new EntityArg( convertEntity( exp, ctx.dataModel ) );
+            case LAX_AGGREGATE -> new LaxAggArg( convertLaxAggCall( exp, alias, ctx ) );
+            case ENTITY -> new EntityArg( convertEntity( exp, ctx.dataModel ), snapshot, ctx.dataModel );
             case JOIN_TYPE_ENUM -> new EnumArg<>( exp.toEnum( JoinAlgType.class ), ParamType.JOIN_TYPE_ENUM );
             case MODIFY_OP_ENUM -> new EnumArg<>( exp.toEnum( Modify.Operation.class ), ParamType.MODIFY_OP_ENUM );
             case FIELD -> new FieldArg( ctx.getFieldOrdinal( exp.toIdentifier() ) );
@@ -263,7 +267,7 @@ public class PolyAlgToAlgConverter {
 
 
     private RexNode convertRexCall( PolyAlgExpression exp, Context ctx ) {
-        Operator operator = exp.getOperator(ctx.dataModel);
+        Operator operator = exp.getOperator( ctx.dataModel );
         if ( operator.getOperatorName() == OperatorName.CAST ) {
             RexNode child = convertRexNode( exp.getOnlyChild(), ctx );
             return new RexCall( exp.getAlgDataTypeForCast(), operator, ImmutableList.of( child ) );
@@ -304,8 +308,14 @@ public class PolyAlgToAlgConverter {
                 case POLY_VALUE -> builder.makeLiteral( literal.toPolyValue() );
                 case STRING -> {
                     String str = literal.toString();
-                    int idx = ctx.getFieldOrdinal( str );
-                    yield RexIndexRef.of( idx, ctx.fields );
+                    if ( ctx.dataModel == DataModel.DOCUMENT ) {
+                        // nameRef (during serialization, any non-null index fails)
+                        yield RexNameRef.create( List.of( str.split( "\\." ) ), null, ctx.children.get( 0 ).getTupleType() );
+                    } else {
+                        // indexRef
+                        int idx = ctx.getFieldOrdinal( str );
+                        yield RexIndexRef.of( idx, ctx.fields );
+                    }
                 }
                 default -> throw new GenericRuntimeException( "Invalid Literal: '" + literal + "'" );
             };
@@ -349,11 +359,16 @@ public class PolyAlgToAlgConverter {
             throw exception;
         }
 
-        LogicalNamespace ns = snapshot.getNamespace( namespaceName ).orElseThrow( () -> new GenericRuntimeException("no namespace named " + namespaceName) );
+        LogicalNamespace ns = snapshot.getNamespace( namespaceName ).orElseThrow( () -> new GenericRuntimeException( "no namespace named " + namespaceName ) );
         return switch ( ns.dataModel ) {
-            case RELATIONAL -> snapshot.rel().getTable( ns.id, entityName ).orElseThrow( () -> exception );
+            case RELATIONAL -> {
+                if ( entityName == null ) {
+                    yield new SubstitutionGraph( ns.id, "sub", false, ns.caseSensitive, List.of() );
+                }
+                yield snapshot.rel().getTable( ns.id, entityName ).orElseThrow( () -> exception );
+            }
             case DOCUMENT -> snapshot.doc().getCollection( ns.id, entityName ).orElseThrow( () -> exception );
-            case GRAPH -> snapshot.graph().getGraph( ns.id ).orElseThrow( () -> new GenericRuntimeException("no graph with id " + ns.id) );
+            case GRAPH -> snapshot.graph().getGraph( ns.id ).orElseThrow( () -> new GenericRuntimeException( "no graph with id " + ns.id ) );
         };
     }
 
@@ -399,6 +414,15 @@ public class PolyAlgToAlgConverter {
         boolean isApproximate = exp.getExtension( ExtensionType.APPROXIMATE ) != null;
         return AggregateCall.create( f, isDistinct, isApproximate, args, filter, AlgCollations.EMPTY, // TODO: parse WITHIN for Collation
                 0, ctx.children.get( 0 ), type, name ); // type can be null with this create method
+    }
+
+
+    private LaxAggregateCall convertLaxAggCall( PolyAlgExpression exp, String name, Context ctx ) {
+        RexNode input = null;
+        if ( !exp.getChildExps().isEmpty() ) {
+            input = convertRexNode( exp.getOnlyChild(), ctx );
+        }
+        return LaxAggregateCall.create( name, exp.getAggFunction(), input );
     }
 
 

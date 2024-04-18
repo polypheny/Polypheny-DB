@@ -28,7 +28,9 @@ import org.polypheny.db.algebra.polyalg.arguments.ListArg;
 import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.algebra.polyalg.arguments.RexArg;
 import org.polypheny.db.algebra.polyalg.arguments.StringArg;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.Entity;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
@@ -124,7 +126,7 @@ public final class LogicalRelModify extends RelModify<Entity> {
             args.put( "sources", new ListArg<>( getSourceExpressions(), RexArg::new ) );
         }
 
-        return args.put( "table", new EntityArg( entity ) )
+        return args.put( "table", new EntityArg( entity, Catalog.snapshot(), DataModel.RELATIONAL) )
                 .put( "operation", new EnumArg<>( getOperation(), ParamType.MODIFY_OP_ENUM ) )
                 .put( "flattened", new BooleanArg( isFlattened() ) );
     }

@@ -35,6 +35,7 @@ import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.ParamType;
 import org.polypheny.db.algebra.polyalg.arguments.ListArg;
 import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArg;
 import org.polypheny.db.algebra.polyalg.arguments.StringArg;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexCorrelVariable;
 import org.polypheny.db.rex.RexDigestIncludeType;
@@ -362,7 +363,10 @@ public class PolyAlgUtils {
 
         @Override
         public String visitNameRef( RexNameRef nameRef ) {
-            return "===nameRef=== " + nameRef;
+            if (nameRef.getIndex().isPresent()) {
+                throw new GenericRuntimeException( "PolyAlg for RexNameRef with index is currently not supported." );
+            }
+            return String.join( ".", nameRef.getNames() );
         }
 
 

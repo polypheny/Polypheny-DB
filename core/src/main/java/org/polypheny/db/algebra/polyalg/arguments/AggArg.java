@@ -51,17 +51,7 @@ public class AggArg implements PolyAlgArg {
     @Override
     public String toPolyAlg( AlgNode context, @NonNull List<String> inputFieldNames ) {
         String str = aggToString( inputFieldNames );
-        String name = agg.getName();
-        if ( name == null ) {
-            // TODO: make sure agg.getName() is never null
-            Aggregate instance = (Aggregate) context;
-            int i = instance.getAggCallList().indexOf( agg );
-            if ( i != -1 ) {
-                i += instance.getGroupSet().asList().size();
-            }
-            name = "$f" + i;
-        }
-        return PolyAlgUtils.appendAlias( str, name );
+        return PolyAlgUtils.appendAlias( str, getAggName( context ) );
     }
 
 
@@ -97,29 +87,46 @@ public class AggArg implements PolyAlgArg {
         return buf.toString();
     }
 
+
+    private String getAggName( AlgNode context ) {
+        String name = agg.getName();
+        if ( name == null ) {
+            // TODO: make sure agg.getName() is never null
+            Aggregate instance = (Aggregate) context;
+            int i = instance.getAggCallList().indexOf( agg );
+            if ( i != -1 ) {
+                i += instance.getGroupSet().asList().size();
+            }
+            name = "$f" + i;
+        }
+        return name;
+    }
+
+
     @Override
     public ObjectNode serialize( AlgNode context, @NonNull List<String> inputFieldNames, ObjectMapper mapper ) {
         ObjectNode node = mapper.createObjectNode();
         node.put( "arg", toPolyAlg( context, inputFieldNames ) ); // might be useful as a preview
-        if (agg != null) {
-            node.put( "distinct", agg.isDistinct() );
-            node.put("approximate", agg.isApproximate());
+        node.put( "function", agg.getAggregation().toString() );
+        node.put( "distinct", agg.isDistinct() );
+        node.put( "approximate", agg.isApproximate() );
 
-            ArrayNode argList = mapper.createArrayNode();
-            for (int idx : agg.getArgList()) {
-                argList.add( inputFieldNames.get( idx ) );
-            }
-            node.set( "argList", argList );
-
-            ArrayNode collList = mapper.createArrayNode();
-            for ( AlgFieldCollation coll : agg.getCollation().getFieldCollations() ) {
-                collList.add( CollationArg.serialize( coll, inputFieldNames, mapper ) );
-            }
-            node.set( "collList", collList );
-            if (agg.hasFilter()) {
-                node.put( "filter", inputFieldNames.get( agg.filterArg ) );
-            }
+        ArrayNode argList = mapper.createArrayNode();
+        for ( int idx : agg.getArgList() ) {
+            argList.add( inputFieldNames.get( idx ) );
         }
+        node.set( "argList", argList );
+
+        ArrayNode collList = mapper.createArrayNode();
+        for ( AlgFieldCollation coll : agg.getCollation().getFieldCollations() ) {
+            collList.add( CollationArg.serialize( coll, inputFieldNames, mapper ) );
+        }
+        node.set( "collList", collList );
+        if ( agg.hasFilter() ) {
+            node.put( "filter", inputFieldNames.get( agg.filterArg ) );
+        }
+
+        node.put( "alias", getAggName( context ) );
         return node;
     }
 

@@ -19,20 +19,50 @@ package org.polypheny.db.algebra.polyalg.arguments;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.List;
+import java.util.Optional;
 import lombok.Getter;
 import lombok.NonNull;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.ParamType;
 import org.polypheny.db.catalog.entity.Entity;
+import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 
 public class EntityArg implements PolyAlgArg {
 
     @Getter
     private final Entity entity;
 
+    private final String namespaceName;
+    private final String entityName; // for graphs, entityName is null
 
-    public EntityArg( Entity entity ) {
+
+    /**
+     * Creates an EntityArg for an entity which is used in an AlgNode with the specified DataModel.
+     */
+    public EntityArg( Entity entity, Snapshot snapshot, DataModel model ) {
+        this.namespaceName = getNamespaceName( entity, snapshot );
         this.entity = entity;
+
+        if ( model == DataModel.GRAPH || entity.dataModel == DataModel.GRAPH ) {
+            // origin or target data model is graph -> only namespaceName is relevant
+            this.entityName = null;
+        } else {
+            this.entityName = entity.getName();
+        }
+    }
+
+
+    private String getNamespaceName( Entity entity, Snapshot snapshot ) {
+        String nsName;
+        try {
+            nsName = entity.getNamespaceName();
+        } catch ( UnsupportedOperationException e ) {
+            Optional<LogicalNamespace> ns = snapshot.getNamespace( entity.namespaceId );
+            nsName = ns.map( LogicalNamespace::getName ).orElse( null );
+        }
+        return nsName;
     }
 
 
@@ -44,25 +74,23 @@ public class EntityArg implements PolyAlgArg {
 
     @Override
     public String toPolyAlg( AlgNode context, @NonNull List<String> inputFieldNames ) {
-        try {
-            return entity.getNamespaceName() + "." + entity.name;
-        } catch ( UnsupportedOperationException e ) {
-            return entity.name;
+        if ( entityName == null ) {
+            return namespaceName;
         }
+        return namespaceName + "." + entityName;
     }
+
 
     @Override
     public ObjectNode serialize( AlgNode context, @NonNull List<String> inputFieldNames, ObjectMapper mapper ) {
         ObjectNode node = mapper.createObjectNode();
         node.put( "arg", toPolyAlg( context, inputFieldNames ) );
-        if (entity != null) {
-            node.put("namespaceId", entity.namespaceId);
-            node.put("id", entity.id);
+        if ( entity != null ) {
+            node.put( "namespaceId", entity.namespaceId );
+            node.put( "id", entity.id );
         }
         return node;
     }
-
-
 
 
 }
