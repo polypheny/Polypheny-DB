@@ -126,14 +126,14 @@ public class DocumentExecutor extends Executor {
         }
         PolyImplementation implementation = piStatement.getImplementation();
         if ( implementation == null ) {
-            throw new PIServiceException( "Can't fetch form an unexecuted statement.",
+            throw new PIServiceException( "Can't fetch from an unexecuted statement.",
                     "I9002",
                     9002
             );
         }
         ResultIterator iterator = piStatement.getIterator();
         if ( iterator == null ) {
-            throw new PIServiceException( "Can't fetch form an unexecuted statement.",
+            throw new PIServiceException( "Can't fetch from an unexecuted statement.",
                     "I9002",
                     9002
             );
