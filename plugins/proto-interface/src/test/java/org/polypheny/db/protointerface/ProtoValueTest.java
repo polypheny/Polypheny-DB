@@ -38,7 +38,6 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyList;
-import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyUserDefinedValue;
@@ -48,6 +47,7 @@ import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyFloat;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.type.entity.temporal.PolyDate;
 import org.polypheny.db.type.entity.temporal.PolyTime;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
@@ -106,7 +106,7 @@ public class ProtoValueTest {
 
 
     @Test
-    public void polyBigDecimalSeriaizationTest() {
+    public void polyBigDecimalSerializationTest() {
         BigDecimal expectedValue = new BigDecimal( 1691879380700L );
         PolyBigDecimal expected = new PolyBigDecimal( expectedValue );
         ProtoValue protoValue = PolyValueSerializer.serialize( expected );
