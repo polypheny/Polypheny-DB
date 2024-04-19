@@ -17,8 +17,6 @@
 package org.polypheny.db.misc;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 import com.google.common.collect.ImmutableList;
 import java.sql.Connection;
@@ -26,7 +24,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
-import org.apache.calcite.avatica.AvaticaSqlException;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -37,6 +35,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.Pattern;
+import org.polypheny.jdbc.PrismInterfaceServiceException;
 
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
@@ -261,13 +260,9 @@ public class VerticalPartitioningTest {
 
                     // By executing the following statement, technically the column tprimary would not be present
                     // on any DataPlacement anymore. Therefore, it has to fail and all placements should remain
-                    boolean failed = false;
-                    try {
-                        statement.executeUpdate( "ALTER TABLE \"verticalDataPlacementTest\" MODIFY PLACEMENT (tprimary) ON STORE hsqldb" );
-                    } catch ( AvaticaSqlException e ) {
-                        failed = true;
-                    }
-                    assertTrue( failed );
+                    Assertions.assertThrows( PrismInterfaceServiceException.class,
+                            () -> statement.executeUpdate( "ALTER TABLE \"verticalDataPlacementTest\" MODIFY PLACEMENT (tprimary) ON STORE hsqldb" )
+                    );
 
                     // ADD single column on second storeId
                     statement.executeUpdate( "ALTER TABLE \"verticalDataPlacementTest\" MODIFY PLACEMENT ADD COLUMN tinteger ON STORE anotherstore" );
@@ -344,22 +339,17 @@ public class VerticalPartitioningTest {
 
                     // By executing the following statement, technically the column tinteger would not be present
                     // on any of the partitions of the placement anymore. Therefore, it has to fail and all placements should remain
-                    boolean failed = false;
-                    try {
-                        statement.executeUpdate( "ALTER TABLE \"verticalDataPlacementTest\" MODIFY PLACEMENT DROP COLUMN tvarchar ON STORE hsqldb" );
-                        fail();
-                    } catch ( AvaticaSqlException e ) {
-                        // empty on purpose
-                    }
+                    Assertions.assertThrows(
+                            PrismInterfaceServiceException.class,
+                            () -> statement.executeUpdate( "ALTER TABLE \"verticalDataPlacementTest\" MODIFY PLACEMENT DROP COLUMN tvarchar ON STORE hsqldb" )
+                    );
 
                     statement.executeUpdate( "ALTER TABLE \"verticalDataPlacementTest\" MODIFY PLACEMENT (tprimary,tvarchar) ON STORE hsqldb" );
 
-                    try {
-                        statement.executeUpdate( "ALTER TABLE \"verticalDataPlacementTest\" DROP PLACEMENT ON STORE anotherstore" );
-                        fail();
-                    } catch ( AvaticaSqlException e ) {
-                        // empty on purpose
-                    }
+                    Assertions.assertThrows(
+                            PrismInterfaceServiceException.class,
+                            () -> statement.executeUpdate( "ALTER TABLE \"verticalDataPlacementTest\" DROP PLACEMENT ON STORE anotherstore" )
+                    );
 
                 } finally {
                     // Drop tables and stores
