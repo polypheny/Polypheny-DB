@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.sql.Statement;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.jdbc.PolyConnection;
@@ -28,37 +29,35 @@ import org.polypheny.jdbc.multimodel.PolyStatement;
 import org.polypheny.jdbc.multimodel.Result;
 import org.polypheny.jdbc.multimodel.Result.ResultType;
 
-//@Category({ AdapterTestSuite.class, CassandraExcluded.class })
 public class MqlTest {
 
     private static final String MQL_LANGUAGE_NAME = "mongo";
-    private static final String TEST_DATA = "db.students.insertOne({name: \"John Doe\", age: 20, subjects: [\"Math\", \"Physics\", \"Chemistry\"], address: {street: \"123 Main St\", city: \"Anytown\", state: \"CA\", postalCode: \"12345\"}, graduationYear: 2023});";
     private static final String TEST_QUERY = "db.students.find();";
 
 
     @Test
-    public void connectionUnwrapTest() {
+    public void connectionUnwrapTest() throws SQLException {
         try ( Connection connection = new JdbcConnection( true ).getConnection() ) {
             if ( !connection.isWrapperFor( PolyConnection.class ) ) {
                 fail( "Driver must support unwrapping to PolyphenyConnection" );
             }
-        } catch ( SQLException e ) {
-            throw new RuntimeException( e );
         }
     }
 
 
     @Test
-    public void simpleMqlTest() throws ClassNotFoundException {
+    public void simpleMqlTest() throws SQLException {
         try ( Connection connection = new JdbcConnection( true ).getConnection() ) {
+            try ( Statement statement = connection.createStatement() ) {
+                statement.execute( "DROP NAMESPACE IF EXISTS mqltest" );
+                statement.execute( "CREATE DOCUMENT NAMESPACE mqltest" );
+            }
             if ( !connection.isWrapperFor( PolyConnection.class ) ) {
                 fail( "Driver must support unwrapping to PolyphenyConnection" );
             }
             PolyStatement polyStatement = connection.unwrap( PolyConnection.class ).createProtoStatement();
-            Result result = polyStatement.execute( "public", MQL_LANGUAGE_NAME, TEST_QUERY );
+            Result result = polyStatement.execute( "mqltest", MQL_LANGUAGE_NAME, TEST_QUERY );
             assertEquals( ResultType.DOCUMENT, result.getResultType() );
-        } catch ( SQLException e ) {
-            throw new RuntimeException( e );
         }
     }
 
