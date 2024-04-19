@@ -302,15 +302,14 @@ public class JdbcMetaTest {
 
             // Check number of columns
             int totalColumns = rsmd.getColumnCount();
-            assertEquals( 3, totalColumns, "Wrong number of columns" );
+            assertEquals( 2, totalColumns, "Wrong number of columns" );
 
             // Check column names
             assertEquals( "TABLE_CAT", rsmd.getColumnName( 1 ) );
-            assertEquals( "OWNER", rsmd.getColumnName( 2 ) );
-            assertEquals( "DEFAULT_SCHEMA", rsmd.getColumnName( 3 ) );
+            assertEquals( "DEFAULT_SCHEMA", rsmd.getColumnName( 2 ) );
 
             // Check data
-            final Object[] databaseApp = new Object[]{ "APP", "system", "public" };
+            final Object[] databaseApp = new Object[]{ "APP", "public" };
 
             TestHelper.checkResultSet(
                     connection.getMetaData().getCatalogs(),
@@ -382,9 +381,9 @@ public class JdbcMetaTest {
             assertEquals( "COLLATION", rsmd.getColumnName( 25 ), "Wrong column name" );
 
             // Check data
-            final Object[] columnId = new Object[]{ null, "public", "foo", "id", 4, "INTEGER", null, null, null, null, 0, "", null, null, null, null, 1, "NO", null, null, null, null, "No", "No", null };
-            final Object[] columnName = new Object[]{ null, "public", "foo", "name", 12, "VARCHAR", 20, null, null, null, 1, "", null, null, null, null, 2, "YES", null, null, null, null, "No", "No", "CASE_INSENSITIVE" };
-            final Object[] columnBar = new Object[]{ null, "public", "foo", "bar", 12, "VARCHAR", 33, null, null, null, 1, "", null, null, null, null, 3, "YES", null, null, null, null, "No", "No", "CASE_SENSITIVE" };
+            final Object[] columnId = new Object[]{ null, "public", "foo", "id", 4, "INTEGER", null, null, null, null, 0, "", null, null, null, null, 1, "NO", null, null, null, null, "NO", "NO", null };
+            final Object[] columnName = new Object[]{ null, "public", "foo", "name", 12, "VARCHAR", 20, null, null, null, 1, "", null, null, null, null, 2, "YES", null, null, null, null, "NO", "NO", "CASE_INSENSITIVE" };
+            final Object[] columnBar = new Object[]{ null, "public", "foo", "bar", 12, "VARCHAR", 33, null, null, null, 1, "", null, null, null, null, 3, "YES", null, null, null, null, "NO", "NO", "CASE_SENSITIVE" };
             TestHelper.checkResultSet(
                     connection.getMetaData().getColumns( "APP", null, "foo", null ),
                     ImmutableList.of( columnId, columnName, columnBar ) );
