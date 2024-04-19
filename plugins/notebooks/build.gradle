@@ -70,6 +70,8 @@ delombok {
     dependsOn(":plugins:cypher-language:processResources")
 }
 
+test.dependsOn(":dbms:shadowJar")
+
 
 /**
  * JARs

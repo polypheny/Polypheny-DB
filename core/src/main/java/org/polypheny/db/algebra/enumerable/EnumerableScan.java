@@ -64,7 +64,6 @@ import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.volcano.VolcanoCost;
 import org.polypheny.db.schema.types.FilterableEntity;
-import org.polypheny.db.schema.types.ProjectableFilterableEntity;
 import org.polypheny.db.schema.types.QueryableEntity;
 import org.polypheny.db.schema.types.ScannableEntity;
 import org.polypheny.db.schema.types.StreamableEntity;
@@ -138,7 +137,6 @@ public class EnumerableScan extends RelScan<PhysicalTable> implements Enumerable
             }
         } else if ( entity instanceof ScannableEntity
                 || entity instanceof FilterableEntity
-                || entity instanceof ProjectableFilterableEntity
                 || entity instanceof StreamableEntity ) {
             return Object[].class;
         } else {
@@ -177,8 +175,7 @@ public class EnumerableScan extends RelScan<PhysicalTable> implements Enumerable
                 && Object[].class.isAssignableFrom( elementType )
                 && getTupleType().getFieldCount() == 1
                 && (entity.unwrap( ScannableEntity.class ).isPresent()
-                || entity.unwrap( FilterableEntity.class ).isPresent()
-                || entity.unwrap( ProjectableFilterableEntity.class ).isPresent()) ) {
+                || entity.unwrap( FilterableEntity.class ).isPresent()) ) {
             return Expressions.call( BuiltInMethod.SLICE0.method, expression );
         }
         JavaTupleFormat oldFormat = format();

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,28 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.tools;
+package org.polypheny.db.catalog;
 
-import org.apache.calcite.linq4j.tree.Expression;
+public interface CatalogType {
 
-public interface ExpressionTransformable {
+    State getLayer();
 
-    Expression getAsExpression();
+    default boolean isLogical() {
+        return getLayer() == State.LOGICAL;
+    }
+
+    default boolean isAllocation() {
+        return getLayer() == State.ALLOCATION;
+    }
+
+    default boolean isPhysical() {
+        return getLayer() == State.PHYSICAL;
+    }
+
+    enum State {
+        LOGICAL,
+        ALLOCATION,
+        PHYSICAL
+    }
 
 }

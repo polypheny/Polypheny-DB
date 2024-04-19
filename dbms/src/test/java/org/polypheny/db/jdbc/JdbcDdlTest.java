@@ -82,10 +82,10 @@ public class JdbcDdlTest {
             1.999999,
             9876,
             0.3333f,
-            (short) 45,
+            45,
             Time.valueOf( "11:59:32" ),
             Timestamp.valueOf( "2021-01-01 10:11:15" ),
-            (byte) 22,
+            22,
             "hallo" };
 
 
@@ -108,7 +108,6 @@ public class JdbcDdlTest {
                 // Create ddltest table and insert data
                 statement.executeUpdate( DDLTEST_SQL );
                 statement.executeUpdate( DDLTEST_DATA_SQL );
-
                 try {
                     // Checks
                     TestHelper.checkResultSet(
@@ -150,8 +149,6 @@ public class JdbcDdlTest {
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT tvarchar FROM ddltest" ),
                             ImmutableList.of( new Object[]{ DDLTEST_DATA[11] } ) );
-
-                    connection.commit();
                 } finally {
                     // Drop ddltest table
                     statement.executeUpdate( "DROP TABLE ddltest" );
@@ -188,6 +185,56 @@ public class JdbcDdlTest {
 
     @Test
     public void testTimestampType() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                // Create ddltest table and insert data
+                statement.executeUpdate( DDLTEST_SQL );
+                statement.executeUpdate( DDLTEST_DATA_SQL );
+
+                try {
+                    // Checks
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT ttimestamp FROM ddltest" ),
+                            ImmutableList.of( new Object[]{ DDLTEST_DATA[9] } ) );
+
+                    connection.commit();
+                } finally {
+                    // Drop ddltest table
+                    statement.executeUpdate( "DROP TABLE ddltest" );
+                }
+            }
+        }
+    }
+
+
+    @Test
+    public void testDateType2() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                // Create ddltest table and insert data
+                statement.executeUpdate( DDLTEST_SQL );
+                statement.executeUpdate( DDLTEST_DATA_SQL );
+
+                try {
+                    // Checks
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT tdate FROM ddltest" ),
+                            ImmutableList.of( new Object[]{ DDLTEST_DATA[2] } ) );
+
+                    connection.commit();
+                } finally {
+                    // Drop ddltest table
+                    statement.executeUpdate( "DROP TABLE ddltest" );
+                }
+            }
+        }
+    }
+
+
+    @Test
+    public void testTimestampType3() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
@@ -264,7 +311,6 @@ public class JdbcDdlTest {
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT tvarchar FROM ddltestview" ),
                             ImmutableList.of( new Object[]{ DDLTEST_DATA[11] } ) );
-                    connection.commit();
                 } finally {
                     statement.executeUpdate( "DROP VIEW ddltestview" );
                     statement.executeUpdate( "DROP TABLE ddltest" );
@@ -297,11 +343,9 @@ public class JdbcDdlTest {
                             statement.executeQuery( "SELECT ttime FROM ddltestMaterialized" ),
                             ImmutableList.of( new Object[]{ DDLTEST_DATA[8] } ) );
 
-                    connection.commit();
                 } finally {
                     statement.executeUpdate( "DROP MATERIALIZED VIEW ddltestMaterialized" );
                     statement.executeUpdate( "DROP TABLE ddltest" );
-                    connection.commit();
                 }
             }
         }
@@ -330,11 +374,9 @@ public class JdbcDdlTest {
                             statement.executeQuery( "SELECT ttimestamp FROM ddltestMaterialized" ),
                             ImmutableList.of( new Object[]{ DDLTEST_DATA[9] } ) );
 
-                    connection.commit();
                 } finally {
                     statement.executeUpdate( "DROP MATERIALIZED VIEW ddltestMaterialized" );
                     statement.executeUpdate( "DROP TABLE ddltest" );
-                    connection.commit();
                 }
             }
         }
@@ -391,11 +433,9 @@ public class JdbcDdlTest {
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT tvarchar FROM ddltestMaterialized" ),
                             ImmutableList.of( new Object[]{ DDLTEST_DATA[11] } ) );
-                    connection.commit();
                 } finally {
                     statement.executeUpdate( "DROP MATERIALIZED VIEW ddltestMaterialized" );
                     statement.executeUpdate( "DROP TABLE ddltest" );
-                    connection.commit();
                 }
             }
         }
@@ -427,7 +467,6 @@ public class JdbcDdlTest {
                         + "tvarchar VARCHAR(20) NULL, "
                         + "tfile FILE NULL, "
                         + "PRIMARY KEY (tprimary) )" );
-
                 try {
                     statement.executeUpdate( "INSERT INTO ddltest(tprimary) VALUES (1)" );
                     statement.executeUpdate( "INSERT INTO ddltest(tprimary) VALUES (2, null, null, null, null, null, null, null, null, null, null, null, null)" );
@@ -739,13 +778,13 @@ public class JdbcDdlTest {
                     statement.executeUpdate( "ALTER TABLE ddltest MODIFY COLUMN tsmallint SET TYPE INTEGER" );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT tsmallint FROM ddltest" ),
-                            ImmutableList.of( new Object[]{ (int) (short) DDLTEST_DATA[7] } ) );
+                            ImmutableList.of( new Object[]{ DDLTEST_DATA[7] } ) );
 
                     // TinyInt --> SmallInt
                     statement.executeUpdate( "ALTER TABLE ddltest MODIFY COLUMN ttinyint SET TYPE SMALLINT" );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT ttinyint FROM ddltest" ),
-                            ImmutableList.of( new Object[]{ (short) (byte) DDLTEST_DATA[10] } ) );
+                            ImmutableList.of( new Object[]{ DDLTEST_DATA[10] } ) );
                 } finally {
                     // Drop ddltest table
                     statement.executeUpdate( "DROP TABLE ddltest" );

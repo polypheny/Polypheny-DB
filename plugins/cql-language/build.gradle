@@ -92,6 +92,7 @@ delombok {
     dependsOn(":dbms:processResources")
 }
 
+test.dependsOn(":dbms:shadowJar")
 
 /**
  * JavaDoc

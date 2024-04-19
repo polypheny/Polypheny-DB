@@ -27,8 +27,7 @@ package org.polypheny.db.schema.types;
  * <p>
  * If the entity implements extended interfaces such as
  * {@link ScannableEntity},
- * {@link FilterableEntity} or
- * {@link ProjectableFilterableEntity}
+ * {@link FilterableEntity}
  */
 public interface ExtensibleEntity extends Typed {
 

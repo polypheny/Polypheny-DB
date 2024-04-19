@@ -58,6 +58,8 @@ delombok {
     dependsOn(":monitoring:processResources")
 }
 
+test.dependsOn(":dbms:shadowJar")
+
 
 /**
  * JARs
