@@ -26,7 +26,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
-import org.apache.calcite.avatica.AvaticaSqlException;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -50,6 +50,7 @@ import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.partition.properties.TemperaturePartitionProperty;
 import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
+import org.polypheny.jdbc.PrismInterfaceServiceException;
 
 
 @SuppressWarnings({ "SqlNoDataSourceInspection", "SqlDialectInspection" })
@@ -72,7 +73,7 @@ public class HorizontalPartitioningTest {
 
     @BeforeEach
     public void beforeEach() {
-        //helper.randomizeCatalogIds();
+        helper.randomizeCatalogIds();
     }
 
 
@@ -94,30 +95,22 @@ public class HorizontalPartitioningTest {
                             + "PARTITIONS 4" );
 
                     // Cannot partition a table that has already been partitioned
-                    boolean failed = false;
-                    try {
-                        statement.executeUpdate( "ALTER TABLE horizontalparttest "
-                                + "PARTITION BY HASH (tinteger) "
-                                + "PARTITIONS 2" );
-                    } catch ( AvaticaSqlException e ) {
-                        failed = true;
-                    }
-                    assertTrue( failed );
+                    Assertions.assertThrows( PrismInterfaceServiceException.class,
+                            () -> statement.executeUpdate( "ALTER TABLE horizontalparttest "
+                                    + "PARTITION BY HASH (tinteger) "
+                                    + "PARTITIONS 2" )
+                    );
 
-                    // check assert False. Wrong partition column
-                    failed = false;
-                    try {
-                        statement.executeUpdate( "CREATE TABLE horizontalparttestfalsepartition( "
-                                + "tprimary INTEGER NOT NULL, "
-                                + "tinteger INTEGER NULL, "
-                                + "tvarchar VARCHAR(20) NULL, "
-                                + "PRIMARY KEY (tprimary) )"
-                                + "PARTITION BY HASH (othercolumn) "
-                                + "PARTITIONS 3" );
-                    } catch ( AvaticaSqlException e ) {
-                        failed = true;
-                    }
-                    assertTrue( failed );
+                    // Wrong partition column
+                    Assertions.assertThrows( PrismInterfaceServiceException.class,
+                            () -> statement.executeUpdate( "CREATE TABLE horizontalparttestfalsepartition( "
+                                    + "tprimary INTEGER NOT NULL, "
+                                    + "tinteger INTEGER NULL, "
+                                    + "tvarchar VARCHAR(20) NULL, "
+                                    + "PRIMARY KEY (tprimary) )"
+                                    + "PARTITION BY HASH (othercolumn) "
+                                    + "PARTITIONS 3" )
+                    );
                 } finally {
                     // Drop tables and stores
                     statement.executeUpdate( "DROP TABLE IF EXISTS horizontalparttest" );
@@ -199,14 +192,11 @@ public class HorizontalPartitioningTest {
                     // name partitioning can be modified with name
                     statement.executeUpdate( "ALTER TABLE \"horizontalparttestextension\" MODIFY PARTITIONS (name2, name3) ON STORE \"store2\" " );
 
-                    // check assert False. modify with false name no partition exists with name22
-                    failed = false;
-                    try {
-                        statement.executeUpdate( "ALTER TABLE \"horizontalparttestextension\" MODIFY PARTITIONS (name22) ON STORE \"store2\" " );
-                    } catch ( AvaticaSqlException e ) {
-                        failed = true;
-                    }
-                    assertTrue( failed );
+                    // modify with false name no partition exists with name22
+                    Assertions.assertThrows(
+                            PrismInterfaceServiceException.class,
+                            () -> statement.executeUpdate( "ALTER TABLE \"horizontalparttestextension\" MODIFY PARTITIONS (name22) ON STORE \"store2\" " )
+                    );
                 } finally {
                     // Drop tables and stores
                     statement.executeUpdate( "DROP TABLE IF EXISTS horizontalparttestextension" );
@@ -396,22 +386,17 @@ public class HorizontalPartitioningTest {
                         + "PARTITIONS 3" );
 
                 try {
-                    //AsserTFalse
                     //HASH Partitioning cant be created using values
-                    boolean failed = false;
-                    try {
-                        statement.executeUpdate( "CREATE TABLE hashpartitioning( "
-                                + "tprimary INTEGER NOT NULL, "
-                                + "tinteger INTEGER NULL, "
-                                + "tvarchar VARCHAR(20) NULL, "
-                                + "PRIMARY KEY (tprimary) )"
-                                + "PARTITION BY HASH (tvarchar) "
-                                + "( PARTITION parta VALUES('abc'), "
-                                + "PARTITION partb VALUES('def'))" );
-                    } catch ( AvaticaSqlException e ) {
-                        failed = true;
-                    }
-                    assertTrue( failed );
+                    Assertions.assertThrows( PrismInterfaceServiceException.class,
+                            () -> statement.executeUpdate( "CREATE TABLE hashpartitioning( "
+                                    + "tprimary INTEGER NOT NULL, "
+                                    + "tinteger INTEGER NULL, "
+                                    + "tvarchar VARCHAR(20) NULL, "
+                                    + "PRIMARY KEY (tprimary) )"
+                                    + "PARTITION BY HASH (tvarchar) "
+                                    + "( PARTITION parta VALUES('abc'), "
+                                    + "PARTITION partb VALUES('def'))" )
+                    );
 
                     // ADD adapter
                     TestHelper.addHsqldb( "storehash", statement );
@@ -425,20 +410,16 @@ public class HorizontalPartitioningTest {
                     statement.executeUpdate( "ALTER TABLE \"hashpartition\" MERGE PARTITIONS" );
 
                     // You can't change the distribution unless there exists at least one full partition placement of each column as a fallback
-                    failed = false;
-                    try {
-                        statement.executeUpdate( "CREATE TABLE hashpartitioningValidate( "
-                                + "tprimary INTEGER NOT NULL, "
-                                + "tinteger INTEGER NULL, "
-                                + "tvarchar VARCHAR(20) NULL, "
-                                + "PRIMARY KEY (tprimary) )"
-                                + "PARTITION BY HASH (tvarchar) "
-                                + "( PARTITION parta VALUES('abc'), "
-                                + "PARTITION partb VALUES('def'))" );
-                    } catch ( AvaticaSqlException e ) {
-                        failed = true;
-                    }
-                    assertTrue( failed );
+                    Assertions.assertThrows( PrismInterfaceServiceException.class,
+                            () -> statement.executeUpdate( "CREATE TABLE hashpartitioningValidate( "
+                                    + "tprimary INTEGER NOT NULL, "
+                                    + "tinteger INTEGER NULL, "
+                                    + "tvarchar VARCHAR(20) NULL, "
+                                    + "PRIMARY KEY (tprimary) )"
+                                    + "PARTITION BY HASH (tvarchar) "
+                                    + "( PARTITION parta VALUES('abc'), "
+                                    + "PARTITION partb VALUES('def'))" )
+                    );
                 } finally {
                     statement.executeUpdate( "DROP TABLE IF EXISTS hashpartition" );
                     statement.executeUpdate( "DROP TABLE IF EXISTS hashpartitioning" );
@@ -550,7 +531,6 @@ public class HorizontalPartitioningTest {
                             + "( PARTITION parta VALUES(5,4), "
                             + "PARTITION partb VALUES(10,6))" );
 
-
                     // RANGE partitioning can't be created without specifying ranges
                     boolean failed = false;
                     try {
@@ -583,7 +563,6 @@ public class HorizontalPartitioningTest {
     public void partitionFilterTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
-
 
             try ( Statement statement = connection.createStatement() ) {
                 statement.executeUpdate( "CREATE TABLE physicalPartitionFilter( "
