@@ -17,6 +17,7 @@
 package org.polypheny.db.protointerface;
 
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.sql.Connection;
