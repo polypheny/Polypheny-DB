@@ -18,6 +18,14 @@ jobs:
         steps:
             -   name: Checkout
                 uses: actions/checkout@v4
+                with:
+                    path: main # Temporary
+            -   name: Checkout Driver (temporary)
+                uses: actions/checkout@v4
+                with:
+                    repository: polypheny/Polypheny-JDBC-Driver
+                    ref: proto-without-grpc
+                    path: Polypheny-JDBC-Driver
             -   name: Set up JDK
                 uses: actions/setup-java@v4
                 with:
@@ -29,9 +37,12 @@ jobs:
             -   name: Assemble
                 timeout-minutes: 60
                 run: ./gradlew assemble
+                working-directory: main # temporary
             -   name: Build Plugins
                 timeout-minutes: 60
                 run: ./gradlew assemblePlugins
+                working-directory: main # temporary
             -   name: Execute tests
                 timeout-minutes: 30
                 run: ./gradlew -p plugins test
+                working-directory: main # temporary
