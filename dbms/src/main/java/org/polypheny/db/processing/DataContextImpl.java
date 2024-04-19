@@ -126,7 +126,7 @@ public class DataContextImpl implements DataContext {
 
 
     @Override
-    public void addParameterValues( long index, AlgDataType type, List<PolyValue> data ) {
+    public void addParameterValues( long index, @NotNull AlgDataType type, @NotNull List<PolyValue> data ) {
         if ( parameterTypes.containsKey( index ) ) {
             throw new GenericRuntimeException( "There are already values assigned to this index" );
         }
@@ -153,13 +153,13 @@ public class DataContextImpl implements DataContext {
 
 
     @Override
-    public void setParameterValues( List<Map<Long, PolyValue>> values ) {
+    public void setParameterValues( @NotNull List<Map<Long, PolyValue>> values ) {
         parameterValues = new ArrayList<>( values );
     }
 
 
     @Override
-    public void setParameterTypes( Map<Long, AlgDataType> types ) {
+    public void setParameterTypes( @NotNull Map<Long, @NotNull AlgDataType> types ) {
         parameterTypes = new HashMap<>( types );
     }
 

@@ -275,6 +275,20 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     }
 
 
+    public static AlgDataType deriveType( PolyValue value, AlgDataTypeFactory typeFactory ) {
+        if ( value == null ) {
+            return typeFactory.createPolyType( PolyType.NULL );
+        }
+        PolyType type = value.type;
+
+        if ( type == PolyType.ARRAY ) {
+            return typeFactory.createArrayType( typeFactory.createPolyType( PolyType.ANY ), -1 );
+        }
+
+        return typeFactory.createPolyType( type );
+    }
+
+
     @NotNull
     public String toTypedJson() {
         try {

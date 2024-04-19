@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
@@ -77,7 +78,7 @@ public interface DataContext {
     Statement getStatement();
 
 
-    void addParameterValues( long index, AlgDataType type, List<PolyValue> data );
+    void addParameterValues( long index, @NotNull AlgDataType type, List<PolyValue> data );
 
     AlgDataType getParameterType( long index );
 
@@ -85,9 +86,9 @@ public interface DataContext {
 
     void setParameterValues( List<Map<Long, PolyValue>> values );
 
-    Map<Long, AlgDataType> getParameterTypes();
+    Map<Long, @NotNull AlgDataType> getParameterTypes();
 
-    void setParameterTypes( Map<Long, AlgDataType> types );
+    void setParameterTypes( Map<Long, @NotNull AlgDataType> types );
 
     default void resetParameterValues() {
         throw new UnsupportedOperationException();
@@ -239,7 +240,7 @@ public interface DataContext {
 
 
         @Override
-        public void addParameterValues( long index, AlgDataType type, List<PolyValue> data ) {
+        public void addParameterValues( long index, @NotNull AlgDataType type, List<PolyValue> data ) {
 
         }
 
