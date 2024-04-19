@@ -265,7 +265,8 @@ public class SelectTest {
 
     @Test
     public void insertUpdateTest() throws SQLException {
-        String ddl = "CREATE TABLE my_table (column1 INT NOT NULL, column2 VARCHAR(255), column3 INT, PRIMARY KEY (column1))";
+        String ddl1 = "DROP TABLE IF EXISTS my_table";
+        String ddl2 = "CREATE TABLE my_table (column1 INT NOT NULL, column2 VARCHAR(255), column3 INT, PRIMARY KEY (column1))";
         String insert = "INSERT INTO my_table (column1, column2, column3) VALUES (1, 'v1', 100), (2, 'v2', 200), (3, 'v3', 300)";
         String update = "UPDATE my_table SET column2 = 'foo' WHERE column1 = 1 AND column3 = 100";
 
@@ -273,7 +274,8 @@ public class SelectTest {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
 
-                statement.executeUpdate( ddl );
+                statement.executeUpdate( ddl1 );
+                statement.executeUpdate( ddl2 );
                 statement.executeUpdate( insert );
                 statement.executeUpdate( update );
 
