@@ -86,7 +86,7 @@ public class RelationalExecutor extends Executor {
     }
 
 
-    public StatementResult executeAndGetResult( PIStatement piStatement, int fetchSize ) throws Exception {
+    public StatementResult executeAndGetResult( PIStatement piStatement, int fetchSize ) {
         if ( hasInvalidNamespaceType( piStatement ) ) {
             throw new PIServiceException( "The results of type "
                     + piStatement.getLanguage().dataModel()
