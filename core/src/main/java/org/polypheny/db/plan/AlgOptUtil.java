@@ -51,8 +51,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
 import javax.annotation.Nonnull;
 import org.apache.calcite.avatica.AvaticaConnection;
 import org.apache.calcite.linq4j.Ord;
@@ -2851,23 +2849,6 @@ public abstract class AlgOptUtil {
 
 
     /**
-     * Shuttle that finds the set of inputs that are used.
-     */
-    public static class InputReferencedVisitor extends RexShuttle {
-
-        public final SortedSet<Integer> inputPosReferenced = new TreeSet<>();
-
-
-        @Override
-        public RexNode visitIndexRef( RexIndexRef inputRef ) {
-            inputPosReferenced.add( inputRef.getIndex() );
-            return inputRef;
-        }
-
-    }
-
-
-    /**
      * Converts types to descriptive strings.
      */
     public static class TypeDumper {
@@ -3150,4 +3131,3 @@ public abstract class AlgOptUtil {
     }
 
 }
-

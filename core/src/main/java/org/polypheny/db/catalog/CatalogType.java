@@ -14,15 +14,28 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.catalog.refactor;
+package org.polypheny.db.catalog;
 
-import java.util.List;
-import org.apache.calcite.linq4j.Enumerable;
-import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.rex.RexNode;
+public interface CatalogType {
 
-public interface ProjectableFilterableEntity {
+    State getLayer();
 
-    Enumerable<Object[]> scan( DataContext root, List<RexNode> mutableFilters, int[] projectInts );
+    default boolean isLogical() {
+        return getLayer() == State.LOGICAL;
+    }
+
+    default boolean isAllocation() {
+        return getLayer() == State.ALLOCATION;
+    }
+
+    default boolean isPhysical() {
+        return getLayer() == State.PHYSICAL;
+    }
+
+    enum State {
+        LOGICAL,
+        ALLOCATION,
+        PHYSICAL
+    }
 
 }

@@ -82,7 +82,6 @@ import org.polypheny.db.algebra.rules.JoinPushExpressionsRule;
 import org.polypheny.db.algebra.rules.JoinPushThroughJoinRule;
 import org.polypheny.db.algebra.rules.ProjectFilterTransposeRule;
 import org.polypheny.db.algebra.rules.ProjectMergeRule;
-import org.polypheny.db.algebra.rules.ProjectScanRule;
 import org.polypheny.db.algebra.rules.ProjectWindowTransposeRule;
 import org.polypheny.db.algebra.rules.ReduceExpressionsRules;
 import org.polypheny.db.algebra.rules.ScanRule;
@@ -299,8 +298,6 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
             }
         }
         planner.addRule( Bindables.BINDABLE_TABLE_SCAN_RULE );
-        planner.addRule( ProjectScanRule.INSTANCE );
-        planner.addRule( ProjectScanRule.INTERPRETER );
 
         if ( ENABLE_ENUMERABLE ) {
             for ( AlgOptRule rule : ENUMERABLE_RULES ) {
@@ -601,4 +598,3 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
     }
 
 }
-

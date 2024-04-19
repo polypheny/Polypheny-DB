@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,23 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.tools;
+package org.polypheny.db.protointerface.statementProcessing;
 
-import org.apache.calcite.linq4j.tree.Expression;
+import org.polypheny.db.languages.QueryLanguage;
+import org.polypheny.db.protointerface.statements.PIStatement;
 
-public interface ExpressionTransformable {
+public abstract class StatementImplementer {
 
-    Expression getAsExpression();
+    protected final String ORIGIN = "Proto-Interface";
+
+
+    protected boolean hasInvalidLanguage( PIStatement piStatement ) {
+        return piStatement.getLanguage() != getLanguage();
+    }
+
+
+    abstract QueryLanguage getLanguage();
+
+    abstract void implement( PIStatement piStatement );
 
 }

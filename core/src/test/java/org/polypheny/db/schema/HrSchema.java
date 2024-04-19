@@ -17,9 +17,6 @@
 package org.polypheny.db.schema;
 
 
-import lombok.AllArgsConstructor;
-
-
 public class HrSchema {
 
     public final Emps[] emps = {
@@ -43,40 +40,23 @@ public class HrSchema {
     };
 
 
-    @AllArgsConstructor
-    public static class Emps {
+    public record Emps( int empid, int deptno, String name, int salary, int commission ) {
 
-        public final int empid;
-        public final int deptno;
-        public final String name;
-        public final int salary;
-        public final int commission;
     }
 
 
-    @AllArgsConstructor
-    public static class Depts {
+    public record Depts( int deptno, String name, int employees, Location location ) {
 
-        public final int deptno;
-        public final String name;
-        public final int employees;
-        public final Location location;
     }
 
 
-    @AllArgsConstructor
-    public static class Location {
+    public record Location( int x, int y ) {
 
-        public final int x;
-        public final int y;
     }
 
 
-    @AllArgsConstructor
-    public static class Dependents {
+    public record Dependents( int empid, String name ) {
 
-        public final int empid;
-        public final String name;
     }
 
 

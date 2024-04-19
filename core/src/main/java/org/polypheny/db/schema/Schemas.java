@@ -53,7 +53,6 @@ import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.interpreter.Row;
 import org.polypheny.db.schema.types.FilterableEntity;
-import org.polypheny.db.schema.types.ProjectableFilterableEntity;
 import org.polypheny.db.schema.types.QueryableEntity;
 import org.polypheny.db.schema.types.ScannableEntity;
 import org.polypheny.db.type.PolyTypeUtil;
@@ -148,14 +147,6 @@ public final class Schemas {
      */
     public static Enumerable<PolyValue[]> enumerable( final FilterableEntity table, final DataContext root ) {
         return table.scan( root, ImmutableList.of() );
-    }
-
-
-    /**
-     * Returns an {@link org.apache.calcite.linq4j.Enumerable} over the rows of a given table, not applying any filters and projecting all columns, representing each row as an object array.
-     */
-    public static Enumerable<PolyValue[]> enumerable( final ProjectableFilterableEntity table, final DataContext root ) {
-        return table.scan( root, ImmutableList.of(), identity( table.getTupleType( root.getTypeFactory() ).getFieldCount() ) );
     }
 
 

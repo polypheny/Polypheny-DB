@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,28 +14,10 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.webui.models.requests;
+package org.polypheny.db.docker.models;
 
-public class EditCollectionRequest {
+import com.fasterxml.jackson.annotation.JsonProperty;
 
-    /**
-     * Name of the document database (Polypheny schema)
-     */
-    public String database;
-
-    /**
-     * Name of the document collection (Polypheny table)
-     */
-    public String collection;
-
-    /**
-     * Action which is performed on the collection
-     */
-    public String action; // truncate / drop
-
-    /**
-     * Identifier of the store on which the collection is edited
-     */
-    public String store;
+public record UpdateDockerRequest( @JsonProperty int id, @JsonProperty String hostname, @JsonProperty String alias, @JsonProperty String registry ) {
 
 }

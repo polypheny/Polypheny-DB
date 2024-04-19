@@ -14,20 +14,11 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.webui.models.requests;
+package org.polypheny.db.docker.models;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.List;
 
-import lombok.experimental.SuperBuilder;
-import lombok.extern.jackson.Jacksonized;
-import org.polypheny.db.webui.models.catalog.UiColumnDefinition;
-
-@Jacksonized
-@SuperBuilder
-public class ExploreTables extends UIRequest{
-
-    public Integer id;
-    public UiColumnDefinition[] columns;
-    public int cPage;
-
+public record InstancesAndAutoDocker( @JsonProperty List<DockerInstanceInfo> instances, @JsonProperty AutoDockerStatus status ) {
 
 }

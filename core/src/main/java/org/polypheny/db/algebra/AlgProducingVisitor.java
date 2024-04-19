@@ -19,7 +19,6 @@ package org.polypheny.db.algebra;
 import com.google.common.collect.ImmutableMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import org.apache.calcite.linq4j.function.Function2;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -80,38 +79,6 @@ public interface AlgProducingVisitor<Return> {
 
 
         Consumer<AlgNode> getDefaultHandler();
-
-    }
-
-
-    interface AlgProducingVisitor2<Return, Param1> {
-
-        default Return handle( AlgNode visitable, Param1 param1 ) {
-            Function2<AlgNode, Param1, Return> handler = findHandler( visitable.getClass() );
-            if ( handler != null ) {
-                return handler.apply( visitable, param1 );
-            }
-
-            return getDefaultHandler().apply( visitable, param1 );
-        }
-
-
-        default @Nullable Function2<AlgNode, Param1, Return> findHandler( Class<?> clazz ) {
-            while ( clazz != null && clazz != AlgNode.class ) {
-                if ( getHandlers().containsKey( clazz ) ) {
-                    return getHandlers().get( clazz );
-                }
-                clazz = clazz.getSuperclass();
-            }
-
-            return null;
-        }
-
-
-        ImmutableMap<Class<? extends AlgNode>, Function2<AlgNode, Param1, Return>> getHandlers();
-
-
-        Function2<AlgNode, Param1, Return> getDefaultHandler();
 
     }
 

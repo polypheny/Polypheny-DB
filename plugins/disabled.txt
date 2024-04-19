@@ -3,8 +3,4 @@
 # - add one plugin id on each line
 # - put this file in plugins folder
 ########################################
-druid-adapterTemplate
-elasticsearch-adapterTemplate
-geode-adapterTemplate
-html-adapterTemplate
-pig-adapterTemplate
+html-adapter
