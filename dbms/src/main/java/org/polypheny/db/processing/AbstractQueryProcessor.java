@@ -1072,8 +1072,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         }
 
         final AlgDataType jdbcType = QueryProcessorHelpers.makeStruct( root.alg.getCluster().getTypeFactory(), root.validatedRowType );
-        //TODO DL: get metadata instead of null
-        List<List<String>> fieldOrigins = Collections.nCopies( jdbcType.getFieldCount(), null );
 
         final Prefer prefer = Prefer.ARRAY;
         final Convention resultConvention =
@@ -1119,7 +1117,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         return new PreparedResultImpl<>(
                 resultType,
                 parameterRowType,
-                fieldOrigins,
+                Collections.nCopies( jdbcType.getFieldCount(), null ), // we do not have the origin of the fields so we provide null for all
                 root.collation.getFieldCollations().isEmpty()
                         ? ImmutableList.of()
                         : ImmutableList.of( root.collation ),
