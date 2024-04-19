@@ -69,7 +69,8 @@ public class QueryInterfaceManager {
     }
 
 
-    public static void addInterfaceTemplate( String interfaceName, String description,
+    public static void addInterfaceTemplate(
+            String interfaceName, String description,
             List<QueryInterfaceSetting> availableSettings, Function5<TransactionManager, Authenticator, String, Map<String, String>, QueryInterface> deployer ) {
         Catalog.getInstance().createInterfaceTemplate( interfaceName, new QueryInterfaceTemplate( interfaceName, description,
                 deployer, availableSettings ) );

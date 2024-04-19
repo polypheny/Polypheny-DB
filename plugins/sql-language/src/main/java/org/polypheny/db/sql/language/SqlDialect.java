@@ -744,7 +744,6 @@ public class SqlDialect {
     }
 
 
-
     public SqlNode rewriteMinMax( SqlNode node ) {
         return node;
     }

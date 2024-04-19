@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,10 +69,10 @@ public class PIClient {
 
     public Transaction getOrCreateNewTransaction() {
         //synchronized ( this ) {
-            if ( hasNoTransaction() ) {
-                currentTransaction = transactionManager.startTransaction( catalogUser.id, namespace.id, false, "PrismInterface" );
-            }
-            return currentTransaction;
+        if ( hasNoTransaction() ) {
+            currentTransaction = transactionManager.startTransaction( catalogUser.id, namespace.id, false, "PrismInterface" );
+        }
+        return currentTransaction;
         //}
     }
 
@@ -87,7 +87,7 @@ public class PIClient {
 
     public void commitCurrentTransaction() throws PIServiceException {
         //synchronized ( this ) {
-            commitCurrentTransactionUnsynchronized();
+        commitCurrentTransactionUnsynchronized();
         //}
     }
 
@@ -108,17 +108,17 @@ public class PIClient {
 
     public void rollbackCurrentTransaction() throws PIServiceException {
         //synchronized ( this ) {
-            if ( hasNoTransaction() ) {
-                return;
-            }
-            try {
-                currentTransaction.getCancelFlag().set( true );
-                currentTransaction.rollback();
-            } catch ( TransactionException e ) {
-                throw new PIServiceException( "Rollback of current transaction failed: " + e.getLocalizedMessage() );
-            } finally {
-                clearCurrentTransaction();
-            }
+        if ( hasNoTransaction() ) {
+            return;
+        }
+        try {
+            currentTransaction.getCancelFlag().set( true );
+            currentTransaction.rollback();
+        } catch ( TransactionException e ) {
+            throw new PIServiceException( "Rollback of current transaction failed: " + e.getLocalizedMessage() );
+        } finally {
+            clearCurrentTransaction();
+        }
         //}
     }
 

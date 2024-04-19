@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,12 +43,12 @@ import org.polypheny.db.protointerface.proto.ClientInfoPropertyMeta;
 import org.polypheny.db.protointerface.proto.ClientInfoPropertyMetaResponse;
 import org.polypheny.db.protointerface.proto.Column;
 import org.polypheny.db.protointerface.proto.DbmsVersionResponse;
+import org.polypheny.db.protointerface.proto.DefaultNamespaceResponse;
 import org.polypheny.db.protointerface.proto.EntitiesResponse;
 import org.polypheny.db.protointerface.proto.Entity;
 import org.polypheny.db.protointerface.proto.ForeignKey;
 import org.polypheny.db.protointerface.proto.Function;
 import org.polypheny.db.protointerface.proto.FunctionsResponse;
-import org.polypheny.db.protointerface.proto.DefaultNamespaceResponse;
 import org.polypheny.db.protointerface.proto.Index;
 import org.polypheny.db.protointerface.proto.Namespace;
 import org.polypheny.db.protointerface.proto.NamespacesResponse;

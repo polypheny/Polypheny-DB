@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -129,7 +129,7 @@ public class ProtoValueTest {
 
         PolyValue deserialized = ProtoValueDeserializer.deserializeProtoValue( protoValue );
 
-        assertEquals( PolyType.BINARY, deserialized.type  );
+        assertEquals( PolyType.BINARY, deserialized.type );
         assertEquals( data, deserialized.asBinary().getValue() );
     }
 
@@ -228,7 +228,7 @@ public class ProtoValueTest {
         PolyDocument document = new PolyDocument();
         document.put( new PolyString( "1st" ), new PolyBoolean( false ) );
         document.put( new PolyString( "2nd" ), PolyBinary.of( new byte[]{ 0, 1, 2, 3, 4 } ) );
-        document.put( new PolyString( "3rd" ), new PolyDate( 47952743435L ));
+        document.put( new PolyString( "3rd" ), new PolyDate( 47952743435L ) );
         ProtoValue protoValue = PolyValueSerializer.serialize( document );
 
     }

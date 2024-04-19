@@ -108,7 +108,6 @@ public abstract class MockCatalog extends Catalog {
     }
 
 
-
     @Override
     public void addObserver( PropertyChangeListener listener ) {
         super.addObserver( listener );
@@ -143,6 +142,7 @@ public abstract class MockCatalog extends Catalog {
     public void rollback() {
         throw new NotImplementedException();
     }
+
 
     @Override
     public long createNamespace( String name, DataModel dataModel, boolean caseSensitive ) {

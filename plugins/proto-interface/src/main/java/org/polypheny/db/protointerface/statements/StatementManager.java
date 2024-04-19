@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -168,7 +168,7 @@ public class StatementManager {
 
     public void closeBatch( PIUnparameterizedStatementBatch toClose ) {
         //synchronized ( toClose ) {
-            toClose.getStatements().forEach( s -> closeStatementOrBatch( s.getId() ) );
+        toClose.getStatements().forEach( s -> closeStatementOrBatch( s.getId() ) );
         //}
     }
 
@@ -179,8 +179,8 @@ public class StatementManager {
             return;
         }
         //synchronized ( statementToClose ) {
-            openStatements.remove( statementId );
-            statementToClose.close();
+        openStatements.remove( statementId );
+        statementToClose.close();
         //}
     }
 
@@ -232,6 +232,7 @@ public class StatementManager {
                 .collect( Collectors.toSet() )
                 .contains( statementLanguageName );
     }
+
 
     public int openStatementCount() {
         return openStatements.size();

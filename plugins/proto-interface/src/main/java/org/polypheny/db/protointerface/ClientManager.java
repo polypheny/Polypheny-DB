@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,14 +18,10 @@ package org.polypheny.db.protointerface;
 
 import java.security.SecureRandom;
 import java.util.Base64;
-import java.util.List;
 import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalUser;
@@ -59,8 +55,8 @@ class ClientManager {
 
     public void unregisterConnection( PIClient client ) {
         //synchronized ( client ) {
-            client.prepareForDisposal();
-            clients.remove( client.getClientUUID() );
+        client.prepareForDisposal();
+        clients.remove( client.getClientUUID() );
         //}
     }
 

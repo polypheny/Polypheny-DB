@@ -829,18 +829,18 @@ public class JdbcPreparedStatementsTest {
 
                     PreparedStatement preparedSelect = connection.prepareStatement(
                             "SELECT * FROM pstest WHERE "
-                            + "tbigint = ? AND "
-                            + "tboolean = ? AND "
-                            + "tdate = ? AND "
-                            + "tdecimal = ? AND "
-                            + "tdouble = ? AND "
-                            + "tinteger = ? AND "
-                            + "treal = ? AND "
-                            + "tsmallint = ? AND "
-                            + "ttime = ? AND "
-                            + "ttimestamp = ? AND "
-                            + "ttinyint = ? AND "
-                            + "tvarchar = ?" );
+                                    + "tbigint = ? AND "
+                                    + "tboolean = ? AND "
+                                    + "tdate = ? AND "
+                                    + "tdecimal = ? AND "
+                                    + "tdouble = ? AND "
+                                    + "tinteger = ? AND "
+                                    + "treal = ? AND "
+                                    + "tsmallint = ? AND "
+                                    + "ttime = ? AND "
+                                    + "ttimestamp = ? AND "
+                                    + "ttinyint = ? AND "
+                                    + "tvarchar = ?" );
                     preparedSelect.setLong( 1, (long) TEST_DATA[0] );
                     preparedSelect.setBoolean( 2, (boolean) TEST_DATA[1] );
                     preparedSelect.setDate( 3, (Date) TEST_DATA[2] );

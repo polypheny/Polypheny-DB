@@ -18,10 +18,8 @@ package org.polypheny.db.sql.type;
 
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.List;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.jdbc.PrismInterfaceServiceException;
 
