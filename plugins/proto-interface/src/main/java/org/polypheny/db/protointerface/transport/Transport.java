@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-<<<<<<<< HEAD:plugins/proto-interface/src/main/java/org/polypheny/db/protointerface/transport/Transport.java
 package org.polypheny.db.protointerface.transport;
 
 import java.io.Closeable;
@@ -30,12 +29,5 @@ public interface Transport extends Closeable {
     byte[] receiveMessage() throws IOException;
 
     void close();
-========
-package org.polypheny.db.docker.models;
-
-import com.fasterxml.jackson.annotation.JsonProperty;
-
-public record AutoDockerStatus( @JsonProperty boolean available, @JsonProperty boolean connected, @JsonProperty boolean running, @JsonProperty String status ) {
->>>>>>>> master:core/src/main/java/org/polypheny/db/docker/models/AutoDockerStatus.java
 
 }

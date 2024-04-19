@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-<<<<<<<< HEAD:plugins/proto-interface/src/main/java/org/polypheny/db/protointerface/statements/Signaturizable.java
 package org.polypheny.db.protointerface.statements;
 
 import java.util.List;
@@ -23,13 +22,5 @@ import org.polypheny.db.protointerface.proto.ParameterMeta;
 public interface Signaturizable {
 
     List<ParameterMeta> getParameterMetas();
-========
-package org.polypheny.db.docker.models;
-
-import com.fasterxml.jackson.annotation.JsonProperty;
-import java.util.List;
-
-public record AutoDockerResult( @JsonProperty AutoDockerStatus status, @JsonProperty List<DockerInstanceInfo> instances ) {
->>>>>>>> master:core/src/main/java/org/polypheny/db/docker/models/AutoDockerResult.java
 
 }
