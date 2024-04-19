@@ -67,11 +67,7 @@ import org.polypheny.db.protointerface.proto.FetchRequest;
 import org.polypheny.db.protointerface.proto.Frame;
 import org.polypheny.db.protointerface.proto.FunctionsRequest;
 import org.polypheny.db.protointerface.proto.FunctionsResponse;
-import org.polypheny.db.protointerface.proto.LanguageRequest;
-import org.polypheny.db.protointerface.proto.LanguageResponse;
 import org.polypheny.db.protointerface.proto.MetaStringResponse;
-import org.polypheny.db.protointerface.proto.Namespace;
-import org.polypheny.db.protointerface.proto.NamespaceRequest;
 import org.polypheny.db.protointerface.proto.NamespacesRequest;
 import org.polypheny.db.protointerface.proto.NamespacesResponse;
 import org.polypheny.db.protointerface.proto.PrepareStatementRequest;
@@ -278,16 +274,12 @@ class PIService {
         }
         return switch ( req.getTypeCase() ) {
             case DBMS_VERSION_REQUEST -> getDbmsVersion( req.getDbmsVersionRequest(), new ResponseMaker<>( req, "dbms_version_response" ) );
-            case LANGUAGE_REQUEST -> throw new NotImplementedException( "Currently not used" );
             case DEFAULT_NAMESPACE_REQUEST -> getDefaultNamespace( req.getDefaultNamespaceRequest(), new ResponseMaker<>( req, "default_namespace_response" ) );
             case TABLE_TYPES_REQUEST -> getTableTypes( req.getTableTypesRequest(), new ResponseMaker<>( req, "table_types_response" ) );
             case TYPES_REQUEST -> getTypes( req.getTypesRequest(), new ResponseMaker<>( req, "types_response" ) );
-            case USER_DEFINED_TYPES_REQUEST -> throw new NotImplementedException();
-            case CLIENT_INFO_PROPERTY_META_REQUEST -> throw new NotImplementedException();
             case PROCEDURES_REQUEST -> searchProcedures( req.getProceduresRequest(), new ResponseMaker<>( req, "procedures_response" ) );
             case FUNCTIONS_REQUEST -> searchFunctions( req.getFunctionsRequest(), new ResponseMaker<>( req, "functions_response" ) );
             case NAMESPACES_REQUEST -> searchNamespaces( req.getNamespacesRequest(), new ResponseMaker<>( req, "namespaces_response" ) );
-            case NAMESPACE_REQUEST -> throw new NotImplementedException( "Currently not used" );
             case ENTITIES_REQUEST -> searchEntities( req.getEntitiesRequest(), new ResponseMaker<>( req, "entities_response" ) );
             case SQL_STRING_FUNCTIONS_REQUEST -> getSqlStringFunctions( req.getSqlStringFunctionsRequest(), new ResponseMaker<>( req, "sql_string_functions_response" ) );
             case SQL_SYSTEM_FUNCTIONS_REQUEST -> getSqlSystemFunctions( req.getSqlSystemFunctionsRequest(), new ResponseMaker<>( req, "sql_system_functions_response" ) );
@@ -356,14 +348,6 @@ class PIService {
     }
 
 
-    private void getSupportedLanguages( LanguageRequest request, ResponseMaker<LanguageResponse> responseObserver ) {
-        LanguageResponse supportedLanguages = LanguageResponse.newBuilder()
-                .addAllLanguageNames( new LinkedList<>() )
-                .build();
-        responseObserver.makeResponse( supportedLanguages );
-    }
-
-
     private MetaStringResponse buildMetaStringResponse( String string ) {
         return MetaStringResponse.newBuilder()
                 .setString( string )
@@ -390,11 +374,6 @@ class PIService {
         String namespacePattern = request.hasNamespacePattern() ? request.getNamespacePattern() : null;
         String namespaceType = request.hasNamespaceType() ? request.getNamespaceType() : null;
         return responseObserver.makeResponse( DbMetaRetriever.searchNamespaces( namespacePattern, namespaceType ) );
-    }
-
-
-    private void getNamespace( NamespaceRequest request, ResponseMaker<Namespace> responseObserver ) {
-        responseObserver.makeResponse( DbMetaRetriever.getNamespace( request.getNamespaceName() ) );
     }
 
 
