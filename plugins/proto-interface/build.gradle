@@ -55,7 +55,7 @@ extractIncludeProto {
 
 protobuf {
     protoc {
-        artifact = "com.google.protobuf:protoc:3.21.12"
+        artifact = "com.google.protobuf:protoc:3.23.4"
     }
     generatedFilesBaseDir = "${generatedDirName}/proto"
 }
