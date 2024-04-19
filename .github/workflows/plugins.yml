@@ -34,6 +34,9 @@ jobs:
             -   name: Set env variable
                 run: |
                     echo "POLYPHENY_HOME=$GITHUB_WORKSPACE" >> $GITHUB_ENV
+            -   name: Build Driver (temporary)
+                run: ./gradlew publishToMavenLocal
+                working-directory: Polypheny-JDBC-Driver
             -   name: Assemble
                 timeout-minutes: 60
                 run: ./gradlew assemble
