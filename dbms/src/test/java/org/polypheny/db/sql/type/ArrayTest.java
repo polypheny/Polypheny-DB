@@ -17,26 +17,28 @@
 package org.polypheny.db.sql.type;
 
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.List;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
+import org.polypheny.db.TestHelper.JdbcConnection;
+import org.polypheny.jdbc.PrismInterfaceServiceException;
 
 public class ArrayTest {
 
     @Test
     public void NoTypeTest() throws SQLException {
-        List<Object[]> data = List.of(
-                new Object[][]{ new Object[]{ 1, 2, 3 } }
-        );
-        TestHelper.executeSql(
-                ( c, s ) -> s.executeUpdate( "DROP TABLE IF EXISTS t" ),
-                ( c, s ) -> s.executeUpdate( "CREATE TABLE t(i INTEGER NOT NULL, a ARRAY, PRIMARY KEY(i))" ),
-                ( c, s ) -> s.executeUpdate( "INSERT INTO t(i, a) VALUES (0, [1, 2, 3])" ),
-                ( c, s ) -> TestHelper.checkResultSet( s.executeQuery( "SELECT a FROM t" ), data, true ),
-                ( c, s ) -> s.executeUpdate( "DROP TABLE IF EXISTS t" ),
-                ( c, s ) -> c.commit()
-        );
-
+        try ( JdbcConnection con = new JdbcConnection( true ) ) {
+            try ( Statement s = con.getConn().createStatement() ) {
+                s.executeUpdate( "DROP TABLE IF EXISTS t" );
+                Assertions.assertThrows(
+                        PrismInterfaceServiceException.class,
+                        () -> s.executeUpdate( "CREATE TABLE t(i INTEGER NOT NULL, a ARRAY, PRIMARY KEY(i))" ),
+                        "Array type must specify a collection type"
+                );
+            }
+        }
     }
 
 }
