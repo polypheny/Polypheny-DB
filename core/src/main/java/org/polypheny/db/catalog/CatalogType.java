@@ -14,20 +14,28 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.webui.models.requests;
+package org.polypheny.db.catalog;
 
+public interface CatalogType {
 
-import lombok.experimental.SuperBuilder;
-import lombok.extern.jackson.Jacksonized;
-import org.polypheny.db.webui.models.catalog.UiColumnDefinition;
+    State getLayer();
 
-@Jacksonized
-@SuperBuilder
-public class ExploreTables extends UIRequest{
+    default boolean isLogical() {
+        return getLayer() == State.LOGICAL;
+    }
 
-    public Integer id;
-    public UiColumnDefinition[] columns;
-    public int cPage;
+    default boolean isAllocation() {
+        return getLayer() == State.ALLOCATION;
+    }
 
+    default boolean isPhysical() {
+        return getLayer() == State.PHYSICAL;
+    }
+
+    enum State {
+        LOGICAL,
+        ALLOCATION,
+        PHYSICAL
+    }
 
 }

@@ -110,14 +110,6 @@ public interface Entity {
         return DataModel.RELATIONAL;
     }
 
-    interface Table {
-
-    }
-
-
-    interface Collection {
-
-    }
 
 }
 

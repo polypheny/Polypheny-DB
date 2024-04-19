@@ -65,7 +65,6 @@ import org.polypheny.db.algebra.AlgProducingVisitor.AlgConsumingVisitor;
 import org.polypheny.db.algebra.AlgVisitor;
 import org.polypheny.db.algebra.rules.CalcSplitRule;
 import org.polypheny.db.algebra.rules.FilterScanRule;
-import org.polypheny.db.algebra.rules.ProjectScanRule;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
 import org.polypheny.db.config.RuntimeConfig;
@@ -111,8 +110,6 @@ public class Interpreter extends AbstractEnumerable<PolyValue[]> implements Auto
                         .addRuleInstance( CalcSplitRule.INSTANCE )
                         .addRuleInstance( FilterScanRule.INSTANCE )
                         .addRuleInstance( FilterScanRule.INTERPRETER )
-                        .addRuleInstance( ProjectScanRule.INSTANCE )
-                        .addRuleInstance( ProjectScanRule.INTERPRETER )
                         .build();
         final HepPlanner planner = new HepPlanner( hepProgram );
         planner.setRoot( rootAlg );

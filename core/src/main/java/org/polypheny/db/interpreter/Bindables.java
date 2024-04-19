@@ -89,7 +89,6 @@ import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.types.FilterableEntity;
-import org.polypheny.db.schema.types.ProjectableFilterableEntity;
 import org.polypheny.db.schema.types.ScannableEntity;
 import org.polypheny.db.tools.AlgBuilderFactory;
 import org.polypheny.db.type.entity.PolyValue;
@@ -269,8 +268,7 @@ public class Bindables {
 
         public static boolean canHandle( Entity entity ) {
             return entity.unwrap( ScannableEntity.class ).isPresent()
-                    || entity.unwrap( FilterableEntity.class ).isPresent()
-                    || entity.unwrap( ProjectableFilterableEntity.class ).isPresent();
+                    || entity.unwrap( FilterableEntity.class ).isPresent();
         }
 
 
