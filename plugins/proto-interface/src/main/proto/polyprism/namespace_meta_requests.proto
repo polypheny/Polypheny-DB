@@ -11,14 +11,6 @@ option java_outer_classname = "NamespaceMeta";
 package polypheny.protointerface;
 
 /*
-The NamespaceRequest message is designed for querying specific details about a specific namespace.
-*/
-message NamespaceRequest {
-  // The name of the namespace for which details are being requested.
-  string namespace_name = 1;
-}
-
-/*
 The NamespacesRequest message allows querying for namespaces based on specific patterns in their names as well as their types.
 */
 message NamespacesRequest {

@@ -32,16 +32,12 @@ message Request {
   uint64 id = 1;
   oneof type {
     DbmsVersionRequest dbms_version_request = 2;
-    LanguageRequest language_request = 3;
     DefaultNamespaceRequest default_namespace_request = 4;
     TableTypesRequest table_types_request = 5;
     TypesRequest types_request = 6;
-    UserDefinedTypesRequest user_defined_types_request = 7;
-    ClientInfoPropertyMetaRequest client_info_property_meta_request = 8;
     ProceduresRequest procedures_request = 9;
     FunctionsRequest functions_request = 10;
     NamespacesRequest namespaces_request = 11;
-    NamespaceRequest namespace_request = 12;
     EntitiesRequest entities_request = 13;
     SqlStringFunctionsRequest sql_string_functions_request = 14;
     SqlSystemFunctionsRequest sql_system_functions_request = 15;
@@ -88,12 +84,9 @@ message Response {
   oneof type {
     ErrorResponse error_response = 256;
     DbmsVersionResponse dbms_version_response = 3;
-    LanguageResponse language_response = 4;
     DefaultNamespaceResponse default_namespace_response = 24;
     TableTypesResponse table_types_response = 5;
     TypesResponse types_response = 26;
-    UserDefinedTypesResponse user_defined_types_response = 6;
-    ClientInfoPropertyMetaResponse client_info_property_meta_response = 27;
     ProceduresResponse procedures_response = 7;
     FunctionsResponse functions_response = 29;
     NamespacesResponse namespaces_response = 8;

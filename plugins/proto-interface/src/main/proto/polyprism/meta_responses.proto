@@ -24,14 +24,6 @@ message DbmsVersionResponse {
   int32 minor_version = 4;
 }
 
-/*
-The LanguageResponse message offers a list of query languages supported by the system.
-*/
-message LanguageResponse {
-  // A list containing the names of all supported query languages.
-  repeated string language_names = 1;
-}
-
 /* The default namespace */
 message DefaultNamespaceResponse {
   string default_namespace = 1;
@@ -85,14 +77,6 @@ message Type {
   int32 max_scale = 9;
   // The base number used in representing numeric values.
   int32 radix = 10;
-}
-
-/*
-The UserDefinedTypesResponse message offers a list of user-defined data types present in the system.
-*/
-message UserDefinedTypesResponse {
-  // A list of UserDefinedType objects detailing each user-defined data type in the system.
-  repeated UserDefinedType user_defined_types = 1;
 }
 
 /*

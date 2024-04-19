@@ -18,13 +18,6 @@ This message does not contain any fields. It simply acts as an indicator to prom
 message DbmsVersionRequest {
 }
 
-/*
-The LanguageRequest message facilitates the retrieval of supported query languages that can be used for constructing statements.
-This message does not contain any fields. It acts as a request for the server to return the list of supported query languages in a LanguageResponse.
-*/
-message LanguageRequest {
-}
-
 /* Request the default namespace */
 message DefaultNamespaceRequest {
 }
@@ -42,14 +35,6 @@ This helps clients understand the range of data types they can utilize when defi
 This message does not contain any fields. It simply prompts the server to return a list of supported data types in a TypesResponse.
 */
 message TypesRequest {
-}
-
-/*
-The UserDefinedTypesRequest message facilitates the retrieval of user-defined data types present in the database.
-These custom data types can be crafted to meet specific needs not met by standard types.
-This message is devoid of fields. It acts as a signal for the server to provide details of user-defined data types in a UserDefinedTypesResponse.
-*/
-message UserDefinedTypesRequest {
 }
 
 /*
@@ -109,13 +94,6 @@ This message doesn’t possess any fields.
 It acts as a directive for the server to provide the associated client information properties in a ClientInfoPropertiesResponse.
 */
 message ClientInfoPropertiesRequest {
-}
-
-/*
-The ClientInfoPropertyMetaRequest message aids in extracting metadata about the client information properties present in the database.
-This fieldless message prompts the server to detail metadata concerning client information properties in a ClientInfoPropertyMetaResponse.
-*/
-message ClientInfoPropertyMetaRequest {
 }
 
 /*
