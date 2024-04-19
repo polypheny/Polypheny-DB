@@ -82,6 +82,9 @@ delombok {
     dependsOn(":webui:processResources")
 }
 
+test.dependsOn(":dbms:shadowJar")
+
+
 task testJar(type: Jar, dependsOn: testClasses) {
     archiveClassifier = 'tests'
     from sourceSets.test.output

@@ -34,7 +34,7 @@ public final class PolyphenyCertificateManager {
             throw new IOException( "Invalid context string" );
         }
         if ( !isSafeHostname( hostname ) ) {
-            throw new IOException( "Insecure hostname" );
+            throw new IOException( "Unsafe hostname" );
         }
         return "certs/" + context + "/" + hostname + "/";
     }

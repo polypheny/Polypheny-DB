@@ -16,7 +16,6 @@
 
 package org.polypheny.db.webui;
 
-
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -288,33 +287,37 @@ public class HttpServer implements Runnable {
 
 
     private static void attachDockerRoutes( Javalin webuiServer, Crud crud ) {
-        webuiServer.post( "/addDockerInstance", crud::addDockerInstance );
+        webuiServer.post( "/docker/instances/create", crud::createDockerInstance );
 
-        webuiServer.post( "/testDockerInstance/{dockerId}", crud::testDockerInstance );
+        webuiServer.get( "/docker/instances", crud::getDockerInstances );
 
-        webuiServer.get( "/getDockerInstance/{dockerId}", crud::getDockerInstance );
+        webuiServer.get( "/docker/instances/{dockerId}", crud::getDockerInstance );
 
-        webuiServer.get( "/getDockerInstances", crud::getDockerInstances );
+        webuiServer.patch( "/docker/instances/{dockerId}", crud::updateDockerInstance );
 
-        webuiServer.post( "/updateDockerInstance", crud::updateDockerInstance );
+        webuiServer.post( "/docker/instances/{dockerId}/reconnect", crud::reconnectToDockerInstance );
 
-        webuiServer.post( "/reconnectToDockerInstance", crud::reconnectToDockerInstance );
+        webuiServer.post( "/docker/instances/{dockerId}/ping", crud::pingDockerInstance );
 
-        webuiServer.post( "/removeDockerInstance", crud::removeDockerInstance );
+        webuiServer.delete( "/docker/instances/{dockerId}", crud::deleteDockerInstance );
 
-        webuiServer.get( "/getAutoDockerStatus", crud::getAutoDockerStatus );
+        webuiServer.get( "/docker/auto", crud::getAutoDockerStatus );
 
-        webuiServer.post( "/doAutoHandshake", crud::doAutoHandshake );
+        webuiServer.post( "/docker/auto", crud::doAutoHandshake );
 
-        webuiServer.post( "/startHandshake", crud::startHandshake );
+        webuiServer.get( "/docker/handshakes", crud::getHandshakes );
 
-        webuiServer.get( "/getHandshake/{hostname}", crud::getHandshake );
+        webuiServer.get( "/docker/handshakes/{id}", crud::getHandshake );
 
-        webuiServer.post( "/cancelHandshake", crud::cancelHandshake );
+        webuiServer.post( "/docker/handshakes/{id}/restart", crud::restartHandshake );
 
-        webuiServer.get( "/getDockerSettings", crud::getDockerSettings );
+        webuiServer.post( "/docker/handshakes/{id}/cancel", crud::cancelHandshake );
 
-        webuiServer.post( "/changeDockerSettings", crud::changeDockerSettings );
+        webuiServer.delete( "/docker/handshakes/{id}", crud::deleteHandshake );
+
+        webuiServer.get( "/docker/settings", crud::getDockerSettings );
+
+        webuiServer.patch( "/docker/settings", crud::updateDockerSettings );
     }
 
 

@@ -16,7 +16,6 @@
 
 package org.polypheny.db.jdbc;
 
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -44,6 +43,7 @@ import java.util.Map;
 import java.util.Properties;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.PolyphenyDb;
 import org.polypheny.db.TestHelper;
@@ -53,6 +53,9 @@ import org.polypheny.jdbc.PrismInterfaceServiceException;
 import org.polypheny.jdbc.types.PolyphenyBlob;
 import org.polypheny.jdbc.types.PolyphenyClob;
 
+
+@SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
+@Tag("adapter")
 @Slf4j
 public class JdbcConnectionTest {
 
@@ -65,11 +68,6 @@ public class JdbcConnectionTest {
         // Ensures that Polypheny-DB is running
         //noinspection ResultOfMethodCallIgnored
         TestHelper.getInstance();
-        try {
-            Class.forName( "org.polypheny.jdbc.PolyphenyDriver" );
-        } catch ( ClassNotFoundException e ) {
-            log.error( "Polypheny JDBC Driver not found", e );
-        }
     }
 
 

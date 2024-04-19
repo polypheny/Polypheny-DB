@@ -45,9 +45,10 @@ import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.config.ConfigDocker;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.docker.DockerSetupHelper.DockerReconnectResult;
-import org.polypheny.db.docker.DockerSetupHelper.DockerSetupResult;
+import org.polypheny.db.docker.exceptions.DockerUserException;
+import org.polypheny.db.docker.models.AutoDockerStatus;
 import org.polypheny.db.docker.models.DockerHost;
+import org.polypheny.db.docker.models.HandshakeInfo;
 
 @Slf4j
 public final class AutoDocker {
@@ -59,6 +60,12 @@ public final class AutoDocker {
     private Thread thread = null;
 
     private final DockerHost host = new DockerHost( "localhost", "localhost", "", ConfigDocker.COMMUNICATION_PORT, ConfigDocker.HANDSHAKE_PORT, ConfigDocker.PROXY_PORT );
+
+    private HandshakeInfo handshake = null;
+
+
+    private AutoDocker() {
+    }
 
 
     public static AutoDocker getInstance() {
@@ -84,13 +91,11 @@ public final class AutoDocker {
     private Optional<String> findAndStartPolyphenyContainer( DockerClient client ) {
         List<Container> resp = client.listContainersCmd().withShowAll( true ).exec();
         for ( Container c : resp ) {
-            for ( String name : c.getNames() ) {
-                if ( name.equals( "/" + DockerUtils.CONTAINER_NAME ) ) {
-                    if ( !c.getState().equals( "running" ) ) {
-                        client.startContainerCmd( c.getId() ).exec();
-                    }
-                    return Optional.of( c.getId() );
+            if ( Arrays.asList( c.getNames() ).contains( "/" + DockerUtils.CONTAINER_NAME ) ) {
+                if ( !c.getState().equals( "running" ) ) {
+                    client.startContainerCmd( c.getId() ).exec();
                 }
+                return Optional.of( c.getId() );
             }
         }
         return Optional.empty();
@@ -141,7 +146,7 @@ public final class AutoDocker {
 
 
     private String createAndStartHandshakeCommand( DockerClient client, String containerUuid ) {
-        ExecCreateCmdResponse execResponse = client.execCreateCmd( containerUuid ).withCmd( "./main", "handshake", HandshakeManager.getInstance().getHandshakeParameters( "localhost" ) ).withAttachStdin( true ).withAttachStderr( true ).exec();
+        ExecCreateCmdResponse execResponse = client.execCreateCmd( containerUuid ).withCmd( "./main", "handshake", HandshakeManager.getInstance().getHandshakeParameters( handshake.id() ) ).withAttachStdin( true ).withAttachStderr( true ).exec();
 
         client.execStartCmd( execResponse.getId() ).exec( new ResultCallback<Frame>() {
             @Override
@@ -187,11 +192,15 @@ public final class AutoDocker {
 
         String execId = createAndStartHandshakeCommand( client, maybeUuid.get() );
         updateStatus( "Performing handshake with container" );
-        HandshakeManager.getInstance().restartOrGetHandshake( "localhost" );
+        HandshakeManager.getInstance().ensureHandshakeIsRunning( handshake.id() );
         int retries = 0;
         while ( true ) {
-            String handshakeStatus = HandshakeManager.getInstance().getHandshake( "localhost" ).get( "status" );
+            String handshakeStatus = HandshakeManager.getInstance().getHandshake( handshake.id() ).orElseThrow().status();
             if ( handshakeStatus.equals( "FAILED" ) || handshakeStatus.equals( "SUCCESS" ) ) {
+                if ( handshakeStatus.equals( "FAILED" ) ) {
+                    status = HandshakeManager.getInstance().getHandshake( handshake.id() ).orElseThrow().lastErrorMessage();
+                }
+                handshake = null;
                 break;
             }
             if ( handshakeStatus.equals( "NOT_RUNNING" ) ) {
@@ -207,7 +216,7 @@ public final class AutoDocker {
                     updateStatus( "Command failed with exit code " + s.getExitCodeLong() );
                     break;
                 }
-                HandshakeManager.getInstance().restartOrGetHandshake( "localhost" );
+                HandshakeManager.getInstance().ensureHandshakeIsRunning( handshake.id() );
             }
             try {
                 TimeUnit.SECONDS.sleep( 1 );
@@ -219,43 +228,43 @@ public final class AutoDocker {
     }
 
 
-    public boolean doAutoConnect() {
+    public void doAutoConnect() {
         if ( !isAvailable() ) {
-            return false;
+            throw new DockerUserException( "AutoDocker is not available" );
         }
 
         if ( isConnected() ) {
-            return true;
+            return;
         }
 
         Optional<Map.Entry<Integer, DockerInstance>> maybeDockerInstance = DockerManager.getInstance().getDockerInstances().entrySet().stream().filter( e -> e.getValue().getHost().hostname().equals( "localhost" ) ).findFirst();
 
         if ( maybeDockerInstance.isPresent() ) {
-            DockerReconnectResult res = DockerSetupHelper.reconnectToInstance( maybeDockerInstance.get().getKey() );
-
-            if ( !res.getError().isEmpty() ) {
-                log.info( "AutoDocker: Reconnect failed: " + res.getError() );
-                updateStatus( "error: " + res.getError() );
-                return false;
+            try {
+                handshake = DockerSetupHelper.reconnectToInstance( maybeDockerInstance.get().getKey() );
+            } catch ( DockerUserException e ) {
+                log.info( "AutoDocker: Reconnect failed: " + e );
+                updateStatus( "error: " + e.getMessage() );
+                throw new DockerUserException( e.getMessage() );
             }
         } else {
-            DockerSetupResult res = DockerSetupHelper.newDockerInstance( host.hostname(), host.alias(), host.registry(), host.communicationPort(), host.handshakePort(), host.proxyPort(), false );
-
-            if ( res.isSuccess() ) {
-                return true;
-            }
-
-            if ( !res.getError().isEmpty() ) {
-                log.info( "AutoDocker: Setup failed: " + res.getError() );
-                updateStatus( "setup failed: " + res.getError() );
-                return false;
+            try {
+                Optional<HandshakeInfo> res = DockerSetupHelper.newDockerInstance( host.hostname(), host.alias(), host.registry(), host.communicationPort(), host.handshakePort(), host.proxyPort(), false ); // TODO: Here we get the handshake
+                if ( res.isEmpty() ) {
+                    return;
+                }
+                handshake = res.get();
+            } catch ( DockerUserException e ) {
+                log.info( "AutoDocker: Setup failed: " + e );
+                updateStatus( "setup failed: " + e.getMessage() );
+                throw e;
             }
         }
 
         // If it is not successful and not an error, a handshake needs to be done
         synchronized ( this ) {
             if ( thread == null || !thread.isAlive() ) {
-                thread = new Thread( this::doAutoHandshake );
+                thread = new Thread( this::doAutoHandshake, "AutoHandshakeThread" );
                 thread.start();
             }
         }
@@ -267,7 +276,9 @@ public final class AutoDocker {
                 // no problem
             }
         }
-        return isConnected();
+        if ( !isConnected() ) {
+            throw new DockerUserException( "Failed to connect to local Docker instance: " + status );
+        }
     }
 
 
@@ -287,13 +298,8 @@ public final class AutoDocker {
     }
 
 
-    public Map<String, Object> getStatus() {
-        return Map.of(
-                "available", isAvailable(),
-                "connected", isConnected(),
-                "running", thread != null && thread.isAlive(),
-                "message", status
-        );
+    public AutoDockerStatus getStatus() {
+        return new AutoDockerStatus( isAvailable(), isConnected(), thread != null && thread.isAlive(), status );
     }
 
 

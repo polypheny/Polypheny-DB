@@ -14,27 +14,12 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.docker;
+package org.polypheny.db.docker.models;
 
-import lombok.Getter;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
-@Getter
-public final class DockerStatus {
-
-    private final boolean successful;
-    private final String errorMessage;
-    private final int instanceId;
-
-
-    public DockerStatus( int instanceId, boolean successful ) {
-        this( instanceId, successful, "" );
-    }
-
-
-    public DockerStatus( int instanceId, boolean successful, String errorMessage ) {
-        this.instanceId = instanceId;
-        this.successful = successful;
-        this.errorMessage = errorMessage;
-    }
+public record HandshakeInfo( @JsonProperty long id, @JsonProperty DockerHost host, @JsonProperty String runCommand, @JsonProperty String execCommand,
+                             @JsonProperty String status, @JsonProperty String lastErrorMessage,
+                             @JsonProperty boolean containerExistsGuess ) {
 
 }

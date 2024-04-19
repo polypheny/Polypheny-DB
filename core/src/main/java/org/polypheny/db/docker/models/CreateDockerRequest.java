@@ -17,21 +17,18 @@
 package org.polypheny.db.docker.models;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.config.ConfigDocker;
 import org.polypheny.db.docker.DockerUtils;
 import org.polypheny.db.docker.exceptions.DockerUserException;
 
-public record DockerHost( @JsonProperty String hostname, @JsonProperty String alias, @JsonProperty String registry,
-                          @JsonProperty int communicationPort, @JsonProperty int handshakePort, @JsonProperty int proxyPort ) {
 
-    public String getRegistryOrDefault() {
-        return registry.isEmpty() ?
-                RuntimeConfig.DOCKER_CONTAINER_REGISTRY.getString()
-                : registry;
-    }
+public record CreateDockerRequest( @JsonProperty String hostname, @JsonProperty String alias, @JsonProperty String registry,
+                                   @JsonProperty Integer communicationPort, @JsonProperty Integer handshakePort, @JsonProperty Integer proxyPort ) {
 
-
-    private static int checkPortIsValid( int port ) {
+    private static int checkPortIsValid( Integer port, int defaultValue ) {
+        if ( port == null ) {
+            return defaultValue;
+        }
         if ( port <= 0 || port > 65535 ) {
             throw new DockerUserException( "Invalid port number %d", port );
         }
@@ -39,10 +36,7 @@ public record DockerHost( @JsonProperty String hostname, @JsonProperty String al
     }
 
 
-    public DockerHost( String hostname, String alias, String registry, int communicationPort, int handshakePort, int proxyPort ) {
-        if ( communicationPort == handshakePort || handshakePort == proxyPort || communicationPort == proxyPort ) {
-            throw new DockerUserException( "Communication, handshake and proxy port must be different" );
-        }
+    public CreateDockerRequest( String hostname, String alias, String registry, Integer communicationPort, Integer handshakePort, Integer proxyPort ) {
         this.hostname = DockerUtils.normalizeHostname( hostname );
         if ( this.hostname.isEmpty() ) {
             throw new DockerUserException( "Hostname must not be empty" );
@@ -52,9 +46,12 @@ public record DockerHost( @JsonProperty String hostname, @JsonProperty String al
             throw new DockerUserException( "Alias must not be empty" );
         }
         this.registry = registry;
-        this.communicationPort = checkPortIsValid( communicationPort );
-        this.handshakePort = checkPortIsValid( handshakePort );
-        this.proxyPort = checkPortIsValid( proxyPort );
+        this.communicationPort = checkPortIsValid( communicationPort, ConfigDocker.COMMUNICATION_PORT );
+        this.handshakePort = checkPortIsValid( handshakePort, ConfigDocker.HANDSHAKE_PORT );
+        this.proxyPort = checkPortIsValid( proxyPort, ConfigDocker.PROXY_PORT );
+        if ( this.communicationPort.equals( this.handshakePort ) || this.handshakePort.equals( this.proxyPort ) || this.communicationPort.equals( this.proxyPort ) ) {
+            throw new DockerUserException( "Communication, handshake and proxy port must be different" );
+        }
     }
 
 }
