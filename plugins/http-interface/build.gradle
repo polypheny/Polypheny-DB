@@ -35,7 +35,7 @@ delombok {
 }
 
 javadoc {
-    dependsOn(":plugins:http-interface:compileTestJava")
+    //dependsOn(":plugins:http-interface:compileTestJava")
 }
 
 
@@ -48,7 +48,7 @@ jar {
         attributes "Copyright": "The Polypheny Project (polypheny.org)"
         attributes "Version": "$project.version"
     }
-    dependsOn(compileTestJava)
+    //dependsOn(compileTestJava)
 }
 java {
     withJavadocJar()

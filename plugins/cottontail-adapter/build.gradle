@@ -46,13 +46,13 @@ delombok {
     dependsOn(":plugins:sql-language:processResources")
 }
 
-inspectClassesForKotlinIC {
+/*inspectClassesForKotlinIC {
     dependsOn(":plugins:cottontail-adapter:compileTestKotlin")
 }
 
 plugin {
     dependsOn(":plugins:cottontail-adapter:compileTestKotlin")
-}
+}*/
 
 test.dependsOn(":dbms:shadowJar")
 
@@ -89,7 +89,7 @@ jar {
         attributes "Copyright": "The Polypheny Project (polypheny.org)"
         attributes "Version": "$project.version"
     }
-    dependsOn(":plugins:cottontail-adapter:compileTestKotlin")
+    //dependsOn(":plugins:cottontail-adapter:compileTestKotlin")
 }
 java {
     withJavadocJar()
@@ -97,7 +97,7 @@ java {
 }
 
 javadoc {
-    dependsOn(":plugins:cottontail-adapter:compileTestKotlin")
+    //dependsOn(":plugins:cottontail-adapter:compileTestKotlin")
 }
 
 licensee {
