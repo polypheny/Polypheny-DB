@@ -295,55 +295,9 @@ public class TestHelper {
             while ( j < expectedRow.length ) {
                 if ( expectedRow.length >= j + 1 ) {
                     int columnType = rsmd.getColumnType( j + 1 ); // this leads to errors if expected is different aka expected is decimal and actual is integer
-                    if ( columnType == Types.BINARY ) {
-                        if ( expectedRow[j] == null ) {
-                            assertNull( row[j], "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "': " );
-                        } else {
-                            assertEquals(
-                                    new String( (byte[]) expectedRow[j] ),
-                                    new String( (byte[]) row[j] ),
-                                    "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'" );
-                        }
-                    } else if ( columnType != Types.ARRAY ) {
-                        if ( expectedRow[j] != null ) {
-                            if ( columnType == Types.FLOAT || columnType == Types.REAL ) {
-                                float diff = Math.abs( (float) expectedRow[j] - (float) row[j] );
-                                assertTrue( diff < EPSILON,
-                                        "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "': The difference between the expected float and the received float exceeds the epsilon. Difference: " + (diff - EPSILON) );
-                            } else if ( columnType == Types.DOUBLE ) {
-                                double diff = Math.abs( (double) expectedRow[j] - (double) row[j] );
-                                assertTrue( diff < EPSILON,
-                                        "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "': The difference between the expected double and the received double exceeds the epsilon. Difference: " + (diff - EPSILON) );
-                            } else if ( columnType == Types.DECIMAL || (expectedRow[j] instanceof Float || expectedRow[j] instanceof Double) ) { // Decimals are exact // but not for calculations?
-                                BigDecimal expectedResult = new BigDecimal( expectedRow[j].toString() );
-                                BigDecimal actualResult = new BigDecimal( row[j].toString() );
-                                double diff = Math.abs( expectedResult.doubleValue() - actualResult.doubleValue() );
-                                if ( isConvertingDecimals ) {
-                                    assertTrue( diff < EPSILON,
-                                            "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "': The difference between the expected decimal and the received decimal exceeds the epsilon. Difference: " + (diff - EPSILON) );
-                                } else {
-                                    assertEquals( 0, expectedResult.doubleValue() - actualResult.doubleValue(), 0.0, "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'" );
-                                }
-                            } else if ( expectedRow[j] != null && row[j] != null && expectedRow[j] instanceof Number && row[j] instanceof Number ) {
-                                assertEquals( ((Number) expectedRow[j]).longValue(), ((Number) row[j]).longValue(), "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'" );
-                            } else {
-                                assertEquals(
-                                        expectedRow[j],
-                                        row[j],
-                                        "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'"
-                                );
-                            }
-                        } else {
-                            assertEquals(
-                                    expectedRow[j],
-                                    row[j],
-                                    "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'"
-                            );
-                        }
+                    String columnName = rsmd.getColumnName( j + 1 );
 
-                    } else {
-                        checkArray( rsmd, row, expectedRow, j );
-                    }
+                    checkValue( isConvertingDecimals, row[j], expectedRow[j], columnType, columnName );
                     j++;
                 } else {
                     fail( "More data available then expected." );
@@ -354,21 +308,71 @@ public class TestHelper {
     }
 
 
-    private static void checkArray( ResultSetMetaData rsmd, Object[] row, Object[] expectedRow, int j ) throws SQLException {
-        List<?> resultList = (List<?>) row[j];
+    private static void checkValue( boolean isConvertingDecimals, Object actualValue, Object expectedValue, int columnType, String columnName ) {
+        if ( columnType != Types.ARRAY ) {
+            checkScalar( columnName, actualValue, expectedValue, isConvertingDecimals, columnType );
+        } else {
+            checkArray( columnName, actualValue, expectedValue, isConvertingDecimals, columnType );
+        }
+    }
 
-        if ( expectedRow[j] == null ) {
-            assertNull( resultList, "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "': " );
+
+    private static void checkScalar( String columnName, Object actualValue, Object expectedValue, boolean isConvertingDecimals, int columnType ) {
+        if ( expectedValue == null ) {
+            assertNull( actualValue, "Unexpected data in column '%s'".formatted( columnName ) );
+        } else if ( columnType == Types.BINARY ) {
+            assertEquals(
+                    new String( (byte[]) expectedValue ),
+                    new String( (byte[]) actualValue ),
+                    "Unexpected data in column '%s'".formatted( columnName ) );
+        } else if ( columnType == Types.FLOAT || columnType == Types.REAL ) {
+            float diff = Math.abs( (float) expectedValue - (float) actualValue );
+            assertTrue( diff < EPSILON,
+                    "Unexpected data in column '%s': The difference between the expected float and the received float exceeds the epsilon. Difference: %s".formatted( columnName, diff - EPSILON ) );
+        } else if ( columnType == Types.DOUBLE ) {
+            double diff = Math.abs( (double) expectedValue - (double) actualValue );
+            assertTrue( diff < EPSILON,
+                    "Unexpected data in column '%s': The difference between the expected double and the received double exceeds the epsilon. Difference: %s".formatted( columnName, diff - EPSILON ) );
+        } else if ( columnType == Types.DECIMAL || (expectedValue instanceof Float || expectedValue instanceof Double) ) { // Decimals are exact // but not for calculations?
+            BigDecimal expectedResult = new BigDecimal( expectedValue.toString() );
+            BigDecimal actualResult = new BigDecimal( actualValue.toString() );
+            double diff = Math.abs( expectedResult.doubleValue() - actualResult.doubleValue() );
+            if ( isConvertingDecimals ) {
+                assertTrue( diff < EPSILON,
+                        "Unexpected data in column '%s': The difference between the expected decimal and the received decimal exceeds the epsilon. Difference: %s".formatted( columnName, diff - EPSILON ) );
+            } else {
+                assertEquals( 0, expectedResult.doubleValue() - actualResult.doubleValue(), 0.0, "Unexpected data in column '%s'".formatted( columnName ) );
+            }
+        } else if ( expectedValue instanceof Number expectedNumber && actualValue instanceof Number actualNumber ) {
+            assertEquals( expectedNumber.longValue(), actualNumber.longValue(), "Unexpected data in column '%s'".formatted( columnName ) );
+        } else if ( expectedValue instanceof List<?> expectedList && actualValue instanceof List<?> actualList
+                && (columnType == Types.ARRAY || columnType == Types.OTHER) ) {
+            for ( int i = 0; i < expectedList.size(); i++ ) {
+                checkValue( isConvertingDecimals, actualList.get( i ), expectedList.get( i ), Types.OTHER, columnName );
+            }
+        } else {
+            assertEquals(
+                    expectedValue,
+                    actualValue,
+                    "Unexpected data in column '%s'".formatted( columnName )
+            );
+        }
+
+    }
+
+
+    private static void checkArray( String columnName, Object actualValue, Object expectedValue, boolean isConvertingDecimals, int columnType ) {
+        List<?> resultList = (List<?>) actualValue;
+
+        if ( expectedValue == null ) {
+            assertNull( resultList, "Unexpected data in column '%s'".formatted( columnName ) );
             return;
         }
 
-        List<?> expectedArray = toList( (Object[]) expectedRow[j] );//(Object[]) expectedRow[j];
+        List<?> expectedArray = toList( (Object[]) expectedValue );
 
         for ( int k = 0; k < expectedArray.size(); k++ ) {
-            assertEquals(
-                    expectedArray.get( k ),
-                    resultList.get( k ),
-                    "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "' at position: " + k + 1 );
+            checkValue( isConvertingDecimals, resultList.get( k ), expectedArray.get( k ), Types.OTHER, columnName ); // we have rather unspecific component types for arrays
         }
     }
 
