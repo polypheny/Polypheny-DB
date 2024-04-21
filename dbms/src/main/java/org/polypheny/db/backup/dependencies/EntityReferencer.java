@@ -47,6 +47,13 @@ public class EntityReferencer {
         this.entityType = entityType;
     }
 
+
+    /**
+     * Checks if the entity is referenced by another entity
+     * @param entityId The id of the entity you want to check whether it is referenced by another entity
+     * @param entityType The type of the entity to be checked
+     * @return true if the entity is referenced by another entity, false if not
+     */
     public Boolean isReferenced(Long entityId, BackupEntityType entityType) {
         if (referencerNamespaces.isEmpty() && referencerTables.isEmpty()) {
             return false;

@@ -38,11 +38,18 @@ public class InsertEntries {
     TransactionManager transactionManager = null;
 
 
+    /**
+     * Organizes the insertion of data from the backup
+     * @param transactionManager TransactionManager to use
+     */
     public InsertEntries(TransactionManager transactionManager) {
         this.transactionManager = transactionManager;
     }
 
 
+    /**
+     * Starts the insertion of data from the backup, creates a threadpool where each thread handles one file, i.e. one entity
+     */
     public void start() {
         ExecutorService executorService = null;
         try {

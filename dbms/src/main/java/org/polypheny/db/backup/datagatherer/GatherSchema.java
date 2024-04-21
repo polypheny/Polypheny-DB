@@ -43,6 +43,9 @@ import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 
 
+/**
+ * This class gathers the schema information from Polypheny-DB, and safes it in a BackupInformationObject
+ */
 @Slf4j
 public class GatherSchema {
 
@@ -53,7 +56,7 @@ public class GatherSchema {
 
     private Catalog catalog = PolyCatalog.getInstance();
 
-    //TODO(FF): don't safe data here, but safe it informationobject...
+    //don't safe data here, but safe it informationobject...
     //ImmutableMap<Long, LogicalNamespace> namespaces;
     List<LogicalNamespace> namespaces;
     List<LogicalNamespace> relNamespaces;
@@ -62,7 +65,7 @@ public class GatherSchema {
 
     //namespace id, list of tables for the namespace
     ImmutableMap<Long, List<LogicalEntity>> tables;
-    //TODO(FF): make views and materialized views not (? deleted?)... views and materialized views can be over several tables -> over several namespaces??
+    //TODO(FF): make views and materialized views
     ImmutableMap<Long, List<LogicalEntity>> views;
     ImmutableMap<Long, List<LogicalEntity>> materializedViews;
     ImmutableMap<Long, List<LogicalEntity>> collections;
@@ -72,11 +75,9 @@ public class GatherSchema {
     ImmutableMap<Long, List<LogicalColumn>> columns;
     ImmutableMap<Long, List<LogicalPrimaryKey>> primaryKeysPerTable;
     ImmutableMap<Long, List<LogicalForeignKey>> foreignKeysPerTable;
-    //ImmutableMap<Long, List<LogicalKey>> keysPerTable;
-    // uufspliite en pk, fk, constraints, indexes
+
     // index -> can only be created per (one) table
     ImmutableMap<Long, List<LogicalEntity>> logicalIndexes;
-    //TODO(FF): if there exist constraint that go over several tables, need other way to signify it... rather use constraints per table, not per namespace! (but gets the right amount of constraints) --> constr only 1 table (?), views can be sever tables
     ImmutableMap<Long, List<LogicalConstraint>> constraints;
 
     Boolean collectedRel = false;
@@ -88,6 +89,11 @@ public class GatherSchema {
     }
 
 
+    /**
+     * Starts the gathering of the schema information from Polypheny-DB
+     * @param backupInformationObject The BackupInformationObject where the gathered information should be saved
+     * @return The BackupInformationObject with the gathered schema information
+     */
     public BackupInformationObject start( BackupInformationObject backupInformationObject ) {
         log.debug( "gather schemas" );
         this.backupInformationObject = backupInformationObject;
@@ -289,9 +295,6 @@ public class GatherSchema {
         this.backupInformationObject.setCollections( this.collections );
         this.backupInformationObject.setCollectedDocSchema( true );
     }
-
-    //TODO (FF): either create getters (and setters?) or a "whole" getter class... to pass information to BackupManager
-
 
     /**
      * Prints some of the gathered information (in a debug statement)

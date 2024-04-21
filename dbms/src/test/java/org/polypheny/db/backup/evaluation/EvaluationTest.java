@@ -95,9 +95,13 @@ public class EvaluationTest {
 
      */
 
+
+    /**
+     * Start the evaluation for different batchsizes against different data volumes
+     */
     @Test
     public void startEvaluation() {
-        /*
+
 
         startMeasure( "batchSize5", "s", "simple", "rel", 5 );
         startMeasure( "batchSize500", "s", "simple", "rel", 500 );
@@ -113,22 +117,21 @@ public class EvaluationTest {
 
 
 
-         */
+        startMeasure( "batchSize5", "s", "simple", "graph", 5 );//yes
+        startMeasure( "batchSize500", "s", "simple", "graph", 500 );//yes
+        startMeasure( "batchSize1000", "s", "simple", "graph", 1000 );//yes
 
-        //startMeasure( "batchSize5", "s", "simple", "graph", 5 );//yes
-        //startMeasure( "batchSize500", "s", "simple", "graph", 500 );//yes
-        //startMeasure( "batchSize1000", "s", "simple", "graph", 1000 );//yes
 
-        //startMeasure( "batchSize5", "m", "simple", "graph", 5 );//yes
-        //startMeasure( "batchSize500", "m", "simple", "graph", 500 );//yes
-        //startMeasure( "batchSize1000", "m", "simple", "graph", 1000 );//yes
+        startMeasure( "batchSize5", "m", "simple", "graph", 5 );//yes
+        startMeasure( "batchSize500", "m", "simple", "graph", 500 );//yes
+        startMeasure( "batchSize1000", "m", "simple", "graph", 1000 );//yes
 
-        //todo: first failed on first insertion (or writing to file): kong.unirest.UnirestException: java.net.SocketTimeoutException: Read timed out (evtl s file uusläse?)
-        //startMeasure( "batchSize5", "l", "simple", "graph", 5 );
-        //startMeasure( "batchSize500", "l", "simple", "graph", 500 );
-        //startMeasure( "batchSize1000", "l", "simple", "graph", 1000 );
 
-        /*
+
+        startMeasure( "batchSize5", "l", "simple", "graph", 5 );//yes
+        startMeasure( "batchSize500", "l", "simple", "graph", 500 );//yes
+        startMeasure( "batchSize1000", "l", "simple", "graph", 1000 );
+
 
         startMeasure( "batchSize5", "s", "simple", "doc", 5 );
         startMeasure( "batchSize500", "s", "simple", "doc", 500 );
@@ -142,41 +145,32 @@ public class EvaluationTest {
         startMeasure( "batchSize5000", "l", "simple", "doc", 5000 );
         startMeasure( "batchSize5", "l", "simple", "doc", 5 );
 
-         */
 
-
-
+        //To see if everything is working
         assertEquals( 2, 2, "Wrong number of tables" );
 
     }
 
+
+    /**
+     * Test the evaluation for the relational data model
+     * @throws InterruptedException
+     */
     @Test public void relTest() throws InterruptedException {
         BackupManager backupManager = BackupManager.getINSTANCE();
         //backupManager.setBatchSize( 10 );
         addBasicRelData( 6 );
-        /*
-        List<Object[]> data = List.of(
-                new Object[]{ 12, "Name1", 60 },
-                new Object[]{ 15, "Name2", 24 },
-                new Object[]{ 99, "Name3", 11 }
-        );
-        TestHelper.executeSql(
-                ( c, s ) -> TestHelper.checkResultSet( s.executeQuery( "SELECT * FROM TableA" ), data, true ),
-                //( c, s ) -> s.executeUpdate( "UPDATE TableA SET AGE = 13 WHERE AGE = 12" ),
-                //( c, s ) -> s.executeUpdate( "DROP TABLE TableA" ),
-                ( c, s ) -> c.commit()
-        );
-
-         */
 
         backupManager.startDataGathering( -1 );
-
-
 
         assertEquals( 2, 2, "Wrong number of tables" );
         //Thread.sleep( 5000 );
     }
 
+
+    /**
+     * Test the evaluation for the document data model
+     */
     @Test
     public void docTest() {
         BackupManager backupManager = BackupManager.getINSTANCE();
@@ -192,6 +186,11 @@ public class EvaluationTest {
         assertEquals( 2, 2, "Wrong number of tables" );
     }
 
+
+    /**
+     * Test the evaluation for the graph data model
+     * @throws InterruptedException when something goes wrong with the threadpool in the data collection and insertion process
+     */
     @Test
     public void graphTest() throws InterruptedException {
         BackupManager backupManager = BackupManager.getINSTANCE();
@@ -232,7 +231,11 @@ public class EvaluationTest {
                 nbrEntries = 500;
                 break;
             case "l":
-                nbrEntries = 1000;
+                if (dataModel.equals( "graph" )) {
+                    nbrEntries = 1000;
+                } else {
+                    nbrEntries = 5000;
+                }
                 break;
             default:
                 break;
@@ -356,18 +359,20 @@ public class EvaluationTest {
         ArrayList<Long> measuredTime = new ArrayList<Long>();
         long startTime;
         long elapsedTime;
-        // es warmup mache vorhär, evtl eif 2, 3mol mässe vorhär - das au schriibe
+        // perform 5 warmup runs
         backupManager.startDataGathering( batchSize );
         backupManager.startDataGathering( batchSize );
         backupManager.startDataGathering( batchSize );
-        for(int i=0; i< 50; i++){
+        backupManager.startDataGathering( batchSize );
+        backupManager.startDataGathering( batchSize );
+
+        // perform 500 runs
+        for(int i=0; i< 500; i++){
             startTime = System.nanoTime();
             backupManager.startDataGathering( batchSize );
             elapsedTime = System.nanoTime() - startTime;
             measuredTime.add(elapsedTime);
             log.info( "Time" + dataModel+complexity + ": " + elapsedTime);
-            //todo print elapsed time
-            //can (and do i have to) delete old backup data & reset bupInofrmationObject?? - no
         }
         return measuredTime;
     }
@@ -387,8 +392,8 @@ public class EvaluationTest {
         //parameter: e.g. batchsize, scaling: [s|m|l], complexity: [simple|complex], type: [collection|insertion], dataModel: [rel|doc|graph|allModels]
         // file title: e.g. rel_batchSize10_s_simple_collection
 
-        // warmup runs, 2
-        for(int i=0; i<= 3; i++){
+        // perform warmup runs, 5 times
+        for(int i=0; i< 5; i++){
             backupManager.startInserting();
             switch ( dataModel ) {
                 case "rel":
@@ -409,7 +414,8 @@ public class EvaluationTest {
             }
         }
 
-        for(int i=0; i< 50; i++){
+        // perform 500 runs
+        for(int i=0; i< 500; i++){
             startTime = System.nanoTime();
             backupManager.startInserting();
             elapsedTime = System.nanoTime() - startTime;
@@ -436,34 +442,6 @@ public class EvaluationTest {
     }
 
     //------------------------------------------------------------------------
-
-    private static void addBasicRelTestData() {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
-            Connection connection = jdbcConnection.getConnection();
-            try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate( "CREATE NAMESPACE reli" );
-                statement.executeUpdate( "CREATE TABLE reli.album(albumId INTEGER NOT NULL, albumName VARCHAR(255), nbrSongs INTEGER,PRIMARY KEY (albumId))" );
-                statement.executeUpdate( "INSERT INTO reli.album VALUES (1, 'Best Album Ever!', 10), (2, 'Pretty Decent Album...', 15), (3, 'Your Ears will Bleed!', 13)" );
-                connection.commit();
-            }
-        } catch ( SQLException e ) {
-            log.error( "Exception while adding test data", e );
-        }
-    }
-
-    private static void deleteBasicRelTestData() {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
-            Connection connection = jdbcConnection.getConnection();
-            try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate( "DROP TABLE reli.album" );
-                statement.executeUpdate( "DROP SCHEMA reli" );
-                connection.commit();
-            }
-        } catch ( SQLException e ) {
-            log.error( "Exception while deleting old data", e );
-        }
-    }
-
 
     /**
      * Add simple relational evaluation data - simple structure
@@ -487,46 +465,13 @@ public class EvaluationTest {
         TestHelper.executeSql(
                 ( c, s ) -> c.commit()
         );
-
-        /*
-
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
-            Connection connection = jdbcConnection.getConnection();
-            try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate( "CREATE NAMESPACE reli" );
-                statement.executeUpdate( "CREATE TABLE reli.album(albumId INTEGER NOT NULL, albumName VARCHAR(255), nbrSongs INTEGER,PRIMARY KEY (albumId))" );
-                for ( int i = 0; i < nbrRows; i++ ) {
-                    statement.executeUpdate( "INSERT INTO reli.album VALUES (" + i + ", 'Best Album Ever!', 10)" );
-                }
-                connection.commit();
-                int l = 3;
-            }
-        } catch ( SQLException e ) {
-            log.error( "Exception while adding test data", e );
-        }
-
-         */
     }
 
 
     /**
-     * Delete simple relational evaluation data
+     * Delete simple relational evaluation data created with the addBasicRelData method (deletes the namespace)
      */
     private static void deleteBasicRelData() {
-        /*
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
-            Connection connection = jdbcConnection.getConnection();
-            try ( Statement statement = connection.createStatement() ) {
-                //statement.executeUpdate( "DROP TABLE reli.album" ); //TODO: delete this?
-                statement.executeUpdate( "DROP SCHEMA IF EXISTS reli" );
-                connection.commit();
-            }
-        } catch ( SQLException e ) {
-            log.error( "Exception while deleting old data", e );
-        }
-
-         */
-
         TestHelper.executeSql(
                 ( c, s ) -> s.executeUpdate( "DROP SCHEMA IF EXISTS reli" ),
                 ( c, s ) -> c.commit()
@@ -537,32 +482,12 @@ public class EvaluationTest {
 
 
     /**
-     * Add simple graph test data with a number of nodes and edges. Edges are always between two nodes
+     * Add simple graph test data with a number of nodes and edges. Edges are always between two nodes (each has one property)
      * @param nbrNodes how many nodes you want to create
      */
     private static void addBasicGraphData( int nbrNodes ) {
         //nbr Edges is nbrNodes/2
-        /*
 
-        final String SINGLE_NODE_PERSON_1 = "CREATE (p:Person {name: 'Max'})";
-        final String SINGLE_NODE_PERSON_2 = "CREATE (p:Person {name: 'Hans'})";
-
-        final String SINGLE_NODE_PERSON_COMPLEX_1 = "CREATE (p:Person {name: 'Ann', age: 45, depno: 13})";
-        final String SINGLE_NODE_PERSON_COMPLEX_2 = "CREATE (p:Person {name: 'Bob', age: 31, depno: 13})";
-
-        final String SINGLE_NODE_ANIMAL = "CREATE (a:Animal {name:'Kira', age:3, type:'dog'})";
-        final String SINGLE_EDGE_1 = "CREATE (p:Person {name: 'Max'})-[rel:OWNER_OF]->(a:Animal {name:'Kira', age:3, type:'dog'})";
-        final String SINGLE_EDGE_2 = "CREATE (p:Person {name: 'Max'})-[rel:KNOWS {since: 1994}]->(a:Person {name:'Hans', age:31})";
-
-
-        executeGraph( SINGLE_NODE_PERSON_2, GRAPH_NAME );
-        executeGraph( SINGLE_NODE_PERSON_COMPLEX_1, GRAPH_NAME );
-        executeGraph( SINGLE_NODE_PERSON_COMPLEX_2, GRAPH_NAME );
-        executeGraph( SINGLE_NODE_ANIMAL, GRAPH_NAME );
-        executeGraph( SINGLE_EDGE_1, GRAPH_NAME );
-        executeGraph( SINGLE_EDGE_2, GRAPH_NAME );
-
-         */
         String GRAPH_NAME = "graphtest";
         String nodesString = "";
         String edgesString = "";
@@ -584,7 +509,7 @@ public class EvaluationTest {
             executeGraph( nodeQuery, GRAPH_NAME );
         }
 
-        /*
+        /* Uncomment to also create edges
         // connect two nodes with an edge
         for ( int i = 0; i < nbrEdges; i++ ) {
             if ( i%2 != 0 ) {
@@ -608,12 +533,20 @@ public class EvaluationTest {
     }
 
 
+    /**
+     * Deletes the graph namespace created with the addBasicGraphData method
+     */
     private static void deleteBasicGraphData() {
         deleteGraphData( "graphtest" );
     }
 
     //------------------------------------------------------------------------
 
+
+    /**
+     * Add simple document test data with a number of documents (a document has 3 fields)
+     * @param nbrDocs how many documents you want to create
+     */
     private static void addBasicDocData( int nbrDocs ) {
         initDatabase( "doctest" );  //database = namespace
         createCollection( "doc1", "doctest" );
@@ -626,6 +559,10 @@ public class EvaluationTest {
         //executeDoc( "db.doc1.insert({name: 'Ann', age: 45, depno: 13})", "doctest" );
     }
 
+
+    /**
+     * Delete the document namespace created with the addBasicDocData method
+     */
     private static void deleteBasicDocData() {
         //dropCollection( "doc1", "doctest" );
         dropDatabase( "doctest" );

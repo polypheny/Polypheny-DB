@@ -62,6 +62,18 @@ public class InsertEntriesTask implements Runnable{
     String entityName;
     int nbrCols;
 
+
+    /**
+     * Executes a task that inserts entries into the database. One task is created for each entity that should be inserted and handles only one entity
+     * The data is inserted batchwise, meaning that a new insertion query is created for each batch of entries
+     * @param transactionManager TransactionManager
+     * @param dataFile File that contains the entry data
+     * @param dataModel DataModel of the data to be inserted
+     * @param namespaceId Id of the namespace of the entity where the entries should be inserted
+     * @param namespaceName Name of the namespace of the entity where the entries should be inserted
+     * @param entityName Name of the entity where the entries should be inserted
+     * @param nbrCols Number of columns of the entity (for tables, for other data models it is ignored)
+     */
     public InsertEntriesTask( TransactionManager transactionManager, File dataFile, DataModel dataModel, Long namespaceId, String namespaceName, String entityName, int nbrCols ) {
         this.transactionManager = transactionManager;
         this.dataFile = dataFile;
@@ -73,6 +85,9 @@ public class InsertEntriesTask implements Runnable{
     }
 
 
+    /**
+     * Reads the data from the file and inserts it into the database
+     */
     @Override
     public void run() {
         Transaction transaction;
@@ -94,18 +109,11 @@ public class InsertEntriesTask implements Runnable{
                     String inLine = "";
                     String row = "";
                     transaction = transactionManager.startTransaction( Catalog.defaultUserId, false, "Backup Entry-Inserter" ); //FIXME: bruuche en transaction för jede batch, bzw sobald transaction commited... passts...... commit erscht am schloss....
-                    //statement = transaction.createStatement();
-
-                    //statement.getDataContext().setParameterTypes(  );
-                    //statement.getDataContext().setParameterValues(  );//liste
-                    //ImplementationContext lol =  LanguageManager.getINSTANCE().anyPrepareQuery( QueryContext.builder().language( QueryLanguage.from( "sql" ) ).query( query ).origin( "Backup Manager" ).transactionManager( transactionManager ).namespaceId( namespaceId ).build(), statement ).get( 0 );
-                    //Statement statementTrue = lol.getStatement();
-
                     String relValues = "";
+
                     //build up row for query (since each value is one row in the file), and then execute query for each row
                     while ( (inLine = in.readLine()) != null ) {
                         elementCounter++;
-                        //PolyValue deserialized = PolyValue.deserialize( inLine );   //somehow only reads two first lines from table file and nothing else (if there is only doc file, it doesnt read)
                         PolyValue deserialized = PolyValue.fromTypedJson( inLine, PolyValue.class );
 
                         String value = deserialized.toJson();
@@ -122,7 +130,6 @@ public class InsertEntriesTask implements Runnable{
                             //query = String.format( "INSERT INTO %s.%s VALUES (%s)", namespaceName, entityName, row );
                             //log.info( row );
 
-                            //ExecutedContext executedQuery = LanguageManager.getINSTANCE().anyQuery( QueryContext.builder().language( QueryLanguage.from( "sql" ) ).query( query ).origin( "Backup Manager" ).transactionManager( transactionManager ).namespaceId( namespaceId ).build(), statement ).get( 0 );
                             //relValues = relValues + row + ", ";
                             row = String.format( "(%s), ", row );
                             relValues = relValues + row;
@@ -131,9 +138,6 @@ public class InsertEntriesTask implements Runnable{
                             batchCounter ++;
                             //query = "";
                             row= "";
-
-
-
                         }
 
                         if (batchCounter == BackupManager.batchSize) {
@@ -183,10 +187,6 @@ public class InsertEntriesTask implements Runnable{
                             throw new GenericRuntimeException("Could not insert relational backup data from query: " + query + " with error message:" + e.getMessage());
 
                         }
-
-                        // ImplementationContext lol =  LanguageManager.getINSTANCE().anyPrepareQuery( QueryContext.builder().language( QueryLanguage.from( "sql" ) ).query( query ).origin( "Backup Manager" ).transactionManager( transactionManager ).namespaceId( namespaceId ).build(), statement ).get( 0 );
-                        //lol.getStatement()
-                        //statementTrue - values iifüege wie obe
                         batchCounter = 0;
                         query = "";
                     }
@@ -198,17 +198,11 @@ public class InsertEntriesTask implements Runnable{
                     //statement = transaction.createStatement();
                     String docValues = "";
                     while ( (inLine = in.readLine()) != null ) {
-                        //PolyValue deserialized = PolyValue.deserialize( inLine );   //somehow only reads two first lines from table file and nothing else (if there is only doc file, it doesnt read)
                         PolyValue deserialized = PolyValue.fromTypedJson( inLine, PolyValue.class );
                         String value = deserialized.toJson();
                         docValues += value + ", ";
                         batchCounter++;
                         //query = String.format( "db.%s.insertOne(%s)", entityName, value );
-
-                        //transaction = transactionManager.startTransaction( Catalog.defaultUserId, false, "Backup Entry-Gatherer" );
-                        //statement = transaction.createStatement();
-                        //ExecutedContext executedQuery = LanguageManager.getINSTANCE().anyQuery( QueryContext.builder().language( QueryLanguage.from( "mql" ) ).query( query ).origin( "Backup Manager" ).transactionManager( transactionManager ).namespaceId( namespaceId ).build(), statement ).get( 0 );
-                        //transaction.commit();
 
                         if (batchCounter == BackupManager.batchSize) {
                             // remove the last ", " from the string
@@ -431,22 +425,6 @@ public class InsertEntriesTask implements Runnable{
             }
             in.close();
             log.info( "data-insertion: end of thread for " + entityName );
-
-            /*
-            String test = bIn.readLine();
-            StringTokenizer tk = new StringTokenizer(inLine);
-            int a = Integer.parseInt(tk.nextToken()); // <-- read single word on inLine and parse to int
-            log.info( test );
-
-            byte[] bytes = new byte[1000];
-            int whatever = in.read( bytes );
-            String resultt = new String();
-            for (byte b : bytes) {
-                resultt += (char) b;
-            }
-
-             */
-
 
 
         } catch(Exception e){

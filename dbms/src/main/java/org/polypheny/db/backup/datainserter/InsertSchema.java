@@ -48,6 +48,9 @@ import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.PolyType;
 
+/**
+ * This class inserts the schema of the backup into Polypheny-DB
+ */
 @Slf4j
 public class InsertSchema {
 
@@ -63,7 +66,6 @@ public class InsertSchema {
 
     /**
      * Manages the insertion process of the schema
-     *
      * @param backupInformationObject contains all the metadata of the schema to be inserted
      */
     public void start( BackupInformationObject backupInformationObject ) {
@@ -71,62 +73,15 @@ public class InsertSchema {
         this.backupInformationObject = backupInformationObject;
         ImmutableMap<Long, List<BackupEntityWrapper<LogicalTable>>> tables;
 
-        /*
-        ImmutableMap<Long, BupSuperEntity<LogicalNamespace>> temp = bupInformationObject.transformNamespacesToBupSuperEntityMap( bupInformationObject.getRelNamespaces() );
-        bupInformationObject.setBupRelNamespaces( temp );
-        insertCreateNamespace( bupInformationObject.getBupRelNamespaces() );
-        insertCreateNamespace( bupInformationObject.getBupDocNamespaces() );
-        insertCreateNamespace( bupInformationObject.getBupGraphNamespaces() );
-
-         */
-
-        //TODO(FF): figure out how to create collections
-        //insertCreateCollection(); //error: Caused by: org.polypheny.db.mql.parser.TokenMgrError: Lexical error at line 1, column 21.  Encountered: '39' (39),
-        log.info( "created collection" );
-        // got until prepared statement execution, then got the following error: -> do i have to create mqlQueryParameters, not queryParameters??
-        // class org.polypheny.db.languages.QueryParameters cannot be cast to class org.polypheny.db.languages.mql.MqlQueryParameters (org.polypheny.db.languages.QueryParameters is in unnamed module of loader 'app'; org.polypheny.db.languages.mql.MqlQueryParameters is in unnamed module of loader org.pf4j.PluginClassLoader @60743cdb)
-
-        //ImmutableMap<Long, BackupEntityWrapper<LogicalNamespace>> namespaces = backupInformationObject.wrapNamespaces( backupInformationObject.getNamespaces() );
-        //backupInformationObject.setWrappedNamespaces( namespaces );
         insertCreateNamespace( backupInformationObject.getWrappedNamespaces() );
-        /*
-        String query = String.format("CREATE GRAPH NAMESPACE testGraph");
-        executeStatementInPolypheny( query, "sql", DataModel.GRAPH);
-        String queery = "CREATE PLACEMENT OF testGraph ON STORE hsqldb"; //error: Caused by: org.polypheny.db.languages.sql.parser.impl.ParseException: Encountered "" at line 1, column 1.
-        executeStatementInPolypheny( queery, "sql", DataModel.GRAPH);
-         */
 
-        //tables = bupInformationObject.transformLogicalEntitiesToBupSuperEntityyy( bupInformationObject.getTables() );
-        //bupInformationObject.setBupTables( tables );
-
-        //List<BupSuperEntity<LogicalEntity>> bupEntityList = new ArrayList<>();
         Map<Long, List<BackupEntityWrapper<? extends LogicalEntity>>> tempMap = new HashMap<>();
-        //luege öbs goht eso (a de räschtleche ort, ond söcht met instance of caste)
 
-        /*
-        for ( Map.Entry<Long, List<LogicalTable>> a : backupInformationObject.getTables().entrySet()) {
-            List<BackupEntityWrapper<LogicalEntity>> bupEntityList = new ArrayList<>();
-            //TODO(FF): doesn't work with return value :(
-            bupEntityList = backupInformationObject.wrapLogicalEntity( a.getValue().stream().map( e -> (LogicalEntity) e ).collect( Collectors.toList()) );
-            tempMap.put( a.getKey(), bupEntityList.stream().map( e -> (BackupEntityWrapper<LogicalEntity>) e ).collect( Collectors.toList()));
-        }
-        //bupInformationObject.setBupTables( ImmutableMap.copyOf( tempMap ) );
-
-         */
-
-        // create table
-        //bupInformationObject.transformLogicalEntitiesToBupSuperEntity( bupInformationObject.getTables() );
-        //tables = backupInformationObject.tempWrapLogicalTables( backupInformationObject.getTables(), true );
-        //backupInformationObject.setWrappedTables( tables );
-
-        //LogicalTable lol = backupInformationObject.getWrappedTables().get( 0 ).get( 0 ).getEntityObject().unwrap( LogicalTable.class );
-        //use LogicalEntity.unwrap(LogicalTable.class) for each of the LogicalEntities in wrappedTables
-        //ImmutableMap<Long, List<BackupEntityWrapper<LogicalTable>>> tableTables = backupInformationObject.getWrappedTables()
 
         insertCreateTable( backupInformationObject.getWrappedTables() );
 
         // alter table - add unique constraint
-        //TODO(FF): only call if there are any relational schemas (machts senn??)
+        //TODO(FF): only call if there are any relational schemas
         insertAlterTableUQ( backupInformationObject.getWrappedTables(), backupInformationObject.getConstraints() );
         insertAlterTableFK( backupInformationObject.getWrappedTables(), backupInformationObject.getForeignKeysPerTable() );
 
@@ -134,7 +89,6 @@ public class InsertSchema {
         insertCreateCollection( backupInformationObject.getWrappedCollections() );
 
         //TODO(FF): create something to test that only available data is tried to be inserted
-        //TODO(FF): don't insert tables from source (check for entityType SOURCE (not default is ENTITY))
 
         /*
         insertion order (schema):
@@ -165,23 +119,10 @@ public class InsertSchema {
     }
 
 
-    /*
-    private void insertRelationalNamespaces() {
-        ImmutableMap<Long, BackupEntityWrapper<LogicalNamespace>> relNamespaces = backupInformationObject.getBupRelNamespaces();
-        //String query = "INSERT INTO " + "relational_namespace" + " (id, name, owner, case_sensitive) VALUES (?, ?, ?, ?)";
-        String query = new String();
-
-        for ( Map.Entry<Long, BackupEntityWrapper<LogicalNamespace>> ns : relNamespaces.entrySet() ) {
-
-            //query = "CREATE RELATIONAL NAMESPACE " + ns.getValue().getEntityObject().name + ";";
-            query = String.format( "CREATE RELATIONAL NAMESPACE %s", ns.getValue().getEntityObject().name );
-        }
-
-    }
-
+    /**
+     * creates a "create namespace" query and executes it in polypheny for all namespaces that are marked to be inserted and are passed in the namespaces map
+     * @param namespaces map of namespaces to be inserted, where the key is the namespace id and the value is the wrapped namespace
      */
-
-
     private void insertCreateNamespace( ImmutableMap<Long, BackupEntityWrapper<LogicalNamespace>> namespaces ) {
         String query = new String();
         //TODO(FF): check if namespace already exists, give rename or overwrite option (here, or earlier?), if new name, write it to bupInformationObject
@@ -214,20 +155,16 @@ public class InsertSchema {
                         default:
                             throw new GenericRuntimeException( "During backup schema insertions not supported data model detected" + ns.getValue().getEntityObject().dataModel );
                     }
-
-                    //executeStatementInPolypheny( "CREATE DATABASE product2 IF NOT EXISTS", Catalog.defaultNamespaceId, DataModel.GRAPH );
-                    //executeStatementInPolypheny( query, ns.getKey(), ns.getValue().getEntityObject().dataModel );
-
-                    //executeStatementInPolypheny( query, "sql", ns.getValue().getEntityObject().dataModel );
-
                 }
             }
         }
-
-
     }
 
 
+    /**
+     * Sets an order for a "create table" query and executes it in polypheny for all table in the tables map. The creation query only contains the columns and the primary key
+     * @param tables map of tables to be inserted, where the key is the namespace id and the value is a list of wrapped tables that are in this namespace
+     */
     private void insertCreateTable( ImmutableMap<Long, List<BackupEntityWrapper<LogicalEntity>>> tables ) {
         String query = new String();
 
@@ -255,6 +192,11 @@ public class InsertSchema {
     }
 
 
+    /**
+     * Creates a "alter table" query, that sets a unique constraint on a table, and executes it in polypheny for all constraints in the constraints map
+     * @param tables map of tables to be altered, where the key is the table id and the value is a list of wrapped tables that are in this namespace
+     * @param constraints map of constraints to be inserted, where the key is the table id and the value is a list of constraints that are in this table
+     */
     private void insertAlterTableUQ( ImmutableMap<Long, List<BackupEntityWrapper<LogicalEntity>>> tables, ImmutableMap<Long, List<LogicalConstraint>> constraints ) {
         String query = new String();
 
@@ -266,7 +208,7 @@ public class InsertSchema {
 
             // go through each constraint in the list (of tables for one namespace)
             for ( BackupEntityWrapper<LogicalEntity> table : tablesList ) {
-                //TODO(FF - cosmetic): exclude source tables (for speed)
+                //TODO:FF (low priority): exclude source tables (for speed)
 
                 // compare the table id with the constraint keys, and if they are the same, create the constraint, and check if it schoult be inserted
                 if ( (constraints.containsKey( table.getEntityObject().unwrap( LogicalTable.class ).get().getId() )) && table.getToBeInserted() ) {
@@ -289,7 +231,6 @@ public class InsertSchema {
                             log.info( query );
                             executeStatementInPolypheny( query, nsID, DataModel.RELATIONAL );
                         }
-
                     }
                 }
             }
@@ -297,6 +238,11 @@ public class InsertSchema {
     }
 
 
+    /**
+     * Creates a "alter table" query, that sets a foreign key constraint on a table, and executes it in polypheny for all foreign keys in the foreignKeysPerTable map
+     * @param bupTables (deprecated) map of tables to be altered, where the key is the table id and the value is a list of wrapped tables that are in this namespace
+     * @param foreignKeysPerTable map of foreign keys to be inserted, where the key is the table id and the value is a list of foreign keys that are in this table
+     */
     private void insertAlterTableFK( ImmutableMap<Long, List<BackupEntityWrapper<LogicalEntity>>> bupTables, ImmutableMap<Long, List<LogicalForeignKey>> foreignKeysPerTable ) {
         String query = new String();
         //if (!foreignKeysPerTable.isEmpty()) {
@@ -336,6 +282,10 @@ public class InsertSchema {
     }
 
 
+    /**
+     * Creates a "create collecton" query and executes it in polypheny for all collections in the wrappedCollections map
+     * @param wrappedCollections map of collections to be inserted, where the key is the namespace id and the value is a list of wrapped collections that are in this namespace
+     */
     private void insertCreateCollection( ImmutableMap<Long, List<BackupEntityWrapper<LogicalEntity>>> wrappedCollections ) {
         String query = new String();
 
@@ -364,13 +314,6 @@ public class InsertSchema {
     }
 
 
-    private void setGraphStore() {
-        //query:CREATE PLACEMENT OF graf ON STORE 0 (comes from error message from trying to insert it via ui)
-        //TODO(FF): how do i know on which store the graph is on? how do i set this with the create query?????
-
-    }
-
-
     /**
      * Gets a list of the column names (seperated by ", ") without brackets
      *
@@ -394,6 +337,12 @@ public class InsertSchema {
     }
 
 
+    /**
+     * Creates a "create table" query for one table and returns it, the query only contains the columns and the primary key
+     * @param table wrapped table to be inserted
+     * @param namespaceName name of the namespace of the table
+     * @return the query to create the table
+     */
     private String createTableQuery( BackupEntityWrapper<LogicalEntity> table, String namespaceName ) {
         String query = new String();
         String columnDefinitions = "";
@@ -437,6 +386,11 @@ public class InsertSchema {
     }
 
 
+    /**
+     * Creates the column definition part of a "create table" query
+     * @param col logical column for which the column definition should be created
+     * @return the column definition part of a "create table" query
+     */
     private String createColumnDefinition( LogicalColumn col ) {
         String columnDefinitionString = new String();
         String colName = col.getName();
@@ -444,23 +398,6 @@ public class InsertSchema {
         String colNullable = "";
         String defaultValue = new String();
         if ( !(col.defaultValue == null) ) {
-
-            /*
-            String value = col.defaultValue.value.toTypedJson( ); //'hallo', {"@class":"org.polypheny.db.type.entity.PolyBigDecimal","value":2}
-            String value2 = col.defaultValue.value.toJson( );
-            String value3 = value2.replaceAll( "\"", "''" );
-            value2 = value2.replaceAll( "'", "''" );
-            //for string it is this: {"@class":"org.polypheny.db.type.entity.PolyString","value":"hallo","charset":"UTF-16"}, figure out regex to only get value
-            //from the string value (in json format), get only the value with regex from string {"@class":"org.polypheny.db.type.entity.PolyString","value":"hallo","charset":"UTF-16"}
-            String regexString = value.replaceAll( ".*\"value\":", "" ); //is now value":"hallo","charset":"UTF-16"}, dont want ,"charset":"UTF-16"} part
-            regexString = regexString.replaceAll( ",.*", "" );  //correct for varchar, for int it is still 2}, dont want last }
-            regexString = regexString.replaceAll( "}", "" );
-            regexString = regexString.replaceAll( "\"", "" );
-
-
-            PolyValue reverse = PolyValue.fromTypedJson( value, PolyValue.class );
-            Boolean testing = PolyType.DATETIME_TYPES.contains( col.defaultValue.type );
-            */
 
             //replace ' to '', in case there is a " in the default value
             String value = col.defaultValue.value.toJson();
@@ -561,6 +498,8 @@ public class InsertSchema {
         return columnDefinitionString;
     }
 
+
+    //(implemented at other place, but may change there. This is kept for reference)
     /*
     private String collationToString( Collation collation ) {
         try {
@@ -577,9 +516,10 @@ public class InsertSchema {
             throw new RuntimeException( e );
         }
     }
-
      */
 
+
+    //(implemented at other place, but may change there. This is kept for reference)
     /*
     private String nullableBoolToString (boolean nullable) {
         if (nullable) {
@@ -588,10 +528,15 @@ public class InsertSchema {
             return "NOT NULL";
         }
     }
-
      */
 
 
+    /**
+     * Executes a query in polypheny
+     * @param query query to be executed
+     * @param namespaceId namespace id of where the query should be executed
+     * @param dataModel data model of the query
+     */
     private void executeStatementInPolypheny( String query, Long namespaceId, DataModel dataModel ) {
         log.info( "entered execution with query:" + query );
         Transaction transaction;
@@ -707,42 +652,6 @@ public class InsertSchema {
                 throw new GenericRuntimeException( "Error while starting transaction" + e.getMessage() );
             }
         }
-
-        /*
-
-        try {
-            // get algRoot
-            Processor queryProcessor = statement.getTransaction().getProcessor( QueryLanguage.from( queryLanguageType ) );
-            Node parsed = queryProcessor.parse( query ).get( 0 );
-
-            if ( dataModel == DataModel.RELATIONAL ) {
-                //TODO(FF): MqlQueryParamters would require dependency... am i allwoed?
-                //MqlQueryParameters parameters = new MqlQueryParameters
-            }
-
-            QueryParameters parameters = new QueryParameters( query, dataModel );
-
-            //ddl?
-            //result = queryProcessor.prepareDdl( statement, parsed, parameters );
-
-
-            //from here on again comment
-            AlgRoot algRoot = queryProcessor.translate(
-                    statement,
-                    queryProcessor.validate( statement.getTransaction(), sqlNode, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean()).left,
-                    new QueryParameters( query, DataModel.RELATIONAL )
-            );
-            //get PolyResult from AlgRoot
-            final QueryProcessor processor = statement.getQueryProcessor();
-            result = processor.prepareQuery( algRoot, true );
-
-
-        } catch ( Exception e ) {
-            log.info( e.getMessage() );
-            log.info( "exception while executing query: "+ query );
-            throw new RuntimeException( e );
-        }
-        */
 
     }
 

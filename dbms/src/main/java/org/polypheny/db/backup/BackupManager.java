@@ -61,7 +61,7 @@ public class BackupManager {
     @Getter
     private BackupInformationObject backupInformationObject;
     public static TransactionManager transactionManager = null;
-    public static int batchSize = 1;  //#rows (100 for the beginning)
+    public static int batchSize = 2;  // can be set with startDataGathering()
     public static int threadNumber = 8; //#cores (#cpu's) for now
     //private final Logger logger;
 
@@ -135,9 +135,11 @@ public class BackupManager {
      * Starts the data gathering process. It is responsible for starting and managing the schema and the entry data gathering.
      * It starts the wrapping process of the schema data.
      * It also starts the process of saving the data to a file (resp. it is started in the GatherEntries class)
+     * @param setBatchSize The batch size for the backup manager (stays that way also for the insertion)
      */
     public void startDataGathering( int setBatchSize ) {
 
+        //TODO: catch if it is set to an invalid value
         // if setBatchSize is -1, the default value is used
         if ( ! (setBatchSize == -1) ) {
             batchSize = setBatchSize;

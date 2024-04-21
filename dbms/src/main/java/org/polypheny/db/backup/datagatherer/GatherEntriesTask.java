@@ -43,6 +43,9 @@ import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.graph.PolyGraph;
 
+/**
+ * This class is a task that is executed by a thread. It gathers the entries from the database from one entity and writes them to a file.
+ */
 @Slf4j
 public class GatherEntriesTask implements Runnable {
 
@@ -53,6 +56,14 @@ public class GatherEntriesTask implements Runnable {
     private File dataFile;
 
 
+    /**
+     * Creates a new GatherEntriesTask, which gathers the entries from the database from one entity and writes them to a file (one file per entity)
+     * @param transactionManager TransactionManager to use
+     * @param query gather query to execute
+     * @param dataModel DataModel of the entity where the entry data belongs to
+     * @param namespaceId Id of the namespace of the entity
+     * @param dataFile File to write the entries to
+     */
     public GatherEntriesTask( TransactionManager transactionManager, String query, DataModel dataModel, long namespaceId, File dataFile ) {
         this.transactionManager = transactionManager;   //TODO(FF): is transactionmanager thread safe to pass it like this??
         this.query = query;
@@ -62,6 +73,9 @@ public class GatherEntriesTask implements Runnable {
     }
 
 
+    /**
+     * Runs the task, gathers the entries from the database from one entity and writes them to a file
+     */
     @Override
     public void run() {
         log.info( "thread for gather entries entered with query" + query );
@@ -71,108 +85,11 @@ public class GatherEntriesTask implements Runnable {
 
         switch ( dataModel ) {
             case RELATIONAL:
-                //fileChannel (is blocking... does it matter?) or
-                // DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(dataFile)));
-
-                /*
-                //fileChannel way (randomaccessfile, nio)
-                try(
-                        //DataOutputStream out = new DataOutputStream( new BufferedOutputStream( new FileOutputStream( dataFile ) ) );  //channel doesn't work with this
-                        RandomAccessFile writer = new RandomAccessFile( dataFile, "rw" );
-                        FileChannel channel = writer.getChannel();
-
-                        //method2
-                        FileOutputStream fos = new FileOutputStream( dataFile );
-                        FileChannel channel1 = fos.getChannel();
-
-                    ) {
-
-                    transaction = transactionManager.startTransaction( Catalog.defaultUserId, false, "Backup Entry-Gatherer" );
-                    statement = transaction.createStatement();
-                    //TODO(FF): be aware for writing into file with batches that you dont overwrite the entries already in the file (evtl you need to read the whole file again
-                    ExecutedContext executedQuery = LanguageManager.getINSTANCE().anyQuery( QueryContext.builder().language( QueryLanguage.from( "sql" ) ).query( query ).origin( "Backup Manager" ).transactionManager( transactionManager ).batch( BackupManager.batchSize ).namespaceId( namespaceId ).build(), statement ).get( 0 );
-                    ExecutedContext executedQuery1 = LanguageManager.getINSTANCE().anyQuery( QueryContext.builder().language( QueryLanguage.from( "sql" ) ).query( query ).origin( "Backup Manager" ).transactionManager( transactionManager ).namespaceId( Catalog.defaultNamespaceId ).build(), statement ).get( 0 );
-                    // in case of results
-                    ResultIterator iter = executedQuery.getIterator();
-                    while ( iter.hasMoreRows() ) {
-                        // liste mit tuples
-                        List<List<PolyValue>> resultsPerTable = iter.getNextBatch();
-                        log.info( resultsPerTable.toString() );
-                        //FIXME(FF): if this is array: [[1, PolyList(value=[PolyList(value=[PolyList(value=[PolyBigDecimal(value=111), PolyBigDecimal(value=112)]), PolyList(value=[PolyBigDecimal(value=121), PolyBigDecimal(value=122)])]), PolyList(value=[PolyList(value=[PolyBigDecimal(value=211), PolyBigDecimal(value=212)]), PolyList(value=[PolyBigDecimal(value=221), PolyBigDecimal(value=222)])])])]]
-                        //value is shown correctly for tojson
-
-                        for ( List<PolyValue> row : resultsPerTable ) {
-                            for ( PolyValue polyValue : row ) {
-                                String byteString = polyValue.serialize();
-                                //byte[] byteString2 = polyValue.serialize().getBytes(StandardCharsets.UTF_8);
-                                String jsonString = polyValue.toTypedJson();
-
-                                ByteBuffer buff = ByteBuffer.wrap(byteString.getBytes( StandardCharsets.UTF_8));
-                                channel.write( buff );
-
-
-                                //larger, testing easier, replace later
-                                PolyValue deserialized = PolyValue.deserialize( byteString );
-                                PolyValue deserialized2 = PolyValue.fromTypedJson( jsonString, PolyValue.class );
-                                int jhg=87;
-                            }
-                        }
-
-                        // flush only batchwise? is this even possible? does it make sense?
-
-                    }
-
-                } catch(Exception e){
-                    throw new GenericRuntimeException( "Error while starting transaction", e );
-                }
-
-                 */
-
-
-                /*
-                try {
-                    // get a transaction and a statement
-                    transaction = transactionManager.startTransaction( Catalog.defaultUserId, false, "Backup Entry-Gatherer" );
-                    statement = transaction.createStatement();
-                    //TODO(FF): be aware for writing into file with batches that you dont overwrite the entries already in the file (evtl you need to read the whole file again
-                    ExecutedContext executedQuery = LanguageManager.getINSTANCE().anyQuery( QueryContext.builder().language( QueryLanguage.from( "sql" ) ).query( query ).origin( "Backup Manager" ).transactionManager( transactionManager ).batch( BackupManager.batchSize ).namespaceId( namespaceId ).build(), statement ).get( 0 );
-                    ExecutedContext executedQuery1 = LanguageManager.getINSTANCE().anyQuery( QueryContext.builder().language( QueryLanguage.from( "sql" ) ).query( query ).origin( "Backup Manager" ).transactionManager( transactionManager ).namespaceId( Catalog.defaultNamespaceId ).build(), statement ).get( 0 );
-                    // in case of results
-                    ResultIterator iter = executedQuery.getIterator();
-                    while ( iter.hasMoreRows() ) {
-                        // liste mit tuples
-                        List<List<PolyValue>> resultsPerTable = iter.getNextBatch();
-                        log.info( resultsPerTable.toString() );
-                        //FIXME(FF): if this is array: [[1, PolyList(value=[PolyList(value=[PolyList(value=[PolyBigDecimal(value=111), PolyBigDecimal(value=112)]), PolyList(value=[PolyBigDecimal(value=121), PolyBigDecimal(value=122)])]), PolyList(value=[PolyList(value=[PolyBigDecimal(value=211), PolyBigDecimal(value=212)]), PolyList(value=[PolyBigDecimal(value=221), PolyBigDecimal(value=222)])])])]]
-                        //value is shown correctly for tojson
-
-                        for ( List<PolyValue> row : resultsPerTable ) {
-                            for ( PolyValue polyValue : row ) {
-                                String test = polyValue.serialize();
-                                String jsonString = polyValue.toTypedJson();    //larger, testing easier, replace later
-                                PolyValue deserialized = PolyValue.deserialize( test );
-                                PolyValue deserialized2 = PolyValue.fromTypedJson( jsonString, PolyValue.class );    // gives nullpointerexception
-                                int jhg=87;
-                            }
-                        }
-
-                    }
-
-                } catch ( Exception e ) {
-                    throw new GenericRuntimeException( "Error while starting transaction", e );
-                }
-
-                 */
-
-                // bufferedOutputStream, io way
                 try (
                         //DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(dataFile), 32768));
                         PrintWriter pOut = new PrintWriter( new DataOutputStream( new BufferedOutputStream( new FileOutputStream( dataFile ), 32768 ) ) );
-
                         //BufferedWriter bOut = new BufferedWriter( new OutputStreamWriter( new BufferedOutputStream( new FileOutputStream( dataFile ), 32768 ) ) );
-
                         //DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(dataFile)));
-
                         //String result = in.readUTF();
                         //in.close();
 
@@ -213,10 +130,8 @@ public class GatherEntriesTask implements Runnable {
                                 //larger, testing easier, replace later
                                 PolyValue deserialized = PolyValue.deserialize( byteString );
                                 PolyValue deserialized2 = PolyValue.fromTypedJson( jsonString, PolyValue.class );
-                                int jhg = 87;
                             }
                         }
-                        // flush only batchwise? is this even possible? does it make sense?
 
                     }
                     out.flush();
@@ -352,9 +267,5 @@ public class GatherEntriesTask implements Runnable {
 
     }
 
-
-    private void createFile( String path ) {
-
-    }
 
 }

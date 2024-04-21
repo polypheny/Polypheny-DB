@@ -23,8 +23,16 @@ import java.io.IOException;
 import java.io.Reader;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 
+/**
+ * Transforms the manifest file from the backup into a BackupManifest object
+ */
 public class ManifestReader {
 
+    /**
+     * Reads a manifest file and returns the BackupManifest object
+     * @param manifestFilePath path to the manifest file
+     * @return BackupManifest object
+     */
     public BackupManifest readManifest( String manifestFilePath ) {
         try (
                 Reader reader = new FileReader( manifestFilePath );
