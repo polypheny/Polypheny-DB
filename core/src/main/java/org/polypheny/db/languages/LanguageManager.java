@@ -108,7 +108,7 @@ public class LanguageManager {
                 throw new GenericRuntimeException( String.format( "%s query is empty", context.getLanguage().serializedName() ) );
             }
 
-            parsedQueries = context.getLanguage().splitter().apply( context );
+            parsedQueries = context.getLanguage().parser().apply( context );
         } catch ( Throwable e ) {
             log.warn( "Error on preparing query: {}", e.getMessage() );
             if ( transaction.isAnalyze() ) {
@@ -133,7 +133,7 @@ public class LanguageManager {
             try {
                 // test if parsing was successful
                 if ( parsed.getQueryNode().isEmpty() ) {
-                    Exception e = new GenericRuntimeException( "Error during parsing of query \"" + context.getQuery() + "\"" );
+                    Exception e = new GenericRuntimeException( "Error during parsing of query \"%s\"".formatted( context.getQuery() ) );
                     return handleParseException( statement, parsed, transaction, e, implementationContexts );
                 }
 

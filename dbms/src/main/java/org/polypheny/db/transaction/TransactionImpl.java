@@ -78,7 +78,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     private final LogicalUser user;
     @Getter
     private final LogicalNamespace defaultNamespace;
-
+    @Getter
     private final TransactionManagerImpl transactionManager;
 
     @Getter
