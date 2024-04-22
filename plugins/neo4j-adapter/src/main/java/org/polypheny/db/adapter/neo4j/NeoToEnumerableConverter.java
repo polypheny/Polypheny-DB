@@ -158,7 +158,7 @@ public class NeoToEnumerableConverter extends ConverterImpl implements Enumerabl
                 blockBuilder.newName( "enumerable" ),
                 Expressions.call(
                         entity,
-                        NeoMethod.EXECUTE.method, Expressions.constant( query ), types, parameterClasses ) );
+                        NeoMethod.EXECUTE.method, Expressions.constant( query ), types, parameterClasses, Expressions.constant( neoImplementor.isNeedsPreparedReturn() ) ) );
 
         blockBuilder.add( Expressions.return_( null, enumerable ) );
 

@@ -24,7 +24,7 @@ import org.polypheny.db.adapter.neo4j.types.NestedPolyType;
 
 
 public enum NeoMethod {
-    EXECUTE( NeoEntity.NeoQueryable.class, "execute", String.class, NestedPolyType.class, Map.class ),
+    EXECUTE( NeoEntity.NeoQueryable.class, "execute", String.class, NestedPolyType.class, Map.class, boolean.class ),
     GRAPH_EXECUTE( NeoGraph.NeoQueryable.class, "execute", String.class, NestedPolyType.class, Map.class ),
     GRAPH_ALL( NeoGraph.NeoQueryable.class, "executeAll", String.class, String.class );
 

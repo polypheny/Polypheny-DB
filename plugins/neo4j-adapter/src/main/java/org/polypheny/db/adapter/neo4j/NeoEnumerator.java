@@ -25,7 +25,7 @@ import org.polypheny.db.type.entity.PolyValue;
 
 
 /**
- * Neo4j representation of a {@link Enumerator}.
+ * Neo4j's representation of a {@link Enumerator}.
  *
  */
 public class NeoEnumerator implements Enumerator<PolyValue[]> {
