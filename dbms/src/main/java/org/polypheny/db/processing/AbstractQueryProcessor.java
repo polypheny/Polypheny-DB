@@ -95,6 +95,8 @@ import org.polypheny.db.information.InformationCode;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
+import org.polypheny.db.information.InformationPolyAlg;
+import org.polypheny.db.information.InformationPolyAlg.PlanType;
 import org.polypheny.db.information.InformationQueryPlan;
 import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.interpreter.Interpreters;
@@ -262,16 +264,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         AlgCluster cluster = AlgCluster.create( new VolcanoPlanner(), new RexBuilder( factory ), null, null );
         Snapshot snapshot = Catalog.snapshot();
 
-        System.out.println( "===== Logical Query Plan as JSON =====" );
-        ObjectMapper objectMapper = new ObjectMapper();
-        ObjectNode objectNode = alg.serializePolyAlgebra(objectMapper);
-        try {
-            String jsonString = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(objectNode);
-            System.out.println(jsonString);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
+        attachPolyAlgPlan(alg);
 
         StringBuilder sb = new StringBuilder();
         alg.buildPolyAlgebra( sb, "" );
@@ -305,6 +298,28 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
         } catch ( Exception e ) {
             System.out.println( "Could not parse input correctly:" );
+            e.printStackTrace();
+        }
+
+    }
+
+    private void attachPolyAlgPlan(AlgNode alg) {
+        System.out.println( "===== Logical Query Plan as JSON =====" );
+        ObjectMapper objectMapper = new ObjectMapper();
+        ObjectNode objectNode = alg.serializePolyAlgebra(objectMapper);
+        try {
+            String jsonString = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(objectNode);
+            System.out.println(jsonString);
+
+            InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
+            InformationPage page = new InformationPage( "PolyAlg Query Plan" ).setLabel( "plans" );
+            page.fullWidth();
+            InformationGroup group = new InformationGroup( page, "Logical PolyAlg Query Plan" );
+            queryAnalyzer.addPage( page );
+            queryAnalyzer.addGroup( group );
+            queryAnalyzer.registerInformation( new InformationPolyAlg( group, jsonString, PlanType.LOGICAL ) );
+
+        } catch (Exception e) {
             e.printStackTrace();
         }
 
