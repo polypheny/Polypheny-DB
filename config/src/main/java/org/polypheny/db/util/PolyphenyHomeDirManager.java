@@ -46,7 +46,7 @@ public class PolyphenyHomeDirManager {
     private File home;
     private final List<File> dirs = new ArrayList<>();
     private final List<File> deleteOnExit = new ArrayList<>();
-    private final FileLock lock;
+    private final FileLock lock; // Reference so the lock is not released
     @Getter
     private static RunMode mode;
 
