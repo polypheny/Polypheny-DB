@@ -229,15 +229,6 @@ public class PolyphenyDb {
 
         initializeStatusNotificationService();
 
-        // Check if Polypheny is already running
-        if ( GuiUtils.checkPolyphenyAlreadyRunning() ) {
-            if ( openUiInBrowser ) {
-                GuiUtils.openUiInBrowser();
-            }
-            System.err.println( "There is already an instance of Polypheny running on this system." );
-            System.exit( 0 );
-        }
-
         // Restore content of Polypheny folder
         restoreHomeFolderIfNecessary( dirManager );
 
