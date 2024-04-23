@@ -272,54 +272,6 @@ public class PolyphenyDb {
         log.info( "Polypheny UUID: " + uuid );
         RuntimeConfig.INSTANCE_UUID.setString( uuid );
 
-        class ShutdownHelper implements Runnable {
-
-            private final Serializable[] joinOnNotStartedLock = new Serializable[0];
-            private volatile boolean alreadyRunning = false;
-            private volatile boolean hasFinished = false;
-            private volatile Thread executor = null;
-
-
-            @Override
-            public void run() {
-                synchronized ( this ) {
-                    if ( alreadyRunning ) {
-                        return;
-                    } else {
-                        alreadyRunning = true;
-                        executor = Thread.currentThread();
-                    }
-                }
-                synchronized ( joinOnNotStartedLock ) {
-                    joinOnNotStartedLock.notifyAll();
-                }
-
-                synchronized ( this ) {
-                    hasFinished = true;
-                }
-            }
-
-
-            public boolean hasFinished() {
-                synchronized ( this ) {
-                    return hasFinished;
-                }
-            }
-
-
-            public void join( final long millis ) throws InterruptedException {
-                synchronized ( joinOnNotStartedLock ) {
-                    while ( !alreadyRunning ) {
-                        joinOnNotStartedLock.wait( 0 );
-                    }
-                }
-                if ( executor != null ) {
-                    executor.join( millis );
-                }
-            }
-
-        }
-
         final ShutdownHelper sh = new ShutdownHelper();
         // shutdownHookId = addShutdownHook( "Component Terminator", sh );
 
@@ -644,5 +596,53 @@ public class PolyphenyDb {
         DefaultInserter.restoreInterfacesIfNecessary();
     }
 
+
+    private static class ShutdownHelper implements Runnable {
+
+        private final Serializable[] joinOnNotStartedLock = new Serializable[0];
+        private volatile boolean alreadyRunning = false;
+        private volatile boolean hasFinished = false;
+        private volatile Thread executor = null;
+
+
+        @Override
+        public void run() {
+            synchronized ( this ) {
+                if ( alreadyRunning ) {
+                    return;
+                } else {
+                    alreadyRunning = true;
+                    executor = Thread.currentThread();
+                }
+            }
+            synchronized ( joinOnNotStartedLock ) {
+                joinOnNotStartedLock.notifyAll();
+            }
+
+            synchronized ( this ) {
+                hasFinished = true;
+            }
+        }
+
+
+        public boolean hasFinished() {
+            synchronized ( this ) {
+                return hasFinished;
+            }
+        }
+
+
+        public void join( final long millis ) throws InterruptedException {
+            synchronized ( joinOnNotStartedLock ) {
+                while ( !alreadyRunning ) {
+                    joinOnNotStartedLock.wait( 0 );
+                }
+            }
+            if ( executor != null ) {
+                executor.join( millis );
+            }
+        }
+
+    }
 
 }
