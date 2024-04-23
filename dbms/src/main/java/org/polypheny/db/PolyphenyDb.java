@@ -173,11 +173,9 @@ public class PolyphenyDb {
             }
 
             polyphenyDb.runPolyphenyDb();
-        } catch (
-                ParseException e ) {
+        } catch ( ParseException e ) {
             log.error( "Error parsing command line parameters: " + e.getMessage() );
-        } catch (
-                Throwable uncaught ) {
+        } catch ( Throwable uncaught ) {
             if ( log.isErrorEnabled() ) {
                 log.error( "Uncaught Throwable.", uncaught );
                 StatusNotificationService.printError(
@@ -200,11 +198,9 @@ public class PolyphenyDb {
         // Select behavior depending on arguments
         boolean showSplashScreen;
         boolean trayMenu;
-        boolean openUiInBrowser;
         if ( daemonMode ) {
             showSplashScreen = false;
             trayMenu = false;
-            openUiInBrowser = false;
         } else if ( desktopMode ) {
             showSplashScreen = true;
             try {
@@ -212,11 +208,9 @@ public class PolyphenyDb {
             } catch ( Exception e ) {
                 trayMenu = false;
             }
-            openUiInBrowser = true;
         } else {
             showSplashScreen = false;
             trayMenu = false;
-            openUiInBrowser = false;
         }
 
         // Open splash screen
