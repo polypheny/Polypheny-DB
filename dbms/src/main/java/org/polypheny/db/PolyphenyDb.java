@@ -529,7 +529,7 @@ public class PolyphenyDb {
     }
 
 
-    private String generateOrLoadPolyphenyUUID() {
+    private static String generateOrLoadPolyphenyUUID() {
         Optional<File> uuidFile = PolyphenyHomeDirManager.getInstance().getGlobalFile( "uuid" );
         if ( uuidFile.isEmpty() ) {
             UUID id = UUID.randomUUID();
