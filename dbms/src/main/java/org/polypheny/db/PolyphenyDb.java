@@ -122,6 +122,9 @@ public class PolyphenyDb {
     @Option(name = { "-mode" }, description = "Special system configuration for running tests", typeConverterProvider = PolyModesConverter.class)
     public static RunMode mode = RunMode.PRODUCTION;
 
+    @Option(name = { "-noAutoDocker" }, description = "Do not perform automatic setup with a local Docker instance")
+    public static boolean noAutoDocker = false;
+
     @Option(name = { "-gui" }, description = "Show splash screen on startup and add taskbar gui")
     public boolean desktopMode = false;
 
@@ -358,9 +361,11 @@ public class PolyphenyDb {
         StatusService.initialize( transactionManager, server.getServer() );
 
         Catalog.resetDocker = resetDocker; // TODO: Needed?
-        log.debug( "Setting Docker Timeouts" );
-        RuntimeConfig.DOCKER_TIMEOUT.setInteger( mode == RunMode.DEVELOPMENT || mode == RunMode.TEST ? 5 : RuntimeConfig.DOCKER_TIMEOUT.getInteger() );
-        initializeDockerManager();
+        if ( !noAutoDocker ) {
+            log.debug( "Setting Docker Timeouts" );
+            RuntimeConfig.DOCKER_TIMEOUT.setInteger( mode == RunMode.DEVELOPMENT || mode == RunMode.TEST ? 5 : RuntimeConfig.DOCKER_TIMEOUT.getInteger() );
+            performAutoSetup();
+        }
 
         // Initialize plugin manager
         PolyPluginManager.init( resetPlugins );
@@ -465,7 +470,7 @@ public class PolyphenyDb {
     }
 
 
-    private void initializeDockerManager() {
+    private void performAutoSetup() {
         if ( AutoDocker.getInstance().isAvailable() ) {
             if ( mode == RunMode.TEST ) {
                 resetDocker = true;
