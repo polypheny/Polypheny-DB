@@ -229,9 +229,11 @@ public class PolyphenyDb {
         if ( resetCatalog ) {
             if ( !PolyphenyHomeDirManager.getInstance().recursiveDeleteFolder( "data" ) ) {
                 log.error( "Unable to delete the data folder." );
+                System.exit( 1 );
             }
             if ( !PolyphenyHomeDirManager.getInstance().recursiveDeleteFolder( "monitoring" ) ) {
                 log.error( "Unable to delete the monitoring folder." );
+                System.exit( 1 );
             }
             ConfigManager.getInstance().resetDefaultConfiguration();
         }
