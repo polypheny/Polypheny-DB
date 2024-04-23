@@ -57,7 +57,6 @@ import org.polypheny.db.ddl.DdlManagerImpl;
 import org.polypheny.db.ddl.DefaultInserter;
 import org.polypheny.db.docker.AutoDocker;
 import org.polypheny.db.docker.DockerManager;
-import org.polypheny.db.gui.GuiUtils;
 import org.polypheny.db.gui.SplashHelper;
 import org.polypheny.db.gui.TrayGui;
 import org.polypheny.db.iface.Authenticator;
