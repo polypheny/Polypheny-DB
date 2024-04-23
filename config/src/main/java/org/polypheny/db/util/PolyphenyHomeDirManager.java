@@ -119,16 +119,16 @@ public class PolyphenyHomeDirManager {
     }
 
 
-    private boolean probeCreatingFolder( File file ) {
+    private static boolean probeCreatingFolder( File file ) {
         if ( file.isFile() ) {
             return false;
         }
 
         boolean couldCreate = true;
-        if ( !home.exists() ) {
-            couldCreate = home.mkdirs();
+        if ( !file.exists() ) {
+            couldCreate = file.mkdirs();
         }
-        return couldCreate && home.canWrite();
+        return couldCreate && file.canWrite();
     }
 
 
