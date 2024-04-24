@@ -74,7 +74,7 @@ import org.polypheny.db.util.PolyphenyHomeDirManager;
 @Extension
 @AdapterProperties(
         name = "File",
-        logo = "fa fa-file-image-o",
+        logoAssetPath = "fa fa-file-image-o",
         description = "An adapter that stores all data as files. It is especially suitable for multimedia collections.",
         usedModes = DeployMode.EMBEDDED,
         defaultMode = DeployMode.EMBEDDED)

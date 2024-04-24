@@ -63,7 +63,7 @@ import org.polypheny.db.util.PasswordGenerator;
 @Slf4j
 @AdapterProperties(
         name = "PostgreSQL",
-        logo = "assets/dbms-logos/postgres.svg",
+        logoAssetPath = "assets/dbms-logos/postgres.svg",
         description = "Relational database system optimized for transactional workload that provides an advanced set of features. PostgreSQL is fully ACID compliant and ensures that all requirements are met.",
         usedModes = { DeployMode.REMOTE, DeployMode.DOCKER },
         defaultMode = DeployMode.DOCKER)

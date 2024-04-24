@@ -67,7 +67,7 @@ import org.polypheny.db.util.Sources;
 @Slf4j
 @AdapterProperties(
         name = "Excel",
-        logo = "assets/dbms-logos/xls.png",
+        logoAssetPath = "assets/dbms-logos/xls.png",
         description = "An adapter for querying Excel files. The location of the directory containing the Excel files can be specified. Currently, this adapter only supports read operations.",
         usedModes = DeployMode.EMBEDDED,
         defaultMode = DeployMode.EMBEDDED)

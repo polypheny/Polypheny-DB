@@ -64,7 +64,7 @@ public class AdapterManager {
     public static long addAdapterTemplate( Class<? extends Adapter<?>> clazz, String adapterName, Function4<Long, String, Map<String, String>, Adapter<?>> deployer ) {
         List<AbstractAdapterSetting> settings = AdapterTemplate.getAllSettings( clazz );
         AdapterProperties properties = clazz.getAnnotation( AdapterProperties.class );
-        return Catalog.getInstance().createAdapterTemplate( clazz, adapterName, properties.description(), List.of( properties.usedModes() ), settings, deployer, properties.logo() );
+        return Catalog.getInstance().createAdapterTemplate( clazz, adapterName, properties.description(), List.of( properties.usedModes() ), settings, deployer, properties.logoAssetPath() );
     }
 
 

@@ -64,7 +64,7 @@ import org.slf4j.LoggerFactory;
 @Extension
 @AdapterProperties(
         name = "CSV",
-        logo = "assets/dbms-logos/csv.png",
+        logoAssetPath = "assets/dbms-logos/csv.png",
         description = "An adapter for querying CSV files. The location of the directory containing the CSV files can be specified. Currently, this adapter only supports read operations.",
         usedModes = DeployMode.EMBEDDED,
         defaultMode = DeployMode.EMBEDDED)

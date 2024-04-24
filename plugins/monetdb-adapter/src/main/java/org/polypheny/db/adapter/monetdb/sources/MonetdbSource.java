@@ -43,7 +43,7 @@ import org.polypheny.db.sql.language.SqlDialect;
 @Slf4j
 @AdapterProperties(
         name = "MonetDB",
-        logo = "assets/dbms-logos/monetdb.png",
+        logoAssetPath = "assets/dbms-logos/monetdb.png",
         description = "MonetDB is an execute-source column-oriented database management system. It is based on an optimistic concurrency control.",
         usedModes = DeployMode.REMOTE,
         defaultMode = DeployMode.REMOTE)

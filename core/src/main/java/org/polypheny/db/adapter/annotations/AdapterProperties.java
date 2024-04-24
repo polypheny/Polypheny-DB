@@ -29,7 +29,7 @@ public @interface AdapterProperties {
 
     String name();
 
-    String logo();
+    String logoAssetPath();
 
     String description();
 
