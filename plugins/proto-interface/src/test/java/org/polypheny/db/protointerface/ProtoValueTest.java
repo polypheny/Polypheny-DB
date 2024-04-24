@@ -110,10 +110,9 @@ public class ProtoValueTest {
         BigDecimal expectedValue = new BigDecimal( 1691879380700L );
         PolyBigDecimal expected = new PolyBigDecimal( expectedValue );
         ProtoValue protoValue = PolyValueSerializer.serialize( expected );
-        MathContext context = new MathContext( protoValue.getBigDecimal().getPrecision() );
         int scale = protoValue.getBigDecimal().getScale();
         BigInteger value = new BigInteger( protoValue.getBigDecimal().getUnscaledValue().toByteArray() );
-        BigDecimal result = new BigDecimal( value, scale, context );
+        BigDecimal result = new BigDecimal( value, scale );
         assertEquals( expectedValue, result );
     }
 
