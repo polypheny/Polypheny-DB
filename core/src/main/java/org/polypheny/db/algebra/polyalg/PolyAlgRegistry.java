@@ -24,19 +24,25 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentAggregate;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentFilter;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentModify;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentSort;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentUnwind;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgAggregate;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgFilter;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgMatch;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgProject;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgSort;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgUnion;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgUnwind;
 import org.polypheny.db.algebra.logical.relational.LogicalCalc;
+import org.polypheny.db.algebra.logical.relational.LogicalModifyCollect;
 import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalRelCorrelate;
+import org.polypheny.db.algebra.logical.relational.LogicalRelExchange;
 import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
 import org.polypheny.db.algebra.logical.relational.LogicalRelIntersect;
 import org.polypheny.db.algebra.logical.relational.LogicalRelJoin;
@@ -47,7 +53,10 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalRelSort;
 import org.polypheny.db.algebra.logical.relational.LogicalRelUnion;
 import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
+import org.polypheny.db.algebra.logical.relational.LogicalRelViewScan;
+import org.polypheny.db.algebra.logical.relational.LogicalSortExchange;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.OperatorTag;
+import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.ParamTag;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.ParamType;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.Parameter;
 import org.polypheny.db.algebra.polyalg.arguments.BooleanArg;
@@ -77,12 +86,17 @@ public class PolyAlgRegistry {
         declarations.put( LogicalRelProject.class, PolyAlgDeclaration.builder()
                 .creator( LogicalRelProject::create ).model( DataModel.RELATIONAL )
                 .opName( "PROJECT" ).opAliases( List.of( "P", "PROJECT#" ) ).numInputs( 1 ).opTags( logTags )
-                .param( Parameter.builder().name( "projects" ).isMultiValued( true ).type( ParamType.REX ).build() )
+                .param( Parameter.builder().name( "projects" ).tag( ParamTag.ALIAS ).isMultiValued( true ).type( ParamType.REX ).build() )
                 .build() );
         declarations.put( LogicalRelScan.class, PolyAlgDeclaration.builder()
                 .creator( LogicalRelScan::create ).model( DataModel.RELATIONAL )
                 .opName( "SCAN" ).numInputs( 0 ).opTags( logTags )
-                .param( Parameter.builder().name( "entity" ).type( ParamType.ENTITY ).build() )
+                .param( Parameter.builder().name( "entity" ).alias( "table" ).type( ParamType.ENTITY ).build() )
+                .build() );
+        declarations.put( LogicalRelViewScan.class, PolyAlgDeclaration.builder()
+                .creator( LogicalRelViewScan::create ).model( DataModel.RELATIONAL )
+                .opName( "VIEW_SCAN" ).numInputs( 0 ).opTags( logTags )
+                .param( Parameter.builder().name( "entity" ).alias( "table" ).type( ParamType.ENTITY ).build() )
                 .build() );
         declarations.put( LogicalRelFilter.class, PolyAlgDeclaration.builder()
                 .creator( LogicalRelFilter::create ).model( DataModel.RELATIONAL )
@@ -109,7 +123,12 @@ public class PolyAlgRegistry {
                 .build() );
         declarations.put( LogicalRelIntersect.class, PolyAlgDeclaration.builder()
                 .creator( LogicalRelIntersect::create ).model( DataModel.RELATIONAL )
-                .opName( "INTERSECT" ).numInputs( 2 ).opTags( logTags )
+                .opName( "INTERSECT" ).numInputs( -1 ).opTags( logTags )
+                .param( Parameter.builder().name( "all" ).type( ParamType.BOOLEAN ).defaultValue( BooleanArg.FALSE ).build() )
+                .build() );
+        declarations.put( LogicalModifyCollect.class, PolyAlgDeclaration.builder()
+                .creator( LogicalModifyCollect::create ).model( DataModel.RELATIONAL )
+                .opName( "MODIFY_COLLECT" ).numInputs( -1 ).opTags( logTags )
                 .param( Parameter.builder().name( "all" ).type( ParamType.BOOLEAN ).defaultValue( BooleanArg.FALSE ).build() )
                 .build() );
         declarations.put( LogicalRelSort.class, PolyAlgDeclaration.builder()
@@ -131,7 +150,7 @@ public class PolyAlgRegistry {
                 .model( DataModel.RELATIONAL )
                 .opName( "CALC" ).numInputs( 1 ).opTags( logTags )
                 .param( Parameter.builder().name( "exps" ).type( ParamType.REX ).isMultiValued( true ).build() )
-                .param( Parameter.builder().name( "projects" ).type( ParamType.REX ).isMultiValued( true ).build() )
+                .param( Parameter.builder().name( "projects" ).tag( ParamTag.ALIAS ).type( ParamType.REX ).isMultiValued( true ).build() ) // can have a name
                 .param( Parameter.builder().name( "condition" ).type( ParamType.REX ).defaultValue( RexArg.NULL ).build() )
                 .build() );
         declarations.put( LogicalRelModify.class, PolyAlgDeclaration.builder()
@@ -148,6 +167,26 @@ public class PolyAlgRegistry {
                 .opName( "VALUES" ).numInputs( 0 ).opTags( logTags )
                 .param( Parameter.builder().name( "names" ).isMultiValued( true ).type( ParamType.STRING ).build() )
                 .param( Parameter.builder().name( "tuples" ).isMultiValued( true ).type( ParamType.REX ).build() )
+                .build() );
+        declarations.put( LogicalRelCorrelate.class, PolyAlgDeclaration.builder()
+                .creator( LogicalRelCorrelate::create ).model( DataModel.RELATIONAL )
+                .opName( "CORRELATE" ).numInputs( 2 ).opTags( logTags )
+                .param( Parameter.builder().name( "id" ).type( ParamType.CORR_ID ).build() )
+                .param( Parameter.builder().name( "columns" ).type( ParamType.REX ).build() )
+                .param( Parameter.builder().name( "joinType" ).alias( "type" ).type( ParamType.SEMI_JOIN_TYPE_ENUM ).build() )
+                .build() );
+        declarations.put( LogicalRelExchange.class, PolyAlgDeclaration.builder()
+                .creator( LogicalRelExchange::create ).model( DataModel.RELATIONAL )
+                .opName( "EXCHANGE" ).numInputs( 1 ).opTags( logTags )
+                .param( Parameter.builder().name( "distributionType" ).alias( "type" ).type( ParamType.DISTRIBUTION_TYPE_ENUM ).build() )
+                .param( Parameter.builder().name( "numbers" ).isMultiValued( true ).type( ParamType.REX ).defaultValue( ListArg.EMPTY ).build() )
+                .build() );
+        declarations.put( LogicalSortExchange.class, PolyAlgDeclaration.builder()
+                .creator( LogicalSortExchange::create ).model( DataModel.RELATIONAL )
+                .opName( "SORT_EXCHANGE" ).numInputs( 1 ).opTags( logTags )
+                .param( Parameter.builder().name( "sort" ).aliases( List.of( "collation", "order" ) ).isMultiValued( true ).type( ParamType.COLLATION ).build() )
+                .param( Parameter.builder().name( "distributionType" ).alias( "type" ).type( ParamType.DISTRIBUTION_TYPE_ENUM ).build() )
+                .param( Parameter.builder().name( "numbers" ).isMultiValued( true ).type( ParamType.REX ).defaultValue( ListArg.EMPTY ).build() )
                 .build() );
 
         // DOCUMENT
@@ -177,7 +216,7 @@ public class PolyAlgRegistry {
         declarations.put( LogicalDocumentProject.class, PolyAlgDeclaration.builder()
                 .creator( LogicalDocumentProject::create ).model( DataModel.DOCUMENT )
                 .opName( "DOC_PROJECT" ).numInputs( 1 ).opTags( logTags )
-                .param( Parameter.builder().name( "includes" ).isMultiValued( true ).type( ParamType.REX ).defaultValue( ListArg.EMPTY ).build() )
+                .param( Parameter.builder().name( "includes" ).tag( ParamTag.ALIAS ).requiresAlias( true ).isMultiValued( true ).type( ParamType.REX ).defaultValue( ListArg.EMPTY ).build() )
                 .param( Parameter.builder().name( "excludes" ).isMultiValued( true ).type( ParamType.STRING ).defaultValue( ListArg.EMPTY ).build() )
                 .build() );
         declarations.put( LogicalDocumentAggregate.class, PolyAlgDeclaration.builder()
@@ -185,6 +224,15 @@ public class PolyAlgRegistry {
                 .opName( "DOC_AGG" ).opAlias( "DOC_AGGREGATE" ).numInputs( 1 ).opTags( logTags )
                 .param( Parameter.builder().name( "group" ).type( ParamType.REX ).defaultValue( RexArg.NULL ).build() )
                 .param( Parameter.builder().name( "aggs" ).isMultiValued( true ).type( ParamType.LAX_AGGREGATE ).defaultValue( ListArg.EMPTY ).build() )
+                .build() );
+        declarations.put( LogicalDocumentModify.class, PolyAlgDeclaration.builder()
+                .creator( LogicalDocumentModify::create ).model( DataModel.DOCUMENT )
+                .opName( "DOC_MODIFY" ).numInputs( 1 ).opTags( logTags )
+                .param( Parameter.builder().name( "entity" ).type( ParamType.ENTITY ).build() )
+                .param( Parameter.builder().name( "operation" ).type( ParamType.MODIFY_OP_ENUM ).build() )
+                .param( Parameter.builder().name( "updates" ).tag( ParamTag.ALIAS ).requiresAlias( true ).isMultiValued( true ).type( ParamType.REX ).defaultValue( ListArg.EMPTY ).build() )
+                .param( Parameter.builder().name( "removes" ).isMultiValued( true ).type( ParamType.STRING ).defaultValue( ListArg.EMPTY ).build() )
+                .param( Parameter.builder().name( "renames" ).tag( ParamTag.ALIAS ).requiresAlias( true ).isMultiValued( true ).type( ParamType.STRING ).defaultValue( ListArg.EMPTY ).build() )
                 .build() );
 
         // GRAPH
@@ -196,7 +244,7 @@ public class PolyAlgRegistry {
         declarations.put( LogicalLpgMatch.class, PolyAlgDeclaration.builder()
                 .creator( LogicalLpgMatch::create ).model( DataModel.GRAPH )
                 .opName( "LPG_MATCH" ).numInputs( 1 ).opTags( logTags )
-                .param( Parameter.builder().name( "matches" ).isMultiValued( true ).type( ParamType.REX ).build() )
+                .param( Parameter.builder().name( "matches" ).tag( ParamTag.ALIAS ).isMultiValued( true ).type( ParamType.REX ).build() )
                 .build() );
         declarations.put( LogicalLpgFilter.class, PolyAlgDeclaration.builder()
                 .creator( LogicalLpgFilter::create ).model( DataModel.GRAPH )
@@ -206,7 +254,7 @@ public class PolyAlgRegistry {
         declarations.put( LogicalLpgProject.class, PolyAlgDeclaration.builder()
                 .creator( LogicalLpgProject::create ).model( DataModel.GRAPH )
                 .opName( "LPG_PROJECT" ).numInputs( 1 ).opTags( logTags )
-                .param( Parameter.builder().name( "projects" ).isMultiValued( true ).type( ParamType.REX ).build() )
+                .param( Parameter.builder().name( "projects" ).tag( ParamTag.ALIAS ).isMultiValued( true ).type( ParamType.REX ).build() )
                 .build() );
         declarations.put( LogicalLpgSort.class, PolyAlgDeclaration.builder()
                 .creator( LogicalLpgSort::create ).model( DataModel.GRAPH )
@@ -225,6 +273,20 @@ public class PolyAlgRegistry {
                 .opName( "LPG_UNWIND" ).numInputs( 1 ).opTags( logTags )
                 .param( Parameter.builder().name( "index" ).type( ParamType.INTEGER ).build() )
                 .param( Parameter.builder().name( "alias" ).type( ParamType.STRING ).defaultValue( StringArg.NULL ).build() )
+                .build() );
+        declarations.put( LogicalLpgAggregate.class, PolyAlgDeclaration.builder()
+                .creator( LogicalLpgAggregate::create ).model( DataModel.GRAPH )
+                .opName( "LPG_AGG" ).opAlias( "LPG_AGGREGATE" ).numInputs( 1 ).opTags( logTags )
+                .param( Parameter.builder().name( "groups" ).isMultiValued( true ).type( ParamType.REX ).defaultValue( ListArg.EMPTY ).build() )
+                .param( Parameter.builder().name( "aggs" ).isMultiValued( true ).type( ParamType.LAX_AGGREGATE ).defaultValue( ListArg.EMPTY ).build() )
+                .build() );
+        declarations.put( LogicalLpgModify.class, PolyAlgDeclaration.builder()
+                .creator( LogicalLpgModify::create ).model( DataModel.GRAPH )
+                .opName( "LPG_MODIFY" ).numInputs( 1 ).opTags( logTags )
+                .param( Parameter.builder().name( "entity" ).type( ParamType.ENTITY ).build() )
+                .param( Parameter.builder().name( "operation" ).type( ParamType.MODIFY_OP_ENUM ).build() )
+                .param( Parameter.builder().name( "updates" ).alias( "operations" ).isMultiValued( true ).type( ParamType.REX ).defaultValue( ListArg.EMPTY ).build() )
+                .param( Parameter.builder().name( "ids" ).isMultiValued( true ).type( ParamType.STRING ).defaultValue( ListArg.EMPTY ).build() )
                 .build() );
     }
 

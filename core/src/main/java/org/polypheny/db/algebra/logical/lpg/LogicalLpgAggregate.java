@@ -17,14 +17,20 @@
 package org.polypheny.db.algebra.logical.lpg;
 
 import java.util.List;
+import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.LaxAggregateCall;
 import org.polypheny.db.algebra.core.lpg.LpgAggregate;
+import org.polypheny.db.algebra.polyalg.arguments.LaxAggArg;
+import org.polypheny.db.algebra.polyalg.arguments.ListArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
+import org.polypheny.db.algebra.polyalg.arguments.RexArg;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexNameRef;
 
 
@@ -33,6 +39,22 @@ public class LogicalLpgAggregate extends LpgAggregate {
 
     public LogicalLpgAggregate( AlgCluster cluster, AlgTraitSet traits, AlgNode child, @NotNull List<RexNameRef> groups, List<LaxAggregateCall> aggCalls, AlgDataType tupleType ) {
         super( cluster, traits, child, groups, aggCalls, tupleType );
+    }
+
+
+    public static LogicalLpgAggregate create( final AlgNode input, @NotNull List<RexNameRef> groups, List<LaxAggregateCall> aggCalls ) {
+        final AlgCluster cluster = input.getCluster();
+        final AlgTraitSet traitSet = cluster.traitSetOf( Convention.NONE );
+        throw new NotImplementedException( "Not supported yet" ); // TODO: determine tupleType before creation
+        //return new LogicalLpgAggregate( cluster, traitSet, input, groups, aggCalls, tupleType );
+    }
+
+
+    public static LogicalLpgAggregate create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+        ListArg<RexArg> groups = args.getListArg( "group", RexArg.class );
+        ListArg<LaxAggArg> aggs = args.getListArg( "aggs", LaxAggArg.class );
+
+        return create( children.get( 0 ), groups.map( r -> (RexNameRef) r.getNode() ), aggs.map( LaxAggArg::getAgg ) );
     }
 
 
@@ -45,6 +67,16 @@ public class LogicalLpgAggregate extends LpgAggregate {
     @Override
     public AlgNode accept( AlgShuttle shuttle ) {
         return shuttle.visit( this );
+    }
+
+
+    @Override
+    public PolyAlgArgs collectAttributes() {
+        PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
+
+        args.put( "groups", new ListArg<>( groups, RexArg::new ) );
+        args.put( "aggs", new ListArg<>( aggCalls, LaxAggArg::new ) );
+        return args;
     }
 
 }

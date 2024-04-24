@@ -26,10 +26,12 @@ import java.util.Set;
 import java.util.stream.IntStream;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgCollations;
+import org.polypheny.db.algebra.AlgDistribution;
 import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.constant.SemiJoinType;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.CorrelationId;
 import org.polypheny.db.algebra.core.JoinAlgType;
@@ -220,10 +222,10 @@ public class PolyAlgToAlgConverter {
 
     private PolyAlgArg convertArg( Parameter p, PolyAlgAliasedArgument aliasedArg, Context ctx ) {
         if ( aliasedArg.getArg() instanceof PolyAlgExpression ) {
+            // no more nested args
             return convertExpression( p, (PolyAlgExpression) aliasedArg.getArg(), aliasedArg.getAlias(), ctx );
         } else if ( aliasedArg.getArg() instanceof PolyAlgNodeList ) {
             return buildList( p, (PolyAlgNodeList) aliasedArg.getArg(), aliasedArg.getAlias(), ctx );
-            //throw new GenericRuntimeException( "Nested PolyAlgNodeLists are currently not supported" );
         } else {
             throw new GenericRuntimeException( "This PolyAlgNode type is currently not supported" );
         }
@@ -231,12 +233,15 @@ public class PolyAlgToAlgConverter {
 
 
     private PolyAlgArg convertExpression( Parameter p, PolyAlgExpression exp, String alias, Context ctx ) {
+        if ( p.requiresAlias && (alias == null || alias.isEmpty()) ) {
+            throw new GenericRuntimeException( "Missing <AS> for " + p.getName() );
+        }
         ParamType pType = p.getType();
         return switch ( pType ) {
             case ANY -> new AnyArg( exp.toString() );
             case INTEGER -> new IntArg( exp.toInt() );
             case BOOLEAN -> new BooleanArg( exp.toBoolean() );
-            case STRING -> new StringArg( exp.toString() );
+            case STRING -> new StringArg( exp.toString(), alias );
             case REX -> {
                 RexNode node = convertRexNode( exp, ctx );
                 yield new RexArg( node, alias == null ? exp.getDefaultAlias() : alias );
@@ -244,8 +249,10 @@ public class PolyAlgToAlgConverter {
             case AGGREGATE -> new AggArg( convertAggCall( exp, alias, ctx ) );
             case LAX_AGGREGATE -> new LaxAggArg( convertLaxAggCall( exp, alias, ctx ) );
             case ENTITY -> new EntityArg( convertEntity( exp, ctx.dataModel ), snapshot, ctx.dataModel );
-            case JOIN_TYPE_ENUM -> new EnumArg<>( exp.toEnum( JoinAlgType.class ), ParamType.JOIN_TYPE_ENUM );
-            case MODIFY_OP_ENUM -> new EnumArg<>( exp.toEnum( Modify.Operation.class ), ParamType.MODIFY_OP_ENUM );
+            case JOIN_TYPE_ENUM -> new EnumArg<>( exp.toEnum( JoinAlgType.class ), pType );
+            case SEMI_JOIN_TYPE_ENUM -> new EnumArg<>( exp.toEnum( SemiJoinType.class ), pType );
+            case MODIFY_OP_ENUM -> new EnumArg<>( exp.toEnum( Modify.Operation.class ), pType );
+            case DISTRIBUTION_TYPE_ENUM -> new EnumArg<>( exp.toEnum( AlgDistribution.Type.class ), pType );
             case FIELD -> new FieldArg( ctx.getFieldOrdinal( exp.toIdentifier() ) );
             case LIST -> ListArg.EMPTY;
             case COLLATION -> new CollationArg( convertCollation( exp, ctx ) );

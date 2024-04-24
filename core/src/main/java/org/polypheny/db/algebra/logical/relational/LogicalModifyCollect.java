@@ -20,6 +20,8 @@ import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.ModifyCollect;
+import org.polypheny.db.algebra.polyalg.arguments.BooleanArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
@@ -50,6 +52,11 @@ public final class LogicalModifyCollect extends ModifyCollect {
     }
 
 
+    public static LogicalModifyCollect create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+        return create( children, args.getArg( "all", BooleanArg.class ).toBool() );
+    }
+
+
     @Override
     public LogicalModifyCollect copy( AlgTraitSet traitSet, List<AlgNode> inputs, boolean all ) {
         assert traitSet.containsIfApplicable( Convention.NONE );
@@ -60,6 +67,13 @@ public final class LogicalModifyCollect extends ModifyCollect {
     @Override
     public AlgNode accept( AlgShuttle shuttle ) {
         return shuttle.visit( this );
+    }
+
+
+    @Override
+    public PolyAlgArgs collectAttributes() {
+        PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
+        return args.put( "all", new BooleanArg( all ) );
     }
 
 }

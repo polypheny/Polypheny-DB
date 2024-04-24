@@ -23,11 +23,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.NonNull;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.ParamType;
 import org.polypheny.db.algebra.polyalg.PolyAlgUtils;
+import org.polypheny.db.util.Pair;
 
 public class ListArg<E extends PolyAlgArg> implements PolyAlgArg {
 
@@ -35,7 +37,6 @@ public class ListArg<E extends PolyAlgArg> implements PolyAlgArg {
 
     @Getter
     private final List<E> args;
-    @Getter
     private final List<String> aliases;
     private final boolean unpackValues;
     private final boolean containsListArg; // if a list is inside a list, the lists need brackets to be unambiguous
@@ -78,9 +79,11 @@ public class ListArg<E extends PolyAlgArg> implements PolyAlgArg {
         this( rawArgs.stream().map( converter ).toList(), aliases, unpackValues );
     }
 
+
     public <T> ListArg( Map<String, T> rawArgs, Function<T, E> converter ) {
-        this( rawArgs, converter, false);
+        this( rawArgs, converter, false );
     }
+
 
     public <T> ListArg( Map<String, T> rawArgs, Function<T, E> converter, boolean unpackValues ) {
         this( new ArrayList<>( rawArgs.values() ), converter, new ArrayList<>( rawArgs.keySet() ), unpackValues );
@@ -153,6 +156,13 @@ public class ListArg<E extends PolyAlgArg> implements PolyAlgArg {
 
     public <T> List<T> map( Function<E, T> mapper ) {
         return args.stream().map( mapper ).toList();
+    }
+
+
+    public <T> Map<String, T> toStringKeyedMap( Function<E, String> keyMapper, Function<E, T> valueMapper ) {
+        List<String> aliases = this.map( keyMapper );
+        List<T> values = this.map( valueMapper );
+        return Pair.zip( aliases, values ).stream().collect( Collectors.toMap( e -> e.left, e -> e.right ) );
     }
 
 

@@ -18,6 +18,7 @@ package org.polypheny.db.algebra.polyalg;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -51,10 +52,10 @@ import org.polypheny.db.plan.AlgCluster;
 public class PolyAlgDeclaration {
 
     public final String opName;
-    public final ImmutableList<String> opAliases;
+    public final ImmutableSet<String> opAliases;
     public final DataModel model;
     private final int numInputs; // -1 if arbitrary amount is allowed
-    public final ImmutableList<OperatorTag> opTags;
+    public final ImmutableSet<OperatorTag> opTags;
 
     public final ImmutableList<Parameter> posParams;
     public final ImmutableList<Parameter> kwParams;
@@ -66,21 +67,22 @@ public class PolyAlgDeclaration {
     @Builder
     public PolyAlgDeclaration(
             @NonNull String opName,
-            @Singular ImmutableList<String> opAliases,
+            @Singular ImmutableSet<String> opAliases,
             @NonNull DataModel model,
             TriFunction<PolyAlgArgs, List<AlgNode>, AlgCluster, AlgNode> creator,
-            @Singular ImmutableList<OperatorTag> opTags,
+            @Singular ImmutableSet<OperatorTag> opTags,
             int numInputs,
             @Singular ImmutableList<Parameter> params ) {
         this.opName = opName;
-        this.opAliases = (opAliases != null) ? opAliases : ImmutableList.of();
+        this.opAliases = (opAliases != null) ? opAliases : ImmutableSet.of();
         this.model = model;
         this.creator = creator;
         this.numInputs = numInputs;
-        this.opTags = (opTags != null) ? opTags : ImmutableList.of();
+        this.opTags = (opTags != null) ? opTags : ImmutableSet.of();
         params = (params != null) ? params : ImmutableList.of();
 
         assert PolyAlgDeclaration.hasUniqueNames( params );
+        assert PolyAlgDeclaration.hasRequiredTags( params );
 
         ImmutableMap.Builder<String, Parameter> bMap = ImmutableMap.builder();
         ImmutableList.Builder<Parameter> bPos = ImmutableList.builder();
@@ -152,6 +154,16 @@ public class PolyAlgDeclaration {
     }
 
 
+    private static boolean hasRequiredTags( ImmutableList<Parameter> params ) {
+        for ( Parameter p : params ) {
+            if ( p.requiresAlias && !p.tags.contains( ParamTag.ALIAS ) ) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+
     /**
      * Checks whether this operator has exactly one positional parameter, which in addition must be multiValued.
      * If this is the case, it is safe for the multiValued parameter to omit the brackets, as it is possible to
@@ -183,6 +195,8 @@ public class PolyAlgDeclaration {
      * </ul>
      *
      * The boolean isMultiValued indicates whether an argument can consist of a list of values of the specified type.
+     * The boolean requiresAlias can be useful if a key-value pair is expected. This alias corresponds to the "AS" clause
+     * and should not be confused with parameter name aliases.
      */
     @Builder
     @Data
@@ -191,12 +205,13 @@ public class PolyAlgDeclaration {
         @NonNull
         private final String name;
         @Singular
-        private final ImmutableList<String> aliases;
+        private final ImmutableSet<String> aliases;
         @Singular
-        private final ImmutableList<ParameterTag> tags;
+        private final ImmutableSet<ParamTag> tags;
         @NonNull
         private final ParamType type;
         private final boolean isMultiValued;
+        public final boolean requiresAlias;
         private final PolyAlgArg defaultValue;
 
 
@@ -255,7 +270,9 @@ public class PolyAlgDeclaration {
 
         // Every new enum also needs to be added to the PolyAlgToAlgConverter like any other new ParamType
         JOIN_TYPE_ENUM( EnumArg.class ),
+        SEMI_JOIN_TYPE_ENUM( EnumArg.class ),
         MODIFY_OP_ENUM( EnumArg.class ),
+        DISTRIBUTION_TYPE_ENUM( EnumArg.class),
 
         /**
          * A specific field (= column in the relational data model).
@@ -304,12 +321,17 @@ public class PolyAlgDeclaration {
     }
 
 
-    public enum ParameterTag {
+    public enum ParamTag {
 
         /**
          * Only show parameter in advanced mode.
          */
-        ADVANCED
+        ADVANCED,
+
+        /**
+         * Parameter allows for a (possibly optional) alias (not to be confused with a parameter name alias)
+         */
+        ALIAS
     }
 
 }

@@ -30,10 +30,17 @@ public class StringArg implements PolyAlgArg {
     public static final StringArg NULL = new StringArg( null );
 
     private final String arg;
+    private final String alias;
 
 
     public StringArg( String arg ) {
+        this( arg, null );
+    }
+
+
+    public StringArg( String arg, String alias ) {
         this.arg = arg;
+        this.alias = alias;
     }
 
 
