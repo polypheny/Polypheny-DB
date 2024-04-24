@@ -1,0 +1,4 @@
+deptno:int,name:string
+10,Sales
+20,Marketing
+30,HR

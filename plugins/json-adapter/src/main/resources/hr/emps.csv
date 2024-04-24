@@ -1,0 +1,5 @@
+empid:int,deptno:int,name:string,salary:int,commission:int
+100,10,Bill,10000,1000
+110,10,Theodore,11500,250
+150,20,Sebastian,7000,400
+200,30,Eric,8000,500
