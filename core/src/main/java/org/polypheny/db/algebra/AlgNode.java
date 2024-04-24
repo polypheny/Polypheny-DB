@@ -253,9 +253,9 @@ public interface AlgNode extends AlgOptNode, Cloneable {
         buildPolyAlgebra( sb, null );
     }
 
-    default String buildPolyAlgebra() {
+    default String buildPolyAlgebra(String prefix) {
         StringBuilder sb = new StringBuilder();
-        buildPolyAlgebra(sb);
+        buildPolyAlgebra(sb, prefix);
         return sb.toString();
     }
 

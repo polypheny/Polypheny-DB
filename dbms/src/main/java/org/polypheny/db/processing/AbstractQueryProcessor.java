@@ -317,7 +317,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             InformationGroup group = new InformationGroup( page, "Logical PolyAlg Query Plan" );
             queryAnalyzer.addPage( page );
             queryAnalyzer.addGroup( group );
-            queryAnalyzer.registerInformation( new InformationPolyAlg( group, jsonString, PlanType.LOGICAL ) );
+            queryAnalyzer.registerInformation( new InformationPolyAlg( group, alg.buildPolyAlgebra(""), jsonString, PlanType.LOGICAL ) );
 
         } catch (Exception e) {
             e.printStackTrace();
