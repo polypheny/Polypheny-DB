@@ -242,14 +242,11 @@ public class PolyAlgExpression extends PolyAlgNode {
 
     public AggFunction getAggFunction() {
         String str = getLiteralsAsString();
-        return switch ( str.toUpperCase( Locale.ROOT ) ) {
-            case "COUNT" -> OperatorRegistry.getAgg( OperatorName.COUNT );
-            case "SUM" -> OperatorRegistry.getAgg( OperatorName.SUM );
-            case "MAX" -> OperatorRegistry.getAgg( OperatorName.MAX );
-            case "MIN" -> OperatorRegistry.getAgg( OperatorName.MIN );
-            case "AVG" -> OperatorRegistry.getAgg( OperatorName.AVG );
-            default -> throw new IllegalArgumentException( "Aggregate Function '" + str + "' is not yet supported" );
-        };
+        OperatorName opName = OperatorName.valueOf( str.toUpperCase( Locale.ROOT ) );
+        if ( opName.getClazz() != AggFunction.class ) {
+            throw new GenericRuntimeException( "Operator '" + str + "' is not a valid aggregate function" );
+        }
+        return OperatorRegistry.getAgg( opName );
     }
 
 
