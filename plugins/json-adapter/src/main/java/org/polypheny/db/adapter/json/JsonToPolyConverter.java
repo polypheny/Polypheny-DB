@@ -28,63 +28,65 @@ import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.document.PolyDocument;
-import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.numerical.PolyDouble;
+import org.polypheny.db.type.entity.numerical.PolyLong;
+import org.polypheny.db.type.entity.relational.PolyMap;
 
 public class JsonToPolyConverter {
 
-    public PolyDocument nodeToDocument( JsonNode node ) throws IOException {
+    public PolyDocument nodeToPolyDocument( JsonNode node ) {
         return new PolyDocument( nodeToPolyMap( node ) );
     }
 
 
-    public HashMap<PolyString, PolyValue> nodeToPolyMap( JsonNode node ) {
-        HashMap<PolyString, PolyValue> polyMap = new HashMap<>();
+    public PolyMap<PolyString, PolyValue> nodeToPolyMap( JsonNode node ) {
+        HashMap<PolyString, PolyValue> map = new HashMap<>();
         node.fields().forEachRemaining( entry -> {
             PolyString key = new PolyString( entry.getKey() );
             PolyValue value = nodeToPolyValue( entry.getValue() );
-            polyMap.put( key, value );
+            map.put( key, value );
         } );
-        return polyMap;
+        return PolyMap.of( map );
     }
 
 
     public PolyValue nodeToPolyValue( JsonNode node ) {
         switch ( node.getNodeType() ) {
-            case NULL -> {
-            }
-            case ARRAY -> {
-            }
-            case OBJECT -> {
-            }
-            case NUMBER -> {
-            }
-            case STRING -> {
-            }
-            case BOOLEAN -> {
-            }
+            case NULL -> {return nodeToPolyNull();}
+            case ARRAY -> {return nodeToPolyList( node );}
+            case OBJECT -> {return nodeToPolyMap( node );}
+            case NUMBER -> {return nodeToPolyNumber( node );}
+            case STRING -> {return nodeToPolyString( node );}
+            case BOOLEAN -> {return nodeToPolyBoolean( node );}
         }
         return new PolyNull();
     }
+
 
     public PolyNull nodeToPolyNull() {
         return new PolyNull();
     }
 
-    public PolyString nodeToPolyString(JsonNode node) {
-        return new PolyString( node.textValue() );
-    }
 
-    public PolyBoolean nodeToPolyBoolean(JsonNode node) {
-        return new PolyBoolean( node.booleanValue() );
-    }
-
-    public PolyNumber nodeToPolyNumber(JsonNode node) {
-        Number number = node.numberValue();
-        return new PolyInteger( 69 );
+    public PolyString nodeToPolyString( JsonNode node ) {
+        return new PolyString( node.asText() );
     }
 
 
-    public PolyValue arrayNodeToPolyList( JsonNode node ) {
+    public PolyBoolean nodeToPolyBoolean( JsonNode node ) {
+        return new PolyBoolean( node.asBoolean() );
+    }
+
+
+    public PolyNumber nodeToPolyNumber( JsonNode node ) {
+        if ( node.isIntegralNumber() ) {
+            return new PolyLong( node.asLong() );
+        }
+        return new PolyDouble( node.asDouble() );
+    }
+
+
+    public PolyValue nodeToPolyList( JsonNode node ) {
         return StreamSupport.stream( node.spliterator(), false )
                 .map( this::nodeToPolyValue )
                 .collect( Collectors.toCollection( PolyList::new ) );
