@@ -82,7 +82,6 @@ import org.polypheny.db.algebra.rules.JoinPushExpressionsRule;
 import org.polypheny.db.algebra.rules.JoinPushThroughJoinRule;
 import org.polypheny.db.algebra.rules.ProjectFilterTransposeRule;
 import org.polypheny.db.algebra.rules.ProjectMergeRule;
-import org.polypheny.db.algebra.rules.ProjectScanRule;
 import org.polypheny.db.algebra.rules.ProjectWindowTransposeRule;
 import org.polypheny.db.algebra.rules.ReduceExpressionsRules;
 import org.polypheny.db.algebra.rules.ScanRule;
@@ -299,8 +298,6 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
             }
         }
         planner.addRule( Bindables.BINDABLE_TABLE_SCAN_RULE );
-        planner.addRule( ProjectScanRule.INSTANCE );
-        planner.addRule( ProjectScanRule.INTERPRETER );
 
         if ( ENABLE_ENUMERABLE ) {
             for ( AlgOptRule rule : ENUMERABLE_RULES ) {
@@ -422,16 +419,8 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
      */
     private static String getTypeName( AlgDataType type ) {
         final PolyType polyType = type.getPolyType();
-        return switch ( polyType ) {
-            case INTERVAL_YEAR_MONTH -> "INTERVAL_YEAR_TO_MONTH";
-            case INTERVAL_DAY_HOUR -> "INTERVAL_DAY_TO_HOUR";
-            case INTERVAL_DAY_MINUTE -> "INTERVAL_DAY_TO_MINUTE";
-            case INTERVAL_DAY_SECOND -> "INTERVAL_DAY_TO_SECOND";
-            case INTERVAL_HOUR_MINUTE -> "INTERVAL_HOUR_TO_MINUTE";
-            case INTERVAL_HOUR_SECOND -> "INTERVAL_HOUR_TO_SECOND";
-            case INTERVAL_MINUTE_SECOND -> "INTERVAL_MINUTE_TO_SECOND";
-            default -> polyType.getName(); // e.g. "DECIMAL", "INTERVAL_YEAR_MONTH"
-        };
+        // e.g. "DECIMAL", "INTERVAL_YEAR_MONTH"
+        return polyType.getName();
     }
 
 

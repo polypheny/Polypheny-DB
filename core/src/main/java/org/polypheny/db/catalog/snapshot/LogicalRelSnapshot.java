@@ -274,4 +274,6 @@ public interface LogicalRelSnapshot {
 
     @NotNull List<LogicalPrimaryKey> getPrimaryKeys();
 
+    @NotNull List<LogicalForeignKey> getForeignKeys();
+
 }

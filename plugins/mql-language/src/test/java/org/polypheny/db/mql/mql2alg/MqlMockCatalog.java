@@ -30,21 +30,10 @@ import org.polypheny.db.adapter.java.AdapterTemplate;
 import org.polypheny.db.catalog.MockCatalog;
 import org.polypheny.db.catalog.catalogs.AdapterCatalog;
 import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceTemplate;
+import org.polypheny.db.transaction.Transaction;
 
 
 public class MqlMockCatalog extends MockCatalog {
-
-    /*@Override
-    public LogicalNamespace getNamespace( long id ) {
-        return new LogicalNamespace( 1, "private", 0, 0, "tester", NamespaceType.DOCUMENT, true );
-    }
-
-
-    @Override
-    public CatalogUser getUser( long id ) {
-        return new CatalogUser( 0, "name", "name" );
-    }*/
-
 
     @Override
     public void change() {
@@ -107,7 +96,7 @@ public class MqlMockCatalog extends MockCatalog {
 
 
     @Override
-    public void restore() {
+    public void restore( Transaction transaction ) {
 
     }
 

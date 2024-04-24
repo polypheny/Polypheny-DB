@@ -27,10 +27,7 @@ include 'dbms'
 
 include 'plugins'
 
-// catalog
-// include 'plugins:mapdb-catalog'
-
-include 'plugins:mapdb-monitoring'
+include 'plugins:inmemory-monitoring'
 
 // language plugins
 include 'plugins:sql-language'

@@ -141,10 +141,6 @@ public class PushProjector {
      */
     final int nFieldsRight;
 
-    /**
-     * Number of system fields. System fields appear at the start of a join, before the first field from the left input.
-     */
-    private final int nSysFields;
 
     /**
      * Expressions referenced in the projection/filter that should be preserved.
@@ -202,37 +198,34 @@ public class PushProjector {
         nChildFields = childFields.size();
 
         projRefs = new BitSet( nChildFields );
-        if ( childRel instanceof Join ) {
-            Join joinRel = (Join) childRel;
+        if ( childRel instanceof Join joinRel ) {
             List<AlgDataTypeField> leftFields = joinRel.getLeft().getTupleType().getFields();
             List<AlgDataTypeField> rightFields = joinRel.getRight().getTupleType().getFields();
             nFields = leftFields.size();
             nFieldsRight = childRel instanceof SemiJoin ? 0 : rightFields.size();
-            nSysFields = joinRel.getSystemFieldList().size();
-            childBitmap = ImmutableBitSet.range( nSysFields, nFields + nSysFields );
-            rightBitmap = ImmutableBitSet.range( nFields + nSysFields, nChildFields );
+            childBitmap = ImmutableBitSet.range( 0, nFields );
+            rightBitmap = ImmutableBitSet.range( nFields, nChildFields );
 
             switch ( joinRel.getJoinType() ) {
                 case INNER:
                     strongBitmap = ImmutableBitSet.of();
                     break;
                 case RIGHT:  // All the left-input's columns must be strong
-                    strongBitmap = ImmutableBitSet.range( nSysFields, nFields + nSysFields );
+                    strongBitmap = ImmutableBitSet.range( 0, nFields );
                     break;
                 case LEFT: // All the right-input's columns must be strong
-                    strongBitmap = ImmutableBitSet.range( nFields + nSysFields, nChildFields );
+                    strongBitmap = ImmutableBitSet.range( nFields, nChildFields );
                     break;
                 case FULL:
                 default:
-                    strongBitmap = ImmutableBitSet.range( nSysFields, nChildFields );
+                    strongBitmap = ImmutableBitSet.range( 0, nChildFields );
             }
 
-        } else if ( childRel instanceof Correlate ) {
-            Correlate corrRel = (Correlate) childRel;
-            List<AlgDataTypeField> leftFields = corrRel.getLeft().getTupleType().getFields();
-            List<AlgDataTypeField> rightFields = corrRel.getRight().getTupleType().getFields();
+        } else if ( childRel instanceof Correlate corrAlg ) {
+            List<AlgDataTypeField> leftFields = corrAlg.getLeft().getTupleType().getFields();
+            List<AlgDataTypeField> rightFields = corrAlg.getRight().getTupleType().getFields();
             nFields = leftFields.size();
-            SemiJoinType joinType = corrRel.getJoinType();
+            SemiJoinType joinType = corrAlg.getJoinType();
             switch ( joinType ) {
                 case SEMI:
                 case ANTI:
@@ -241,12 +234,11 @@ public class PushProjector {
                 default:
                     nFieldsRight = rightFields.size();
             }
-            nSysFields = 0;
             childBitmap = ImmutableBitSet.range( 0, nFields );
             rightBitmap = ImmutableBitSet.range( nFields, nChildFields );
 
             // Required columns need to be included in project
-            projRefs.or( BitSets.of( corrRel.getRequiredColumns() ) );
+            projRefs.or( BitSets.of( corrAlg.getRequiredColumns() ) );
 
             switch ( joinType ) {
                 case INNER:
@@ -267,10 +259,9 @@ public class PushProjector {
             nFieldsRight = 0;
             childBitmap = ImmutableBitSet.range( nChildFields );
             rightBitmap = null;
-            nSysFields = 0;
             strongBitmap = ImmutableBitSet.of();
         }
-        assert nChildFields == nSysFields + nFields + nFieldsRight;
+        assert nChildFields == nFields + nFieldsRight;
 
         childPreserveExprs = new ArrayList<>();
         rightPreserveExprs = new ArrayList<>();
@@ -361,14 +352,9 @@ public class PushProjector {
                 origProjExprs,
                 origFilter );
 
-        // The system fields of each child are always used by the join, even if they are not projected out of it.
         projRefs.set(
-                nSysFields,
-                nSysFields + nSysFields,
-                true );
-        projRefs.set(
-                nSysFields + nFields,
-                nSysFields + nFields + nSysFields,
+                nFields,
+                nFields,
                 true );
 
         // Count how many fields are projected.
@@ -376,9 +362,7 @@ public class PushProjector {
         nProject = 0;
         nRightProject = 0;
         for ( int bit : BitSets.toIter( projRefs ) ) {
-            if ( bit < nSysFields ) {
-                nSystemProject++;
-            } else if ( bit < nSysFields + nFields ) {
+            if ( bit < nFields ) {
                 nProject++;
             } else {
                 nRightProject++;
@@ -428,11 +412,11 @@ public class PushProjector {
         if ( rightSide ) {
             preserveExprs = rightPreserveExprs;
             nInputRefs = nRightProject;
-            offset = nSysFields + nFields;
+            offset = nFields;
         } else {
             preserveExprs = childPreserveExprs;
             nInputRefs = nProject;
-            offset = nSysFields;
+            offset = 0;
         }
         int refIdx = offset - 1;
         List<Pair<RexNode, String>> newProjects = new ArrayList<>();
@@ -490,7 +474,7 @@ public class PushProjector {
         int rightOffset = childPreserveExprs.size();
         for ( int pos : BitSets.toIter( projRefs ) ) {
             adjustments[pos] = -(pos - newIdx);
-            if ( pos >= nSysFields + nFields ) {
+            if ( pos >= nFields ) {
                 adjustments[pos] += rightOffset;
             }
             newIdx++;

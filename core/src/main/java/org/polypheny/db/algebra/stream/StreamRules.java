@@ -338,14 +338,12 @@ public class StreamRules {
             final LogicalDelta rightWithDelta = LogicalDelta.create( right );
             final LogicalRelJoin joinL = LogicalRelJoin.create( left, rightWithDelta,
                     join.getCondition(), join.getVariablesSet(), join.getJoinType(),
-                    join.isSemiJoinDone(),
-                    ImmutableList.copyOf( join.getSystemFieldList() ) );
+                    join.isSemiJoinDone() );
 
             final LogicalDelta leftWithDelta = LogicalDelta.create( left );
             final LogicalRelJoin joinR = LogicalRelJoin.create( leftWithDelta, right,
                     join.getCondition(), join.getVariablesSet(), join.getJoinType(),
-                    join.isSemiJoinDone(),
-                    ImmutableList.copyOf( join.getSystemFieldList() ) );
+                    join.isSemiJoinDone() );
 
             List<AlgNode> inputsToUnion = new ArrayList<>();
             inputsToUnion.add( joinL );

@@ -68,9 +68,6 @@ import java.util.function.Supplier;
 import lombok.Getter;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.util.DateTimeUtils;
-import org.apache.calcite.avatica.util.TimeUnit;
-import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.BlockStatement;
@@ -101,6 +98,7 @@ import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.BinaryOperator;
 import org.polypheny.db.nodes.JsonAgg;
 import org.polypheny.db.nodes.Operator;
+import org.polypheny.db.nodes.TimeUnitRange;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
@@ -111,12 +109,15 @@ import org.polypheny.db.schema.impl.AggregateFunctionImpl;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.type.entity.PolyBoolean;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Util;
+import org.polypheny.db.util.temporal.DateTimeUtils;
+import org.polypheny.db.util.temporal.TimeUnit;
 
 
 /**
@@ -350,8 +351,6 @@ public class RexImpTable {
         map.put( OperatorRegistry.get( OperatorName.CURRENT_DATE ), systemFunctionImplementor );
         map.put( OperatorRegistry.get( OperatorName.LOCALTIME ), systemFunctionImplementor );
         map.put( OperatorRegistry.get( OperatorName.LOCALTIMESTAMP ), systemFunctionImplementor );
-
-        defineMethod( OperatorRegistry.get( OperatorName.UNWRAP_INTERVAL ), BuiltInMethod.UNWRAP_INTERVAL.method, NullPolicy.NONE );
 
         aggMap.put( OperatorRegistry.getAgg( OperatorName.COUNT ), constructorSupplier( CountImplementor.class ) );
         aggMap.put( OperatorRegistry.getAgg( OperatorName.REGR_COUNT ), constructorSupplier( CountImplementor.class ) );
@@ -1875,21 +1874,13 @@ public class RexImpTable {
                     final Type type;
                     final Method floorMethod;
                     Expression operand = translatedOperands.get( 0 );
-                    switch ( call.getType().getPolyType() ) {
-                        case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-                            operand = Expressions.call(
-                                    BuiltInMethod.TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_TIMESTAMP.method,
-                                    operand,
-                                    Expressions.call( BuiltInMethod.TIME_ZONE.method, translator.getRoot() ) );
-                            // fall through
-                        case TIMESTAMP:
-                            type = PolyBigDecimal.class;
-                            operand = Expressions.call( PolyBigDecimal.class, "convert", operand );
-                            floorMethod = timestampMethod;
-                            break;
-                        default:
-                            type = PolyBigDecimal.class;
-                            floorMethod = dateMethod;
+                    if ( Objects.requireNonNull( call.getType().getPolyType() ) == PolyType.TIMESTAMP ) {
+                        type = PolyBigDecimal.class;
+                        operand = Expressions.call( PolyBigDecimal.class, "convert", operand );
+                        floorMethod = timestampMethod;
+                    } else {
+                        type = PolyBigDecimal.class;
+                        floorMethod = dateMethod;
                     }
                     ConstantExpression tur = (ConstantExpression) translatedOperands.get( 1 );
                     final TimeUnitRange timeUnitRange = (TimeUnitRange) tur.value;
@@ -2122,26 +2113,8 @@ public class RexImpTable {
                 case ISOYEAR:
                 case WEEK:
                     switch ( polyType ) {
-                        case INTERVAL_YEAR:
-                        case INTERVAL_YEAR_MONTH:
-                        case INTERVAL_MONTH:
-                        case INTERVAL_DAY:
-                        case INTERVAL_DAY_HOUR:
-                        case INTERVAL_DAY_MINUTE:
-                        case INTERVAL_DAY_SECOND:
-                        case INTERVAL_HOUR:
-                        case INTERVAL_HOUR_MINUTE:
-                        case INTERVAL_HOUR_SECOND:
-                        case INTERVAL_MINUTE:
-                        case INTERVAL_MINUTE_SECOND:
-                        case INTERVAL_SECOND:
+                        case INTERVAL:
                             break;
-                        case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-                            operand = Expressions.call(
-                                    BuiltInMethod.TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_TIMESTAMP.method,
-                                    operand,
-                                    Expressions.call( BuiltInMethod.TIME_ZONE.method, translator.getRoot() ) );
-                            // fall through
                         case TIMESTAMP:
                             //operand = EnumUtils.unwrapPolyValue( operand, "longValue" );
                             return Expressions.call( BuiltInMethod.UNIX_DATE_EXTRACT.method, translatedOperands.get( 0 ), operand );
@@ -2166,25 +2139,7 @@ public class RexImpTable {
                         case TIMESTAMP:
                             // convert to seconds
                             return EnumUtils.wrapPolyValue( call.type.getPolyType(), Expressions.divide( EnumUtils.unwrapPolyValue( operand, "longValue" ), Expressions.constant( TimeUnit.SECOND.multiplier.longValue() ) ) );
-                        case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-                            operand = Expressions.call(
-                                    BuiltInMethod.TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_TIMESTAMP.method,
-                                    operand,
-                                    Expressions.call( BuiltInMethod.TIME_ZONE.method, translator.getRoot() ) );
-                            return EnumUtils.wrapPolyValue( call.type.getPolyType(), Expressions.divide( EnumUtils.unwrapPolyValue( operand, "longValue" ), Expressions.constant( TimeUnit.SECOND.multiplier.longValue() ) ) );
-                        case INTERVAL_YEAR:
-                        case INTERVAL_YEAR_MONTH:
-                        case INTERVAL_MONTH:
-                        case INTERVAL_DAY:
-                        case INTERVAL_DAY_HOUR:
-                        case INTERVAL_DAY_MINUTE:
-                        case INTERVAL_DAY_SECOND:
-                        case INTERVAL_HOUR:
-                        case INTERVAL_HOUR_MINUTE:
-                        case INTERVAL_HOUR_SECOND:
-                        case INTERVAL_MINUTE:
-                        case INTERVAL_MINUTE_SECOND:
-                        case INTERVAL_SECOND:
+                        case INTERVAL:
                             // no convertlet conversion, pass it as extract
                             throw new AssertionError( "unexpected " + polyType );
                     }
@@ -2598,14 +2553,14 @@ public class RexImpTable {
             if ( op.equals( OperatorRegistry.get( OperatorName.CURRENT_USER ) )
                     || op.getOperatorName() == OperatorName.SESSION_USER
                     || op.getOperatorName() == OperatorName.USER ) {
-                return Expressions.constant( "sa" );
+                return PolyString.of( "pa" ).asExpression();
             } else if ( op.getOperatorName() == OperatorName.SYSTEM_USER ) {
-                return Expressions.constant( System.getProperty( "user.name" ) );
+                return PolyString.of( System.getProperty( "user.name" ) ).asExpression();
             } else if ( op.getOperatorName() == OperatorName.CURRENT_PATH
                     || op.getOperatorName() == OperatorName.CURRENT_ROLE
                     || op.getOperatorName() == OperatorName.CURRENT_CATALOG ) {
                 // By default, the CURRENT_ROLE and CURRENT_CATALOG functions return the empty string because a role or a catalog has to be set explicitly.
-                return Expressions.constant( "" );
+                return PolyString.of( "" ).asExpression();
             } else if ( op.getOperatorName() == OperatorName.CURRENT_TIMESTAMP ) {
                 return Expressions.call( BuiltInMethod.CURRENT_TIMESTAMP.method, root );
             } else if ( op.getOperatorName() == OperatorName.CURRENT_TIME ) {
@@ -2700,65 +2655,40 @@ public class RexImpTable {
                                 Expressions.multiply( trop0, Expressions.constant( DateTimeUtils.MILLIS_PER_DAY ) ),
                                 long.class );
                     } else {
-                        trop1 = switch ( typeName1 ) {
-                            case INTERVAL_DAY, INTERVAL_DAY_HOUR, INTERVAL_DAY_MINUTE, INTERVAL_DAY_SECOND, INTERVAL_HOUR, INTERVAL_HOUR_MINUTE, INTERVAL_HOUR_SECOND, INTERVAL_MINUTE, INTERVAL_MINUTE_SECOND, INTERVAL_SECOND -> Expressions.convert_( Expressions.divide( trop1, Expressions.constant( DateTimeUtils.MILLIS_PER_DAY ) ), int.class );
-                            default -> trop1;
-                        };
+                        //case INTERVAL -> trop1;
+                        trop1 = trop1;
                     }
                     break;
                 case TIME:
                     trop1 = Expressions.convert_( trop1, int.class );
                     break;
             }
-            switch ( typeName1 ) {
-                case INTERVAL_YEAR:
-                case INTERVAL_YEAR_MONTH:
-                case INTERVAL_MONTH:
-                    if ( Objects.requireNonNull( call.getKind() ) == Kind.MINUS ) {
-                        trop1 = Expressions.negate( trop1 );
-                    }
-                    if ( Objects.requireNonNull( typeName ) == PolyType.TIME ) {
-                        return Expressions.convert_( trop0, long.class );
-                    }
-                    final BuiltInMethod method =
-                            operand0.getType().getPolyType() == PolyType.TIMESTAMP
-                                    ? BuiltInMethod.ADD_MONTHS
-                                    : BuiltInMethod.ADD_MONTHS_INT;
-                    return Expressions.call( method.method, EnumUtils.convertPolyValue( typeName, trop0 ), trop1 );
-
-                case INTERVAL_DAY:
-                case INTERVAL_DAY_HOUR:
-                case INTERVAL_DAY_MINUTE:
-                case INTERVAL_DAY_SECOND:
-                case INTERVAL_HOUR:
-                case INTERVAL_HOUR_MINUTE:
-                case INTERVAL_HOUR_SECOND:
-                case INTERVAL_MINUTE:
-                case INTERVAL_MINUTE_SECOND:
-                case INTERVAL_SECOND:
-                    return switch ( call.getKind() ) {
-                        case MINUS -> normalize( typeName, Expressions.subtract( trop0, trop1 ) );
-                        default -> normalize( typeName, Expressions.add( trop0, trop1 ) );
-                    };
-
-                default:
-                    return switch ( call.getKind() ) {
-                        case MINUS -> {
-                            switch ( typeName ) {
-                                case INTERVAL_YEAR:
-                                case INTERVAL_YEAR_MONTH:
-                                case INTERVAL_MONTH:
-                                    yield Expressions.call( BuiltInMethod.SUBTRACT_MONTHS.method, trop0, trop1 );
-                            }
-                            TimeUnit fromUnit = typeName1 == PolyType.DATE ? TimeUnit.DAY : TimeUnit.MILLISECOND;
-                            TimeUnit toUnit = TimeUnit.MILLISECOND;
-                            yield multiplyDivide(
-                                    Expressions.convert_( Expressions.subtract( trop0, trop1 ), long.class ),
-                                    fromUnit.multiplier, toUnit.multiplier );
-                        }
-                        default -> throw new AssertionError( call );
-                    };
+            if ( Objects.requireNonNull( typeName1 ) == PolyType.INTERVAL ) {
+                if ( Objects.requireNonNull( call.getKind() ) == Kind.MINUS ) {
+                    trop1 = Expressions.negate( trop1 );
+                }
+                if ( Objects.requireNonNull( typeName ) == PolyType.TIME ) {
+                    return Expressions.convert_( trop0, long.class );
+                }
+                final BuiltInMethod method =
+                        operand0.getType().getPolyType() == PolyType.TIMESTAMP
+                                ? BuiltInMethod.ADD_MONTHS
+                                : BuiltInMethod.ADD_MONTHS_INT;
+                return Expressions.call( method.method, EnumUtils.convertPolyValue( typeName, trop0 ), trop1 );
             }
+            return switch ( call.getKind() ) {
+                case MINUS -> {
+                    if ( Objects.requireNonNull( typeName ) == PolyType.INTERVAL ) {
+                        yield Expressions.call( BuiltInMethod.SUBTRACT_MONTHS.method, trop0, trop1 );
+                    }
+                    TimeUnit fromUnit = typeName1 == PolyType.DATE ? TimeUnit.DAY : TimeUnit.MILLISECOND;
+                    TimeUnit toUnit = TimeUnit.MILLISECOND;
+                    yield multiplyDivide(
+                            Expressions.convert_( Expressions.subtract( trop0, trop1 ), long.class ),
+                            fromUnit.multiplier, toUnit.multiplier );
+                }
+                default -> throw new AssertionError( call );
+            };
         }
 
 

@@ -205,7 +205,7 @@ public class SqlProcessor extends Processor {
         AlgRoot logicalRoot = sqlToAlgConverter.convertQuery( context.getQueryNode().orElseThrow(), false, true );
 
         // Decorrelate
-        final AlgBuilder algBuilder = config.getAlgBuilderFactory().create( cluster, null );
+        final AlgBuilder algBuilder = config.algBuilderFactory().create( cluster, null );
         logicalRoot = logicalRoot.withAlg( AlgDecorrelator.decorrelateQuery( logicalRoot.alg, algBuilder ) );
 
         // Trim unused fields.

@@ -29,8 +29,8 @@ public class AbstractAdapterSettingList extends AbstractAdapterSetting {
     public boolean dynamic = false;
 
 
-    public AbstractAdapterSettingList( String name, boolean canBeNull, final String subOf, boolean required, boolean modifiable, List<String> options, List<DeploySetting> modes, String defaultValue, int position ) {
-        super( AdapterSettingType.LIST, name, canBeNull, subOf, required, modifiable, modes, defaultValue, position );
+    public AbstractAdapterSettingList( String name, boolean canBeNull, final String subOf, boolean required, boolean modifiable, List<String> options, List<DeploySetting> appliesTo, String defaultValue, int position ) {
+        super( AdapterSettingType.LIST, name, canBeNull, subOf, required, modifiable, appliesTo, defaultValue, position );
         this.options = options;
     }
 

@@ -125,11 +125,6 @@ public class JoinCommuteRule extends AlgOptRule {
     public void onMatch( final AlgOptRuleCall call ) {
         Join join = call.alg( 0 );
 
-        if ( !join.getSystemFieldList().isEmpty() ) {
-            // FIXME Enable this rule for joins with system fields
-            return;
-        }
-
         final AlgNode swapped = swap( join, this.swapOuter, call.builder() );
         if ( swapped == null ) {
             return;

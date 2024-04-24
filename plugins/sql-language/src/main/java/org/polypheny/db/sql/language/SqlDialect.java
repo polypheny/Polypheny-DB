@@ -32,9 +32,6 @@ import lombok.With;
 import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.SqlType;
-import org.apache.calcite.avatica.util.DateTimeUtils;
-import org.apache.calcite.avatica.util.TimeUnit;
-import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.apache.calcite.linq4j.function.Experimental;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -53,6 +50,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeSystemImpl;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Operator;
+import org.polypheny.db.nodes.TimeUnitRange;
 import org.polypheny.db.sql.language.dialect.JethroDataSqlDialect;
 import org.polypheny.db.sql.language.dialect.JethroDataSqlDialect.JethroInfo;
 import org.polypheny.db.sql.language.util.SqlBuilder;
@@ -61,6 +59,8 @@ import org.polypheny.db.type.BasicPolyType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.util.temporal.DateTimeUtils;
+import org.polypheny.db.util.temporal.TimeUnit;
 
 
 /**
@@ -284,7 +284,11 @@ public class SqlDialect {
 
 
     public void unparseCall( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
-        ((SqlOperator) call.getOperator()).unparse( writer, call, leftPrec, rightPrec );
+        if ( OperatorName.PI == call.getOperator().getOperatorName() ) {
+            writer.literal( "PI()" );
+        } else {
+            ((SqlOperator) call.getOperator()).unparse( writer, call, leftPrec, rightPrec );
+        }
     }
 
 
@@ -360,10 +364,12 @@ public class SqlDialect {
     public void unparseSqlIntervalLiteral( SqlWriter writer, SqlIntervalLiteral literal, int leftPrec, int rightPrec ) {
         SqlIntervalLiteral.IntervalValue interval = (SqlIntervalLiteral.IntervalValue) literal.getValue();
         writer.keyword( "INTERVAL" );
-        if ( interval.getSign() == -1 ) {
+        if ( interval.isNegative() || interval.millis < 0 || interval.months < 0 ) {
             writer.print( "-" );
         }
-        writer.literal( "'" + literal.getValue().toString() + "'" );
+        String intervalStr = literal.getValue().toString();
+        intervalStr = intervalStr.startsWith( "-" ) ? intervalStr.substring( 1 ) : intervalStr;
+        writer.literal( "'" + intervalStr + "'" );
         unparseSqlIntervalQualifier( writer, interval.getIntervalQualifier(), AlgDataTypeSystem.DEFAULT );
     }
 

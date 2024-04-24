@@ -21,11 +21,11 @@ import java.util.Objects;
 import lombok.Getter;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyInterval;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Litmus;
 
@@ -48,8 +48,8 @@ import org.polypheny.db.util.Litmus;
 public class SqlIntervalLiteral extends SqlLiteral {
 
 
-    protected SqlIntervalLiteral( int sign, String intervalStr, SqlIntervalQualifier intervalQualifier, PolyType polyType, ParserPos pos ) {
-        this( new IntervalValue( intervalQualifier, sign, intervalStr ), polyType, pos );
+    protected SqlIntervalLiteral( PolyInterval interval, SqlIntervalQualifier intervalQualifier, PolyType polyType, ParserPos pos ) {
+        this( new IntervalValue( intervalQualifier, interval ), polyType, pos );
     }
 
 
@@ -80,30 +80,24 @@ public class SqlIntervalLiteral extends SqlLiteral {
     /**
      * A Interval value.
      */
-    public static class IntervalValue extends PolyValue {
+    @Getter
+    public static class IntervalValue extends PolyInterval {
 
-        @Getter
         private final SqlIntervalQualifier intervalQualifier;
         private final String intervalStr;
-        @Getter
-        private final int sign;
+        private final boolean negative;
 
 
         /**
          * Creates an interval value.
          *
          * @param intervalQualifier Interval qualifier
-         * @param sign Sign (+1 or -1)
-         * @param intervalStr Interval string
          */
-        IntervalValue( SqlIntervalQualifier intervalQualifier, int sign, String intervalStr ) {
-            super( null );
-            assert (sign == -1) || (sign == 1);
-            assert intervalQualifier != null;
-            assert intervalStr != null;
+        IntervalValue( SqlIntervalQualifier intervalQualifier, PolyInterval interval ) {
+            super( interval.millis, interval.months );
             this.intervalQualifier = intervalQualifier;
-            this.sign = sign;
-            this.intervalStr = intervalStr;
+            this.negative = interval.millis < 0 || interval.months < 0;
+            this.intervalStr = SqlIntervalQualifier.intervalString( interval, intervalQualifier );
         }
 
 
@@ -112,13 +106,18 @@ public class SqlIntervalLiteral extends SqlLiteral {
                 return false;
             }
             return this.intervalStr.equals( that.intervalStr )
-                    && (this.sign == that.sign)
+                    && (this.negative == that.negative)
                     && this.intervalQualifier.equalsDeep( that.intervalQualifier, Litmus.IGNORE );
         }
 
 
+        public int getSign() {
+            return negative ? -1 : 1;
+        }
+
+
         public int hashCode() {
-            return Objects.hash( sign, intervalStr, intervalQualifier );
+            return Objects.hash( getSign(), intervalStr, intervalQualifier );
         }
 
 
@@ -131,7 +130,7 @@ public class SqlIntervalLiteral extends SqlLiteral {
             for ( int i = 0; i < intervalStr.length(); i++ ) {
                 char ch = intervalStr.charAt( i );
                 if ( ch >= '1' && ch <= '9' ) {
-                    // If non zero return sign.
+                    // If non-zero return sign.
                     return getSign();
                 }
             }
@@ -159,12 +158,6 @@ public class SqlIntervalLiteral extends SqlLiteral {
         @Override
         public PolySerializable copy() {
             throw new GenericRuntimeException( "Not allowed" );
-        }
-
-
-        @Override
-        public @Nullable Long deriveByteSize() {
-            return null;
         }
 
 

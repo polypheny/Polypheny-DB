@@ -32,6 +32,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
 import java.util.TimeZone;
 import java.util.UUID;
 import javax.inject.Inject;
@@ -274,27 +275,7 @@ public class PolyphenyDb {
         }
 
         // Generate UUID for Polypheny (if there isn't one already)
-        String uuid;
-        if ( PolyphenyHomeDirManager.getInstance().getGlobalFile( "uuid" ).isEmpty() ) {
-            UUID id = UUID.randomUUID();
-            File f = PolyphenyHomeDirManager.getInstance().registerNewGlobalFile( "uuid" );
-
-            try ( FileOutputStream out = new FileOutputStream( f ) ) {
-                out.write( id.toString().getBytes( StandardCharsets.UTF_8 ) );
-            } catch ( IOException e ) {
-                throw new GenericRuntimeException( "Failed to store UUID " + e );
-            }
-
-            uuid = id.toString();
-        } else {
-            Path path = PolyphenyHomeDirManager.getInstance().getGlobalFile( "uuid" ).orElseThrow().toPath();
-
-            try ( BufferedReader in = Files.newBufferedReader( path, StandardCharsets.UTF_8 ) ) {
-                uuid = UUID.fromString( in.readLine() ).toString();
-            } catch ( IOException e ) {
-                throw new GenericRuntimeException( "Failed to load UUID " + e );
-            }
-        }
+        String uuid = generateOrLoadPolyphenyUUID();
 
         if ( mode == RunMode.TEST ) {
             uuid = "polypheny-test";
@@ -376,11 +357,10 @@ public class PolyphenyDb {
         // Status service which pipes msgs to the start ui or the console
         StatusService.initialize( transactionManager, server.getServer() );
 
+        Catalog.resetDocker = resetDocker; // TODO: Needed?
         log.debug( "Setting Docker Timeouts" );
         RuntimeConfig.DOCKER_TIMEOUT.setInteger( mode == RunMode.DEVELOPMENT || mode == RunMode.TEST ? 5 : RuntimeConfig.DOCKER_TIMEOUT.getInteger() );
-        if ( initializeDockerManager() ) {
-            return;
-        }
+        initializeDockerManager();
 
         // Initialize plugin manager
         PolyPluginManager.init( resetPlugins );
@@ -406,7 +386,8 @@ public class PolyphenyDb {
                 null,
                 AlgProcessor::new,
                 null,
-                q -> null );
+                q -> null,
+                c -> c );
         LanguageManager.getINSTANCE().addQueryLanguage( language );
 
         // Initialize index manager
@@ -484,22 +465,22 @@ public class PolyphenyDb {
     }
 
 
-    private boolean initializeDockerManager() {
+    private void initializeDockerManager() {
         if ( AutoDocker.getInstance().isAvailable() ) {
             if ( mode == RunMode.TEST ) {
                 resetDocker = true;
                 Catalog.resetDocker = true;
             }
-            boolean success = AutoDocker.getInstance().doAutoConnect();
-            if ( mode == RunMode.TEST && !success ) {
+            try {
+                AutoDocker.getInstance().doAutoConnect();
+            } catch ( GenericRuntimeException e ) {
                 // AutoDocker does not work in Windows containers
-                if ( !System.getenv( "RUNNER_OS" ).equals( "Windows" ) ) {
-                    log.error( "Failed to connect to docker instance" );
-                    return true;
+                if ( mode == RunMode.TEST && !System.getenv( "RUNNER_OS" ).equals( "Windows" ) ) {
+                    log.error( "Failed to connect to Docker instance: " + e.getMessage() );
+                    throw e;
                 }
             }
         }
-        return false;
     }
 
 
@@ -559,6 +540,31 @@ public class PolyphenyDb {
     }
 
 
+    private String generateOrLoadPolyphenyUUID() {
+        Optional<File> uuidFile = PolyphenyHomeDirManager.getInstance().getGlobalFile( "uuid" );
+        if ( uuidFile.isEmpty() ) {
+            UUID id = UUID.randomUUID();
+            File f = PolyphenyHomeDirManager.getInstance().registerNewGlobalFile( "uuid" );
+
+            try ( FileOutputStream out = new FileOutputStream( f ) ) {
+                out.write( id.toString().getBytes( StandardCharsets.UTF_8 ) );
+            } catch ( IOException e ) {
+                throw new GenericRuntimeException( "Failed to store UUID " + e );
+            }
+
+            return id.toString();
+        } else {
+            Path path = uuidFile.get().toPath();
+
+            try ( BufferedReader in = Files.newBufferedReader( path, StandardCharsets.UTF_8 ) ) {
+                return UUID.fromString( in.readLine() ).toString();
+            } catch ( IOException e ) {
+                throw new GenericRuntimeException( "Failed to load UUID " + e );
+            }
+        }
+    }
+
+
     private HttpServer startHttpServer( Authenticator authenticator, TransactionManager transactionManager ) {
         final HttpServer httpServer = new HttpServer( transactionManager, authenticator );
         Thread polyphenyUiThread = new Thread( httpServer );
@@ -578,7 +584,9 @@ public class PolyphenyDb {
         Catalog.memoryCatalog = memoryCatalog;
         Catalog.mode = mode;
         Catalog.resetDocker = resetDocker;
+
         Catalog catalog = Catalog.setAndGetInstance( new PolyCatalog() );
+
         if ( catalog == null ) {
             throw new GenericRuntimeException( "There was no catalog submitted, aborting." );
         }
@@ -596,8 +604,13 @@ public class PolyphenyDb {
     private void restore( Authenticator authenticator, Catalog catalog ) {
         PolyPluginManager.startUp( transactionManager, authenticator );
 
-        if ( !resetCatalog && mode != RunMode.TEST ) {
-            Catalog.getInstance().restore();
+        Transaction trx = transactionManager.startTransaction(
+                Catalog.defaultUserId,
+                Catalog.defaultNamespaceId,
+                false,
+                "Catalog Startup" );
+        if ( !resetCatalog && !memoryCatalog && mode != RunMode.TEST ) {
+            Catalog.getInstance().restore( trx );
         }
         Catalog.getInstance().updateSnapshot();
 
@@ -607,21 +620,15 @@ public class PolyphenyDb {
 
         QueryInterfaceManager.getInstance().restoreInterfaces( catalog.getSnapshot() );
 
-        commitRestore();
+        commitRestore( trx );
     }
 
 
     /**
      * Tries to commit the restored catalog.
      */
-    private void commitRestore() {
-        Transaction trx = null;
+    private void commitRestore( Transaction trx ) {
         try {
-            trx = transactionManager.startTransaction(
-                    Catalog.defaultUserId,
-                    Catalog.defaultNamespaceId,
-                    false,
-                    "Catalog Startup" );
             trx.commit();
         } catch ( TransactionException e ) {
             try {

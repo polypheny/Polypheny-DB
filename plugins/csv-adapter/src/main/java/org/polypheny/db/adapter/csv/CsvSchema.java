@@ -45,6 +45,7 @@ import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.adapter.DataSource.ExportedColumn;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
@@ -84,7 +85,7 @@ public class CsvSchema extends Namespace {
 
     public CsvTable createCsvTable( long id, PhysicalTable table, CsvSource csvSource ) {
         final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
-        final AlgDataTypeFactory.Builder fieldInfo = typeFactory.builder();
+        final Builder fieldInfo = typeFactory.builder();
         List<CsvFieldType> fieldTypes = new LinkedList<>();
         List<Integer> fieldIds = new ArrayList<>();
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -96,19 +96,7 @@ public class PolyTypeExplicitPrecedenceList implements AlgDataTypePrecedenceList
                     .put( PolyType.DATE, list( PolyType.DATE ) )
                     .put( PolyType.TIME, list( PolyType.TIME ) )
                     .put( PolyType.TIMESTAMP, list( PolyType.TIMESTAMP, PolyType.DATE, PolyType.TIME ) )
-                    .put( PolyType.INTERVAL_YEAR, list( PolyType.YEAR_INTERVAL_TYPES ) )
-                    .put( PolyType.INTERVAL_YEAR_MONTH, list( PolyType.YEAR_INTERVAL_TYPES ) )
-                    .put( PolyType.INTERVAL_MONTH, list( PolyType.YEAR_INTERVAL_TYPES ) )
-                    .put( PolyType.INTERVAL_DAY, list( PolyType.DAY_INTERVAL_TYPES ) )
-                    .put( PolyType.INTERVAL_DAY_HOUR, list( PolyType.DAY_INTERVAL_TYPES ) )
-                    .put( PolyType.INTERVAL_DAY_MINUTE, list( PolyType.DAY_INTERVAL_TYPES ) )
-                    .put( PolyType.INTERVAL_DAY_SECOND, list( PolyType.DAY_INTERVAL_TYPES ) )
-                    .put( PolyType.INTERVAL_HOUR, list( PolyType.DAY_INTERVAL_TYPES ) )
-                    .put( PolyType.INTERVAL_HOUR_MINUTE, list( PolyType.DAY_INTERVAL_TYPES ) )
-                    .put( PolyType.INTERVAL_HOUR_SECOND, list( PolyType.DAY_INTERVAL_TYPES ) )
-                    .put( PolyType.INTERVAL_MINUTE, list( PolyType.DAY_INTERVAL_TYPES ) )
-                    .put( PolyType.INTERVAL_MINUTE_SECOND, list( PolyType.DAY_INTERVAL_TYPES ) )
-                    .put( PolyType.INTERVAL_SECOND, list( PolyType.DAY_INTERVAL_TYPES ) )
+                    .put( PolyType.INTERVAL, list( PolyType.INTERVAL_TYPES ) )
                     .build();
 
 
@@ -179,4 +167,3 @@ public class PolyTypeExplicitPrecedenceList implements AlgDataTypePrecedenceList
     }
 
 }
-

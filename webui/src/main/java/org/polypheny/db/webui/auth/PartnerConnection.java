@@ -42,7 +42,8 @@ public class PartnerConnection {
 
     public <E> void broadcast( E msg ) {
         List<WsMessageContext> invalid = new ArrayList<>();
-        for ( WsMessageContext context : contexts ) {
+
+        for ( WsMessageContext context : List.copyOf( contexts ) ) { // Copy to avoid ConcurrentModificationException
             if ( !context.session.isOpen() ) {
                 invalid.add( context );
                 continue;

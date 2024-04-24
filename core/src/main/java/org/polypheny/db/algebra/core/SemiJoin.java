@@ -118,8 +118,7 @@ public class SemiJoin extends EquiJoin {
                 null,
                 JoinAlgType.INNER,
                 getCluster().getTypeFactory(),
-                null,
-                ImmutableList.of() );
+                null );
     }
 
 }

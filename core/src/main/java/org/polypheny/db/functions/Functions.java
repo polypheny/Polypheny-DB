@@ -107,7 +107,6 @@ import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyInterval;
 import org.polypheny.db.type.entity.PolyList;
-import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
@@ -116,6 +115,7 @@ import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.type.entity.relational.PolyMap;
 import org.polypheny.db.util.BsonUtil;
 import org.polypheny.db.util.Static;
@@ -373,11 +373,11 @@ public class Functions {
 
 
     @SuppressWarnings("unused")
-    public static Enumerable<?> enforceConstraint( DataContext context, Function0<Enumerable<PolyValue[]>> modify, Function0<Enumerable<PolyValue[]>> control, List<Class<? extends Exception>> exceptions, List<String> msgs ) {
-        List<PolyValue> results = new ArrayList<>();
+    public static Enumerable<PolyValue[]> enforceConstraint( DataContext context, Function0<Enumerable<PolyValue[]>> modify, Function0<Enumerable<PolyValue[]>> control, List<Class<? extends Exception>> exceptions, List<String> msgs ) {
+        List<PolyValue[]> results = new ArrayList<>();
         try {
             for ( PolyValue[] object : modify.apply() ) {
-                results.add( object[0] );
+                results.add( object );
             }
         } catch ( Exception e ) {
             throw new ConstraintViolationException( Joiner.on( "\n" ).join( msgs ) );
@@ -1159,7 +1159,7 @@ public class Functions {
 
 
     public static PolyInterval multiply( PolyInterval b0, PolyNumber b1 ) {
-        return PolyInterval.of( b0.value.multiply( b1.bigDecimalValue() ), b0.qualifier );
+        return PolyInterval.of( b0.millis * b1.longValue(), b0.months * b1.longValue() );
     }
 
 
@@ -1324,6 +1324,17 @@ public class Functions {
      */
     public static PolyNumber abs( PolyNumber number ) {
         return PolyBigDecimal.of( number.bigDecimalValue().abs() );
+    }
+
+
+    /**
+     * SQL <code>ABS</code> operator applied to byte values.
+     */
+    public static PolyNumber abs( PolyValue value ) {
+        if ( value.isNumber() ) {
+            return abs( value.asNumber() );
+        }
+        throw new GenericRuntimeException( "ABS can only be applied to numbers" );
     }
 
     // ACOS
@@ -2733,7 +2744,7 @@ public class Functions {
     }
 
 
-    public static void jsonArrayAggAdd( List list, Object element, JsonConstructorNullClause nullClause ) {
+    public static void jsonArrayAggAdd( List<PolyValue> list, PolyValue element, JsonConstructorNullClause nullClause ) {
         if ( element == null ) {
             if ( nullClause == JsonConstructorNullClause.NULL_ON_NULL ) {
                 list.add( null );
@@ -2829,4 +2840,3 @@ public class Functions {
     }
 
 }
-

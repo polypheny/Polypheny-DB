@@ -16,6 +16,7 @@
 
 package org.polypheny.db.cql;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
@@ -90,6 +91,12 @@ public class CqlProcessor extends Processor {
     @Override
     public AlgDataType getParameterRowType( Node left ) {
         return null;
+    }
+
+
+    @Override
+    public List<String> splitStatements( String statements ) {
+        return Arrays.stream( statements.split( ";" ) ).filter( q -> !q.trim().isEmpty() ).toList();
     }
 
 }

@@ -38,7 +38,9 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.processing.QueryContext;
+import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.entity.graph.PolyGraph;
+import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.crud.LanguageCrud;
 import org.polypheny.db.webui.models.requests.AlgRequest;
 import org.polypheny.db.webui.models.requests.GraphRequest;
@@ -110,9 +112,11 @@ public class WebSocket implements Consumer<WsConfig> {
         switch ( request.type ) {
             case "GraphRequest":
                 GraphRequest graphRequest = ctx.messageAsClass( GraphRequest.class );
-                PolyGraph graph = LanguageCrud.getGraph( Catalog.snapshot().getNamespace( graphRequest.namespace ).orElseThrow().name, crud.getTransactionManager(), ctx.session );
+                Pair<PolyXid, PolyGraph> xidGraph = LanguageCrud.getGraph( Catalog.snapshot().getNamespace( graphRequest.namespace ).orElseThrow().name, crud.getTransactionManager(), ctx.session );
 
-                ctx.send( graph.toJson() );
+                xIds.add( xidGraph.left.toString() );
+
+                ctx.send( xidGraph.right.toJson() );
 
                 break;
             case "QueryRequest":
@@ -126,14 +130,12 @@ public class WebSocket implements Consumer<WsConfig> {
                                 .isAnalysed( queryRequest.analyze )
                                 .usesCache( queryRequest.cache )
                                 .namespaceId( LanguageCrud.getNamespaceIdOrDefault( queryRequest.namespace ) )
-                                .origin( POLYPHENY_UI ).batch( queryRequest.noLimit ? -1 : crud.getPageSize() )
+                                .origin( POLYPHENY_UI )
+                                .batch( queryRequest.noLimit ? -1 : crud.getPageSize() )
                                 .transactionManager( crud.getTransactionManager() )
                                 .informationTarget( i -> i.setSession( ctx.session ) ).build(), queryRequest );
 
                 for ( Result<?, ?> result : results ) {
-                    if ( !(result instanceof RelationalResult) ) {
-                        continue;
-                    }
                     if ( result.xid != null ) {
                         xIds.add( result.xid );
                     }
@@ -171,7 +173,7 @@ public class WebSocket implements Consumer<WsConfig> {
                                                 .batch( uiRequest.noLimit ? -1 : crud.getPageSize() )
                                                 .transactionManager( crud.getTransactionManager() )
                                                 .informationTarget( i -> i.setSession( ctx.session ) )
-                                                .namespaceId( namespace == null ? Catalog.defaultNamespaceId : namespace.id )
+                                                .namespaceId( namespace.id )
                                                 .build(), uiRequest ).get( 0 );
                             }
                             case GRAPH -> LanguageCrud.anyQueryResult(
@@ -180,7 +182,7 @@ public class WebSocket implements Consumer<WsConfig> {
                                             .language( QueryLanguage.from( "cypher" ) )
                                             .origin( POLYPHENY_UI )
                                             .batch( uiRequest.noLimit ? -1 : crud.getPageSize() )
-                                            .namespaceId( namespace == null ? Catalog.defaultNamespaceId : namespace.id )
+                                            .namespaceId( namespace.id )
                                             .transactionManager( crud.getTransactionManager() )
                                             .informationTarget( i -> i.setSession( ctx.session ) )
                                             .build(), uiRequest ).get( 0 );

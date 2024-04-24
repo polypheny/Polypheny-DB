@@ -19,7 +19,6 @@ package org.polypheny.db.adapter.postgres;
 
 import java.util.Objects;
 import org.apache.calcite.avatica.SqlType;
-import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.NullCollation;
@@ -27,6 +26,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.algebra.type.AlgDataTypeSystemImpl;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.nodes.TimeUnitRange;
 import org.polypheny.db.sql.language.SqlBasicCall;
 import org.polypheny.db.sql.language.SqlCall;
 import org.polypheny.db.sql.language.SqlDataTypeSpec;
@@ -135,19 +135,7 @@ public class PostgresqlSqlDialect extends SqlDialect {
                     default -> "_" + t.getName() + brackets;
                 };
                 break;
-            case INTERVAL_YEAR_MONTH:
-            case INTERVAL_DAY:
-            case INTERVAL_DAY_HOUR:
-            case INTERVAL_DAY_MINUTE:
-            case INTERVAL_DAY_SECOND:
-            case INTERVAL_HOUR_MINUTE:
-            case INTERVAL_HOUR:
-            case INTERVAL_HOUR_SECOND:
-            case INTERVAL_MINUTE:
-            case INTERVAL_MONTH:
-            case INTERVAL_SECOND:
-            case INTERVAL_MINUTE_SECOND:
-            case INTERVAL_YEAR:
+            case INTERVAL:
                 castSpec = "interval";
                 break;
             default:

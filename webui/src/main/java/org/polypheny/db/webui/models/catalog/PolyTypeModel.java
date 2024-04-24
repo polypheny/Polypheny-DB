@@ -20,7 +20,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.polypheny.db.type.PolyType;
 
 
-public record PolyTypeModel(@JsonProperty("name") String name, @JsonProperty("signatures") int signatures) {
+public record PolyTypeModel( @JsonProperty("name") String name, @JsonProperty("signatures") int signatures ) {
 
 
     public static PolyTypeModel from( PolyType type ) {

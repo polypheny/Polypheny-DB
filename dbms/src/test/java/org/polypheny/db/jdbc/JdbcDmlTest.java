@@ -68,7 +68,6 @@ public class JdbcDmlTest {
                                     new Object[]{ 4, 6, "hans" },
                                     new Object[]{ 5, 3, "georg" },
                                     new Object[]{ 6, 2, "jack" } ) );
-                    connection.commit();
                 } finally {
                     // Drop table
                     statement.executeUpdate( "DROP TABLE multiinserttest" );

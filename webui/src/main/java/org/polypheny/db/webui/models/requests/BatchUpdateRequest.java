@@ -81,12 +81,12 @@ public class BatchUpdateRequest {
                     log.warn( "This should not happen" );
                 }
             }
-            sBuilder.append( setClauses.toString() );
+            sBuilder.append( setClauses );
             StringJoiner whereClauses = new StringJoiner( " AND " );
             for ( Entry<String, String> entry : oldPkValues.entrySet() ) {
                 whereClauses.add( String.format( "\"%s\"='%s'", entry.getKey(), entry.getValue() ) );
             }
-            sBuilder.append( " WHERE " ).append( whereClauses.toString() );
+            sBuilder.append( " WHERE " ).append( whereClauses );
             return sBuilder.toString();
         }
 

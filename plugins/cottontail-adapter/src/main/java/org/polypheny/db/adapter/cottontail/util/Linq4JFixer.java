@@ -24,13 +24,13 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyList;
-import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyFloat;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.type.entity.temporal.PolyDate;
 import org.polypheny.db.type.entity.temporal.PolyTime;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
@@ -154,6 +154,7 @@ public class Linq4JFixer {
         return PolyDouble.of( (Double) data );
     }
 
+
     /**
      * Converts the given object and returns it as {@link Integer} object.
      *
@@ -216,7 +217,6 @@ public class Linq4JFixer {
         }
         return PolyBoolean.of( (Boolean) data );
     }
-
 
 
     public static PolyList<PolyBoolean> getBoolVector( Object data ) {

@@ -21,21 +21,26 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.ConfigDocker;
 import org.polypheny.db.docker.PolyphenyHandshakeClient.State;
+import org.polypheny.db.docker.exceptions.DockerUserException;
 import org.polypheny.db.docker.models.DockerHost;
+import org.polypheny.db.docker.models.HandshakeInfo;
 
 @Slf4j
 public final class HandshakeManager {
 
     private static final HandshakeManager INSTANCE = new HandshakeManager();
-    private final Map<String, Handshake> handshakes = new HashMap<>();
+    private final Map<Long, Handshake> handshakes = new HashMap<>();
 
 
     private HandshakeManager() {
@@ -47,16 +52,13 @@ public final class HandshakeManager {
     }
 
 
-    Map<String, String> newHandshake( DockerHost host, Runnable onCompletion, boolean startHandshake ) {
+    HandshakeInfo newHandshake( DockerHost host, Runnable onCompletion, boolean startHandshake ) {
         synchronized ( this ) {
-            Handshake old = handshakes.remove( host.hostname() );
-            if ( old != null ) {
-                old.cancel();
-            }
+            cancelHandshakes( host.hostname() );
 
             try {
                 Handshake h = new Handshake( host, onCompletion );
-                handshakes.put( host.hostname(), h );
+                handshakes.put( h.getId(), h );
                 if ( startHandshake ) {
                     h.startOrRestart();
                 }
@@ -68,11 +70,11 @@ public final class HandshakeManager {
     }
 
 
-    public Map<String, String> restartOrGetHandshake( String hostname ) {
+    public HandshakeInfo restartHandshake( long id ) {
         synchronized ( this ) {
-            Handshake h = handshakes.get( hostname );
+            Handshake h = handshakes.get( id );
             if ( h == null ) {
-                throw new GenericRuntimeException( "No handshake for hostname " + hostname );
+                throw new DockerUserException( 404, "No handshake with id " + id );
             }
             try {
                 h.startOrRestart();
@@ -84,9 +86,24 @@ public final class HandshakeManager {
     }
 
 
-    public boolean cancelHandshake( String hostname ) {
+    void ensureHandshakeIsRunning( long id ) {
         synchronized ( this ) {
-            Handshake h = handshakes.remove( DockerUtils.normalizeHostname( hostname ) );
+            Handshake h = handshakes.get( id );
+            if ( h == null ) {
+                throw new GenericRuntimeException( "No handshake with id " + id );
+            }
+            try {
+                h.startOrRestart();
+            } catch ( IOException e ) {
+                throw new GenericRuntimeException( e );
+            }
+        }
+    }
+
+
+    public boolean cancelAndRemoveHandshake( long id ) {
+        synchronized ( this ) {
+            Handshake h = handshakes.remove( id );
             if ( h != null ) {
                 h.cancel();
             }
@@ -95,24 +112,46 @@ public final class HandshakeManager {
     }
 
 
-    public Map<String, String> getHandshake( String hostname ) {
+    void cancelHandshakes( String hostname ) {
         synchronized ( this ) {
-            return handshakes.get( DockerUtils.normalizeHostname( hostname ) ).serializeHandshake();
+            List<Long> ids = handshakes.values().stream().filter( h -> h.host.hostname().equals( hostname ) ).map( Handshake::getId ).toList();
+            ids.forEach( this::cancelAndRemoveHandshake );
         }
     }
 
 
-    String getHandshakeParameters( String hostname ) {
+    public Optional<HandshakeInfo> getHandshake( long id ) {
         synchronized ( this ) {
-            return handshakes.get( DockerUtils.normalizeHostname( hostname ) ).getHandshakeParameters();
+            Handshake h = handshakes.get( id );
+            return Optional.ofNullable( h != null ? h.serializeHandshake() : null );
+        }
+    }
+
+
+    public List<HandshakeInfo> getActiveHandshakes() {
+        synchronized ( this ) {
+            return handshakes.values().stream()
+                    .map( Handshake::serializeHandshake )
+                    .filter( h -> !h.status().equals( "CANCELLED" ) && !h.status().equals( "SUCCESS" ) ).toList();
+        }
+    }
+
+
+    String getHandshakeParameters( long id ) {
+        synchronized ( this ) {
+            return handshakes.get( id ).getHandshakeParameters();
         }
     }
 
 
     private static class Handshake {
 
+        private static final AtomicLong ID_BUILDER = new AtomicLong();
+
+        @Getter
+        private final long id;
         private Thread handshakeThread = null;
-        private DockerHost host;
+        private final DockerHost host;
         private boolean containerRunningGuess;
         private PolyphenyHandshakeClient client;
         private final Runnable onCompletion;
@@ -121,6 +160,7 @@ public final class HandshakeManager {
 
 
         private Handshake( DockerHost host, Runnable onCompletion ) throws IOException {
+            this.id = ID_BUILDER.getAndIncrement();
             this.host = host;
             this.client = new PolyphenyHandshakeClient( host.hostname(), host.handshakePort(), timeout, onCompletion );
             this.onCompletion = onCompletion;
@@ -130,7 +170,7 @@ public final class HandshakeManager {
         private boolean guessIfContainerExists() {
             try {
                 Socket s = new Socket();
-                s.connect( new InetSocketAddress( host.hostname(), host.communicationPort() ), 5000 );
+                s.connect( new InetSocketAddress( host.hostname(), host.communicationPort() ), 1000 );
                 s.close();
                 return true;
             } catch ( IOException ignore ) {
@@ -139,8 +179,8 @@ public final class HandshakeManager {
         }
 
 
-        private Map<String, String> serializeHandshake() {
-            return Map.of( "hostname", host.hostname(), "runCommand", getRunCommand(), "execCommand", getExecCommand(), "status", client.getState().toString(), "lastErrorMessage", client.getLastErrorMessage(), "containerExists", containerRunningGuess ? "true" : "false" );
+        private HandshakeInfo serializeHandshake() {
+            return new HandshakeInfo( id, host, getRunCommand(), getExecCommand(), cancelled ? "CANCELLED" : client.getState().toString(), client.getLastErrorMessage(), containerRunningGuess );
         }
 
 
@@ -162,10 +202,10 @@ public final class HandshakeManager {
                     }
                     Runnable doHandshake = () -> {
                         if ( client.doHandshake() ) {
-                            log.info( "Handshake with " + host.hostname() + " successful" );
+                            log.info( "Handshake with {} successful", host.hostname() );
                         }
                     };
-                    handshakeThread = new Thread( doHandshake );
+                    handshakeThread = new Thread( doHandshake, "HandshakeThread" );
                     handshakeThread.start();
                 }
             }
@@ -174,9 +214,13 @@ public final class HandshakeManager {
 
         private void cancel() {
             synchronized ( this ) {
-                timeout.set( 0 );
-                handshakeThread.interrupt();
-                cancelled = true;
+                synchronized ( client ) {
+                    if ( client.getState() != State.SUCCESS ) {
+                        timeout.set( 0 );
+                        handshakeThread.interrupt();
+                        cancelled = true;
+                    }
+                }
             }
         }
 

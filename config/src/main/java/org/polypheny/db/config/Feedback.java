@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,12 +17,14 @@
 package org.polypheny.db.config;
 
 import lombok.AllArgsConstructor;
+import lombok.Value;
 
 @AllArgsConstructor
+@Value
 public class Feedback {
 
-    public final boolean successful;
-    public final String message;
+    public boolean successful;
+    public String message;
 
 
     public static Feedback of( boolean successful ) {

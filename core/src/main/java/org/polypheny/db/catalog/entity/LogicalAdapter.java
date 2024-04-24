@@ -19,6 +19,7 @@ package org.polypheny.db.catalog.entity;
 
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
+import java.io.Serial;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.EqualsAndHashCode;
@@ -35,6 +36,7 @@ import org.polypheny.db.type.entity.PolyValue;
 @SuperBuilder(toBuilder = true)
 public class LogicalAdapter implements PolyObject {
 
+    @Serial
     private static final long serialVersionUID = -6140489767408917639L;
 
     @Serialize

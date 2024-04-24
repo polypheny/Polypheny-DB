@@ -87,4 +87,10 @@ public class AlgProcessor extends Processor {
         throw new GenericRuntimeException( AlgProcessor.class.getSimpleName() + " does not support getParameterRowType!" );
     }
 
+
+    @Override
+    public List<String> splitStatements( String statements ) {
+        throw new GenericRuntimeException( "not implemented" );
+    }
+
 }

@@ -354,6 +354,12 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
 
     @Override
+    public @NotNull List<LogicalForeignKey> getForeignKeys() {
+        return foreignKeys.values().asList();
+    }
+
+
+    @Override
     public @NonNull List<LogicalKey> getTableKeys( long tableId ) {
         return Optional.ofNullable( tableKeys.get( tableId ) ).orElse( List.of() );
     }
@@ -441,7 +447,7 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
     @Override
     public @NonNull List<LogicalConstraint> getConstraints( long tableId ) {
         List<Long> keysOfTable = getTableKeys( tableId ).stream().map( t -> t.id ).toList();
-        return constraints.values().stream().filter( c -> keysOfTable.contains( c.keyId ) ).collect( Collectors.toList() );
+        return constraints.values().stream().filter( c -> keysOfTable.contains( c.keyId ) ).toList();
     }
 
 

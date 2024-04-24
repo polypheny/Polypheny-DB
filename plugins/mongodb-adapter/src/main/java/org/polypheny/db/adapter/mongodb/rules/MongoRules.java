@@ -463,7 +463,10 @@ public class MongoRules {
             Operator operator = call.getOperator();
             if ( operator.getOperatorName() == OperatorName.COALESCE
                     || operator.getOperatorName() == OperatorName.EXTRACT
+                    || operator.getOperatorName() == OperatorName.ABS
+                    || operator.getOperatorName() == OperatorName.PI
                     || operator.getOperatorName() == OperatorName.OVERLAY
+                    || call.operands.stream().anyMatch( o -> o.isA( Kind.QUERY ) )
                     || operator.getOperatorName() == OperatorName.COT
                     || operator.getOperatorName() == OperatorName.TRIM
                     || operator.getOperatorName() == OperatorName.INITCAP

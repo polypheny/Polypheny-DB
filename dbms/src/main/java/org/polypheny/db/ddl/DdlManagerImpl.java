@@ -175,7 +175,13 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public long createNamespace( String name, DataModel type, boolean ifNotExists, boolean replace, Statement statement ) {
+    public long createNamespace( String initialName, DataModel type, boolean ifNotExists, boolean replace, Statement statement ) {
+        String name = initialName.toLowerCase();
+        // Check that name is not blocked
+        if ( blockedNamespaceNames.contains( name ) ) {
+            throw new GenericRuntimeException( String.format( "Namespace name %s is not allowed.", name ) );
+        }
+
         // Check if there is already a namespace with this name
         Optional<LogicalNamespace> optionalNamespace = catalog.getSnapshot().getNamespace( name );
         if ( optionalNamespace.isPresent() ) {
@@ -200,17 +206,17 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void createAdapter( String uniqueName, String adapterName, AdapterType adapterType, Map<String, String> config, DeployMode mode ) {
+    public void createStore( String uniqueName, String adapterName, AdapterType adapterType, Map<String, String> config, DeployMode mode ) {
         uniqueName = uniqueName.toLowerCase();
         Adapter<?> adapter = AdapterManager.getInstance().addAdapter( adapterName, uniqueName, adapterType, mode, config );
-
-        if ( adapter instanceof DataSource<?> ) {
-            handleSource( (DataSource<?>) adapter );
-        }
     }
 
 
-    private void handleSource( DataSource<?> adapter ) {
+    @Override
+    public void createSource( String uniqueName, String adapterName, long namespace, AdapterType adapterType, Map<String, String> config, DeployMode mode ) {
+        uniqueName = uniqueName.toLowerCase();
+        DataSource<?> adapter = (DataSource<?>) AdapterManager.getInstance().addAdapter( adapterName, uniqueName, adapterType, mode, config );
+
         Map<String, List<ExportedColumn>> exportedColumns;
         try {
             exportedColumns = adapter.getExportedColumns();
@@ -222,26 +228,26 @@ public class DdlManagerImpl extends DdlManager {
         for ( Map.Entry<String, List<ExportedColumn>> entry : exportedColumns.entrySet() ) {
             // Make sure the table name is unique
             String tableName = entry.getKey();
-            if ( catalog.getSnapshot().rel().getTable( Catalog.defaultNamespaceId, tableName ).isPresent() ) { // apparently we put them all into 1?
+            if ( catalog.getSnapshot().rel().getTable( namespace, tableName ).isPresent() ) {
                 int i = 0;
-                while ( catalog.getSnapshot().rel().getTable( Catalog.defaultNamespaceId, tableName + i ).isPresent() ) {
+                while ( catalog.getSnapshot().rel().getTable( namespace, tableName + i ).isPresent() ) {
                     i++;
                 }
                 tableName += i;
             }
 
-            LogicalTable logical = catalog.getLogicalRel( Catalog.defaultNamespaceId ).addTable( tableName, EntityType.SOURCE, !(adapter).isDataReadOnly() );
+            LogicalTable logical = catalog.getLogicalRel( namespace ).addTable( tableName, EntityType.SOURCE, !(adapter).isDataReadOnly() );
             List<LogicalColumn> columns = new ArrayList<>();
 
             Pair<AllocationPartition, PartitionProperty> partitionProperty = createSinglePartition( logical.namespaceId, logical );
 
-            AllocationPlacement placement = catalog.getAllocRel( Catalog.defaultNamespaceId ).addPlacement( logical.id, Catalog.defaultNamespaceId, adapter.adapterId );
-            AllocationEntity allocation = catalog.getAllocRel( Catalog.defaultNamespaceId ).addAllocation( adapter.getAdapterId(), placement.id, partitionProperty.left.id, logical.id );
+            AllocationPlacement placement = catalog.getAllocRel( namespace ).addPlacement( logical.id, namespace, adapter.adapterId );
+            AllocationEntity allocation = catalog.getAllocRel( namespace ).addAllocation( adapter.getAdapterId(), placement.id, partitionProperty.left.id, logical.id );
             List<AllocationColumn> aColumns = new ArrayList<>();
             int colPos = 1;
 
             for ( ExportedColumn exportedColumn : entry.getValue() ) {
-                LogicalColumn column = catalog.getLogicalRel( Catalog.defaultNamespaceId ).addColumn(
+                LogicalColumn column = catalog.getLogicalRel( namespace ).addColumn(
                         exportedColumn.name,
                         logical.id,
                         colPos++,
@@ -254,7 +260,7 @@ public class DdlManagerImpl extends DdlManager {
                         exportedColumn.nullable,
                         Collation.getDefaultCollation() );
 
-                AllocationColumn allocationColumn = catalog.getAllocRel( Catalog.defaultNamespaceId ).addColumn(
+                AllocationColumn allocationColumn = catalog.getAllocRel( namespace ).addColumn(
                         placement.id,
                         logical.id,
                         column.id,
@@ -278,7 +284,6 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void dropAdapter( String name, Statement statement ) {
-        long defaultNamespaceId = 1;
         name = name.replace( "'", "" );
 
         LogicalAdapter adapter = catalog.getSnapshot().getAdapter( name ).orElseThrow();
@@ -294,7 +299,7 @@ public class DdlManagerImpl extends DdlManager {
                 } else if ( allocation.unwrap( AllocationTable.class ).isPresent() ) {
 
                     for ( LogicalForeignKey fk : catalog.getSnapshot().rel().getForeignKeys( allocation.logicalId ) ) {
-                        catalog.getLogicalRel( defaultNamespaceId ).deleteForeignKey( fk.id );
+                        catalog.getLogicalRel( allocation.namespaceId ).deleteForeignKey( fk.id );
                     }
 
                     LogicalTable table = catalog.getSnapshot().rel().getTable( allocation.logicalId ).orElseThrow();
@@ -310,19 +315,22 @@ public class DdlManagerImpl extends DdlManager {
                     }
                     // Delete column placement in catalog
                     for ( AllocationColumn column : allocation.unwrap( AllocationTable.class ).get().getColumns() ) {
-                        catalog.getAllocRel( defaultNamespaceId ).deleteColumn( allocation.id, column.columnId );
+                        catalog.getAllocRel( allocation.namespaceId ).deleteColumn( allocation.id, column.columnId );
                     }
 
+                    // delete allocation
+                    catalog.getAllocRel( allocation.namespaceId ).deleteAllocation( allocation.id );
+
                     // Remove primary keys
-                    catalog.getLogicalRel( defaultNamespaceId ).deletePrimaryKey( table.id );
+                    catalog.getLogicalRel( allocation.namespaceId ).deletePrimaryKey( table.id );
 
                     // Delete columns
                     for ( LogicalColumn column : catalog.getSnapshot().rel().getColumns( allocation.logicalId ) ) {
-                        catalog.getLogicalRel( defaultNamespaceId ).deleteColumn( column.id );
+                        catalog.getLogicalRel( allocation.namespaceId ).deleteColumn( column.id );
                     }
 
                     // Delete the table
-                    catalog.getLogicalRel( defaultNamespaceId ).deleteTable( table.id );
+                    catalog.getLogicalRel( allocation.namespaceId ).deleteTable( table.id );
                     // Reset plan cache implementation cache & routing cache
                     statement.getQueryProcessor().resetCaches();
                 }
@@ -514,7 +522,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void createForeignKey( LogicalTable table, LogicalTable refTable, List<String> columnNames, List<String> refColumnNames, String constraintName, ForeignKeyOption onUpdate, ForeignKeyOption onDelete ) {
+    public void createForeignKey( LogicalTable table, LogicalTable refTable, List<String> columnNames, List<String> refColumnNames, String constraintName, ForeignKeyOption onUpdate, ForeignKeyOption onDelete, Statement statement ) {
         // Make sure that this is a table of type TABLE (and not SOURCE)
         checkIfDdlPossible( table.entityType );
         checkIfDdlPossible( refTable.entityType );
@@ -530,6 +538,9 @@ public class DdlManagerImpl extends DdlManager {
             referencesIds.add( logicalColumn.id );
         }
         catalog.getLogicalRel( table.namespaceId ).addForeignKey( table.id, columnIds, refTable.id, referencesIds, constraintName, onUpdate, onDelete );
+        catalog.getLogicalRel( table.namespaceId ).addConstraint( table.id, ConstraintType.FOREIGN.name(), columnIds, ConstraintType.FOREIGN );
+
+        statement.getTransaction().getLogicalTables().add( table );
     }
 
 
@@ -766,15 +777,24 @@ public class DdlManagerImpl extends DdlManager {
 
         LogicalPrimaryKey oldPk = catalog.getSnapshot().rel().getPrimaryKey( table.primaryKey ).orElse( null );
 
-        List<Long> columnIds = new LinkedList<>();
+        List<Long> columnIds = new ArrayList<>();
         for ( String columnName : columnNames ) {
             LogicalColumn logicalColumn = catalog.getSnapshot().rel().getColumn( table.id, columnName ).orElseThrow();
             columnIds.add( logicalColumn.id );
         }
+
+        if ( oldPk != null && oldPk.key.fieldIds.containsAll( columnIds ) && columnIds.contains( oldPk.key.fieldIds ) ) {
+            return;
+        }
+
+        if ( oldPk != null ) {
+            dropConstraint( table, ConstraintType.PRIMARY.name() );
+        }
+
         catalog.getLogicalRel( table.namespaceId ).addPrimaryKey( table.id, columnIds );
+        catalog.getLogicalRel( table.namespaceId ).addConstraint( table.id, ConstraintType.PRIMARY.name(), columnIds, ConstraintType.PRIMARY );
 
         // Add new column placements
-        // long pkColumnId = oldPk.columnIds.get( 0 ); // It is sufficient to check for one because all get replicated on all stores
         List<AllocationPlacement> placements = catalog.getSnapshot().alloc().getPlacementsFromLogical( table.id );
         for ( AllocationPlacement placement : placements ) {
             List<Long> pColumnIds = catalog.getSnapshot().alloc().getColumns( placement.id ).stream().map( c -> c.columnId ).toList();
@@ -798,12 +818,13 @@ public class DdlManagerImpl extends DdlManager {
                 }
             }
         }
+        statement.getTransaction().getLogicalTables().add( table );
 
     }
 
 
     @Override
-    public void createUniqueConstraint( LogicalTable table, List<String> columnNames, String constraintName ) {
+    public void createUniqueConstraint( LogicalTable table, List<String> columnNames, String constraintName, Statement statement ) {
         // Make sure that this is a table of type TABLE (and not SOURCE)
         checkIfDdlPossible( table.entityType );
 
@@ -815,6 +836,7 @@ public class DdlManagerImpl extends DdlManager {
             columnIds.add( logicalColumn.id );
         }
         catalog.getLogicalRel( table.namespaceId ).addUniqueConstraint( table.id, constraintName, columnIds );
+        statement.getTransaction().getLogicalTables().add( table );
 
     }
 
@@ -961,6 +983,10 @@ public class DdlManagerImpl extends DdlManager {
 
         LogicalForeignKey foreignKey = catalog.getSnapshot().rel().getForeignKey( table.id, foreignKeyName ).orElseThrow();
         catalog.getLogicalRel( table.namespaceId ).deleteForeignKey( foreignKey.id );
+        catalog.getSnapshot().rel().getConstraints( table.id )
+                .stream()
+                .filter( c -> c.type == ConstraintType.FOREIGN && c.name.equalsIgnoreCase( foreignKeyName ) )
+                .forEach( c -> catalog.getLogicalRel( table.namespaceId ).deleteConstraint( c.id ) );
     }
 
 
@@ -1044,6 +1070,10 @@ public class DdlManagerImpl extends DdlManager {
         // Make sure that this is a table of type TABLE (and not SOURCE)
         checkIfDdlPossible( table.entityType );
         catalog.getLogicalRel( table.namespaceId ).deletePrimaryKey( table.id );
+        catalog.getSnapshot().rel()
+                .getConstraints( table.id )
+                .stream()
+                .filter( c -> c.type == ConstraintType.PRIMARY ).forEach( c -> catalog.getLogicalRel( table.namespaceId ).deleteConstraint( c.id ) );
     }
 
 
@@ -1688,6 +1718,7 @@ public class DdlManagerImpl extends DdlManager {
         // Sets previously created primary key
         long pkId = ids.get( fields.get( fields.size() - 1 ).name ).id;
         catalog.getLogicalRel( namespaceId ).addPrimaryKey( view.id, List.of( pkId ) );
+        catalog.getLogicalRel( view.namespaceId ).addConstraint( view.id, ConstraintType.PRIMARY.name(), List.of( pkId ), ConstraintType.PRIMARY );
 
         AllocationPartitionGroup group = catalog.getAllocRel( namespaceId ).addPartitionGroup( view.id, UNPARTITIONED, namespaceId, PartitionType.NONE, 1, false );
         AllocationPartition partition = catalog.getAllocRel( namespaceId ).addPartition( view.id, namespaceId, group.id, null, false, PlacementType.AUTOMATIC, DataPlacementRole.UP_TO_DATE, null, PartitionType.NONE );
@@ -2674,6 +2705,7 @@ public class DdlManagerImpl extends DdlManager {
                 break;
             case PRIMARY:
                 catalog.getLogicalRel( namespaceId ).addPrimaryKey( tableId, columnIds );
+                catalog.getLogicalRel( namespaceId ).addConstraint( tableId, ConstraintType.PRIMARY.name(), columnIds, ConstraintType.PRIMARY );
                 break;
             case FOREIGN:
                 String foreignKeyTable = information.foreignKeyTable;
@@ -2688,6 +2720,7 @@ public class DdlManagerImpl extends DdlManager {
                 }
                 long columnId = catalog.getSnapshot().rel().getColumn( foreignTableId, information.foreignKeyColumnName ).orElseThrow().id;
                 catalog.getLogicalRel( namespaceId ).addForeignKey( tableId, columnIds, foreignTableId, List.of( columnId ), constraintName, ForeignKeyOption.NONE, ForeignKeyOption.NONE );
+                catalog.getLogicalRel( namespaceId ).addConstraint( tableId, ConstraintType.FOREIGN.name(), columnIds, ConstraintType.FOREIGN );
 
                 break;
         }
@@ -2813,7 +2846,6 @@ public class DdlManagerImpl extends DdlManager {
         // delete constraints
         for ( LogicalConstraint constraint : snapshot.rel().getConstraints( table.id ) ) {
             dropConstraint( table, constraint.name );
-            //catalog.getLogicalRel( table.namespaceId ).deleteConstraint( constraint.id );
         }
 
         // delete keys

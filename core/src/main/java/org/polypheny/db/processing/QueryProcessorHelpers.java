@@ -72,6 +72,13 @@ public class QueryProcessorHelpers {
     }
 
 
+    public static int getScale( AlgDataType type ) {
+        return type.getScale() == AlgDataType.SCALE_NOT_SPECIFIED
+                ? 0
+                : type.getScale();
+    }
+
+
     public static int getTypeOrdinal( AlgDataType type ) {
         return type.getPolyType().getJdbcOrdinal();
     }
@@ -161,29 +168,29 @@ public class QueryProcessorHelpers {
             List<String> origins ) {
         final ColumnMetaData.AvaticaType avaticaType = avaticaType( typeFactory, type, fieldType );
         return new ColumnMetaData(
-                ordinal,
-                false,
-                true,
-                false,
-                false,
-                type.isNullable()
+                ordinal, //XXX ordinal
+                false, // auto inc
+                true, //case sensitive
+                false, //searchable
+                false, // currency
+                type.isNullable() //XXX nullable
                         ? DatabaseMetaData.columnNullable
                         : DatabaseMetaData.columnNoNulls,
-                true,
-                type.getPrecision(),
-                fieldName,
-                QueryProcessorHelpers.origin( origins, 0 ),
-                QueryProcessorHelpers.origin( origins, 2 ),
-                QueryProcessorHelpers.getPrecision( type ),
-                0, // This is a workaround for a bug in Avatica with Decimals. There is no need to change the scale //getScale( type ),
-                QueryProcessorHelpers.origin( origins, 1 ),
-                null,
-                avaticaType,
-                true,
-                false,
-                false,
+                true, //signed
+                type.getPrecision(), //XXX display size
+                fieldName, //XXX label
+                QueryProcessorHelpers.origin( origins, 0 ), //XXX column name
+                QueryProcessorHelpers.origin( origins, 2 ), //XXX schema name
+                QueryProcessorHelpers.getPrecision( type ), //XXX precision
+                0, // XXX scale; This is a workaround for a bug in Avatica with Decimals. There is no need to change the scale //getScale( type ),
+                QueryProcessorHelpers.origin( origins, 1 ), //XXX table name
+                null, //XXXcatalog name = namespace
+                avaticaType, //type
+                true, // read only
+                false, // writable
+                false, // definitely writable
 //                avaticaType.columnClassName() );
-                (fieldType instanceof ArrayType) ? "java.util.List" : avaticaType.columnClassName() );
+                (fieldType instanceof ArrayType) ? "java.util.List" : avaticaType.columnClassName() ); // columnClassName
     }
 
 }

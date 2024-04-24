@@ -354,7 +354,6 @@ public class JdbcArrayTest {
                     statement.executeUpdate( "DROP TABLE arraytest" );
                     connection.commit();
                 }
-
             }
         }
     }

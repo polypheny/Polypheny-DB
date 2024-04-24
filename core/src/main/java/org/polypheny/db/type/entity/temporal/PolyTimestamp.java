@@ -30,9 +30,9 @@ import lombok.Getter;
 import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
-import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
@@ -56,11 +56,12 @@ public class PolyTimestamp extends PolyTemporal {
 
 
     @JsonProperty
+    @Nullable
     public Long millisSinceEpoch; // normalized to UTC
 
 
     @JsonCreator
-    public PolyTimestamp( @JsonProperty("millisSinceEpoch") Long millisSinceEpoch ) {
+    public PolyTimestamp( @JsonProperty("millisSinceEpoch") @Nullable Long millisSinceEpoch ) {
         super( PolyType.TIMESTAMP );
         this.millisSinceEpoch = millisSinceEpoch;
     }
@@ -106,20 +107,6 @@ public class PolyTimestamp extends PolyTemporal {
     }
 
 
-    public static PolyTimestamp convert( Object value ) {
-        if ( value == null ) {
-            return null;
-        }
-        if ( value instanceof PolyValue poly ) {
-            if ( poly.isTimestamp() ) {
-                return poly.asTimestamp();
-            }
-        }
-        throw new NotImplementedException( "convert value to Timestamp" );
-    }
-
-
-
     @Nullable
     public Timestamp asSqlTimestamp() {
         return millisSinceEpoch == null ? null : new Timestamp( millisSinceEpoch );
@@ -136,6 +123,14 @@ public class PolyTimestamp extends PolyTemporal {
     public int compareTo( @NotNull PolyValue o ) {
         if ( !isSameType( o ) ) {
             return -1;
+        } else if ( !o.isTimestamp() ) {
+            return -1;
+        } else if ( millisSinceEpoch == null && o.asTimestamp().millisSinceEpoch == null ) {
+            return 0;
+        } else if ( millisSinceEpoch == null ) {
+            return -1;
+        } else if ( o.asTimestamp().millisSinceEpoch == null ) {
+            return 1;
         }
 
         return Long.compare( millisSinceEpoch, o.asTimestamp().millisSinceEpoch );
@@ -154,7 +149,7 @@ public class PolyTimestamp extends PolyTemporal {
     }
 
 
-    public static PolyTimestamp convert( PolyValue value ) {
+    public static PolyTimestamp convert( @Nullable PolyValue value ) {
         if ( value == null ) {
             return null;
         }
@@ -164,7 +159,7 @@ public class PolyTimestamp extends PolyTemporal {
         } else if ( value.isTemporal() ) {
             return PolyTimestamp.of( value.asTemporal().getMillisSinceEpoch() );
         }
-        throw new NotImplementedException( "convert " + PolyTimestamp.class.getSimpleName() );
+        throw new GenericRuntimeException( getConvertError( value, PolyTimestamp.class ) );
     }
 
 

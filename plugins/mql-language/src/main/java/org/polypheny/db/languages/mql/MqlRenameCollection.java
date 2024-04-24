@@ -33,8 +33,8 @@ public class MqlRenameCollection extends MqlCollectionStatement implements Execu
     private final boolean dropTarget;
 
 
-    public MqlRenameCollection( ParserPos pos, String collection, String newName, Boolean dropTarget ) {
-        super( collection, pos );
+    public MqlRenameCollection( ParserPos pos, String collection, String namespace, String newName, Boolean dropTarget ) {
+        super( collection, namespace, pos );
         this.newName = newName;
         this.dropTarget = dropTarget != null && dropTarget;
     }

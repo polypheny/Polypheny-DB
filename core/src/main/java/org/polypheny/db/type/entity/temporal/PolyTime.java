@@ -24,8 +24,9 @@ import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
-import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
@@ -38,11 +39,12 @@ import org.polypheny.db.util.TimeString;
 public class PolyTime extends PolyTemporal {
 
     @JsonProperty
+    @Nullable
     public Integer ofDay;
 
 
     @JsonCreator
-    public PolyTime( @JsonProperty("ofDay") Integer ofDay ) {
+    public PolyTime( @JsonProperty("ofDay") @Nullable Integer ofDay ) {
         super( PolyType.TIME );
         this.ofDay = ofDay;
     }
@@ -78,16 +80,16 @@ public class PolyTime extends PolyTemporal {
     }
 
 
-    public static PolyTime convert( Object value ) {
+    public static PolyTime convert( @Nullable PolyValue value ) {
         if ( value == null ) {
             return null;
         }
-        if ( value instanceof PolyValue poly ) {
-            if ( poly.isTime() ) {
-                return poly.asTime();
-            }
+
+        if ( value.isTime() ) {
+            return value.asTime();
         }
-        throw new NotImplementedException( "convert value to Time" );
+
+        throw new GenericRuntimeException( getConvertError( value, PolyTime.class ) );
     }
 
 

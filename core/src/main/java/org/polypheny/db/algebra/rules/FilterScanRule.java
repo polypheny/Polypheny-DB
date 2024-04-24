@@ -46,7 +46,6 @@ import org.polypheny.db.plan.AlgOptRuleOperand;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.schema.types.FilterableEntity;
-import org.polypheny.db.schema.types.ProjectableFilterableEntity;
 import org.polypheny.db.tools.AlgBuilderFactory;
 import org.polypheny.db.util.mapping.Mapping;
 import org.polypheny.db.util.mapping.Mappings;
@@ -57,12 +56,10 @@ import org.polypheny.db.util.mapping.Mappings;
  * a {@link Filter}
  * on a {@link RelScan}
  * of a {@link FilterableEntity}
- * or a {@link ProjectableFilterableEntity}
  * to a {@link BindableScan}.
  *
  * The {@link #INTERPRETER} variant allows an intervening {@link EnumerableInterpreter}.
  *
- * @see ProjectScanRule
  */
 public abstract class FilterScanRule extends AlgOptRule {
 
@@ -115,15 +112,14 @@ public abstract class FilterScanRule extends AlgOptRule {
 
     public static boolean test( RelScan<?> scan ) {
         // We can only push filters into a FilterableTable or ProjectableFilterableTable.
-        return scan.entity.unwrap( FilterableEntity.class ).isPresent() || scan.entity.unwrap( ProjectableFilterableEntity.class ).isPresent();
+        return scan.entity.unwrap( FilterableEntity.class ).isPresent();
     }
 
 
     protected void apply( AlgOptRuleCall call, Filter filter, RelScan<?> scan ) {
         final ImmutableList<Integer> projects;
         final ImmutableList.Builder<RexNode> filters = ImmutableList.builder();
-        if ( scan instanceof BindableScan ) {
-            final BindableScan bindableScan = (BindableScan) scan;
+        if ( scan instanceof BindableScan bindableScan ) {
             filters.addAll( bindableScan.filters );
             projects = bindableScan.projects;
         } else {

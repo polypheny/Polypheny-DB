@@ -54,7 +54,7 @@ final class PolyphenyKeypair {
 
         // XXX: If we would save pkinfo1 directly, it would not be
         // understood by the openssl(1).  With this dance,
-        // so openssl(1) can read the key.
+        // openssl(1) can read the key.
         PrivateKeyInfo pkinfo1 = PrivateKeyInfoFactory.createPrivateKeyInfo( key );
         PrivateKeyInfo pkinfo = new PrivateKeyInfo( pkinfo1.getPrivateKeyAlgorithm(), pkinfo1.parsePrivateKey() );
         PolyphenyCertificateUtils.saveAsPemOverwrite( keyfile, "PRIVATE KEY", pkinfo.getEncoded( "DER" ) );
@@ -71,7 +71,7 @@ final class PolyphenyKeypair {
         PolyphenyKeypair kp = new PolyphenyKeypair( cert, sk );
 
         if ( !kp.getUuid().equals( uuid ) ) {
-            throw new IOException( "Loaded certificate UUID does not match the expected UUID" );
+            throw new IOException( "Loaded certificate UUID does not match the current Polypheny instance UUID" );
         }
 
         return kp;

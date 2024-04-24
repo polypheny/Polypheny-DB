@@ -36,6 +36,7 @@ package org.polypheny.db.algebra.logical.relational;
 
 import com.google.common.collect.ImmutableSet;
 import java.util.Objects;
+import lombok.Getter;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
 import org.polypheny.db.algebra.AlgDistributionTraitDef;
 import org.polypheny.db.algebra.AlgNode;
@@ -56,8 +57,9 @@ import org.polypheny.db.util.Litmus;
 
 
 /**
- * Sub-class of {@link Filter} not targeted at any particular engine or calling convention.
+ * Subclass of {@link Filter} not targeted at any particular engine or calling convention.
  */
+@Getter
 public final class LogicalRelFilter extends Filter implements RelAlg {
 
     private final ImmutableSet<CorrelationId> variablesSet;
@@ -65,13 +67,12 @@ public final class LogicalRelFilter extends Filter implements RelAlg {
 
     /**
      * Creates a LogicalFilter.
-     *
+     * <p>
      * Use {@link #create} unless you know what you're doing.
      *
      * @param cluster Cluster that this relational expression belongs to
      * @param child Input relational expression
      * @param condition Boolean expression which determines whether a row is allowed to pass
-     * @param variablesSet Correlation variables set by this relational expression to be used by nested expressions
      */
     public LogicalRelFilter( AlgCluster cluster, AlgTraitSet traitSet, AlgNode child, RexNode condition, ImmutableSet<CorrelationId> variablesSet ) {
         super( cluster, traitSet.replace( ModelTrait.RELATIONAL ), child, condition );
@@ -102,12 +103,6 @@ public final class LogicalRelFilter extends Filter implements RelAlg {
 
 
     @Override
-    public ImmutableSet<CorrelationId> getVariablesSet() {
-        return variablesSet;
-    }
-
-
-    @Override
     public LogicalRelFilter copy( AlgTraitSet traitSet, AlgNode input, RexNode condition ) {
         assert traitSet.containsIfApplicable( Convention.NONE );
         return new LogicalRelFilter( getCluster(), traitSet, input, condition, variablesSet );
@@ -122,8 +117,7 @@ public final class LogicalRelFilter extends Filter implements RelAlg {
 
     @Override
     public AlgWriter explainTerms( AlgWriter pw ) {
-        return super.explainTerms( pw ).itemIf( "variablesSet", variablesSet, !variablesSet.isEmpty() );
+        return super.explainTerms( pw );
     }
 
 }
-

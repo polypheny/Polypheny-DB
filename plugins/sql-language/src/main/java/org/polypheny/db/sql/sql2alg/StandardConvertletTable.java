@@ -24,8 +24,6 @@ import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import org.apache.calcite.avatica.util.DateTimeUtils;
-import org.apache.calcite.avatica.util.TimeUnit;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.operators.OperatorName;
@@ -87,6 +85,8 @@ import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.InitializerContext;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
+import org.polypheny.db.util.temporal.DateTimeUtils;
+import org.polypheny.db.util.temporal.TimeUnit;
 
 
 /**
@@ -432,18 +432,17 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
         assert call.getKind() == Kind.CAST;
         final SqlNode left = call.operand( 0 );
         final SqlNode right = call.operand( 1 );
-        if ( right instanceof SqlIntervalQualifier ) {
-            final SqlIntervalQualifier intervalQualifier = (SqlIntervalQualifier) right;
+        if ( right instanceof SqlIntervalQualifier intervalQualifier ) {
             if ( left instanceof SqlIntervalLiteral ) {
                 RexLiteral sourceInterval = (RexLiteral) cx.convertExpression( left );
-                BigDecimal sourceValue = sourceInterval.value.asInterval().value;
+                Long sourceValue = sourceInterval.value.asInterval().millis;
                 RexLiteral castedInterval = cx.getRexBuilder().makeIntervalLiteral( sourceValue, intervalQualifier );
                 return castToValidatedType( cx, call, castedInterval );
             } else if ( left instanceof SqlNumericLiteral ) {
                 RexLiteral sourceInterval = (RexLiteral) cx.convertExpression( left );
-                BigDecimal sourceValue = sourceInterval.getValue().asNumber().bigDecimalValue();
-                final BigDecimal multiplier = intervalQualifier.getUnit().multiplier;
-                sourceValue = sourceValue.multiply( multiplier );
+                long sourceValue = sourceInterval.getValue().asNumber().longValue();
+                final long multiplier = intervalQualifier.getUnit().multiplier.longValue();
+                sourceValue = sourceValue * multiplier;
                 RexLiteral castedInterval = cx.getRexBuilder().makeIntervalLiteral( sourceValue, intervalQualifier );
                 return castToValidatedType( cx, call, castedInterval );
             }
@@ -516,7 +515,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
 
     /**
      * Converts a call to the {@code EXTRACT} function.
-     *
+     * <p>
      * Called automatically via reflection.
      */
     public RexNode convertExtract( SqlRexContext cx, SqlExtractFunction op, SqlCall call ) {
@@ -652,7 +651,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
 
     /**
      * Converts a call to an operator into a {@link RexCall} to the same operator.
-     *
+     * <p>
      * Called automatically via reflection.
      *
      * @param cx Context
@@ -718,15 +717,12 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
 
 
     private PolyValue toPolyValue( SqlNode node ) {
-        switch ( node.getKind() ) {
-            case LITERAL:
-                return ((SqlLiteral) node).getPolyValue();
-            case CAST:
-                return PolyValue.convert( toPolyValue( ((SqlCall) node).operand( 0 ) ), ((DataTypeSpec) ((SqlCall) node).operand( 1 )).getType() );
-            case ARRAY_VALUE_CONSTRUCTOR:
-                return PolyList.of( ((SqlCall) node).getSqlOperandList().stream().map( this::toPolyValue ).toList() );
-        }
-        return null;
+        return switch ( node.getKind() ) {
+            case LITERAL -> ((SqlLiteral) node).getPolyValue();
+            case CAST -> PolyValue.convert( toPolyValue( ((SqlCall) node).operand( 0 ) ), ((DataTypeSpec) ((SqlCall) node).operand( 1 )).getType() );
+            case ARRAY_VALUE_CONSTRUCTOR -> PolyList.of( ((SqlCall) node).getSqlOperandList().stream().map( this::toPolyValue ).toList() );
+            default -> null;
+        };
     }
 
 
@@ -814,21 +810,8 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
                 List<RexNode> operands = ((RexCall) rex).getOperands();
                 if ( operands.size() == 2 ) {
                     final PolyType polyType = operands.get( 0 ).getType().getPolyType();
-                    switch ( polyType ) {
-                        case INTERVAL_YEAR:
-                        case INTERVAL_YEAR_MONTH:
-                        case INTERVAL_MONTH:
-                        case INTERVAL_DAY:
-                        case INTERVAL_DAY_HOUR:
-                        case INTERVAL_DAY_MINUTE:
-                        case INTERVAL_DAY_SECOND:
-                        case INTERVAL_HOUR:
-                        case INTERVAL_HOUR_MINUTE:
-                        case INTERVAL_HOUR_SECOND:
-                        case INTERVAL_MINUTE:
-                        case INTERVAL_MINUTE_SECOND:
-                        case INTERVAL_SECOND:
-                            operands = ImmutableList.of( operands.get( 1 ), operands.get( 0 ) );
+                    if ( Objects.requireNonNull( polyType ) == PolyType.INTERVAL ) {
+                        operands = ImmutableList.of( operands.get( 1 ), operands.get( 0 ) );
                     }
                 }
                 return rexBuilder.makeCall( rex.getType(), OperatorRegistry.get( OperatorName.DATETIME_PLUS ), operands );
@@ -847,7 +830,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
 
     /**
      * Converts a BETWEEN expression.
-     *
+     * <p>
      * Called automatically via reflection.
      */
     public RexNode convertBetween( SqlRexContext cx, SqlBetweenOperator op, SqlCall call ) {
@@ -890,7 +873,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
 
     /**
      * Converts a LiteralChain expression: that is, concatenates the operands immediately, to produce a single literal string.
-     *
+     * <p>
      * Called automatically via reflection.
      */
     public RexNode convertLiteralChain( SqlRexContext cx, SqlLiteralChainOperator op, SqlCall call ) {
@@ -903,7 +886,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
 
     /**
      * Converts a ROW.
-     *
+     * <p>
      * Called automatically via reflection.
      */
     public RexNode convertRow( SqlRexContext cx, SqlRowOperator op, SqlCall call ) {
@@ -922,7 +905,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
 
     /**
      * Converts a call to OVERLAPS.
-     *
+     * <p>
      * Called automatically via reflection.
      */
     public RexNode convertOverlaps( SqlRexContext cx, SqlOverlapsOperator op, SqlCall call ) {
@@ -1392,12 +1375,12 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
                         rexBuilder,
                         multiply(
                                 rexBuilder,
-                                rexBuilder.makeIntervalLiteral( BigDecimal.ONE, qualifier ),
+                                rexBuilder.makeIntervalLiteral( 1L, qualifier ),
                                 op1 ),
                         BigDecimal.ONE.divide( unit.multiplier, RoundingMode.UNNECESSARY ) );
                 default -> multiply(
                         rexBuilder,
-                        rexBuilder.makeIntervalLiteral( unit.multiplier, qualifier ),
+                        rexBuilder.makeIntervalLiteral( 1L, qualifier ),
                         op1 );
             };
 
@@ -1414,13 +1397,6 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
                     interval2Add );
         }
 
-
-        private RexNode interval2Num( RexBuilder rexBuilder, RexLiteral rexLiteral ) {
-            return rexBuilder.makeCall(
-                    AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.BIGINT ),
-                    OperatorRegistry.get( OperatorName.UNWRAP_INTERVAL ),
-                    rexLiteral );
-        }
 
     }
 
@@ -1479,4 +1455,3 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
     }
 
 }
-

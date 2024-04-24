@@ -104,6 +104,7 @@ public class AlgMdSize implements MetadataHandler<BuiltInMetadata.Size> {
      *
      * @see AlgMetadataQuery#getAverageRowSize
      */
+    @SuppressWarnings("unused")
     public Double averageRowSize( AlgNode alg, AlgMetadataQuery mq ) {
         final List<Double> averageColumnSizes = mq.getAverageColumnSizes( alg );
         if ( averageColumnSizes == null ) {
@@ -127,26 +128,31 @@ public class AlgMdSize implements MetadataHandler<BuiltInMetadata.Size> {
      *
      * @see AlgMetadataQuery#getAverageColumnSizes
      */
+    @SuppressWarnings("unused")
     public List<Double> averageColumnSizes( AlgNode alg, AlgMetadataQuery mq ) {
         return null; // absolutely no idea
     }
 
 
+    @SuppressWarnings("unused")
     public List<Double> averageColumnSizes( Filter alg, AlgMetadataQuery mq ) {
         return mq.getAverageColumnSizes( alg.getInput() );
     }
 
 
+    @SuppressWarnings("unused")
     public List<Double> averageColumnSizes( Sort alg, AlgMetadataQuery mq ) {
         return mq.getAverageColumnSizes( alg.getInput() );
     }
 
 
+    @SuppressWarnings("unused")
     public List<Double> averageColumnSizes( Exchange alg, AlgMetadataQuery mq ) {
         return mq.getAverageColumnSizes( alg.getInput() );
     }
 
 
+    @SuppressWarnings("unused")
     public List<Double> averageColumnSizes( Project alg, AlgMetadataQuery mq ) {
         final List<Double> inputColumnSizes = mq.getAverageColumnSizesNotNull( alg.getInput() );
         final ImmutableNullableList.Builder<Double> sizes = ImmutableNullableList.builder();
@@ -157,6 +163,7 @@ public class AlgMdSize implements MetadataHandler<BuiltInMetadata.Size> {
     }
 
 
+    @SuppressWarnings("unused")
     public List<Double> averageColumnSizes( Values alg, AlgMetadataQuery mq ) {
         final List<AlgDataTypeField> fields = alg.getTupleType().getFields();
         final ImmutableList.Builder<Double> list = ImmutableList.builder();
@@ -178,7 +185,8 @@ public class AlgMdSize implements MetadataHandler<BuiltInMetadata.Size> {
     }
 
 
-    public List<Double> averageColumnSizes( RelScan alg, AlgMetadataQuery mq ) {
+    @SuppressWarnings("unused")
+    public List<Double> averageColumnSizes( RelScan<?> alg, AlgMetadataQuery mq ) {
         final List<AlgDataTypeField> fields = alg.getTupleType().getFields();
         final ImmutableList.Builder<Double> list = ImmutableList.builder();
         for ( AlgDataTypeField field : fields ) {
@@ -188,6 +196,7 @@ public class AlgMdSize implements MetadataHandler<BuiltInMetadata.Size> {
     }
 
 
+    @SuppressWarnings("unused")
     public List<Double> averageColumnSizes( Aggregate alg, AlgMetadataQuery mq ) {
         final List<Double> inputColumnSizes = mq.getAverageColumnSizesNotNull( alg.getInput() );
         final ImmutableList.Builder<Double> list = ImmutableList.builder();
@@ -201,11 +210,13 @@ public class AlgMdSize implements MetadataHandler<BuiltInMetadata.Size> {
     }
 
 
+    @SuppressWarnings("unused")
     public List<Double> averageColumnSizes( SemiJoin alg, AlgMetadataQuery mq ) {
         return averageJoinColumnSizes( alg, mq, true );
     }
 
 
+    @SuppressWarnings("unused")
     public List<Double> averageColumnSizes( Join alg, AlgMetadataQuery mq ) {
         return averageJoinColumnSizes( alg, mq, false );
     }
@@ -234,16 +245,19 @@ public class AlgMdSize implements MetadataHandler<BuiltInMetadata.Size> {
     }
 
 
+    @SuppressWarnings("unused")
     public List<Double> averageColumnSizes( Intersect alg, AlgMetadataQuery mq ) {
         return mq.getAverageColumnSizes( alg.getInput( 0 ) );
     }
 
 
+    @SuppressWarnings("unused")
     public List<Double> averageColumnSizes( Minus alg, AlgMetadataQuery mq ) {
         return mq.getAverageColumnSizes( alg.getInput( 0 ) );
     }
 
 
+    @SuppressWarnings("unused")
     public List<Double> averageColumnSizes( Union alg, AlgMetadataQuery mq ) {
         final int fieldCount = alg.getTupleType().getFieldCount();
         List<List<Double>> inputColumnSizeList = new ArrayList<>();
@@ -283,7 +297,7 @@ public class AlgMdSize implements MetadataHandler<BuiltInMetadata.Size> {
 
     /**
      * Estimates the average size (in bytes) of a value of a field, knowing nothing more than its type.
-     *
+     * <p>
      * We assume that the proportion of nulls is negligible, even if the field is nullable.
      */
     protected Double averageFieldValueSize( AlgDataTypeField field ) {
@@ -293,7 +307,7 @@ public class AlgMdSize implements MetadataHandler<BuiltInMetadata.Size> {
 
     /**
      * Estimates the average size (in bytes) of a value of a type.
-     *
+     * <p>
      * We assume that the proportion of nulls is negligible, even if the type is nullable.
      */
     public Double averageTypeValueSize( AlgDataType type ) {
@@ -308,31 +322,17 @@ public class AlgMdSize implements MetadataHandler<BuiltInMetadata.Size> {
             case DECIMAL:
             case DATE:
             case TIME:
-            case TIME_WITH_LOCAL_TIME_ZONE:
-            case INTERVAL_YEAR:
-            case INTERVAL_YEAR_MONTH:
-            case INTERVAL_MONTH:
+            case INTERVAL:
                 return 4d;
             case BIGINT:
             case DOUBLE:
             case FLOAT: // sic
             case TIMESTAMP:
-            case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-            case INTERVAL_DAY:
-            case INTERVAL_DAY_HOUR:
-            case INTERVAL_DAY_MINUTE:
-            case INTERVAL_DAY_SECOND:
-            case INTERVAL_HOUR:
-            case INTERVAL_HOUR_MINUTE:
-            case INTERVAL_HOUR_SECOND:
-            case INTERVAL_MINUTE:
-            case INTERVAL_MINUTE_SECOND:
-            case INTERVAL_SECOND:
                 return 8d;
             case BINARY:
                 return (double) type.getPrecision();
             case VARBINARY:
-                return Math.min( (double) type.getPrecision(), 100d );
+                return Math.min( type.getPrecision(), 100d );
             case CHAR:
                 return (double) type.getPrecision() * BYTES_PER_CHARACTER;
             case JSON:
@@ -353,75 +353,42 @@ public class AlgMdSize implements MetadataHandler<BuiltInMetadata.Size> {
 
     /**
      * Estimates the average size (in bytes) of a value of a type.
-     *
+     * <p>
      * Nulls count as 1 byte.
      */
-    public double typeValueSize( AlgDataType type, Comparable value ) {
+    public double typeValueSize( AlgDataType type, Comparable<?> value ) {
         if ( value == null ) {
             return 1d;
         }
-        switch ( type.getPolyType() ) {
-            case BOOLEAN:
-            case TINYINT:
-                return 1d;
-            case SMALLINT:
-                return 2d;
-            case INTEGER:
-            case FLOAT:
-            case REAL:
-            case DATE:
-            case TIME:
-            case TIME_WITH_LOCAL_TIME_ZONE:
-            case INTERVAL_YEAR:
-            case INTERVAL_YEAR_MONTH:
-            case INTERVAL_MONTH:
-                return 4d;
-            case BIGINT:
-            case DOUBLE:
-            case TIMESTAMP:
-            case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-            case INTERVAL_DAY:
-            case INTERVAL_DAY_HOUR:
-            case INTERVAL_DAY_MINUTE:
-            case INTERVAL_DAY_SECOND:
-            case INTERVAL_HOUR:
-            case INTERVAL_HOUR_MINUTE:
-            case INTERVAL_HOUR_SECOND:
-            case INTERVAL_MINUTE:
-            case INTERVAL_MINUTE_SECOND:
-            case INTERVAL_SECOND:
-                return 8d;
-            case BINARY:
-            case VARBINARY:
-                return ((ByteString) value).length();
-            case CHAR:
-            case JSON:
-            case VARCHAR:
-                return ((NlsString) value).getValue().length() * BYTES_PER_CHARACTER;
-            default:
-                return 32;
-        }
+        return switch ( type.getPolyType() ) {
+            case BOOLEAN, TINYINT -> 1d;
+            case SMALLINT -> 2d;
+            case INTEGER, FLOAT, REAL, DATE, TIME, INTERVAL -> 4d;
+            case BIGINT, DOUBLE, TIMESTAMP -> 8d;
+            case BINARY, VARBINARY -> ((ByteString) value).length();
+            case CHAR, JSON, VARCHAR -> ((NlsString) value).getValue().length() * BYTES_PER_CHARACTER;
+            default -> 32;
+        };
     }
 
 
     public Double averageRexSize( RexNode node, List<Double> inputColumnSizes ) {
-        switch ( node.getKind() ) {
-            case INPUT_REF:
-                return inputColumnSizes.get( ((RexIndexRef) node).getIndex() );
-            case LITERAL:
-                return typeValueSize( node.getType(), ((RexLiteral) node).getValue() );
-            default:
-                if ( node instanceof RexCall ) {
-                    RexCall call = (RexCall) node;
+        return switch ( node.getKind() ) {
+            case INPUT_REF -> inputColumnSizes.get( ((RexIndexRef) node).getIndex() );
+            case LITERAL -> typeValueSize( node.getType(), ((RexLiteral) node).getValue() );
+            default -> {
+                if ( node instanceof RexCall call ) {
                     for ( RexNode operand : call.getOperands() ) {
                         // It's a reasonable assumption that a function's result will have similar size to its argument of a similar type. For example, UPPER(c) has the same average size as c.
                         if ( operand.getType().getPolyType() == node.getType().getPolyType() ) {
-                            return averageRexSize( operand, inputColumnSizes );
+                            yield averageRexSize( operand, inputColumnSizes );
                         }
                     }
                 }
-                return averageTypeValueSize( node.getType() );
-        }
+                yield averageTypeValueSize( node.getType() );
+                // It's a reasonable assumption that a function's result will have similar size to its argument of a similar type. For example, UPPER(c) has the same average size as c.
+            }
+        };
     }
 
 }

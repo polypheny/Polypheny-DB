@@ -37,16 +37,12 @@ package org.polypheny.db.interpreter;
 import static org.polypheny.db.util.Static.RESOURCE;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.function.Function1;
@@ -57,17 +53,14 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.runtime.Enumerables;
 import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.schema.types.FilterableEntity;
-import org.polypheny.db.schema.types.ProjectableFilterableEntity;
 import org.polypheny.db.schema.types.QueryableEntity;
 import org.polypheny.db.schema.types.ScannableEntity;
 import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.mapping.Mapping;
 import org.polypheny.db.util.mapping.Mappings;
 
@@ -94,10 +87,6 @@ public class ScanNode implements Node {
      * Tries various table SPIs, and negotiates with the table which filters and projects it can implement. Adds to the Enumerable implementations of any filters and projects that cannot be implemented by the table.
      */
     static ScanNode create( Compiler compiler, RelScan<?> alg, ImmutableList<RexNode> filters, ImmutableList<Integer> projects ) {
-        Optional<ProjectableFilterableEntity> oPfTable = alg.entity.unwrap( ProjectableFilterableEntity.class );
-        if ( oPfTable.isPresent() ) {
-            return createProjectableFilterable( compiler, alg, filters, projects, oPfTable.get() );
-        }
         Optional<FilterableEntity> oFilterableTable = alg.entity.unwrap( FilterableEntity.class );
         if ( oFilterableTable.isPresent() ) {
             return createFilterable( compiler, alg, filters, projects, oFilterableTable.get() );
@@ -171,50 +160,6 @@ public class ScanNode implements Node {
         return createEnumerable( compiler, alg, rowEnumerable, null, mutableFilters, projects );
     }
 
-
-    private static ScanNode createProjectableFilterable( Compiler compiler, RelScan<?> alg, ImmutableList<RexNode> filters, ImmutableList<Integer> projects, ProjectableFilterableEntity pfTable ) {
-        final DataContext root = compiler.getDataContext();
-        final ImmutableList<Integer> originalProjects = projects;
-        for ( ; ; ) {
-            final List<RexNode> mutableFilters = Lists.newArrayList( filters );
-            final int[] projectInts;
-            if ( projects == null || projects.equals( RelScan.identity( alg.getEntity() ) ) ) {
-                projectInts = null;
-            } else {
-                projectInts = projects.stream().mapToInt( i -> i ).toArray();
-            }
-            final Enumerable<PolyValue[]> enumerable1 = pfTable.scan( root, mutableFilters, projectInts );
-            for ( RexNode filter : mutableFilters ) {
-                if ( !filters.contains( filter ) ) {
-                    throw RESOURCE.filterableEntityInventedFilter( filter.toString() ).ex();
-                }
-            }
-            final ImmutableBitSet usedFields = AlgOptUtil.InputFinder.bits( mutableFilters, null );
-            if ( projects != null ) {
-                int changeCount = 0;
-                for ( int usedField : usedFields ) {
-                    if ( !projects.contains( usedField ) ) {
-                        // A field that is not projected is used in a filter that the table rejected. We won't be able to apply the filter later.
-                        // Try again without any projects.
-                        projects = ImmutableList.copyOf( Iterables.concat( projects, ImmutableList.of( usedField ) ) );
-                        ++changeCount;
-                    }
-                }
-                if ( changeCount > 0 ) {
-                    continue;
-                }
-            }
-            final Enumerable<Row<PolyValue>> rowEnumerable = Enumerables.toRow( enumerable1 );
-            final ImmutableList<Integer> rejectedProjects;
-            if ( Objects.equals( projects, originalProjects ) ) {
-                rejectedProjects = null;
-            } else {
-                // We projected extra columns because they were needed in filters. Now project the leading columns.
-                rejectedProjects = ImmutableList.copyOf( IntStream.range( 0, originalProjects.size() ).boxed().collect( Collectors.toList() ) );
-            }
-            return createEnumerable( compiler, alg, rowEnumerable, projects, mutableFilters, rejectedProjects );
-        }
-    }
 
 
     private static ScanNode createEnumerable( Compiler compiler, RelScan<?> alg, Enumerable<Row<PolyValue>> enumerable, final ImmutableList<Integer> acceptedProjects, List<RexNode> rejectedFilters, final ImmutableList<Integer> rejectedProjects ) {
