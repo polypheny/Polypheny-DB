@@ -119,7 +119,9 @@ public class PolyCatalog extends Catalog implements PolySerializable {
     @Serialize
     public final Map<Long, AdapterRestore> adapterRestore;
 
-    public final IdBuilder idBuilder = IdBuilder.getInstance();
+    @Serialize
+    public final IdBuilder idBuilder;
+
     private final Persister persister;
 
     @Getter
@@ -139,7 +141,8 @@ public class PolyCatalog extends Catalog implements PolySerializable {
                 Map.of(),
                 Map.of(),
                 Map.of(),
-                Map.of() );
+                Map.of(),
+                IdBuilder.getInstance() );
 
     }
 
@@ -150,8 +153,10 @@ public class PolyCatalog extends Catalog implements PolySerializable {
             @Deserialize("allocationCatalogs") Map<Long, AllocationCatalog> allocationCatalogs,
             @Deserialize("adapterRestore") Map<Long, AdapterRestore> adapterRestore,
             @Deserialize("adapters") Map<Long, LogicalAdapter> adapters,
-            @Deserialize("interfaces") Map<Long, LogicalQueryInterface> interfaces ) {
+            @Deserialize("interfaces") Map<Long, LogicalQueryInterface> interfaces,
+            @Deserialize("idBuilder") IdBuilder idBuilder ) {
         // persistent data
+        this.idBuilder = idBuilder;
         this.users = new ConcurrentHashMap<>( users );
         this.logicalCatalogs = new ConcurrentHashMap<>( logicalCatalogs );
         this.allocationCatalogs = new ConcurrentHashMap<>( allocationCatalogs );
@@ -255,6 +260,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
         interfaces.putAll( old.interfaces );
         adapterRestore.clear();
         adapterRestore.putAll( old.adapterRestore );
+        idBuilder.restore( old.idBuilder );
     }
 
 

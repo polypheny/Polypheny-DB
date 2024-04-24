@@ -81,6 +81,11 @@ public class DefaultInserter {
 
 
     private static void restoreUsers( Catalog catalog ) {
+        if ( catalog.getUsers().values().stream().anyMatch( u -> u.getName().equals( "system" ) ) ) {
+            catalog.commit();
+            return;
+        }
+
         //////////////
         // init users
         long systemId = catalog.createUser( "system", "" );
