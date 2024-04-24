@@ -41,16 +41,11 @@ sourceSets {
 }
 
 compileJava {
+    dependsOn(":dbms:processResources")
     dependsOn(":config:processResources")
     dependsOn(":core:processResources")
     dependsOn(":information:processResources")
-    dependsOn(":plugins:sql-language:processResources")
 }
-
-delombok {
-    dependsOn(":plugins:sql-language:processResources")
-}
-
 
 /**
  * JARs
