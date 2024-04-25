@@ -17,45 +17,38 @@ repositories {
     mavenCentral()
 }
 
+def protobufVersion = '3.23.4'
+
 dependencies {
 
     compileOnly project(path: ':core')
     compileOnly project(path: ':dbms')
     compileOnly project(path: ':plugins:sql-language')
     compileOnly project(path: ':plugins:mql-language')
-    testImplementation project(path: ':plugins:mql-language')
-    testImplementation project(path: ":dbms", configuration: "test")
-    testImplementation project(path: ':dbms')
-    testImplementation project(path: ":core", configuration: "tests")
+
+    implementation group: 'com.google.protobuf', name: 'protobuf-java', version: protobufVersion
+
+
+    // --- Test Compile ---
+    testImplementation project(path: ':dbms', configuration: 'test')
+    testImplementation project(path: ':core', configuration: 'tests')
     testImplementation project(path: ':core')
+    testRuntimeOnly project(path: ':dbms')
+    //testImplementation project(path: ':plugins:mql-language')
 
-    compileOnly project(":monitoring")
-    // https://mvnrepository.com/artifact/com.google.protobuf/protobuf-java
-    implementation group: 'com.google.protobuf', name: 'protobuf-java', version: protobuf_version
-
-    implementation group: 'jakarta.annotation', name: 'jakarta.annotation-api', version: '1.3.5'
 }
 
 def generatedDirName = "${project.buildDir}/generated"
 
 // compile protos on build
 compileJava.dependsOn(generateProto)
-
-extractIncludeProto {
-    dependsOn(':core:generateVersionProperties')
-    dependsOn(':information:compileJava')
-    dependsOn(':core:compileJava')
-    dependsOn(':webui:compileJava')
-    dependsOn(':monitoring:compileJava')
-    dependsOn(':dbms:compileJava')
-    dependsOn(':plugins:sql-language:compileJava')
-    dependsOn(':plugins:mql-language:compileJava')
-}
-
+compileTestJava.mustRunAfter(javadoc)
+compileTestJava.mustRunAfter(jar)
+compileTestJava.mustRunAfter(plugin)
 
 protobuf {
     protoc {
-        artifact = "com.google.protobuf:protoc:$protobuf_version"
+        artifact = "com.google.protobuf:protoc:${protobufVersion}"
     }
     generatedFilesBaseDir = "${generatedDirName}/proto"
 }
@@ -66,7 +59,7 @@ sourceSets {
             srcDir "${protobuf.generatedFilesBaseDir}/proto/main/java"
         }
         java {
-            srcDirs = ["src/main/java", "build/generated-sources", 'build/generated/source/proto/main/java']
+            srcDirs = ["src/main/java", "build/generated/source/proto/main/java"]
         }
         resources {
             srcDirs = ["src/main/resources"]
@@ -78,31 +71,30 @@ sourceSets {
             srcDirs = ["src/test/java"]
         }
         resources {
-            srcDirs = ["src/test/resources", "src/main/resources"]
+            srcDirs = ["src/test/resources"]
         }
         output.resourcesDir = file(project.buildDir.absolutePath + "/test-classes")
     }
 }
 
 delombok {
-    dependsOn(":monitoring:processResources")
     dependsOn(':plugins:proto-interface:generateProto')
-    dependsOn(':plugins:mql-language:processResources')
+    dependsOn(':plugins:sql-language:processResources')
     dependsOn(':plugins:mql-language:processResources')
 }
 
 compileJava {
     dependsOn(":core:processResources")
-    dependsOn(":monitoring:processResources")
 }
 
 extractIncludeProto {
-    dependsOn(":core:compileJava")
-    dependsOn(":monitoring:compileJava")
-    dependsOn(":plugins:mql-language:compileJava")
-    dependsOn(":webui:compileJava")
-    dependsOn(":plugins:sql-language:compileJava")
+    dependsOn(':core:generateVersionProperties')
+    dependsOn(':core:compileJava')
+    dependsOn(':dbms:compileJava')
+    dependsOn(':plugins:sql-language:compileJava')
+    dependsOn(':plugins:mql-language:compileJava')
 }
+
 
 /**
  * Tests
@@ -125,7 +117,7 @@ jar {
 java {
     withJavadocJar()
     withSourcesJar()
-    sourcesJar.dependsOn(':plugins:proto-interface:generateProto')
+    sourcesJar.dependsOn(generateProto)
 }
 
 
@@ -134,5 +126,4 @@ java {
  */
 licensee {
     allow('BSD-3-Clause')
-    allowDependency('jakarta.annotation', 'jakarta.annotation-api', '1.3.5') { because 'Eclipse Public License v. 2.0' }
 }
