@@ -17,7 +17,6 @@
 package org.polypheny.db.adapter.json;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -52,12 +51,24 @@ public class JsonToPolyConverter {
 
     public PolyValue nodeToPolyValue( JsonNode node ) {
         switch ( node.getNodeType() ) {
-            case NULL -> {return nodeToPolyNull();}
-            case ARRAY -> {return nodeToPolyList( node );}
-            case OBJECT -> {return nodeToPolyMap( node );}
-            case NUMBER -> {return nodeToPolyNumber( node );}
-            case STRING -> {return nodeToPolyString( node );}
-            case BOOLEAN -> {return nodeToPolyBoolean( node );}
+            case NULL -> {
+                return nodeToPolyNull();
+            }
+            case ARRAY -> {
+                return nodeToPolyList( node );
+            }
+            case OBJECT -> {
+                return nodeToPolyMap( node );
+            }
+            case NUMBER -> {
+                return nodeToPolyNumber( node );
+            }
+            case STRING -> {
+                return nodeToPolyString( node );
+            }
+            case BOOLEAN -> {
+                return nodeToPolyBoolean( node );
+            }
         }
         return new PolyNull();
     }
