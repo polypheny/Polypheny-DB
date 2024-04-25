@@ -93,6 +93,7 @@ delombok {
 }
 
 compileJava {
+    dependsOn(":dbms:processResources")
     dependsOn(":core:processResources")
     dependsOn(":monitoring:processResources")
 }
