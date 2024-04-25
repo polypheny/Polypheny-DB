@@ -17,8 +17,6 @@ repositories {
     mavenCentral()
 }
 
-def protobufVersion = '3.23.4'
-
 dependencies {
 
     compileOnly project(path: ':core')
@@ -26,7 +24,7 @@ dependencies {
     compileOnly project(path: ':plugins:sql-language')
     compileOnly project(path: ':plugins:mql-language')
 
-    implementation group: 'com.google.protobuf', name: 'protobuf-java', version: protobufVersion
+    implementation group: 'com.google.protobuf', name: 'protobuf-java', version: protobuf_version
 
 
     // --- Test Compile ---
@@ -48,7 +46,7 @@ compileTestJava.mustRunAfter(plugin)
 
 protobuf {
     protoc {
-        artifact = "com.google.protobuf:protoc:${protobufVersion}"
+        artifact = "com.google.protobuf:protoc:${protobuf_version}"
     }
     generatedFilesBaseDir = "${generatedDirName}/proto"
 }
