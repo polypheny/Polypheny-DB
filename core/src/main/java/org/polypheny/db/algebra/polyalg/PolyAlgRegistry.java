@@ -16,6 +16,9 @@
 
 package org.polypheny.db.algebra.polyalg;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
 import java.util.HashMap;
 import java.util.List;
@@ -71,6 +74,7 @@ public class PolyAlgRegistry {
 
     private static final Map<Class<? extends AlgNode>, PolyAlgDeclaration> declarations = new HashMap<>();
     private static final Map<String, Class<? extends AlgNode>> classes = new HashMap<>();
+    private static ObjectNode serialized = null;
 
 
     static {
@@ -346,4 +350,31 @@ public class PolyAlgRegistry {
         return declarations.get( getClass( opName ) );
     }
 
+    public static ObjectNode serialize() {
+        if (serialized == null) {
+            ObjectMapper mapper = new ObjectMapper();
+            ObjectNode node = mapper.createObjectNode();
+
+            ObjectNode decls = mapper.createObjectNode();
+
+            for ( PolyAlgDeclaration decl : declarations.values() ) {
+                decls.set( decl.opName, decl.serialize(mapper) );
+            }
+            node.set( "declarations", decls );
+
+            ObjectNode enums = mapper.createObjectNode();
+            for (ParamType type : ParamType.getEnumParamTypes()) {
+                ArrayNode values = mapper.createArrayNode();
+                for (Enum<?> enumValue : type.getEnumClass().getEnumConstants()) {
+                    values.add(enumValue.name());
+                }
+                enums.set( type.name(), values );
+            }
+            node.set( "enums", enums );
+
+            serialized = node;
+        }
+
+        return serialized;
+    }
 }

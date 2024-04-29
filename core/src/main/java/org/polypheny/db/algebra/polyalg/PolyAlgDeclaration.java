@@ -16,9 +16,13 @@
 
 package org.polypheny.db.algebra.polyalg;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -29,7 +33,11 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Singular;
 import org.apache.commons.lang3.function.TriFunction;
+import org.polypheny.db.algebra.AlgDistribution;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.constant.SemiJoinType;
+import org.polypheny.db.algebra.core.JoinAlgType;
+import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.polyalg.arguments.AggArg;
 import org.polypheny.db.algebra.polyalg.arguments.AnyArg;
 import org.polypheny.db.algebra.polyalg.arguments.BooleanArg;
@@ -186,6 +194,41 @@ public class PolyAlgDeclaration {
     }
 
 
+    public ObjectNode serialize( ObjectMapper mapper ) {
+        ObjectNode node = mapper.createObjectNode();
+        node.put( "name", opName );
+
+        ArrayNode aliases = mapper.createArrayNode();
+        for ( String alias : opAliases ) {
+            aliases.add( alias );
+        }
+        node.set( "aliases", aliases );
+
+        node.put( "model", model.name() );
+        node.put( "numInputs", numInputs );
+
+        ArrayNode tags = mapper.createArrayNode();
+        for ( OperatorTag tag : opTags ) {
+            tags.add( tag.name() );
+        }
+        node.set( "tags", tags );
+
+        ArrayNode posArr = mapper.createArrayNode();
+        for ( Parameter p : posParams ) {
+            posArr.add( p.serialize( mapper ) );
+        }
+        node.set( "posParams", posArr );
+
+        ArrayNode kwArr = mapper.createArrayNode();
+        for ( Parameter p : kwParams ) {
+            kwArr.add( p.serialize( mapper ) );
+        }
+        node.set( "kwParams", kwArr );
+
+        return node;
+    }
+
+
     /**
      * Depending on whether a defaultValue is specified, a Parameter can result in two types of corresponding arguments:
      * <ul>
@@ -243,6 +286,34 @@ public class PolyAlgDeclaration {
             return defaultValue.toPolyAlg( context, inputFieldNames );
         }
 
+
+        public ObjectNode serialize( ObjectMapper mapper ) {
+            ObjectNode node = mapper.createObjectNode();
+            node.put( "name", name );
+
+            ArrayNode aliasesArr = mapper.createArrayNode();
+            for ( String alias : aliases ) {
+                aliasesArr.add( alias );
+            }
+            node.set( "aliases", aliasesArr );
+
+            ArrayNode tagsArr = mapper.createArrayNode();
+            for ( ParamTag tag : tags ) {
+                tagsArr.add( tag.name() );
+            }
+            node.set( "tags", tagsArr );
+
+            node.put( "type", type.name() );
+            node.put( "isMultiValued", isMultiValued );
+            node.put( "requiresAlias", requiresAlias );
+            if ( !isPositional() ) {
+                node.set( "defaultValue", defaultValue.serializeWrapped( null, List.of(), mapper ) );
+            }
+            node.put( "isEnum", type.isEnum() );
+
+            return node;
+        }
+
     }
 
 
@@ -269,10 +340,10 @@ public class PolyAlgDeclaration {
         ENTITY( EntityArg.class ),
 
         // Every new enum also needs to be added to the PolyAlgToAlgConverter like any other new ParamType
-        JOIN_TYPE_ENUM( EnumArg.class ),
-        SEMI_JOIN_TYPE_ENUM( EnumArg.class ),
-        MODIFY_OP_ENUM( EnumArg.class ),
-        DISTRIBUTION_TYPE_ENUM( EnumArg.class),
+        JOIN_TYPE_ENUM( EnumArg.class, JoinAlgType.class ),
+        SEMI_JOIN_TYPE_ENUM( EnumArg.class, SemiJoinType.class ),
+        MODIFY_OP_ENUM( EnumArg.class, Modify.Operation.class ),
+        DISTRIBUTION_TYPE_ENUM( EnumArg.class, AlgDistribution.Type.class ),
 
         /**
          * A specific field (= column in the relational data model).
@@ -295,15 +366,27 @@ public class PolyAlgDeclaration {
         CORR_ID( CorrelationArg.class );
 
         private final Class<? extends PolyAlgArg> argClass;
+        private final Class<? extends Enum<?>> enumClass;
 
 
         ParamType( Class<? extends PolyAlgArg> argClass ) {
+            this( argClass, null );
+        }
+
+
+        ParamType( Class<? extends PolyAlgArg> argClass, Class<? extends Enum<?>> enumClass ) {
             this.argClass = argClass;
+            this.enumClass = enumClass;
         }
 
 
         public boolean isEnum() {
             return this.argClass == EnumArg.class;
+        }
+
+
+        public static List<ParamType> getEnumParamTypes() {
+            return Arrays.stream( ParamType.values() ).filter( ParamType::isEnum ).toList();
         }
 
     }

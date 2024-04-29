@@ -94,6 +94,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Sort;
+import org.polypheny.db.algebra.polyalg.PolyAlgRegistry;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
@@ -2953,6 +2954,11 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     }
 
 
+    public void getPolyAlgRegistry( Context ctx ) {
+        ctx.json( PolyAlgRegistry.serialize() );
+    }
+
+
     void createDockerInstance( final Context ctx ) {
         try {
             CreateDockerRequest req = ctx.bodyAsClass( CreateDockerRequest.class );
@@ -2967,9 +2973,12 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             );
 
             ctx.json( new CreateDockerResponse( res.orElse( null ), DockerManager.getInstance().getDockerInstancesMap() ) );
-        } catch ( DockerUserException e ) {
+        } catch (
+                DockerUserException e ) {
             ctx.status( e.getStatus() ).result( e.getMessage() );
         }
+
+
     }
 
 
