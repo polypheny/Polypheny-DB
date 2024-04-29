@@ -44,6 +44,8 @@ compileTestJava.mustRunAfter(javadoc)
 compileTestJava.mustRunAfter(jar)
 compileTestJava.mustRunAfter(plugin)
 
+test.dependsOn(":dbms:shadowJar")
+
 protobuf {
     protoc {
         artifact = "com.google.protobuf:protoc:${protobuf_version}"
