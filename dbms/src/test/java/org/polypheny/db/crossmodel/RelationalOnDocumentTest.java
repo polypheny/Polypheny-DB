@@ -58,6 +58,7 @@ public class RelationalOnDocumentTest extends CrossModelTestTemplate {
 
         executeStatements( ( s, c ) -> {
             ResultSet result = s.executeQuery( String.format( "SELECT * FROM %s.%s", DATABASE_NAME, COLLECTION_NAME ) );
+            // todo gartens || hafner there seems to be an error with the deserialization of the protovalue of type document
             List<Object[]> doc = TestHelper.convertResultSetToList( result );
             // contents of documents are non-deterministic, and we cannot compare them as usual through TestHelper.checkResultSet
             assertEquals( BsonDocument.parse( TEST_DATA ), BsonDocument.parse( (String) doc.get( 0 )[0] ) );
