@@ -24,39 +24,39 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.StreamSupport;
+import java.util.stream.Collectors;
 import org.polypheny.db.adapter.DataSource.ExportedColumn;
 import org.polypheny.db.type.PolyType;
 
 public class JsonMetaRetriever {
 
     public static Map<String, List<ExportedColumn>> getFields( URL jsonFile, String physicalCollectionName ) throws IOException {
-        String fileName = jsonFile.getFile();
         ObjectMapper objectMapper = new ObjectMapper();
         JsonNode rootNode = objectMapper.readTree( jsonFile );
         AtomicInteger position = new AtomicInteger( 1 );
-        HashMap<String, List<ExportedColumn>> fieldMap = new HashMap<>();
+        String entityName = deriveEntityName( jsonFile.getFile() );
 
-        if ( rootNode.isObject() ) {
-            fieldMap.put( deriveEntityName( fileName ), getFieldsFromNode( rootNode, fileName, physicalCollectionName, position ) );
-            return fieldMap;
-        } else if ( rootNode.isArray() ) {
-            int index = 0;
-            for ( JsonNode node : rootNode ) {
-                String elementName = deriveEntityName( fileName, index++ );
-                fieldMap.put( elementName, getFieldsFromNode( node, fileName, physicalCollectionName, position ) );
-            }
-            return fieldMap;
-        }
-        throw new RuntimeException( "JSON file has invalid structure" );
+        Map<String, JsonNode> fields = gatherFields( rootNode );
+        List<ExportedColumn> uniqueFields = fields.entrySet().stream()
+                .map( entry -> buildColumn( entry.getKey(), getDataType( entry.getValue() ), entityName, physicalCollectionName, position.getAndIncrement() ) )
+                .collect( Collectors.toList() );
+
+        Map<String, List<ExportedColumn>> exportedColumns = new HashMap<>();
+        exportedColumns.put( entityName, uniqueFields );
+        return exportedColumns;
     }
 
 
-    private static List<ExportedColumn> getFieldsFromNode( JsonNode node, String fileName, String physicalCollectionName, AtomicInteger position ) {
-        Iterable<Map.Entry<String, JsonNode>> iterable = node::fields;
-        return StreamSupport.stream( iterable.spliterator(), false )
-                .map( f -> buildColumn( f.getKey(), getDataType( f.getValue() ), fileName, physicalCollectionName, position.getAndIncrement() ) )
-                .toList();
+    private static Map<String, JsonNode> gatherFields( JsonNode node ) {
+        Map<String, JsonNode> fields = new HashMap<>();
+        if ( node.isArray() ) {
+            node.forEach( subNode -> subNode.fields().forEachRemaining( entry -> fields.put( entry.getKey(), entry.getValue() ) ) );
+        } else if ( node.isObject() ) {
+            node.fields().forEachRemaining( entry -> fields.put( entry.getKey(), entry.getValue() ) );
+        } else {
+            throw new RuntimeException( "JSON file does not contain a valid top-level structure (neither an object nor an array)" );
+        }
+        return fields;
     }
 
 
@@ -110,16 +110,13 @@ public class JsonMetaRetriever {
     }
 
 
-    private static String deriveEntityName( String fileName, int entityIndex ) {
-        return deriveEntityName( fileName ) + entityIndex;
-    }
-
-
     private static String deriveEntityName( String fileName ) {
+        fileName = fileName.replaceAll( "/+$", "" );  // remove trailing "/"
         return fileName
+                .substring( fileName.lastIndexOf( '/' ) + 1 )  // extract file name after last "/"
                 .toLowerCase()
                 .replace( ".json", "" )
-                .replaceAll( "[^a-z0-9_]+", "" )
+                .replaceAll( "[^a-z0-9_]+", "" )  // remove invalid characters
                 .trim();
     }
 

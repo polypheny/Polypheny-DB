@@ -52,7 +52,7 @@ import org.slf4j.LoggerFactory;
         description = "An adapter for querying JSON files. A JSON file can be specified by path. Currently, this adapter only supports read operations.",
         usedModes = DeployMode.EMBEDDED,
         defaultMode = DeployMode.EMBEDDED)
-@AdapterSettingDirectory(name = "jsonFile", defaultValue = "classpath://article_example.json", description = "Path to the JSON file which is to be integrated as this source.", position = 1)
+@AdapterSettingDirectory(name = "jsonFile", defaultValue = "classpath://articles.json", description = "Path to the JSON file which is to be integrated as this source.", position = 1)
 public class JsonSource extends DataSource<DocAdapterCatalog> {
 
     private static final Logger log = LoggerFactory.getLogger( JsonSource.class );
@@ -63,25 +63,27 @@ public class JsonSource extends DataSource<DocAdapterCatalog> {
 
     public JsonSource( final long storeId, final String uniqueName, final Map<String, String> settings ) {
         super( storeId, uniqueName, settings, true, new DocAdapterCatalog( storeId ) );
-        this.jsonFile = getJsonFileUrl( settings );
+        //this.jsonFile = getJsonFileUrl( settings );
+        URL url = getJsonFileUrl( "classpath://articles.json" );
+        this.jsonFile = url;
     }
 
 
     @Override
     protected void reloadSettings( List<String> updatedSettings ) {
         if ( updatedSettings.contains( "directory" ) ) {
-            this.jsonFile = getJsonFileUrl( settings );
+            //this.jsonFile = getJsonFileUrl( settings.get( "jsonFile" ) );
+            this.jsonFile = getJsonFileUrl( "classpath://articles.json" );
         }
     }
 
 
-    private URL getJsonFileUrl( Map<String, String> settings ) {
-        String dir = settings.get( "jsonFile" );
-        if ( dir.startsWith( "classpath://" ) ) {
-            return this.getClass().getClassLoader().getResource( dir.replace( "classpath://", "" ) + "/" );
+    private URL getJsonFileUrl( String file ) {
+        if ( file.startsWith( "classpath://" ) ) {
+            return this.getClass().getClassLoader().getResource( file.replace( "classpath://", "" ) + "/" );
         }
         try {
-            return new File( dir ).toURI().toURL();
+            return new File( file ).toURI().toURL();
         } catch ( MalformedURLException e ) {
             throw new GenericRuntimeException( e );
         }
@@ -110,11 +112,11 @@ public class JsonSource extends DataSource<DocAdapterCatalog> {
     @Override
     public Map<String, List<ExportedColumn>> getExportedColumns() {
         if ( !Sources.of( jsonFile ).file().isFile() ) {
-            String f = "f";
             throw new RuntimeException( "File must be a single JSON file, not a directory." );
         }
         try {
-            return JsonMetaRetriever.getFields( jsonFile, namespace.getName() );
+            String namespaceName = "foo"; //TODO: Where do i get this from or where is it set?
+            return JsonMetaRetriever.getFields( jsonFile, namespaceName );
         } catch ( IOException e ) {
             throw new RuntimeException( "Failed to retrieve columns from json file." );
         }
