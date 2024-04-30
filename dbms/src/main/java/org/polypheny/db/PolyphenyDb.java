@@ -443,6 +443,7 @@ public class PolyphenyDb {
         log.info( "                                       http://localhost:{}", RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
         log.info( "****************************************************************************************************" );
         isReady = true;
+        server.setReady( true );
 
         // Initialize statistic settings
         StatisticsManager.getInstance().initializeStatisticSettings();
