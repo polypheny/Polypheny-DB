@@ -375,7 +375,7 @@ public class UniqueConstraintTest {
                         preparedStatement.executeBatch();
                         connection.commit();
                         Assertions.fail( "Expected ConstraintViolationException was not thrown" );
-                    } catch ( AvaticaSqlException e ) {
+                    } catch ( PrismInterfaceServiceException e ) {
                         if ( !e.getMessage().contains( "Insert violates unique constraint" ) ) {
                             throw new RuntimeException( "Unexpected exception", e );
                         }
