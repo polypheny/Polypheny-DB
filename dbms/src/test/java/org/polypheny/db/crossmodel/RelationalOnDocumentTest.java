@@ -20,12 +20,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.sql.ResultSet;
 import java.util.List;
-import org.bson.BsonDocument;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.mql.MqlTestTemplate;
+import org.polypheny.jdbc.types.PolyDocument;
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 public class RelationalOnDocumentTest extends CrossModelTestTemplate {
@@ -55,16 +55,17 @@ public class RelationalOnDocumentTest extends CrossModelTestTemplate {
 
     @Test
     public void simpleSelectTest() {
-
         executeStatements( ( s, c ) -> {
             ResultSet result = s.executeQuery( String.format( "SELECT * FROM %s.%s", DATABASE_NAME, COLLECTION_NAME ) );
             // todo gartens || hafner there seems to be an error with the deserialization of the protovalue of type document
             List<Object[]> doc = TestHelper.convertResultSetToList( result );
             // contents of documents are non-deterministic, and we cannot compare them as usual through TestHelper.checkResultSet
-            assertEquals( BsonDocument.parse( TEST_DATA ), BsonDocument.parse( (String) doc.get( 0 )[0] ) );
+            PolyDocument document = (PolyDocument) doc.get( 0 )[0];
+            assertEquals( document.size(), 2 );
+            assertEquals( document.get( "_id" ).asString(), "630103687f2e95058018fd9b" );
+            assertEquals( document.get( "test" ).asInt(), 3 );
         } );
     }
-
 
 
     @Test
