@@ -115,12 +115,16 @@ public class PolyAlgUtils {
     /**
      * Joins the values for a multivalued attribute into a single string.
      * If values contains more than one element, the returned string is surrounded with brackets to represent a list.
+     * An empty list is indicated with {@code "[]"}.
      *
      * @param values the values to be joined
      * @param omitBrackets whether the surrounding brackets in the case of multiple values should be omitted
      * @return a string either representing a list containing all entries of values or a single value if values is of size 1
      */
     public static String joinMultiValued( List<String> values, boolean omitBrackets ) {
+        if ( values.isEmpty() ) {
+            return "[]";
+        }
         String str = String.join( ", ", values );
         return (omitBrackets || values.size() <= 1) ? str : "[" + str + "]";
     }

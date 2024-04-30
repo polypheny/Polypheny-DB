@@ -217,6 +217,9 @@ public class PolyAlgDeclaration {
         for ( Parameter p : posParams ) {
             posArr.add( p.serialize( mapper ) );
         }
+        if ( !posArr.isEmpty() && canUnpackValues() ) {
+            ((ObjectNode) posArr.get( 0 )).put( "canUnpackValues", true);
+        }
         node.set( "posParams", posArr );
 
         ArrayNode kwArr = mapper.createArrayNode();
@@ -308,6 +311,7 @@ public class PolyAlgDeclaration {
             node.put( "requiresAlias", requiresAlias );
             if ( !isPositional() ) {
                 node.set( "defaultValue", defaultValue.serializeWrapped( null, List.of(), mapper ) );
+                node.put( "defaultPolyAlg", defaultValue.toPolyAlg( null, List.of() ) );
             }
             node.put( "isEnum", type.isEnum() );
 
