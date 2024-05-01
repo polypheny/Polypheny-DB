@@ -418,7 +418,12 @@ public class PolyAlgDeclaration {
         /**
          * Parameter allows for a (possibly optional) alias (not to be confused with a parameter name alias)
          */
-        ALIAS
+        ALIAS,
+
+        /**
+         * Indicates that negative values are not permitted (typically together with IntArg)
+         */
+        NON_NEGATIVE
     }
 
 }

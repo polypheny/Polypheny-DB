@@ -239,7 +239,7 @@ public class PolyAlgToAlgConverter {
         ParamType pType = p.getType();
         return switch ( pType ) {
             case ANY -> new AnyArg( exp.toString() );
-            case INTEGER -> new IntArg( exp.toInt() );
+            case INTEGER -> new IntArg( exp.toInt(p.getTags()) );
             case BOOLEAN -> new BooleanArg( exp.toBoolean() );
             case STRING -> new StringArg( exp.toString(), alias );
             case REX -> {

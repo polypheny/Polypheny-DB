@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.JoinAlgType;
+import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentAggregate;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentFilter;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentModify;
@@ -58,6 +59,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelUnion;
 import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.algebra.logical.relational.LogicalRelViewScan;
 import org.polypheny.db.algebra.logical.relational.LogicalSortExchange;
+import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.OperatorTag;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.ParamTag;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.ParamType;
@@ -264,8 +266,8 @@ public class PolyAlgRegistry {
                 .creator( LogicalLpgSort::create ).model( DataModel.GRAPH )
                 .opName( "LPG_SORT" ).numInputs( 1 ).opTags( logTags )
                 .param( Parameter.builder().name( "sort" ).aliases( List.of( "collation", "order" ) ).type( ParamType.COLLATION ).isMultiValued( true ).defaultValue( ListArg.EMPTY ).build() )
-                .param( Parameter.builder().name( "limit" ).alias( "fetch" ).type( ParamType.INTEGER ).defaultValue( IntArg.NULL ).build() )
-                .param( Parameter.builder().name( "skip" ).alias( "offset" ).type( ParamType.INTEGER ).defaultValue( IntArg.NULL ).build() )
+                .param( Parameter.builder().name( "limit" ).alias( "fetch" ).tag( ParamTag.NON_NEGATIVE ).type( ParamType.INTEGER ).defaultValue( IntArg.NULL ).build() )
+                .param( Parameter.builder().name( "skip" ).alias( "offset" ).tag( ParamTag.NON_NEGATIVE ).type( ParamType.INTEGER ).defaultValue( IntArg.NULL ).build() )
                 .build() );
         declarations.put( LogicalLpgUnion.class, PolyAlgDeclaration.builder()
                 .creator( LogicalLpgUnion::create ).model( DataModel.GRAPH )
@@ -275,7 +277,7 @@ public class PolyAlgRegistry {
         declarations.put( LogicalLpgUnwind.class, PolyAlgDeclaration.builder()
                 .creator( LogicalLpgUnwind::create ).model( DataModel.GRAPH )
                 .opName( "LPG_UNWIND" ).numInputs( 1 ).opTags( logTags )
-                .param( Parameter.builder().name( "index" ).type( ParamType.INTEGER ).build() )
+                .param( Parameter.builder().name( "index" ).tag( ParamTag.NON_NEGATIVE ).type( ParamType.INTEGER ).build() )
                 .param( Parameter.builder().name( "alias" ).type( ParamType.STRING ).defaultValue( StringArg.NULL ).build() )
                 .build() );
         declarations.put( LogicalLpgAggregate.class, PolyAlgDeclaration.builder()
@@ -370,6 +372,15 @@ public class PolyAlgRegistry {
                 }
                 enums.set( type.name(), values );
             }
+
+            ArrayNode values = mapper.createArrayNode();
+            for ( OperatorName operator : OperatorName.values()) {
+                if (operator.getClazz() == AggFunction.class ) {
+                    values.add(operator.name());
+                }
+            }
+            enums.set( "AggFunctionOperator", values );
+
             node.set( "enums", enums );
 
             serialized = node;

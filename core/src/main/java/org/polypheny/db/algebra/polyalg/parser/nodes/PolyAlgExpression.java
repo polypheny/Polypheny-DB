@@ -20,12 +20,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.StringJoiner;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.ParamTag;
 import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgExpressionExtension.ExtensionType;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -118,9 +120,13 @@ public class PolyAlgExpression extends PolyAlgNode {
     }
 
 
-    public int toInt() {
+    public int toInt( Set<ParamTag> constraints) {
         if ( !isSingleLiteral() ) {
             throw new GenericRuntimeException( "Not a valid integer: " + this );
+        }
+        int i = literals.get( 0 ).toInt();
+        if (i < 0 && constraints.contains( ParamTag.NON_NEGATIVE )) {
+            throw new GenericRuntimeException( "Integer value must not be negative!" );
         }
         return literals.get( 0 ).toInt();
     }
