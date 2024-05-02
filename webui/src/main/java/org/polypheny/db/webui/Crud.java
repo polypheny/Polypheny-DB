@@ -95,6 +95,9 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.polyalg.PolyAlgRegistry;
+import org.polypheny.db.algebra.polyalg.parser.PolyAlgParser;
+import org.polypheny.db.algebra.polyalg.parser.PolyAlgToAlgConverter;
+import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
@@ -156,11 +159,13 @@ import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoCol
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.partition.properties.PartitionProperty;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plugins.PolyPluginManager;
 import org.polypheny.db.plugins.PolyPluginManager.PluginStatus;
 import org.polypheny.db.processing.ImplementationContext;
 import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
 import org.polypheny.db.processing.QueryContext;
+import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.security.SecurityManager;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
@@ -213,6 +218,7 @@ import org.polypheny.db.webui.models.requests.ConstraintRequest;
 import org.polypheny.db.webui.models.requests.EditTableRequest;
 import org.polypheny.db.webui.models.requests.PartitioningRequest;
 import org.polypheny.db.webui.models.requests.PartitioningRequest.ModifyPartitionRequest;
+import org.polypheny.db.webui.models.requests.PolyAlgRequest;
 import org.polypheny.db.webui.models.requests.UIRequest;
 import org.polypheny.db.webui.models.results.RelationalResult;
 import org.polypheny.db.webui.models.results.RelationalResult.RelationalResultBuilder;
@@ -2402,6 +2408,104 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 break;
         }
         return timeUnit;
+    }
+
+
+    /**
+     * Execute a logical plan represented as PolyAlgebra from the Web-Ui PolyPlan builder
+     */
+    public Result<?,?> executePolyAlg( PolyAlgRequest polyAlgRequest, Session session ) {
+        Transaction transaction = getTransaction( true, true, this );
+        transaction.getQueryAnalyzer().setSession( session );
+
+        Statement statement = transaction.createStatement();
+        long executionTime = 0;
+        long temp = 0;
+
+        InformationManager queryAnalyzer = transaction.getQueryAnalyzer().observe( this );
+
+        AlgRoot root;
+        try {
+            temp = System.nanoTime();
+
+            Snapshot snapshot = statement.getTransaction().getSnapshot();
+            RexBuilder rexBuilder = new RexBuilder( statement.getTransaction().getTypeFactory() );
+            AlgCluster cluster = AlgCluster.create( statement.getQueryProcessor().getPlanner(), rexBuilder, null, snapshot );
+            PolyAlgToAlgConverter converter = new PolyAlgToAlgConverter( snapshot, cluster );
+
+            PolyAlgParser parser = PolyAlgParser.create( polyAlgRequest.polyAlg );
+            PolyAlgNode node = (PolyAlgNode) parser.parseQuery();
+            root = converter.convert( node );
+
+        } catch ( Exception e ) {
+            log.error( "Caught exception while building the plan builder tree", e );
+            return RelationalResult.builder().error( e.getMessage() ).build();
+        }
+
+        // TODO: create separate method to reduce duplicate code with executeAlg
+        // Prepare
+        PolyImplementation polyImplementation = statement.getQueryProcessor().prepareQuery( root, true );
+
+        List<List<PolyValue>> rows;
+        try {
+            ResultIterator iterator = polyImplementation.execute( statement, getPageSize() );
+            rows = iterator.getNextBatch();
+            iterator.close();
+        } catch ( Exception e ) {
+            log.error( "Caught exception while iterating the plan builder tree", e );
+            return RelationalResult.builder().error( e.getMessage() ).build();
+        }
+
+        UiColumnDefinition[] header = new UiColumnDefinition[polyImplementation.getTupleType().getFieldCount()];
+        int counter = 0;
+        for ( AlgDataTypeField col : polyImplementation.getTupleType().getFields() ) {
+            header[counter++] = UiColumnDefinition.builder()
+                    .name( col.getName() )
+                    .dataType( col.getType().getFullTypeString() )
+                    .nullable( col.getType().isNullable() )
+                    .precision( col.getType().getPrecision() ).build();
+        }
+
+        List<String[]> data = LanguageCrud.computeResultData( rows, List.of( header ), statement.getTransaction() );
+
+        try {
+            executionTime += System.nanoTime() - temp;
+            transaction.commit();
+        } catch ( TransactionException e ) {
+            log.error( "Caught exception while committing the plan builder tree", e );
+            try {
+                transaction.rollback();
+            } catch ( TransactionException transactionException ) {
+                log.error( "Exception while rollback", transactionException );
+            }
+            throw new GenericRuntimeException( e );
+        }
+        RelationalResult finalResult = RelationalResult.builder()
+                .header( header )
+                .data( data.toArray( new String[0][] ) )
+                .xid( transaction.getXid().toString() )
+                .query( "Execute logical query plan" )
+                .build();
+
+        if ( queryAnalyzer != null ) {
+            InformationPage p1 = new InformationPage( "Query analysis", "Analysis of the query." );
+            InformationGroup g1 = new InformationGroup( p1, "Execution time" );
+            InformationText text;
+            if ( executionTime < 1e4 ) {
+                text = new InformationText( g1, String.format( "Execution time: %d nanoseconds", executionTime ) );
+            } else {
+                long millis = TimeUnit.MILLISECONDS.convert( executionTime, TimeUnit.NANOSECONDS );
+                // format time: see: https://stackoverflow.com/questions/625433/how-to-convert-milliseconds-to-x-mins-x-seconds-in-java#answer-625444
+                DateFormat df = new SimpleDateFormat( "m 'min' s 'sec' S 'ms'" );
+                String durationText = df.format( new Date( millis ) );
+                text = new InformationText( g1, String.format( "Execution time: %s", durationText ) );
+            }
+            queryAnalyzer.addPage( p1 );
+            queryAnalyzer.addGroup( g1 );
+            queryAnalyzer.registerInformation( text );
+        }
+
+        return finalResult;
     }
 
 

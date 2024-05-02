@@ -44,6 +44,7 @@ import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.crud.LanguageCrud;
 import org.polypheny.db.webui.models.requests.AlgRequest;
 import org.polypheny.db.webui.models.requests.GraphRequest;
+import org.polypheny.db.webui.models.requests.PolyAlgRequest;
 import org.polypheny.db.webui.models.requests.QueryRequest;
 import org.polypheny.db.webui.models.requests.RegisterRequest;
 import org.polypheny.db.webui.models.requests.RequestModel;
@@ -142,6 +143,29 @@ public class WebSocket implements Consumer<WsConfig> {
                 }
                 ctx.send( results );
                 break;
+            case "PolyAlgRequest":
+                PolyAlgRequest polyAlgRequest = ctx.messageAsClass( PolyAlgRequest.class );
+                if ( polyAlgRequest.runQuery ) {
+                    System.out.println("Running query " + polyAlgRequest.polyAlg);
+
+                    Result<?, ?> result = null;
+                    try {
+                        result = crud.executePolyAlg( polyAlgRequest, ctx.session );
+                    } catch ( Throwable t ) {
+                        ctx.send( RelationalResult.builder().error( t.getMessage() ).build() );
+                        return;
+                    }
+
+                    if ( result.xid != null ) {
+                        xIds.add( result.xid );
+                    }
+                    ctx.send( result );
+
+                } else {
+                    System.out.println("Building tree for query " + polyAlgRequest.polyAlg);
+                }
+                break;
+
             case "RegisterRequest":
                 RegisterRequest registerRequest = ctx.messageAsClass( RegisterRequest.class );
                 crud.authCrud.register( registerRequest, ctx );
