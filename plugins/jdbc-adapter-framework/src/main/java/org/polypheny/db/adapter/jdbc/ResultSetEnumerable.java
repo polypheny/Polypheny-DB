@@ -340,9 +340,30 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
         while ( t.getComponentType().getPolyType() == PolyType.ARRAY ) {
             t = t.getComponentType();
         }
+
         componentType = SqlType.valueOf( t.getComponentType().getPolyType().getJdbcOrdinal() );
+        if ( t.getComponentType().getPolyType() == PolyType.ANY ) {
+            componentType = estimateFittingType( value.asList().value );
+        }
         Object[] array = (Object[]) PolyValue.wrapNullableIfNecessary( PolyValue.getPolyToJava( type, false ), type.isNullable() ).apply( value );
         return connectionHandler.createArrayOf( connectionHandler.getDialect().getArrayComponentTypeString( componentType ), array );
+    }
+
+
+    public static SqlType estimateFittingType( List<PolyValue> value ) {
+        if ( value.isEmpty() ) {
+            return SqlType.NULL;
+        } else if ( value.stream().allMatch( PolyValue::isBoolean ) ) {
+            return SqlType.BOOLEAN;
+        } else if ( value.stream().allMatch( PolyValue::isNumber ) ) {
+            return SqlType.NUMERIC;
+        } else if ( value.stream().allMatch( PolyValue::isBinary ) ) {
+            return SqlType.BINARY;
+        } else if ( value.stream().allMatch( PolyValue::isString ) ) {
+            return SqlType.VARCHAR;
+        }
+
+        return SqlType.ANY;
     }
 
 
