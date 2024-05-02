@@ -41,6 +41,8 @@ import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.polypheny.db.adapter.ConnectionMethod;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DeployMode;
+import org.polypheny.db.adapter.RelationalDataSource;
+import org.polypheny.db.adapter.RelationalDataSource.ExportedColumn;
 import org.polypheny.db.adapter.RelationalScanDelegate;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.annotations.AdapterSettingDirectory;
@@ -76,7 +78,7 @@ import org.polypheny.db.util.Sources;
 @AdapterSettingString(name = "sheetName", description = "default to read the first sheet", defaultValue = "", required = false)
 @AdapterSettingInteger(name = "maxStringLength", defaultValue = 255, position = 2,
         description = "Which length (number of characters including whitespace) should be used for the varchar columns. Make sure this is equal or larger than the longest string in any of the columns.")
-public class ExcelSource extends DataSource<RelAdapterCatalog> {
+public class ExcelSource extends DataSource<RelAdapterCatalog> implements RelationalDataSource {
 
     @Delegate(excludes = Excludes.class)
     private final RelationalScanDelegate delegate;

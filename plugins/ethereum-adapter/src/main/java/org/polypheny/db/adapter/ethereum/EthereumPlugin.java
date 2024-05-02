@@ -31,6 +31,8 @@ import org.pf4j.Extension;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DeployMode;
+import org.polypheny.db.adapter.RelationalDataSource;
+import org.polypheny.db.adapter.RelationalDataSource.ExportedColumn;
 import org.polypheny.db.adapter.RelationalScanDelegate;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.annotations.AdapterSettingBoolean;
@@ -91,7 +93,7 @@ public class EthereumPlugin extends PolyPlugin {
     @AdapterSettingString(name = "ClientUrl", description = "The URL of the ethereum JSON RPC client", defaultValue = "https://mainnet.infura.io/v3/4d06589e97064040b5da99cf4051ef04", position = 1)
     @AdapterSettingInteger(name = "Blocks", description = "The number of Blocks to fetch when processing a query", defaultValue = 10, position = 2, modifiable = true)
     @AdapterSettingBoolean(name = "ExperimentalFiltering", description = "Experimentally filter Past Block", defaultValue = false, position = 3, modifiable = true)
-    public static class EthereumDataSource extends DataSource<RelAdapterCatalog> {
+    public static class EthereumDataSource extends DataSource<RelAdapterCatalog> implements RelationalDataSource {
 
         @Delegate(excludes = Excludes.class)
         private final RelationalScanDelegate delegate;

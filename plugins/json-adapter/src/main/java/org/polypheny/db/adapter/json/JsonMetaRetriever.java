@@ -20,93 +20,28 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.net.URL;
-import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
-import org.polypheny.db.adapter.DataSource.ExportedColumn;
-import org.polypheny.db.type.PolyType;
+import org.polypheny.db.adapter.DocumentDataSource.ExportedDocument;
+import org.polypheny.db.catalog.logistic.EntityType;
 
 public class JsonMetaRetriever {
 
-    public static Map<String, List<ExportedColumn>> getFields( URL jsonFile, String physicalCollectionName ) throws IOException {
+    public static List<ExportedDocument> getDocuments( URL jsonFile ) throws IOException {
         ObjectMapper objectMapper = new ObjectMapper();
         JsonNode rootNode = objectMapper.readTree( jsonFile );
-        AtomicInteger position = new AtomicInteger( 1 );
+        List<ExportedDocument> exportedDocuments = new LinkedList<>();
         String entityName = deriveEntityName( jsonFile.getFile() );
-
-        Map<String, JsonNode> fields = gatherFields( rootNode );
-        List<ExportedColumn> uniqueFields = fields.entrySet().stream()
-                .map( entry -> buildColumn( entry.getKey(), getDataType( entry.getValue() ), entityName, physicalCollectionName, position.getAndIncrement() ) )
-                .collect( Collectors.toList() );
-
-        Map<String, List<ExportedColumn>> exportedColumns = new HashMap<>();
-        exportedColumns.put( entityName, uniqueFields );
-        return exportedColumns;
-    }
-
-
-    private static Map<String, JsonNode> gatherFields( JsonNode node ) {
-        Map<String, JsonNode> fields = new HashMap<>();
-        if ( node.isArray() ) {
-            node.forEach( subNode -> subNode.fields().forEachRemaining( entry -> fields.put( entry.getKey(), entry.getValue() ) ) );
-        } else if ( node.isObject() ) {
-            node.fields().forEachRemaining( entry -> fields.put( entry.getKey(), entry.getValue() ) );
+        if ( rootNode.isArray() ) {
+            AtomicInteger enumerator = new AtomicInteger();
+            rootNode.forEach( elementNode -> exportedDocuments.add( new ExportedDocument( entityName + enumerator.getAndIncrement(), false, EntityType.SOURCE ) ) );
+        } else if ( rootNode.isObject() ) {
+            exportedDocuments.add( new ExportedDocument( entityName, false, EntityType.SOURCE ) );
         } else {
             throw new RuntimeException( "JSON file does not contain a valid top-level structure (neither an object nor an array)" );
         }
-        return fields;
-    }
-
-
-    private static ExportedColumn buildColumn( String name, PolyType type, String fileName, String physicalCollectionName, int position ) {
-        int length = type == PolyType.VARCHAR ? 8388096 : 0; // max length of json string in chars: 8388096
-        return new ExportedColumn(
-                name,
-                type,
-                null,
-                length,
-                null,
-                null,
-                null,
-                false,
-                fileName,
-                physicalCollectionName,
-                name,
-                position,
-                position == 1 );
-    }
-
-
-    private static PolyType getDataType( JsonNode value ) {
-        switch ( value.getNodeType() ) {
-            case NULL -> {
-                return PolyType.NULL;
-            }
-            case ARRAY -> {
-                return PolyType.ARRAY;
-            }
-            case OBJECT -> {
-                return PolyType.MAP;
-            }
-            case NUMBER -> {
-                if ( value.isIntegralNumber() ) {
-                    return PolyType.BIGINT;
-                }
-                if ( value.isFloatingPointNumber() ) {
-                    return PolyType.DOUBLE;
-                }
-                throw new RuntimeException( "ILLEGAL DATA TYPE: json file contains unknown number type." );
-            }
-            case STRING -> {
-                return PolyType.VARCHAR;
-            }
-            case BOOLEAN -> {
-                return PolyType.BOOLEAN;
-            }
-        }
-        return PolyType.NULL;
+        return exportedDocuments;
     }
 
 

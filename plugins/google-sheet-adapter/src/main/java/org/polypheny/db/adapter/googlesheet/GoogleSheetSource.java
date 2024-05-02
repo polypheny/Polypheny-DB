@@ -47,6 +47,8 @@ import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DeployMode;
+import org.polypheny.db.adapter.RelationalDataSource;
+import org.polypheny.db.adapter.RelationalDataSource.ExportedColumn;
 import org.polypheny.db.adapter.RelationalScanDelegate;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.annotations.AdapterSettingBoolean;
@@ -84,7 +86,7 @@ import org.polypheny.db.util.PolyphenyHomeDirManager;
 @AdapterSettingString(name = "oAuth-Client-ID", description = "Authentication credentials used for GoogleSheets API. Not the account credentials.", defaultValue = "", position = 5)
 @AdapterSettingString(name = "oAuth-Client-Key", description = "Authentication credentials used for GoogleSheets API. Not the account credentials.", defaultValue = "")
 @AdapterSettingString(name = "sheetName", description = "Name of sheet to use.", defaultValue = "")
-public class GoogleSheetSource extends DataSource<RelAdapterCatalog> {
+public class GoogleSheetSource extends DataSource<RelAdapterCatalog> implements RelationalDataSource {
 
     @Delegate(excludes = Excludes.class)
     private final RelationalScanDelegate delegate;

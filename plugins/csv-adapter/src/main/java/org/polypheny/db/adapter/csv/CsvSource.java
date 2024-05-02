@@ -35,6 +35,8 @@ import org.pf4j.Extension;
 import org.polypheny.db.adapter.ConnectionMethod;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DeployMode;
+import org.polypheny.db.adapter.RelationalDataSource;
+import org.polypheny.db.adapter.RelationalDataSource.ExportedColumn;
 import org.polypheny.db.adapter.RelationalScanDelegate;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.annotations.AdapterSettingDirectory;
@@ -72,7 +74,7 @@ import org.slf4j.LoggerFactory;
 @AdapterSettingString(subOf = "method_link", defaultValue = "classpath://hr", name = "directoryName", description = "You can select a path to a folder or specific .csv or .csv.gz files.", position = 2)
 @AdapterSettingInteger(name = "maxStringLength", defaultValue = 255, position = 3,
         description = "Which length (number of characters including whitespace) should be used for the varchar columns. Make sure this is equal or larger than the longest string in any of the columns.")
-public class CsvSource extends DataSource<RelAdapterCatalog> {
+public class CsvSource extends DataSource<RelAdapterCatalog> implements RelationalDataSource {
 
     private static final Logger log = LoggerFactory.getLogger( CsvSource.class );
     @Delegate(excludes = Excludes.class)

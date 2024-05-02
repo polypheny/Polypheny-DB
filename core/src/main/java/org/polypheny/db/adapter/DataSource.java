@@ -18,68 +18,37 @@ package org.polypheny.db.adapter;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSerializer;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import lombok.AllArgsConstructor;
+import java.util.Set;
 import lombok.Getter;
 import org.pf4j.ExtensionPoint;
 import org.polypheny.db.catalog.catalogs.AdapterCatalog;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
-import org.polypheny.db.type.PolyType;
+import org.polypheny.db.catalog.logistic.DataModel;
 
 @Getter
 public abstract class DataSource<S extends AdapterCatalog> extends Adapter<S> implements ExtensionPoint {
 
     private final boolean dataReadOnly;
+    private Set<DataModel> supportedDataModels;
+
+
+    protected DataSource( final long adapterId, final String uniqueName, final Map<String, String> settings, boolean dataReadOnly, S catalog, Set<DataModel> supportedDataModels ) {
+        super( adapterId, uniqueName, settings, catalog );
+        this.dataReadOnly = dataReadOnly;
+        this.supportedDataModels = supportedDataModels;
+        informationPage.setLabel( "Sources" );
+
+    }
 
 
     protected DataSource( final long adapterId, final String uniqueName, final Map<String, String> settings, boolean dataReadOnly, S catalog ) {
         super( adapterId, uniqueName, settings, catalog );
         this.dataReadOnly = dataReadOnly;
-
+        this.supportedDataModels = new HashSet<>( List.of( DataModel.getDefault() ) );
         informationPage.setLabel( "Sources" );
-    }
-
-
-    public abstract Map<String, List<ExportedColumn>> getExportedColumns();
-
-
-    @AllArgsConstructor
-    public static class ExportedColumn {
-
-        public final String name;
-        public final PolyType type;
-        public final PolyType collectionsType;
-        public final Integer length;
-        public final Integer scale;
-        public final Integer dimension;
-        public final Integer cardinality;
-        public final boolean nullable;
-        public final String physicalSchemaName;
-        public final String physicalTableName;
-        public final String physicalColumnName;
-        public final int physicalPosition;
-        public final boolean primary;
-
-
-        public String getDisplayType() {
-            String typeStr = type.getName();
-            if ( scale != null ) {
-                typeStr += "(" + length + "," + scale + ")";
-            } else if ( length != null ) {
-                typeStr += "(" + length + ")";
-            }
-
-            if ( collectionsType != null ) {
-                typeStr += " " + collectionsType.getName();
-                if ( cardinality != null ) {
-                    typeStr += "(" + dimension + "," + cardinality + ")";
-                } else if ( dimension != null ) {
-                    typeStr += "(" + dimension + ")";
-                }
-            }
-            return typeStr;
-        }
 
     }
 
@@ -103,5 +72,6 @@ public abstract class DataSource<S extends AdapterCatalog> extends Adapter<S> im
     private AdapterType getAdapterType() {
         return AdapterType.SOURCE;
     }
+
 
 }

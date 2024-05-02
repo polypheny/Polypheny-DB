@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
@@ -38,6 +39,7 @@ import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DataSource.ExportedColumn;
+import org.polypheny.db.adapter.DataSource.ExportedDocument;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DataStore.IndexMethodModel;
 import org.polypheny.db.adapter.DeployMode;
@@ -70,6 +72,7 @@ import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalForeignKey;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalIndex;
@@ -216,7 +219,44 @@ public class DdlManagerImpl extends DdlManager {
     public void createSource( String uniqueName, String adapterName, long namespace, AdapterType adapterType, Map<String, String> config, DeployMode mode ) {
         uniqueName = uniqueName.toLowerCase();
         DataSource<?> adapter = (DataSource<?>) AdapterManager.getInstance().addAdapter( adapterName, uniqueName, adapterType, mode, config );
+        if ( adapter.getSupportedDataModels().contains( DataModel.RELATIONAL ) ) {
+            createRelationalSource( adapter, namespace );
+        }
+        if ( adapter.getSupportedDataModels().contains( DataModel.DOCUMENT ) ) {
+            createDocumentSource( adapter, namespace );
+        }
+        if ( adapter.getSupportedDataModels().contains( DataModel.GRAPH ) ) {
+            // TODO: implement graph source creation
+            throw new IllegalArgumentException( "Adapters with native data model graph are not yet supported!" );
+        }
+        catalog.updateSnapshot();
+    }
 
+
+    private void createDocumentSource( DataSource<?> adapter, long namespace ) {
+        List<ExportedDocument> exportedCollections;
+        try {
+            exportedCollections = adapter.getExportedCollection();
+        } catch ( Exception e ) {
+            AdapterManager.getInstance().removeAdapter( adapter.getAdapterId() );
+            throw new GenericRuntimeException( "Could not deploy adapter", e );
+        }
+
+        for ( ExportedDocument exportedDocument : exportedCollections ) {
+            String documentName = getUniqueEntityName( namespace, exportedDocument.getName(), ( ns, en ) -> catalog.getSnapshot().doc().getCollection( ns, en ) );
+            LogicalCollection logical = catalog.getLogicalDoc( namespace ).addCollection( documentName, EntityType.SOURCE, !(adapter).isDataReadOnly() );
+
+            LogicalCollection logicalCollection = catalog.getLogicalDoc( namespace ).addCollection( exportedDocument.getName(), exportedDocument.getType(), exportedDocument.isModifyable() );
+            AllocationCollection allocationCollection = catalog.getAllocDoc( namespace ).addAllocation( logicalCollection, logical.getId(), 0, adapter.getAdapterId() );
+
+            buildNamespace( Catalog.defaultNamespaceId, logical, adapter );
+            adapter.createCollection( null, logical, allocationCollection );
+            catalog.updateSnapshot();
+        }
+    }
+
+
+    private void createRelationalSource( DataSource<?> adapter, long namespace ) {
         Map<String, List<ExportedColumn>> exportedColumns;
         try {
             exportedColumns = adapter.getExportedColumns();
@@ -227,14 +267,7 @@ public class DdlManagerImpl extends DdlManager {
         // Create table, columns etc.
         for ( Map.Entry<String, List<ExportedColumn>> entry : exportedColumns.entrySet() ) {
             // Make sure the table name is unique
-            String tableName = entry.getKey();
-            if ( catalog.getSnapshot().rel().getTable( namespace, tableName ).isPresent() ) {
-                int i = 0;
-                while ( catalog.getSnapshot().rel().getTable( namespace, tableName + i ).isPresent() ) {
-                    i++;
-                }
-                tableName += i;
-            }
+            String tableName = getUniqueEntityName( namespace, entry.getKey(), ( ns, en ) -> catalog.getSnapshot().rel().getTable( ns, en ) );
 
             LogicalTable logical = catalog.getLogicalRel( namespace ).addTable( tableName, EntityType.SOURCE, !(adapter).isDataReadOnly() );
             List<LogicalColumn> columns = new ArrayList<>();
@@ -275,10 +308,16 @@ public class DdlManagerImpl extends DdlManager {
             buildNamespace( Catalog.defaultNamespaceId, logical, adapter );
             adapter.createTable( null, LogicalTableWrapper.of( logical, columns, List.of() ), AllocationTableWrapper.of( allocation.unwrap( AllocationTable.class ).orElseThrow(), aColumns ) );
             catalog.updateSnapshot();
-
         }
-        catalog.updateSnapshot();
+    }
 
+
+    private String getUniqueEntityName( Long namespace, String name, BiFunction<Long, String, Optional<?>> retriever ) {
+        int enumerator = 0;
+        while ( retriever.apply( namespace, name + enumerator ).isPresent() ) {
+            enumerator++;
+        }
+        return name + enumerator;
     }
 
 
@@ -2118,7 +2157,7 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
-    private void buildNamespace( long namespaceId, LogicalTable logical, Adapter<?> store ) {
+    private void buildNamespace( long namespaceId, LogicalEntity logical, Adapter<?> store ) {
         store.updateNamespace( logical.getNamespaceName(), namespaceId );
     }
 

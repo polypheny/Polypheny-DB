@@ -20,12 +20,14 @@ import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import lombok.experimental.Delegate;
 import org.pf4j.Extension;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DeployMode;
+import org.polypheny.db.adapter.DocumentDataSource;
 import org.polypheny.db.adapter.DocumentScanDelegate;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.annotations.AdapterSettingDirectory;
@@ -41,6 +43,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
 import org.polypheny.db.catalog.entity.physical.PhysicalCollection;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.transaction.PolyXid;
@@ -55,7 +58,7 @@ import org.slf4j.LoggerFactory;
         usedModes = DeployMode.EMBEDDED,
         defaultMode = DeployMode.EMBEDDED)
 @AdapterSettingDirectory(name = "jsonFile", defaultValue = "classpath://articles.json", description = "Path to the JSON file which is to be integrated as this source.", position = 1)
-public class JsonSource extends DataSource<DocAdapterCatalog> {
+public class JsonSource extends DataSource<DocAdapterCatalog> implements DocumentDataSource {
 
     private static final Logger log = LoggerFactory.getLogger( JsonSource.class );
     @Delegate(excludes = Excludes.class)
@@ -66,7 +69,7 @@ public class JsonSource extends DataSource<DocAdapterCatalog> {
 
 
     public JsonSource( final long storeId, final String uniqueName, final Map<String, String> settings ) {
-        super( storeId, uniqueName, settings, true, new DocAdapterCatalog( storeId ) );
+        super( storeId, uniqueName, settings, true, new DocAdapterCatalog( storeId ), new HashSet<>( List.of( DataModel.DOCUMENT ) ) );
         //this.jsonFile = getJsonFileUrl( settings );
         URL url = getJsonFileUrl( "classpath://articles.json" );
         this.jsonFile = url;
@@ -97,7 +100,6 @@ public class JsonSource extends DataSource<DocAdapterCatalog> {
 
     @Override
     public void updateNamespace( String name, long id ) {
-        // TODO: Ask David. What is name used for?
         namespace = new JsonNamespace( name, id, adapterId );
     }
 
@@ -115,15 +117,14 @@ public class JsonSource extends DataSource<DocAdapterCatalog> {
 
 
     @Override
-    public Map<String, List<ExportedColumn>> getExportedColumns() {
+    public List<ExportedDocument> getExportedCollection() {
         if ( !Sources.of( jsonFile ).file().isFile() ) {
             throw new RuntimeException( "File must be a single JSON file, not a directory." );
         }
         try {
-            String namespaceName = "foo"; //TODO: Where do i get this from or where is it set?
-            return JsonMetaRetriever.getFields( jsonFile, namespaceName );
+            return JsonMetaRetriever.getDocuments( jsonFile );
         } catch ( IOException e ) {
-            throw new RuntimeException( "Failed to retrieve columns from json file." );
+            throw new RuntimeException( "Failed to retrieve documents from json file." );
         }
     }
 
@@ -151,11 +152,6 @@ public class JsonSource extends DataSource<DocAdapterCatalog> {
         adapterCatalog.addPhysical( allocation, physicalCollection );
     }
 
-    @Override
-    public List<PhysicalEntity> createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation ) {
-        log.debug( "NOT SUPPORTED: JSON source does not support method createTable()." );
-        return null;
-    }
 
     @Override
     public List<PhysicalEntity> createCollection( Context context, LogicalCollection logical, AllocationCollection allocation ) {
@@ -217,9 +213,17 @@ public class JsonSource extends DataSource<DocAdapterCatalog> {
         log.debug( "NOT SUPPORTED: JSON source does not support method rollback()." );
     }
 
+
     @Override
     public void dropTable( Context context, long allocId ) {
         log.debug( "NOT SUPPORTED: JSON source does not support method dropTable()" );
+    }
+
+
+    @Override
+    public List<PhysicalEntity> createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation ) {
+        log.debug( "NOT SUPPORTED: JSON source does not support method createTable()." );
+        return null;
     }
 
 
@@ -255,7 +259,9 @@ public class JsonSource extends DataSource<DocAdapterCatalog> {
         void createCollection( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation );
 
         void restoreCollection( AllocationTable alloc, List<PhysicalEntity> entities );
+
     }
+
 }
 
 
