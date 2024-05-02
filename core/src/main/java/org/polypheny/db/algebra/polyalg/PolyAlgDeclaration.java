@@ -167,6 +167,9 @@ public class PolyAlgDeclaration {
             if ( p.requiresAlias && !p.tags.contains( ParamTag.ALIAS ) ) {
                 return false;
             }
+            if (p.tags.contains( ParamTag.HIDE_TRIVIAL ) && ! p.tags.contains( ParamTag.ALIAS ) ) {
+                return false;
+            }
         }
         return true;
     }
@@ -423,7 +426,12 @@ public class PolyAlgDeclaration {
         /**
          * Indicates that negative values are not permitted (typically together with IntArg)
          */
-        NON_NEGATIVE
+        NON_NEGATIVE,
+
+        /**
+         * For projects and some other operators it is useful to let the user hide any trivial arguments in the UI
+         */
+        HIDE_TRIVIAL
     }
 
 }

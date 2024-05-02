@@ -92,7 +92,7 @@ public class PolyAlgRegistry {
         declarations.put( LogicalRelProject.class, PolyAlgDeclaration.builder()
                 .creator( LogicalRelProject::create ).model( DataModel.RELATIONAL )
                 .opName( "PROJECT" ).opAliases( List.of( "P", "PROJECT#" ) ).numInputs( 1 ).opTags( logTags )
-                .param( Parameter.builder().name( "projects" ).tag( ParamTag.ALIAS ).isMultiValued( true ).type( ParamType.REX ).build() )
+                .param( Parameter.builder().name( "projects" ).tags( List.of(ParamTag.ALIAS, ParamTag.HIDE_TRIVIAL ) ).isMultiValued( true ).type( ParamType.REX ).build() )
                 .build() );
         declarations.put( LogicalRelScan.class, PolyAlgDeclaration.builder()
                 .creator( LogicalRelScan::create ).model( DataModel.RELATIONAL )
