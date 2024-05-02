@@ -22,9 +22,11 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.List;
 import java.util.Map;
+import lombok.experimental.Delegate;
 import org.pf4j.Extension;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DeployMode;
+import org.polypheny.db.adapter.DocumentScanDelegate;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.annotations.AdapterSettingDirectory;
 import org.polypheny.db.catalog.catalogs.AdapterCatalog;
@@ -56,6 +58,8 @@ import org.slf4j.LoggerFactory;
 public class JsonSource extends DataSource<DocAdapterCatalog> {
 
     private static final Logger log = LoggerFactory.getLogger( JsonSource.class );
+    @Delegate(excludes = Excludes.class)
+    private final DocumentScanDelegate delegate;
     private JsonNamespace namespace;
 
     private URL jsonFile;
@@ -66,6 +70,7 @@ public class JsonSource extends DataSource<DocAdapterCatalog> {
         //this.jsonFile = getJsonFileUrl( settings );
         URL url = getJsonFileUrl( "classpath://articles.json" );
         this.jsonFile = url;
+        this.delegate = new DocumentScanDelegate( this, getAdapterCatalog() );
     }
 
 
@@ -146,6 +151,11 @@ public class JsonSource extends DataSource<DocAdapterCatalog> {
         adapterCatalog.addPhysical( allocation, physicalCollection );
     }
 
+    @Override
+    public List<PhysicalEntity> createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation ) {
+        log.debug( "NOT SUPPORTED: JSON source does not support method createTable()." );
+        return null;
+    }
 
     @Override
     public List<PhysicalEntity> createCollection( Context context, LogicalCollection logical, AllocationCollection allocation ) {
@@ -207,14 +217,6 @@ public class JsonSource extends DataSource<DocAdapterCatalog> {
         log.debug( "NOT SUPPORTED: JSON source does not support method rollback()." );
     }
 
-
-    @Override
-    public List<PhysicalEntity> createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation ) {
-        log.debug( "NOT SUPPORTED: JSON source does not support method createTable()." );
-        return null;
-    }
-
-
     @Override
     public void dropTable( Context context, long allocId ) {
         log.debug( "NOT SUPPORTED: JSON source does not support method dropTable()" );
@@ -246,6 +248,14 @@ public class JsonSource extends DataSource<DocAdapterCatalog> {
     }
 
 
+    private interface Excludes {
+
+        void refreshCollection( long allocId );
+
+        void createCollection( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation );
+
+        void restoreCollection( AllocationTable alloc, List<PhysicalEntity> entities );
+    }
 }
 
 
