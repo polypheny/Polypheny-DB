@@ -22,11 +22,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.math.MathContext;
 import java.sql.Time;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
@@ -40,7 +37,6 @@ import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyString;
-import org.polypheny.db.type.entity.PolyUserDefinedValue;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
@@ -58,50 +54,6 @@ public class ProtoValueTest {
     public static void init() {
         // needed to launch polypheny
         TestHelper.getInstance();
-    }
-
-
-    private enum TestEnum {
-        UNTESTED
-    }
-
-
-    public static PolyUserDefinedValue buildTestUdt() {
-        Map<String, PolyType> template = new HashMap<>();
-        template.put( "binaryField", PolyType.BINARY );
-        template.put( "booleanField", PolyType.BOOLEAN );
-        template.put( "dateField", PolyType.DATE );
-        template.put( "doubleField", PolyType.DOUBLE );
-        template.put( "fileField", PolyType.FILE );
-        template.put( "floatField", PolyType.FLOAT );
-        template.put( "integerField", PolyType.INTEGER );
-        template.put( "arrayField", PolyType.ARRAY );
-        template.put( "bigIntField", PolyType.BIGINT );
-        template.put( "nullField", PolyType.NULL );
-        template.put( "stringField", PolyType.VARCHAR );
-        template.put( "symbolField", PolyType.SYMBOL );
-        template.put( "timeField", PolyType.TIME );
-        template.put( "timestampField", PolyType.TIMESTAMP );
-        Map<String, PolyValue> value = new HashMap<>();
-        value.put( "binaryField", PolyBinary.of( new byte[]{ 0x01, 0x02, 0x03 } ) );
-        value.put( "booleanField", new PolyBoolean( true ) );
-        value.put( "dateField", new PolyDate( 119581L ) );
-        value.put( "doubleField", new PolyDouble( 123.456 ) );
-        value.put( "floatField", new PolyFloat( 45.67f ) );
-        value.put( "integerField", new PolyInteger( 1234 ) );
-        value.put( "arrayField", new PolyList(
-                        new PolyInteger( 1 ),
-                        new PolyInteger( 2 ),
-                        new PolyInteger( 3 ),
-                        new PolyInteger( 4 )
-                )
-        );
-        value.put( "bigIntField", new PolyLong( 1234567890L ) );
-        value.put( "nullField", new PolyNull() );
-        value.put( "stringField", new PolyString( "sample string" ) );
-        value.put( "timeField", PolyTime.of( new Time( 1691879380700L ) ) );
-        value.put( "timestampField", new PolyTimestamp( 1691879380700L ) );
-        return new PolyUserDefinedValue( template, value );
     }
 
 
@@ -123,13 +75,13 @@ public class ProtoValueTest {
         PolyBinary expected = PolyBinary.of( data );
         ProtoValue protoValue = PolyValueSerializer.serialize( expected );
 
-        assertArrayEquals( data, protoValue.getBinary().toByteArray() );
+        assertArrayEquals( data, protoValue.getBinary().getBinary().toByteArray() );
         assertEquals( ValueCase.BINARY, protoValue.getValueCase() );
 
         PolyValue deserialized = ProtoValueDeserializer.deserializeProtoValue( protoValue );
 
         assertEquals( PolyType.BINARY, deserialized.type );
-        assertEquals( data, deserialized.asBinary().getValue() );
+        assertArrayEquals( data, deserialized.asBinary().getValue() );
     }
 
 
@@ -143,8 +95,8 @@ public class ProtoValueTest {
 
     @Test
     public void polyDateSerializationTest() {
-        long daysSinceEpoch = 119581;
-        PolyDate expected = new PolyDate( daysSinceEpoch );
+        int daysSinceEpoch = 119581;
+        PolyDate expected = PolyDate.ofDays( daysSinceEpoch );
         ProtoValue protoValue = PolyValueSerializer.serialize( expected );
         assertEquals( daysSinceEpoch, protoValue.getDate().getDate() );
     }
@@ -176,7 +128,7 @@ public class ProtoValueTest {
 
     @Test
     public void polyListSerializationTest() {
-        PolyList<PolyInteger> expected = new PolyList(
+        PolyList<PolyInteger> expected = new PolyList<>(
                 new PolyInteger( 1 ),
                 new PolyInteger( 2 ),
                 new PolyInteger( 3 ),
@@ -208,9 +160,10 @@ public class ProtoValueTest {
 
     @Test
     public void polyTimeSerializationTest() {
-        PolyTime expected = PolyTime.of( new Time( 1691879380700L ) );
+        long time = (3600 * 9 + 60 * 42 + 11) * 1000;
+        PolyTime expected = PolyTime.of( time );
         ProtoValue protoValue = PolyValueSerializer.serialize( expected );
-        assertEquals( 1691879380700L, protoValue.getTime().getTime() );
+        assertEquals( time, protoValue.getTime().getTime() );
     }
 
 
@@ -228,7 +181,7 @@ public class ProtoValueTest {
         document.put( new PolyString( "1st" ), new PolyBoolean( false ) );
         document.put( new PolyString( "2nd" ), PolyBinary.of( new byte[]{ 0, 1, 2, 3, 4 } ) );
         document.put( new PolyString( "3rd" ), new PolyDate( 47952743435L ) );
-        ProtoValue protoValue = PolyValueSerializer.serialize( document );
+        PolyValueSerializer.serialize( document );
 
     }
 

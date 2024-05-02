@@ -25,6 +25,7 @@ import java.util.Map;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 
@@ -40,35 +41,31 @@ public class NamedValueProcessorTest {
 
     @Test
     public void replacePlaceholders__missingValue() {
-        assertThrows( PIServiceException.class, () -> {
-            final String statement = "select * from people where (first_name = :first_name or last_name= :last_name) and project = :project);";
+        final String statement = "select * from people where (first_name = :first_name or last_name= :last_name) and project = :project);";
 
-            final Map<String, PolyValue> values = new HashMap<>();
-            values.put( "first_name", PolyString.of( "tobias" ) );
-            values.put( "last_name", PolyString.of( "hafner" ) );
+        final Map<String, PolyValue> values = new HashMap<>();
+        values.put( "first_name", PolyString.of( "tobias" ) );
+        values.put( "last_name", PolyString.of( "hafner" ) );
 
-            NamedValueProcessor namedValueProcessor = new NamedValueProcessor( statement );
-            List<PolyValue> parameters = namedValueProcessor.transformValueMap( values );
-        } );
+        NamedValueProcessor namedValueProcessor = new NamedValueProcessor( statement );
+        assertThrows( GenericRuntimeException.class, () -> namedValueProcessor.transformValueMap( values ) );
     }
 
 
     @Test
     public void replacePlaceholders__checkValue() {
-        assertThrows( PIServiceException.class, () -> {
-            final String statement = "select * from people where (first_name = :first_name or last_name= :last_name) and project = :project);";
+        final String statement = "select * from people where (first_name = :first_name or last_name= :last_name) and project = :project);";
 
-            final Map<String, PolyValue> values = new HashMap<>();
-            values.put( "first_name", PolyString.of( "tobias" ) );
-            values.put( "last_name", PolyString.of( "hafner" ) );
-            values.put( "project", PolyString.of( "polypheny" ) );
+        final Map<String, PolyValue> values = new HashMap<>();
+        values.put( "first_name", PolyString.of( "tobias" ) );
+        values.put( "last_name", PolyString.of( "hafner" ) );
+        values.put( "project", PolyString.of( "polypheny" ) );
 
-            NamedValueProcessor namedValueProcessor = new NamedValueProcessor( statement );
-            List<PolyValue> parameters = namedValueProcessor.transformValueMap( values );
-            assertEquals( "tobias", parameters.get( 0 ).asString().getValue() );
-            assertEquals( "hafner", parameters.get( 1 ).asString().getValue() );
-            assertEquals( "polypheny", parameters.get( 2 ).asString().getValue() );
-        } );
+        NamedValueProcessor namedValueProcessor = new NamedValueProcessor( statement );
+        List<PolyValue> parameters = namedValueProcessor.transformValueMap( values );
+        assertEquals( "tobias", parameters.get( 0 ).asString().getValue() );
+        assertEquals( "hafner", parameters.get( 1 ).asString().getValue() );
+        assertEquals( "polypheny", parameters.get( 2 ).asString().getValue() );
     }
 
 }
