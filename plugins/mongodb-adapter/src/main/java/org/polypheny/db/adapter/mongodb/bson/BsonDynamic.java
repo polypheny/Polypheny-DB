@@ -85,7 +85,7 @@ public class BsonDynamic extends BsonDocument {
 
 
     public BsonDynamic setPolyFunction( String functionName ) {
-        append( MongoDynamic.MONGO_DYNAMIC_FUNC_BODY_KEY, new BsonString( functionName ) );
+        append( MongoDynamic.MONGO_DYNAMIC_FUNC_NAME_KEY, new BsonString( functionName ) );
         return this;
     }
 
