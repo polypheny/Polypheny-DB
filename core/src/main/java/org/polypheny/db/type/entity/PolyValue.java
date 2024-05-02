@@ -230,7 +230,34 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             }
             case FILE, IMAGE, AUDIO, VIDEO -> o -> o.asBlob().asByteArray();
             case DOCUMENT -> o -> o.asDocument().toJson();
+            case ANY -> o -> getPolyToJavaRuntime( o, arrayAsList );
             default -> throw new NotImplementedException( "meta: " + type.getFullTypeString() );
+        };
+    }
+
+
+    private static Object getPolyToJavaRuntime( PolyValue value, boolean arrayAsList ) {
+        if ( value == null || value.isNull() ) {
+            return null;
+        }
+
+        return switch ( value.type ) {
+            case VARCHAR, CHAR, TEXT -> value.asString().value;
+            case INTEGER, TINYINT, SMALLINT -> value.asNumber().IntValue();
+            case FLOAT, REAL -> value.asNumber().FloatValue();
+            case DOUBLE -> value.asNumber().DoubleValue();
+            case BIGINT -> value.asNumber().LongValue();
+            case DECIMAL -> value.asNumber().BigDecimalValue();
+            case DATE -> value.asDate().getDaysSinceEpoch();
+            case TIME -> value.asTime().getMillisOfDay();
+            case TIMESTAMP -> value.asTimestamp().millisSinceEpoch;
+            case BOOLEAN -> value.asBoolean().value;
+            case ARRAY -> arrayAsList
+                    ? (value.asList().value.stream().map( e -> getPolyToJavaRuntime( e, true ) ).toList())
+                    : value.asList().value.stream().map( e -> getPolyToJavaRuntime( e, false ) ).toList().toArray();
+            case FILE, IMAGE, AUDIO, VIDEO -> value.asBlob().asByteArray();
+            case DOCUMENT -> value.asDocument().toJson();
+            default -> throw new NotImplementedException( "meta: " + value.type );
         };
     }
 
