@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.polypheny.db.adapter.DocumentDataSource.ExportedDocument;
 import org.polypheny.db.catalog.logistic.EntityType;
 
@@ -33,14 +32,10 @@ public class JsonMetaRetriever {
         JsonNode rootNode = objectMapper.readTree( jsonFile );
         List<ExportedDocument> exportedDocuments = new LinkedList<>();
         String entityName = deriveEntityName( jsonFile.getFile() );
-        if ( rootNode.isArray() ) {
-            AtomicInteger enumerator = new AtomicInteger();
-            rootNode.forEach( elementNode -> exportedDocuments.add( new ExportedDocument( entityName + enumerator.getAndIncrement(), false, EntityType.SOURCE ) ) );
-        } else if ( rootNode.isObject() ) {
-            exportedDocuments.add( new ExportedDocument( entityName, false, EntityType.SOURCE ) );
-        } else {
+        if ( !(rootNode.isArray() || rootNode.isObject()) ) {
             throw new RuntimeException( "JSON file does not contain a valid top-level structure (neither an object nor an array)" );
         }
+        exportedDocuments.add( new ExportedDocument( entityName, false, EntityType.SOURCE ) );
         return exportedDocuments;
     }
 

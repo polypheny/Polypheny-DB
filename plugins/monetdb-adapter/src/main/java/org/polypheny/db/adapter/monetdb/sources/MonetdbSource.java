@@ -24,6 +24,8 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.polypheny.db.adapter.DeployMode;
+import org.polypheny.db.adapter.DocumentDataSource;
+import org.polypheny.db.adapter.RelationalDataSource;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.annotations.AdapterSettingInteger;
 import org.polypheny.db.adapter.annotations.AdapterSettingString;
@@ -53,7 +55,7 @@ import org.polypheny.db.sql.language.SqlDialect;
 @AdapterSettingString(name = "password", defaultValue = "polypheny", description = "Username to be used for authenticating at the remote instance.", position = 5)
 @AdapterSettingInteger(name = "maxConnections", defaultValue = 25, description = "Password to be used for authenticating at the remote instance.")
 @AdapterSettingString(name = "table", defaultValue = "public.foo,public.bar", description = "Maximum number of concurrent JDBC connections.")
-public class MonetdbSource extends AbstractJdbcSource {
+public class MonetdbSource extends AbstractJdbcSource implements RelationalDataSource{
 
     public MonetdbSource( final long storeId, final String uniqueName, final Map<String, String> settings ) {
         super( storeId, uniqueName, settings, "nl.cwi.monetdb.jdbc.MonetDriver", MonetdbSqlDialect.DEFAULT, false );
@@ -126,6 +128,35 @@ public class MonetdbSource extends AbstractJdbcSource {
         adapterCatalog.replacePhysical( physical );
 
         return List.of( physical );
+    }
+
+    @Override
+    public boolean supportsRelational() {
+        return true;
+    }
+
+
+    @Override
+    public boolean supportsDocument() {
+        return false;
+    }
+
+
+    @Override
+    public boolean supportsGraph() {
+        return false;
+    }
+
+
+    @Override
+    public RelationalDataSource asRelationalDataSource() {
+        return this;
+    }
+
+
+    @Override
+    public DocumentDataSource asDocumentDataSource() {
+        throw new IllegalStateException("This source does not support the relational model.");
     }
 
 }

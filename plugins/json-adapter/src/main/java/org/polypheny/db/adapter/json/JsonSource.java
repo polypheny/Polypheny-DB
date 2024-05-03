@@ -20,7 +20,6 @@ import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import lombok.experimental.Delegate;
@@ -29,8 +28,10 @@ import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.DocumentDataSource;
 import org.polypheny.db.adapter.DocumentScanDelegate;
+import org.polypheny.db.adapter.Scannable;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.annotations.AdapterSettingDirectory;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.catalogs.AdapterCatalog;
 import org.polypheny.db.catalog.catalogs.DocAdapterCatalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
@@ -58,7 +59,7 @@ import org.slf4j.LoggerFactory;
         usedModes = DeployMode.EMBEDDED,
         defaultMode = DeployMode.EMBEDDED)
 @AdapterSettingDirectory(name = "jsonFile", defaultValue = "classpath://articles.json", description = "Path to the JSON file which is to be integrated as this source.", position = 1)
-public class JsonSource extends DataSource<DocAdapterCatalog> implements DocumentDataSource {
+public class JsonSource extends DataSource<DocAdapterCatalog> implements DocumentDataSource, Scannable {
 
     private static final Logger log = LoggerFactory.getLogger( JsonSource.class );
     @Delegate(excludes = Excludes.class)
@@ -69,11 +70,13 @@ public class JsonSource extends DataSource<DocAdapterCatalog> implements Documen
 
 
     public JsonSource( final long storeId, final String uniqueName, final Map<String, String> settings ) {
-        super( storeId, uniqueName, settings, true, new DocAdapterCatalog( storeId ), new HashSet<>( List.of( DataModel.DOCUMENT ) ) );
+        super( storeId, uniqueName, settings, true, new DocAdapterCatalog( storeId ), List.of( DataModel.DOCUMENT ) );
         //this.jsonFile = getJsonFileUrl( settings );
         URL url = getJsonFileUrl( "classpath://articles.json" );
         this.jsonFile = url;
         this.delegate = new DocumentScanDelegate( this, getAdapterCatalog() );
+        long namespaceId = Catalog.getInstance().createNamespace( uniqueName, DataModel.DOCUMENT, true );
+        this.namespace = new JsonNamespace( uniqueName, namespaceId, getAdapterId() );
     }
 
 
@@ -249,6 +252,12 @@ public class JsonSource extends DataSource<DocAdapterCatalog> implements Documen
     @Override
     public void restoreGraph( AllocationGraph alloc, List<PhysicalEntity> entities, Context context ) {
         log.debug( "NOT SUPPORTED: JSON source does not support method restoreGraph()." );
+    }
+
+
+    @Override
+    public DocumentDataSource asDocumentDataSource() {
+        return this;
     }
 
 

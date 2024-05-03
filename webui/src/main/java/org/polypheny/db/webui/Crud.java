@@ -83,9 +83,10 @@ import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.AdapterManager.AdapterInformation;
 import org.polypheny.db.adapter.ConnectionMethod;
 import org.polypheny.db.adapter.DataSource;
-import org.polypheny.db.adapter.DataSource.ExportedColumn;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DataStore.FunctionalIndexInfo;
+import org.polypheny.db.adapter.RelationalDataSource;
+import org.polypheny.db.adapter.RelationalDataSource.ExportedColumn;
 import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.adapter.java.AdapterTemplate;
 import org.polypheny.db.algebra.AlgCollation;
@@ -131,13 +132,13 @@ import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.docker.DockerSetupHelper;
 import org.polypheny.db.docker.HandshakeManager;
 import org.polypheny.db.docker.exceptions.DockerUserException;
-import org.polypheny.db.docker.models.CreateDockerResponse;
 import org.polypheny.db.docker.models.AutoDockerResult;
 import org.polypheny.db.docker.models.CreateDockerRequest;
+import org.polypheny.db.docker.models.CreateDockerResponse;
 import org.polypheny.db.docker.models.DockerSettings;
-import org.polypheny.db.docker.models.UpdateDockerRequest;
 import org.polypheny.db.docker.models.HandshakeInfo;
 import org.polypheny.db.docker.models.InstancesAndAutoDocker;
+import org.polypheny.db.docker.models.UpdateDockerRequest;
 import org.polypheny.db.iface.QueryInterface;
 import org.polypheny.db.iface.QueryInterfaceManager;
 import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceInformation;
@@ -1101,7 +1102,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         for ( Long adapterId : adapterIds ) {
             Adapter<?> adapter = AdapterManager.getInstance().getAdapter( adapterId ).orElseThrow();
             if ( adapter instanceof DataSource<?> dataSource ) {
-                for ( Entry<String, List<ExportedColumn>> entry : dataSource.getExportedColumns().entrySet() ) {
+                for ( Entry<String, List<ExportedColumn>> entry : dataSource.asRelationalDataSource().getExportedColumns().entrySet() ) {
                     List<UiColumnDefinition> columnList = new ArrayList<>();
                     for ( ExportedColumn col : entry.getValue() ) {
                         UiColumnDefinition dbCol = UiColumnDefinition.builder()
@@ -1122,8 +1123,8 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 }
                 ctx.json( exportedColumns.toArray( new RelationalResult[0] ) );
                 return;
-            }
 
+            }
         }
 
         ctx.json( RelationalResult.builder().error( "Could not retrieve exported source fields." ).build() );

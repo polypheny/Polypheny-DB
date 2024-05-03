@@ -38,11 +38,11 @@ import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataSource;
-import org.polypheny.db.adapter.DataSource.ExportedColumn;
-import org.polypheny.db.adapter.DataSource.ExportedDocument;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DataStore.IndexMethodModel;
 import org.polypheny.db.adapter.DeployMode;
+import org.polypheny.db.adapter.DocumentDataSource.ExportedDocument;
+import org.polypheny.db.adapter.RelationalDataSource.ExportedColumn;
 import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
@@ -211,7 +211,7 @@ public class DdlManagerImpl extends DdlManager {
     @Override
     public void createStore( String uniqueName, String adapterName, AdapterType adapterType, Map<String, String> config, DeployMode mode ) {
         uniqueName = uniqueName.toLowerCase();
-        Adapter<?> adapter = AdapterManager.getInstance().addAdapter( adapterName, uniqueName, adapterType, mode, config );
+        AdapterManager.getInstance().addAdapter( adapterName, uniqueName, adapterType, mode, config );
     }
 
 
@@ -219,13 +219,14 @@ public class DdlManagerImpl extends DdlManager {
     public void createSource( String uniqueName, String adapterName, long namespace, AdapterType adapterType, Map<String, String> config, DeployMode mode ) {
         uniqueName = uniqueName.toLowerCase();
         DataSource<?> adapter = (DataSource<?>) AdapterManager.getInstance().addAdapter( adapterName, uniqueName, adapterType, mode, config );
-        if ( adapter.getSupportedDataModels().contains( DataModel.RELATIONAL ) ) {
+        namespace = adapter.getCurrentNamespace() == null ? namespace : adapter.getCurrentNamespace().getId(); // TODO: clean implementation. Sources should either create their own namespace or there should be default namespaces for different models.
+        if ( adapter.supportsRelational() ) {
             createRelationalSource( adapter, namespace );
         }
-        if ( adapter.getSupportedDataModels().contains( DataModel.DOCUMENT ) ) {
+        if ( adapter.supportsDocument() ) {
             createDocumentSource( adapter, namespace );
         }
-        if ( adapter.getSupportedDataModels().contains( DataModel.GRAPH ) ) {
+        if ( adapter.supportsGraph() ) {
             // TODO: implement graph source creation
             throw new IllegalArgumentException( "Adapters with native data model graph are not yet supported!" );
         }
@@ -236,7 +237,7 @@ public class DdlManagerImpl extends DdlManager {
     private void createDocumentSource( DataSource<?> adapter, long namespace ) {
         List<ExportedDocument> exportedCollections;
         try {
-            exportedCollections = adapter.getExportedCollection();
+            exportedCollections = adapter.asDocumentDataSource().getExportedCollection();
         } catch ( Exception e ) {
             AdapterManager.getInstance().removeAdapter( adapter.getAdapterId() );
             throw new GenericRuntimeException( "Could not deploy adapter", e );
@@ -244,13 +245,13 @@ public class DdlManagerImpl extends DdlManager {
 
         for ( ExportedDocument exportedDocument : exportedCollections ) {
             String documentName = getUniqueEntityName( namespace, exportedDocument.getName(), ( ns, en ) -> catalog.getSnapshot().doc().getCollection( ns, en ) );
-            LogicalCollection logical = catalog.getLogicalDoc( namespace ).addCollection( documentName, EntityType.SOURCE, !(adapter).isDataReadOnly() );
+            LogicalCollection logicalCollection = catalog.getLogicalDoc( namespace ).addCollection( documentName, exportedDocument.getType(), exportedDocument.isModifyable() );
+            AllocationPartition partition = catalog.getAllocDoc( namespace ).addPartition( logicalCollection, PartitionType.NONE, null );
+            AllocationPlacement placement = catalog.getAllocDoc( namespace ).addPlacement( logicalCollection, adapter.getAdapterId() );
+            AllocationCollection allocationCollection = catalog.getAllocDoc( namespace ).addAllocation( logicalCollection, placement.getId(), partition.getId(), adapter.getAdapterId() );
 
-            LogicalCollection logicalCollection = catalog.getLogicalDoc( namespace ).addCollection( exportedDocument.getName(), exportedDocument.getType(), exportedDocument.isModifyable() );
-            AllocationCollection allocationCollection = catalog.getAllocDoc( namespace ).addAllocation( logicalCollection, logical.getId(), 0, adapter.getAdapterId() );
-
-            buildNamespace( Catalog.defaultNamespaceId, logical, adapter );
-            adapter.createCollection( null, logical, allocationCollection );
+            buildDocumentNamespace( namespace, logicalCollection, adapter );
+            adapter.createCollection( null, logicalCollection, allocationCollection );
             catalog.updateSnapshot();
         }
     }
@@ -259,7 +260,7 @@ public class DdlManagerImpl extends DdlManager {
     private void createRelationalSource( DataSource<?> adapter, long namespace ) {
         Map<String, List<ExportedColumn>> exportedColumns;
         try {
-            exportedColumns = adapter.getExportedColumns();
+            exportedColumns = adapter.asRelationalDataSource().getExportedColumns();
         } catch ( Exception e ) {
             AdapterManager.getInstance().removeAdapter( adapter.getAdapterId() );
             throw new GenericRuntimeException( "Could not deploy adapter", e );
@@ -305,7 +306,7 @@ public class DdlManagerImpl extends DdlManager {
                 aColumns.add( allocationColumn );
             }
 
-            buildNamespace( Catalog.defaultNamespaceId, logical, adapter );
+            buildRelationalNamespace( namespace, logical, adapter );
             adapter.createTable( null, LogicalTableWrapper.of( logical, columns, List.of() ), AllocationTableWrapper.of( allocation.unwrap( AllocationTable.class ).orElseThrow(), aColumns ) );
             catalog.updateSnapshot();
         }
@@ -313,6 +314,9 @@ public class DdlManagerImpl extends DdlManager {
 
 
     private String getUniqueEntityName( Long namespace, String name, BiFunction<Long, String, Optional<?>> retriever ) {
+        if ( retriever.apply( namespace, name ).isEmpty() ) {
+            return name;
+        }
         int enumerator = 0;
         while ( retriever.apply( namespace, name + enumerator ).isPresent() ) {
             enumerator++;
@@ -420,9 +424,8 @@ public class DdlManagerImpl extends DdlManager {
 
         long adapterId = allocation.adapterId;
         DataSource<?> dataSource = AdapterManager.getInstance().getSource( adapterId ).orElseThrow();
-
         //String physicalTableName = catalog.getSnapshot().alloc().getPhysicalTable( catalogTable.id, adapterId ).name;
-        List<ExportedColumn> exportedColumns = dataSource.getExportedColumns().get( table.name );
+        List<ExportedColumn> exportedColumns = dataSource.asRelationalDataSource().getExportedColumns().get( table.name );
 
         // Check if physicalColumnName is valid
         ExportedColumn exportedColumn = null;
@@ -2119,7 +2122,7 @@ public class DdlManagerImpl extends DdlManager {
             columns.add( catalog.getAllocRel( namespaceId ).addColumn( placementId, logical.id, column.id, adapter.adapterId, PlacementType.AUTOMATIC, i++ ) );
         }
 
-        buildNamespace( namespaceId, logical, adapter );
+        buildRelationalNamespace( namespaceId, logical, adapter );
         List<AllocationTable> tables = new ArrayList<>();
         for ( Long partitionId : partitionIds ) {
             tables.add( addAllocationTable( namespaceId, statement, logical, lColumns, pkIds, placementId, partitionId, columns, adapter ) );
@@ -2157,7 +2160,11 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
-    private void buildNamespace( long namespaceId, LogicalEntity logical, Adapter<?> store ) {
+    private void buildRelationalNamespace( long namespaceId, LogicalTable logical, Adapter<?> store ) {
+        store.updateNamespace( logical.getNamespaceName(), namespaceId );
+    }
+
+    private void buildDocumentNamespace( long namespaceId, LogicalCollection logical, Adapter<?> store ) {
         store.updateNamespace( logical.getNamespaceName(), namespaceId );
     }
 

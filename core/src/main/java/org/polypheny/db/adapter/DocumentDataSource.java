@@ -34,5 +34,4 @@ public interface DocumentDataSource {
         private final EntityType type;
 
     }
-
 }

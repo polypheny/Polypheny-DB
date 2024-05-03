@@ -32,7 +32,6 @@ import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.RelationalDataSource;
-import org.polypheny.db.adapter.RelationalDataSource.ExportedColumn;
 import org.polypheny.db.adapter.RelationalScanDelegate;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.annotations.AdapterSettingBoolean;
@@ -44,6 +43,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.plugins.PluginContext;
@@ -107,7 +107,7 @@ public class EthereumPlugin extends PolyPlugin {
 
 
         public EthereumDataSource( final long storeId, final String uniqueName, final Map<String, String> settings ) {
-            super( storeId, uniqueName, settings, true, new RelAdapterCatalog( storeId ) );
+            super( storeId, uniqueName, settings, true, new RelAdapterCatalog( storeId ), List.of( DataModel.RELATIONAL ) );
             setClientURL( settings.get( "ClientUrl" ) );
             this.blocks = Integer.parseInt( settings.get( "Blocks" ) );
             this.experimentalFiltering = Boolean.parseBoolean( settings.get( "ExperimentalFiltering" ) );
@@ -291,6 +291,12 @@ public class EthereumPlugin extends PolyPlugin {
         public void renameLogicalColumn( long id, String newColumnName ) {
             adapterCatalog.renameLogicalColumn( id, newColumnName );
             adapterCatalog.fields.values().stream().filter( c -> c.id == id ).forEach( c -> updateNativePhysical( c.allocId ) );
+        }
+
+
+        @Override
+        public RelationalDataSource asRelationalDataSource() {
+            return this;
         }
 
     }

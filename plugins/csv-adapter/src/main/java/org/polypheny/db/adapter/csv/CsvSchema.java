@@ -42,7 +42,7 @@ import java.util.List;
 import java.util.Map;
 import lombok.Getter;
 import org.jetbrains.annotations.Nullable;
-import org.polypheny.db.adapter.DataSource.ExportedColumn;
+import org.polypheny.db.adapter.RelationalDataSource.ExportedColumn;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
@@ -112,7 +112,14 @@ public class CsvSchema extends Namespace {
 
 
     /**
-     * Creates different subtype of table based on the "flavor" attribute.
+     * Creates different subtype of table based on thString tableName = entry.getKey();
+            if ( catalog.getSnapshot().rel().getTable( namespace, tableName ).isPresent() ) {
+                int i = 0;
+                while ( catalog.getSnapshot().rel().getTable( namespace, tableName + i ).isPresent() ) {
+                    i++;
+                }
+                tableName += i;
+            }e "flavor" attribute.
      */
     private CsvTable createTable( long id, Source source, PhysicalTable table, List<CsvFieldType> fieldTypes, int[] fields, CsvSource csvSource ) {
         return switch ( flavor ) {
