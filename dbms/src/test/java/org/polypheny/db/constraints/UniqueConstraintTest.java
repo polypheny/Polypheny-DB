@@ -23,7 +23,6 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.AvaticaSqlException;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -472,7 +471,7 @@ public class UniqueConstraintTest {
                     try {
                         preparedStatement.executeBatch();
                         Assertions.fail( "Expected ConstraintViolationException was not thrown" );
-                    } catch ( AvaticaSqlException e ) {
+                    } catch ( PrismInterfaceServiceException e ) {
                         if ( !e.getMessage().contains( "Update violates unique constraint" ) ) {
                             throw new RuntimeException( "Unexpected exception", e );
                         }
