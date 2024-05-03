@@ -31,6 +31,7 @@ import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Objects;
 import lombok.Value;
+import org.apache.calcite.avatica.util.Base64;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -123,6 +124,10 @@ public class PolyBinary extends PolyValue {
             return out.substring( out.length() - count );
         }
         return out;
+    }
+
+    public String as64String() {
+        return Base64.encodeBytes( value );
     }
 
 

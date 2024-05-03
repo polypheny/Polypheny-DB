@@ -296,13 +296,21 @@ public class CottontailTypeUtil {
                 }
                 break;
             }
+            case VARBINARY:
+                if ( value.isBinary() ) {
+                    return builder.setStringData( value.asBinary().as64String() ).build();
+                }
+                break;
             case FILE:
             case IMAGE:
             case AUDIO:
             case VIDEO:
                 if ( value.isBlob() ) {
                     return builder.setStringData( value.asBlob().as64String() ).build();
+                } else if ( value.isBinary() ) {
+                    return builder.setStringData( value.asBinary().as64String() ).build();
                 }
+                break;
         }
 
         log.error( "Conversion not possible! value: {}, type: {}", value.getClass().getCanonicalName(), actualType );
