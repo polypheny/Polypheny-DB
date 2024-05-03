@@ -37,11 +37,11 @@ import org.polypheny.jdbc.PolyphenyResultSet;
 @Tag("adapter")
 public class JdbcResultSetTest {
 
-    private static final String TABLE_SQL = "CREATE TABLE IF NOT EXISTS resultset_test (id INT PRIMARY KEY, hex_value VARCHAR(2))";
-    private static final String DROP_TABLE_SQL = "DROP TABLE resultset_test";
+    private static final String TABLE_SQL = "CREATE TABLE resultset_test (id INT PRIMARY KEY, hex_value VARCHAR(2))";
+    private static final String DROP_TABLE_SQL = "DROP TABLE IF EXISTS resultset_test";
     private static final String DATA_SQL = buildInsertSql();
 
-    private static final String SELECT_SQL = "SELECT * FROM resultset_test";
+    private static final String SELECT_SQL = "SELECT * FROM resultset_test ORDER BY id";
 
 
     private static String buildInsertSql() {
@@ -60,6 +60,7 @@ public class JdbcResultSetTest {
 
     private void createTableWithData( Connection connection ) throws SQLException {
         try ( Statement statement = connection.createStatement(); ) {
+            statement.execute( DROP_TABLE_SQL );
             statement.execute( TABLE_SQL );
             statement.execute( DATA_SQL );
         }
@@ -498,7 +499,7 @@ public class JdbcResultSetTest {
             createTableWithData( connection );
             ResultSet rs = statement.executeQuery( SELECT_SQL );
             assertTrue( rs.absolute( -5 ) );
-            assertEquals( 46, rs.getRow() );
+            assertEquals( 21, rs.getRow() );
             rs.close();
             statement.executeUpdate( DROP_TABLE_SQL );
         }
