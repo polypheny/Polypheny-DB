@@ -291,11 +291,11 @@ public class JdbcStatementTest {
             statement.execute( INSERT_TEST_DATA );
             statement.setMaxRows( maxRows );
             assertEquals( maxRows, statement.getMaxRows() );
-            ResultSet rs = statement.executeQuery( "SELECT * FROM my_table" );
+            ResultSet rs = statement.executeQuery( "SELECT * FROM my_table ORDER BY id" );
             TestHelper.checkResultSet( rs, ImmutableList.of(
                     new Object[]{ 1, "A" },
                     new Object[]{ 2, "B" }
-            ), true );
+            ) );
             connection.rollback();
         }
     }
@@ -313,11 +313,11 @@ public class JdbcStatementTest {
             statement.execute( INSERT_TEST_DATA );
             statement.setLargeMaxRows( maxRows );
             assertEquals( maxRows, statement.getLargeMaxRows() );
-            ResultSet rs = statement.executeQuery( "SELECT * FROM my_table" );
+            ResultSet rs = statement.executeQuery( "SELECT * FROM my_table ORDER BY id" );
             TestHelper.checkResultSet( rs, ImmutableList.of(
                     new Object[]{ 1, "A" },
                     new Object[]{ 2, "B" }
-            ), true );
+            ) );
             connection.rollback();
         }
     }
