@@ -611,19 +611,15 @@ public class JdbcMetaTest {
             TestHelper.checkResultSet(
                     connection.getMetaData().getIndexInfo( "APP", "public", "foo", false, false ),
                     ImmutableList.of( index1 ) );
-            System.out.println( "BIMS" );
             TestHelper.checkResultSet(
                     connection.getMetaData().getIndexInfo( "AP_", "tes_", "foo_", false, false ),
                     ImmutableList.of( index2a, index2b ), true );
-            System.out.println( "BAMS" );
             TestHelper.checkResultSet(
                     connection.getMetaData().getIndexInfo( "%", "%", "%", false, false ),
                     ImmutableList.of( index1, index2a, index2b ), true );
-            System.out.println( "WIMS" );
             TestHelper.checkResultSet(
                     connection.getMetaData().getIndexInfo( null, null, null, false, false ),
                     ImmutableList.of( index1, index2a, index2b ), true );
-            System.out.println( "WUMS" );
             TestHelper.checkResultSet(
                     connection.getMetaData().getIndexInfo( null, "%", null, true, false ),
                     ImmutableList.of( index1 ) );
