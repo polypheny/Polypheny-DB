@@ -24,7 +24,7 @@ import lombok.Getter;
 
 public class VersionUtils {
 
-    private static final String API_VERSION_PROPERTIES = "prism-api-version-properties.properties";
+    private static final String API_VERSION_PROPERTIES = "prism-api-version.properties";
 
     @Getter private static final int MAJOR_API_VERSION;
     @Getter private static final int MINOR_API_VERSION;
