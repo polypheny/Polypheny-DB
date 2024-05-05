@@ -3,8 +3,6 @@ plugins {
     id "com.google.protobuf" version "$protobuf_plugin_version"
 }
 
-def majorApiVersion = 2
-def minorApiVersion = 0
 
 apply plugin: "com.google.protobuf"
 
@@ -21,6 +19,7 @@ repositories {
 }
 
 dependencies {
+    implementation 'org.polypheny:prism:1.0'
 
     compileOnly project(path: ':core')
     compileOnly project(path: ':dbms')
@@ -38,14 +37,6 @@ dependencies {
     //testImplementation project(path: ':plugins:mql-language')
 
 }
-
-tasks.register('copyResources', Copy) {
-    from 'src/main/resources'
-    into 'build/resources/main'
-    expand([MAJOR_API_VERSION: majorApiVersion, MINOR_API_VERSION: minorApiVersion])
-}
-
-processResources.dependsOn copyResources
 
 def generatedDirName = "${project.buildDir}/generated"
 
@@ -105,6 +96,25 @@ extractIncludeProto {
     dependsOn(':plugins:sql-language:compileJava')
     dependsOn(':plugins:mql-language:compileJava')
 }
+
+task copyProtoFiles {
+    def subDir = 'org/polypheny/prism'
+    copy {
+        configurations.runtimeClasspath.files.each { file ->
+            if (file.name.startsWith('prism')) {
+                from zipTree(file).matching { include "$subDir/**" }
+                into 'src/main/proto'
+                eachFile { fcp ->
+                    fcp.path = fcp.path.replaceFirst("^$subDir", '')
+                }
+                includeEmptyDirs false
+            }
+        }
+    }
+}
+
+
+generateProto.dependsOn copyProtoFiles
 
 
 /**

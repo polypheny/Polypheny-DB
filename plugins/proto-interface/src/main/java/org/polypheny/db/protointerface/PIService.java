@@ -32,6 +32,21 @@ import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.iface.AuthenticationException;
 import org.polypheny.db.languages.QueryLanguage;
+import org.polypheny.db.protointerface.statementProcessing.StatementProcessor;
+import org.polypheny.db.protointerface.statements.PIPreparedIndexedStatement;
+import org.polypheny.db.protointerface.statements.PIPreparedNamedStatement;
+import org.polypheny.db.protointerface.statements.PIStatement;
+import org.polypheny.db.protointerface.statements.PIUnparameterizedStatement;
+import org.polypheny.db.protointerface.statements.PIUnparameterizedStatementBatch;
+import org.polypheny.db.protointerface.transport.Transport;
+import org.polypheny.db.protointerface.utils.PropertyUtils;
+import org.polypheny.db.protointerface.utils.ProtoUtils;
+import org.polypheny.db.protointerface.utils.ProtoValueDeserializer;
+import org.polypheny.db.protointerface.utils.VersionUtils;
+import org.polypheny.db.sql.language.SqlJdbcFunctionCall;
+import org.polypheny.db.transaction.TransactionException;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.util.Util;
 import org.polypheny.prism.ClientInfoProperties;
 import org.polypheny.prism.ClientInfoPropertiesRequest;
 import org.polypheny.prism.ClientInfoPropertiesResponse;
@@ -91,26 +106,10 @@ import org.polypheny.prism.TableTypesRequest;
 import org.polypheny.prism.TableTypesResponse;
 import org.polypheny.prism.TypesRequest;
 import org.polypheny.prism.TypesResponse;
-import org.polypheny.db.protointerface.statementProcessing.StatementProcessor;
-import org.polypheny.db.protointerface.statements.PIPreparedIndexedStatement;
-import org.polypheny.db.protointerface.statements.PIPreparedNamedStatement;
-import org.polypheny.db.protointerface.statements.PIStatement;
-import org.polypheny.db.protointerface.statements.PIUnparameterizedStatement;
-import org.polypheny.db.protointerface.statements.PIUnparameterizedStatementBatch;
-import org.polypheny.db.protointerface.transport.Transport;
-import org.polypheny.db.protointerface.utils.PropertyUtils;
-import org.polypheny.db.protointerface.utils.ProtoUtils;
-import org.polypheny.db.protointerface.utils.ProtoValueDeserializer;
-import org.polypheny.db.sql.language.SqlJdbcFunctionCall;
-import org.polypheny.db.transaction.TransactionException;
-import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.util.Util;
 
 @Slf4j
 class PIService {
 
-    private static final int majorApiVersion = 2;
-    private static final int minorApiVersion = 0;
     private final long connectionId;
     private final ClientManager clientManager;
     private final Transport con;
@@ -314,8 +313,8 @@ class PIService {
             throw new PIServiceException( "Can only connect once per session" );
         }
         Builder responseBuilder = ConnectionResponse.newBuilder()
-                .setMajorApiVersion( majorApiVersion )
-                .setMinorApiVersion( minorApiVersion );
+                .setMajorApiVersion( VersionUtils.getMAJOR_API_VERSION() )
+                .setMinorApiVersion( VersionUtils.getMINOR_API_VERSION() );
         boolean isCompatible = checkApiVersion( request );
         responseBuilder.setIsCompatible( isCompatible );
         ConnectionResponse ConnectionResponse = responseBuilder.build();
@@ -576,7 +575,7 @@ class PIService {
 
 
     private static boolean checkApiVersion( ConnectionRequest connectionRequest ) {
-        return connectionRequest.getMajorApiVersion() == majorApiVersion;
+        return connectionRequest.getMajorApiVersion() == VersionUtils.getMAJOR_API_VERSION();
     }
 
 }
