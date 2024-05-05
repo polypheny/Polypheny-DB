@@ -27,8 +27,6 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
-import org.polypheny.db.protointerface.proto.ProtoValue;
-import org.polypheny.db.protointerface.proto.ProtoValue.ValueCase;
 import org.polypheny.db.protointerface.utils.PolyValueSerializer;
 import org.polypheny.db.protointerface.utils.ProtoValueDeserializer;
 import org.polypheny.db.type.PolyType;
@@ -47,6 +45,8 @@ import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.type.entity.temporal.PolyDate;
 import org.polypheny.db.type.entity.temporal.PolyTime;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
+import org.polypheny.prism.ProtoValue;
+import org.polypheny.prism.ProtoValue.ValueCase;
 
 public class ProtoValueTest {
 
