@@ -90,7 +90,7 @@ message ProceduresRequest {
 /*
 The ClientInfoPropertiesRequest message facilitates the acquisition of client information properties stored in the database.
 These properties can offer additional context about the connected client.
-This message doesn’t possess any fields.
+This message doesn't possess any fields.
 It acts as a directive for the server to provide the associated client information properties in a ClientInfoPropertiesResponse.
 */
 message ClientInfoPropertiesRequest {

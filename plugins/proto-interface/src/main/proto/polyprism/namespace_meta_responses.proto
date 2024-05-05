@@ -117,7 +117,7 @@ message Column {
     // The namespace or schema of the primary key’s table.
     REGULAR = 1;
     // The table with this primary key.
-    CALUCLATED = 2;
+    CALCULATED = 2;
     // The columns that make up the primary key.
     VERSION = 3;
   }
