@@ -28,12 +28,12 @@ import org.polypheny.db.catalog.entity.LogicalUser;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.iface.AuthenticationException;
 import org.polypheny.db.iface.Authenticator;
-import org.polypheny.prism.ConnectionRequest;
 import org.polypheny.db.protointerface.transport.Transport;
 import org.polypheny.db.protointerface.utils.PropertyUtils;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
+import org.polypheny.prism.ConnectionRequest;
 
 @Slf4j
 class ClientManager {

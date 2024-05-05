@@ -19,6 +19,9 @@ package org.polypheny.db.protointerface.utils;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.protointerface.statements.PIPreparedStatement;
+import org.polypheny.db.protointerface.statements.PIStatement;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.prism.ColumnMeta;
 import org.polypheny.prism.DocumentFrame;
 import org.polypheny.prism.Frame;
@@ -29,9 +32,6 @@ import org.polypheny.prism.Row;
 import org.polypheny.prism.StatementBatchResponse;
 import org.polypheny.prism.StatementResponse;
 import org.polypheny.prism.StatementResult;
-import org.polypheny.db.protointerface.statements.PIPreparedStatement;
-import org.polypheny.db.protointerface.statements.PIStatement;
-import org.polypheny.db.type.entity.PolyValue;
 
 public class ProtoUtils {
 

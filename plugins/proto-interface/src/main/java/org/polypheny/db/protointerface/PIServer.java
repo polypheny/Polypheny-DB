@@ -171,7 +171,7 @@ class PIServer {
     }
 
 
-    private record ServerAndLock(ServerSocketChannel server, FileLock lock) {
+    private record ServerAndLock( ServerSocketChannel server, FileLock lock ) {
 
     }
 

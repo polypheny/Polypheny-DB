@@ -26,9 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.prism.IndexedParameters;
-import org.polypheny.prism.ProtoBigDecimal;
-import org.polypheny.prism.ProtoValue;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyList;
@@ -45,6 +42,9 @@ import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.type.entity.temporal.PolyDate;
 import org.polypheny.db.type.entity.temporal.PolyTime;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
+import org.polypheny.prism.IndexedParameters;
+import org.polypheny.prism.ProtoBigDecimal;
+import org.polypheny.prism.ProtoValue;
 
 public class ProtoValueDeserializer {
 

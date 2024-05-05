@@ -29,14 +29,14 @@ import org.polypheny.db.processing.ImplementationContext;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.protointerface.PIServiceException;
-import org.polypheny.prism.Frame;
-import org.polypheny.prism.StatementResult;
 import org.polypheny.db.protointerface.relational.RelationalMetaRetriever;
 import org.polypheny.db.protointerface.statements.PIPreparedStatement;
 import org.polypheny.db.protointerface.statements.PIStatement;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.util.Pair;
+import org.polypheny.prism.Frame;
+import org.polypheny.prism.StatementResult;
 
 public class StatementProcessor {
 
