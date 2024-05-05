@@ -28,8 +28,8 @@ import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.protointerface.PIClient;
 import org.polypheny.db.protointerface.PIServiceException;
-import org.polypheny.db.protointerface.proto.ExecuteUnparameterizedStatementRequest;
-import org.polypheny.db.protointerface.proto.PrepareStatementRequest;
+import org.polypheny.prism.ExecuteUnparameterizedStatementRequest;
+import org.polypheny.prism.PrepareStatementRequest;
 
 @Slf4j
 public class StatementManager {

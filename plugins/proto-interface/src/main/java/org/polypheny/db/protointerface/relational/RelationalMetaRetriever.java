@@ -29,13 +29,13 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.processing.QueryProcessorHelpers;
-import org.polypheny.db.protointerface.proto.ArrayMeta;
-import org.polypheny.db.protointerface.proto.ColumnMeta;
-import org.polypheny.db.protointerface.proto.FieldMeta;
-import org.polypheny.db.protointerface.proto.ParameterMeta;
-import org.polypheny.db.protointerface.proto.ProtoPolyType;
-import org.polypheny.db.protointerface.proto.StructMeta;
-import org.polypheny.db.protointerface.proto.TypeMeta;
+import org.polypheny.prism.ArrayMeta;
+import org.polypheny.prism.ColumnMeta;
+import org.polypheny.prism.FieldMeta;
+import org.polypheny.prism.ParameterMeta;
+import org.polypheny.prism.ProtoPolyType;
+import org.polypheny.prism.StructMeta;
+import org.polypheny.prism.TypeMeta;
 import org.polypheny.db.type.PolyType;
 
 public class RelationalMetaRetriever {

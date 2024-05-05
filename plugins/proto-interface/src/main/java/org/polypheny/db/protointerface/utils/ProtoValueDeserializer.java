@@ -16,7 +16,7 @@
 
 package org.polypheny.db.protointerface.utils;
 
-import static org.polypheny.db.protointerface.proto.ProtoValue.ValueCase.STRING;
+import static org.polypheny.prism.ProtoValue.ValueCase.STRING;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -26,9 +26,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.protointerface.proto.IndexedParameters;
-import org.polypheny.db.protointerface.proto.ProtoBigDecimal;
-import org.polypheny.db.protointerface.proto.ProtoValue;
+import org.polypheny.prism.IndexedParameters;
+import org.polypheny.prism.ProtoBigDecimal;
+import org.polypheny.prism.ProtoValue;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyList;

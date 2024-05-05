@@ -5,7 +5,7 @@ Messages concerning the handling of transactions.
 syntax = "proto3";
 
 option java_multiple_files = true;
-option java_package = "org.polypheny.db.protointerface.proto";
+option java_package = "org.polypheny.prism";
 option java_outer_classname = "TransactionResponses";
 
 package polypheny.protointerface;

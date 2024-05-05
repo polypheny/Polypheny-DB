@@ -25,7 +25,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.protointerface.PIClient;
-import org.polypheny.db.protointerface.proto.StatementResult;
+import org.polypheny.prism.StatementResult;
 import org.polypheny.db.protointerface.statementProcessing.StatementProcessor;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;

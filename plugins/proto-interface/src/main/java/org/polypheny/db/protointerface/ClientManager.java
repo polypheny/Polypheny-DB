@@ -28,7 +28,7 @@ import org.polypheny.db.catalog.entity.LogicalUser;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.iface.AuthenticationException;
 import org.polypheny.db.iface.Authenticator;
-import org.polypheny.db.protointerface.proto.ConnectionRequest;
+import org.polypheny.prism.ConnectionRequest;
 import org.polypheny.db.protointerface.transport.Transport;
 import org.polypheny.db.protointerface.utils.PropertyUtils;
 import org.polypheny.db.transaction.Transaction;

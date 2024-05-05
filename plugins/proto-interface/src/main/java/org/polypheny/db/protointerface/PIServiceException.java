@@ -20,7 +20,7 @@ import java.sql.SQLException;
 import java.util.Optional;
 import lombok.Getter;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.protointerface.proto.ErrorDetails;
+import org.polypheny.prism.ErrorDetails;
 
 public class PIServiceException extends GenericRuntimeException {
 

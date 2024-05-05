@@ -7,7 +7,7 @@ syntax = "proto3";
 import "polyprism/value.proto";
 
 option java_multiple_files = true;
-option java_package = "org.polypheny.db.protointerface.proto";
+option java_package = "org.polypheny.prism";
 option java_outer_classname = "DocumentResultProto";
 
 package polypheny.protointerface;

@@ -17,7 +17,7 @@
 package org.polypheny.db.protointerface.statements;
 
 import java.util.List;
-import org.polypheny.db.protointerface.proto.ParameterMeta;
+import org.polypheny.prism.ParameterMeta;
 
 public interface Signaturizable {
 

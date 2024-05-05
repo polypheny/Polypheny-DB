@@ -16,8 +16,8 @@
 
 package org.polypheny.db.protointerface;
 
-import org.polypheny.db.protointerface.proto.Request;
-import org.polypheny.db.protointerface.proto.Response;
+import org.polypheny.prism.Request;
+import org.polypheny.prism.Response;
 
 public class ResponseMaker<T> {
 

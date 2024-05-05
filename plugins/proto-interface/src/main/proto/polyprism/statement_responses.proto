@@ -9,7 +9,7 @@ import "polyprism/graph_frame.proto";
 import "polyprism/document_frame.proto";
 
 option java_multiple_files = true;
-option java_package = "org.polypheny.db.protointerface.proto";
+option java_package = "org.polypheny.prism";
 option java_outer_classname = "StatementResponses";
 
 package polypheny.protointerface;

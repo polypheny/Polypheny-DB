@@ -21,7 +21,7 @@ import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.protointerface.PIClient;
-import org.polypheny.db.protointerface.proto.ParameterMeta;
+import org.polypheny.prism.ParameterMeta;
 import org.polypheny.db.protointerface.statementProcessing.StatementProcessor;
 
 public abstract class PIPreparedStatement extends PIStatement implements Signaturizable {
