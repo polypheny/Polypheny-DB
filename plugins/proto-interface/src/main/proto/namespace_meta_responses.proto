@@ -8,7 +8,7 @@ option java_multiple_files = true;
 option java_package = "org.polypheny.prism";
 option java_outer_classname = "NamespaceMetaResponses";
 
-package polypheny.protointerface;
+package polypheny.prism;
 
 /*
 The NamespacesResponse message delivers a list of namespaces based on the provided criteria in the NamespacesRequest.

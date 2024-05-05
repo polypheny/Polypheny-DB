@@ -4,13 +4,13 @@ Messages pertaining to document frames as used to represent results from the doc
 
 syntax = "proto3";
 
-import "polyprism/value.proto";
+import "value.proto";
 
 option java_multiple_files = true;
 option java_package = "org.polypheny.prism";
 option java_outer_classname = "DocumentResultProto";
 
-package polypheny.protointerface;
+package polypheny.prism;
 
 /*
 The DocumentFrame message represents a frame containing one or more documents and is used to relay results or data entries structured as documents from the server to the client.

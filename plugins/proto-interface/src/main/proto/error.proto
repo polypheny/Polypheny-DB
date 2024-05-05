@@ -7,7 +7,7 @@ option java_multiple_files = true;
 option java_package = "org.polypheny.prism";
 option java_outer_classname = "Error";
 
-package polypheny.protointerface;
+package polypheny.prism;
 
 /*
 The ErrorDetails message conveys specific information about an error encountered during the processing of a request.

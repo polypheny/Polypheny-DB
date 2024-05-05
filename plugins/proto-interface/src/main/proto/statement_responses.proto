@@ -4,15 +4,15 @@ Messages related to statements in a query language and their results.
 
 syntax = "proto3";
 
-import "polyprism/relational_frame.proto";
-import "polyprism/graph_frame.proto";
-import "polyprism/document_frame.proto";
+import "relational_frame.proto";
+import "graph_frame.proto";
+import "document_frame.proto";
 
 option java_multiple_files = true;
 option java_package = "org.polypheny.prism";
 option java_outer_classname = "StatementResponses";
 
-package polypheny.protointerface;
+package polypheny.prism;
 
 /*
 Response of the server on the request of a client to close the result set of a specific statement.

@@ -8,7 +8,7 @@ option java_multiple_files = true;
 option java_package = "org.polypheny.prism";
 option java_outer_classname = "ConnectionRequests";
 
-package polypheny.protointerface;
+package polypheny.prism;
 
 /*
 The ConnectionRequest message is designed to initiate a connection request from the client to the server.

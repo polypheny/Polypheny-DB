@@ -8,7 +8,7 @@ option java_multiple_files = true;
 option java_package = "org.polypheny.prism";
 option java_outer_classname = "GraphResultProto";
 
-package polypheny.protointerface;
+package polypheny.prism;
 
 /*
 The GraphFrame message is a placeholder intended to represent graph frames as part of the labeled property graph model.

@@ -4,13 +4,13 @@ Messages related to statements in a query language and their results.
 
 syntax = "proto3";
 
-import "polyprism/value.proto";
+import "value.proto";
 
 option java_multiple_files = true;
 option java_package = "org.polypheny.prism";
 option java_outer_classname = "StatementRequests";
 
-package polypheny.protointerface;
+package polypheny.prism;
 
 /*
 Closes the result set of the statement matching the specified statement id. If no such statement exists, or the result is already closed, this request is ignored.

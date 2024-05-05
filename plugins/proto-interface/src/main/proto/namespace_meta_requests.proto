@@ -8,7 +8,7 @@ option java_multiple_files = true;
 option java_package = "org.polypheny.prism";
 option java_outer_classname = "NamespaceMeta";
 
-package polypheny.protointerface;
+package polypheny.prism;
 
 /*
 The NamespacesRequest message allows querying for namespaces based on specific patterns in their names as well as their types.

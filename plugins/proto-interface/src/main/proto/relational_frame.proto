@@ -4,13 +4,13 @@ Messages related to relational frames as used to represent the results form the 
 
 syntax = "proto3";
 
-import "polyprism/value.proto";
+import "value.proto";
 
 option java_multiple_files = true;
 option java_package = "org.polypheny.prism";
 option java_outer_classname = "RelationalResult";
 
-package polypheny.protointerface;
+package polypheny.prism;
 
 /*
 The RelationalFrame message encapsulates the structure of a relational frame, which includes metadata about columns and rows of data within a relational table.

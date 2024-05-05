@@ -8,7 +8,7 @@ option java_multiple_files = true;
 option java_package = "org.polypheny.prism";
 option java_outer_classname = "MetaRequests";
 
-package polypheny.protointerface;
+package polypheny.prism;
 
 /*
 The DbmsVersionRequest message is utilized to request the version information of the database management system (DBMS) in use.

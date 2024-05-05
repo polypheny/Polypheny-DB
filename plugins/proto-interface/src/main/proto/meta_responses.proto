@@ -8,7 +8,7 @@ option java_multiple_files = true;
 option java_package = "org.polypheny.prism";
 option java_outer_classname = "MetaResponses";
 
-package polypheny.protointerface;
+package polypheny.prism;
 
 /*
 The DbmsVersionResponse message relays details about the version and name of the database management system (DBMS) in response to a DbmsVersionRequest.

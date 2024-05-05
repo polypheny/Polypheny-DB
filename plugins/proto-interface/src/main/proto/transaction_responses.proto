@@ -8,7 +8,7 @@ option java_multiple_files = true;
 option java_package = "org.polypheny.prism";
 option java_outer_classname = "TransactionResponses";
 
-package polypheny.protointerface;
+package polypheny.prism;
 
 /*
 Represents the response after attempting to commit a transaction.
