@@ -3,6 +3,9 @@ plugins {
     id "com.google.protobuf" version "$protobuf_plugin_version"
 }
 
+def majorApiVersion = 2
+def minorApiVersion = 0
+
 apply plugin: "com.google.protobuf"
 
 group "org.polypheny"
@@ -35,6 +38,14 @@ dependencies {
     //testImplementation project(path: ':plugins:mql-language')
 
 }
+
+tasks.register('copyResources', Copy) {
+    from 'src/main/resources'
+    into 'build/resources/main'
+    expand([MAJOR_API_VERSION: majorApiVersion, MINOR_API_VERSION: minorApiVersion])
+}
+
+processResources.dependsOn copyResources
 
 def generatedDirName = "${project.buildDir}/generated"
 
