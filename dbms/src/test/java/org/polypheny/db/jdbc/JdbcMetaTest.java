@@ -17,7 +17,10 @@
 package org.polypheny.db.jdbc;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import com.google.common.collect.ImmutableList;
 import java.sql.Connection;
@@ -42,6 +45,14 @@ import org.polypheny.db.TestHelper.JdbcConnection;
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Slf4j
 public class JdbcMetaTest {
+
+    private static final String CREATE_TEST_TABLE = "CREATE TABLE IF NOT EXISTS my_table (id INT PRIMARY KEY, some_value INT)";
+    private static final String INSERT_TEST_DATA = "INSERT INTO my_table (id, some_value) VALUES " +
+            "(1, 10), " +
+            "(2, NULL), " +
+            "(3, 5), " +
+            "(4, NULL), " +
+            "(5, 8)";
 
 
     private static TestHelper helper;
@@ -339,6 +350,75 @@ public class JdbcMetaTest {
                     connection.getMetaData().getTableTypes(),
                     tableTypeTable );
         }
+    }
+
+
+    @Test
+    public void testSortNullsAtEnd() throws SQLException {
+        try (
+                JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
+                Connection connection = polyphenyDbConnection.getConnection();
+                Statement statement = connection.createStatement()
+        ) {
+            statement.execute( CREATE_TEST_TABLE );
+            statement.executeUpdate( INSERT_TEST_DATA );
+
+            ResultSet rs = statement.executeQuery( "SELECT * FROM my_table ORDER BY some_value IS NULL, some_value" );
+
+            boolean trigger = false;
+            while ( rs.next() ) {
+                Integer value = rs.getInt( "some_value" );
+                if ( value == 0 ) {
+                    trigger = true;
+                } else if ( trigger && value != null ) {
+                    fail( "Values are not sorted correctly." );
+                }
+            }
+
+            ResultSet rs2 = statement.executeQuery( "SELECT * FROM my_table ORDER BY some_value IS NULL, some_value" );
+
+            trigger = false;
+            while ( rs2.next() ) {
+                Integer value = rs2.getInt( "some_value" );
+                if ( value == 0 ) {
+                    trigger = true;
+                } else if ( trigger && value != null ) {
+                    fail( "Values are not sorted correctly." );
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testNullsAreSortedAtEnd() throws SQLException {
+            try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false, true );
+                    Connection connection = polyphenyDbConnection.getConnection() ) {
+                assertTrue(connection.getMetaData().nullsAreSortedAtEnd());
+            }
+    }
+
+    @Test
+    public void testNullsAreSortedStart() throws SQLException {
+            try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false, true );
+                    Connection connection = polyphenyDbConnection.getConnection() ) {
+                assertFalse(connection.getMetaData().nullsAreSortedAtStart());
+            }
+    }
+
+    @Test
+    public void testNullsAreSortedHigh() throws SQLException {
+            try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false, true );
+                    Connection connection = polyphenyDbConnection.getConnection() ) {
+                assertFalse(connection.getMetaData().nullsAreSortedHigh());
+            }
+    }
+
+    @Test
+    public void testNullsAreSortedLow() throws SQLException {
+            try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false, true );
+                    Connection connection = polyphenyDbConnection.getConnection() ) {
+                assertFalse(connection.getMetaData().nullsAreSortedLow());
+            }
     }
 
 
