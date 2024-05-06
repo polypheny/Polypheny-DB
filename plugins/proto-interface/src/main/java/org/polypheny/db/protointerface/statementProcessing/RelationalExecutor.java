@@ -25,14 +25,14 @@ import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.monitoring.events.MonitoringType;
 import org.polypheny.db.protointerface.PIClient;
 import org.polypheny.db.protointerface.PIServiceException;
-import org.polypheny.prism.ColumnMeta;
-import org.polypheny.prism.Frame;
-import org.polypheny.prism.StatementResult;
 import org.polypheny.db.protointerface.relational.RelationalMetaRetriever;
 import org.polypheny.db.protointerface.statements.PIStatement;
 import org.polypheny.db.protointerface.utils.ProtoUtils;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.prism.ColumnMeta;
+import org.polypheny.prism.Frame;
+import org.polypheny.prism.StatementResult;
 
 public class RelationalExecutor extends Executor {
 

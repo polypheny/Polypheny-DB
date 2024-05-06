@@ -25,11 +25,11 @@ import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.protointerface.NamedValueProcessor;
 import org.polypheny.db.protointerface.PIClient;
-import org.polypheny.prism.StatementResult;
 import org.polypheny.db.protointerface.statementProcessing.StatementProcessor;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.prism.StatementResult;
 
 public class PIPreparedNamedStatement extends PIPreparedStatement {
 

@@ -19,13 +19,15 @@ repositories {
 }
 
 dependencies {
-    implementation 'org.polypheny:prism:1.0'
-
     compileOnly project(path: ':core')
     compileOnly project(path: ':dbms')
     compileOnly project(path: ':plugins:sql-language')
     compileOnly project(path: ':plugins:mql-language')
 
+    // Prism API files (protobuf files), needs to be implementation due to the prism-api-version.properties
+    implementation group: 'org.polypheny', name: 'prism', version: prism_api_version
+
+    // Protobuf
     implementation group: 'com.google.protobuf', name: 'protobuf-java', version: protobuf_version
 
 
@@ -38,13 +40,12 @@ dependencies {
 
 }
 
-def generatedDirName = "${project.buildDir}/generated"
-
 // compile protos on build
 compileJava.dependsOn(generateProto)
 compileTestJava.mustRunAfter(javadoc)
 compileTestJava.mustRunAfter(jar)
 compileTestJava.mustRunAfter(plugin)
+processResources.dependsOn(extractIncludeProto)
 
 test.dependsOn(":dbms:shadowJar")
 
@@ -52,21 +53,29 @@ protobuf {
     protoc {
         artifact = "com.google.protobuf:protoc:${protobuf_version}"
     }
-    generatedFilesBaseDir = "${generatedDirName}/proto"
+
+    generateProtoTasks {
+        all().each { task ->
+            task.builtins {
+                java {}
+            }
+        }
+    }
 }
 
 sourceSets {
     main {
-        proto {
-            srcDir "${protobuf.generatedFilesBaseDir}/proto/main/java"
-        }
         java {
             srcDirs = ["src/main/java", "build/generated/source/proto/main/java"]
+        }
+        proto {
+            srcDirs = ["build/extracted-include-protos/main"]
         }
         resources {
             srcDirs = ["src/main/resources"]
         }
         output.resourcesDir = file(project.buildDir.absolutePath + "/classes")
+
     }
     test {
         java {
@@ -96,25 +105,6 @@ extractIncludeProto {
     dependsOn(':plugins:sql-language:compileJava')
     dependsOn(':plugins:mql-language:compileJava')
 }
-
-task copyProtoFiles {
-    def subDir = 'org/polypheny/prism'
-    copy {
-        configurations.runtimeClasspath.files.each { file ->
-            if (file.name.startsWith('prism')) {
-                from zipTree(file).matching { include "$subDir/**" }
-                into 'src/main/proto'
-                eachFile { fcp ->
-                    fcp.path = fcp.path.replaceFirst("^$subDir", '')
-                }
-                includeEmptyDirs false
-            }
-        }
-    }
-}
-
-
-generateProto.dependsOn copyProtoFiles
 
 
 /**
@@ -146,5 +136,6 @@ java {
  * LICENSEE
  */
 licensee {
+    allow('Apache-2.0')
     allow('BSD-3-Clause')
 }

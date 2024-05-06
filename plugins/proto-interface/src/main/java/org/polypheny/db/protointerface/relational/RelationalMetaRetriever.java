@@ -29,6 +29,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.processing.QueryProcessorHelpers;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.prism.ArrayMeta;
 import org.polypheny.prism.ColumnMeta;
 import org.polypheny.prism.FieldMeta;
@@ -36,7 +37,6 @@ import org.polypheny.prism.ParameterMeta;
 import org.polypheny.prism.ProtoPolyType;
 import org.polypheny.prism.StructMeta;
 import org.polypheny.prism.TypeMeta;
-import org.polypheny.db.type.PolyType;
 
 public class RelationalMetaRetriever {
 

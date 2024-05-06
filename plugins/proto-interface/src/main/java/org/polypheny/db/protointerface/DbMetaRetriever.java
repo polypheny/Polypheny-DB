@@ -39,6 +39,7 @@ import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.prism.ClientInfoPropertyMeta;
 import org.polypheny.prism.ClientInfoPropertyMetaResponse;
 import org.polypheny.prism.Column;
@@ -59,7 +60,6 @@ import org.polypheny.prism.TableType;
 import org.polypheny.prism.TableTypesResponse;
 import org.polypheny.prism.Type;
 import org.polypheny.prism.TypesResponse;
-import org.polypheny.db.type.PolyType;
 
 class DbMetaRetriever {
 

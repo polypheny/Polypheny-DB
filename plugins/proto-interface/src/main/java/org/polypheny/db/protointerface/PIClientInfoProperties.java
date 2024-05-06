@@ -57,7 +57,7 @@ class PIClientInfoProperties extends Properties {
     }
 
 
-    record ClientInfoPropertiesDefault(String key, String default_value, int maxLength, String description) {
+    record ClientInfoPropertiesDefault( String key, String default_value, int maxLength, String description ) {
 
     }
 
