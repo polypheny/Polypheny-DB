@@ -78,7 +78,7 @@ public class NeoToEnumerableConverter extends ConverterImpl implements Enumerabl
 
 
     /**
-     * This methods generates the code snippet, which is used for the graph model logic for the Neo4j adapter.
+     * This method generates the code snippet, which is used for the graph model logic for the Neo4j adapter.
      *
      * @param implementor is used build the code snippets by recursively moving through them
      * @param pref preferred result format, e.g. when SCALAR -> single result gets returned as single element, if ARRAY it is wrapped in an array

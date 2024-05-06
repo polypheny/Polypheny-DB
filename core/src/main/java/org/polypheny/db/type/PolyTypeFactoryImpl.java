@@ -344,7 +344,10 @@ public class PolyTypeFactoryImpl extends AlgDataTypeFactoryImpl {
                         }
                     }
 
-                    resultType = createPolyType( newTypeName, precision );
+                    if ( newTypeName != PolyType.TEXT ) {
+                        resultType = createPolyType( newTypeName, precision );
+                    }
+
                 }
                 Charset charset = null;
                 Collation collation = null;

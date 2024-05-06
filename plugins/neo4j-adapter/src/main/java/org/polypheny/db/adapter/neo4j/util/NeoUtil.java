@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.NonNull;
@@ -41,6 +42,8 @@ import org.neo4j.driver.types.Node;
 import org.neo4j.driver.types.Path;
 import org.neo4j.driver.types.Relationship;
 import org.polypheny.db.adapter.neo4j.types.NestedPolyType;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgVisitor;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.core.Project;
@@ -543,6 +546,7 @@ public interface NeoUtil {
         if ( p.getTraitSet().contains( ModelTrait.GRAPH ) ) {
             return false;
         }
+
         if ( p.getTupleType().getFieldNames().stream().anyMatch( n -> n.matches( "^[0-9].*" ) ) ) {
             return false;
         }
@@ -591,6 +595,23 @@ public interface NeoUtil {
             } ).toList();
             default -> throw new NotImplementedException();
         };
+    }
+
+    static boolean containsEntity( AlgNode a ) {
+        final AtomicBoolean contains = new AtomicBoolean( false );
+
+        AlgVisitor visitor = new AlgVisitor() {
+
+            @Override
+            public void visit( AlgNode node, int ordinal, AlgNode parent ) {
+                if ( node.getEntity() != null ) {
+                    contains.set( true );
+                }
+                super.visit( node, ordinal, parent );
+            }
+        };
+        visitor.go( a );
+        return contains.get();
     }
 
     @Getter

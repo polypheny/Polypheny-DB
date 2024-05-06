@@ -152,7 +152,7 @@ public enum PolyType {
             PolyTypeFamily.CHARACTER ),
 
     TEXT(
-            PrecScale.NO_NO,
+            PrecScale.NO_NO | PrecScale.YES_NO,
             false,
             Types.VARCHAR,
             PolyTypeFamily.CHARACTER ),

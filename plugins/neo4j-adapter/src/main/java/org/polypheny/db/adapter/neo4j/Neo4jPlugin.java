@@ -37,7 +37,6 @@ import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Transaction;
-import org.neo4j.driver.exceptions.Neo4jException;
 import org.pf4j.Extension;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
@@ -266,7 +265,7 @@ public class Neo4jPlugin extends PolyPlugin {
                 }
 
                 transactionProvider.commitDdlTransaction();
-            } catch ( Neo4jException e ) {
+            } catch ( Exception e ) {
                 transactionProvider.rollbackDdlTransaction();
                 throw new GenericRuntimeException( e );
             }
