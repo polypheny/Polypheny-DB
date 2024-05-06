@@ -18,6 +18,8 @@ package org.polypheny.db.webui;
 
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
@@ -95,9 +97,6 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.polyalg.PolyAlgRegistry;
-import org.polypheny.db.algebra.polyalg.parser.PolyAlgParser;
-import org.polypheny.db.algebra.polyalg.parser.PolyAlgToAlgConverter;
-import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
@@ -152,6 +151,7 @@ import org.polypheny.db.information.InformationObserver;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationText;
 import org.polypheny.db.languages.LanguageManager;
+import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.partition.PartitionFunctionInfo;
@@ -159,13 +159,11 @@ import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoCol
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.partition.properties.PartitionProperty;
-import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plugins.PolyPluginManager;
 import org.polypheny.db.plugins.PolyPluginManager.PluginStatus;
 import org.polypheny.db.processing.ImplementationContext;
 import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
 import org.polypheny.db.processing.QueryContext;
-import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.security.SecurityManager;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
@@ -2414,29 +2412,20 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     /**
      * Execute a logical plan represented as PolyAlgebra from the Web-Ui PolyPlan builder
      */
-    public Result<?,?> executePolyAlg( PolyAlgRequest polyAlgRequest, Session session ) {
+    public Result<?, ?> executePolyAlg( PolyAlgRequest polyAlgRequest, Session session ) {
         Transaction transaction = getTransaction( true, true, this );
         transaction.getQueryAnalyzer().setSession( session );
 
         Statement statement = transaction.createStatement();
         long executionTime = 0;
-        long temp = 0;
+        long temp;
 
         InformationManager queryAnalyzer = transaction.getQueryAnalyzer().observe( this );
 
         AlgRoot root;
         try {
             temp = System.nanoTime();
-
-            Snapshot snapshot = statement.getTransaction().getSnapshot();
-            RexBuilder rexBuilder = new RexBuilder( statement.getTransaction().getTypeFactory() );
-            AlgCluster cluster = AlgCluster.create( statement.getQueryProcessor().getPlanner(), rexBuilder, null, snapshot );
-            PolyAlgToAlgConverter converter = new PolyAlgToAlgConverter( snapshot, cluster );
-
-            PolyAlgParser parser = PolyAlgParser.create( polyAlgRequest.polyAlg );
-            PolyAlgNode node = (PolyAlgNode) parser.parseQuery();
-            root = converter.convert( node );
-
+            root = PolyPlanBuilder.buildFromPolyAlg( polyAlgRequest.polyAlg, statement );
         } catch ( Exception e ) {
             log.error( "Caught exception while building the plan builder tree", e );
             return RelationalResult.builder().error( e.getMessage() ).build();
@@ -2506,6 +2495,21 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         }
 
         return finalResult;
+    }
+
+
+    /**
+     * @return a serialized version of the plan built from the given polyAlgRequest
+     * @throws NodeParseException if the parser is not able to construct the intermediary PolyAlgNode tree
+     * @throws RuntimeException if polyAlg cannot be parsed into a valid AlgNode tree
+     */
+    ObjectNode buildPlanFromPolyAlg( PolyAlgRequest polyAlgRequest, Session session ) throws NodeParseException {
+        Transaction transaction = getTransaction( true, true, this );
+        transaction.getQueryAnalyzer().setSession( session );
+        Statement statement = transaction.createStatement();
+
+        AlgNode node = PolyPlanBuilder.buildFromPolyAlg( polyAlgRequest.polyAlg, statement ).alg;
+        return node.serializePolyAlgebra( new ObjectMapper() );
     }
 
 

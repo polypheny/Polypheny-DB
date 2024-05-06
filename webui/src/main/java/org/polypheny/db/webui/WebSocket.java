@@ -17,6 +17,7 @@
 package org.polypheny.db.webui;
 
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.javalin.websocket.WsCloseContext;
 import io.javalin.websocket.WsConfig;
 import io.javalin.websocket.WsConnectContext;
@@ -146,7 +147,7 @@ public class WebSocket implements Consumer<WsConfig> {
             case "PolyAlgRequest":
                 PolyAlgRequest polyAlgRequest = ctx.messageAsClass( PolyAlgRequest.class );
                 if ( polyAlgRequest.runQuery ) {
-                    System.out.println("Running query " + polyAlgRequest.polyAlg);
+                    System.out.println( "Running query " + polyAlgRequest.polyAlg );
 
                     Result<?, ?> result = null;
                     try {
@@ -162,7 +163,14 @@ public class WebSocket implements Consumer<WsConfig> {
                     ctx.send( result );
 
                 } else {
-                    System.out.println("Building tree for query " + polyAlgRequest.polyAlg);
+                    System.out.println( "Building tree for query " + polyAlgRequest.polyAlg );
+                    try {
+                        ObjectNode plan = crud.buildPlanFromPolyAlg( polyAlgRequest, ctx.session );
+                        ctx.send( plan );
+                    } catch ( Exception e ) {
+                        ctx.send( e.getMessage() );
+                        return;
+                    }
                 }
                 break;
 
