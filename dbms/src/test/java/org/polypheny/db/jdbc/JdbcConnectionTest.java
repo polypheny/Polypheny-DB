@@ -50,8 +50,8 @@ import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.jdbc.PolyConnection;
 import org.polypheny.jdbc.PrismInterfaceServiceException;
-import org.polypheny.jdbc.types.PolyphenyBlob;
-import org.polypheny.jdbc.types.PolyphenyClob;
+import org.polypheny.jdbc.types.PolyBlob;
+import org.polypheny.jdbc.types.PolyClob;
 
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
@@ -473,7 +473,7 @@ public class JdbcConnectionTest {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
             Clob clob = connection.createClob();
-            assertTrue( clob instanceof PolyphenyClob );
+            assertTrue( clob instanceof PolyClob );
         }
     }
 
@@ -483,7 +483,7 @@ public class JdbcConnectionTest {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
             Blob blob = connection.createBlob();
-            assertTrue( blob instanceof PolyphenyBlob );
+            assertTrue( blob instanceof PolyBlob );
         }
     }
 
@@ -493,7 +493,7 @@ public class JdbcConnectionTest {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
             NClob nclob = connection.createNClob();
-            assertTrue( nclob instanceof PolyphenyClob );
+            assertTrue( nclob instanceof PolyClob );
         }
     }
 
