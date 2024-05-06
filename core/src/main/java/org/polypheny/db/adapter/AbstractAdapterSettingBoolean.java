@@ -20,7 +20,7 @@ import java.util.Arrays;
 import java.util.List;
 import org.polypheny.db.adapter.DeployMode.DeploySetting;
 import org.polypheny.db.adapter.annotations.AdapterSettingBoolean;
-
+//dsfdsfa
 public class AbstractAdapterSettingBoolean extends AbstractAdapterSetting {
 
 
