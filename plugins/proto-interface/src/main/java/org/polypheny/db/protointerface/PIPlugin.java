@@ -60,7 +60,7 @@ public class PIPlugin extends PolyPlugin {
     public static class ProtoInterface extends QueryInterface implements PropertyChangeListener {
 
         public static final String INTERFACE_NAME = "Proto Interface";
-        public static final String INTERFACE_DESCRIPTION = "proto-interface query interface supporting the PolySQL dialect.";
+        public static final String INTERFACE_DESCRIPTION = "proto-interface query interface supporting multiple query languages and data models.";
         public static final List<QueryInterfaceSetting> AVAILABLE_PLAIN_SETTINGS = ImmutableList.of(
                 new QueryInterfaceSettingInteger( "port", false, true, false, 20590 )
         );
