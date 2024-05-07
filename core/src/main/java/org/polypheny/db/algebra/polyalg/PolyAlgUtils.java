@@ -34,7 +34,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.ParamType;
 import org.polypheny.db.algebra.polyalg.arguments.ListArg;
 import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArg;
-import org.polypheny.db.algebra.polyalg.arguments.StringArg;
+import org.polypheny.db.algebra.polyalg.arguments.RexArg;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexCorrelVariable;
@@ -146,8 +146,8 @@ public class PolyAlgUtils {
      * @param startIndex index of the first field of child in inputFieldNames
      * @return ListArg representing the projects argument or null if no projections are required.
      */
-    public static ListArg<StringArg> getAuxProjections( AlgNode child, List<String> inputFieldNames, int startIndex ) {
-        List<String> from = new ArrayList<>();
+    public static ListArg<RexArg> getAuxProjections( AlgNode child, List<String> inputFieldNames, int startIndex ) {
+        List<RexNode> from = new ArrayList<>();
         List<String> to = new ArrayList<>();
         List<String> names = child.getTupleType().getFieldNames();
         boolean isTrivial = true;
@@ -155,7 +155,7 @@ public class PolyAlgUtils {
         for ( int i = 0; i < names.size(); i++ ) {
             String name = names.get( i );
             String uniqueName = inputFieldNames.get( startIndex + i );
-            from.add( name );
+            from.add( RexIndexRef.of( i, child.getTupleType() ) );
             to.add( uniqueName );
             if ( !name.equals( uniqueName ) ) {
                 isTrivial = false;
@@ -164,7 +164,7 @@ public class PolyAlgUtils {
         if ( isTrivial ) {
             return null;
         }
-        return new ListArg<>( from, StringArg::new, to, false );
+        return new ListArg<>( from, RexArg::new, to, false );
     }
 
 
@@ -226,7 +226,7 @@ public class PolyAlgUtils {
     }
 
 
-    public static ObjectNode wrapInRename( AlgNode child, ListArg<StringArg> projections, AlgNode context, List<String> inputFieldNames, ObjectMapper mapper ) {
+    public static ObjectNode wrapInRename( AlgNode child, ListArg<RexArg> projections, AlgNode context, List<String> inputFieldNames, ObjectMapper mapper ) {
         ObjectNode node = mapper.createObjectNode();
         PolyAlgDeclaration decl = PolyAlgRegistry.getDeclaration( LogicalRelProject.class );
         node.put( "opName", decl.opName + "#" );

@@ -62,7 +62,7 @@ import org.polypheny.db.algebra.polyalg.PolyAlgRegistry;
 import org.polypheny.db.algebra.polyalg.PolyAlgUtils;
 import org.polypheny.db.algebra.polyalg.arguments.ListArg;
 import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
-import org.polypheny.db.algebra.polyalg.arguments.StringArg;
+import org.polypheny.db.algebra.polyalg.arguments.RexArg;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.plan.AlgCluster;
@@ -378,7 +378,7 @@ public abstract class AbstractAlgNode implements AlgNode {
         sb.append( "(\n" );
         int inputIdx = 0;
         for ( AlgNode child : getInputs() ) {
-            ListArg<StringArg> projections = makeFieldsUnique ?
+            ListArg<RexArg> projections = makeFieldsUnique ?
                     PolyAlgUtils.getAuxProjections( child, inputFieldNames, inputIdx ) :
                     null;
             inputIdx += child.getTupleType().getFieldCount();
@@ -388,7 +388,7 @@ public abstract class AbstractAlgNode implements AlgNode {
             } else {
                 sb.append( nextPrefix )
                         .append( PolyAlgRegistry.getDeclaration( LogicalRelProject.class ).opName ).append( "#" )  // TODO: select Project depending on data model, logical / physical
-                        .append( projections.toPolyAlg( this, inputFieldNames ) )
+                        .append( projections.toPolyAlg( child, child.getTupleType().getFieldNames() ) )
                         .append( "(\n" );
                 child.buildPolyAlgebra( sb, nextPrefix == null ? null : nextPrefix + INDENT );
                 sb.append( ")" );
@@ -418,7 +418,7 @@ public abstract class AbstractAlgNode implements AlgNode {
 
         int inputIdx = 0;
         for ( AlgNode child : getInputs() ) {
-            ListArg<StringArg> projections = makeFieldsUnique ?
+            ListArg<RexArg> projections = makeFieldsUnique ?
                     PolyAlgUtils.getAuxProjections( child, inputFieldNames, inputIdx ) :
                     null;
             inputIdx += child.getTupleType().getFieldCount();
@@ -426,7 +426,7 @@ public abstract class AbstractAlgNode implements AlgNode {
             if ( projections == null ) {
                 inputs.add( child.serializePolyAlgebra( mapper ) );
             } else {
-                inputs.add(PolyAlgUtils.wrapInRename(child, projections, this, inputFieldNames, mapper));
+                inputs.add(PolyAlgUtils.wrapInRename(child, projections, child, child.getTupleType().getFieldNames(), mapper));
             }
         }
         node.set( "inputs", inputs );
