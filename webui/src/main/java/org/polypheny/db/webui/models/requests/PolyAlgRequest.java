@@ -22,6 +22,5 @@ import lombok.Value;
 public class PolyAlgRequest {
     public String type;
     public String polyAlg;
-    public boolean runQuery; // false if the parsed tree should only be generated, but not executed
 
 }

@@ -17,7 +17,6 @@
 package org.polypheny.db.webui;
 
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.javalin.websocket.WsCloseContext;
 import io.javalin.websocket.WsConfig;
 import io.javalin.websocket.WsConnectContext;
@@ -146,32 +145,20 @@ public class WebSocket implements Consumer<WsConfig> {
                 break;
             case "PolyAlgRequest":
                 PolyAlgRequest polyAlgRequest = ctx.messageAsClass( PolyAlgRequest.class );
-                if ( polyAlgRequest.runQuery ) {
-                    System.out.println( "Running query " + polyAlgRequest.polyAlg );
+                System.out.println( "Running query " + polyAlgRequest.polyAlg );
 
-                    Result<?, ?> result = null;
-                    try {
-                        result = crud.executePolyAlg( polyAlgRequest, ctx.session );
-                    } catch ( Throwable t ) {
-                        ctx.send( RelationalResult.builder().error( t.getMessage() ).build() );
-                        return;
-                    }
-
-                    if ( result.xid != null ) {
-                        xIds.add( result.xid );
-                    }
-                    ctx.send( result );
-
-                } else {
-                    System.out.println( "Building tree for query " + polyAlgRequest.polyAlg );
-                    try {
-                        ObjectNode plan = crud.buildPlanFromPolyAlg( polyAlgRequest, ctx.session );
-                        ctx.send( plan );
-                    } catch ( Exception e ) {
-                        ctx.send( e.getMessage() );
-                        return;
-                    }
+                Result<?, ?> polyAlgResult = null;
+                try {
+                    polyAlgResult = crud.executePolyAlg( polyAlgRequest, ctx.session );
+                } catch ( Throwable t ) {
+                    ctx.send( RelationalResult.builder().error( t.getMessage() ).build() );
+                    return;
                 }
+
+                if ( polyAlgResult.xid != null ) {
+                    xIds.add( polyAlgResult.xid );
+                }
+                ctx.send( polyAlgResult );
                 break;
 
             case "RegisterRequest":

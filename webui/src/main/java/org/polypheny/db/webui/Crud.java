@@ -19,7 +19,6 @@ package org.polypheny.db.webui;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
@@ -2499,21 +2498,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
 
     /**
-     * @return a serialized version of the plan built from the given polyAlgRequest
-     * @throws NodeParseException if the parser is not able to construct the intermediary PolyAlgNode tree
-     * @throws RuntimeException if polyAlg cannot be parsed into a valid AlgNode tree
-     */
-    ObjectNode buildPlanFromPolyAlg( PolyAlgRequest polyAlgRequest, Session session ) throws NodeParseException {
-        Transaction transaction = getTransaction( true, true, this );
-        transaction.getQueryAnalyzer().setSession( session );
-        Statement statement = transaction.createStatement();
-
-        AlgNode node = PolyPlanBuilder.buildFromPolyAlg( polyAlgRequest.polyAlg, statement ).alg;
-        return node.serializePolyAlgebra( new ObjectMapper() );
-    }
-
-
-    /**
      * Execute a logical plan coming from the Web-Ui plan builder
      */
     RelationalResult executeAlg( final AlgRequest request, Session session ) {
@@ -3064,6 +3048,23 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
     public void getPolyAlgRegistry( Context ctx ) {
         ctx.json( PolyAlgRegistry.serialize() );
+    }
+
+
+    /**
+     * @return a serialized version of the plan built from the given polyAlgRequest
+     * @throws NodeParseException if the parser is not able to construct the intermediary PolyAlgNode tree
+     * @throws RuntimeException if polyAlg cannot be parsed into a valid AlgNode tree
+     */
+    public void buildPlanFromPolyAlg( final Context ctx ) throws NodeParseException {
+        PolyAlgRequest request = ctx.bodyAsClass( PolyAlgRequest.class );
+        try {
+            AlgNode node = PolyPlanBuilder.buildFromPolyAlg( request.polyAlg ).alg;
+            ctx.json( node.serializePolyAlgebra( new ObjectMapper() ) );
+        } catch ( Exception e ) {
+            ctx.json( Map.of( "errorMsg", e.getMessage() ) );
+            ctx.status( 400 );
+        }
     }
 
 

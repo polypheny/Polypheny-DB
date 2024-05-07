@@ -20,9 +20,12 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.polyalg.parser.PolyAlgParser;
 import org.polypheny.db.algebra.polyalg.parser.PolyAlgToAlgConverter;
 import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgNode;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.plan.AlgCluster;
+import org.polypheny.db.plan.volcano.VolcanoPlanner;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.transaction.Statement;
 
@@ -46,11 +49,31 @@ public class PolyPlanBuilder {
         Snapshot snapshot = statement.getTransaction().getSnapshot();
         RexBuilder rexBuilder = new RexBuilder( statement.getTransaction().getTypeFactory() );
         AlgCluster cluster = AlgCluster.create( statement.getQueryProcessor().getPlanner(), rexBuilder, null, snapshot );
+        return buildFromPolyAlg( polyAlg, snapshot, cluster );
+    }
+
+    /**
+     * Creates a AlgNode tree from the given PolyAlg representation not related to a statement.
+     *
+     * @param polyAlg string representing the AlgNode tree serialized as PolyAlg
+     * @return AlgRoot with {@code AlgRoot.alg} being the top node of tree
+     * @throws NodeParseException if the parser is not able to construct the intermediary PolyAlgNode tree
+     * @throws RuntimeException if polyAlg cannot be parsed into a valid AlgNode tree
+     */
+    public static AlgRoot buildFromPolyAlg( String polyAlg ) throws NodeParseException {
+        Snapshot snapshot = Catalog.snapshot();
+        AlgCluster cluster = AlgCluster.create(
+                new VolcanoPlanner(), new RexBuilder( AlgDataTypeFactory.DEFAULT ), null, snapshot );
+        return buildFromPolyAlg( polyAlg, snapshot, cluster );
+    }
+
+    private static AlgRoot buildFromPolyAlg(String polyAlg, Snapshot snapshot, AlgCluster cluster) throws NodeParseException {
         PolyAlgToAlgConverter converter = new PolyAlgToAlgConverter( snapshot, cluster );
 
         PolyAlgParser parser = PolyAlgParser.create( polyAlg );
         PolyAlgNode node = (PolyAlgNode) parser.parseQuery();
         return converter.convert( node );
+
     }
 
 }
