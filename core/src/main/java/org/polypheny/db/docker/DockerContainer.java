@@ -189,8 +189,8 @@ public final class DockerContainer {
         OutputStream remoteOut = client.getOutputStream().get();
         try {
             remoteOut.write( (containerId + ":" + port + "\n").getBytes( StandardCharsets.UTF_8 ) );
-            Thread copyToRemote = pipe( local.getInputStream(), remoteOut, String.format( "polypheny => %s", uniqueName ) );
-            Thread copyFromRemote = pipe( client.getInputStream().get(), local.getOutputStream(), String.format( "polypheny <= %s", uniqueName ) );
+            Thread copyToRemote = pipe( local.getInputStream(), remoteOut, String.format( "polypheny -> %s", uniqueName ) );
+            Thread copyFromRemote = pipe( client.getInputStream().get(), local.getOutputStream(), String.format( "polypheny <- %s", uniqueName ) );
             new Thread( () -> {
                 while ( true ) {
                     try {
