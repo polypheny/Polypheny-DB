@@ -21,6 +21,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.StandardSocketOptions;
 import java.security.SecureRandom;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
@@ -85,6 +86,7 @@ final class PolyphenyTlsClient {
         byte[] serverCertificate = PolyphenyCertificateManager.loadServerCertificate( context, hostname );
         Socket s = new Socket();
         s.connect( new InetSocketAddress( hostname, port ), 5000 );
+        s.setOption( StandardSocketOptions.TCP_NODELAY, true );
         try {
             PolyphenyTlsClient client = new PolyphenyTlsClient( kp, serverCertificate, s.getInputStream(), s.getOutputStream() );
             client.socket = s;

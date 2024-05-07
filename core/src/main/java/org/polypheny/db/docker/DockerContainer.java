@@ -24,6 +24,7 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
+import java.net.StandardSocketOptions;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
@@ -188,8 +189,8 @@ public final class DockerContainer {
         OutputStream remoteOut = client.getOutputStream().get();
         try {
             remoteOut.write( (containerId + ":" + port + "\n").getBytes( StandardCharsets.UTF_8 ) );
-            Thread copyToRemote = pipe( local.getInputStream(), remoteOut, String.format( "polypheny => %s", uniqueName ) );
-            Thread copyFromRemote = pipe( client.getInputStream().get(), local.getOutputStream(), String.format( "polypheny <= %s", uniqueName ) );
+            Thread copyToRemote = pipe( local.getInputStream(), remoteOut, String.format( "polypheny -> %s", uniqueName ) );
+            Thread copyFromRemote = pipe( client.getInputStream().get(), local.getOutputStream(), String.format( "polypheny <- %s", uniqueName ) );
             new Thread( () -> {
                 while ( true ) {
                     try {
@@ -218,6 +219,7 @@ public final class DockerContainer {
                 while ( true ) {
                     try {
                         Socket local = server.accept();
+                        local.setOption( StandardSocketOptions.TCP_NODELAY, true );
                         DockerInstance dockerInstance = getDockerInstance().orElseThrow( () -> new IOException( "Not connected to docker host" ) );
                         startProxyForConnection( dockerInstance, local, port );
                     } catch ( IOException e ) {
