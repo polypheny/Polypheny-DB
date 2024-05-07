@@ -304,6 +304,7 @@ public interface NeoUtil {
                 return literal.value.asList().toString();
             case BINARY:
             case VARBINARY:
+                return literal.value.asBinary().as64String();
             case FILE:
             case IMAGE:
             case VIDEO:
@@ -585,7 +586,7 @@ public interface NeoUtil {
             case BIGINT -> value.asNumber().LongValue();
             case VARCHAR, TEXT, CHAR -> value.asString().value;
             case BOOLEAN -> value.asBoolean().value;
-            case BINARY, VARBINARY, FILE, IMAGE, VIDEO, AUDIO -> value.asBlob().asByteArray();
+            case BINARY, VARBINARY, FILE, IMAGE, VIDEO, AUDIO -> value.asBinary().value;
             case FLOAT, REAL, DOUBLE, DECIMAL -> value.asNumber().doubleValue();
             case ARRAY -> value.asList().value.stream().map( e -> {
                 if ( isNested ) {

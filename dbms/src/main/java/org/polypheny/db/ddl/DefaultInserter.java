@@ -51,6 +51,7 @@ public class DefaultInserter {
 
         restoreAdapters( ddlManager, catalog, mode );
 
+        catalog.executeCommitActions();
         catalog.commit();
 
     }

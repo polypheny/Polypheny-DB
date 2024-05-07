@@ -17,6 +17,7 @@
 package org.polypheny.db.adapter.neo4j;
 
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.function.Function1;
 import org.neo4j.driver.Record;
@@ -26,8 +27,8 @@ import org.polypheny.db.type.entity.PolyValue;
 
 /**
  * Neo4j's representation of a {@link Enumerator}.
- *
  */
+@Slf4j
 public class NeoEnumerator implements Enumerator<PolyValue[]> {
 
     private final List<Result> results;

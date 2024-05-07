@@ -32,6 +32,8 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.adapter.AbstractAdapterSetting;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
@@ -68,6 +70,7 @@ import org.polypheny.db.catalog.persistance.InMemoryPersister;
 import org.polypheny.db.catalog.persistance.Persister;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.catalog.snapshot.impl.SnapshotBuilder;
+import org.polypheny.db.catalog.util.ConstraintCondition;
 import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceTemplate;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolySerializable;
@@ -86,7 +89,8 @@ public class PolyCatalog extends Catalog implements PolySerializable {
     /**
      * Constraints which have to be met before a commit can be executed.
      */
-    private final Collection<Pair<Supplier<Boolean>, String>> commitConstraints = new ConcurrentLinkedDeque<>();
+    private final Collection<ConstraintCondition> commitConstraints = new ConcurrentLinkedDeque<>();
+    private final Collection<Runnable> commitActions = new ConcurrentLinkedDeque<>();
 
 
     @Serialize
@@ -198,21 +202,17 @@ public class PolyCatalog extends Catalog implements PolySerializable {
     }
 
 
+    @Override
+    public void executeCommitActions() {
+        // execute physical changes
+        commitActions.forEach( Runnable::run );
+    }
+
+
     public synchronized void commit() {
         if ( !this.dirty.get() ) {
             log.debug( "Nothing changed" );
             return;
-        }
-        // check constraints e.g. primary key constraints
-        List<Pair<Boolean, String>> fails = commitConstraints
-                .stream()
-                .map( c -> Pair.of( c.left.get(), c.right ) )
-                .filter( c -> !c.left )
-                .toList();
-
-        if ( !fails.isEmpty() ) {
-            commitConstraints.clear();
-            throw new GenericRuntimeException( "DDL constraints not met: \n" + fails.stream().map( f -> f.right ).collect( Collectors.joining( ",\n " ) ) + "." );
         }
 
         log.debug( "commit" );
@@ -229,11 +229,33 @@ public class PolyCatalog extends Catalog implements PolySerializable {
         persister.write( backup );
         this.dirty.set( false );
         this.commitConstraints.clear();
+        this.commitActions.clear();
+    }
+
+
+    @Override
+    public Pair<@NotNull Boolean, @Nullable String> checkIntegrity() {
+        // check constraints e.g. primary key constraints
+        List<Pair<Boolean, String>> fails = commitConstraints
+                .stream()
+                .map( c -> Pair.of( c.condition().get(), c.errorMessage() ) )
+                .filter( c -> !c.left )
+                .toList();
+
+        if ( !fails.isEmpty() ) {
+            commitConstraints.clear();
+            return Pair.of( false, "DDL constraints not met: \n" + fails.stream().map( f -> f.right ).collect( Collectors.joining( ",\n " ) ) + "." );
+        }
+        return Pair.of( true, null );
     }
 
 
     public void rollback() {
         long id = snapshot.id();
+
+        commitActions.clear();
+        commitConstraints.clear();
+
         restoreLastState();
 
         log.debug( "rollback" );
@@ -480,7 +502,13 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
     @Override
     public void attachCommitConstraint( Supplier<Boolean> constraintChecker, String description ) {
-        commitConstraints.add( Pair.of( constraintChecker, description ) );
+        commitConstraints.add( new ConstraintCondition( constraintChecker, description ) );
+    }
+
+
+    @Override
+    public void attachCommitAction( Runnable action ) {
+        commitActions.add( action );
     }
 
 

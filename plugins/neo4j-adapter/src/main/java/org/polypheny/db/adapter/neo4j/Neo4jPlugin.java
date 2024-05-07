@@ -35,6 +35,7 @@ import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
+import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Transaction;
 import org.pf4j.Extension;
@@ -261,7 +262,8 @@ public class Neo4jPlugin extends PolyPlugin {
             Transaction trx = transactionProvider.getDdlTransaction();
             try {
                 for ( String query : queries ) {
-                    trx.run( query );
+                    Result result = trx.run( query );
+                    result.consume();
                 }
 
                 transactionProvider.commitDdlTransaction();
@@ -310,6 +312,7 @@ public class Neo4jPlugin extends PolyPlugin {
 
         @Override
         public void dropTable( Context context, long allocId ) {
+            transactionProvider.commitAll();
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
             PhysicalEntity physical = adapterCatalog.fromAllocation( allocId, PhysicalEntity.class );
 

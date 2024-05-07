@@ -57,6 +57,7 @@ import org.polypheny.db.processing.DataMigratorImpl;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.processing.QueryProcessor;
 import org.polypheny.db.type.entity.category.PolyNumber;
+import org.polypheny.db.util.Pair;
 import org.polypheny.db.view.MaterializedViewManager;
 
 
@@ -157,6 +158,15 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
             log.trace( "This transaction has already been finished!" );
             return;
         }
+
+        Pair<Boolean, String> isValid = Catalog.getInstance().checkIntegrity();
+        if ( !isValid.left ) {
+            throw new TransactionException( isValid.right + "\nThere are violated constraints, the transaction was rolled back!" );
+        }
+
+        // physical changes
+        Catalog.getInstance().executeCommitActions();
+
         // Prepare to commit changes on all involved adapters and the catalog
         boolean okToCommit = true;
         if ( RuntimeConfig.TWO_PC_MODE.getBoolean() ) {
@@ -214,7 +224,6 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
         // Handover information about commit to Materialized Manager
         MaterializedViewManager.getInstance().updateCommittedXid( xid );
-
 
     }
 

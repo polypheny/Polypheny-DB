@@ -73,6 +73,8 @@ public class TransactionProvider {
 
             pair.right.close();
             pair.left.close();
+
+            register.remove( xid );
         }
     }
 
@@ -90,6 +92,9 @@ public class TransactionProvider {
                 pair.right.close();
             }
             pair.left.close();
+            pair.right.close();
+
+            register.remove( xid );
         }
     }
 
@@ -103,6 +108,7 @@ public class TransactionProvider {
     synchronized public Transaction startSession( PolyXid xid ) {
         Session session = db.session();
         Transaction trx = session.beginTransaction();
+
         register.put( xid, Pair.of( session, trx ) );
         return trx;
     }

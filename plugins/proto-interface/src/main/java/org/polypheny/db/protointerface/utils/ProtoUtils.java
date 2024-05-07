@@ -102,7 +102,7 @@ public class ProtoUtils {
         List<ProtoDocument> documents = data.stream()
                 .map( PolyValue::asDocument )
                 .map( PolyValueSerializer::buildProtoDocument )
-                .collect( Collectors.toList() );
+                .toList();
         DocumentFrame documentFrame = DocumentFrame.newBuilder()
                 .addAllDocuments( documents )
                 .build();
