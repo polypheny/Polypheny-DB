@@ -250,6 +250,12 @@ public class PolyBigDecimal extends PolyNumber {
 
 
     @Override
+    public boolean isNull() {
+        return value == null;
+    }
+
+
+    @Override
     public Object toJava() {
         return value;
     }
