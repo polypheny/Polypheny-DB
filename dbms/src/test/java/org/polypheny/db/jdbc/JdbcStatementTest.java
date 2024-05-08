@@ -595,7 +595,7 @@ public class JdbcStatementTest {
 
 
     @Test
-    public void getConectionTest() throws SQLException {
+    public void getConnectionTest() throws SQLException {
         try (
                 JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
                 Connection connection = polyphenyDbConnection.getConnection();

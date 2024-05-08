@@ -209,6 +209,12 @@ public class PolyCatalog extends Catalog implements PolySerializable {
     }
 
 
+    @Override
+    public void clearCommitActions() {
+        commitActions.clear();
+    }
+
+
     public synchronized void commit() {
         if ( !this.dirty.get() ) {
             log.debug( "Nothing changed" );

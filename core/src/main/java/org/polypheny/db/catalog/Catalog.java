@@ -111,6 +111,8 @@ public abstract class Catalog implements ExtensionPoint {
 
     public abstract void executeCommitActions();
 
+    public abstract void clearCommitActions();
+
     public abstract void commit();
 
     public abstract Pair<@NotNull Boolean, @Nullable String> checkIntegrity();

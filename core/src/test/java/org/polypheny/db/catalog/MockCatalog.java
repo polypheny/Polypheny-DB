@@ -220,6 +220,12 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
+    public void clearCommitActions() {
+        this.commitActions.clear();
+    }
+
+
+    @Override
     public void attachCommitConstraint( Supplier<Boolean> constraintChecker, String description ) {
         // empty on purpose
     }
