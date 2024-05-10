@@ -13,7 +13,7 @@ jobs:
             fail-fast: false
             matrix:
                 adapter: [ mongodb, hsqldb, monetdb, postgresql, file, cottontail, neo4j ]
-        name: Integration Tests (Java 17)
+        name: ${{ matrix.adapter }}
         steps:
             -   name: Checkout
                 uses: actions/checkout@v4
