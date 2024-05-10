@@ -17,14 +17,17 @@ jobs:
         steps:
             -   name: Checkout
                 uses: actions/checkout@v4
-            #            -   name: Set up JDK
-            #                uses: actions/setup-java@v4
-            #                with:
-            #                    distribution: 'temurin'
-            #                    java-version: ${{ matrix.java }}
+            -   name: Set up JDK
+                uses: actions/setup-java@v4
+                with:
+                    distribution: 'temurin'
+                    java-version: 21
             -   name: Set env variable
                 run: |
                     echo "POLYPHENY_HOME=$GITHUB_WORKSPACE" >> $GITHUB_ENV
+            -   name: Print Java Version
+                timeout-minutes: 5
+                run: ./gradlew printJavaVersion
             -   name: Assemble
                 timeout-minutes: 60
                 run: ./gradlew assemble

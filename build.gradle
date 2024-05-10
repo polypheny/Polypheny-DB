@@ -57,7 +57,8 @@ allprojects {
 
     java {
         toolchain {
-            languageVersion = JavaLanguageVersion.of(17)
+            languageVersion.set(JavaLanguageVersion.of(17))
+            vendor = JvmVendorSpec.ADOPTIUM
         }
     }
 
@@ -200,6 +201,27 @@ build {
 
 allprojects {
     test.dependsOn(":plugins:assemblePlugins")
+}
+
+
+task printJavaVersion {
+    doLast {
+        println("Java version used for running Gradle: " + org.gradle.api.JavaVersion.current())
+        println "Current JAVA_HOME used by Gradle: " + System.getProperty("java.home")
+
+        // Retrieve and print the Java version configured in the toolchain
+        // Check if a toolchain is configured and retrieve details
+        if (project.extensions.findByType(JavaPluginExtension.class)?.toolchain != null) {
+            def toolchainService = project.extensions.getByType(JavaToolchainService.class)
+            def javaCompiler = toolchainService.compilerFor {
+                languageVersion.set(project.extensions.getByType(JavaPluginExtension.class).toolchain.languageVersion.get())
+            }
+            println "Java version used by toolchain: " + javaCompiler.get().metadata.languageVersion
+            println "Toolchain JAVA_HOME: " + javaCompiler.get().metadata.installationPath
+        } else {
+            println "No toolchain configured."
+        }
+    }
 }
 
 
