@@ -34,6 +34,7 @@ import org.polypheny.db.util.Pair;
 public class ListArg<E extends PolyAlgArg> implements PolyAlgArg {
 
     public static final ListArg<AnyArg> EMPTY = new ListArg<>( List.of(), List.of() );
+    public static final ListArg<ListArg<AnyArg>> NESTED_EMPTY = new ListArg<>( List.of(EMPTY) );
 
     @Getter
     private final List<E> args;

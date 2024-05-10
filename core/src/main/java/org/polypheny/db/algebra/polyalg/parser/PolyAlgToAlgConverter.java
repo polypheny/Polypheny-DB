@@ -182,7 +182,7 @@ public class PolyAlgToAlgConverter {
                 converted.put( p, buildArg( p, firstArg, ctx ) );
             } else {
                 PolyAlgNodeList listArg = new PolyAlgNodeList( argsToCombine, firstArg.getPos() );
-                converted.put( p, buildList( p, listArg, null, ctx ) );
+                converted.put( p, buildList( p, listArg, null, ctx, 0 ) );
             }
         }
 
@@ -200,32 +200,35 @@ public class PolyAlgToAlgConverter {
 
         if ( p.isMultiValued() ) {
             if ( arg instanceof PolyAlgNodeList ) {
-                return buildList( p, (PolyAlgNodeList) arg, alias, ctx );
+                return buildList( p, (PolyAlgNodeList) arg, alias, ctx, 0 );
             }
-            return buildList( p, new PolyAlgNodeList( List.of( aliasedArg ), arg.getPos() ), alias, ctx );
+            return buildList( p, new PolyAlgNodeList( List.of( aliasedArg ), arg.getPos() ), alias, ctx, 0 );
         }
 
-        return convertArg( p, aliasedArg, ctx );
+        return convertArg( p, aliasedArg, ctx, 0 );
     }
 
 
-    private PolyAlgArg buildList( Parameter p, PolyAlgNodeList listArg, String alias, Context ctx ) {
+    private PolyAlgArg buildList( Parameter p, PolyAlgNodeList listArg, String alias, Context ctx, int depth ) {
         List<PolyAlgArg> args = new ArrayList<>();
         for ( PolyAlgNode node : listArg.getPolyAlgList() ) {
             PolyAlgAliasedArgument aliasedArg = (PolyAlgAliasedArgument) node;
-            args.add( convertArg( p, aliasedArg, ctx ) );
+            args.add( convertArg( p, aliasedArg, ctx, depth + 1 ) ); // aliasedArg is within a list, so we increase its depth by 1
         }
         // We do not specify aliases for the entire list. Instead, this should happen on an element level (if necessary).
         return new ListArg<>( args );
     }
 
 
-    private PolyAlgArg convertArg( Parameter p, PolyAlgAliasedArgument aliasedArg, Context ctx ) {
+    private PolyAlgArg convertArg( Parameter p, PolyAlgAliasedArgument aliasedArg, Context ctx, int depth ) {
         if ( aliasedArg.getArg() instanceof PolyAlgExpression ) {
             // no more nested args
+            if ( depth != p.getMultiValued() ) {
+                throw new GenericRuntimeException( "Invalid depth for list argument " + p.getName() );
+            }
             return convertExpression( p, (PolyAlgExpression) aliasedArg.getArg(), aliasedArg.getAlias(), ctx );
         } else if ( aliasedArg.getArg() instanceof PolyAlgNodeList ) {
-            return buildList( p, (PolyAlgNodeList) aliasedArg.getArg(), aliasedArg.getAlias(), ctx );
+            return buildList( p, (PolyAlgNodeList) aliasedArg.getArg(), aliasedArg.getAlias(), ctx, depth );
         } else {
             throw new GenericRuntimeException( "This PolyAlgNode type is currently not supported" );
         }
@@ -239,7 +242,7 @@ public class PolyAlgToAlgConverter {
         ParamType pType = p.getType();
         return switch ( pType ) {
             case ANY -> new AnyArg( exp.toString() );
-            case INTEGER -> new IntArg( exp.toInt(p.getTags()) );
+            case INTEGER -> new IntArg( exp.toInt( p.getTags() ) );
             case BOOLEAN -> new BooleanArg( exp.toBoolean() );
             case STRING -> new StringArg( exp.toString(), alias );
             case REX -> {

@@ -183,7 +183,7 @@ public class PolyAlgDeclaration {
      * @return whether it is safe to unpack the values of the (only) positional argument
      */
     public boolean canUnpackValues() {
-        return posParams.size() == 1 && getPos( 0 ).isMultiValued;
+        return posParams.size() == 1 && getPos( 0 ).isMultiValued();
     }
 
 
@@ -243,7 +243,7 @@ public class PolyAlgDeclaration {
      *     <li>Keyword arguments: Arguments are preceded by the name of the parameter. Keyword arguments can be omitted, in which case the defaultValue is used.</li>
      * </ul>
      *
-     * The boolean isMultiValued indicates whether an argument can consist of a list of values of the specified type.
+     * The int multiValued indicates that the argument is wrapped within multiValued number of nested lists. (0: arg, 1: [arg0, arg1, ...], 2: [[arg00, arg01, ...], ...])
      * The boolean requiresAlias can be useful if a key-value pair is expected. This alias corresponds to the "AS" clause
      * and should not be confused with parameter name aliases.
      */
@@ -259,9 +259,9 @@ public class PolyAlgDeclaration {
         private final ImmutableSet<ParamTag> tags;
         @NonNull
         private final ParamType type;
-        private final boolean isMultiValued;
+        private final int multiValued; // 0: not multivalued (default). otherwise: nesting depth of lists
         public final boolean requiresAlias;
-        private final PolyAlgArg defaultValue;
+        private final PolyAlgArg defaultValue; // for multiValued parameters the default value should be a ListArg representing the outermost element
 
 
         public boolean isPositional() {
@@ -270,7 +270,7 @@ public class PolyAlgDeclaration {
 
 
         public boolean isCompatible( ParamType type ) {
-            return this.type == type || (isMultiValued && type == ParamType.LIST);
+            return this.type == type || (isMultiValued() && type == ParamType.LIST);
         }
 
 
@@ -282,6 +282,10 @@ public class PolyAlgDeclaration {
          */
         public boolean hasValidDefault() {
             return isPositional() || isCompatible( defaultValue.getType() );
+        }
+
+        public boolean isMultiValued() {
+            return multiValued > 0;
         }
 
 
@@ -310,7 +314,7 @@ public class PolyAlgDeclaration {
             node.set( "tags", tagsArr );
 
             node.put( "type", type.name() );
-            node.put( "isMultiValued", isMultiValued );
+            node.put( "multiValued", multiValued );
             node.put( "requiresAlias", requiresAlias );
             if ( !isPositional() ) {
                 node.set( "defaultValue", defaultValue.serializeWrapped( null, List.of(), mapper ) );
