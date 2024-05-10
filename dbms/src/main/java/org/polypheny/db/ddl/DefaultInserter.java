@@ -105,10 +105,10 @@ public class DefaultInserter {
         }
         Catalog.getInstance().getInterfaceTemplates().values().forEach( i -> Catalog.getInstance().createQueryInterface( i.interfaceName().toLowerCase(), i.interfaceName(), i.getDefaultSettings() ) );
         // TODO: This is ugly, both because it is racy, and depends on a string (which might be changed)
-        if ( Catalog.getInstance().getInterfaceTemplates().values().stream().anyMatch( t -> t.interfaceName().equals( "Proto Interface (Unix transport)" ) ) ) {
+        if ( Catalog.getInstance().getInterfaceTemplates().values().stream().anyMatch( t -> t.interfaceName().equals( "Prism Interface (Unix transport)" ) ) ) {
             Catalog.getInstance().createQueryInterface(
-                    "Proto Interface .polypheny Listener (Unix transport)",
-                    "Proto Interface (Unix transport)",
+                    "prism interface (unix transport @ .polypheny)",
+                    "Prism Interface (Unix transport)",
                     Map.of( "path", PolyphenyHomeDirManager.getInstance().registerNewGlobalFile( "polypheny-prism.sock" ).getAbsolutePath() )
             );
         }
