@@ -18,14 +18,6 @@ jobs:
         steps:
             -   name: Checkout
                 uses: actions/checkout@v4
-                with:
-                    path: main # Temporary
-            -   name: Checkout Driver (temporary)
-                uses: actions/checkout@v4
-                with:
-                    repository: polypheny/Polypheny-JDBC-Driver
-                    ref: proto-without-grpc
-                    path: Polypheny-JDBC-Driver
             -   name: Set up JDK
                 uses: actions/setup-java@v4
                 with:
@@ -34,18 +26,12 @@ jobs:
             -   name: Set env variable
                 run: |
                     echo "POLYPHENY_HOME=$GITHUB_WORKSPACE" >> $GITHUB_ENV
-            -   name: Build Driver (temporary)
-                run: ./gradlew publishToMavenLocal
-                working-directory: Polypheny-JDBC-Driver
             -   name: Assemble
                 timeout-minutes: 60
                 run: ./gradlew assemble
-                working-directory: main # temporary
             -   name: Build Plugins
                 timeout-minutes: 60
                 run: ./gradlew assemblePlugins
-                working-directory: main # temporary
             -   name: Execute tests
                 timeout-minutes: 30
                 run: ./gradlew check
-                working-directory: main # temporary
