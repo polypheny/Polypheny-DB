@@ -37,6 +37,7 @@ import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
+import org.polypheny.db.processing.QueryContext.TranslatedQueryContext;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
@@ -98,16 +99,18 @@ public class LanguageManager {
             context.getInformationTarget().accept( statement.getTransaction().getQueryAnalyzer() );
         }
 
-        if ( transaction.isAnalyze() ) {
-            statement.getOverviewDuration().start( "Parsing" );
-        }
         List<ParsedQueryContext> parsedQueries;
-
-        try {
-            // handle empty query
-            if ( context.getQuery().trim().isEmpty() ) {
-                throw new GenericRuntimeException( String.format( "%s query is empty", context.getLanguage().serializedName() ) );
+        if ( context instanceof ParsedQueryContext ) {
+            parsedQueries = List.of( (ParsedQueryContext) context );
+        } else {
+            if ( transaction.isAnalyze() ) {
+                statement.getOverviewDuration().start( "Parsing" );
             }
+            try {
+                // handle empty query
+                if ( context.getQuery().trim().isEmpty() ) {
+                    throw new GenericRuntimeException( String.format( "%s query is empty", context.getLanguage().serializedName() ) );
+                }
 
             parsedQueries = context.getLanguage().parser().apply( context );
         } catch ( Throwable e ) {
@@ -119,8 +122,13 @@ public class LanguageManager {
             return List.of( ImplementationContext.ofError( e, ParsedQueryContext.fromQuery( context.getQuery(), null, context ), statement ) );
         }
 
-        if ( transaction.isAnalyze() ) {
-            statement.getOverviewDuration().stop( "Parsing" );
+            if ( transaction.isAnalyze() ) {
+                statement.getOverviewDuration().stop( "Parsing" );
+            }
+        }
+
+        if ( context instanceof TranslatedQueryContext ) {
+            return implementTranslatedQuery(statement, transaction, (TranslatedQueryContext) context);
         }
 
         Processor processor = context.getLanguage().processorSupplier().get();
@@ -217,6 +225,21 @@ public class LanguageManager {
     }
 
 
+    private List<ImplementationContext> implementTranslatedQuery( Statement statement, Transaction transaction, TranslatedQueryContext translated ) {
+        try {
+            PolyImplementation implementation = statement.getQueryProcessor().prepareQuery( (translated).getRoot(), true );
+            return List.of( new ImplementationContext( implementation, translated, statement, null ) );
+        }  catch ( Throwable e ) {
+            log.warn( "Caught exception: ", e );
+            if ( transaction.isAnalyze() ) {
+                transaction.getQueryAnalyzer().attachStacktrace( e );
+            }
+            cancelTransaction( transaction );
+            return List.of(( ImplementationContext.ofError( e, translated, statement ) ));
+        }
+    }
+
+
     @NotNull
     private static List<ImplementationContext> handleParseException( Statement statement, ParsedQueryContext parsed, Transaction transaction, Exception e, List<ImplementationContext> implementationContexts ) {
         if ( transaction.isAnalyze() ) {
@@ -240,7 +263,12 @@ public class LanguageManager {
 
 
     public List<ExecutedContext> anyQuery( QueryContext context ) {
-        List<ImplementationContext> prepared = anyPrepareQuery( context, context.getTransactions().get( context.getTransactions().size() - 1 ) );
+        List<ImplementationContext> prepared;
+        if (context instanceof TranslatedQueryContext) {
+            prepared = anyPrepareQuery( context, context.getStatement());
+        } else {
+            prepared = anyPrepareQuery( context, context.getTransactions().get( context.getTransactions().size() - 1 ) );
+        }
 
         List<ExecutedContext> executedContexts = new ArrayList<>();
 

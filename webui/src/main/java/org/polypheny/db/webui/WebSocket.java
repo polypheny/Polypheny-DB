@@ -32,12 +32,16 @@ import java.util.function.Consumer;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
+import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.processing.QueryContext;
+import org.polypheny.db.processing.QueryContext.TranslatedQueryContext;
+import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.util.Pair;
@@ -145,20 +149,38 @@ public class WebSocket implements Consumer<WsConfig> {
                 break;
             case "PolyAlgRequest":
                 PolyAlgRequest polyAlgRequest = ctx.messageAsClass( PolyAlgRequest.class );
-                System.out.println( "Running query " + polyAlgRequest.polyAlg );
-
-                Result<?, ?> polyAlgResult = null;
+                Transaction transaction = crud.getTransactionManager().startTransaction( Catalog.defaultUserId, Catalog.defaultNamespaceId, true, POLYPHENY_UI );
+                AlgRoot root;
+                Statement statement;
                 try {
-                    polyAlgResult = crud.executePolyAlg( polyAlgRequest, ctx.session );
-                } catch ( Throwable t ) {
-                    ctx.send( RelationalResult.builder().error( t.getMessage() ).build() );
-                    return;
+                    statement = transaction.createStatement();
+                    root = PolyPlanBuilder.buildFromPolyAlg( polyAlgRequest.polyAlg, statement );
+                } catch ( Exception e ) {
+                    log.error( "Caught exception while building the plan builder tree", e );
+                    ctx.send( RelationalResult.builder().error( e.getMessage() ).build() );
+                    break;
                 }
 
-                if ( polyAlgResult.xid != null ) {
-                    xIds.add( polyAlgResult.xid );
-                }
-                ctx.send( polyAlgResult );
+                QueryLanguage ql = switch ( polyAlgRequest.model ) {
+                    case RELATIONAL -> QueryLanguage.from( "sql" );
+                    case DOCUMENT -> QueryLanguage.from( "mongo" );
+                    case GRAPH -> QueryLanguage.from( "cypher" );
+                };
+                QueryContext qc = QueryContext.builder()
+                        .query( polyAlgRequest.polyAlg )
+                        .language( ql )
+                        .isAnalysed( true )
+                        .usesCache( true )
+                        .origin( POLYPHENY_UI )
+                        .batch( polyAlgRequest.noLimit ? -1 : crud.getPageSize() )
+                        .transactionManager( crud.getTransactionManager() )
+                        .transactions( List.of( transaction ) )
+                        .statement( statement )
+                        .informationTarget( i -> i.setSession( ctx.session ) ).build();
+                TranslatedQueryContext translated = TranslatedQueryContext.fromQuery( polyAlgRequest.polyAlg, root, qc );
+
+                List<? extends Result<?, ?>> polyAlgResults = LanguageCrud.anyQueryResult( translated, polyAlgRequest );
+                ctx.send( polyAlgResults.get( 0 ) );
                 break;
 
             case "RegisterRequest":

@@ -16,11 +16,19 @@
 
 package org.polypheny.db.webui.models.requests;
 
-import lombok.Value;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.experimental.SuperBuilder;
+import lombok.extern.jackson.Jacksonized;
+import org.polypheny.db.catalog.logistic.DataModel;
 
-@Value
-public class PolyAlgRequest {
-    public String type;
+
+@SuperBuilder
+@Jacksonized
+public class PolyAlgRequest extends UIRequest {
+
+    @JsonProperty
     public String polyAlg;
+    @JsonProperty
+    public DataModel model;
 
 }

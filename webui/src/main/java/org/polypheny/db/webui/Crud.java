@@ -2409,95 +2409,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
 
     /**
-     * Execute a logical plan represented as PolyAlgebra from the Web-Ui PolyPlan builder
-     */
-    public Result<?, ?> executePolyAlg( PolyAlgRequest polyAlgRequest, Session session ) {
-        Transaction transaction = getTransaction( true, true, this );
-        transaction.getQueryAnalyzer().setSession( session );
-
-        Statement statement = transaction.createStatement();
-        long executionTime = 0;
-        long temp;
-
-        InformationManager queryAnalyzer = transaction.getQueryAnalyzer().observe( this );
-
-        AlgRoot root;
-        try {
-            temp = System.nanoTime();
-            root = PolyPlanBuilder.buildFromPolyAlg( polyAlgRequest.polyAlg, statement );
-        } catch ( Exception e ) {
-            log.error( "Caught exception while building the plan builder tree", e );
-            return RelationalResult.builder().error( e.getMessage() ).build();
-        }
-
-        // TODO: create separate method to reduce duplicate code with executeAlg
-        // Prepare
-        PolyImplementation polyImplementation = statement.getQueryProcessor().prepareQuery( root, true );
-
-        List<List<PolyValue>> rows;
-        try {
-            ResultIterator iterator = polyImplementation.execute( statement, getPageSize() );
-            rows = iterator.getNextBatch();
-            iterator.close();
-        } catch ( Exception e ) {
-            log.error( "Caught exception while iterating the plan builder tree", e );
-            return RelationalResult.builder().error( e.getMessage() ).build();
-        }
-
-        UiColumnDefinition[] header = new UiColumnDefinition[polyImplementation.getTupleType().getFieldCount()];
-        int counter = 0;
-        for ( AlgDataTypeField col : polyImplementation.getTupleType().getFields() ) {
-            header[counter++] = UiColumnDefinition.builder()
-                    .name( col.getName() )
-                    .dataType( col.getType().getFullTypeString() )
-                    .nullable( col.getType().isNullable() )
-                    .precision( col.getType().getPrecision() ).build();
-        }
-
-        List<String[]> data = LanguageCrud.computeResultData( rows, List.of( header ), statement.getTransaction() );
-
-        try {
-            executionTime += System.nanoTime() - temp;
-            transaction.commit();
-        } catch ( TransactionException e ) {
-            log.error( "Caught exception while committing the plan builder tree", e );
-            try {
-                transaction.rollback();
-            } catch ( TransactionException transactionException ) {
-                log.error( "Exception while rollback", transactionException );
-            }
-            throw new GenericRuntimeException( e );
-        }
-        RelationalResult finalResult = RelationalResult.builder()
-                .header( header )
-                .data( data.toArray( new String[0][] ) )
-                .xid( transaction.getXid().toString() )
-                .query( "Execute logical query plan" )
-                .build();
-
-        if ( queryAnalyzer != null ) {
-            InformationPage p1 = new InformationPage( "Query analysis", "Analysis of the query." );
-            InformationGroup g1 = new InformationGroup( p1, "Execution time" );
-            InformationText text;
-            if ( executionTime < 1e4 ) {
-                text = new InformationText( g1, String.format( "Execution time: %d nanoseconds", executionTime ) );
-            } else {
-                long millis = TimeUnit.MILLISECONDS.convert( executionTime, TimeUnit.NANOSECONDS );
-                // format time: see: https://stackoverflow.com/questions/625433/how-to-convert-milliseconds-to-x-mins-x-seconds-in-java#answer-625444
-                DateFormat df = new SimpleDateFormat( "m 'min' s 'sec' S 'ms'" );
-                String durationText = df.format( new Date( millis ) );
-                text = new InformationText( g1, String.format( "Execution time: %s", durationText ) );
-            }
-            queryAnalyzer.addPage( p1 );
-            queryAnalyzer.addGroup( g1 );
-            queryAnalyzer.registerInformation( text );
-        }
-
-        return finalResult;
-    }
-
-
-    /**
      * Execute a logical plan coming from the Web-Ui plan builder
      */
     RelationalResult executeAlg( final AlgRequest request, Session session ) {
@@ -3056,7 +2967,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
      * @throws NodeParseException if the parser is not able to construct the intermediary PolyAlgNode tree
      * @throws RuntimeException if polyAlg cannot be parsed into a valid AlgNode tree
      */
-    public void buildPlanFromPolyAlg( final Context ctx ) throws NodeParseException {
+    public void buildPlanFromPolyAlg( final Context ctx ) {
         PolyAlgRequest request = ctx.bodyAsClass( PolyAlgRequest.class );
         try {
             AlgNode node = PolyPlanBuilder.buildFromPolyAlg( request.polyAlg ).alg;

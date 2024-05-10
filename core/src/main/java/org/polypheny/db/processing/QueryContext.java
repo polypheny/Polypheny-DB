@@ -27,6 +27,7 @@ import lombok.experimental.NonFinal;
 import lombok.experimental.SuperBuilder;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.languages.QueryLanguage;
@@ -88,6 +89,7 @@ public class QueryContext {
 
     @EqualsAndHashCode(callSuper = true)
     @Value
+    @NonFinal
     @SuperBuilder(toBuilder = true)
     public static class ParsedQueryContext extends QueryContext {
 
@@ -121,6 +123,35 @@ public class QueryContext {
 
         public Optional<Node> getQueryNode() {
             return Optional.ofNullable( queryNode );
+        }
+
+    }
+
+
+    @EqualsAndHashCode(callSuper = true)
+    @Value
+    @SuperBuilder(toBuilder = true)
+    public static class TranslatedQueryContext extends ParsedQueryContext {
+
+        AlgRoot root;
+
+        // A TranslatedQueryContext is not associated with a specific a namespaceId or queryNode
+        public static TranslatedQueryContext fromQuery( String query, AlgRoot root, QueryContext context ) {
+            return TranslatedQueryContext.builder()
+                    .query( query )
+                    .queryNode( null )
+                    .language( context.language )
+                    .isAnalysed( context.isAnalysed )
+                    .usesCache( context.usesCache )
+                    .userId( context.userId )
+                    .origin( context.getOrigin() )
+                    .batch( context.batch )
+                    .statement( context.statement )
+                    .transactions( context.transactions )
+                    .transactionManager( context.transactionManager )
+                    .informationTarget( context.informationTarget )
+                    .root(root)
+                    .build();
         }
 
     }
