@@ -87,6 +87,7 @@ public class PolyAlgRegistry {
 
     private static void populateDeclarationsMap() {
         ImmutableList<OperatorTag> logTags = ImmutableList.of( OperatorTag.LOGICAL );
+        ImmutableList<OperatorTag> logProTags = ImmutableList.of( OperatorTag.LOGICAL, OperatorTag.ADVANCED );
 
         // RELATIONAL
         declarations.put( LogicalRelProject.class, PolyAlgDeclaration.builder()
@@ -112,14 +113,14 @@ public class PolyAlgRegistry {
                 .build() );
         declarations.put( LogicalRelAggregate.class, PolyAlgDeclaration.builder()
                 .creator( LogicalRelAggregate::create ).model( DataModel.RELATIONAL )
-                .opName( "AGG" ).opAlias( "AGGREGATE" ).numInputs( 1 ).opTags( logTags )
+                .opName( "AGGREGATE" ).opAlias( "AGG" ).numInputs( 1 ).opTags( logTags )
                 .param( Parameter.builder().name( "group" ).type( ParamType.FIELD ).multiValued( 1 ).defaultValue( ListArg.EMPTY ).build() )  // select count(*) has no group
                 .param( Parameter.builder().name( "groups" ).type( ParamType.FIELD ).multiValued( 2 ).defaultValue( ListArg.NESTED_EMPTY ).build() )
-                .param( Parameter.builder().name( "aggs" ).type( ParamType.AGGREGATE ).multiValued( 1 ).defaultValue( ListArg.EMPTY ).build() )
+                .param( Parameter.builder().name( "aggregates" ).type( ParamType.AGGREGATE ).multiValued( 1 ).defaultValue( ListArg.EMPTY ).build() )
                 .build() );
         declarations.put( LogicalRelMinus.class, PolyAlgDeclaration.builder()
                 .creator( LogicalRelMinus::create ).model( DataModel.RELATIONAL )
-                .opName( "MINUS" ).numInputs( 2 ).opTags( logTags )
+                .opName( "MINUS" ).numInputs( -1 ).opTags( logTags )
                 .param( Parameter.builder().name( "all" ).type( ParamType.BOOLEAN ).defaultValue( BooleanArg.FALSE ).build() )
                 .build() );
         declarations.put( LogicalRelUnion.class, PolyAlgDeclaration.builder()
@@ -134,7 +135,7 @@ public class PolyAlgRegistry {
                 .build() );
         declarations.put( LogicalModifyCollect.class, PolyAlgDeclaration.builder()
                 .creator( LogicalModifyCollect::create ).model( DataModel.RELATIONAL )
-                .opName( "MODIFY_COLLECT" ).numInputs( -1 ).opTags( logTags )
+                .opName( "MODIFY_COLLECT" ).numInputs( -1 ).opTags( logProTags )
                 .param( Parameter.builder().name( "all" ).type( ParamType.BOOLEAN ).defaultValue( BooleanArg.FALSE ).build() )
                 .build() );
         declarations.put( LogicalRelSort.class, PolyAlgDeclaration.builder()
@@ -154,14 +155,14 @@ public class PolyAlgRegistry {
                 .build() );
         declarations.put( LogicalCalc.class, PolyAlgDeclaration.builder()
                 .model( DataModel.RELATIONAL )
-                .opName( "CALC" ).numInputs( 1 ).opTags( logTags )
+                .opName( "CALC" ).numInputs( 1 ).opTags( logProTags )
                 .param( Parameter.builder().name( "exps" ).type( ParamType.REX ).multiValued( 1 ).build() )
                 .param( Parameter.builder().name( "projects" ).tag( ParamTag.ALIAS ).type( ParamType.REX ).multiValued( 1 ).build() ) // can have a name
                 .param( Parameter.builder().name( "condition" ).type( ParamType.REX ).defaultValue( RexArg.NULL ).build() )
                 .build() );
         declarations.put( LogicalRelModify.class, PolyAlgDeclaration.builder()
                 .creator( LogicalRelModify::create ).model( DataModel.RELATIONAL )
-                .opName( "MODIFY" ).numInputs( 1 ).opTags( logTags )
+                .opName( "MODIFY" ).numInputs( 1 ).opTags( logProTags )
                 .param( Parameter.builder().name( "table" ).alias( "target" ).type( ParamType.ENTITY ).build() )
                 .param( Parameter.builder().name( "operation" ).type( ParamType.MODIFY_OP_ENUM ).build() )
                 .param( Parameter.builder().name( "targets" ).alias( "columns" ).multiValued( 1 ).type( ParamType.STRING ).defaultValue( ListArg.EMPTY ).build() )
@@ -170,26 +171,26 @@ public class PolyAlgRegistry {
                 .build() );
         declarations.put( LogicalRelValues.class, PolyAlgDeclaration.builder()
                 .creator( LogicalRelValues::create ).model( DataModel.RELATIONAL )
-                .opName( "VALUES" ).numInputs( 0 ).opTags( logTags )
+                .opName( "VALUES" ).numInputs( 0 ).opTags( logProTags )
                 .param( Parameter.builder().name( "names" ).multiValued( 1 ).type( ParamType.STRING ).build() )
                 .param( Parameter.builder().name( "tuples" ).multiValued( 2 ).type( ParamType.REX ).build() )
                 .build() );
         declarations.put( LogicalRelCorrelate.class, PolyAlgDeclaration.builder()
                 .creator( LogicalRelCorrelate::create ).model( DataModel.RELATIONAL )
-                .opName( "CORRELATE" ).numInputs( 2 ).opTags( logTags )
+                .opName( "CORRELATE" ).numInputs( 2 ).opTags( logProTags )
                 .param( Parameter.builder().name( "id" ).type( ParamType.CORR_ID ).build() )
                 .param( Parameter.builder().name( "columns" ).type( ParamType.REX ).build() )
                 .param( Parameter.builder().name( "joinType" ).alias( "type" ).type( ParamType.SEMI_JOIN_TYPE_ENUM ).build() )
                 .build() );
         declarations.put( LogicalRelExchange.class, PolyAlgDeclaration.builder()
                 .creator( LogicalRelExchange::create ).model( DataModel.RELATIONAL )
-                .opName( "EXCHANGE" ).numInputs( 1 ).opTags( logTags )
+                .opName( "EXCHANGE" ).numInputs( 1 ).opTags( logProTags )
                 .param( Parameter.builder().name( "distributionType" ).alias( "type" ).type( ParamType.DISTRIBUTION_TYPE_ENUM ).build() )
                 .param( Parameter.builder().name( "numbers" ).multiValued( 1 ).type( ParamType.REX ).defaultValue( ListArg.EMPTY ).build() )
                 .build() );
         declarations.put( LogicalSortExchange.class, PolyAlgDeclaration.builder()
                 .creator( LogicalSortExchange::create ).model( DataModel.RELATIONAL )
-                .opName( "SORT_EXCHANGE" ).numInputs( 1 ).opTags( logTags )
+                .opName( "SORT_EXCHANGE" ).numInputs( 1 ).opTags( logProTags )
                 .param( Parameter.builder().name( "sort" ).aliases( List.of( "collation", "order" ) ).multiValued( 1 ).type( ParamType.COLLATION ).build() )
                 .param( Parameter.builder().name( "distributionType" ).alias( "type" ).type( ParamType.DISTRIBUTION_TYPE_ENUM ).build() )
                 .param( Parameter.builder().name( "numbers" ).multiValued( 1 ).type( ParamType.REX ).defaultValue( ListArg.EMPTY ).build() )
@@ -216,7 +217,7 @@ public class PolyAlgRegistry {
                 .build() );
         declarations.put( LogicalDocumentUnwind.class, PolyAlgDeclaration.builder()
                 .creator( LogicalDocumentUnwind::create ).model( DataModel.DOCUMENT )
-                .opName( "DOC_UNWIND" ).numInputs( 1 ).opTags( logTags )
+                .opName( "DOC_UNWIND" ).numInputs( 1 ).opTags( logProTags )
                 .param( Parameter.builder().name( "path" ).type( ParamType.STRING ).build() )
                 .build() );
         declarations.put( LogicalDocumentProject.class, PolyAlgDeclaration.builder()
@@ -227,13 +228,13 @@ public class PolyAlgRegistry {
                 .build() );
         declarations.put( LogicalDocumentAggregate.class, PolyAlgDeclaration.builder()
                 .creator( LogicalDocumentAggregate::create ).model( DataModel.DOCUMENT )
-                .opName( "DOC_AGG" ).opAlias( "DOC_AGGREGATE" ).numInputs( 1 ).opTags( logTags )
+                .opName( "DOC_AGGREGATE" ).opAlias( "DOC_AGG" ).numInputs( 1 ).opTags( logTags )
                 .param( Parameter.builder().name( "group" ).type( ParamType.REX ).defaultValue( RexArg.NULL ).build() )
                 .param( Parameter.builder().name( "aggs" ).multiValued( 1 ).type( ParamType.LAX_AGGREGATE ).defaultValue( ListArg.EMPTY ).build() )
                 .build() );
         declarations.put( LogicalDocumentModify.class, PolyAlgDeclaration.builder()
                 .creator( LogicalDocumentModify::create ).model( DataModel.DOCUMENT )
-                .opName( "DOC_MODIFY" ).numInputs( 1 ).opTags( logTags )
+                .opName( "DOC_MODIFY" ).numInputs( 1 ).opTags( logProTags )
                 .param( Parameter.builder().name( "entity" ).type( ParamType.ENTITY ).build() )
                 .param( Parameter.builder().name( "operation" ).type( ParamType.MODIFY_OP_ENUM ).build() )
                 .param( Parameter.builder().name( "updates" ).tag( ParamTag.ALIAS ).requiresAlias( true ).multiValued( 1 ).type( ParamType.REX ).defaultValue( ListArg.EMPTY ).build() )
@@ -276,19 +277,19 @@ public class PolyAlgRegistry {
                 .build() );
         declarations.put( LogicalLpgUnwind.class, PolyAlgDeclaration.builder()
                 .creator( LogicalLpgUnwind::create ).model( DataModel.GRAPH )
-                .opName( "LPG_UNWIND" ).numInputs( 1 ).opTags( logTags )
+                .opName( "LPG_UNWIND" ).numInputs( 1 ).opTags( logProTags )
                 .param( Parameter.builder().name( "index" ).tag( ParamTag.NON_NEGATIVE ).type( ParamType.INTEGER ).build() )
                 .param( Parameter.builder().name( "alias" ).type( ParamType.STRING ).defaultValue( StringArg.NULL ).build() )
                 .build() );
         declarations.put( LogicalLpgAggregate.class, PolyAlgDeclaration.builder()
                 .creator( LogicalLpgAggregate::create ).model( DataModel.GRAPH )
-                .opName( "LPG_AGG" ).opAlias( "LPG_AGGREGATE" ).numInputs( 1 ).opTags( logTags )
+                .opName( "LPG_AGGREGATE" ).opAlias( "LPG_AGG" ).numInputs( 1 ).opTags( logTags )
                 .param( Parameter.builder().name( "groups" ).multiValued( 1 ).type( ParamType.REX ).defaultValue( ListArg.EMPTY ).build() )
                 .param( Parameter.builder().name( "aggs" ).multiValued( 1 ).type( ParamType.LAX_AGGREGATE ).defaultValue( ListArg.EMPTY ).build() )
                 .build() );
         declarations.put( LogicalLpgModify.class, PolyAlgDeclaration.builder()
                 .creator( LogicalLpgModify::create ).model( DataModel.GRAPH )
-                .opName( "LPG_MODIFY" ).numInputs( 1 ).opTags( logTags )
+                .opName( "LPG_MODIFY" ).numInputs( 1 ).opTags( logProTags )
                 .param( Parameter.builder().name( "entity" ).type( ParamType.ENTITY ).build() )
                 .param( Parameter.builder().name( "operation" ).type( ParamType.MODIFY_OP_ENUM ).build() )
                 .param( Parameter.builder().name( "updates" ).alias( "operations" ).multiValued( 1 ).type( ParamType.REX ).defaultValue( ListArg.EMPTY ).build() )
