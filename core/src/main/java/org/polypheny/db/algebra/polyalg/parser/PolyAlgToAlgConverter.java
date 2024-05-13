@@ -161,11 +161,17 @@ public class PolyAlgToAlgConverter {
                     continue;
                 } else {
                     p = decl.getPos( i ); // TODO: handle invalid arguments
+                    if (p == null) {
+                        throw new GenericRuntimeException( "Too many positional arguments were given for " + decl.opName );
+                    }
                 }
             } else {
                 noMorePosArgs = true;
 
                 p = decl.getParam( name );
+                if (p == null) {
+                    throw new GenericRuntimeException( "Unexpected keyword argument '" + name + "' for " + decl.opName );
+                }
             }
 
             if ( usedParams.contains( p ) ) {
@@ -251,7 +257,7 @@ public class PolyAlgToAlgConverter {
             }
             case AGGREGATE -> new AggArg( convertAggCall( exp, alias, ctx ) );
             case LAX_AGGREGATE -> new LaxAggArg( convertLaxAggCall( exp, alias, ctx ) );
-            case ENTITY -> new EntityArg( convertEntity( exp, ctx.dataModel ), snapshot, ctx.dataModel );
+            case ENTITY -> new EntityArg( convertEntity( exp ), snapshot, ctx.dataModel );
             case JOIN_TYPE_ENUM -> new EnumArg<>( exp.toEnum( JoinAlgType.class ), pType );
             case SEMI_JOIN_TYPE_ENUM -> new EnumArg<>( exp.toEnum( SemiJoinType.class ), pType );
             case MODIFY_OP_ENUM -> new EnumArg<>( exp.toEnum( Modify.Operation.class ), pType );
@@ -355,7 +361,7 @@ public class PolyAlgToAlgConverter {
     }
 
 
-    private Entity convertEntity( PolyAlgExpression exp, DataModel dataModel ) {
+    private Entity convertEntity( PolyAlgExpression exp ) {
         String[] names = exp.toIdentifier().split( "\\.", 3 );
         GenericRuntimeException exception = new GenericRuntimeException( "Invalid entity name: " + String.join( ".", names ) );
         String namespaceName;

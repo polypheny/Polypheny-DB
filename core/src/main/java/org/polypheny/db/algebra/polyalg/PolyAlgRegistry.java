@@ -116,7 +116,7 @@ public class PolyAlgRegistry {
                 .opName( "AGGREGATE" ).opAlias( "AGG" ).numInputs( 1 ).opTags( logTags )
                 .param( Parameter.builder().name( "group" ).type( ParamType.FIELD ).multiValued( 1 ).defaultValue( ListArg.EMPTY ).build() )  // select count(*) has no group
                 .param( Parameter.builder().name( "groups" ).type( ParamType.FIELD ).multiValued( 2 ).defaultValue( ListArg.NESTED_EMPTY ).build() )
-                .param( Parameter.builder().name( "aggregates" ).type( ParamType.AGGREGATE ).multiValued( 1 ).defaultValue( ListArg.EMPTY ).build() )
+                .param( Parameter.builder().name( "aggregates" ).alias( "aggs" ).type( ParamType.AGGREGATE ).multiValued( 1 ).defaultValue( ListArg.EMPTY ).build() )
                 .build() );
         declarations.put( LogicalRelMinus.class, PolyAlgDeclaration.builder()
                 .creator( LogicalRelMinus::create ).model( DataModel.RELATIONAL )
@@ -230,7 +230,7 @@ public class PolyAlgRegistry {
                 .creator( LogicalDocumentAggregate::create ).model( DataModel.DOCUMENT )
                 .opName( "DOC_AGGREGATE" ).opAlias( "DOC_AGG" ).numInputs( 1 ).opTags( logTags )
                 .param( Parameter.builder().name( "group" ).type( ParamType.REX ).defaultValue( RexArg.NULL ).build() )
-                .param( Parameter.builder().name( "aggs" ).multiValued( 1 ).type( ParamType.LAX_AGGREGATE ).defaultValue( ListArg.EMPTY ).build() )
+                .param( Parameter.builder().name( "aggregates" ).alias( "aggs" ).multiValued( 1 ).type( ParamType.LAX_AGGREGATE ).defaultValue( ListArg.EMPTY ).build() )
                 .build() );
         declarations.put( LogicalDocumentModify.class, PolyAlgDeclaration.builder()
                 .creator( LogicalDocumentModify::create ).model( DataModel.DOCUMENT )
@@ -285,7 +285,7 @@ public class PolyAlgRegistry {
                 .creator( LogicalLpgAggregate::create ).model( DataModel.GRAPH )
                 .opName( "LPG_AGGREGATE" ).opAlias( "LPG_AGG" ).numInputs( 1 ).opTags( logTags )
                 .param( Parameter.builder().name( "groups" ).multiValued( 1 ).type( ParamType.REX ).defaultValue( ListArg.EMPTY ).build() )
-                .param( Parameter.builder().name( "aggs" ).multiValued( 1 ).type( ParamType.LAX_AGGREGATE ).defaultValue( ListArg.EMPTY ).build() )
+                .param( Parameter.builder().name( "aggregates" ).alias( "aggs" ).multiValued( 1 ).type( ParamType.LAX_AGGREGATE ).defaultValue( ListArg.EMPTY ).build() )
                 .build() );
         declarations.put( LogicalLpgModify.class, PolyAlgDeclaration.builder()
                 .creator( LogicalLpgModify::create ).model( DataModel.GRAPH )

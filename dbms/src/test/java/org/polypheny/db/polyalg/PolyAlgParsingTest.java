@@ -24,7 +24,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
@@ -131,13 +130,39 @@ public class PolyAlgParsingTest {
     @Test
     public void aggregatePolyAlgTest() throws NodeParseException {
         String polyAlg = """
-                AGG[group=name, aggs=COUNT(DISTINCT foo) AS EXPR$1](
+                AGGREGATE[group=name, aggregates=COUNT(DISTINCT foo) AS EXPR$1](
                  PROJECT[foo, name](
                   SCAN[public.polyalg_test]))
                 """;
         AlgNode node = fromPolyAlg( polyAlg ).alg;
         assertTrue( node instanceof LogicalRelAggregate );
         assertEqualAfterRoundtrip( polyAlg, node );
+    }
+
+
+    @Test
+    public void opAliasPolyAlgTest() throws NodeParseException {
+        String polyAlg = """
+                 P[foo, name](
+                  SCAN[public.polyalg_test])
+                """;
+        AlgNode node = fromPolyAlg( polyAlg ).alg;
+        String polyAlgAfter = toPolyAlg( node );
+        assertEquals( polyAlg.replace( "P[", "PROJECT[" ).replaceAll( "\\s", "" ),
+                polyAlgAfter.replaceAll( "\\s", "" ) );
+    }
+
+
+    @Test
+    public void paramAliasPolyAlgTest() throws NodeParseException {
+        String polyAlg = """
+                 SORT[fetch=2](
+                  SCAN[public.polyalg_test])
+                """;
+        AlgNode node = fromPolyAlg( polyAlg ).alg;
+        String polyAlgAfter = toPolyAlg( node );
+        assertEquals( polyAlg.replace( "fetch=", "limit=" ).replaceAll( "\\s", "" ),
+                polyAlgAfter.replaceAll( "\\s", "" ) );
     }
 
 
