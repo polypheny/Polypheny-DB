@@ -76,7 +76,7 @@ public class PolyNull extends PolyValue {
 
     @Override
     public int compareTo( @NotNull PolyValue o ) {
-        return o.isNull() ? 0 : -1;
+        return o == null || o.isNull() ? 0 : -1;
     }
 
 

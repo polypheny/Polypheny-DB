@@ -41,6 +41,7 @@ import io.activej.serializer.def.SimpleSerializerDef;
 import java.lang.reflect.Type;
 import java.sql.Timestamp;
 import java.util.Calendar;
+import java.util.List;
 import java.util.Optional;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
@@ -403,6 +404,11 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
 
     public static PolyValue getNull( Class<?> clazz ) {
         return PolyDefaults.NULLS.get( clazz );
+    }
+
+
+    public static @NotNull Expression isNullExpression( Expression operand ) {
+        return Expressions.foldOr( List.of( Expressions.equal( operand, Expressions.constant( null ) ), Expressions.call( operand, "isNull" ) ) );
     }
 
 

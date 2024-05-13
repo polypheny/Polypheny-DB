@@ -680,7 +680,7 @@ public class RexImpTable {
             // Primitive values cannot be null
             return optimize( expression );
         } else {
-            return optimize( EnumUtils.condition( Expressions.equal( operand, NULL_EXPR ), NULL_EXPR, expression ) );
+            return optimize( EnumUtils.condition( PolyValue.isNullExpression( operand ), NULL_EXPR, expression ) );
         }
     }
 
@@ -922,8 +922,8 @@ public class RexImpTable {
                 case NULL, NOT_POSSIBLE -> x;
                 case FALSE -> Expressions.call( BuiltInMethod.IS_TRUE.method, x );
                 case TRUE -> Expressions.call( BuiltInMethod.IS_NOT_FALSE.method, x );
-                case IS_NULL -> Expressions.new_( PolyBoolean.class, Expressions.equal( x, NULL_EXPR ) );
-                case IS_NOT_NULL -> Expressions.new_( PolyBoolean.class, Expressions.notEqual( x, NULL_EXPR ) );
+                case IS_NULL -> Expressions.new_( PolyBoolean.class, PolyValue.isNullExpression( x ) );
+                case IS_NOT_NULL -> Expressions.new_( PolyBoolean.class, Expressions.equal( PolyValue.isNullExpression( x ), Expressions.constant( false ) ) );
             };
         }
     }

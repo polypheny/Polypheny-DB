@@ -882,7 +882,9 @@ public class Functions {
      * SQL <code>=</code> operator applied to number values.
      */
     public static PolyBoolean eq( PolyNumber b0, PolyNumber b1 ) {
-        if ( b0 == null || b0.isNull() || b1 == null || b1.isNull() ) {
+        if ( (b0 == null || b0.isNull()) && (b1 == null || b1.isNull()) ) {
+            return PolyBoolean.TRUE;
+        } else if ( b0 == null || b0.isNull() || b1 == null || b1.isNull() ) {
             return PolyBoolean.FALSE;
         }
         return PolyBoolean.of( b0.bigDecimalValue().stripTrailingZeros().equals( b1.bigDecimalValue().stripTrailingZeros() ) );
