@@ -51,6 +51,7 @@ import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
+import org.apache.calcite.linq4j.tree.Types;
 import org.apache.commons.lang3.NotImplementedException;
 import org.bson.BsonDocument;
 import org.bson.json.JsonParseException;
@@ -408,6 +409,9 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
 
 
     public static @NotNull Expression isNullExpression( Expression operand ) {
+        if ( Types.isArray( operand.getType() ) ) {
+            return Expressions.equal( operand, Expressions.constant( null ) );
+        }
         return Expressions.foldOr( List.of( Expressions.equal( operand, Expressions.constant( null ) ), Expressions.call( operand, "isNull" ) ) );
     }
 
