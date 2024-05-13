@@ -83,6 +83,9 @@ public class PolyBigDecimal extends PolyNumber {
 
 
     public static PolyBigDecimal of( Number value, int precision, int scale ) {
+        if ( value instanceof BigDecimal bigDecimal ) {
+            return PolyBigDecimal.of( bigDecimal );
+        }
         return PolyBigDecimal.of( value.doubleValue() );
     }
 

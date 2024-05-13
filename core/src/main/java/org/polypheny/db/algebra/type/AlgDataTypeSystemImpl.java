@@ -67,7 +67,7 @@ public abstract class AlgDataTypeSystemImpl implements AlgDataTypeSystem {
         return switch ( typeName ) {
             case CHAR, BINARY -> 1;
             case JSON, VARCHAR, VARBINARY -> AlgDataType.PRECISION_NOT_SPECIFIED;
-            case DECIMAL -> getMaxNumericPrecision();
+            case DECIMAL -> PolyType.MAX_DECIMAL_PRECISION;
             case INTERVAL -> PolyType.DEFAULT_INTERVAL_START_PRECISION;
             case BOOLEAN -> 1;
             case TINYINT -> 3;
@@ -90,7 +90,7 @@ public abstract class AlgDataTypeSystemImpl implements AlgDataTypeSystem {
     @Override
     public int getMaxPrecision( PolyType typeName ) {
         return switch ( typeName ) {
-            case DECIMAL -> getMaxNumericPrecision();
+            case DECIMAL -> PolyType.MAX_DECIMAL_PRECISION;
             case JSON, VARCHAR, CHAR, VARBINARY, BINARY -> 65536;
             case TIME, TIMESTAMP -> PolyType.MAX_DATETIME_PRECISION;
             case INTERVAL -> PolyType.MAX_INTERVAL_START_PRECISION;

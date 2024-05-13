@@ -5381,7 +5381,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                         final int intValue = literal.intValue( false );
                         if ( intValue >= 0 ) {
                             if ( intValue < 1 || intValue > aliasList.size() ) {
-                                throw newValidationError( (Node) literal, RESOURCE.orderByOrdinalOutOfRange() );
+                                throw newValidationError( literal, RESOURCE.orderByOrdinalOutOfRange() );
                             }
 
                             // SQL ordinals are 1-based, but Sort's are 0-based

@@ -335,6 +335,7 @@ public enum PolyType {
     public static final int MIN_INTERVAL_FRACTIONAL_SECOND_PRECISION = 1;
     public static final int MAX_INTERVAL_START_PRECISION = 10;
     public static final int MAX_INTERVAL_FRACTIONAL_SECOND_PRECISION = 9;
+    public static final int MAX_DECIMAL_PRECISION = 64;
 
     // Cached map of enum values
     private static final Map<String, PolyType> VALUES_MAP = Util.enumConstants( PolyType.class );
