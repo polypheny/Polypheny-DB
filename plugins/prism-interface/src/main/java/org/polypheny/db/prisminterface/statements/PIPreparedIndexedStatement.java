@@ -111,13 +111,13 @@ public class PIPreparedIndexedStatement extends PIPreparedStatement {
             case "FLOAT" -> typeFactory.createPolyType( PolyType.FLOAT );
             case "INT", "INTEGER" -> typeFactory.createPolyType( PolyType.INTEGER );
             case "VARCHAR" -> {
-                if ( parameterMeta.getPrecision() >= 0 ) {
+                if ( parameterMeta.getPrecision() > 0 ) {
                     yield typeFactory.createPolyType( PolyType.VARCHAR, parameterMeta.getPrecision() );
                 }
                 yield typeFactory.createPolyType( PolyType.VARCHAR );
             }
             case "CHAR" -> {
-                if ( parameterMeta.getPrecision() >= 0 ) {
+                if ( parameterMeta.getPrecision() > 0 ) {
                     yield typeFactory.createPolyType( PolyType.CHAR, parameterMeta.getPrecision() );
                 }
                 yield typeFactory.createPolyType( PolyType.CHAR );
@@ -142,13 +142,13 @@ public class PIPreparedIndexedStatement extends PIPreparedStatement {
                 yield typeFactory.createPolyType( PolyType.TIMESTAMP );
             }
             case "BINARY" -> {
-                if ( parameterMeta.getPrecision() >= 0 ) {
+                if ( parameterMeta.getPrecision() > 0 ) {
                     yield typeFactory.createPolyType( PolyType.BINARY, parameterMeta.getPrecision() );
                 }
                 yield typeFactory.createPolyType( PolyType.BINARY );
             }
             case "VARBINARY" -> {
-                if ( parameterMeta.getPrecision() >= 0 ) {
+                if ( parameterMeta.getPrecision() > 0 ) {
                     yield typeFactory.createPolyType( PolyType.VARBINARY, parameterMeta.getPrecision() );
                 }
                 yield typeFactory.createPolyType( PolyType.VARBINARY );
