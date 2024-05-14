@@ -299,11 +299,7 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
                 break;
             case VARBINARY:
             case BINARY:
-                if ( !connectionHandler.getDialect().supportsComplexBinary() ) {
-                    preparedStatement.setString( i, value.asBinary().toTypedJson() );
-                } else {
-                    preparedStatement.setBytes( i, value.asBinary().value );
-                }
+                handleBinary( preparedStatement, i, value, connectionHandler );
                 break;
             case ARRAY:
                 if ( (type.getComponentType().getPolyType() == PolyType.ARRAY && connectionHandler.getDialect().supportsNestedArrays()) || (type.getComponentType().getPolyType() != PolyType.ARRAY) && connectionHandler.getDialect().supportsArrays() ) {
@@ -322,14 +318,14 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
                     if ( value.isBlob() ) {
                         preparedStatement.setBinaryStream( i, value.asBlob().asBinaryStream() );
                     } else {
-                        preparedStatement.setBytes( i, value.asBinary().value );
+                        handleBinary( preparedStatement, i, value, connectionHandler );
                     }
 
                 } else {
                     if ( value.isBlob() ) {
                         preparedStatement.setBytes( i, value.asBlob().asByteArray() );
                     } else {
-                        preparedStatement.setBytes( i, value.asBinary().value );
+                        handleBinary( preparedStatement, i, value, connectionHandler );
                     }
                 }
                 break;
@@ -339,6 +335,15 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
             default:
                 log.warn( "potentially unhandled type" );
                 preparedStatement.setObject( i, value );
+        }
+    }
+
+
+    private static void handleBinary( PreparedStatement preparedStatement, int i, PolyValue value, ConnectionHandler connectionHandler ) throws SQLException {
+        if ( !connectionHandler.getDialect().supportsComplexBinary() ) {
+            preparedStatement.setString( i, value.asBinary().toTypedJson() );
+        } else {
+            preparedStatement.setBytes( i, value.asBinary().value );
         }
     }
 

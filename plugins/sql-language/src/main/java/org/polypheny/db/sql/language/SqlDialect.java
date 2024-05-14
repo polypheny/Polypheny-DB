@@ -36,6 +36,7 @@ import org.apache.calcite.avatica.SqlType;
 import org.apache.calcite.linq4j.function.Experimental;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
+import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.NullCollation;
@@ -61,6 +62,7 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.category.PolyBlob;
 import org.polypheny.db.util.temporal.DateTimeUtils;
 import org.polypheny.db.util.temporal.TimeUnit;
 
@@ -734,9 +736,11 @@ public class SqlDialect {
     }
 
 
-    public Expression handleRetrieval( AlgDataType fieldType, Expression child ) {
+    public Expression handleRetrieval( AlgDataType fieldType, Expression child, ParameterExpression resultSet_, int index ) {
+        final String methodName = fieldType.isNullable() ? "ofNullable" : "of";
         return switch ( fieldType.getPolyType() ) {
-            case TEXT -> Expressions.call( PolyString.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( child, String.class ) );
+            case FILE, AUDIO, VIDEO, IMAGE -> Expressions.call( PolyBlob.class, methodName, Expressions.convert_( child, byte[].class ) );
+            case TEXT -> Expressions.call( PolyString.class, methodName, Expressions.convert_( child, String.class ) );
             case VARBINARY -> Expressions.call( PolyBinary.class, "fromTypedJson", Expressions.convert_( child, String.class ), Expressions.constant( PolyBinary.class ) );
             default -> child;
         };

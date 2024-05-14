@@ -22,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import nl.cwi.monetdb.jdbc.MonetClob;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
+import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.UnaryExpression;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
@@ -48,6 +49,7 @@ import org.polypheny.db.sql.language.SqlLiteral;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyBinary;
 
 
 /**
@@ -109,12 +111,15 @@ public class MonetdbSqlDialect extends SqlDialect {
             case VARBINARY, BINARY:
                 castSpec = "_TEXT";
                 break;
+            case BIGINT:
+                castSpec = "_HUGEINT";
+                break;
             case FILE:
             case IMAGE:
             case VIDEO:
             case AUDIO:
                 // We need to flag the type with an underscore to flag the type (the underscore is removed in the unparse method)
-                castSpec = "_BLOB";
+                castSpec = "_TEXT";
                 break;
             default:
                 return super.getCastSpec( type );
@@ -125,13 +130,21 @@ public class MonetdbSqlDialect extends SqlDialect {
 
 
     @Override
-    public Expression handleRetrieval( AlgDataType fieldType, Expression child ) {
+    public Expression handleRetrieval( AlgDataType fieldType, Expression child, ParameterExpression resultSet_, int index ) {
         return switch ( fieldType.getPolyType() ) {
+            case FILE, AUDIO, IMAGE, VIDEO -> {
+                UnaryExpression client = Expressions.convert_( Expressions.call( resultSet_, "getObject", Expressions.constant( index ) ), MonetClob.class );
+                yield Expressions.call(
+                        PolyBinary.class,
+                        "fromTypedJson",
+                        Expressions.convert_( Expressions.call( MonetdbSqlDialect.class, "toString", client ), String.class ),
+                        Expressions.constant( PolyBinary.class ) );
+            }
             case TEXT, VARBINARY -> {
                 UnaryExpression client = Expressions.convert_( child, MonetClob.class );
-                yield super.handleRetrieval( fieldType, Expressions.call( MonetdbSqlDialect.class, "toString", client ) );
+                yield super.handleRetrieval( fieldType, Expressions.call( MonetdbSqlDialect.class, "toString", client ), resultSet_, index );
             }
-            default -> super.handleRetrieval( fieldType, child );
+            default -> super.handleRetrieval( fieldType, child, resultSet_, index );
         };
     }
 

@@ -352,6 +352,8 @@ public class SqlPrettyWriter implements SqlWriter {
     void indent( int indent ) {
         if ( indent < 0 ) {
             throw new IllegalArgumentException( "negative indent " + indent );
+        } else if ( indent == 0 ) {
+            return;
         }
         Spaces.append( pw, indent );
         charCount += indent;

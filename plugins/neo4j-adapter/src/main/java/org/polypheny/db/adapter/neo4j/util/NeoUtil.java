@@ -112,7 +112,7 @@ public interface NeoUtil {
             case BIGINT:
                 return v -> PolyBigDecimal.of( v.asLong() );
             case DECIMAL:
-                return v -> PolyBigDecimal.of( v.asDouble() );
+                return v -> PolyBigDecimal.of( v.asString() );
             case FLOAT:
             case REAL:
                 return v -> PolyFloat.of( v.asNumber() );
@@ -568,6 +568,9 @@ public interface NeoUtil {
         }
 
         if ( value.isNumber() ) {
+            if ( type.getType() == PolyType.DECIMAL ) {
+                return value.asNumber().bigDecimalValue().toPlainString();
+            }
             return value.asNumber().DoubleValue();
         }
         if ( value.isList() ) {
@@ -587,7 +590,8 @@ public interface NeoUtil {
             case VARCHAR, TEXT, CHAR -> value.asString().value;
             case BOOLEAN -> value.asBoolean().value;
             case BINARY, VARBINARY, FILE, IMAGE, VIDEO, AUDIO -> value.asBinary().value;
-            case FLOAT, REAL, DOUBLE, DECIMAL -> value.asNumber().doubleValue();
+            case FLOAT, REAL, DOUBLE -> value.asNumber().doubleValue();
+            case DECIMAL -> value.asNumber().bigDecimalValue();
             case ARRAY -> value.asList().value.stream().map( e -> {
                 if ( isNested ) {
                     return e.toTypedJson();

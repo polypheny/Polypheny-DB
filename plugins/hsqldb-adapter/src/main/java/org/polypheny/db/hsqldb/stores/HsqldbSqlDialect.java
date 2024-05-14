@@ -22,6 +22,7 @@ import java.util.Objects;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.hsqldb.jdbc.JDBCClobClient;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.NullCollation;
@@ -142,8 +143,8 @@ public class HsqldbSqlDialect extends SqlDialect {
 
 
     @Override
-    public Expression handleRetrieval( AlgDataType fieldType, Expression child ) {
-        return super.handleRetrieval( fieldType, child );
+    public Expression handleRetrieval( AlgDataType fieldType, Expression child, ParameterExpression resultSet_, int index ) {
+        return super.handleRetrieval( fieldType, child, resultSet_, index );
     }
 
 

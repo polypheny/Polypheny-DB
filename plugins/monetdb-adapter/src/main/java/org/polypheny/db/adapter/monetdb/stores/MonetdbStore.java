@@ -300,7 +300,7 @@ public class MonetdbStore extends AbstractJdbcStore {
     @Override
     protected String getTypeString( PolyType type ) {
         if ( type.getFamily() == PolyTypeFamily.MULTIMEDIA ) {
-            return "BLOB";
+            return "TEXT";
         }
         return switch ( type ) {
             case BOOLEAN -> "BOOLEAN";
@@ -308,7 +308,7 @@ public class MonetdbStore extends AbstractJdbcStore {
             case TINYINT -> "SMALLINT"; // there seems to be an issue with tinyints and the jdbc driver
             case SMALLINT -> "SMALLINT";
             case INTEGER -> "INT";
-            case BIGINT -> "BIGINT";
+            case BIGINT -> "HUGEINT";
             case REAL -> "REAL";
             case DOUBLE -> "DOUBLE";
             case DECIMAL -> "DECIMAL";
