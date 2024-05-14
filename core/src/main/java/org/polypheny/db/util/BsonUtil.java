@@ -266,7 +266,7 @@ public class BsonUtil {
             case JSON -> BsonUtil::handleDocument;
             case ARRAY -> {
                 Function<PolyValue, BsonValue> transformer = getBsonTransformer( types, bucket );
-                yield ( o ) -> new BsonArray( o.asList().stream().map( e -> transformer.apply( (PolyValue) e ) ).toList() );
+                yield ( o ) -> new BsonArray( o.asList().stream().map( transformer::apply ).toList() );
             }
             case DOCUMENT -> o -> BsonDocument.parse( "{ k:" + (o.isString() ? o.asString().toQuotedJson() : o.toJson()) + "}" ).get( "k" );
             default -> BsonUtil::handleString;

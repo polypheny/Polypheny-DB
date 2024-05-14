@@ -42,7 +42,7 @@ public class BsonDynamic extends BsonDocument {
         String textualType = type.getPolyType() != PolyType.ARRAY
                 ? type.getPolyType().getTypeName()
                 : "ARRAY$" + getTypeString( type.getComponentType() );
-        return textualType + (type.getPrecision() == AlgDataType.PRECISION_NOT_SPECIFIED ? "" : "|" + type.getPrecision());
+        return textualType + (type.getPrecision() == AlgDataType.PRECISION_NOT_SPECIFIED ? "" : "|" + (type.getPolyType() == PolyType.DECIMAL ? type.getScale() : type.getPrecision()));
     }
 
 
