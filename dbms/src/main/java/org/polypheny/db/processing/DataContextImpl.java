@@ -154,12 +154,12 @@ public class DataContextImpl implements DataContext {
                 }
             }
             case VARCHAR, CHAR -> {
-                if ( value.asString().value.length() > type.getPrecision() ) {
+                if ( type.getPrecision() >= 0 && value.asString().value.length() > type.getPrecision() ) {
                     throw new GenericRuntimeException( "Char value is too long" );
                 }
             }
             case BINARY, VARBINARY -> {
-                if ( value.asBinary().length() > type.getPrecision() ) {
+                if ( type.getPrecision() >= 0 && value.asBinary().length() > type.getPrecision() ) {
                     throw new GenericRuntimeException( "Binary value is too long" );
                 }
             }

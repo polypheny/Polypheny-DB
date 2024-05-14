@@ -18,6 +18,7 @@ package org.polypheny.db.prisminterface.statements;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.stream.IntStream;
 import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.PolyImplementation;
@@ -63,10 +64,7 @@ public class PIPreparedIndexedStatement extends PIPreparedStatement {
         } else {
             statement.getDataContext().resetParameterValues();
         }
-        List<AlgDataType> types = valuesBatch.stream()
-                .map( v -> v.get( 0 ).getType() )
-                .map( v -> statement.getTransaction().getTypeFactory().createPolyType( v ) )
-                .toList();
+        List<AlgDataType> types = IntStream.range( 0, valuesBatch.size() ).mapToObj( i -> deriveType( statement.getTransaction().getTypeFactory(), parameterMetas.get( i ) ) ).toList();
         int i = 0;
         for ( List<PolyValue> column : valuesBatch ) {
             statement.getDataContext().addParameterValues( i, types.get( i++ ), column );
@@ -111,7 +109,7 @@ public class PIPreparedIndexedStatement extends PIPreparedStatement {
             }
             case "DOUBLE" -> typeFactory.createPolyType( PolyType.DOUBLE );
             case "FLOAT" -> typeFactory.createPolyType( PolyType.FLOAT );
-            case "INT", "INTEGER" -> typeFactory.createPolyType( PolyType.INTEGER, parameterMeta.getPrecision() );
+            case "INT", "INTEGER" -> typeFactory.createPolyType( PolyType.INTEGER );
             case "VARCHAR" -> {
                 if ( parameterMeta.getPrecision() >= 0 ) {
                     yield typeFactory.createPolyType( PolyType.VARCHAR, parameterMeta.getPrecision() );

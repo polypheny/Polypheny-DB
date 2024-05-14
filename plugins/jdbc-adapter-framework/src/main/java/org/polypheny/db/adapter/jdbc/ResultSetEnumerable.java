@@ -319,9 +319,18 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
             case FILE:
             case VIDEO:
                 if ( connectionHandler.getDialect().supportsBinaryStream() ) {
-                    preparedStatement.setBinaryStream( i, value.asBlob().asBinaryStream() );
+                    if ( value.isBlob() ) {
+                        preparedStatement.setBinaryStream( i, value.asBlob().asBinaryStream() );
+                    } else {
+                        preparedStatement.setBytes( i, value.asBinary().value );
+                    }
+
                 } else {
-                    preparedStatement.setBytes( i, value.asBlob().asByteArray() );
+                    if ( value.isBlob() ) {
+                        preparedStatement.setBytes( i, value.asBlob().asByteArray() );
+                    } else {
+                        preparedStatement.setBytes( i, value.asBinary().value );
+                    }
                 }
                 break;
             case TEXT:
