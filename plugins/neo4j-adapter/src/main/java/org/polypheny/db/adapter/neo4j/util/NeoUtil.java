@@ -115,9 +115,9 @@ public interface NeoUtil {
                 return v -> PolyBigDecimal.of( v.asString() );
             case FLOAT:
             case REAL:
-                return v -> PolyFloat.of( v.asNumber() );
+                return v -> v instanceof StringValue ? PolyFloat.of( Float.valueOf( v.asString() ) ) : PolyFloat.of( v.asNumber() );
             case DOUBLE:
-                return v -> PolyDouble.of( v.asNumber() );
+                return v -> v instanceof StringValue ? PolyDouble.of( Double.valueOf( v.asString() ) ) : PolyDouble.of( v.asNumber() );
             case INTERVAL:
                 break;
             case ANY:
