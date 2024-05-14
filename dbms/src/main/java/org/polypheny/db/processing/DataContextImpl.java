@@ -149,7 +149,7 @@ public class DataContextImpl implements DataContext {
     private PolyValue check( PolyValue value, AlgDataType type ) {
         switch ( type.getPolyType() ) {
             case DECIMAL -> {
-                if ( value.asNumber().toString().length() > type.getPrecision() ) {
+                if ( value.asNumber().toString().replace( ".", "" ).length() > type.getPrecision() ) {
                     throw new GenericRuntimeException( "Numeric value is too long" );
                 }
             }
