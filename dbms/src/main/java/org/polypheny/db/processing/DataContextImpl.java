@@ -131,7 +131,7 @@ public class DataContextImpl implements DataContext {
             throw new GenericRuntimeException( "There are already values assigned to this index" );
         }
         if ( parameterValues.isEmpty() ) {
-            for ( Object d : data ) {
+            for ( Object ignored : data ) {
                 parameterValues.add( new HashMap<>() );
             }
         }
@@ -141,8 +141,30 @@ public class DataContextImpl implements DataContext {
         parameterTypes.put( index, type );
         int i = 0;
         for ( PolyValue d : data ) {
-            parameterValues.get( i++ ).put( index, d );
+            parameterValues.get( i++ ).put( index, check( d, type ) );
         }
+    }
+
+
+    private PolyValue check( PolyValue value, AlgDataType type ) {
+        switch ( type.getPolyType() ) {
+            case DECIMAL -> {
+                if ( value.asNumber().toString().length() > type.getPrecision() ) {
+                    throw new GenericRuntimeException( "Numeric value is too long" );
+                }
+            }
+            case VARCHAR, CHAR -> {
+                if ( value.asString().value.length() > type.getPrecision() ) {
+                    throw new GenericRuntimeException( "Char value is too long" );
+                }
+            }
+            case BINARY, VARBINARY -> {
+                if ( value.asBinary().length() > type.getPrecision() ) {
+                    throw new GenericRuntimeException( "Binary value is too long" );
+                }
+            }
+        }
+        return value;
     }
 
 

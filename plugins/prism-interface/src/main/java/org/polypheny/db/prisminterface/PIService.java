@@ -458,7 +458,7 @@ class PIService {
         int fetchSize = request.hasFetchSize()
                 ? request.getFetchSize()
                 : PropertyUtils.DEFAULT_FETCH_SIZE;
-        return responseObserver.makeResponse( statement.execute( PrismValueDeserializer.deserializeParameterList( request.getParameters().getParametersList() ), fetchSize ) );
+        return responseObserver.makeResponse( statement.execute( PrismValueDeserializer.deserializeParameterList( request.getParameters().getParametersList() ), statement.getParameterMetas(), fetchSize ) );
     }
 
 
