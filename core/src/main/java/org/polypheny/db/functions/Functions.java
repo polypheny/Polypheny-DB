@@ -290,7 +290,7 @@ public class Functions {
     @SuppressWarnings("unused")
     public static <T> Enumerable<PolyValue[]> streamRight( final DataContext context, final Enumerable<PolyValue[]> baz, final Function0<Enumerable<PolyValue[]>> executorCall, final List<PolyType> polyTypes ) {
         AlgDataTypeFactory factory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
-        List<AlgDataType> algDataTypes = polyTypes.stream().map( typeName -> typeName == PolyType.ARRAY ? factory.createArrayType( factory.createPolyType( PolyType.ANY ), -1 ) : factory.createPolyType( typeName ) ).toList();
+        List<AlgDataType> algDataTypes = polyTypes.stream().map( typeName -> typeName == PolyType.ARRAY ? factory.createArrayType( factory.createPolyType( PolyType.ANY ), -1 ) : deriveType( factory, typeName ) ).toList();
 
         boolean single = polyTypes.size() == 1;
 
@@ -320,6 +320,14 @@ public class Functions {
         context.setParameterValues( valuesBackup );
 
         return Linq4j.asEnumerable( results );
+    }
+
+
+    private static AlgDataType deriveType( AlgDataTypeFactory factory, PolyType type ) {
+        if ( type == PolyType.CHAR ) {
+            return factory.createPolyType( PolyType.VARCHAR );
+        }
+        return factory.createPolyType( type );
     }
 
 
