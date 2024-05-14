@@ -147,6 +147,10 @@ public class DataContextImpl implements DataContext {
 
 
     private PolyValue check( PolyValue value, AlgDataType type ) {
+        if ( value == null || value.isNull() ) {
+            return null;
+        }
+
         switch ( type.getPolyType() ) {
             case DECIMAL -> {
                 if ( value.asNumber().toString().replace( ".", "" ).replace( "-", "" ).length() > type.getPrecision() ) {
