@@ -87,7 +87,7 @@ public class PIPreparedIndexedStatement extends PIPreparedStatement {
         long index = 0;
         for ( PolyValue value : values ) {
             if ( value != null ) {
-                AlgDataType algDataType = parameterMetas.contains( index )
+                AlgDataType algDataType = parameterMetas.size() > index
                         ? deriveType( statement.getTransaction().getTypeFactory(), parameterMetas.get( (int) index ) )
                         : statement.getTransaction().getTypeFactory().createPolyType( value.type );
                 statement.getDataContext().addParameterValues( index++, algDataType, List.of( value ) );
