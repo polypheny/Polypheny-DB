@@ -32,6 +32,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import javax.annotation.Nullable;
@@ -49,15 +50,17 @@ class PIServer {
 
     private final ServerSocketChannel server;
     private final static AtomicLong ID_COUNTER = new AtomicLong();
-    private final FileLock fileLock; // Needed for unix servers to keep a lock on the socket
+    private final ServerAndLock fileLock; // Needed for unix servers to keep a lock on the socket
+    private AtomicBoolean shutdown = new AtomicBoolean( false );
 
 
-    private PIServer( ServerSocketChannel server, ClientManager clientManager, String name, Function<SocketChannel, Transport> createTransport, @Nullable FileLock fileLock ) throws IOException {
+    private PIServer( ServerSocketChannel server, ClientManager clientManager, String name, Function<SocketChannel, Transport> createTransport, @Nullable ServerAndLock fileLock ) throws IOException {
         this.server = server;
         this.fileLock = fileLock;
         log.info( "Prism Interface started and is listening for {} connections on {}", name.toLowerCase(), server.getLocalAddress() );
         Thread acceptor = new Thread( () -> acceptLoop( server, clientManager, name, createTransport ), "PrismInterface" + name + "Server" );
         acceptor.start();
+        Runtime.getRuntime().addShutdownHook( new Thread( this::shutdownHook ) );
     }
 
 
@@ -71,7 +74,7 @@ class PIServer {
             case PLAIN -> new PIServer( createInetServer( Integer.parseInt( settings.get( "port" ) ) ), clientManager, "Plain", PlainTransport::accept );
             case UNIX -> {
                 ServerAndLock sl = createUnixServer( settings.get( "path" ) );
-                yield new PIServer( sl.server, clientManager, "Unix", UnixTransport::accept, sl.lock );
+                yield new PIServer( sl.server, clientManager, "Unix", UnixTransport::accept, sl );
             }
         };
     }
@@ -108,7 +111,7 @@ class PIServer {
             ServerSocketChannel s = ServerSocketChannel.open( StandardProtocolFamily.UNIX )
                     .bind( UnixDomainSocketAddress.of( socket.getAbsolutePath() ) );
             socket.setWritable( true, false );
-            return new ServerAndLock( s, fileLock.get() );
+            return new ServerAndLock( s, fileLock.get(), socket, lockPath );
         } else {
             throw new IOException( "There is already a Polypheny instance listening at " + socket.getPath() );
         }
@@ -161,17 +164,31 @@ class PIServer {
 
 
     void shutdown() throws InterruptedException, IOException {
+        if ( shutdown.getAndSet( true ) ) {
+            return;
+        }
         if ( log.isTraceEnabled() ) {
             log.trace( "prism-interface server shutdown requested" );
         }
         if ( fileLock != null ) {
-            fileLock.release();
+            fileLock.socket.delete();
+            fileLock.lockFile.toFile().delete();
+            fileLock.lock.release();
         }
         Util.closeNoThrow( server );
     }
 
 
-    private record ServerAndLock( ServerSocketChannel server, FileLock lock ) {
+    private void shutdownHook() {
+        try {
+            shutdown();
+        } catch ( IOException | InterruptedException e ) {
+            log.info( "Shutdown hook failed: ", e );
+        }
+    }
+
+
+    private record ServerAndLock( ServerSocketChannel server, FileLock lock, File socket, Path lockFile ) {
 
     }
 
