@@ -30,7 +30,7 @@ import io.activej.serializer.annotations.SerializeNullable;
 import io.activej.serializer.def.SimpleSerializerDef;
 import java.math.BigDecimal;
 import java.math.MathContext;
-import java.util.Objects;
+import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -46,12 +46,14 @@ import org.polypheny.db.type.entity.category.PolyNumber;
 
 @Value
 @Slf4j
+@EqualsAndHashCode(onlyExplicitlyIncluded = true, callSuper = false)
 public class PolyBigDecimal extends PolyNumber {
 
     @JsonProperty
     @Serialize
     @SerializeNullable
     @Nullable
+    @EqualsAndHashCode.Include
     public BigDecimal value;
 
 
@@ -190,37 +192,6 @@ public class PolyBigDecimal extends PolyNumber {
     @Override
     public String toString() {
         return value.toString();
-    }
-
-
-    @Override
-    public boolean equals( Object o ) {
-        if ( this == o ) {
-            return true;
-        }
-        if ( o == null ) {
-            return false;
-        }
-
-        if ( !(o instanceof PolyValue) ) {
-            return false;
-        }
-
-        if ( ((PolyValue) o).isNull() ) {
-            return false;
-        }
-
-        if ( !((PolyValue) o).isNumber() ) {
-            return false;
-        }
-        BigDecimal that = ((PolyValue) o).asNumber().bigDecimalValue();
-        return Objects.equals( value.stripTrailingZeros(), that.stripTrailingZeros() );
-    }
-
-
-    @Override
-    public int hashCode() {
-        return Objects.hash( super.hashCode(), value );
     }
 
 

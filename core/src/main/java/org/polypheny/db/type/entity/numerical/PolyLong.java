@@ -29,7 +29,7 @@ import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.def.SimpleSerializerDef;
 import java.math.BigDecimal;
 import java.math.MathContext;
-import java.util.Objects;
+import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -43,11 +43,13 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
 
 @Value
+@EqualsAndHashCode(onlyExplicitlyIncluded = true, callSuper = false)
 public class PolyLong extends PolyNumber {
 
     @Serialize
     @JsonProperty
     @Nullable
+    @EqualsAndHashCode.Include
     public Long value;
 
 
@@ -97,11 +99,6 @@ public class PolyLong extends PolyNumber {
         return ObjectUtils.compare( value, o.asNumber().LongValue() );
     }
 
-
-    @Override
-    public int hashCode() {
-        return Objects.hash( super.hashCode(), value );
-    }
 
 
     @Override

@@ -28,7 +28,7 @@ import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.def.SimpleSerializerDef;
 import java.math.BigDecimal;
-import java.util.Objects;
+import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -42,11 +42,13 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
 
 @Value
+@EqualsAndHashCode(onlyExplicitlyIncluded = true, callSuper = false)
 public class PolyDouble extends PolyNumber {
 
     @Serialize
     @JsonProperty
     @Nullable
+    @EqualsAndHashCode.Include
     public Double value;
 
 
@@ -85,12 +87,6 @@ public class PolyDouble extends PolyNumber {
         }
 
         return ObjectUtils.compare( value, o.asNumber().DoubleValue() );
-    }
-
-
-    @Override
-    public int hashCode() {
-        return Objects.hash( super.hashCode(), value );
     }
 
 

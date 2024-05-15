@@ -21,6 +21,7 @@ import com.mongodb.client.gridfs.GridFSBucket;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,6 +42,8 @@ import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.entity.physical.PhysicalCollection;
+import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
+import org.polypheny.db.catalog.entity.physical.PhysicalField;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
@@ -240,7 +243,7 @@ class MongoTableModify extends RelModify<MongoEntity> implements MongoAlg {
                 doc.putAll( getRenameUpdate( keys, key, (RexCall) el.operands.get( 2 ) ) );
                 break;
             default:
-                throw new RuntimeException( "The used update operation is not supported by the MongoDB adapter." );
+                throw new GenericRuntimeException( "The used update operation is not supported by the MongoDB adapter." );
         }
     }
 
@@ -370,7 +373,7 @@ class MongoTableModify extends RelModify<MongoEntity> implements MongoAlg {
                 doc.append( "$divide", array );
                 break;
             default:
-                throw new RuntimeException( "Not implemented yet" );
+                throw new GenericRuntimeException( "Not implemented yet" );
         }
 
         return doc;
@@ -394,7 +397,7 @@ class MongoTableModify extends RelModify<MongoEntity> implements MongoAlg {
             String physicalName = entity.getPhysicalName( input.getTupleType().getFields().get( pos ).getName() );
             if ( rexNode instanceof RexDynamicParam ) {
                 // preparedInsert
-                doc.append( physicalName == null ? implementor.getEntity().fields.get( pos ).name : physicalName, new BsonDynamic( (RexDynamicParam) rexNode ) );
+                doc.append( physicalName == null ? implementor.getEntity().fields.stream().sorted( Comparator.comparingInt( ( PhysicalField a ) -> a.unwrap( PhysicalColumn.class ).orElseThrow().position ) ).toList().get( pos ).name : physicalName, new BsonDynamic( (RexDynamicParam) rexNode ) );
             } else if ( rexNode instanceof RexLiteral ) {
                 doc.append( physicalName, BsonUtil.getAsBson( (RexLiteral) rexNode, bucket ) );
             } else if ( rexNode instanceof RexCall ) {
@@ -437,11 +440,11 @@ class MongoTableModify extends RelModify<MongoEntity> implements MongoAlg {
                 } else if ( operand instanceof RexCall ) {
                     return getBsonArray( (RexCall) operand, type, bucket );
                 }
-                throw new RuntimeException( "The given RexCall could not be transformed correctly." );
+                throw new GenericRuntimeException( "The given RexCall could not be transformed correctly." );
             } ).toList() );
             return array;
         }
-        throw new RuntimeException( "The given RexCall could not be transformed correctly." );
+        throw new GenericRuntimeException( "The given RexCall could not be transformed correctly." );
     }
 
 

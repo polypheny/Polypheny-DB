@@ -28,7 +28,7 @@ import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.def.SimpleSerializerDef;
 import java.math.BigDecimal;
-import java.util.Objects;
+import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -42,11 +42,13 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
 
 @Value
+@EqualsAndHashCode(onlyExplicitlyIncluded = true, callSuper = false)
 public class PolyFloat extends PolyNumber {
 
     @Serialize
     @JsonProperty
     @Nullable
+    @EqualsAndHashCode.Include
     public Float value;
 
 
@@ -107,12 +109,6 @@ public class PolyFloat extends PolyNumber {
 
 
     @Override
-    public int hashCode() {
-        return Objects.hash( super.hashCode(), value );
-    }
-
-
-    @Override
     public Expression asExpression() {
         return Expressions.new_( PolyFloat.class, Expressions.constant( value ) );
     }
@@ -150,7 +146,7 @@ public class PolyFloat extends PolyNumber {
 
     @Override
     public BigDecimal bigDecimalValue() {
-        return BigDecimal.valueOf( value );
+        return value == null ? null : new BigDecimal( Float.toString( value ) );
     }
 
 

@@ -1037,16 +1037,17 @@ public class MongoFilter extends Filter implements MongoAlg {
             String randomName = getRandomName();
             this.preProjections.put( randomName, BsonFunctionHelper.getFunction( right, rowType, implementor ) );
 
-            switch ( left.getKind() ) {
-                case LITERAL:
+            return switch ( left.getKind() ) {
+                case LITERAL -> {
                     attachCondition( op, randomName, BsonUtil.getAsBson( (RexLiteral) left, bucket ) );
-                    return true;
-                case DYNAMIC_PARAM:
+                    yield true;
+                }
+                case DYNAMIC_PARAM -> {
                     attachCondition( op, randomName, new BsonDynamic( (RexDynamicParam) left ) );
-                    return true;
-                default:
-                    return false;
-            }
+                    yield true;
+                }
+                default -> false;
+            };
 
         }
 
