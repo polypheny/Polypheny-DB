@@ -387,6 +387,13 @@ public interface AlgNode extends AlgOptNode, Cloneable {
         return getInputs().stream().anyMatch( AlgNode::containsScan );
     }
 
+    default boolean containsEntity() {
+        if ( getEntity() != null ) {
+            return true;
+        }
+        return getInputs().stream().anyMatch( AlgNode::containsEntity );
+    }
+
     /**
      * Context of an algebra expression, for purposes of checking validity.
      */

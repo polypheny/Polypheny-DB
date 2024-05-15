@@ -89,7 +89,6 @@ import java.util.RandomAccess;
 import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.TimeZone;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
@@ -102,7 +101,6 @@ import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.AlgVisitor;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.fun.AggFunction;
@@ -2058,20 +2056,7 @@ public class Util {
 
 
     public static boolean containsEntity( AlgNode a ) {
-        final AtomicBoolean contains = new AtomicBoolean( false );
-
-        AlgVisitor visitor = new AlgVisitor() {
-
-            @Override
-            public void visit( AlgNode node, int ordinal, AlgNode parent ) {
-                if ( node.getEntity() != null ) {
-                    contains.set( true );
-                }
-                super.visit( node, ordinal, parent );
-            }
-        };
-        visitor.go( a );
-        return contains.get();
+        return a.containsEntity();
     }
 
 

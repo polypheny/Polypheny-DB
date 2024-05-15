@@ -37,7 +37,7 @@ public class CottontailToEnumerableConverterRule extends ConverterRule {
                 CottontailConvention.INSTANCE,
                 EnumerableConvention.INSTANCE,
                 algBuilderFactory,
-                "CottontailToEnumerableConverterRule" );
+                CottontailToEnumerableConverterRule.class.getSimpleName() );
     }
 
 
