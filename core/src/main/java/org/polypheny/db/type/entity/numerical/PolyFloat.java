@@ -187,7 +187,7 @@ public class PolyFloat extends PolyNumber {
 
 
     @Override
-    public @Nullable Long deriveByteSize() {
+    public @NotNull Long deriveByteSize() {
         return 4L;
     }
 
