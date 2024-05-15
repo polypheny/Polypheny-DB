@@ -236,18 +236,18 @@ public class PolyBigDecimal extends PolyNumber {
             return false;
         }
 
-        if ( !(o instanceof PolyValue) ) {
+        if ( !(o instanceof PolyValue val) ) {
             return false;
         }
 
-        if ( ((PolyValue) o).isNull() ) {
+        if ( val.isNull() ) {
             return false;
         }
 
-        if ( !((PolyValue) o).isNumber() ) {
+        if ( !val.isNumber() ) {
             return false;
         }
-        BigDecimal that = ((PolyValue) o).asNumber().bigDecimalValue();
+        BigDecimal that = val.asNumber().bigDecimalValue();
         return Objects.equals( value.stripTrailingZeros(), that.stripTrailingZeros() );
     }
 
