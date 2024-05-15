@@ -350,10 +350,6 @@ public interface NeoUtil {
                 return o -> String.format( "%s > %s", o.get( 0 ), o.get( 1 ) );
             case GREATER_THAN_OR_EQUAL:
                 return o -> String.format( "%s >= %s", o.get( 0 ), o.get( 1 ) );
-            case IN:
-                return o -> String.format( "%s IN %s", o.get( 0 ), o.get( 1 ) );
-            case NOT_IN:
-                return o -> String.format( "%s NOT IN %s", o.get( 0 ), o.get( 1 ) );
             case LESS_THAN:
                 return o -> String.format( "%s < %s", o.get( 0 ), o.get( 1 ) );
             case LESS_THAN_OR_EQUAL:
@@ -568,7 +564,6 @@ public interface NeoUtil {
             if ( type.getType() == PolyType.DECIMAL ) {
                 return value.asNumber().bigDecimalValue().toPlainString();
             }
-            return value.asNumber().DoubleValue();
         }
         if ( value.isList() ) {
             if ( isNested ) {
