@@ -23,6 +23,7 @@ import java.net.Inet4Address;
 import java.net.InetSocketAddress;
 import java.net.StandardProtocolFamily;
 import java.net.UnixDomainSocketAddress;
+import java.nio.channels.AsynchronousCloseException;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.channels.ServerSocketChannel;
@@ -152,7 +153,10 @@ class PIServer {
                 Thread t = new Thread( () -> acceptConnection( s, name, connectionId, createTransport, clientManager ), String.format( "PrismInterface" + name + "ClientConnection%d", connectionId ) );
                 t.start();
             } catch ( IOException e ) {
-                log.error( e.getMessage() );
+                if (e instanceof AsynchronousCloseException && shutdown.get() ) {
+                    return;
+                }
+                log.error( "acceptLoop", e );
                 break;
             } catch ( Throwable t ) {
                 // For debug purposes
