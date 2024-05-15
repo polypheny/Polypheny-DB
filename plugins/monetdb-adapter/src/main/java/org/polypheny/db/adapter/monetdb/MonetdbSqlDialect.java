@@ -17,6 +17,7 @@
 package org.polypheny.db.adapter.monetdb;
 
 
+import javax.annotation.Nullable;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import nl.cwi.monetdb.jdbc.MonetClob;
@@ -50,6 +51,7 @@ import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyBinary;
+import org.polypheny.db.type.entity.PolyValue;
 
 
 /**
@@ -135,8 +137,8 @@ public class MonetdbSqlDialect extends SqlDialect {
             case FILE, AUDIO, IMAGE, VIDEO -> {
                 UnaryExpression client = Expressions.convert_( Expressions.call( resultSet_, "getObject", Expressions.constant( index ) ), MonetClob.class );
                 yield Expressions.call(
-                        PolyBinary.class,
-                        "fromTypedJson",
+                        MonetdbSqlDialect.class,
+                        "nullableFromTypedJson",
                         Expressions.convert_( Expressions.call( MonetdbSqlDialect.class, "toString", client ), String.class ),
                         Expressions.constant( PolyBinary.class ) );
             }
@@ -146,6 +148,15 @@ public class MonetdbSqlDialect extends SqlDialect {
             }
             default -> super.handleRetrieval( fieldType, child, resultSet_, index );
         };
+    }
+
+
+    @SuppressWarnings("unused")
+    public static PolyValue nullableFromTypedJson( @Nullable String value, Class<? extends PolyValue> type ) {
+        if ( value == null ) {
+            return null;
+        }
+        return PolyValue.fromTypedJson( value, type );
     }
 
 

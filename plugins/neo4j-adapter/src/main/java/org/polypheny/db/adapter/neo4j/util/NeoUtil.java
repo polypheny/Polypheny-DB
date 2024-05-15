@@ -112,7 +112,7 @@ public interface NeoUtil {
             case BIGINT:
                 return v -> PolyBigDecimal.of( v.asLong() );
             case DECIMAL:
-                return v -> PolyBigDecimal.of( v.asString() );
+                return v -> v instanceof StringValue ? PolyBigDecimal.of( v.asString() ) : PolyBigDecimal.of( v.asDouble() );
             case FLOAT:
             case REAL:
                 return v -> v instanceof StringValue ? PolyFloat.of( Float.valueOf( v.asString() ) ) : PolyFloat.of( v.asNumber() );
