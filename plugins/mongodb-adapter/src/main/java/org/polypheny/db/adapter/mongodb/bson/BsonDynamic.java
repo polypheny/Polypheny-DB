@@ -47,7 +47,6 @@ public class BsonDynamic extends BsonDocument {
 
 
     public BsonDynamic( long id, String polyTypeName ) {
-        super();
         this.id = id;
         append( MongoDynamic.MONGO_DYNAMIC_INDEX_KEY, new BsonInt64( id ) );
         append( MongoDynamic.MONGO_DYNAMIC_TYPE_KEY, new BsonString( polyTypeName ) );

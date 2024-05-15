@@ -16,13 +16,13 @@
 
 package org.polypheny.db.adapter.neo4j;
 
-import org.polypheny.db.adapter.neo4j.util.NeoUtil;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.enumerable.EnumerableConvention;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.tools.AlgBuilderFactory;
+import org.polypheny.db.util.Util;
 
 /**
  * {@link ConverterRule}, which registers the Neo4j converter operator to push the algebra into the Neo4j adapter.
@@ -35,7 +35,7 @@ public class NeoToEnumerableConverterRule extends ConverterRule {
     public NeoToEnumerableConverterRule( AlgBuilderFactory algBuilderFactory ) {
         super(
                 AlgNode.class,
-                NeoUtil::containsEntity,
+                Util::containsEntity,
                 NeoConvention.INSTANCE,
                 EnumerableConvention.INSTANCE,
                 algBuilderFactory,

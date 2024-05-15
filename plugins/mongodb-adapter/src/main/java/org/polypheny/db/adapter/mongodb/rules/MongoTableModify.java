@@ -394,7 +394,7 @@ class MongoTableModify extends RelModify<MongoEntity> implements MongoAlg {
             String physicalName = entity.getPhysicalName( input.getTupleType().getFields().get( pos ).getName() );
             if ( rexNode instanceof RexDynamicParam ) {
                 // preparedInsert
-                doc.append( physicalName, new BsonDynamic( (RexDynamicParam) rexNode ) );
+                doc.append( physicalName == null ? implementor.getEntity().fields.get( pos ).name : physicalName, new BsonDynamic( (RexDynamicParam) rexNode ) );
             } else if ( rexNode instanceof RexLiteral ) {
                 doc.append( physicalName, BsonUtil.getAsBson( (RexLiteral) rexNode, bucket ) );
             } else if ( rexNode instanceof RexCall ) {

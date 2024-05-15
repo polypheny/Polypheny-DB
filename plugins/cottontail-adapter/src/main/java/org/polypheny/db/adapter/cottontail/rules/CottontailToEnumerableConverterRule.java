@@ -24,6 +24,7 @@ import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.enumerable.EnumerableConvention;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.tools.AlgBuilderFactory;
+import org.polypheny.db.util.Util;
 
 
 public class CottontailToEnumerableConverterRule extends ConverterRule {
@@ -32,7 +33,7 @@ public class CottontailToEnumerableConverterRule extends ConverterRule {
     public CottontailToEnumerableConverterRule( AlgBuilderFactory algBuilderFactory ) {
         super(
                 AlgNode.class,
-                r -> true,
+                Util::containsEntity,
                 CottontailConvention.INSTANCE,
                 EnumerableConvention.INSTANCE,
                 algBuilderFactory,

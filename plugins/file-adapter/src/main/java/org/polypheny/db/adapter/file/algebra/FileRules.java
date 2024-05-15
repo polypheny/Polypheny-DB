@@ -52,6 +52,7 @@ import org.polypheny.db.schema.document.DocumentRules;
 import org.polypheny.db.schema.types.ModifiableTable;
 import org.polypheny.db.tools.AlgBuilderFactory;
 import org.polypheny.db.util.UnsupportedRexCallVisitor;
+import org.polypheny.db.util.Util;
 
 
 @Slf4j
@@ -154,7 +155,7 @@ public class FileRules {
 
 
         public FileToEnumerableConverterRule( FileConvention convention, AlgBuilderFactory algBuilderFactory, Method enumeratorMethod, FileSchema fileSchema ) {
-            super( AlgNode.class, r -> true, convention, EnumerableConvention.INSTANCE, algBuilderFactory, "FileToEnumerableConverterRule:" + convention.getName() );
+            super( AlgNode.class, Util::containsEntity, convention, EnumerableConvention.INSTANCE, algBuilderFactory, "FileToEnumerableConverterRule:" + convention.getName() );
             this.enumeratorMethod = enumeratorMethod;
             this.fileSchema = fileSchema;
         }
