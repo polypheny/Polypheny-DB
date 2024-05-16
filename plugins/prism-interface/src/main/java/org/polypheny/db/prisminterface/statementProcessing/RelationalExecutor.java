@@ -50,13 +50,12 @@ public class RelationalExecutor extends Executor {
         throwOnIllegalState( piStatement );
         Statement statement = piStatement.getStatement();
         PolyImplementation implementation = piStatement.getImplementation();
-        PIClient client = piStatement.getClient();
         StatementResult.Builder resultBuilder = StatementResult.newBuilder();
         if ( implementation.isDDL() || Kind.DML.contains( implementation.getKind() ) ) {
             try ( ResultIterator iterator = implementation.execute( statement, -1 ) ) {
                 resultBuilder.setScalar( PolyImplementation.getRowsChanged( statement, iterator.getIterator(), MonitoringType.from( implementation.getKind() ) ) );
             }
-            client.commitCurrentTransactionIfAuto();
+            piStatement.getClient().commitCurrentTransactionIfAuto();
             return resultBuilder.build();
         }
         throw new PIServiceException( "Can't execute a non DDL or non DML statement using this method..",
