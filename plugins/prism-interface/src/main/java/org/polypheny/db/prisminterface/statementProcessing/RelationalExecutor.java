@@ -47,28 +47,9 @@ public class RelationalExecutor extends Executor {
 
     @Override
     StatementResult executeAndGetResult( PIStatement piStatement ) {
-        if ( hasInvalidNamespaceType( piStatement ) ) {
-            throw new PIServiceException( "The results of type "
-                    + piStatement.getLanguage().dataModel()
-                    + "returned by this statement can't be retrieved by a relational retriever.",
-                    "I9000",
-                    9000
-            );
-        }
+        throwOnIllegalState( piStatement );
         Statement statement = piStatement.getStatement();
-        if ( statement == null ) {
-            throw new PIServiceException( "Statement is not linked to a polypheny statement",
-                    "I9001",
-                    9001
-            );
-        }
         PolyImplementation implementation = piStatement.getImplementation();
-        if ( implementation == null ) {
-            throw new PIServiceException( "Can't retrieve results from an unexecuted statement.",
-                    "I9002",
-                    9002
-            );
-        }
         PIClient client = piStatement.getClient();
         StatementResult.Builder resultBuilder = StatementResult.newBuilder();
         if ( implementation.isDDL() || Kind.DML.contains( implementation.getKind() ) ) {
@@ -86,28 +67,9 @@ public class RelationalExecutor extends Executor {
 
 
     public StatementResult executeAndGetResult( PIStatement piStatement, int fetchSize ) {
-        if ( hasInvalidNamespaceType( piStatement ) ) {
-            throw new PIServiceException( "The results of type "
-                    + piStatement.getLanguage().dataModel()
-                    + "returned by this statement can't be retrieved by a relational retriever.",
-                    "I9000",
-                    9000
-            );
-        }
+        throwOnIllegalState( piStatement );
         Statement statement = piStatement.getStatement();
-        if ( statement == null ) {
-            throw new PIServiceException( "Statement is not linked to a polypheny statement",
-                    "I9001",
-                    9001
-            );
-        }
         PolyImplementation implementation = piStatement.getImplementation();
-        if ( implementation == null ) {
-            throw new PIServiceException( "Can't retrieve results from an unprepared statement.",
-                    "I9002",
-                    9002
-            );
-        }
         PIClient client = piStatement.getClient();
         StatementResult.Builder resultBuilder = StatementResult.newBuilder();
         if ( Kind.DDL.contains( implementation.getKind() ) ) {
@@ -134,29 +96,10 @@ public class RelationalExecutor extends Executor {
 
     @Override
     public Frame fetch( PIStatement piStatement, int fetchSize ) {
-        if ( hasInvalidNamespaceType( piStatement ) ) {
-            throw new PIServiceException( "The results of type "
-                    + piStatement.getLanguage().dataModel()
-                    + "returned by this statement can't be retrieved by a relational retriever.",
-                    "I9000",
-                    9000
-            );
-        }
+        throwOnIllegalState( piStatement );
         StopWatch executionStopWatch = piStatement.getExecutionStopWatch();
         PolyImplementation implementation = piStatement.getImplementation();
-        if ( implementation == null ) {
-            throw new PIServiceException( "Can't fetch from an unprepared statement.",
-                    "I9002",
-                    9002
-            );
-        }
         ResultIterator iterator = piStatement.getIterator();
-        if ( iterator == null ) {
-            throw new PIServiceException( "Can't fetch from an unexecuted statement.",
-                    "I9002",
-                    9002
-            );
-        }
         startOrResumeStopwatch( executionStopWatch );
         List<List<PolyValue>> rows = iterator.getNextBatch( fetchSize );
         executionStopWatch.suspend();
