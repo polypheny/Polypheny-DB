@@ -59,7 +59,6 @@ public class StatementManager {
 
 
     public PIUnparameterizedStatement createUnparameterizedStatement( ExecuteUnparameterizedStatementRequest request ) throws PIServiceException {
-        //synchronized ( client ) {
         String languageName = request.getLanguageName();
         if ( !isSupportedLanguage( languageName ) ) {
             throw new PIServiceException( "Language " + languageName + " not supported." );
@@ -82,12 +81,10 @@ public class StatementManager {
             log.trace( "created request {}", statement );
         }
         return statement;
-        //}
     }
 
 
     public PIUnparameterizedStatementBatch createUnparameterizedStatementBatch( List<ExecuteUnparameterizedStatementRequest> statements ) {
-        //synchronized ( client ) {
         List<PIUnparameterizedStatement> PIUnparameterizedStatements = statements.stream()
                 .map( this::createUnparameterizedStatement )
                 .collect( Collectors.toList() );
@@ -98,12 +95,10 @@ public class StatementManager {
             log.trace( "created batch {}", batch );
         }
         return batch;
-        //}
     }
 
 
     public PIPreparedIndexedStatement createIndexedPreparedInterfaceStatement( PrepareStatementRequest request ) throws PIServiceException {
-        //synchronized ( client ) {
         String languageName = request.getLanguageName();
         if ( !isSupportedLanguage( languageName ) ) {
             throw new PIServiceException( "Language " + languageName + " not supported." );
@@ -126,12 +121,10 @@ public class StatementManager {
             log.trace( "created named prepared statement {}", statement );
         }
         return statement;
-        //}
     }
 
 
     public PIPreparedNamedStatement createNamedPreparedInterfaceStatement( PrepareStatementRequest request ) throws PIServiceException {
-        //synchronized ( client ) {
         String languageName = request.getLanguageName();
         if ( !isSupportedLanguage( languageName ) ) {
             throw new PIServiceException( "Language " + languageName + " not supported." );
@@ -154,22 +147,17 @@ public class StatementManager {
             log.trace( "created named prepared statement {}", statement );
         }
         return statement;
-        //}
     }
 
 
     public void closeAll() {
-        //synchronized ( client ) {
         openUnparameterizedBatches.values().forEach( this::closeBatch );
         openStatements.values().forEach( s -> closeStatement( s.getId() ) );
-        //}
     }
 
 
     public void closeBatch( PIUnparameterizedStatementBatch toClose ) {
-        //synchronized ( toClose ) {
         toClose.getStatements().forEach( s -> closeStatementOrBatch( s.getId() ) );
-        //}
     }
 
 
@@ -178,10 +166,9 @@ public class StatementManager {
         if ( statementToClose == null ) {
             return;
         }
-        //synchronized ( statementToClose ) {
+
         openStatements.remove( statementId );
         statementToClose.close();
-        //}
     }
 
 

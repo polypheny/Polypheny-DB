@@ -16,7 +16,7 @@
 
 package org.polypheny.db.prisminterface.statements;
 
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.IntStream;
 import lombok.Getter;
@@ -58,7 +58,7 @@ public class PIPreparedIndexedStatement extends PIPreparedStatement {
 
 
     public List<Long> executeBatch( List<List<PolyValue>> valuesBatch ) {
-        List<Long> updateCounts = new LinkedList<>();//synchronized ( this ) {
+        List<Long> updateCounts = new ArrayList<>();
         if ( statement == null || client.hasNoTransaction() ) {
             statement = client.getOrCreateNewTransaction().createStatement();
         } else {
@@ -78,7 +78,6 @@ public class PIPreparedIndexedStatement extends PIPreparedStatement {
 
     @SuppressWarnings("Duplicates")
     public StatementResult execute( List<PolyValue> values, List<ParameterMeta> parameterMetas, int fetchSize ) {
-        //synchronized ( this ) {
         if ( statement == null || client.hasNoTransaction() ) {
             statement = client.getOrCreateNewTransaction().createStatement();
         } else {
@@ -95,7 +94,6 @@ public class PIPreparedIndexedStatement extends PIPreparedStatement {
         }
         StatementProcessor.implement( this );
         return StatementProcessor.executeAndGetResult( this, fetchSize );
-        //}
     }
 
 

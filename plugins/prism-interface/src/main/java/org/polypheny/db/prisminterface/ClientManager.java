@@ -55,10 +55,8 @@ class ClientManager {
 
 
     public void unregisterConnection( PIClient client ) {
-        //synchronized ( client ) {
         client.prepareForDisposal();
         clients.remove( client.getClientUUID() );
-        //}
     }
 
 

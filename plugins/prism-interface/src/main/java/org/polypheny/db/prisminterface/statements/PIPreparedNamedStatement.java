@@ -59,7 +59,6 @@ public class PIPreparedNamedStatement extends PIPreparedStatement {
 
     @SuppressWarnings("Duplicates")
     public StatementResult execute( Map<String, PolyValue> values, int fetchSize ) throws Exception {
-        //synchronized ( this ) {
         if ( statement == null || client.hasNoTransaction() ) {
             statement = client.getOrCreateNewTransaction().createStatement();
         } else {
@@ -71,7 +70,6 @@ public class PIPreparedNamedStatement extends PIPreparedStatement {
         }
         StatementProcessor.implement( this );
         return StatementProcessor.executeAndGetResult( this, fetchSize );
-        //}
     }
 
 

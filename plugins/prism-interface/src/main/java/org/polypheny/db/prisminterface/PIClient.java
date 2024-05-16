@@ -68,12 +68,10 @@ public class PIClient {
 
 
     public Transaction getOrCreateNewTransaction() {
-        //synchronized ( this ) {
         if ( hasNoTransaction() ) {
             currentTransaction = transactionManager.startTransaction( catalogUser.id, namespace.id, false, "PrismInterface" );
         }
         return currentTransaction;
-        //}
     }
 
 
@@ -86,9 +84,7 @@ public class PIClient {
 
 
     public void commitCurrentTransaction() throws PIServiceException {
-        //synchronized ( this ) {
         commitCurrentTransactionUnsynchronized();
-        //}
     }
 
 
@@ -107,7 +103,6 @@ public class PIClient {
 
 
     public void rollbackCurrentTransaction() throws PIServiceException {
-        //synchronized ( this ) {
         if ( hasNoTransaction() ) {
             return;
         }
@@ -119,7 +114,6 @@ public class PIClient {
         } finally {
             clearCurrentTransaction();
         }
-        //}
     }
 
 
