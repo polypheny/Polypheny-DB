@@ -28,13 +28,16 @@ import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyBlob;
 import org.polypheny.db.type.entity.document.PolyDocument;
+import org.polypheny.db.type.entity.graph.PolyEdge;
+import org.polypheny.db.type.entity.graph.PolyEdge.EdgeDirection;
+import org.polypheny.db.type.entity.graph.PolyNode;
+import org.polypheny.db.type.entity.graph.PolyPath;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyFloat;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.type.entity.relational.PolyMap;
-import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.type.entity.temporal.PolyDate;
 import org.polypheny.db.type.entity.temporal.PolyTime;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
@@ -44,13 +47,17 @@ import org.polypheny.prism.ProtoBoolean;
 import org.polypheny.prism.ProtoDate;
 import org.polypheny.prism.ProtoDocument;
 import org.polypheny.prism.ProtoDouble;
+import org.polypheny.prism.ProtoEdge;
+import org.polypheny.prism.ProtoEdge.Direction;
 import org.polypheny.prism.ProtoEntry;
 import org.polypheny.prism.ProtoFloat;
 import org.polypheny.prism.ProtoInteger;
 import org.polypheny.prism.ProtoInterval;
 import org.polypheny.prism.ProtoList;
 import org.polypheny.prism.ProtoLong;
+import org.polypheny.prism.ProtoNode;
 import org.polypheny.prism.ProtoNull;
+import org.polypheny.prism.ProtoPath;
 import org.polypheny.prism.ProtoString;
 import org.polypheny.prism.ProtoTime;
 import org.polypheny.prism.ProtoTimestamp;
@@ -97,24 +104,10 @@ public class PolyValueSerializer {
             case NULL -> serializeAsProtoNull();
             case ARRAY -> serializeAsProtoList( polyValue.asList() );
             case DOCUMENT -> serializeAsProtoDocument( polyValue.asDocument() );
-            case GEOMETRY -> serializeGeometry( polyValue.asGeometry() );
             case IMAGE, VIDEO, AUDIO, FILE -> serializeAsProtoFile( polyValue.asBlob() ); // used
             case MAP, GRAPH, NODE, EDGE, PATH, DISTINCT, STRUCTURED, ROW, OTHER, CURSOR, COLUMN_LIST, DYNAMIC_STAR, SYMBOL, JSON, MULTISET, USER_DEFINED_TYPE, ANY -> throw new NotImplementedException( "Serialization of " + polyValue.getType() + " to proto not implemented" );
             default -> throw new NotImplementedException();
         };
-    }
-
-
-    private static ProtoValue serializeGeometry( PolyGeometry geometry ) {
-        ProtoString asString = ProtoString.newBuilder().setString( geometry.toString() ).build(); // todo add own value, taken from @danylokravchenko
-        return ProtoValue.newBuilder().setString( asString ).build();
-    }
-
-
-    public static ProtoDocument buildProtoDocument( PolyDocument polyDocument ) {
-        return ProtoDocument.newBuilder()
-                .addAllEntries( serializeToProtoEntryList( polyDocument.asMap() ) )
-                .build();
     }
 
 
@@ -287,7 +280,7 @@ public class PolyValueSerializer {
     }
 
 
-    private static ProtoValue serializeAsProtoNull() {
+    public static ProtoValue serializeAsProtoNull() {
         return ProtoValue.newBuilder()
                 .setNull( ProtoNull.newBuilder().build() )
                 .build();
@@ -306,5 +299,57 @@ public class PolyValueSerializer {
                 .setBigDecimal( protoBigDecimal )
                 .build();
     }
+
+
+    public static ProtoDocument buildProtoDocument( PolyDocument polyDocument ) {
+        return ProtoDocument.newBuilder()
+                .addAllEntries( serializeToProtoEntryList( polyDocument.asMap() ) )
+                .build();
+    }
+
+
+    public static ProtoNode buildProtoNode( PolyNode polyNode ) {
+        return ProtoNode.newBuilder()
+                .setId( polyNode.getId().getValue() )
+                .setName( polyNode.getVariableName().getValue() )
+                .addAllLabels( polyNode.getLabels().stream().map( l -> ((PolyString) l).getValue() ).collect( Collectors.toList() ) )
+                .addAllProperties( serializeToProtoEntryList( polyNode.properties.asMap() ) )
+                .build();
+    }
+
+
+    public static ProtoEdge buildProtoEdge( PolyEdge polyEdge ) {
+        return ProtoEdge.newBuilder()
+                .setId( polyEdge.getId().getValue() )
+                .setName( polyEdge.getVariableName().getValue() )
+                .addAllLabels( polyEdge.getLabels().stream().map( l -> ((PolyString) l).getValue() ).collect( Collectors.toList() ) )
+                .addAllProperties( serializeToProtoEntryList( polyEdge.properties.asMap() ) )
+                .setSource( polyEdge.getSource().getValue() )
+                .setTarget( polyEdge.getTarget().getValue() )
+                .setDirection( buildProtoEdgeDirection( polyEdge.getDirection() ) )
+                .build();
+    }
+
+
+    private static Direction buildProtoEdgeDirection( EdgeDirection direction ) {
+        switch ( direction ) {
+            case LEFT_TO_RIGHT -> {
+                return Direction.LEFT_TO_RIGHT;
+            }
+            case RIGHT_TO_LEFT -> {
+                return Direction.RIGHT_TO_LEFT;
+            }
+            case NONE -> {
+                return Direction.NONE;
+            }
+        }
+        return Direction.UNSPECIFIED;
+    }
+
+
+    public static ProtoPath buildProtoPath( PolyPath polyPath ) {
+        throw new NotImplementedException();
+    }
+
 
 }
