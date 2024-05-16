@@ -112,7 +112,7 @@ public class PrismUtils {
     }
 
 
-    public static Frame buildGraphFrame() {
+    public static Frame buildGraphFrame(boolean isLast, List<List<PolyValue>> data) {
         throw new GenericRuntimeException( "Feature not implemented" );
     }
 

@@ -38,7 +38,7 @@ public abstract class Executor {
     }
 
 
-    protected void throwOnIllegalState( PIStatement piStatement ) {
+    protected void throwOnIllegalState( PIStatement piStatement ) throws PIServiceException {
         DataModel statementDataModel = piStatement.getLanguage().dataModel();
 
         if ( statementDataModel != getDataModel() ) {
