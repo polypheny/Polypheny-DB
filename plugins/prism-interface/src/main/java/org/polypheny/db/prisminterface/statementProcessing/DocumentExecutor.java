@@ -59,7 +59,6 @@ public class DocumentExecutor extends Executor {
     StatementResult executeAndGetResult( PIStatement piStatement, int fetchSize ) {
         throwOnIllegalState( piStatement );
         PolyImplementation implementation = piStatement.getImplementation();
-        PIClient client = piStatement.getClient();
         StatementResult.Builder resultBuilder = StatementResult.newBuilder();
         if ( implementation.isDDL() ) {
             resultBuilder.setScalar( 1 );
@@ -70,7 +69,7 @@ public class DocumentExecutor extends Executor {
         resultBuilder.setFrame( frame );
         if ( frame.getIsLast() ) {
             //TODO TH: special handling for result set updates. Do we need to wait with committing until all changes have been done?
-            client.commitCurrentTransactionIfAuto();
+            piStatement.getClient().commitCurrentTransactionIfAuto();
         }
         return resultBuilder.build();
     }
@@ -80,14 +79,13 @@ public class DocumentExecutor extends Executor {
     Frame fetch( PIStatement piStatement, int fetchSize ) {
         throwOnIllegalState( piStatement );
         StopWatch executionStopWatch = piStatement.getExecutionStopWatch();
-        PolyImplementation implementation = piStatement.getImplementation();
         ResultIterator iterator = piStatement.getIterator();
         startOrResumeStopwatch( executionStopWatch );
         List<PolyValue> data = iterator.getNextBatch( fetchSize ).stream().map( p -> p.get( 0 ) ).toList();
         boolean isLast = !iterator.hasMoreRows();
         if ( isLast ) {
             executionStopWatch.stop();
-            implementation.getExecutionTimeMonitor().setExecutionTime( executionStopWatch.getNanoTime() );
+            piStatement.getImplementation().getExecutionTimeMonitor().setExecutionTime( executionStopWatch.getNanoTime() );
         }
         return PrismUtils.buildDocumentFrame( isLast, data );
     }
