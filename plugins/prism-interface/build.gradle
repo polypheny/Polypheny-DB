@@ -16,6 +16,7 @@ configurations {
 
 repositories {
     mavenCentral()
+    mavenLocal()
 }
 
 dependencies {
@@ -25,7 +26,7 @@ dependencies {
     compileOnly project(path: ':plugins:mql-language')
 
     // Prism API files (protobuf files), needs to be implementation due to the prism-api-version.properties
-    implementation group: 'org.polypheny', name: 'prism', version: prism_api_version
+    implementation group: 'org.polypheny', name: 'prism', version: 5.1
 
     // Protobuf
     implementation group: 'com.google.protobuf', name: 'protobuf-java', version: protobuf_version
