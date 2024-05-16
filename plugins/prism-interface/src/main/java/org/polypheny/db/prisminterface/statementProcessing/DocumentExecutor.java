@@ -25,7 +25,6 @@ import org.polypheny.db.prisminterface.PIClient;
 import org.polypheny.db.prisminterface.PIServiceException;
 import org.polypheny.db.prisminterface.statements.PIStatement;
 import org.polypheny.db.prisminterface.utils.PrismUtils;
-import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.prism.Frame;
 import org.polypheny.prism.StatementResult;
@@ -43,24 +42,9 @@ public class DocumentExecutor extends Executor {
 
     @Override
     StatementResult executeAndGetResult( PIStatement piStatement ) {
-        if ( hasInvalidNamespaceType( piStatement ) ) {
-            throw new PIServiceException( "The results of type "
-                    + piStatement.getLanguage().dataModel()
-                    + "returned by this statement can't be retrieved by a document retriever.",
-                    "I9000",
-                    9000
-            );
-        }
-        PolyImplementation implementation = piStatement.getImplementation();
-        if ( implementation == null ) {
-            throw new PIServiceException( "Can't retrieve results form an unexecuted statement.",
-                    "I9002",
-                    9002
-            );
-        }
-        PIClient client = piStatement.getClient();
+        throwOnIllegalState( piStatement );
         StatementResult.Builder resultBuilder = StatementResult.newBuilder();
-        if ( implementation.isDDL() ) {
+        if ( piStatement.getImplementation().isDDL() ) {
             resultBuilder.setScalar( 1 );
             return resultBuilder.build();
         }
@@ -73,21 +57,8 @@ public class DocumentExecutor extends Executor {
 
     @Override
     StatementResult executeAndGetResult( PIStatement piStatement, int fetchSize ) {
-        if ( hasInvalidNamespaceType( piStatement ) ) {
-            throw new PIServiceException( "The results of type "
-                    + piStatement.getLanguage().dataModel()
-                    + "returned by this statement can't be retrieved by a document retriever.",
-                    "I9000",
-                    9000
-            );
-        }
+        throwOnIllegalState( piStatement );
         PolyImplementation implementation = piStatement.getImplementation();
-        if ( implementation == null ) {
-            throw new PIServiceException( "Can't retrieve results form an unexecuted statement.",
-                    "I9002",
-                    9002
-            );
-        }
         PIClient client = piStatement.getClient();
         StatementResult.Builder resultBuilder = StatementResult.newBuilder();
         if ( implementation.isDDL() ) {
@@ -107,40 +78,18 @@ public class DocumentExecutor extends Executor {
 
     @Override
     Frame fetch( PIStatement piStatement, int fetchSize ) {
-        if ( hasInvalidNamespaceType( piStatement ) ) {
-            throw new PIServiceException( "The results of type "
-                    + piStatement.getLanguage().dataModel()
-                    + "returned by this statement can't be retrieved by a document retriever.",
-                    "I9000",
-                    9000
-            );
-        }
+        throwOnIllegalState( piStatement );
         StopWatch executionStopWatch = piStatement.getExecutionStopWatch();
-        Statement statement = piStatement.getStatement();
-        if ( statement == null ) {
-            throw new PIServiceException( "Statement is not linked to a polypheny statement",
-                    "I9001",
-                    9001
-            );
-        }
         PolyImplementation implementation = piStatement.getImplementation();
-        if ( implementation == null ) {
-            throw new PIServiceException( "Can't fetch from an unexecuted statement.",
-                    "I9002",
-                    9002
-            );
-        }
         ResultIterator iterator = piStatement.getIterator();
-        if ( iterator == null ) {
-            throw new PIServiceException( "Can't fetch from an unexecuted statement.",
-                    "I9002",
-                    9002
-            );
-        }
         startOrResumeStopwatch( executionStopWatch );
         List<PolyValue> data = iterator.getNextBatch( fetchSize ).stream().map( p -> p.get( 0 ) ).toList();
-        executionStopWatch.stop();
-        return PrismUtils.buildDocumentFrame( !iterator.hasMoreRows(), data );
+        boolean isLast = !iterator.hasMoreRows();
+        if ( isLast ) {
+            executionStopWatch.stop();
+            implementation.getExecutionTimeMonitor().setExecutionTime( executionStopWatch.getNanoTime() );
+        }
+        return PrismUtils.buildDocumentFrame( isLast, data );
     }
 
 }
