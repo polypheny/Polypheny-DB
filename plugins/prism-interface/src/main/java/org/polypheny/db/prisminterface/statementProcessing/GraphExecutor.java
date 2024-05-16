@@ -23,9 +23,12 @@ import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.ResultIterator;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.prisminterface.PIServiceException;
+import org.polypheny.db.prisminterface.metaRetrieval.GraphMetaRetriever;
+import org.polypheny.db.prisminterface.metaRetrieval.RelationalMetaRetriever;
 import org.polypheny.db.prisminterface.statements.PIStatement;
 import org.polypheny.db.prisminterface.utils.PrismUtils;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.prism.ColumnMeta;
 import org.polypheny.prism.Frame;
 import org.polypheny.prism.StatementResult;
 
@@ -85,6 +88,10 @@ public class GraphExecutor extends Executor {
         if ( isLast ) {
             executionStopWatch.stop();
             piStatement.getImplementation().getExecutionTimeMonitor().setExecutionTime( executionStopWatch.getNanoTime() );
+        }
+        if (GraphMetaRetriever.retrievedResultIsRelational(piStatement.getImplementation())) {
+            List<ColumnMeta> columnMetas = GraphMetaRetriever.retrieveColumnMetas( piStatement.getImplementation() );
+            return PrismUtils.buildRelationalFrame( isLast, data, columnMetas );
         }
         return PrismUtils.buildGraphFrame( isLast, data );
     }

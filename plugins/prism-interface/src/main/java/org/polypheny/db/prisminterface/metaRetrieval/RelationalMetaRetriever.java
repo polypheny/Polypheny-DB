@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.prisminterface.relational;
+package org.polypheny.db.prisminterface.metaRetrieval;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,6 +28,7 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.prisminterface.utils.PrismUtils;
 import org.polypheny.db.processing.QueryProcessorHelpers;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.prism.ArrayMeta;
@@ -43,6 +44,21 @@ public class RelationalMetaRetriever {
     private static final int ORIGIN_COLUMN_INDEX = 3;
     private static final int ORIGIN_TABLE_INDEX = 2;
     private static final int ORIGIN_SCHEMA_INDEX = 1;
+
+
+    public static List<ColumnMeta> retrieveColumnMetas( PolyImplementation polyImplementation ) {
+        AlgDataType algDataType = retrieveAlgDataType( polyImplementation );
+        AlgDataType whatever = QueryProcessorHelpers.makeStruct( polyImplementation.getStatement().getTransaction().getTypeFactory(), algDataType );
+        List<List<String>> origins = polyImplementation.getPreparedResult().getFieldOrigins();
+        List<ColumnMeta> columns = new ArrayList<>();
+        int index = 0;
+        for ( Ord<AlgDataTypeField> pair : Ord.zip( whatever.getFields() ) ) {
+            final AlgDataTypeField field = pair.e;
+            final AlgDataType type = field.getType();
+            columns.add( retrieveColumnMeta( index++, field.getName(), type, origins.get( pair.i ) ) );
+        }
+        return columns;
+    }
 
 
     public static List<ParameterMeta> retrieveParameterMetas( AlgDataType parameterRowType ) {
@@ -61,26 +77,6 @@ public class RelationalMetaRetriever {
         metaBuilder.setScale( QueryProcessorHelpers.getScale( algDataType ) );
         Optional.ofNullable( parameterName ).ifPresent( p -> metaBuilder.setParameterName( parameterName ) );
         return metaBuilder.build();
-    }
-
-
-    public static List<ColumnMeta> retrieveColumnMetas( PolyImplementation polyImplementation ) {
-        AlgDataType algDataType = retrieveAlgDataType( polyImplementation );
-        AlgDataType whatever = QueryProcessorHelpers.makeStruct( polyImplementation.getStatement().getTransaction().getTypeFactory(), algDataType );
-        List<List<String>> origins = polyImplementation.getPreparedResult().getFieldOrigins();
-        List<ColumnMeta> columns = new ArrayList<>();
-        int index = 0;
-        for ( Ord<AlgDataTypeField> pair : Ord.zip( whatever.getFields() ) ) {
-            final AlgDataTypeField field = pair.e;
-            final AlgDataType type = field.getType();
-            columns.add( retrieveColumnMeta( index++, field.getName(), type, origins.get( pair.i ) ) );
-        }
-        return columns;
-    }
-
-
-    private static ProtoPolyType getFromPolyType( PolyType polyType ) {
-        return ProtoPolyType.valueOf( polyType.getName() );
     }
 
 
@@ -157,7 +153,7 @@ public class RelationalMetaRetriever {
                         //TODO TH: handle structured type meta in a useful way
                         .build();
             }
-            ProtoPolyType type = getFromPolyType( polyType );
+            ProtoPolyType type = PrismUtils.getProtoFromPolyType( polyType );
             return TypeMeta.newBuilder()
                     .setProtoValueType( type )
                     .build();

@@ -25,7 +25,7 @@ import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.monitoring.events.MonitoringType;
 import org.polypheny.db.prisminterface.PIClient;
 import org.polypheny.db.prisminterface.PIServiceException;
-import org.polypheny.db.prisminterface.relational.RelationalMetaRetriever;
+import org.polypheny.db.prisminterface.metaRetrieval.RelationalMetaRetriever;
 import org.polypheny.db.prisminterface.statements.PIStatement;
 import org.polypheny.db.prisminterface.utils.PrismUtils;
 import org.polypheny.db.transaction.Statement;

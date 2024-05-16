@@ -21,12 +21,14 @@ import java.util.stream.Collectors;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.prisminterface.statements.PIPreparedStatement;
 import org.polypheny.db.prisminterface.statements.PIStatement;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.prism.ColumnMeta;
 import org.polypheny.prism.DocumentFrame;
 import org.polypheny.prism.Frame;
 import org.polypheny.prism.PreparedStatementSignature;
 import org.polypheny.prism.ProtoDocument;
+import org.polypheny.prism.ProtoPolyType;
 import org.polypheny.prism.RelationalFrame;
 import org.polypheny.prism.Row;
 import org.polypheny.prism.StatementBatchResponse;
@@ -115,6 +117,10 @@ public class PrismUtils {
 
     public static Frame buildGraphFrame(boolean isLast, List<List<PolyValue>> data) {
         throw new GenericRuntimeException( "Feature not implemented" );
+    }
+
+    public static ProtoPolyType getProtoFromPolyType( PolyType polyType ) {
+        return ProtoPolyType.valueOf( polyType.getName() );
     }
 
 }
