@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.prisminterface.relational;
+package org.polypheny.db.prisminterface.metaRetrieval;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
@@ -27,6 +28,7 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.prisminterface.utils.PrismUtils;
 import org.polypheny.db.processing.QueryProcessorHelpers;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.prism.ArrayMeta;
@@ -44,25 +46,6 @@ public class RelationalMetaRetriever {
     private static final int ORIGIN_SCHEMA_INDEX = 1;
 
 
-    public static List<ParameterMeta> retrieveParameterMetas( AlgDataType parameterRowType ) {
-        return parameterRowType.getFields().stream()
-                .map( p -> retrieveParameterMeta( p, null ) )
-                .toList();
-    }
-
-
-    private static ParameterMeta retrieveParameterMeta( AlgDataTypeField algDataTypeField, String parameterName ) {
-        AlgDataType algDataType = algDataTypeField.getType();
-        ParameterMeta.Builder metaBuilder = ParameterMeta.newBuilder();
-        metaBuilder.setName( algDataTypeField.getName() );
-        metaBuilder.setTypeName( algDataType.getPolyType().getTypeName() );
-        metaBuilder.setPrecision( QueryProcessorHelpers.getPrecision( algDataType ) );
-        metaBuilder.setScale( QueryProcessorHelpers.getScale( algDataType ) );
-        Optional.ofNullable( parameterName ).ifPresent( p -> metaBuilder.setParameterName( parameterName ) );
-        return metaBuilder.build();
-    }
-
-
     public static List<ColumnMeta> retrieveColumnMetas( PolyImplementation polyImplementation ) {
         AlgDataType algDataType = retrieveAlgDataType( polyImplementation );
         AlgDataType whatever = QueryProcessorHelpers.makeStruct( polyImplementation.getStatement().getTransaction().getTypeFactory(), algDataType );
@@ -78,8 +61,22 @@ public class RelationalMetaRetriever {
     }
 
 
-    private static ProtoPolyType getFromPolyType( PolyType polyType ) {
-        return ProtoPolyType.valueOf( polyType.getName() );
+    public static List<ParameterMeta> retrieveParameterMetas( AlgDataType parameterRowType ) {
+        return parameterRowType.getFields().stream()
+                .map( p -> retrieveParameterMeta( p, null ) )
+                .collect( Collectors.toList() );
+    }
+
+
+    private static ParameterMeta retrieveParameterMeta( AlgDataTypeField algDataTypeField, String parameterName ) {
+        AlgDataType algDataType = algDataTypeField.getType();
+        ParameterMeta.Builder metaBuilder = ParameterMeta.newBuilder();
+        metaBuilder.setName( algDataTypeField.getName() );
+        metaBuilder.setTypeName( algDataType.getPolyType().getTypeName() );
+        metaBuilder.setPrecision( QueryProcessorHelpers.getPrecision( algDataType ) );
+        metaBuilder.setScale( QueryProcessorHelpers.getScale( algDataType ) );
+        Optional.ofNullable( parameterName ).ifPresent( p -> metaBuilder.setParameterName( parameterName ) );
+        return metaBuilder.build();
     }
 
 
@@ -149,14 +146,14 @@ public class RelationalMetaRetriever {
                         .getFields()
                         .stream()
                         .map( f -> retrieveFieldMeta( f.getIndex(), f.getName(), f.getType() ) )
-                        .toList();
+                        .collect( Collectors.toList() );
                 return TypeMeta.newBuilder()
                         .setStructMeta( StructMeta.newBuilder().addAllFieldMetas( fieldMetas ).build() )
                         //.setProtoValueType( ProtoValueType.PROTO_VALUE_TYPE_STRUCTURED )
                         //TODO TH: handle structured type meta in a useful way
                         .build();
             }
-            ProtoPolyType type = getFromPolyType( polyType );
+            ProtoPolyType type = PrismUtils.getProtoFromPolyType( polyType );
             return TypeMeta.newBuilder()
                     .setProtoValueType( type )
                     .build();
@@ -165,15 +162,18 @@ public class RelationalMetaRetriever {
 
 
     private static AlgDataType retrieveAlgDataType( PolyImplementation polyImplementation ) {
-        return switch ( polyImplementation.getKind() ) {
-            case INSERT, DELETE, UPDATE, EXPLAIN -> {
+        switch ( polyImplementation.getKind() ) {
+            case INSERT:
+            case DELETE:
+            case UPDATE:
+            case EXPLAIN:
                 // FIXME: getValidatedNodeType is wrong for DML
                 Kind kind = polyImplementation.getKind();
                 JavaTypeFactory typeFactory = polyImplementation.getStatement().getTransaction().getTypeFactory();
-                yield AlgOptUtil.createDmlRowType( kind, typeFactory );
-            }
-            default -> polyImplementation.tupleType;
-        };
+                return AlgOptUtil.createDmlRowType( kind, typeFactory );
+            default:
+                return polyImplementation.tupleType;
+        }
     }
 
 }
