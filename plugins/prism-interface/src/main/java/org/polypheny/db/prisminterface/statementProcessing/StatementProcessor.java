@@ -42,10 +42,11 @@ public class StatementProcessor {
 
     private static final String ORIGIN = "prism-interface";
 
-    private static final Map<DataModel, Executor> RESULT_RETRIEVERS =
+    private static final Map<DataModel, Executor> EXECUTORS =
             ImmutableMap.<DataModel, Executor>builder()
                     .put( DataModel.RELATIONAL, new RelationalExecutor() )
                     .put( DataModel.DOCUMENT, new DocumentExecutor() )
+                    .put( DataModel.GRAPH, new GraphExecutor() )
                     .build();
 
 
@@ -77,27 +78,12 @@ public class StatementProcessor {
 
 
     public static StatementResult executeAndGetResult( PIStatement piStatement ) {
-        Executor executor = RESULT_RETRIEVERS.get( piStatement.getLanguage().dataModel() );
-        if ( executor == null ) {
-            throw new PIServiceException( "No result retriever registered for namespace type "
-                    + piStatement.getLanguage().dataModel(),
-                    "I9004",
-                    9004
-            );
-        }
-        return executor.executeAndGetResult( piStatement );
+        return getExecutorOrThrow( piStatement ).executeAndGetResult( piStatement );
     }
 
 
     public static StatementResult executeAndGetResult( PIStatement piStatement, int fetchSize ) {
-        Executor executor = RESULT_RETRIEVERS.get( piStatement.getLanguage().dataModel() );
-        if ( executor == null ) {
-            throw new PIServiceException( "No result retriever registered for namespace type "
-                    + piStatement.getLanguage().dataModel(),
-                    "I9004",
-                    9004
-            );
-        }
+        Executor executor = getExecutorOrThrow( piStatement );
         try {
             return executor.executeAndGetResult( piStatement, fetchSize );
         } catch ( Exception e ) {
@@ -107,14 +93,7 @@ public class StatementProcessor {
 
 
     public static Frame fetch( PIStatement piStatement, int fetchSize ) {
-        Executor executor = RESULT_RETRIEVERS.get( piStatement.getLanguage().dataModel() );
-        if ( executor == null ) {
-            throw new PIServiceException( "No result retriever registered for namespace type "
-                    + piStatement.getLanguage().dataModel(),
-                    "I9004",
-                    9004
-            );
-        }
+        Executor executor = getExecutorOrThrow( piStatement );
         return executor.fetch( piStatement, fetchSize );
     }
 
@@ -131,6 +110,19 @@ public class StatementProcessor {
         Pair<Node, AlgDataType> validated = queryProcessor.validate( transaction, parsed, false );
         AlgDataType parameterRowType = queryProcessor.getParameterRowType( validated.left );
         piStatement.setParameterMetas( RelationalMetaRetriever.retrieveParameterMetas( parameterRowType ) );
+    }
+
+
+    private static Executor getExecutorOrThrow( PIStatement piStatement ) {
+        Executor executor = EXECUTORS.get( piStatement.getLanguage().dataModel() );
+        if ( executor == null ) {
+            throw new PIServiceException( "No executor registered for namespace type "
+                    + piStatement.getLanguage().dataModel(),
+                    "I9004",
+                    9004
+            );
+        }
+        return executor;
     }
 
 }
