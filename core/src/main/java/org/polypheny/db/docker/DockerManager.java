@@ -39,10 +39,6 @@ import org.polypheny.db.docker.models.DockerInstanceInfo;
 import org.polypheny.db.docker.models.HandshakeInfo;
 import org.polypheny.db.docker.models.UpdateDockerResponse;
 import org.polypheny.db.util.RunMode;
-import org.polypheny.db.docker.models.DockerInstanceInfo;
-import org.polypheny.db.docker.models.HandshakeInfo;
-import org.polypheny.db.docker.models.UpdateDockerResponse;
-
 
 
 public final class DockerManager {

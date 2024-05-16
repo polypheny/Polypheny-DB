@@ -145,25 +145,25 @@ public class SqlPrettyWriter implements SqlWriter {
     @Setter
     private boolean selectListItemsOnSeparateLines;
     /**
-     *  Sets whether to use a fix for SELECT list indentations.
-     *  <ul>
-     *  <li>If set to "false":
-     *  <blockquote><pre>
-     *  SELECT
-     *      A as A
-     *          B as B
-     *          C as C
-     *      D
-     *  </pre></blockquote></li>
-     *  <li>If set to "true":
-     *  <blockquote><pre>
-     *  SELECT
-     *      A as A
-     *      B as B
-     *      C as C
-     *      D
-     *  </pre></blockquote></li>
-     *  </ul>
+     * Sets whether to use a fix for SELECT list indentations.
+     * <ul>
+     * <li>If set to "false":
+     * <blockquote><pre>
+     * SELECT
+     *     A as A
+     *         B as B
+     *         C as C
+     *     D
+     * </pre></blockquote></li>
+     * <li>If set to "true":
+     * <blockquote><pre>
+     * SELECT
+     *     A as A
+     *     B as B
+     *     C as C
+     *     D
+     * </pre></blockquote></li>
+     * </ul>
      */
     @Setter
     private boolean selectListExtraIndentFlag;
@@ -177,13 +177,13 @@ public class SqlPrettyWriter implements SqlWriter {
     @Setter
     private SubQueryStyle subQueryStyle;
     /**
-     *  Sets whether to print a newline before each AND or OR (whichever is higher level) in WHERE clauses. NOTE: <i>Ignored when alwaysUseParentheses is set to true.</i>
+     * Sets whether to print a newline before each AND or OR (whichever is higher level) in WHERE clauses. NOTE: <i>Ignored when alwaysUseParentheses is set to true.</i>
      */
     @Setter
     private boolean whereListItemsOnSeparateLines;
 
     /**
-     *  Sets whether the WHEN, THEN and ELSE clauses of a CASE expression appear at the start of a new line. The default is false.
+     * Sets whether the WHEN, THEN and ELSE clauses of a CASE expression appear at the start of a new line. The default is false.
      */
     @Setter
     private boolean caseClausesOnNewLines;

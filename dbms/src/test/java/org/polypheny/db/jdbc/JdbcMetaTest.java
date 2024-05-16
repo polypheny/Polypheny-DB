@@ -389,36 +389,40 @@ public class JdbcMetaTest {
         }
     }
 
+
     @Test
     public void testNullsAreSortedAtEnd() throws SQLException {
-            try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false, true );
-                    Connection connection = polyphenyDbConnection.getConnection() ) {
-                assertTrue(connection.getMetaData().nullsAreSortedAtEnd());
-            }
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false, true );
+                Connection connection = polyphenyDbConnection.getConnection() ) {
+            assertTrue( connection.getMetaData().nullsAreSortedAtEnd() );
+        }
     }
+
 
     @Test
     public void testNullsAreSortedStart() throws SQLException {
-            try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false, true );
-                    Connection connection = polyphenyDbConnection.getConnection() ) {
-                assertFalse(connection.getMetaData().nullsAreSortedAtStart());
-            }
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false, true );
+                Connection connection = polyphenyDbConnection.getConnection() ) {
+            assertFalse( connection.getMetaData().nullsAreSortedAtStart() );
+        }
     }
+
 
     @Test
     public void testNullsAreSortedHigh() throws SQLException {
-            try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false, true );
-                    Connection connection = polyphenyDbConnection.getConnection() ) {
-                assertFalse(connection.getMetaData().nullsAreSortedHigh());
-            }
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false, true );
+                Connection connection = polyphenyDbConnection.getConnection() ) {
+            assertFalse( connection.getMetaData().nullsAreSortedHigh() );
+        }
     }
+
 
     @Test
     public void testNullsAreSortedLow() throws SQLException {
-            try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false, true );
-                    Connection connection = polyphenyDbConnection.getConnection() ) {
-                assertFalse(connection.getMetaData().nullsAreSortedLow());
-            }
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false, true );
+                Connection connection = polyphenyDbConnection.getConnection() ) {
+            assertFalse( connection.getMetaData().nullsAreSortedLow() );
+        }
     }
 
 

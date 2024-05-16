@@ -369,7 +369,7 @@ public class MongoDynamic {
      * Helper class which holds replace information for a BsonDocument, which has one or multiple dynamic children
      * and defines how the child can be replaced.
      */
-    record ArrayWrapper(int index, BsonArray array) implements Wrapper {
+    record ArrayWrapper( int index, BsonArray array ) implements Wrapper {
 
 
         @Override
@@ -380,7 +380,7 @@ public class MongoDynamic {
     }
 
 
-    record KeyWrapper(int index, BsonDocument document, List<DocWrapper> children) implements Wrapper {
+    record KeyWrapper( int index, BsonDocument document, List<DocWrapper> children ) implements Wrapper {
 
 
         @Override

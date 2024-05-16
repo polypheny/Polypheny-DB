@@ -564,7 +564,7 @@ public abstract class DdlManager {
      * Helper class which holds all information required for creating a column,
      * decoupled from a specific query language
      */
-    public record FieldInformation(String name, ColumnTypeInformation typeInformation, Collation collation, PolyValue defaultValue, int position) {
+    public record FieldInformation( String name, ColumnTypeInformation typeInformation, Collation collation, PolyValue defaultValue, int position ) {
 
     }
 
@@ -605,7 +605,7 @@ public abstract class DdlManager {
      * decoupled from the used query language
      */
 
-    public record ColumnTypeInformation(PolyType type, @Nullable PolyType collectionType, Integer precision, Integer scale, Integer dimension, Integer cardinality, Boolean nullable) {
+    public record ColumnTypeInformation( PolyType type, @Nullable PolyType collectionType, Integer precision, Integer scale, Integer dimension, Integer cardinality, Boolean nullable ) {
 
         public ColumnTypeInformation(
                 PolyType type,

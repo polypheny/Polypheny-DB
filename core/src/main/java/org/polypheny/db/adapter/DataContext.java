@@ -119,7 +119,7 @@ public interface DataContext {
     }
 
 
-    record ParameterValue(long index, AlgDataType type, PolyValue value) {
+    record ParameterValue( long index, AlgDataType type, PolyValue value ) {
 
     }
 

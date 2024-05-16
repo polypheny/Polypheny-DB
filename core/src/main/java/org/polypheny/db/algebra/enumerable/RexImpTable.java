@@ -1962,7 +1962,7 @@ public class RexImpTable {
     }
 
 
-    private record MqlMethodNameImplementor(String methodName) implements NotNullImplementor {
+    private record MqlMethodNameImplementor( String methodName ) implements NotNullImplementor {
 
 
         @Override
@@ -1976,7 +1976,7 @@ public class RexImpTable {
     /**
      * Implementor for binary operators.
      */
-    private record BinaryImplementor(ExpressionType expressionType, String backupMethodName) implements NotNullImplementor {
+    private record BinaryImplementor( ExpressionType expressionType, String backupMethodName ) implements NotNullImplementor {
 
         /**
          * Types that can be arguments to comparison operators such as {@code <}.
@@ -2069,7 +2069,7 @@ public class RexImpTable {
     /**
      * Implementor for unary operators.
      */
-    private record UnaryImplementor(ExpressionType expressionType) implements NotNullImplementor {
+    private record UnaryImplementor( ExpressionType expressionType ) implements NotNullImplementor {
 
 
         @Override
@@ -2587,7 +2587,7 @@ public class RexImpTable {
      * 2. Of the 3 input values (TRUE, FALSE, NULL) they return TRUE for 1 or 2,
      * FALSE for the other 2 or 1.
      */
-    private record IsXxxImplementor(Boolean seek, boolean negate) implements CallImplementor {
+    private record IsXxxImplementor( Boolean seek, boolean negate ) implements CallImplementor {
 
 
         @Override
@@ -2619,7 +2619,7 @@ public class RexImpTable {
     /**
      * Implementor for the {@code NOT} operator.
      */
-    private record NotImplementor(NotNullImplementor implementor) implements NotNullImplementor {
+    private record NotImplementor( NotNullImplementor implementor ) implements NotNullImplementor {
 
 
         static NotNullImplementor of( NotNullImplementor implementor ) {

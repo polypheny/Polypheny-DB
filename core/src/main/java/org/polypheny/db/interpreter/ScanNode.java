@@ -161,7 +161,6 @@ public class ScanNode implements Node {
     }
 
 
-
     private static ScanNode createEnumerable( Compiler compiler, RelScan<?> alg, Enumerable<Row<PolyValue>> enumerable, final ImmutableList<Integer> acceptedProjects, List<RexNode> rejectedFilters, final ImmutableList<Integer> rejectedProjects ) {
         if ( !rejectedFilters.isEmpty() ) {
             final RexNode filter = RexUtil.composeConjunction( alg.getCluster().getRexBuilder(), rejectedFilters );

@@ -90,7 +90,8 @@ public class QueryContext {
     @SuperBuilder(toBuilder = true)
     public static class ParsedQueryContext extends QueryContext {
 
-        @Nullable Node queryNode;
+        @Nullable
+        Node queryNode;
 
 
         public static ParsedQueryContext fromQuery( String query, Node queryNode, QueryContext context ) {

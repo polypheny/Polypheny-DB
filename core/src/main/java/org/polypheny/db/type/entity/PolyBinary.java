@@ -126,6 +126,7 @@ public class PolyBinary extends PolyValue {
         return out;
     }
 
+
     public String as64String() {
         return Base64.encodeBytes( value );
     }

@@ -183,7 +183,7 @@ public class QueryInterfaceManager {
     public record QueryInterfaceInformationRequest(
             @JsonSerialize String interfaceName,
             @JsonSerialize String uniqueName,
-            @JsonSerialize Map<String, String> currentSettings) {
+            @JsonSerialize Map<String, String> currentSettings ) {
 
     }
 
@@ -192,7 +192,7 @@ public class QueryInterfaceManager {
             @JsonSerialize String interfaceName,
             @JsonSerialize String description,
             Function5<TransactionManager, Authenticator, String, Map<String, String>, QueryInterface> deployer,
-            @JsonSerialize List<QueryInterfaceSetting> availableSettings) {
+            @JsonSerialize List<QueryInterfaceSetting> availableSettings ) {
 
         public Map<String, String> getDefaultSettings() {
             Map<String, String> m = new HashMap<>();

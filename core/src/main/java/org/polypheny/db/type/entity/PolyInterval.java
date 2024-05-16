@@ -166,7 +166,7 @@ public class PolyInterval extends PolyValue {
     }
 
 
-    private record MonthsMilliseconds(long months, long milliseconds) {
+    private record MonthsMilliseconds( long months, long milliseconds ) {
 
     }
 

@@ -183,7 +183,6 @@ public class FileRules {
         }
 
 
-
         /**
          * Needed for the {@link FileUnionRule}.
          * A FileUnion should only be generated during a multi-insert with arrays.

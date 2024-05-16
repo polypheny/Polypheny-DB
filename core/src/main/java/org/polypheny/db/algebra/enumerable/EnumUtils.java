@@ -255,7 +255,6 @@ public class EnumUtils {
     }
 
 
-
     static Expression enforce( final Type storageType, final Expression e ) {
         if ( storageType != null && e.type != storageType ) {
             if ( e.type == java.sql.Date.class ) {

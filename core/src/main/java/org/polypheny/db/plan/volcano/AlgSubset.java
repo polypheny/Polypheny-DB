@@ -288,7 +288,6 @@ public class AlgSubset extends AbstractAlgNode {
     }
 
 
-
     /**
      * Adds expression <code>rel</code> to this subset.
      */

@@ -2166,7 +2166,6 @@ public class DdlManagerImpl extends DdlManager {
             List<Long> refreshedPks = Catalog.snapshot().rel().getKey( refreshedLogical.primaryKey ).orElseThrow().fieldIds;
             AllocationTable refreshedAlloc = Catalog.snapshot().alloc().getAlloc( alloc.placementId, alloc.partitionId ).map( e -> e.unwrap( AllocationTable.class ).orElseThrow() ).orElseThrow();
 
-
             adapter.createTable( statement.getPrepareContext(), LogicalTableWrapper.of( refreshedLogical, sortByPosition( refreshedLColumns ), refreshedPks ), AllocationTableWrapper.of( refreshedAlloc, refreshedAColumns ) );
         };
 
@@ -2177,7 +2176,6 @@ public class DdlManagerImpl extends DdlManager {
             // we are already committing currently
             action.run();
         }
-
 
         return alloc;
     }

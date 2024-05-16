@@ -644,7 +644,7 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements AlgPro
     /**
      * Stack frame.
      */
-    private record Frame(int ordinalInParent, AlgNode r) {
+    private record Frame( int ordinalInParent, AlgNode r ) {
 
     }
 

@@ -98,7 +98,6 @@ public class PolyLong extends PolyNumber {
     }
 
 
-
     @Override
     public Expression asExpression() {
         return Expressions.new_( PolyLong.class, Expressions.constant( value ) );
