@@ -577,7 +577,7 @@ public interface NeoUtil {
             case TIME -> value.asTemporal().getMillisSinceEpoch();
             case TIMESTAMP -> value.asTemporal().getMillisSinceEpoch();
             case DOCUMENT -> value.asDocument().toTypedJson();
-            case INTEGER -> value.asNumber().IntValue();
+            case TINYINT, INTEGER, SMALLINT -> value.asNumber().IntValue();
             case BIGINT -> value.asNumber().LongValue();
             case VARCHAR, TEXT, CHAR -> value.asString().value;
             case BOOLEAN -> value.asBoolean().value;
@@ -590,7 +590,7 @@ public interface NeoUtil {
                 }
                 return fixParameterValue( e, type.asList().types.get( 0 ), true );
             } ).toList();
-            default -> throw new NotImplementedException();
+            default -> throw new NotImplementedException( "Poly to Neo4j value" );
         };
     }
 
