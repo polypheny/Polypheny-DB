@@ -52,7 +52,7 @@ public class PigLanguagePlugin extends PolyPlugin {
                 null,
                 PigProcessor::new,
                 null,
-                LanguageManager::toQueryNodes,
+                LanguageManager::toUnsplitQueryNodes,
                 c -> c );
         LanguageManager.getINSTANCE().addQueryLanguage( language );
         PolyPluginManager.AFTER_INIT.add( () -> LanguageCrud.addToResult( language, LanguageCrud::getRelResult ) );

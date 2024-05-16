@@ -23,7 +23,6 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.AvaticaSqlException;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -32,6 +31,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
+import org.polypheny.jdbc.PrismInterfaceServiceException;
 
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
@@ -138,25 +138,19 @@ public class UniqueConstraintTest {
                 try {
                     statement.executeUpdate( "INSERT INTO constraint_test VALUES (1, 1, 1, 1)" );
 
-                    try {
-                        statement.executeUpdate( "INSERT INTO constraint_test VALUES (1, 2, 3, 4)" );
+                    Assertions.assertThrows(
+                            PrismInterfaceServiceException.class,
+                            () -> statement.executeUpdate( "INSERT INTO constraint_test VALUES (1, 2, 3, 4)" ),
+                            "Insert violates unique constraint"
+                    );
 
-                        Assertions.fail( "Expected ConstraintViolationException was not thrown" );
-                    } catch ( AvaticaSqlException e ) {
-                        if ( !e.getMessage().contains( "Insert violates unique constraint" ) ) {
-                            throw new RuntimeException( "Unexpected exception", e );
-                        }
-                    }
-                    try {
-                        statement.executeUpdate( "INSERT INTO constraint_test VALUES (2, 1, 1, 4)" );
+                    Assertions.assertThrows(
+                            PrismInterfaceServiceException.class,
+                            () -> statement.executeUpdate( "INSERT INTO constraint_test VALUES (2, 1, 1, 4)" ),
+                            "Insert violates unique constraint"
+                    );
 
-                        Assertions.fail( "Expected ConstraintViolationException was not thrown" );
-                    } catch ( AvaticaSqlException e ) {
-                        if ( !e.getMessage().contains( "Insert violates unique constraint" ) ) {
-                            throw new RuntimeException( "Unexpected exception", e );
-                        }
-                        connection.rollback();
-                    }
+                    connection.rollback();
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM constraint_test" ),
                             ImmutableList.of( new Object[]{ 1, 1, 1, 1 } )
@@ -187,16 +181,13 @@ public class UniqueConstraintTest {
                 try {
                     statement.executeUpdate( "INSERT INTO constraint_test VALUES (1, 1, 1, 1)" );
 
-                    try {
-                        statement.executeUpdate( "INSERT INTO constraint_test VALUES (2, 2, 3, 4), (4, 2, 3, 1)" );
+                    Assertions.assertThrows(
+                            PrismInterfaceServiceException.class,
+                            () -> statement.executeUpdate( "INSERT INTO constraint_test VALUES (2, 2, 3, 4), (4, 2, 3, 1)" ),
+                            "Insert violates unique constraint"
+                    );
+                    connection.rollback();
 
-                        Assertions.fail( "Expected ConstraintViolationException was not thrown" );
-                    } catch ( AvaticaSqlException e ) {
-                        if ( !e.getMessage().contains( "Insert violates unique constraint" ) ) {
-                            throw new RuntimeException( "Unexpected exception", e );
-                        }
-                        connection.rollback();
-                    }
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM constraint_test" ),
                             ImmutableList.of( new Object[]{ 1, 1, 1, 1 } )
@@ -263,25 +254,13 @@ public class UniqueConstraintTest {
                 try {
                     statement.executeUpdate( "INSERT INTO constraint_test VALUES (1, 1, 1, 1), (2, 2, 2, 2)" );
 
-                    try {
-                        statement.executeUpdate( "INSERT INTO constraint_test SELECT * FROM constraint_test" );
+                    Assertions.assertThrows(
+                            PrismInterfaceServiceException.class,
+                            () -> statement.executeUpdate( "INSERT INTO constraint_test SELECT * FROM constraint_test" ),
+                            "Insert violates unique constraint"
+                    );
+                    connection.rollback();
 
-                        TestHelper.checkResultSet(
-                                statement.executeQuery( "SELECT * FROM constraint_test ORDER BY ctid" ),
-                                ImmutableList.of(
-                                        new Object[]{ 1, 1, 1, 1 },
-                                        new Object[]{ 2, 2, 2, 2 }
-                                )
-                        );
-
-                        connection.commit();
-                        Assertions.fail( "Expected ConstraintViolationException was not thrown" );
-                    } catch ( AvaticaSqlException e ) {
-                        if ( !e.getMessage().contains( "Insert violates unique constraint" ) ) {
-                            throw new RuntimeException( "Unexpected exception", e );
-                        }
-                        connection.rollback();
-                    }
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM constraint_test ORDER BY ctid" ),
                             ImmutableList.of(
@@ -315,16 +294,12 @@ public class UniqueConstraintTest {
                 try {
                     statement.executeUpdate( "INSERT INTO constraint_test VALUES (1, 1, 1, 5), (2, 2, 2, 5)" );
 
-                    try {
-                        statement.executeUpdate( "INSERT INTO constraint_test SELECT c AS ctid, a + 2 AS a, b, c FROM constraint_test" );
-                        connection.commit();
-                        Assertions.fail( "Expected ConstraintViolationException was not thrown" );
-                    } catch ( AvaticaSqlException e ) {
-                        if ( !e.getMessage().contains( "Insert violates unique constraint" ) ) {
-                            throw new RuntimeException( "Unexpected exception", e );
-                        }
-                        connection.rollback();
-                    }
+                    Assertions.assertThrows(
+                            PrismInterfaceServiceException.class,
+                            () -> statement.executeUpdate( "INSERT INTO constraint_test SELECT c AS ctid, a + 2 AS a, b, c FROM constraint_test" ),
+                            "Insert violates unique constraint"
+                    );
+                    connection.rollback();
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM constraint_test ORDER BY ctid" ),
                             ImmutableList.of(
@@ -369,16 +344,12 @@ public class UniqueConstraintTest {
                     preparedStatement.setInt( 3, 1 );
                     preparedStatement.setInt( 4, 1 );
                     preparedStatement.addBatch();
-                    try {
-                        preparedStatement.executeBatch();
-                        connection.commit();
-                        Assertions.fail( "Expected ConstraintViolationException was not thrown" );
-                    } catch ( AvaticaSqlException e ) {
-                        if ( !e.getMessage().contains( "Insert violates unique constraint" ) ) {
-                            throw new RuntimeException( "Unexpected exception", e );
-                        }
-                        connection.rollback();
-                    }
+                    Assertions.assertThrows(
+                            PrismInterfaceServiceException.class,
+                            preparedStatement::executeBatch,
+                            "Insert violates unique constraint"
+                    );
+                    connection.rollback();
 
                     // This should work
                     for ( int i = 1; i < 5; i++ ) {
@@ -403,7 +374,7 @@ public class UniqueConstraintTest {
                         preparedStatement.executeBatch();
                         connection.commit();
                         Assertions.fail( "Expected ConstraintViolationException was not thrown" );
-                    } catch ( AvaticaSqlException e ) {
+                    } catch ( PrismInterfaceServiceException e ) {
                         if ( !e.getMessage().contains( "Insert violates unique constraint" ) ) {
                             throw new RuntimeException( "Unexpected exception", e );
                         }
@@ -500,7 +471,7 @@ public class UniqueConstraintTest {
                     try {
                         preparedStatement.executeBatch();
                         Assertions.fail( "Expected ConstraintViolationException was not thrown" );
-                    } catch ( AvaticaSqlException e ) {
+                    } catch ( PrismInterfaceServiceException e ) {
                         if ( !e.getMessage().contains( "Update violates unique constraint" ) ) {
                             throw new RuntimeException( "Unexpected exception", e );
                         }
@@ -570,7 +541,6 @@ public class UniqueConstraintTest {
                     }
 
 
-
                 } finally {
                     statement.executeUpdate( "DROP TABLE constraint_test" );
                 }
@@ -597,36 +567,12 @@ public class UniqueConstraintTest {
                 try {
                     statement.executeUpdate( "INSERT INTO constraint_test VALUES (1, 1, 1, 1), (2, 2, 2, 2), (3, 3, 3, 3), (4, 4, 4, 4)" );
 
-                    try {
-                        statement.executeUpdate( "UPDATE constraint_test SET ctid = 1" );
-                        connection.commit();
-                        Assertions.fail( "Expected ConstraintViolationException was not thrown" );
-                    } catch ( AvaticaSqlException e ) {
-                        if ( !e.getMessage().contains( "Update violates unique constraint" ) ) {
-                            throw new RuntimeException( "Unexpected exception", e );
-                        }
-                        connection.rollback();
-                    }
-                    try {
-                        statement.executeUpdate( "UPDATE constraint_test SET a = 42, b = 73" );
-                        connection.commit();
-                        Assertions.fail( "Expected ConstraintViolationException was not thrown" );
-                    } catch ( AvaticaSqlException e ) {
-                        if ( !e.getMessage().contains( "Update violates unique constraint" ) ) {
-                            throw new RuntimeException( "Unexpected exception", e );
-                        }
-                        connection.rollback();
-                    }
-                    try {
-                        statement.executeUpdate( "UPDATE constraint_test SET ctid = 4 WHERE a = 3" );
-                        connection.commit();
-                        Assertions.fail( "Expected ConstraintViolationException was not thrown" );
-                    } catch ( AvaticaSqlException e ) {
-                        if ( !e.getMessage().contains( "Update violates unique constraint" ) ) {
-                            throw new RuntimeException( "Unexpected exception", e );
-                        }
-                        connection.rollback();
-                    }
+                    Assertions.assertThrows( PrismInterfaceServiceException.class, () -> statement.executeUpdate( "UPDATE constraint_test SET ctid = 1" ), "Update violates unique constraint" );
+                    connection.rollback();
+                    Assertions.assertThrows( PrismInterfaceServiceException.class, () -> statement.executeUpdate( "UPDATE constraint_test SET a = 42, b = 73" ), "Update violates unique constraint" );
+                    connection.rollback();
+                    Assertions.assertThrows( PrismInterfaceServiceException.class, () -> statement.executeUpdate( "UPDATE constraint_test SET ctid = 4 WHERE a = 3" ), "Update violates unique constraint" );
+                    connection.rollback();
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM constraint_test ORDER BY ctid" ),
                             ImmutableList.of(

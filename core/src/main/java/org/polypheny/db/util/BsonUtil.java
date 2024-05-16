@@ -19,6 +19,7 @@ package org.polypheny.db.util;
 import com.mongodb.client.gridfs.GridFSBucket;
 import java.io.PushbackInputStream;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
@@ -29,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -40,6 +42,7 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.commons.lang3.NotImplementedException;
 import org.bson.BsonArray;
+import org.bson.BsonBinary;
 import org.bson.BsonBoolean;
 import org.bson.BsonDecimal128;
 import org.bson.BsonDocument;
@@ -65,6 +68,7 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.runtime.ComparableList;
 import org.polypheny.db.runtime.PolyCollections.FlatMap;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyNull;
@@ -83,6 +87,8 @@ public class BsonUtil {
     private final static List<String> stops = new ArrayList<>();
     public static final String DOC_MONTH_KEY = "m";
     public static final String DOC_MILLIS_KEY = "ms";
+    public static final String DOC_MEDIA_TYPE_KEY = "_type";
+    public static final String DOC_MEDIA_ID_KEY = "_id";
 
 
     static {
@@ -193,17 +199,17 @@ public class BsonUtil {
         }
         return switch ( type ) {
             case BIGINT -> handleBigInt( obj );
-            case DECIMAL -> handleDecimal( obj );
+            case DECIMAL -> handleDecimal( obj, Optional.empty() );
             case TINYINT -> handleTinyInt( obj );
             case SMALLINT -> handleSmallInt( obj );
             case INTEGER -> handleInteger( obj );
             case FLOAT, REAL -> new BsonDouble( Double.parseDouble( obj.toString() ) );
-            case DOUBLE -> handleDouble( obj );
+            case DOUBLE -> handleDouble( obj, Optional.empty() );
             case DATE -> handleDate( obj );
             case TIME -> handleTime( obj );
             case TIMESTAMP -> handleTimestamp( obj );
             case BOOLEAN -> new BsonBoolean( obj.asBoolean().value );
-            case BINARY -> new BsonString( new ByteString( obj.asBinary().value ).toBase64String() );
+            case BINARY, VARBINARY -> new BsonBinary( obj.asBinary().value );
             case AUDIO, IMAGE, VIDEO, FILE -> handleMultimedia( bucket, obj );
             case INTERVAL -> handleInterval( obj );
             case JSON -> handleDocument( obj );
@@ -220,7 +226,7 @@ public class BsonUtil {
      * @param bucket the bucket can be used to retrieve multimedia objects
      * @return the transformer method, which can be used to get the correct BsonValues
      */
-    public static Function<PolyValue, BsonValue> getBsonTransformer( Queue<PolyType> types, GridFSBucket bucket ) {
+    public static Function<PolyValue, BsonValue> getBsonTransformer( Queue<Pair<PolyType, Optional<Integer>>> types, GridFSBucket bucket ) {
         Function<PolyValue, BsonValue> function = getBsonTransformerPrimitive( types, bucket );
         return ( o ) -> {
             if ( o == null || o.isNull() ) {
@@ -240,26 +246,27 @@ public class BsonUtil {
      * @param bucket the bucket can be used to retrieve multimedia objects
      * @return the transformer method, which can be used to get the correct BsonValues
      */
-    private static Function<PolyValue, BsonValue> getBsonTransformerPrimitive( Queue<PolyType> types, GridFSBucket bucket ) {
-        return switch ( Objects.requireNonNull( types.poll() ) ) {
+    private static Function<PolyValue, BsonValue> getBsonTransformerPrimitive( Queue<Pair<PolyType, Optional<Integer>>> types, GridFSBucket bucket ) {
+        Pair<PolyType, Optional<Integer>> type = types.poll();
+        return switch ( Objects.requireNonNull( type.left ) ) {
             case BIGINT -> BsonUtil::handleBigInt;
-            case DECIMAL -> BsonUtil::handleDecimal;
+            case DECIMAL -> obj -> handleDecimal( obj, type.right );
             case TINYINT -> BsonUtil::handleTinyInt;
             case SMALLINT -> BsonUtil::handleSmallInt;
             case INTEGER -> BsonUtil::handleInteger;
-            case FLOAT, REAL -> BsonUtil::handleNonDouble;
-            case DOUBLE -> BsonUtil::handleDouble;
+            case FLOAT, REAL -> obj -> handleNonDouble( obj, type.right );
+            case DOUBLE -> obj -> handleDouble( obj, type.right );
             case DATE -> BsonUtil::handleDate;
             case TIME -> BsonUtil::handleTime;
             case TIMESTAMP -> BsonUtil::handleTimestamp;
             case BOOLEAN -> BsonUtil::handleBoolean;
-            case BINARY -> BsonUtil::handleBinary;
+            case BINARY, VARBINARY -> BsonUtil::handleBinary;
             case AUDIO, IMAGE, VIDEO, FILE -> ( o ) -> handleMultimedia( bucket, o );
             case INTERVAL -> BsonUtil::handleInterval;
             case JSON -> BsonUtil::handleDocument;
             case ARRAY -> {
                 Function<PolyValue, BsonValue> transformer = getBsonTransformer( types, bucket );
-                yield ( o ) -> new BsonArray( o.asList().stream().map( e -> transformer.apply( (PolyValue) e ) ).toList() );
+                yield ( o ) -> new BsonArray( o.asList().stream().map( transformer::apply ).toList() );
             }
             case DOCUMENT -> o -> BsonDocument.parse( "{ k:" + (o.isString() ? o.asString().toQuotedJson() : o.toJson()) + "}" ).get( "k" );
             default -> BsonUtil::handleString;
@@ -272,13 +279,21 @@ public class BsonUtil {
     }
 
 
-    private static BsonValue handleNonDouble( PolyValue obj ) {
+    private static BsonValue handleNonDouble( PolyValue obj, Optional<Integer> precision ) {
         return new BsonDouble( Double.parseDouble( obj.toString() ) );
     }
 
 
     private static BsonValue handleBinary( Object obj ) {
-        return new BsonString( ((ByteString) obj).toBase64String() );
+        if ( obj instanceof PolyBinary polyBinary ) {
+            return new BsonBinary( polyBinary.value );
+        } else if ( obj instanceof ByteString byteString ) {
+            return new BsonBinary( byteString.getBytes() );
+        } else if ( obj instanceof byte[] bytes ) {
+            return new BsonBinary( bytes );
+        }
+        throw new GenericRuntimeException( "The provided object is not a binary object." );
+
     }
 
 
@@ -305,16 +320,19 @@ public class BsonUtil {
     }
 
 
-    private static BsonValue handleDouble( PolyValue obj ) {
+    private static BsonValue handleDouble( PolyValue obj, Optional<Integer> precision ) {
         return new BsonDouble( obj.asNumber().DoubleValue() );
     }
 
 
     private static BsonValue handleMultimedia( GridFSBucket bucket, PolyValue o ) {
+        if ( o.isBinary() ) {
+            return new BsonBinary( o.asBinary().value );
+        }
         ObjectId id = bucket.uploadFromStream( "_", o.asBlob().asBinaryStream() );
         return new BsonDocument()
-                .append( "_type", new BsonString( "s" ) )
-                .append( "_id", new BsonString( id.toString() ) );
+                .append( DOC_MEDIA_TYPE_KEY, new BsonString( "s" ) )
+                .append( DOC_MEDIA_ID_KEY, new BsonString( id.toString() ) );
     }
 
 
@@ -326,8 +344,10 @@ public class BsonUtil {
     }
 
 
-    private static BsonValue handleDecimal( PolyValue obj ) {
-        return new BsonDecimal128( new Decimal128( obj.asNumber().BigDecimalValue() ) );
+    private static BsonValue handleDecimal( PolyValue obj, Optional<Integer> precision ) {
+        BigDecimal decimal = obj.asNumber().BigDecimalValue();
+        decimal = precision.isPresent() ? decimal.setScale( precision.get(), RoundingMode.HALF_UP ) : decimal;
+        return new BsonDecimal128( new Decimal128( decimal ) );
     }
 
 

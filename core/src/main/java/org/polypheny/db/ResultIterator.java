@@ -62,6 +62,11 @@ public class ResultIterator implements AutoCloseable {
 
 
     public List<List<PolyValue>> getNextBatch() {
+        return getNextBatch( batch );
+    }
+
+
+    public List<List<PolyValue>> getNextBatch( int fetchSize ) {
         StopWatch stopWatch = null;
         try {
             if ( isTimed ) {
@@ -70,7 +75,7 @@ public class ResultIterator implements AutoCloseable {
             }
             List<List<PolyValue>> res = new ArrayList<>();
             int i = 0;
-            while ( (batch < 0 || i++ < batch) && iterator.hasNext() ) {
+            while ( (fetchSize < 0 || i++ < fetchSize) && iterator.hasNext() ) {
                 res.add( Lists.newArrayList( iterator.next() ) );
             }
 
@@ -134,7 +139,7 @@ public class ResultIterator implements AutoCloseable {
 
 
     @Override
-    public void close() throws Exception {
+    public void close() {
         try {
             if ( iterator instanceof AutoCloseable ) {
                 ((AutoCloseable) iterator).close();

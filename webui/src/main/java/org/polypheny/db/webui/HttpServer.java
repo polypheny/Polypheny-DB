@@ -35,6 +35,7 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.StatusNotificationService;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -59,6 +60,8 @@ public class HttpServer implements Runnable {
     private static HttpServer INSTANCE = null;
     @Getter
     private WebSocket webSocketHandler;
+    @Setter
+    private boolean isReady = false;
 
 
     public static HttpServer getInstance() {
@@ -282,6 +285,8 @@ public class HttpServer implements Runnable {
         webuiServer.get( "/getDocumentDatabases", crud.languageCrud::getDocumentDatabases );
 
         webuiServer.get( "/product", ctx -> ctx.result( "Polypheny-DB" ) );
+
+        webuiServer.get( "/isReady", ctx -> ctx.result( String.valueOf( isReady ) ) );
 
     }
 

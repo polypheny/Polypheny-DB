@@ -23,8 +23,6 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import com.google.common.io.BaseEncoding;
@@ -33,6 +31,7 @@ import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Objects;
 import lombok.Value;
+import org.apache.calcite.avatica.util.Base64;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -49,8 +48,6 @@ public class PolyBinary extends PolyValue {
     public static final PolyBinary EMPTY = new PolyBinary( new byte[0], null );
 
     @JsonProperty()
-    @JsonSerialize(using = ByteStringSerializer.class)
-    @JsonDeserialize(using = ByteStringDeserializer.class)
     public byte[] value;
 
     @JsonProperty()
@@ -127,6 +124,11 @@ public class PolyBinary extends PolyValue {
             return out.substring( out.length() - count );
         }
         return out;
+    }
+
+
+    public String as64String() {
+        return Base64.encodeBytes( value );
     }
 
 

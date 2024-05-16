@@ -83,6 +83,9 @@ public class PolyBigDecimal extends PolyNumber {
 
 
     public static PolyBigDecimal of( Number value, int precision, int scale ) {
+        if ( value instanceof BigDecimal bigDecimal ) {
+            return PolyBigDecimal.of( bigDecimal );
+        }
         return PolyBigDecimal.of( value.doubleValue() );
     }
 
@@ -191,37 +194,6 @@ public class PolyBigDecimal extends PolyNumber {
 
 
     @Override
-    public boolean equals( Object o ) {
-        if ( this == o ) {
-            return true;
-        }
-        if ( o == null ) {
-            return false;
-        }
-
-        if ( !(o instanceof PolyValue) ) {
-            return false;
-        }
-
-        if ( ((PolyValue) o).isNull() ) {
-            return false;
-        }
-
-        if ( !((PolyValue) o).isNumber() ) {
-            return false;
-        }
-        BigDecimal that = ((PolyValue) o).asNumber().bigDecimalValue();
-        return Objects.equals( value.stripTrailingZeros(), that.stripTrailingZeros() );
-    }
-
-
-    @Override
-    public int hashCode() {
-        return Objects.hash( super.hashCode(), value );
-    }
-
-
-    @Override
     public int compareTo( @NotNull PolyValue o ) {
         if ( !o.isNumber() ) {
             return -1;
@@ -246,6 +218,43 @@ public class PolyBigDecimal extends PolyNumber {
     @Override
     public @NotNull Long deriveByteSize() {
         return value == null ? 1 : 32L;
+    }
+
+
+    @Override
+    public boolean isNull() {
+        return value == null;
+    }
+
+
+    @Override
+    public boolean equals( Object o ) {
+        if ( this == o ) {
+            return true;
+        }
+        if ( o == null ) {
+            return false;
+        }
+
+        if ( !(o instanceof PolyValue val) ) {
+            return false;
+        }
+
+        if ( val.isNull() ) {
+            return false;
+        }
+
+        if ( !val.isNumber() ) {
+            return false;
+        }
+        BigDecimal that = val.asNumber().bigDecimalValue();
+        return Objects.equals( value.stripTrailingZeros(), that.stripTrailingZeros() );
+    }
+
+
+    @Override
+    public int hashCode() {
+        return Objects.hash( super.hashCode(), value );
     }
 
 

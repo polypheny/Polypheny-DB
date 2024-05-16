@@ -2529,6 +2529,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
 
     private static void register( OperatorName key, Operator operator ) {
         OperatorRegistry.register( key, operator );
+        OperatorRegistry.register( QueryLanguage.from( "sql" ), key, operator );
     }
 
 }

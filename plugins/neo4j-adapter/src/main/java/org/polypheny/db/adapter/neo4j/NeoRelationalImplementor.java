@@ -100,6 +100,9 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
     @Getter
     private AlgNode last;
 
+    @Getter
+    private boolean needsPreparedReturn;
+
 
     public void add( OperatorStatement statement ) {
         this.statements.add( statement );
@@ -165,7 +168,7 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
     public void addPreparedValues() {
         if ( last instanceof NeoProject ) {
             add( createProjectValues( (NeoProject) last, entity, this ) );
-            addRowCount( 1 );
+            this.needsPreparedReturn = true;
             return;
         }
         throw new GenericRuntimeException( "" );
@@ -278,7 +281,7 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
         OperatorStatement statement = statements.get( statements.size() - 1 );
         if ( statements.get( statements.size() - 1 ).type != StatementType.RETURN ) {
             if ( isDml ) {
-                addRowCountEntity();
+                needsPreparedReturn = true;
             } else if ( statement.type == StatementType.WITH ) {
                 // can replace
                 statements.remove( statements.size() - 1 );

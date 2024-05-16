@@ -25,9 +25,11 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import com.google.common.collect.ImmutableList;
 import java.sql.Array;
-import java.sql.CallableStatement;
+import java.sql.Blob;
+import java.sql.Clob;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.NClob;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
@@ -41,18 +43,20 @@ import java.util.Map;
 import java.util.Properties;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.PolyphenyDb;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
+import org.polypheny.jdbc.PolyConnection;
+import org.polypheny.jdbc.PrismInterfaceServiceException;
+import org.polypheny.jdbc.types.PolyBlob;
+import org.polypheny.jdbc.types.PolyClob;
 
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Tag("adapter")
 @Slf4j
-@Disabled
 public class JdbcConnectionTest {
 
     private final static String dbHost = "localhost";
@@ -81,11 +85,10 @@ public class JdbcConnectionTest {
 
     @Test
     public void timeZoneTestNoTimezone() throws SQLException {
-        Time expected = Time.valueOf( "11:59:32" );
-        String url = "jdbc:polypheny://pa:pa@" + dbHost + ":" + port;
-        String tableDdl = "CREATE TABLE test(testtime TIME NOT NULL)";
-        String insert = "INSERT INTO test VALUES (time '11:59:32')";
-        String select = "SELECT * FROM test";
+        String url = "jdbc:polypheny://pa:@" + dbHost + ":" + port;
+        String tableDdl = "CREATE TABLE test(id INTEGER PRIMARY KEY, testtime TIME NOT NULL)";
+        String insert = "INSERT INTO test VALUES (0, time '11:59:32')";
+        String select = "SELECT testtime FROM test";
         try ( Connection con = jdbcConnect( url );
                 Statement statement = con.createStatement() ) {
             statement.execute( tableDdl );
@@ -98,7 +101,7 @@ public class JdbcConnectionTest {
 
     @Test
     public void autocommitUrlTest() throws SQLException {
-        String url = "jdbc:polypheny://pa:pa@" + dbHost + ":" + port + "/public?autocommit=false";
+        String url = "jdbc:polypheny://pa:@" + dbHost + ":" + port + "/public?autocommit=false";
         try ( Connection con = jdbcConnect( url ) ) {
             assertFalse( con.getAutoCommit() );
         }
@@ -107,7 +110,7 @@ public class JdbcConnectionTest {
 
     @Test
     public void readOnlyUrlTest() throws SQLException {
-        String url = "jdbc:polypheny://pa:pa@" + dbHost + ":" + port + "/public?readonly=true";
+        String url = "jdbc:polypheny://pa:@" + dbHost + ":" + port + "/public?readonly=true";
         try ( Connection con = jdbcConnect( url ) ) {
             assertTrue( con.isReadOnly() );
         }
@@ -116,29 +119,21 @@ public class JdbcConnectionTest {
 
     @Test
     public void isolationSerializableUrlTest() {
-        assertThrows( SQLException.class, () -> {
-            String url = "jdbc:polypheny://pa:pa@" + dbHost + ":" + port + "/public?isolation=SERIALIZABLE";
-            try ( Connection con = jdbcConnect( url ) ) {
-                fail( "Isolation mode SERIALIZABLE is not jet supported" );
-            }
-        } );
+        String url = "jdbc:polypheny://pa:@" + dbHost + ":" + port + "/public?isolation=SERIALIZABLE";
+        assertThrows( SQLException.class, () -> jdbcConnect( url ) );
     }
 
 
     @Test
     public void isolationDirtyUrlTest() {
-        assertThrows( SQLException.class, () -> {
-            String url = "jdbc:polypheny://pa:pa@" + dbHost + ":" + port + "/public?isolation=DIRTY";
-            try ( Connection con = jdbcConnect( url ) ) {
-                fail( "Isolation mode DIRTY is not jet supported" );
-            }
-        } );
+        String url = "jdbc:polypheny://pa:@" + dbHost + ":" + port + "/public?isolation=DIRTY";
+        assertThrows( SQLException.class, () -> jdbcConnect( url ) );
     }
 
 
     @Test
     public void isolationCommittedUrlTest() throws SQLException {
-        String url = "jdbc:polypheny://pa:pa@" + dbHost + ":" + port + "/public?isolation=COMMITTED";
+        String url = "jdbc:polypheny://pa:@" + dbHost + ":" + port + "/public?isolation=COMMITTED";
         try ( Connection con = jdbcConnect( url ) ) {
             assertEquals( Connection.TRANSACTION_READ_COMMITTED, con.getTransactionIsolation() );
         }
@@ -147,19 +142,15 @@ public class JdbcConnectionTest {
 
     @Test
     public void isolationRepeatableReadUrlTest() {
-        assertThrows( SQLException.class, () -> {
-            String url = "jdbc:polypheny://pa:pa@" + dbHost + ":" + port + "/public?isolation=REPEATABLE_READ";
-            try ( Connection con = jdbcConnect( url ) ) {
-                fail( "Isolation mode REPEATABLE_READ is not jet supported" );
-            }
-        } );
+        String url = "jdbc:polypheny://pa:@" + dbHost + ":" + port + "/public?isolation=REPEATABLE_READ";
+        assertThrows( SQLException.class, () -> jdbcConnect( url ) );
     }
 
 
     @Test
     public void networkTimeoutUrlTest() throws SQLException {
         int expectedTimeout = 250000;
-        String url = "jdbc:polypheny://pa:pa@" + dbHost + ":" + port + "/public?nwtimeout=" + expectedTimeout;
+        String url = "jdbc:polypheny://pa:@" + dbHost + ":" + port + "/public?nwtimeout=" + expectedTimeout;
         try ( Connection con = jdbcConnect( url ) ) {
             assertEquals( expectedTimeout, con.getNetworkTimeout() );
         }
@@ -168,18 +159,14 @@ public class JdbcConnectionTest {
 
     @Test
     public void resultHoldabilityHoldUrlTest() {
-        assertThrows( SQLException.class, () -> {
-            String url = "jdbc:polypheny://pa:pa@" + dbHost + ":" + port + "/public?holdability=HOLD";
-            try ( Connection con = jdbcConnect( url ) ) {
-                fail( "Result holdability mode HOLD is not jet supported" );
-            }
-        } );
+        String url = "jdbc:polypheny://pa:@" + dbHost + ":" + port + "/public?holdability=HOLD";
+        assertThrows( SQLException.class, () -> jdbcConnect( url ) );
     }
 
 
     @Test
     public void resultHoldabilityCloseUrlTest() throws SQLException {
-        String url = "jdbc:polypheny://pa:pa@" + dbHost + ":" + port + "/public?holdability=CLOSE";
+        String url = "jdbc:polypheny://pa:@" + dbHost + ":" + port + "/public?holdability=CLOSE";
         try ( Connection con = jdbcConnect( url ) ) {
             assertEquals( ResultSet.CLOSE_CURSORS_AT_COMMIT, con.getHoldability() );
         }
@@ -188,7 +175,7 @@ public class JdbcConnectionTest {
 
     @Test
     public void autocommitPropertyTest() throws SQLException {
-        String url = "jdbc:polypheny://pa:pa@" + dbHost + ":" + port;
+        String url = "jdbc:polypheny://pa:@" + dbHost + ":" + port;
         Properties properties = new Properties();
         properties.setProperty( "autocommit", "false" );
         try ( Connection con = jdbcConnect( url, properties ) ) {
@@ -199,7 +186,7 @@ public class JdbcConnectionTest {
 
     @Test
     public void readOnlyPropertyTest() throws SQLException {
-        String url = "jdbc:polypheny://pa:pa@" + dbHost + ":" + port;
+        String url = "jdbc:polypheny://pa:@" + dbHost + ":" + port;
         Properties properties = new Properties();
         properties.setProperty( "readonly", "true" );
         try ( Connection con = jdbcConnect( url, properties ) ) {
@@ -210,33 +197,25 @@ public class JdbcConnectionTest {
 
     @Test
     public void isolationSerializablePropertyTest() {
-        assertThrows( SQLException.class, () -> {
-            String url = "jdbc:polypheny://pa:pa@" + dbHost + ":" + port;
-            Properties properties = new Properties();
-            properties.setProperty( "isolation", "SERIALIZABLE" );
-            try ( Connection con = jdbcConnect( url, properties ) ) {
-                fail( "Isolation mode SERIALIZABLE is not jet supported" );
-            }
-        } );
+        String url = "jdbc:polypheny://pa:@" + dbHost + ":" + port;
+        Properties properties = new Properties();
+        properties.setProperty( "isolation", "SERIALIZABLE" );
+        assertThrows( SQLException.class, () -> jdbcConnect( url, properties ) );
     }
 
 
     @Test
     public void isolationDirtyPropertyTest() {
-        assertThrows( SQLException.class, () -> {
-            String url = "jdbc:polypheny://pa:pa@" + dbHost + ":" + port;
-            Properties properties = new Properties();
-            properties.setProperty( "isolation", "DIRTY" );
-            try ( Connection con = jdbcConnect( url, properties ) ) {
-                fail( "Isolation mode DIRTY is not jet supported" );
-            }
-        } );
+        String url = "jdbc:polypheny://pa:@" + dbHost + ":" + port;
+        Properties properties = new Properties();
+        properties.setProperty( "isolation", "DIRTY" );
+        assertThrows( SQLException.class, () -> jdbcConnect( url, properties ) );
     }
 
 
     @Test
     public void isolationCommittedPropertyTest() throws SQLException {
-        String url = "jdbc:polypheny://pa:pa@" + dbHost + ":" + port;
+        String url = "jdbc:polypheny://pa:@" + dbHost + ":" + port;
         Properties properties = new Properties();
         properties.setProperty( "isolation", "COMMITTED" );
         try ( Connection con = jdbcConnect( url, properties ) ) {
@@ -247,21 +226,17 @@ public class JdbcConnectionTest {
 
     @Test
     public void isolationRepeatableReadPropertyTest() {
-        assertThrows( SQLException.class, () -> {
-            String url = "jdbc:polypheny://pa:pa@" + dbHost + ":" + port;
-            Properties properties = new Properties();
-            properties.setProperty( "isolation", "REPEATABLE_READ" );
-            try ( Connection con = jdbcConnect( url, properties ) ) {
-                fail( "Isolation mode EPEATABLE_READ is not jet supported" );
-            }
-        } );
+        String url = "jdbc:polypheny://pa:@" + dbHost + ":" + port;
+        Properties properties = new Properties();
+        properties.setProperty( "isolation", "REPEATABLE_READ" );
+        assertThrows( SQLException.class, () -> jdbcConnect( url, properties ) );
     }
 
 
     @Test
     public void networkTimeoutPropertyTest() throws SQLException {
         int expectedTimeout = 250;
-        String url = "jdbc:polypheny://pa:pa@" + dbHost + ":" + port;
+        String url = "jdbc:polypheny://pa:@" + dbHost + ":" + port;
         Properties properties = new Properties();
         properties.setProperty( "nwtimeout", String.valueOf( expectedTimeout ) );
         try ( Connection con = jdbcConnect( url, properties ) ) {
@@ -272,24 +247,36 @@ public class JdbcConnectionTest {
 
     @Test
     public void resultHoldabilityHoldPropertyTest() {
-        assertThrows( SQLException.class, () -> {
-            String url = "jdbc:polypheny://pa:pa@" + dbHost + ":" + port;
-            Properties properties = new Properties();
-            properties.setProperty( "holdability", "HOLD" );
-            try ( Connection con = jdbcConnect( url, properties ) ) {
-                fail( "Result holdability mode HOLD is not jet supported" );
-            }
-        } );
+        String url = "jdbc:polypheny://pa:@" + dbHost + ":" + port;
+        Properties properties = new Properties();
+        properties.setProperty( "holdability", "HOLD" );
+        assertThrows( SQLException.class, () -> jdbcConnect( url, properties ) );
     }
 
 
     @Test
     public void resultHoldabilityClosePropertyTest() throws SQLException {
-        String url = "jdbc:polypheny://pa:pa@" + dbHost + ":" + port;
+        String url = "jdbc:polypheny://pa:@" + dbHost + ":" + port;
         Properties properties = new Properties();
         properties.setProperty( "holdability", "CLOSE" );
         try ( Connection con = jdbcConnect( url, properties ) ) {
             assertEquals( ResultSet.CLOSE_CURSORS_AT_COMMIT, con.getHoldability() );
+        }
+    }
+
+
+    @Test
+    public void isWrapperForTest() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+            PolyConnection polyphenyConnection = jdbcConnection.getConnection().unwrap( PolyConnection.class );
+        }
+    }
+
+
+    @Test
+    public void unwrapTest() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+            PolyConnection polyphenyConnection = jdbcConnection.getConnection().unwrap( PolyConnection.class );
         }
     }
 
@@ -306,25 +293,21 @@ public class JdbcConnectionTest {
 
 
     @Test
-    public void unwrapExceptionTest() {
-        assertThrows( SQLException.class, () -> {
-            try (
-                    JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
-                    Connection connection = polyphenyDbConnection.getConnection();
-            ) {
-                PolyphenyDb polyDb = connection.unwrap( PolyphenyDb.class );
-            }
-        } );
+    public void unwrapExceptionTest() throws SQLException {
+        try (
+                JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
+                Connection connection = polyphenyDbConnection.getConnection();
+        ) {
+            assertThrows( SQLException.class, () -> connection.unwrap( PolyphenyDb.class ) );
+        }
     }
 
 
     @Test
-    public void illegalTimeoutBelowZeroTest() {
-        assertThrows( SQLException.class, () -> {
-            try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
-                jdbcConnection.getConnection().setNetworkTimeout( null, -42 );
-            }
-        } );
+    public void illegalTimeoutBelowZeroTest() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+            assertThrows( SQLException.class, () -> jdbcConnection.getConnection().setNetworkTimeout( null, -42 ) );
+        }
     }
 
 
@@ -340,19 +323,29 @@ public class JdbcConnectionTest {
 
 
     @Test
-    public void abortNotSupportedTest() {
-        assertThrows( SQLFeatureNotSupportedException.class, () -> {
+    public void abortNotSupportedTest() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            assertThrows( SQLFeatureNotSupportedException.class, () -> connection.abort( null ) );
+        }
+    }
+
+
+    @Test
+    public void setInvalidNamespaceTest() {
+        String namespaceName = "nonexistentNamespace";
+        assertThrows( PrismInterfaceServiceException.class, () -> {
             try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
                 Connection connection = jdbcConnection.getConnection();
-                connection.abort( null );
+                connection.setSchema( namespaceName );
             }
         } );
     }
 
 
     @Test
-    public void setNamespaceTest() throws SQLException {
-        String namespaceName = "testSpace";
+    public void setValidNamespaceTest() throws SQLException {
+        String namespaceName = "public";
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
             connection.setSchema( namespaceName );
@@ -467,24 +460,50 @@ public class JdbcConnectionTest {
 
 
     @Test
-    public void sqlxmlNotSupportedTest() {
-        assertThrows( SQLFeatureNotSupportedException.class, () -> {
-            try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
-                Connection connection = jdbcConnection.getConnection();
-                connection.createSQLXML();
-            }
-        } );
+    public void sqlxmlNotSupportedTest() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            assertThrows( SQLFeatureNotSupportedException.class, connection::createSQLXML );
+        }
     }
 
 
     @Test
-    public void prepareCallWithParamsNotSupportedTest() {
-        assertThrows( SQLFeatureNotSupportedException.class, () -> {
-            try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
-                Connection connection = jdbcConnection.getConnection();
-                CallableStatement cs = connection.prepareCall( "CALL testProcedure()" );
-            }
-        } );
+    public void createClobTest() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            Clob clob = connection.createClob();
+            assertTrue( clob instanceof PolyClob );
+        }
+    }
+
+
+    @Test
+    public void createBlobTest() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            Blob blob = connection.createBlob();
+            assertTrue( blob instanceof PolyBlob );
+        }
+    }
+
+
+    @Test
+    public void createNClobTest() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            NClob nclob = connection.createNClob();
+            assertTrue( nclob instanceof PolyClob );
+        }
+    }
+
+
+    @Test
+    public void prepareCallWithParamsNotSupportedTest() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            assertThrows( SQLFeatureNotSupportedException.class, () -> connection.prepareCall( "CALL testProcedure()" ) );
+        }
     }
 
 
@@ -516,14 +535,12 @@ public class JdbcConnectionTest {
 
 
     @Test
-    public void getWarningsWhenClosedTest() {
-        assertThrows( SQLException.class, () -> {
-            try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
-                Connection connection = jdbcConnection.getConnection();
-                connection.close();
-                connection.getWarnings();
-            }
-        } );
+    public void getWarningsWhenClosedTest() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            connection.close();
+            assertThrows( SQLException.class, connection::getWarnings );
+        }
     }
 
 
@@ -537,62 +554,50 @@ public class JdbcConnectionTest {
 
 
     @Test
-    public void clearWarningsWhenClosedTest() {
-        assertThrows( SQLException.class, () -> {
-            try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
-                Connection connection = jdbcConnection.getConnection();
-                connection.close();
-                connection.clearWarnings();
-            }
-        } );
+    public void clearWarningsWhenClosedTest() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            connection.close();
+            assertThrows( SQLException.class, () -> connection.clearWarnings() );
+        }
     }
 
 
     @Test
-    public void setSavepointTest() {
-        assertThrows( SQLFeatureNotSupportedException.class, () -> {
-            try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
-                Connection connection = jdbcConnection.getConnection();
-
-                connection.setSavepoint();
-            }
-        } );
+    public void setSavepointTest() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            assertThrows( SQLFeatureNotSupportedException.class, connection::setSavepoint );
+        }
     }
 
 
     @Test
-    public void setSavepointWithNameTest() {
-        assertThrows( SQLFeatureNotSupportedException.class, () -> {
-            try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
-                Connection connection = jdbcConnection.getConnection();
-
-                connection.setSavepoint( "testSavepoint" );
-            }
-        } );
+    public void setSavepointWithNameTest() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            assertThrows( SQLFeatureNotSupportedException.class, () -> connection.setSavepoint( "testSavepoint" ) );
+        }
     }
 
 
     @Test
-    public void rollbackWithSavepointTest() {
-        assertThrows( SQLFeatureNotSupportedException.class, () -> {
-            try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
-                Connection connection = jdbcConnection.getConnection();
-                Savepoint savepoint = null;
-                connection.rollback( savepoint );
-            }
-        } );
+    public void rollbackWithSavepointTest() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            Savepoint savepoint = null;
+            assertThrows( SQLFeatureNotSupportedException.class, () -> connection.rollback( savepoint ) );
+        }
     }
 
 
     @Test
-    public void releaseSavepointTest() {
-        assertThrows( SQLFeatureNotSupportedException.class, () -> {
-            try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
-                Connection connection = jdbcConnection.getConnection();
-                Savepoint savepoint = null;
-                connection.releaseSavepoint( savepoint );
-            }
-        } );
+    public void releaseSavepointTest() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            Savepoint savepoint = null;
+            assertThrows( SQLFeatureNotSupportedException.class, () -> connection.releaseSavepoint( savepoint ) );
+        }
     }
 
 
@@ -610,25 +615,21 @@ public class JdbcConnectionTest {
 
 
     @Test
-    public void setHoldabilityHoldThrowsErrorTest() {
-        assertThrows( SQLException.class, () -> {
-            try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
-                Connection connection = jdbcConnection.getConnection();
-                connection.setHoldability( ResultSet.HOLD_CURSORS_OVER_COMMIT );
-            }
-        } );
+    public void setHoldabilityHoldThrowsErrorTest() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            assertThrows( SQLException.class, () -> connection.setHoldability( ResultSet.HOLD_CURSORS_OVER_COMMIT ) );
+        }
     }
 
 
     @Test
     public void setHoldabilityCloseOnClosedErrorTest() throws SQLException {
-        assertThrows( SQLException.class, () -> {
-            try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
-                Connection connection = jdbcConnection.getConnection();
-                connection.close();
-                connection.setHoldability( ResultSet.CLOSE_CURSORS_AT_COMMIT );
-            }
-        } );
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            connection.close();
+            assertThrows( SQLException.class, () -> connection.setHoldability( ResultSet.CLOSE_CURSORS_AT_COMMIT ) );
+        }
     }
 
 
@@ -644,50 +645,39 @@ public class JdbcConnectionTest {
 
 
     @Test
-    public void setTransactionIsolationWithRepeatableReadTest() {
-        assertThrows( SQLException.class, () -> {
-            try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
-                Connection connection = jdbcConnection.getConnection();
-
-                connection.setTransactionIsolation( Connection.TRANSACTION_REPEATABLE_READ );
-            }
-        } );
+    public void setTransactionIsolationWithRepeatableReadTest() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            assertThrows( SQLException.class, () -> connection.setTransactionIsolation( Connection.TRANSACTION_REPEATABLE_READ ) );
+        }
     }
 
 
     @Test
-    public void setTransactionIsolationWithSerializableTest() {
-        assertThrows( SQLException.class, () -> {
-            try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
-                Connection connection = jdbcConnection.getConnection();
-
-                connection.setTransactionIsolation( Connection.TRANSACTION_SERIALIZABLE );
-            }
-        } );
+    public void setTransactionIsolationWithSerializableTest() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            assertThrows( SQLException.class, () -> connection.setTransactionIsolation( Connection.TRANSACTION_SERIALIZABLE ) );
+        }
     }
 
 
     @Test
-    public void setTransactionIsolationWithReadUncommittedTest() {
-        assertThrows( SQLException.class, () -> {
-            try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
-                Connection connection = jdbcConnection.getConnection();
-
-                connection.setTransactionIsolation( Connection.TRANSACTION_READ_UNCOMMITTED );
-            }
-        } );
+    public void setTransactionIsolationWithReadUncommittedTest() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            assertThrows( SQLException.class, () -> connection.setTransactionIsolation( Connection.TRANSACTION_READ_UNCOMMITTED ) );
+        }
     }
 
 
     @Test
-    public void setTransactionOnClosedTest() {
-        assertThrows( SQLException.class, () -> {
-            try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
-                Connection connection = jdbcConnection.getConnection();
-                connection.close();
-                connection.setTransactionIsolation( Connection.TRANSACTION_REPEATABLE_READ );
-            }
-        } );
+    public void setTransactionOnClosedTest() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            connection.close();
+            assertThrows( SQLException.class, () -> connection.setTransactionIsolation( Connection.TRANSACTION_REPEATABLE_READ ) );
+        }
     }
 
 
@@ -711,13 +701,11 @@ public class JdbcConnectionTest {
 
 
     @Test
-    public void setCatalogWhenClosedTest() {
-        assertThrows( SQLException.class, () -> {
-            JdbcConnection jdbcConnection = new JdbcConnection( true );
-            Connection connection = jdbcConnection.getConnection();
-            connection.close();
-            connection.setCatalog( "TestCatalog" );
-        } );
+    public void setCatalogWhenClosedTest() throws SQLException {
+        JdbcConnection jdbcConnection = new JdbcConnection( true );
+        Connection connection = jdbcConnection.getConnection();
+        connection.close();
+        assertThrows( SQLException.class, () -> connection.setCatalog( "TestCatalog" ) );
     }
 
 
@@ -753,35 +741,29 @@ public class JdbcConnectionTest {
 
 
     @Test
-    public void setReadOnlyWhenClosedTest() {
-        assertThrows( SQLException.class, () -> {
-            JdbcConnection jdbcConnection = new JdbcConnection( true );
-            Connection connection = jdbcConnection.getConnection();
-            connection.close();
-            connection.setReadOnly( true );
-        } );
+    public void setReadOnlyWhenClosedTest() throws SQLException {
+        JdbcConnection jdbcConnection = new JdbcConnection( true );
+        Connection connection = jdbcConnection.getConnection();
+        connection.close();
+        assertThrows( SQLException.class, () -> connection.setReadOnly( true ) );
     }
 
 
     @Test
-    public void isReadOnlyWhenClosedTest() {
-        assertThrows( SQLException.class, () -> {
-            JdbcConnection jdbcConnection = new JdbcConnection( true );
-            Connection connection = jdbcConnection.getConnection();
-            connection.close();
-            connection.isReadOnly();
-        } );
+    public void isReadOnlyWhenClosedTest() throws SQLException {
+        JdbcConnection jdbcConnection = new JdbcConnection( true );
+        Connection connection = jdbcConnection.getConnection();
+        connection.close();
+        assertThrows( SQLException.class, connection::isReadOnly );
     }
 
 
     @Test
-    public void nativeSQLNotSupportedTest() {
-        assertThrows( SQLFeatureNotSupportedException.class, () -> {
-            try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
-                Connection connection = jdbcConnection.getConnection();
-                connection.nativeSQL( "SELECT * FROM table_name" );
-            }
-        } );
+    public void nativeSQLNotSupportedTest() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            assertThrows( SQLFeatureNotSupportedException.class, () -> connection.nativeSQL( "SELECT * FROM table_name" ) );
+        }
     }
 
 
@@ -795,13 +777,11 @@ public class JdbcConnectionTest {
 
 
     @Test
-    public void commitTransactionOnAutocommitTest() {
-        assertThrows( SQLException.class, () -> {
-            try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
-                Connection connection = jdbcConnection.getConnection();
-                connection.commit();
-            }
-        } );
+    public void commitTransactionOnAutocommitTest() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true, true ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            assertThrows( SQLException.class, connection::commit );
+        }
     }
 
 
@@ -815,59 +795,49 @@ public class JdbcConnectionTest {
 
 
     @Test
-    public void rollbackTransactionOnAutocommitTest() {
-        assertThrows( SQLException.class, () -> {
-            try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
-                Connection connection = jdbcConnection.getConnection();
-                connection.rollback();
-            }
-        } );
-    }
-
-
-    @Test
-    public void commitWhenClosedTest() {
-        assertThrows( SQLException.class, () -> {
-            JdbcConnection jdbcConnection = new JdbcConnection( true );
+    public void rollbackTransactionOnAutocommitTest() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true, true ) ) {
             Connection connection = jdbcConnection.getConnection();
-            connection.close();
-            connection.commit();
-        } );
+            assertThrows( SQLException.class, connection::rollback );
+        }
     }
 
 
     @Test
-    public void rollbackWhenClosedTest() {
-        assertThrows( SQLException.class, () -> {
-            JdbcConnection jdbcConnection = new JdbcConnection( true );
+    public void commitWhenClosedTest() throws SQLException {
+        JdbcConnection jdbcConnection = new JdbcConnection( true, true );
+        Connection connection = jdbcConnection.getConnection();
+        connection.close();
+        assertThrows( SQLException.class, connection::commit );
+    }
+
+
+    @Test
+    public void rollbackWhenClosedTest() throws SQLException {
+        JdbcConnection jdbcConnection = new JdbcConnection( true, true );
+        Connection connection = jdbcConnection.getConnection();
+        connection.close();
+        assertThrows( SQLException.class, connection::rollback );
+    }
+
+
+    @Test
+    public void commitWithAutoCommitTest() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true, true ) ) {
             Connection connection = jdbcConnection.getConnection();
-            connection.close();
-            connection.rollback();
-        } );
+            connection.setAutoCommit( true );
+            assertThrows( SQLException.class, connection::commit );
+        }
     }
 
 
     @Test
-    public void commitWithAutoCommitTest() {
-        assertThrows( SQLException.class, () -> {
-            try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
-                Connection connection = jdbcConnection.getConnection();
-                connection.setAutoCommit( true );
-                connection.commit();
-            }
-        } );
-    }
-
-
-    @Test
-    public void rollbackWithAutoCommitTest() {
-        assertThrows( SQLException.class, () -> {
-            try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
-                Connection connection = jdbcConnection.getConnection();
-                connection.setAutoCommit( true );
-                connection.rollback();
-            }
-        } );
+    public void rollbackWithAutoCommitTest() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true, true ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            connection.setAutoCommit( true );
+            assertThrows( SQLException.class, connection::rollback );
+        }
     }
 
 }

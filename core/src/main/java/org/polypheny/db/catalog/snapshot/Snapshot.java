@@ -17,6 +17,7 @@
 package org.polypheny.db.catalog.snapshot;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import javax.annotation.Nullable;
 import org.jetbrains.annotations.NotNull;
@@ -47,7 +48,8 @@ public interface Snapshot extends OperatorTable {
      * @param name Pattern for the namespace name. null returns all.
      * @return List of namespaces which fit to the specified filter. If there is no namespace which meets the criteria, an empty list is returned.
      */
-    @NotNull List<LogicalNamespace> getNamespaces( @Nullable Pattern name );
+    @NotNull
+    List<LogicalNamespace> getNamespaces( @Nullable Pattern name );
 
     /**
      * Returns the namespace with the specified id.
@@ -55,7 +57,8 @@ public interface Snapshot extends OperatorTable {
      * @param id The id of the namespace
      * @return The namespace
      */
-    @NotNull Optional<LogicalNamespace> getNamespace( long id );
+    @NotNull
+    Optional<LogicalNamespace> getNamespace( long id );
 
     /**
      * Returns the namespace with the given name.
@@ -63,7 +66,8 @@ public interface Snapshot extends OperatorTable {
      * @param name The name of the namespace
      * @return The namespace
      */
-    @NotNull Optional<LogicalNamespace> getNamespace( String name );
+    @NotNull
+    Optional<LogicalNamespace> getNamespace( String name );
 
 
     /**
@@ -72,7 +76,8 @@ public interface Snapshot extends OperatorTable {
      * @param name The name of the user
      * @return The user
      */
-    @NotNull Optional<LogicalUser> getUser( String name );
+    @NotNull
+    Optional<LogicalUser> getUser( String name );
 
     /**
      * Get the user with the specified id.
@@ -80,7 +85,8 @@ public interface Snapshot extends OperatorTable {
      * @param id The id of the user
      * @return The user
      */
-    @NotNull Optional<LogicalUser> getUser( long id );
+    @NotNull
+    Optional<LogicalUser> getUser( long id );
 
     /**
      * Get list of all adapters
@@ -94,23 +100,25 @@ public interface Snapshot extends OperatorTable {
      *
      * @return The adapter
      */
-    @NotNull Optional<LogicalAdapter> getAdapter( String uniqueName );
+    @NotNull
+    Optional<LogicalAdapter> getAdapter( String uniqueName );
 
     /**
      * Get an adapter by its id
      *
      * @return The adapter
      */
-    @NotNull Optional<LogicalAdapter> getAdapter( long id );
+    @NotNull
+    Optional<LogicalAdapter> getAdapter( long id );
 
 
     /*
-     * Get list of all query interfaces
+     * Get map of all query interfaces
      *
-     * @return List of query interfaces
+     * @return Map of query interfaces
      */
     @NotNull
-    List<LogicalQueryInterface> getQueryInterfaces();
+    Map<Long, LogicalQueryInterface> getQueryInterfaces();
 
     /**
      * Get a query interface by its unique name
@@ -121,8 +129,8 @@ public interface Snapshot extends OperatorTable {
     @NotNull
     Optional<LogicalQueryInterface> getQueryInterface( String uniqueName );
 
-    @NotNull Optional<QueryInterfaceTemplate> getInterfaceTemplate( String name );
-
+    @NotNull
+    Optional<QueryInterfaceTemplate> getInterfaceTemplate( String name );
 
 
     List<LogicalTable> getTablesForPeriodicProcessing();

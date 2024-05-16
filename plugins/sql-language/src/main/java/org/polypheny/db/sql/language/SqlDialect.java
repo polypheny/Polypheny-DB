@@ -24,6 +24,7 @@ import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
 import lombok.NonNull;
@@ -35,6 +36,7 @@ import org.apache.calcite.avatica.SqlType;
 import org.apache.calcite.linq4j.function.Experimental;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
+import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.NullCollation;
@@ -58,7 +60,9 @@ import org.polypheny.db.sql.language.util.SqlTypeUtil;
 import org.polypheny.db.type.BasicPolyType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
+import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.category.PolyBlob;
 import org.polypheny.db.util.temporal.DateTimeUtils;
 import org.polypheny.db.util.temporal.TimeUnit;
 
@@ -732,9 +736,12 @@ public class SqlDialect {
     }
 
 
-    public Expression getExpression( AlgDataType fieldType, Expression child ) {
+    public Expression handleRetrieval( AlgDataType fieldType, Expression child, ParameterExpression resultSet_, int index ) {
+        final String methodName = fieldType.isNullable() ? "ofNullable" : "of";
         return switch ( fieldType.getPolyType() ) {
-            case TEXT -> Expressions.call( PolyString.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( child, String.class ) );
+            case FILE, AUDIO, VIDEO, IMAGE -> Expressions.call( PolyBlob.class, methodName, Expressions.convert_( child, byte[].class ) );
+            case TEXT -> Expressions.call( PolyString.class, methodName, Expressions.convert_( child, String.class ) );
+            case VARBINARY -> Expressions.call( PolyBinary.class, "fromTypedJson", Expressions.convert_( child, String.class ), Expressions.constant( PolyBinary.class ) );
             default -> child;
         };
 
@@ -776,6 +783,18 @@ public class SqlDialect {
      */
     public boolean handlesUtcIncorrectly() {
         return false;
+    }
+
+
+    /**
+     * Some adapters support different handling for missing length parameters.
+     * Like they allow for VARCHAR instead of VARCHAR(length) or VARCHAR VARYING if no length is provided.
+     *
+     * @param type the type for which a length is supported but not provided.
+     * @return the handling used if no length is provided, empty if no handling is necessary.
+     */
+    public Optional<String> handleMissingLength( PolyType type ) {
+        return Optional.empty();
     }
 
 

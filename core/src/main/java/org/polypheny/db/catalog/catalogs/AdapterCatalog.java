@@ -35,7 +35,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalField;
@@ -48,8 +47,6 @@ import org.polypheny.db.util.Pair;
 @Slf4j
 @SerializeClass(subclasses = { DocAdapterCatalog.class, RelAdapterCatalog.class, GraphAdapterCatalog.class })
 public abstract class AdapterCatalog {
-
-    IdBuilder idBuilder = IdBuilder.getInstance();
 
     @Serialize
     public long adapterId;
@@ -81,7 +78,8 @@ public abstract class AdapterCatalog {
             Map<Long, PhysicalEntity> physicals,
             Map<Long, AllocationEntity> allocations,
             Map<Long, SortedSet<Long>> allocToPhysicals,
-            Map<Pair<Long, Long>, PhysicalField> fields ) {
+            Map<Pair<Long, Long>, PhysicalField> fields
+    ) {
         this.adapterId = adapterId;
         this.namespaces = new ConcurrentHashMap<>( namespaces );
         this.physicals = new ConcurrentHashMap<>( physicals );

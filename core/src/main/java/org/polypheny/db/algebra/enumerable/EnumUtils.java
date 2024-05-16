@@ -194,8 +194,8 @@ public class EnumUtils {
                 if ( joinType.generatesNullsOn( ord.i ) ) {
                     expression =
                             EnumUtils.condition(
-                                    Expressions.equal( parameter, Expressions.constant( null ) ),
-                                    Expressions.constant( null ),//PolyValue.getNull( inputPhysType.field( i ).fieldClass( 0 ) ).asExpression(),
+                                    PolyValue.isNullExpression( parameter ),
+                                    Expressions.constant( null ),
                                     expression );
                 }
                 expressions.add( expression );
@@ -253,7 +253,6 @@ public class EnumUtils {
         }
         return type;
     }
-
 
 
     static Expression enforce( final Type storageType, final Expression e ) {

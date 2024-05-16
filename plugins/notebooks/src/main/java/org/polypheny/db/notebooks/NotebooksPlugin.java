@@ -40,7 +40,6 @@ import org.polypheny.db.plugins.PluginContext;
 import org.polypheny.db.plugins.PolyPlugin;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.webui.ConfigService.HandlerType;
-import org.polypheny.db.webui.Crud;
 import org.polypheny.db.webui.HttpServer;
 
 @Slf4j

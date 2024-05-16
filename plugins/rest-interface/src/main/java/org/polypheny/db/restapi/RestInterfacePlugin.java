@@ -85,20 +85,16 @@ public class RestInterfacePlugin extends PolyPlugin {
     }
 
 
-
     @Override
     public void afterCatalogInit() {
         // Add REST interface
-        Map<String, String> restSettings = new HashMap<>();
-        restSettings.put( "port", "8089" );
-        restSettings.put( "maxUploadSizeMb", "10000" );
-        QueryInterfaceManager.addInterfaceType( "rest", HttpRestServer.class, restSettings );
+        QueryInterfaceManager.addInterfaceTemplate( HttpRestServer.INTERFACE_NAME, HttpRestServer.INTERFACE_DESCRIPTION, HttpRestServer.AVAILABLE_SETTINGS, HttpRestServer::new );
     }
 
 
     @Override
     public void stop() {
-        QueryInterfaceManager.removeInterfaceType( HttpRestServer.class );
+        QueryInterfaceManager.removeInterfaceType( HttpRestServer.INTERFACE_NAME );
     }
 
 
@@ -133,8 +129,8 @@ public class RestInterfacePlugin extends PolyPlugin {
         private Javalin restServer;
 
 
-        public HttpRestServer( TransactionManager transactionManager, Authenticator authenticator, long ifaceId, String uniqueName, Map<String, String> settings ) {
-            super( transactionManager, authenticator, ifaceId, uniqueName, settings, true, false );
+        public HttpRestServer( TransactionManager transactionManager, Authenticator authenticator, String uniqueName, Map<String, String> settings ) {
+            super( transactionManager, authenticator, uniqueName, settings, true, false );
             this.requestParser = new RequestParser( transactionManager, authenticator, Catalog.USER_NAME, Catalog.DATABASE_NAME );
             this.uniqueName = uniqueName;
             this.port = Integer.parseInt( settings.get( "port" ) );

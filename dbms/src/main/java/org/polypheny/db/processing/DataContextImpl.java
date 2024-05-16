@@ -126,12 +126,12 @@ public class DataContextImpl implements DataContext {
 
 
     @Override
-    public void addParameterValues( long index, AlgDataType type, List<PolyValue> data ) {
+    public void addParameterValues( long index, @NotNull AlgDataType type, @NotNull List<PolyValue> data ) {
         if ( parameterTypes.containsKey( index ) ) {
             throw new GenericRuntimeException( "There are already values assigned to this index" );
         }
         if ( parameterValues.isEmpty() ) {
-            for ( Object d : data ) {
+            for ( Object ignored : data ) {
                 parameterValues.add( new HashMap<>() );
             }
         }
@@ -141,8 +141,34 @@ public class DataContextImpl implements DataContext {
         parameterTypes.put( index, type );
         int i = 0;
         for ( PolyValue d : data ) {
-            parameterValues.get( i++ ).put( index, d );
+            parameterValues.get( i++ ).put( index, check( d, type ) );
         }
+    }
+
+
+    private PolyValue check( PolyValue value, AlgDataType type ) {
+        if ( value == null || value.isNull() ) {
+            return null;
+        }
+
+        switch ( type.getPolyType() ) {
+            case DECIMAL -> {
+                if ( value.asNumber().toString().replace( ".", "" ).replace( "-", "" ).length() > type.getPrecision() ) {
+                    throw new GenericRuntimeException( "Numeric value is too long" );
+                }
+            }
+            case VARCHAR, CHAR -> {
+                if ( type.getPrecision() >= 0 && value.asString().value.length() > type.getPrecision() ) {
+                    throw new GenericRuntimeException( "Char value is too long" );
+                }
+            }
+            case BINARY, VARBINARY -> {
+                if ( type.getPrecision() >= 0 && value.asBinary().length() > type.getPrecision() ) {
+                    throw new GenericRuntimeException( "Binary value is too long" );
+                }
+            }
+        }
+        return value;
     }
 
 
@@ -153,13 +179,13 @@ public class DataContextImpl implements DataContext {
 
 
     @Override
-    public void setParameterValues( List<Map<Long, PolyValue>> values ) {
+    public void setParameterValues( @NotNull List<Map<Long, PolyValue>> values ) {
         parameterValues = new ArrayList<>( values );
     }
 
 
     @Override
-    public void setParameterTypes( Map<Long, AlgDataType> types ) {
+    public void setParameterTypes( @NotNull Map<Long, @NotNull AlgDataType> types ) {
         parameterTypes = new HashMap<>( types );
     }
 

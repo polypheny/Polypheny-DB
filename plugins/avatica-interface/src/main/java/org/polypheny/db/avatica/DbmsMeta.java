@@ -1254,36 +1254,22 @@ public class DbmsMeta implements ProtobufMeta {
         if ( type == Rep.ARRAY ) {
             return PolyType.ARRAY;
         }
-        switch ( type ) {
-            case SHORT:
-            case BYTE:
-                return PolyType.TINYINT; // cache this
-            case LONG:
-                return PolyType.BIGINT;
-            case NUMBER:
-                return PolyType.DECIMAL;
-            case JAVA_SQL_TIME:
-                return PolyType.TIME;
-            case JAVA_SQL_DATE:
-                return PolyType.DATE;
-            case JAVA_SQL_TIMESTAMP:
-                return PolyType.TIMESTAMP;
-            case BOOLEAN:
-                return PolyType.BOOLEAN;
-            case DOUBLE:
-                return PolyType.DOUBLE;
-            case INTEGER:
-                return PolyType.INTEGER;
-            case FLOAT:
-                return PolyType.FLOAT;
-            case STRING:
-                return PolyType.VARCHAR;
-            case BYTE_STRING:
-                return PolyType.BINARY;
-            case OBJECT:
-                return PolyType.OTHER;
-        }
-        throw new NotImplementedException( "sql to polyType " + type );
+        return switch ( type ) {
+            case SHORT, BYTE -> PolyType.TINYINT; // cache this
+            case LONG -> PolyType.BIGINT;
+            case NUMBER -> PolyType.DECIMAL;
+            case JAVA_SQL_TIME -> PolyType.TIME;
+            case JAVA_SQL_DATE -> PolyType.DATE;
+            case JAVA_SQL_TIMESTAMP -> PolyType.TIMESTAMP;
+            case BOOLEAN -> PolyType.BOOLEAN;
+            case DOUBLE -> PolyType.DOUBLE;
+            case INTEGER -> PolyType.INTEGER;
+            case FLOAT -> PolyType.FLOAT;
+            case STRING -> PolyType.VARCHAR;
+            case BYTE_STRING -> PolyType.BINARY;
+            case OBJECT -> PolyType.OTHER;
+            default -> throw new NotImplementedException( "sql to polyType " + type );
+        };
     }
 
 

@@ -705,7 +705,7 @@ public class RexToLixTranslator {
             // E.g. from "Short" to "Integer"
             // Generate "x == null ? null : Integer.valueOf(x.intValue())"
             return EnumUtils.condition(
-                    Expressions.equal( operand, RexImpTable.NULL_EXPR ),
+                    PolyValue.isNullExpression( operand ),
                     RexImpTable.NULL_EXPR,
                     Expressions.box( Expressions.unbox( operand, toBox ), toBox ) );
         } else if ( fromPrimitive != null && toBox != null ) {
@@ -753,7 +753,7 @@ public class RexToLixTranslator {
                 // E.g. from "Integer" to "BigDecimal".
                 // Generate "x == null ? null : new BigDecimal(x.intValue())"
                 return EnumUtils.condition(
-                        Expressions.equal( operand, RexImpTable.NULL_EXPR ),
+                        PolyValue.isNullExpression( operand ),
                         RexImpTable.NULL_EXPR,
                         Expressions.new_( BigDecimal.class, Expressions.unbox( operand, fromBox ) ) );
             }
@@ -765,7 +765,7 @@ public class RexToLixTranslator {
             // E.g. from "Object" to "BigDecimal".
             // Generate "x == null ? null : SqlFunctions.toBigDecimal(x)"
             return EnumUtils.condition(
-                    Expressions.equal( operand, RexImpTable.NULL_EXPR ),
+                    PolyValue.isNullExpression( operand ),
                     RexImpTable.NULL_EXPR,
                     Expressions.call( Functions.class, "toBigDecimal", operand ) );
         } else if ( toType == String.class ) {
@@ -790,7 +790,7 @@ public class RexToLixTranslator {
                 // E.g. from "BigDecimal" to "String"
                 // Generate "x.toString()"
                 return EnumUtils.condition(
-                        Expressions.equal( operand, RexImpTable.NULL_EXPR ),
+                        PolyValue.isNullExpression( operand ),
                         RexImpTable.NULL_EXPR,
                         Expressions.call(
                                 Functions.class,
@@ -800,7 +800,7 @@ public class RexToLixTranslator {
                 // E.g. from "BigDecimal" to "String"
                 // Generate "x == null ? null : x.toString()"
                 return EnumUtils.condition(
-                        Expressions.equal( operand, RexImpTable.NULL_EXPR ),
+                        PolyValue.isNullExpression( operand ),
                         RexImpTable.NULL_EXPR,
                         Expressions.call( operand, "toString" ) );
             }

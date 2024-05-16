@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import org.apache.calcite.linq4j.function.Function1;
@@ -37,7 +38,6 @@ import org.polypheny.db.rex.RexFieldAccess;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexLocalRef;
-import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexVisitorImpl;
 import org.polypheny.db.type.PathType;
 import org.polypheny.db.type.PolyType;
@@ -170,10 +170,11 @@ public class Translator extends RexVisitorImpl<String> {
     private String getFinalFunction( RexCall call, List<String> ops ) {
         Function1<List<String>, String> getter = NeoUtil.getOpAsNeo( call.op.getOperatorName(), call.operands, call.type );
         assert getter != null : "Function is not supported by the Neo4j adapter.";
+        String adjusted = getter.apply( IntStream.range( 0, ops.size() ).mapToObj( i -> call.operands.get( i ).getType().getPolyType() == PolyType.DECIMAL ? "toFloat(" + ops.get( i ) + ")" : ops.get( i ) ).toList() );
         if ( useBrackets ) {
-            return "(" + getter.apply( ops ) + ")";
+            return "(" + adjusted + ")";
         }
-        return " " + getter.apply( ops ) + " ";
+        return " " + adjusted + " ";
     }
 
 
@@ -187,12 +188,9 @@ public class Translator extends RexVisitorImpl<String> {
 
 
     private String handleBinaries( RexCall call ) {
-        RexNode leftRex = call.operands.get( 0 );
-        RexNode rightRex = call.operands.get( 1 );
-        String left = leftRex.accept( this );
-        String right = rightRex.accept( this );
+        List<String> nodes = call.operands.stream().map( o -> o.accept( this ) ).toList();
 
-        return getFinalFunction( call, List.of( left, right ) );
+        return getFinalFunction( call, nodes );
 
     }
 

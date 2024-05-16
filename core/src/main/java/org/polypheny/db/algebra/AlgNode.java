@@ -131,7 +131,6 @@ public interface AlgNode extends AlgOptNode, Cloneable {
     AlgDataType getTupleType();
 
 
-
     /**
      * Returns the type of the rows expected for an input. Defaults to {@link #getTupleType}.
      *
@@ -353,7 +352,6 @@ public interface AlgNode extends AlgOptNode, Cloneable {
      * Expands node
      * If a part of AlgNode is a LogicalViewScan it is replaced
      * Else recursively hands call down if view in deeper level
-     *
      */
     default AlgNode unfoldView( @Nullable AlgNode parent, int index, AlgCluster cluster ) {
         int i = 0;
@@ -385,6 +383,13 @@ public interface AlgNode extends AlgOptNode, Cloneable {
 
     default boolean containsScan() {
         return getInputs().stream().anyMatch( AlgNode::containsScan );
+    }
+
+    default boolean containsEntity() {
+        if ( getEntity() != null ) {
+            return true;
+        }
+        return getInputs().stream().anyMatch( AlgNode::containsEntity );
     }
 
     /**

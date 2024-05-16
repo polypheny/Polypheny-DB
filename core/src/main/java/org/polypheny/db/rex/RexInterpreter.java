@@ -346,7 +346,7 @@ public class RexInterpreter implements RexVisitor<PolyValue> {
             elseValue = Util.last( values );
         }
         for ( int i = 0; i < size; i += 2 ) {
-            if ( values.get( i ).isBoolean() && !values.get( i ).isNull() && values.get( i ).asBoolean().value.equals( true ) ) {
+            if ( values.get( i ).isBoolean() && !(values.get( i ) == null || values.get( i ).isNull()) && values.get( i ).asBoolean().value.equals( true ) ) {
                 return values.get( i + 1 );
             }
         }
@@ -379,7 +379,7 @@ public class RexInterpreter implements RexVisitor<PolyValue> {
 
     private boolean containsNull( List<PolyValue> values ) {
         for ( PolyValue value : values ) {
-            if ( value == N ) {
+            if ( value == N || value.isNull() ) {
                 return true;
             }
         }
@@ -396,7 +396,7 @@ public class RexInterpreter implements RexVisitor<PolyValue> {
 
 
         static Truthy of( PolyValue c ) {
-            return c.isNull() || !c.isBoolean() ? UNKNOWN : (c.asBoolean().value ? TRUE : FALSE);
+            return c == null || c.isNull() || !c.isBoolean() ? UNKNOWN : (c.asBoolean().value ? TRUE : FALSE);
         }
 
 

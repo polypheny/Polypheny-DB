@@ -99,12 +99,6 @@ public class PolyLong extends PolyNumber {
 
 
     @Override
-    public int hashCode() {
-        return Objects.hash( super.hashCode(), value );
-    }
-
-
-    @Override
     public Expression asExpression() {
         return Expressions.new_( PolyLong.class, Expressions.constant( value ) );
     }
@@ -179,6 +173,12 @@ public class PolyLong extends PolyNumber {
     @Override
     public PolyNumber negate() {
         return PolyLong.of( -value );
+    }
+
+
+    @Override
+    public int hashCode() {
+        return Objects.hash( super.hashCode(), value );
     }
 
 

@@ -100,6 +100,7 @@ import org.apache.calcite.avatica.util.Spaces;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgFieldCollation;
+import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.fun.AggFunction;
@@ -2051,6 +2052,11 @@ public class Util {
 
     public static Collation getDefaultCollation() {
         return Collation.COERCIBLE;
+    }
+
+
+    public static boolean containsEntity( AlgNode a ) {
+        return a.containsEntity();
     }
 
 

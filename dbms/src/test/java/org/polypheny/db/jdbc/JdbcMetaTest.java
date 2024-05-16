@@ -17,13 +17,20 @@
 package org.polypheny.db.jdbc;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import com.google.common.collect.ImmutableList;
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
 import java.sql.Statement;
+import java.util.LinkedList;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
@@ -38,6 +45,14 @@ import org.polypheny.db.TestHelper.JdbcConnection;
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Slf4j
 public class JdbcMetaTest {
+
+    private static final String CREATE_TEST_TABLE = "CREATE TABLE IF NOT EXISTS my_table (id INT PRIMARY KEY, some_value INT)";
+    private static final String INSERT_TEST_DATA = "INSERT INTO my_table (id, some_value) VALUES " +
+            "(1, 10), " +
+            "(2, NULL), " +
+            "(3, 5), " +
+            "(4, NULL), " +
+            "(5, 8)";
 
 
     private static TestHelper helper;
@@ -117,7 +132,7 @@ public class JdbcMetaTest {
 
             // Check number of columns
             int totalColumns = rsmd.getColumnCount();
-            assertEquals( 11, totalColumns, "Wrong number of columns" );
+            assertEquals( 10, totalColumns, "Wrong number of columns" );
 
             // Check column names
             assertEquals( "TABLE_CAT", rsmd.getColumnName( 1 ), "Wrong column name" );
@@ -130,11 +145,10 @@ public class JdbcMetaTest {
             assertEquals( "TYPE_NAME", rsmd.getColumnName( 8 ), "Wrong column name" );
             assertEquals( "SELF_REFERENCING_COL_NAME", rsmd.getColumnName( 9 ), "Wrong column name" );
             assertEquals( "REF_GENERATION", rsmd.getColumnName( 10 ), "Wrong column name" );
-            assertEquals( "OWNER", rsmd.getColumnName( 11 ), "Wrong column name" );
 
             // Check data
-            final Object[] tableFoo = new Object[]{ "APP", "public", "foo", "ENTITY", "", null, null, null, null, null, "pa" };
-            final Object[] tableFoo2 = new Object[]{ "APP", "test", "foo2", "ENTITY", "", null, null, null, null, null, "pa" };
+            final Object[] tableFoo = new Object[]{ null, "public", "foo", "ENTITY", "", null, null, null, null, null };
+            final Object[] tableFoo2 = new Object[]{ null, "test", "foo2", "ENTITY", "", null, null, null, null, null, };
             TestHelper.checkResultSet(
                     connection.getMetaData().getTables( "APP", null, "foo", null ),
                     ImmutableList.of( tableFoo ) );
@@ -155,55 +169,6 @@ public class JdbcMetaTest {
 
 
     @Test
-    public void testMetaGetColumns() throws SQLException {
-        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
-            Connection connection = polyphenyDbConnection.getConnection();
-            ResultSet resultSet = connection.getMetaData().getColumns( null, null, null, null );
-            ResultSetMetaData rsmd = resultSet.getMetaData();
-
-            // Check number of columns
-            int totalColumns = rsmd.getColumnCount();
-            assertEquals( 19, totalColumns, "Wrong number of columns" );
-
-            // Check column names
-            assertEquals( "TABLE_CAT", rsmd.getColumnName( 1 ) );
-            assertEquals( "TABLE_SCHEM", rsmd.getColumnName( 2 ) );
-            assertEquals( "TABLE_NAME", rsmd.getColumnName( 3 ) );
-            assertEquals( "COLUMN_NAME", rsmd.getColumnName( 4 ) );
-            assertEquals( "DATA_TYPE", rsmd.getColumnName( 5 ) );
-            assertEquals( "TYPE_NAME", rsmd.getColumnName( 6 ) );
-            assertEquals( "COLUMN_SIZE", rsmd.getColumnName( 7 ) );
-            assertEquals( "BUFFER_LENGTH", rsmd.getColumnName( 8 ) );
-            assertEquals( "DECIMAL_DIGITS", rsmd.getColumnName( 9 ) );
-            assertEquals( "NUM_PREC_RADIX", rsmd.getColumnName( 10 ) );
-            assertEquals( "NULLABLE", rsmd.getColumnName( 11 ) );
-            assertEquals( "REMARKS", rsmd.getColumnName( 12 ) );
-            assertEquals( "COLUMN_DEF", rsmd.getColumnName( 13 ) );
-            assertEquals( "SQL_DATA_TYPE", rsmd.getColumnName( 14 ) );
-            assertEquals( "SQL_DATETIME_SUB", rsmd.getColumnName( 15 ) );
-            assertEquals( "CHAR_OCTET_LENGTH", rsmd.getColumnName( 16 ) );
-            assertEquals( "ORDINAL_POSITION", rsmd.getColumnName( 17 ) );
-            assertEquals( "IS_NULLABLE", rsmd.getColumnName( 18 ) );
-            assertEquals( "COLLATION", rsmd.getColumnName( 19 ) );
-
-            // Check data
-            final Object[] columnId = new Object[]{ "APP", "public", "foo", "id", 4, "INTEGER", null, null, null, null, 0, "", null, null, null, null, 1, "NO", null };
-            final Object[] columnName = new Object[]{ "APP", "public", "foo", "name", 12, "VARCHAR", 20, null, null, null, 1, "", null, null, null, null, 2, "YES", "CASE_INSENSITIVE" };
-            final Object[] columnBar = new Object[]{ "APP", "public", "foo", "bar", 12, "VARCHAR", 33, null, null, null, 1, "", null, null, null, null, 3, "YES", "CASE_SENSITIVE" };
-            TestHelper.checkResultSet(
-                    connection.getMetaData().getColumns( "APP", null, "foo", null ),
-                    ImmutableList.of( columnId, columnName, columnBar ) );
-            TestHelper.checkResultSet(
-                    connection.getMetaData().getColumns( "APP", null, "foo", "id" ),
-                    ImmutableList.of( columnId ) );
-            TestHelper.checkResultSet(
-                    connection.getMetaData().getColumns( "APP", null, "foo", "id%" ),
-                    ImmutableList.of( columnId ) );
-        }
-    }
-
-
-    @Test
     public void testMetaGetSchemas() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -212,18 +177,17 @@ public class JdbcMetaTest {
 
             // Check number of columns
             int totalColumns = rsmd.getColumnCount();
-            assertEquals( 4, totalColumns, "Wrong number of columns" );
+            assertEquals( 3, totalColumns, "Wrong number of columns" );
 
             // Check column names
             assertEquals( "TABLE_SCHEM", rsmd.getColumnName( 1 ) );
             assertEquals( "TABLE_CATALOG", rsmd.getColumnName( 2 ) );
-            assertEquals( "OWNER", rsmd.getColumnName( 3 ) );
-            assertEquals( "SCHEMA_TYPE", rsmd.getColumnName( 4 ) );
+            assertEquals( "SCHEMA_TYPE", rsmd.getColumnName( 3 ) );
 
             // Check data
-            final Object[] schemaPublic = new Object[]{ "public", "APP", "pa", "RELATIONAL" };
+            final Object[] schemaPublic = new Object[]{ "public", null, "RELATIONAL" };
             //final Object[] schemaDoc = new Object[]{ "doc", "APP", "pa", "DOCUMENT" };
-            final Object[] schemaTest = new Object[]{ "test", "APP", "pa", "RELATIONAL" };
+            final Object[] schemaTest = new Object[]{ "test", null, "RELATIONAL" };
 
             TestHelper.checkResultSet(
                     connection.getMetaData().getSchemas( "APP", null ),
@@ -245,6 +209,102 @@ public class JdbcMetaTest {
 
 
     @Test
+    public void testColumnPrivilegesThrowsExceptionIfStrict() {
+        assertThrows( SQLFeatureNotSupportedException.class, () -> {
+            try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false, true );
+                    Connection connection = polyphenyDbConnection.getConnection() ) {
+                DatabaseMetaData metadata = connection.getMetaData();
+                ResultSet rs = metadata.getColumnPrivileges( null, null, null, null );
+            }
+        } );
+    }
+
+
+    @Test
+    public void testColumnPrivilegesReturnsDummy() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false, false ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            ResultSet resultSet = connection.getMetaData().getColumnPrivileges( null, "test", null, null );
+            ResultSetMetaData rsmd = resultSet.getMetaData();
+
+            // Check number of columns
+            int totalColumns = rsmd.getColumnCount();
+            assertEquals( 8, totalColumns, "Wrong number of columns" );
+
+            // Check column names
+            assertEquals( rsmd.getColumnName( 1 ), "TABLE_CAT", "Wrong column name" );
+            assertEquals( rsmd.getColumnName( 2 ), "TABLE_SCHEM", "Wrong column name" );
+            assertEquals( rsmd.getColumnName( 3 ), "TABLE_NAME", "Wrong column name" );
+            assertEquals( rsmd.getColumnName( 4 ), "COLUMN_NAME", "Wrong column name" );
+            assertEquals( rsmd.getColumnName( 5 ), "GRANTOR", "Wrong column name" );
+            assertEquals( rsmd.getColumnName( 6 ), "GRANTEE", "Wrong column name" );
+            assertEquals( rsmd.getColumnName( 7 ), "PRIVILEGE", "Wrong column name" );
+            assertEquals( rsmd.getColumnName( 8 ), "IS_GRANTABLE", "Wrong column name" );
+
+            // Check data
+            final List<Object[]> expected = new LinkedList<>();
+            expected.add( new Object[]{ null, "test", "foo2", "name", null, "pa", "INSERT", "NO" } );
+            expected.add( new Object[]{ null, "test", "foo2", "name", null, "pa", "REFERENCE", "NO" } );
+            expected.add( new Object[]{ null, "test", "foo2", "name", null, "pa", "SELECT", "NO" } );
+            expected.add( new Object[]{ null, "test", "foo2", "name", null, "pa", "UPDATE", "NO" } );
+
+            TestHelper.checkResultSet(
+                    connection.getMetaData().getColumnPrivileges( null, "test", "foo2", "name" ),
+                    expected );
+        }
+    }
+
+
+    @Test
+    public void testTablePrivilegesThrowsExceptionIfStrict() {
+        assertThrows( SQLFeatureNotSupportedException.class, () -> {
+            try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false, true );
+                    Connection connection = polyphenyDbConnection.getConnection() ) {
+                DatabaseMetaData metadata = connection.getMetaData();
+                ResultSet rs = metadata.getTablePrivileges( null, null, null );
+            }
+        } );
+    }
+
+
+    @Test
+    public void testTablePrivilegesReturnsDummy() {
+        assertThrows( SQLFeatureNotSupportedException.class, () -> {
+            try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false, true ) ) {
+                Connection connection = polyphenyDbConnection.getConnection();
+                ResultSet resultSet = connection.getMetaData().getTablePrivileges( null, "test", "foo2" );
+                ResultSetMetaData rsmd = resultSet.getMetaData();
+
+                // Check number of columns
+                int totalColumns = rsmd.getColumnCount();
+                assertEquals( 4, totalColumns, "Wrong number of columns" );
+
+                // Check column names
+                assertEquals( "TABLE_CAT", rsmd.getColumnName( 1 ), "Wrong column name" );
+                assertEquals( "TABLE_SCHEM", rsmd.getColumnName( 2 ), "Wrong column name" );
+                assertEquals( "TABLE_NAME", rsmd.getColumnName( 3 ), "Wrong column name" );
+                assertEquals( "GRANTOR", rsmd.getColumnName( 4 ), "Wrong column name" );
+                assertEquals( "GRANTEE", rsmd.getColumnName( 5 ), "Wrong column name" );
+                assertEquals( "PRIVILEGE", rsmd.getColumnName( 6 ), "Wrong column name" );
+                assertEquals( "IS_GRANTABLE", rsmd.getColumnName( 7 ), "Wrong column name" );
+
+                // Check data
+                final List<Object[]> expected = new LinkedList<>();
+                expected.add( new Object[]{ "APP", "test", "foo2", null, "pa", "DELETE", "NO" } );
+                expected.add( new Object[]{ "APP", "test", "foo2", null, "pa", "INSERT", "NO" } );
+                expected.add( new Object[]{ "APP", "test", "foo2", null, "pa", "REFERENCE", "NO" } );
+                expected.add( new Object[]{ "APP", "test", "foo2", null, "pa", "SELECT", "NO" } );
+                expected.add( new Object[]{ "APP", "test", "foo2", null, "pa", "UPDATE", "NO" } );
+
+                TestHelper.checkResultSet(
+                        connection.getMetaData().getTablePrivileges( null, "test", "foo2" ),
+                        expected );
+            }
+        } );
+    }
+
+
+    @Test
     public void testGetCatalogs() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -253,15 +313,14 @@ public class JdbcMetaTest {
 
             // Check number of columns
             int totalColumns = rsmd.getColumnCount();
-            assertEquals( 3, totalColumns, "Wrong number of columns" );
+            assertEquals( 2, totalColumns, "Wrong number of columns" );
 
             // Check column names
             assertEquals( "TABLE_CAT", rsmd.getColumnName( 1 ) );
-            assertEquals( "OWNER", rsmd.getColumnName( 2 ) );
-            assertEquals( "DEFAULT_SCHEMA", rsmd.getColumnName( 3 ) );
+            assertEquals( "DEFAULT_SCHEMA", rsmd.getColumnName( 2 ) );
 
             // Check data
-            final Object[] databaseApp = new Object[]{ "APP", "system", "public" };
+            final Object[] databaseApp = new Object[]{ "APP", "public" };
 
             TestHelper.checkResultSet(
                     connection.getMetaData().getCatalogs(),
@@ -295,6 +354,134 @@ public class JdbcMetaTest {
 
 
     @Test
+    public void testSortNullsAtEnd() throws SQLException {
+        try (
+                JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
+                Connection connection = polyphenyDbConnection.getConnection();
+                Statement statement = connection.createStatement()
+        ) {
+            statement.execute( CREATE_TEST_TABLE );
+            statement.executeUpdate( INSERT_TEST_DATA );
+
+            ResultSet rs = statement.executeQuery( "SELECT * FROM my_table ORDER BY some_value IS NULL, some_value" );
+
+            boolean trigger = false;
+            while ( rs.next() ) {
+                Integer value = rs.getInt( "some_value" );
+                if ( value == 0 ) {
+                    trigger = true;
+                } else if ( trigger && value != null ) {
+                    fail( "Values are not sorted correctly." );
+                }
+            }
+
+            ResultSet rs2 = statement.executeQuery( "SELECT * FROM my_table ORDER BY some_value IS NULL, some_value" );
+
+            trigger = false;
+            while ( rs2.next() ) {
+                Integer value = rs2.getInt( "some_value" );
+                if ( value == 0 ) {
+                    trigger = true;
+                } else if ( trigger && value != null ) {
+                    fail( "Values are not sorted correctly." );
+                }
+            }
+        }
+    }
+
+
+    @Test
+    public void testNullsAreSortedAtEnd() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false, true );
+                Connection connection = polyphenyDbConnection.getConnection() ) {
+            assertTrue( connection.getMetaData().nullsAreSortedAtEnd() );
+        }
+    }
+
+
+    @Test
+    public void testNullsAreSortedStart() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false, true );
+                Connection connection = polyphenyDbConnection.getConnection() ) {
+            assertFalse( connection.getMetaData().nullsAreSortedAtStart() );
+        }
+    }
+
+
+    @Test
+    public void testNullsAreSortedHigh() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false, true );
+                Connection connection = polyphenyDbConnection.getConnection() ) {
+            assertFalse( connection.getMetaData().nullsAreSortedHigh() );
+        }
+    }
+
+
+    @Test
+    public void testNullsAreSortedLow() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false, true );
+                Connection connection = polyphenyDbConnection.getConnection() ) {
+            assertFalse( connection.getMetaData().nullsAreSortedLow() );
+        }
+    }
+
+
+    @Test
+    public void testMetaGetColumns() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            ResultSet resultSet = connection.getMetaData().getColumns( null, null, null, null );
+            ResultSetMetaData rsmd = resultSet.getMetaData();
+
+            // Check number of columns
+            int totalColumns = rsmd.getColumnCount();
+            assertEquals( 25, totalColumns, "Wrong number of columns" );
+
+            // Check column names
+            assertEquals( "TABLE_CAT", rsmd.getColumnName( 1 ), "Wrong column name" );
+            assertEquals( "TABLE_SCHEM", rsmd.getColumnName( 2 ), "Wrong column name" );
+            assertEquals( "TABLE_NAME", rsmd.getColumnName( 3 ), "Wrong column name" );
+            assertEquals( "COLUMN_NAME", rsmd.getColumnName( 4 ), "Wrong column name" );
+            assertEquals( "DATA_TYPE", rsmd.getColumnName( 5 ), "Wrong column name" );
+            assertEquals( "TYPE_NAME", rsmd.getColumnName( 6 ), "Wrong column name" );
+            assertEquals( "COLUMN_SIZE", rsmd.getColumnName( 7 ), "Wrong column name" );
+            assertEquals( "BUFFER_LENGTH", rsmd.getColumnName( 8 ), "Wrong column name" );
+            assertEquals( "DECIMAL_DIGITS", rsmd.getColumnName( 9 ), "Wrong column name" );
+            assertEquals( "NUM_PREC_RADIX", rsmd.getColumnName( 10 ), "Wrong column name" );
+            assertEquals( "NULLABLE", rsmd.getColumnName( 11 ), "Wrong column name" );
+            assertEquals( "REMARKS", rsmd.getColumnName( 12 ), "Wrong column name" );
+            assertEquals( "COLUMN_DEF", rsmd.getColumnName( 13 ), "Wrong column name" );
+            assertEquals( "SQL_DATA_TYPE", rsmd.getColumnName( 14 ), "Wrong column name" );
+            assertEquals( "SQL_DATETIME_SUB", rsmd.getColumnName( 15 ), "Wrong column name" );
+            assertEquals( "CHAR_OCTET_LENGTH", rsmd.getColumnName( 16 ), "Wrong column name" );
+            assertEquals( "ORDINAL_POSITION", rsmd.getColumnName( 17 ), "Wrong column name" );
+            assertEquals( "IS_NULLABLE", rsmd.getColumnName( 18 ), "Wrong column name" );
+            assertEquals( "SCOPE_CATALOG", rsmd.getColumnName( 19 ), "Wrong column name" );
+            assertEquals( "SCOPE_SCHEMA", rsmd.getColumnName( 20 ), "Wrong column name" );
+            assertEquals( "SCOPE_TABLE", rsmd.getColumnName( 21 ), "Wrong column name" );
+            assertEquals( "SOURCE_DATA_TYPE", rsmd.getColumnName( 22 ), "Wrong column name" );
+            assertEquals( "IS_AUTOINCREMENT", rsmd.getColumnName( 23 ), "Wrong column name" );
+            assertEquals( "IS_GENERATEDCOLUMN", rsmd.getColumnName( 24 ), "Wrong column name" );
+            assertEquals( "COLLATION", rsmd.getColumnName( 25 ), "Wrong column name" );
+
+            // Check data
+            final Object[] columnId = new Object[]{ null, "public", "foo", "id", 4, "INTEGER", null, null, null, null, 0, "", null, null, null, null, 1, "NO", null, null, null, null, "NO", "NO", null };
+            final Object[] columnName = new Object[]{ null, "public", "foo", "name", 12, "VARCHAR", 20, null, null, null, 1, "", null, null, null, null, 2, "YES", null, null, null, null, "NO", "NO", "CASE_INSENSITIVE" };
+            final Object[] columnBar = new Object[]{ null, "public", "foo", "bar", 12, "VARCHAR", 33, null, null, null, 1, "", null, null, null, null, 3, "YES", null, null, null, null, "NO", "NO", "CASE_SENSITIVE" };
+            TestHelper.checkResultSet(
+                    connection.getMetaData().getColumns( "APP", null, "foo", null ),
+                    ImmutableList.of( columnId, columnName, columnBar ) );
+            TestHelper.checkResultSet(
+                    connection.getMetaData().getColumns( "APP", null, "foo", "id" ),
+                    ImmutableList.of( columnId ) );
+            TestHelper.checkResultSet(
+                    connection.getMetaData().getColumns( "APP", null, "foo", "id%" ),
+                    ImmutableList.of( columnId ) );
+        }
+    }
+
+
+    @Test
     public void testGetPrimaryKeys() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -314,9 +501,9 @@ public class JdbcMetaTest {
             assertEquals( "PK_NAME", rsmd.getColumnName( 6 ) );
 
             // Check data
-            final Object[] primaryKey = new Object[]{ "APP", "public", "foo", "id", 1, null };
-            final Object[] compositePrimaryKey1 = new Object[]{ "APP", "test", "foo2", "id", 1, null };
-            final Object[] compositePrimaryKey2 = new Object[]{ "APP", "test", "foo2", "name", 2, null };
+            final Object[] primaryKey = new Object[]{ null, "public", "foo", "id", 1, null };
+            final Object[] compositePrimaryKey1 = new Object[]{ null, "test", "foo2", "id", 1, null };
+            final Object[] compositePrimaryKey2 = new Object[]{ null, "test", "foo2", "name", 2, null };
 
             TestHelper.checkResultSet(
                     connection.getMetaData().getPrimaryKeys( "APP", "public", "foo" ),
@@ -365,9 +552,9 @@ public class JdbcMetaTest {
             assertEquals( "DEFERRABILITY", rsmd.getColumnName( 14 ) );
 
             // Check data
-            final Object[] foreignKey1a = new Object[]{ "APP", "test", "foo2", "name", "APP", "public", "foo", "name", 1, 1, 1, "fk_foo_1", null, null };
-            final Object[] foreignKey1b = new Object[]{ "APP", "test", "foo2", "foobar", "APP", "public", "foo", "bar", 2, 1, 1, "fk_foo_1", null, null };
-            final Object[] foreignKey2 = new Object[]{ "APP", "public", "foo", "id", "APP", "test", "foo2", "id", 1, 1, 1, "fk_foo_2", null, null };
+            final Object[] foreignKey1a = new Object[]{ null, "test", "foo2", null, null, "public", "foo", "name", 1, 1, 1, "fk_foo_1", null, null };
+            final Object[] foreignKey1b = new Object[]{ null, "test", "foo2", null, null, "public", "foo", "bar", 2, 1, 1, "fk_foo_1", null, null };
+            final Object[] foreignKey2 = new Object[]{ null, "public", "foo", null, null, "test", "foo2", "id", 1, 1, 1, "fk_foo_2", null, null };
 
             TestHelper.checkResultSet(
                     connection.getMetaData().getImportedKeys( "APP", "public", "foo" ),
@@ -414,9 +601,9 @@ public class JdbcMetaTest {
             assertEquals( "DEFERRABILITY", rsmd.getColumnName( 14 ) );
 
             // Check data
-            final Object[] foreignKey1a = new Object[]{ "APP", "test", "foo2", "name", "APP", "public", "foo", "name", 1, 1, 1, "fk_foo_1", null, null };
-            final Object[] foreignKey1b = new Object[]{ "APP", "test", "foo2", "foobar", "APP", "public", "foo", "bar", 2, 1, 1, "fk_foo_1", null, null };
-            final Object[] foreignKey2 = new Object[]{ "APP", "public", "foo", "id", "APP", "test", "foo2", "id", 1, 1, 1, "fk_foo_2", null, null };
+            final Object[] foreignKey1a = new Object[]{ null, "test", "foo2", null, null, "public", "foo", "name", 1, 1, 1, "fk_foo_1", null, null };
+            final Object[] foreignKey1b = new Object[]{ null, "test", "foo2", null, null, "public", "foo", "bar", 2, 1, 1, "fk_foo_1", null, null };
+            final Object[] foreignKey2 = new Object[]{ null, "public", "foo", null, null, "test", "foo2", "id", 1, 1, 1, "fk_foo_2", null, null };
 
             TestHelper.checkResultSet(
                     connection.getMetaData().getExportedKeys( "APP", "public", "foo" ),
@@ -498,9 +685,9 @@ public class JdbcMetaTest {
             assertEquals( "INDEX_TYPE", rsmd.getColumnName( 15 ) );
 
             // Check data
-            final Object[] index1 = new Object[]{ "APP", "public", "foo", false, null, "i_foo", 0, 1, "id", null, -1, null, null, 0, 1 };
-            final Object[] index2a = new Object[]{ "APP", "test", "foo2", true, null, "i_foo2", 0, 1, "name", null, -1, null, null, 0, 1 };
-            final Object[] index2b = new Object[]{ "APP", "test", "foo2", true, null, "i_foo2", 0, 2, "foobar", null, -1, null, null, 0, 1 };
+            final Object[] index1 = new Object[]{ null, "public", "foo", false, null, "i_foo", 0, 1, "id", null, -1, null, null, 0, 1 };
+            final Object[] index2a = new Object[]{ null, "test", "foo2", true, null, "i_foo2", 0, 1, "name", null, -1, null, null, 0, 1 };
+            final Object[] index2b = new Object[]{ null, "test", "foo2", true, null, "i_foo2", 0, 2, "foobar", null, -1, null, null, 0, 1 };
 
             if ( !helper.storeSupportsIndex() ) {
                 return;

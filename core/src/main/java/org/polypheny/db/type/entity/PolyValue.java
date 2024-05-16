@@ -41,6 +41,7 @@ import io.activej.serializer.def.SimpleSerializerDef;
 import java.lang.reflect.Type;
 import java.sql.Timestamp;
 import java.util.Calendar;
+import java.util.List;
 import java.util.Optional;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
@@ -50,6 +51,7 @@ import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
+import org.apache.calcite.linq4j.tree.Types;
 import org.apache.commons.lang3.NotImplementedException;
 import org.bson.BsonDocument;
 import org.bson.json.JsonParseException;
@@ -230,7 +232,34 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             }
             case FILE, IMAGE, AUDIO, VIDEO -> o -> o.asBlob().asByteArray();
             case DOCUMENT -> o -> o.asDocument().toJson();
+            case ANY -> o -> getPolyToJavaRuntime( o, arrayAsList );
             default -> throw new NotImplementedException( "meta: " + type.getFullTypeString() );
+        };
+    }
+
+
+    private static Object getPolyToJavaRuntime( PolyValue value, boolean arrayAsList ) {
+        if ( value == null || value.isNull() ) {
+            return null;
+        }
+
+        return switch ( value.type ) {
+            case VARCHAR, CHAR, TEXT -> value.asString().value;
+            case INTEGER, TINYINT, SMALLINT -> value.asNumber().IntValue();
+            case FLOAT, REAL -> value.asNumber().FloatValue();
+            case DOUBLE -> value.asNumber().DoubleValue();
+            case BIGINT -> value.asNumber().LongValue();
+            case DECIMAL -> value.asNumber().BigDecimalValue();
+            case DATE -> value.asDate().getDaysSinceEpoch();
+            case TIME -> value.asTime().getMillisOfDay();
+            case TIMESTAMP -> value.asTimestamp().millisSinceEpoch;
+            case BOOLEAN -> value.asBoolean().value;
+            case ARRAY -> arrayAsList
+                    ? (value.asList().value.stream().map( e -> getPolyToJavaRuntime( e, true ) ).toList())
+                    : value.asList().value.stream().map( e -> getPolyToJavaRuntime( e, false ) ).toList().toArray();
+            case FILE, IMAGE, AUDIO, VIDEO -> value.asBlob().asByteArray();
+            case DOCUMENT -> value.asDocument().toJson();
+            default -> throw new NotImplementedException( "meta: " + value.type );
         };
     }
 
@@ -272,6 +301,20 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             throw new GenericRuntimeException( e );
         }
 
+    }
+
+
+    public static AlgDataType deriveType( PolyValue value, AlgDataTypeFactory typeFactory ) {
+        if ( value == null ) {
+            return typeFactory.createPolyType( PolyType.NULL );
+        }
+        PolyType type = value.type;
+
+        if ( type == PolyType.ARRAY ) {
+            return typeFactory.createArrayType( typeFactory.createPolyType( PolyType.ANY ), -1 );
+        }
+
+        return typeFactory.createPolyType( type );
     }
 
 
@@ -362,6 +405,14 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
 
     public static PolyValue getNull( Class<?> clazz ) {
         return PolyDefaults.NULLS.get( clazz );
+    }
+
+
+    public static @NotNull Expression isNullExpression( Expression operand ) {
+        if ( Types.isArray( operand.getType() ) ) {
+            return Expressions.equal( operand, Expressions.constant( null ) );
+        }
+        return Expressions.foldOr( List.of( Expressions.equal( operand, Expressions.constant( null ) ), Expressions.call( operand, "isNull" ) ) );
     }
 
 

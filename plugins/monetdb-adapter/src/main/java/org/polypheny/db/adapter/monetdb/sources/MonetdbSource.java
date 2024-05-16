@@ -46,7 +46,7 @@ import org.polypheny.db.sql.language.SqlDialect;
         description = "MonetDB is an execute-source column-oriented database management system. It is based on an optimistic concurrency control.",
         usedModes = DeployMode.REMOTE,
         defaultMode = DeployMode.REMOTE)
-@AdapterSettingString(name = "hose", defaultValue = "localhost", description = "Hostname or IP address of the remote MonetDB instance.", position = 1)
+@AdapterSettingString(name = "host", defaultValue = "localhost", description = "Hostname or IP address of the remote MonetDB instance.", position = 1)
 @AdapterSettingInteger(name = "port", defaultValue = 50000, description = "JDBC port number on the remote MonetDB instance.", position = 2)
 @AdapterSettingString(name = "database", defaultValue = "polypheny", description = "JDBC port number on the remote MonetDB instance.", position = 3)
 @AdapterSettingString(name = "username", defaultValue = "polypheny", description = "Name of the database to connect to.", position = 4)

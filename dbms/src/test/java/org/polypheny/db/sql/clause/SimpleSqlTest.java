@@ -16,13 +16,17 @@
 
 package org.polypheny.db.sql.clause;
 
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.List;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
+@Tag("adapter")
 public class SimpleSqlTest {
 
     @BeforeAll
@@ -121,6 +125,35 @@ public class SimpleSqlTest {
                 ( c, s ) -> s.executeUpdate( "INSERT INTO Person VALUES (4, 'Name4')" ),
                 ( c, s ) -> TestHelper.checkResultSet( s.executeQuery( "SELECT test FROM (SELECT id AS test FROM Person where name like 'Name%')" ), data, true ),
                 ( c, s ) -> s.executeUpdate( "DROP TABLE Person" ),
+                ( c, s ) -> c.commit()
+        );
+
+    }
+
+
+    @Test
+    public void tooLargeNumberTest() {
+        TestHelper.executeSql(
+                ( c, s ) -> s.executeUpdate( "DROP TABLE IF EXISTS t" ),
+                ( c, s ) -> s.executeUpdate( "CREATE TABLE t(i INTEGER NOT NULL, a DECIMAL(1) NOT NULL, PRIMARY KEY(i))" ),
+                ( c, s ) -> Assertions.assertThrows( Exception.class, () -> s.executeUpdate( "INSERT INTO t(i, a) VALUES (0, 2555)" ) ),
+                ( c, s ) -> Assertions.assertThrows( Exception.class, () -> {
+                    PreparedStatement prepared = c.prepareStatement( "INSERT INTO t(i, a) VALUES (0, ?)" );
+                    prepared.setInt( 1, 2555 );
+                    prepared.execute();
+                } ),
+                ( c, s ) -> c.commit()
+        );
+
+    }
+
+
+    @Test
+    public void tooLargeVarCharTest() {
+        TestHelper.executeSql(
+                ( c, s ) -> s.executeUpdate( "DROP TABLE IF EXISTS t" ),
+                ( c, s ) -> s.executeUpdate( "CREATE TABLE t(i INTEGER NOT NULL, a VARCHAR(1) NOT NULL, PRIMARY KEY(i))" ),
+                ( c, s ) -> Assertions.assertThrows( Exception.class, () -> s.executeUpdate( "INSERT INTO t(i, a) VALUES (0, 'test')" ) ),
                 ( c, s ) -> c.commit()
         );
 

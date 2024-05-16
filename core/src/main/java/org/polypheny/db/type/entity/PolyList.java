@@ -66,7 +66,7 @@ import org.polypheny.db.type.entity.PolyList.PolyListSerializer;
 import org.polypheny.db.util.Pair;
 
 @Slf4j
-@EqualsAndHashCode(callSuper = true)
+@EqualsAndHashCode(callSuper = false)
 @Value
 @JsonSerialize(using = PolyListSerializer.class)
 @JsonDeserialize(using = PolyListDeserializer.class)

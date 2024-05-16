@@ -40,6 +40,7 @@ import org.polypheny.db.util.temporal.TimeUnit;
 @NonFinal
 public class PolyInterval extends PolyValue {
 
+    @Getter
     @NotNull
     public Long millis;
 
@@ -165,7 +166,7 @@ public class PolyInterval extends PolyValue {
     }
 
 
-    public record MonthsMilliseconds(long months, long milliseconds) {
+    private record MonthsMilliseconds( long months, long milliseconds ) {
 
     }
 

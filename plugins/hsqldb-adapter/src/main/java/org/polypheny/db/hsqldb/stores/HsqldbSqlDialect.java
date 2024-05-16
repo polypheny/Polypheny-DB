@@ -19,8 +19,10 @@ package org.polypheny.db.hsqldb.stores;
 
 import com.google.common.io.CharStreams;
 import java.util.Objects;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.hsqldb.jdbc.JDBCClobClient;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.NullCollation;
@@ -41,6 +43,7 @@ import org.polypheny.db.sql.language.SqlNodeList;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.sql.language.fun.SqlCase;
 import org.polypheny.db.sql.language.fun.SqlFloorFunction;
+import org.polypheny.db.type.PolyType;
 
 
 /**
@@ -53,6 +56,7 @@ public class HsqldbSqlDialect extends SqlDialect {
             EMPTY_CONTEXT
                     .withNullCollation( NullCollation.HIGH )
                     .withIdentifierQuoteString( "\"" ) );
+    public static final int SUBSTITUTION_LENGTH = 20000;
 
 
     /**
@@ -86,17 +90,25 @@ public class HsqldbSqlDialect extends SqlDialect {
         String castSpec;
         switch ( type.getPolyType() ) {
             case ARRAY:
-                // We need to flag the type with a underscore to flag the type (the underscore is removed in the unparse method)
+                // We need to flag the type with an underscore to flag the type (the underscore is removed in the unparse method)
                 castSpec = "_LONGVARCHAR";
                 break;
             case TEXT:
-                castSpec = "_VARCHAR(20000)";
+                castSpec = "_VARCHAR(" + SUBSTITUTION_LENGTH + ")";
                 break;
+            case VARCHAR:
+            case VARBINARY:
+                if ( type.getPrecision() == -1 ) {
+                    castSpec = "_" + type.getPolyType().getName() + "(" + SUBSTITUTION_LENGTH + ")";
+                    break;
+                } else {
+                    return super.getCastSpec( type );
+                }
             case FILE:
             case IMAGE:
             case VIDEO:
             case AUDIO:
-                // We need to flag the type with a underscore to flag the type (the underscore is removed in the unparse method)
+                // We need to flag the type with an underscore to flag the type (the underscore is removed in the unparse method)
                 castSpec = "_BLOB";
                 break;
             case INTERVAL:
@@ -131,8 +143,8 @@ public class HsqldbSqlDialect extends SqlDialect {
 
 
     @Override
-    public Expression getExpression( AlgDataType fieldType, Expression child ) {
-        return super.getExpression( fieldType, child );
+    public Expression handleRetrieval( AlgDataType fieldType, Expression child, ParameterExpression resultSet_, int index ) {
+        return super.handleRetrieval( fieldType, child, resultSet_, index );
     }
 
 
@@ -152,6 +164,15 @@ public class HsqldbSqlDialect extends SqlDialect {
     @Override
     public void unparseOffsetFetch( SqlWriter writer, SqlNode offset, SqlNode fetch ) {
         unparseFetchUsingLimit( writer, offset, fetch );
+    }
+
+
+    @Override
+    public Optional<String> handleMissingLength( PolyType type ) {
+        return switch ( type ) {
+            case VARCHAR, VARBINARY, BINARY -> Optional.of( "(" + SUBSTITUTION_LENGTH + ")" );
+            default -> Optional.empty();
+        };
     }
 
 

@@ -91,7 +91,6 @@ import org.polypheny.db.type.entity.PolyDefaults;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.type.entity.category.PolyBlob;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyFloat;
@@ -418,17 +417,17 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                 if ( dialect.supportsComplexBinary() ) {
                     poly = Expressions.call( PolyBinary.class, methodName, Expressions.convert_( source, byte[].class ) );
                 } else {
-                    poly = Expressions.call( PolyBinary.class, "fromTypedJson", Expressions.convert_( source, String.class ), Expressions.constant( PolyBinary.class ) );
+                    poly = dialect.handleRetrieval( fieldType, source, resultSet_, i + 1 );
                 }
                 break;
             case TEXT:
-                poly = dialect.getExpression( fieldType, source );
+                poly = dialect.handleRetrieval( fieldType, source, resultSet_, i + 1 );
                 break;
             case FILE:
             case AUDIO:
             case IMAGE:
             case VIDEO:
-                poly = Expressions.call( PolyBlob.class, methodName, Expressions.convert_( source, byte[].class ) );
+                poly = dialect.handleRetrieval( fieldType, source, resultSet_, i + 1 );
                 break;
             default:
                 log.warn( "potentially unhandled polyValue" );

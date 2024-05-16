@@ -299,11 +299,7 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
                 break;
             case VARBINARY:
             case BINARY:
-                if ( !connectionHandler.getDialect().supportsComplexBinary() ) {
-                    preparedStatement.setString( i, value.asBinary().toTypedJson() );
-                } else {
-                    preparedStatement.setBytes( i, value.asBinary().value );
-                }
+                handleBinary( preparedStatement, i, value, connectionHandler );
                 break;
             case ARRAY:
                 if ( (type.getComponentType().getPolyType() == PolyType.ARRAY && connectionHandler.getDialect().supportsNestedArrays()) || (type.getComponentType().getPolyType() != PolyType.ARRAY) && connectionHandler.getDialect().supportsArrays() ) {
@@ -319,9 +315,18 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
             case FILE:
             case VIDEO:
                 if ( connectionHandler.getDialect().supportsBinaryStream() ) {
-                    preparedStatement.setBinaryStream( i, value.asBlob().asBinaryStream() );
+                    if ( value.isBlob() ) {
+                        preparedStatement.setBinaryStream( i, value.asBlob().asBinaryStream() );
+                    } else {
+                        handleBinary( preparedStatement, i, value, connectionHandler );
+                    }
+
                 } else {
-                    preparedStatement.setBytes( i, value.asBlob().asByteArray() );
+                    if ( value.isBlob() ) {
+                        preparedStatement.setBytes( i, value.asBlob().asByteArray() );
+                    } else {
+                        handleBinary( preparedStatement, i, value, connectionHandler );
+                    }
                 }
                 break;
             case TEXT:
@@ -334,15 +339,45 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
     }
 
 
+    private static void handleBinary( PreparedStatement preparedStatement, int i, PolyValue value, ConnectionHandler connectionHandler ) throws SQLException {
+        if ( !connectionHandler.getDialect().supportsComplexBinary() ) {
+            preparedStatement.setString( i, value.asBinary().toTypedJson() );
+        } else {
+            preparedStatement.setBytes( i, value.asBinary().value );
+        }
+    }
+
+
     private static Array getArray( PolyValue value, AlgDataType type, ConnectionHandler connectionHandler ) throws SQLException {
         SqlType componentType;
         AlgDataType t = type;
         while ( t.getComponentType().getPolyType() == PolyType.ARRAY ) {
             t = t.getComponentType();
         }
+
         componentType = SqlType.valueOf( t.getComponentType().getPolyType().getJdbcOrdinal() );
+        if ( t.getComponentType().getPolyType() == PolyType.ANY ) {
+            componentType = estimateFittingType( value.asList().value );
+        }
         Object[] array = (Object[]) PolyValue.wrapNullableIfNecessary( PolyValue.getPolyToJava( type, false ), type.isNullable() ).apply( value );
         return connectionHandler.createArrayOf( connectionHandler.getDialect().getArrayComponentTypeString( componentType ), array );
+    }
+
+
+    public static SqlType estimateFittingType( List<PolyValue> value ) {
+        if ( value.isEmpty() ) {
+            return SqlType.NULL;
+        } else if ( value.stream().allMatch( PolyValue::isBoolean ) ) {
+            return SqlType.BOOLEAN;
+        } else if ( value.stream().allMatch( PolyValue::isNumber ) ) {
+            return SqlType.NUMERIC;
+        } else if ( value.stream().allMatch( PolyValue::isBinary ) ) {
+            return SqlType.BINARY;
+        } else if ( value.stream().allMatch( PolyValue::isString ) ) {
+            return SqlType.VARCHAR;
+        }
+
+        return SqlType.ANY;
     }
 
 

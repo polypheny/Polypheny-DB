@@ -35,10 +35,10 @@ import org.polypheny.db.config.ConfigManager;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.docker.exceptions.DockerUserException;
 import org.polypheny.db.docker.models.DockerHost;
-import org.polypheny.db.util.RunMode;
 import org.polypheny.db.docker.models.DockerInstanceInfo;
 import org.polypheny.db.docker.models.HandshakeInfo;
 import org.polypheny.db.docker.models.UpdateDockerResponse;
+import org.polypheny.db.util.RunMode;
 
 
 public final class DockerManager {

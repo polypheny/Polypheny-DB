@@ -22,7 +22,7 @@ import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.catalog.logistic.DataModel;
-import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceTemplate;
+import org.polypheny.db.util.PolyphenyHomeDirManager;
 import org.polypheny.db.util.RunMode;
 
 @Deterministic
@@ -51,6 +51,7 @@ public class DefaultInserter {
 
         restoreAdapters( ddlManager, catalog, mode );
 
+        catalog.executeCommitActions();
         catalog.commit();
 
     }
@@ -81,6 +82,11 @@ public class DefaultInserter {
 
 
     private static void restoreUsers( Catalog catalog ) {
+        if ( catalog.getUsers().values().stream().anyMatch( u -> u.getName().equals( "system" ) ) ) {
+            catalog.commit();
+            return;
+        }
+
         //////////////
         // init users
         long systemId = catalog.createUser( "system", "" );
@@ -97,18 +103,17 @@ public class DefaultInserter {
         if ( !Catalog.getInstance().getInterfaces().isEmpty() ) {
             return;
         }
-        Catalog.getInstance().getInterfaceTemplates().values().forEach( i -> Catalog.getInstance().createQueryInterface( i.interfaceName, i.clazz.getName(), i.defaultSettings ) );
+        Catalog.getInstance().getInterfaceTemplates().values().forEach( i -> Catalog.getInstance().createQueryInterface( i.interfaceName().toLowerCase(), i.interfaceName(), i.getDefaultSettings() ) );
+        // TODO: This is ugly, both because it is racy, and depends on a string (which might be changed)
+        if ( Catalog.getInstance().getInterfaceTemplates().values().stream().anyMatch( t -> t.interfaceName().equals( "Prism Interface (Unix transport)" ) ) ) {
+            Catalog.getInstance().createQueryInterface(
+                    "prism interface (unix transport @ .polypheny)",
+                    "Prism Interface (Unix transport)",
+                    Map.of( "path", PolyphenyHomeDirManager.getInstance().registerNewGlobalFile( "polypheny-prism.sock" ).getAbsolutePath() )
+            );
+        }
         Catalog.getInstance().commit();
 
-    }
-
-
-    public static void restoreAvatica() {
-        if ( Catalog.snapshot().getQueryInterface( "avatica" ).isPresent() ) {
-            return;
-        }
-        QueryInterfaceTemplate avatica = Catalog.snapshot().getInterfaceTemplate( "AvaticaInterface" ).orElseThrow();
-        Catalog.getInstance().createQueryInterface( "avatica", avatica.clazz.getName(), avatica.defaultSettings );
     }
 
 }

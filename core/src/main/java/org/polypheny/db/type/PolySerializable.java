@@ -18,11 +18,17 @@ package org.polypheny.db.type;
 
 import com.drew.lang.Charsets;
 import io.activej.codegen.DefiningClassLoader;
+import io.activej.serializer.BinaryInput;
+import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
+import io.activej.serializer.CompatibilityLevel;
+import io.activej.serializer.CorruptedDataException;
 import io.activej.serializer.SerializerFactory;
+import io.activej.serializer.def.SimpleSerializerDef;
 import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.plugins.PolyPluginManager;
@@ -37,7 +43,7 @@ public interface PolySerializable {
     Charset SERIALIZAION_CHARSET = Charsets.ISO_8859_1;
 
     static <C extends Class<T>, T> BinarySerializer<T> buildSerializer( C clazz ) {
-        return SerializerFactory.defaultInstance()
+        return SerializerFactory.defaultInstance().builder().with( AtomicLong.class, ctx -> new AtomicLongSerializer() ).build()
                 .create( CLASS_LOADER, clazz );
     }
 
@@ -83,5 +89,25 @@ public interface PolySerializable {
 
 
     PolySerializable copy();
+
+    class AtomicLongSerializer extends SimpleSerializerDef<AtomicLong> {
+
+        @Override
+        protected BinarySerializer<AtomicLong> createSerializer( int version, CompatibilityLevel compatibilityLevel ) {
+            return new BinarySerializer<>() {
+                @Override
+                public void encode( BinaryOutput out, AtomicLong item ) {
+                    out.writeVarLong( item.get() );
+                }
+
+
+                @Override
+                public AtomicLong decode( BinaryInput in ) throws CorruptedDataException {
+                    return new AtomicLong( in.readVarLong() );
+                }
+            };
+        }
+
+    }
 
 }
