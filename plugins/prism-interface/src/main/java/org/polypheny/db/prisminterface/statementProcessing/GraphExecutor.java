@@ -16,8 +16,8 @@
 
 package org.polypheny.db.prisminterface.statementProcessing;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.ResultIterator;
@@ -29,9 +29,9 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.prism.Frame;
 import org.polypheny.prism.StatementResult;
 
-public class DocumentExecutor extends Executor {
+public class GraphExecutor extends Executor {
 
-    private static final DataModel namespaceType = DataModel.DOCUMENT;
+    private static final DataModel namespaceType = DataModel.GRAPH;
 
 
     @Override
@@ -56,7 +56,7 @@ public class DocumentExecutor extends Executor {
 
 
     @Override
-    StatementResult executeAndGetResult( PIStatement piStatement, int fetchSize ) {
+    StatementResult executeAndGetResult( PIStatement piStatement, int fetchSize ) throws Exception {
         throwOnIllegalState( piStatement );
         PolyImplementation implementation = piStatement.getImplementation();
         StatementResult.Builder resultBuilder = StatementResult.newBuilder();
@@ -68,7 +68,6 @@ public class DocumentExecutor extends Executor {
         Frame frame = fetch( piStatement, fetchSize );
         resultBuilder.setFrame( frame );
         if ( frame.getIsLast() ) {
-            //TODO TH: special handling for result set updates. Do we need to wait with committing until all changes have been done?
             piStatement.getClient().commitCurrentTransactionIfAuto();
         }
         return resultBuilder.build();
@@ -81,13 +80,13 @@ public class DocumentExecutor extends Executor {
         StopWatch executionStopWatch = piStatement.getExecutionStopWatch();
         ResultIterator iterator = piStatement.getIterator();
         startOrResumeStopwatch( executionStopWatch );
-        List<PolyValue> data = iterator.getNextBatch( fetchSize ).stream().map( p -> p.get( 0 ) ).collect( Collectors.toList() );
+        List<List<PolyValue>> data = new ArrayList<>( iterator.getNextBatch( fetchSize ) );
         boolean isLast = !iterator.hasMoreRows();
         if ( isLast ) {
             executionStopWatch.stop();
             piStatement.getImplementation().getExecutionTimeMonitor().setExecutionTime( executionStopWatch.getNanoTime() );
         }
-        return PrismUtils.buildDocumentFrame( isLast, data );
+        return PrismUtils.buildGraphFrame( isLast, data );
     }
 
 }
