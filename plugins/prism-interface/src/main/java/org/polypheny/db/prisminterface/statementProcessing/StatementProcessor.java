@@ -26,7 +26,7 @@ import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.prisminterface.PIServiceException;
-import org.polypheny.db.prisminterface.relational.RelationalMetaRetriever;
+import org.polypheny.db.prisminterface.metaRetrieval.RelationalMetaRetriever;
 import org.polypheny.db.prisminterface.statements.PIPreparedStatement;
 import org.polypheny.db.prisminterface.statements.PIStatement;
 import org.polypheny.db.processing.ImplementationContext;
