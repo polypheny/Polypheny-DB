@@ -573,9 +573,7 @@ public interface NeoUtil {
         }
 
         return switch ( type.getType() ) {
-            case DATE -> value.asTemporal().getDaysSinceEpoch();
-            case TIME -> value.asTemporal().getMillisSinceEpoch();
-            case TIMESTAMP -> value.asTemporal().getMillisSinceEpoch();
+            case DATE, TIME, TIMESTAMP -> value.asTemporal().getMillisSinceEpoch();
             case DOCUMENT -> value.asDocument().toTypedJson();
             case TINYINT, INTEGER, SMALLINT -> value.asNumber().IntValue();
             case BIGINT -> value.asNumber().LongValue();
