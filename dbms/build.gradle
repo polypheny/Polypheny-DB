@@ -6,6 +6,7 @@ buildscript {
             url "https://plugins.gradle.org/m2/"
         }
         google()
+        mavenLocal()
     }
     dependencies {
         classpath group: "app.cash.licensee", name: "licensee-gradle-plugin", version: licensee_version
@@ -69,7 +70,7 @@ dependencies {
     testImplementation group: "com.fasterxml.jackson.core", name: "jackson-core", version: jackson_core_version  // Apache 2.0
     testImplementation group: "com.fasterxml.jackson.core", name: "jackson-databind", version: jackson_databind_version  // Apache 2.0
 
-    testImplementation(group: "org.polypheny", name: "polypheny-jdbc-driver", version: polypheny_jdbc_driver_version) {
+    testImplementation(group: "org.polypheny", name: "polypheny-jdbc-driver", version: "2.2-SNAPSHOT") { //polypheny_jdbc_driver_version
         exclude(group: "com.fasterxml.jackson.core")
         exclude(group: "com.fasterxml.jackson.databind")
     }  // Apache 2.0
