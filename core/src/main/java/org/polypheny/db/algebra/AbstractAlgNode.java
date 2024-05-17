@@ -402,6 +402,7 @@ public abstract class AbstractAlgNode implements AlgNode {
         sb.append( ")" );
     }
 
+
     @Override
     public ObjectNode serializePolyAlgebra( ObjectMapper mapper ) {
         ObjectNode node = mapper.createObjectNode();
@@ -412,7 +413,8 @@ public abstract class AbstractAlgNode implements AlgNode {
                 PolyAlgUtils.getInputFieldNamesList( this );
 
         node.put( "opName", getPolyAlgDeclaration().opName );
-        node.set("arguments", collectAttributes().serialize( this, inputFieldNames, mapper ));
+        node.set( "arguments", collectAttributes().serialize( this, inputFieldNames, mapper ) );
+        node.set( "metadata", serializeMetadata( mapper ) );
 
         ArrayNode inputs = mapper.createArrayNode();
 
@@ -426,12 +428,26 @@ public abstract class AbstractAlgNode implements AlgNode {
             if ( projections == null ) {
                 inputs.add( child.serializePolyAlgebra( mapper ) );
             } else {
-                inputs.add(PolyAlgUtils.wrapInRename(child, projections, child, child.getTupleType().getFieldNames(), mapper));
+                inputs.add( PolyAlgUtils.wrapInRename( child, projections, child, child.getTupleType().getFieldNames(), mapper ) );
             }
         }
         node.set( "inputs", inputs );
 
         return node;
+    }
+
+
+    private ObjectNode serializeMetadata( ObjectMapper mapper ) {
+        ObjectNode meta = mapper.createObjectNode();
+        AlgMetadataQuery mq = this.getCluster().getMetadataQuery();
+        meta.put( "rowCount", mq.getTupleCount( this ) );
+        try {
+            meta.put( "rowsCost", mq.getCumulativeCost( this ).getRows() );
+            meta.put( "cpuCost", mq.getCumulativeCost( this ).getCpu() );
+            meta.put( "ioCost", mq.getCumulativeCost( this ).getIo() );
+        } catch ( Exception ignored ) {
+        }
+        return meta;
     }
 
 

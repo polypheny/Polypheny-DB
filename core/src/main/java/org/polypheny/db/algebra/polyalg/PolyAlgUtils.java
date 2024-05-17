@@ -236,6 +236,11 @@ public class PolyAlgUtils {
         argNode.set( "value", projections.serialize( context, inputFieldNames, mapper ) );
 
         node.set( "arguments", mapper.createObjectNode().set( decl.getPos( 0 ).getName(), argNode ) );
+
+        ObjectNode metaNode = mapper.createObjectNode();
+        metaNode.put( "isAuxiliary", true );
+        node.set( "metadata", metaNode );
+
         node.set( "inputs", mapper.createArrayNode().add( child.serializePolyAlgebra( mapper ) ) );
         return node;
     }
@@ -367,7 +372,7 @@ public class PolyAlgUtils {
 
         @Override
         public String visitNameRef( RexNameRef nameRef ) {
-            if (nameRef.getIndex().isPresent()) {
+            if ( nameRef.getIndex().isPresent() ) {
                 throw new GenericRuntimeException( "PolyAlg for RexNameRef with index is currently not supported." );
             }
             return String.join( ".", nameRef.getNames() );
