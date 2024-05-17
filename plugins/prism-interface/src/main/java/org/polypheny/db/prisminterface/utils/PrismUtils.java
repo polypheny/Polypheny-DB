@@ -82,7 +82,7 @@ public class PrismUtils {
     }
 
 
-    public static Row serializeToRow( List<PolyValue> row ) {
+    private static Row serializeToRow( List<PolyValue> row ) {
         return Row.newBuilder()
                 .addAllValues( PolyValueSerializer.serializeList( row ) )
                 .build();
@@ -138,12 +138,14 @@ public class PrismUtils {
 
     public static Frame buildGraphFrame( boolean isLast, List<List<PolyValue>> data ) {
         GraphFrame.Builder graphFrameBuilder = GraphFrame.newBuilder();
-        PolyType elementType = data.get( 0 ).get( 0 ).getType();
-        switch ( elementType ) {
-            case NODE -> graphFrameBuilder.addAllNodes( serializeToNodes( data ) );
-            case EDGE -> graphFrameBuilder.addAllEdges( serializeToEdges( data ) );
-            case PATH -> graphFrameBuilder.addAllPaths( serilaizeToPaths( data ) );
-            default -> throw new RuntimeException( "Should never be thrown!" );
+        if ( !data.isEmpty() ) {
+            PolyType elementType = data.get( 0 ).get( 0 ).getType();
+            switch ( elementType ) {
+                case NODE -> graphFrameBuilder.addAllNodes( serializeToNodes( data ) );
+                case EDGE -> graphFrameBuilder.addAllEdges( serializeToEdges( data ) );
+                case PATH -> graphFrameBuilder.addAllPaths( serilaizeToPaths( data ) );
+                default -> throw new RuntimeException( "Should never be thrown!" );
+            }
         }
 
         return Frame.newBuilder()
