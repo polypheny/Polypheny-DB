@@ -138,7 +138,7 @@ public class LanguageCrud {
 
 
     public static long getNamespaceIdOrDefault( String namespace ) {
-        return namespace == null ? Catalog.defaultNamespaceId : Catalog.snapshot().getNamespace( namespace ).orElseThrow().id;
+        return namespace == null ? Catalog.defaultNamespaceId : Catalog.snapshot().getNamespace( namespace ).map( n -> n.id ).orElse( Catalog.defaultNamespaceId );
     }
 
 

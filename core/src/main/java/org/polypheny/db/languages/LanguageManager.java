@@ -20,6 +20,7 @@ import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
@@ -27,6 +28,7 @@ import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.nodes.ExecutableStatement;
@@ -126,10 +128,15 @@ public class LanguageManager {
         List<ImplementationContext> implementationContexts = new ArrayList<>();
         boolean previousDdl = false;
         int i = 0;
+        Optional<String> changedNamespace = Optional.empty();
         for ( ParsedQueryContext parsed : parsedQueries ) {
             if ( i != 0 ) {
                 statement = transaction.createStatement();
             }
+            if ( changedNamespace.isPresent() ) {
+                parsed = parsed.toBuilder().namespaceId( Catalog.snapshot().getNamespace( changedNamespace.get() ).map( n -> n.id ).orElse( parsed.getNamespaceId() ) ).build();
+            }
+
             try {
                 // test if parsing was successful
                 if ( parsed.getQueryNode().isEmpty() ) {
@@ -191,6 +198,9 @@ public class LanguageManager {
                     }
                     implementation = statement.getQueryProcessor().prepareQuery( root, true );
                 }
+                // queries are able to switch the context of the following queries
+                changedNamespace = parsed.getQueryNode().orElseThrow().switchesNamespace();
+
                 implementationContexts.add( new ImplementationContext( implementation, parsed, statement, null ) );
 
             } catch ( Throwable e ) {
