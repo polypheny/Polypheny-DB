@@ -20,10 +20,14 @@ import java.util.List;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.ResultIterator;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.monitoring.events.MonitoringType;
+import org.polypheny.db.prisminterface.PIClient;
 import org.polypheny.db.prisminterface.PIServiceException;
 import org.polypheny.db.prisminterface.statements.PIStatement;
 import org.polypheny.db.prisminterface.utils.PrismUtils;
+import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.prism.Frame;
 import org.polypheny.prism.StatementResult;
@@ -57,18 +61,26 @@ public class DocumentExecutor extends Executor {
     @Override
     StatementResult executeAndGetResult( PIStatement piStatement, int fetchSize ) {
         throwOnIllegalState( piStatement );
+        Statement statement = piStatement.getStatement();
         PolyImplementation implementation = piStatement.getImplementation();
+        PIClient client = piStatement.getClient();
         StatementResult.Builder resultBuilder = StatementResult.newBuilder();
-        if ( implementation.isDDL() ) {
+        if ( Kind.DDL.contains( implementation.getKind() ) ) {
             resultBuilder.setScalar( 1 );
+            return resultBuilder.build();
+        }
+        if ( Kind.DML.contains( implementation.getKind() ) ) {
+            try (ResultIterator iterator = implementation.execute( statement, -1 )) {
+                resultBuilder.setScalar( PolyImplementation.getRowsChanged( statement, iterator.getIterator(), MonitoringType.from(implementation.getKind()) ) );
+            }
+            client.commitCurrentTransactionIfAuto();
             return resultBuilder.build();
         }
         piStatement.setIterator( implementation.execute( piStatement.getStatement(), fetchSize ) );
         Frame frame = fetch( piStatement, fetchSize );
         resultBuilder.setFrame( frame );
         if ( frame.getIsLast() ) {
-            //TODO TH: special handling for result set updates. Do we need to wait with committing until all changes have been done?
-            piStatement.getClient().commitCurrentTransactionIfAuto();
+            client.commitCurrentTransactionIfAuto();
         }
         return resultBuilder.build();
     }
