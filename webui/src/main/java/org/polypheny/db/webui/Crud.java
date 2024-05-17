@@ -2084,7 +2084,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     /**
      * Deploy a new adapter
      */
-    void addAdapter( final Context ctx ) throws ServletException, IOException {
+    void createAdapter( final Context ctx ) throws ServletException, IOException {
         initMultipart( ctx );
         String body = "";
         Map<String, InputStream> inputStreams = new HashMap<>();
