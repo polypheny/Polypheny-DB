@@ -48,11 +48,11 @@ import org.polypheny.db.algebra.metadata.UnboundMetadata;
 /**
  * VolcanoRelMetadataProvider implements the {@link AlgMetadataProvider} interface by combining metadata from the rels making up an equivalence class.
  */
-public class VolcanoRelMetadataProvider implements AlgMetadataProvider {
+public class VolcanoAlgMetadataProvider implements AlgMetadataProvider {
 
     @Override
     public boolean equals( Object obj ) {
-        return obj instanceof VolcanoRelMetadataProvider;
+        return obj instanceof VolcanoAlgMetadataProvider;
     }
 
 

@@ -1546,7 +1546,7 @@ public class VolcanoPlanner extends AbstractAlgPlanner {
     // implement RelOptPlanner
     @Override
     public void registerMetadataProviders( List<AlgMetadataProvider> list ) {
-        list.add( 0, new VolcanoRelMetadataProvider() );
+        list.add( 0, new VolcanoAlgMetadataProvider() );
     }
 
 
