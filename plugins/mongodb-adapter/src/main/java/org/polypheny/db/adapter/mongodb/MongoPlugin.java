@@ -114,6 +114,7 @@ public class MongoPlugin extends PolyPlugin {
     @Extension
     @AdapterProperties(
             name = "MongoDB",
+            logoAssetPath = "assets/dbms-logos/mongodb.png",
             description = "MongoDB is a document-oriented database system.",
             usedModes = { DeployMode.REMOTE, DeployMode.DOCKER },
             defaultMode = DeployMode.DOCKER)

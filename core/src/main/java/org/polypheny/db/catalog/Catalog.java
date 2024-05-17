@@ -204,7 +204,7 @@ public abstract class Catalog implements ExtensionPoint {
      * @param mode The deploy mode of the adapter
      * @return The id of the newly added adapter
      */
-    public abstract long createAdapter( String uniqueName, String clazz, AdapterType type, Map<String, String> settings, DeployMode mode );
+    public abstract long createAdapter( String uniqueName, String clazz, String adapterLogo, AdapterType type, Map<String, String> settings, DeployMode mode );
 
     /**
      * Update settings of an adapter
@@ -239,7 +239,7 @@ public abstract class Catalog implements ExtensionPoint {
      */
     public abstract void dropQueryInterface( long id );
 
-    public abstract long createAdapterTemplate( Class<? extends Adapter<?>> clazz, String adapterName, String description, List<DeployMode> modes, List<AbstractAdapterSetting> settings, Function4<Long, String, Map<String, String>, Adapter<?>> deployer );
+    public abstract long createAdapterTemplate( Class<? extends Adapter<?>> clazz, String adapterName, String description, List<DeployMode> modes, List<AbstractAdapterSetting> settings, Function4<Long, String, Map<String, String>, Adapter<?>> deployer, String adapterLogo );
 
 
     public abstract void createInterfaceTemplate( String name, QueryInterfaceTemplate queryInterfaceTemplate );

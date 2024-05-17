@@ -92,6 +92,7 @@ jar {
         attributes "Version": "$project.version"
     }
     from("$buildDir/webapp") // include webapp files
+    from("$buildDir/public") // include public files
     duplicatesStrategy = 'include'
 }
 java {

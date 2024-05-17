@@ -64,7 +64,7 @@ public class AdapterManager {
     public static long addAdapterTemplate( Class<? extends Adapter<?>> clazz, String adapterName, Function4<Long, String, Map<String, String>, Adapter<?>> deployer ) {
         List<AbstractAdapterSetting> settings = AdapterTemplate.getAllSettings( clazz );
         AdapterProperties properties = clazz.getAnnotation( AdapterProperties.class );
-        return Catalog.getInstance().createAdapterTemplate( clazz, adapterName, properties.description(), List.of( properties.usedModes() ), settings, deployer );
+        return Catalog.getInstance().createAdapterTemplate( clazz, adapterName, properties.description(), List.of( properties.usedModes() ), settings, deployer, properties.logoAssetPath() );
     }
 
 
@@ -181,7 +181,7 @@ public class AdapterManager {
 
         AdapterTemplate adapterTemplate = AdapterTemplate.fromString( adapterName, adapterType );
 
-        long adapterId = Catalog.getInstance().createAdapter( uniqueName, adapterName, adapterType, settings, mode );
+        long adapterId = Catalog.getInstance().createAdapter( uniqueName, adapterName, adapterTemplate.adapterLogo, adapterType, settings, mode );
         try {
             Adapter<?> adapter = adapterTemplate.getDeployer().get( adapterId, uniqueName, settings );
             adapterByName.put( adapter.getUniqueName(), adapter );

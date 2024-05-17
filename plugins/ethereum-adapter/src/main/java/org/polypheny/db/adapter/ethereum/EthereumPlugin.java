@@ -85,6 +85,7 @@ public class EthereumPlugin extends PolyPlugin {
     @Extension
     @AdapterProperties(
             name = "Ethereum",
+            logoAssetPath = "assets/dbms-logos/ethereum.png",
             description = "An adapter for querying the Ethereum blockchain. It uses the ethereum JSON-RPC API. Currently, this adapter only supports read operations.",
             usedModes = DeployMode.REMOTE,
             defaultMode = DeployMode.REMOTE)

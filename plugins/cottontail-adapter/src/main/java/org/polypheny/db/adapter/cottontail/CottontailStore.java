@@ -91,6 +91,7 @@ import org.vitrivr.cottontail.server.grpc.CottontailGrpcServer;
 @Slf4j
 @AdapterProperties(
         name = "Cottontail-DB",
+        logoAssetPath = "assets/dbms-logos/cottontaildb.png",
         description = "Cottontail-DB is a column store aimed at multimedia retrieval. It is optimized for classical boolean as well as vector-space retrieval.",
         usedModes = { DeployMode.EMBEDDED, DeployMode.REMOTE },
         defaultMode = DeployMode.EMBEDDED)

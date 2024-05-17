@@ -46,9 +46,9 @@ public class AdapterTemplate {
     public List<DeployMode> modes;
     public long id;
     public String description;
+    public String adapterLogo;
 
-
-    public AdapterTemplate( long id, Class<?> clazz, String adapterName, List<AbstractAdapterSetting> settings, List<DeployMode> modes, String description, Function4<Long, String, Map<String, String>, Adapter<?>> deployer ) {
+    public AdapterTemplate( long id, Class<?> clazz, String adapterName, List<AbstractAdapterSetting> settings, List<DeployMode> modes, String description, Function4<Long, String, Map<String, String>, Adapter<?>> deployer, String adapterLogo) {
         this.id = id;
         this.adapterName = adapterName;
         this.description = description;
@@ -57,6 +57,7 @@ public class AdapterTemplate {
         this.modes = modes;
         this.adapterType = getAdapterType( clazz );
         this.deployer = deployer;
+        this.adapterLogo = adapterLogo;
     }
 
 

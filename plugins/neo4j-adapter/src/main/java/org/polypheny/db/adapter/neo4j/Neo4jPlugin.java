@@ -131,6 +131,7 @@ public class Neo4jPlugin extends PolyPlugin {
     @Slf4j
     @AdapterProperties(
             name = "Neo4j",
+            logoAssetPath = "assets/dbms-logos/neo4j.png",
             description = "Neo4j is a graph-model based database system. It stores data in a graph structure which consists of nodes and edges.",
             usedModes = { DeployMode.DOCKER, DeployMode.REMOTE },
             defaultMode = DeployMode.DOCKER)

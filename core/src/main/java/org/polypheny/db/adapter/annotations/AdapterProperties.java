@@ -29,6 +29,8 @@ public @interface AdapterProperties {
 
     String name();
 
+    String logoAssetPath();
+
     String description();
 
     DeployMode[] usedModes();

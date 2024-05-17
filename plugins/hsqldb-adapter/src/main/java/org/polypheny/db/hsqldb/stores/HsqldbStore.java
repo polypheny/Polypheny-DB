@@ -52,6 +52,7 @@ import org.polypheny.db.util.PolyphenyHomeDirManager;
 @Slf4j
 @AdapterProperties(
         name = "HSQLDB",
+        logoAssetPath = "assets/dbms-logos/hsqldb.png",
         description = "Java-based relational database system. It supports an in-memory and a persistent file based mode. Deploying a HSQLDB instance requires no additional dependencies to be installed or servers to be set up.",
         usedModes = DeployMode.EMBEDDED,
         defaultMode = DeployMode.EMBEDDED)

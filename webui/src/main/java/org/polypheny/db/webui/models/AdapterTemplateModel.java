@@ -32,16 +32,18 @@ import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.config.ConfigDocker;
 import org.polypheny.db.config.RuntimeConfig;
 
-public record AdapterTemplateModel( @JsonProperty String adapterName, @JsonProperty AdapterType adapterType, @JsonProperty List<AdapterSettingsModel> settings, @JsonProperty String description, @JsonProperty List<DeployMode> modes ) {
+public record AdapterTemplateModel( @JsonProperty String adapterName, @JsonProperty String adapterLogo, @JsonProperty AdapterType adapterType, @JsonProperty List<AdapterSettingsModel> settings, @JsonProperty String description, @JsonProperty List<DeployMode> modes ) {
 
 
     public AdapterTemplateModel(
             @NotNull String adapterName,
+            @NotNull String adapterLogo,
             @NotNull AdapterType adapterType,
             @NotNull List<AdapterSettingsModel> settings,
             @NotNull String description,
             @NotNull List<DeployMode> modes ) {
         this.adapterName = adapterName;
+        this.adapterLogo = adapterLogo;
         this.adapterType = adapterType;
         this.settings = settings;
         this.description = description;
@@ -64,6 +66,7 @@ public record AdapterTemplateModel( @JsonProperty String adapterName, @JsonPrope
 
         return new AdapterTemplateModel(
                 template.adapterName,
+                template.adapterLogo,
                 template.adapterType,
                 settings,
                 template.description,
