@@ -159,7 +159,7 @@ public class PolyBigDecimal extends PolyNumber {
 
     @Override
     public @NotNull PolyNumber divide( @NotNull PolyNumber other ) {
-        return PolyBigDecimal.of( value.divide( other.bigDecimalValue(), MathContext.DECIMAL64 ) );
+        return PolyBigDecimal.of( value.divide( other.bigDecimalValue(), new MathContext( Math.max( value.precision(), 64 ) ) ) );
     }
 
 
