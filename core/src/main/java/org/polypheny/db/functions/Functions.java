@@ -26,6 +26,7 @@ import com.fasterxml.jackson.core.JsonParser.Feature;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Sets;
 import com.google.gson.Gson;
+import com.google.gson.JsonParseException;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
@@ -2501,6 +2502,12 @@ public class Functions {
 
 
     @SuppressWarnings("unused")
+    public static Object jsonValueExpression( PolyValue input ) {
+        return jsonValueExpression( PolyString.of( input.toJson() ) );
+    }
+
+
+    @SuppressWarnings("unused")
     public static Object jsonValueExpressionExclude( PolyString input, List<PolyString> excluded ) {
         try {
             PolyList<PolyList<PolyString>> collect = PolyList.copyOf( excluded.stream().map( e -> PolyList.of( Arrays.stream( e.value.split( "\\." ) ).map( PolyString::of ).toList() ) ).toList() );
@@ -2564,7 +2571,6 @@ public class Functions {
 
     public static PathContext jsonApiCommonSyntax( PolyValue input, PolyString pathSpec ) {
         try {
-
             Matcher matcher = JSON_PATH_BASE.matcher( pathSpec.value );
             if ( !matcher.matches() ) {
                 throw Static.RESOURCE.illegalJsonPathSpec( pathSpec.value ).ex();
@@ -2591,7 +2597,15 @@ public class Functions {
             };
             try {
                 Object json = ctx.read( pathWff );
-                return PathContext.withReturned( mode, json == null ? null : PolyValue.fromJson( json.toString() ) );
+                PolyValue val = null;
+                try {
+                    val = json == null ? null : PolyValue.fromJson( json.toString() );
+                } catch ( JsonParseException | GenericRuntimeException e ) {
+                    // if the BsonParser cannot parse it we might try as string
+                    val = PolyValue.fromJson( "\"" + json + "\"" );
+                }
+
+                return PathContext.withReturned( mode, val );
             } catch ( Exception e ) {
                 return PathContext.withStrictException( e );
             }

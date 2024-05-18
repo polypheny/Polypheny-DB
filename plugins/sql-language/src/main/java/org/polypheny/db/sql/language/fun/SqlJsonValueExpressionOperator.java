@@ -52,7 +52,7 @@ public class SqlJsonValueExpressionOperator extends SqlSpecialOperator {
                         operandTypes[0] = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.ANY ), true );
                     }
                 },
-                structured ? OperandTypes.ANY : OperandTypes.STRING );
+                structured ? OperandTypes.ANY : OperandTypes.JSON );
         this.structured = structured;
     }
 
