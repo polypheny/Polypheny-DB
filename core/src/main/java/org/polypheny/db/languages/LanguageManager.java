@@ -199,7 +199,7 @@ public class LanguageManager {
                     implementation = statement.getQueryProcessor().prepareQuery( root, true );
                 }
                 // queries are able to switch the context of the following queries
-                changedNamespace = parsed.getQueryNode().orElseThrow().switchesNamespace();
+                changedNamespace = parsed.getQueryNode().orElseThrow().switchesNamespace().isPresent() ? parsed.getQueryNode().orElseThrow().switchesNamespace() : changedNamespace;
 
                 implementationContexts.add( new ImplementationContext( implementation, parsed, statement, null ) );
 
