@@ -115,9 +115,9 @@ public class PolyAlgParsingTest {
     @Test
     public void projectPolyAlgTest() throws NodeParseException {
         String polyAlg = """
-                PROJECT[id, name, foo](
-                 FILTER[>(foo, 5)](
-                  SCAN[public.polyalg_test]))
+                REL_PROJECT[id, name, foo](
+                 REL_FILTER[>(foo, 5)](
+                  REL_SCAN[public.polyalg_test]))
                 """;
         AlgNode node = fromPolyAlg( polyAlg ).alg;
         assertTrue( node instanceof LogicalRelProject );
@@ -130,9 +130,9 @@ public class PolyAlgParsingTest {
     @Test
     public void aggregatePolyAlgTest() throws NodeParseException {
         String polyAlg = """
-                AGGREGATE[group=name, aggregates=COUNT(DISTINCT foo) AS EXPR$1](
-                 PROJECT[foo, name](
-                  SCAN[public.polyalg_test]))
+                REL_AGGREGATE[group=name, aggregates=COUNT(DISTINCT foo) AS EXPR$1](
+                 REL_PROJECT[foo, name](
+                  REL_SCAN[public.polyalg_test]))
                 """;
         AlgNode node = fromPolyAlg( polyAlg ).alg;
         assertTrue( node instanceof LogicalRelAggregate );
@@ -144,11 +144,11 @@ public class PolyAlgParsingTest {
     public void opAliasPolyAlgTest() throws NodeParseException {
         String polyAlg = """
                  P[foo, name](
-                  SCAN[public.polyalg_test])
+                  REL_SCAN[public.polyalg_test])
                 """;
         AlgNode node = fromPolyAlg( polyAlg ).alg;
         String polyAlgAfter = toPolyAlg( node );
-        assertEquals( polyAlg.replace( "P[", "PROJECT[" ).replaceAll( "\\s", "" ),
+        assertEquals( polyAlg.replace( "P[", "REL_PROJECT[" ).replaceAll( "\\s", "" ),
                 polyAlgAfter.replaceAll( "\\s", "" ) );
     }
 
@@ -156,8 +156,8 @@ public class PolyAlgParsingTest {
     @Test
     public void paramAliasPolyAlgTest() throws NodeParseException {
         String polyAlg = """
-                 SORT[fetch=2](
-                  SCAN[public.polyalg_test])
+                 REL_SORT[fetch=2](
+                  REL_SCAN[public.polyalg_test])
                 """;
         AlgNode node = fromPolyAlg( polyAlg ).alg;
         String polyAlgAfter = toPolyAlg( node );
@@ -169,8 +169,8 @@ public class PolyAlgParsingTest {
     @Test
     public void sortPolyAlgTest() throws NodeParseException {
         String polyAlg = """
-                SORT[sort=name DESC LAST, limit=2, offset=1](
-                  SCAN[public.polyalg_test])
+                REL_SORT[sort=name DESC LAST, limit=2, offset=1](
+                  REL_SCAN[public.polyalg_test])
                 """;
         AlgNode node = fromPolyAlg( polyAlg ).alg;
         assertTrue( node instanceof LogicalRelSort );
@@ -181,11 +181,11 @@ public class PolyAlgParsingTest {
     @Test
     public void joinPolyAlgTest() throws NodeParseException {
         String polyAlg = """
-                PROJECT[id, name, foo, id0, name0, foo0](
-                 JOIN[=(id, id0), type=LEFT](
-                  SCAN[public.polyalg_test],
-                  PROJECT[id AS id0, name AS name0, foo AS foo0](
-                   SCAN[public.polyalg_test])))
+                REL_PROJECT[id, name, foo, id0, name0, foo0](
+                 REL_JOIN[=(id, id0), type=LEFT](
+                  REL_SCAN[public.polyalg_test],
+                  REL_PROJECT[id AS id0, name AS name0, foo AS foo0](
+                   REL_SCAN[public.polyalg_test])))
                 """;
         AlgNode node = fromPolyAlg( polyAlg ).alg;
         assertTrue( node.getInput( 0 ) instanceof LogicalRelJoin );
@@ -196,11 +196,11 @@ public class PolyAlgParsingTest {
     @Test
     public void unionPolyAlgTest() throws NodeParseException {
         String polyAlg = """
-                UNION[all=true](
-                 PROJECT[id](
-                  SCAN[public.polyalg_test]),
-                 PROJECT[foo](
-                  SCAN[public.polyalg_test]))
+                REL_UNION[all=true](
+                 REL_PROJECT[id](
+                  REL_SCAN[public.polyalg_test]),
+                 REL_PROJECT[foo](
+                  REL_SCAN[public.polyalg_test]))
                 """;
         AlgNode node = fromPolyAlg( polyAlg ).alg;
         assertTrue( node instanceof LogicalRelUnion );
