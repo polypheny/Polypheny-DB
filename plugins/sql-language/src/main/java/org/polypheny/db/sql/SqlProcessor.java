@@ -80,15 +80,13 @@ import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.SourceStringReader;
 
 
+@Setter
 @Slf4j
 public class SqlProcessor extends Processor {
 
     private static final ParserConfig parserConfig;
 
-    @Setter
     private PolyphenyDbSqlValidator validator;
-
-    private final Snapshot snapshot = Catalog.getInstance().getSnapshot();
 
 
     static {
@@ -370,6 +368,7 @@ public class SqlProcessor extends Processor {
 
     private LogicalTable getTable( Transaction transaction, SqlIdentifier tableName ) {
         LogicalTable table;
+        Snapshot snapshot = transaction.getSnapshot();
         long namespaceId;
         String tableOldName;
         if ( tableName.names.size() == 3 ) { // DatabaseName.SchemaName.TableName

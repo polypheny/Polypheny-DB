@@ -173,7 +173,7 @@ public class LanguageManager {
                         parsed.addTransaction( transaction );
                     }
                     previousDdl = false;
-                    if ( context.getLanguage().validatorSupplier() != null ) {
+                    if ( parsed.getLanguage().validatorSupplier() != null ) {
                         if ( transaction.isAnalyze() ) {
                             statement.getOverviewDuration().start( "Validation" );
                         }
@@ -181,7 +181,7 @@ public class LanguageManager {
                                 transaction,
                                 parsed.getQueryNode().get(),
                                 RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() );
-                        parsed = ParsedQueryContext.fromQuery( parsed.getQuery(), validated.left, context );
+                        parsed = ParsedQueryContext.fromQuery( parsed.getQuery(), validated.left, parsed );
                         if ( transaction.isAnalyze() ) {
                             statement.getOverviewDuration().stop( "Validation" );
                         }
