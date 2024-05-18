@@ -36,6 +36,8 @@ import org.polypheny.db.adapter.jdbc.JdbcTable;
 import org.polypheny.db.adapter.jdbc.JdbcUtils;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.catalog.catalogs.RelAdapterCatalog;
+import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
+import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
@@ -425,7 +427,22 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
             updateNamespace( table.namespaceName, table.namespaceId );
             adapterCatalog.addPhysical( alloc, currentJdbcSchema.createJdbcTable( table.unwrap( PhysicalTable.class ).orElseThrow() ) );
         }
+    }
 
+
+    @Override
+    public void restoreGraph( AllocationGraph alloc, List<PhysicalEntity> entities, Context context ) {
+        // already created substitution with the restore tables
+        // restore link between alloc and physical
+        adapterCatalog.addPhysical( alloc, entities.toArray( new PhysicalEntity[]{} ) );
+    }
+
+
+    @Override
+    public void restoreCollection( AllocationCollection alloc, List<PhysicalEntity> entities, Context context ) {
+        // already created substitution with the restore tables
+        // restore link between alloc and physical
+        adapterCatalog.addPhysical( alloc, entities.toArray( new PhysicalEntity[]{} ) );
     }
 
 
@@ -512,6 +529,10 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
         void createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocationWrapper );
 
         void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities );
+
+        void restoreGraph( AllocationGraph alloc, List<PhysicalEntity> entities, Context context );
+
+        void restoreCollection( AllocationCollection alloc, List<PhysicalEntity> entities, Context context );
 
         void renameLogicalColumn( long id, String newName );
 
