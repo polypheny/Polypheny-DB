@@ -187,11 +187,6 @@ public class CrossModelFunctions {
     }
 
 
-    public static PolyValue cypherOnlyLabelGraph( PolyValue value, PolyString label ) {
-        return null;
-    }
-
-
     /**
      * Modify operation, which inserts edge properties.
      *

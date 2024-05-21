@@ -17,6 +17,7 @@
 package org.polypheny.db.nodes;
 
 import java.util.List;
+import javax.annotation.Nullable;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.Syntax;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -25,11 +26,23 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.validate.Validator;
 import org.polypheny.db.nodes.validate.ValidatorScope;
+import org.polypheny.db.type.PolyType;
 
 public class LangFunctionOperator extends OperatorImpl {
 
-    public LangFunctionOperator( String name, Kind kind ) {
+    private final PolyType returnType;
+    private final @Nullable PolyType returnComponentType;
+
+
+    public LangFunctionOperator( String name, Kind kind, PolyType returnType, @Nullable PolyType returnComponentType ) {
         super( name, kind, null, null, null );
+        this.returnType = returnType;
+        this.returnComponentType = returnComponentType;
+    }
+
+
+    public LangFunctionOperator( String name, Kind kind, PolyType returnType ) {
+        this( name, kind, returnType, null );
     }
 
 
@@ -47,7 +60,19 @@ public class LangFunctionOperator extends OperatorImpl {
 
     @Override
     public AlgDataType inferReturnType( OperatorBinding opBinding ) {
-        throw new GenericRuntimeException( "Not Implemented" );
+        return getReturnType();
+    }
+
+
+    private AlgDataType getReturnType() {
+        if ( returnComponentType != null ) {
+            return AlgDataTypeFactory.DEFAULT.createArrayType( AlgDataTypeFactory.DEFAULT.createPolyType( returnComponentType ), -1 );
+        }
+
+        return switch ( returnType ) {
+            case VARCHAR -> AlgDataTypeFactory.DEFAULT.createPolyType( returnType, 2050 );
+            default -> AlgDataTypeFactory.DEFAULT.createPolyType( returnType );
+        };
     }
 
 
@@ -59,7 +84,7 @@ public class LangFunctionOperator extends OperatorImpl {
 
     @Override
     public AlgDataType inferReturnType( AlgDataTypeFactory typeFactory, List<AlgDataType> operandTypes ) {
-        return null;
+        return getReturnType();
     }
 
 }

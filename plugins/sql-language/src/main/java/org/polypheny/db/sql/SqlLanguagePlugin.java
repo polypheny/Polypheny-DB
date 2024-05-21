@@ -2515,12 +2515,12 @@ public class SqlLanguagePlugin extends PolyPlugin {
          */
         register(
                 OperatorName.CROSS_MODEL_ITEM,
-                new LangFunctionOperator( OperatorName.CROSS_MODEL_ITEM.name(), Kind.CROSS_MODEL_ITEM ) );
+                new LangFunctionOperator( OperatorName.CROSS_MODEL_ITEM.name(), Kind.CROSS_MODEL_ITEM, PolyType.DOCUMENT ) );
 
         /*
          * Operator which transforms a value to JSON.
          */
-        register( OperatorName.TO_JSON, new LangFunctionOperator( OperatorName.TO_JSON.name(), Kind.OTHER ) );
+        register( OperatorName.TO_JSON, new LangFunctionOperator( OperatorName.TO_JSON.name(), Kind.OTHER, PolyType.TEXT ) );
 
         isInit = true;
     }

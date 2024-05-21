@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Objects;
 import javax.annotation.Nonnull;
+import lombok.Getter;
 import org.apache.calcite.linq4j.function.Functions;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
@@ -46,8 +47,20 @@ public class SqlFunction extends SqlOperator implements Function {
 
     private final FunctionCategory category;
 
+    /**
+     * -- GETTER --
+     *
+     * @return fully qualified name of function, or null for a builtin function
+     */
+    @Getter
     private final SqlIdentifier sqlIdentifier;
 
+    /**
+     * -- GETTER --
+     *
+     * @return List of parameter types, or null for builtin function
+     */
+    @Getter
     private final List<AlgDataType> paramTypes;
 
 
@@ -124,28 +137,12 @@ public class SqlFunction extends SqlOperator implements Function {
     }
 
 
-    /**
-     * @return fully qualified name of function, or null for a builtin function
-     */
-    public SqlIdentifier getSqlIdentifier() {
-        return sqlIdentifier;
-    }
-
-
     @Override
     public SqlIdentifier getNameAsId() {
         if ( sqlIdentifier != null ) {
             return sqlIdentifier;
         }
         return super.getNameAsId();
-    }
-
-
-    /**
-     * @return List of parameter types, or null for builtin function
-     */
-    public List<AlgDataType> getParamTypes() {
-        return paramTypes;
     }
 
 
