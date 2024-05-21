@@ -28,16 +28,14 @@ import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.prism.StatementResult;
 
+@Getter
 @Slf4j
 public class PIUnparameterizedStatement extends PIStatement {
 
-    @Getter
-    String query;
-    @Getter
-    Statement statement;
+    private final String query;
+    private Statement statement;
     @Setter
-    @Getter
-    PolyImplementation implementation;
+    private PolyImplementation implementation;
 
 
     public PIUnparameterizedStatement( int id, PIClient client, QueryLanguage language, LogicalNamespace namespace, String query ) {
