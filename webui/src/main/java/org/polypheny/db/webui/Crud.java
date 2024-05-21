@@ -2089,16 +2089,24 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         String body = "";
         Map<String, InputStream> inputStreams = new HashMap<>();
 
-        // collect all files e.g. csv files
-        for ( Part part : ctx.req.getParts() ) {
-            if ( part.getName().equals( "body" ) ) {
-                body = IOUtils.toString( ctx.req.getPart( "body" ).getInputStream(), StandardCharsets.UTF_8 );
-            } else {
-                inputStreams.put( part.getName(), part.getInputStream() );
+        final AdapterModel a;
+        if ( ctx.isMultipartFormData() ) {
+            // collect all files e.g. csv files
+            for ( Part part : ctx.req.getParts() ) {
+                if ( part.getName().equals( "body" ) ) {
+                    body = IOUtils.toString( ctx.req.getPart( "body" ).getInputStream(), StandardCharsets.UTF_8 );
+                } else {
+                    inputStreams.put( part.getName(), part.getInputStream() );
+                }
             }
+            a = HttpServer.mapper.readValue( body, AdapterModel.class );
+        } else if ( "application/json".equals( ctx.contentType() ) ) {
+            a = ctx.bodyAsClass( AdapterModel.class );
+        } else {
+            ctx.status( HttpCode.BAD_REQUEST );
+            return;
         }
 
-        AdapterModel a = HttpServer.mapper.readValue( body, AdapterModel.class );
         Map<String, String> settings = new HashMap<>();
 
         ConnectionMethod method = ConnectionMethod.UPLOAD;
