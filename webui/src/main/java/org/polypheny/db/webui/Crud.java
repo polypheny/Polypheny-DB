@@ -2135,8 +2135,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                     String directory = handleUploadFiles( inputStreams, fileNames, setting, a );
                     settings.put( set.name, directory );
                 }
-
-
             } else {
                 settings.put( set.name, entry.value() );
             }
@@ -2487,10 +2485,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                         false,
                         false
                 );
-
-
             } else {
-
                 viewType = "View";
                 List<DataStore<?>> store = null;
                 PlacementType placementType = PlacementType.AUTOMATIC;
@@ -2515,8 +2510,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                         gson.toJson( request.topNode ),
                         QueryLanguage.from( "rel" )
                 );
-
-
             }
             try {
                 transaction.commit();
