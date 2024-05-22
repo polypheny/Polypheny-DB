@@ -159,18 +159,7 @@ class PIService {
     }
 
 
-    private CompletableFuture<Request> waitForRequest() {
-        return CompletableFuture.supplyAsync( () -> {
-            try {
-                return readOneMessage();
-            } catch ( IOException e ) {
-                throw new PIServiceException( e );
-            }
-        } );
-    }
-
-
-    private void handleRequest( Request req, CompletableFuture<Response> f ) {
+    private Response handleRequest( Request req ) {
         Response r;
         try {
             r = handleMessage( req );
@@ -179,49 +168,33 @@ class PIService {
         }
         try {
             sendOneMessage( r );
-            f.complete( r );
+            return r;
         } catch ( IOException e ) {
             throw new GenericRuntimeException( e );
         }
     }
 
 
-    private void handleMessages() throws IOException, ExecutionException, InterruptedException {
+    private void handleMessages() throws IOException, InterruptedException {
         if ( !handleFirstMessage() ) {
             return;
         }
 
         BlockingQueue<byte[]> waiting = new LinkedBlockingQueue<>();
         clientManager.getReader().addConnection( con, waiting );
-        CompletableFuture<Response> response;
-        Thread handle = null;
         try {
             while ( true ) {
                 Request req = Request.parseFrom( waiting.take() );
-                response = new CompletableFuture<>();
-                CompletableFuture<Response> finalResponse = response;
-                handle = new Thread( () -> handleRequest( req, finalResponse ), String.format( "PrismConnection%dRequest%dHandler", connectionId, req.getId() ) );
-                handle.setUncaughtExceptionHandler( ( t, e ) -> finalResponse.completeExceptionally( e ) );
-                handle.start();
-
-                response.get();
-
-                handle.join();
-                handle = null;
-                Response r = response.get();
+                Response r = handleRequest( req );
                 if ( r.getTypeCase() == Response.TypeCase.DISCONNECT_RESPONSE ) {
                     break;
                 }
             }
-        } catch ( ExecutionException e ) {
-            if ( e.getCause() instanceof PIServiceException p && p.getCause() instanceof EOFException eof ) {
+        } catch ( Throwable t ) {
+            if ( t.getCause() instanceof PIServiceException p && p.getCause() instanceof EOFException eof ) {
                 throw eof;
             }
-            throw e;
-        } finally {
-            if ( handle != null ) {
-                handle.interrupt();
-            }
+            throw t;
         }
     }
 
