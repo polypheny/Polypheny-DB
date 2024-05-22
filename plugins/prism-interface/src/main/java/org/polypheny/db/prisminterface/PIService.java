@@ -21,8 +21,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.NotImplementedException;
@@ -138,9 +136,9 @@ class PIService {
     }
 
 
-    private boolean handleFirstMessage() throws IOException {
+    private boolean handleFirstMessage( BlockingQueue<byte[]> waiting ) throws IOException {
         boolean success = false;
-        Request firstReq = readOneMessage();
+        Request firstReq = readOneMessage( waiting );
 
         if ( firstReq.getTypeCase() != TypeCase.CONNECTION_REQUEST ) {
             sendOneMessage( createErrorResponse( firstReq.getId(), "First message must be a connection request" ) );
@@ -175,16 +173,17 @@ class PIService {
     }
 
 
-    private void handleMessages() throws IOException, InterruptedException {
-        if ( !handleFirstMessage() ) {
+    private void handleMessages() throws IOException {
+        BlockingQueue<byte[]> waiting = new LinkedBlockingQueue<>();
+        clientManager.getReader().addConnection( con, waiting );
+
+        if ( !handleFirstMessage( waiting ) ) {
             return;
         }
 
-        BlockingQueue<byte[]> waiting = new LinkedBlockingQueue<>();
-        clientManager.getReader().addConnection( con, waiting );
         try {
             while ( true ) {
-                Request req = Request.parseFrom( waiting.take() );
+                Request req = readOneMessage( waiting );
                 Response r = handleRequest( req );
                 if ( r.getTypeCase() == Response.TypeCase.DISCONNECT_RESPONSE ) {
                     break;
@@ -220,8 +219,12 @@ class PIService {
     }
 
 
-    private Request readOneMessage() throws IOException {
-        return Request.parseFrom( con.receiveMessage() );
+    private Request readOneMessage( BlockingQueue<byte[]> waiting ) throws IOException {
+        try {
+            return Request.parseFrom( waiting.take() );
+        } catch ( InterruptedException e ) {
+            throw new IOException( e );
+        }
     }
 
 

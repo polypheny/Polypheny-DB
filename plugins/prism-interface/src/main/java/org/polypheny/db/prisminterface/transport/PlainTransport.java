@@ -134,21 +134,6 @@ public class PlainTransport implements Transport {
     }
 
 
-    @Override
-    public byte[] receiveMessage() throws IOException {
-        ByteBuffer bb = ByteBuffer.allocate( 8 );
-        readEntireBuffer( bb );
-        bb.order( ByteOrder.LITTLE_ENDIAN ); // TODO Big endian like other network protocols?
-        long length = bb.getLong();
-        if ( length == 0 ) {
-            throw new IOException( "Invalid message length" );
-        }
-        bb = ByteBuffer.allocate( (int) length );
-        readEntireBuffer( bb );
-        return bb.array();
-    }
-
-
     public Optional<byte[]> tryReceiveMessage() throws IOException {
         int res = con.read( bb );
         if ( res == -1 ) {

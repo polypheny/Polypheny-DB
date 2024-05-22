@@ -27,8 +27,6 @@ public interface Transport extends Closeable {
 
     void sendMessage( byte[] msg ) throws IOException;
 
-    byte[] receiveMessage() throws IOException;
-
     Optional<byte[]> tryReceiveMessage() throws IOException;
 
     SelectableChannel getChannel();
