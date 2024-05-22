@@ -64,7 +64,7 @@ public class LogicalLpgSort extends LpgSort {
         ListArg<CollationArg> collations = args.getListArg( "sort", CollationArg.class );
         IntArg limit = args.getArg( "limit", IntArg.class );
         IntArg skip = args.getArg( "skip", IntArg.class );
-        return create( AlgCollations.of( collations.map( CollationArg::getColl ) ), children.get( 0 ), limit.getArg(), skip.getArg() );
+        return create( AlgCollations.of( collations.map( CollationArg::getColl ) ), children.get( 0 ), skip.getArg(), limit.getArg() );
     }
 
 
