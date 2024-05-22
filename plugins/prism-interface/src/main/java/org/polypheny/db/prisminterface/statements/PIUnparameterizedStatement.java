@@ -59,7 +59,9 @@ public class PIUnparameterizedStatement extends PIStatement {
 
     @Override
     public void close() {
-        statement.close();
+        if ( statement != null ) {
+            statement.close();
+        }
         closeResults();
     }
 
