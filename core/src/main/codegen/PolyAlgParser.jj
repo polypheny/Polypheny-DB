@@ -140,6 +140,7 @@ TOKEN :
 | <RBRACK: "]">
 | <SEP: ",">
 | <EQUALS: "=">
+| <NEQ: "<>"> | <GEQ: ">="> | <LEQ: "<=">
 | <PLUS: "+">
 | <MINUS: "-">
 | <COLON: ":">
@@ -355,7 +356,7 @@ PolyAlgLiteral Literal() :
         |
         t = <SYMBOL>
         |
-        t = <EQUALS> | t = <PLUS> | t = <MINUS>
+        t = <EQUALS> | t = <NEQ> | t = <GEQ> | t = <LEQ> | t = <PLUS> | t = <MINUS>
         |
         t = <DIR> {type = LiteralType.DIRECTION;} | t = <NULL_DIR> {type = LiteralType.NULL_DIRECTION;}
         |
