@@ -119,9 +119,14 @@ public class LogicalLpgModify extends LpgModify<Entity> implements RelationalTra
         PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
 
         args.put( "entity", new EntityArg( entity, Catalog.snapshot(), DataModel.GRAPH ) )
-                .put( "operation", new EnumArg<>( getOperation(), ParamType.MODIFY_OP_ENUM ) )
-                .put( "ids", new ListArg<>( ids, s -> new StringArg( s.value ) ) )
-                .put( "updates", new ListArg<>( operations, RexArg::new ) );
+                .put( "operation", new EnumArg<>( getOperation(), ParamType.MODIFY_OP_ENUM ) );
+        if ( ids != null ) {
+            args.put( "ids", new ListArg<>( ids, s -> new StringArg( s.value ) ) );
+        }
+        if ( operations != null ) {
+            args.put( "updates", new ListArg<>( operations, RexArg::new ) );
+        }
+
         return args;
     }
 
