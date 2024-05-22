@@ -16,16 +16,19 @@
 
 package org.polypheny.db.prisminterface;
 
+import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalUser;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.iface.AuthenticationException;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.prisminterface.PIPlugin.PrismInterface;
@@ -43,6 +46,8 @@ class ClientManager {
     private final Authenticator authenticator;
     private final TransactionManager transactionManager;
     private final MonitoringPage monitoringPage;
+    @Getter
+    private final PIRequestReader reader;
 
 
     ClientManager( PrismInterface prismInterface ) {
@@ -51,6 +56,11 @@ class ClientManager {
         this.transactionManager = prismInterface.getTransactionManager();
         this.monitoringPage = prismInterface.getMonitoringPage();
         monitoringPage.setClientManager( this );
+        try {
+            this.reader = new PIRequestReader( prismInterface.getUniqueName() );
+        } catch ( IOException e ) {
+            throw new GenericRuntimeException( e );
+        }
     }
 
 

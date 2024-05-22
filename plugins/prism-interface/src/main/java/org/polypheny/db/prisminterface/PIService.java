@@ -18,12 +18,12 @@ package org.polypheny.db.prisminterface;
 
 import java.io.EOFException;
 import java.io.IOException;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
-import java.util.Queue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.LinkedBlockingQueue;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.constant.FunctionCategory;
@@ -191,41 +191,26 @@ class PIService {
             return;
         }
 
-        Queue<Request> waiting = new LinkedList<>();
-        CompletableFuture<Request> request = waitForRequest();
-        CompletableFuture<Response> response = null;
+        BlockingQueue<byte[]> waiting = new LinkedBlockingQueue<>();
+        clientManager.getReader().addConnection( con, waiting );
+        CompletableFuture<Response> response;
         Thread handle = null;
         try {
             while ( true ) {
-                if ( response == null ) {
-                    Request req = waiting.poll();
-                    if ( req != null ) {
-                        response = new CompletableFuture<>();
-                        CompletableFuture<Response> finalResponse = response;
-                        handle = new Thread( () -> handleRequest( req, finalResponse ), String.format( "PrismConnection%dRequest%dHandler", connectionId, req.getId() ) );
-                        handle.setUncaughtExceptionHandler( ( t, e ) -> finalResponse.completeExceptionally( e ) );
-                        handle.start();
-                    }
-                }
+                Request req = Request.parseFrom( waiting.take() );
+                response = new CompletableFuture<>();
+                CompletableFuture<Response> finalResponse = response;
+                handle = new Thread( () -> handleRequest( req, finalResponse ), String.format( "PrismConnection%dRequest%dHandler", connectionId, req.getId() ) );
+                handle.setUncaughtExceptionHandler( ( t, e ) -> finalResponse.completeExceptionally( e ) );
+                handle.start();
 
-                // Wait for next event
-                if ( response == null ) {
-                    request.get();
-                } else {
-                    CompletableFuture.anyOf( request, response ).get();
-                }
+                response.get();
 
-                if ( request.isDone() ) {
-                    waiting.add( request.get() );
-                    request = waitForRequest();
-                } else if ( response != null && response.isDone() ) {
-                    handle.join();
-                    handle = null;
-                    Response r = response.get();
-                    if ( r.getTypeCase() == Response.TypeCase.DISCONNECT_RESPONSE ) {
-                        break;
-                    }
-                    response = null;
+                handle.join();
+                handle = null;
+                Response r = response.get();
+                if ( r.getTypeCase() == Response.TypeCase.DISCONNECT_RESPONSE ) {
+                    break;
                 }
             }
         } catch ( ExecutionException e ) {

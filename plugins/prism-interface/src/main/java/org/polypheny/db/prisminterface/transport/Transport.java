@@ -18,6 +18,7 @@ package org.polypheny.db.prisminterface.transport;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.nio.channels.SelectableChannel;
 import java.util.Optional;
 
 public interface Transport extends Closeable {
@@ -27,6 +28,10 @@ public interface Transport extends Closeable {
     void sendMessage( byte[] msg ) throws IOException;
 
     byte[] receiveMessage() throws IOException;
+
+    Optional<byte[]> tryReceiveMessage() throws IOException;
+
+    SelectableChannel getChannel();
 
     void close();
 
