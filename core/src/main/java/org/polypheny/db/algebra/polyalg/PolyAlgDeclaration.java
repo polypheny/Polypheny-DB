@@ -96,6 +96,7 @@ public class PolyAlgDeclaration {
         ImmutableList.Builder<Parameter> bPos = ImmutableList.builder();
         ImmutableList.Builder<Parameter> bKey = ImmutableList.builder();
         for ( Parameter p : params ) {
+            assert p.hasCompatibleSimpleType();
             assert p.hasValidDefault();
 
             bMap.put( p.name, p );
@@ -167,7 +168,7 @@ public class PolyAlgDeclaration {
             if ( p.requiresAlias && !p.tags.contains( ParamTag.ALIAS ) ) {
                 return false;
             }
-            if (p.tags.contains( ParamTag.HIDE_TRIVIAL ) && ! p.tags.contains( ParamTag.ALIAS ) ) {
+            if ( p.tags.contains( ParamTag.HIDE_TRIVIAL ) && !p.tags.contains( ParamTag.ALIAS ) ) {
                 return false;
             }
         }
@@ -221,7 +222,7 @@ public class PolyAlgDeclaration {
             posArr.add( p.serialize( mapper ) );
         }
         if ( !posArr.isEmpty() && canUnpackValues() ) {
-            ((ObjectNode) posArr.get( 0 )).put( "canUnpackValues", true);
+            ((ObjectNode) posArr.get( 0 )).put( "canUnpackValues", true );
         }
         node.set( "posParams", posArr );
 
@@ -257,6 +258,7 @@ public class PolyAlgDeclaration {
         private final ImmutableSet<String> aliases;
         @Singular
         private final ImmutableSet<ParamTag> tags;
+        private final SimpleType simpleType;
         @NonNull
         private final ParamType type;
         private final int multiValued; // 0: not multivalued (default). otherwise: nesting depth of lists
@@ -283,6 +285,14 @@ public class PolyAlgDeclaration {
         public boolean hasValidDefault() {
             return isPositional() || isCompatible( defaultValue.getType() );
         }
+
+
+        public boolean hasCompatibleSimpleType() {
+            return this.simpleType == null ||
+                    (this.simpleType.isCompatible( type ) &&
+                            !(this.isPositional() && this.simpleType == SimpleType.HIDDEN));
+        }
+
 
         public boolean isMultiValued() {
             return multiValued > 0;
@@ -314,6 +324,9 @@ public class PolyAlgDeclaration {
             node.set( "tags", tagsArr );
 
             node.put( "type", type.name() );
+            if ( simpleType != null ) {
+                node.put( "simpleType", simpleType.name() );
+            }
             node.put( "multiValued", multiValued );
             node.put( "requiresAlias", requiresAlias );
             if ( !isPositional() ) {
@@ -409,18 +422,13 @@ public class PolyAlgDeclaration {
         ALLOCATION,
 
         /**
-         * Operator is irrelevant for the average user.
+         * Operator should be hidden in simple mode.
          */
         ADVANCED
     }
 
 
     public enum ParamTag {
-
-        /**
-         * Only show parameter in advanced mode.
-         */
-        ADVANCED,
 
         /**
          * Parameter allows for a (possibly optional) alias (not to be confused with a parameter name alias)
@@ -436,6 +444,37 @@ public class PolyAlgDeclaration {
          * For projects and some other operators it is useful to let the user hide any trivial arguments in the UI
          */
         HIDE_TRIVIAL
+    }
+
+
+    public enum SimpleType {
+        HIDDEN, // do not show parameter in simple mode and use default value instead
+        REX_PREDICATE( ParamType.REX ),
+        REX_UINT( ParamType.REX ), // integer >= 0
+        SIMPLE_COLLATION( ParamType.COLLATION ),
+        SIMPLE_AGG( ParamType.AGGREGATE );
+
+        private final Set<ParamType> compatible; // empty: compatible with all
+
+
+        SimpleType() {
+            this( Set.of() );
+        }
+
+
+        SimpleType( ParamType compatible ) {
+            this( Set.of( compatible ) );
+        }
+
+
+        SimpleType( Set<ParamType> compatible ) {
+            this.compatible = compatible;
+        }
+
+
+        public boolean isCompatible( ParamType type ) {
+            return compatible.isEmpty() || compatible.contains( type );
+        }
     }
 
 }

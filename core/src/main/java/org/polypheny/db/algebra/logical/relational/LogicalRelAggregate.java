@@ -113,6 +113,9 @@ public final class LogicalRelAggregate extends Aggregate implements RelAlg {
                         g.stream().map( FieldArg::getField ).toList()
                 )
         ).toList();
+        if ( groupSets.isEmpty() ) {
+            groupSets = null;
+        }
 
         return create( children.get( 0 ), ImmutableBitSet.of( group.map( FieldArg::getField ) ), groupSets, aggs.map( AggArg::getAgg ) );
     }

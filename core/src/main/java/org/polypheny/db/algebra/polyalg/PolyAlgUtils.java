@@ -188,7 +188,7 @@ public class PolyAlgUtils {
         List<List<T>> outerList = new ArrayList<>();
         for ( List<T> list : outerListArg.map( ListArg::getArgs ) ) {
             if ( list.isEmpty() ) {
-                outerList.add( List.of() );
+                // empty inner lists are not supported
             } else {
                 outerList.add( list );
             }
