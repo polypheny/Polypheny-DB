@@ -1461,14 +1461,6 @@ public class RexBuilder {
     }
 
 
-    public RexCall makeLabelFilter( String label ) {
-        return new RexCall(
-                typeFactory.createPolyType( PolyType.BOOLEAN ),
-                OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_GRAPH_ONLY_LABEL ),
-                List.of( makeInputRef( typeFactory.createPolyType( PolyType.GRAPH ), 0 ), makeLiteral( label ) ) );
-    }
-
-
     public RexCall makeToJson( RexNode node ) {
         return new RexCall(
                 typeFactory.createPolyType( PolyType.VARCHAR, 2024 ),
