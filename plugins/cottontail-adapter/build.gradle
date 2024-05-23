@@ -10,18 +10,10 @@ dependencies {
     compileOnly project(":core")
     compileOnly project(":plugins:sql-language")
 
-    implementation(group: "io.grpc", name: "grpc-all", version: cottontaildb_grpc_version) {
-        exclude group: "junit"
-    }
+    implementation group: "io.grpc", name: "grpc-all", version: cottontaildb_grpc_version
     // Cottontail DB
-    implementation(group: "org.vitrivr", name: "cottontaildb", version: cottontaildb_version) {
-        exclude group: "junit"
-    }
-    implementation(group: "org.vitrivr", name: "cottontaildb-proto", version: cottontaildb_driver_version) {
-        exclude group: "junit"
-    }
-
-    implementation group: "org.slf4j", name: "log4j-over-slf4j", version: slf4j_api_version
+    implementation(group: "org.vitrivr", name: "cottontaildb", version: cottontaildb_version)
+    implementation group: "org.vitrivr", name: "cottontaildb-proto", version: cottontaildb_driver_version
 
 
     // --- Test Compile ---
@@ -29,8 +21,6 @@ dependencies {
     testImplementation project(path: ":dbms")
     testImplementation project(path: ":core", configuration: "tests")
     testImplementation project(path: ":core")
-
-    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter', version: junit_jupiter_version
 }
 
 compileKotlin {

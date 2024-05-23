@@ -16,7 +16,6 @@
 
 package org.polypheny.db;
 
-import static org.reflections.Reflections.log;
 
 import com.google.common.collect.Lists;
 import java.util.ArrayList;
@@ -26,6 +25,7 @@ import java.util.function.Function;
 import java.util.stream.StreamSupport;
 import javax.annotation.Nullable;
 import lombok.Value;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.StopWatch;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -36,6 +36,7 @@ import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.entity.PolyValue;
 
 
+@Slf4j
 @Value
 public class ResultIterator implements AutoCloseable {
 

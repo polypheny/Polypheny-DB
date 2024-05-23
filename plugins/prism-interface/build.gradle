@@ -32,11 +32,10 @@ dependencies {
 
 
     // --- Test Compile ---
-    testImplementation project(path: ':dbms', configuration: 'test')
-    testImplementation project(path: ':core', configuration: 'tests')
-    testImplementation project(path: ':core')
+    testRuntimeOnly project(path: ':dbms', configuration: 'test')
+    testRuntimeOnly project(path: ':core', configuration: 'tests')
+    testRuntimeOnly project(path: ':core')
     testRuntimeOnly project(path: ':dbms')
-    //testImplementation project(path: ':plugins:mql-language')
 
 }
 

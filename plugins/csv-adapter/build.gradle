@@ -15,9 +15,6 @@ dependencies {
     testImplementation project(path: ":core", configuration: "tests")
     testImplementation project(path: ":core")
     testImplementation project(path: ":plugins:sql-language")
-
-    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter', version: junit_jupiter_version
-    testImplementation group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version  // BSD 3-clause
 }
 
 

@@ -18,6 +18,7 @@ buildscript {
 plugins {
     id "java"
     id "org.jetbrains.gradle.plugin.idea-ext" version "1.1.7"
+    id 'nebula.lint' version "$nebula_lint_version"
 }
 
 
@@ -50,6 +51,7 @@ allprojects {
     apply plugin: "io.freefair.lombok"
     apply plugin: "com.adarshr.test-logger"
     apply plugin: "com.jaredsburrows.license"
+    apply plugin: "nebula.lint"
 
     compileJava.options.encoding = "UTF-8"
     compileTestJava.options.encoding = "UTF-8"
@@ -96,6 +98,12 @@ allprojects {
         options.memberLevel = JavadocMemberLevel.PRIVATE
     }
 
+    gradleLint.rules = ['all-dependency', 'unused-dependency']
+
+    gradleLint {
+        alwaysRun = false
+    }
+
     String storeName = System.getProperty("store.default") != null ? System.getProperty("store.default") : 'hsqldb'
 
     tasks.register('integrationTests', Test) {
@@ -135,6 +143,12 @@ allprojects {
             exclude group: "org.slf4j"
         }
         annotationProcessor group: 'org.pf4j', name: 'pf4j', version: pf4j_version
+
+        implementation group: "org.slf4j", name: "slf4j-api", version: slf4j_api_version  // MIT
+        implementation group: "org.apache.logging.log4j", name: "log4j-core", version: log4j_core_version  // Apache 2.0
+        implementation group: "org.apache.logging.log4j", name: "log4j-api", version: log4j_api_version  // Apache 2.0
+        implementation group: "org.apache.logging.log4j", name: "log4j-slf4j2-impl", version: log4j_slf4j_impl_version  // Apache 2.0
+
 
         testCompileOnly(group: 'org.pf4j', name: 'pf4j', version: pf4j_version) {
             exclude group: "org.slf4j"

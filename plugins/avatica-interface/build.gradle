@@ -16,9 +16,7 @@ dependencies {
 
     ////// APACHE CALCITE AVATICA
     implementation group: "org.polypheny.avatica", name: "avatica-core", version: avatica_core_version
-    implementation(group: "org.polypheny.avatica", name: "avatica-server", version: avatica_server_version) {
-        exclude(group: "org.slf4j")
-    }  // Apache 2.0
+    implementation group: "org.polypheny.avatica", name: "avatica-server", version: avatica_server_version  // Apache 2.0
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")

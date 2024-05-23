@@ -36,18 +36,11 @@ dependencies {
     implementation project(":webui")
     implementation project(":monitoring")
 
-    ////// Logging
-    implementation group: "org.apache.logging.log4j", name: "log4j-core", version: log4j_core_version  // Apache 2.0
-    implementation group: "org.apache.logging.log4j", name: "log4j-api", version: log4j_api_version  // Apache 2.0
-    implementation group: "org.apache.logging.log4j", name: "log4j-slf4j-impl", version: log4j_slf4j_impl_version  // Apache 2.0
-
     ////// SLF4J
-    implementation group: "org.pf4j", name: "pf4j", version: pf4j_version  // Apache 2.0
     implementation group: "io.javalin", name: "javalin", version: javalin_version  // Apache 2.0
 
     implementation group: "com.github.rvesse", name: "airline", version: airline_version  // Apache 2.0
 
-    implementation group: "com.j256.simplemagic", name: "simplemagic", version: simplemagic_version
     implementation group: "org.jetbrains", name: "annotations", version: jetbrains_annotations_version  // ISC
 
     // workaround to fix cottontail todo remove: when grpc-all is same in cottontail and for plugin
@@ -55,19 +48,11 @@ dependencies {
         exclude group: "junit"
     } // Apache 2.0
 
-    implementation group: "org.ow2.asm", name: "asm", version: asm_version  // Apache 2.0
-    implementation group: "org.ow2.asm", name: "asm-tree", version: asm_version  // Apache 2.0
-    implementation group: "org.ow2.asm", name: "asm-commons", version: asm_version  // Apache 2.0
-
-
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
 
     // Workaround so org.polypheny.db.docker gets the right protobuf during testing
     testImplementation group: "com.google.protobuf", name: "protobuf-java", version: protobuf_version // BSD 3-clause
-
-    testImplementation group: "com.fasterxml.jackson.core", name: "jackson-core", version: jackson_core_version  // Apache 2.0
-    testImplementation group: "com.fasterxml.jackson.core", name: "jackson-databind", version: jackson_databind_version  // Apache 2.0
 
     testImplementation(group: "org.polypheny", name: "polypheny-jdbc-driver", version: polypheny_jdbc_driver_version) {
         exclude(group: "com.fasterxml.jackson.core")
@@ -76,11 +61,6 @@ dependencies {
 
     testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter', version: junit_jupiter_version
     testRuntimeOnly(group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: junit_jupiter_version)
-    testImplementation group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version  // BSD 3-clause
-
-    testImplementation group: "com.konghq", name: "unirest-java", version: unirest_version // MIT
-
-    implementation group: "org.mongodb", name: "mongodb-driver-sync", version: mongodb_driver_sync_version  // Apache 2.0
 }
 
 
@@ -136,10 +116,6 @@ licensee {
     allowDependency('javax.servlet', 'javax.servlet-api', '3.1.0') {
         because 'Servlet-api.jar and javax.servlet-*.jar are under the CDDL license, the original source code for this can be found at http://www.eclipse.org/jetty/downloads.php'
     }
-
-    allowDependency('org.ow2.asm', 'asm', '9.6') { because 'BSD 3-Clause' }
-    allowDependency('org.ow2.asm', 'asm-tree', '9.6') { because 'BSD 3-Clause' }
-    allowDependency('org.ow2.asm', 'asm-commons', '9.6') { because 'BSD 3-Clause' }
 
     // Glassfish
     allowDependency('org.glassfish.hk2.external', 'jakarta.inject', '2.6.1') { because 'Eclipse Public License v. 2.0' }

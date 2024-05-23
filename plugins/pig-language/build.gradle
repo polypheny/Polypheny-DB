@@ -29,10 +29,6 @@ dependencies {
     testImplementation project(path: ":dbms", configuration: "test")
     testImplementation project(path: ":dbms")
 
-    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter', version: junit_jupiter_version
-    testImplementation group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version  // BSD 3-clause
-
-    implementation group: "org.eclipse.jetty.websocket", name: "websocket-api", version: jetty_websocket_api_version
 }
 
 /**

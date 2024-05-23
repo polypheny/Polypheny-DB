@@ -34,6 +34,7 @@
 package org.polypheny.db.sql.sql2alg;
 
 
+import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
@@ -62,7 +63,6 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import javax.annotation.Nonnull;
-import kotlin.text.Charsets;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.calcite.avatica.util.Spaces;
