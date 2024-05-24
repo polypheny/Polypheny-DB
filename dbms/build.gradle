@@ -288,22 +288,21 @@ shadowDistZip {
     dependsOn(jar)
 }
 
-def getCurrentBranch() {
-    def branch = ""
-    def proc = "git rev-parse --abbrev-ref HEAD".execute()
-    proc.in.eachLine { line -> branch = line }
+def getLastLine(String cmd) {
+    def output = ""
+    def proc = cmd.execute()
+    proc.in.eachLine { line -> output = line }
     proc.err.eachLine { line -> println line }
     proc.waitFor()
-    branch
+    output
+}
+
+def getCurrentBranch() {
+    getLastLine("git rev-parse --abbrev-ref HEAD")
 }
 
 def getCurrentHash() {
-    def hash = ""
-    def proc = "git rev-parse --short HEAD".execute()
-    proc.in.eachLine { line -> hash = line }
-    proc.err.eachLine { line -> println line }
-    proc.waitFor()
-    hash
+    getLastLine("git rev-parse --short HEAD")
 }
 
 task createProperties() {
