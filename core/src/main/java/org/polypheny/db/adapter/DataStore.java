@@ -39,8 +39,8 @@ public abstract class DataStore<S extends AdapterCatalog> extends Adapter<S> imp
     protected final transient Catalog catalog = Catalog.getInstance();
 
 
-    public DataStore( final long adapterId, final String uniqueName, final Map<String, String> settings, final boolean persistent, S storeCatalog ) {
-        super( adapterId, uniqueName, settings, storeCatalog );
+    public DataStore( final long adapterId, final String uniqueName, final Map<String, String> settings, final DeployMode mode, final boolean persistent, S storeCatalog ) {
+        super( adapterId, uniqueName, settings, mode, storeCatalog );
         this.persistent = persistent;
 
         informationPage.setLabel( "Stores" );

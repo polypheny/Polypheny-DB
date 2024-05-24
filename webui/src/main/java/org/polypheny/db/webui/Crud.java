@@ -2140,6 +2140,8 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             }
         }
 
+        settings.put( "mode", a.mode.toString() );
+
         String query = String.format( "ALTER ADAPTERS ADD \"%s\" USING '%s' AS '%s' WITH '%s'", a.name, a.adapterName, a.type, Crud.gson.toJson( settings ) );
         QueryLanguage language = QueryLanguage.from( "sql" );
         Result<?, ?> res = LanguageCrud.anyQueryResult(

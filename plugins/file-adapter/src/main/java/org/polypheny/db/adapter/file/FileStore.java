@@ -102,8 +102,8 @@ public class FileStore extends DataStore<RelAdapterCatalog> {
     private final List<PolyType> unsupportedTypes = ImmutableList.of( PolyType.ARRAY, PolyType.MAP );
 
 
-    public FileStore( final long storeId, final String uniqueName, final Map<String, String> settings ) {
-        super( storeId, uniqueName, settings, true, new RelAdapterCatalog( storeId ) );
+    public FileStore( final long storeId, final String uniqueName, final Map<String, String> settings, final DeployMode mode ) {
+        super( storeId, uniqueName, settings, mode, true, new RelAdapterCatalog( storeId ) );
         PolyphenyHomeDirManager fileManager = PolyphenyHomeDirManager.getInstance();
         File adapterRoot = fileManager.registerNewFolder( "data/file-store" );
 

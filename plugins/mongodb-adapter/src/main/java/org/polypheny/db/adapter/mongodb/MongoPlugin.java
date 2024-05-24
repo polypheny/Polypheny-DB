@@ -139,8 +139,8 @@ public class MongoPlugin extends PolyPlugin {
         private final List<PolyType> unsupportedTypes = ImmutableList.of();
 
 
-        public MongoStore( final long adapterId, final String uniqueName, final Map<String, String> settings ) {
-            super( adapterId, uniqueName, settings, true, new DocAdapterCatalog( adapterId ) );
+        public MongoStore( final long adapterId, final String uniqueName, final Map<String, String> settings, final DeployMode mode ) {
+            super( adapterId, uniqueName, settings, mode, true, new DocAdapterCatalog( adapterId ) );
 
             if ( deployMode == DeployMode.DOCKER ) {
                 if ( settings.getOrDefault( "deploymentId", "" ).isEmpty() ) {

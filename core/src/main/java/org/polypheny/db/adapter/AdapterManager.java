@@ -61,7 +61,7 @@ public class AdapterManager {
     }
 
 
-    public static long addAdapterTemplate( Class<? extends Adapter<?>> clazz, String adapterName, Function4<Long, String, Map<String, String>, Adapter<?>> deployer ) {
+    public static long addAdapterTemplate( Class<? extends Adapter<?>> clazz, String adapterName, Function5<Long, String, Map<String, String>, DeployMode, Adapter<?>> deployer ) {
         List<AbstractAdapterSetting> settings = AdapterTemplate.getAllSettings( clazz );
         AdapterProperties properties = clazz.getAnnotation( AdapterProperties.class );
         return Catalog.getInstance().createAdapterTemplate( clazz, adapterName, properties.description(), List.of( properties.usedModes() ), settings, deployer );
@@ -175,15 +175,12 @@ public class AdapterManager {
         if ( getAdapters().containsKey( uniqueName ) ) {
             throw new GenericRuntimeException( "There is already an adapter with this unique name" );
         }
-        if ( !settings.containsKey( "mode" ) ) {
-            throw new GenericRuntimeException( "The adapter does not specify a mode which is necessary." );
-        }
 
         AdapterTemplate adapterTemplate = AdapterTemplate.fromString( adapterName, adapterType );
 
         long adapterId = Catalog.getInstance().createAdapter( uniqueName, adapterName, adapterType, settings, mode );
         try {
-            Adapter<?> adapter = adapterTemplate.getDeployer().get( adapterId, uniqueName, settings );
+            Adapter<?> adapter = adapterTemplate.getDeployer().get( adapterId, uniqueName, settings, mode );
             adapterByName.put( adapter.getUniqueName(), adapter );
             adapterById.put( adapter.getAdapterId(), adapter );
             return adapter;
@@ -227,20 +224,15 @@ public class AdapterManager {
      * Restores adapters from catalog
      */
     public void restoreAdapters( List<LogicalAdapter> adapters ) {
-        try {
-            for ( LogicalAdapter adapter : adapters ) {
-                Constructor<?> ctor = AdapterTemplate.fromString( adapter.adapterName, adapter.type ).getClazz().getConstructor( long.class, String.class, Map.class );
-                Adapter<?> instance = (Adapter<?>) ctor.newInstance( adapter.id, adapter.uniqueName, adapter.settings );
-                adapterByName.put( instance.getUniqueName(), instance );
-                adapterById.put( instance.getAdapterId(), instance );
-            }
-        } catch ( NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException e ) {
-            throw new GenericRuntimeException( "Something went wrong while restoring adapters from the catalog.", e );
+        for ( LogicalAdapter adapter : adapters ) {
+            Adapter<?> instance = AdapterTemplate.fromString( adapter.adapterName, adapter.type ).getDeployer().get( adapter.id, adapter.uniqueName, adapter.settings, adapter.mode );
+            adapterByName.put( instance.getUniqueName(), instance );
+            adapterById.put( instance.getAdapterId(), instance );
         }
     }
 
 
-    public record AdapterInformation(String name, String description, AdapterType type, List<AbstractAdapterSetting> settings, List<DeployMode> modes) {
+    public record AdapterInformation( String name, String description, AdapterType type, List<AbstractAdapterSetting> settings, List<DeployMode> modes ) {
 
         public static JsonSerializer<AdapterInformation> getSerializer() {
             return ( src, typeOfSrc, context ) -> {
@@ -257,9 +249,9 @@ public class AdapterManager {
 
 
     @FunctionalInterface
-    public interface Function4<P1, P2, P3, R> {
+    public interface Function5<P1, P2, P3, P4, R> {
 
-        R get( P1 p1, P2 p2, P3 p3 );
+        R get( P1 p1, P2 p2, P3 p3, P4 p4 );
 
     }
 

@@ -81,8 +81,8 @@ public class Qfs extends DataSource<RelAdapterCatalog> {
     private QfsSchema currentNamespace;
 
 
-    public Qfs( long adapterId, String uniqueName, Map<String, String> settings ) {
-        super( adapterId, uniqueName, settings, true, new RelAdapterCatalog( adapterId ) );
+    public Qfs( long adapterId, String uniqueName, Map<String, String> settings, DeployMode mode) {
+        super( adapterId, uniqueName, settings, mode, true, new RelAdapterCatalog( adapterId ) );
         init( settings );
         registerInformationPage( uniqueName );
         this.delegate = new RelationalScanDelegate( this, adapterCatalog );

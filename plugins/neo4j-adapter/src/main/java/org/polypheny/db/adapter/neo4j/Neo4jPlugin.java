@@ -158,8 +158,8 @@ public class Neo4jPlugin extends PolyPlugin {
         private String host;
 
 
-        public Neo4jStore( final long adapterId, final String uniqueName, final Map<String, String> adapterSettings ) {
-            super( adapterId, uniqueName, adapterSettings, true, new GraphAdapterCatalog( adapterId ) );
+        public Neo4jStore( final long adapterId, final String uniqueName, final Map<String, String> adapterSettings, DeployMode mode ) {
+            super( adapterId, uniqueName, adapterSettings, mode, true, new GraphAdapterCatalog( adapterId ) );
 
             this.user = "neo4j";
             if ( !settings.containsKey( "password" ) ) {

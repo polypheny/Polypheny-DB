@@ -33,8 +33,8 @@ public abstract class DataSource<S extends AdapterCatalog> extends Adapter<S> im
     private final boolean dataReadOnly;
 
 
-    protected DataSource( final long adapterId, final String uniqueName, final Map<String, String> settings, boolean dataReadOnly, S catalog ) {
-        super( adapterId, uniqueName, settings, catalog );
+    protected DataSource( final long adapterId, final String uniqueName, final Map<String, String> settings, final DeployMode mode, boolean dataReadOnly, S catalog ) {
+        super( adapterId, uniqueName, settings, mode, catalog );
         this.dataReadOnly = dataReadOnly;
 
         informationPage.setLabel( "Sources" );

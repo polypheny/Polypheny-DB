@@ -26,7 +26,7 @@ import org.polypheny.db.adapter.AbstractAdapterSetting;
 import org.polypheny.db.adapter.AbstractAdapterSettingList;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
-import org.polypheny.db.adapter.AdapterManager.Function4;
+import org.polypheny.db.adapter.AdapterManager.Function5;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.DeployMode.DeploySetting;
@@ -41,14 +41,14 @@ public class AdapterTemplate {
     public Class<?> clazz;
     public String adapterName;
     public AdapterType adapterType;
-    Function4<Long, String, Map<String, String>, Adapter<?>> deployer;
+    Function5<Long, String, Map<String, String>, DeployMode, Adapter<?>> deployer;
     public List<AbstractAdapterSetting> settings;
     public List<DeployMode> modes;
     public long id;
     public String description;
 
 
-    public AdapterTemplate( long id, Class<?> clazz, String adapterName, List<AbstractAdapterSetting> settings, List<DeployMode> modes, String description, Function4<Long, String, Map<String, String>, Adapter<?>> deployer ) {
+    public AdapterTemplate( long id, Class<?> clazz, String adapterName, List<AbstractAdapterSetting> settings, List<DeployMode> modes, String description, Function5<Long, String, Map<String, String>, DeployMode, Adapter<?>> deployer ) {
         this.id = id;
         this.adapterName = adapterName;
         this.description = description;
