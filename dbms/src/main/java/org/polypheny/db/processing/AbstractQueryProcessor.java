@@ -256,15 +256,15 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 AlgOptUtil.dumpPlan( "Logical Query Plan", logicalRoot.alg, ExplainFormat.JSON, ExplainLevel.ALL_ATTRIBUTES ) );
         queryAnalyzer.registerInformation( informationQueryPlan );
 
-        testPolyAlgParserDuringDevelopment(logicalRoot.alg); // TODO: Delete as soon as PolyAlgParser is working
+
+        attachPolyAlgPlan(logicalRoot.alg);
+        //testPolyAlgParserDuringDevelopment(logicalRoot.alg); // TODO: Delete as soon as PolyAlgParser is working
     }
 
     private void testPolyAlgParserDuringDevelopment(AlgNode alg) {
         AlgDataTypeFactory factory = AlgDataTypeFactory.DEFAULT;
         AlgCluster cluster = AlgCluster.create( new VolcanoPlanner(), new RexBuilder( factory ), null, null );
         Snapshot snapshot = Catalog.snapshot();
-
-        attachPolyAlgPlan(alg);
 
         StringBuilder sb = new StringBuilder();
         alg.buildPolyAlgebra( sb, "" );
@@ -304,12 +304,10 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     }
 
     private void attachPolyAlgPlan(AlgNode alg) {
-        System.out.println( "===== Logical Query Plan as JSON =====" );
         ObjectMapper objectMapper = new ObjectMapper();
         ObjectNode objectNode = alg.serializePolyAlgebra(objectMapper);
         try {
             String jsonString = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(objectNode);
-            System.out.println(jsonString);
 
             InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
             InformationPage page = new InformationPage( "PolyAlg Query Plan" ).setLabel( "plans" );

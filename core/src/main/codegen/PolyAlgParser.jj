@@ -394,14 +394,9 @@ PolyValue PolyNode() :
     <POLY_NODE> <LPAR>
         [t = <IDENTIFIER> {name = new PolyString( t.image );}]
 
-        [<COLON>
+        (<COLON>
             t = <IDENTIFIER> {labels.add(new PolyString( t.image ));}
-            |
-            (<LBRACK>
-                t = <IDENTIFIER> {labels.add(new PolyString( t.image ));}
-                (<SEP> t = <IDENTIFIER> {labels.add(new PolyString( t.image ));})*
-            <RBRACK>)
-        ]
+        )*
 
         [<LCURL>[
                 key = <IDENTIFIER> <EQUALS> (

@@ -25,9 +25,11 @@ import lombok.NonNull;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.ParamType;
 import org.polypheny.db.catalog.entity.Entity;
+import org.polypheny.db.catalog.entity.logical.LogicalGraph.SubstitutionGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
+import org.polypheny.db.type.entity.PolyString;
 
 public class EntityArg implements PolyAlgArg {
 
@@ -46,8 +48,12 @@ public class EntityArg implements PolyAlgArg {
         this.entity = entity;
 
         if ( model == DataModel.GRAPH || entity.dataModel == DataModel.GRAPH ) {
-            // origin or target data model is graph -> only namespaceName is relevant
-            this.entityName = null;
+            // origin or target data model is graph
+            if ( entity instanceof SubstitutionGraph sub && !sub.names.isEmpty() ) {
+                this.entityName = String.join( ".", sub.names.stream().map( PolyString::toString ).toList() );
+            } else {
+                this.entityName = null;
+            }
         } else {
             this.entityName = entity.getName();
         }

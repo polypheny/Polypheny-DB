@@ -2973,6 +2973,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             AlgNode node = PolyPlanBuilder.buildFromPolyAlg( request.polyAlg ).alg;
             ctx.json( node.serializePolyAlgebra( new ObjectMapper() ) );
         } catch ( Exception e ) {
+            e.printStackTrace(); // TODO: remove after when PolyAlg is finished
             ctx.json( Map.of( "errorMsg", e.getMessage() ) );
             ctx.status( 400 );
         }

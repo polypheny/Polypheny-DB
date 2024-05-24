@@ -549,10 +549,7 @@ public class PolyAlgUtils {
 
         private String visitGraphLabelProps( PolyList<PolyString> lbls, PolyDictionary props, PolyString varName ) {
             String name = varName.isNull() ? "" : varName.toString();
-            String labels = lbls.toString();
-            if ( lbls.size() < 2 ) {
-                labels = labels.substring( 1, labels.length() - 1 );
-            }
+            String labels = String.join(":", lbls.stream().map( PolyString::toString ).toList());
             String properties = props.map.toString();
             if ( properties.equals( "{}" ) ) {
                 properties = "";

@@ -19,6 +19,7 @@ package org.polypheny.db.algebra.polyalg.parser;
 import com.google.common.collect.ImmutableList;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -161,7 +162,7 @@ public class PolyAlgToAlgConverter {
                     continue;
                 } else {
                     p = decl.getPos( i ); // TODO: handle invalid arguments
-                    if (p == null) {
+                    if ( p == null ) {
                         throw new GenericRuntimeException( "Too many positional arguments were given for " + decl.opName );
                     }
                 }
@@ -169,7 +170,7 @@ public class PolyAlgToAlgConverter {
                 noMorePosArgs = true;
 
                 p = decl.getParam( name );
-                if (p == null) {
+                if ( p == null ) {
                     throw new GenericRuntimeException( "Unexpected keyword argument '" + name + "' for " + decl.opName );
                 }
             }
@@ -257,7 +258,7 @@ public class PolyAlgToAlgConverter {
             }
             case AGGREGATE -> new AggArg( convertAggCall( exp, alias, ctx ) );
             case LAX_AGGREGATE -> new LaxAggArg( convertLaxAggCall( exp, alias, ctx ) );
-            case ENTITY -> new EntityArg( convertEntity( exp ), snapshot, ctx.dataModel );
+            case ENTITY -> new EntityArg( convertEntity( exp, ctx ), snapshot, ctx.dataModel );
             case JOIN_TYPE_ENUM -> new EnumArg<>( exp.toEnum( JoinAlgType.class ), pType );
             case SEMI_JOIN_TYPE_ENUM -> new EnumArg<>( exp.toEnum( SemiJoinType.class ), pType );
             case MODIFY_OP_ENUM -> new EnumArg<>( exp.toEnum( Modify.Operation.class ), pType );
@@ -361,8 +362,8 @@ public class PolyAlgToAlgConverter {
     }
 
 
-    private Entity convertEntity( PolyAlgExpression exp ) {
-        String[] names = exp.toIdentifier().split( "\\.", 3 );
+    private Entity convertEntity( PolyAlgExpression exp, Context ctx ) {
+        String[] names = exp.toIdentifier().split( "\\.", 2 );
         GenericRuntimeException exception = new GenericRuntimeException( "Invalid entity name: " + String.join( ".", names ) );
         String namespaceName;
         String entityName = null;
@@ -374,12 +375,14 @@ public class PolyAlgToAlgConverter {
         } else {
             throw exception;
         }
-
         LogicalNamespace ns = snapshot.getNamespace( namespaceName ).orElseThrow( () -> new GenericRuntimeException( "no namespace named " + namespaceName ) );
         return switch ( ns.dataModel ) {
             case RELATIONAL -> {
                 if ( entityName == null ) {
                     yield new SubstitutionGraph( ns.id, "sub", false, ns.caseSensitive, List.of() );
+                } else if ( ctx.dataModel == DataModel.GRAPH ) {
+                    List<String> subNames = Arrays.asList( entityName.split( "\\." ) );
+                    yield new SubstitutionGraph( ns.id, "sub", false, ns.caseSensitive, subNames.stream().map( PolyString::of ).toList() );
                 }
                 yield snapshot.rel().getTable( ns.id, entityName ).orElseThrow( () -> exception );
             }
