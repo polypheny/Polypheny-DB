@@ -160,12 +160,14 @@ allprojects {
         useJUnitPlatform()
     }
 
+
     licenseReport {
         generateJsonReport = true
         generateCsvReport = false
         generateHtmlReport = false
         generateTextReport = false
     }
+
 
     idea {
         module {

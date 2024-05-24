@@ -130,5 +130,6 @@ artifacts {
 }
 
 licensee {
+    allow('MIT')
     allow('Apache-2.0')
 }

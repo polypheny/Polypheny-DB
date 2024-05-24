@@ -40,7 +40,6 @@ include 'plugins:cypher-language'
 include 'plugins:jdbc-adapter-framework'
 
 // interface plugins
-include 'plugins:avatica-interface'
 include 'plugins:rest-interface'
 include 'plugins:http-interface'
 include 'plugins:prism-interface'
