@@ -48,7 +48,7 @@ public class AdapterModel extends IdEntity {
     public AdapterType type;
 
     @JsonProperty
-    public Map<String, AdapterSettingValueModel> settings;
+    public Map<String, String> settings;
 
     @JsonProperty
     public DeployMode mode;
@@ -62,7 +62,7 @@ public class AdapterModel extends IdEntity {
             @JsonProperty("name") @Nullable String name,
             @JsonProperty("adapterName") String adapterName,
             @JsonProperty("type") AdapterType type,
-            @JsonProperty("settings") Map<String, AdapterSettingValueModel> settings,
+            @JsonProperty("settings") Map<String, String> settings,
             @JsonProperty("mode") DeployMode mode,
             @JsonProperty("indexMethods") List<IndexMethodModel> indexMethods ) {
         super( id, name );
@@ -76,7 +76,7 @@ public class AdapterModel extends IdEntity {
 
     @Nullable
     public static AdapterModel from( LogicalAdapter adapter ) {
-        Map<String, AdapterSettingValueModel> settings = adapter.settings.entrySet().stream().collect( Collectors.toMap( Entry::getKey, s -> AdapterSettingValueModel.from( s.getKey(), s.getValue() ) ) );
+        Map<String, String> settings = adapter.settings;
 
         Optional<Adapter<?>> a = AdapterManager.getInstance().getAdapter( adapter.id );
         return a.map( dataStore -> new AdapterModel(
@@ -87,16 +87,6 @@ public class AdapterModel extends IdEntity {
                 settings,
                 adapter.mode,
                 adapter.type == AdapterType.STORE ? ((DataStore<?>) dataStore).getAvailableIndexMethods() : List.of() ) ).orElse( null );
-
-    }
-
-
-    public record AdapterSettingValueModel(@JsonProperty("name") String name, @JsonProperty("value") String value) {
-
-
-        public static AdapterSettingValueModel from( String name, String value ) {
-            return new AdapterSettingValueModel( name, value );
-        }
 
     }
 
