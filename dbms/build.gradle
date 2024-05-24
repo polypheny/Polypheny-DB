@@ -311,8 +311,8 @@ task createProperties() {
         new File("$buildDir/version.properties").withWriter { w ->
             Properties p = new Properties()
             p['version'] = version
-            p['branch'] = getCurrentBranch()
-            p['hash'] = getCurrentHash()
+            p['branch'] = System.getenv("GIT_BRANCH") ?: getCurrentBranch()
+            p['hash'] = System.getenv("GIT_HASH") ?: getCurrentHash()
             p.store w, null
         }
         // copy needed, otherwise the bean VersionController can't load the file at startup when running complete-app tests.
