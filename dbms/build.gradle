@@ -61,6 +61,9 @@ dependencies {
 
     testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter', version: junit_jupiter_version
     testRuntimeOnly(group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: junit_jupiter_version)
+    testImplementation group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version  // BSD 3-clause
+    testImplementation group: "com.konghq", name: "unirest-java", version: unirest_version // MIT
+    testImplementation group: "org.mongodb", name: "mongodb-driver-sync", version: mongodb_driver_sync_version  // Apache 2.0
 }
 
 
@@ -116,6 +119,11 @@ licensee {
     allowDependency('javax.servlet', 'javax.servlet-api', '3.1.0') {
         because 'Servlet-api.jar and javax.servlet-*.jar are under the CDDL license, the original source code for this can be found at http://www.eclipse.org/jetty/downloads.php'
     }
+
+    allowDependency('org.ow2.asm', 'asm', '9.4') { because 'BSD 3-Clause' }
+    allowDependency('org.ow2.asm', 'asm-tree', '9.4') { because 'BSD 3-Clause' }
+    allowDependency('org.ow2.asm', 'asm-commons', '9.4') { because 'BSD 3-Clause' }
+
 
     // Glassfish
     allowDependency('org.glassfish.hk2.external', 'jakarta.inject', '2.6.1') { because 'Eclipse Public License v. 2.0' }
