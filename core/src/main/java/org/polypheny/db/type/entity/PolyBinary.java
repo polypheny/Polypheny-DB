@@ -31,16 +31,16 @@ import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Objects;
 import lombok.Value;
-import org.apache.calcite.avatica.util.Base64;
-import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.BitString;
+import org.polypheny.db.util.avatica.ByteString;
 
 @Value
 public class PolyBinary extends PolyValue {
@@ -128,7 +128,7 @@ public class PolyBinary extends PolyValue {
 
 
     public String as64String() {
-        return Base64.encodeBytes( value );
+        return Base64.encodeBase64String( value );
     }
 
 

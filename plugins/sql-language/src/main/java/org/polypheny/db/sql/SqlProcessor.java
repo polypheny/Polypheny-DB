@@ -22,8 +22,6 @@ import java.util.Arrays;
 import java.util.List;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.AvaticaSeverity;
-import org.apache.calcite.avatica.util.Casing;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.algebra.AlgDecorrelator;
 import org.polypheny.db.algebra.AlgNode;
@@ -78,6 +76,7 @@ import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.DeadlockException;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.SourceStringReader;
+import org.polypheny.db.util.avatica.Casing;
 
 
 @Setter
@@ -167,7 +166,7 @@ public class SqlProcessor extends Processor {
         } catch ( Exception e ) {
             log.error( "Exception while validating query", e );
             String message = e.getLocalizedMessage();
-            throw new GenericRuntimeException( message == null ? "null" : message, -1, "", AvaticaSeverity.ERROR );
+            throw new GenericRuntimeException( message == null ? "null" : message, -1, "", "Sever error encountered" );
         }
         stopWatch.stop();
         if ( log.isTraceEnabled() ) {

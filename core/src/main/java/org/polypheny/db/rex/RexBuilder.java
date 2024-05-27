@@ -50,10 +50,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.util.ByteString;
-import org.apache.calcite.avatica.util.Spaces;
 import org.apache.commons.lang3.NotImplementedException;
-import org.bson.BsonValue;
+import org.apache.commons.lang3.StringUtils;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.AggregateCall;
@@ -69,7 +67,6 @@ import org.polypheny.db.nodes.Function.FunctionType;
 import org.polypheny.db.nodes.IntervalQualifier;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.nodes.SpecialOperator;
-import org.polypheny.db.runtime.PolyCollections.FlatMap;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.MapPolyType;
 import org.polypheny.db.type.MultisetPolyType;
@@ -89,7 +86,6 @@ import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.temporal.PolyDate;
 import org.polypheny.db.type.entity.temporal.PolyTime;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
-import org.polypheny.db.util.BsonUtil;
 import org.polypheny.db.util.Collation;
 import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.DateString;
@@ -98,6 +94,7 @@ import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.TimeString;
 import org.polypheny.db.util.TimestampString;
 import org.polypheny.db.util.Util;
+import org.polypheny.db.util.avatica.ByteString;
 import org.polypheny.db.util.temporal.DateTimeUtils;
 import org.polypheny.db.util.temporal.TimeUnit;
 
@@ -1125,7 +1122,7 @@ public class RexBuilder {
 
     private static Comparable<?> zeroValue( AlgDataType type ) {
         return switch ( type.getPolyType() ) {
-            case CHAR -> new NlsString( Spaces.of( type.getPrecision() ), null, null );
+            case CHAR -> new NlsString( StringUtils.leftPad( "", type.getPrecision() ), null, null );
             case JSON, VARCHAR -> new NlsString( "", null, null );
             case BINARY -> new ByteString( new byte[type.getPrecision()] );
             case VARBINARY -> ByteString.EMPTY;
@@ -1426,10 +1423,7 @@ public class RexBuilder {
         if ( s.length() >= length ) {
             return s;
         }
-        return new StringBuilder()
-                .append( s )
-                .append( Spaces.MAX, s.length(), length )
-                .toString();
+        return StringUtils.rightPad( s, length - s.length() );
     }
 
 
@@ -1440,21 +1434,6 @@ public class RexBuilder {
 
     public RexLiteral makeMap( AlgDataType type, Map<RexNode, RexNode> operands ) {
         return new RexLiteral( null, type, type.getPolyType() ); // todo fix this
-    }
-
-
-    public RexLiteral makeMapFromBson( AlgDataType type, Map<String, BsonValue> bson ) {
-        @SuppressWarnings("RedundantCast") // seems necessary
-        FlatMap<RexLiteral, RexLiteral> map = FlatMap.of( (Map<RexLiteral, RexLiteral>) bson.entrySet().stream().collect( Collectors.toMap( e -> makeLiteral( e.getKey() ), e -> BsonUtil.getAsLiteral( e.getValue(), this ) ) ) );
-        return new RexLiteral( null, type, PolyType.CHAR );// todo fix this
-    }
-
-
-    public RexCall makeLpgExtract( String key ) {
-        return new RexCall(
-                typeFactory.createPolyType( PolyType.VARCHAR, 255 ),
-                OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_EXTRACT_PROPERTY ),
-                List.of( makeInputRef( typeFactory.createPolyType( PolyType.NODE ), 0 ), makeLiteral( key ) ) );
     }
 
 

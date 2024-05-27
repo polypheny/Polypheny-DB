@@ -40,7 +40,7 @@ import java.io.Serializable;
 import java.util.Calendar;
 import java.util.regex.Pattern;
 import javax.annotation.Nonnull;
-import org.apache.calcite.avatica.util.DateTimeUtils;
+import org.polypheny.db.util.temporal.DateTimeUtils;
 
 
 /**

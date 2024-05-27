@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,30 +31,76 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.runtime;
-
-
-import org.apache.calcite.linq4j.Enumerator;
+package org.polypheny.db.util.avatica;
 
 
 /**
- * Implementation of {@link org.apache.calcite.avatica.util.Cursor} on top of an {@link org.apache.calcite.linq4j.Enumerator} that returns an array of {@link Object} for each row.
+ * Efficiently writes strings of spaces.
  */
-public class ArrayEnumeratorCursor extends EnumeratorCursor<Object[]> {
+public class Spacer {
+
+    private int n;
+
 
     /**
-     * Creates an ArrayEnumeratorCursor.
-     *
-     * @param enumerator Enumerator
+     * Creates a Spacer with zero spaces.
      */
-    public ArrayEnumeratorCursor( Enumerator<Object[]> enumerator ) {
-        super( enumerator );
+    public Spacer() {
+        this( 0 );
     }
 
 
-    @Override
-    protected Getter createGetter( int ordinal ) {
-        return new ArrayGetter( ordinal );
+    /**
+     * Creates a Spacer with a given number of spaces.
+     */
+    public Spacer( int n ) {
+        set( n );
+    }
+
+
+    /**
+     * Sets the current number of spaces.
+     */
+    public Spacer set( int n ) {
+        this.n = n;
+        return this;
+    }
+
+
+    /**
+     * Returns the current number of spaces.
+     */
+    public int get() {
+        return n;
+    }
+
+
+    /**
+     * Increases the current number of spaces by {@code n}.
+     */
+    public Spacer add( int n ) {
+        return set( this.n + n );
+    }
+
+
+    /**
+     * Reduces the current number of spaces by {@code n}.
+     */
+    public Spacer subtract( int n ) {
+        return set( this.n - n );
+    }
+
+
+    /** Returns a string of the current number of spaces. */
+    public String toString() {
+        return Spaces.of( n );
+    }
+
+
+    /**
+     * Appends current number of spaces to a {@link StringBuilder}.
+     */
+    public StringBuilder spaces(StringBuilder buf) {
+        return Spaces.append(buf, n);
     }
 }
-

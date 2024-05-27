@@ -51,8 +51,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 import javax.sql.DataSource;
-import org.apache.calcite.avatica.ColumnMetaData;
-import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.linq4j.function.Function0;
 import org.apache.calcite.linq4j.function.Function1;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
@@ -78,6 +76,8 @@ import org.polypheny.db.type.entity.temporal.PolyDate;
 import org.polypheny.db.type.entity.temporal.PolyTime;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.avatica.ColumnMetaData;
+import org.polypheny.db.util.temporal.DateTimeUtils;
 
 
 /**

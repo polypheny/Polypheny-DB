@@ -42,8 +42,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import org.apache.calcite.avatica.util.Casing;
-import org.apache.calcite.avatica.util.Quoting;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
@@ -74,6 +72,8 @@ import org.polypheny.db.util.SourceStringReader;
 import org.polypheny.db.util.Sources;
 import org.polypheny.db.util.TestUtil;
 import org.polypheny.db.util.Util;
+import org.polypheny.db.util.avatica.Casing;
+import org.polypheny.db.util.avatica.Quoting;
 
 
 /**

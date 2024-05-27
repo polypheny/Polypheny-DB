@@ -37,9 +37,9 @@ package org.polypheny.db.util;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.TimeZone;
-import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.util.temporal.DateTimeUtils;
 
 
 /**

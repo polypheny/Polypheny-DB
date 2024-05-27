@@ -33,54 +33,13 @@
 
 package org.polypheny.db.config;
 
-
-import org.apache.calcite.avatica.ConnectionConfig;
-import org.apache.calcite.avatica.util.Casing;
-import org.apache.calcite.avatica.util.Quoting;
-import org.polypheny.db.algebra.constant.Lex;
-import org.polypheny.db.algebra.constant.NullCollation;
 import org.polypheny.db.util.Conformance;
 
 /**
  * Interface for reading connection properties within Polypheny-DB code. There is a method for every property.
  * At some point there will be similar config classes for system and statement properties.
  */
-public interface PolyphenyDbConnectionConfig extends ConnectionConfig {
-
-    /**
-     * @see PolyphenyDbConnectionProperty#DEFAULT_NULL_COLLATION
-     */
-    NullCollation defaultNullCollation();
-
-    /**
-     * @see PolyphenyDbConnectionProperty#MODEL
-     */
-    String model();
-
-    /**
-     * @see PolyphenyDbConnectionProperty#LEX
-     */
-    Lex lex();
-
-    /**
-     * @see PolyphenyDbConnectionProperty#QUOTING
-     */
-    Quoting quoting();
-
-    /**
-     * @see PolyphenyDbConnectionProperty#UNQUOTED_CASING
-     */
-    Casing unquotedCasing();
-
-    /**
-     * @see PolyphenyDbConnectionProperty#QUOTED_CASING
-     */
-    Casing quotedCasing();
-
-    /**
-     * @see PolyphenyDbConnectionProperty#PARSER_FACTORY
-     */
-    <T> T parserFactory( Class<T> parserFactoryClass, T defaultParserFactory );
+public interface PolyphenyDbConnectionConfig {
 
     /**
      * @see PolyphenyDbConnectionProperty#FORCE_DECORRELATE
@@ -88,20 +47,9 @@ public interface PolyphenyDbConnectionConfig extends ConnectionConfig {
     boolean forceDecorrelate();
 
     /**
-     * @see PolyphenyDbConnectionProperty#TYPE_SYSTEM
-     */
-    <T> T typeSystem( Class<T> typeSystemClass, T defaultTypeSystem );
-
-    /**
      * @see PolyphenyDbConnectionProperty#CONFORMANCE
      */
     Conformance conformance();
-
-    /**
-     * @see PolyphenyDbConnectionProperty#TIME_ZONE
-     */
-    @Override
-    String timeZone();
 
 }
 

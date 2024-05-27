@@ -95,9 +95,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collector;
 import javax.annotation.Nonnull;
-import org.apache.calcite.avatica.util.DateTimeUtils;
-import org.apache.calcite.avatica.util.Spaces;
 import org.apache.calcite.linq4j.Ord;
+import org.apache.commons.lang3.StringUtils;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.AlgNode;
@@ -113,6 +112,7 @@ import org.polypheny.db.nodes.Literal;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.RowOperator;
 import org.polypheny.db.nodes.ValuesOperator;
+import org.polypheny.db.util.temporal.DateTimeUtils;
 import org.slf4j.Logger;
 
 
@@ -1785,7 +1785,7 @@ public class Util {
     public static <K, V> Map<K, V> asIndexMapJ( final Collection<V> values, final Function<V, K> function ) {
         final Collection<Map.Entry<K, V>> entries = Collections2.transform( values, v -> Pair.of( function.apply( v ), v ) );
         final Set<Map.Entry<K, V>> entrySet =
-                new AbstractSet<Map.Entry<K, V>>() {
+                new AbstractSet<>() {
                     @Override
                     public Iterator<Map.Entry<K, V>> iterator() {
                         return entries.iterator();
@@ -1797,7 +1797,7 @@ public class Util {
                         return entries.size();
                     }
                 };
-        return new AbstractMap<K, V>() {
+        return new AbstractMap<>() {
             @Override
             public Set<Entry<K, V>> entrySet() {
                 return entrySet;
@@ -1819,7 +1819,7 @@ public class Util {
                 out.print( "/*" );
                 String number = Integer.toString( i );
                 if ( number.length() < 4 ) {
-                    Spaces.append( out, 4 - number.length() );
+                    out.append( StringUtils.rightPad( "", 4 - number.length() ) );
                 }
                 out.print( number );
                 out.print( " */ " );

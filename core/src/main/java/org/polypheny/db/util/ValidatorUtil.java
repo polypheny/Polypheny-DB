@@ -30,12 +30,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.util.ByteString;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.type.PolyTypeUtil;
+import org.polypheny.db.util.avatica.ByteString;
 
 @Slf4j
 public class ValidatorUtil {

@@ -23,8 +23,8 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Map;
-import org.apache.calcite.avatica.util.Quoting;
 import org.polypheny.db.languages.Parser.ParserConfig;
+import org.polypheny.db.util.avatica.Quoting;
 
 
 /**

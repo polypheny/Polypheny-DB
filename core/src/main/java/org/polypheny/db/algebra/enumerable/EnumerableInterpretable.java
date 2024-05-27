@@ -39,7 +39,6 @@ import java.io.StringReader;
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.Helper;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
@@ -53,6 +52,7 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterImpl;
 import org.polypheny.db.algebra.enumerable.EnumerableAlg.Prefer;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.interpreter.Compiler;
@@ -127,7 +127,7 @@ public class EnumerableInterpretable extends ConverterImpl implements Interpreta
         try {
             return new Pair<>( getBindable( expr, s, alg.getTupleType().getFieldCount() ), s );
         } catch ( Exception e ) {
-            throw Helper.INSTANCE.wrap( "Error while compiling generated Java code:\n" + s, e );
+            throw new GenericRuntimeException( "Error while compiling generated Java code:\n" + s, e );
         }
     }
 

@@ -38,7 +38,6 @@ import com.google.common.collect.ImmutableList;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.calcite.avatica.util.Spacer;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
@@ -47,6 +46,7 @@ import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.avatica.Spacer;
 
 
 /**

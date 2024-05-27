@@ -38,10 +38,11 @@ import com.google.common.base.Equivalence;
 import com.google.common.collect.Lists;
 import java.util.List;
 import java.util.Objects;
-import org.apache.calcite.avatica.util.Spaces;
+import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgCluster;
+import org.polypheny.db.util.avatica.Spaces;
 
 
 /**
@@ -81,6 +82,7 @@ public abstract class MutableAlg {
     public final AlgDataType rowType;
     protected final MutableAlgType type;
 
+    @Getter
     protected MutableAlg parent;
     protected int ordinalInParent;
 
@@ -89,11 +91,6 @@ public abstract class MutableAlg {
         this.cluster = Objects.requireNonNull( cluster );
         this.rowType = Objects.requireNonNull( rowType );
         this.type = Objects.requireNonNull( type );
-    }
-
-
-    public MutableAlg getParent() {
-        return parent;
     }
 
 
@@ -144,7 +141,7 @@ public abstract class MutableAlg {
     /**
      * Implementation of MutableVisitor that dumps the details of a MutableRel tree.
      */
-    private class MutableRelDumper extends MutableAlgVisitor {
+    private static class MutableRelDumper extends MutableAlgVisitor {
 
         private final StringBuilder buf = new StringBuilder();
         private int level;

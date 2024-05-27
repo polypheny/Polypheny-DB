@@ -35,7 +35,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.ResultIterator;
 import org.polypheny.db.algebra.constant.Kind;
@@ -45,6 +44,7 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.avatica.ColumnMetaData;
 
 
 @Slf4j
@@ -101,7 +101,7 @@ public class RestResult {
         }
         List<Map<String, Object>> result = new ArrayList<>();
         Map<String, Object> map = new HashMap<>();
-        map.put( columns.get( 0 ).columnName, rowsChanged );
+        map.put( columns.get( 0 ).columnName(), rowsChanged );
         result.add( map );
         this.result = result;
     }
@@ -119,7 +119,7 @@ public class RestResult {
             for ( AlgDataTypeField type : dataType.getFields() ) {
                 PolyValue o = row[i];
 
-                String columnName = columns.get( i ).columnName;
+                String columnName = columns.get( i ).columnName();
                 if ( o == null ) {
                     temp.put( columnName, null );
                     continue;

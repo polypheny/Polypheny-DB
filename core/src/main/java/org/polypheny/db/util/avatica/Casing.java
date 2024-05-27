@@ -31,52 +31,19 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.runtime;
+package org.polypheny.db.util.avatica;
 
-
-import org.apache.calcite.avatica.util.PositionedCursor;
-import org.apache.calcite.linq4j.Enumerator;
-import org.polypheny.db.algebra.enumerable.EnumerableCalc;
-
-
-/**
- * Implementation of {@link org.apache.calcite.avatica.util.Cursor} on top of an {@link org.apache.calcite.linq4j.Enumerator} that returns a record for each row. The returned record is cached to avoid
- * multiple computations of current row.
- *
- * For instance, {@link EnumerableCalc} computes result just in {@code current()} method, thus it makes sense to cache the result and make it available for all the accessors.
- *
- * @param <T> Element type
- */
-public abstract class EnumeratorCursor<T> extends PositionedCursor<T> {
-
-    private final Enumerator<T> enumerator;
-
+public enum Casing {
+    /**
+     * The case of identifiers is not changed.
+     */
+    UNCHANGED,
 
     /**
-     * Creates a {@code EnumeratorCursor}
-     *
-     * @param enumerator input enumerator
+     * Identifiers are converted to upper-case.
      */
-    protected EnumeratorCursor( Enumerator<T> enumerator ) {
-        this.enumerator = enumerator;
-    }
+    TO_UPPER,
 
-
-    @Override
-    protected T current() {
-        return enumerator.current();
-    }
-
-
-    @Override
-    public boolean next() {
-        return enumerator.moveNext();
-    }
-
-
-    @Override
-    public void close() {
-        enumerator.close();
-    }
+    /** Identifiers are converted to lower-case. */
+    TO_LOWER
 }
-

@@ -39,7 +39,7 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Locale;
 import java.util.TimeZone;
-import org.apache.calcite.avatica.util.DateTimeUtils;
+import org.polypheny.db.util.temporal.DateTimeUtils;
 
 
 /**

@@ -25,16 +25,15 @@ import java.sql.Statement;
 import java.sql.Types;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.ColumnMetaData;
-import org.apache.calcite.avatica.ColumnMetaData.Rep;
-import org.apache.calcite.avatica.util.ArrayFactoryImpl;
-import org.apache.calcite.avatica.util.Unsafe;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
+import org.polypheny.db.util.avatica.ColumnMetaData;
+import org.polypheny.db.util.avatica.ColumnMetaData.Rep;
+import org.polypheny.db.util.avatica.Utils;
 
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
@@ -257,8 +256,7 @@ public class SqlDistanceFunctionTest {
             try ( Statement statement = connection.createStatement() ) {
                 PreparedStatement preparedStatement = connection.prepareStatement( "SELECT id, distance(myarray, cast(? as INTEGER ARRAY), cast( ? as VARCHAR)) as dist FROM knninttest ORDER BY id" );
 
-                final ArrayFactoryImpl arrayFactory = new ArrayFactoryImpl( Unsafe.localCalendar().getTimeZone() );
-                preparedStatement.setArray( 1, arrayFactory.createArray(
+                preparedStatement.setArray( 1, Utils.createArray(
                         ColumnMetaData.scalar( Types.INTEGER, "INTEGER", Rep.STRING ),
                         ImmutableList.of( 1, 1 ) ) );
                 preparedStatement.setString( 2, "L2SQUARED" );

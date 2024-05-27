@@ -37,7 +37,6 @@ package org.polypheny.db.algebra.metadata;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.calcite.avatica.util.ByteString;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.AggregateCall;
@@ -63,6 +62,7 @@ import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.ImmutableNullableList;
 import org.polypheny.db.util.NlsString;
 import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.avatica.ByteString;
 
 
 /**

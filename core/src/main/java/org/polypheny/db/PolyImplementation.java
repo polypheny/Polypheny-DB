@@ -26,10 +26,6 @@ import javax.annotation.Nullable;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.ColumnMetaData;
-import org.apache.calcite.avatica.Meta;
-import org.apache.calcite.avatica.Meta.CursorFactory;
-import org.apache.calcite.avatica.Meta.StatementType;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
@@ -41,7 +37,6 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
-import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.monitoring.events.MonitoringType;
 import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.plan.AlgOptUtil;
@@ -56,6 +51,7 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.util.avatica.ColumnMetaData;
 
 
 @Getter
@@ -68,7 +64,6 @@ public class PolyImplementation {
     private Bindable<PolyValue[]> bindable;
     private final DataModel dataModel;
     private final ExecutionTimeMonitor executionTimeMonitor;
-    private CursorFactory cursorFactory;
     private final Convention resultConvention;
     private List<ColumnMetaData> fields;
     private final PreparedResult<PolyValue> preparedResult;
@@ -149,21 +144,6 @@ public class PolyImplementation {
     }
 
 
-    public CursorFactory getCursorFactory() {
-        if ( cursorFactory != null ) {
-            return cursorFactory;
-        }
-        if ( resultConvention == null ) {
-            return Meta.CursorFactory.OBJECT;
-        }
-
-        cursorFactory = resultConvention == BindableConvention.INSTANCE
-                ? CursorFactory.ARRAY
-                : CursorFactory.deduce( getFields(), getResultClass() );
-
-        return cursorFactory;
-    }
-
 
     public Bindable<PolyValue[]> getBindable() {
         if ( Kind.DDL.contains( kind ) ) {
@@ -173,7 +153,7 @@ public class PolyImplementation {
         if ( bindable != null ) {
             return bindable;
         }
-        bindable = preparedResult.getBindable( getCursorFactory() );
+        bindable = preparedResult.getBindable();
         return bindable;
     }
 
@@ -247,23 +227,6 @@ public class PolyImplementation {
         return this.iterator;
     }
 
-
-    public static Meta.StatementType toStatementType( Kind kind ) {
-        if ( kind == Kind.SELECT ) {
-            return Meta.StatementType.SELECT;
-        } else if ( Kind.DDL.contains( kind ) ) {
-            return Meta.StatementType.OTHER_DDL;
-        } else if ( Kind.DML.contains( kind ) ) {
-            return Meta.StatementType.IS_DML;
-        }
-
-        throw new GenericRuntimeException( "Illegal statement type: " + kind.name() );
-    }
-
-
-    public StatementType getStatementType() {
-        return toStatementType( this.kind );
-    }
 
 
     public static int getRowsChanged( Statement statement, Iterator<?> iterator, MonitoringType kind ) {

@@ -69,8 +69,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.util.ByteString;
-import org.apache.calcite.avatica.util.Spaces;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
@@ -84,6 +82,7 @@ import org.apache.calcite.linq4j.function.NonDeterministic;
 import org.apache.calcite.linq4j.function.Predicate2;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.calcite.linq4j.tree.Types;
+import org.apache.commons.lang3.StringUtils;
 import org.bson.BsonDocument;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.adapter.DataContext;
@@ -120,6 +119,7 @@ import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.type.entity.relational.PolyMap;
 import org.polypheny.db.util.BsonUtil;
 import org.polypheny.db.util.Static;
+import org.polypheny.db.util.avatica.ByteString;
 
 
 /**
@@ -1845,7 +1845,7 @@ public class Functions {
             if ( length > maxLength ) {
                 return PolyString.of( s.value.substring( 0, maxLength ) );
             } else {
-                return length < maxLength ? PolyString.of( Spaces.padRight( s.value, maxLength ) ) : s;
+                return length < maxLength ? PolyString.of( StringUtils.rightPad( s.value, maxLength ) ) : s;
             }
         }
     }

@@ -18,8 +18,6 @@ package org.polypheny.db.sql.language.utils;
 
 
 import java.sql.ResultSet;
-import org.apache.calcite.avatica.util.Casing;
-import org.apache.calcite.avatica.util.Quoting;
 import org.polypheny.db.algebra.constant.Lex;
 import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.operators.OperatorTable;
@@ -28,6 +26,8 @@ import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.sql.language.SqlTestFactory;
 import org.polypheny.db.sql.language.utils.SqlValidatorTestCase.Tester;
 import org.polypheny.db.util.Conformance;
+import org.polypheny.db.util.avatica.Casing;
+import org.polypheny.db.util.avatica.Quoting;
 
 
 /**

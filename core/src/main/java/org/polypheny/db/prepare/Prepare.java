@@ -39,7 +39,6 @@ import java.lang.reflect.Type;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import org.apache.calcite.avatica.Meta;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
@@ -273,10 +272,9 @@ public abstract class Prepare<T> {
         /**
          * Executes the prepared result.
          *
-         * @param cursorFactory How to map values into a cursor
          * @return producer of rows resulting from execution
          */
-        Bindable<T[]> getBindable( Meta.CursorFactory cursorFactory );
+        Bindable<T[]> getBindable();
 
     }
 

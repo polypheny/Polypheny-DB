@@ -30,13 +30,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Pattern;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.util.Base64;
 import org.polypheny.db.notebooks.model.response.NotebookModel;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
 
@@ -368,7 +368,7 @@ class JupyterMapFS {
                 );
             }
             if ( format != null && format.equals( "base64" ) ) {
-                content = "\"" + Base64.encodeBytes( raw ) + "\"";
+                content = "\"" + Base64.getEncoder().encodeToString( raw ) + "\"";
             } else {
                 content = new Gson().toJson( StandardCharsets.UTF_8.decode( ByteBuffer.wrap( raw ) ).toString() );
             }

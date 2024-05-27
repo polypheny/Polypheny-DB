@@ -39,7 +39,7 @@ import com.google.common.base.Strings;
 import java.io.Serializable;
 import java.util.Calendar;
 import java.util.regex.Pattern;
-import org.apache.calcite.avatica.util.DateTimeUtils;
+import org.polypheny.db.util.temporal.DateTimeUtils;
 
 
 /**

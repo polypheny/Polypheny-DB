@@ -37,8 +37,6 @@ package org.polypheny.db.adapter.jdbc;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import org.apache.calcite.avatica.ColumnMetaData;
-import org.apache.calcite.avatica.ColumnMetaData.Rep;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Queryable;
@@ -77,6 +75,8 @@ import org.polypheny.db.sql.language.util.SqlString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
+import org.polypheny.db.util.avatica.ColumnMetaData;
+import org.polypheny.db.util.avatica.ColumnMetaData.Rep;
 
 
 /**

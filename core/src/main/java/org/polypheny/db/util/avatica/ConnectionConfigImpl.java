@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,38 +31,18 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.runtime;
+package org.polypheny.db.util.avatica;
 
 
-import org.apache.calcite.linq4j.Enumerator;
+import java.util.Properties;
+
+public class ConnectionConfigImpl {
+
+    protected final Properties properties;
 
 
-/**
- * Implementation of {@link org.apache.calcite.avatica.util.Cursor} on top of an {@link org.apache.calcite.linq4j.Enumerator} that returns a record for each row.
- * The record is a synthetic class whose fields are all public.
- *
- * @param <E> Element type
- */
-public class RecordEnumeratorCursor<E> extends EnumeratorCursor<E> {
-
-    private final Class<E> clazz;
-
-
-    /**
-     * Creates a RecordEnumeratorCursor.
-     *
-     * @param enumerator Enumerator
-     * @param clazz Element type
-     */
-    public RecordEnumeratorCursor( Enumerator<E> enumerator, Class<E> clazz ) {
-        super( enumerator );
-        this.clazz = clazz;
+    public ConnectionConfigImpl( Properties properties ) {
+        this.properties = properties;
     }
 
-
-    @Override
-    protected Getter createGetter( int ordinal ) {
-        return new FieldGetter( clazz.getFields()[ordinal] );
-    }
 }
-

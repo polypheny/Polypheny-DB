@@ -65,8 +65,8 @@ import java.util.stream.IntStream;
 import javax.annotation.Nonnull;
 import lombok.Getter;
 import lombok.Setter;
-import org.apache.calcite.avatica.util.Spaces;
 import org.apache.calcite.linq4j.Ord;
+import org.apache.commons.lang3.StringUtils;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
 import org.polypheny.db.algebra.AlgCollations;
@@ -1493,7 +1493,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
             PolyString unpadded = value.asString();
             return rexBuilder.makeCharLiteral(
                     new NlsString(
-                            Spaces.padRight( unpadded.value, type.getPrecision() ),
+                            StringUtils.rightPad( unpadded.value, type.getPrecision() ),
                             String.valueOf( Charsets.UTF_8 ),
                             Collation.COERCIBLE ) );
         }

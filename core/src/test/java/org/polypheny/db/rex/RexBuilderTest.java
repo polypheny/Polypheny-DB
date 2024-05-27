@@ -42,8 +42,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.util.Calendar;
-import org.apache.calcite.avatica.util.ByteString;
-import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -60,6 +58,8 @@ import org.polypheny.db.util.RunMode;
 import org.polypheny.db.util.TimeString;
 import org.polypheny.db.util.TimestampString;
 import org.polypheny.db.util.Util;
+import org.polypheny.db.util.avatica.ByteString;
+import org.polypheny.db.util.temporal.DateTimeUtils;
 
 
 /**

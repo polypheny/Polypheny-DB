@@ -17,9 +17,8 @@
 package org.polypheny.db.algebra.constant;
 
 
-import org.apache.calcite.avatica.util.Casing;
-import org.apache.calcite.avatica.util.Quoting;
-
+import org.polypheny.db.util.avatica.Casing;
+import org.polypheny.db.util.avatica.Quoting;
 
 /**
  * Named, built-in lexical policy. A lexical policy describes how identifiers are quoted, whether they are converted to upper- or lower-case when they are read,

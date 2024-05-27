@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import lombok.Getter;
@@ -38,7 +37,6 @@ import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
-import org.polypheny.db.config.PolyphenyDbConnectionProperty;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
@@ -257,7 +255,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
 
 
     public static <T> T fun( Class<T> operatorTableClass, T defaultOperatorTable ) {
-        final String fun = PolyphenyDbConnectionProperty.FUN.wrap( new Properties() ).getString();
+        final String fun = "default";
         if ( fun == null || fun.isEmpty() || fun.equals( "standard" ) ) {
             return defaultOperatorTable;
         }

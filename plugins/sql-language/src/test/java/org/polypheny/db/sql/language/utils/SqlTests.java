@@ -32,7 +32,6 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.apache.calcite.avatica.ColumnMetaData;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
@@ -44,6 +43,7 @@ import org.polypheny.db.sql.language.utils.SqlTester.TypeChecker;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.TestUtil;
 import org.polypheny.db.util.Util;
+import org.polypheny.db.util.avatica.ColumnMetaData;
 
 
 /**

@@ -35,13 +35,9 @@ package org.polypheny.db.config;
 
 
 import java.util.Properties;
-import org.apache.calcite.avatica.ConnectionConfigImpl;
-import org.apache.calcite.avatica.util.Casing;
-import org.apache.calcite.avatica.util.Quoting;
 import org.polypheny.db.algebra.constant.ConformanceEnum;
-import org.polypheny.db.algebra.constant.Lex;
-import org.polypheny.db.algebra.constant.NullCollation;
 import org.polypheny.db.util.Conformance;
+import org.polypheny.db.util.avatica.ConnectionConfigImpl;
 
 
 /**
@@ -65,68 +61,13 @@ public class PolyphenyDbConnectionConfigImpl extends ConnectionConfigImpl implem
 
 
     @Override
-    public NullCollation defaultNullCollation() {
-        return PolyphenyDbConnectionProperty.DEFAULT_NULL_COLLATION.wrap( properties ).getEnum( NullCollation.class, NullCollation.HIGH );
-    }
-
-
-    @Override
-    public String model() {
-        return PolyphenyDbConnectionProperty.MODEL.wrap( properties ).getString();
-    }
-
-
-    @Override
-    public Lex lex() {
-        return PolyphenyDbConnectionProperty.LEX.wrap( properties ).getEnum( Lex.class );
-    }
-
-
-    @Override
-    public Quoting quoting() {
-        return PolyphenyDbConnectionProperty.QUOTING.wrap( properties ).getEnum( Quoting.class, lex().quoting );
-    }
-
-
-    @Override
-    public Casing unquotedCasing() {
-        return PolyphenyDbConnectionProperty.UNQUOTED_CASING.wrap( properties ).getEnum( Casing.class, lex().unquotedCasing );
-    }
-
-
-    @Override
-    public Casing quotedCasing() {
-        return PolyphenyDbConnectionProperty.QUOTED_CASING.wrap( properties ).getEnum( Casing.class, lex().quotedCasing );
-    }
-
-
-    @Override
-    public <T> T parserFactory( Class<T> parserFactoryClass, T defaultParserFactory ) {
-        return PolyphenyDbConnectionProperty.PARSER_FACTORY.wrap( properties ).getPlugin( parserFactoryClass, defaultParserFactory );
-    }
-
-
-    @Override
     public boolean forceDecorrelate() {
-        return PolyphenyDbConnectionProperty.FORCE_DECORRELATE.wrap( properties ).getBoolean();
+        return true;
     }
-
-
-    @Override
-    public <T> T typeSystem( Class<T> typeSystemClass, T defaultTypeSystem ) {
-        return PolyphenyDbConnectionProperty.TYPE_SYSTEM.wrap( properties ).getPlugin( typeSystemClass, defaultTypeSystem );
-    }
-
 
     @Override
     public Conformance conformance() {
-        return PolyphenyDbConnectionProperty.CONFORMANCE.wrap( properties ).getEnum( ConformanceEnum.class );
-    }
-
-
-    @Override
-    public String timeZone() {
-        return PolyphenyDbConnectionProperty.TIME_ZONE.wrap( properties ).getString();
+        return ConformanceEnum.DEFAULT;
     }
 
 }

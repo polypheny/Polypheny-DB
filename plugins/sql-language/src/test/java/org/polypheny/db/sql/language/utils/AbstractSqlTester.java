@@ -29,8 +29,6 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.NoSuchElementException;
-import org.apache.calcite.avatica.util.Casing;
-import org.apache.calcite.avatica.util.Quoting;
 import org.polypheny.db.algebra.constant.ConformanceEnum;
 import org.polypheny.db.algebra.constant.Lex;
 import org.polypheny.db.algebra.constant.Monotonicity;
@@ -61,6 +59,8 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
+import org.polypheny.db.util.avatica.Casing;
+import org.polypheny.db.util.avatica.Quoting;
 
 
 /**

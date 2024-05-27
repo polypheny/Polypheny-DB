@@ -40,7 +40,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.Setter;
-import org.apache.calcite.avatica.util.Spaces;
+import org.apache.commons.lang3.StringUtils;
 
 
 /**
@@ -149,7 +149,7 @@ public class JsonBuilder {
 
 
     private void newline( StringBuilder buf, int indent ) {
-        Spaces.append( buf.append( '\n' ), indent * 2 );
+        buf.append( '\n' ).append( StringUtils.rightPad( "", indent * 2 ) );
     }
 
 

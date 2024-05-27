@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,52 +31,26 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.runtime;
+package org.polypheny.db.util.avatica;
 
-
-import org.apache.calcite.avatica.util.PositionedCursor;
-import org.apache.calcite.linq4j.Enumerator;
-
-
-/**
- * Implementation of {@link org.apache.calcite.avatica.util.Cursor} on top of an {@link org.apache.calcite.linq4j.Enumerator} that returns an {@link Object} for each row.
- */
-public class ObjectEnumeratorCursor extends PositionedCursor<Object> {
-
-    private final Enumerator<Object> enumerator;
-
+public enum Quoting {
+    /**
+     * Quote identifiers in double-quotes. For example, {@code "my id"}.
+     */
+    DOUBLE_QUOTE( "\"" ),
 
     /**
-     * Creates an ObjectEnumeratorCursor.
-     *
-     * @param enumerator Enumerator
+     * Quote identifiers in back-quotes. For example, {@code `my id`}.
      */
-    public ObjectEnumeratorCursor( Enumerator<Object> enumerator ) {
-        this.enumerator = enumerator;
-    }
+    BACK_TICK( "`" ),
+
+    /** Quote identifiers in brackets. For example, {@code [my id]}. */
+    BRACKET( "[" );
+
+    public final String string;
 
 
-    @Override
-    protected Getter createGetter( int ordinal ) {
-        return new ObjectGetter( ordinal );
-    }
-
-
-    @Override
-    protected Object current() {
-        return enumerator.current();
-    }
-
-
-    @Override
-    public boolean next() {
-        return enumerator.moveNext();
-    }
-
-
-    @Override
-    public void close() {
-        enumerator.close();
+    Quoting( String string ) {
+        this.string = string;
     }
 }
-

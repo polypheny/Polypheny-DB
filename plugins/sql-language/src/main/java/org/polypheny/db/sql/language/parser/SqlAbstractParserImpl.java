@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import org.apache.calcite.avatica.util.Casing;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Syntax;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -46,6 +45,7 @@ import org.polypheny.db.sql.language.SqlUnresolvedFunction;
 import org.polypheny.db.sql.language.fun.SqlStdOperatorTable;
 import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.Glossary;
+import org.polypheny.db.util.avatica.Casing;
 
 
 /**

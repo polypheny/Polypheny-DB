@@ -20,9 +20,6 @@ import java.sql.DatabaseMetaData;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.calcite.avatica.ColumnMetaData;
-import org.apache.calcite.avatica.ColumnMetaData.Rep;
-import org.apache.calcite.avatica.Meta.StatementType;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.constant.Kind;
@@ -31,13 +28,14 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.prepare.Prepare.PreparedResult;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.ExtraPolyTypes;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyDefaults;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Util;
+import org.polypheny.db.util.avatica.ColumnMetaData;
+import org.polypheny.db.util.avatica.ColumnMetaData.Rep;
 
 
 /**
@@ -81,15 +79,6 @@ public class QueryProcessorHelpers {
 
     public static int getTypeOrdinal( AlgDataType type ) {
         return type.getPolyType().getJdbcOrdinal();
-    }
-
-
-    public static StatementType getStatementType( PreparedResult preparedResult ) {
-        if ( preparedResult.isDml() ) {
-            return StatementType.IS_DML;
-        } else {
-            return StatementType.SELECT;
-        }
     }
 
 

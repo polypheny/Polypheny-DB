@@ -34,21 +34,17 @@
 package org.polypheny.db.config;
 
 
-import static org.apache.calcite.avatica.ConnectionConfigImpl.PropEnv;
-
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Properties;
 import java.util.TimeZone;
-import org.apache.calcite.avatica.ConnectionProperty;
-import org.apache.calcite.avatica.util.Casing;
-import org.apache.calcite.avatica.util.Quoting;
 import org.polypheny.db.algebra.constant.ConformanceEnum;
 import org.polypheny.db.algebra.constant.Lex;
 import org.polypheny.db.algebra.constant.NullCollation;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
+import org.polypheny.db.util.avatica.Casing;
+import org.polypheny.db.util.avatica.ConnectionProperty;
+import org.polypheny.db.util.avatica.Quoting;
 
 
 /**
@@ -137,7 +133,7 @@ public enum PolyphenyDbConnectionProperty implements ConnectionProperty {
     private final Type type;
     private final Object defaultValue;
     private final boolean required;
-    private final Class valueClass;
+    private final Class<?> valueClass;
 
     private static final Map<String, PolyphenyDbConnectionProperty> NAME_TO_PROPS;
 
@@ -156,7 +152,7 @@ public enum PolyphenyDbConnectionProperty implements ConnectionProperty {
     }
 
 
-    PolyphenyDbConnectionProperty( String camelName, Type type, Object defaultValue, boolean required, Class valueClass ) {
+    PolyphenyDbConnectionProperty( String camelName, Type type, Object defaultValue, boolean required, Class<?> valueClass ) {
         this.camelName = camelName;
         this.type = type;
         this.defaultValue = defaultValue;
@@ -180,45 +176,11 @@ public enum PolyphenyDbConnectionProperty implements ConnectionProperty {
     }
 
 
-    @Override
-    public Type type() {
-        return type;
-    }
-
-
-    @Override
-    public Class valueClass() {
-        return valueClass;
-    }
-
 
     @Override
     public boolean required() {
         return required;
     }
 
-
-    @Override
-    public PropEnv wrap( Properties properties ) {
-        return new PropEnv( parse2( properties, NAME_TO_PROPS ), this );
-    }
-
-
-    /**
-     * Fixed version of {@link org.apache.calcite.avatica.ConnectionConfigImpl#parse} until we upgrade Avatica.
-     */
-    private static Map<ConnectionProperty, String> parse2( Properties properties, Map<String, ? extends ConnectionProperty> nameToProps ) {
-        final Map<ConnectionProperty, String> map = new LinkedHashMap<>();
-        for ( String name : properties.stringPropertyNames() ) {
-            final ConnectionProperty connectionProperty = nameToProps.get( name.toUpperCase( Locale.ROOT ) );
-            if ( connectionProperty == null ) {
-                // For now, don't throw. It messes up sub-projects.
-                //throw new RuntimeException("Unknown property '" + name + "'");
-                continue;
-            }
-            map.put( connectionProperty, properties.getProperty( name ) );
-        }
-        return map;
-    }
 
 }
