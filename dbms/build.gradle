@@ -217,6 +217,7 @@ jar.dependsOn(copyPluginsBuild)
 shadowJar.dependsOn(copyPluginsBuild)
 copyPlugins.dependsOn(":plugins:assemblePlugins")
 copyPluginsBuild.dependsOn(":plugins:assemblePlugins")
+compileTestJava.dependsOn(copyPluginsBuild)
 
 // due to gradle 7.6+
 configurations {
