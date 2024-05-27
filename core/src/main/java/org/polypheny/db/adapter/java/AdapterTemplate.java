@@ -95,4 +95,9 @@ public class AdapterTemplate {
         return map;
     }
 
+
+    public DeployMode getDefaultMode() {
+        return clazz.getAnnotation( AdapterProperties.class ).defaultMode();
+    }
+
 }
