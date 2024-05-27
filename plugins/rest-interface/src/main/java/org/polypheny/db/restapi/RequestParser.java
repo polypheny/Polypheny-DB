@@ -25,7 +25,6 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -37,6 +36,7 @@ import java.util.regex.Pattern;
 import javax.servlet.http.HttpServletRequest;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.polypheny.db.algebra.fun.AggFunction;
@@ -75,10 +75,6 @@ import org.polypheny.db.util.TimeString;
 
 @Slf4j
 public class RequestParser {
-
-    static final Pattern BASE64_PATTERN = Pattern.compile(
-            "^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$"
-    );
 
     private final TransactionManager transactionManager;
     private final Authenticator authenticator;
@@ -136,18 +132,13 @@ public class RequestParser {
 
     @VisibleForTesting
     static Pair<String, String> decodeBasicAuthorization( String encodedAuthorization ) {
-        if ( !isBase64( encodedAuthorization ) ) {
+        if ( !Base64.isBase64( encodedAuthorization ) ) {
             throw new UnauthorizedAccessException( "Basic Authorization header is not properly encoded." );
         }
         final String encodedHeader = StringUtils.substringAfter( encodedAuthorization, "Basic" );
-        final String decodedHeader = new String( Base64.getDecoder().decode( encodedHeader ) );
+        final String decodedHeader = new String( Base64.decodeBase64( encodedHeader ) );
         final String[] decoded = StringUtils.splitPreserveAllTokens( decodedHeader, ":" );
         return new Pair<>( decoded[0], decoded[1] );
-    }
-
-
-    private static boolean isBase64( String value ) {
-        return BASE64_PATTERN.matcher( value ).matches();
     }
 
 

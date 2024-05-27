@@ -36,6 +36,7 @@ dependencies {
     implementation project(":webui")
     implementation project(":monitoring")
 
+
     ////// SLF4J
     implementation group: "io.javalin", name: "javalin", version: javalin_version  // Apache 2.0
 
