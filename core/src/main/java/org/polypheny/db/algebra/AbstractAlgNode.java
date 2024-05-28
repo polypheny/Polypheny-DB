@@ -58,6 +58,8 @@ import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.metadata.Metadata;
 import org.polypheny.db.algebra.metadata.MetadataFactory;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration;
+import org.polypheny.db.algebra.polyalg.PolyAlgMetadata;
+import org.polypheny.db.algebra.polyalg.PolyAlgMetadata.GlobalStats;
 import org.polypheny.db.algebra.polyalg.PolyAlgRegistry;
 import org.polypheny.db.algebra.polyalg.PolyAlgUtils;
 import org.polypheny.db.algebra.polyalg.arguments.ListArg;
@@ -404,7 +406,7 @@ public abstract class AbstractAlgNode implements AlgNode {
 
 
     @Override
-    public ObjectNode serializePolyAlgebra( ObjectMapper mapper ) {
+    public ObjectNode serializePolyAlgebra( ObjectMapper mapper, GlobalStats gs ) {
         ObjectNode node = mapper.createObjectNode();
 
         boolean makeFieldsUnique = !(this instanceof SetOp); // set operations like UNION require duplicate field names
@@ -414,7 +416,7 @@ public abstract class AbstractAlgNode implements AlgNode {
 
         node.put( "opName", getPolyAlgDeclaration().opName );
         node.set( "arguments", collectAttributes().serialize( this, inputFieldNames, mapper ) );
-        node.set( "metadata", serializeMetadata( mapper ) );
+        node.set( "metadata", serializeMetadata( mapper, gs ) ); // set to null if gs is null
 
         ArrayNode inputs = mapper.createArrayNode();
 
@@ -426,9 +428,9 @@ public abstract class AbstractAlgNode implements AlgNode {
             inputIdx += child.getTupleType().getFieldCount();
 
             if ( projections == null ) {
-                inputs.add( child.serializePolyAlgebra( mapper ) );
+                inputs.add( child.serializePolyAlgebra( mapper, gs ) );
             } else {
-                inputs.add( PolyAlgUtils.wrapInRename( child, projections, child, child.getTupleType().getFieldNames(), mapper ) );
+                inputs.add( PolyAlgUtils.wrapInRename( child, projections, child, child.getTupleType().getFieldNames(), mapper, gs ) );
             }
         }
         node.set( "inputs", inputs );
@@ -437,17 +439,17 @@ public abstract class AbstractAlgNode implements AlgNode {
     }
 
 
-    private ObjectNode serializeMetadata( ObjectMapper mapper ) {
-        ObjectNode meta = mapper.createObjectNode();
+    private ObjectNode serializeMetadata( ObjectMapper mapper, GlobalStats gs ) {
+        if (gs == null) {
+            return null;
+        }
+        PolyAlgMetadata meta = new PolyAlgMetadata( mapper, gs );
         AlgMetadataQuery mq = this.getCluster().getMetadataQuery();
-        meta.put( "rowCount", mq.getTupleCount( this ) );
         try {
-            meta.put( "rowsCost", mq.getCumulativeCost( this ).getRows() );
-            meta.put( "cpuCost", mq.getCumulativeCost( this ).getCpu() );
-            meta.put( "ioCost", mq.getCumulativeCost( this ).getIo() );
+            meta.addCosts( mq.getNonCumulativeCost( this ), mq.getCumulativeCost( this ), mq.getTupleCount( this ) );
         } catch ( Exception ignored ) {
         }
-        return meta;
+        return meta.serialize();
     }
 
 

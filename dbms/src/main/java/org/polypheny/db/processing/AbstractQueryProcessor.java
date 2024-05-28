@@ -76,6 +76,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
+import org.polypheny.db.algebra.polyalg.PolyAlgMetadata.GlobalStats;
 import org.polypheny.db.algebra.polyalg.parser.PolyAlgParser;
 import org.polypheny.db.algebra.polyalg.parser.PolyAlgToAlgConverter;
 import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgNode;
@@ -305,7 +306,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
     private void attachPolyAlgPlan(AlgNode alg) {
         ObjectMapper objectMapper = new ObjectMapper();
-        ObjectNode objectNode = alg.serializePolyAlgebra(objectMapper);
+        GlobalStats gs = GlobalStats.computeGlobalStats( alg );
+        ObjectNode objectNode = alg.serializePolyAlgebra(objectMapper, gs);
         try {
             String jsonString = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(objectNode);
 

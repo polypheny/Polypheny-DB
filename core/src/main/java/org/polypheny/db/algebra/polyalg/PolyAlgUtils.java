@@ -32,6 +32,7 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.Syntax;
 import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.ParamType;
+import org.polypheny.db.algebra.polyalg.PolyAlgMetadata.GlobalStats;
 import org.polypheny.db.algebra.polyalg.arguments.ListArg;
 import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArg;
 import org.polypheny.db.algebra.polyalg.arguments.RexArg;
@@ -226,7 +227,7 @@ public class PolyAlgUtils {
     }
 
 
-    public static ObjectNode wrapInRename( AlgNode child, ListArg<RexArg> projections, AlgNode context, List<String> inputFieldNames, ObjectMapper mapper ) {
+    public static ObjectNode wrapInRename( AlgNode child, ListArg<RexArg> projections, AlgNode context, List<String> inputFieldNames, ObjectMapper mapper, GlobalStats gs ) {
         ObjectNode node = mapper.createObjectNode();
         PolyAlgDeclaration decl = PolyAlgRegistry.getDeclaration( LogicalRelProject.class );
         node.put( "opName", decl.opName + "#" );
@@ -236,12 +237,9 @@ public class PolyAlgUtils {
         argNode.set( "value", projections.serialize( context, inputFieldNames, mapper ) );
 
         node.set( "arguments", mapper.createObjectNode().set( decl.getPos( 0 ).getName(), argNode ) );
+        node.set( "metadata", PolyAlgMetadata.getMetadataForAuxiliaryNode(mapper) );
 
-        ObjectNode metaNode = mapper.createObjectNode();
-        metaNode.put( "isAuxiliary", true );
-        node.set( "metadata", metaNode );
-
-        node.set( "inputs", mapper.createArrayNode().add( child.serializePolyAlgebra( mapper ) ) );
+        node.set( "inputs", mapper.createArrayNode().add( child.serializePolyAlgebra( mapper, gs ) ) );
         return node;
     }
 

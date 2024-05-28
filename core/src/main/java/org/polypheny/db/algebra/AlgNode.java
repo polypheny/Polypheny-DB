@@ -46,6 +46,7 @@ import org.polypheny.db.algebra.externalize.AlgWriterImpl;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.metadata.Metadata;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration;
+import org.polypheny.db.algebra.polyalg.PolyAlgMetadata.GlobalStats;
 import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.Entity;
@@ -263,9 +264,19 @@ public interface AlgNode extends AlgOptNode, Cloneable {
      * Recursively constructs a JSON object structure that represents the tree rooted at this AlgNode using the provided ObjectMapper.
      *
      * @param mapper the ObjectMapper used for creating JsonNodes.
+     * @param gs the GlobalStats object containing the global maximums for stats or null if no metadata should be included
      * @return a ObjectNode representing the AlgNode tree rooted at this node.
      */
-    ObjectNode serializePolyAlgebra( ObjectMapper mapper );
+    ObjectNode serializePolyAlgebra( ObjectMapper mapper, GlobalStats gs );
+
+    /**
+     * Serialize this node without generating metadata.
+     * @param mapper the ObjectMapper used for creating JsonNodes.
+     * @return a ObjectNode representing the AlgNode tree rooted at this node.
+     */
+    default ObjectNode serializePolyAlgebra( ObjectMapper mapper) {
+        return serializePolyAlgebra( mapper, null );
+    }
 
     /**
      * Retrieves the PolyAlgDeclaration for this AlgNode implementation.
