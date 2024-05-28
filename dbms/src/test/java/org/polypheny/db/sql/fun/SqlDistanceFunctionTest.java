@@ -31,9 +31,9 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
+import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.avatica.ColumnMetaData;
 import org.polypheny.db.util.avatica.ColumnMetaData.Rep;
-import org.polypheny.db.util.avatica.Utils;
 
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
@@ -256,7 +256,7 @@ public class SqlDistanceFunctionTest {
             try ( Statement statement = connection.createStatement() ) {
                 PreparedStatement preparedStatement = connection.prepareStatement( "SELECT id, distance(myarray, cast(? as INTEGER ARRAY), cast( ? as VARCHAR)) as dist FROM knninttest ORDER BY id" );
 
-                preparedStatement.setArray( 1, Utils.createArray(
+                preparedStatement.setArray( 1, CoreUtil.createArray(
                         ColumnMetaData.scalar( Types.INTEGER, "INTEGER", Rep.STRING ),
                         ImmutableList.of( 1, 1 ) ) );
                 preparedStatement.setString( 2, "L2SQUARED" );

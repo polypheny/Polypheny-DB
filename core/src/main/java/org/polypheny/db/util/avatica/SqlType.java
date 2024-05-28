@@ -53,6 +53,7 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.polypheny.db.util.CoreUtil;
 
 /**
  * Extends the information in {@link java.sql.Types}.
@@ -516,7 +517,7 @@ public enum SqlType {
      * Returns the boxed type.
      */
     public Class<?> boxedClass() {
-        return Utils.box( clazz );
+        return CoreUtil.box( clazz );
     }
 
 

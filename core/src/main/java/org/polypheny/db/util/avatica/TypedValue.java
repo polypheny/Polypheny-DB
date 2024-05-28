@@ -41,6 +41,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Objects;
+import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.avatica.ColumnMetaData.AvaticaType;
 import org.polypheny.db.util.avatica.ColumnMetaData.Rep;
 import org.polypheny.db.util.temporal.DateTimeUtils;
@@ -320,7 +321,7 @@ public class TypedValue {
                 assert componentRep != null;
                 AvaticaType elementType = new AvaticaType( componentRep.typeId, componentRep.name(),
                         componentRep );
-                return Utils.createArray( elementType, copy );
+                return CoreUtil.createArray( elementType, copy );
             default:
                 return serialToLocal( type, value );
         }

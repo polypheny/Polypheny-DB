@@ -36,10 +36,10 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
+import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.avatica.ColumnMetaData;
 import org.polypheny.db.util.avatica.ColumnMetaData.Rep;
 import org.polypheny.db.util.avatica.SqlType;
-import org.polypheny.db.util.avatica.Utils;
 
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
@@ -1092,13 +1092,13 @@ public class JdbcPreparedStatementsTest {
 
 
                     preparedInsert.setInt( 1, 1 );
-                    preparedInsert.setArray( 2, Utils.createArray(
+                    preparedInsert.setArray( 2, CoreUtil.createArray(
                             ColumnMetaData.scalar( Types.INTEGER, "INTEGER", Rep.INTEGER ),
                             ImmutableList.of( 1, 2 ) ) );
                     preparedInsert.execute();
 
                     preparedInsert.setInt( 1, 2 );
-                    preparedInsert.setArray( 2, Utils.createArray(
+                    preparedInsert.setArray( 2, CoreUtil.createArray(
                             ColumnMetaData.scalar( Types.INTEGER, "INTEGER", Rep.INTEGER ),
                             ImmutableList.of( 4, 5 ) ) );
                     preparedInsert.execute();
@@ -1136,13 +1136,13 @@ public class JdbcPreparedStatementsTest {
 
 
                     preparedInsert.setInt( 1, 1 );
-                    preparedInsert.setArray( 2, Utils.createArray(
+                    preparedInsert.setArray( 2, CoreUtil.createArray(
                             ColumnMetaData.scalar( Types.VARCHAR, "VARCHAR", Rep.STRING ),
                             ImmutableList.of( "Hans", "Georg" ) ) );
                     preparedInsert.addBatch();
 
                     preparedInsert.setInt( 1, 2 );
-                    preparedInsert.setArray( 2, Utils.createArray(
+                    preparedInsert.setArray( 2, CoreUtil.createArray(
                             ColumnMetaData.scalar( Types.VARCHAR, "VARCHAR", Rep.STRING ),
                             ImmutableList.of( "Lisa", "Livia" ) ) );
                     preparedInsert.addBatch();

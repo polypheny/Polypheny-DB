@@ -22,9 +22,14 @@ import com.google.common.base.Charsets;
 import java.math.BigDecimal;
 import java.nio.charset.Charset;
 import java.nio.charset.UnsupportedCharsetException;
+import java.sql.Array;
 import java.text.MessageFormat;
+import java.util.AbstractList;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.StringTokenizer;
 import java.util.stream.Collectors;
 import org.polypheny.db.algebra.constant.Kind;
@@ -42,9 +47,27 @@ import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.runtime.Resources;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
+import org.polypheny.db.util.avatica.ArrayImpl;
 import org.polypheny.db.util.avatica.Casing;
+import org.polypheny.db.util.avatica.ColumnMetaData.AvaticaType;
 
 public class CoreUtil {
+
+
+    private static final Map<Class<?>, Class<?>> BOX;
+
+
+    static {
+        BOX = new HashMap<>();
+        BOX.put( boolean.class, Boolean.class );
+        BOX.put( byte.class, Byte.class );
+        BOX.put( char.class, Character.class );
+        BOX.put( short.class, Short.class );
+        BOX.put( int.class, Integer.class );
+        BOX.put( long.class, Long.class );
+        BOX.put( float.class, Float.class );
+        BOX.put( double.class, Double.class );
+    }
 
 
     /**
@@ -406,6 +429,52 @@ public class CoreUtil {
         }
 
         return s.substring( start, stop );
+    }
+
+
+    /**
+     * Adapts a primitive array into a {@link List}. For example,
+     * {@code asList(new double[2])} returns a {@code List&lt;Double&gt;}.
+     */
+    public static List<?> primitiveList( final Object array ) {
+        // REVIEW: A per-type list might be more efficient. (Or might not.)
+        return new AbstractList<>() {
+            public Object get( int index ) {
+                return java.lang.reflect.Array.get( array, index );
+            }
+
+
+            public int size() {
+                return java.lang.reflect.Array.getLength( array );
+            }
+        };
+    }
+
+
+    /**
+     * Returns the boxed class. For example, {@code box(int.class)}
+     * returns {@code java.lang.Integer}.
+     */
+    public static Class<?> box( Class<?> clazz ) {
+        if ( clazz.isPrimitive() ) {
+            return BOX.get( clazz );
+        }
+        return clazz;
+    }
+
+
+    public static Array createArray( AvaticaType elementType, Iterable<Object> elements ) {
+        // Avoid creating a new List if we already have a List
+        List<Object> elementList;
+        if ( elements instanceof List ) {
+            elementList = (List<Object>) elements;
+        } else {
+            elementList = new ArrayList<>();
+            for ( Object element : elements ) {
+                elementList.add( element );
+            }
+        }
+        return new ArrayImpl( elementList, elementType );
     }
 
 

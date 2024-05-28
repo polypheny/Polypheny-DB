@@ -40,6 +40,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import lombok.Getter;
+import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.avatica.ColumnMetaData.ArrayType;
 import org.polypheny.db.util.avatica.ColumnMetaData.AvaticaType;
 import org.polypheny.db.util.avatica.ColumnMetaData.Rep;
@@ -98,7 +99,7 @@ public class ArrayImpl implements Array {
         if ( o == null ) {
             buf.append( "null" );
         } else if ( o.getClass().isArray() ) {
-            append( buf, Utils.primitiveList( o ) );
+            append( buf, CoreUtil.primitiveList( o ) );
         } else {
             buf.append( o );
         }

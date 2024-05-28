@@ -37,16 +37,17 @@ package org.polypheny.db.config;
 import java.util.Properties;
 import org.polypheny.db.algebra.constant.ConformanceEnum;
 import org.polypheny.db.util.Conformance;
-import org.polypheny.db.util.avatica.ConnectionConfigImpl;
 
 
 /**
  * Implementation of {@link PolyphenyDbConnectionConfig}.
  */
-public class PolyphenyDbConnectionConfigImpl extends ConnectionConfigImpl implements PolyphenyDbConnectionConfig {
+public class PolyphenyDbConnectionConfigImpl implements PolyphenyDbConnectionConfig {
+
+    protected final Properties properties;
 
     public PolyphenyDbConnectionConfigImpl( Properties properties ) {
-        super( properties );
+        this.properties = properties;
     }
 
 
