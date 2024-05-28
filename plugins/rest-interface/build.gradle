@@ -21,6 +21,8 @@ dependencies {
     testImplementation project(path: ":dbms", configuration: "test")
     testImplementation project(path: ":plugins:sql-language")
     testImplementation project(path: ":plugins:sql-language", configuration: "tests")
+
+    testImplementation group: "org.mockito", name: "mockito-core", version: mockito_core_version  // MIT
 }
 
 

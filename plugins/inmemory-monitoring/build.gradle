@@ -18,6 +18,8 @@ dependencies {
     testImplementation project(path: ":dbms")
     testImplementation project(path: ":dbms", configuration: "test")
     testImplementation project(path: ":config")
+
+    testImplementation group: "org.mockito", name: "mockito-core", version: mockito_core_version  // MIT
 }
 
 sourceSets {
