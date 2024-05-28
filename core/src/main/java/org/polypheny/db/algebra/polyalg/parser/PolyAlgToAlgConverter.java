@@ -78,6 +78,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
+import org.polypheny.db.information.InformationPolyAlg.PlanType;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.rex.RexBuilder;
@@ -100,12 +101,14 @@ public class PolyAlgToAlgConverter {
     private final Snapshot snapshot;
     private final AlgCluster cluster;
     private final RexBuilder builder;
+    private final PlanType planType;
 
 
-    public PolyAlgToAlgConverter( Snapshot snapshot, AlgCluster cluster ) {
+    public PolyAlgToAlgConverter( PlanType planType, Snapshot snapshot, AlgCluster cluster ) {
         this.snapshot = snapshot;
         this.cluster = cluster;
         this.builder = cluster.getRexBuilder();
+        this.planType = planType;
     }
 
 
@@ -365,6 +368,11 @@ public class PolyAlgToAlgConverter {
     private Entity convertEntity( PolyAlgExpression exp, Context ctx ) {
         String[] names = exp.toIdentifier().split( "\\.", 2 );
         GenericRuntimeException exception = new GenericRuntimeException( "Invalid entity name: " + String.join( ".", names ) );
+
+        if (planType == PlanType.ALLOCATION) {
+            return snapshot.alloc().getAlloc( Integer.parseInt( names[0] ), Integer.parseInt( names[1] ) ).orElseThrow(() -> exception);
+        }
+
         String namespaceName;
         String entityName = null;
         if ( names.length == 2 ) {
@@ -375,6 +383,7 @@ public class PolyAlgToAlgConverter {
         } else {
             throw exception;
         }
+
         LogicalNamespace ns = snapshot.getNamespace( namespaceName ).orElseThrow( () -> new GenericRuntimeException( "no namespace named " + namespaceName ) );
         return switch ( ns.dataModel ) {
             case RELATIONAL -> {

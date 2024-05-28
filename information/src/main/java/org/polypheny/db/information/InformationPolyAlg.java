@@ -22,8 +22,6 @@ import java.util.UUID;
 public class InformationPolyAlg extends Information {
 
     @JsonProperty
-    public String polyAlg;
-    @JsonProperty
     public String jsonPolyAlg;
 
     @JsonProperty
@@ -35,9 +33,8 @@ public class InformationPolyAlg extends Information {
      *
      * @param group The InformationGroup to which this information belongs
      */
-    public InformationPolyAlg( final InformationGroup group, final String polyAlg, final String jsonPolyAlg, final PlanType planType ) {
+    public InformationPolyAlg( final InformationGroup group, final String jsonPolyAlg, final PlanType planType ) {
         super( UUID.randomUUID().toString(), group.getId() );
-        this.polyAlg = polyAlg;
         this.jsonPolyAlg = jsonPolyAlg;
         this.planType = planType.name();
         fullWidth( true );
@@ -52,8 +49,8 @@ public class InformationPolyAlg extends Information {
 
     public enum PlanType {
         LOGICAL,
-        ROUTED,
-        PHYSICAL;
+        ALLOCATION,
+        PHYSICAL
     }
 
 }

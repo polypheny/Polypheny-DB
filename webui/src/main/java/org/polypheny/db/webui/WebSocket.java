@@ -37,12 +37,13 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.information.InformationPolyAlg.PlanType;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.processing.QueryContext.TranslatedQueryContext;
+import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
-import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.crud.LanguageCrud;
@@ -154,7 +155,7 @@ public class WebSocket implements Consumer<WsConfig> {
                 Statement statement;
                 try {
                     statement = transaction.createStatement();
-                    root = PolyPlanBuilder.buildFromPolyAlg( polyAlgRequest.polyAlg, statement );
+                    root = PolyPlanBuilder.buildFromPolyAlg( polyAlgRequest.polyAlg, polyAlgRequest.planType, statement );
                 } catch ( Exception e ) {
                     log.error( "Caught exception while building the plan builder tree", e );
                     ctx.send( RelationalResult.builder().error( e.getMessage() ).build() );
@@ -177,7 +178,8 @@ public class WebSocket implements Consumer<WsConfig> {
                         .transactions( List.of( transaction ) )
                         .statement( statement )
                         .informationTarget( i -> i.setSession( ctx.session ) ).build();
-                TranslatedQueryContext translated = TranslatedQueryContext.fromQuery( polyAlgRequest.polyAlg, root, qc );
+                TranslatedQueryContext translated = TranslatedQueryContext.fromQuery(
+                        polyAlgRequest.polyAlg, root, polyAlgRequest.planType == PlanType.ALLOCATION, qc );
 
                 List<? extends Result<?, ?>> polyAlgResults = LanguageCrud.anyQueryResult( translated, polyAlgRequest );
                 ctx.send( polyAlgResults.get( 0 ) );

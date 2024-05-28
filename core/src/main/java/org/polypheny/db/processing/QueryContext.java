@@ -134,9 +134,10 @@ public class QueryContext {
     public static class TranslatedQueryContext extends ParsedQueryContext {
 
         AlgRoot root;
+        boolean isRouted;
 
         // A TranslatedQueryContext is not associated with a specific a namespaceId or queryNode
-        public static TranslatedQueryContext fromQuery( String query, AlgRoot root, QueryContext context ) {
+        public static TranslatedQueryContext fromQuery( String query, AlgRoot root, boolean isRouted, QueryContext context ) {
             return TranslatedQueryContext.builder()
                     .query( query )
                     .queryNode( null )
@@ -151,6 +152,7 @@ public class QueryContext {
                     .transactionManager( context.transactionManager )
                     .informationTarget( context.informationTarget )
                     .root(root)
+                    .isRouted(isRouted)
                     .build();
         }
 

@@ -87,8 +87,9 @@ public class PolyAlgRegistry {
 
 
     private static void populateDeclarationsMap() {
-        ImmutableList<OperatorTag> logTags = ImmutableList.of( OperatorTag.LOGICAL );
-        ImmutableList<OperatorTag> logProTags = ImmutableList.of( OperatorTag.LOGICAL, OperatorTag.ADVANCED );
+        // logical operators can also be used as allocation operators
+        ImmutableList<OperatorTag> logTags = ImmutableList.of( OperatorTag.LOGICAL, OperatorTag.ALLOCATION );
+        ImmutableList<OperatorTag> logProTags = ImmutableList.of( OperatorTag.LOGICAL, OperatorTag.ALLOCATION, OperatorTag.ADVANCED );
 
         // RELATIONAL
         declarations.put( LogicalRelProject.class, PolyAlgDeclaration.builder()

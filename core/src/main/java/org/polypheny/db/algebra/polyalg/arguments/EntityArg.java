@@ -18,13 +18,18 @@ package org.polypheny.db.algebra.polyalg.arguments;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import lombok.Getter;
 import lombok.NonNull;
+import org.polypheny.db.adapter.Adapter;
+import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.ParamType;
 import org.polypheny.db.catalog.entity.Entity;
+import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
+import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph.SubstitutionGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.logistic.DataModel;
@@ -57,6 +62,24 @@ public class EntityArg implements PolyAlgArg {
         } else {
             this.entityName = entity.getName();
         }
+
+        if (entity instanceof AllocationEntity e) {
+            System.out.println("id: " + e.id);
+            System.out.println("Placement id: " + e.placementId);
+            System.out.println("Partition id: " + e.partitionId);
+            System.out.println("Logical id: " + e.logicalId);
+            System.out.println("NS id: " + e.namespaceId);
+            System.out.println("Adapter id: " + e.adapterId);
+            System.out.println("---");
+
+            Adapter<?> a = AdapterManager.getInstance().getAdapter( e.adapterId ).orElseThrow();
+            System.out.println("Adapter: " + a.adapterName + ", unique name: " + a.getUniqueName()); // we can use the unique name to find the adapterid
+            AllocationPlacement p = snapshot.alloc().getPlacement( e.adapterId, e.logicalId ).orElseThrow();
+            System.out.println("Placement: " + p + ", param arr " + Arrays.toString( p.getParameterArray() ) );
+            System.out.println();
+
+            //snapshot.alloc().getAlloc(  ) // -> placement id + partition id
+        }
     }
 
 
@@ -80,6 +103,9 @@ public class EntityArg implements PolyAlgArg {
 
     @Override
     public String toPolyAlg( AlgNode context, @NonNull List<String> inputFieldNames ) {
+        if (entity instanceof AllocationEntity e) {
+            return e.placementId + "." + e.partitionId;
+        }
         if ( entityName == null ) {
             return namespaceName;
         }
@@ -94,6 +120,11 @@ public class EntityArg implements PolyAlgArg {
         if ( entity != null ) {
             node.put( "namespaceId", entity.namespaceId );
             node.put( "id", entity.id );
+
+            if (entity instanceof AllocationEntity e) {
+                node.put( "placementId", e.placementId );
+                node.put( "partitionId", e.partitionId );
+            }
         }
         return node;
     }

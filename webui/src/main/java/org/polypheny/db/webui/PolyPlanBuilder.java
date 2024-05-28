@@ -23,6 +23,7 @@ import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgNode;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.snapshot.Snapshot;
+import org.polypheny.db.information.InformationPolyAlg.PlanType;
 import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.volcano.VolcanoPlanner;
@@ -45,11 +46,11 @@ public class PolyPlanBuilder {
      * @throws NodeParseException if the parser is not able to construct the intermediary PolyAlgNode tree
      * @throws RuntimeException if polyAlg cannot be parsed into a valid AlgNode tree
      */
-    public static AlgRoot buildFromPolyAlg( String polyAlg, Statement statement ) throws NodeParseException {
+    public static AlgRoot buildFromPolyAlg( String polyAlg, PlanType planType, Statement statement ) throws NodeParseException {
         Snapshot snapshot = statement.getTransaction().getSnapshot();
         RexBuilder rexBuilder = new RexBuilder( statement.getTransaction().getTypeFactory() );
         AlgCluster cluster = AlgCluster.create( statement.getQueryProcessor().getPlanner(), rexBuilder, null, snapshot );
-        return buildFromPolyAlg( polyAlg, snapshot, cluster );
+        return buildFromPolyAlg( polyAlg, planType, snapshot, cluster );
     }
 
     /**
@@ -60,15 +61,15 @@ public class PolyPlanBuilder {
      * @throws NodeParseException if the parser is not able to construct the intermediary PolyAlgNode tree
      * @throws RuntimeException if polyAlg cannot be parsed into a valid AlgNode tree
      */
-    public static AlgRoot buildFromPolyAlg( String polyAlg ) throws NodeParseException {
+    public static AlgRoot buildFromPolyAlg( String polyAlg, PlanType planType ) throws NodeParseException {
         Snapshot snapshot = Catalog.snapshot();
         AlgCluster cluster = AlgCluster.create(
                 new VolcanoPlanner(), new RexBuilder( AlgDataTypeFactory.DEFAULT ), null, snapshot );
-        return buildFromPolyAlg( polyAlg, snapshot, cluster );
+        return buildFromPolyAlg( polyAlg, planType, snapshot, cluster );
     }
 
-    private static AlgRoot buildFromPolyAlg(String polyAlg, Snapshot snapshot, AlgCluster cluster) throws NodeParseException {
-        PolyAlgToAlgConverter converter = new PolyAlgToAlgConverter( snapshot, cluster );
+    private static AlgRoot buildFromPolyAlg(String polyAlg, PlanType planType, Snapshot snapshot, AlgCluster cluster) throws NodeParseException {
+        PolyAlgToAlgConverter converter = new PolyAlgToAlgConverter( planType, snapshot, cluster );
 
         PolyAlgParser parser = PolyAlgParser.create( polyAlg );
         PolyAlgNode node = (PolyAlgNode) parser.parseQuery();

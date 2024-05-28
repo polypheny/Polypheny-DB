@@ -20,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.jackson.Jacksonized;
 import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.information.InformationPolyAlg.PlanType;
 
 
 @SuperBuilder
@@ -30,5 +31,7 @@ public class PolyAlgRequest extends UIRequest {
     public String polyAlg;
     @JsonProperty
     public DataModel model;
+    @JsonProperty
+    public PlanType planType;
 
 }

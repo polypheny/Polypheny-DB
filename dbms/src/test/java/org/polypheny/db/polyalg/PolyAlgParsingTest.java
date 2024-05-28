@@ -41,6 +41,7 @@ import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgNode;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.snapshot.Snapshot;
+import org.polypheny.db.information.InformationPolyAlg.PlanType;
 import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.volcano.VolcanoPlanner;
@@ -90,7 +91,7 @@ public class PolyAlgParsingTest {
         AlgCluster cluster = AlgCluster.create( new VolcanoPlanner(), new RexBuilder( factory ), null, null );
         Snapshot snapshot = Catalog.snapshot();
 
-        PolyAlgToAlgConverter converter = new PolyAlgToAlgConverter( snapshot, cluster );
+        PolyAlgToAlgConverter converter = new PolyAlgToAlgConverter( PlanType.LOGICAL, snapshot, cluster );
 
         PolyAlgParser parser = PolyAlgParser.create( polyAlg );
         PolyAlgNode node = (PolyAlgNode) parser.parseQuery();

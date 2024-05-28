@@ -16,6 +16,9 @@
 
 package org.polypheny.db.routing;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +26,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.ExplainFormat;
 import org.polypheny.db.algebra.constant.ExplainLevel;
+import org.polypheny.db.algebra.polyalg.PolyAlgMetadata.GlobalStats;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
@@ -30,6 +34,8 @@ import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
+import org.polypheny.db.information.InformationPolyAlg;
+import org.polypheny.db.information.InformationPolyAlg.PlanType;
 import org.polypheny.db.information.InformationQueryPlan;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.plan.AlgOptCost;
@@ -77,6 +83,7 @@ public class UiRoutingPageUtil {
 
 
     private static void addRoutedPlanPage( AlgNode routedNode, InformationManager queryAnalyzer ) {
+        addRoutedPolyPlanPage(routedNode, queryAnalyzer);
         InformationPage page = new InformationPage( "Routed Query Plan" ).setLabel( "plans" );
         page.fullWidth();
         InformationGroup group = new InformationGroup( page, "Routed Query Plan" );
@@ -86,6 +93,26 @@ public class UiRoutingPageUtil {
                 group,
                 AlgOptUtil.dumpPlan( "Routed Query Plan", routedNode, ExplainFormat.JSON, ExplainLevel.ALL_ATTRIBUTES ) );
         queryAnalyzer.registerInformation( informationQueryPlan );
+    }
+
+    private static void addRoutedPolyPlanPage(AlgNode routedNode, InformationManager queryAnalyzer) {
+        ObjectMapper objectMapper = new ObjectMapper();
+        GlobalStats gs = GlobalStats.computeGlobalStats( routedNode );
+        ObjectNode objectNode = routedNode.serializePolyAlgebra(objectMapper, gs);
+        try {
+            String jsonString = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(objectNode);
+
+            InformationPage page = new InformationPage( "Routed PolyAlg Query Plan" ).setLabel( "plans" );
+            page.fullWidth();
+            InformationGroup group = new InformationGroup( page, "Routed PolyAlg Query Plan" );
+            queryAnalyzer.addPage( page );
+            queryAnalyzer.addGroup( group );
+            queryAnalyzer.registerInformation( new InformationPolyAlg( group, jsonString, PlanType.ALLOCATION ) );
+
+        } catch ( JsonProcessingException e) {
+            e.printStackTrace();
+        }
+
     }
 
 

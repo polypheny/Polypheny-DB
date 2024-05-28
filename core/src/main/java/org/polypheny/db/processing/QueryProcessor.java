@@ -35,6 +35,14 @@ public interface QueryProcessor {
 
     /**
      * @param logicalRoot Logical query plan.
+     * @param isRouted Indicated whether query already routed.
+     * @param withMonitoring Activates or deactivates the monitoring.
+     * @return prepared PolyphenyDbSignature
+     */
+    PolyImplementation prepareQuery( AlgRoot logicalRoot, boolean isRouted, boolean withMonitoring );
+
+    /**
+     * @param logicalRoot Logical query plan.
      * @param parameters Row type (required with prepared statements).
      * @param withMonitoring Activates or deactivates the monitoring.
      * @return prepared PolyphenyDbSignature

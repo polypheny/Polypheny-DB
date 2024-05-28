@@ -227,7 +227,7 @@ public class LanguageManager {
 
     private List<ImplementationContext> implementTranslatedQuery( Statement statement, Transaction transaction, TranslatedQueryContext translated ) {
         try {
-            PolyImplementation implementation = statement.getQueryProcessor().prepareQuery( (translated).getRoot(), true );
+            PolyImplementation implementation = statement.getQueryProcessor().prepareQuery( (translated).getRoot(), translated.isRouted(), true );
             return List.of( new ImplementationContext( implementation, translated, statement, null ) );
         }  catch ( Throwable e ) {
             log.warn( "Caught exception: ", e );

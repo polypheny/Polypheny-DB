@@ -210,6 +210,12 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
 
     @Override
+    public PolyImplementation prepareQuery( AlgRoot logicalRoot, boolean isRouted, boolean withMonitoring ) {
+        return prepareQuery( logicalRoot, logicalRoot.alg.getCluster().getTypeFactory().builder().build(), isRouted, false, withMonitoring );
+    }
+
+
+    @Override
     public PolyImplementation prepareQuery( AlgRoot logicalRoot, AlgDataType parameterRowType, boolean withMonitoring ) {
         return prepareQuery( logicalRoot, parameterRowType, false, false, withMonitoring );
     }
@@ -218,7 +224,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     @Override
     public PolyImplementation prepareQuery( AlgRoot logicalRoot, AlgDataType parameterRowType, boolean isRouted, boolean isSubquery, boolean withMonitoring ) {
         if ( statement.getTransaction().isAnalyze() ) {
-            attachQueryPlans( logicalRoot );
+            attachQueryPlans( logicalRoot ); // TODO: do not attach logical plan when isRouted?
         }
 
         if ( statement.getTransaction().isAnalyze() ) {
@@ -257,12 +263,12 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 AlgOptUtil.dumpPlan( "Logical Query Plan", logicalRoot.alg, ExplainFormat.JSON, ExplainLevel.ALL_ATTRIBUTES ) );
         queryAnalyzer.registerInformation( informationQueryPlan );
 
-
-        attachPolyAlgPlan(logicalRoot.alg);
+        attachPolyAlgPlan( logicalRoot.alg );
         //testPolyAlgParserDuringDevelopment(logicalRoot.alg); // TODO: Delete as soon as PolyAlgParser is working
     }
 
-    private void testPolyAlgParserDuringDevelopment(AlgNode alg) {
+
+    private void testPolyAlgParserDuringDevelopment( AlgNode alg ) {
         AlgDataTypeFactory factory = AlgDataTypeFactory.DEFAULT;
         AlgCluster cluster = AlgCluster.create( new VolcanoPlanner(), new RexBuilder( factory ), null, null );
         Snapshot snapshot = Catalog.snapshot();
@@ -279,7 +285,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             PolyAlgNode node = (PolyAlgNode) parser.parseQuery();
             System.out.println( "Successfully parsed input!\n" );
 
-            PolyAlgToAlgConverter converter = new PolyAlgToAlgConverter(snapshot, cluster);
+            PolyAlgToAlgConverter converter = new PolyAlgToAlgConverter( PlanType.LOGICAL, snapshot, cluster );
 
             AlgRoot root = converter.convert( node );
 
@@ -290,8 +296,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             String roundTripPolyAlg = sb.toString();
             System.out.println( ">>>>> Logical Query Plan (parsed) <<<<<" );
             System.out.println( sb );
-            if (polyAlg.replace( "PROJECT#", "PROJECT" ).equals( roundTripPolyAlg )) {
-                System.out.println("----> Plans are equal!");
+            if ( polyAlg.replace( "PROJECT#", "PROJECT" ).equals( roundTripPolyAlg ) ) {
+                System.out.println( "----> Plans are equal!" );
             } else {
                 log.warn( "Plans are not equal" );
             }
@@ -304,22 +310,23 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
     }
 
-    private void attachPolyAlgPlan(AlgNode alg) {
+
+    private void attachPolyAlgPlan( AlgNode alg ) {
         ObjectMapper objectMapper = new ObjectMapper();
         GlobalStats gs = GlobalStats.computeGlobalStats( alg );
-        ObjectNode objectNode = alg.serializePolyAlgebra(objectMapper, gs);
         try {
-            String jsonString = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(objectNode);
+            ObjectNode objectNode = alg.serializePolyAlgebra( objectMapper, gs );
+            String jsonString = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString( objectNode );
 
             InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
-            InformationPage page = new InformationPage( "PolyAlg Query Plan" ).setLabel( "plans" );
+            InformationPage page = new InformationPage( "Logical PolyAlg Query Plan" ).setLabel( "plans" );
             page.fullWidth();
             InformationGroup group = new InformationGroup( page, "Logical PolyAlg Query Plan" );
             queryAnalyzer.addPage( page );
             queryAnalyzer.addGroup( group );
-            queryAnalyzer.registerInformation( new InformationPolyAlg( group, alg.buildPolyAlgebra(""), jsonString, PlanType.LOGICAL ) );
+            queryAnalyzer.registerInformation( new InformationPolyAlg( group, jsonString, PlanType.LOGICAL ) );
 
-        } catch (Exception e) {
+        } catch ( Exception e ) {
             e.printStackTrace();
         }
 
