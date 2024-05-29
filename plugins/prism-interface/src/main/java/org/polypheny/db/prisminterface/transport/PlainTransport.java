@@ -152,7 +152,7 @@ public class PlainTransport implements Transport {
             }
             bb = ByteBuffer.allocate( (int) length );
             state = State.READ_MESSAGE;
-            return Optional.empty();
+            return tryReceiveMessage();
         } else {
             byte[] msg = bb.array();
             bb = ByteBuffer.allocate( 8 );
