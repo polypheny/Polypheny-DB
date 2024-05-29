@@ -16,7 +16,6 @@ toolchainManagement {
 
 
 // core modules
-include 'util'
 include 'core'
 include 'config'
 include 'information'

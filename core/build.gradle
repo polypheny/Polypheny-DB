@@ -27,9 +27,6 @@ configurations {
 
 
 dependencies {
-    annotationProcessor project(':util')
-    implementation project(':util')
-
     api project(":config")
     api project(":information")
 
@@ -51,9 +48,6 @@ dependencies {
     api(group: "org.apache.calcite", name: "calcite-linq4j", version: calcite_linq4j_version) {
         exclude(module: "guava")
     } // Apache 2.0
-    /*api(group: "org.polypheny.avatica", name: "avatica-core", version: avatica_core_version) {
-        exclude(module: "protobuf-java")
-    } // Apache 2.0*/
 
     implementation group: "com.drewnoakes", name: "metadata-extractor", version: metadata_extractor_version // Apache 2.0
 
@@ -129,7 +123,6 @@ delombok {
 extractIncludeProto {
     dependsOn(":config:compileJava")
     dependsOn(":information:compileJava")
-    dependsOn(":util:compileJava")
 }
 
 
