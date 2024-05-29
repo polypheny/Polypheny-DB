@@ -83,7 +83,7 @@ public class PolyAlgMetadata {
         table.add( row );
 
         if ( displayMaxName != null && globalStats.isMax( key, value ) ) {
-            addBadge( displayMaxName, key );
+            addBadge( displayMaxName, key, BadgeLevel.DANGER );
         }
         return this;
     }
@@ -107,10 +107,11 @@ public class PolyAlgMetadata {
     }
 
 
-    public PolyAlgMetadata addBadge( String content, String forKey ) {
+    public PolyAlgMetadata addBadge( String content, String forKey, BadgeLevel level ) {
         ObjectNode badge = mapper.createObjectNode();
         badge.put( "content", content );
         badge.put( "forKey", forKey );
+        badge.put( "level", level.name() );
         badges.add( badge );
         return this;
     }
@@ -213,6 +214,13 @@ public class PolyAlgMetadata {
             return maxCumulativeValues.getOrDefault( key, 0d );
         }
 
+    }
+
+
+    public enum BadgeLevel {
+        INFO,
+        WARN,
+        DANGER
     }
 
 }
