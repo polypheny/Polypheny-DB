@@ -34,7 +34,6 @@ import org.polypheny.db.prisminterface.transport.Transport;
 class PIRequestReader {
 
     private final Selector selector;
-    private final Map<SelectionKey, Connection> connections = new HashMap<>();
 
 
     PIRequestReader( String name ) throws IOException {
@@ -45,8 +44,7 @@ class PIRequestReader {
 
     public void addConnection( Transport transport, BlockingQueue<byte[]> queue ) throws ClosedChannelException {
         SelectableChannel chan = transport.getChannel();
-        SelectionKey k = chan.register( selector, SelectionKey.OP_READ );
-        connections.put( k, new Connection( transport, queue ) );
+        chan.register( selector, SelectionKey.OP_READ, new Connection( transport, queue ) );
         selector.wakeup();
     }
 
@@ -55,7 +53,7 @@ class PIRequestReader {
         while ( true ) {
             try {
                 selector.select( key -> {
-                    Connection c = connections.get( key );
+                    Connection c = (Connection) key.attachment();
                     try {
                         Optional<byte[]> maybeMessage = c.transport.tryReceiveMessage();
                         if ( maybeMessage.isPresent() ) {
@@ -65,7 +63,6 @@ class PIRequestReader {
                     } catch ( EOFException | ClosedChannelException e ) {
                         // TODO: Close Transport?
                         key.cancel();
-                        connections.remove( key );
                     } catch ( IOException | InterruptedException e ) {
                         log.error( "tryReceiveMessage", e );
                         throw new GenericRuntimeException( e );
