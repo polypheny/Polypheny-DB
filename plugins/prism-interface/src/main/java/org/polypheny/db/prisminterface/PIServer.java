@@ -52,6 +52,7 @@ class PIServer {
     private final ServerSocketChannel server;
     private final static AtomicLong ID_COUNTER = new AtomicLong();
     private final ServerAndLock fileLock; // Needed for unix servers to keep a lock on the socket
+    private final PIRequestReader reader;
     private AtomicBoolean shutdown = new AtomicBoolean( false );
 
 
@@ -59,6 +60,7 @@ class PIServer {
         this.server = server;
         this.fileLock = fileLock;
         log.info( "Prism Interface started and is listening for {} connections on {}", name.toLowerCase(), server.getLocalAddress() );
+        this.reader = new PIRequestReader( name );
         Thread acceptor = new Thread( () -> acceptLoop( server, clientManager, name, createTransport ), "PrismInterface" + name + "Server" );
         acceptor.start();
         Runtime.getRuntime().addShutdownHook( new Thread( this::shutdownHook ) );
@@ -131,7 +133,7 @@ class PIServer {
     private void acceptConnection( SocketChannel s, String name, long connectionId, Function<SocketChannel, Transport> createTransport, ClientManager clientManager ) {
         try {
             log.info( "accept {} connection with id {} from {}", name.toLowerCase(), connectionId, getRemoteAddressOrNone( s ) );
-            PIService.acceptConnection( createTransport.apply( s ), connectionId, clientManager );
+            PIService.acceptConnection( createTransport.apply( s ), connectionId, clientManager, reader );
         } catch ( GenericRuntimeException e ) {
             if ( e.getCause() instanceof EOFException ) {
                 return;
@@ -180,6 +182,7 @@ class PIServer {
             fileLock.lock.release();
         }
         Util.closeNoThrow( server );
+        Util.closeNoThrow( reader );
     }
 
 

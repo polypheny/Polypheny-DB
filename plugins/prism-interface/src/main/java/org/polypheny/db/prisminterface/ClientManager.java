@@ -46,8 +46,6 @@ class ClientManager {
     private final Authenticator authenticator;
     private final TransactionManager transactionManager;
     private final MonitoringPage monitoringPage;
-    @Getter
-    private final PIRequestReader reader;
 
 
     ClientManager( PrismInterface prismInterface ) {
@@ -56,11 +54,6 @@ class ClientManager {
         this.transactionManager = prismInterface.getTransactionManager();
         this.monitoringPage = prismInterface.getMonitoringPage();
         monitoringPage.setClientManager( this );
-        try {
-            this.reader = new PIRequestReader( prismInterface.getUniqueName() );
-        } catch ( IOException e ) {
-            throw new GenericRuntimeException( e );
-        }
     }
 
 

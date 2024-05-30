@@ -111,18 +111,20 @@ class PIService {
     private final long connectionId;
     private final ClientManager clientManager;
     private final Transport con;
+    private final PIRequestReader reader;
     private String uuid = null;
 
 
-    private PIService( Transport con, long connectionId, ClientManager clientManager ) {
+    private PIService( Transport con, long connectionId, ClientManager clientManager, PIRequestReader reader ) {
         this.con = con;
         this.connectionId = connectionId;
         this.clientManager = clientManager;
+        this.reader = reader;
     }
 
 
-    public static void acceptConnection( Transport con, long connectionId, ClientManager clientManager ) {
-        PIService service = new PIService( con, connectionId, clientManager );
+    public static void acceptConnection( Transport con, long connectionId, ClientManager clientManager, PIRequestReader reader ) {
+        PIService service = new PIService( con, connectionId, clientManager, reader );
         service.acceptLoop();
     }
 
@@ -175,7 +177,7 @@ class PIService {
 
     private void handleMessages() throws IOException {
         BlockingQueue<byte[]> waiting = new LinkedBlockingQueue<>();
-        clientManager.getReader().addConnection( con, waiting );
+        reader.addConnection( con, waiting );
 
         if ( !handleFirstMessage( waiting ) ) {
             return;
