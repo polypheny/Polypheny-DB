@@ -184,8 +184,7 @@ public class AdapterManager {
             return adapter;
         } catch ( Exception e ) {
             Catalog.getInstance().dropAdapter( adapterId );
-            e.printStackTrace(); // TODO: Remove as soon as monetdb test no longer fails
-            throw new GenericRuntimeException( "Something went wrong while adding a new adapter: " + e.getMessage(), e );
+            throw new GenericRuntimeException( "Something went wrong while adding a new adapter", e );
         }
     }
 
