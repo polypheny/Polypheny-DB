@@ -223,8 +223,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
     @Override
     public PolyImplementation prepareQuery( AlgRoot logicalRoot, AlgDataType parameterRowType, boolean isRouted, boolean isSubquery, boolean withMonitoring ) {
-        if ( statement.getTransaction().isAnalyze() ) {
-            attachQueryPlans( logicalRoot ); // TODO: do not attach logical plan when isRouted?
+        if ( !isRouted && statement.getTransaction().isAnalyze() ) {
+            attachQueryPlans( logicalRoot );
         }
 
         if ( statement.getTransaction().isAnalyze() ) {
