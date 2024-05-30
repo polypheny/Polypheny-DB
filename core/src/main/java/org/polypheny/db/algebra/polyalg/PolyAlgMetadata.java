@@ -49,7 +49,7 @@ public class PolyAlgMetadata {
         addMetadata( "tupleCount", "Tuple Count", tupleCount, false );
         addMetadata( "tuplesCost", "Processed Tuples", nonCumulative.getRows(), cumulative.getRows(), false, "Most Tuples Processed" );
         addMetadata( "cpuCost", "CPU Cost", nonCumulative.getCpu(), cumulative.getCpu(), false, "Most CPU" );
-        setOutConnection( "tuplesCost", true );
+        setOutConnection( "tupleCount", false );
         //addMetadata( "ioCost", "IO Cost", nonCumulative.getIo(), cumulative.getIo(), false );
         return this;
     }

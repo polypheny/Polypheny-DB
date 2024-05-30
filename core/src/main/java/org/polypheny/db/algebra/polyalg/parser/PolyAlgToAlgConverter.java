@@ -73,6 +73,10 @@ import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgOperator;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.entity.Entity;
+import org.polypheny.db.catalog.entity.LogicalAdapter;
+import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
+import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
+import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph.SubstitutionGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -369,33 +373,63 @@ public class PolyAlgToAlgConverter {
         String[] names = exp.toIdentifier().split( "\\.", 2 );
         GenericRuntimeException exception = new GenericRuntimeException( "Invalid entity name: " + String.join( ".", names ) );
 
-        if (planType == PlanType.ALLOCATION) {
-            return snapshot.alloc().getAlloc( Integer.parseInt( names[0] ), Integer.parseInt( names[1] ) ).orElseThrow(() -> exception);
-        }
-
         String namespaceName;
-        String entityName = null;
+        String rest = null; // contains everything after the first "."
         if ( names.length == 2 ) {
             namespaceName = names[0];
-            entityName = names[1];
+            rest = names[1];
         } else if ( names.length == 1 ) {
             namespaceName = names[0];
         } else {
-            throw exception;
+            throw exception; // names.length == 0
         }
 
         LogicalNamespace ns = snapshot.getNamespace( namespaceName ).orElseThrow( () -> new GenericRuntimeException( "no namespace named " + namespaceName ) );
+
+        if (planType == PlanType.ALLOCATION) {
+            // ns.entity@adapterName.partition
+            System.out.println("trying to parse " + exp.toIdentifier());
+            if (rest == null) {
+                throw exception;
+            }
+            String[] split = rest.split( "@" );
+            if (split.length != 2) {
+                throw exception;
+            }
+            String entityName = split[0];
+            String[] apSplit = split[1].split( "\\.", 2 ); // [adapterName, partition]
+
+            LogicalAdapter adapter = snapshot.getAdapter( apSplit[0] ).orElseThrow(() -> exception);
+            LogicalEntity logicalEntity = snapshot.getLogicalEntity( ns.id, entityName).orElseThrow(() -> exception);
+            AllocationPlacement placement = snapshot.alloc().getPlacement( adapter.id, logicalEntity.id ).orElseThrow(() -> exception);
+
+            if (apSplit.length == 1) {
+                List<AllocationEntity> entities = snapshot.alloc().getAllocsOfPlacement( placement.id );
+                if (entities.isEmpty()) {
+                    throw exception;
+                }
+                return entities.get( 0 );
+            } else  {
+                try {
+                    return snapshot.alloc().getAlloc( placement.id, Long.parseLong( apSplit[1] )).orElseThrow(() -> exception);
+                } catch ( NumberFormatException e ) {
+                    long partitionId = snapshot.alloc().getPartitionFromName( logicalEntity.id, apSplit[1] ).orElseThrow(() -> exception).id;
+                    return snapshot.alloc().getAlloc( placement.id, partitionId).orElseThrow(() -> exception);
+                }
+            }
+        }
+
         return switch ( ns.dataModel ) {
             case RELATIONAL -> {
-                if ( entityName == null ) {
+                if ( rest == null ) {
                     yield new SubstitutionGraph( ns.id, "sub", false, ns.caseSensitive, List.of() );
                 } else if ( ctx.dataModel == DataModel.GRAPH ) {
-                    List<String> subNames = Arrays.asList( entityName.split( "\\." ) );
+                    List<String> subNames = Arrays.asList( rest.split( "\\." ) );
                     yield new SubstitutionGraph( ns.id, "sub", false, ns.caseSensitive, subNames.stream().map( PolyString::of ).toList() );
                 }
-                yield snapshot.rel().getTable( ns.id, entityName ).orElseThrow( () -> exception );
+                yield snapshot.rel().getTable( ns.id, rest ).orElseThrow( () -> exception );
             }
-            case DOCUMENT -> snapshot.doc().getCollection( ns.id, entityName ).orElseThrow( () -> exception );
+            case DOCUMENT -> snapshot.doc().getCollection( ns.id, rest ).orElseThrow( () -> exception );
             case GRAPH -> snapshot.graph().getGraph( ns.id ).orElseThrow( () -> new GenericRuntimeException( "no graph with id " + ns.id ) );
         };
     }
