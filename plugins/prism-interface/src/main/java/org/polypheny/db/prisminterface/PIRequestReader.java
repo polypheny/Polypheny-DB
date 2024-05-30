@@ -52,7 +52,7 @@ class PIRequestReader implements Closeable {
 
     private void loop() {
         try {
-            while ( true ) {
+            while ( !closed ) {
                 selector.select( key -> {
                     Connection c = (Connection) key.attachment();
                     try {
@@ -69,9 +69,6 @@ class PIRequestReader implements Closeable {
                         throw new GenericRuntimeException( e );
                     }
                 } );
-                if ( closed ) {
-                    break;
-                }
             }
         } catch ( IOException e ) {
             log.error( "select", e );
