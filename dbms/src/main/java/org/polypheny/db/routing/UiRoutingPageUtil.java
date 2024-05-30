@@ -98,8 +98,8 @@ public class UiRoutingPageUtil {
     private static void addRoutedPolyPlanPage(AlgNode routedNode, InformationManager queryAnalyzer) {
         ObjectMapper objectMapper = new ObjectMapper();
         GlobalStats gs = GlobalStats.computeGlobalStats( routedNode );
-        ObjectNode objectNode = routedNode.serializePolyAlgebra(objectMapper, gs);
         try {
+            ObjectNode objectNode = routedNode.serializePolyAlgebra(objectMapper, gs);
             String jsonString = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(objectNode);
 
             InformationPage page = new InformationPage( "Routed PolyAlg Query Plan" ).setLabel( "plans" );
