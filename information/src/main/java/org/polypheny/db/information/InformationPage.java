@@ -171,6 +171,11 @@ public class InformationPage extends Refreshable {
         this.implicit = false;
     }
 
+    public InformationPage setStmtLabel(int stmtIdx) {
+        this.label = "Query " + (stmtIdx + 1);
+        return this;
+    }
+
 
     /**
      * Convert page to Json using the custom TypeAdapter

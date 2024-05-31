@@ -253,7 +253,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
     private void attachQueryPlans( AlgRoot logicalRoot ) {
         InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
-        InformationPage page = new InformationPage( "Logical Query Plan" ).setLabel( "plans" );
+        InformationPage page = new InformationPage( "Logical Query Plan" ).setStmtLabel( statement.getIndex() );
         page.fullWidth();
         InformationGroup group = new InformationGroup( page, "Logical Query Plan" );
         queryAnalyzer.addPage( page );
@@ -319,7 +319,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             String jsonString = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString( objectNode );
 
             InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
-            InformationPage page = new InformationPage( "Logical PolyAlg Query Plan" ).setLabel( "plans" );
+            InformationPage page = new InformationPage( "Logical PolyAlg Query Plan" ).setStmtLabel( statement.getIndex() );
             page.fullWidth();
             InformationGroup group = new InformationGroup( page, "Logical PolyAlg Query Plan" );
             queryAnalyzer.addPage( page );
@@ -1499,7 +1499,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             if ( statement.getTransaction().isAnalyze() ) {
                 UiRoutingPageUtil.outputSingleResult(
                         proposed.plans.get( 0 ),
-                        statement.getTransaction().getQueryAnalyzer() );
+                        statement.getTransaction().getQueryAnalyzer(),
+                        statement.getIndex());
                 addGeneratedCodeToQueryAnalyzer( proposed.plans.get( 0 ).generatedCodes() );
             }
             return new Pair<>( proposed.plans.get( 0 ).result(), proposed.plans.get( 0 ).proposedRoutingPlan() );
@@ -1517,7 +1518,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
             if ( statement.getTransaction().isAnalyze() ) {
                 AlgNode optimalNode = proposed.plans.get( index ).optimalNode();
-                UiRoutingPageUtil.addPhysicalPlanPage( optimalNode, statement.getTransaction().getQueryAnalyzer() );
+                UiRoutingPageUtil.addPhysicalPlanPage( optimalNode, statement.getTransaction().getQueryAnalyzer(), statement.getIndex() );
                 addGeneratedCodeToQueryAnalyzer( proposed.plans.get( index ).generatedCodes() );
             }
 
@@ -1529,7 +1530,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     private void addGeneratedCodeToQueryAnalyzer( String code ) {
         if ( code != null ) {
             InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
-            InformationPage page = new InformationPage( "Implementation" );
+            InformationPage page = new InformationPage( "Implementation" ).setStmtLabel( statement.getIndex() );
             page.fullWidth();
             InformationGroup group = new InformationGroup( page, "Java Code" );
             queryAnalyzer.addPage( page );
