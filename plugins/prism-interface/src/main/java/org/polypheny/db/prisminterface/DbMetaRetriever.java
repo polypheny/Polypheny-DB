@@ -20,7 +20,6 @@ import java.sql.DatabaseMetaData;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import org.polypheny.db.PolyphenyDb;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
@@ -79,7 +78,7 @@ class DbMetaRetriever {
             return logicalNamespaces;
         }
         DataModel catalogNamespaceType = DataModel.valueOf( namespaceType );
-        return logicalNamespaces.stream().filter( n -> n.getDataModel() == catalogNamespaceType ).collect( Collectors.toList() );
+        return logicalNamespaces.stream().filter( n -> n.getDataModel() == catalogNamespaceType ).toList();
     }
 
 
@@ -124,7 +123,7 @@ class DbMetaRetriever {
     private static List<Entity> getRelationalEntities( long namespaceId, String entityPattern ) {
         Pattern catalogEntityPattern = getPatternOrNull( entityPattern );
         final List<LogicalTable> tables = Catalog.getInstance().getSnapshot().rel().getTables( namespaceId, catalogEntityPattern );
-        return tables.stream().map( logicalTable -> buildEntityFromTable( getTableMeta( logicalTable ) ) ).collect( Collectors.toList() );
+        return tables.stream().map( logicalTable -> buildEntityFromTable( getTableMeta( logicalTable ) ) ).toList();
     }
 
 
@@ -152,7 +151,7 @@ class DbMetaRetriever {
 
 
     private static List<Column> getColumns( LogicalTable logicalTable ) {
-        return logicalTable.getColumns().stream().map( DbMetaRetriever::getColumnMeta ).collect( Collectors.toList() );
+        return logicalTable.getColumns().stream().map( DbMetaRetriever::getColumnMeta ).toList();
     }
 
 
@@ -200,7 +199,7 @@ class DbMetaRetriever {
 
     private static List<ForeignKey> getForeignKeys( LogicalTable logicalTable ) {
         return Catalog.getInstance().getSnapshot().rel().getForeignKeys( logicalTable.getId() )
-                .stream().map( DbMetaRetriever::getForeignKeyMeta ).collect( Collectors.toList() );
+                .stream().map( DbMetaRetriever::getForeignKeyMeta ).toList();
     }
 
 
@@ -218,19 +217,19 @@ class DbMetaRetriever {
 
 
     private static List<Column> getReferencedColumns( LogicalForeignKey logicalForeignKey ) {
-        return logicalForeignKey.referencedKeyFieldIds.stream().map( id -> Catalog.snapshot().rel().getColumn( id ).orElseThrow() ).map( DbMetaRetriever::getColumnMeta ).collect( Collectors.toList() );
+        return logicalForeignKey.referencedKeyFieldIds.stream().map( id -> Catalog.snapshot().rel().getColumn( id ).orElseThrow() ).map( DbMetaRetriever::getColumnMeta ).toList();
     }
 
 
     private static List<ForeignKey> getExportedKeys( LogicalTable logicalTable ) {
         return Catalog.getInstance().getSnapshot().rel().getExportedKeys( logicalTable.getId() )
-                .stream().map( DbMetaRetriever::getForeignKeyMeta ).collect( Collectors.toList() );
+                .stream().map( DbMetaRetriever::getForeignKeyMeta ).toList();
     }
 
 
     private static List<Index> getIndexes( LogicalTable logicalTable, boolean unique ) {
         return Catalog.getInstance().getSnapshot().rel().getIndexes( logicalTable.getId(), unique )
-                .stream().map( DbMetaRetriever::getIndexMeta ).collect( Collectors.toList() );
+                .stream().map( DbMetaRetriever::getIndexMeta ).toList();
     }
 
 
@@ -309,7 +308,7 @@ class DbMetaRetriever {
 
     static ClientInfoPropertyMetaResponse getClientInfoProperties() {
         List<ClientInfoPropertyMeta> propertyInfoMetas = PIClientInfoProperties.DEFAULTS.stream()
-                .map( DbMetaRetriever::getClientInfoPropertyMeta ).collect( Collectors.toList() );
+                .map( DbMetaRetriever::getClientInfoPropertyMeta ).toList();
         return ClientInfoPropertyMetaResponse.newBuilder()
                 .addAllClientInfoPropertyMetas( propertyInfoMetas )
                 .build();
@@ -332,7 +331,7 @@ class DbMetaRetriever {
                 .map( org.polypheny.db.nodes.Function.class::cast )
                 .filter( f -> f.getFunctionCategory() == functionCategory || functionCategory == null )
                 .map( DbMetaRetriever::getFunctionMeta )
-                .collect( Collectors.toList() );
+                .toList();
         return FunctionsResponse.newBuilder().addAllFunctions( functions ).build();
     }
 
