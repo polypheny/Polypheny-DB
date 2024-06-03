@@ -54,12 +54,12 @@ public abstract class DataStore<S extends AdapterCatalog> extends Adapter<S> imp
     public abstract List<FunctionalIndexInfo> getFunctionalIndexes( LogicalTable catalogTable );
 
 
-    public record IndexMethodModel(String name, String displayName) {
+    public record IndexMethodModel( String name, String displayName ) {
 
     }
 
 
-    public record FunctionalIndexInfo(List<Long> columnIds, String methodDisplayName) {
+    public record FunctionalIndexInfo( List<Long> columnIds, String methodDisplayName ) {
 
         public List<String> getColumnNames() {
             List<String> columnNames = new ArrayList<>( columnIds.size() );

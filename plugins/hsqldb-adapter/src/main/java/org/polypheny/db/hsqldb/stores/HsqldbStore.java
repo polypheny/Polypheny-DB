@@ -63,7 +63,7 @@ import org.polypheny.db.util.PolyphenyHomeDirManager;
 public class HsqldbStore extends AbstractJdbcStore {
 
 
-    public HsqldbStore( final long storeId, final String uniqueName, final Map<String, String> settings, final DeployMode mode) {
+    public HsqldbStore( final long storeId, final String uniqueName, final Map<String, String> settings, final DeployMode mode ) {
         super( storeId, uniqueName, settings, mode, HsqldbSqlDialect.DEFAULT, settings.get( "type" ).equals( "File" ) );
     }
 

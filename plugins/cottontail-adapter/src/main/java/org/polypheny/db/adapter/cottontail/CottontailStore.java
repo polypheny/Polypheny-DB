@@ -126,7 +126,7 @@ public class CottontailStore extends DataStore<RelAdapterCatalog> {
 
         this.dbName = settings.get( "database" );
         this.isEmbedded = this.deployMode == DeployMode.EMBEDDED;
-	this.dbPort = Integer.parseInt( settings.get( "port" ) );
+        this.dbPort = Integer.parseInt( settings.get( "port" ) );
 
         engine = Engine.valueOf( settings.get( "engine" ).trim() );
 

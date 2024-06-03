@@ -18,8 +18,6 @@ package org.polypheny.db.ddl;
 
 import java.util.Map;
 import org.apache.calcite.linq4j.function.Deterministic;
-import org.polypheny.db.adapter.DeployMode;
-import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.java.AdapterTemplate;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
