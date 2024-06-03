@@ -26,6 +26,7 @@ import java.util.Map;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.fun.AggFunction;
+import org.polypheny.db.algebra.logical.common.LogicalBatchIterator;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentAggregate;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentFilter;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentModify;
@@ -88,68 +89,68 @@ public class PolyAlgRegistry {
 
     private static void populateDeclarationsMap() {
         // logical operators can also be used as allocation operators
-        ImmutableList<OperatorTag> logTags = ImmutableList.of( OperatorTag.LOGICAL, OperatorTag.ALLOCATION );
-        ImmutableList<OperatorTag> logProTags = ImmutableList.of( OperatorTag.LOGICAL, OperatorTag.ALLOCATION, OperatorTag.ADVANCED );
+        ImmutableList<OperatorTag> logAllTags = ImmutableList.of( OperatorTag.LOGICAL, OperatorTag.ALLOCATION );
+        ImmutableList<OperatorTag> logAllProTags = ImmutableList.of( OperatorTag.LOGICAL, OperatorTag.ALLOCATION, OperatorTag.ADVANCED );
 
         // RELATIONAL
         declarations.put( LogicalRelProject.class, PolyAlgDeclaration.builder()
                 .creator( LogicalRelProject::create ).model( DataModel.RELATIONAL )
-                .opName( "REL_PROJECT" ).opAliases( List.of( "PROJECT", "P", "REL_PROJECT#", "PROJECT#" ) ).numInputs( 1 ).opTags( logTags )
+                .opName( "REL_PROJECT" ).opAliases( List.of( "PROJECT", "P", "REL_PROJECT#", "PROJECT#" ) ).numInputs( 1 ).opTags( logAllTags )
                 .param( Parameter.builder().name( "projects" ).tags( List.of( ParamTag.ALIAS, ParamTag.HIDE_TRIVIAL ) ).multiValued( 1 ).type( ParamType.REX ).build() )
                 .build() );
         declarations.put( LogicalRelScan.class, PolyAlgDeclaration.builder()
                 .creator( LogicalRelScan::create ).model( DataModel.RELATIONAL )
-                .opName( "REL_SCAN" ).opAlias( "SCAN" ).numInputs( 0 ).opTags( logTags )
+                .opName( "REL_SCAN" ).opAlias( "SCAN" ).numInputs( 0 ).opTags( logAllTags )
                 .param( Parameter.builder().name( "entity" ).alias( "table" ).type( ParamType.ENTITY ).build() )
                 .build() );
         declarations.put( LogicalRelViewScan.class, PolyAlgDeclaration.builder()
                 .creator( LogicalRelViewScan::create ).model( DataModel.RELATIONAL )
-                .opName( "REL_VIEW_SCAN" ).opAlias( "VIEW_SCAN" ).numInputs( 0 ).opTags( logTags )
+                .opName( "REL_VIEW_SCAN" ).opAlias( "VIEW_SCAN" ).numInputs( 0 ).opTags( logAllTags )
                 .param( Parameter.builder().name( "entity" ).alias( "table" ).type( ParamType.ENTITY ).build() )
                 .build() );
         declarations.put( LogicalRelFilter.class, PolyAlgDeclaration.builder()
                 .creator( LogicalRelFilter::create ).model( DataModel.RELATIONAL )
-                .opName( "REL_FILTER" ).opAlias( "FILTER" ).numInputs( 1 ).opTags( logTags )
+                .opName( "REL_FILTER" ).opAlias( "FILTER" ).numInputs( 1 ).opTags( logAllTags )
                 .param( Parameter.builder().name( "condition" ).type( ParamType.REX ).simpleType( SimpleType.REX_PREDICATE ).build() )
                 .param( Parameter.builder().name( "variables" ).type( ParamType.CORR_ID ).simpleType( SimpleType.HIDDEN ).multiValued( 1 ).defaultValue( ListArg.EMPTY ).build() )
                 .build() );
         declarations.put( LogicalRelAggregate.class, PolyAlgDeclaration.builder()
                 .creator( LogicalRelAggregate::create ).model( DataModel.RELATIONAL )
-                .opName( "REL_AGGREGATE" ).opAliases( List.of( "AGGREGATE", "AGG" ) ).numInputs( 1 ).opTags( logTags )
+                .opName( "REL_AGGREGATE" ).opAliases( List.of( "AGGREGATE", "AGG" ) ).numInputs( 1 ).opTags( logAllTags )
                 .param( Parameter.builder().name( "group" ).type( ParamType.FIELD ).multiValued( 1 ).defaultValue( ListArg.EMPTY ).build() )  // select count(*) has no group
                 .param( Parameter.builder().name( "groups" ).type( ParamType.FIELD ).simpleType( SimpleType.HIDDEN ).multiValued( 2 ).defaultValue( ListArg.NESTED_EMPTY ).build() )
                 .param( Parameter.builder().name( "aggregates" ).alias( "aggs" ).type( ParamType.AGGREGATE ).simpleType( SimpleType.SIMPLE_AGG ).multiValued( 1 ).defaultValue( ListArg.EMPTY ).build() )
                 .build() );
         declarations.put( LogicalRelMinus.class, PolyAlgDeclaration.builder()
                 .creator( LogicalRelMinus::create ).model( DataModel.RELATIONAL )
-                .opName( "REL_MINUS" ).opAlias( "MINUS" ).numInputs( -1 ).opTags( logTags )
+                .opName( "REL_MINUS" ).opAlias( "MINUS" ).numInputs( -1 ).opTags( logAllTags )
                 .param( Parameter.builder().name( "all" ).type( ParamType.BOOLEAN ).simpleType( SimpleType.HIDDEN ).defaultValue( BooleanArg.FALSE ).build() )
                 .build() );
         declarations.put( LogicalRelUnion.class, PolyAlgDeclaration.builder()
                 .creator( LogicalRelUnion::create ).model( DataModel.RELATIONAL )
-                .opName( "REL_UNION" ).opAlias( "UNION" ).numInputs( -1 ).opTags( logTags )
+                .opName( "REL_UNION" ).opAlias( "UNION" ).numInputs( -1 ).opTags( logAllTags )
                 .param( Parameter.builder().name( "all" ).type( ParamType.BOOLEAN ).simpleType( SimpleType.HIDDEN ).defaultValue( BooleanArg.FALSE ).build() )
                 .build() );
         declarations.put( LogicalRelIntersect.class, PolyAlgDeclaration.builder()
                 .creator( LogicalRelIntersect::create ).model( DataModel.RELATIONAL )
-                .opName( "REL_INTERSECT" ).opAlias( "INTERSECT" ).numInputs( -1 ).opTags( logTags )
+                .opName( "REL_INTERSECT" ).opAlias( "INTERSECT" ).numInputs( -1 ).opTags( logAllTags )
                 .param( Parameter.builder().name( "all" ).type( ParamType.BOOLEAN ).simpleType( SimpleType.HIDDEN ).defaultValue( BooleanArg.FALSE ).build() )
                 .build() );
         declarations.put( LogicalModifyCollect.class, PolyAlgDeclaration.builder()
                 .creator( LogicalModifyCollect::create ).model( DataModel.RELATIONAL )
-                .opName( "REL_MODIFY_COLLECT" ).opAlias( "MODIFY_COLLECT" ).numInputs( -1 ).opTags( logProTags )
+                .opName( "REL_MODIFY_COLLECT" ).opAlias( "MODIFY_COLLECT" ).numInputs( -1 ).opTags( logAllProTags )
                 .param( Parameter.builder().name( "all" ).type( ParamType.BOOLEAN ).simpleType( SimpleType.HIDDEN ).defaultValue( BooleanArg.FALSE ).build() )
                 .build() );
         declarations.put( LogicalRelSort.class, PolyAlgDeclaration.builder()
                 .creator( LogicalRelSort::create ).model( DataModel.RELATIONAL )
-                .opName( "REL_SORT" ).opAlias( "SORT" ).numInputs( 1 ).opTags( logTags )
+                .opName( "REL_SORT" ).opAlias( "SORT" ).numInputs( 1 ).opTags( logAllTags )
                 .param( Parameter.builder().name( "sort" ).aliases( List.of( "collation", "order" ) ).type( ParamType.COLLATION ).simpleType( SimpleType.SIMPLE_COLLATION ).multiValued( 1 ).defaultValue( ListArg.EMPTY ).build() )
                 .param( Parameter.builder().name( "limit" ).alias( "fetch" ).type( ParamType.REX ).simpleType( SimpleType.REX_UINT ).defaultValue( RexArg.NULL ).build() )
                 .param( Parameter.builder().name( "offset" ).type( ParamType.REX ).simpleType( SimpleType.HIDDEN ).defaultValue( RexArg.NULL ).build() )
                 .build() );
         declarations.put( LogicalRelJoin.class, PolyAlgDeclaration.builder()
                 .creator( LogicalRelJoin::create ).model( DataModel.RELATIONAL )
-                .opName( "REL_JOIN" ).opAlias( "JOIN" ).numInputs( 2 ).opTags( logTags )
+                .opName( "REL_JOIN" ).opAlias( "JOIN" ).numInputs( 2 ).opTags( logAllTags )
                 .param( Parameter.builder().name( "condition" ).alias( "on" ).type( ParamType.REX ).simpleType( SimpleType.REX_PREDICATE ).build() )
                 .param( Parameter.builder().name( "type" ).type( ParamType.JOIN_TYPE_ENUM ).defaultValue( new EnumArg<>( JoinAlgType.INNER, ParamType.JOIN_TYPE_ENUM ) ).build() )
                 .param( Parameter.builder().name( "variables" ).type( ParamType.CORR_ID ).simpleType( SimpleType.HIDDEN ).multiValued( 1 ).defaultValue( ListArg.EMPTY ).build() )
@@ -157,14 +158,14 @@ public class PolyAlgRegistry {
                 .build() );
         declarations.put( LogicalCalc.class, PolyAlgDeclaration.builder()
                 .model( DataModel.RELATIONAL )
-                .opName( "REL_CALC" ).opAlias( "CALC" ).numInputs( 1 ).opTags( logProTags )
+                .opName( "REL_CALC" ).opAlias( "CALC" ).numInputs( 1 ).opTags( logAllProTags )
                 .param( Parameter.builder().name( "exps" ).type( ParamType.REX ).multiValued( 1 ).build() )
                 .param( Parameter.builder().name( "projects" ).tag( ParamTag.ALIAS ).type( ParamType.REX ).multiValued( 1 ).build() ) // can have a name
                 .param( Parameter.builder().name( "condition" ).type( ParamType.REX ).simpleType( SimpleType.REX_PREDICATE ).defaultValue( RexArg.NULL ).build() )
                 .build() );
         declarations.put( LogicalRelModify.class, PolyAlgDeclaration.builder()
                 .creator( LogicalRelModify::create ).model( DataModel.RELATIONAL )
-                .opName( "REL_MODIFY" ).opAlias( "MODIFY" ).numInputs( 1 ).opTags( logProTags )
+                .opName( "REL_MODIFY" ).opAlias( "MODIFY" ).numInputs( 1 ).opTags( logAllProTags )
                 .param( Parameter.builder().name( "table" ).alias( "target" ).type( ParamType.ENTITY ).build() )
                 .param( Parameter.builder().name( "operation" ).type( ParamType.MODIFY_OP_ENUM ).build() )
                 .param( Parameter.builder().name( "targets" ).alias( "columns" ).multiValued( 1 ).type( ParamType.STRING ).defaultValue( ListArg.EMPTY ).build() )
@@ -173,26 +174,26 @@ public class PolyAlgRegistry {
                 .build() );
         declarations.put( LogicalRelValues.class, PolyAlgDeclaration.builder()
                 .creator( LogicalRelValues::create ).model( DataModel.RELATIONAL )
-                .opName( "REL_VALUES" ).opAlias( "VALUES" ).numInputs( 0 ).opTags( logProTags )
+                .opName( "REL_VALUES" ).opAlias( "VALUES" ).numInputs( 0 ).opTags( logAllProTags )
                 .param( Parameter.builder().name( "names" ).multiValued( 1 ).type( ParamType.STRING ).build() )
                 .param( Parameter.builder().name( "tuples" ).multiValued( 2 ).type( ParamType.REX ).build() )
                 .build() );
         declarations.put( LogicalRelCorrelate.class, PolyAlgDeclaration.builder()
                 .creator( LogicalRelCorrelate::create ).model( DataModel.RELATIONAL )
-                .opName( "REL_CORRELATE" ).opAlias( "CORRELATE" ).numInputs( 2 ).opTags( logProTags )
+                .opName( "REL_CORRELATE" ).opAlias( "CORRELATE" ).numInputs( 2 ).opTags( logAllProTags )
                 .param( Parameter.builder().name( "id" ).type( ParamType.CORR_ID ).build() )
                 .param( Parameter.builder().name( "columns" ).type( ParamType.REX ).build() )
                 .param( Parameter.builder().name( "joinType" ).alias( "type" ).type( ParamType.SEMI_JOIN_TYPE_ENUM ).build() )
                 .build() );
         declarations.put( LogicalRelExchange.class, PolyAlgDeclaration.builder()
                 .creator( LogicalRelExchange::create ).model( DataModel.RELATIONAL )
-                .opName( "REL_EXCHANGE" ).opAlias( "EXCHANGE" ).numInputs( 1 ).opTags( logProTags )
+                .opName( "REL_EXCHANGE" ).opAlias( "EXCHANGE" ).numInputs( 1 ).opTags( logAllProTags )
                 .param( Parameter.builder().name( "distributionType" ).alias( "type" ).type( ParamType.DISTRIBUTION_TYPE_ENUM ).build() )
                 .param( Parameter.builder().name( "numbers" ).multiValued( 1 ).type( ParamType.REX ).defaultValue( ListArg.EMPTY ).build() )
                 .build() );
         declarations.put( LogicalSortExchange.class, PolyAlgDeclaration.builder()
                 .creator( LogicalSortExchange::create ).model( DataModel.RELATIONAL )
-                .opName( "REL_SORT_EXCHANGE" ).opAlias( "SORT_EXCHANGE" ).numInputs( 1 ).opTags( logProTags )
+                .opName( "REL_SORT_EXCHANGE" ).opAlias( "SORT_EXCHANGE" ).numInputs( 1 ).opTags( logAllProTags )
                 .param( Parameter.builder().name( "sort" ).aliases( List.of( "collation", "order" ) ).multiValued( 1 ).type( ParamType.COLLATION ).simpleType( SimpleType.SIMPLE_COLLATION ).build() )
                 .param( Parameter.builder().name( "distributionType" ).alias( "type" ).type( ParamType.DISTRIBUTION_TYPE_ENUM ).build() )
                 .param( Parameter.builder().name( "numbers" ).multiValued( 1 ).type( ParamType.REX ).defaultValue( ListArg.EMPTY ).build() )
@@ -201,17 +202,17 @@ public class PolyAlgRegistry {
         // DOCUMENT
         declarations.put( LogicalDocumentScan.class, PolyAlgDeclaration.builder()
                 .creator( LogicalDocumentScan::create ).model( DataModel.DOCUMENT )
-                .opName( "DOC_SCAN" ).numInputs( 0 ).opTags( logTags )
+                .opName( "DOC_SCAN" ).numInputs( 0 ).opTags( logAllTags )
                 .param( Parameter.builder().name( "entity" ).type( ParamType.ENTITY ).build() )
                 .build() );
         declarations.put( LogicalDocumentFilter.class, PolyAlgDeclaration.builder()
                 .creator( LogicalDocumentFilter::create ).model( DataModel.DOCUMENT )
-                .opName( "DOC_FILTER" ).numInputs( 1 ).opTags( logTags )
+                .opName( "DOC_FILTER" ).numInputs( 1 ).opTags( logAllTags )
                 .param( Parameter.builder().name( "condition" ).type( ParamType.REX ).simpleType( SimpleType.REX_PREDICATE ).build() )
                 .build() );
         declarations.put( LogicalDocumentSort.class, PolyAlgDeclaration.builder()
                 .creator( LogicalDocumentSort::create ).model( DataModel.DOCUMENT )
-                .opName( "DOC_SORT" ).numInputs( 1 ).opTags( logTags )
+                .opName( "DOC_SORT" ).numInputs( 1 ).opTags( logAllTags )
                 .param( Parameter.builder().name( "sort" ).aliases( List.of( "collation", "order" ) ).type( ParamType.COLLATION ).simpleType( SimpleType.SIMPLE_COLLATION ).multiValued( 1 ).defaultValue( ListArg.EMPTY ).build() )
                 .param( Parameter.builder().name( "targets" ).multiValued( 1 ).type( ParamType.REX ).defaultValue( ListArg.EMPTY ).build() )
                 .param( Parameter.builder().name( "limit" ).alias( "fetch" ).type( ParamType.REX ).simpleType( SimpleType.REX_UINT ).defaultValue( RexArg.NULL ).build() )
@@ -219,24 +220,24 @@ public class PolyAlgRegistry {
                 .build() );
         declarations.put( LogicalDocumentUnwind.class, PolyAlgDeclaration.builder()
                 .creator( LogicalDocumentUnwind::create ).model( DataModel.DOCUMENT )
-                .opName( "DOC_UNWIND" ).numInputs( 1 ).opTags( logProTags )
+                .opName( "DOC_UNWIND" ).numInputs( 1 ).opTags( logAllProTags )
                 .param( Parameter.builder().name( "path" ).type( ParamType.STRING ).build() )
                 .build() );
         declarations.put( LogicalDocumentProject.class, PolyAlgDeclaration.builder()
                 .creator( LogicalDocumentProject::create ).model( DataModel.DOCUMENT )
-                .opName( "DOC_PROJECT" ).numInputs( 1 ).opTags( logTags )
+                .opName( "DOC_PROJECT" ).numInputs( 1 ).opTags( logAllTags )
                 .param( Parameter.builder().name( "includes" ).tag( ParamTag.ALIAS ).requiresAlias( true ).multiValued( 1 ).type( ParamType.REX ).defaultValue( ListArg.EMPTY ).build() )
                 .param( Parameter.builder().name( "excludes" ).multiValued( 1 ).type( ParamType.STRING ).defaultValue( ListArg.EMPTY ).build() )
                 .build() );
         declarations.put( LogicalDocumentAggregate.class, PolyAlgDeclaration.builder()
                 .creator( LogicalDocumentAggregate::create ).model( DataModel.DOCUMENT )
-                .opName( "DOC_AGGREGATE" ).opAlias( "DOC_AGG" ).numInputs( 1 ).opTags( logTags )
+                .opName( "DOC_AGGREGATE" ).opAlias( "DOC_AGG" ).numInputs( 1 ).opTags( logAllTags )
                 .param( Parameter.builder().name( "group" ).type( ParamType.REX ).defaultValue( RexArg.NULL ).build() )
                 .param( Parameter.builder().name( "aggregates" ).alias( "aggs" ).multiValued( 1 ).type( ParamType.LAX_AGGREGATE ).defaultValue( ListArg.EMPTY ).build() )
                 .build() );
         declarations.put( LogicalDocumentModify.class, PolyAlgDeclaration.builder()
                 .creator( LogicalDocumentModify::create ).model( DataModel.DOCUMENT )
-                .opName( "DOC_MODIFY" ).numInputs( 1 ).opTags( logProTags )
+                .opName( "DOC_MODIFY" ).numInputs( 1 ).opTags( logAllProTags )
                 .param( Parameter.builder().name( "entity" ).type( ParamType.ENTITY ).build() )
                 .param( Parameter.builder().name( "operation" ).type( ParamType.MODIFY_OP_ENUM ).build() )
                 .param( Parameter.builder().name( "updates" ).tag( ParamTag.ALIAS ).requiresAlias( true ).multiValued( 1 ).type( ParamType.REX ).defaultValue( ListArg.EMPTY ).build() )
@@ -247,55 +248,61 @@ public class PolyAlgRegistry {
         // GRAPH
         declarations.put( LogicalLpgScan.class, PolyAlgDeclaration.builder()
                 .creator( LogicalLpgScan::create ).model( DataModel.GRAPH )
-                .opName( "LPG_SCAN" ).numInputs( 0 ).opTags( logTags )
+                .opName( "LPG_SCAN" ).numInputs( 0 ).opTags( logAllTags )
                 .param( Parameter.builder().name( "entity" ).type( ParamType.ENTITY ).build() )
                 .build() );
         declarations.put( LogicalLpgMatch.class, PolyAlgDeclaration.builder()
                 .creator( LogicalLpgMatch::create ).model( DataModel.GRAPH )
-                .opName( "LPG_MATCH" ).numInputs( 1 ).opTags( logTags )
+                .opName( "LPG_MATCH" ).numInputs( 1 ).opTags( logAllTags )
                 .param( Parameter.builder().name( "matches" ).tag( ParamTag.ALIAS ).multiValued( 1 ).type( ParamType.REX ).build() )
                 .build() );
         declarations.put( LogicalLpgFilter.class, PolyAlgDeclaration.builder()
                 .creator( LogicalLpgFilter::create ).model( DataModel.GRAPH )
-                .opName( "LPG_FILTER" ).numInputs( 1 ).opTags( logTags )
+                .opName( "LPG_FILTER" ).numInputs( 1 ).opTags( logAllTags )
                 .param( Parameter.builder().name( "condition" ).type( ParamType.REX ).simpleType( SimpleType.REX_PREDICATE ).build() )
                 .build() );
         declarations.put( LogicalLpgProject.class, PolyAlgDeclaration.builder()
                 .creator( LogicalLpgProject::create ).model( DataModel.GRAPH )
-                .opName( "LPG_PROJECT" ).numInputs( 1 ).opTags( logTags )
+                .opName( "LPG_PROJECT" ).numInputs( 1 ).opTags( logAllTags )
                 .param( Parameter.builder().name( "projects" ).tag( ParamTag.ALIAS ).multiValued( 1 ).type( ParamType.REX ).build() )
                 .build() );
         declarations.put( LogicalLpgSort.class, PolyAlgDeclaration.builder()
                 .creator( LogicalLpgSort::create ).model( DataModel.GRAPH )
-                .opName( "LPG_SORT" ).numInputs( 1 ).opTags( logTags )
+                .opName( "LPG_SORT" ).numInputs( 1 ).opTags( logAllTags )
                 .param( Parameter.builder().name( "sort" ).aliases( List.of( "collation", "order" ) ).type( ParamType.COLLATION ).simpleType( SimpleType.SIMPLE_COLLATION ).multiValued( 1 ).defaultValue( ListArg.EMPTY ).build() )
                 .param( Parameter.builder().name( "limit" ).alias( "fetch" ).tag( ParamTag.NON_NEGATIVE ).type( ParamType.INTEGER ).defaultValue( IntArg.NULL ).build() )
                 .param( Parameter.builder().name( "skip" ).alias( "offset" ).tag( ParamTag.NON_NEGATIVE ).type( ParamType.INTEGER ).simpleType( SimpleType.HIDDEN ).defaultValue( IntArg.NULL ).build() )
                 .build() );
         declarations.put( LogicalLpgUnion.class, PolyAlgDeclaration.builder()
                 .creator( LogicalLpgUnion::create ).model( DataModel.GRAPH )
-                .opName( "LPG_UNION" ).numInputs( -1 ).opTags( logTags )
+                .opName( "LPG_UNION" ).numInputs( -1 ).opTags( logAllTags )
                 .param( Parameter.builder().name( "all" ).type( ParamType.BOOLEAN ).simpleType( SimpleType.HIDDEN ).defaultValue( BooleanArg.FALSE ).build() )
                 .build() );
         declarations.put( LogicalLpgUnwind.class, PolyAlgDeclaration.builder()
                 .creator( LogicalLpgUnwind::create ).model( DataModel.GRAPH )
-                .opName( "LPG_UNWIND" ).numInputs( 1 ).opTags( logProTags )
+                .opName( "LPG_UNWIND" ).numInputs( 1 ).opTags( logAllProTags )
                 .param( Parameter.builder().name( "index" ).tag( ParamTag.NON_NEGATIVE ).type( ParamType.INTEGER ).build() )
                 .param( Parameter.builder().name( "alias" ).type( ParamType.STRING ).defaultValue( StringArg.NULL ).build() )
                 .build() );
         declarations.put( LogicalLpgAggregate.class, PolyAlgDeclaration.builder()
                 .creator( LogicalLpgAggregate::create ).model( DataModel.GRAPH )
-                .opName( "LPG_AGGREGATE" ).opAlias( "LPG_AGG" ).numInputs( 1 ).opTags( logTags )
+                .opName( "LPG_AGGREGATE" ).opAlias( "LPG_AGG" ).numInputs( 1 ).opTags( logAllTags )
                 .param( Parameter.builder().name( "groups" ).multiValued( 1 ).type( ParamType.REX ).defaultValue( ListArg.EMPTY ).build() )
                 .param( Parameter.builder().name( "aggregates" ).alias( "aggs" ).multiValued( 1 ).type( ParamType.LAX_AGGREGATE ).defaultValue( ListArg.EMPTY ).build() )
                 .build() );
         declarations.put( LogicalLpgModify.class, PolyAlgDeclaration.builder()
                 .creator( LogicalLpgModify::create ).model( DataModel.GRAPH )
-                .opName( "LPG_MODIFY" ).numInputs( 1 ).opTags( logProTags )
+                .opName( "LPG_MODIFY" ).numInputs( 1 ).opTags( logAllProTags )
                 .param( Parameter.builder().name( "entity" ).type( ParamType.ENTITY ).build() )
                 .param( Parameter.builder().name( "operation" ).type( ParamType.MODIFY_OP_ENUM ).build() )
                 .param( Parameter.builder().name( "updates" ).alias( "operations" ).multiValued( 1 ).type( ParamType.REX ).defaultValue( ListArg.EMPTY ).build() )
                 .param( Parameter.builder().name( "ids" ).multiValued( 1 ).type( ParamType.STRING ).defaultValue( ListArg.EMPTY ).build() )
+                .build() );
+
+        // Common
+        declarations.put( LogicalBatchIterator.class, PolyAlgDeclaration.builder()
+                .creator( LogicalBatchIterator::create ).model( null )
+                .opName( "BATCH_ITERATOR" ).opAlias( "BATCH" ).numInputs( 1 ).opTags( logAllProTags )
                 .build() );
     }
 

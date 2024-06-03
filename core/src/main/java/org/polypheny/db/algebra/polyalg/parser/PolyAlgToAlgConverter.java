@@ -265,7 +265,7 @@ public class PolyAlgToAlgConverter {
             }
             case AGGREGATE -> new AggArg( convertAggCall( exp, alias, ctx ) );
             case LAX_AGGREGATE -> new LaxAggArg( convertLaxAggCall( exp, alias, ctx ) );
-            case ENTITY -> new EntityArg( convertEntity( exp, ctx ), snapshot, ctx.dataModel );
+            case ENTITY -> new EntityArg( convertEntity( exp, ctx ), snapshot, ctx.getNonNullDataModel() );
             case JOIN_TYPE_ENUM -> new EnumArg<>( exp.toEnum( JoinAlgType.class ), pType );
             case SEMI_JOIN_TYPE_ENUM -> new EnumArg<>( exp.toEnum( SemiJoinType.class ), pType );
             case MODIFY_OP_ENUM -> new EnumArg<>( exp.toEnum( Modify.Operation.class ), pType );
@@ -291,7 +291,7 @@ public class PolyAlgToAlgConverter {
 
 
     private RexNode convertRexCall( PolyAlgExpression exp, Context ctx ) {
-        Operator operator = exp.getOperator( ctx.dataModel );
+        Operator operator = exp.getOperator( ctx.getNonNullDataModel() );
         if ( operator.getOperatorName() == OperatorName.CAST ) {
             RexNode child = convertRexNode( exp.getOnlyChild(), ctx );
             return new RexCall( exp.getAlgDataTypeForCast(), operator, ImmutableList.of( child ) );
@@ -332,7 +332,7 @@ public class PolyAlgToAlgConverter {
                 case POLY_VALUE -> builder.makeLiteral( literal.toPolyValue() );
                 case STRING -> {
                     String str = literal.toString();
-                    if ( ctx.dataModel == DataModel.DOCUMENT ) {
+                    if ( ctx.getNonNullDataModel() == DataModel.DOCUMENT ) {
                         // nameRef (during serialization, any non-null index fails)
                         yield RexNameRef.create( List.of( str.split( "\\." ) ), null, ctx.children.get( 0 ).getTupleType() );
                     } else {
@@ -386,35 +386,35 @@ public class PolyAlgToAlgConverter {
 
         LogicalNamespace ns = snapshot.getNamespace( namespaceName ).orElseThrow( () -> new GenericRuntimeException( "no namespace named " + namespaceName ) );
 
-        if (planType == PlanType.ALLOCATION) {
+        if ( planType == PlanType.ALLOCATION ) {
             // ns.entity@adapterName.partition
-            System.out.println("trying to parse " + exp.toIdentifier());
-            if (rest == null) {
+            System.out.println( "trying to parse " + exp.toIdentifier() );
+            if ( rest == null ) {
                 throw exception;
             }
             String[] split = rest.split( "@" );
-            if (split.length != 2) {
+            if ( split.length != 2 ) {
                 throw exception;
             }
             String entityName = split[0];
             String[] apSplit = split[1].split( "\\.", 2 ); // [adapterName, partition]
 
-            LogicalAdapter adapter = snapshot.getAdapter( apSplit[0] ).orElseThrow(() -> exception);
-            LogicalEntity logicalEntity = snapshot.getLogicalEntity( ns.id, entityName).orElseThrow(() -> exception);
-            AllocationPlacement placement = snapshot.alloc().getPlacement( adapter.id, logicalEntity.id ).orElseThrow(() -> exception);
+            LogicalAdapter adapter = snapshot.getAdapter( apSplit[0] ).orElseThrow( () -> exception );
+            LogicalEntity logicalEntity = snapshot.getLogicalEntity( ns.id, entityName ).orElseThrow( () -> exception );
+            AllocationPlacement placement = snapshot.alloc().getPlacement( adapter.id, logicalEntity.id ).orElseThrow( () -> exception );
 
-            if (apSplit.length == 1) {
+            if ( apSplit.length == 1 ) {
                 List<AllocationEntity> entities = snapshot.alloc().getAllocsOfPlacement( placement.id );
-                if (entities.isEmpty()) {
+                if ( entities.isEmpty() ) {
                     throw exception;
                 }
                 return entities.get( 0 );
-            } else  {
+            } else {
                 try {
-                    return snapshot.alloc().getAlloc( placement.id, Long.parseLong( apSplit[1] )).orElseThrow(() -> exception);
+                    return snapshot.alloc().getAlloc( placement.id, Long.parseLong( apSplit[1] ) ).orElseThrow( () -> exception );
                 } catch ( NumberFormatException e ) {
-                    long partitionId = snapshot.alloc().getPartitionFromName( logicalEntity.id, apSplit[1] ).orElseThrow(() -> exception).id;
-                    return snapshot.alloc().getAlloc( placement.id, partitionId).orElseThrow(() -> exception);
+                    long partitionId = snapshot.alloc().getPartitionFromName( logicalEntity.id, apSplit[1] ).orElseThrow( () -> exception ).id;
+                    return snapshot.alloc().getAlloc( placement.id, partitionId ).orElseThrow( () -> exception );
                 }
             }
         }
@@ -423,7 +423,7 @@ public class PolyAlgToAlgConverter {
             case RELATIONAL -> {
                 if ( rest == null ) {
                     yield new SubstitutionGraph( ns.id, "sub", false, ns.caseSensitive, List.of() );
-                } else if ( ctx.dataModel == DataModel.GRAPH ) {
+                } else if ( ctx.getNonNullDataModel() == DataModel.GRAPH ) {
                     List<String> subNames = Arrays.asList( rest.split( "\\." ) );
                     yield new SubstitutionGraph( ns.id, "sub", false, ns.caseSensitive, subNames.stream().map( PolyString::of ).toList() );
                 }
@@ -542,6 +542,17 @@ public class PolyAlgToAlgConverter {
 
         public AlgDataType getChildTupleType( int idx ) {
             return children.get( idx ).getTupleType();
+        }
+
+
+        /**
+         * The data model could be null for common AlgNodes.
+         * In this case this method returns the default DataModel.
+         *
+         * @return the DataModel of this context or the default DataModel if it is null
+         */
+        public DataModel getNonNullDataModel() {
+            return Objects.requireNonNullElse( dataModel, DataModel.getDefault() );
         }
 
     }

@@ -19,6 +19,7 @@ package org.polypheny.db.algebra.logical.common;
 import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.common.BatchIterator;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.transaction.Statement;
@@ -47,12 +48,23 @@ public class LogicalBatchIterator extends BatchIterator {
     }
 
 
+    public static LogicalBatchIterator create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+        return create( children.get( 0 ) );
+    }
+
+
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         return new LogicalBatchIterator(
                 inputs.get( 0 ).getCluster(),
                 traitSet,
                 inputs.get( 0 ) );
+    }
+
+
+    @Override
+    public PolyAlgArgs collectAttributes() {
+        return new PolyAlgArgs( getPolyAlgDeclaration() );
     }
 
 }

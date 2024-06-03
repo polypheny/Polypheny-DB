@@ -61,7 +61,7 @@ public class PolyAlgDeclaration {
 
     public final String opName;
     public final ImmutableSet<String> opAliases;
-    public final DataModel model;
+    public final DataModel model; // null: common (can be used with nodes of any datamodel)
     private final int numInputs; // -1 if arbitrary amount is allowed
     public final ImmutableSet<OperatorTag> opTags;
 
@@ -76,7 +76,7 @@ public class PolyAlgDeclaration {
     public PolyAlgDeclaration(
             @NonNull String opName,
             @Singular ImmutableSet<String> opAliases,
-            @NonNull DataModel model,
+            DataModel model,
             TriFunction<PolyAlgArgs, List<AlgNode>, AlgCluster, AlgNode> creator,
             @Singular ImmutableSet<OperatorTag> opTags,
             int numInputs,
@@ -208,7 +208,11 @@ public class PolyAlgDeclaration {
         }
         node.set( "aliases", aliases );
 
-        node.put( "model", model.name() );
+        if (model == null) {
+            node.put( "model", "COMMON" );
+        } else {
+            node.put( "model", model.name() );
+        }
         node.put( "numInputs", numInputs );
 
         ArrayNode tags = mapper.createArrayNode();
