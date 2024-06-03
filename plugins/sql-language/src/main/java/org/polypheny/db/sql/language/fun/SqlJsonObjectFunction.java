@@ -36,6 +36,7 @@ import org.polypheny.db.sql.language.validate.SqlValidator;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
 import org.polypheny.db.type.PolyTypeUtil;
+import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.checker.PolyOperandTypeChecker;
 import org.polypheny.db.type.inference.ReturnTypes;
 import org.polypheny.db.util.Static;
@@ -52,7 +53,7 @@ public class SqlJsonObjectFunction extends SqlFunction {
                 Kind.OTHER_FUNCTION,
                 ReturnTypes.VARCHAR_2000,
                 null,
-                null,
+                OperandTypes.VARIADIC,
                 FunctionCategory.SYSTEM );
     }
 
