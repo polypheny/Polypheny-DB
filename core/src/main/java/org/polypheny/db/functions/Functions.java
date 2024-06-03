@@ -1315,7 +1315,6 @@ public class Functions {
 
 
     public static PolyNumber floor( PolyNumber b0 ) {
-        log.warn( "optimize" );
         return PolyBigDecimal.of( b0.bigDecimalValue().setScale( 0, RoundingMode.FLOOR ) );
     }
 
