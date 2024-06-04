@@ -76,7 +76,7 @@ public class AdapterManager {
 
 
     public static AdapterTemplate getAdapterTemplate( String name, AdapterType adapterType ) {
-        return Catalog.snapshot().getAdapterTemplate( name, adapterType ).orElseThrow();
+        return Catalog.snapshot().getAdapterTemplate( name, adapterType ).orElseThrow( () -> new GenericRuntimeException( "No adapter template found for name: " + name + " of type: " + adapterType ) );
     }
 
 
