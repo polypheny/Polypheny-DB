@@ -201,7 +201,6 @@ import org.polypheny.db.webui.models.TableConstraint;
 import org.polypheny.db.webui.models.Uml;
 import org.polypheny.db.webui.models.UnderlyingTables;
 import org.polypheny.db.webui.models.catalog.AdapterModel;
-import org.polypheny.db.webui.models.catalog.AdapterModel.AdapterSettingValueModel;
 import org.polypheny.db.webui.models.catalog.PolyTypeModel;
 import org.polypheny.db.webui.models.catalog.SnapshotModel;
 import org.polypheny.db.webui.models.catalog.UiColumnDefinition;
@@ -2084,32 +2083,40 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     /**
      * Deploy a new adapter
      */
-    void addAdapter( final Context ctx ) throws ServletException, IOException {
+    void createAdapter( final Context ctx ) throws ServletException, IOException {
         initMultipart( ctx );
         String body = "";
         Map<String, InputStream> inputStreams = new HashMap<>();
 
-        // collect all files e.g. csv files
-        for ( Part part : ctx.req.getParts() ) {
-            if ( part.getName().equals( "body" ) ) {
-                body = IOUtils.toString( ctx.req.getPart( "body" ).getInputStream(), StandardCharsets.UTF_8 );
-            } else {
-                inputStreams.put( part.getName(), part.getInputStream() );
+        final AdapterModel a;
+        if ( ctx.isMultipartFormData() ) {
+            // collect all files e.g. csv files
+            for ( Part part : ctx.req.getParts() ) {
+                if ( part.getName().equals( "body" ) ) {
+                    body = IOUtils.toString( ctx.req.getPart( "body" ).getInputStream(), StandardCharsets.UTF_8 );
+                } else {
+                    inputStreams.put( part.getName(), part.getInputStream() );
+                }
             }
+            a = HttpServer.mapper.readValue( body, AdapterModel.class );
+        } else if ( "application/json".equals( ctx.contentType() ) ) {
+            a = ctx.bodyAsClass( AdapterModel.class );
+        } else {
+            ctx.status( HttpCode.BAD_REQUEST );
+            return;
         }
 
-        AdapterModel a = HttpServer.mapper.readValue( body, AdapterModel.class );
         Map<String, String> settings = new HashMap<>();
 
         ConnectionMethod method = ConnectionMethod.UPLOAD;
         if ( a.settings.containsKey( "method" ) ) {
-            method = ConnectionMethod.valueOf( a.settings.get( "method" ).value().toUpperCase() );
+            method = ConnectionMethod.valueOf( a.settings.get( "method" ).toUpperCase() );
         }
         AdapterTemplate adapter = AdapterManager.getAdapterTemplate( a.adapterName, a.type );
         Map<String, AbstractAdapterSetting> allSettings = adapter.settings.stream().collect( Collectors.toMap( e -> e.name, e -> e ) );
 
-        for ( AdapterSettingValueModel entry : a.settings.values() ) {
-            AbstractAdapterSetting set = allSettings.get( entry.name() );
+        for ( Map.Entry<String, String> entry : a.settings.entrySet() ) {
+            AbstractAdapterSetting set = allSettings.get( entry.getKey() );
             if ( set == null ) {
                 continue;
             }
@@ -2120,19 +2127,19 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                         ctx.json( RelationalResult.builder().exception( e ).build() );
                         return;
                     }
-                    settings.put( set.name, entry.value() );
+                    settings.put( set.name, entry.getValue() );
                 } else {
-                    List<String> fileNames = HttpServer.mapper.readValue( entry.value(), new TypeReference<>() {
+                    List<String> fileNames = HttpServer.mapper.readValue( entry.getValue(), new TypeReference<>() {
                     } );
                     String directory = handleUploadFiles( inputStreams, fileNames, setting, a );
                     settings.put( set.name, directory );
                 }
-
-
             } else {
-                settings.put( set.name, entry.value() );
+                settings.put( set.name, entry.getValue() );
             }
         }
+
+        settings.put( "mode", a.mode.toString() );
 
         String query = String.format( "ALTER ADAPTERS ADD \"%s\" USING '%s' AS '%s' WITH '%s'", a.name, a.adapterName, a.type, Crud.gson.toJson( settings ) );
         QueryLanguage language = QueryLanguage.from( "sql" );
@@ -2479,10 +2486,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                         false,
                         false
                 );
-
-
             } else {
-
                 viewType = "View";
                 List<DataStore<?>> store = null;
                 PlacementType placementType = PlacementType.AUTOMATIC;
@@ -2507,8 +2511,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                         gson.toJson( request.topNode ),
                         QueryLanguage.from( "rel" )
                 );
-
-
             }
             try {
                 transaction.commit();

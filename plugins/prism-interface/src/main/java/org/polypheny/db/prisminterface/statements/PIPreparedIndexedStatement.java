@@ -38,10 +38,10 @@ import org.polypheny.prism.StatementResult;
 @Getter
 public class PIPreparedIndexedStatement extends PIPreparedStatement {
 
-    protected String query;
-    protected Statement statement;
+    private final String query;
+    private Statement statement;
     @Setter
-    protected PolyImplementation implementation;
+    private PolyImplementation implementation;
 
 
     public PIPreparedIndexedStatement(

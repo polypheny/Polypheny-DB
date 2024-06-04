@@ -99,7 +99,8 @@ public class SqlAlterAdaptersAdd extends SqlAlter {
         Map<String, String> configMap = new Gson().fromJson( removeQuotationMarks( config.toString() ), Map.class );
 
         AdapterType type = AdapterType.valueOf( removeQuotationMarks( adapterType.toString().toUpperCase() ) );
-        DeployMode mode = configMap.containsKey( "mode" ) ? DeployMode.valueOf( configMap.get( "mode" ).toUpperCase() ) : DeployMode.EMBEDDED;
+        String deployMode = configMap.remove( "mode" );
+        DeployMode mode = deployMode != null ? DeployMode.valueOf( deployMode.toUpperCase() ) : DeployMode.EMBEDDED;
         String uniqueName = removeQuotationMarks( this.uniqueName.toString() );
         String adapterName = removeQuotationMarks( this.adapterName.toString() );
         if ( type == AdapterType.STORE ) {

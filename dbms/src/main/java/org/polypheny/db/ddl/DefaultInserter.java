@@ -18,7 +18,7 @@ package org.polypheny.db.ddl;
 
 import java.util.Map;
 import org.apache.calcite.linq4j.function.Deterministic;
-import org.polypheny.db.adapter.DeployMode;
+import org.polypheny.db.adapter.java.AdapterTemplate;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.catalog.logistic.DataModel;
@@ -66,16 +66,16 @@ public class DefaultInserter {
         catalog.updateSnapshot();
 
         // Deploy default store (HSQLDB)
-        Map<String, String> defaultStore = Catalog.snapshot().getAdapterTemplate( Catalog.defaultStore.getAdapterName(), AdapterType.STORE ).orElseThrow().getDefaultSettings();
-        ddlManager.createStore( "hsqldb", Catalog.defaultStore.getAdapterName(), AdapterType.STORE, defaultStore, DeployMode.EMBEDDED );
+        AdapterTemplate storeTemplate = Catalog.snapshot().getAdapterTemplate( Catalog.defaultStore.getAdapterName(), AdapterType.STORE ).orElseThrow();
+        ddlManager.createStore( "hsqldb", Catalog.defaultStore.getAdapterName(), AdapterType.STORE, storeTemplate.getDefaultSettings(), storeTemplate.getDefaultMode() );
 
         if ( mode == RunMode.TEST ) {
             return; // source adapters create schema structure, which we do not want for testing
         }
 
         // Deploy default source (CSV with HR data)
-        Map<String, String> defaultSource = Catalog.snapshot().getAdapterTemplate( Catalog.defaultSource.getAdapterName(), AdapterType.SOURCE ).orElseThrow().getDefaultSettings();
-        ddlManager.createSource( "hr", Catalog.defaultSource.getAdapterName(), Catalog.defaultNamespaceId, AdapterType.SOURCE, defaultSource, DeployMode.REMOTE );
+        AdapterTemplate sourceTemplate = Catalog.snapshot().getAdapterTemplate( Catalog.defaultSource.getAdapterName(), AdapterType.SOURCE ).orElseThrow();
+        ddlManager.createSource( "hr", Catalog.defaultSource.getAdapterName(), Catalog.defaultNamespaceId, AdapterType.SOURCE, sourceTemplate.getDefaultSettings(), sourceTemplate.getDefaultMode() );
 
 
     }

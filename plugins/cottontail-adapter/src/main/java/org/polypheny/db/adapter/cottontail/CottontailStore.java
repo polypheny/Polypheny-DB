@@ -121,11 +121,11 @@ public class CottontailStore extends DataStore<RelAdapterCatalog> {
     private final transient CottontailWrapper wrapper;
 
 
-    public CottontailStore( long storeId, String uniqueName, Map<String, String> settings ) {
-        super( storeId, uniqueName, settings, true, new RelAdapterCatalog( storeId ) );
+    public CottontailStore( long storeId, String uniqueName, Map<String, String> settings, DeployMode mode ) {
+        super( storeId, uniqueName, settings, mode, true, new RelAdapterCatalog( storeId ) );
 
         this.dbName = settings.get( "database" );
-        this.isEmbedded = settings.get( "mode" ).equalsIgnoreCase( "embedded" );
+        this.isEmbedded = this.deployMode == DeployMode.EMBEDDED;
         this.dbPort = Integer.parseInt( settings.get( "port" ) );
 
         engine = Engine.valueOf( settings.get( "engine" ).trim() );

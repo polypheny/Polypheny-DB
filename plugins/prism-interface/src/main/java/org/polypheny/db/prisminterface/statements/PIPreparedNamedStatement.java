@@ -34,12 +34,12 @@ import org.polypheny.prism.StatementResult;
 public class PIPreparedNamedStatement extends PIPreparedStatement {
 
     @Getter
-    protected String query;
+    private final String query;
     @Getter
     @Setter
-    protected PolyImplementation implementation;
+    private PolyImplementation implementation;
     @Getter
-    protected Statement statement;
+    private Statement statement;
     private final NamedValueProcessor namedValueProcessor;
 
 
