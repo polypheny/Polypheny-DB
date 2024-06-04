@@ -281,7 +281,7 @@ public class PolyphenyDb {
         String uuid = generateOrLoadPolyphenyUUID();
 
         if ( mode == RunMode.TEST ) {
-            uuid = "polypheny-test";
+            uuid += "-polypheny-test";
         }
 
         log.info( "Polypheny UUID: " + uuid );
