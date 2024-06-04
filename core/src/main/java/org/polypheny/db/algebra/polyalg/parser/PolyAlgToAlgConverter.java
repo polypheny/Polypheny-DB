@@ -270,6 +270,7 @@ public class PolyAlgToAlgConverter {
             case SEMI_JOIN_TYPE_ENUM -> new EnumArg<>( exp.toEnum( SemiJoinType.class ), pType );
             case MODIFY_OP_ENUM -> new EnumArg<>( exp.toEnum( Modify.Operation.class ), pType );
             case DISTRIBUTION_TYPE_ENUM -> new EnumArg<>( exp.toEnum( AlgDistribution.Type.class ), pType );
+            case DATAMODEL_ENUM -> new EnumArg<>( exp.toEnum( DataModel.class ), pType );
             case FIELD -> new FieldArg( ctx.getFieldOrdinal( exp.toIdentifier() ) );
             case LIST -> ListArg.EMPTY;
             case COLLATION -> new CollationArg( convertCollation( exp, ctx ) );
@@ -370,7 +371,9 @@ public class PolyAlgToAlgConverter {
 
 
     private Entity convertEntity( PolyAlgExpression exp, Context ctx ) {
-        String[] names = exp.toIdentifier().split( "\\.", 2 );
+        String[] atSplit = exp.toIdentifier().split( "@", 2 );
+
+        String[] names = atSplit[0].split( "\\.", 2 );
         GenericRuntimeException exception = new GenericRuntimeException( "Invalid entity name: " + String.join( ".", names ) );
 
         String namespaceName;
@@ -388,19 +391,24 @@ public class PolyAlgToAlgConverter {
 
         if ( planType == PlanType.ALLOCATION ) {
             // ns.entity@adapterName.partition
-            System.out.println( "trying to parse " + exp.toIdentifier() );
+            if ( atSplit.length != 2 ) {
+                throw exception;
+            }
+
+            LogicalEntity logicalEntity;
             if ( rest == null ) {
-                throw exception;
+                if ( ns.dataModel == DataModel.GRAPH ) {
+                    logicalEntity = snapshot.graph().getGraph( ns.id ).orElseThrow( () -> exception );
+                } else {
+                    throw exception;
+                }
+            } else {
+                logicalEntity = snapshot.getLogicalEntity( ns.id, rest ).orElseThrow( () -> exception );
             }
-            String[] split = rest.split( "@" );
-            if ( split.length != 2 ) {
-                throw exception;
-            }
-            String entityName = split[0];
-            String[] apSplit = split[1].split( "\\.", 2 ); // [adapterName, partition]
+
+            String[] apSplit = atSplit[1].split( "\\.", 2 ); // [adapterName, partition]
 
             LogicalAdapter adapter = snapshot.getAdapter( apSplit[0] ).orElseThrow( () -> exception );
-            LogicalEntity logicalEntity = snapshot.getLogicalEntity( ns.id, entityName ).orElseThrow( () -> exception );
             AllocationPlacement placement = snapshot.alloc().getPlacement( adapter.id, logicalEntity.id ).orElseThrow( () -> exception );
 
             if ( apSplit.length == 1 ) {

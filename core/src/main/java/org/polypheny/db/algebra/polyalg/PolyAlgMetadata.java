@@ -98,7 +98,7 @@ public class PolyAlgMetadata {
     public PolyAlgMetadata setOutConnection( String key, boolean useCumulative ) {
         double max = useCumulative ? globalStats.getCumulativeMax( key ) : globalStats.getMax( key );
         ObjectNode row = findTableEntry( key );
-        if ( row != null && max > 0 && (!useCumulative || row.has( "cumulativeValue" )) ) {
+        if ( row != null && max > 1 && (!useCumulative || row.has( "cumulativeValue" )) ) {
             double v = useCumulative ? row.get( "cumulativeValue" ).asDouble() : row.get( "value" ).asDouble();
             outConnection.put( "width", v / max );
             outConnection.put( "forKey", key );

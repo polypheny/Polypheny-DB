@@ -41,7 +41,7 @@ public class LogicalDocumentScan extends DocumentScan<Entity> implements Relatio
      * Subclass of {@link DocumentScan} not targeted at any particular engine or calling convention.
      */
     public LogicalDocumentScan( AlgCluster cluster, AlgTraitSet traitSet, Entity document ) {
-        super( cluster, traitSet.replace( ModelTrait.DOCUMENT ), document );
+        super( cluster, traitSet.plus( ModelTrait.DOCUMENT ), document );
     }
 
 

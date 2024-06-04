@@ -52,6 +52,7 @@ import lombok.experimental.SuperBuilder;
 import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.core.CorrelationId;
 import org.polypheny.db.algebra.core.SetOp;
+import org.polypheny.db.algebra.core.common.Transformer;
 import org.polypheny.db.algebra.externalize.AlgWriterImpl;
 import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
@@ -363,8 +364,8 @@ public abstract class AbstractAlgNode implements AlgNode {
     public void buildPolyAlgebra( StringBuilder sb, String prefix ) {
         final String INDENT = " ";
         String nextPrefix = prefix == null ? null : prefix + INDENT;
-        boolean makeFieldsUnique = !(this instanceof SetOp); // set operations like UNION require duplicate field names
-        List<String> inputFieldNames = makeFieldsUnique ?
+        boolean makeUnique = makeFieldsUnique();
+        List<String> inputFieldNames = makeUnique ?
                 PolyAlgUtils.uniquifiedInputFieldNames( this ) :
                 PolyAlgUtils.getInputFieldNamesList( this );
 
@@ -380,7 +381,7 @@ public abstract class AbstractAlgNode implements AlgNode {
         sb.append( "(\n" );
         int inputIdx = 0;
         for ( AlgNode child : getInputs() ) {
-            ListArg<RexArg> projections = makeFieldsUnique ?
+            ListArg<RexArg> projections = makeUnique ?
                     PolyAlgUtils.getAuxProjections( child, inputFieldNames, inputIdx ) :
                     null;
             inputIdx += child.getTupleType().getFieldCount();
@@ -409,8 +410,8 @@ public abstract class AbstractAlgNode implements AlgNode {
     public ObjectNode serializePolyAlgebra( ObjectMapper mapper, GlobalStats gs ) {
         ObjectNode node = mapper.createObjectNode();
 
-        boolean makeFieldsUnique = !(this instanceof SetOp); // set operations like UNION require duplicate field names
-        List<String> inputFieldNames = makeFieldsUnique ?
+        boolean makeUnique = makeFieldsUnique(); // set operations like UNION require duplicate field names
+        List<String> inputFieldNames = makeUnique ?
                 PolyAlgUtils.uniquifiedInputFieldNames( this ) :
                 PolyAlgUtils.getInputFieldNamesList( this );
 
@@ -422,7 +423,7 @@ public abstract class AbstractAlgNode implements AlgNode {
 
         int inputIdx = 0;
         for ( AlgNode child : getInputs() ) {
-            ListArg<RexArg> projections = makeFieldsUnique ?
+            ListArg<RexArg> projections = makeUnique ?
                     PolyAlgUtils.getAuxProjections( child, inputFieldNames, inputIdx ) :
                     null;
             inputIdx += child.getTupleType().getFieldCount();
@@ -440,7 +441,7 @@ public abstract class AbstractAlgNode implements AlgNode {
 
 
     private ObjectNode serializeMetadata( ObjectMapper mapper, GlobalStats gs ) {
-        if (gs == null) {
+        if ( gs == null ) {
             return null;
         }
         PolyAlgMetadata meta = new PolyAlgMetadata( mapper, gs );
@@ -450,6 +451,12 @@ public abstract class AbstractAlgNode implements AlgNode {
         } catch ( Exception ignored ) {
         }
         return meta.serialize();
+    }
+
+
+    private boolean makeFieldsUnique() {
+        // set operations like UNION require duplicate field names
+        return !(this instanceof SetOp || this instanceof Transformer);
     }
 
 

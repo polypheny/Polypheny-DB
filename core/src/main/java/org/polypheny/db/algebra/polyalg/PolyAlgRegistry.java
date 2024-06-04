@@ -27,6 +27,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.logical.common.LogicalBatchIterator;
+import org.polypheny.db.algebra.logical.common.LogicalTransformer;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentAggregate;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentFilter;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentModify;
@@ -303,6 +304,12 @@ public class PolyAlgRegistry {
         declarations.put( LogicalBatchIterator.class, PolyAlgDeclaration.builder()
                 .creator( LogicalBatchIterator::create ).model( null )
                 .opName( "BATCH_ITERATOR" ).opAlias( "BATCH" ).numInputs( 1 ).opTags( logAllProTags )
+                .build() );
+        declarations.put( LogicalTransformer.class, PolyAlgDeclaration.builder()
+                .creator( LogicalTransformer::create ).model( null )
+                .opName( "TRANSFORMER" ).numInputs( -1 ).opTags( logAllProTags )
+                .param( Parameter.builder().name( "outModel" ).type( ParamType.DATAMODEL_ENUM ).build() )
+                .param( Parameter.builder().name( "names" ).multiValued( 1 ).type( ParamType.STRING ).defaultValue( ListArg.EMPTY ).build() )
                 .build() );
     }
 

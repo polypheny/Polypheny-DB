@@ -47,7 +47,7 @@ public class LogicalLpgScan extends LpgScan<Entity> implements RelationalTransfo
      * Subclass of {@link LpgScan} not targeted at any particular engine or calling convention.
      */
     public LogicalLpgScan( AlgCluster cluster, AlgTraitSet traitSet, Entity graph, AlgDataType rowType ) {
-        super( cluster, traitSet.replace( ModelTrait.GRAPH ), graph );
+        super( cluster, traitSet.plus( ModelTrait.GRAPH ), graph );
         this.rowType = rowType;
     }
 

@@ -65,7 +65,9 @@ public class EntityArg implements PolyAlgArg {
         }
 
         if ( entity instanceof AllocationEntity e ) {
-            this.entityName = snapshot.getLogicalEntity( e.logicalId ).orElseThrow().name;
+            if (e.dataModel != DataModel.GRAPH) {
+                this.entityName = snapshot.getLogicalEntity( e.logicalId ).orElseThrow().name;
+            }
             Adapter<?> a = AdapterManager.getInstance().getAdapter( e.adapterId ).orElseThrow();
             this.adapterName = a.getUniqueName();
         }

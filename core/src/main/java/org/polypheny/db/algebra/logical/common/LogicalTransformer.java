@@ -23,10 +23,19 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.core.common.Transformer;
 import org.polypheny.db.algebra.enumerable.EnumerableConvention;
+import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.ParamType;
+import org.polypheny.db.algebra.polyalg.arguments.EnumArg;
+import org.polypheny.db.algebra.polyalg.arguments.ListArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
+import org.polypheny.db.algebra.polyalg.arguments.StringArg;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.DocumentType;
+import org.polypheny.db.algebra.type.GraphType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.schema.trait.ModelTrait;
+import org.polypheny.db.schema.trait.ModelTraitDef;
 
 
 @Setter
@@ -59,6 +68,36 @@ public class LogicalTransformer extends Transformer {
     }
 
 
+    public static LogicalTransformer create( AlgCluster cluster, List<AlgNode> inputs, List<String> names, ModelTrait outModelTrait ) {
+        ModelTrait inModelTrait = inputs.get( 0 ).getTraitSet().getTrait( ModelTraitDef.INSTANCE );
+        if ( inModelTrait == null ) {
+            System.out.println( "Default inModelTrait is used." );
+            inModelTrait = ModelTrait.RELATIONAL;
+        }
+        System.out.println( "parsed inModelTrait: " + inModelTrait );
+        AlgDataType type = switch ( outModelTrait.dataModel() ) {
+            case DOCUMENT -> DocumentType.ofDoc(); // TODO: verify any -> doc works
+            case GRAPH -> GraphType.of();
+            case RELATIONAL -> switch ( inModelTrait.dataModel() ) {
+                case DOCUMENT -> DocumentType.ofCrossRelational(); // TODO: verify doc -> rel works
+                case GRAPH -> GraphType.ofRelational();
+                case RELATIONAL -> inputs.get( 0 ).getTupleType();  // TODO: verify rel -> rel works
+            };
+
+        };
+        System.out.println( "parsed rowtype: " + type );
+
+        return create( cluster, inputs, names, inModelTrait, outModelTrait, type, !inModelTrait.satisfies( outModelTrait ) );
+    }
+
+
+    public static LogicalTransformer create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+        List<String> names = args.getListArg( "names", StringArg.class ).map( StringArg::getArg );
+        EnumArg<DataModel> out = args.getEnumArg( "outModel", DataModel.class );
+        return create( cluster, children, names, out.getArg().getModelTrait() );
+    }
+
+
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         return new LogicalTransformer( getCluster(), traitSet, inputs, names, inModelTrait, outModelTrait, rowType, isCrossModel );
@@ -74,6 +113,24 @@ public class LogicalTransformer extends Transformer {
             i++;
         }
         return writer;
+    }
+
+
+    @Override
+    public PolyAlgArgs collectAttributes() {
+        System.out.println( "traitset: " + traitSet );
+        System.out.println( "names: " + names );
+        System.out.println( "inTrait: " + inModelTrait );
+        System.out.println( "outTrait: " + outModelTrait );
+        System.out.println( "rowType: " + rowType );
+        System.out.println( "isCrossModel: " + isCrossModel );
+
+        PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
+        args.put( "outModel", new EnumArg<>( outModelTrait.dataModel(), ParamType.DATAMODEL_ENUM ) );
+        if ( names != null ) {
+            args.put( "names", new ListArg<>( names, StringArg::new ) );
+        }
+        return args;
     }
 
 

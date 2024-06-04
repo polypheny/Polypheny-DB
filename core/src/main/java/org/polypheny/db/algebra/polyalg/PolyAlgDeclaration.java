@@ -372,6 +372,7 @@ public class PolyAlgDeclaration {
         SEMI_JOIN_TYPE_ENUM( EnumArg.class, SemiJoinType.class ),
         MODIFY_OP_ENUM( EnumArg.class, Modify.Operation.class ),
         DISTRIBUTION_TYPE_ENUM( EnumArg.class, AlgDistribution.Type.class ),
+        DATAMODEL_ENUM( EnumArg.class, DataModel.class ),
 
         /**
          * A specific field (= column in the relational data model).

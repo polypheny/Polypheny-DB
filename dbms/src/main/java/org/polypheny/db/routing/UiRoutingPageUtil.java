@@ -16,7 +16,6 @@
 
 package org.polypheny.db.routing;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
@@ -69,6 +68,7 @@ public class UiRoutingPageUtil {
 
     public static void addPhysicalPlanPage( AlgNode optimalNode, InformationManager queryAnalyzer, int stmtIdx ) {
         new Thread( () -> {
+            addRoutedPolyPlanPage( optimalNode, queryAnalyzer, stmtIdx, true );
             InformationPage page = new InformationPage( "Physical Query Plan" ).setStmtLabel( stmtIdx );
             page.fullWidth();
             InformationGroup group = new InformationGroup( page, "Physical Query Plan" );
@@ -83,7 +83,7 @@ public class UiRoutingPageUtil {
 
 
     private static void addRoutedPlanPage( AlgNode routedNode, InformationManager queryAnalyzer, int stmtIdx ) {
-        addRoutedPolyPlanPage(routedNode, queryAnalyzer, stmtIdx);
+        addRoutedPolyPlanPage( routedNode, queryAnalyzer, stmtIdx, false );
         InformationPage page = new InformationPage( "Routed Query Plan" ).setStmtLabel( stmtIdx );
         page.fullWidth();
         InformationGroup group = new InformationGroup( page, "Routed Query Plan" );
@@ -95,21 +95,23 @@ public class UiRoutingPageUtil {
         queryAnalyzer.registerInformation( informationQueryPlan );
     }
 
-    private static void addRoutedPolyPlanPage(AlgNode routedNode, InformationManager queryAnalyzer, int stmtIdx) {
+
+    private static void addRoutedPolyPlanPage( AlgNode routedNode, InformationManager queryAnalyzer, int stmtIdx, boolean isPhysical ) {
         ObjectMapper objectMapper = new ObjectMapper();
         GlobalStats gs = GlobalStats.computeGlobalStats( routedNode );
+        String prefix = isPhysical ? "Physical" : "Routed";
         try {
-            ObjectNode objectNode = routedNode.serializePolyAlgebra(objectMapper, gs);
-            String jsonString = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(objectNode);
+            ObjectNode objectNode = routedNode.serializePolyAlgebra( objectMapper, gs );
+            String jsonString = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString( objectNode );
 
-            InformationPage page = new InformationPage( "Routed PolyAlg Query Plan" ).setStmtLabel( stmtIdx );
+            InformationPage page = new InformationPage( prefix + " PolyAlg Query Plan" ).setStmtLabel( stmtIdx );
             page.fullWidth();
-            InformationGroup group = new InformationGroup( page, "Routed PolyAlg Query Plan" );
+            InformationGroup group = new InformationGroup( page, prefix + " PolyAlg Query Plan" );
             queryAnalyzer.addPage( page );
             queryAnalyzer.addGroup( group );
-            queryAnalyzer.registerInformation( new InformationPolyAlg( group, jsonString, PlanType.ALLOCATION ) );
+            queryAnalyzer.registerInformation( new InformationPolyAlg( group, jsonString, isPhysical ? PlanType.PHYSICAL : PlanType.ALLOCATION ) );
 
-        } catch ( JsonProcessingException e) {
+        } catch ( Exception e ) {
             e.printStackTrace();
         }
 

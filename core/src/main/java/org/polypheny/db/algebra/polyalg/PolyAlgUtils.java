@@ -237,7 +237,7 @@ public class PolyAlgUtils {
         argNode.set( "value", projections.serialize( context, inputFieldNames, mapper ) );
 
         node.set( "arguments", mapper.createObjectNode().set( decl.getPos( 0 ).getName(), argNode ) );
-        node.set( "metadata", PolyAlgMetadata.getMetadataForAuxiliaryNode(mapper) );
+        node.set( "metadata", PolyAlgMetadata.getMetadataForAuxiliaryNode( mapper ) );
 
         node.set( "inputs", mapper.createArrayNode().add( child.serializePolyAlgebra( mapper, gs ) ) );
         return node;
@@ -546,8 +546,8 @@ public class PolyAlgUtils {
 
 
         private String visitGraphLabelProps( PolyList<PolyString> lbls, PolyDictionary props, PolyString varName ) {
-            String name = varName.isNull() ? "" : varName.toString();
-            String labels = String.join(":", lbls.stream().map( PolyString::toString ).toList());
+            String name = (varName == null || varName.isNull()) ? "" : varName.toString();
+            String labels = String.join( ":", lbls.stream().map( PolyString::toString ).toList() );
             String properties = props.map.toString();
             if ( properties.equals( "{}" ) ) {
                 properties = "";
