@@ -307,8 +307,8 @@ public class PolyAlgRegistry {
                 .build() );
         declarations.put( LogicalTransformer.class, PolyAlgDeclaration.builder()
                 .creator( LogicalTransformer::create ).model( null )
-                .opName( "TRANSFORMER" ).numInputs( -1 ).opTags( logAllProTags )
-                .param( Parameter.builder().name( "outModel" ).type( ParamType.DATAMODEL_ENUM ).build() )
+                .opName( "TRANSFORMER" ).numInputs( -1 ).opTags( ImmutableList.of( OperatorTag.ALLOCATION, OperatorTag.ADVANCED ) )
+                .param( Parameter.builder().name( "out" ).alias( "outModel" ).type( ParamType.DATAMODEL_ENUM ).build() )
                 .param( Parameter.builder().name( "names" ).multiValued( 1 ).type( ParamType.STRING ).defaultValue( ListArg.EMPTY ).build() )
                 .build() );
     }

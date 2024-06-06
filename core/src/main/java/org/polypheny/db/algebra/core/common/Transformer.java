@@ -29,6 +29,7 @@ import org.polypheny.db.algebra.core.lpg.LpgScan;
 import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.schema.trait.ModelTrait;
@@ -62,7 +63,7 @@ public class Transformer extends AbstractAlgNode {
             LogicalRelProject lp = LogicalRelProject.create(
                     inputs.get( 0 ),
                     List.of( cluster.getRexBuilder().makeInputRef( inputs.get( 0 ).getTupleType().getFields().get( 0 ).getType(), 1 ) ),
-                    List.of( "d" ) );
+                    List.of( DocumentType.DOCUMENT_FIELD ) );
             this.inputs = List.of( lp );
         } else {
             this.inputs = new ArrayList<>( inputs );
