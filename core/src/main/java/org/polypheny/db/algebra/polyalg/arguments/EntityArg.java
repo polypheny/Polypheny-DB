@@ -44,6 +44,7 @@ public class EntityArg implements PolyAlgArg {
 
     // in the case of an AllocationEntity:
     private String adapterName;
+    private String partitionName;
 
 
     /**
@@ -70,6 +71,7 @@ public class EntityArg implements PolyAlgArg {
             }
             Adapter<?> a = AdapterManager.getInstance().getAdapter( e.adapterId ).orElseThrow();
             this.adapterName = a.getUniqueName();
+            this.partitionName = snapshot.alloc().getPartition( e.partitionId ).orElseThrow().name;
         }
     }
 
@@ -119,6 +121,9 @@ public class EntityArg implements PolyAlgArg {
         if ( entity instanceof AllocationEntity e ) {
             node.put( "adapterName", adapterName );
             node.put( "partitionId", String.valueOf( e.partitionId ) );
+            if (partitionName != null) {
+                node.put( "partitionName", partitionName );
+            }
         }
 
         return node;
