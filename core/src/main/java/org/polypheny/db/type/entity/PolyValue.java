@@ -173,7 +173,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             .with( PolyLong.class, ctx -> new PolyLongSerializerDef() )
             .build().create( CLASS_LOADER, PolyValue.class );
 
-
+    @JsonIgnore
     public static final ObjectMapper JSON_WRAPPER = JsonMapper.builder()
             .configure( MapperFeature.REQUIRE_TYPE_ID_FOR_SUBTYPES, true )
             .configure( DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false )
