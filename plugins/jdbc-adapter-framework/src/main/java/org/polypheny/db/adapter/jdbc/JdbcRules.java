@@ -46,6 +46,7 @@ import org.polypheny.db.adapter.jdbc.rel2sql.SqlImplementor;
 import org.polypheny.db.adapter.jdbc.rel2sql.SqlImplementor.Result;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgCollationTraitDef;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.InvalidAlgException;
@@ -68,9 +69,13 @@ import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
+import org.polypheny.db.algebra.metadata.AlgMdCollation;
 import org.polypheny.db.algebra.metadata.AlgMdUtil;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.algebra.polyalg.arguments.ListArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
+import org.polypheny.db.algebra.polyalg.arguments.RexArg;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.nodes.Function;
@@ -91,6 +96,7 @@ import org.polypheny.db.rex.RexMultisetUtil;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexOver;
 import org.polypheny.db.rex.RexProgram;
+import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.rex.RexVisitorImpl;
 import org.polypheny.db.schema.document.DocumentRules;
 import org.polypheny.db.schema.trait.ModelTrait;
@@ -103,6 +109,7 @@ import org.polypheny.db.tools.AlgBuilderFactory;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.UnsupportedRexCallVisitor;
+import org.polypheny.db.util.ValidatorUtil;
 import org.polypheny.db.util.trace.PolyphenyDbTrace;
 import org.slf4j.Logger;
 
@@ -541,6 +548,27 @@ public class JdbcRules {
         public JdbcProject( AlgCluster cluster, AlgTraitSet traitSet, AlgNode input, List<? extends RexNode> projects, AlgDataType rowType ) {
             super( cluster, traitSet, input, projects, rowType );
             assert getConvention() instanceof JdbcConvention;
+        }
+
+
+        public static JdbcProject create( final AlgNode input, final List<? extends RexNode> projects, AlgDataType rowType ) {
+            final AlgCluster cluster = input.getCluster();
+            final AlgMetadataQuery mq = cluster.getMetadataQuery();
+            final AlgTraitSet traitSet = input.getTraitSet().replaceIfs( AlgCollationTraitDef.INSTANCE, () -> AlgMdCollation.project( mq, input, projects ) );
+            return new JdbcProject( cluster, traitSet, input, projects, rowType );
+        }
+
+
+        static AlgNode create( AlgNode child, List<? extends RexNode> projects, List<String> fieldNames ) {
+            final AlgCluster cluster = child.getCluster();
+            final AlgDataType rowType = RexUtil.createStructType( cluster.getTypeFactory(), projects, fieldNames, ValidatorUtil.F_SUGGESTER );
+            return create( child, projects, rowType );
+        }
+
+
+        public static AlgNode create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+            ListArg<RexArg> projects = args.getListArg( 0, RexArg.class );
+            return create( children.get( 0 ), projects.map( RexArg::getNode ), projects.map( RexArg::getAlias ) );
         }
 
 

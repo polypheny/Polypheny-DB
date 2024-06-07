@@ -50,6 +50,12 @@ import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.polyalg.PolyAlgUtils;
+import org.polypheny.db.algebra.polyalg.arguments.AggArg;
+import org.polypheny.db.algebra.polyalg.arguments.FieldArg;
+import org.polypheny.db.algebra.polyalg.arguments.ListArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.algebra.rules.AggregateExpandDistinctAggregatesRule;
 import org.polypheny.db.algebra.rules.AggregateProjectPullUpConstantsRule;
 import org.polypheny.db.algebra.rules.AggregateReduceFunctionsRule;
@@ -72,6 +78,7 @@ import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.Triple;
 import org.polypheny.db.util.Util;
 
 
@@ -411,6 +418,43 @@ public abstract class Aggregate extends SingleAlg {
                 (groupSet != null ? groupSet.toString() : "") + "$" +
                 (groupSets != null ? groupSets.stream().map( Objects::toString ).collect( Collectors.joining( " $ " ) ) : "") + "$" +
                 indicator + "&";
+    }
+
+
+    protected static Triple<ImmutableBitSet, List<ImmutableBitSet>, List<AggregateCall>> extractArgs( PolyAlgArgs args ) {
+        ListArg<FieldArg> group = args.getListArg( "group", FieldArg.class );
+        ListArg<AggArg> aggs = args.getListArg( "aggs", AggArg.class );
+        List<List<FieldArg>> groups = PolyAlgUtils.getNestedListArgAsList( args.getListArg( "groups", ListArg.class ) );
+        List<ImmutableBitSet> groupSets = groups.stream().map(
+                g -> ImmutableBitSet.of(
+                        g.stream().map( FieldArg::getField ).toList()
+                )
+        ).toList();
+        if ( groupSets.isEmpty() ) {
+            groupSets = null;
+        }
+        return Triple.of( ImmutableBitSet.of( group.map( FieldArg::getField ) ), groupSets, aggs.map( AggArg::getAgg ) );
+    }
+
+
+    @Override
+    public PolyAlgArgs collectAttributes() {
+        PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
+
+        PolyAlgArg groupArg = new ListArg<>( groupSet.asList(), FieldArg::new, args.getDecl().canUnpackValues() );
+        PolyAlgArg aggsArg = new ListArg<>( aggCalls, AggArg::new );
+
+        args.put( "group", groupArg );
+        args.put( "aggs", aggsArg );
+        if ( getGroupType() != Group.SIMPLE ) {
+            PolyAlgArg groupSetArg = new ListArg<>(
+                    groupSets,
+                    set -> new ListArg<>( set.asList(), FieldArg::new ) );
+
+            args.put( "groups", groupSetArg );
+        }
+
+        return args;
     }
 
 

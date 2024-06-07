@@ -415,8 +415,13 @@ public abstract class AbstractAlgNode implements AlgNode {
                 PolyAlgUtils.uniquifiedInputFieldNames( this ) :
                 PolyAlgUtils.getInputFieldNamesList( this );
 
-        node.put( "opName", getPolyAlgDeclaration().opName );
-        node.set( "arguments", collectAttributes().serialize( this, inputFieldNames, mapper ) );
+        PolyAlgDeclaration decl = getPolyAlgDeclaration();
+        node.put( "opName", decl.opName );
+        if ( decl.hasParams() ) {
+            node.set( "arguments", collectAttributes().serialize( this, inputFieldNames, mapper ) );
+        } else {
+            node.set( "arguments", mapper.createObjectNode() );
+        }
         node.set( "metadata", serializeMetadata( mapper, gs ) ); // set to null if gs is null
 
         ArrayNode inputs = mapper.createArrayNode();

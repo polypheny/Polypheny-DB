@@ -40,11 +40,6 @@ import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.relational.RelAlg;
-import org.polypheny.db.algebra.polyalg.PolyAlgUtils;
-import org.polypheny.db.algebra.polyalg.arguments.AggArg;
-import org.polypheny.db.algebra.polyalg.arguments.FieldArg;
-import org.polypheny.db.algebra.polyalg.arguments.ListArg;
-import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArg;
 import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.algebra.rules.AggregateProjectPullUpConstantsRule;
 import org.polypheny.db.algebra.rules.AggregateReduceFunctionsRule;
@@ -52,6 +47,7 @@ import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.util.ImmutableBitSet;
+import org.polypheny.db.util.Triple;
 
 
 /**
@@ -105,19 +101,8 @@ public final class LogicalRelAggregate extends Aggregate implements RelAlg {
 
 
     public static LogicalRelAggregate create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
-        ListArg<FieldArg> group = args.getListArg( "group", FieldArg.class );
-        ListArg<AggArg> aggs = args.getListArg( "aggs", AggArg.class );
-        List<List<FieldArg>> groups = PolyAlgUtils.getNestedListArgAsList( args.getListArg( "groups", ListArg.class ) );
-        List<ImmutableBitSet> groupSets = groups.stream().map(
-                g -> ImmutableBitSet.of(
-                        g.stream().map( FieldArg::getField ).toList()
-                )
-        ).toList();
-        if ( groupSets.isEmpty() ) {
-            groupSets = null;
-        }
-
-        return create( children.get( 0 ), ImmutableBitSet.of( group.map( FieldArg::getField ) ), groupSets, aggs.map( AggArg::getAgg ) );
+        Triple<ImmutableBitSet, List<ImmutableBitSet>, List<AggregateCall>> extracted = extractArgs( args );
+        return create( children.get( 0 ), extracted.left, extracted.middle, extracted.right );
     }
 
 
@@ -133,26 +118,6 @@ public final class LogicalRelAggregate extends Aggregate implements RelAlg {
         return shuttle.visit( this );
     }
 
-
-    @Override
-    public PolyAlgArgs collectAttributes() {
-        PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
-
-        PolyAlgArg groupArg = new ListArg<>( groupSet.asList(), FieldArg::new, args.getDecl().canUnpackValues() );
-        PolyAlgArg aggsArg = new ListArg<>( aggCalls, AggArg::new );
-
-        args.put( "group", groupArg );
-        args.put( "aggs", aggsArg );
-        if ( getGroupType() != Group.SIMPLE ) {
-            PolyAlgArg groupSetArg = new ListArg<>(
-                    groupSets,
-                    set -> new ListArg<>( set.asList(), FieldArg::new ) );
-
-            args.put( "groups", groupSetArg );
-        }
-
-        return args;
-    }
 
 }
 

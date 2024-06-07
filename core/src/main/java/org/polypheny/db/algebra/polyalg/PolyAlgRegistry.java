@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.JoinAlgType;
+import org.polypheny.db.algebra.enumerable.EnumerableAggregate;
 import org.polypheny.db.algebra.enumerable.EnumerableConvention;
 import org.polypheny.db.algebra.enumerable.EnumerableInterpreter;
 import org.polypheny.db.algebra.enumerable.EnumerableProject;
@@ -78,6 +79,8 @@ import org.polypheny.db.algebra.polyalg.arguments.ListArg;
 import org.polypheny.db.algebra.polyalg.arguments.RexArg;
 import org.polypheny.db.algebra.polyalg.arguments.StringArg;
 import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.interpreter.BindableConvention;
+import org.polypheny.db.interpreter.Bindables.BindableScan;
 import org.polypheny.db.plan.Convention;
 
 public class PolyAlgRegistry {
@@ -319,22 +322,42 @@ public class PolyAlgRegistry {
 
         // Physical
         addEnumerableDeclarations();
+        addBindableDeclarations();
     }
 
 
     private static void addEnumerableDeclarations() {
-        ImmutableList<OperatorTag> physTags = ImmutableList.of( OperatorTag.PHYSICAL, OperatorTag.ALLOCATION );
+        ImmutableList<OperatorTag> physTags = ImmutableList.of( OperatorTag.PHYSICAL, OperatorTag.ADVANCED );
         Convention c = EnumerableConvention.INSTANCE;
 
         declarations.put( EnumerableProject.class, PolyAlgDeclaration.builder()
                 .creator( EnumerableProject::create ).model( null )
                 .opName( "ENUMERABLE_PROJECT" ).convention( c ).numInputs( 1 ).opTags( physTags )
-                .param( Parameter.builder().name( "projects" ).tags( List.of( ParamTag.ALIAS, ParamTag.HIDE_TRIVIAL ) ).multiValued( 1 ).type( ParamType.REX ).build() )
+                .params( getParams( LogicalRelProject.class ) )
                 .build() );
         declarations.put( EnumerableInterpreter.class, PolyAlgDeclaration.builder()
                 .creator( EnumerableInterpreter::create ).model( null )
                 .opName( "ENUMERABLE_INTERPRETER" ).convention( c ).numInputs( 1 ).opTags( physTags )
-                .param( Parameter.builder().name( "factor" ).tag(ParamTag.NON_NEGATIVE).type( ParamType.DOUBLE ).build() )
+                .param( Parameter.builder().name( "factor" ).tag( ParamTag.NON_NEGATIVE ).type( ParamType.DOUBLE ).build() )
+                .build() );
+        declarations.put( EnumerableAggregate.class, PolyAlgDeclaration.builder()
+                .creator( EnumerableAggregate::create ).model( null )
+                .opName( "ENUMERABLE_AGGREGATE" ).convention( c ).numInputs( 1 ).opTags( physTags )
+                .params( getParams( LogicalRelAggregate.class ) )
+                .build() );
+    }
+
+
+    private static void addBindableDeclarations() {
+        ImmutableList<OperatorTag> physTags = ImmutableList.of( OperatorTag.PHYSICAL, OperatorTag.ADVANCED );
+        Convention c = BindableConvention.INSTANCE;
+
+        declarations.put( BindableScan.class, PolyAlgDeclaration.builder()
+                .creator( BindableScan::create ).model( DataModel.RELATIONAL )
+                .opName( "BINDABLE_SCAN" ).convention( c ).numInputs( 0 ).opTags( physTags )
+                .param( Parameter.builder().name( "entity" ).type( ParamType.ENTITY ).build() )
+                .param( Parameter.builder().name( "filters" ).multiValued( 1 ).type( ParamType.REX ).defaultValue( ListArg.EMPTY ).build() )
+                .param( Parameter.builder().name( "projects" ).multiValued( 1 ).type( ParamType.INTEGER ).defaultValue( ListArg.EMPTY ).build() )
                 .build() );
     }
 
@@ -394,13 +417,42 @@ public class PolyAlgRegistry {
         return declarations.get( getClass( opName ) );
     }
 
-    public static List<Parameter> getParams( String opName ) {
-        PolyAlgDeclaration decl = declarations.get( getClass( opName ) );
-        List<Parameter> params = new ArrayList<>(decl.posParams);
+
+    /**
+     * Registers the specified declaration for the given AlgNode class.
+     * This is only allowed during the initialization of Polypheny-DB.
+     * As soon as a UI instance has requested the registry, this will result in an assertion error.
+     *
+     * @param clazz The class for which the PolyAlgDeclaration is being registered
+     * @param decl The PolyAlgDeclaration to register
+     */
+    public static void register( Class<? extends AlgNode> clazz, PolyAlgDeclaration decl ) {
+        assert serialized == null;
+        assert !declarations.containsKey( clazz );
+        declarations.put( clazz, decl );
+
+        assert !classes.containsKey( decl.opName );
+        classes.put( decl.opName, clazz );
+        for ( String alias : decl.opAliases ) {
+            assert !classes.containsKey( alias );
+            classes.put( alias, clazz );
+        }
+    }
+
+
+    /**
+     * Retrieves a mutable list containing all parameters of a previously registered declaration.
+     * This can be useful when multiple operators share the same arguments.
+     *
+     * @param clazz the class whose declaration will be used
+     * @return a list containing all parameters of the declaration corresponding to the specified class
+     */
+    public static List<Parameter> getParams( Class<? extends AlgNode> clazz ) {
+        PolyAlgDeclaration decl = declarations.get( clazz );
+        List<Parameter> params = new ArrayList<>( decl.posParams );
         params.addAll( decl.kwParams );
         return params;
     }
-
 
 
     public static ObjectNode serialize() {

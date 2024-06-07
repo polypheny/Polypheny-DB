@@ -66,7 +66,7 @@ public class EntityArg implements PolyAlgArg {
         }
 
         if ( entity instanceof AllocationEntity e ) {
-            if (e.dataModel != DataModel.GRAPH) {
+            if ( e.dataModel != DataModel.GRAPH ) {
                 this.entityName = snapshot.getLogicalEntity( e.logicalId ).orElseThrow().name;
             }
             Adapter<?> a = AdapterManager.getInstance().getAdapter( e.adapterId ).orElseThrow();
@@ -121,7 +121,7 @@ public class EntityArg implements PolyAlgArg {
         if ( entity instanceof AllocationEntity e ) {
             node.put( "adapterName", adapterName );
             node.put( "partitionId", String.valueOf( e.partitionId ) );
-            if (partitionName != null) {
+            if ( partitionName != null && !partitionName.isEmpty() ) {
                 node.put( "partitionName", partitionName );
             }
         }

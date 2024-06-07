@@ -199,6 +199,11 @@ public class PolyAlgDeclaration {
     }
 
 
+    public boolean hasParams() {
+        return !paramLookup.isEmpty();
+    }
+
+
     public boolean supportsNumberOfChildren( int n ) {
         return numInputs == -1 || numInputs == n;
     }

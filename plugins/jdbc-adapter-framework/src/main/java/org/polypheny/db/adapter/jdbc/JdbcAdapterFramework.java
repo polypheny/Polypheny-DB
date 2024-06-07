@@ -16,6 +16,14 @@
 
 package org.polypheny.db.adapter.jdbc;
 
+import com.google.common.collect.ImmutableList;
+import org.polypheny.db.adapter.jdbc.JdbcRules.JdbcProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
+import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration;
+import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.OperatorTag;
+import org.polypheny.db.algebra.polyalg.PolyAlgRegistry;
+import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plugins.PluginContext;
 import org.polypheny.db.plugins.PolyPlugin;
 
@@ -27,6 +35,23 @@ public class JdbcAdapterFramework extends PolyPlugin {
      */
     public JdbcAdapterFramework( PluginContext context ) {
         super( context );
+        registerPolyAlg();
+    }
+
+
+    private void registerPolyAlg() {
+        ImmutableList<OperatorTag> physTags = ImmutableList.of( OperatorTag.PHYSICAL, OperatorTag.ADVANCED );
+        Convention c = JdbcConvention.NONE; // TODO: set correct convention
+
+        PolyAlgRegistry.register( JdbcProject.class, PolyAlgDeclaration.builder()
+                .creator( JdbcProject::create ).model( DataModel.RELATIONAL )
+                .opName( "JDBC_PROJECT" ).convention( c ).numInputs( 1 ).opTags( physTags )
+                .params( PolyAlgRegistry.getParams( LogicalRelProject.class ) )
+                .build() );
+        PolyAlgRegistry.register( JdbcToEnumerableConverter.class, PolyAlgDeclaration.builder()
+                .creator( JdbcToEnumerableConverter::create ).model( DataModel.RELATIONAL )
+                .opName( "JDBC_TO_ENUMERABLE" ).convention( c ).numInputs( 1 ).opTags( physTags )
+                .build() );
     }
 
 
