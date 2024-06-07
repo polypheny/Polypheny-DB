@@ -86,7 +86,7 @@ public class RestResult {
         List<PolyValue[]> object;
         int rowsChanged = -1;
         while ( iterator.hasMoreRows() ) {
-            object = iterator.getArrayRows();
+            object = iterator.getTupleRows();
             int num;
             if ( object != null && object.get( 0 ).getClass().isArray() ) {
                 num = object.get( 0 )[0].asNumber().intValue();
@@ -112,7 +112,7 @@ public class RestResult {
         stopWatch.start();
         List<Map<String, Object>> result = new ArrayList<>();
         while ( iterator.hasMoreRows() ) {
-            PolyValue[] row = iterator.getArrayRows().get( 0 );
+            PolyValue[] row = iterator.getTupleRows().get( 0 );
 
             Map<String, Object> temp = new HashMap<>();
             int i = 0;

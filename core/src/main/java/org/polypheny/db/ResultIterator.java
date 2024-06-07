@@ -21,13 +21,10 @@ import com.google.common.collect.Lists;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.function.Function;
 import java.util.stream.StreamSupport;
-import javax.annotation.Nullable;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.StopWatch;
-import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.monitoring.events.StatementEvent;
@@ -118,24 +115,12 @@ public class ResultIterator implements AutoCloseable {
     }
 
 
-    @NotNull
-    private <D> List<D> getNextBatch( @Nullable Function<PolyValue[], D> transformer ) {
+    public List<PolyValue[]> getTupleRows() {
         final Iterable<PolyValue[]> iterable = () -> iterator;
 
-        if ( transformer == null ) {
-            return (List<D>) StreamSupport
-                    .stream( iterable.spliterator(), false )
-                    .toList();
-        }
         return StreamSupport
                 .stream( iterable.spliterator(), false )
-                .map( transformer )
                 .toList();
-    }
-
-
-    public List<PolyValue[]> getArrayRows() {
-        return getNextBatch( rowType.getFieldCount() == 1 ? e -> (PolyValue[]) e : null );
     }
 
 

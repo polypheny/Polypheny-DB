@@ -373,7 +373,7 @@ public class LanguageCrud {
         ResultIterator iterator = context.getIterator();
         List<PolyValue[]> data;
         try {
-            data = iterator.getArrayRows();
+            data = iterator.getTupleRows();
 
             iterator.close();
 
