@@ -20,11 +20,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.JoinAlgType;
+import org.polypheny.db.algebra.enumerable.EnumerableConvention;
+import org.polypheny.db.algebra.enumerable.EnumerableInterpreter;
+import org.polypheny.db.algebra.enumerable.EnumerableProject;
 import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.logical.common.LogicalBatchIterator;
 import org.polypheny.db.algebra.logical.common.LogicalTransformer;
@@ -74,6 +78,7 @@ import org.polypheny.db.algebra.polyalg.arguments.ListArg;
 import org.polypheny.db.algebra.polyalg.arguments.RexArg;
 import org.polypheny.db.algebra.polyalg.arguments.StringArg;
 import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.plan.Convention;
 
 public class PolyAlgRegistry {
 
@@ -311,6 +316,26 @@ public class PolyAlgRegistry {
                 .param( Parameter.builder().name( "out" ).alias( "outModel" ).type( ParamType.DATAMODEL_ENUM ).build() )
                 .param( Parameter.builder().name( "names" ).multiValued( 1 ).type( ParamType.STRING ).defaultValue( ListArg.EMPTY ).build() )
                 .build() );
+
+        // Physical
+        addEnumerableDeclarations();
+    }
+
+
+    private static void addEnumerableDeclarations() {
+        ImmutableList<OperatorTag> physTags = ImmutableList.of( OperatorTag.PHYSICAL, OperatorTag.ALLOCATION );
+        Convention c = EnumerableConvention.INSTANCE;
+
+        declarations.put( EnumerableProject.class, PolyAlgDeclaration.builder()
+                .creator( EnumerableProject::create ).model( null )
+                .opName( "ENUMERABLE_PROJECT" ).convention( c ).numInputs( 1 ).opTags( physTags )
+                .param( Parameter.builder().name( "projects" ).tags( List.of( ParamTag.ALIAS, ParamTag.HIDE_TRIVIAL ) ).multiValued( 1 ).type( ParamType.REX ).build() )
+                .build() );
+        declarations.put( EnumerableInterpreter.class, PolyAlgDeclaration.builder()
+                .creator( EnumerableInterpreter::create ).model( null )
+                .opName( "ENUMERABLE_INTERPRETER" ).convention( c ).numInputs( 1 ).opTags( physTags )
+                .param( Parameter.builder().name( "factor" ).tag(ParamTag.NON_NEGATIVE).type( ParamType.DOUBLE ).build() )
+                .build() );
     }
 
 
@@ -368,6 +393,14 @@ public class PolyAlgRegistry {
     public static PolyAlgDeclaration getDeclaration( String opName ) {
         return declarations.get( getClass( opName ) );
     }
+
+    public static List<Parameter> getParams( String opName ) {
+        PolyAlgDeclaration decl = declarations.get( getClass( opName ) );
+        List<Parameter> params = new ArrayList<>(decl.posParams);
+        params.addAll( decl.kwParams );
+        return params;
+    }
+
 
 
     public static ObjectNode serialize() {

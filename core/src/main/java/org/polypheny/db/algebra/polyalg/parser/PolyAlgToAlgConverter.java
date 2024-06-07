@@ -50,6 +50,7 @@ import org.polypheny.db.algebra.polyalg.arguments.AnyArg;
 import org.polypheny.db.algebra.polyalg.arguments.BooleanArg;
 import org.polypheny.db.algebra.polyalg.arguments.CollationArg;
 import org.polypheny.db.algebra.polyalg.arguments.CorrelationArg;
+import org.polypheny.db.algebra.polyalg.arguments.DoubleArg;
 import org.polypheny.db.algebra.polyalg.arguments.EntityArg;
 import org.polypheny.db.algebra.polyalg.arguments.EnumArg;
 import org.polypheny.db.algebra.polyalg.arguments.FieldArg;
@@ -257,6 +258,7 @@ public class PolyAlgToAlgConverter {
         return switch ( pType ) {
             case ANY -> new AnyArg( exp.toString() );
             case INTEGER -> new IntArg( exp.toInt( p.getTags() ) );
+            case DOUBLE -> new DoubleArg( exp.toDouble( p.getTags() ) );
             case BOOLEAN -> new BooleanArg( exp.toBoolean() );
             case STRING -> new StringArg( exp.toString(), alias );
             case REX -> {

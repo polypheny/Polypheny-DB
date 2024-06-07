@@ -134,15 +134,5 @@ public final class LogicalRelProject extends Project implements RelAlg {
         return shuttle.visit( this );
     }
 
-
-    @Override
-    public PolyAlgArgs collectAttributes() {
-        PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
-        PolyAlgArg projectsArg = new ListArg<>( exps, RexArg::new, rowType.getFieldNames(), args.getDecl().canUnpackValues() );
-
-        args.put( 0, projectsArg );
-        return args;
-    }
-
 }
 

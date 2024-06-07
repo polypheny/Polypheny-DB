@@ -46,6 +46,10 @@ import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.polyalg.arguments.ListArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
+import org.polypheny.db.algebra.polyalg.arguments.RexArg;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.plan.AlgCluster;
@@ -320,6 +324,16 @@ public abstract class Project extends SingleAlg {
                 (exps != null ? exps.stream().map( Objects::hashCode ).map( Objects::toString )
                         .collect( Collectors.joining( "$" ) ) : "") + "$" +
                 rowType.toString() + types + "&";
+    }
+
+
+    @Override
+    public PolyAlgArgs collectAttributes() {
+        PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
+        PolyAlgArg projectsArg = new ListArg<>( exps, RexArg::new, rowType.getFieldNames(), args.getDecl().canUnpackValues() );
+
+        args.put( 0, projectsArg );
+        return args;
     }
 
 }

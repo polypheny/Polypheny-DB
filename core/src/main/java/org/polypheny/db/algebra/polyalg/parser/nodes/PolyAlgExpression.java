@@ -128,8 +128,20 @@ public class PolyAlgExpression extends PolyAlgNode {
         if (i < 0 && constraints.contains( ParamTag.NON_NEGATIVE )) {
             throw new GenericRuntimeException( "Integer value must not be negative!" );
         }
-        return literals.get( 0 ).toInt();
+        return i;
     }
+
+    public Double toDouble( Set<ParamTag> constraints ) {
+        if ( !isSingleLiteral() ) {
+            throw new GenericRuntimeException( "Not a valid double: " + this );
+        }
+        double d = literals.get( 0 ).toNumber().doubleValue();
+        if (d < 0 && constraints.contains( ParamTag.NON_NEGATIVE )) {
+            throw new GenericRuntimeException( "Double value must not be negative!" );
+        }
+        return d;
+    }
+
 
 
     public Number toNumber() {

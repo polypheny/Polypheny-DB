@@ -42,6 +42,11 @@ import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.polyalg.arguments.CorrelationArg;
+import org.polypheny.db.algebra.polyalg.arguments.DoubleArg;
+import org.polypheny.db.algebra.polyalg.arguments.ListArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
+import org.polypheny.db.algebra.polyalg.arguments.RexArg;
 import org.polypheny.db.interpreter.Interpreter;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
@@ -89,6 +94,11 @@ public class EnumerableInterpreter extends SingleAlg implements EnumerableAlg {
     }
 
 
+    public static EnumerableInterpreter create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+        return create( children.get( 0 ), args.getArg( "factor", DoubleArg.class ).getArg() );
+    }
+
+
     @Override
     public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         return super.computeSelfCost( planner, mq ).multiplyBy( factor );
@@ -121,6 +131,14 @@ public class EnumerableInterpreter extends SingleAlg implements EnumerableAlg {
                         : interpreter_;
         builder.add( sliced_ );
         return implementor.result( physType, builder.toBlock() );
+    }
+
+
+    @Override
+    public PolyAlgArgs collectAttributes() {
+        PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
+        args.put( "factor", new DoubleArg( factor ) );
+        return args;
     }
 
 }

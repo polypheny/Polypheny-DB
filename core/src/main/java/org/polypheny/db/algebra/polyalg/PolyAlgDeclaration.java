@@ -43,6 +43,7 @@ import org.polypheny.db.algebra.polyalg.arguments.AnyArg;
 import org.polypheny.db.algebra.polyalg.arguments.BooleanArg;
 import org.polypheny.db.algebra.polyalg.arguments.CollationArg;
 import org.polypheny.db.algebra.polyalg.arguments.CorrelationArg;
+import org.polypheny.db.algebra.polyalg.arguments.DoubleArg;
 import org.polypheny.db.algebra.polyalg.arguments.EntityArg;
 import org.polypheny.db.algebra.polyalg.arguments.EnumArg;
 import org.polypheny.db.algebra.polyalg.arguments.FieldArg;
@@ -55,6 +56,7 @@ import org.polypheny.db.algebra.polyalg.arguments.RexArg;
 import org.polypheny.db.algebra.polyalg.arguments.StringArg;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.plan.AlgCluster;
+import org.polypheny.db.plan.Convention;
 
 
 public class PolyAlgDeclaration {
@@ -62,6 +64,7 @@ public class PolyAlgDeclaration {
     public final String opName;
     public final ImmutableSet<String> opAliases;
     public final DataModel model; // null: common (can be used with nodes of any datamodel)
+    public final Convention convention; // null: no convention (i.e. not a physical operator)
     private final int numInputs; // -1 if arbitrary amount is allowed
     public final ImmutableSet<OperatorTag> opTags;
 
@@ -77,6 +80,7 @@ public class PolyAlgDeclaration {
             @NonNull String opName,
             @Singular ImmutableSet<String> opAliases,
             DataModel model,
+            Convention convention,
             TriFunction<PolyAlgArgs, List<AlgNode>, AlgCluster, AlgNode> creator,
             @Singular ImmutableSet<OperatorTag> opTags,
             int numInputs,
@@ -84,6 +88,7 @@ public class PolyAlgDeclaration {
         this.opName = opName;
         this.opAliases = (opAliases != null) ? opAliases : ImmutableSet.of();
         this.model = model;
+        this.convention = convention;
         this.creator = creator;
         this.numInputs = numInputs;
         this.opTags = (opTags != null) ? opTags : ImmutableSet.of();
@@ -91,6 +96,7 @@ public class PolyAlgDeclaration {
 
         assert PolyAlgDeclaration.hasUniqueNames( params );
         assert PolyAlgDeclaration.hasRequiredTags( params );
+        assert convention == null || this.opTags.contains( OperatorTag.PHYSICAL );
 
         ImmutableMap.Builder<String, Parameter> bMap = ImmutableMap.builder();
         ImmutableList.Builder<Parameter> bPos = ImmutableList.builder();
@@ -208,10 +214,14 @@ public class PolyAlgDeclaration {
         }
         node.set( "aliases", aliases );
 
-        if (model == null) {
+        if ( model == null ) {
             node.put( "model", "COMMON" );
         } else {
             node.put( "model", model.name() );
+        }
+
+        if ( convention != null ) {
+            node.put( "convention", convention.getName() );
         }
         node.put( "numInputs", numInputs );
 
@@ -352,6 +362,7 @@ public class PolyAlgDeclaration {
          */
         ANY( AnyArg.class ),
         INTEGER( IntArg.class ),
+        DOUBLE( DoubleArg.class ),
         STRING( StringArg.class ),
 
         /**
