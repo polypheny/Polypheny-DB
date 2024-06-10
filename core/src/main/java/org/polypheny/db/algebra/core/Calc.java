@@ -42,14 +42,20 @@ import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.logical.relational.LogicalCalc;
 import org.polypheny.db.algebra.metadata.AlgMdUtil;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.polyalg.arguments.ListArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
+import org.polypheny.db.algebra.polyalg.arguments.RexArg;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexLocalRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexProgram;
+import org.polypheny.db.rex.RexProgramBuilder;
 import org.polypheny.db.rex.RexShuttle;
 import org.polypheny.db.util.Litmus;
 
@@ -112,7 +118,6 @@ public abstract class Calc extends SingleAlg {
     }
 
 
-
     @Override
     public double estimateTupleCount( AlgMetadataQuery mq ) {
         return AlgMdUtil.estimateFilteredRows( getInput(), program, mq );
@@ -163,6 +168,35 @@ public abstract class Calc extends SingleAlg {
         return this.getClass().getSimpleName() + "$" +
                 input.algCompareString() + "$" +
                 (program != null ? program.toString() : "") + "&";
+    }
+
+
+    public static RexProgram getProgramFromArgs( PolyAlgArgs args, AlgNode input, RexBuilder b ) {
+        List<RexNode> exprs = args.getListArg( "exprs", RexArg.class ).map( RexArg::getNode );
+        List<RexArg> projectsArg = args.getListArg( "projects", RexArg.class ).getArgs();
+        RexNode condition = args.getArg( "condition", RexArg.class ).getNode();
+
+        RexProgramBuilder builder = new RexProgramBuilder( input.getTupleType(), b );
+        exprs.forEach( builder::addExpr );
+        projectsArg.forEach( p -> builder.addProject( p.getNode(), p.getAlias() ) );
+        if ( condition != null ) {
+            builder.addCondition( condition );
+        }
+
+        return builder.getProgram();
+    }
+
+
+    @Override
+    public PolyAlgArgs collectAttributes() {
+        PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
+        PolyAlgArg exprs = new ListArg<>( program.getExprList(), RexArg::new, args.getDecl().canUnpackValues() );
+        PolyAlgArg projects = new ListArg<>( program.getProjectList(), RexArg::new, program.getOutputRowType().getFieldNames(), args.getDecl().canUnpackValues() );
+
+        args.put( "exprs", exprs )
+                .put( "projects", projects )
+                .put( "condition", new RexArg( program.getCondition() ) );
+        return args;
     }
 
 }

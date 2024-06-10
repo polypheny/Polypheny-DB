@@ -262,7 +262,7 @@ public class PolyAlgUtils {
 
         @Override
         public String visitLocalRef( RexLocalRef localRef ) {
-            return "===LocalRef=== " + localRef;
+            return RexLocalRef.PREFIX + localRef.getIndex() + ":" + localRef.getType();
         }
 
 

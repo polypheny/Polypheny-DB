@@ -36,7 +36,6 @@ package org.polypheny.db.algebra.logical.relational;
 
 import com.google.common.collect.ImmutableList;
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.List;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
 import org.polypheny.db.algebra.AlgNode;
@@ -45,20 +44,15 @@ import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.core.relational.RelAlg;
 import org.polypheny.db.algebra.metadata.AlgMdCollation;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
-import org.polypheny.db.algebra.polyalg.PolyAlgUtils;
-import org.polypheny.db.algebra.polyalg.arguments.ListArg;
 import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
-import org.polypheny.db.algebra.polyalg.arguments.RexArg;
-import org.polypheny.db.algebra.polyalg.arguments.StringArg;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexLiteral;
-import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.util.ValidatorUtil;
+import org.polypheny.db.util.Pair;
 
 
 /**
@@ -92,13 +86,8 @@ public class LogicalRelValues extends Values implements RelAlg {
 
 
     public static LogicalRelValues create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
-        List<String> names = args.getListArg( "names", StringArg.class ).map( StringArg::getArg );
-        List<List<RexLiteral>> tuples = PolyAlgUtils.getNestedListArgAsList(
-                args.getListArg( "tuples", ListArg.class ),
-                r -> (RexLiteral) ((RexArg) r).getNode() );
-
-        AlgDataType rowType = RexUtil.createStructType( cluster.getTypeFactory(), tuples.get( 0 ), names, ValidatorUtil.F_SUGGESTER );
-        return create( cluster, rowType, PolyAlgUtils.toImmutableNestedList( tuples ) );
+        Pair<AlgDataType, ImmutableList<ImmutableList<RexLiteral>>> extracted = extractArgs( args, cluster );
+        return create( cluster, extracted.left, extracted.right );
     }
 
 
@@ -141,22 +130,6 @@ public class LogicalRelValues extends Values implements RelAlg {
     @Override
     public AlgNode accept( AlgShuttle shuttle ) {
         return shuttle.visit( this );
-    }
-
-
-    @Override
-    public PolyAlgArgs collectAttributes() {
-        PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
-
-        args.put( "names", new ListArg<>( rowType.getFieldNames(), StringArg::new ) );
-
-        List<ListArg<RexArg>> tuplesArg = new ArrayList<>();
-        for ( ImmutableList<RexLiteral> tuple : getTuples() ) {
-            tuplesArg.add( new ListArg<>( tuple, RexArg::new ) );
-        }
-        args.put( "tuples", new ListArg<>( tuplesArg ) );
-
-        return args;
     }
 
 }

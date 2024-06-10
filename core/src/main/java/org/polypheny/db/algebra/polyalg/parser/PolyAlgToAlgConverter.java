@@ -73,6 +73,7 @@ import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgNodeList;
 import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgOperator;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.LogicalAdapter;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
@@ -80,6 +81,7 @@ import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph.SubstitutionGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
@@ -89,6 +91,7 @@ import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexIndexRef;
+import org.polypheny.db.rex.RexLocalRef;
 import org.polypheny.db.rex.RexNameRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.tools.AlgBuilder;
@@ -353,6 +356,9 @@ public class PolyAlgToAlgConverter {
             if ( literal.getType() == LiteralType.NULL ) {
                 return builder.makeNullLiteral( type );
             }
+            if ( literal.getType() == LiteralType.LOCAL_REF ) {
+                return new RexLocalRef( literal.toLocalRef(), type );
+            }
 
             String str = literal.toUnquotedString();
             return switch ( type.getPolyType() ) {
@@ -373,6 +379,11 @@ public class PolyAlgToAlgConverter {
 
 
     private Entity convertEntity( PolyAlgExpression exp, Context ctx ) {
+        if ( planType == PlanType.PHYSICAL ) {
+            PhysicalEntity e = getPhysicalEntity( exp.toIdentifier() );
+            ctx.updateFieldNamesIfEmpty( e );
+            return e;
+        }
         String[] atSplit = exp.toIdentifier().split( "@", 2 );
 
         String[] names = atSplit[0].split( "\\.", 2 );
@@ -392,41 +403,7 @@ public class PolyAlgToAlgConverter {
         LogicalNamespace ns = snapshot.getNamespace( namespaceName ).orElseThrow( () -> new GenericRuntimeException( "no namespace named " + namespaceName ) );
 
         if ( planType == PlanType.ALLOCATION ) {
-            // ns.entity@adapterName.partition
-            if ( atSplit.length != 2 ) {
-                throw exception;
-            }
-
-            LogicalEntity logicalEntity;
-            if ( rest == null ) {
-                if ( ns.dataModel == DataModel.GRAPH ) {
-                    logicalEntity = snapshot.graph().getGraph( ns.id ).orElseThrow( () -> exception );
-                } else {
-                    throw exception;
-                }
-            } else {
-                logicalEntity = snapshot.getLogicalEntity( ns.id, rest ).orElseThrow( () -> exception );
-            }
-
-            String[] apSplit = atSplit[1].split( "\\.", 2 ); // [adapterName, partition]
-
-            LogicalAdapter adapter = snapshot.getAdapter( apSplit[0] ).orElseThrow( () -> exception );
-            AllocationPlacement placement = snapshot.alloc().getPlacement( adapter.id, logicalEntity.id ).orElseThrow( () -> exception );
-
-            if ( apSplit.length == 1 ) {
-                List<AllocationEntity> entities = snapshot.alloc().getAllocsOfPlacement( placement.id );
-                if ( entities.isEmpty() ) {
-                    throw exception;
-                }
-                return entities.get( 0 );
-            } else {
-                try {
-                    return snapshot.alloc().getAlloc( placement.id, Long.parseLong( apSplit[1] ) ).orElseThrow( () -> exception );
-                } catch ( NumberFormatException e ) {
-                    long partitionId = snapshot.alloc().getPartitionFromName( logicalEntity.id, apSplit[1] ).orElseThrow( () -> exception ).id;
-                    return snapshot.alloc().getAlloc( placement.id, partitionId ).orElseThrow( () -> exception );
-                }
-            }
+            return getAllocationEntity( atSplit, ns, rest );
         }
 
         return switch ( ns.dataModel ) {
@@ -442,6 +419,58 @@ public class PolyAlgToAlgConverter {
             case DOCUMENT -> snapshot.doc().getCollection( ns.id, rest ).orElseThrow( () -> exception );
             case GRAPH -> snapshot.graph().getGraph( ns.id ).orElseThrow( () -> new GenericRuntimeException( "no graph with id " + ns.id ) );
         };
+    }
+
+
+    private AllocationEntity getAllocationEntity( String[] atSplit, LogicalNamespace ns, String entityName ) {
+        // atSplit has structure [ns.entity, adapterName.partition]
+        GenericRuntimeException exception = new GenericRuntimeException( "Invalid AllocationEntity: " + String.join( "@", atSplit ) );
+        if ( atSplit.length != 2 ) {
+            throw exception;
+        }
+        LogicalEntity logicalEntity = getLogicalEntity( entityName, ns );
+        String[] apSplit = atSplit[1].split( "\\.", 2 ); // [adapterName, partition]
+        LogicalAdapter adapter = snapshot.getAdapter( apSplit[0] ).orElseThrow( () -> exception );
+        AllocationPlacement placement = snapshot.alloc().getPlacement( adapter.id, logicalEntity.id ).orElseThrow( () -> exception );
+
+        if ( apSplit.length == 1 ) {
+            List<AllocationEntity> entities = snapshot.alloc().getAllocsOfPlacement( placement.id );
+            if ( entities.isEmpty() ) {
+                throw exception;
+            }
+            return entities.get( 0 );
+        }
+        try {
+            return snapshot.alloc().getAlloc( placement.id, Long.parseLong( apSplit[1] ) ).orElseThrow( () -> exception );
+        } catch ( NumberFormatException e ) {
+            long partitionId = snapshot.alloc().getPartitionFromName( logicalEntity.id, apSplit[1] ).orElseThrow( () -> exception ).id;
+            return snapshot.alloc().getAlloc( placement.id, partitionId ).orElseThrow( () -> exception );
+        }
+
+    }
+
+
+    private LogicalEntity getLogicalEntity( String entityName, LogicalNamespace ns ) {
+        if ( entityName == null ) {
+            if ( ns.dataModel == DataModel.GRAPH ) {
+                return snapshot.graph().getGraph( ns.id ).orElseThrow(
+                        () -> new GenericRuntimeException( "Cannot find entity: " + ns.name ) );
+            } else {
+                throw new GenericRuntimeException( "Entity name must not be null for a non-graph namespace." );
+            }
+        }
+        return snapshot.getLogicalEntity( ns.id, entityName ).orElseThrow(
+                () -> new GenericRuntimeException( "Cannot find entity: " + ns.name + "." + entityName ) );
+    }
+
+
+    private PhysicalEntity getPhysicalEntity( String s ) {
+        GenericRuntimeException exception = new GenericRuntimeException( "Invalid PhysicalEntity: " + s );
+
+        String[] apSplit = s.split( "\\.", 2 ); // [adapterName, physicalId]
+        LogicalAdapter adapter = snapshot.getAdapter( apSplit[0] ).orElseThrow( () -> exception );
+        long physicalId = Long.parseLong( apSplit[1] );
+        return Catalog.getInstance().getAdapterCatalog( adapter.id ).orElseThrow( () -> exception ).getPhysical( physicalId );
     }
 
 
@@ -497,8 +526,8 @@ public class PolyAlgToAlgConverter {
     private static final class Context {
 
         private final List<AlgNode> children;
-        private final List<String> fieldNames;
-        private final List<AlgDataTypeField> fields;
+        private List<String> fieldNames;
+        private List<AlgDataTypeField> fields;
         private final DataModel dataModel;
 
 
@@ -563,6 +592,21 @@ public class PolyAlgToAlgConverter {
          */
         public DataModel getNonNullDataModel() {
             return Objects.requireNonNullElse( dataModel, DataModel.getDefault() );
+        }
+
+
+        /**
+         * In the case of a leaf node (e.g. a SCAN operation), fieldNames are empty.
+         * We can manually add the fieldNames given the scanned entity to allow other arguments to use a field name instead of an index.
+         *
+         * @param e The entity that defines the field names for this node
+         */
+        public void updateFieldNamesIfEmpty( PhysicalEntity e ) {
+            if ( fieldNames.isEmpty() ) {
+                System.out.println("tuple type: " + e.getTupleType());
+                fieldNames = e.getTupleType().getFieldNames();
+                fields = e.getTupleType().getFields();
+            }
         }
 
     }

@@ -43,6 +43,8 @@ import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
 import org.polypheny.db.algebra.metadata.AlgMdUtil;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
+import org.polypheny.db.algebra.polyalg.arguments.RexArg;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
@@ -152,6 +154,12 @@ public abstract class Filter extends SingleAlg {
         return this.getClass().getSimpleName() + "$" +
                 input.algCompareString() + "$" +
                 (condition != null ? condition.hashCode() : "") + "&";
+    }
+
+    @Override
+    public PolyAlgArgs collectAttributes() {
+        PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
+        return args.put( 0, new RexArg( condition ) );
     }
 
 }

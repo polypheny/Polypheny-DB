@@ -105,6 +105,7 @@ public class LogicalLpgSort extends LpgSort {
 
     @Override
     public PolyAlgArgs collectAttributes() {
+        // We cannot use super.collectAttributes() since the type for limit and skip (offset differ).
         PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
 
         PolyAlgArg collArg = new ListArg<>(

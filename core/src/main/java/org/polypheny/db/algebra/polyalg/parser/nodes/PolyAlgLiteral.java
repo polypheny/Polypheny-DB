@@ -25,6 +25,7 @@ import org.polypheny.db.algebra.AlgFieldCollation.NullDirection;
 import org.polypheny.db.algebra.core.CorrelationId;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.rex.RexLocalRef;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 
@@ -104,6 +105,11 @@ public class PolyAlgLiteral extends PolyAlgNode {
         return Pair.of( new CorrelationId( parts[0] ), parts[1] );
     }
 
+    public int toLocalRef() {
+        checkType( LiteralType.LOCAL_REF );
+        return Integer.parseInt( str.substring( RexLocalRef.PREFIX.length() ) );
+    }
+
 
     @Override
     public String toString() {
@@ -141,6 +147,7 @@ public class PolyAlgLiteral extends PolyAlgNode {
         NULL_DIRECTION, // AlgFieldCollation.NullDirection
         DYNAMIC_PARAM,
         CORRELATION_VAR,
+        LOCAL_REF,
         POLY_VALUE,
         STRING; // This is the least specific type and is used e.g. for field or entity names
 

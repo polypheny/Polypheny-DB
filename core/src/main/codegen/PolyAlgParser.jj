@@ -27,6 +27,7 @@ import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgExpression;
 import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgExpressionExtension;
 import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgExpressionExtension.ExtensionType;
 import org.polypheny.db.algebra.core.CorrelationId;
+import org.polypheny.db.rex.RexLocalRef;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
@@ -344,7 +345,13 @@ PolyAlgLiteral Literal() :
 }
 {
     (
-        t = <IDENTIFIER> {if (t.image.startsWith(CorrelationId.CORREL_PREFIX)) type = LiteralType.CORRELATION_VAR;}
+        t = <IDENTIFIER> {
+            if (t.image.startsWith(CorrelationId.CORREL_PREFIX)) {
+                type = LiteralType.CORRELATION_VAR;
+            } else if (t.image.startsWith(RexLocalRef.PREFIX)) {
+                type = LiteralType.LOCAL_REF;
+            }
+        }
         |
         LOOKAHEAD(2) num = Number() {return new PolyAlgLiteral(num, LiteralType.NUMBER, getPos());}
         |

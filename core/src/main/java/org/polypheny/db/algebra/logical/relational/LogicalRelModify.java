@@ -20,22 +20,15 @@ import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.relational.RelModify;
-import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.ParamType;
-import org.polypheny.db.algebra.polyalg.arguments.BooleanArg;
 import org.polypheny.db.algebra.polyalg.arguments.EntityArg;
-import org.polypheny.db.algebra.polyalg.arguments.EnumArg;
-import org.polypheny.db.algebra.polyalg.arguments.ListArg;
 import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
-import org.polypheny.db.algebra.polyalg.arguments.RexArg;
-import org.polypheny.db.algebra.polyalg.arguments.StringArg;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.Entity;
-import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.trait.ModelTrait;
+import org.polypheny.db.util.Quadruple;
 
 
 /**
@@ -91,14 +84,8 @@ public final class LogicalRelModify extends RelModify<Entity> {
 
     public static LogicalRelModify create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
         EntityArg entity = args.getArg( "table", EntityArg.class );
-        EnumArg<Operation> op = args.getEnumArg( "operation", Operation.class );
-        List<String> updateColumns = args.getListArg( "targets", StringArg.class ).map( StringArg::getArg );
-        List<? extends RexNode> sourceExpressions = args.getListArg( "sources", RexArg.class ).map( RexArg::getNode );
-        BooleanArg flattened = args.getArg( "flattened", BooleanArg.class );
-
-        updateColumns = updateColumns.isEmpty() ? null : updateColumns;
-        sourceExpressions = sourceExpressions.isEmpty() ? null : sourceExpressions;
-        return create( entity.getEntity(), children.get( 0 ), op.getArg(), updateColumns, sourceExpressions, flattened.toBool() );
+        Quadruple<Operation, List<String>, List<? extends RexNode>, Boolean> extracted = extractArgs( args );
+        return create( entity.getEntity(), children.get( 0 ), extracted.a, extracted.b, extracted.c, extracted.d );
     }
 
 
@@ -112,23 +99,6 @@ public final class LogicalRelModify extends RelModify<Entity> {
     @Override
     public AlgNode accept( AlgShuttle shuttle ) {
         return shuttle.visit( this );
-    }
-
-
-    @Override
-    public PolyAlgArgs collectAttributes() {
-        PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
-
-        if ( getUpdateColumns() != null ) {
-            args.put( "targets", new ListArg<>( getUpdateColumns(), StringArg::new ) );
-        }
-        if ( getSourceExpressions() != null ) {
-            args.put( "sources", new ListArg<>( getSourceExpressions(), RexArg::new ) );
-        }
-
-        return args.put( "table", new EntityArg( entity, Catalog.snapshot(), DataModel.RELATIONAL) )
-                .put( "operation", new EnumArg<>( getOperation(), ParamType.MODIFY_OP_ENUM ) )
-                .put( "flattened", new BooleanArg( isFlattened() ) );
     }
 
 }

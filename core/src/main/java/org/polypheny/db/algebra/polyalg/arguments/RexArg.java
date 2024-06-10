@@ -34,6 +34,7 @@ public class RexArg implements PolyAlgArg {
     private final RexNode node;
     @Getter
     private final String alias;
+    private List<String> inputFieldNames = null;
 
 
     /**
@@ -51,7 +52,20 @@ public class RexArg implements PolyAlgArg {
 
 
     public RexArg( RexNode node ) {
-        this( node, null );
+        this( node, (String) null );
+    }
+
+
+    /**
+     * Creates a RexArg for the given RexNode that uses the specified list of inputFieldNames during serialization.
+     * This can be useful for leaf nodes, since the inputFieldNames cannot be derived from the child node.
+     *
+     * @param node the RexNode corresponding to this argument
+     * @param inputFieldNames the list of names to be used for serialization
+     */
+    public RexArg( RexNode node, @NonNull List<String> inputFieldNames ) {
+        this(node);
+        this.inputFieldNames = inputFieldNames;
     }
 
 
@@ -69,10 +83,10 @@ public class RexArg implements PolyAlgArg {
 
     private String rexAsString( @NonNull List<String> inputFieldNames ) {
         String str = node == null ? "" : node.toString();
-        if ( inputFieldNames.isEmpty() || node == null ) {
+        if ( (this.inputFieldNames == null && inputFieldNames.isEmpty()) || node == null ) {
             return str;
         }
-        return PolyAlgUtils.digestWithNames( node, inputFieldNames );
+        return PolyAlgUtils.digestWithNames( node, this.inputFieldNames == null ? inputFieldNames : this.inputFieldNames);
     }
 
 
@@ -80,7 +94,7 @@ public class RexArg implements PolyAlgArg {
     public ObjectNode serialize( AlgNode context, @NonNull List<String> inputFieldNames, ObjectMapper mapper ) {
         ObjectNode node = mapper.createObjectNode();
         node.put( "rex", rexAsString( inputFieldNames ) );
-        if (alias != null) {
+        if ( alias != null ) {
             node.put( "alias", alias );
         }
         return node;

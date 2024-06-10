@@ -17,11 +17,35 @@
 package org.polypheny.db.adapter.jdbc;
 
 import com.google.common.collect.ImmutableList;
+import org.polypheny.db.adapter.jdbc.JdbcRules.JdbcAggregate;
+import org.polypheny.db.adapter.jdbc.JdbcRules.JdbcCalc;
+import org.polypheny.db.adapter.jdbc.JdbcRules.JdbcFilter;
+import org.polypheny.db.adapter.jdbc.JdbcRules.JdbcIntersect;
+import org.polypheny.db.adapter.jdbc.JdbcRules.JdbcJoin;
+import org.polypheny.db.adapter.jdbc.JdbcRules.JdbcMinus;
 import org.polypheny.db.adapter.jdbc.JdbcRules.JdbcProject;
+import org.polypheny.db.adapter.jdbc.JdbcRules.JdbcSort;
+import org.polypheny.db.adapter.jdbc.JdbcRules.JdbcTableModify;
+import org.polypheny.db.adapter.jdbc.JdbcRules.JdbcUnion;
+import org.polypheny.db.adapter.jdbc.JdbcRules.JdbcValues;
+import org.polypheny.db.algebra.core.JoinAlgType;
+import org.polypheny.db.algebra.logical.relational.LogicalCalc;
+import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalRelIntersect;
+import org.polypheny.db.algebra.logical.relational.LogicalRelMinus;
+import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelSort;
+import org.polypheny.db.algebra.logical.relational.LogicalRelUnion;
+import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.OperatorTag;
+import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.ParamType;
+import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.Parameter;
+import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.SimpleType;
 import org.polypheny.db.algebra.polyalg.PolyAlgRegistry;
+import org.polypheny.db.algebra.polyalg.arguments.EnumArg;
+import org.polypheny.db.algebra.polyalg.arguments.ListArg;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plugins.PluginContext;
@@ -52,6 +76,59 @@ public class JdbcAdapterFramework extends PolyPlugin {
                 .creator( JdbcToEnumerableConverter::create ).model( DataModel.RELATIONAL )
                 .opName( "JDBC_TO_ENUMERABLE" ).convention( c ).numInputs( 1 ).opTags( physTags )
                 .build() );
+        PolyAlgRegistry.register( JdbcJoin.class, PolyAlgDeclaration.builder()
+                .creator( JdbcJoin::create ).model( DataModel.RELATIONAL )
+                .opName( "JDBC_JOIN" ).convention( c ).numInputs( 2 ).opTags( physTags )
+                .param( Parameter.builder().name( "condition" ).alias( "on" ).type( ParamType.REX ).simpleType( SimpleType.REX_PREDICATE ).build() )
+                .param( Parameter.builder().name( "type" ).type( ParamType.JOIN_TYPE_ENUM ).defaultValue( new EnumArg<>( JoinAlgType.INNER, ParamType.JOIN_TYPE_ENUM ) ).build() )
+                .param( Parameter.builder().name( "variables" ).type( ParamType.CORR_ID ).simpleType( SimpleType.HIDDEN ).multiValued( 1 ).defaultValue( ListArg.EMPTY ).build() )
+                .build() );
+        PolyAlgRegistry.register( JdbcCalc.class, PolyAlgDeclaration.builder()
+                .creator( JdbcCalc::create ).model( DataModel.RELATIONAL )
+                .opName( "JDBC_CALC" ).convention( c ).numInputs( 1 ).opTags( physTags )
+                .params( PolyAlgRegistry.getParams( LogicalCalc.class ) )
+                .build() );
+        PolyAlgRegistry.register( JdbcFilter.class, PolyAlgDeclaration.builder()
+                .creator( JdbcFilter::create ).model( DataModel.RELATIONAL )
+                .opName( "JDBC_FILTER" ).convention( c ).numInputs( 1 ).opTags( physTags )
+                .param( Parameter.builder().name( "condition" ).type( ParamType.REX ).simpleType( SimpleType.REX_PREDICATE ).build() )
+                .build() );
+        PolyAlgRegistry.register( JdbcAggregate.class, PolyAlgDeclaration.builder()
+                .creator( JdbcAggregate::create ).model( DataModel.RELATIONAL )
+                .opName( "JDBC_AGGREGATE" ).convention( c ).numInputs( 1 ).opTags( physTags )
+                .params( PolyAlgRegistry.getParams( LogicalRelAggregate.class ) )
+                .build() );
+        PolyAlgRegistry.register( JdbcSort.class, PolyAlgDeclaration.builder()
+                .creator( JdbcSort::create ).model( DataModel.RELATIONAL )
+                .opName( "JDBC_SORT" ).convention( c ).numInputs( 1 ).opTags( physTags )
+                .params( PolyAlgRegistry.getParams( LogicalRelSort.class ) )
+                .build() );
+        PolyAlgRegistry.register( JdbcUnion.class, PolyAlgDeclaration.builder()
+                .creator( JdbcUnion::create ).model( DataModel.RELATIONAL )
+                .opName( "JDBC_UNION" ).convention( c ).numInputs( -1 ).opTags( physTags )
+                .params( PolyAlgRegistry.getParams( LogicalRelUnion.class ) )
+                .build() );
+        PolyAlgRegistry.register( JdbcIntersect.class, PolyAlgDeclaration.builder()
+                .creator( JdbcIntersect::create ).model( DataModel.RELATIONAL )
+                .opName( "JDBC_INTERSECT" ).convention( c ).numInputs( -1 ).opTags( physTags )
+                .params( PolyAlgRegistry.getParams( LogicalRelIntersect.class ) )
+                .build() );
+        PolyAlgRegistry.register( JdbcMinus.class, PolyAlgDeclaration.builder()
+                .creator( JdbcMinus::create ).model( DataModel.RELATIONAL )
+                .opName( "JDBC_MINUS" ).convention( c ).numInputs( -1 ).opTags( physTags )
+                .params( PolyAlgRegistry.getParams( LogicalRelMinus.class ) )
+                .build() );
+        PolyAlgRegistry.register( JdbcTableModify.class, PolyAlgDeclaration.builder()
+                .creator( JdbcTableModify::create ).model( DataModel.RELATIONAL )
+                .opName( "JDBC_MODIFY" ).convention( c ).numInputs( 1 ).opTags( physTags )
+                .params( PolyAlgRegistry.getParams( LogicalRelModify.class ) )
+                .build() );
+        PolyAlgRegistry.register( JdbcValues.class, PolyAlgDeclaration.builder()
+                .creator( JdbcTableModify::create ).model( DataModel.RELATIONAL )
+                .opName( "JDBC_VALUES" ).convention( c ).numInputs( 0 ).opTags( physTags )
+                .params( PolyAlgRegistry.getParams( LogicalRelValues.class ) )
+                .build() );
+
     }
 
 

@@ -87,11 +87,4 @@ public final class LogicalRelIntersect extends Intersect implements RelAlg {
         return shuttle.visit( this );
     }
 
-
-    @Override
-    public PolyAlgArgs collectAttributes() {
-        PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
-        return args.put( "all", new BooleanArg( all ) );
-    }
-
 }

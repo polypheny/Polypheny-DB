@@ -42,11 +42,17 @@ import lombok.Getter;
 import org.apache.calcite.linq4j.Ord;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.polyalg.arguments.CollationArg;
+import org.polypheny.db.algebra.polyalg.arguments.ListArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
+import org.polypheny.db.algebra.polyalg.arguments.RexArg;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
@@ -55,6 +61,7 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
 import org.polypheny.db.schema.trait.ModelTraitDef;
+import org.polypheny.db.util.Triple;
 import org.polypheny.db.util.Util;
 
 
@@ -191,6 +198,30 @@ public abstract class Sort extends SingleAlg {
                 (collation != null ? collation.getFieldCollations().stream().map( AlgFieldCollation::getDirection ).map( Objects::toString ).collect( Collectors.joining( "$" ) ) : "") + "$" +
                 (offset != null ? offset.toString() : "") + "$" +
                 (fetch != null ? fetch.toString() : "") + "&";
+    }
+
+
+    protected static Triple<AlgCollation, RexNode, RexNode> extractArgs( PolyAlgArgs args ) {
+        ListArg<CollationArg> collations = args.getListArg( "sort", CollationArg.class );
+        RexArg limit = args.getArg( "limit", RexArg.class );
+        RexArg offset = args.getArg( "offset", RexArg.class );
+        return Triple.of( AlgCollations.of( collations.map( CollationArg::getColl ) ), offset.getNode(), limit.getNode() );
+    }
+
+
+    @Override
+    public PolyAlgArgs collectAttributes() {
+        PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
+
+        PolyAlgArg collArg = new ListArg<>(
+                collation.getFieldCollations(),
+                CollationArg::new,
+                args.getDecl().canUnpackValues() );
+
+        args.put( "sort", collArg )
+                .put( "limit", new RexArg( fetch ) )
+                .put( "offset", new RexArg( offset ) );
+        return args;
     }
 
 }

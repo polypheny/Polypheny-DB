@@ -34,6 +34,7 @@
 package org.polypheny.db.algebra.logical.relational;
 
 
+import java.util.List;
 import java.util.Set;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
 import org.polypheny.db.algebra.AlgDistributionTraitDef;
@@ -44,10 +45,7 @@ import org.polypheny.db.algebra.core.relational.RelAlg;
 import org.polypheny.db.algebra.metadata.AlgMdCollation;
 import org.polypheny.db.algebra.metadata.AlgMdDistribution;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
-import org.polypheny.db.algebra.polyalg.arguments.ListArg;
-import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArg;
 import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
-import org.polypheny.db.algebra.polyalg.arguments.RexArg;
 import org.polypheny.db.algebra.rules.FilterCalcMergeRule;
 import org.polypheny.db.algebra.rules.FilterToCalcRule;
 import org.polypheny.db.algebra.rules.ProjectToCalcRule;
@@ -98,6 +96,11 @@ public final class LogicalCalc extends Calc implements RelAlg {
     }
 
 
+    public static LogicalCalc create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+        return create( children.get( 0 ), getProgramFromArgs( args, children.get( 0 ), cluster.getRexBuilder() ) );
+    }
+
+
     @Override
     public LogicalCalc copy( AlgTraitSet traitSet, AlgNode child, RexProgram program ) {
         return new LogicalCalc( getCluster(), traitSet, child, program );
@@ -111,19 +114,6 @@ public final class LogicalCalc extends Calc implements RelAlg {
             expr.accept( vuv );
         }
         variableSet.addAll( vuv.variables );
-    }
-
-
-    @Override
-    public PolyAlgArgs collectAttributes() {
-        PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
-        PolyAlgArg expsArg = new ListArg<>( program.getExprList(), RexArg::new );
-        PolyAlgArg projectsArg = new ListArg<>( program.getProjectList(), RexArg::new, rowType.getFieldNames() );
-
-        args.put( 0, expsArg );
-        args.put( 1, projectsArg );
-        args.put( "condition", new RexArg( program.getCondition() ) );
-        return args;
     }
 
 }

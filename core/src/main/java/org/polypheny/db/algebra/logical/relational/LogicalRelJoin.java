@@ -34,7 +34,6 @@
 package org.polypheny.db.algebra.logical.relational;
 
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.polypheny.db.algebra.AlgNode;
@@ -44,18 +43,14 @@ import org.polypheny.db.algebra.core.CorrelationId;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.relational.RelAlg;
-import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.ParamType;
 import org.polypheny.db.algebra.polyalg.arguments.BooleanArg;
-import org.polypheny.db.algebra.polyalg.arguments.CorrelationArg;
-import org.polypheny.db.algebra.polyalg.arguments.EnumArg;
-import org.polypheny.db.algebra.polyalg.arguments.ListArg;
 import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
-import org.polypheny.db.algebra.polyalg.arguments.RexArg;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.trait.ModelTrait;
+import org.polypheny.db.util.Triple;
 
 
 /**
@@ -126,11 +121,9 @@ public final class LogicalRelJoin extends Join implements RelAlg {
 
 
     public static LogicalRelJoin create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
-        RexArg condition = args.getArg( "condition", RexArg.class );
-        EnumArg<JoinAlgType> type = args.getEnumArg( "type", JoinAlgType.class );
-        List<CorrelationId> variables = args.getListArg( "variables", CorrelationArg.class ).map( CorrelationArg::getCorrId );
+        Triple<RexNode, Set<CorrelationId>, JoinAlgType> extracted = extractArgs( args );
         BooleanArg semiJoinDone = args.getArg( "semiJoinDone", BooleanArg.class );
-        return create( children.get( 0 ), children.get( 1 ), condition.getNode(), new HashSet<>( variables ), type.getArg(), semiJoinDone.toBool() );
+        return create( children.get( 0 ), children.get( 1 ), extracted.left, extracted.middle, extracted.right, semiJoinDone.toBool() );
     }
 
 
@@ -162,13 +155,8 @@ public final class LogicalRelJoin extends Join implements RelAlg {
 
     @Override
     public PolyAlgArgs collectAttributes() {
-        PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
-
-        args.put( 0, new RexArg( condition ) )
-                .put( "type", new EnumArg<>( joinType, ParamType.JOIN_TYPE_ENUM ) )
-                .put( "variables", new ListArg<>( variablesSet.asList(), CorrelationArg::new ) )
-                .put( "semiJoinDone", new BooleanArg( semiJoinDone ) );
-        return args;
+        PolyAlgArgs args = super.collectAttributes();
+        return args.put( "semiJoinDone", new BooleanArg( semiJoinDone ) );
     }
 
 }

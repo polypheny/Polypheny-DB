@@ -62,11 +62,4 @@ public class LogicalLpgUnion extends Union {
     }
 
 
-    @Override
-    public PolyAlgArgs collectAttributes() {
-        PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
-        return args.put( "all", new BooleanArg( all ) );
-    }
-
-
 }

@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Optional;
 import lombok.Getter;
 import lombok.NonNull;
-import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.ParamType;
@@ -30,6 +29,7 @@ import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph.SubstitutionGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.type.entity.PolyString;
@@ -43,7 +43,6 @@ public class EntityArg implements PolyAlgArg {
     private String entityName; // for graphs, entityName is null
 
     // in the case of an AllocationEntity:
-    private String adapterName;
     private String partitionName;
 
 
@@ -69,8 +68,6 @@ public class EntityArg implements PolyAlgArg {
             if ( e.dataModel != DataModel.GRAPH ) {
                 this.entityName = snapshot.getLogicalEntity( e.logicalId ).orElseThrow().name;
             }
-            Adapter<?> a = AdapterManager.getInstance().getAdapter( e.adapterId ).orElseThrow();
-            this.adapterName = a.getUniqueName();
             this.partitionName = snapshot.alloc().getPartition( e.partitionId ).orElseThrow().name;
         }
     }
@@ -96,11 +93,19 @@ public class EntityArg implements PolyAlgArg {
 
     @Override
     public String toPolyAlg( AlgNode context, @NonNull List<String> inputFieldNames ) {
+        if ( entity instanceof PhysicalEntity e ) {
+            return getAdapterName( e.adapterId ) + "." + e.id;
+        }
         String name = getFullName();
         if ( entity instanceof AllocationEntity e ) {
-            return name + "@" + adapterName + "." + e.partitionId;
+            return name + "@" + getAdapterName( e.adapterId ) + "." + e.partitionId;
         }
         return name;
+    }
+
+
+    private String getAdapterName( Long adapterId ) {
+        return AdapterManager.getInstance().getAdapter( adapterId ).orElseThrow().getUniqueName();
     }
 
 
@@ -119,11 +124,14 @@ public class EntityArg implements PolyAlgArg {
         node.put( "fullName", getFullName() );
 
         if ( entity instanceof AllocationEntity e ) {
-            node.put( "adapterName", adapterName );
+            node.put( "adapterName", getAdapterName( e.adapterId ) );
             node.put( "partitionId", String.valueOf( e.partitionId ) );
             if ( partitionName != null && !partitionName.isEmpty() ) {
                 node.put( "partitionName", partitionName );
             }
+        } else if ( entity instanceof PhysicalEntity e ) {
+            node.put( "adapterName", getAdapterName( e.adapterId ) );
+            node.put( "physicalId", e.id );
         }
 
         return node;

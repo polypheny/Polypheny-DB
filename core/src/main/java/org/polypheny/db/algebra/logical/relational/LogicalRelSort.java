@@ -38,20 +38,16 @@ import java.util.List;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
-import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.relational.RelAlg;
-import org.polypheny.db.algebra.polyalg.arguments.CollationArg;
-import org.polypheny.db.algebra.polyalg.arguments.ListArg;
-import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArg;
 import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
-import org.polypheny.db.algebra.polyalg.arguments.RexArg;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.util.Triple;
 
 
 /**
@@ -89,10 +85,8 @@ public final class LogicalRelSort extends Sort implements RelAlg {
 
 
     public static LogicalRelSort create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
-        ListArg<CollationArg> collations = args.getListArg( "sort", CollationArg.class );
-        RexArg limit = args.getArg( "limit", RexArg.class );
-        RexArg offset = args.getArg( "offset", RexArg.class );
-        return create( children.get( 0 ), AlgCollations.of( collations.map( CollationArg::getColl ) ), offset.getNode(), limit.getNode() );
+        Triple<AlgCollation, RexNode, RexNode> extracted = extractArgs( args );
+        return create( children.get( 0 ), extracted.left, extracted.middle, extracted.right );
     }
 
 
@@ -105,22 +99,6 @@ public final class LogicalRelSort extends Sort implements RelAlg {
     @Override
     public AlgNode accept( AlgShuttle shuttle ) {
         return shuttle.visit( this );
-    }
-
-
-    @Override
-    public PolyAlgArgs collectAttributes() {
-        PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
-
-        PolyAlgArg collArg = new ListArg<>(
-                collation.getFieldCollations(),
-                CollationArg::new,
-                args.getDecl().canUnpackValues() );
-
-        args.put( "sort", collArg )
-                .put( "limit", new RexArg( fetch ) )
-                .put( "offset", new RexArg( offset ) );
-        return args;
     }
 
 }

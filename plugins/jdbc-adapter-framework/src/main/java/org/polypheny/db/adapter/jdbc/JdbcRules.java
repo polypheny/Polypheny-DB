@@ -73,6 +73,8 @@ import org.polypheny.db.algebra.metadata.AlgMdCollation;
 import org.polypheny.db.algebra.metadata.AlgMdUtil;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.algebra.polyalg.arguments.BooleanArg;
+import org.polypheny.db.algebra.polyalg.arguments.EntityArg;
 import org.polypheny.db.algebra.polyalg.arguments.ListArg;
 import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.algebra.polyalg.arguments.RexArg;
@@ -108,6 +110,9 @@ import org.polypheny.db.sql.language.fun.SqlItemOperator;
 import org.polypheny.db.tools.AlgBuilderFactory;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.ImmutableBitSet;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.Quadruple;
+import org.polypheny.db.util.Triple;
 import org.polypheny.db.util.UnsupportedRexCallVisitor;
 import org.polypheny.db.util.ValidatorUtil;
 import org.polypheny.db.util.trace.PolyphenyDbTrace;
@@ -305,6 +310,16 @@ public class JdbcRules {
         }
 
 
+        public static JdbcJoin create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+            Triple<RexNode, Set<CorrelationId>, JoinAlgType> extracted = extractArgs( args );
+            try {
+                return new JdbcJoin( cluster, cluster.traitSet(), children.get( 0 ), children.get( 1 ), extracted.left, extracted.middle, extracted.right );
+            } catch ( InvalidAlgException e ) {
+                throw new RuntimeException( e );
+            }
+        }
+
+
         @Override
         public JdbcJoin copy( AlgTraitSet traitSet, RexNode condition, AlgNode left, AlgNode right, JoinAlgType joinType, boolean semiJoinDone ) {
             try {
@@ -388,6 +403,12 @@ public class JdbcRules {
             assert getConvention() instanceof JdbcConvention;
             this.program = program;
             this.rowType = program.getOutputRowType();
+        }
+
+
+        public static JdbcCalc create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+            return new JdbcCalc( cluster, cluster.traitSet(), children.get( 0 ),
+                    Calc.getProgramFromArgs( args, children.get( 0 ), cluster.getRexBuilder() ) );
         }
 
 
@@ -740,6 +761,12 @@ public class JdbcRules {
         }
 
 
+        public static JdbcFilter create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+            RexArg condition = args.getArg( "condition", RexArg.class );
+            return new JdbcFilter( cluster, cluster.traitSet(), children.get( 0 ), condition.getNode() );
+        }
+
+
         @Override
         public JdbcFilter copy( AlgTraitSet traitSet, AlgNode input, RexNode condition ) {
             return new JdbcFilter( getCluster(), traitSet, input, condition );
@@ -830,6 +857,17 @@ public class JdbcRules {
         }
 
 
+        public static JdbcAggregate create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+            Triple<ImmutableBitSet, List<ImmutableBitSet>, List<AggregateCall>> extracted = extractArgs( args );
+            try {
+                return new JdbcAggregate( cluster, cluster.traitSet(), children.get( 0 ), false,
+                        extracted.left, extracted.middle, extracted.right );
+            } catch ( InvalidAlgException e ) {
+                throw new RuntimeException( e );
+            }
+        }
+
+
         @Override
         public JdbcAggregate copy(
                 AlgTraitSet traitSet,
@@ -910,6 +948,12 @@ public class JdbcRules {
         }
 
 
+        public static JdbcSort create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+            Triple<AlgCollation, RexNode, RexNode> extracted = extractArgs( args );
+            return new JdbcSort( cluster, children.get( 0 ).getTraitSet(), children.get( 0 ), extracted.left, extracted.middle, extracted.right );
+        }
+
+
         @Override
         public JdbcSort copy( AlgTraitSet traitSet, AlgNode newInput, AlgCollation newCollation, ImmutableList<RexNode> nodes, RexNode offset, RexNode fetch ) {
             return new JdbcSort( getCluster(), traitSet, newInput, newCollation, offset, fetch );
@@ -955,6 +999,11 @@ public class JdbcRules {
 
         public JdbcUnion( AlgCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, boolean all ) {
             super( cluster, traitSet, inputs, all );
+        }
+
+
+        public static JdbcUnion create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+            return new JdbcUnion( cluster, cluster.traitSet(), children, args.getArg( "all", BooleanArg.class ).toBool() );
         }
 
 
@@ -1016,6 +1065,11 @@ public class JdbcRules {
         }
 
 
+        public static JdbcIntersect create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+            return new JdbcIntersect( cluster, cluster.traitSet(), children, args.getArg( "all", BooleanArg.class ).toBool() );
+        }
+
+
         @Override
         public JdbcIntersect copy( AlgTraitSet traitSet, List<AlgNode> inputs, boolean all ) {
             return new JdbcIntersect( getCluster(), traitSet, inputs, all );
@@ -1064,6 +1118,11 @@ public class JdbcRules {
         public JdbcMinus( AlgCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, boolean all ) {
             super( cluster, traitSet, inputs, all );
             assert !all;
+        }
+
+
+        public static JdbcMinus create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+            return new JdbcMinus( cluster, cluster.traitSet(), children, args.getArg( "all", BooleanArg.class ).toBool() );
         }
 
 
@@ -1156,6 +1215,14 @@ public class JdbcRules {
         }
 
 
+        public static JdbcTableModify create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+            EntityArg entity = args.getArg( "table", EntityArg.class );
+            Quadruple<Operation, List<String>, List<? extends RexNode>, Boolean> extracted = extractArgs( args );
+            return new JdbcTableModify( cluster, cluster.traitSet(), (JdbcTable) entity.getEntity(), children.get( 0 ),
+                    extracted.a, extracted.b, extracted.c, extracted.d );
+        }
+
+
         @Override
         public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
             double cost = super.computeSelfCost( planner, mq ).getCosts();
@@ -1214,6 +1281,12 @@ public class JdbcRules {
 
         JdbcValues( AlgCluster cluster, AlgDataType rowType, ImmutableList<ImmutableList<RexLiteral>> tuples, AlgTraitSet traitSet ) {
             super( cluster, rowType, tuples, traitSet );
+        }
+
+
+        public static JdbcValues create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+            Pair<AlgDataType, ImmutableList<ImmutableList<RexLiteral>>> extracted = extractArgs( args, cluster );
+            return new JdbcValues( cluster, extracted.left, extracted.right, cluster.traitSet() );
         }
 
 

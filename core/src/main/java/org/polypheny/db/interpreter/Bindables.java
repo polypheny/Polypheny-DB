@@ -313,7 +313,8 @@ public class Bindables {
         @Override
         public PolyAlgArgs collectAttributes() {
             PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
-            PolyAlgArg filtersArg = new ListArg<>( filters, RexArg::new, args.getDecl().canUnpackValues() );
+            List<String> fieldNames = entity.getTupleType().getFieldNames();
+            PolyAlgArg filtersArg = new ListArg<>( filters, f -> new RexArg( f, fieldNames ), args.getDecl().canUnpackValues() );
             PolyAlgArg projectsArg = new ListArg<>( projects, IntArg::new, args.getDecl().canUnpackValues() );
 
             args.put( "entity", new EntityArg( entity, Catalog.snapshot(), DataModel.RELATIONAL ) )

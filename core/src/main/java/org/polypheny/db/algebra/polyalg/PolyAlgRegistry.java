@@ -27,9 +27,17 @@ import java.util.Map;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.enumerable.EnumerableAggregate;
+import org.polypheny.db.algebra.enumerable.EnumerableCalc;
 import org.polypheny.db.algebra.enumerable.EnumerableConvention;
 import org.polypheny.db.algebra.enumerable.EnumerableInterpreter;
+import org.polypheny.db.algebra.enumerable.EnumerableIntersect;
+import org.polypheny.db.algebra.enumerable.EnumerableJoin;
+import org.polypheny.db.algebra.enumerable.EnumerableLimit;
+import org.polypheny.db.algebra.enumerable.EnumerableMinus;
 import org.polypheny.db.algebra.enumerable.EnumerableProject;
+import org.polypheny.db.algebra.enumerable.EnumerableSort;
+import org.polypheny.db.algebra.enumerable.EnumerableUnion;
+import org.polypheny.db.algebra.enumerable.EnumerableValues;
 import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.logical.common.LogicalBatchIterator;
 import org.polypheny.db.algebra.logical.common.LogicalTransformer;
@@ -168,9 +176,9 @@ public class PolyAlgRegistry {
         declarations.put( LogicalCalc.class, PolyAlgDeclaration.builder()
                 .model( DataModel.RELATIONAL )
                 .opName( "REL_CALC" ).opAlias( "CALC" ).numInputs( 1 ).opTags( logAllProTags )
-                .param( Parameter.builder().name( "exps" ).type( ParamType.REX ).multiValued( 1 ).build() )
-                .param( Parameter.builder().name( "projects" ).tag( ParamTag.ALIAS ).type( ParamType.REX ).multiValued( 1 ).build() ) // can have a name
-                .param( Parameter.builder().name( "condition" ).type( ParamType.REX ).simpleType( SimpleType.REX_PREDICATE ).defaultValue( RexArg.NULL ).build() )
+                .param( Parameter.builder().name( "exprs" ).type( ParamType.REX ).multiValued( 1 ).defaultValue( ListArg.EMPTY ).build() )
+                .param( Parameter.builder().name( "projects" ).tag( ParamTag.ALIAS ).type( ParamType.REX ).multiValued( 1 ).defaultValue( ListArg.EMPTY ).build() )
+                .param( Parameter.builder().name( "condition" ).type( ParamType.REX ).defaultValue( RexArg.NULL ).build() )
                 .build() );
         declarations.put( LogicalRelModify.class, PolyAlgDeclaration.builder()
                 .creator( LogicalRelModify::create ).model( DataModel.RELATIONAL )
@@ -332,18 +340,63 @@ public class PolyAlgRegistry {
 
         declarations.put( EnumerableProject.class, PolyAlgDeclaration.builder()
                 .creator( EnumerableProject::create ).model( null )
-                .opName( "ENUMERABLE_PROJECT" ).convention( c ).numInputs( 1 ).opTags( physTags )
+                .opName( "E_PROJECT" ).convention( c ).numInputs( 1 ).opTags( physTags )
                 .params( getParams( LogicalRelProject.class ) )
                 .build() );
         declarations.put( EnumerableInterpreter.class, PolyAlgDeclaration.builder()
                 .creator( EnumerableInterpreter::create ).model( null )
-                .opName( "ENUMERABLE_INTERPRETER" ).convention( c ).numInputs( 1 ).opTags( physTags )
+                .opName( "E_INTERPRETER" ).convention( c ).numInputs( 1 ).opTags( physTags )
                 .param( Parameter.builder().name( "factor" ).tag( ParamTag.NON_NEGATIVE ).type( ParamType.DOUBLE ).build() )
                 .build() );
         declarations.put( EnumerableAggregate.class, PolyAlgDeclaration.builder()
                 .creator( EnumerableAggregate::create ).model( null )
-                .opName( "ENUMERABLE_AGGREGATE" ).convention( c ).numInputs( 1 ).opTags( physTags )
+                .opName( "E_AGGREGATE" ).convention( c ).numInputs( 1 ).opTags( physTags )
                 .params( getParams( LogicalRelAggregate.class ) )
+                .build() );
+        declarations.put( EnumerableCalc.class, PolyAlgDeclaration.builder()
+                .creator( EnumerableCalc::create ).model( null )
+                .opName( "E_CALC" ).convention( c ).numInputs( 1 ).opTags( physTags )
+                .params( getParams( LogicalCalc.class ) )
+                .build() );
+        declarations.put( EnumerableJoin.class, PolyAlgDeclaration.builder()
+                .creator( EnumerableJoin::create ).model( null )
+                .opName( "E_JOIN" ).numInputs( 2 ).opTags( physTags )
+                .param( Parameter.builder().name( "condition" ).alias( "on" ).type( ParamType.REX ).simpleType( SimpleType.REX_PREDICATE ).build() )
+                .param( Parameter.builder().name( "type" ).type( ParamType.JOIN_TYPE_ENUM ).defaultValue( new EnumArg<>( JoinAlgType.INNER, ParamType.JOIN_TYPE_ENUM ) ).build() )
+                .param( Parameter.builder().name( "variables" ).type( ParamType.CORR_ID ).simpleType( SimpleType.HIDDEN ).multiValued( 1 ).defaultValue( ListArg.EMPTY ).build() )
+                .param( Parameter.builder().name( "leftKeys" ).multiValued( 1 ).type( ParamType.INTEGER ).defaultValue( ListArg.EMPTY ).build() )
+                .param( Parameter.builder().name( "rightKeys" ).multiValued( 1 ).type( ParamType.INTEGER ).defaultValue( ListArg.EMPTY ).build() )
+                .build() );
+        declarations.put( EnumerableSort.class, PolyAlgDeclaration.builder()
+                .creator( EnumerableSort::create ).model( null )
+                .opName( "E_SORT" ).convention( c ).numInputs( 1 ).opTags( physTags )
+                .params( getParams( LogicalRelSort.class ) )
+                .build() );
+        declarations.put( EnumerableUnion.class, PolyAlgDeclaration.builder()
+                .creator( EnumerableUnion::create ).model( null )
+                .opName( "E_UNION" ).convention( c ).numInputs( -1 ).opTags( physTags )
+                .params( getParams( LogicalRelUnion.class ) )
+                .build() );
+        declarations.put( EnumerableIntersect.class, PolyAlgDeclaration.builder()
+                .creator( EnumerableIntersect::create ).model( null )
+                .opName( "E_INTERSECT" ).convention( c ).numInputs( -1 ).opTags( physTags )
+                .params( getParams( LogicalRelIntersect.class ) )
+                .build() );
+        declarations.put( EnumerableMinus.class, PolyAlgDeclaration.builder()
+                .creator( EnumerableMinus::create ).model( null )
+                .opName( "E_MINUS" ).convention( c ).numInputs( -1 ).opTags( physTags )
+                .params( getParams( LogicalRelMinus.class ) )
+                .build() );
+        declarations.put( EnumerableValues.class, PolyAlgDeclaration.builder()
+                .creator( EnumerableValues::create ).model( DataModel.RELATIONAL )
+                .opName( "E_VALUES" ).convention( c ).numInputs( 0 ).opTags( physTags )
+                .params( getParams( LogicalRelValues.class ) )
+                .build() );
+        declarations.put( EnumerableLimit.class, PolyAlgDeclaration.builder()
+                .creator( EnumerableLimit::create ).model( null )
+                .opName( "E_LIMIT" ).convention( c ).numInputs( 1 ).opTags( physTags )
+                .param( Parameter.builder().name( "limit" ).alias( "fetch" ).type( ParamType.REX ).simpleType( SimpleType.REX_UINT ).defaultValue( RexArg.NULL ).build() )
+                .param( Parameter.builder().name( "offset" ).type( ParamType.REX ).simpleType( SimpleType.HIDDEN ).defaultValue( RexArg.NULL ).build() )
                 .build() );
     }
 

@@ -57,6 +57,7 @@ import org.polypheny.db.algebra.core.Calc;
 import org.polypheny.db.algebra.metadata.AlgMdCollation;
 import org.polypheny.db.algebra.metadata.AlgMdDistribution;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPredicateList;
@@ -85,6 +86,12 @@ public class EnumerableCalc extends Calc implements EnumerableAlg {
         super( cluster, traitSet, input, program );
         assert getConvention() instanceof EnumerableConvention;
         assert !program.containsAggs();
+    }
+
+
+    public static EnumerableCalc create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+        return new EnumerableCalc( cluster, cluster.traitSet(), children.get( 0 ),
+                getProgramFromArgs( args, children.get( 0 ), cluster.getRexBuilder() ) );
     }
 
 
