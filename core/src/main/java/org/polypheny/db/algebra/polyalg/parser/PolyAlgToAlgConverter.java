@@ -95,6 +95,7 @@ import org.polypheny.db.rex.RexLocalRef;
 import org.polypheny.db.rex.RexNameRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.tools.AlgBuilder;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.Pair;
@@ -276,6 +277,7 @@ public class PolyAlgToAlgConverter {
             case MODIFY_OP_ENUM -> new EnumArg<>( exp.toEnum( Modify.Operation.class ), pType );
             case DISTRIBUTION_TYPE_ENUM -> new EnumArg<>( exp.toEnum( AlgDistribution.Type.class ), pType );
             case DATAMODEL_ENUM -> new EnumArg<>( exp.toEnum( DataModel.class ), pType );
+            case POLY_TYPE_ENUM -> new EnumArg<>( exp.toEnum( PolyType.class ), pType );
             case FIELD -> new FieldArg( ctx.getFieldOrdinal( exp.toIdentifier() ) );
             case LIST -> ListArg.EMPTY;
             case COLLATION -> new CollationArg( convertCollation( exp, ctx ) );
@@ -509,7 +511,8 @@ public class PolyAlgToAlgConverter {
             filter = ctx.getFieldOrdinal( filterLiteral.toString() );
         }
         boolean isApproximate = exp.getExtension( ExtensionType.APPROXIMATE ) != null;
-        return AggregateCall.create( f, isDistinct, isApproximate, args, filter, AlgCollations.EMPTY, // TODO: parse WITHIN for Collation
+        // TODO: parse WITHIN clause for Collation (low priority, since not supported by practically all AggFunctions)
+        return AggregateCall.create( f, isDistinct, isApproximate, args, filter, AlgCollations.EMPTY,
                 0, ctx.children.get( 0 ), null, name ); // type can be null with this create method
     }
 
@@ -603,7 +606,6 @@ public class PolyAlgToAlgConverter {
          */
         public void updateFieldNamesIfEmpty( PhysicalEntity e ) {
             if ( fieldNames.isEmpty() ) {
-                System.out.println("tuple type: " + e.getTupleType());
                 fieldNames = e.getTupleType().getFieldNames();
                 fields = e.getTupleType().getFields();
             }

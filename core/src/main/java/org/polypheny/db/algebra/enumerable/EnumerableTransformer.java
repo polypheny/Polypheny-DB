@@ -40,11 +40,13 @@ import org.apache.calcite.linq4j.tree.Types;
 import org.apache.calcite.linq4j.tree.Types.ArrayType;
 import org.apache.calcite.linq4j.tree.UnaryExpression;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.core.common.Transformer;
 import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.DocumentType;
@@ -62,6 +64,7 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.Quadruple;
 
 
 @Getter
@@ -76,6 +79,17 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
      */
     public EnumerableTransformer( AlgCluster cluster, List<AlgNode> inputs, List<String> names, AlgTraitSet traitSet, ModelTrait inTraitSet, ModelTrait outTraitSet, AlgDataType rowType, boolean isCrossModel ) {
         super( cluster, inputs, names, traitSet, inTraitSet, outTraitSet, rowType, isCrossModel );
+    }
+
+
+    public static EnumerableTransformer create( AlgCluster cluster, List<AlgNode> inputs, List<String> names, ModelTrait inTraitSet, ModelTrait outTraitSet, AlgDataType rowType, boolean isCrossModel ) {
+        return new EnumerableTransformer( cluster, inputs, names, inputs.get( 0 ).getTraitSet().replace( AlgCollations.EMPTY ), inTraitSet, outTraitSet, rowType, isCrossModel );
+    }
+
+
+    public static EnumerableTransformer create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+        Quadruple<List<String>, ModelTrait, ModelTrait, AlgDataType> extracted = extractArgs( args, children );
+        return create( cluster, children, extracted.a, extracted.b, extracted.c, extracted.d, true );
     }
 
 

@@ -28,12 +28,21 @@ import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.core.lpg.LpgScan;
 import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
+import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.ParamType;
+import org.polypheny.db.algebra.polyalg.arguments.EnumArg;
+import org.polypheny.db.algebra.polyalg.arguments.ListArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
+import org.polypheny.db.algebra.polyalg.arguments.StringArg;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.DocumentType;
+import org.polypheny.db.algebra.type.GraphType;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.schema.trait.ModelTraitDef;
+import org.polypheny.db.util.Quadruple;
 
 
 @Getter
@@ -101,6 +110,38 @@ public class Transformer extends AbstractAlgNode {
                 + inModelTrait + "$"
                 + outModelTrait + "$"
                 + inputs.stream().map( AlgNode::algCompareString ).collect( Collectors.joining( "$" ) ) + "&";
+    }
+
+
+    protected static Quadruple<List<String>, ModelTrait, ModelTrait, AlgDataType> extractArgs( PolyAlgArgs args, List<AlgNode> inputs ) {
+        List<String> names = args.getListArg( "names", StringArg.class ).map( StringArg::getArg );
+        ModelTrait outModelTrait = args.getEnumArg( "out", DataModel.class ).getArg().getModelTrait();
+
+        ModelTrait inModelTrait = inputs.get( 0 ).getTraitSet().getTrait( ModelTraitDef.INSTANCE );
+        if ( inModelTrait == null ) {
+            inModelTrait = ModelTrait.RELATIONAL;
+        }
+        AlgDataType type = switch ( outModelTrait.dataModel() ) {
+            case DOCUMENT -> DocumentType.ofDoc();
+            case GRAPH -> GraphType.of();
+            case RELATIONAL -> switch ( inModelTrait.dataModel() ) {
+                case DOCUMENT -> DocumentType.ofCrossRelational();
+                case GRAPH -> GraphType.ofRelational();
+                case RELATIONAL -> throw new GenericRuntimeException( "Cannot transform from RELATIONAL to RELATIONAL." );
+            };
+        };
+        return Quadruple.of( names, inModelTrait, outModelTrait, type );
+    }
+
+
+    @Override
+    public PolyAlgArgs collectAttributes() {
+        PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
+        args.put( "out", new EnumArg<>( outModelTrait.dataModel(), ParamType.DATAMODEL_ENUM ) );
+        if ( names != null ) {
+            args.put( "names", new ListArg<>( names, StringArg::new ) );
+        }
+        return args;
     }
 
 }

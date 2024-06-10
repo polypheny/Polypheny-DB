@@ -57,6 +57,7 @@ import org.polypheny.db.algebra.polyalg.arguments.StringArg;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.Convention;
+import org.polypheny.db.type.PolyType;
 
 
 public class PolyAlgDeclaration {
@@ -389,6 +390,7 @@ public class PolyAlgDeclaration {
         MODIFY_OP_ENUM( EnumArg.class, Modify.Operation.class ),
         DISTRIBUTION_TYPE_ENUM( EnumArg.class, AlgDistribution.Type.class ),
         DATAMODEL_ENUM( EnumArg.class, DataModel.class ),
+        POLY_TYPE_ENUM( EnumArg.class, PolyType.class ),
 
         /**
          * A specific field (= column in the relational data model).

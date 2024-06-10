@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.List;
 import lombok.Getter;
 import lombok.NonNull;
+import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgFieldCollation;
@@ -76,9 +77,12 @@ public class AggArg implements PolyAlgArg {
             buf.append( " APPROXIMATE" );
         }
         if ( !collation.equals( AlgCollations.EMPTY ) ) {
+            throw new NotImplementedException( "Aggs using the WITHIN GROUP statement are not yet supported." );
+            /*
             buf.append( " WITHIN GROUP (" );
             buf.append( collation );
             buf.append( ")" );
+            */
         }
         if ( agg.hasFilter() ) {
             buf.append( " FILTER " );

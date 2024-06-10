@@ -23,20 +23,12 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.core.common.Transformer;
 import org.polypheny.db.algebra.enumerable.EnumerableConvention;
-import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.ParamType;
-import org.polypheny.db.algebra.polyalg.arguments.EnumArg;
-import org.polypheny.db.algebra.polyalg.arguments.ListArg;
 import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
-import org.polypheny.db.algebra.polyalg.arguments.StringArg;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.DocumentType;
-import org.polypheny.db.algebra.type.GraphType;
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.schema.trait.ModelTrait;
-import org.polypheny.db.schema.trait.ModelTraitDef;
+import org.polypheny.db.util.Quadruple;
 
 
 @Setter
@@ -69,29 +61,9 @@ public class LogicalTransformer extends Transformer {
     }
 
 
-    public static LogicalTransformer create( AlgCluster cluster, List<AlgNode> inputs, List<String> names, ModelTrait outModelTrait ) {
-        ModelTrait inModelTrait = inputs.get( 0 ).getTraitSet().getTrait( ModelTraitDef.INSTANCE );
-        if ( inModelTrait == null ) {
-            inModelTrait = ModelTrait.RELATIONAL;
-        }
-        AlgDataType type = switch ( outModelTrait.dataModel() ) {
-            case DOCUMENT -> DocumentType.ofDoc();
-            case GRAPH -> GraphType.of();
-            case RELATIONAL -> switch ( inModelTrait.dataModel() ) {
-                case DOCUMENT -> DocumentType.ofCrossRelational();
-                case GRAPH -> GraphType.ofRelational();
-                case RELATIONAL -> throw new GenericRuntimeException( "Cannot transform from RELATIONAL to RELATIONAL." );
-            };
-        };
-
-        return create( cluster, inputs, names, inModelTrait, outModelTrait, type, true );
-    }
-
-
     public static LogicalTransformer create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
-        List<String> names = args.getListArg( "names", StringArg.class ).map( StringArg::getArg );
-        EnumArg<DataModel> out = args.getEnumArg( "out", DataModel.class );
-        return create( cluster, children, names, out.getArg().getModelTrait() );
+        Quadruple<List<String>, ModelTrait, ModelTrait, AlgDataType> extracted = extractArgs( args, children );
+        return create( cluster, children, extracted.a, extracted.b, extracted.c, extracted.d, true );
     }
 
 
@@ -110,17 +82,6 @@ public class LogicalTransformer extends Transformer {
             i++;
         }
         return writer;
-    }
-
-
-    @Override
-    public PolyAlgArgs collectAttributes() {
-        PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
-        args.put( "out", new EnumArg<>( outModelTrait.dataModel(), ParamType.DATAMODEL_ENUM ) );
-        if ( names != null ) {
-            args.put( "names", new ListArg<>( names, StringArg::new ) );
-        }
-        return args;
     }
 
 }

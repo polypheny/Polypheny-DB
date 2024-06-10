@@ -36,6 +36,7 @@ import org.polypheny.db.algebra.enumerable.EnumerableLimit;
 import org.polypheny.db.algebra.enumerable.EnumerableMinus;
 import org.polypheny.db.algebra.enumerable.EnumerableProject;
 import org.polypheny.db.algebra.enumerable.EnumerableSort;
+import org.polypheny.db.algebra.enumerable.EnumerableTransformer;
 import org.polypheny.db.algebra.enumerable.EnumerableUnion;
 import org.polypheny.db.algebra.enumerable.EnumerableValues;
 import org.polypheny.db.algebra.fun.AggFunction;
@@ -55,6 +56,7 @@ import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgProject;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgSort;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgTransformer;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgUnion;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgUnwind;
 import org.polypheny.db.algebra.logical.relational.LogicalCalc;
@@ -315,6 +317,12 @@ public class PolyAlgRegistry {
                 .param( Parameter.builder().name( "updates" ).alias( "operations" ).multiValued( 1 ).type( ParamType.REX ).defaultValue( ListArg.EMPTY ).build() )
                 .param( Parameter.builder().name( "ids" ).multiValued( 1 ).type( ParamType.STRING ).defaultValue( ListArg.EMPTY ).build() )
                 .build() );
+        declarations.put( LogicalLpgTransformer.class, PolyAlgDeclaration.builder()
+                .creator( LogicalLpgTransformer::create ).model( DataModel.GRAPH )
+                .opName( "LPG_TRANSFORMER" ).numInputs( -1 ).opTags( ImmutableList.of( OperatorTag.ALLOCATION, OperatorTag.ADVANCED ) )
+                .param( Parameter.builder().name( "operation" ).type( ParamType.MODIFY_OP_ENUM ).build() )
+                .param( Parameter.builder().name( "order" ).multiValued( 1 ).type( ParamType.POLY_TYPE_ENUM ).defaultValue( ListArg.EMPTY ).build() )
+                .build() );
 
         // Common
         declarations.put( LogicalBatchIterator.class, PolyAlgDeclaration.builder()
@@ -397,6 +405,11 @@ public class PolyAlgRegistry {
                 .opName( "E_LIMIT" ).convention( c ).numInputs( 1 ).opTags( physTags )
                 .param( Parameter.builder().name( "limit" ).alias( "fetch" ).type( ParamType.REX ).simpleType( SimpleType.REX_UINT ).defaultValue( RexArg.NULL ).build() )
                 .param( Parameter.builder().name( "offset" ).type( ParamType.REX ).simpleType( SimpleType.HIDDEN ).defaultValue( RexArg.NULL ).build() )
+                .build() );
+        declarations.put( EnumerableTransformer.class, PolyAlgDeclaration.builder()
+                .creator( EnumerableTransformer::create ).model( null )
+                .opName( "E_TRANSFORMER" ).convention( c ).numInputs( -1 ).opTags( physTags )
+                .params( getParams( LogicalTransformer.class ) )
                 .build() );
     }
 
