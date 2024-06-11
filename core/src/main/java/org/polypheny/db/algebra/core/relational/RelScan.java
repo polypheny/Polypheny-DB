@@ -30,13 +30,12 @@ import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.common.Scan;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
-import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration;
 import org.polypheny.db.algebra.polyalg.arguments.EntityArg;
-import org.polypheny.db.algebra.polyalg.PolyAlgRegistry;
 import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.DocumentType;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.plan.AlgCluster;
@@ -166,6 +165,13 @@ public abstract class RelScan<E extends Entity> extends Scan<E> implements RelAl
     @Override
     public boolean isCrossModel() {
         return entity.dataModel != DataModel.RELATIONAL;
+    }
+
+
+    @Override
+    public PolyAlgArgs collectAttributes() {
+        PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
+        return args.put( "entity", new EntityArg( entity, Catalog.snapshot(), DataModel.RELATIONAL ) );
     }
 
 

@@ -35,6 +35,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelIntersect;
 import org.polypheny.db.algebra.logical.relational.LogicalRelMinus;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalRelSort;
 import org.polypheny.db.algebra.logical.relational.LogicalRelUnion;
 import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
@@ -127,6 +128,11 @@ public class JdbcAdapterFramework extends PolyPlugin {
                 .creator( JdbcTableModify::create ).model( DataModel.RELATIONAL )
                 .opName( "JDBC_VALUES" ).convention( c ).numInputs( 0 ).opTags( physTags )
                 .params( PolyAlgRegistry.getParams( LogicalRelValues.class ) )
+                .build() );
+        PolyAlgRegistry.register( JdbcScan.class, PolyAlgDeclaration.builder()
+                .creator( JdbcScan::create ).model( DataModel.RELATIONAL )
+                .opName( "JDBC_SCAN" ).convention( c ).numInputs( 0 ).opTags( physTags )
+                .params( PolyAlgRegistry.getParams( LogicalRelScan.class ) )
                 .build() );
 
     }
