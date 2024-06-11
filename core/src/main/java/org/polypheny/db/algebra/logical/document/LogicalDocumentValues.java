@@ -21,6 +21,10 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.document.DocumentValues;
 import org.polypheny.db.algebra.core.relational.RelationalTransformable;
+import org.polypheny.db.algebra.polyalg.arguments.ListArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
+import org.polypheny.db.algebra.polyalg.arguments.RexArg;
+import org.polypheny.db.algebra.polyalg.arguments.StringArg;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -75,6 +79,16 @@ public class LogicalDocumentValues extends DocumentValues implements RelationalT
     }
 
 
+    public static AlgNode create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+        ListArg<StringArg> documents = args.getListArg( "docs", StringArg.class );
+        ListArg<RexArg> dynamic = args.getListArg( "dynamic", RexArg.class );
+        final AlgTraitSet traitSet = cluster.traitSetOf( Convention.NONE );
+        return new LogicalDocumentValues( cluster, traitSet,
+                documents.map( s -> PolyDocument.fromJson( s.getArg() ).asDocument() ),
+                dynamic.map( r -> (RexDynamicParam) r.getNode() ) );
+    }
+
+
     public static LogicalDocumentValues createOneTuple( AlgCluster cluster ) {
         return new LogicalDocumentValues( cluster, cluster.traitSet(), List.of( new PolyDocument() ) );
     }
@@ -103,6 +117,14 @@ public class LogicalDocumentValues extends DocumentValues implements RelationalT
     @Override
     public AlgNode accept( AlgShuttle shuttle ) {
         return shuttle.visit( this );
+    }
+
+
+    @Override
+    public PolyAlgArgs collectAttributes() {
+        PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
+        return args.put( "docs", new ListArg<>( documents, d -> new StringArg( d.toJson() ) ) )
+                .put( "dynamic", new ListArg<>( dynamicDocuments, RexArg::new ) );
     }
 
 }

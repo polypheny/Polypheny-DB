@@ -61,6 +61,7 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.graph.GraphPropertyHolder;
 import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.type.entity.graph.PolyEdge;
@@ -476,15 +477,36 @@ public class PolyAlgUtils {
 
         private String visitLiteral( RexLiteral literal, RexDigestIncludeType includeType ) {
             PolyValue value = literal.value;
-            if ( value.isNode() ) {
-                return visitPolyNode( (PolyNode) value, true );
-            } else if ( value.isPath() ) {
-                return visitPolyPath( (PolyPath) value, true );
-            } else if ( value.isEdge() ) {
-                return visitPolyEdge( (PolyEdge) value, true );
-
+            String str = visitPolyValue( value );
+            if (str != null) {
+                return str;
             }
             return literal.computeDigest( includeType );
+        }
+
+        private String visitPolyValue(PolyValue value ) {
+            if ( value.isNode() ) {
+                return visitPolyNode( value.asNode(), true );
+            } else if ( value.isPath() ) {
+                return visitPolyPath( value.asPath(), true );
+            } else if ( value.isEdge() ) {
+                return visitPolyEdge( value.asEdge(), true );
+            } else if (value.isList()) {
+                return visitPolyList( value.asList());
+            } else if (value.isDocument()) {
+                return visitPolyDocument( value.asDocument());
+            }
+            return null;
+        }
+
+
+        private String visitPolyDocument( PolyDocument document ) {
+            return "PolyDocument " + document.toJson();
+        }
+
+
+        private String visitPolyList( PolyList<? extends PolyValue> list ) {
+            return "PolyList " + list.toJson();
         }
 
 
@@ -501,19 +523,6 @@ public class PolyAlgUtils {
 
 
         private String visitPolyPath( PolyPath path, boolean withPrefix ) {
-            /*String nodes = path.getNodes().value.stream().map( this::visitPolyNode ).collect( Collectors.joining( ", " ) );
-            String edges = path.getEdges().value.stream().map( this::visitPolyEdge ).collect( Collectors.joining( ", " ) );
-            String names = path.getNames().value.stream().map( PolyString::toString ).collect( Collectors.joining( ", " ) );
-            String propertyHolders = path.getPath().value.stream().map( GraphObject::toString ).collect( Collectors.joining( ", " ) );
-            String varName = path.variableName == null ? "" : path.variableName.toString();
-
-            return "PolyPath(" +
-                    "\nnodes: " + nodes +
-                    "\nedges: " + edges +
-                    "\nnames: " + names +
-                    "\npropertyHolders: " + propertyHolders +
-                    "\nvarName: " + varName + "\n)";*/
-
             StringBuilder sb = new StringBuilder( withPrefix ? "PolyPath " : "" );
             for ( GraphPropertyHolder holder : path.getPath() ) {
                 if ( holder.isNode() ) {

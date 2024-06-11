@@ -49,6 +49,7 @@ import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentSort;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentUnwind;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgAggregate;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgFilter;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgMatch;
@@ -92,6 +93,8 @@ import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.interpreter.Bindables.BindableScan;
 import org.polypheny.db.plan.Convention;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.document.PolyDocument;
 
 public class PolyAlgRegistry {
 
@@ -263,6 +266,15 @@ public class PolyAlgRegistry {
                 .param( Parameter.builder().name( "removes" ).multiValued( 1 ).type( ParamType.STRING ).defaultValue( ListArg.EMPTY ).build() )
                 .param( Parameter.builder().name( "renames" ).tag( ParamTag.ALIAS ).requiresAlias( true ).multiValued( 1 ).type( ParamType.STRING ).defaultValue( ListArg.EMPTY ).build() )
                 .build() );
+        declarations.put( LogicalDocumentValues.class, PolyAlgDeclaration.builder()
+                .creator( LogicalDocumentValues::create ).model( DataModel.DOCUMENT )
+                .opName( "DOC_VALUES" ).numInputs( 0 ).opTags( logAllProTags )
+                .param( Parameter.builder().name( "docs" ).alias( "documents" ).multiValued( 1 ).type( ParamType.STRING ).defaultValue( ListArg.EMPTY ).build() )
+                .param( Parameter.builder().name( "dynamic" ).multiValued( 1 ).type( ParamType.REX ).simpleType( SimpleType.HIDDEN ).defaultValue( ListArg.EMPTY ).build() )
+                .build() );
+
+        PolyValue doc = PolyDocument.fromJson( "{ \"title\": \"The Favourite\"}" );
+        System.out.println(doc);
 
         // GRAPH
         declarations.put( LogicalLpgScan.class, PolyAlgDeclaration.builder()

@@ -32,6 +32,7 @@ import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.type.entity.graph.PolyNode;
 import java.util.Arrays;
@@ -155,6 +156,8 @@ TOKEN :
 | <APPROX: "APPROXIMATE">
 | <OVER: "OVER">
 | <POLY_NODE: "PolyNode">
+| <POLY_LIST: "PolyList">
+| <POLY_DOC: "PolyDocument">
 | <IDENTIFIER: (<LETTER> | <IDENTIFIER_SYMBOL>) (<LETTER> | <DIGIT> | <IDENTIFIER_SYMBOL> | <MINUS>)*>
 
 | <UNSIGNED_INT: (<DIGIT>)+ >
@@ -338,7 +341,7 @@ PolyAlgExpressionExtension ExpressionExtension() :
 
 PolyAlgLiteral Literal() :
 {
-    String num;
+    String num, docStr;
     Token t = null;
     LiteralType type = LiteralType.DEFAULT;
     PolyValue polyValue;
@@ -369,6 +372,8 @@ PolyAlgLiteral Literal() :
         |
         t = <DYNAMIC_PARAM> {type = LiteralType.DYNAMIC_PARAM;}
         |
+        docStr = DocumentStr() {return new PolyAlgLiteral(docStr, LiteralType.DEFAULT, getPos());}
+        |
         polyValue = SpecialPolyValue() {return new PolyAlgLiteral(polyValue, LiteralType.POLY_VALUE, getPos());}
 
     )
@@ -376,13 +381,22 @@ PolyAlgLiteral Literal() :
 
 }
 
+/**
+* To be able to parse these PolyValues correctly, we need to prefix these PolyValues according to their type.
+* Otherwise, we do not have enough context to e.g. decide if we have a PolyList or a ListArgument.
+*/
 PolyValue SpecialPolyValue() :
 {
     PolyValue value = null;
+    String str = null;
 }
 {
     (
         value = PolyNode()
+        |
+        (<POLY_LIST> str = ListStr() {value = PolyList.fromJson(str);} )
+        |
+        (<POLY_DOC> str = DocumentStr() {value = PolyDocument.fromJson(str);})
     )
 
     {return value;}
@@ -417,6 +431,64 @@ PolyValue PolyNode() :
         ]<RCURL>]
     <RPAR>
     {return new PolyNode(PolyDictionary.ofDict(properties), labels, name);}
+}
+
+/**
+* We do not parse serialized PolyLists and PolyDocuments ourselves (created with .toJson()).
+* Instead we just return it as a string. They can then be parsed using for example PolyDocument.fromJson(str);
+*/
+String ListStr() :
+{
+    StringBuilder sb = new StringBuilder();
+    String str;
+}
+{
+    <LBRACK> {sb.append("[");}
+    (
+        str = DocumentStr() { sb.append(str); }
+        |
+        str = ListStr() { sb.append(str); }
+        |
+        str = Number() { sb.append(str); }
+        |
+        <QUOTED> { sb.append( token.image); }
+        |
+        <COLON> { sb.append(token.image); }
+        |
+        <SEP> { sb.append(token.image); }
+        |
+        <BOOL> { sb.append(token.image); }
+    )*
+    <RBRACK> {sb.append("]");}
+    {return sb.toString();}
+}
+
+String DocumentStr() :
+{
+    StringBuilder sb = new StringBuilder();
+    String str;
+}
+{
+    <LCURL> {sb.append("{");}
+    (
+        str = DocumentStr() { sb.append(str); }
+        |
+        <QUOTED> { sb.append( token.image); }
+        |
+        <COLON> { sb.append(token.image); }
+        |
+        <LBRACK> { sb.append(token.image); }
+        |
+        <RBRACK> { sb.append(token.image); }
+        |
+        <SEP> { sb.append(token.image); }
+        |
+        <BOOL> { sb.append(token.image); }
+        |
+        str = Number() { sb.append(str); }
+    )*
+    <RCURL> {sb.append("}");}
+    {return sb.toString();}
 }
 
 PolyAlgDataType DataType() :

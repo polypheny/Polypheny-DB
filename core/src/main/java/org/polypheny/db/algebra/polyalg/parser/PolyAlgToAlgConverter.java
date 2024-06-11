@@ -373,6 +373,7 @@ public class PolyAlgToAlgConverter {
                 case CHAR, VARCHAR -> builder.makeLiteral( PolyString.of( str ), type, type.getPolyType() );
                 case NULL -> builder.constantNull();
                 case NODE -> builder.makeLiteral( literal.toPolyValue(), type );
+                case DOCUMENT -> builder.makeLiteral( PolyString.of( str ), type );
                 default -> throw new GenericRuntimeException( "Unsupported type: " + type.getFullTypeString() );
             };
         }
