@@ -58,7 +58,7 @@ public class LogicalUser implements PolyObject, Comparable<LogicalUser> {
     @Override
     public int compareTo( LogicalUser o ) {
         if ( o != null ) {
-            return Math.toIntExact( this.id - o.id );
+            return Long.compare( this.id, o.id );
         }
         return -1;
     }
