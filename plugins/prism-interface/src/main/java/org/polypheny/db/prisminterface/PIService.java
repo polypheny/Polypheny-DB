@@ -177,7 +177,7 @@ class PIService {
 
     private void handleMessages() throws IOException {
         BlockingQueue<byte[]> waiting = new LinkedBlockingQueue<>();
-        reader.addConnection( con, waiting );
+        reader.addConnection( con, waiting, connectionId );
 
         if ( !handleFirstMessage( waiting ) ) {
             return;

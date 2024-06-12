@@ -43,9 +43,9 @@ class PIRequestReader implements Closeable {
     }
 
 
-    public void addConnection( Transport transport, BlockingQueue<byte[]> queue ) throws ClosedChannelException {
+    public void addConnection( Transport transport, BlockingQueue<byte[]> queue, long connectionId ) throws ClosedChannelException {
         SelectableChannel chan = transport.getChannel();
-        chan.register( selector, SelectionKey.OP_READ, new Connection( transport, queue ) );
+        chan.register( selector, SelectionKey.OP_READ, new Connection( transport, queue, connectionId ) );
         selector.wakeup();
     }
 
@@ -65,13 +65,13 @@ class PIRequestReader implements Closeable {
                         // TODO: Close Transport?
                         key.cancel();
                     } catch ( IOException | InterruptedException e ) {
-                        log.error( "tryReceiveMessage", e );
+                        log.error( "Failed to receive message from connection with id {}", c.connectionId, e );
                         throw new GenericRuntimeException( e );
                     }
                 } );
             }
         } catch ( IOException e ) {
-            log.error( "select", e );
+            log.error( "Failed to select key", e );
         } finally {
             Util.closeNoThrow( selector );
         }
@@ -85,7 +85,7 @@ class PIRequestReader implements Closeable {
     }
 
 
-    private record Connection( Transport transport, BlockingQueue<byte[]> queue ) {
+    private record Connection( Transport transport, BlockingQueue<byte[]> queue, long connectionId ) {
 
     }
 
