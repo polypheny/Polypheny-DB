@@ -28,6 +28,7 @@ import lombok.Setter;
 import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.ParamTag;
+import org.polypheny.db.algebra.polyalg.PolyAlgUtils;
 import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgExpressionExtension.ExtensionType;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -73,6 +74,10 @@ public class PolyAlgExpression extends PolyAlgNode {
     public boolean isCall() {
         // if childExps is an empty list, we have a call with 0 arguments
         return childExps != null;
+    }
+
+    public boolean isElementRef() {
+        return isCall() && getLiteralsAsString().equals( PolyAlgUtils.ELEMENT_REF_PREFIX );
     }
 
 

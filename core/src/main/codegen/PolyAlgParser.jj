@@ -33,8 +33,14 @@ import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.type.entity.graph.PolyNode;
+import org.polypheny.db.type.entity.graph.PolyEdge;
+import org.polypheny.db.type.entity.graph.PolyEdge.EdgeDirection;
+import org.polypheny.db.type.entity.graph.PolyPath;
+import org.polypheny.db.algebra.polyalg.PolyAlgUtils;
+import org.polypheny.db.util.Quadruple;
 import java.util.Arrays;
 import java.util.List;
 import java.util.ArrayList;
@@ -142,7 +148,7 @@ TOKEN :
 | <RBRACK: "]">
 | <SEP: ",">
 | <EQUALS: "=">
-| <NEQ: "<>"> | <GEQ: ">="> | <LEQ: "<=">
+| <NEQ: "<>"> | <GEQ: ">="> | <LEQ: "<="> | <GT: ">"> | <LT: "<">
 | <PLUS: "+">
 | <MINUS: "-">
 | <COLON: ":">
@@ -156,6 +162,7 @@ TOKEN :
 | <APPROX: "APPROXIMATE">
 | <OVER: "OVER">
 | <POLY_NODE: "PolyNode">
+| <POLY_PATH: "PolyPath">
 | <POLY_LIST: "PolyList">
 | <POLY_DOC: "PolyDocument">
 | <IDENTIFIER: (<LETTER> | <IDENTIFIER_SYMBOL>) (<LETTER> | <DIGIT> | <IDENTIFIER_SYMBOL> | <MINUS>)*>
@@ -366,7 +373,7 @@ PolyAlgLiteral Literal() :
         |
         t = <SYMBOL>
         |
-        t = <EQUALS> | t = <NEQ> | t = <GEQ> | t = <LEQ> | t = <PLUS> | t = <MINUS>
+        t = <EQUALS> | t = <NEQ> | t = <GEQ> | t = <LEQ> | t = <GT> | t = <LT> | t = <PLUS> | t = <MINUS>
         |
         t = <DIR> {type = LiteralType.DIRECTION;} | t = <NULL_DIR> {type = LiteralType.NULL_DIRECTION;}
         |
@@ -392,7 +399,9 @@ PolyValue SpecialPolyValue() :
 }
 {
     (
-        value = PolyNode()
+        (<POLY_NODE> value = PolyNode())
+        |
+        (<POLY_PATH> value = PolyPath())
         |
         (<POLY_LIST> str = ListStr() {value = PolyList.fromJson(str);} )
         |
@@ -412,7 +421,7 @@ PolyValue PolyNode() :
     PolyValue value = null;
 }
 {
-    <POLY_NODE> <LPAR>
+    <LPAR>
         [t = <IDENTIFIER> {name = new PolyString( t.image );}]
 
         (<COLON>
@@ -426,11 +435,70 @@ PolyValue PolyNode() :
                     t = <UNSIGNED_INT> {value = new PolyInteger(Integer.parseInt(t.image));}
                     |
                     t = <UNSIGNED_DECIMAL> {value = new PolyDouble(Double.parseDouble(t.image));}
+                    |
+                    t = <QUOTED> {value = new PolyString(t.image.substring(1, t.image.length() - 1));}
                 )
                 {properties.put(new PolyString( key.image ), value);}
         ]<RCURL>]
     <RPAR>
     {return new PolyNode(PolyDictionary.ofDict(properties), labels, name);}
+}
+
+PolyValue PolyPath() :
+{
+    Token t;
+    PolyValue node = null;
+    Quadruple<PolyDictionary, List<PolyString>, PolyString, EdgeDirection> edge = null;
+    List<PolyNode> nodes = new ArrayList<>();
+    List<Quadruple<PolyDictionary, List<PolyString>, PolyString, EdgeDirection>> edgeArgs = new ArrayList<>();
+}
+{
+    node = PolyNode() {nodes.add((PolyNode) node);}
+    (LOOKAHEAD(2)
+        edge = PolyEdge() {edgeArgs.add(edge);}
+        node = PolyNode() {nodes.add((PolyNode) node);}
+    )+
+
+    {return PolyAlgUtils.buildPolyPath(nodes, edgeArgs);}
+}
+
+// We cannot yet create a PolyEdge, since we do not know source and target node
+Quadruple<PolyDictionary, List<PolyString>, PolyString, EdgeDirection> PolyEdge() :
+{
+    Token t;
+    Map<PolyString, PolyValue> properties = new HashMap<>();
+    PolyString name = null;
+    List<PolyString> labels = new ArrayList<>();
+    Token key = null;
+    PolyValue value = null;
+    EdgeDirection dir = EdgeDirection.NONE;
+}
+{
+
+    [<LT> {dir = EdgeDirection.RIGHT_TO_LEFT;}] <MINUS>
+    [
+        <LBRACK>
+            [t = <IDENTIFIER> {name = new PolyString( t.image );}]
+
+            (<COLON>
+                t = <IDENTIFIER> {labels.add(new PolyString( t.image ));}
+            )*
+
+            [<LCURL>[
+                    key = <IDENTIFIER> <EQUALS> (
+                        t = <IDENTIFIER> {value = new PolyString(t.image);}
+                        |
+                        t = <UNSIGNED_INT> {value = new PolyInteger(Integer.parseInt(t.image));}
+                        |
+                        t = <UNSIGNED_DECIMAL> {value = new PolyDouble(Double.parseDouble(t.image));}
+                    )
+                    {properties.put(new PolyString( key.image ), value);}
+            ]<RCURL>]
+        <RBRACK>
+    ]
+    <MINUS> [<GT> {dir = EdgeDirection.LEFT_TO_RIGHT;}]
+
+    {return new Quadruple<>(PolyDictionary.ofDict(properties), labels, name, dir);}
 }
 
 /**

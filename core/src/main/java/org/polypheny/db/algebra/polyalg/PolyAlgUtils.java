@@ -24,9 +24,11 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.Syntax;
@@ -65,14 +67,17 @@ import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.graph.GraphPropertyHolder;
 import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.type.entity.graph.PolyEdge;
+import org.polypheny.db.type.entity.graph.PolyEdge.EdgeDirection;
 import org.polypheny.db.type.entity.graph.PolyNode;
 import org.polypheny.db.type.entity.graph.PolyPath;
-import org.polypheny.db.type.entity.relational.PolyMap;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.Quadruple;
 import org.polypheny.db.util.ValidatorUtil;
 
 public class PolyAlgUtils {
 
     private static final Pattern CAST_PATTERN;
+    public static final String ELEMENT_REF_PREFIX = "$elem";
 
 
     static {
@@ -245,6 +250,19 @@ public class PolyAlgUtils {
     }
 
 
+    public static PolyPath buildPolyPath( List<PolyNode> nodes, List<Quadruple<PolyDictionary, List<PolyString>, PolyString, EdgeDirection>> edgeArgs ) {
+        List<PolyEdge> edges = new ArrayList<>();
+        for ( int i = 0; i < edgeArgs.size(); i++ ) {
+            Quadruple<PolyDictionary, List<PolyString>, PolyString, EdgeDirection> e = edgeArgs.get( 0 );
+            PolyNode source = nodes.get( i );
+            PolyNode target = nodes.get( i + 1 );
+            edges.add( new PolyEdge( e.a, e.b, source.id, target.id, e.d, e.c ) );
+        }
+        return PolyPath.create( nodes.stream().map( n -> Pair.of( n.variableName, n ) ).toList(),
+                edges.stream().map( e -> Pair.of( e.variableName, e ) ).toList() );
+    }
+
+
     public static class NameReplacer implements RexVisitor<String> {
 
         private final List<String> names;
@@ -379,8 +397,11 @@ public class PolyAlgUtils {
 
 
         @Override
-        public String visitElementRef( RexElementRef rexElementRef ) {
-            return "===elementRef=== " + rexElementRef;
+        public String visitElementRef( RexElementRef elemRef ) {
+            if ( elemRef.type.getPolyType() != PolyType.DOCUMENT ) {
+                throw new NotImplementedException( "PolyAlg for RexElementRef is currently only supported for DocumentType" );
+            }
+            return ELEMENT_REF_PREFIX + "(" + elemRef.getCollectionRef().accept( this ) + ")";
         }
 
 
@@ -478,23 +499,24 @@ public class PolyAlgUtils {
         private String visitLiteral( RexLiteral literal, RexDigestIncludeType includeType ) {
             PolyValue value = literal.value;
             String str = visitPolyValue( value );
-            if (str != null) {
-                return str;
+            if ( str == null ) {
+                str = literal.computeDigest( includeType );
             }
-            return literal.computeDigest( includeType );
+            return str;
         }
 
-        private String visitPolyValue(PolyValue value ) {
+
+        private String visitPolyValue( PolyValue value ) {
             if ( value.isNode() ) {
                 return visitPolyNode( value.asNode(), true );
             } else if ( value.isPath() ) {
                 return visitPolyPath( value.asPath(), true );
             } else if ( value.isEdge() ) {
                 return visitPolyEdge( value.asEdge(), true );
-            } else if (value.isList()) {
-                return visitPolyList( value.asList());
-            } else if (value.isDocument()) {
-                return visitPolyDocument( value.asDocument());
+            } else if ( value.isList() ) {
+                return visitPolyList( value.asList() );
+            } else if ( value.isDocument() ) {
+                return visitPolyDocument( value.asDocument() );
             }
             return null;
         }
@@ -547,9 +569,14 @@ public class PolyAlgUtils {
 
             StringBuilder sb = new StringBuilder();
             String prefix = withPrefix ? "PolyEdge " : "";
-            sb.append( prefix ).append( left ).append( "[" )
-                    .append( visitGraphLabelProps( edge.labels, edge.properties, edge.variableName ) )
-                    .append( "]" ).append( right );
+            String lp = visitGraphLabelProps( edge.labels, edge.properties, edge.variableName );
+            sb.append( prefix ).append( left );
+            if ( !lp.isEmpty() ) {
+                sb.append( "[" )
+                        .append( lp )
+                        .append( "]" );
+            }
+            sb.append( right );
             return sb.toString();
         }
 
@@ -557,7 +584,7 @@ public class PolyAlgUtils {
         private String visitGraphLabelProps( PolyList<PolyString> lbls, PolyDictionary props, PolyString varName ) {
             String name = (varName == null || varName.isNull()) ? "" : varName.toString();
             String labels = String.join( ":", lbls.stream().map( PolyString::toString ).toList() );
-            String properties = props.map.toString();
+            String properties = visitPolyDictionary( props );
             if ( properties.equals( "{}" ) ) {
                 properties = "";
             }
@@ -575,8 +602,20 @@ public class PolyAlgUtils {
         }
 
 
-        private <K extends PolyValue, V extends PolyValue> String visitPolyMap( PolyMap<K, V> map ) {
-            return map.toString();
+        private <K extends PolyValue, V extends PolyValue> String visitPolyDictionary( PolyDictionary dict ) {
+            List<String> propsList = new ArrayList<>();
+            for ( Entry<PolyString, PolyValue> entry : dict.map.entrySet()) {
+                PolyValue value = entry.getValue();
+                String valueStr = visitPolyValue(value);
+                if (valueStr == null) {
+                    valueStr = switch(value.type) {
+                        case VARCHAR, CHAR, TEXT -> value.asString().toTypedString( false );
+                        default -> value.toString();
+                    };
+                }
+                propsList.add( entry.getKey().toString() + "=" + valueStr );
+            }
+            return "{" + String.join( ", ", propsList ) + "}";
         }
 
     }

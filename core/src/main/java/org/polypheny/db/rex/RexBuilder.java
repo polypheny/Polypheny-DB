@@ -62,6 +62,7 @@ import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.Function.FunctionType;
@@ -1065,6 +1066,11 @@ public class RexBuilder {
                 interval,
                 typeFactory.createIntervalType( intervalQualifier ),
                 intervalQualifier.typeName() );
+    }
+
+
+    public RexLiteral makeDocumentLiteral( PolyValue v ) {
+        return makeLiteral( v, new DocumentType() );
     }
 
 

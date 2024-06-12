@@ -73,6 +73,7 @@ import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgNodeList;
 import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgOperator;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.LogicalAdapter;
@@ -90,7 +91,9 @@ import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexElementRef;
 import org.polypheny.db.rex.RexIndexRef;
+import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexLocalRef;
 import org.polypheny.db.rex.RexNameRef;
 import org.polypheny.db.rex.RexNode;
@@ -288,7 +291,10 @@ public class PolyAlgToAlgConverter {
 
 
     private RexNode convertRexNode( PolyAlgExpression exp, Context ctx ) {
-        if ( exp.isCall() ) {
+        if ( exp.isElementRef() ) {
+            RexNode collectionRef = convertRexNode( exp.getOnlyChild(), ctx );
+            return new RexElementRef( collectionRef, DocumentType.ofDoc() );
+        } else if ( exp.isCall() ) {
             return convertRexCall( exp, ctx );
         } else if ( exp.isSingleLiteral() ) {
             PolyAlgLiteral literal = exp.getLiterals().get( 0 );
@@ -373,7 +379,11 @@ public class PolyAlgToAlgConverter {
                 case CHAR, VARCHAR -> builder.makeLiteral( PolyString.of( str ), type, type.getPolyType() );
                 case NULL -> builder.constantNull();
                 case NODE -> builder.makeLiteral( literal.toPolyValue(), type );
-                case DOCUMENT -> builder.makeLiteral( PolyString.of( str ), type );
+                case DOCUMENT -> builder.makeDocumentLiteral( switch ( literal.getType() ) {
+                    case NUMBER -> ((RexLiteral) AlgBuilder.literal( literal.toNumber(), builder )).value;
+                    case BOOLEAN -> ((RexLiteral) AlgBuilder.literal( literal.toBoolean(), builder )).value;
+                    default -> PolyString.of( str );
+                } );
                 default -> throw new GenericRuntimeException( "Unsupported type: " + type.getFullTypeString() );
             };
         }

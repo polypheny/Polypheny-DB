@@ -26,7 +26,7 @@ import org.polypheny.db.algebra.constant.Kind;
 public class SqlArrayQueryConstructor extends SqlMultisetQueryConstructor {
 
     public SqlArrayQueryConstructor() {
-        super( "ARRAY", Kind.ARRAY_QUERY_CONSTRUCTOR );
+        super( "ARRAY_QUERY", Kind.ARRAY_QUERY_CONSTRUCTOR );
     }
 
 }
