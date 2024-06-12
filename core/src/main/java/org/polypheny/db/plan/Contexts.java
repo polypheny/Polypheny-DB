@@ -104,14 +104,11 @@ public class Contexts {
         for ( Context context : contexts ) {
             build( list, context );
         }
-        switch ( list.size() ) {
-            case 0:
-                return empty();
-            case 1:
-                return list.get( 0 );
-            default:
-                return new ChainContext( ImmutableList.copyOf( list ) );
-        }
+        return switch ( list.size() ) {
+            case 0 -> empty();
+            case 1 -> list.get( 0 );
+            default -> new ChainContext( ImmutableList.copyOf( list ) );
+        };
     }
 
 
@@ -122,8 +119,7 @@ public class Contexts {
         if ( context == EMPTY_CONTEXT || list.contains( context ) ) {
             return;
         }
-        if ( context instanceof ChainContext ) {
-            ChainContext chainContext = (ChainContext) context;
+        if ( context instanceof ChainContext chainContext ) {
             for ( Context child : chainContext.contexts ) {
                 build( list, child );
             }

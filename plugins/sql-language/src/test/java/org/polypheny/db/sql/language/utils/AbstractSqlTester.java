@@ -250,12 +250,9 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
             conformance = ConformanceEnum.DEFAULT;
         }
         final SqlTester tester = with( "conformance", conformance );
-        // TODO MV: Fix
-//        if ( conformance instanceof SqlConformanceEnum ) {
-//            return tester.withConnectionFactory( PolyphenyDbAssert.EMPTY_CONNECTION_FACTORY.with( PolyphenyDbConnectionProperty.CONFORMANCE, conformance ) );
-//        } else {
+
         return tester;
-//        }
+
     }
 
 
@@ -264,12 +261,6 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
         return with( "operatorTable", operatorTable );
     }
 
-
-    /*
-    @Override
-    public SqlTester withConnectionFactory( PolyphenyDbAssert.ConnectionFactory connectionFactory ) {
-        return with( "connectionFactory", connectionFactory );
-    } */
 
 
     protected final SqlTester with( final String name, final Object value ) {

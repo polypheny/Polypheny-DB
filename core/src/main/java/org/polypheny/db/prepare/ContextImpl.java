@@ -18,7 +18,6 @@ package org.polypheny.db.prepare;
 
 
 import java.util.List;
-import java.util.Properties;
 import lombok.Getter;
 import lombok.Value;
 import lombok.experimental.NonFinal;
@@ -26,8 +25,6 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.snapshot.Snapshot;
-import org.polypheny.db.config.PolyphenyDbConnectionConfig;
-import org.polypheny.db.config.PolyphenyDbConnectionConfigImpl;
 import org.polypheny.db.transaction.Statement;
 
 @Getter
@@ -62,10 +59,5 @@ public class ContextImpl implements Context {
         this.snapshot = Catalog.snapshot();
     }
 
-
-    @Override
-    public PolyphenyDbConnectionConfig config() {
-        return new PolyphenyDbConnectionConfigImpl( new Properties() );
-    }
 
 }

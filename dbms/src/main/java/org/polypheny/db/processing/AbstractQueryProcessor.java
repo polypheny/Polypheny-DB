@@ -51,6 +51,7 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.AlgStructuredTypeFlattener;
+import org.polypheny.db.algebra.constant.ConformanceEnum;
 import org.polypheny.db.algebra.constant.ExplainFormat;
 import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.constant.Kind;
@@ -1095,7 +1096,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 enumerable = EnumerableCalc.create( enumerable, program );
             }
 
-            final Conformance conformance = statement.getPrepareContext().config().conformance();
+            final Conformance conformance = ConformanceEnum.DEFAULT;
 
             final Map<String, Object> internalParameters = new LinkedHashMap<>();
             internalParameters.put( "_conformance", conformance );

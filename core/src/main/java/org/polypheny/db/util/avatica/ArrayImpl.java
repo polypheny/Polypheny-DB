@@ -61,13 +61,13 @@ public class ArrayImpl implements Array {
 
 
     @Override
-    public String getBaseTypeName() throws SQLException {
+    public String getBaseTypeName() {
         return elementType.getName();
     }
 
 
     @Override
-    public int getBaseType() throws SQLException {
+    public int getBaseType() {
         return Types.ARRAY;
     }
 
@@ -125,7 +125,7 @@ public class ArrayImpl implements Array {
 
 
     @Override
-    public ResultSet getResultSet() throws SQLException {
+    public ResultSet getResultSet() {
         throw new UnsupportedOperationException();
     }
 
@@ -137,7 +137,7 @@ public class ArrayImpl implements Array {
 
 
     @Override
-    public ResultSet getResultSet( long index, int count ) throws SQLException {
+    public ResultSet getResultSet( long index, int count ) {
         throw new UnsupportedOperationException(); // TODO
     }
 
@@ -145,7 +145,7 @@ public class ArrayImpl implements Array {
     @Override
     public ResultSet getResultSet(
             long index, int count,
-            Map<String, Class<?>> map ) throws SQLException {
+            Map<String, Class<?>> map ) {
         throw new UnsupportedOperationException(); // TODO
     }
 

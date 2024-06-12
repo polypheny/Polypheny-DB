@@ -21,7 +21,6 @@ import java.util.List;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.catalog.snapshot.Snapshot;
-import org.polypheny.db.config.PolyphenyDbConnectionConfig;
 import org.polypheny.db.transaction.Statement;
 
 
@@ -40,8 +39,6 @@ public interface Context {
     String getDefaultNamespaceName();
 
     void updateSnapshot();
-
-    PolyphenyDbConnectionConfig config();
 
     DataContext getDataContext();
 

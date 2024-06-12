@@ -104,8 +104,8 @@ class LixToAlgTranslator {
     private List<RexNode> toRex( AlgNode child, FunctionExpression<?> expression ) {
         RexBuilder rexBuilder = cluster.getRexBuilder();
         List<RexNode> list = Collections.singletonList( rexBuilder.makeRangeReference( child ) );
-        PolyphenyDbPrepareImpl.ScalarTranslator translator =
-                PolyphenyDbPrepareImpl.EmptyScalarTranslator
+        ScalarTranslator translator =
+                EmptyScalarTranslator
                         .empty( rexBuilder )
                         .bind( expression.parameterList, list );
         final List<RexNode> rexList = new ArrayList<>();
@@ -132,7 +132,7 @@ class LixToAlgTranslator {
         for ( AlgNode input : inputs ) {
             list.add( rexBuilder.makeRangeReference( input ) );
         }
-        return PolyphenyDbPrepareImpl.EmptyScalarTranslator.empty( rexBuilder )
+        return EmptyScalarTranslator.empty( rexBuilder )
                 .bind( expression.parameterList, list )
                 .toRexList( expression.body );
     }
@@ -144,7 +144,7 @@ class LixToAlgTranslator {
         for ( AlgNode input : inputs ) {
             list.add( rexBuilder.makeRangeReference( input ) );
         }
-        return PolyphenyDbPrepareImpl.EmptyScalarTranslator.empty( rexBuilder )
+        return EmptyScalarTranslator.empty( rexBuilder )
                 .bind( expression.parameterList, list )
                 .toRex( expression.body );
     }

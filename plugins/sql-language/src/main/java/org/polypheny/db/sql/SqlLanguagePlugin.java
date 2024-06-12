@@ -27,6 +27,7 @@ import java.util.regex.Pattern;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.algebra.constant.ConformanceEnum;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.Modality;
@@ -249,7 +250,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
         final OperatorTable opTab0 = fun( OperatorTable.class, SqlStdOperatorTable.instance() );
         final OperatorTable opTab = ChainedOperatorTable.of( opTab0, snapshot );
         final JavaTypeFactory typeFactory = context.getTypeFactory();
-        final Conformance conformance = context.config().conformance();
+        final Conformance conformance = ConformanceEnum.DEFAULT;
         return new PolyphenyDbSqlValidator( opTab, snapshot, typeFactory, conformance );
     }
 
