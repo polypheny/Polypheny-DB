@@ -19,10 +19,12 @@ package org.polypheny.db.prisminterface;
 import java.io.Closeable;
 import java.io.EOFException;
 import java.io.IOException;
+import java.net.SocketException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
+import java.nio.channels.SocketChannel;
 import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -73,12 +75,9 @@ class PIRequestReader implements Closeable {
                             byte[] msg = maybeMessage.get();
                             putIgnoreInterrupt( c.queue, msg );
                         }
-                    } catch ( EOFException | ClosedChannelException e ) {
+                    } catch ( IOException e ) {
                         putIgnoreInterrupt( c.queue, null );
                         key.cancel();
-                    } catch ( IOException e ) {
-                        log.error( "Failed to receive message from connection with id {}", c.connectionId, e );
-                        throw new GenericRuntimeException( e );
                     }
                 } );
             }
