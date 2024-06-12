@@ -17,19 +17,15 @@
 package org.polypheny.db.prisminterface;
 
 import java.io.Closeable;
-import java.io.EOFException;
 import java.io.IOException;
-import java.net.SocketException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
-import java.nio.channels.SocketChannel;
 import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.prisminterface.transport.Transport;
 import org.polypheny.db.util.Util;
 
