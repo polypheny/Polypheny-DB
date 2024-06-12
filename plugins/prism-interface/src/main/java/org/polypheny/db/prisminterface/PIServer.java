@@ -155,7 +155,7 @@ class PIServer {
                 Thread t = new Thread( () -> acceptConnection( s, name, connectionId, createTransport, clientManager ), String.format( "PrismInterface" + name + "ClientConnection%d", connectionId ) );
                 t.start();
             } catch ( IOException e ) {
-                if (e instanceof AsynchronousCloseException && shutdown.get() ) {
+                if ( e instanceof AsynchronousCloseException && shutdown.get() ) {
                     return;
                 }
                 log.error( "acceptLoop", e );
