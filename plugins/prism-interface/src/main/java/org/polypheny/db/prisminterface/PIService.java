@@ -138,7 +138,7 @@ class PIService {
     }
 
 
-    private boolean handleFirstMessage( BlockingQueue<byte[]> waiting ) throws IOException {
+    private boolean handleFirstMessage( BlockingQueue<Optional<byte[]>> waiting ) throws IOException {
         boolean success = false;
         Request firstReq = readOneMessage( waiting );
 
@@ -176,8 +176,7 @@ class PIService {
 
 
     private void handleMessages() throws IOException {
-        BlockingQueue<byte[]> waiting = new LinkedBlockingQueue<>();
-        reader.addConnection( con, waiting, connectionId );
+        BlockingQueue<Optional<byte[]>> waiting = reader.addConnection( con, connectionId );
 
         if ( !handleFirstMessage( waiting ) ) {
             return;
@@ -221,9 +220,9 @@ class PIService {
     }
 
 
-    private Request readOneMessage( BlockingQueue<byte[]> waiting ) throws IOException {
+    private Request readOneMessage( BlockingQueue<Optional<byte[]>> waiting ) throws IOException {
         try {
-            return Request.parseFrom( waiting.take() );
+            return Request.parseFrom( waiting.take().orElseThrow( EOFException::new ) );
         } catch ( InterruptedException e ) {
             throw new IOException( e );
         }

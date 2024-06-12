@@ -25,6 +25,7 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.prisminterface.transport.Transport;
@@ -43,10 +44,21 @@ class PIRequestReader implements Closeable {
     }
 
 
-    public void addConnection( Transport transport, BlockingQueue<byte[]> queue, long connectionId ) throws ClosedChannelException {
+    public BlockingQueue<Optional<byte[]>> addConnection( Transport transport, long connectionId ) throws ClosedChannelException {
+        BlockingQueue<Optional<byte[]>> queue = new LinkedBlockingQueue<>();
         SelectableChannel chan = transport.getChannel();
         chan.register( selector, SelectionKey.OP_READ, new Connection( transport, queue, connectionId ) );
         selector.wakeup();
+        return queue;
+    }
+
+
+    private void putIgnoreInterrupt( BlockingQueue<Optional<byte[]>> q, byte[] element ) {
+        try {
+            q.put( Optional.ofNullable( element ) );
+        } catch ( InterruptedException e ) {
+            // ignore
+        }
     }
 
 
@@ -59,12 +71,12 @@ class PIRequestReader implements Closeable {
                         Optional<byte[]> maybeMessage = c.transport.tryReceiveMessage();
                         if ( maybeMessage.isPresent() ) {
                             byte[] msg = maybeMessage.get();
-                            c.queue.put( msg );
+                            putIgnoreInterrupt( c.queue, msg );
                         }
                     } catch ( EOFException | ClosedChannelException e ) {
-                        // TODO: Close Transport?
+                        putIgnoreInterrupt( c.queue, null );
                         key.cancel();
-                    } catch ( IOException | InterruptedException e ) {
+                    } catch ( IOException e ) {
                         log.error( "Failed to receive message from connection with id {}", c.connectionId, e );
                         throw new GenericRuntimeException( e );
                     }
@@ -73,6 +85,7 @@ class PIRequestReader implements Closeable {
         } catch ( IOException e ) {
             log.error( "Failed to select key", e );
         } finally {
+            selector.keys().forEach( k -> putIgnoreInterrupt( ((Connection) k.attachment()).queue, null ) );
             Util.closeNoThrow( selector );
         }
     }
@@ -85,7 +98,7 @@ class PIRequestReader implements Closeable {
     }
 
 
-    private record Connection( Transport transport, BlockingQueue<byte[]> queue, long connectionId ) {
+    private record Connection( Transport transport, BlockingQueue<Optional<byte[]>> queue, long connectionId ) {
 
     }
 
