@@ -92,5 +92,31 @@ public class DmlDeleteTest extends CypherTestTemplate {
 
     }
 
+    @Test
+    public void relationshipWithPropertiesDeleteTest() {
+
+    }
+
+    @Test
+    public void pathDeleteTest()
+    {
+         execute( "MATCH (p:Person {name: 'Alice'})-[r:WORKS_AT]->(c:Company {name: 'TechCorp'})\n"
+                 + "DELETE r, p\n" );
+    }
+
+    @Test
+    public void  NodeWithRelationshipsDeleteTest()
+    {
+        execute( "MATCH (n:Person {name: 'Carrie-Anne Moss'})\n"
+                + "DETACH DELETE n" );
+    }
+    @Test
+    public void allNodesAndRelationshipsDeleteTest ()
+    {
+        execute( "MATCH (n)\n"
+                + "DETACH DELETE n" ) ;
+    }
+
+
 
 }

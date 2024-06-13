@@ -38,11 +38,19 @@ public class MergeTest extends CypherTestTemplate{
 
          res =  execute( "MERGE (n:Person) RETURN n" );
     }
+    @Test
+    public void singleNodeWithMultipleLabelsMergeTest()
+    {
+       GraphResult res  =  execute( "MERGE (robert:Critic:Viewer) RETURN labels(robert)" );
+    }
+
+
 
     @Test
     public void singleNodeWithPropertiesMergeTest()
     {
-       GraphResult res  =  execute( "MERGE (charlie {name: 'Charlie Sheen', age: 10})RETURN charlie" );
+
+        GraphResult res  =  execute( "MERGE (charlie {name: 'Charlie Sheen', age: 10})RETURN charlie" );
     }
     @Test
     public void singleNodeWithPropertiesAndLabelMergeTest()
@@ -53,11 +61,21 @@ public class MergeTest extends CypherTestTemplate{
     @Test
     public void singleNodeDerivedFromExistingNodeMergeTest()
     {
-        GraphResult res  =  execute( "MATCH (p:Person {name: 'Max'}), (p:Person {name: 'Hans'}) MERGE (oliver)-[:DIRECTED]->(movie:Movie)<-[:ACTED_IN]-(reiner) RETURN movie" );
+        GraphResult res  =  execute( "MATCH (person:Person) MERGE (age:Age {ageNumber : person.age}) RETURN person.name, person.age,  age" );
+    }
+    @Test
+    public void createWithMergeTest()
+    {
+
+    }
+    @Test
+    public void matchWithMergeTest()
+    {
+
     }
 
     @Test
-    public void createOrMatchNodeMergeTest ()
+    public void createOrMatchNodeWithMergeTest ()
     {
         // Create new node
         GraphResult res =  execute( "MERGE (n:Person {name: 'Alice'}) ON CREATE SET n.age = 30 ON MATCH SET n.age = 35 RETURN n" );
@@ -65,40 +83,60 @@ public class MergeTest extends CypherTestTemplate{
         // Updated the Matched  node
          res =  execute( "MERGE (n:Person {name: 'MAX'}) ON CREATE SET n.age = 30 ON MATCH SET n.age = 35 RETURN n" );
     }
-
     @Test
-    public void  singleRelationShipMergeTest()
+    public void matchMultiplePropertiesMergeTest()
     {
-       GraphResult  res = execute( "MERGE (n1:Person {name: 'Alice'}) MERGE (n2:Person {name: 'Bob'}) MERGE (n1)-[r:KNOWS]->(n2) RETURN n1, n2, r" );
 
-       res =  execute("MERGE (n1:Person {name: 'Hans'}) MERGE (n2:Person {name: 'Max'}) MERGE (n1)-[r:KNOWS ]->(n2) RETURN n1, n2, r");
     }
 
     @Test
-    public void multipleRelationShipsMergeTest()
+    public void  singleRelationshipMergeTest()
+    {
+       GraphResult  res = execute( "MATCH (n1:Person {name: 'Alice'}) , (n2:Person {name: 'Bob'}) MERGE (n1)-[r:KNOWS]->(n2) RETURN n1, n2, r" );
+
+       res =  execute("MATCH (n1:Person {name: 'Hans'}) ,  (n2:Person {name: 'Max'}) MERGE (n1)-[r:KNOWS ]->(n2) RETURN n1, n2, r");
+    }
+
+    @Test
+    public void multipleRelationshipsMergeTest()
     {
       GraphResult res  = execute( "MATCH (p:Person {name: 'Max'}),(a:Animal {name:'Kira') MERGE (person)-[:Owner]->(movie:Movie)<-[:belong]-(Animal) RETURN movie" );
 
 
     }
     @Test
-    public void undirectedRelationShipMergeTest()
+    public void undirectedRelationshipMergeTest()
     {
-        GraphResult res  = execute( "MERGE (n1:Person {name: 'Hans'}) MERGE (n2:Person {name: 'Max'}) MERGE (n1)-[r:KNOWS ]-(n2) RETURN n1, n2, r" );
+
+        GraphResult res  = execute( "MATCH (n1:Person {name: 'Hans'}) , (n2:Person {name: 'Max'}) MERGE (n1)-[r:KNOWS ]-(n2) RETURN n1, n2, r" );
     }
 
     @Test
-    public void MatchMergeMergeTest()
+    public void relationshipOnTwoExistingNodeMergeTest()
     {
-        GraphResult  res  =  execute( "MATCH (person:Person) MERGE (age:Age {name: person.age}) MERGE (person)-[r:Have]->(age) RETURN person.name, person.age, age" );
+        GraphResult  res  =  execute( "MATCH (n1:Person {name: 'Hans'}) MERGE (n2:Person {name: 'Bob'}) MERGE (n1)-[r:Knows]->(n2) RETURN person.name, person.age" );
     }
     @Test
-    public void  createAndRelationShipMergeTest()
+    public  void relationshipOnExistingNodeAndMergeNodeDerivedFromAnodeProperty ()
+    {
+        GraphResult res =  execute( "MATCH (person:Person) MERGE (person)-[r:Has_Age]->(age:Age {ageNumber: person.age}) RETURN person.name, person.age, age" );
+    }
+    @Test
+    public void  createAndRelationshipMergeTest()
     {
         GraphResult  res = execute( "MERGE (n:Person {name: 'MAX'}) ON CREATE SET n.created = timestamp() MERGE (m:Person {name: 'Bob'})ON CREATE SET m.created = timestamp()" );
 
         res =  execute("MERGE (n:Person {name: 'Bob'}) ON CREATE SET n.age =  30 MERGE (m:Person {name: 'Ann'})ON CREATE SET m.age = 50");
     }
+
+ // do you want me to test this ??
+    @Test
+    public void UniqueConstrainsMergeTest()
+    {
+
+    }
+
+
 
 
 }

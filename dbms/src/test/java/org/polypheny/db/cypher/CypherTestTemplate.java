@@ -54,11 +54,18 @@ public class CypherTestTemplate {
     private static final String GRAPH_NAME = "test";
     protected static final String SINGLE_NODE_PERSON_1 = "CREATE (p:Person {name: 'Max'})";
     protected static final String SINGLE_NODE_PERSON_2 = "CREATE (p:Person {name: 'Hans'})";
+    protected static final String SINGLE_NODE_PERSON_EMPLOYEE = "CREATE (p:Person:Employee {name: 'Max'})";
 
     protected static final String SINGLE_NODE_PERSON_COMPLEX_1 = "CREATE (p:Person {name: 'Ann', age: 45, depno: 13})";
     protected static final String SINGLE_NODE_PERSON_COMPLEX_2 = "CREATE (p:Person {name: 'Bob', age: 31, depno: 13})";
 
+
     protected static final String SINGLE_NODE_PERSON_COMPLEX_3 = "CREATE (p:Person {name: 'Alex', age: 32, depno: 14})";
+    protected  static  final  String SINGLE_NODE_PERSON_COMPLEX_4 = "CREATE (charlie:Person {name: 'Charlie Sheen', bornIn: 'New York', chauffeurName: 'John Brown'})";
+    protected  static  final  String SINGLE_NODE_PERSON_COMPLEX_5 = "CREATE (martin:Person {name: 'Martin Sheen', bornIn: 'Ohio', chauffeurName: 'Bob Brown'})";
+    protected  static  final  String SINGLE_NODE_PERSON_COMPLEX_6 = "CREATE (michael:Person {name: 'Michael Douglas', bornIn: 'New Jersey', chauffeurName: 'John Brown'})";
+
+    protected static final   String  SINGLE_NODE_MOVIE =  "CREATE (wallStreet:Movie {title: 'Wall Street'})";
     protected static final String SINGLE_NODE_ANIMAL = "CREATE (a:Animal {name:'Kira', age:3, type:'dog'})";
     protected static final String SINGLE_EDGE_1 = "CREATE (p:Person {name: 'Max'})-[rel:OWNER_OF]->(a:Animal {name:'Kira', age:3, type:'dog'})";
     protected static final String SINGLE_EDGE_2 = "CREATE (p:Person {name: 'Max'})-[rel:KNOWS {since: 1994}]->(a:Person {name:'Hans', age:31})";
