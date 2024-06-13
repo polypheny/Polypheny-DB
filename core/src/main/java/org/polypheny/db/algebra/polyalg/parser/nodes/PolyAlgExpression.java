@@ -252,9 +252,9 @@ public class PolyAlgExpression extends PolyAlgNode {
 
     public Operator getOperator( DataModel model ) {
         String str = getLiteralsAsString();
-        Operator op = OperatorRegistry.getFromName( model, str.toUpperCase( Locale.ROOT ) );
+        Operator op = OperatorRegistry.getFromUniqueName( model, str.toUpperCase( Locale.ROOT ) );
         if ( op == null ) {
-            op = OperatorRegistry.getFromName( DataModel.RELATIONAL, str.toUpperCase( Locale.ROOT ) ); // generic operator fallback
+            op = OperatorRegistry.getFromUniqueName( DataModel.RELATIONAL, str.toUpperCase( Locale.ROOT ) ); // generic operator fallback
             if ( op == null ) {
                 throw new GenericRuntimeException( "Operator '" + str + "' is not yet supported" );
             }

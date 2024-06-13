@@ -39,6 +39,7 @@ import org.polypheny.db.algebra.polyalg.arguments.ListArg;
 import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArg;
 import org.polypheny.db.algebra.polyalg.arguments.RexArg;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexCorrelVariable;
 import org.polypheny.db.rex.RexDigestIncludeType;
@@ -296,7 +297,7 @@ public class PolyAlgUtils {
             // This code follows call.toString(), but uses the visitor for nested RexNodes
 
             boolean withType = call.isA( Kind.CAST ) || call.isA( Kind.NEW_SPECIFICATION );
-            final StringBuilder sb = new StringBuilder( call.op.getName() );
+            final StringBuilder sb = new StringBuilder( OperatorRegistry.getUniqueName( call.op ) );
             if ( (!call.operands.isEmpty()) && (call.op.getSyntax() == Syntax.FUNCTION_ID) ) {
                 // Don't print params for empty arg list. For example, we want "SYSTEM_USER", not "SYSTEM_USER()".
             } else {
@@ -315,7 +316,7 @@ public class PolyAlgUtils {
         @Override
         public String visitOver( RexOver over ) {
             boolean withType = over.isA( Kind.CAST ) || over.isA( Kind.NEW_SPECIFICATION );
-            final StringBuilder sb = new StringBuilder( over.op.getName() );
+            final StringBuilder sb = new StringBuilder( OperatorRegistry.getUniqueName( over.op ) );
             sb.append( "(" );
             if ( over.isDistinct() ) {
                 sb.append( "DISTINCT " );
@@ -362,7 +363,7 @@ public class PolyAlgUtils {
         public String visitSubQuery( RexSubQuery subQuery ) {
             /* TODO: make sure subquery is parsed correctly
              */
-            final StringBuilder sb = new StringBuilder( subQuery.op.getName() );
+            final StringBuilder sb = new StringBuilder( OperatorRegistry.getUniqueName( subQuery.op ) );
             sb.append( "(" );
             for ( RexNode operand : subQuery.operands ) {
                 sb.append( operand );
