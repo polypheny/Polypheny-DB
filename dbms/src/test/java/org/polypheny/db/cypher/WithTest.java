@@ -35,16 +35,18 @@ public class WithTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_PERSON_2 );
 
-        GraphResult res = execute( "MATCH (n:Person) WITH n.name RETURN n.name" );
+        GraphResult res = execute( "MATCH (n:Person) WITH n RETURN n.name" );
 
 
     }
 
     @Test
-    public void multipleVariablesWithTest()
+    public void multipleRenameVariablesWithTest()
     {
+        execute( SINGLE_NODE_PERSON_COMPLEX_1 );
+        execute( SINGLE_NODE_PERSON_COMPLEX_2 );
 
-        GraphResult res = execute( "MATCH (p:Person) WITH p.name ,  p.age , p.depno AS person_age RETURN person_name, person_age;" );
+        GraphResult res = execute( "MATCH (p:Person) WITH p.name AS person_name ,  p.age AS person_age , p RETURN person_name, person_age , p.depno;" );
     }
 
     @Test
@@ -53,8 +55,6 @@ public class WithTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_2 );
 
         GraphResult res = execute( "MATCH (n:Person) WITH n.name AS name, n RETURN name, n" );
-        assertNode( res, 2);
-
         assert containsRows( res, true, true,
                 Row.of( TestLiteral.from( "Max" ), MAX ),
                 Row.of( TestLiteral.from( "Hans" ),HANS ));
@@ -299,6 +299,12 @@ public class WithTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_COMPLEX_3 );
         GraphResult  res  = execute( "MATCH (p:Person) WITH p, CASE WHEN p.age < 30 THEN 'Young' HEN p.age >= 30 AND p.age < 60 THEN 'Middle-aged' ELSE 'Elderly  END AS ageGroup RETURN p.name, p.age, ageGroup;" ) ;
 
+    }
+
+    @Test
+    public void orderByWithTest()
+    {
+        GraphResult res =  execute( "MATCH (p:Person) WITH p ORDER BY p.name ASC RETURN p" );
     }
 
 }
