@@ -47,13 +47,13 @@ public class RefactorFunctions {
 
     @SuppressWarnings("unused")
     public static PolyString fromDocument( PolyValue doc ) {
-        return PolyString.of( doc.serialize() );
+        return PolyString.of( doc.toTypedJson() );
     }
 
 
     @SuppressWarnings("unused")
     public static PolyValue toDocument( PolyString json ) {
-        return PolyValue.deserialize( json.value );
+        return PolyValue.fromTypedJson( json.value, PolyValue.class );
     }
 
 
