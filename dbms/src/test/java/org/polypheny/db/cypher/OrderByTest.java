@@ -20,8 +20,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.polypheny.db.adapter.java.Array;
 import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.webui.models.results.GraphResult;
+import java.util.Arrays;
 
 public class OrderByTest extends CypherTestTemplate {
 
@@ -206,5 +208,149 @@ public class OrderByTest extends CypherTestTemplate {
                 Row.of( KIRA ),
                 Row.of( KIRA ) );
     }
+    @Test
+    public void renameWithClauseSortTest()
+    {
+        execute( SINGLE_NODE_PERSON_COMPLEX_1 );
+        execute(SINGLE_NODE_PERSON_COMPLEX_2);
+        GraphResult res =  execute( "MATCH (p:Person) WITH  p.age AS personAge RETURN  personAge ORDER BY personAge" );
+        assert  containsRows( res , true ,true ,
+                Row.of( TestLiteral.from( 31 ) ),
+                Row.of(TestLiteral.from( 45 )) );
+
+    }
+    @Test
+    public void renameWithClauseOrderByWithLimitTest()
+    {
+        execute( SINGLE_NODE_PERSON_COMPLEX_1 );
+        execute(SINGLE_NODE_PERSON_COMPLEX_2);
+        execute( SINGLE_NODE_PERSON_COMPLEX_3 );
+        GraphResult res =  execute( "MATCH (p:Person) WITH  p.age AS age ORDER BY age DESC LIMIT 2 RETURN age" );
+
+        assert  containsRows( res , true ,true ,
+                Row.of( TestLiteral.from( 45  ) ),
+                Row.of(TestLiteral.from( 32 )) );
+
+
+
+    }
+
+    @Test
+    public void renameWithClauseDoubleOrderByWithLimitTest()
+    {
+        execute( SINGLE_NODE_PERSON_COMPLEX_1 );
+        execute(SINGLE_NODE_PERSON_COMPLEX_2);
+        execute( SINGLE_NODE_PERSON_COMPLEX_3 );
+
+        GraphResult res =  execute( "MATCH (p:Person) WITH p.depno AS department , p.name  AS name  ORDER BY department ASC,  name ASC LIMIT 3 RETURN department , name " );
+
+
+        assert containsRows( res, true, true,
+                Row.of( TestLiteral.from( 13 ), TestLiteral.from( "Ann" ) ),
+                Row.of( TestLiteral.from( 13 ), TestLiteral.from( "Bob" ) ) ,
+                Row.of( TestLiteral.from( 14 ),TestLiteral.from( "Alex" )));
+
+
+
+
+    }
+
+    @Test
+    public void renameWithClauseDoubleOrderByTest()
+    {
+        execute( SINGLE_NODE_PERSON_COMPLEX_1 );
+        execute(SINGLE_NODE_PERSON_COMPLEX_2);
+        execute( SINGLE_NODE_PERSON_COMPLEX_3 );
+
+        GraphResult res =  execute( "MATCH (p:Person) WITH p.depno AS department , p.name  AS name  ORDER BY department ASC,  name ASC  RETURN department , name" );
+
+
+        assert containsRows( res, true, true,
+                Row.of( TestLiteral.from( 13 ), TestLiteral.from( "Ann" ) ),
+                Row.of( TestLiteral.from( 13 ), TestLiteral.from( "Bob" ) ) ,
+                Row.of( TestLiteral.from( 14 ),TestLiteral.from( "Alex" )));
+
+
+
+
+    }
+    @Test
+    public void renameUnwindSortTest() {
+        GraphResult res = execute( "UNWIND [1, true,3.14] AS i RETURN i ORDER BY i" );
+        assert containsRows( res, true, true,
+                Row.of( TestLiteral.from( true ) ),
+                Row.of( TestLiteral.from( 1 ) ),
+                Row.of( TestLiteral.from( 3.14 ) ) );
+
+
+    }
+    @Test
+    public void renameWithClauseWithRenameUnwindSortTest ()
+    {
+
+     GraphResult res = execute( "WITH  [1 ,2 ,3] AS number UNWIND  number AS n RETURN  n ORDER BY n" );
+
+     assert containsRows( res , true , true ,
+             Row.of( TestLiteral.from( 1 ) ),
+             Row.of( TestLiteral.from( 2 ) ),
+             Row.of( TestLiteral.from( 3 ) ) );
+    }
+
+    @Test
+    public void renameWithMixedTypesWithRenameUnwindSortTest ()
+    {
+
+
+        GraphResult res = execute( "WITH  [1 ,2 ,'4'] AS number UNWIND  number AS n RETURN n ORDER BY n" );
+
+        assert containsRows( res , true , true ,
+                Row.of( TestLiteral.from( '4') ),
+                Row.of( TestLiteral.from( 1) ),
+                Row.of( TestLiteral.from( 2 ) ) );
+    }
+
+    @Test
+    public void renameAvgAggregateFieldSortTest()
+    {
+        execute( SINGLE_NODE_PERSON_COMPLEX_1 );
+        execute( SINGLE_NODE_PERSON_COMPLEX_2 );
+        execute( SINGLE_NODE_PERSON_COMPLEX_3 );
+        GraphResult res = execute( "MATCH (p:Person)RETURN p.depno As Department ,avg(p.age) AS averageAge ORDER BY averageAge" );
+        assert containsRows( res , true , true ,
+                Row.of( TestLiteral.from( 14)  , TestLiteral.from( 32 )),
+                Row.of( TestLiteral.from( 13 ) ,TestLiteral.from( 38 )));
+
+    }
+
+    @Test
+    public void renameWithClauseOrderByWithSkipTest()
+    {
+        execute( SINGLE_NODE_PERSON_COMPLEX_1 );
+        execute(SINGLE_NODE_PERSON_COMPLEX_2);
+        execute( SINGLE_NODE_PERSON_COMPLEX_3 );
+        GraphResult res =  execute( "MATCH (p:Person) WITH  p.age AS age ORDER BY age DESC SKIP 1 Limit 1 RETURN age" );
+
+        assert  containsRows( res , true ,true ,
+                Row.of( TestLiteral.from( 32  ) ),
+                Row.of(TestLiteral.from( 31)) );
+
+    }
+
+    @Test
+    public void renameWithClauseOrderByWithSkipLimitTest()
+    {
+        execute( SINGLE_NODE_PERSON_COMPLEX_1 );
+        execute(SINGLE_NODE_PERSON_COMPLEX_2);
+        execute( SINGLE_NODE_PERSON_COMPLEX_3 );
+        GraphResult res =  execute( "MATCH (p:Person) WITH  p.age AS age ORDER BY age DESC SKIP 1 Limit 1 RETURN age" );
+
+        assert  containsRows( res , true ,true ,
+                Row.of( TestLiteral.from( 32  ) ));
+
+
+    }
+
+
+
 
 }
