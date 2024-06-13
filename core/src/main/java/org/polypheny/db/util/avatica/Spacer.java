@@ -91,7 +91,9 @@ public class Spacer {
     }
 
 
-    /** Returns a string of the current number of spaces. */
+    /**
+     * Returns a string of the current number of spaces.
+     */
     public String toString() {
         return Spaces.of( n );
     }
@@ -100,7 +102,8 @@ public class Spacer {
     /**
      * Appends current number of spaces to a {@link StringBuilder}.
      */
-    public StringBuilder spaces(StringBuilder buf) {
-        return Spaces.append(buf, n);
+    public StringBuilder spaces( StringBuilder buf ) {
+        return Spaces.append( buf, n );
     }
+
 }

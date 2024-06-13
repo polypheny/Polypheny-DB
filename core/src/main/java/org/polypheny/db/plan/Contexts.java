@@ -64,7 +64,7 @@ public class Contexts {
 
     /**
      * Returns a context that wraps an object.
-     *
+     * <p>
      * A call to {@code unwrap(C)} will return {@code target} if it is an instance of {@code C}.
      */
     public static Context of( Object o ) {
@@ -88,9 +88,9 @@ public class Contexts {
 
     /**
      * Returns a context that wraps a list of contexts.
-     *
+     * <p>
      * A call to {@code unwrap(C)} will return the first object that is an instance of {@code C}.
-     *
+     * <p>
      * If any of the contexts is a {@link Context}, recursively looks in that object. Thus this method can be used to chain contexts.
      */
     public static Context chain( Context... contexts ) {
@@ -153,6 +153,7 @@ public class Contexts {
         public @NotNull <T> Optional<T> unwrap( Class<T> clazz ) {
             return Optional.empty();
         }
+
     }
 
 
@@ -172,4 +173,5 @@ public class Contexts {
         }
 
     }
+
 }

@@ -91,7 +91,6 @@ public class SqlTestFactory {
     }
 
 
-
     public Parser createParser( String sql ) {
         ParserConfig config = parserConfig.get();
         SqlAbstractParserImpl parser = (SqlAbstractParserImpl) config.parserFactory().getParser( new SourceStringReader( sql ) );
@@ -130,7 +129,6 @@ public class SqlTestFactory {
         builder.put( name, value );
         return new SqlTestFactory( builder.build(), validatorFactory );
     }
-
 
 
     public final Object get( String name ) {

@@ -15,7 +15,6 @@ configurations {
 }
 
 
-
 dependencies {
     compileOnly project(":core")
     compileOnly project(":webui")

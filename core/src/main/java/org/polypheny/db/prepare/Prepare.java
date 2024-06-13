@@ -36,7 +36,6 @@ package org.polypheny.db.prepare;
 
 import com.google.common.collect.ImmutableList;
 import java.lang.reflect.Type;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.adapter.DataContext;
@@ -44,15 +43,11 @@ import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.AlgVisitor;
-import org.polypheny.db.algebra.constant.ExplainFormat;
 import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
-import org.polypheny.db.languages.NodeToAlgConverter;
-import org.polypheny.db.nodes.Node;
-import org.polypheny.db.nodes.validate.ValidatorTable;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgPlanner;
@@ -65,7 +60,6 @@ import org.polypheny.db.runtime.Typed;
 import org.polypheny.db.schema.types.TranslatableEntity;
 import org.polypheny.db.tools.Program;
 import org.polypheny.db.tools.Programs;
-import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Holder;
 import org.polypheny.db.util.TryThreadLocal;
 import org.polypheny.db.util.trace.PolyphenyDbTrace;
@@ -173,73 +167,7 @@ public abstract class Prepare<T> {
     protected abstract PreparedResult<T> implement( AlgRoot root );
 
 
-    protected abstract AlgNode decorrelate( NodeToAlgConverter sqlToRelConverter, Node query, AlgNode rootRel );
-
-
     protected abstract void init( Class<?> runtimeContextClass );
-
-
-    /**
-     * Definition of a table, for the purposes of the validator and planner.
-     */
-    public interface PreparingEntity extends ValidatorTable {
-
-    }
-
-    /**
-     * PreparedExplanation is a PreparedResult for an EXPLAIN PLAN statement. It's always good to have an explanation prepared.
-     */
-    public abstract static class PreparedExplain implements PreparedResult<PolyValue> {
-
-        private final AlgDataType rowType;
-        private final AlgDataType parameterRowType;
-        private final AlgRoot root;
-        private final ExplainFormat format;
-        private final ExplainLevel detailLevel;
-
-
-        public PreparedExplain(
-                AlgDataType rowType,
-                AlgDataType parameterRowType,
-                AlgRoot root,
-                ExplainFormat format,
-                ExplainLevel detailLevel ) {
-            this.rowType = rowType;
-            this.parameterRowType = parameterRowType;
-            this.root = root;
-            this.format = format;
-            this.detailLevel = detailLevel;
-        }
-
-
-        @Override
-        public String getCode() {
-            if ( root == null ) {
-                return AlgOptUtil.dumpType( rowType );
-            } else {
-                return AlgOptUtil.dumpPlan( "", root.alg, format, detailLevel );
-            }
-        }
-
-
-        @Override
-        public AlgDataType getParameterRowType() {
-            return parameterRowType;
-        }
-
-
-        @Override
-        public boolean isDml() {
-            return false;
-        }
-
-
-        @Override
-        public List<List<String>> getFieldOrigins() {
-            return Collections.singletonList( Collections.nCopies( 4, null ) );
-        }
-
-    }
 
 
     /**

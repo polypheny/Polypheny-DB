@@ -44,6 +44,8 @@ public enum Casing {
      */
     TO_UPPER,
 
-    /** Identifiers are converted to lower-case. */
+    /**
+     * Identifiers are converted to lower-case.
+     */
     TO_LOWER
 }

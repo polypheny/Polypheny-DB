@@ -7796,7 +7796,7 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
      * <p>
      * Sounds peculiar, but is necessary when eager and lazy behaviors are both valid.
      */
-    private record ValueOrExceptionResultChecker(Object expected, Pattern... patterns) implements SqlTester.ResultChecker {
+    private record ValueOrExceptionResultChecker( Object expected, Pattern... patterns ) implements SqlTester.ResultChecker {
 
 
         @Override

@@ -45,7 +45,6 @@ import org.polypheny.db.prepare.Prepare.PreparedResult;
 import org.polypheny.db.processing.QueryProcessorHelpers;
 import org.polypheny.db.routing.ExecutionTimeMonitor;
 import org.polypheny.db.runtime.Bindable;
-import org.polypheny.db.runtime.Typed;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
@@ -135,16 +134,6 @@ public class PolyImplementation {
     }
 
 
-    public Class<?> getResultClass() {
-        Class<?> resultClazz = null;
-        if ( preparedResult instanceof Typed ) {
-            resultClazz = (Class<?>) ((Typed) preparedResult).getElementType();
-        }
-        return resultClazz;
-    }
-
-
-
     public Bindable<PolyValue[]> getBindable() {
         if ( Kind.DDL.contains( kind ) ) {
             return dataContext -> Linq4j.singletonEnumerable( new PolyInteger[]{ PolyInteger.of( 1 ) } );
@@ -226,7 +215,6 @@ public class PolyImplementation {
 
         return this.iterator;
     }
-
 
 
     public static int getRowsChanged( Statement statement, Iterator<?> iterator, MonitoringType kind ) {

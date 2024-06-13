@@ -116,6 +116,7 @@ public interface Node extends Cloneable, Visitable {
      */
     boolean equalsDeep( Node node, Litmus litmus );
 
-    @Nullable String getEntity();
+    @Nullable
+    String getEntity();
 
 }

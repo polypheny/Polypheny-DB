@@ -262,7 +262,6 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
     }
 
 
-
     protected final SqlTester with( final String name, final Object value ) {
         return with( factory.with( name, value ) );
     }

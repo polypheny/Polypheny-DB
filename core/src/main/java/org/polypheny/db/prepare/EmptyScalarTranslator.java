@@ -79,8 +79,7 @@ class EmptyScalarTranslator implements ScalarTranslator {
 
     private static List<Expression> simpleList( BlockStatement statement ) {
         Expression simple = Blocks.simple( statement );
-        if ( simple instanceof NewExpression ) {
-            NewExpression newExpression = (NewExpression) simple;
+        if ( simple instanceof NewExpression newExpression ) {
             return newExpression.arguments;
         } else {
             return Collections.singletonList( simple );
@@ -118,8 +117,7 @@ class EmptyScalarTranslator implements ScalarTranslator {
             case Constant:
                 final ConstantExpression constant = (ConstantExpression) expression;
                 Object value = constant.value;
-                if ( value instanceof Number ) {
-                    Number number = (Number) value;
+                if ( value instanceof Number number ) {
                     if ( value instanceof Double || value instanceof Float ) {
                         return rexBuilder.makeApproxLiteral( BigDecimal.valueOf( number.doubleValue() ) );
                     } else if ( value instanceof BigDecimal ) {

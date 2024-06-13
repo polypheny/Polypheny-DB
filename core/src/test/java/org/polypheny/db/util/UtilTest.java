@@ -937,7 +937,6 @@ public class UtilTest {
     }
 
 
-
     /**
      * Unit test for {@link Util#isDistinct(java.util.List)}.
      */

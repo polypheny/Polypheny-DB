@@ -130,7 +130,7 @@ public class RestResult {
                 } else {
                     switch ( type.getType().getPolyType() ) {
                         case TIMESTAMP:
-                            LocalDateTime localDateTime = o.asTimestamp().asSqlTimestamp().toInstant().atOffset( ZoneOffset.UTC ).toLocalDateTime();//.toLocalDateTime(); //LocalDateTime.ofEpochSecond( nanoSeconds / 1000L, (int) ((nanoSeconds % 1000) * 1000), ZoneOffset.UTC );
+                            LocalDateTime localDateTime = o.asTimestamp().asSqlTimestamp().toInstant().atOffset( ZoneOffset.UTC ).toLocalDateTime();
                             temp.put( columnName, localDateTime.toString() );
                             break;
                         case TIME:
@@ -176,7 +176,6 @@ public class RestResult {
         this.executionTime = stopWatch.getNanoTime();
         this.result = result;
     }
-
 
 
     public Pair<String, Integer> getResult( final Context ctx ) {

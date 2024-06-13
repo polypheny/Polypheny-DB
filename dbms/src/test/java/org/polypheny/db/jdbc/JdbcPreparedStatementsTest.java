@@ -1090,7 +1090,6 @@ public class JdbcPreparedStatementsTest {
                 try {
                     PreparedStatement preparedInsert = connection.prepareStatement( "INSERT INTO psarrtest(tinteger,tintarr) VALUES (?, ?)" );
 
-
                     preparedInsert.setInt( 1, 1 );
                     preparedInsert.setArray( 2, CoreUtil.createArray(
                             ColumnMetaData.scalar( Types.INTEGER, "INTEGER", Rep.INTEGER ),
@@ -1133,7 +1132,6 @@ public class JdbcPreparedStatementsTest {
 
                 try {
                     PreparedStatement preparedInsert = connection.prepareStatement( "INSERT INTO psarrtest(tinteger,tvarchararr) VALUES (?, ?)" );
-
 
                     preparedInsert.setInt( 1, 1 );
                     preparedInsert.setArray( 2, CoreUtil.createArray(

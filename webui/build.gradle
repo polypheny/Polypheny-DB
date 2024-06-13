@@ -71,12 +71,12 @@ task unzipUiFiles(type: Copy) {
     doLast {
         file("$buildDir/webapp/index").mkdirs()
         ant.move file: "$buildDir/webapp/webapp/index.html",
-                toDir: "$buildDir/webapp/index/"
+            toDir: "$buildDir/webapp/index/"
     }
 }
 tasks.register('deleteUiFiles') {
     project.delete(
-            fileTree("$buildDir/webapp")
+        fileTree("$buildDir/webapp")
     )
 }
 unzipUiFiles.dependsOn(deleteUiFiles)

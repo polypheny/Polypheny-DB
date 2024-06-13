@@ -44,7 +44,9 @@ public enum Quoting {
      */
     BACK_TICK( "`" ),
 
-    /** Quote identifiers in brackets. For example, {@code [my id]}. */
+    /**
+     * Quote identifiers in brackets. For example, {@code [my id]}.
+     */
     BRACKET( "[" );
 
     public final String string;
