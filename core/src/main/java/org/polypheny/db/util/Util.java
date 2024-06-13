@@ -96,7 +96,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collector;
 import javax.annotation.Nonnull;
 import org.apache.calcite.linq4j.Ord;
-import org.apache.commons.lang3.StringUtils;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.AlgNode;
@@ -1816,13 +1815,7 @@ public class Util {
         try {
             String line;
             for ( int i = 1; (line = br.readLine()) != null; i++ ) {
-                out.print( "/*" );
-                String number = Integer.toString( i );
-                if ( number.length() < 4 ) {
-                    out.append( StringUtils.rightPad( "", 4 - number.length() ) );
-                }
-                out.print( number );
-                out.print( " */ " );
+                out.printf( "/*%-4d */", i );
                 out.println( line );
             }
         } catch ( IOException e ) {

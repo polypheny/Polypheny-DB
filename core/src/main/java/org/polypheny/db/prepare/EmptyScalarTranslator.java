@@ -36,6 +36,7 @@ import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.enumerable.RexToLixTranslator;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.nodes.BinaryOperator;
 import org.polypheny.db.nodes.Operator;
@@ -87,6 +88,11 @@ class EmptyScalarTranslator implements ScalarTranslator {
     }
 
 
+    private List<RexNode> toRex( List<Expression> expressions ) {
+        return expressions.stream().map( this::toRex ).toList();
+    }
+
+
     @Override
     public RexNode toRex( Expression expression ) {
         switch ( expression.getNodeType() ) {
@@ -113,20 +119,20 @@ class EmptyScalarTranslator implements ScalarTranslator {
                                     .appendIfNotNull( call.targetExpression )
                                     .appendAll( call.expressions ) ) );
                 }
-                throw new RuntimeException( "Could translate call to method " + call.method );
+                throw new GenericRuntimeException( "Could translate call to method " + call.method );
             case Constant:
                 final ConstantExpression constant = (ConstantExpression) expression;
                 Object value = constant.value;
                 if ( value instanceof Number number ) {
                     if ( value instanceof Double || value instanceof Float ) {
                         return rexBuilder.makeApproxLiteral( BigDecimal.valueOf( number.doubleValue() ) );
-                    } else if ( value instanceof BigDecimal ) {
-                        return rexBuilder.makeExactLiteral( (BigDecimal) value );
+                    } else if ( value instanceof BigDecimal bigDecimal ) {
+                        return rexBuilder.makeExactLiteral( bigDecimal );
                     } else {
                         return rexBuilder.makeExactLiteral( BigDecimal.valueOf( number.longValue() ) );
                     }
-                } else if ( value instanceof Boolean ) {
-                    return rexBuilder.makeLiteral( (Boolean) value );
+                } else if ( value instanceof Boolean bool ) {
+                    return rexBuilder.makeLiteral( bool );
                 } else {
                     return rexBuilder.makeLiteral( constant.toString() );
                 }
@@ -136,19 +142,12 @@ class EmptyScalarTranslator implements ScalarTranslator {
     }
 
 
+
     private RexNode binary( Expression expression, BinaryOperator op ) {
         BinaryExpression call = (BinaryExpression) expression;
         return rexBuilder.makeCall( type( call ), op, toRex( ImmutableList.of( call.expression0, call.expression1 ) ) );
     }
 
-
-    private List<RexNode> toRex( List<Expression> expressions ) {
-        final List<RexNode> list = new ArrayList<>();
-        for ( Expression expression : expressions ) {
-            list.add( toRex( expression ) );
-        }
-        return list;
-    }
 
 
     protected AlgDataType type( Expression expression ) {
@@ -164,7 +163,7 @@ class EmptyScalarTranslator implements ScalarTranslator {
 
 
     public RexNode parameter( ParameterExpression param ) {
-        throw new RuntimeException( "unknown parameter " + param );
+        throw new GenericRuntimeException( "unknown parameter " + param );
     }
 
 }

@@ -1420,10 +1420,7 @@ public class RexBuilder {
      */
     @SuppressWarnings("unused")
     private static String padRight( String s, int length ) {
-        if ( s.length() >= length ) {
-            return s;
-        }
-        return StringUtils.rightPad( s, length - s.length() );
+        return StringUtils.rightPad( s, s.length() );
     }
 
 

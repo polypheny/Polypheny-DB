@@ -108,7 +108,7 @@ public class ArrayImpl implements Array {
 
     @Override
     public Object getArray( Map<String, Class<?>> map ) throws SQLException {
-        throw new UnsupportedOperationException(); // TODO
+        throw new UnsupportedOperationException();
     }
 
 
@@ -132,13 +132,13 @@ public class ArrayImpl implements Array {
 
     @Override
     public ResultSet getResultSet( Map<String, Class<?>> map ) {
-        throw new UnsupportedOperationException(); // TODO
+        throw new UnsupportedOperationException();
     }
 
 
     @Override
     public ResultSet getResultSet( long index, int count ) {
-        throw new UnsupportedOperationException(); // TODO
+        throw new UnsupportedOperationException();
     }
 
 
@@ -146,7 +146,7 @@ public class ArrayImpl implements Array {
     public ResultSet getResultSet(
             long index, int count,
             Map<String, Class<?>> map ) {
-        throw new UnsupportedOperationException(); // TODO
+        throw new UnsupportedOperationException();
     }
 
 
