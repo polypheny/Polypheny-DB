@@ -161,8 +161,4 @@ public enum TimeUnitRange {
         };
     }
 
-
-    public boolean monthly() {
-        return ordinal() <= MONTH.ordinal();
-    }
 }
