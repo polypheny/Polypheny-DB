@@ -178,7 +178,6 @@ public class QueryProcessorHelpers {
                 true, // read only
                 false, // writable
                 false, // definitely writable
-//                avaticaType.columnClassName() );
                 (fieldType instanceof ArrayType) ? "java.util.List" : avaticaType.columnClassName() ); // columnClassName
     }
 

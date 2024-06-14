@@ -24,14 +24,12 @@ import java.nio.charset.Charset;
 import java.nio.charset.UnsupportedCharsetException;
 import java.sql.Array;
 import java.text.MessageFormat;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.StringTokenizer;
 import java.util.stream.Collectors;
-import lombok.Getter;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
@@ -54,15 +52,16 @@ import org.polypheny.db.util.avatica.ColumnMetaData.AvaticaType;
 public class CoreUtil {
 
 
-    private static final Map<Class<?>, Class<?>> BOX = Map.of(
-            boolean.class, Boolean.class,
-            byte.class, Byte.class,
-            char.class, Character.class,
-            short.class, Short.class,
-            int.class, Integer.class,
-            float.class, Float.class,
-            double.class, Double.class
-    );
+    private static final Map<Class<?>, Class<?>> BOX = new HashMap<>() {{
+        put( boolean.class, Boolean.class );
+        put( byte.class, Byte.class );
+        put( char.class, Character.class );
+        put( short.class, Short.class );
+        put( int.class, Integer.class );
+        put( long.class, Long.class );
+        put( float.class, Float.class );
+        put( double.class, Double.class );
+    }};
 
 
     /**
