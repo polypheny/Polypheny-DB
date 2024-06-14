@@ -54,20 +54,15 @@ import org.polypheny.db.util.avatica.ColumnMetaData.AvaticaType;
 public class CoreUtil {
 
 
-    private static final Map<Class<?>, Class<?>> BOX;
-
-
-    static {
-        BOX = new HashMap<>();
-        BOX.put( boolean.class, Boolean.class );
-        BOX.put( byte.class, Byte.class );
-        BOX.put( char.class, Character.class );
-        BOX.put( short.class, Short.class );
-        BOX.put( int.class, Integer.class );
-        BOX.put( long.class, Long.class );
-        BOX.put( float.class, Float.class );
-        BOX.put( double.class, Double.class );
-    }
+    private static final Map<Class<?>, Class<?>> BOX = Map.of(
+            boolean.class, Boolean.class,
+            byte.class, Byte.class,
+            char.class, Character.class,
+            short.class, Short.class,
+            int.class, Integer.class,
+            float.class, Float.class,
+            double.class, Double.class
+    );
 
 
     /**
@@ -438,18 +433,9 @@ public class CoreUtil {
     }
 
 
-    public static Array createArray( AvaticaType elementType, Iterable<Object> elements ) {
+    public static Array createArray( AvaticaType elementType, List<Object> elements ) {
         // Avoid creating a new List if we already have a List
-        List<Object> elementList;
-        if ( elements instanceof List ) {
-            elementList = (List<Object>) elements;
-        } else {
-            elementList = new ArrayList<>();
-            for ( Object element : elements ) {
-                elementList.add( element );
-            }
-        }
-        return new ArrayImpl( elementList, elementType );
+        return new ArrayImpl( elements, elementType );
     }
 
 
