@@ -17,7 +17,6 @@
 package org.polypheny.db.prepare;
 
 
-import java.util.List;
 import lombok.Getter;
 import lombok.Value;
 import lombok.experimental.NonFinal;
@@ -45,12 +44,6 @@ public class ContextImpl implements Context {
         this.dataContext = dataContext;
         this.defaultNamespaceName = defaultNamespaceName;
         this.statement = statement;
-    }
-
-
-    @Override
-    public List<String> getObjectPath() {
-        return null;
     }
 
 
