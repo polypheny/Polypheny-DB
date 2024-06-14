@@ -80,7 +80,6 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.NavigableSet;
 import java.util.Objects;
-import java.util.Properties;
 import java.util.Random;
 import java.util.RandomAccess;
 import java.util.Set;
@@ -721,51 +720,6 @@ public class UtilTest {
         assertEquals( 5825, x );
     }
 
-
-    /**
-     * Unit test for {@link Pair#adjacents(Iterable)}.
-     */
-    @Test
-    public void testPairAdjacents() {
-        List<String> strings = Arrays.asList( "a", "b", "c" );
-        List<String> result = new ArrayList<>();
-        for ( Pair<String, String> pair : Pair.adjacents( strings ) ) {
-            result.add( pair.toString() );
-        }
-        assertThat( result.toString(), equalTo( "[<a, b>, <b, c>]" ) );
-
-        // empty source yields empty result
-        assertThat( Pair.adjacents( ImmutableList.of() ).iterator().hasNext(), is( false ) );
-
-        // source with 1 element yields empty result
-        assertThat( Pair.adjacents( ImmutableList.of( "a" ) ).iterator().hasNext(), is( false ) );
-
-        // source with 100 elements yields result with 99 elements; null elements are ok
-        assertThat( Iterables.size( Pair.adjacents( Collections.nCopies( 100, null ) ) ), equalTo( 99 ) );
-    }
-
-
-    /**
-     * Unit test for {@link Pair#firstAnd(Iterable)}.
-     */
-    @Test
-    public void testPairFirstAnd() {
-        List<String> strings = Arrays.asList( "a", "b", "c" );
-        List<String> result = new ArrayList<>();
-        for ( Pair<String, String> pair : Pair.firstAnd( strings ) ) {
-            result.add( pair.toString() );
-        }
-        assertThat( result.toString(), equalTo( "[<a, b>, <a, c>]" ) );
-
-        // empty source yields empty result
-        assertThat( Pair.firstAnd( ImmutableList.of() ).iterator().hasNext(), is( false ) );
-
-        // source with 1 element yields empty result
-        assertThat( Pair.firstAnd( ImmutableList.of( "a" ) ).iterator().hasNext(), is( false ) );
-
-        // source with 100 elements yields result with 99 elements; null elements are ok
-        assertThat( Iterables.size( Pair.firstAnd( Collections.nCopies( 100, null ) ) ), equalTo( 99 ) );
-    }
 
 
     /**

@@ -37,6 +37,7 @@ package org.polypheny.db.rex;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Streams;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
@@ -90,7 +91,6 @@ import org.polypheny.db.util.Collation;
 import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.NlsString;
-import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.TimeString;
 import org.polypheny.db.util.TimestampString;
 import org.polypheny.db.util.Util;
@@ -317,13 +317,7 @@ public class RexBuilder {
 
 
     private static List<Integer> nullableArgs( List<Integer> list0, List<AlgDataType> types ) {
-        final List<Integer> list = new ArrayList<>();
-        for ( Pair<Integer, AlgDataType> pair : Pair.zip( list0, types ) ) {
-            if ( pair.right.isNullable() ) {
-                list.add( pair.left );
-            }
-        }
-        return list;
+        return Streams.zip( list0.stream(), types.stream(), ( left, right ) -> right.isNullable() ? left : null ).filter( Objects::nonNull ).toList();
     }
 
 
@@ -1204,22 +1198,7 @@ public class RexBuilder {
                 }
                 if ( allowCast ) {
                     return makeCall( OperatorRegistry.get( OperatorName.MULTISET_VALUE ), operands );
-                } else {
-                    log.warn( "this will not work anyway" );
-                    return new RexLiteral( (PolyValue) List.of( operands ), type, type.getPolyType() );
                 }
-            case ROW:
-                operands = new ArrayList<>();
-                //noinspection unchecked
-                for ( Pair<AlgDataTypeField, Object> pair : Pair.zip( type.getFields(), (List<Object>) value ) ) {
-                    final RexNode e =
-                            pair.right instanceof RexLiteral
-                                    ? (RexNode) pair.right
-                                    : makeLiteral( pair.right, pair.left.getType(), allowCast );
-                    operands.add( e );
-                }
-                log.warn( "this will not work anyway" );
-                return new RexLiteral( (PolyValue) List.of( operands ), type, type.getPolyType() );
             case NODE:
             case EDGE:
                 return new RexLiteral( (PolyValue) value, type, type.getPolyType() );
@@ -1420,7 +1399,7 @@ public class RexBuilder {
      */
     @SuppressWarnings("unused")
     private static String padRight( String s, int length ) {
-        return StringUtils.rightPad( s, s.length() );
+        return StringUtils.rightPad( s, length );
     }
 
 

@@ -38,7 +38,6 @@ import com.google.common.collect.ImmutableList;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -71,7 +70,6 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.ImmutableBitSet;
-import org.polypheny.db.util.Pair;
 
 
 /**
@@ -240,7 +238,7 @@ public class AggregateNode extends AbstractSingleNode<Aggregate> {
                             return RexToLixTranslator.forAggregation(
                                     typeFactory,
                                     currentBlock(),
-                                    new RexToLixTranslator.InputGetterImpl( Collections.singletonList( Pair.of( (Expression) inParameter, inputPhysType ) ) ),
+                                    new RexToLixTranslator.InputGetterImpl( inParameter, inputPhysType ),
                                     conformance
                             ).setNullable( currentNullables() );
                         }

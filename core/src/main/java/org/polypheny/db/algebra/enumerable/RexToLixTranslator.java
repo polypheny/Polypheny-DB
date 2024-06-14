@@ -36,6 +36,7 @@ package org.polypheny.db.algebra.enumerable;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Streams;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
@@ -105,8 +106,6 @@ import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.ControlFlowException;
-import org.polypheny.db.util.Pair;
-import org.polypheny.db.util.Util;
 import org.polypheny.db.util.temporal.DateTimeUtils;
 
 
@@ -118,10 +117,8 @@ import org.polypheny.db.util.temporal.DateTimeUtils;
 public class RexToLixTranslator {
 
     public static final Map<Method, Operator> JAVA_TO_SQL_METHOD_MAP =
-            Util.mapOf(
-                    findMethod( String.class, "toUpperCase" ), OperatorRegistry.get( OperatorName.UPPER ),
+            Map.of( findMethod( String.class, "toUpperCase" ), OperatorRegistry.get( OperatorName.UPPER ),
                     findMethod( Functions.class, "substring", PolyString.class, PolyNumber.class, PolyNumber.class ), OperatorRegistry.get( OperatorName.SUBSTRING ),
-                    findMethod( Functions.class, "charLength", PolyString.class ), OperatorRegistry.get( OperatorName.CHARACTER_LENGTH ),
                     findMethod( Functions.class, "charLength", PolyString.class ), OperatorRegistry.get( OperatorName.CHAR_LENGTH ),
                     findMethod( Functions.class, "translate3", String.class, String.class, String.class ), OperatorRegistry.get( OperatorName.ORACLE_TRANSLATE3 ) );
 
@@ -580,11 +577,7 @@ public class RexToLixTranslator {
 
 
     public List<Expression> translateList( List<RexNode> operandList, RexImpTable.NullAs nullAs, List<? extends Type> storageTypes ) {
-        final List<Expression> list = new ArrayList<>();
-        for ( Pair<RexNode, ? extends Type> e : Pair.zip( operandList, storageTypes ) ) {
-            list.add( translate( e.left, nullAs, e.right ) );
-        }
-        return list;
+        return Streams.zip( operandList.stream(), storageTypes.stream(), ( a, b ) -> translate( a, nullAs, b ) ).toList();
     }
 
 
@@ -1004,30 +997,50 @@ public class RexToLixTranslator {
      */
     public static class InputGetterImpl implements InputGetter {
 
-        private final List<Pair<Expression, PhysType>> inputs;
+        private final Expression expression;
+        private final PhysType type;
 
 
-        public InputGetterImpl( List<Pair<Expression, PhysType>> inputs ) {
-            this.inputs = inputs;
+        public InputGetterImpl( Expression expression, PhysType type ) {
+            this.expression = expression;
+            this.type = type;
         }
 
 
         @Override
         public Expression field( BlockBuilder list, int index, Type storageType ) {
-            int offset = 0;
-            for ( Pair<Expression, PhysType> input : inputs ) {
-                final PhysType physType = input.right;
-                int fieldCount = physType.getTupleType().getFieldCount();
-                if ( index >= offset + fieldCount ) {
-                    offset += fieldCount;
-                    continue;
-                }
-                final Expression left = list.append( "current", input.left );
-                return physType.fieldReference( left, index - offset, storageType );
+
+            final PhysType physType = type;
+            int fieldCount = physType.getTupleType().getFieldCount();
+            if ( index >= fieldCount ) {
+                throw new GenericRuntimeException( "Index too high" );
             }
-            throw new IllegalArgumentException( "Unable to find field #" + index );
+            final Expression left = list.append( "current", expression );
+            return physType.fieldReference( left, index, storageType );
+
         }
 
+    }
+
+
+    public record JoinInputGetterImpl( Expression expressionsLeft, PhysType typeLeft, Expression expressionsRight, PhysType typeRight ) implements InputGetter {
+
+        @Override
+        public Expression field( BlockBuilder list, int index, Type storageType ) {
+            int fieldCount = typeLeft.getTupleType().getFieldCount();
+            if ( index >= fieldCount ) {
+                int offset = fieldCount;
+                fieldCount = typeRight.getTupleType().getFieldCount();
+                if ( index >= offset + fieldCount ) {
+                    throw new GenericRuntimeException( "Index too high" );
+                }
+                final Expression left = list.append( "current", expressionsRight );
+                return typeRight.fieldReference( left, index - offset, storageType );
+            }
+
+            final Expression left = list.append( "current", expressionsLeft );
+            return typeLeft.fieldReference( left, index, storageType );
+        }
     }
 
 
