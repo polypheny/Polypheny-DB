@@ -55,7 +55,7 @@ public class PolyTypeExplicitPrecedenceList implements AlgDataTypePrecedenceList
 
     // NOTE: The null entries delimit equivalence classes
     private static final List<PolyType> NUMERIC_TYPES =
-            ImmutableList.of(
+            ImmutableNullableList.of(
                     PolyType.TINYINT,
                     null,
                     PolyType.SMALLINT,
