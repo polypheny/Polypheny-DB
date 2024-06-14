@@ -487,32 +487,6 @@ public class UtilTest {
     }
 
 
-    @Test
-    public void testIterableProperties() {
-        Properties properties = new Properties();
-        properties.put( "foo", "george" );
-        properties.put( "bar", "ringo" );
-        StringBuilder sb = new StringBuilder();
-        for ( Map.Entry<String, String> entry : Util.toMap( properties ).entrySet() ) {
-            sb.append( entry.getKey() ).append( "=" ).append( entry.getValue() );
-            sb.append( ";" );
-        }
-        assertEquals( "bar=ringo;foo=george;", sb.toString() );
-
-        assertEquals( 2, Util.toMap( properties ).entrySet().size() );
-
-        properties.put( "nonString", 34 );
-        try {
-            for ( Map.Entry<String, String> e : Util.toMap( properties ).entrySet() ) {
-                String s = e.getValue();
-                Util.discard( s );
-            }
-            fail( "expected exception" );
-        } catch ( ClassCastException e ) {
-            // ok
-        }
-    }
-
 
     /**
      * Tests the {@link Util#toPosix(TimeZone, boolean)} method.
@@ -1420,24 +1394,6 @@ public class UtilTest {
         assertThat( list301d.get( 0 ), sameInstance( immutableList3 ) );
         assertThat( list301d.get( 1 ), sameInstance( immutableList0 ) );
         assertThat( list301d.get( 2 ), sameInstance( immutableList1 ) );
-    }
-
-
-    @Test
-    public void testAsIndexView() {
-        final List<String> values = Lists.newArrayList( "abCde", "X", "y" );
-        final Map<String, String> map = Util.asIndexMapJ( values, input -> input.toUpperCase( Locale.ROOT ) );
-        assertThat( map.size(), equalTo( values.size() ) );
-        assertThat( map.get( "X" ), equalTo( "X" ) );
-        assertThat( map.get( "Y" ), equalTo( "y" ) );
-        assertThat( map.get( "y" ), is( (String) null ) );
-        assertThat( map.get( "ABCDE" ), equalTo( "abCde" ) );
-
-        // If you change the values collection, the map changes.
-        values.remove( 1 );
-        assertThat( map.size(), equalTo( values.size() ) );
-        assertThat( map.get( "X" ), is( (String) null ) );
-        assertThat( map.get( "Y" ), equalTo( "y" ) );
     }
 
 

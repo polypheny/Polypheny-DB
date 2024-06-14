@@ -96,6 +96,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collector;
 import javax.annotation.Nonnull;
 import org.apache.calcite.linq4j.Ord;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.AlgNode;
@@ -315,7 +316,7 @@ public class Util {
             pw.print( "null" );
             return;
         }
-        Class clazz = o.getClass();
+        Class<?> clazz = o.getClass();
         if ( o instanceof String ) {
             printJavaString( pw, (String) o, true );
         } else if (
@@ -328,7 +329,7 @@ public class Util {
                         || (clazz == Float.class)
                         || (clazz == Double.class)
                         || (clazz == Void.class) ) {
-            pw.print( o.toString() );
+            pw.print( o );
         } else if ( clazz.isArray() ) {
             // o is an array, but we can't cast to Object[] because it may be an array of primitives.
             Object[] a; // for debug
@@ -350,9 +351,8 @@ public class Util {
                 print( pw, Array.get( o, i ), indent + 1 );
             }
             pw.print( "}" );
-        } else if ( o instanceof Iterator ) {
+        } else if ( o instanceof Iterator iter ) {
             pw.print( clazz.getName() );
-            Iterator iter = (Iterator) o;
             pw.print( " {" );
             int i = 0;
             while ( iter.hasNext() ) {
@@ -362,9 +362,8 @@ public class Util {
                 print( pw, iter.next(), indent + 1 );
             }
             pw.print( "}" );
-        } else if ( o instanceof Enumeration ) {
+        } else if ( o instanceof Enumeration e ) {
             pw.print( clazz.getName() );
-            Enumeration e = (Enumeration) o;
             pw.print( " {" );
             int i = 0;
             while ( e.hasMoreElements() ) {
@@ -516,22 +515,6 @@ public class Util {
 
 
     /**
-     * Converts double-quoted Java strings to their contents.
-     * For example, <code>"foo\"bar"</code> becomes <code>foo"bar</code>.
-     */
-    public static String stripDoubleQuotes( String value ) {
-        assert value.charAt( 0 ) == '"';
-        assert value.charAt( value.length() - 1 ) == '"';
-        String s5 = value.substring( 1, value.length() - 1 );
-        String s4 = Util.replace( s5, "\\r", "\r" );
-        String s3 = Util.replace( s4, "\\n", "\n" );
-        String s2 = Util.replace( s3, "\\\"", "\"" );
-        String s1 = Util.replace( s2, "\\\\", "\\" );
-        return s1;
-    }
-
-
-    /**
      * Converts an arbitrary string into a string suitable for use as a Java identifier.
      * <p>
      * The mapping is one-to-one (that is, distinct strings will produce distinct java identifiers). The mapping is also reversible,
@@ -585,30 +568,6 @@ public class Util {
     }
 
 
-    /**
-     * Returns true when input string is a valid Java identifier.
-     *
-     * @param s input string
-     * @return true when input string is a valid Java identifier
-     */
-    public static boolean isValidJavaIdentifier( String s ) {
-        if ( s.isEmpty() ) {
-            return false;
-        }
-        if ( !Character.isJavaIdentifierStart( s.codePointAt( 0 ) ) ) {
-            return false;
-        }
-        int i = 0;
-        while ( i < s.length() ) {
-            int codePoint = s.codePointAt( i );
-            if ( !Character.isJavaIdentifierPart( codePoint ) ) {
-                return false;
-            }
-            i += Character.charCount( codePoint );
-        }
-        return true;
-    }
-
 
     public static String toLinux( String s ) {
         return s.replaceAll( "\r\n", "\n" );
@@ -619,7 +578,7 @@ public class Util {
      * @return true if s==null or if s.length()==0
      */
     public static boolean isNullOrEmpty( String s ) {
-        return (null == s) || (s.length() == 0);
+        return (null == s) || (s.isEmpty());
     }
 
 
@@ -764,7 +723,7 @@ public class Util {
      * Converts a string into tokens.
      */
     public static Iterable<String> tokenize( final String s, final String delim ) {
-        return new Iterable<String>() {
+        return new Iterable<>() {
             final StringTokenizer t = new StringTokenizer( s, delim );
 
 
@@ -783,10 +742,6 @@ public class Util {
                     }
 
 
-                    @Override
-                    public void remove() {
-                        throw new UnsupportedOperationException( "remove" );
-                    }
                 };
             }
         };
@@ -948,22 +903,13 @@ public class Util {
             case 3: // SimpleTimeZone.DOW_GE_DOM_MODE
 
                 // If the day is 1, 8, 15, 22, we can translate this to case 2.
-                switch ( day ) {
-                    case 1:
-                        week = 1; // 1st week of month
-                        break;
-                    case 8:
-                        week = 2; // 2nd week of month
-                        break;
-                    case 15:
-                        week = 3; // 3rd week of month
-                        break;
-                    case 22:
-                        week = 4; // 4th week of month
-                        break;
-                    default:
-                        throw new AssertionError( "POSIX timezone format cannot represent " + tz );
-                }
+                week = switch ( day ) {
+                    case 1 -> 1; // 1st week of month
+                    case 8 -> 2; // 2nd week of month
+                    case 15 -> 3; // 3rd week of month
+                    case 22 -> 4; // 4th week of month
+                    default -> throw new AssertionError( "POSIX timezone format cannot represent " + tz );
+                };
                 // fall through
 
             case 2: // SimpleTimeZone.DOW_IN_MONTH_MODE
@@ -1053,16 +999,12 @@ public class Util {
      */
     public static Locale parseLocale( String localeString ) {
         String[] strings = localeString.split( "_" );
-        switch ( strings.length ) {
-            case 1:
-                return new Locale( strings[0] );
-            case 2:
-                return new Locale( strings[0], strings[1] );
-            case 3:
-                return new Locale( strings[0], strings[1], strings[2] );
-            default:
-                throw new AssertionError( "bad locale string '" + localeString + "'" );
-        }
+        return switch ( strings.length ) {
+            case 1 -> new Locale( strings[0] );
+            case 2 -> new Locale( strings[0], strings[1] );
+            case 3 -> new Locale( strings[0], strings[1], strings[2] );
+            default -> throw new AssertionError( "bad locale string '" + localeString + "'" );
+        };
     }
 
 
@@ -1154,12 +1096,12 @@ public class Util {
 
 
     public static <E> Collection<E> filter( final Collection<?> collection, final Class<E> includeFilter ) {
-        return new AbstractCollection<E>() {
+        return new AbstractCollection<>() {
             private int size = -1;
 
 
             @Override
-            public Iterator<E> iterator() {
+            public @NotNull Iterator<E> iterator() {
                 return new Filterator<>( collection.iterator(), includeFilter );
             }
 
@@ -1201,57 +1143,6 @@ public class Util {
         return result;
     }
 
-
-    /**
-     * Converts a {@link Properties} object to a <code>{@link Map}&lt;String, String&gt;</code>.
-     * <p>
-     * This is necessary because {@link Properties} is a dinosaur class. It ought to extend <code>Map&lt;String,String&gt;</code>,
-     * but instead extends <code>{@link Hashtable}&lt;Object,Object&gt;</code>.
-     * <p>
-     * Typical usage, to iterate over a {@link Properties}:
-     *
-     * <blockquote>
-     * <code>
-     * Properties properties;<br>
-     * for (Map.Entry&lt;String, String&gt; entry =
-     * Util.toMap(properties).entrySet()) {<br>
-     * println("key=" + entry.getKey() + ", value=" + entry.getValue());<br>
-     * }
-     * </code>
-     * </blockquote>
-     */
-    public static Map<String, String> toMap( final Properties properties ) {
-        //noinspection unchecked
-        return (Map) properties;
-    }
-
-
-    /**
-     * Returns a hashmap with given contents.
-     * <p>
-     * Use this method in initializers. Type parameters are inferred from context, and the contents are initialized declaratively. For example,
-     *
-     * <blockquote><code>Map&lt;String, Integer&gt; population =<br>
-     * &nbsp;&nbsp;Olap4jUtil.mapOf(<br>
-     * &nbsp;&nbsp;&nbsp;&nbsp;"UK", 65000000,<br>
-     * &nbsp;&nbsp;&nbsp;&nbsp;"USA", 300000000);</code></blockquote>
-     *
-     * @param key First key
-     * @param value First value
-     * @param keyValues Second and sequent key/value pairs
-     * @param <K> Key type
-     * @param <V> Value type
-     * @return Map with given contents
-     */
-    public static <K, V> Map<K, V> mapOf( K key, V value, Object... keyValues ) {
-        final Map<K, V> map = new LinkedHashMap<>( 1 + keyValues.length );
-        map.put( key, value );
-        for ( int i = 0; i < keyValues.length; ) {
-            //noinspection unchecked
-            map.put( (K) keyValues[i++], (V) keyValues[i++] );
-        }
-        return map;
-    }
 
 
     /**
@@ -1733,76 +1624,25 @@ public class Util {
             return "-" + human( -d );
         }
         final int digitCount = (int) Math.floor( Math.log10( d ) );
-        switch ( digitCount ) {
-            case 0:
-            case 1:
-            case 2:
-                return Integer.toString( (int) d );
-            case 3:
-            case 4:
-            case 5:
-                return digits3( Math.round( d / 10D ), digitCount % 3 ) + "K";
-            case 6:
-            case 7:
-            case 8:
-                return digits3( Math.round( d / 10000D ), digitCount % 3 ) + "M";
-            case 9:
-            case 10:
-            case 11:
-                return digits3( Math.round( d / 10000000D ), digitCount % 3 ) + "G";
-            default:
-                return Double.toString( d );
-        }
+        return switch ( digitCount ) {
+            case 0, 1, 2 -> Integer.toString( (int) d );
+            case 3, 4, 5 -> digits3( Math.round( d / 10D ), digitCount % 3 ) + "K";
+            case 6, 7, 8 -> digits3( Math.round( d / 10000D ), digitCount % 3 ) + "M";
+            case 9, 10, 11 -> digits3( Math.round( d / 10000000D ), digitCount % 3 ) + "G";
+            default -> Double.toString( d );
+        };
     }
 
 
     private static String digits3( long x, int z ) {
         final String s = Long.toString( x );
-        switch ( z ) {
-            case 0:
-                return s.charAt( 0 ) + "." + s.substring( 1, 3 );
-            case 1:
-                return s.substring( 0, 2 ) + "." + s.substring( 2, 3 );
-            default:
-                return s.substring( 0, 3 );
-        }
-    }
-
-
-    /**
-     * Returns a map that is a view onto a collection of values, using the provided function to convert a value to a key.
-     * <p>
-     * Unlike {@link com.google.common.collect.Maps#uniqueIndex(Iterable, com.google.common.base.Function)},
-     * returns a view whose contents change as the collection of values changes.
-     *
-     * @param values Collection of values
-     * @param function Function to map value to key
-     * @param <K> Key type
-     * @param <V> Value type
-     * @return Map that is a view onto the values
-     */
-    public static <K, V> Map<K, V> asIndexMapJ( final Collection<V> values, final Function<V, K> function ) {
-        final Collection<Map.Entry<K, V>> entries = Collections2.transform( values, v -> Pair.of( function.apply( v ), v ) );
-        final Set<Map.Entry<K, V>> entrySet =
-                new AbstractSet<>() {
-                    @Override
-                    public Iterator<Map.Entry<K, V>> iterator() {
-                        return entries.iterator();
-                    }
-
-
-                    @Override
-                    public int size() {
-                        return entries.size();
-                    }
-                };
-        return new AbstractMap<>() {
-            @Override
-            public Set<Entry<K, V>> entrySet() {
-                return entrySet;
-            }
+        return switch ( z ) {
+            case 0 -> s.charAt( 0 ) + "." + s.substring( 1, 3 );
+            case 1 -> s.substring( 0, 2 ) + "." + s.substring( 2, 3 );
+            default -> s.substring( 0, 3 );
         };
     }
+
 
 
     /**
@@ -1846,7 +1686,7 @@ public class Util {
         if ( v == null ) {
             return defaultValue;
         }
-        return "".equals( v ) || "true".equalsIgnoreCase( v );
+        return v.isEmpty() || "true".equalsIgnoreCase( v );
     }
 
 

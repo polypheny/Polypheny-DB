@@ -92,9 +92,8 @@ javadoc {
     // Include private fields in JavaDoc
     options.memberLevel = JavadocMemberLevel.PRIVATE
     // Use HTML 5 for JavaDoc
-    if (JavaVersion.current().isJava9Compatible()) {
-        options.addBooleanOption("html5", true)
-    }
+    options.addBooleanOption("html5", true)
+
     // Exclude build dir
     exclude "fmpp/mql/javacc/**"
 }

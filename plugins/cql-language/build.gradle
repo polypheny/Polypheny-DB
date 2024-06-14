@@ -90,9 +90,8 @@ test.dependsOn(":dbms:shadowJar")
  * JavaDoc
  */
 javadoc {
-    if (JavaVersion.current().isJava9Compatible()) {
-        options.addBooleanOption("html5", true)
-    }
+    options.addBooleanOption("html5", true)
+
     // suppress most of the warnings
     options.addStringOption("Xdoclint:none", "-quiet")
     // Include private fields in JavaDoc

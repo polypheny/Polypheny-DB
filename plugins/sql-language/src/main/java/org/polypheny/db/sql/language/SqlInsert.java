@@ -16,7 +16,6 @@
 
 package org.polypheny.db.sql.language;
 
-import com.google.common.collect.ImmutableList;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
@@ -77,13 +76,13 @@ public class SqlInsert extends SqlCall {
 
     @Override
     public List<Node> getOperandList() {
-        return ImmutableList.of( keywords, targetTable, source, columns );
+        return ImmutableNullableList.of( keywords, targetTable, source, columns );
     }
 
 
     @Override
     public List<SqlNode> getSqlOperandList() {
-        return ImmutableList.of( keywords, targetTable, source, columns );
+        return ImmutableNullableList.of( keywords, targetTable, source, columns );
     }
 
 

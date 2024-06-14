@@ -41,6 +41,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Deque;
+import lombok.Setter;
 
 
 /**
@@ -66,16 +67,27 @@ public class XmlOutput {
 
     // This flag is set to true if the output should be compacted.
     // Compacted output is free of extraneous whitespace and is designed for easier transport.
+    @Setter
     private boolean compact;
 
     /**
-     * @see #setIndentString
+     *
+     * -- SETTER --
+     *  Sets the string to print for each level of indentation. The default is a tab. The value must not be <code>null</code>. Set this to the empty
+     *  string to achieve no indentation (note that <code>
+     * (true)</code> removes indentation <em>and</em> newlines).
+     @see #setIndentString
      */
+    @Setter
     private String indentString = "\t";
 
     /**
-     * @see #setGlob
+     *
+     * -- SETTER --
+     *  Sets whether to detect that tags are empty.
+     @see #setGlob
      */
+    @Setter
     private boolean glob;
 
     /**
@@ -84,14 +96,10 @@ public class XmlOutput {
      */
     private boolean inTag;
 
-    /**
-     * @see #setAlwaysQuoteCData
-     */
+    @Setter
     private boolean alwaysQuoteCData;
 
-    /**
-     * @see #setIgnorePcdata
-     */
+    @Setter
     private boolean ignorePcdata;
 
 
@@ -132,57 +140,10 @@ public class XmlOutput {
     }
 
 
-    /**
-     * Sets or unsets the compact mode.  Compact mode causes the generated XML to be free of extraneous whitespace and other unnecessary characters.
-     *
-     * @param compact true to turn on compact mode, or false to turn it off.
-     */
-    public void setCompact( boolean compact ) {
-        this.compact = compact;
-    }
-
-
     public boolean getCompact() {
         return compact;
     }
 
-
-    /**
-     * Sets the string to print for each level of indentation. The default is a tab. The value must not be <code>null</code>. Set this to the empty
-     * string to achieve no indentation (note that <code>{@link #setCompact}(true)</code> removes indentation <em>and</em> newlines).
-     */
-    public void setIndentString( String indentString ) {
-        this.indentString = indentString;
-    }
-
-
-    /**
-     * Sets whether to detect that tags are empty.
-     */
-    public void setGlob( boolean glob ) {
-        this.glob = glob;
-    }
-
-
-    /**
-     * Sets whether to always quote cdata segments (even if they don't contain special characters).
-     */
-    public void setAlwaysQuoteCData( boolean alwaysQuoteCData ) {
-        this.alwaysQuoteCData = alwaysQuoteCData;
-    }
-
-
-    /**
-     * Sets whether to ignore unquoted text, such as whitespace.
-     */
-    public void setIgnorePcdata( boolean ignorePcdata ) {
-        this.ignorePcdata = ignorePcdata;
-    }
-
-
-    public boolean getIgnorePcdata() {
-        return ignorePcdata;
-    }
 
 
     /**
@@ -247,21 +208,6 @@ public class XmlOutput {
     }
 
 
-    /**
-     * If we are currently inside the start tag, finishes it off.
-     */
-    public void beginNode() {
-        if ( inTag ) {
-            // complete the parent's start tag
-            if ( compact ) {
-                out.print( ">" );
-            } else {
-                out.println( ">" );
-            }
-            inTag = false;
-        }
-    }
-
 
     /**
      * Completes a tag.  This outputs the end tag corresponding to the last exposed beginTag. The tag name must match the name of the corresponding beginTag.
@@ -296,39 +242,6 @@ public class XmlOutput {
         out.flush();
     }
 
-
-    /**
-     * Writes an empty tag to the stream.  An empty tag is one with no tags inside it, although it may still have attributes.
-     *
-     * @param tagName the name of the empty tag.
-     * @param attributes an XMLAttrVector containing the attributes to include in the tag.
-     */
-    public void emptyTag( String tagName, XMLAttrVector attributes ) {
-        if ( inTag ) {
-            // complete the parent's start tag
-            if ( compact ) {
-                out.print( ">" );
-            } else {
-                out.println( ">" );
-            }
-            inTag = false;
-        }
-        displayIndent( out, indent );
-        out.print( "<" );
-        out.print( tagName );
-        if ( attributes != null ) {
-            out.print( " " );
-            attributes.display( out, indent );
-        }
-
-        if ( compact ) {
-            out.print( "/>" );
-        } else {
-            out.println( "/>" );
-        }
-        out.flush();
-        tagsWritten++;
-    }
 
 
     /**
@@ -407,15 +320,6 @@ public class XmlOutput {
     }
 
 
-    /**
-     * Writes a String tag; a tag containing nothing but a CDATA section.
-     */
-    public void stringTag( String name, String data ) {
-        beginTag( name, null );
-        cdata( data );
-        endTag( name );
-    }
-
 
     /**
      * Writes content.
@@ -467,15 +371,6 @@ public class XmlOutput {
         tagsWritten++;
     }
 
-
-    /**
-     * Get the total number of tags written
-     *
-     * @return the total number of tags written to the XML stream.
-     */
-    public int numTagsWritten() {
-        return tagsWritten;
-    }
 
 
     /**
@@ -671,7 +566,6 @@ public class XmlOutput {
             HTML_ESCAPER = new StringEscaper();
             HTML_ESCAPER.defineEscape( '&', "&amp;" );
             HTML_ESCAPER.defineEscape( '"', "&quot;" );
-//      htmlEscaper.defineEscape('\'',"&apos;");
             HTML_ESCAPER.defineEscape( '\'', "&#39;" );
             HTML_ESCAPER.defineEscape( '<', "&lt;" );
             HTML_ESCAPER.defineEscape( '>', "&gt;" );
