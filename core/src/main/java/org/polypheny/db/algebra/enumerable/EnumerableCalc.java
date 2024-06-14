@@ -90,8 +90,8 @@ public class EnumerableCalc extends Calc implements EnumerableAlg {
 
 
     public static EnumerableCalc create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
-        return new EnumerableCalc( cluster, cluster.traitSet(), children.get( 0 ),
-                getProgramFromArgs( args, children.get( 0 ), cluster.getRexBuilder() ) );
+        RexProgram p = getProgramFromArgs( args, children.get( 0 ), cluster.getRexBuilder() );
+        return new EnumerableCalc( cluster, cluster.traitSet(), children.get( 0 ), p );
     }
 
 

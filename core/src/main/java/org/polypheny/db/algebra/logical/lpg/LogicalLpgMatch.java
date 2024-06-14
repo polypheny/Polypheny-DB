@@ -21,7 +21,6 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.lpg.LpgMatch;
 import org.polypheny.db.algebra.polyalg.arguments.ListArg;
-import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArg;
 import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.algebra.polyalg.arguments.RexArg;
 import org.polypheny.db.plan.AlgCluster;
@@ -65,17 +64,5 @@ public class LogicalLpgMatch extends LpgMatch {
         return shuttle.visit( this );
     }
 
-
-    @Override
-    public PolyAlgArgs collectAttributes() {
-        PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
-        PolyAlgArg matchesArg = new ListArg<>(
-                matches, RexArg::new,
-                names.stream().map( PolyString::toString ).toList(),
-                args.getDecl().canUnpackValues() );
-
-        args.put( "matches", matchesArg );
-        return args;
-    }
 
 }

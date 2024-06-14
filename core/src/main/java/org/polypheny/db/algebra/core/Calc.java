@@ -177,13 +177,12 @@ public abstract class Calc extends SingleAlg {
         RexNode condition = args.getArg( "condition", RexArg.class ).getNode();
 
         RexProgramBuilder builder = new RexProgramBuilder( input.getTupleType(), b );
-        exprs.forEach( builder::addExpr );
+        exprs.forEach( builder::registerInput );
         projectsArg.forEach( p -> builder.addProject( p.getNode(), p.getAlias() ) );
         if ( condition != null ) {
             builder.addCondition( condition );
         }
-
-        return builder.getProgram();
+        return builder.getProgram(false);
     }
 
 

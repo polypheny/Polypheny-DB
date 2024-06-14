@@ -28,6 +28,7 @@ import lombok.experimental.SuperBuilder;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.languages.QueryLanguage;
@@ -35,6 +36,7 @@ import org.polypheny.db.nodes.Node;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionManager;
+import org.polypheny.db.type.entity.PolyValue;
 
 @Value
 @NonFinal
@@ -130,11 +132,13 @@ public class QueryContext {
 
     @EqualsAndHashCode(callSuper = true)
     @Value
+    @NonFinal
     @SuperBuilder(toBuilder = true)
     public static class TranslatedQueryContext extends ParsedQueryContext {
 
         AlgRoot root;
         boolean isRouted;
+
 
         // A TranslatedQueryContext is not associated with a specific a namespaceId or queryNode
         public static TranslatedQueryContext fromQuery( String query, AlgRoot root, boolean isRouted, QueryContext context ) {
@@ -151,8 +155,42 @@ public class QueryContext {
                     .transactions( context.transactions )
                     .transactionManager( context.transactionManager )
                     .informationTarget( context.informationTarget )
-                    .root(root)
-                    .isRouted(isRouted)
+                    .root( root )
+                    .isRouted( isRouted )
+                    .build();
+        }
+
+    }
+
+
+    @EqualsAndHashCode(callSuper = true)
+    @Value
+    @SuperBuilder(toBuilder = true)
+    public static class PhysicalQueryContext extends TranslatedQueryContext {
+
+        List<PolyValue> dynamicValues;
+        List<AlgDataType> dynamicTypes;
+
+
+        // AlgRoot represents a physical execution plan
+        public static PhysicalQueryContext fromQuery( String query, AlgRoot root, List<PolyValue> dynamicValues, List<AlgDataType> dynamicTypes, QueryContext context ) {
+            return PhysicalQueryContext.builder()
+                    .query( query )
+                    .queryNode( null )
+                    .language( context.language )
+                    .isAnalysed( context.isAnalysed )
+                    .usesCache( context.usesCache )
+                    .userId( context.userId )
+                    .origin( context.getOrigin() )
+                    .batch( context.batch )
+                    .statement( context.statement )
+                    .transactions( context.transactions )
+                    .transactionManager( context.transactionManager )
+                    .informationTarget( context.informationTarget )
+                    .root( root )
+                    .dynamicValues( dynamicValues )
+                    .dynamicTypes( dynamicTypes )
+                    .isRouted( true )
                     .build();
         }
 

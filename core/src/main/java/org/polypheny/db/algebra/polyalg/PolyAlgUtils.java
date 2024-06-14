@@ -342,7 +342,7 @@ public class PolyAlgUtils {
 
         @Override
         public String visitDynamicParam( RexDynamicParam dynamicParam ) {
-            return dynamicParam.getName();
+            return "?" + dynamicParam.getIndex() + ":" + dynamicParam.type;
         }
 
 

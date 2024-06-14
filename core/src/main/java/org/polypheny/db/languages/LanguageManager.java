@@ -37,10 +37,12 @@ import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
+import org.polypheny.db.processing.QueryContext.PhysicalQueryContext;
 import org.polypheny.db.processing.QueryContext.TranslatedQueryContext;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 
 @Slf4j
@@ -112,15 +114,15 @@ public class LanguageManager {
                     throw new GenericRuntimeException( String.format( "%s query is empty", context.getLanguage().serializedName() ) );
                 }
 
-            parsedQueries = context.getLanguage().parser().apply( context );
-        } catch ( Throwable e ) {
-            log.warn( "Error on preparing query: {}", e.getMessage() );
-            if ( transaction.isAnalyze() ) {
-                transaction.getQueryAnalyzer().attachStacktrace( e );
+                parsedQueries = context.getLanguage().parser().apply( context );
+            } catch ( Throwable e ) {
+                log.warn( "Error on preparing query: {}", e.getMessage() );
+                if ( transaction.isAnalyze() ) {
+                    transaction.getQueryAnalyzer().attachStacktrace( e );
+                }
+                cancelTransaction( transaction );
+                return List.of( ImplementationContext.ofError( e, ParsedQueryContext.fromQuery( context.getQuery(), null, context ), statement ) );
             }
-            cancelTransaction( transaction );
-            return List.of( ImplementationContext.ofError( e, ParsedQueryContext.fromQuery( context.getQuery(), null, context ), statement ) );
-        }
 
             if ( transaction.isAnalyze() ) {
                 statement.getOverviewDuration().stop( "Parsing" );
@@ -128,7 +130,7 @@ public class LanguageManager {
         }
 
         if ( context instanceof TranslatedQueryContext ) {
-            return implementTranslatedQuery(statement, transaction, (TranslatedQueryContext) context);
+            return implementTranslatedQuery( statement, transaction, (TranslatedQueryContext) context );
         }
 
         Processor processor = context.getLanguage().processorSupplier().get();
@@ -227,15 +229,27 @@ public class LanguageManager {
 
     private List<ImplementationContext> implementTranslatedQuery( Statement statement, Transaction transaction, TranslatedQueryContext translated ) {
         try {
-            PolyImplementation implementation = statement.getQueryProcessor().prepareQuery( (translated).getRoot(), translated.isRouted(), true );
+            PolyImplementation implementation;
+
+            if ( translated instanceof PhysicalQueryContext physical ) {
+                for ( int i = 0; i < physical.getDynamicValues().size(); i++ ) {
+                    PolyValue v = physical.getDynamicValues().get( i );
+                    AlgDataType type = physical.getDynamicTypes().get( i );
+                    statement.getDataContext().addParameterValues( i, type, List.of( v ) );
+                }
+                implementation = statement.getQueryProcessor().prepareQuery( physical.getRoot(), translated.isRouted(), true, true );
+            } else {
+                implementation = statement.getQueryProcessor().prepareQuery( translated.getRoot(), translated.isRouted(), true );
+            }
+
             return List.of( new ImplementationContext( implementation, translated, statement, null ) );
-        }  catch ( Throwable e ) {
+        } catch ( Throwable e ) {
             log.warn( "Caught exception: ", e );
             if ( transaction.isAnalyze() ) {
                 transaction.getQueryAnalyzer().attachStacktrace( e );
             }
             cancelTransaction( transaction );
-            return List.of(( ImplementationContext.ofError( e, translated, statement ) ));
+            return List.of( (ImplementationContext.ofError( e, translated, statement )) );
         }
     }
 
@@ -264,8 +278,8 @@ public class LanguageManager {
 
     public List<ExecutedContext> anyQuery( QueryContext context ) {
         List<ImplementationContext> prepared;
-        if (context instanceof TranslatedQueryContext) {
-            prepared = anyPrepareQuery( context, context.getStatement());
+        if ( context instanceof TranslatedQueryContext ) {
+            prepared = anyPrepareQuery( context, context.getStatement() );
         } else {
             prepared = anyPrepareQuery( context, context.getTransactions().get( context.getTransactions().size() - 1 ) );
         }

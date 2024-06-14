@@ -17,6 +17,7 @@
 package org.polypheny.db.webui.models.requests;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.List;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.jackson.Jacksonized;
 import org.polypheny.db.catalog.logistic.DataModel;
@@ -33,5 +34,9 @@ public class PolyAlgRequest extends UIRequest {
     public DataModel model;
     @JsonProperty
     public PlanType planType;
+    @JsonProperty
+    public List<String> dynamicValues; // for physical plans
+    @JsonProperty
+    public List<String> dynamicTypes; // AlgDataType string (e.g. CHAR(4))
 
 }

@@ -39,6 +39,7 @@ import org.polypheny.db.algebra.enumerable.EnumerableSort;
 import org.polypheny.db.algebra.enumerable.EnumerableTransformer;
 import org.polypheny.db.algebra.enumerable.EnumerableUnion;
 import org.polypheny.db.algebra.enumerable.EnumerableValues;
+import org.polypheny.db.algebra.enumerable.lpg.EnumerableLpgMatch;
 import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.logical.common.LogicalBatchIterator;
 import org.polypheny.db.algebra.logical.common.LogicalTransformer;
@@ -422,6 +423,11 @@ public class PolyAlgRegistry {
                 .creator( EnumerableTransformer::create ).model( null )
                 .opName( "E_TRANSFORMER" ).convention( c ).numInputs( -1 ).opTags( physTags )
                 .params( getParams( LogicalTransformer.class ) )
+                .build() );
+        declarations.put( EnumerableLpgMatch.class, PolyAlgDeclaration.builder()
+                .creator( EnumerableLpgMatch::create ).model( DataModel.GRAPH )
+                .opName( "E_LPG_MATCH" ).convention( c ).numInputs( 1 ).opTags( physTags )
+                .params( getParams( LogicalLpgMatch.class ) )
                 .build() );
     }
 

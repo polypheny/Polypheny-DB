@@ -211,7 +211,13 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
     @Override
     public PolyImplementation prepareQuery( AlgRoot logicalRoot, boolean isRouted, boolean withMonitoring ) {
-        return prepareQuery( logicalRoot, logicalRoot.alg.getCluster().getTypeFactory().builder().build(), isRouted, false, withMonitoring );
+        return prepareQuery( logicalRoot, logicalRoot.alg.getCluster().getTypeFactory().builder().build(), isRouted, false, false, withMonitoring );
+    }
+
+
+    @Override
+    public PolyImplementation prepareQuery( AlgRoot logicalRoot, boolean isRouted, boolean isPhysical, boolean withMonitoring ) {
+        return prepareQuery( logicalRoot, logicalRoot.alg.getCluster().getTypeFactory().builder().build(), isRouted, isPhysical, false, withMonitoring );
     }
 
 
@@ -223,14 +229,23 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
     @Override
     public PolyImplementation prepareQuery( AlgRoot logicalRoot, AlgDataType parameterRowType, boolean isRouted, boolean isSubquery, boolean withMonitoring ) {
+        return prepareQuery( logicalRoot, parameterRowType, false, false, false, withMonitoring );
+    }
+
+
+    @Override
+    public PolyImplementation prepareQuery( AlgRoot root, AlgDataType parameterRowType, boolean isRouted, boolean isPhysical, boolean isSubquery, boolean withMonitoring ) {
+        if ( isPhysical ) {
+            return implementPhysicalPlan( root, parameterRowType );
+        }
         if ( !isRouted && statement.getTransaction().isAnalyze() ) {
-            attachQueryPlans( logicalRoot );
+            attachQueryPlans( root );
         }
 
         if ( statement.getTransaction().isAnalyze() ) {
             statement.getOverviewDuration().start( "Processing" );
         }
-        final ProposedImplementations proposedImplementations = prepareQueries( logicalRoot, parameterRowType, isRouted, isSubquery );
+        final ProposedImplementations proposedImplementations = prepareQueries( root, parameterRowType, isRouted, isSubquery );
 
         if ( statement.getTransaction().isAnalyze() ) {
             statement.getOverviewDuration().stop( "Processing" );
@@ -604,6 +619,22 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         return new ProposedImplementations(
                 plans.stream().filter( Plan::isValid ).toList(),
                 logicalQueryInformation );
+    }
+
+
+    private PolyImplementation implementPhysicalPlan( AlgRoot root, AlgDataType parameterRowType ) {
+        final Convention resultConvention = ENABLE_BINDABLE ? BindableConvention.INSTANCE : EnumerableConvention.INSTANCE;
+
+        PreparedResult<PolyValue> preparedResult = implement( root, parameterRowType );
+        UiRoutingPageUtil.addPhysicalPlanPage( root.alg, statement.getTransaction().getQueryAnalyzer(), statement.getIndex() );
+        return createPolyImplementation(
+                preparedResult,
+                root.kind,
+                root.alg,
+                root.validatedRowType,
+                resultConvention,
+                new ExecutionTimeMonitor(),
+                Objects.requireNonNull( root.alg.getTraitSet().getTrait( ModelTraitDef.INSTANCE ) ).dataModel() );
     }
 
 
@@ -1500,7 +1531,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 UiRoutingPageUtil.outputSingleResult(
                         proposed.plans.get( 0 ),
                         statement.getTransaction().getQueryAnalyzer(),
-                        statement.getIndex());
+                        statement.getIndex() );
                 addGeneratedCodeToQueryAnalyzer( proposed.plans.get( 0 ).generatedCodes() );
             }
             return new Pair<>( proposed.plans.get( 0 ).result(), proposed.plans.get( 0 ).proposedRoutingPlan() );

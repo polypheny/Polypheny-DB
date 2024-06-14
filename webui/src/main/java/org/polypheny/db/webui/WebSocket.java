@@ -33,6 +33,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -40,10 +41,12 @@ import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.information.InformationPolyAlg.PlanType;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.processing.QueryContext;
+import org.polypheny.db.processing.QueryContext.PhysicalQueryContext;
 import org.polypheny.db.processing.QueryContext.TranslatedQueryContext;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.crud.LanguageCrud;
@@ -178,9 +181,21 @@ public class WebSocket implements Consumer<WsConfig> {
                         .transactions( List.of( transaction ) )
                         .statement( statement )
                         .informationTarget( i -> i.setSession( ctx.session ) ).build();
-                TranslatedQueryContext translated = TranslatedQueryContext.fromQuery(
-                        polyAlgRequest.polyAlg, root, polyAlgRequest.planType == PlanType.ALLOCATION, qc );
 
+                TranslatedQueryContext translated;
+                if ( polyAlgRequest.planType == PlanType.PHYSICAL ) {
+                    Pair<List<PolyValue>, List<AlgDataType>> dynamicParams;
+                    try {
+                        dynamicParams = PolyPlanBuilder.translateDynamicParams( polyAlgRequest.dynamicValues, polyAlgRequest.dynamicTypes );
+                    } catch ( Exception e ) {
+                        log.error( "Caught exception while translating dynamic parameters:", e );
+                        ctx.send( RelationalResult.builder().error( e.getMessage() ).build() );
+                        break;
+                    }
+                    translated = PhysicalQueryContext.fromQuery( polyAlgRequest.polyAlg, root, dynamicParams.left, dynamicParams.right, qc );
+                } else {
+                    translated = TranslatedQueryContext.fromQuery( polyAlgRequest.polyAlg, root, polyAlgRequest.planType == PlanType.ALLOCATION, qc );
+                }
                 List<? extends Result<?, ?>> polyAlgResults = LanguageCrud.anyQueryResult( translated, polyAlgRequest );
                 ctx.send( polyAlgResults.get( 0 ) );
                 break;
