@@ -45,7 +45,7 @@ import org.polypheny.db.util.temporal.DateTimeUtils;
 
 /**
  * Time literal.
- *
+ * <p>
  * Immutable, internally represented as a string (in ISO format), and can support unlimited precision (milliseconds, nanoseconds).
  */
 public class TimeString implements Comparable<TimeString>, Serializable {
@@ -98,7 +98,7 @@ public class TimeString implements Comparable<TimeString>, Serializable {
 
     /**
      * Sets the fraction field of a {@code TimeString} to a given number of milliseconds. Nukes the value set via {@link #withNanos}.
-     *
+     * <p>
      * For example, {@code new TimeString(1970, 1, 1, 2, 3, 4).withMillis(56)} yields {@code TIME '1970-01-01 02:03:04.056'}.
      */
     public TimeString withMillis( int millis ) {
@@ -109,7 +109,7 @@ public class TimeString implements Comparable<TimeString>, Serializable {
 
     /**
      * Sets the fraction field of a {@code TimeString} to a given number of nanoseconds. Nukes the value set via {@link #withMillis(int)}.
-     *
+     * <p>
      * For example, {@code new TimeString(1970, 1, 1, 2, 3, 4).withNanos(56789)} yields {@code TIME '1970-01-01 02:03:04.000056789'}.
      */
     public TimeString withNanos( int nanos ) {
@@ -122,7 +122,7 @@ public class TimeString implements Comparable<TimeString>, Serializable {
      * Sets the fraction field of a {@code TimeString}.
      * The precision is determined by the number of leading zeros.
      * Trailing zeros are stripped.
-     *
+     * <p>
      * For example, {@code new TimeString(1970, 1, 1, 2, 3, 4).withFraction("00506000")} yields {@code TIME '1970-01-01 02:03:04.00506'}.
      */
     public TimeString withFraction( String fraction ) {
@@ -134,7 +134,7 @@ public class TimeString implements Comparable<TimeString>, Serializable {
         while ( fraction.endsWith( "0" ) ) {
             fraction = fraction.substring( 0, fraction.length() - 1 );
         }
-        if ( fraction.length() > 0 ) {
+        if ( !fraction.isEmpty() ) {
             v = v + "." + fraction;
         }
         return new TimeString( v );
@@ -209,17 +209,16 @@ public class TimeString implements Comparable<TimeString>, Serializable {
 
 
     private int getMillisInSecond() {
-        switch ( v.length() ) {
-            case 8: // "12:34:56"
-                return 0;
-            case 10: // "12:34:56.7"
-                return Integer.parseInt( v.substring( 9 ) ) * 100;
-            case 11: // "12:34:56.78"
-                return Integer.parseInt( v.substring( 9 ) ) * 10;
-            case 12: // "12:34:56.789"
-            default: // "12:34:56.7890000012345"
-                return Integer.parseInt( v.substring( 9, 12 ) );
-        }
+        return switch ( v.length() ) {
+            case 8 -> // "12:34:56"
+                    0;
+            case 10 -> // "12:34:56.7"
+                    Integer.parseInt( v.substring( 9 ) ) * 100;
+            case 11 -> // "12:34:56.78"
+                    Integer.parseInt( v.substring( 9 ) ) * 10; // "12:34:56.789"
+            default -> // "12:34:56.7890000012345"
+                    Integer.parseInt( v.substring( 9, 12 ) );
+        };
     }
 
 
@@ -235,11 +234,6 @@ public class TimeString implements Comparable<TimeString>, Serializable {
 
     private int getSecond() {
         return Integer.parseInt( this.v.substring( 6, 8 ) );
-    }
-
-
-    public Calendar toCalendar() {
-        return Util.calendar( getMillisOfDay() );
     }
 
 

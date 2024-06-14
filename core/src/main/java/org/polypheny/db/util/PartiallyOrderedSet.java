@@ -53,7 +53,7 @@ import java.util.function.Function;
 
 /**
  * Partially-ordered set.
- *
+ * <p>
  * When you create a partially-ordered set ('poset' for short) you must provide an {@link Ordering} that determines the order relation. The
  * ordering must be:
  *
@@ -64,7 +64,7 @@ import java.util.function.Function;
  * </ul>
  *
  * Note that not all pairs of elements are related. If is OK if e.lte(f) returns false and f.lte(e) returns false also.
- *
+ * <p>
  * In addition to the usual set methods, there are methods to determine the immediate parents and children of an element in the set, and method to find
  * all elements which have no parents or no children (i.e. "root" and "leaf" elements).
  *
@@ -73,16 +73,8 @@ import java.util.function.Function;
  */
 public class PartiallyOrderedSet<E> extends AbstractSet<E> {
 
-    /**
-     * Ordering that orders bit sets by inclusion.
-     *
-     * For example, the children of 14 (1110) are 12 (1100), 10 (1010) and 6 (0110).
-     */
-    public static final Ordering<ImmutableBitSet> BIT_SET_INCLUSION_ORDERING = ImmutableBitSet::contains;
-
     private final Map<E, Node<E>> map;
     private final Function<E, Iterable<E>> parentFunction;
-    private final Function<E, Iterable<E>> childFunction;
     private final Ordering<E> ordering;
 
     /**
@@ -141,7 +133,6 @@ public class PartiallyOrderedSet<E> extends AbstractSet<E> {
     private PartiallyOrderedSet( Ordering<E> ordering, Map<E, Node<E>> map, Function<E, Iterable<E>> childFunction, Function<E, Iterable<E>> parentFunction ) {
         this.ordering = ordering;
         this.map = map;
-        this.childFunction = childFunction;
         this.parentFunction = parentFunction;
         this.topNode = new TopBottomNode<>( true );
         this.bottomNode = new TopBottomNode<>( false );
@@ -448,9 +439,7 @@ public class PartiallyOrderedSet<E> extends AbstractSet<E> {
                 final boolean lt12 = ordering.lessThan( node1.e, node2.e );
                 final boolean lt21 = ordering.lessThan( node2.e, node1.e );
                 if ( node1 == node2 ) {
-                    if ( !(lt12 && lt21) ) {
-                        assert !fail : "self should be less than self: " + node1;
-                    }
+                    assert lt12 && lt21 || !fail : "self should be less than self: " + node1;
                 }
                 if ( lt12 && lt21 ) {
                     if ( !(node1 == node2) ) {
@@ -530,7 +519,7 @@ public class PartiallyOrderedSet<E> extends AbstractSet<E> {
 
     /**
      * Returns the values in this partially-ordered set that are less-than a given value and there are no intervening values.
-     *
+     * <p>
      * If the value is not in this set, returns null.
      *
      * @param e Value
@@ -544,7 +533,7 @@ public class PartiallyOrderedSet<E> extends AbstractSet<E> {
 
     /**
      * Returns the values in this partially-ordered set that are less-than a given value and there are no intervening values.
-     *
+     * <p>
      * If the value is not in this set, returns null if {@code hypothetical} is false.
      *
      * @param e Value
@@ -568,7 +557,7 @@ public class PartiallyOrderedSet<E> extends AbstractSet<E> {
 
     /**
      * Returns the values in this partially-ordered set that are greater-than a given value and there are no intervening values.
-     *
+     * <p>
      *If the value is not in this set, returns null.
      *
      * @param e Value
@@ -582,7 +571,7 @@ public class PartiallyOrderedSet<E> extends AbstractSet<E> {
 
     /**
      * Returns the values in this partially-ordered set that are greater-than a given value and there are no intervening values.
-     *
+     * <p>
      * If the value is not in this set, returns {@code null} if {@code hypothetical} is false.
      *
      * @param e Value
@@ -666,7 +655,7 @@ public class PartiallyOrderedSet<E> extends AbstractSet<E> {
     public static <E> List<E> strip( List<Node<E>> list ) {
         if ( list.size() == 1 && list.get( 0 ).e == null ) {
             // If parent list contains top element, a node whose element is null, officially there are no parents.
-            // Similarly child list and bottom element.
+            // Similarly, child list and bottom element.
             return ImmutableList.of();
         }
         return Util.transform( list, node -> node.e );
@@ -749,7 +738,7 @@ public class PartiallyOrderedSet<E> extends AbstractSet<E> {
 
     /**
      * Holds a value, its parent nodes, and child nodes.
-     *
+     * <p>
      * We deliberately do not override {@link #hashCode} or {@link #equals(Object)}. A canonizing map ensures that within a
      * given PartiallyOrderedSet, two nodes are identical if and only if they contain the same value.
      *
@@ -799,12 +788,12 @@ public class PartiallyOrderedSet<E> extends AbstractSet<E> {
 
     /**
      * Ordering relation.
-     *
+     * <p>
      * To obey the constraints of the partially-ordered set, the function must be consistent with the reflexive, anti-symmetric, and transitive
      * properties required by a partially ordered set.
-     *
+     * <p>
      * For instance, if {@code ordering(foo, foo)} returned false for any not-null value of foo, it would violate the reflexive property.
-     *
+     * <p>
      * If an ordering violates any of these required properties, the behavior of a {@link PartiallyOrderedSet} is unspecified. (But mayhem is likely.)
      *
      * @param <E> Element type

@@ -169,10 +169,6 @@ public class SqlJoin extends SqlCall {
     }
 
 
-    public final SqlLiteral isNaturalNode() {
-        return natural;
-    }
-
 
     public final SqlNode getRight() {
         return right;

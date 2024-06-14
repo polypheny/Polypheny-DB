@@ -182,13 +182,13 @@ public class SqlWindow extends SqlCall implements Window {
 
     @Override
     public List<Node> getOperandList() {
-        return ImmutableNullableList.of( declName, refName, partitionList, orderList, isRows, lowerBound, upperBound, allowPartial );
+        return ImmutableList.of( declName, refName, partitionList, orderList, isRows, lowerBound, upperBound, allowPartial );
     }
 
 
     @Override
     public List<SqlNode> getSqlOperandList() {
-        return ImmutableNullableList.of( declName, refName, partitionList, orderList, isRows, (SqlNode) lowerBound, (SqlNode) upperBound, allowPartial );
+        return ImmutableList.of( declName, refName, partitionList, orderList, isRows, (SqlNode) lowerBound, (SqlNode) upperBound, allowPartial );
     }
 
 

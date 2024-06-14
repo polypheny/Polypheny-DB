@@ -17,6 +17,7 @@
 package org.polypheny.db.sql.language;
 
 
+import com.google.common.collect.ImmutableList;
 import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.algebra.constant.ExplainFormat;
@@ -76,13 +77,13 @@ public class SqlExplain extends SqlCall implements Explain {
 
     @Override
     public List<Node> getOperandList() {
-        return ImmutableNullableList.of( explicandum, detailLevel, depth, format );
+        return ImmutableList.of( explicandum, detailLevel, depth, format );
     }
 
 
     @Override
     public List<SqlNode> getSqlOperandList() {
-        return ImmutableNullableList.of( explicandum, detailLevel, depth, format );
+        return ImmutableList.of( explicandum, detailLevel, depth, format );
     }
 
 
@@ -131,14 +132,6 @@ public class SqlExplain extends SqlCall implements Explain {
     @Override
     public int getDynamicParamCount() {
         return dynamicParameterCount;
-    }
-
-
-    /**
-     * @return whether physical plan implementation should be returned
-     */
-    public boolean withImplementation() {
-        return getDepth() == Explain.Depth.PHYSICAL;
     }
 
 

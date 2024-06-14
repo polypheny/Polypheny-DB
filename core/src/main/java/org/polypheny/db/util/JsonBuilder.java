@@ -91,7 +91,7 @@ public class JsonBuilder {
 
     /**
      * Serializes an object consisting of maps, lists and atoms into a JSON string.
-     *
+     * <p>
      * We should use a JSON library such as Jackson when Mondrian needs one elsewhere.
      */
     public String toJsonString( Object o ) {

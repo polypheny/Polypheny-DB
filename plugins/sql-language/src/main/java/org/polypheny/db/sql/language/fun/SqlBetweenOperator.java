@@ -18,6 +18,7 @@ package org.polypheny.db.sql.language.fun;
 
 
 import java.util.List;
+import lombok.Getter;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -51,13 +52,13 @@ import org.polypheny.db.util.Util;
 
 /**
  * Defines the BETWEEN operator.
- *
+ * <p>
  * Syntax:
  *
  * <blockquote><code>X [NOT] BETWEEN [ASYMMETRIC | SYMMETRIC] Y AND Z</code></blockquote>
  *
  * If the asymmetric/symmeteric keywords are left out ASYMMETRIC is default.
- *
+ * <p>
  * This operator is always expanded (into something like <code>Y &lt;= X AND X &lt;= Z</code>) before being converted into Rex nodes.
  */
 public class SqlBetweenOperator extends SqlInfixOperator {
@@ -100,6 +101,7 @@ public class SqlBetweenOperator extends SqlInfixOperator {
     /**
      * If true the call represents 'NOT BETWEEN'.
      */
+    @Getter
     private final boolean negated;
 
 
@@ -107,11 +109,6 @@ public class SqlBetweenOperator extends SqlInfixOperator {
         super( negated ? NOT_BETWEEN_NAMES : BETWEEN_NAMES, Kind.BETWEEN, 32, null, InferTypes.FIRST_KNOWN, OTC_CUSTOM );
         this.flag = flag;
         this.negated = negated;
-    }
-
-
-    public boolean isNegated() {
-        return negated;
     }
 
 

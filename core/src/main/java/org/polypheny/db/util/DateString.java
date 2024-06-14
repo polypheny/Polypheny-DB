@@ -44,7 +44,7 @@ import org.polypheny.db.util.temporal.DateTimeUtils;
 
 /**
  * Date literal.
- *
+ * <p>
  * Immutable, internally represented as a string (in ISO format).
  */
 public class DateString implements Comparable<DateString>, Serializable {
@@ -169,10 +169,6 @@ public class DateString implements Comparable<DateString>, Serializable {
         return getDaysSinceEpoch() * DateTimeUtils.MILLIS_PER_DAY;
     }
 
-
-    public Calendar toCalendar() {
-        return Util.calendar( getMillisSinceEpoch() );
-    }
 
 }
 

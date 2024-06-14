@@ -60,7 +60,7 @@ public class TryThreadLocal<T> extends ThreadLocal<T> {
 
 
     // It is important that this method is final.
-    // This ensures that the sub-class does not choose a different initial value. Then the close logic can detect whether the previous value was equal to the initial value.
+    // This ensures that the subclass does not choose a different initial value. Then the close logic can detect whether the previous value was equal to the initial value.
     @Override
     protected final T initialValue() {
         return initialValue;

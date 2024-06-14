@@ -70,7 +70,7 @@ public interface Source {
 
     /**
      * Returns a source whose path concatenates this with a child.
-     *
+     * <p>
      * For example,
      * <ul>
      * <li>source("/foo").append(source("bar"))
@@ -84,7 +84,7 @@ public interface Source {
 
     /**
      * Returns a relative source, if this source is a child of a given base.
-     *
+     * <p>
      * For example,
      * <ul>
      * <li>source("/foo/bar").relative(source("/foo"))

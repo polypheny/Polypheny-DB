@@ -40,7 +40,7 @@ import java.io.StringWriter;
 /**
  * Contains methods that call JDK methods that the <a href="https://github.com/policeman-tools/forbidden-apis">forbidden APIs checker</a>
  * does not approve of.
- *
+ * <p>
  * This class is excluded from the check, so methods called via this class will not fail the build.
  */
 public class Unsafe {
@@ -48,21 +48,6 @@ public class Unsafe {
     private Unsafe() {
     }
 
-
-    /**
-     * Calls {@link System#exit}.
-     */
-    public static void systemExit( int status ) {
-        System.exit( status );
-    }
-
-
-    /**
-     * Calls {@link Object#notifyAll()}.
-     */
-    public static void notifyAll( Object o ) {
-        o.notifyAll();
-    }
 
 
     /**

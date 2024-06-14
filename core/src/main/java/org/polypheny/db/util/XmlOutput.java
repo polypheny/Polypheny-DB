@@ -45,7 +45,7 @@ import java.util.Deque;
 
 /**
  * Streaming XML output.
- *
+ * <p>
  * Use this class to write XML to any streaming source.
  * While the class itself is unstructured and doesn't enforce any DTD specification, use of the class
  * does ensure that the output is syntactically valid XML.
@@ -527,7 +527,7 @@ public class XmlOutput {
 
     /**
      * Returns whether a string contains any XML special characters.
-     *
+     * <p>
      * If this function returns true, the string will need to be encoded either using the stringEncodeXML function above or using a
      * CDATA section.  Note that MSXML has a nasty bug whereby whitespace characters outside of a CDATA section are lost when parsing.
      * To avoid hitting this bug, this method treats many whitespace characters as "special".
@@ -556,7 +556,7 @@ public class XmlOutput {
 
     /**
      * Utility for replacing special characters with escape sequences in strings.
-     *
+     * <p>
      * A StringEscaper starts out as an identity transform in the "mutable" state. Call {@link #defineEscape} as many times as necessary to set up
      * mappings, and then call {@link #makeImmutable} before actually applying the defined transform. Or, use one of the global mappings pre-defined here.
      */

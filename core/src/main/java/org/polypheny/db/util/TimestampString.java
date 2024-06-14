@@ -44,7 +44,7 @@ import org.polypheny.db.util.temporal.DateTimeUtils;
 
 /**
  * Timestamp literal.
- *
+ * <p>
  * Immutable, internally represented as a string (in ISO format), and can support unlimited precision (milliseconds, nanoseconds).
  */
 public class TimestampString implements Comparable<TimestampString>, Serializable {
@@ -73,7 +73,7 @@ public class TimestampString implements Comparable<TimestampString>, Serializabl
 
     /**
      * Sets the fraction field of a {@code TimestampString} to a given number of milliseconds. Nukes the value set via {@link #withNanos}.
-     *
+     * <p>
      * For example, {@code new TimestampString(1970, 1, 1, 2, 3, 4).withMillis(56)} yields {@code TIMESTAMP '1970-01-01 02:03:04.056'}.
      */
     public TimestampString withMillis( int millis ) {
@@ -84,7 +84,7 @@ public class TimestampString implements Comparable<TimestampString>, Serializabl
 
     /**
      * Sets the fraction field of a {@code TimestampString} to a given number of nanoseconds. Nukes the value set via {@link #withMillis(int)}.
-     *
+     * <p>
      * For example, {@code new TimestampString(1970, 1, 1, 2, 3, 4).withNanos(56789)} yields {@code TIMESTAMP '1970-01-01 02:03:04.000056789'}.
      */
     public TimestampString withNanos( int nanos ) {
@@ -97,7 +97,7 @@ public class TimestampString implements Comparable<TimestampString>, Serializabl
      * Sets the fraction field of a {@code TimestampString}.
      * The precision is determined by the number of leading zeros.
      * Trailing zeros are stripped.
-     *
+     * <p>
      * For example, {@code new TimestampString(1970, 1, 1, 2, 3, 4).withFraction("00506000")} yields {@code TIMESTAMP '1970-01-01 02:03:04.00506'}.
      */
     public TimestampString withFraction( String fraction ) {

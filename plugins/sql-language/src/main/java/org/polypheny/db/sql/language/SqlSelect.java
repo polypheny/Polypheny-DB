@@ -259,15 +259,6 @@ public class SqlSelect extends SqlCall implements Select {
     }
 
 
-    public boolean hasOrderBy() {
-        return orderBy != null && orderBy.size() != 0;
-    }
-
-
-    public boolean hasWhere() {
-        return where != null;
-    }
-
 
     public boolean isKeywordPresent( SqlSelectKeyword targetKeyWord ) {
         return getModifierNode( targetKeyWord ) != null;

@@ -39,18 +39,27 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.nio.charset.Charset;
+import lombok.Getter;
 
 
 /**
  * Serializable wrapper around a {@link Charset}.
- *
+ * <p>
  * It serializes itself by writing out the name of the character set, for example "ISO-8859-1". On the other side, it deserializes itself
  * by looking for a charset with the same name.
- *
+ * <p>
  * A SerializableCharset is immutable.
  */
 public class SerializableCharset implements Serializable {
 
+    /**
+     * -- GETTER --
+     *  Returns the wrapped
+     * .
+     *
+     * @return the wrapped Charset
+     */
+    @Getter
     private Charset charset;
     private String charsetName;
 
@@ -81,16 +90,6 @@ public class SerializableCharset implements Serializable {
     private void readObject( ObjectInputStream in ) throws IOException, ClassNotFoundException {
         charsetName = (String) in.readObject();
         charset = Charset.availableCharsets().get( this.charsetName );
-    }
-
-
-    /**
-     * Returns the wrapped {@link Charset}.
-     *
-     * @return the wrapped Charset
-     */
-    public Charset getCharset() {
-        return charset;
     }
 
 

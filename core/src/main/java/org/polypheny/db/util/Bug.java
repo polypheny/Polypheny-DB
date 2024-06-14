@@ -149,12 +149,6 @@ public abstract class Bug {
      */
     public static final boolean FRG375_FIXED = false;
 
-    /**
-     * Whether
-     * <a href="https://issues.apache.org/jira/browse/CALCITE-194">[POLYPHENYDB-194]
-     * Array items in MongoDB adapter</a> is fixed.
-     */
-    public static final boolean CALCITE_194_FIXED = false;
 
     /**
      * Whether the remaining issues raised in
@@ -167,12 +161,6 @@ public abstract class Bug {
      */
     public static final boolean CALCITE_461_FIXED = false;
 
-    /**
-     * Whether
-     * <a href="https://issues.apache.org/jira/browse/CALCITE-673">[POLYPHENYDB-673]
-     * Timeout executing joins against MySQL</a> is fixed.
-     */
-    public static final boolean CALCITE_673_FIXED = false;
 
     /**
      * Whether
@@ -181,12 +169,6 @@ public abstract class Bug {
      */
     public static final boolean CALCITE_1048_FIXED = false;
 
-    /**
-     * Whether
-     * <a href="https://issues.apache.org/jira/browse/CALCITE-1045">[POLYPHENYDB-1045]
-     * Decorrelate sub-queries in Project and Join</a> is fixed.
-     */
-    public static final boolean CALCITE_1045_FIXED = false;
 
     /**
      * Whether
@@ -215,25 +197,6 @@ public abstract class Bug {
      */
     public static final boolean TODO_FIXED = false;
 
-
-    /**
-     * Use this method to flag temporary code.
-     *
-     * <p>Example #1:
-     * <blockquote><pre>
-     * if (Bug.remark("baz fixed") == null) {
-     *   baz();
-     * }</pre></blockquote>
-     *
-     * <p>Example #2:
-     * <blockquote><pre>
-     * /&#42;&#42; &#64;see Bug#remark Remove before checking in &#42;/
-     * void uselessMethod() {}
-     * </pre></blockquote>
-     */
-    public static <T> T remark( T remark ) {
-        return remark;
-    }
 
 
     /**

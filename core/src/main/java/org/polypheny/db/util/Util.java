@@ -126,7 +126,7 @@ public class Util {
 
     /**
      * System-dependent newline character.
-     *
+     * <p>
      * In general, you should not use this in expected results of tests.
      * Expected results should be the expected result on Linux (or Mac OS) using '\n'. Apply {@link Util#toLinux(String)} to Windows actual results, if
      * necessary, to make them look like Linux actual.
@@ -533,16 +533,16 @@ public class Util {
 
     /**
      * Converts an arbitrary string into a string suitable for use as a Java identifier.
-     *
+     * <p>
      * The mapping is one-to-one (that is, distinct strings will produce distinct java identifiers). The mapping is also reversible,
      * but the inverse mapping is not implemented.
-     *
+     * <p>
      * A valid Java identifier must start with a Unicode letter, underscore, or dollar sign ($). The other characters, if any,
      * can be a Unicode letter, underscore, dollar sign, or digit.
-     *
+     * <p>
      * This method uses an algorithm similar to URL encoding. Valid characters are unchanged; invalid characters are converted to an
      * underscore followed by the hex code of the character; and underscores are doubled.
-     *
+     * <p>
      * Examples:
      *
      * <ul>
@@ -625,7 +625,7 @@ public class Util {
 
     /**
      * Converts a list of a string, with commas between elements.
-     *
+     * <p>
      * For example,
      * <code>commaList(Arrays.asList({"a", "b"}))</code>
      * returns "a, b".
@@ -689,10 +689,10 @@ public class Util {
 
     /**
      * Returns a {@link java.lang.RuntimeException} indicating that a particular feature has not been implemented, but should be.
-     *
+     * <p>
      * If every 'hole' in our functionality uses this method, it will be easier for us to identity the holes. Throwing a
      * {@link java.lang.UnsupportedOperationException} isn't as good, because sometimes we actually want to partially implement an API.
-     *
+     * <p>
      * Example usage:
      *
      * <blockquote>
@@ -795,12 +795,12 @@ public class Util {
 
     /**
      * Converts a Java timezone to POSIX format, so that the boost C++ library can instantiate timezone objects.
-     *
+     * <p>
      * <a href="http://www.opengroup.org/onlinepubs/000095399/basedefs/xbd_chap08.html">POSIX IEEE 1003.1</a> defines a format for timezone specifications.
-     *
+     * <p>
      * The boost C++ library can read these specifications and instantiate <a href="http://www.boost.org/doc/html/date_time/local_time.html#date_time.local_time.posix_time_zone"> posix_time_zone</a>
      * objects from them. The purpose of this method, therefore, is to allow the C++ code such as the fennel calculator to use the same notion of timezone as Java code.
-     *
+     * <p>
      * The format is as follows:
      *
      * <blockquote>"std offset dst [offset],start[/time],end[/time]"</blockquote>
@@ -834,7 +834,7 @@ public class Util {
      * </ul>
      *
      * (Real format strings do not contain spaces; they are in the above template only for readability.)
-     *
+     * <p>
      * Boost apparently diverges from the POSIX standard in how it treats the sign of timezone offsets. The POSIX standard states '<i>If preceded by a
      * '-', the timezone shall be east of the Prime Meridian; otherwise, it shall be west</i>', yet boost requires the opposite. For instance, PST
      * has offset '-8' above. This method generates timezone strings consistent with boost's expectations.
@@ -1045,7 +1045,7 @@ public class Util {
 
     /**
      * Parses a locale string.
-     *
+     * <p>
      * The inverse operation of {@link java.util.Locale#toString()}.
      *
      * @param localeString Locale string, e.g. "en" or "en_US"
@@ -1068,10 +1068,10 @@ public class Util {
 
     /**
      * Converts a list whose members are automatically down-cast to a given type.
-     *
+     * <p>
      * If a member of the backing list is not an instanceof <code>E</code>, the accessing method (such as {@link List#get}) will
      * throw a {@link ClassCastException}.
-     *
+     * <p>
      * All modifications are automatically written to the backing list. Not synchronized.
      *
      * @param list Backing list.
@@ -1085,9 +1085,9 @@ public class Util {
 
     /**
      * Converts a iterator whose members are automatically down-cast to a given type.
-     *
+     * <p>
      * If a member of the backing iterator is not an instanceof <code>E</code>, {@link Iterator#next()}) will throw a {@link ClassCastException}.
-     *
+     * <p>
      * All modifications are automatically written to the backing iterator.
      * Not synchronized.
      *
@@ -1119,7 +1119,7 @@ public class Util {
 
     /**
      * Converts an {@link Iterable} whose members are automatically down-cast to a given type.
-     *
+     * <p>
      * All modifications are automatically written to the backing iterator.
      * Not synchronized.
      *
@@ -1134,7 +1134,7 @@ public class Util {
 
     /**
      * Makes a collection of untyped elements appear as a list of strictly typed elements, by filtering out those which are not of the correct type.
-     *
+     * <p>
      * The returned object is an {@link Iterable}, which makes it ideal for use with the 'foreach' construct. For example,
      *
      * <blockquote><code>List&lt;Number&gt; numbers = Arrays.asList(1, 2, 3.14,
@@ -1184,7 +1184,7 @@ public class Util {
 
     /**
      * Returns a subset of a list containing only elements of a given type.
-     *
+     * <p>
      * Modifications to the list are NOT written back to the source list.
      *
      * @param list List of objects
@@ -1204,10 +1204,10 @@ public class Util {
 
     /**
      * Converts a {@link Properties} object to a <code>{@link Map}&lt;String, String&gt;</code>.
-     *
+     * <p>
      * This is necessary because {@link Properties} is a dinosaur class. It ought to extend <code>Map&lt;String,String&gt;</code>,
      * but instead extends <code>{@link Hashtable}&lt;Object,Object&gt;</code>.
-     *
+     * <p>
      * Typical usage, to iterate over a {@link Properties}:
      *
      * <blockquote>
@@ -1228,7 +1228,7 @@ public class Util {
 
     /**
      * Returns a hashmap with given contents.
-     *
+     * <p>
      * Use this method in initializers. Type parameters are inferred from context, and the contents are initialized declaratively. For example,
      *
      * <blockquote><code>Map&lt;String, Integer&gt; population =<br>
@@ -1286,7 +1286,7 @@ public class Util {
 
     /**
      * Returns the value of an enumeration with a particular name.
-     *
+     * <p>
      * Similar to {@link Enum#valueOf(Class, String)}, but returns {@code null} rather than throwing {@link IllegalArgumentException}.
      *
      * @param clazz Enum class
@@ -1319,9 +1319,9 @@ public class Util {
 
     /**
      * Creates a list that returns every {@code n}th element of a list, starting at element {@code k}.
-     *
+     * <p>
      * It is OK if the list is empty or its size is not a multiple of {@code n}.
-     *
+     * <p>
      * For instance, {@code quotientList(list, 2, 0)} returns the even elements of a list, and {@code quotientList(list, 2, 1)} returns the odd
      * elements. Those lists are the same length only if list has even size.
      */
@@ -1359,9 +1359,9 @@ public class Util {
 
     /**
      * Returns the first value if it is not null, otherwise the second value.
-     *
+     * <p>
      * The result may be null.
-     *
+     * <p>
      * Equivalent to the Elvis operator ({@code ?:}) of languages such as Groovy or PHP.
      */
     public static <T> T first( T v0, T v1 ) {
@@ -1530,7 +1530,7 @@ public class Util {
 
     /**
      * Returns the ordinal of the first element in the list which is equal to a previous element in the list.
-     *
+     * <p>
      * For example,
      * <code>firstDuplicate(Arrays.asList("a", "b", "c", "b", "a"))</code>
      * returns 3, the ordinal of the 2nd "b".
@@ -1570,9 +1570,9 @@ public class Util {
 
     /**
      * Converts a list into a list with unique elements.
-     *
+     * <p>
      * The order is preserved; the second and subsequent occurrences are removed.
-     *
+     * <p>
      * If the list is already unique it is returned unchanged.
      */
     public static <E> List<E> distinctList( List<E> list ) {
@@ -1585,9 +1585,9 @@ public class Util {
 
     /**
      * Converts an iterable into a list with unique elements.
-     *
+     * <p>
      * The order is preserved; the second and subsequent occurrences are removed.
-     *
+     * <p>
      * If {@code iterable} is a unique list it is returned unchanged.
      */
     public static <E> List<E> distinctList( Iterable<E> keys ) {
@@ -1722,7 +1722,7 @@ public class Util {
 
     /**
      * Converts a number into human-readable form, with 3 digits and a "K", "M" or "G" multiplier for thousands, millions or billions.
-     *
+     * <p>
      * Examples: -2, 0, 1, 999, 1.00K, 1.99K, 3.45M, 4.56B.
      */
     public static String human( double d ) {
@@ -1771,7 +1771,7 @@ public class Util {
 
     /**
      * Returns a map that is a view onto a collection of values, using the provided function to convert a value to a key.
-     *
+     * <p>
      * Unlike {@link com.google.common.collect.Maps#uniqueIndex(Iterable, com.google.common.base.Function)},
      * returns a view whose contents change as the collection of values changes.
      *
@@ -1826,7 +1826,7 @@ public class Util {
 
     /**
      * Returns the value of a system property as a boolean.
-     *
+     * <p>
      * For example, the property "foo" is considered true if you supply {@code -Dfoo} or {@code -Dfoo=true} or {@code -Dfoo=TRUE},
      * false if you omit the flag or supply {@code -Dfoo=false}.
      *
@@ -1875,7 +1875,7 @@ public class Util {
 
     /**
      * Creates a {@link PrintWriter} to a given output stream using UTF-8 character set.
-     *
+     * <p>
      * Does not use the default character set.
      */
     public static PrintWriter printWriter( OutputStream out ) {
@@ -1885,7 +1885,7 @@ public class Util {
 
     /**
      * Creates a {@link PrintWriter} to a given file using UTF-8 character set.
-     *
+     * <p>
      * Does not use the default character set.
      */
     public static PrintWriter printWriter( File file ) throws FileNotFoundException {
@@ -1895,7 +1895,7 @@ public class Util {
 
     /**
      * Creates a {@link BufferedReader} to a given input stream using UTF-8 character set.
-     *
+     * <p>
      * Does not use the default character set.
      */
     public static BufferedReader reader( InputStream in ) {
@@ -1905,7 +1905,7 @@ public class Util {
 
     /**
      * Creates a {@link BufferedReader} to read a given file using UTF-8 character set.
-     *
+     * <p>
      * Does not use the default character set.
      */
     public static BufferedReader reader( File file ) throws FileNotFoundException {
@@ -1934,7 +1934,7 @@ public class Util {
 
     /**
      * Returns a {@code Collector} that accumulates the input elements into a Guava {@code ImmutableList} via a {@code ImmutableList.Builder}.
-     *
+     * <p>
      * It will be obsolete when we move to {@link Bug#upgrade Guava 21.0}, which has {@code ImmutableList.toImmutableList()}.
      *
      * @param <T> Type of the input elements

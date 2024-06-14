@@ -18,6 +18,7 @@ package org.polypheny.db.sql.language;
 
 
 import java.util.List;
+import lombok.Getter;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Call;
@@ -30,6 +31,7 @@ import org.polypheny.db.util.ImmutableNullableList;
 /**
  * A <code>SqlDescribeTable</code> is a node of a parse tree that represents a {@code DESCRIBE TABLE} statement.
  */
+@Getter
 public class SqlDescribeTable extends SqlCall {
 
     public static final SqlSpecialOperator OPERATOR =
@@ -97,15 +99,6 @@ public class SqlDescribeTable extends SqlCall {
         return ImmutableNullableList.of( table, column );
     }
 
-
-    public SqlIdentifier getTable() {
-        return table;
-    }
-
-
-    public SqlIdentifier getColumn() {
-        return column;
-    }
 
 }
 

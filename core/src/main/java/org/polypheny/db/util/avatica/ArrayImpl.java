@@ -36,11 +36,10 @@ import java.sql.Array;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.Getter;
-import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.avatica.ColumnMetaData.ArrayType;
 import org.polypheny.db.util.avatica.ColumnMetaData.AvaticaType;
 import org.polypheny.db.util.avatica.ColumnMetaData.Rep;
@@ -48,9 +47,9 @@ import org.polypheny.db.util.avatica.ColumnMetaData.Rep;
 @Getter
 public class ArrayImpl implements Array {
 
-    List<Object> list;
-    ArrayType array;
-    AvaticaType elementType;
+    final List<Object> list;
+    final ArrayType array;
+    final AvaticaType elementType;
 
 
     public ArrayImpl( final List<Object> list, AvaticaType elementType ) {
@@ -79,30 +78,7 @@ public class ArrayImpl implements Array {
 
     @Override
     public String toString() {
-        final Iterator<?> iterator = list.iterator();
-        if ( !iterator.hasNext() ) {
-            return "[]";
-        }
-        final StringBuilder buf = new StringBuilder( "[" );
-        for ( ; ; ) {
-            Object val = iterator.next();
-            append( buf, val.toString() );
-            if ( !iterator.hasNext() ) {
-                return buf.append( "]" ).toString();
-            }
-            buf.append( ", " );
-        }
-    }
-
-
-    private void append( StringBuilder buf, Object o ) {
-        if ( o == null ) {
-            buf.append( "null" );
-        } else if ( o.getClass().isArray() ) {
-            append( buf, CoreUtil.primitiveList( o ) );
-        } else {
-            buf.append( o );
-        }
+        return list.stream().map( Object::toString ).collect( Collectors.joining( ", ", "[", "]" ) );
     }
 
 

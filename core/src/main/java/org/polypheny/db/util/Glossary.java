@@ -36,7 +36,7 @@ package org.polypheny.db.util;
 
 /**
  * A collection of terms.
- *
+ * <p>
  * (This is not a real class. It is here so that terms which do not map to classes can be referenced in Javadoc.)
  */
 public interface Glossary {
@@ -70,7 +70,7 @@ public interface Glossary {
      * <th style="text-align:middle">Often Uses</th>
      * <th style="text-align:middle">Related To</th>
      * </tr>
-     *
+     * <p>
      * <!-- Frequently used patterns have a lime background -->
      * <tr>
      * <td style="background-color:lime"><a href="#AbstractFactoryPattern">Abstract Factory</a>
@@ -86,7 +86,7 @@ public interface Glossary {
      * <a href="#PrototypePattern">Prototype</a><br>
      * <a href="#SingletonPattern">Singleton</a></td>
      * </tr>
-     *
+     * <p>
      * <tr>
      * <td style="background-color:lime"><a href="#ObjectAdapterPattern">Object Adapter</a>
      * </td>
@@ -345,28 +345,6 @@ public interface Glossary {
     Glossary ABSTRACT_FACTORY_PATTERN = null;
 
     /**
-     * Separate the construction of a complex object from its representation so
-     * that the same construction process can create different representations.
-     * (See <a href="http://c2.com/cgi/wiki?BuilderPattern">GoF</a>.)
-     */
-    Glossary BUILDER_PATTERN = null;
-
-    /**
-     * Define an interface for creating an object, but let subclasses decide
-     * which class to instantiate. Lets a class defer instantiation to
-     * subclasses. (See <a href="http://c2.com/cgi/wiki?FactoryMethodPattern">
-     * GoF</a>.)
-     */
-    Glossary FACTORY_METHOD_PATTERN = null;
-
-    /**
-     * Specify the kinds of objects to create using a prototypical instance, and
-     * create new objects by copying this prototype. (See <a
-     * href="http://c2.com/cgi/wiki?PrototypePattern">GoF</a>.)
-     */
-    Glossary PROTOTYPE_PATTERN = null;
-
-    /**
      * Ensure a class only has one instance, and provide a global point of
      * access to it. (See <a href="http://c2.com/cgi/wiki?SingletonPattern">
      * GoF</a>.)
@@ -379,55 +357,6 @@ public interface Glossary {
     Glossary SINGLETON_PATTERN = null;
 
     /**
-     * Convert the interface of a class into another interface clients expect.
-     * Lets classes work together that couldn't otherwise because of
-     * incompatible interfaces. (See <a
-     * href="http://c2.com/cgi/wiki?AdapterPattern">GoF</a>.)
-     */
-    Glossary ADAPTER_PATTERN = null;
-
-    /**
-     * Decouple an abstraction from its implementation so that the two can very
-     * independently. (See <a href="http://c2.com/cgi/wiki?BridgePattern">
-     * GoF</a>.)
-     */
-    Glossary BRIDGE_PATTERN = null;
-
-    /**
-     * Compose objects into tree structures to represent part-whole hierarchies.
-     * Lets clients treat individual objects and compositions of objects
-     * uniformly. (See <a href="http://c2.com/cgi/wiki?CompositePattern">
-     * GoF</a>.)
-     */
-    Glossary COMPOSITE_PATTERN = null;
-
-    /**
-     * Attach additional responsibilities to an object dynamically. Provides a
-     * flexible alternative to subclassing for extending functionality. (See <a
-     * href="http://c2.com/cgi/wiki?DecoratorPattern">GoF</a>.)
-     */
-    Glossary DECORATOR_PATTERN = null;
-
-    /**
-     * Provide a unified interface to a set of interfaces in a subsystem.
-     * Defines a higher-level interface that makes the subsystem easier to use.
-     * (See <a href="http://c2.com/cgi/wiki?FacadePattern">GoF</a>.)
-     */
-    Glossary FACADE_PATTERN = null;
-
-    /**
-     * Use sharing to support large numbers of fine-grained objects efficiently.
-     * (See <a href="http://c2.com/cgi/wiki?FlyweightPattern">GoF</a>.)
-     */
-    Glossary FLYWEIGHT_PATTERN = null;
-
-    /**
-     * Provide a surrogate or placeholder for another object to control access
-     * to it. (See <a href="http://c2.com/cgi/wiki?ProxyPattern">GoF</a>.)
-     */
-    Glossary PROXY_PATTERN = null;
-
-    /**
      * Avoid coupling the sender of a request to its receiver by giving more
      * than one object a chance to handle the request. Chain the receiving
      * objects and pass the request along the chain until an object handles it.
@@ -437,71 +366,12 @@ public interface Glossary {
     Glossary CHAIN_OF_RESPONSIBILITY_PATTERN = null;
 
     /**
-     * Encapsulate a request as an object, thereby letting you parameterize
-     * clients with different requests, queue or log requests, and support
-     * undoable operations. (See <a
-     * href="http://c2.com/cgi/wiki?CommandPattern">GoF</a>.)
-     */
-    Glossary COMMAND_PATTERN = null;
-
-    /**
-     * Given a language, define a representation for its grammar along with an
-     * interpreter that uses the representation to interpret sentences in the
-     * language. (See <a href="http://c2.com/cgi/wiki?InterpreterPattern">
-     * GoF</a>.)
-     */
-    Glossary INTERPRETER_PATTERN = null;
-
-    /**
-     * Provide a way to access the elements of an aggregate object sequentially
-     * without exposing its underlying representation. (See <a
-     * href="http://c2.com/cgi/wiki?IteratorPattern">GoF</a>.)
-     */
-    Glossary ITERATOR_PATTERN = null;
-
-    /**
-     * Define an object that encapsulates how a set of objects interact.
-     * Promotes loose coupling by keeping objects from referring to each other
-     * explicitly, and it lets you vary their interaction independently. (See <a
-     * href="http://c2.com/cgi/wiki?MediatorPattern">GoF</a>.)
-     */
-    Glossary MEDIATOR_PATTERN = null;
-
-    /**
-     * Without violating encapsulation, capture and externalize an objects's
-     * internal state so that the object can be restored to this state later.
-     * (See <a href="http://c2.com/cgi/wiki?MementoPattern">GoF</a>.)
-     */
-    Glossary MEMENTO_PATTERN = null;
-
-    /**
-     * Define a one-to-many dependency between objects so that when one object
-     * changes state, all its dependents are notified and updated automatically.
-     * (See <a href="http://c2.com/cgi/wiki?ObserverPattern">GoF</a>.)
-     */
-    Glossary OBSERVER_PATTERN = null;
-
-    /**
-     * Allow an object to alter its behavior when its internal state changes.
-     * The object will appear to change its class. (See <a
-     * href="http://c2.com/cgi/wiki?StatePattern">GoF</a>.)
-     */
-    Glossary STATE_PATTERN = null;
-
-    /**
      * Define a family of algorithms, encapsulate each one, and make them
      * interchangeable. Lets the algorithm vary independently from clients that
      * use it. (See <a href="http://c2.com/cgi/wiki?StrategyPattern">GoF</a>.)
      */
     Glossary STRATEGY_PATTERN = null;
 
-    /**
-     * Define the skeleton of an algorithm in an operation, deferring some steps
-     * to subclasses. Lets subclasses redefine certain steps of an algorithm
-     * without changing the algorithm's structure. (See <a
-     * href="http://c2.com/cgi/wiki?TemplateMethodPattern">GoF</a>.)
-     */
-    Glossary TEMPLATE_METHOD_PATTERN = null;
 
     /**
      * Represent an operation to be performed on the elements of an object

@@ -44,7 +44,7 @@ import org.polypheny.db.util.temporal.DateTimeUtils;
 
 /**
  * Timestamp with time-zone literal.
- *
+ * <p>
  * Immutable, internally represented as a string (in ISO format), and can support unlimited precision (milliseconds, nanoseconds).
  */
 public class TimestampWithTimeZoneString implements Comparable<TimestampWithTimeZoneString> {
@@ -80,13 +80,13 @@ public class TimestampWithTimeZoneString implements Comparable<TimestampWithTime
      * Creates a TimestampWithTimeZoneString for year, month, day, hour, minute, second, millisecond values in the given time-zone.
      */
     public TimestampWithTimeZoneString( int year, int month, int day, int h, int m, int s, String timeZone ) {
-        this( DateTimeStringUtils.ymdhms( new StringBuilder(), year, month, day, h, m, s ).toString() + " " + timeZone );
+        this( DateTimeStringUtils.ymdhms( new StringBuilder(), year, month, day, h, m, s ) + " " + timeZone );
     }
 
 
     /**
-     * Sets the fraction field of a {@code TimestampWithTimeZoneString} to a given number of milliseconds. Nukes the value set via {@link #withNanos}.
-     *
+     * Sets the fraction field of a {@code TimestampWithTimeZoneString} to a given number of milliseconds.
+     * <p>
      * For example, {@code new TimestampWithTimeZoneString(1970, 1, 1, 2, 3, 4, "GMT").withMillis(56)} yields {@code TIMESTAMP WITH LOCAL TIME ZONE '1970-01-01 02:03:04.056 GMT'}.
      */
     public TimestampWithTimeZoneString withMillis( int millis ) {
@@ -94,22 +94,10 @@ public class TimestampWithTimeZoneString implements Comparable<TimestampWithTime
         return withFraction( DateTimeStringUtils.pad( 3, millis ) );
     }
 
-
-    /**
-     * Sets the fraction field of a {@code TimestampWithTimeZoneString} to a given number of nanoseconds. Nukes the value set via {@link #withMillis(int)}.
-     *
-     * For example, {@code new TimestampWithTimeZoneString(1970, 1, 1, 2, 3, 4, "GMT").withNanos(56789)} yields {@code TIMESTAMP WITH LOCAL TIME ZONE '1970-01-01 02:03:04.000056789 GMT'}.
-     */
-    public TimestampWithTimeZoneString withNanos( int nanos ) {
-        Preconditions.checkArgument( nanos >= 0 && nanos < 1000000000 );
-        return withFraction( DateTimeStringUtils.pad( 9, nanos ) );
-    }
-
-
     /**
      * Sets the fraction field of a {@code TimestampString}. The precision is determined by the number of leading zeros.
      * Trailing zeros are stripped.
-     *
+     * <p>
      * For example, {@code new TimestampWithTimeZoneString(1970, 1, 1, 2, 3, 4, "GMT").withFraction("00506000")}
      * yields {@code TIMESTAMP WITH LOCAL TIME ZONE '1970-01-01 02:03:04.00506 GMT'}.
      */

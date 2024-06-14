@@ -47,14 +47,14 @@ import java.util.List;
 
 /**
  * An immutable list that may contain null values.
- *
+ * <p>
  * If the list cannot contain null values, use {@link com.google.common.collect.ImmutableList}.
  *
  * @param <E> Element type
  */
 public class ImmutableNullableList<E> extends AbstractList<E> {
 
-    private static final List SINGLETON_NULL = Collections.singletonList( null );
+    private static final List<Object> SINGLETON_NULL = Collections.singletonList( null );
 
     private final E[] elements;
 
@@ -67,7 +67,7 @@ public class ImmutableNullableList<E> extends AbstractList<E> {
 
     /**
      * Returns an immutable list containing the given elements, in order.
-     *
+     * <p>
      * Behavior as {@link com.google.common.collect.ImmutableList#copyOf(java.util.Collection)} except that this list allows nulls.
      */
     public static <E> List<E> copyOf( Collection<? extends E> elements ) {
@@ -92,7 +92,7 @@ public class ImmutableNullableList<E> extends AbstractList<E> {
 
     /**
      * Returns an immutable list containing the given elements, in order.
-     *
+     * <p>
      * Behavior as {@link com.google.common.collect.ImmutableList#copyOf(Iterable)} except that this list allows nulls.
      */
     public static <E> List<E> copyOf( Iterable<? extends E> elements ) {
@@ -116,7 +116,7 @@ public class ImmutableNullableList<E> extends AbstractList<E> {
 
     /**
      * Returns an immutable list containing the given elements, in order.
-     *
+     * <p>
      * Behavior as {@link com.google.common.collect.ImmutableList#copyOf(Object[])} except that this list allows nulls.
      */
     public static <E> List<E> copyOf( E[] elements ) {
@@ -164,7 +164,7 @@ public class ImmutableNullableList<E> extends AbstractList<E> {
      * Creates an immutable list of 4 elements.
      */
     public static <E> List<E> of( E e1, E e2, E e3, E e4 ) {
-        // Only we can see the varargs array. Therefore the list is immutable.
+        // Only we can see the varargs array. Therefore, the list is immutable.
         //noinspection unchecked
         return UnmodifiableArrayList.of( e1, e2, e3, e4 );
     }

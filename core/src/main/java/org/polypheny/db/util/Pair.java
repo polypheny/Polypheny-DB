@@ -58,7 +58,7 @@ import org.polypheny.db.util.Pair.PairSerializer;
 
 /**
  * Pair of objects.
- *
+ * <p>
  * Because a pair implements {@link #equals(Object)}, {@link #hashCode()} and {@link #compareTo(Pair)}, it can be used in any kind of {@link java.util.Collection}.
  *
  * @param <T1> Left-hand type
@@ -94,7 +94,7 @@ public class Pair<T1, T2> implements Comparable<Pair<T1, T2>>, Map.Entry<T1, T2>
 
     /**
      * Creates a Pair of appropriate type.
-     *
+     * <p>
      * This is a shorthand that allows you to omit implicit types. For example, you can write:
      * <blockquote>return Pair.of(s, n);</blockquote>
      * instead of
@@ -120,8 +120,8 @@ public class Pair<T1, T2> implements Comparable<Pair<T1, T2>>, Map.Entry<T1, T2>
     public boolean equals( Object obj ) {
         return this == obj
                 || (obj instanceof Pair)
-                && Objects.equals( this.left, ((Pair) obj).left )
-                && Objects.equals( this.right, ((Pair) obj).right );
+                && Objects.equals( this.left, ((Pair<?,?>) obj).left )
+                && Objects.equals( this.right, ((Pair<?,?>) obj).right );
     }
 
 
@@ -139,7 +139,7 @@ public class Pair<T1, T2> implements Comparable<Pair<T1, T2>>, Map.Entry<T1, T2>
 
 
     @Override
-    public int compareTo( @Nonnull Pair<T1, T2> that ) {
+    public int  compareTo( @Nonnull Pair<T1, T2> that ) {
         //noinspection unchecked
         int c = compare( (Comparable) this.left, (Comparable) that.left );
         if ( c == 0 ) {
@@ -197,9 +197,9 @@ public class Pair<T1, T2> implements Comparable<Pair<T1, T2>>, Map.Entry<T1, T2>
 
     /**
      * Converts a collection of Pairs into a Map.
-     *
+     * <p>
      * This is an obvious thing to do because Pair is similar in structure to {@link java.util.Map.Entry}.
-     *
+     * <p>
      * The map contains a copy of the collection of Pairs; if you change the collection, the map does not change.
      *
      * @param pairs Collection of Pair objects
@@ -229,7 +229,7 @@ public class Pair<T1, T2> implements Comparable<Pair<T1, T2>>, Map.Entry<T1, T2>
 
     /**
      * Converts two lists into a list of {@link Pair}s.
-     *
+     * <p>
      * The length of the combined list is the lesser of the lengths of the source lists. But typically the source lists will be the same length.
      *
      * @param ks Left list
@@ -265,7 +265,7 @@ public class Pair<T1, T2> implements Comparable<Pair<T1, T2>>, Map.Entry<T1, T2>
 
     /**
      * Converts two iterables into an iterable of {@link Pair}s.
-     *
+     * <p>
      * The resulting iterator ends whenever the first of the input iterators ends. But typically the source iterators will be the same length.
      *
      * @param ks Left iterable
@@ -284,7 +284,7 @@ public class Pair<T1, T2> implements Comparable<Pair<T1, T2>>, Map.Entry<T1, T2>
 
     /**
      * Converts two arrays into a list of {@link Pair}s.
-     *
+     * <p>
      * The length of the combined list is the lesser of the lengths of the source arrays. But typically the source arrays will be the same length.
      *
      * @param ks Left array
@@ -367,7 +367,7 @@ public class Pair<T1, T2> implements Comparable<Pair<T1, T2>>, Map.Entry<T1, T2>
 
     /**
      * Returns an iterator that iterates over (i, i + 1) pairs in an iterable.
-     *
+     * <p>
      * For example, {@code adjacents([3, 5, 7])} returns [(3, 5), (5, 7)].</p>
      *
      * @param iterable Source collection
@@ -387,7 +387,7 @@ public class Pair<T1, T2> implements Comparable<Pair<T1, T2>>, Map.Entry<T1, T2>
 
     /**
      * Returns an iterator that iterates over (0, i) pairs in an iterable for i &gt; 0.
-     *
+     * <p>
      * For example, {@code firstAnd([3, 5, 7])} returns [(3, 5), (3, 7)].
      *
      * @param iterable Source collection
@@ -516,42 +516,38 @@ public class Pair<T1, T2> implements Comparable<Pair<T1, T2>>, Map.Entry<T1, T2>
 
 
     /**
-     * Iterator that pairs elements from two iterators.
-     *
-     * @param <L> Left-hand type
-     * @param <R> Right-hand type
-     */
-    private static class ZipIterator<L, R> implements Iterator<Pair<L, R>> {
+         * Iterator that pairs elements from two iterators.
+         *
+         * @param <L> Left-hand type
+         * @param <R> Right-hand type
+         */
+        private record ZipIterator<L, R>( Iterator<? extends L> leftIterator, Iterator<? extends R> rightIterator ) implements Iterator<Pair<L, R>> {
 
-        private final Iterator<? extends L> leftIterator;
-        private final Iterator<? extends R> rightIterator;
+            private ZipIterator( Iterator<? extends L> leftIterator, Iterator<? extends R> rightIterator ) {
+                this.leftIterator = Objects.requireNonNull( leftIterator );
+                this.rightIterator = Objects.requireNonNull( rightIterator );
+            }
 
 
-        ZipIterator( Iterator<? extends L> leftIterator, Iterator<? extends R> rightIterator ) {
-            this.leftIterator = Objects.requireNonNull( leftIterator );
-            this.rightIterator = Objects.requireNonNull( rightIterator );
+            @Override
+            public boolean hasNext() {
+                return leftIterator.hasNext() && rightIterator.hasNext();
+            }
+
+
+            @Override
+            public Pair<L, R> next() {
+                return Pair.of( leftIterator.next(), rightIterator.next() );
+            }
+
+
+            @Override
+            public void remove() {
+                leftIterator.remove();
+                rightIterator.remove();
+            }
+
         }
-
-
-        @Override
-        public boolean hasNext() {
-            return leftIterator.hasNext() && rightIterator.hasNext();
-        }
-
-
-        @Override
-        public Pair<L, R> next() {
-            return Pair.of( leftIterator.next(), rightIterator.next() );
-        }
-
-
-        @Override
-        public void remove() {
-            leftIterator.remove();
-            rightIterator.remove();
-        }
-
-    }
 
 
     /**
@@ -587,11 +583,6 @@ public class Pair<T1, T2> implements Comparable<Pair<T1, T2>>, Map.Entry<T1, T2>
             return pair;
         }
 
-
-        @Override
-        public void remove() {
-            throw new UnsupportedOperationException( "remove" );
-        }
 
     }
 

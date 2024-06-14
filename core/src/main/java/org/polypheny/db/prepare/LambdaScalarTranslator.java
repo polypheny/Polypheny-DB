@@ -18,6 +18,7 @@ package org.polypheny.db.prepare;
 
 import java.util.List;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 
@@ -43,7 +44,7 @@ class LambdaScalarTranslator extends EmptyScalarTranslator {
         if ( i >= 0 ) {
             return values.get( i );
         }
-        throw new RuntimeException( "unknown parameter " + param );
+        throw new GenericRuntimeException( "unknown parameter " + param );
     }
 
 }

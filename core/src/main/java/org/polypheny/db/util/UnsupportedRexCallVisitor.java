@@ -46,26 +46,10 @@ public class UnsupportedRexCallVisitor extends RexVisitorImpl<Void> {
     }
 
 
-    public static boolean containsArrayConstructor( List<RexNode> nodes ) {
-        return nodes.stream().anyMatch( n -> containsUnsupportedCall( n, List.of( c -> c.op.getOperatorName() == OperatorName.ARRAY_VALUE_CONSTRUCTOR ) ) );
-    }
-
-
-    public static boolean containsArrayConstructorOrModelItem( List<RexNode> nodes ) {
-        return nodes.stream().anyMatch( n -> containsUnsupportedCall( n,
-                List.of( c -> c.op.getOperatorName() == OperatorName.ARRAY_VALUE_CONSTRUCTOR
-                        || c.op.getOperatorName() == OperatorName.CROSS_MODEL_ITEM ) ) );
-    }
-
 
     public static boolean containsModelItem( List<? extends RexNode> nodes ) {
         return nodes.stream().anyMatch( n -> containsUnsupportedCall( n,
                 List.of( c -> c.op.getOperatorName() == OperatorName.CROSS_MODEL_ITEM ) ) );
-    }
-
-
-    public static boolean containsUnsupportedCall( List<RexNode> nodes, List<Function<RexCall, Boolean>> unsupportedChecks ) {
-        return nodes.stream().anyMatch( n -> containsUnsupportedCall( n, unsupportedChecks ) );
     }
 
 

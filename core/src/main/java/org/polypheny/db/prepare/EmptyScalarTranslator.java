@@ -20,7 +20,6 @@ import com.google.common.collect.ImmutableList;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import org.apache.calcite.linq4j.tree.BinaryExpression;
 import org.apache.calcite.linq4j.tree.BlockStatement;
@@ -63,12 +62,7 @@ class EmptyScalarTranslator implements ScalarTranslator {
 
     @Override
     public List<RexNode> toRexList( BlockStatement statement ) {
-        final List<Expression> simpleList = simpleList( statement );
-        final List<RexNode> list = new ArrayList<>();
-        for ( Expression expression1 : simpleList ) {
-            list.add( toRex( expression1 ) );
-        }
-        return list;
+        return toRex( simpleList( statement ) );
     }
 
 
@@ -83,7 +77,7 @@ class EmptyScalarTranslator implements ScalarTranslator {
         if ( simple instanceof NewExpression newExpression ) {
             return newExpression.arguments;
         } else {
-            return Collections.singletonList( simple );
+            return List.of( simple );
         }
     }
 
@@ -142,12 +136,10 @@ class EmptyScalarTranslator implements ScalarTranslator {
     }
 
 
-
     private RexNode binary( Expression expression, BinaryOperator op ) {
         BinaryExpression call = (BinaryExpression) expression;
         return rexBuilder.makeCall( type( call ), op, toRex( ImmutableList.of( call.expression0, call.expression1 ) ) );
     }
-
 
 
     protected AlgDataType type( Expression expression ) {

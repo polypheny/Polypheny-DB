@@ -40,9 +40,9 @@ import java.util.List;
 
 /**
  * Converts a list whose members are automatically down-cast to a given type.
- *
+ * <p>
  * If a member of the backing list is not an instanceof <code>E</code>, the accessing method (such as {@link List#get}) will throw a {@link ClassCastException}.
- *
+ * <p>
  * All modifications are automatically written to the backing list. Not synchronized.
  *
  * @param <E> Element type

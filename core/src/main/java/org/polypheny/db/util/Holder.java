@@ -36,9 +36,9 @@ package org.polypheny.db.util;
 
 /**
  * A mutable slot that can contain one object.
- *
+ * <p>
  * A holder is useful for implementing OUT or IN-OUT parameters.
- *
+ * <p>
  * It is possible to sub-class to receive events on get or set.
  *
  * @param <E> Element type
@@ -50,7 +50,7 @@ public class Holder<E> {
 
     /**
      * Creates a Holder containing a given value.
-     *
+     * <p>
      * Call this method from a derived constructor or via the {@link #of} method.
      */
     protected Holder( E e ) {
