@@ -20,7 +20,6 @@ import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
@@ -128,13 +127,13 @@ public class LanguageManager {
         List<ImplementationContext> implementationContexts = new ArrayList<>();
         boolean previousDdl = false;
         int i = 0;
-        Optional<String> changedNamespace = Optional.empty();
+        String changedNamespace = null;
         for ( ParsedQueryContext parsed : parsedQueries ) {
             if ( i != 0 ) {
                 statement = transaction.createStatement();
             }
-            if ( changedNamespace.isPresent() ) {
-                parsed = parsed.toBuilder().namespaceId( Catalog.snapshot().getNamespace( changedNamespace.get() ).map( n -> n.id ).orElse( parsed.getNamespaceId() ) ).build();
+            if ( changedNamespace != null ) {
+                parsed = parsed.toBuilder().namespaceId( Catalog.snapshot().getNamespace( changedNamespace ).map( n -> n.id ).orElse( parsed.getNamespaceId() ) ).build();
             }
 
             try {
@@ -199,7 +198,7 @@ public class LanguageManager {
                     implementation = statement.getQueryProcessor().prepareQuery( root, true );
                 }
                 // queries are able to switch the context of the following queries
-                changedNamespace = parsed.getQueryNode().orElseThrow().switchesNamespace().isPresent() ? parsed.getQueryNode().orElseThrow().switchesNamespace() : changedNamespace;
+                changedNamespace = parsed.getQueryNode().orElseThrow().switchesNamespace().orElse( changedNamespace );
 
                 implementationContexts.add( new ImplementationContext( implementation, parsed, statement, null ) );
 
