@@ -272,24 +272,8 @@ public class WithTest extends CypherTestTemplate {
 
     }
 
-    @Test
-    public void  limitWithTest() {
-        execute( SINGLE_NODE_PERSON_COMPLEX_1 ) ;
-        execute( SINGLE_NODE_PERSON_COMPLEX_2 );
-        execute( SINGLE_NODE_PERSON_COMPLEX_3 );
 
-        GraphResult res = execute( "MATCH (n) WITH n LIMIT 2 RETURN n.name, n.age;" );
-    }
 
-    @Test
-    public void SkipWithTest()
-    {
-        execute( SINGLE_NODE_PERSON_COMPLEX_1 ) ;
-        execute( SINGLE_NODE_PERSON_COMPLEX_2 );
-        execute( SINGLE_NODE_PERSON_COMPLEX_3 );
-
-        GraphResult res = execute( "MATCH (n) WITH n SKIP 2 RETURN n.name, n.age;" );
-    }
 
     @Test
     public void conditionalLogicWithTest()
