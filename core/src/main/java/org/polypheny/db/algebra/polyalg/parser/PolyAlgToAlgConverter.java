@@ -267,7 +267,7 @@ public class PolyAlgToAlgConverter {
             case INTEGER -> new IntArg( exp.toInt( p.getTags() ) );
             case DOUBLE -> new DoubleArg( exp.toDouble( p.getTags() ) );
             case BOOLEAN -> new BooleanArg( exp.toBoolean() );
-            case STRING -> new StringArg( exp.toString(), alias );
+            case STRING -> new StringArg( exp.toString() );
             case REX -> {
                 RexNode node = convertRexNode( exp, ctx );
                 yield new RexArg( node, alias == null ? exp.getDefaultAlias() : alias );
@@ -346,9 +346,13 @@ public class PolyAlgToAlgConverter {
                 case POLY_VALUE -> builder.makeLiteral( literal.toPolyValue() );
                 case STRING -> {
                     String str = literal.toString();
-                    if ( ctx.getNonNullDataModel() == DataModel.DOCUMENT ) {
-                        // nameRef (during serialization, any non-null index fails)
-                        yield RexNameRef.create( List.of( str.split( "\\." ) ), null, ctx.children.get( 0 ).getTupleType() );
+                    if ( ctx.getNonNullDataModel() != DataModel.RELATIONAL ) {
+                        String[] idxSplit = str.split( "@", 2 );
+                        Integer idx = null;
+                        if ( idxSplit.length == 2 ) {
+                            idx = Integer.parseInt( idxSplit[1] );
+                        }
+                        yield RexNameRef.create( List.of( idxSplit[0].split( "\\." ) ), idx, ctx.children.get( 0 ).getTupleType() );
                     } else {
                         // indexRef
                         int idx = ctx.getFieldOrdinal( str );
@@ -532,6 +536,9 @@ public class PolyAlgToAlgConverter {
         RexNode input = null;
         if ( !exp.getChildExps().isEmpty() ) {
             input = convertRexNode( exp.getOnlyChild(), ctx );
+        }
+        if ( name == null ) {
+            name = exp.getDefaultAlias();
         }
         return LaxAggregateCall.create( name, exp.getAggFunction(), input );
     }

@@ -596,7 +596,7 @@ String AliasName() :
     (
         name = OpName()
         |
-        t = <QUOTED> {name = t.image;}
+        t = <QUOTED> {name = t.image.substring(1, t.image.length()-1);}
     )
     {return name;}
 }

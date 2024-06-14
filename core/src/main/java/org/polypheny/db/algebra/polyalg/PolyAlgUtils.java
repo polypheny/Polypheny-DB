@@ -38,7 +38,6 @@ import org.polypheny.db.algebra.polyalg.PolyAlgMetadata.GlobalStats;
 import org.polypheny.db.algebra.polyalg.arguments.ListArg;
 import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArg;
 import org.polypheny.db.algebra.polyalg.arguments.RexArg;
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexCorrelVariable;
@@ -91,7 +90,21 @@ public class PolyAlgUtils {
         if ( alias == null || alias.equals( exp ) || isCastWithSameName( exp, alias ) ) {
             return exp;
         }
-        return exp + " AS " + alias;
+        String sanitized = sanitizeAlias( alias );
+        if (sanitized.equals( exp )) {
+            return exp;
+        }
+        return exp + " AS " + sanitized;
+    }
+
+    public static String sanitizeAlias( String alias ) {
+        if ((alias.startsWith( "'" ) && alias.endsWith( "'" )) || (alias.startsWith( "\"" ) && alias.endsWith( "\"" ))  ) {
+            return alias;
+        }
+        if (alias.matches( "[a-zA-Z#$@öÖäÄüÜàÀçÇáÁèÈíÍîÎóÓòôÔÒíÍëËâÂïÏéÉñÑß.\\d-]*" )) {
+            return alias;
+        }
+        return "'" + alias + "'";
     }
 
 
@@ -390,10 +403,11 @@ public class PolyAlgUtils {
 
         @Override
         public String visitNameRef( RexNameRef nameRef ) {
+            String names = String.join( ".", nameRef.getNames() );
             if ( nameRef.getIndex().isPresent() ) {
-                throw new GenericRuntimeException( "PolyAlg for RexNameRef with index is currently not supported." );
+                return names + "@" + nameRef.getIndex().get();
             }
-            return String.join( ".", nameRef.getNames() );
+            return names;
         }
 
 

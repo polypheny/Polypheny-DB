@@ -23,6 +23,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.ParamType;
+import org.polypheny.db.algebra.polyalg.PolyAlgUtils;
 
 @Getter
 public class StringArg implements PolyAlgArg {
@@ -55,13 +56,18 @@ public class StringArg implements PolyAlgArg {
         if ( arg == null ) {
             return "";
         }
-        return arg;
+        return PolyAlgUtils.appendAlias( arg, alias );
     }
 
 
     @Override
     public ObjectNode serialize( AlgNode context, @NonNull List<String> inputFieldNames, ObjectMapper mapper ) {
-        return mapper.createObjectNode().put( "arg", arg );
+        ObjectNode node = mapper.createObjectNode();
+        node.put( "arg", arg );
+        if ( alias != null ) {
+            node.put( "alias", alias );
+        }
+        return node;
     }
 
 }

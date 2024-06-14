@@ -17,7 +17,6 @@
 package org.polypheny.db.algebra.logical.lpg;
 
 import java.util.List;
-import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
@@ -30,7 +29,6 @@ import org.polypheny.db.algebra.polyalg.arguments.RexArg;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexNameRef;
 
 
@@ -43,15 +41,15 @@ public class LogicalLpgAggregate extends LpgAggregate {
 
 
     public static LogicalLpgAggregate create( final AlgNode input, @NotNull List<RexNameRef> groups, List<LaxAggregateCall> aggCalls ) {
-        final AlgCluster cluster = input.getCluster();
-        final AlgTraitSet traitSet = cluster.traitSetOf( Convention.NONE );
-        throw new NotImplementedException( "Not supported yet" ); // TODO: determine tupleType before creation
-        //return new LogicalLpgAggregate( cluster, traitSet, input, groups, aggCalls, tupleType );
+        AlgCluster cluster = input.getCluster();
+        AlgTraitSet traitSet = input.getTraitSet();
+        AlgDataType type = deriveTupleType(cluster, input.getTupleType(), groups, aggCalls);
+        return new LogicalLpgAggregate( cluster, traitSet, input, groups, aggCalls, type);
     }
 
 
     public static LogicalLpgAggregate create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
-        ListArg<RexArg> groups = args.getListArg( "group", RexArg.class );
+        ListArg<RexArg> groups = args.getListArg( "groups", RexArg.class );
         ListArg<LaxAggArg> aggs = args.getListArg( "aggs", LaxAggArg.class );
 
         return create( children.get( 0 ), groups.map( r -> (RexNameRef) r.getNode() ), aggs.map( LaxAggArg::getAgg ) );

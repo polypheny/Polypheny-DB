@@ -319,7 +319,7 @@ public class PolyAlgRegistry {
         declarations.put( LogicalLpgAggregate.class, PolyAlgDeclaration.builder()
                 .creator( LogicalLpgAggregate::create ).model( DataModel.GRAPH )
                 .opName( "LPG_AGGREGATE" ).opAlias( "LPG_AGG" ).numInputs( 1 ).opTags( logAllTags )
-                .param( Parameter.builder().name( "groups" ).multiValued( 1 ).type( ParamType.REX ).defaultValue( ListArg.EMPTY ).build() )
+                .param( Parameter.builder().name( "groups" ).alias( "group" ).multiValued( 1 ).type( ParamType.REX ).defaultValue( ListArg.EMPTY ).build() )
                 .param( Parameter.builder().name( "aggregates" ).alias( "aggs" ).multiValued( 1 ).type( ParamType.LAX_AGGREGATE ).defaultValue( ListArg.EMPTY ).build() )
                 .build() );
         declarations.put( LogicalLpgModify.class, PolyAlgDeclaration.builder()
