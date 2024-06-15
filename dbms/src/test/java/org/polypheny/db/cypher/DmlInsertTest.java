@@ -66,6 +66,21 @@ public class DmlInsertTest extends CypherTestTemplate {
         assert containsNodes( res, true, TestNode.from( Pair.of( "name", "Max Muster" ) ) );
     }
 
+    @Test
+    public void insertNodeWithManyLabelsTest() {
+        execute( "CREATE (p:Person :Employee )" );
+        GraphResult res = matchAndReturnAllNodes();
+        assert containsNodes( res, true, TestNode.from(List.of("Person" , "Employee") ));
+    }
+    @Test
+    public void insertNodeWithManyLabelsAndPropertyTest ()
+    {
+        execute( "CREATE (n:Person:Employee {name :'MAX'})" );
+        GraphResult res = matchAndReturnAllNodes();
+        assert containsNodes( res, true, TestNode.from(List.of("Person" , "Employee") ,Pair.of( "name" , "Max" )));
+
+    }
+
 
     @Test
     public void insertTwoNodeTest() {

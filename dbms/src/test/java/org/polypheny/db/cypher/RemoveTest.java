@@ -16,13 +16,23 @@
 
 package org.polypheny.db.cypher;
 
+import io.activej.codegen.expression.impl.Null;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.polypheny.db.cypher.helper.TestEdge;
+import org.polypheny.db.cypher.helper.TestLiteral;
+import org.polypheny.db.cypher.helper.TestNode;
+import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.models.results.GraphResult;
+import java.util.Arrays;
+import java.util.List;
 
 @Slf4j
 public class RemoveTest extends CypherTestTemplate {
+
+    protected static final String SINGLE_NODE_PERSON_EMPLOYEE = "CREATE (n:Person:Employee) ";
+
 
     @BeforeEach
     public void reset() {
@@ -32,65 +42,108 @@ public class RemoveTest extends CypherTestTemplate {
 
 
     @Test
-    public void labelRemoveTest()
-    {
-        GraphResult res =  execute( "MATCH (n : Person  {name: 'Max'}) REMOVE n:person RETURN n.name" );
+    public void labelRemoveTest() {
+        execute( SINGLE_NODE_PERSON_1 );
+        execute( "MATCH (n:Person {name: 'Max'})\n"
+                + "REMOVE n:Person " );
+        GraphResult res = execute( "MATCH (n :Person) RETURN n" );
+        assert res.getData().length == 0;
+
+
     }
 
 
     @Test
-    public void multipleLabelsRemoveTest()
-    {
-        GraphResult  res  =  execute( "MATCH (n {name: 'Max'}) REMOVE n:Person:Employee  RETURN n.name" );
-    }
-    @Test
-    public void allLabelsRemoveTest(){
+    public void returnWithRemoveTest() {
+        execute( SINGLE_NODE_PERSON_1 );
+        GraphResult res = execute( "MATCH (n:Person {name: 'Max'})\n"
+                + "REMOVE n:Person RETURN n  " );
 
-        GraphResult res  =  execute(  "MATCH (n:Person) SET n = {}" );
-    }
+        assert res.getData().length == 1;
 
-    @Test
-    public void  singlePropertyNodeRemoveTest()
-    {
-        GraphResult res  = execute( "MATCH (n : Person {name: 'Bob'}) REMOVE a.age RETURN a.name, a.age" );
 
     }
+
 
     @Test
-    public void multiplePropertiesRemoveTest()
-    {
-         GraphResult res  = execute( "MATCH (n:Person {name: 'John'})\n"
-                 + "REMOVE n.age, n.email, n.phone\n"
-                 + "RETURN n\n" ) ;
+    public void multipleLabelsRemoveTest() {
+        execute( SINGLE_NODE_PERSON_EMPLOYEE );
+
+        GraphResult res = matchAndReturnAllNodes() ;
+        assert containsNodes( res, true, TestNode.from(List.of("Person" , "Employee") ));
+
+         execute( "MATCH (n) REMOVE n:Person:Employee " );
+         res = execute( "MATCH (n :Person:Employee) RETURN n" );
+         assert res.getData().length == 0 ;
+
+
     }
-   @Test
-    public void allPropertiesNodeRemoveTest(){
-          execute( SINGLE_NODE_PERSON_1 );
-          GraphResult res  =  execute(  "MATCH (n:Person) SET n = {}" );
-   }
+
 
     @Test
-    public void singlePropertyRelationshipRemoveTest()
-    {
+    public void singlePropertyNodeRemoveTest() {
+        execute( SINGLE_NODE_PERSON_COMPLEX_1 );
+        execute( "MATCH (n : Person {name: 'Ann'}) REMOVE a.age " );
+        GraphResult res = execute( "MATCH (n : Person) RETURN n.age  , n.name" );
+        assert containsRows( res, true, true, Row.of( TestLiteral.from( null ), TestLiteral.from( "Ann" ) ) );
+
 
     }
+
 
     @Test
-    public void multiplePropertiesRelationshipRemoveTest()
-    {
-       GraphResult res  = execute( "MATCH (p:Person)-[r:WORKS_AT]->(c:Company)\n"
-               + "WHERE p.name = 'John' AND c.name = 'TechCorp'\n"
-               + "REMOVE r.startDate, r.endDate, r.position\n"
-               + "RETURN r\n" ) ;
+    public void multiplePropertiesRemoveTest() {
+        execute( SINGLE_NODE_PERSON_COMPLEX_1 );
+       execute( "MATCH (n:Person {name: 'Ann'})\n"
+              + "REMOVE n.age, n.depno\n" );
+
+        GraphResult res = execute( "MATCH (n : Person) RETURN n.age  , n.depno , n.name " );
+        assert containsRows( res, true, true, Row.of( TestLiteral.from( null ), TestLiteral.from( null ), TestLiteral.from( "Ann" ) ) );
+
     }
+
+
     @Test
-    public void allPropertiesRelationshipRemoveTest(){
+    public void allPropertiesNodeRemoveTest() {
+        execute( SINGLE_NODE_PERSON_1 );
+        execute( "MATCH (n:Person) SET n = {}" );
+        GraphResult res = matchAndReturnAllNodes();
+        assert res.getData().length == 0;
 
-        GraphResult res  =  execute(  "MATCH (n:Person) SET n = {}" );
     }
 
 
+    @Test
+    public void singlePropertyRelationshipRemoveTest() {
+        execute( SINGLE_EDGE_2 );
+        execute( "MATCH(p1:Person)-[rel:KNOWS]->(p2:Person)\n"
+                + "REMOVE rel.since" );
+        GraphResult res = execute( "MATCH ()-[r:KNOWS]->() RETURN r.since" );
+        assert containsRows( res, true, true, Row.of( TestLiteral.from( null ) ) );
 
+
+    }
+
+
+    @Test
+    public void multiplePropertiesRelationshipRemoveTest() {
+        execute( "Create (p:Person {name: 'Max'})-[rel:KNOWS {since: 1994 , relation : 'friend'}]->(a:Person {name:'Hans', age:31})" );
+        execute( "MATCH(p1:Person)-[rel:KNOWS]->(p2:Person)\n"
+                + "REMOVE rel.since , rel.relation" );
+        GraphResult res = execute( "MATCH ()-[r:KNOWS]->() RETURN r.since , r.relation" );
+        assert containsRows( res, true, true,
+                Row.of( TestLiteral.from( null ) ),
+                Row.of( TestLiteral.from( null ) ) );
+    }
+
+
+    @Test
+    public void allPropertiesRelationshipRemoveTest() {
+        execute( SINGLE_EDGE_2 );
+        execute( "MATCH ()-[r:KNOWS]->() RETURN SET r = {}" );
+        GraphResult res = execute( "MATCH ()-[r:KNOWS]->() RETURN r.since" );
+        assert containsRows( res, true, true, Row.of( TestLiteral.from( null ) ) );
+    }
 
 
 }
