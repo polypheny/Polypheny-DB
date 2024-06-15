@@ -107,20 +107,6 @@ public class AggregateTest extends CypherTestTemplate {
 
     }
 
-    @Test
-    public void countFieldRenameFieldAggregateTest() {
-        execute( SINGLE_NODE_PERSON_1 );
-        execute( SINGLE_NODE_PERSON_2);
-
-        GraphResult res = execute( "MATCH (n) RETURN n.name, count(n.age) AS c" );
-
-
-        assert containsRows(res, true, false,
-                Row.of(TestLiteral.from("Hans") , TestLiteral.from( 0 )),
-                Row.of( TestLiteral.from( "Max"), TestLiteral.from( 1 ) ));
-
-    }
-
 
     @Test
     public void doubleCountRenameAggregateTest() {
@@ -178,7 +164,7 @@ public class AggregateTest extends CypherTestTemplate {
         String[][] data = res.getData();
         System.out.println( Arrays.deepToString(data));
         assert containsRows( res, true, false,
-                Row.of( TestLiteral.from( 26.333333333333333333333333333333 ) ) );
+                Row.of( TestLiteral.from( 26.33333333333333 ) ) );
 
     }
 

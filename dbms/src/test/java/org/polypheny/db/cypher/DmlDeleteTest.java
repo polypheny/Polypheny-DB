@@ -94,28 +94,60 @@ public class DmlDeleteTest extends CypherTestTemplate {
 
     @Test
     public void relationshipWithPropertiesDeleteTest() {
+        execute( SINGLE_EDGE_2 );
+        execute( "MATCH (p:Person) -[rel:OWNER_OF]->(A:Animal) \n"
+                + "DELETE rel" );
+
+        GraphResult res =  execute( "MATCH (p:Person) -[rel:OWNER_OF]->(A:Animal)");
+         assertEmpty( res  );
 
     }
+
 
     @Test
     public void pathDeleteTest()
     {
-         execute( "MATCH (p:Person {name: 'Alice'})-[r:WORKS_AT]->(c:Company {name: 'TechCorp'})\n"
-                 + "DELETE r, p\n" );
+
+        execute( SINGLE_EDGE_1 );
+
+         execute( "MATCH p =  (person:Person {name: 'Max'})-[rel:OWNER_OF]->( animal :Animal {name: 'Kira'})\n"
+                 + "DELETE p\n" );
+
+       GraphResult res =  matchAndReturnAllNodes() ;
+       GraphResult edges = execute(  "MATCH (p:Person) -[rel:OWNER_OF]->(A:Animal)");
+       assert  res.getData().length == 0 && edges.getData().length == 0 ;
+
+
     }
 
     @Test
-    public void  NodeWithRelationshipsDeleteTest()
+    public void  NodeWithAllRelationshipsDeleteTest()
     {
-        execute( "MATCH (n:Person {name: 'Carrie-Anne Moss'})\n"
+        execute( SINGLE_EDGE_2 );
+        execute( "MATCH (n:Person {name: 'MAX'})\n"
                 + "DETACH DELETE n" );
+
+
+        GraphResult res =  execute( "MATCH (p:Person) -[rel:OWNER_OF]->(A:Animal)");
+        assert  res.getData().length == 0 ;
+
     }
     @Test
     public void allNodesAndRelationshipsDeleteTest ()
     {
+        execute( SINGLE_NODE_PERSON_1 );
+        execute( SINGLE_NODE_PERSON_2 );
+        execute( SINGLE_EDGE_1 );
         execute( "MATCH (n)\n"
                 + "DETACH DELETE n" ) ;
+
+
+        GraphResult res =  matchAndReturnAllNodes() ;
+        GraphResult edges = execute(  "MATCH (p:Person) -[rel:OWNER_OF]->(A:Animal)");
+        assert  res.getData().length == 0 && edges.getData().length == 0 ;
+
     }
+
 
 
 
