@@ -19,7 +19,10 @@ package org.polypheny.db.cypher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.cypher.helper.TestLiteral;
+import org.polypheny.db.cypher.helper.TestNode;
+import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.models.results.GraphResult;
+import java.util.Arrays;
 
 public class SkipTest  extends  CypherTestTemplate{
 
@@ -64,7 +67,10 @@ public class SkipTest  extends  CypherTestTemplate{
         execute( SINGLE_NODE_PERSON_COMPLEX_2 );
         execute( SINGLE_NODE_PERSON_COMPLEX_3 );
 
-        GraphResult res = execute( "MATCH (n) WITH n SKIP 2 RETURN n.name, n.age;" );
+        GraphResult res = execute( "MATCH (n) WITH n SKIP 2 RETURN n.name, n.age" );
+
+        assert res.getData().length == 1;
+
     }
 
     @Test
@@ -79,15 +85,28 @@ public class SkipTest  extends  CypherTestTemplate{
         GraphResult res = execute( "MATCH (n) RETURN n.name SKIP 3 LIMIT 1" );
 
         assert res.getData().length == 1;
+
+
+
     }
 
     @Test
-    public void expressionAndSkipTest()
-    {
-        execute( "MATCH (n)\n"
-                + "RETURN n.name\n"
-                + "ORDER BY n.name\n"
-                + "SKIP 1 + toInteger(3*rand())" );
+    public void withAndOrderBySkipTest() {
+        execute( SINGLE_NODE_PERSON_COMPLEX_1 );
+        execute( SINGLE_NODE_PERSON_COMPLEX_2 );
+
+        GraphResult res = execute( "MATCH (n)\n"
+                + "WITH n ORDER BY n.name SKIP 1\n"
+                + "RETURN n" );
+
+        assert res.getData().length == 1;
+
+        assert containsNodes( res, true,
+                TestNode.from( Pair.of( "name" , "Bob" ) ,
+                        Pair.of( "age" , 31 ) ,
+                        Pair.of( "depno" , 13 )) );
+
+
     }
 
 

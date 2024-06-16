@@ -18,43 +18,91 @@ package org.polypheny.db.cypher;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.polypheny.db.cypher.helper.TestLiteral;
+import org.polypheny.db.webui.models.results.GraphResult;
+import java.util.Arrays;
 
-public class UnionTest extends   CypherTestTemplate{
+public class UnionTest extends CypherTestTemplate {
+
+
 
     @BeforeEach
     public void reset() {
         tearDown();
         createGraph();
     }
-@Test
-    public void retainDuplicatesUnionTest()
-    {
-        execute( "MATCH (n:Actor)\n"
+
+    @Test
+    public void simpleUnionTest() {
+        execute( SINGLE_NODE_PERSON_1 );
+        execute( SINGLE_NODE_PERSON_2);
+        execute( SINGLE_NODE_PERSON_1 );
+        execute( SINGLE_NODE_PERSON_2);
+        execute(SINGLE_NODE_ANIMAL);
+        execute( SINGLE_NODE_ANIMAL);
+
+
+        GraphResult res =  execute( "MATCH (n:Actor)\n"
+                + "RETURN n.name AS name\n"
+                + "UNION \n"
+                + "MATCH (n:Movie)\n"
+                + "RETURN n.title AS name" );
+
+
+
+        containsRows( res, true, false,
+                Row.of( TestLiteral.from( "Max" ) ),
+                Row.of( TestLiteral.from( "Hans" ) ),
+                Row.of( TestLiteral.from( "Kira" ) ));
+    }
+    @Test
+    public void allUnionTest() {
+        execute( SINGLE_NODE_PERSON_1 );
+        execute( SINGLE_NODE_PERSON_2);
+        execute(SINGLE_NODE_ANIMAL);
+        execute( SINGLE_NODE_ANIMAL);
+
+        GraphResult res = execute( "MATCH (n:Actor)\n"
                 + "RETURN n.name AS name\n"
                 + "UNION ALL\n"
                 + "MATCH (n:Movie)\n"
                 + "RETURN n.title AS name" );
 
+
+        containsRows( res, true, false,
+                Row.of( TestLiteral.from( "Max" ) ),
+                Row.of( TestLiteral.from( "Hans" ) ),
+                Row.of( TestLiteral.from( "Kira" ) ),
+                Row.of( TestLiteral.from( "Kira" ) ) );
+
+
     }
 
+
+
+
+
     @Test
-    public void removeDuplicatesUnionTest()
-    {
-        execute( "MATCH (n:Actor)\n"
+    public void distinctUnionTest() {
+        execute( SINGLE_NODE_PERSON_1 );
+        execute( SINGLE_NODE_PERSON_2);
+        execute( SINGLE_NODE_PERSON_1 );
+        execute( SINGLE_NODE_PERSON_2);
+        execute(SINGLE_NODE_ANIMAL);
+        execute( SINGLE_NODE_ANIMAL);
+
+        GraphResult res = execute( "MATCH (n:Actor)\n"
                 + "RETURN n.name AS name\n"
                 + "UNION DISTINCT\n"
                 + "MATCH (n:Movie)\n"
                 + "RETURN n.title AS name" );
-    }
 
-    @Test
-    public void distinctUnionTest()
-    {
-        execute( "MATCH (n:Actor)\n"
-                + "RETURN n.name AS name\n"
-                + "UNION DISTINCT\n"
-                + "MATCH (n:Movie)\n"
-                + "RETURN n.title AS name" );
+
+        containsRows( res, true, false,
+                Row.of( TestLiteral.from( "Max" ) ),
+                Row.of( TestLiteral.from( "Hans" ) ),
+                Row.of( TestLiteral.from( "Kira" ) ));
+
     }
 
 }
