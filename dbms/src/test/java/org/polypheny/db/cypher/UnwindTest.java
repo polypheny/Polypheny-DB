@@ -118,7 +118,7 @@ public class UnwindTest extends CypherTestTemplate {
 
         GraphResult res = execute( "MATCH (n) UNWIND n.age  AS age  RETURN max(age)" );
         assert containsRows( res, true, false, Row.of( TestLiteral.from( 45 ) ) );
-        res = execute( "MATCH (n) UNWIND n.age  AS age  RETURN max(age)" );
+        res = execute( "MATCH (n) UNWIND n.age  AS age  RETURN min(age)" );
 
         assert containsRows( res, true, false, Row.of( TestLiteral.from( 31 ) ) );
 
@@ -187,7 +187,11 @@ public class UnwindTest extends CypherTestTemplate {
    @Test
    public void ConditionalLogicUnWind()
    {
-      GraphResult res =  execute( "UNWIND [1, 2, 3, 4, 5] AS number RETURN number, CASE WHEN number % 2 = 0 THEN 'even' ELSE 'odd' END AS type" );
+      GraphResult res =  execute( "UNWIND [1, 2, 3] AS number RETURN number, CASE WHEN number % 2 = 0 THEN 'even' ELSE 'odd' END AS type" );
+     assert containsRows( res , true , true ,
+             Row.of( TestLiteral.from( 1 ) ,TestLiteral.from("odd"  ) ),
+             Row.of( TestLiteral.from( 2 ) ,TestLiteral.from( "even" )),
+             Row.of( TestLiteral.from( 3 ) ,TestLiteral.from(  "odd")));
 
    }
 

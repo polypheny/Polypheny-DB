@@ -156,25 +156,7 @@ public class OrderByTest extends CypherTestTemplate {
 
     }
 
-    @Test
-    public void renameWithClauseDoubleOrderByWithLimitTest()
-    {
-        execute( SINGLE_NODE_PERSON_COMPLEX_1 );
-        execute(SINGLE_NODE_PERSON_COMPLEX_2);
-        execute( SINGLE_NODE_PERSON_COMPLEX_3 );
 
-        GraphResult res =  execute( "MATCH (p:Person) WITH p.depno AS department , p.name  AS name  ORDER BY department ASC,  name ASC LIMIT 3 RETURN department , name " );
-
-
-        assert containsRows( res, true, true,
-                Row.of( TestLiteral.from( 13 ), TestLiteral.from( "Ann" ) ),
-                Row.of( TestLiteral.from( 13 ), TestLiteral.from( "Bob" ) ) ,
-                Row.of( TestLiteral.from( 14 ),TestLiteral.from( "Alex" )));
-
-
-
-
-    }
 
     @Test
     public void renameWithClauseDoubleOrderByTest()
@@ -196,7 +178,26 @@ public class OrderByTest extends CypherTestTemplate {
 
     }
     @Test
-    public void renameUnwindSortTest() {
+    public void renameWithClauseDoubleOrderByWithLimitTest()
+    {
+        execute( SINGLE_NODE_PERSON_COMPLEX_1 );
+        execute(SINGLE_NODE_PERSON_COMPLEX_2);
+        execute( SINGLE_NODE_PERSON_COMPLEX_3 );
+
+        GraphResult res =  execute( "MATCH (p:Person) WITH p.depno AS department , p.name  AS name  ORDER BY department ASC,  name ASC LIMIT 3 RETURN department , name " );
+
+
+        assert containsRows( res, true, true,
+                Row.of( TestLiteral.from( 13 ), TestLiteral.from( "Ann" ) ),
+                Row.of( TestLiteral.from( 13 ), TestLiteral.from( "Bob" ) ) ,
+                Row.of( TestLiteral.from( 14 ),TestLiteral.from( "Alex" )));
+
+
+
+
+    }
+    @Test
+    public void UnwindSortTest() {
         GraphResult res = execute( "UNWIND [1, true,3.14] AS i RETURN i ORDER BY i" );
         assert containsRows( res, true, true,
                 Row.of( TestLiteral.from( true ) ),
@@ -206,7 +207,7 @@ public class OrderByTest extends CypherTestTemplate {
 
     }
     @Test
-    public void renameWithClauseWithRenameUnwindSortTest ()
+    public void renameWithClauseWithUnwindSortTest ()
     {
 
      GraphResult res = execute( "WITH  [1 ,2 ,3] AS number UNWIND  number AS n RETURN  n ORDER BY n" );
@@ -218,7 +219,7 @@ public class OrderByTest extends CypherTestTemplate {
     }
 
     @Test
-    public void renameWithMixedTypesWithRenameUnwindSortTest ()
+    public void renameWithMixedTypesWithUnwindSortTest ()
     {
 
 
@@ -231,7 +232,7 @@ public class OrderByTest extends CypherTestTemplate {
     }
 
     @Test
-    public void renameAvgAggregateFieldSortTest()
+    public void AvgAggregateFieldSortTest()
     {
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
         execute( SINGLE_NODE_PERSON_COMPLEX_2 );
@@ -243,19 +244,7 @@ public class OrderByTest extends CypherTestTemplate {
 
     }
 
-    @Test
-    public void renameWithClauseOrderByWithSkipTest()
-    {
-        execute( SINGLE_NODE_PERSON_COMPLEX_1 );
-        execute(SINGLE_NODE_PERSON_COMPLEX_2);
-        execute( SINGLE_NODE_PERSON_COMPLEX_3 );
-        GraphResult res =  execute( "MATCH (p:Person) WITH  p.age AS age ORDER BY age DESC SKIP 1 Limit 1 RETURN age" );
 
-        assert  containsRows( res , true ,true ,
-                Row.of( TestLiteral.from( 32  ) ),
-                Row.of(TestLiteral.from( 31)) );
-
-    }
 
     @Test
     public void renameWithClauseOrderByWithSkipLimitTest()

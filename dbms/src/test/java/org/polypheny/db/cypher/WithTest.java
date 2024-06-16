@@ -19,7 +19,11 @@ package org.polypheny.db.cypher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.cypher.helper.TestLiteral;
+import org.polypheny.db.cypher.helper.TestNode;
+import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.models.results.GraphResult;
+import java.util.AbstractSequentialList;
+import java.util.Arrays;
 
 
 public class WithTest extends CypherTestTemplate {
@@ -248,7 +252,9 @@ public class WithTest extends CypherTestTemplate {
     @Test
     public void createNodeWithTest()
     {
-      GraphResult res =  execute( "WITH [1, 1.0] AS list CREATE ({l: list})" );
+       execute( "WITH [1, 1.0] AS list CREATE ({l: list})" );
+      GraphResult res =  matchAndReturnAllNodes();
+      assert  res.getData().length ==  1 ;
 
     }
 
@@ -260,15 +266,19 @@ public class WithTest extends CypherTestTemplate {
        execute( SINGLE_NODE_PERSON_1);
 
        GraphResult res =  execute( "MATCH (p:Person) WITH Distinct(p)  Return p " );
+       assert res.getData().length == 2 ;
+
 
     }
     @Test
     public void existsWithTest()
     {
         execute( SINGLE_NODE_PERSON_COMPLEX_1 ) ;
-        execute( SINGLE_NODE_PERSON_COMPLEX_2 );
-        execute( SINGLE_NODE_PERSON_COMPLEX_3 );
-       GraphResult  res =  execute( "MATCH (n) WITH n as person WHERE EXISTS(person.age) RETURN person.name, person.age;" );
+        execute( SINGLE_NODE_PERSON_1 );
+
+        GraphResult  res =  execute( "MATCH (n) WITH n as person WHERE EXISTS(person.age) RETURN person.name, person.age;" );
+        assert containsRows( res , true , true , Row.of( TestLiteral.from(  "Ann" ),TestLiteral.from( 45 ) ));
+
 
     }
 
@@ -281,14 +291,25 @@ public class WithTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_COMPLEX_1 ) ;
         execute( SINGLE_NODE_PERSON_COMPLEX_2 );
         execute( SINGLE_NODE_PERSON_COMPLEX_3 );
-        GraphResult  res  = execute( "MATCH (p:Person) WITH p, CASE WHEN p.age < 30 THEN 'Young' HEN p.age >= 30 AND p.age < 60 THEN 'Middle-aged' ELSE 'Elderly  END AS ageGroup RETURN p.name, p.age, ageGroup;" ) ;
+        GraphResult  res  = execute( "MATCH (p:Person) WITH p, CASE WHEN p.age < 30 THEN 'Young' THEN p.age >= 30 AND p.age < 60 THEN 'Middle-aged' ELSE 'Elderly  END AS ageGroup RETURN p.name, ageGroup;" ) ;
+        assert  containsRows( res , true , true ,
+                Row.of( TestLiteral.from( "Ana" ) , TestLiteral.from( "Middle-aged" ) ) ,
+                Row.of( TestLiteral.from( "Bob" ) , TestLiteral.from( "Middle-aged" ) ),
+                Row.of( TestLiteral.from( "Alex" ) , TestLiteral.from( "Middle-aged" ) ));
 
     }
 
     @Test
     public void orderByWithTest()
     {
-        GraphResult res =  execute( "MATCH (p:Person) WITH p ORDER BY p.name ASC RETURN p" );
+        execute( SINGLE_NODE_PERSON_1 );
+        execute( SINGLE_NODE_PERSON_2 );
+        GraphResult res =  execute( "MATCH (p:Person) WITH p ORDER BY p.name ASC RETURN p.name" );
+
+         assert  containsRows( res , true ,true ,
+                 Row.of( TestLiteral.from( "Hans" )) ,
+                 Row.of( TestLiteral.from( "Max" )) );
+
     }
 
 }

@@ -80,6 +80,14 @@ public class DmlInsertTest extends CypherTestTemplate {
         assert containsNodes( res, true, TestNode.from(List.of("Person" , "Employee") ,Pair.of( "name" , "Max" )));
 
     }
+    @Test
+    public void insertNodeWithPropertyContainsListTest()
+    {
+        execute( "CREATE ({l: [1 ,2,3]})" );
+        GraphResult res = matchAndReturnAllNodes();
+        assert  res.getData().length == 1 ;
+
+    }
 
 
     @Test
