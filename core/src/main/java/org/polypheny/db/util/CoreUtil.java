@@ -109,10 +109,9 @@ public class CoreUtil {
         return switch ( name ) {
             case "BIG5" -> "Big5";
             case "LATIN1" -> "ISO-8859-1";
-            case "GB2312", "GBK" -> name;
+            case "GB2312", "GBK", "UTF-16BE", "UTF-16LE", "ISO-8859-1", "UTF-8" -> name;
             case "UTF8" -> "UTF-8";
             case "UTF16" -> Charsets.UTF_16.name();
-            case "UTF-16BE", "UTF-16LE", "ISO-8859-1", "UTF-8" -> name;
             default -> null;
         };
     }
