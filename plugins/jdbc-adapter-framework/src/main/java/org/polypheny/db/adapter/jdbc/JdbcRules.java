@@ -313,7 +313,7 @@ public class JdbcRules {
         public static JdbcJoin create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
             Triple<RexNode, Set<CorrelationId>, JoinAlgType> extracted = extractArgs( args );
             try {
-                return new JdbcJoin( cluster, cluster.traitSet(), children.get( 0 ), children.get( 1 ), extracted.left, extracted.middle, extracted.right );
+                return new JdbcJoin( cluster, children.get( 0 ).getTraitSet(), children.get( 0 ), children.get( 1 ), extracted.left, extracted.middle, extracted.right );
             } catch ( InvalidAlgException e ) {
                 throw new RuntimeException( e );
             }
@@ -407,7 +407,7 @@ public class JdbcRules {
 
 
         public static JdbcCalc create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
-            return new JdbcCalc( cluster, cluster.traitSet(), children.get( 0 ),
+            return new JdbcCalc( cluster, children.get( 0 ).getTraitSet(), children.get( 0 ),
                     Calc.getProgramFromArgs( args, children.get( 0 ), cluster.getRexBuilder() ) );
         }
 
@@ -763,7 +763,7 @@ public class JdbcRules {
 
         public static JdbcFilter create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
             RexArg condition = args.getArg( "condition", RexArg.class );
-            return new JdbcFilter( cluster, cluster.traitSet(), children.get( 0 ), condition.getNode() );
+            return new JdbcFilter( cluster, children.get( 0 ).getTraitSet(), children.get( 0 ), condition.getNode() );
         }
 
 
@@ -860,7 +860,7 @@ public class JdbcRules {
         public static JdbcAggregate create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
             Triple<ImmutableBitSet, List<ImmutableBitSet>, List<AggregateCall>> extracted = extractArgs( args );
             try {
-                return new JdbcAggregate( cluster, cluster.traitSet(), children.get( 0 ), false,
+                return new JdbcAggregate( cluster, children.get( 0 ).getTraitSet(), children.get( 0 ), false,
                         extracted.left, extracted.middle, extracted.right );
             } catch ( InvalidAlgException e ) {
                 throw new RuntimeException( e );
@@ -1003,7 +1003,7 @@ public class JdbcRules {
 
 
         public static JdbcUnion create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
-            return new JdbcUnion( cluster, cluster.traitSet(), children, args.getArg( "all", BooleanArg.class ).toBool() );
+            return new JdbcUnion( cluster, children.get( 0 ).getTraitSet(), children, args.getArg( "all", BooleanArg.class ).toBool() );
         }
 
 
@@ -1066,7 +1066,7 @@ public class JdbcRules {
 
 
         public static JdbcIntersect create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
-            return new JdbcIntersect( cluster, cluster.traitSet(), children, args.getArg( "all", BooleanArg.class ).toBool() );
+            return new JdbcIntersect( cluster, children.get( 0 ).getTraitSet(), children, args.getArg( "all", BooleanArg.class ).toBool() );
         }
 
 
@@ -1122,7 +1122,7 @@ public class JdbcRules {
 
 
         public static JdbcMinus create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
-            return new JdbcMinus( cluster, cluster.traitSet(), children, args.getArg( "all", BooleanArg.class ).toBool() );
+            return new JdbcMinus( cluster, children.get( 0 ).getTraitSet(), children, args.getArg( "all", BooleanArg.class ).toBool() );
         }
 
 
@@ -1218,7 +1218,7 @@ public class JdbcRules {
         public static JdbcTableModify create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
             EntityArg entity = args.getArg( "table", EntityArg.class );
             Quadruple<Operation, List<String>, List<? extends RexNode>, Boolean> extracted = extractArgs( args );
-            return new JdbcTableModify( cluster, cluster.traitSet(), (JdbcTable) entity.getEntity(), children.get( 0 ),
+            return new JdbcTableModify( cluster, children.get( 0 ).getTraitSet(), (JdbcTable) entity.getEntity(), children.get( 0 ),
                     extracted.a, extracted.b, extracted.c, extracted.d );
         }
 
@@ -1286,7 +1286,7 @@ public class JdbcRules {
 
         public static JdbcValues create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
             Pair<AlgDataType, ImmutableList<ImmutableList<RexLiteral>>> extracted = extractArgs( args, cluster );
-            return new JdbcValues( cluster, extracted.left, extracted.right, cluster.traitSet() );
+            return new JdbcValues( cluster, extracted.left, extracted.right, cluster.traitSetOf( ModelTrait.RELATIONAL ) );
         }
 
 

@@ -63,6 +63,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterImpl;
 import org.polypheny.db.algebra.enumerable.EnumerableAlg;
 import org.polypheny.db.algebra.enumerable.EnumerableAlgImplementor;
+import org.polypheny.db.algebra.enumerable.EnumerableConvention;
 import org.polypheny.db.algebra.enumerable.JavaTupleFormat;
 import org.polypheny.db.algebra.enumerable.PhysType;
 import org.polypheny.db.algebra.enumerable.PhysTypeImpl;
@@ -151,7 +152,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
 
 
     public static AlgNode create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
-        return new JdbcToEnumerableConverter( cluster, cluster.traitSet(), children.get( 0 ) );
+        return new JdbcToEnumerableConverter( cluster, children.get( 0 ).getTraitSet().replace( EnumerableConvention.INSTANCE ), children.get( 0 ) );
     }
 
 

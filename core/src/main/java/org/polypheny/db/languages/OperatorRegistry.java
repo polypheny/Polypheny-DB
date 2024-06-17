@@ -228,8 +228,8 @@ public class OperatorRegistry {
 
 
     private static void buildNameLookup() {
-        nameLookup = new HashMap<>();
-        uniqueNames = new HashMap<>();
+        Map<Pair<QueryLanguage, String>, Operator> nameLookup = new HashMap<>();
+        Map<Operator, String> uniqueNames = new HashMap<>();
         for ( Map.Entry<Pair<QueryLanguage, OperatorName>, Operator> entry : OperatorRegistry.getAllOperators().entrySet() ) {
             QueryLanguage ql = entry.getKey().left;
             String opName = entry.getKey().right.name(); // this is not the same as op.getName()!
@@ -260,6 +260,14 @@ public class OperatorRegistry {
                 nameLookup.put( Pair.of( ql, uniqueName ), op );
                 uniqueNames.put( op, uniqueName );
             }
+        }
+
+        // prevent overwriting in case lookups are created concurrently
+        if ( OperatorRegistry.nameLookup == null ) {
+            OperatorRegistry.nameLookup = nameLookup;
+        }
+        if ( OperatorRegistry.uniqueNames == null ) {
+            OperatorRegistry.uniqueNames = uniqueNames;
         }
     }
 

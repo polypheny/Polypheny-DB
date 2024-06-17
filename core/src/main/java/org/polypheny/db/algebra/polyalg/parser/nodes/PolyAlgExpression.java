@@ -76,6 +76,7 @@ public class PolyAlgExpression extends PolyAlgNode {
         return childExps != null;
     }
 
+
     public boolean isElementRef() {
         return isCall() && getLiteralsAsString().equals( PolyAlgUtils.ELEMENT_REF_PREFIX );
     }
@@ -125,28 +126,28 @@ public class PolyAlgExpression extends PolyAlgNode {
     }
 
 
-    public int toInt( Set<ParamTag> constraints) {
+    public int toInt( Set<ParamTag> constraints ) {
         if ( !isSingleLiteral() ) {
             throw new GenericRuntimeException( "Not a valid integer: " + this );
         }
         int i = literals.get( 0 ).toInt();
-        if (i < 0 && constraints.contains( ParamTag.NON_NEGATIVE )) {
+        if ( i < 0 && constraints.contains( ParamTag.NON_NEGATIVE ) ) {
             throw new GenericRuntimeException( "Integer value must not be negative!" );
         }
         return i;
     }
+
 
     public Double toDouble( Set<ParamTag> constraints ) {
         if ( !isSingleLiteral() ) {
             throw new GenericRuntimeException( "Not a valid double: " + this );
         }
         double d = literals.get( 0 ).toNumber().doubleValue();
-        if (d < 0 && constraints.contains( ParamTag.NON_NEGATIVE )) {
+        if ( d < 0 && constraints.contains( ParamTag.NON_NEGATIVE ) ) {
             throw new GenericRuntimeException( "Double value must not be negative!" );
         }
         return d;
     }
-
 
 
     public Number toNumber() {
@@ -252,9 +253,19 @@ public class PolyAlgExpression extends PolyAlgNode {
 
     public Operator getOperator( DataModel model ) {
         String str = getLiteralsAsString();
-        Operator op = OperatorRegistry.getFromUniqueName( model, str.toUpperCase( Locale.ROOT ) );
+        String upper = str.toUpperCase( Locale.ROOT );
+
+        Operator op = OperatorRegistry.getFromUniqueName( model, upper );
         if ( op == null ) {
-            op = OperatorRegistry.getFromUniqueName( DataModel.RELATIONAL, str.toUpperCase( Locale.ROOT ) ); // generic operator fallback
+            if ( model == DataModel.RELATIONAL ) {
+                // We might have a common operator -> also test GRAPH and DOCUMENT
+                op = OperatorRegistry.getFromUniqueName( DataModel.GRAPH, upper );
+                if ( op == null ) {
+                    op = OperatorRegistry.getFromUniqueName( DataModel.DOCUMENT, upper );
+                }
+            } else {
+                op = OperatorRegistry.getFromUniqueName( DataModel.RELATIONAL, upper ); // generic operator fallback
+            }
             if ( op == null ) {
                 throw new GenericRuntimeException( "Operator '" + str + "' is not yet supported" );
             }

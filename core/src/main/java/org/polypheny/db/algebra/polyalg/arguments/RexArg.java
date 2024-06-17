@@ -83,7 +83,7 @@ public class RexArg implements PolyAlgArg {
 
     private String rexAsString( @NonNull List<String> inputFieldNames ) {
         String str = node == null ? "" : node.toString();
-        if ( (this.inputFieldNames == null && inputFieldNames.isEmpty()) || node == null ) {
+        if ( node == null ) {
             return str;
         }
         return PolyAlgUtils.digestWithNames( node, this.inputFieldNames == null ? inputFieldNames : this.inputFieldNames);

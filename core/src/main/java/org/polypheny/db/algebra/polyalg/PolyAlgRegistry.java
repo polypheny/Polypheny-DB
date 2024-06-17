@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.enumerable.EnumerableAggregate;
@@ -39,6 +40,9 @@ import org.polypheny.db.algebra.enumerable.EnumerableSort;
 import org.polypheny.db.algebra.enumerable.EnumerableTransformer;
 import org.polypheny.db.algebra.enumerable.EnumerableUnion;
 import org.polypheny.db.algebra.enumerable.EnumerableValues;
+import org.polypheny.db.algebra.enumerable.common.EnumerableCollect;
+import org.polypheny.db.algebra.enumerable.common.EnumerableContextSwitcher;
+import org.polypheny.db.algebra.enumerable.common.EnumerableModifyCollect;
 import org.polypheny.db.algebra.enumerable.lpg.EnumerableLpgMatch;
 import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.logical.common.LogicalBatchIterator;
@@ -61,6 +65,7 @@ import org.polypheny.db.algebra.logical.lpg.LogicalLpgSort;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgTransformer;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgUnion;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgUnwind;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgValues;
 import org.polypheny.db.algebra.logical.relational.LogicalCalc;
 import org.polypheny.db.algebra.logical.relational.LogicalModifyCollect;
 import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
@@ -94,9 +99,8 @@ import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.interpreter.Bindables.BindableScan;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.type.entity.document.PolyDocument;
 
+@Slf4j
 public class PolyAlgRegistry {
 
     private static final Map<Class<? extends AlgNode>, PolyAlgDeclaration> declarations = new HashMap<>();
@@ -274,9 +278,6 @@ public class PolyAlgRegistry {
                 .param( Parameter.builder().name( "dynamic" ).multiValued( 1 ).type( ParamType.REX ).simpleType( SimpleType.HIDDEN ).defaultValue( ListArg.EMPTY ).build() )
                 .build() );
 
-        PolyValue doc = PolyDocument.fromJson( "{ \"title\": \"The Favourite\"}" );
-        System.out.println(doc);
-
         // GRAPH
         declarations.put( LogicalLpgScan.class, PolyAlgDeclaration.builder()
                 .creator( LogicalLpgScan::create ).model( DataModel.GRAPH )
@@ -335,6 +336,13 @@ public class PolyAlgRegistry {
                 .opName( "LPG_TRANSFORMER" ).numInputs( -1 ).opTags( ImmutableList.of( OperatorTag.ALLOCATION, OperatorTag.ADVANCED ) )
                 .param( Parameter.builder().name( "operation" ).type( ParamType.MODIFY_OP_ENUM ).build() )
                 .param( Parameter.builder().name( "order" ).multiValued( 1 ).type( ParamType.POLY_TYPE_ENUM ).defaultValue( ListArg.EMPTY ).build() )
+                .build() );
+        declarations.put( LogicalLpgValues.class, PolyAlgDeclaration.builder()
+                .creator( LogicalLpgValues::create ).model( DataModel.GRAPH )
+                .opName( "LPG_VALUES" ).numInputs( 0 ).opTags( logAllProTags )
+                .param( Parameter.builder().name( "nodes" ).multiValued( 1 ).type( ParamType.REX ).tag( ParamTag.POLY_NODE ).defaultValue( ListArg.EMPTY ).build() )
+                .param( Parameter.builder().name( "edges" ).multiValued( 1 ).type( ParamType.REX ).tag( ParamTag.POLY_PATH ).defaultValue( ListArg.EMPTY ).build() )
+                .param( Parameter.builder().name( "values" ).multiValued( 2 ).type( ParamType.REX ).defaultValue( ListArg.NESTED_EMPTY ).build() )
                 .build() );
 
         // Common
@@ -422,12 +430,28 @@ public class PolyAlgRegistry {
         declarations.put( EnumerableTransformer.class, PolyAlgDeclaration.builder()
                 .creator( EnumerableTransformer::create ).model( null )
                 .opName( "E_TRANSFORMER" ).convention( c ).numInputs( -1 ).opTags( physTags )
-                .params( getParams( LogicalTransformer.class ) )
+                .param( Parameter.builder().name( "out" ).alias( "outModel" ).type( ParamType.DATAMODEL_ENUM ).build() )
+                .param( Parameter.builder().name( "names" ).multiValued( 1 ).type( ParamType.STRING ).defaultValue( ListArg.EMPTY ).build() )
+                .param( Parameter.builder().name( "isCrossModel" ).type( ParamType.BOOLEAN ).defaultValue( BooleanArg.FALSE ).build() )
                 .build() );
         declarations.put( EnumerableLpgMatch.class, PolyAlgDeclaration.builder()
                 .creator( EnumerableLpgMatch::create ).model( DataModel.GRAPH )
                 .opName( "E_LPG_MATCH" ).convention( c ).numInputs( 1 ).opTags( physTags )
                 .params( getParams( LogicalLpgMatch.class ) )
+                .build() );
+        declarations.put( EnumerableCollect.class, PolyAlgDeclaration.builder()
+                .creator( EnumerableCollect::create ).model( null )
+                .opName( "E_COLLECT" ).convention( c ).numInputs( 1 ).opTags( physTags )
+                .param( Parameter.builder().name( "field" ).type( ParamType.STRING ).build() )
+                .build() );
+        declarations.put( EnumerableModifyCollect.class, PolyAlgDeclaration.builder()
+                .creator( EnumerableModifyCollect::create ).model( null )
+                .opName( "E_MODIFY_COLLECT" ).convention( c ).numInputs( -1 ).opTags( physTags )
+                .params( getParams( LogicalModifyCollect.class ) )
+                .build() );
+        declarations.put( EnumerableContextSwitcher.class, PolyAlgDeclaration.builder()
+                .creator( EnumerableContextSwitcher::create ).model( null )
+                .opName( "E_CONTEXT_SWITCHER" ).convention( c ).numInputs( 1 ).opTags( physTags )
                 .build() );
     }
 
@@ -511,7 +535,9 @@ public class PolyAlgRegistry {
      * @param decl The PolyAlgDeclaration to register
      */
     public static void register( Class<? extends AlgNode> clazz, PolyAlgDeclaration decl ) {
-        assert serialized == null;
+        if ( serialized != null ) {
+            log.warn( "PolyAlg operator was registered after the registry was already serialized!" );
+        }
         assert !declarations.containsKey( clazz );
         declarations.put( clazz, decl );
 

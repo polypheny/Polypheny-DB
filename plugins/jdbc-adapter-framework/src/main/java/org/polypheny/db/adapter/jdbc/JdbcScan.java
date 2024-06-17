@@ -63,7 +63,7 @@ public class JdbcScan extends RelScan<JdbcTable> implements JdbcAlg {
 
 
     public JdbcScan( AlgCluster cluster, JdbcTable jdbcTable, JdbcConvention jdbcConvention ) {
-        super( cluster, cluster.traitSetOf( jdbcConvention ).replace( ModelTrait.RELATIONAL ), jdbcTable );
+        super( cluster, cluster.traitSetOf( jdbcConvention ).plus( ModelTrait.RELATIONAL ), jdbcTable );
         this.jdbcTable = jdbcTable;
     }
 

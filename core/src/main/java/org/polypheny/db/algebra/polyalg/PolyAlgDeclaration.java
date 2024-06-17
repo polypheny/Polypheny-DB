@@ -466,7 +466,17 @@ public class PolyAlgDeclaration {
         /**
          * For projects and some other operators it is useful to let the user hide any trivial arguments in the UI
          */
-        HIDE_TRIVIAL
+        HIDE_TRIVIAL,
+
+        /**
+         * Indicates that this parameter should be treated as a PolyNode
+         */
+        POLY_NODE,
+
+        /**
+         * Indicates that this parameter should be treated as a PolyPath
+         */
+        POLY_PATH
     }
 
 

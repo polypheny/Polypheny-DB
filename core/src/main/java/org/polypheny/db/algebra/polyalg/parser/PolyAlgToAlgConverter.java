@@ -207,7 +207,6 @@ public class PolyAlgToAlgConverter {
                 converted.put( p, buildList( p, listArg, null, ctx, 0 ) );
             }
         }
-
         if ( !converted.validate( true ) ) {
             throw new GenericRuntimeException( "Missing positional argument" );
         }
@@ -428,14 +427,26 @@ public class PolyAlgToAlgConverter {
                 if ( rest == null ) {
                     yield new SubstitutionGraph( ns.id, "sub", false, ns.caseSensitive, List.of() );
                 } else if ( ctx.getNonNullDataModel() == DataModel.GRAPH ) {
-                    List<String> subNames = Arrays.asList( rest.split( "\\." ) );
-                    yield new SubstitutionGraph( ns.id, "sub", false, ns.caseSensitive, subNames.stream().map( PolyString::of ).toList() );
+                    yield getSubGraph( ns, rest );
                 }
                 yield snapshot.rel().getTable( ns.id, rest ).orElseThrow( () -> exception );
             }
             case DOCUMENT -> snapshot.doc().getCollection( ns.id, rest ).orElseThrow( () -> exception );
-            case GRAPH -> snapshot.graph().getGraph( ns.id ).orElseThrow( () -> new GenericRuntimeException( "no graph with id " + ns.id ) );
+            case GRAPH -> {
+                if ( rest == null ) {
+                    yield snapshot.graph().getGraph( ns.id ).orElseThrow( () -> new GenericRuntimeException( "no graph with id " + ns.id ) );
+                } else {
+                    yield getSubGraph( ns, rest );
+                }
+            }
         };
+    }
+
+
+    private SubstitutionGraph getSubGraph( LogicalNamespace ns, String namesStr ) {
+        List<String> subNames = Arrays.asList( namesStr.split( "\\." ) );
+        String name = subNames.size() == 1 ? subNames.get( 0 ) : "sub";
+        return new SubstitutionGraph( ns.id, name, false, ns.caseSensitive, subNames.stream().map( PolyString::of ).toList() );
     }
 
 

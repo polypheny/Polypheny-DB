@@ -125,7 +125,7 @@ public class JdbcAdapterFramework extends PolyPlugin {
                 .params( PolyAlgRegistry.getParams( LogicalRelModify.class ) )
                 .build() );
         PolyAlgRegistry.register( JdbcValues.class, PolyAlgDeclaration.builder()
-                .creator( JdbcTableModify::create ).model( DataModel.RELATIONAL )
+                .creator( JdbcValues::create ).model( DataModel.RELATIONAL )
                 .opName( "JDBC_VALUES" ).convention( c ).numInputs( 0 ).opTags( physTags )
                 .params( PolyAlgRegistry.getParams( LogicalRelValues.class ) )
                 .build() );

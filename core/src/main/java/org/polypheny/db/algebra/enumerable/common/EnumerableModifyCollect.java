@@ -30,6 +30,8 @@ import org.polypheny.db.algebra.enumerable.EnumerableConvention;
 import org.polypheny.db.algebra.enumerable.JavaTupleFormat;
 import org.polypheny.db.algebra.enumerable.PhysType;
 import org.polypheny.db.algebra.enumerable.PhysTypeImpl;
+import org.polypheny.db.algebra.polyalg.arguments.BooleanArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.util.BuiltInMethod;
@@ -42,6 +44,11 @@ public class EnumerableModifyCollect extends ModifyCollect implements Enumerable
 
     public EnumerableModifyCollect( AlgCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, boolean all ) {
         super( cluster, traitSet, inputs, all );
+    }
+
+
+    public static EnumerableModifyCollect create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+        return new EnumerableModifyCollect( cluster, children.get( 0 ).getTraitSet(), children, args.getArg( "all", BooleanArg.class ).toBool() );
     }
 
 

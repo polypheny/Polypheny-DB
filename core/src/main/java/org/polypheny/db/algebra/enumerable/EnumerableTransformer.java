@@ -46,6 +46,7 @@ import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.core.common.Transformer;
 import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.polyalg.arguments.BooleanArg;
 import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
@@ -88,8 +89,10 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
 
 
     public static EnumerableTransformer create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+        boolean isCrossModel = args.getArg( "isCrossModel", BooleanArg.class ).toBool(); // TODO: remove parameter and instead infer isCrossModel from children
         Quadruple<List<String>, ModelTrait, ModelTrait, AlgDataType> extracted = extractArgs( args, children );
-        return create( cluster, children, extracted.a, extracted.b, extracted.c, extracted.d, true );
+        List<String> names = extracted.a.isEmpty() ? null : extracted.a;
+        return create( cluster, children, names, extracted.b, extracted.c, extracted.d, isCrossModel );
     }
 
 
@@ -527,6 +530,14 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         return new EnumerableTransformer( inputs.get( 0 ).getCluster(), inputs, names, traitSet, inModelTrait, outModelTrait, rowType, isCrossModel );
+    }
+
+
+    @Override
+    public PolyAlgArgs collectAttributes() {
+        PolyAlgArgs args = super.collectAttributes();
+        args.put( "isCrossModel", new BooleanArg( isCrossModel ) );
+        return args;
     }
 
 }

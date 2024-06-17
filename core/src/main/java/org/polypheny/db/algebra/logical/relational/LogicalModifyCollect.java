@@ -69,12 +69,5 @@ public final class LogicalModifyCollect extends ModifyCollect {
         return shuttle.visit( this );
     }
 
-
-    @Override
-    public PolyAlgArgs collectAttributes() {
-        PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
-        return args.put( "all", new BooleanArg( all ) );
-    }
-
 }
 

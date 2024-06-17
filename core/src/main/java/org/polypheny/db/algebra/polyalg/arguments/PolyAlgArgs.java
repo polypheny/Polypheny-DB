@@ -66,7 +66,7 @@ public class PolyAlgArgs {
 
     public ObjectNode serialize( AlgNode context, List<String> inputFieldNames, ObjectMapper mapper ) {
         ObjectNode node = mapper.createObjectNode();
-        for (Map.Entry<Parameter, PolyAlgArg> entry : args.entrySet()) {
+        for ( Map.Entry<Parameter, PolyAlgArg> entry : args.entrySet() ) {
             Parameter parameter = entry.getKey();
             PolyAlgArg arg = entry.getValue();
             node.set( parameter.getName(), arg.serializeWrapped( context, inputFieldNames, mapper ) );
@@ -93,7 +93,7 @@ public class PolyAlgArgs {
             }
         }
         for ( Parameter p : decl.kwParams ) {
-            if ( !args.containsKey( p ) ) {
+            if ( !args.containsKey( p ) || args.get( p ) == null ) {
                 if ( addDefaultOnMissingKw ) {
                     put( p, p.getDefaultValue() );
                 } else {

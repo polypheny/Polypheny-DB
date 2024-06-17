@@ -178,7 +178,7 @@ public class PolyAlgUtils {
             String uniqueName = inputFieldNames.get( startIndex + i );
             from.add( RexIndexRef.of( i, child.getTupleType() ) );
             to.add( uniqueName );
-            if ( !name.equals( uniqueName ) ) {
+            if ( name != null && !name.equals( uniqueName ) ) {
                 isTrivial = false;
             }
         }
@@ -583,15 +583,20 @@ public class PolyAlgUtils {
             }
 
             StringBuilder sb = new StringBuilder();
-            String prefix = withPrefix ? "PolyEdge " : "";
+            if (withPrefix) {
+                sb.append( "PolyEdge (" ).append( edge.source ).append( ")" );
+            }
+            sb.append( left );
             String lp = visitGraphLabelProps( edge.labels, edge.properties, edge.variableName );
-            sb.append( prefix ).append( left );
             if ( !lp.isEmpty() ) {
                 sb.append( "[" )
                         .append( lp )
                         .append( "]" );
             }
             sb.append( right );
+            if (withPrefix) {
+                sb.append( "(" ).append( edge.target ).append( ")" );
+            }
             return sb.toString();
         }
 

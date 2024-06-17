@@ -29,14 +29,15 @@ public class PolyAlgDataType extends PolyAlgNode {
 
     private final String type;
     private final List<Integer> args; // precision / scale
-    private final boolean nullable;
+    private final boolean nullable, isArray;
 
 
-    public PolyAlgDataType( @NonNull String type, @NonNull List<Integer> args, boolean nullable, ParserPos pos ) {
+    public PolyAlgDataType( @NonNull String type, @NonNull List<Integer> args, boolean nullable, boolean isArray, ParserPos pos ) {
         super( pos );
         this.type = type;
         this.args = args;
         this.nullable = nullable;
+        this.isArray = isArray;
     }
 
 
@@ -49,6 +50,9 @@ public class PolyAlgDataType extends PolyAlgNode {
             case 2 -> factory.createPolyType( polyType, args.get( 0 ), args.get( 1 ) );
             default -> throw new GenericRuntimeException( "Unexpected number of type arguments: " + args.size() );
         };
+        if ( isArray ) {
+            dataType = factory.createArrayType( dataType, -1 );
+        }
         return factory.createTypeWithNullability( dataType, nullable );
     }
 

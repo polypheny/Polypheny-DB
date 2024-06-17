@@ -156,6 +156,7 @@ TOKEN :
 | <BOOL: "TRUE" | "FALSE">
 | <NULL: "NULL">
 | <NOT_NULL: "NOT NULL">
+| <ARRAY: "ARRAY">
 | <DIR: "ASC" | "DESC" | "SASC" | "SDESC" | "CLU">
 | <NULL_DIR: "FIRST" | "LAST" | "UNSPECIFIED">
 | <FILTER: "FILTER"> // see AggregateCall
@@ -163,9 +164,10 @@ TOKEN :
 | <OVER: "OVER">
 | <POLY_NODE: "PolyNode">
 | <POLY_PATH: "PolyPath">
+| <POLY_EDGE: "PolyEdge">
 | <POLY_LIST: "PolyList">
 | <POLY_DOC: "PolyDocument">
-| <IDENTIFIER: (<LETTER> | <IDENTIFIER_SYMBOL>) (<LETTER> | <DIGIT> | <IDENTIFIER_SYMBOL> | <MINUS>)*>
+| <IDENTIFIER: (<LETTER> | <IDENTIFIER_SYMBOL>) (<LETTER> | <DIGIT> | <IDENTIFIER_SYMBOL>)*>
 
 | <UNSIGNED_INT: (<DIGIT>)+ >
 | <UNSIGNED_APPROX_DECIMAL: (<UNSIGNED_INT> | <UNSIGNED_DECIMAL>) <EXPONENT> >
@@ -403,6 +405,8 @@ PolyValue SpecialPolyValue() :
         |
         (<POLY_PATH> value = PolyPath())
         |
+        (<POLY_EDGE> value = PolyEdgeWithEnds())
+        |
         (<POLY_LIST> str = ListStr() {value = PolyList.fromJson(str);} )
         |
         (<POLY_DOC> str = DocumentStr() {value = PolyDocument.fromJson(str);})
@@ -439,6 +443,18 @@ PolyValue PolyNode() :
                     t = <QUOTED> {value = new PolyString(t.image.substring(1, t.image.length() - 1));}
                 )
                 {properties.put(new PolyString( key.image ), value);}
+                ( <SEP>
+                    key = <IDENTIFIER> <EQUALS> (
+                        t = <IDENTIFIER> {value = new PolyString(t.image);}
+                        |
+                        t = <UNSIGNED_INT> {value = new PolyInteger(Integer.parseInt(t.image));}
+                        |
+                        t = <UNSIGNED_DECIMAL> {value = new PolyDouble(Double.parseDouble(t.image));}
+                        |
+                        t = <QUOTED> {value = new PolyString(t.image.substring(1, t.image.length() - 1));}
+                    )
+                    {properties.put(new PolyString( key.image ), value);}
+                )*
         ]<RCURL>]
     <RPAR>
     {return new PolyNode(PolyDictionary.ofDict(properties), labels, name);}
@@ -491,14 +507,43 @@ Quadruple<PolyDictionary, List<PolyString>, PolyString, EdgeDirection> PolyEdge(
                         t = <UNSIGNED_INT> {value = new PolyInteger(Integer.parseInt(t.image));}
                         |
                         t = <UNSIGNED_DECIMAL> {value = new PolyDouble(Double.parseDouble(t.image));}
+                        |
+                        t = <QUOTED> {value = new PolyString(t.image.substring(1, t.image.length() - 1));}
                     )
                     {properties.put(new PolyString( key.image ), value);}
+                    ( <SEP>
+                        key = <IDENTIFIER> <EQUALS> (
+                            t = <IDENTIFIER> {value = new PolyString(t.image);}
+                            |
+                            t = <UNSIGNED_INT> {value = new PolyInteger(Integer.parseInt(t.image));}
+                            |
+                            t = <UNSIGNED_DECIMAL> {value = new PolyDouble(Double.parseDouble(t.image));}
+                            |
+                            t = <QUOTED> {value = new PolyString(t.image.substring(1, t.image.length() - 1));}
+                        )
+                        {properties.put(new PolyString( key.image ), value);}
+                    )*
             ]<RCURL>]
         <RBRACK>
     ]
     <MINUS> [<GT> {dir = EdgeDirection.LEFT_TO_RIGHT;}]
 
     {return new Quadruple<>(PolyDictionary.ofDict(properties), labels, name, dir);}
+}
+
+PolyEdge PolyEdgeWithEnds() :
+{
+    Token t;
+    String source, target;
+    Quadruple<PolyDictionary, List<PolyString>, PolyString, EdgeDirection> edge = null;
+
+}
+{
+    <LPAR> source = UUID() <RPAR>
+    edge = PolyEdge()
+    <LPAR> target = UUID() <RPAR>
+
+    {return new PolyEdge(edge.a, edge.b, new PolyString(source), new PolyString(target), edge.d, edge.c);}
 }
 
 /**
@@ -565,13 +610,28 @@ PolyAlgDataType DataType() :
     Token t;
     List<Integer> args = new ArrayList<>();
     boolean nullable = true;
+    boolean isArray = false;
 }
 {
     t = <IDENTIFIER> {type = t.image;} [<LPAR>
         t = <UNSIGNED_INT> {args.add(Integer.parseInt(t.image));} (<SEP> t = <UNSIGNED_INT> {args.add(Integer.parseInt(t.image));})*
     <RPAR>]
+    [<ARRAY> {isArray = true;}]
     [<NULL> | <NOT_NULL> {nullable = false;} ]
-    {return new PolyAlgDataType(type, args, nullable, getPos());}
+    {return new PolyAlgDataType(type, args, nullable, isArray, getPos());}
+}
+
+String UUID() :
+{
+    StringBuilder sb = new StringBuilder();
+}
+{
+    (<IDENTIFIER> {sb.append(token.image);} | <UNSIGNED_INT> {sb.append(token.image);} | <UNSIGNED_APPROX_DECIMAL> {sb.append(token.image);})+
+    <MINUS> {sb.append(token.image);} (<IDENTIFIER> {sb.append(token.image);} | <UNSIGNED_INT> {sb.append(token.image);} | <UNSIGNED_APPROX_DECIMAL> {sb.append(token.image);})+
+    <MINUS> {sb.append(token.image);} (<IDENTIFIER> {sb.append(token.image);} | <UNSIGNED_INT> {sb.append(token.image);} | <UNSIGNED_APPROX_DECIMAL> {sb.append(token.image);})+
+    <MINUS> {sb.append(token.image);} (<IDENTIFIER> {sb.append(token.image);} | <UNSIGNED_INT> {sb.append(token.image);} | <UNSIGNED_APPROX_DECIMAL> {sb.append(token.image);})+
+    <MINUS> {sb.append(token.image);} (<IDENTIFIER> {sb.append(token.image);} | <UNSIGNED_INT> {sb.append(token.image);} | <UNSIGNED_APPROX_DECIMAL> {sb.append(token.image);})+
+    {return sb.toString();}
 }
 
 String OpName() :
