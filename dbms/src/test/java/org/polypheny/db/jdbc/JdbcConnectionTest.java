@@ -377,8 +377,7 @@ public class JdbcConnectionTest {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
             Array array = connection.createArrayOf( typeName, objects );
-            if ( array.getArray() instanceof Integer[] ) {
-                Integer[] values = (Integer[]) array.getArray();
+            if ( array.getArray() instanceof Integer[] values ) {
                 for ( int i = 0; i < objects.length; i++ ) {
                     assertEquals( objects[i], values[i] );
                 }
