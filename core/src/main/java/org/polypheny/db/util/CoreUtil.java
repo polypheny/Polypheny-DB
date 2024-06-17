@@ -22,7 +22,6 @@ import com.google.common.base.Charsets;
 import java.math.BigDecimal;
 import java.nio.charset.Charset;
 import java.nio.charset.UnsupportedCharsetException;
-import java.sql.Array;
 import java.text.MessageFormat;
 import java.util.HashMap;
 import java.util.List;
@@ -45,9 +44,7 @@ import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.runtime.Resources;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
-import org.polypheny.db.util.avatica.ArrayImpl;
 import org.polypheny.db.util.avatica.Casing;
-import org.polypheny.db.util.avatica.ColumnMetaData.AvaticaType;
 
 public class CoreUtil {
 
@@ -428,12 +425,6 @@ public class CoreUtil {
             return BOX.get( clazz );
         }
         return clazz;
-    }
-
-
-    public static Array createArray( AvaticaType elementType, List<Object> elements ) {
-        // Avoid creating a new List if we already have a List
-        return new ArrayImpl( elements, elementType );
     }
 
 
