@@ -169,7 +169,6 @@ public class SqlJoin extends SqlCall {
     }
 
 
-
     public final SqlNode getRight() {
         return right;
     }

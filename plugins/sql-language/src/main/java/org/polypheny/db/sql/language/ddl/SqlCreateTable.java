@@ -57,7 +57,6 @@ import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.util.ImmutableNullableList;
 import org.polypheny.db.util.Pair;
 
 

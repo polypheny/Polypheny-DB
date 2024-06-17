@@ -87,7 +87,6 @@ public record ColumnMetaData(
     }
 
 
-
     /**
      * Description of the type used to internally represent a value. For example,
      * a {@link java.sql.Date} might be represented as a {@link #PRIMITIVE_INT}

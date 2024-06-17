@@ -1041,6 +1041,7 @@ public class RexToLixTranslator {
             final Expression left = list.append( "current", expressionsLeft );
             return typeLeft.fieldReference( left, index, storageType );
         }
+
     }
 
 

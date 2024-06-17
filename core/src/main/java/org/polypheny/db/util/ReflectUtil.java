@@ -34,15 +34,11 @@
 package org.polypheny.db.util;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import org.apache.calcite.linq4j.function.Parameter;
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 
 
 /**
@@ -118,7 +114,6 @@ public abstract class ReflectUtil {
     }
 
 
-
     /**
      * Derives the name of the {@code i}th parameter of a method.
      */
@@ -146,4 +141,3 @@ public abstract class ReflectUtil {
 
 
 }
-

@@ -158,7 +158,6 @@ public class Pair<T1, T2> implements Map.Entry<T1, T2>, Serializable {
     }
 
 
-
     /**
      * Converts two lists into a list of {@link Pair}s, whose length is the lesser of the lengths of the source lists.
      *
@@ -307,4 +306,3 @@ public class Pair<T1, T2> implements Map.Entry<T1, T2>, Serializable {
     }
 
 }
-

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -93,6 +93,7 @@ public class TimestampWithTimeZoneString implements Comparable<TimestampWithTime
         Preconditions.checkArgument( millis >= 0 && millis < 1000 );
         return withFraction( DateTimeStringUtils.pad( 3, millis ) );
     }
+
 
     /**
      * Sets the fraction field of a {@code TimestampString}. The precision is determined by the number of leading zeros.
@@ -211,4 +212,3 @@ public class TimestampWithTimeZoneString implements Comparable<TimestampWithTime
     }
 
 }
-

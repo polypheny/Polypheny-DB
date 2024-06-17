@@ -486,7 +486,6 @@ public class UtilTest {
     }
 
 
-
     /**
      * Tests the {@link Util#toPosix(TimeZone, boolean)} method.
      */
@@ -719,7 +718,6 @@ public class UtilTest {
         }
         assertEquals( 5825, x );
     }
-
 
 
     /**
@@ -1995,4 +1993,3 @@ public class UtilTest {
     }
 
 }
-

@@ -394,7 +394,6 @@ public abstract class PolyTypeUtil {
     }
 
 
-
     /**
      * @return true if type is numeric with approximate precision
      */
@@ -454,7 +453,6 @@ public abstract class PolyTypeUtil {
         }
         return t1.getPolyType() == t2.getPolyType();
     }
-
 
 
     private static boolean isAny( AlgDataType t ) {
@@ -813,6 +811,7 @@ public abstract class PolyTypeUtil {
                 .map( AlgDataTypeField::getType )
                 .toList();
     }
+
 
     /**
      * Returns whether a type is flat. It is not flat if it is a record type that has one or more fields that are

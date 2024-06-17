@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,7 +54,7 @@ public class SerializableCharset implements Serializable {
 
     /**
      * -- GETTER --
-     *  Returns the wrapped
+     * Returns the wrapped
      * .
      *
      * @return the wrapped Charset
@@ -105,5 +105,5 @@ public class SerializableCharset implements Serializable {
         }
         return new SerializableCharset( charset );
     }
-}
 
+}

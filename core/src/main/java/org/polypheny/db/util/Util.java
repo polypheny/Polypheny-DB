@@ -561,7 +561,6 @@ public class Util {
     }
 
 
-
     public static String toLinux( String s ) {
         return s.replaceAll( "\r\n", "\n" );
     }
@@ -1137,7 +1136,6 @@ public class Util {
     }
 
 
-
     /**
      * Returns an exception indicating that we didn't expect to find this enumeration here.
      *
@@ -1637,7 +1635,6 @@ public class Util {
     }
 
 
-
     /**
      * Prints the given code with line numbering.
      */
@@ -2031,4 +2028,3 @@ public class Util {
     }
 
 }
-

@@ -42,7 +42,6 @@ import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.inference.ReturnTypes;
 import org.polypheny.db.util.ControlFlowException;
-import org.polypheny.db.util.ImmutableNullableList;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Static;
 import org.polypheny.db.util.Util;
@@ -865,4 +864,3 @@ public class SqlWindow extends SqlCall implements Window {
     }
 
 }
-

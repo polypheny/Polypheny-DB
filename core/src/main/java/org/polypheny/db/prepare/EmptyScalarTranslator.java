@@ -19,7 +19,6 @@ package org.polypheny.db.prepare;
 import com.google.common.collect.ImmutableList;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.List;
 import org.apache.calcite.linq4j.tree.BinaryExpression;
 import org.apache.calcite.linq4j.tree.BlockStatement;

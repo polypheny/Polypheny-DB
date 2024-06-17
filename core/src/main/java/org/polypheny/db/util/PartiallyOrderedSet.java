@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,7 +67,6 @@ import java.util.function.Function;
  * <p>
  * In addition to the usual set methods, there are methods to determine the immediate parents and children of an element in the set, and method to find
  * all elements which have no parents or no children (i.e. "root" and "leaf" elements).
- *
  *
  * @param <E> Element type
  */
@@ -558,7 +557,7 @@ public class PartiallyOrderedSet<E> extends AbstractSet<E> {
     /**
      * Returns the values in this partially-ordered set that are greater-than a given value and there are no intervening values.
      * <p>
-     *If the value is not in this set, returns null.
+     * If the value is not in this set, returns null.
      *
      * @param e Value
      * @return List of values in this set that are directly greater than the given value
@@ -760,6 +759,7 @@ public class PartiallyOrderedSet<E> extends AbstractSet<E> {
         public String toString() {
             return e.toString();
         }
+
     }
 
 
@@ -783,6 +783,7 @@ public class PartiallyOrderedSet<E> extends AbstractSet<E> {
         public String toString() {
             return description;
         }
+
     }
 
 
@@ -808,6 +809,7 @@ public class PartiallyOrderedSet<E> extends AbstractSet<E> {
          * @return Whether element 1 is &le; element 2
          */
         boolean lessThan( E e1, E e2 );
-    }
-}
 
+    }
+
+}

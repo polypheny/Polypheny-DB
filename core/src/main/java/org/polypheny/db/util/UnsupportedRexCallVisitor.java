@@ -46,7 +46,6 @@ public class UnsupportedRexCallVisitor extends RexVisitorImpl<Void> {
     }
 
 
-
     public static boolean containsModelItem( List<? extends RexNode> nodes ) {
         return nodes.stream().anyMatch( n -> containsUnsupportedCall( n,
                 List.of( c -> c.op.getOperatorName() == OperatorName.CROSS_MODEL_ITEM ) ) );

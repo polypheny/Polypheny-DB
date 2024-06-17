@@ -97,7 +97,7 @@ public final class BitSets {
      * <code>
      * BitSet bitSet;
      * for (int i : Util.toIter(bitSet)) {
-     *   print(i);
+     * print(i);
      * }
      * </code>
      *
@@ -383,6 +383,7 @@ public final class BitSets {
             }
             return o;
         }
-    }
-}
 
+    }
+
+}

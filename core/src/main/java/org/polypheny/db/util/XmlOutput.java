@@ -71,21 +71,21 @@ public class XmlOutput {
     private boolean compact;
 
     /**
-     *
      * -- SETTER --
-     *  Sets the string to print for each level of indentation. The default is a tab. The value must not be <code>null</code>. Set this to the empty
-     *  string to achieve no indentation (note that <code>
+     * Sets the string to print for each level of indentation. The default is a tab. The value must not be <code>null</code>. Set this to the empty
+     * string to achieve no indentation (note that <code>
      * (true)</code> removes indentation <em>and</em> newlines).
-     @see #setIndentString
+     *
+     * @see #setIndentString
      */
     @Setter
     private String indentString = "\t";
 
     /**
-     *
      * -- SETTER --
-     *  Sets whether to detect that tags are empty.
-     @see #setGlob
+     * Sets whether to detect that tags are empty.
+     *
+     * @see #setGlob
      */
     @Setter
     private boolean glob;
@@ -143,7 +143,6 @@ public class XmlOutput {
     public boolean getCompact() {
         return compact;
     }
-
 
 
     /**
@@ -208,7 +207,6 @@ public class XmlOutput {
     }
 
 
-
     /**
      * Completes a tag.  This outputs the end tag corresponding to the last exposed beginTag. The tag name must match the name of the corresponding beginTag.
      *
@@ -243,7 +241,6 @@ public class XmlOutput {
     }
 
 
-
     /**
      * Writes a CDATA section.  Such sections always appear on their own line.
      * The nature in which the CDATA section is written depends on the actual string content with respect to these special characters/sequences:
@@ -255,7 +252,7 @@ public class XmlOutput {
      * <li><code>&lt;</code>
      * <li><code>&gt;</code>
      * </ul>
-
+     *
      * Additionally, the sequence <code>]]&gt;</code> is special.
      * <ul>
      * <li>Content containing no special characters will be left as-is.
@@ -320,7 +317,6 @@ public class XmlOutput {
     }
 
 
-
     /**
      * Writes content.
      */
@@ -370,7 +366,6 @@ public class XmlOutput {
         out.flush();
         tagsWritten++;
     }
-
 
 
     /**
@@ -605,6 +600,7 @@ public class XmlOutput {
         public void display( PrintWriter out, int indent ) {
             throw new UnsupportedOperationException();
         }
-    }
-}
 
+    }
+
+}

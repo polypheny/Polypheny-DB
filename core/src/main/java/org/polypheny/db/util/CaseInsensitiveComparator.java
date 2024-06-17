@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,17 +52,17 @@ class CaseInsensitiveComparator implements Comparator, Serializable {
 
 
     /**
-         * Enables to create floor and ceiling keys for given string.
-         */
-        private record Key( String value, int compareResult ) {
+     * Enables to create floor and ceiling keys for given string.
+     */
+    private record Key( String value, int compareResult ) {
 
 
         @Override
-            public String toString() {
-                return value;
-            }
-
+        public String toString() {
+            return value;
         }
+
+    }
 
 
     Object floorKey( String key ) {
