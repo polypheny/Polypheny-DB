@@ -364,12 +364,11 @@ public abstract class AbstractAlgNode implements AlgNode {
     public void buildPolyAlgebra( StringBuilder sb, String prefix ) {
         final String INDENT = " ";
         String nextPrefix = prefix == null ? null : prefix + INDENT;
-        boolean makeUnique = makeFieldsUnique();
+        PolyAlgDeclaration decl = getPolyAlgDeclaration();
+        boolean makeUnique = makeFieldsUnique( decl );
         List<String> inputFieldNames = makeUnique ?
                 PolyAlgUtils.uniquifiedInputFieldNames( this ) :
                 PolyAlgUtils.getInputFieldNamesList( this );
-
-        PolyAlgDeclaration decl = getPolyAlgDeclaration();
         sb.append( prefix == null ? "" : prefix ).append( decl.opName );
         sb.append( collectAttributes().toPolyAlgebra( this, inputFieldNames ) );
 
@@ -390,7 +389,7 @@ public abstract class AbstractAlgNode implements AlgNode {
                 child.buildPolyAlgebra( sb, nextPrefix );
             } else {
                 sb.append( nextPrefix )
-                        .append( PolyAlgRegistry.getDeclaration( LogicalRelProject.class ).opName ).append( "#" )  // TODO: select Project depending on data model, logical / physical
+                        .append( PolyAlgRegistry.getDeclaration( LogicalRelProject.class ).opName )
                         .append( projections.toPolyAlg( child, child.getTupleType().getFieldNames() ) )
                         .append( "(\n" );
                 child.buildPolyAlgebra( sb, nextPrefix == null ? null : nextPrefix + INDENT );
@@ -410,12 +409,12 @@ public abstract class AbstractAlgNode implements AlgNode {
     public ObjectNode serializePolyAlgebra( ObjectMapper mapper, GlobalStats gs ) {
         ObjectNode node = mapper.createObjectNode();
 
-        boolean makeUnique = makeFieldsUnique(); // set operations like UNION require duplicate field names
+        PolyAlgDeclaration decl = getPolyAlgDeclaration();
+        boolean makeUnique = makeFieldsUnique( decl ); // set operations like UNION require duplicate field names
         List<String> inputFieldNames = makeUnique ?
                 PolyAlgUtils.uniquifiedInputFieldNames( this ) :
                 PolyAlgUtils.getInputFieldNamesList( this );
 
-        PolyAlgDeclaration decl = getPolyAlgDeclaration();
         node.put( "opName", decl.opName );
         if ( decl.hasParams() ) {
             node.set( "arguments", collectAttributes().serialize( this, inputFieldNames, mapper ) );
@@ -459,9 +458,11 @@ public abstract class AbstractAlgNode implements AlgNode {
     }
 
 
-    private boolean makeFieldsUnique() {
+    private boolean makeFieldsUnique( PolyAlgDeclaration decl ) {
         // set operations like UNION require duplicate field names
-        return !(this instanceof SetOp || this instanceof Transformer);
+        return decl.mightRequireAuxiliaryProject() &&
+                !(this instanceof SetOp) &&
+                !(this instanceof Transformer);
     }
 
 

@@ -250,7 +250,7 @@ public class PolyAlgUtils {
     public static ObjectNode wrapInRename( AlgNode child, ListArg<RexArg> projections, AlgNode context, List<String> inputFieldNames, ObjectMapper mapper, GlobalStats gs ) {
         ObjectNode node = mapper.createObjectNode();
         PolyAlgDeclaration decl = PolyAlgRegistry.getDeclaration( LogicalRelProject.class );
-        node.put( "opName", decl.opName + "#" );
+        node.put( "opName", decl.opName);
 
         ObjectNode argNode = mapper.createObjectNode();
         argNode.put( "type", ParamType.LIST.name() );

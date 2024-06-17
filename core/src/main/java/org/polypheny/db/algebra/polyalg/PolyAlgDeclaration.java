@@ -209,6 +209,12 @@ public class PolyAlgDeclaration {
         return numInputs == -1 || numInputs == n;
     }
 
+    public boolean mightRequireAuxiliaryProject() {
+        return (numInputs == -1 || numInputs > 1) &&
+                !opTags.contains( OperatorTag.PHYSICAL ) &&
+                (model == DataModel.RELATIONAL || model == null);
+    }
+
 
     public ObjectNode serialize( ObjectMapper mapper ) {
         ObjectNode node = mapper.createObjectNode();
