@@ -16,11 +16,9 @@
 
 package org.polypheny.db.processing;
 
-import java.sql.DatabaseMetaData;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.calcite.linq4j.Ord;
-import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
@@ -84,47 +82,22 @@ public class QueryProcessorHelpers {
     }
 
 
-    public static List<ColumnMetaData> getColumnMetaDataList( JavaTypeFactory typeFactory, AlgDataType x, AlgDataType jdbcType, List<List<String>> originList ) {
+    public static List<ColumnMetaData> getColumnMetaDataList( AlgDataType jdbcType, List<List<String>> originList ) {
         final List<ColumnMetaData> columns = new ArrayList<>();
         for ( Ord<AlgDataTypeField> pair : Ord.zip( jdbcType.getFields() ) ) {
             final AlgDataTypeField field = pair.e;
-            final AlgDataType type = field.getType();
-            final AlgDataType fieldType = x.isStruct() ? x.getFields().get( pair.i ).getType() : type;
-            columns.add( QueryProcessorHelpers.metaData( typeFactory, columns.size(), field.getName(), type, fieldType, originList.get( pair.i ) ) );
+            columns.add( QueryProcessorHelpers.metaData( field.getName(), originList.get( pair.i ) ) );
         }
         return columns;
     }
 
 
     public static ColumnMetaData metaData(
-            JavaTypeFactory typeFactory,
-            int ordinal,
             String fieldName,
-            AlgDataType type,
-            AlgDataType fieldType,
             List<String> origins ) {
         return new ColumnMetaData(
-                ordinal, //XXX ordinal
-                false, // auto inc
-                true, //case sensitive
-                false, //searchable
-                false, // currency
-                type.isNullable() //XXX nullable
-                        ? DatabaseMetaData.columnNullable
-                        : DatabaseMetaData.columnNoNulls,
-                true, //signed
-                type.getPrecision(), //XXX display size
-                fieldName, //XXX label
-                QueryProcessorHelpers.origin( origins, 0 ), //XXX column name
-                QueryProcessorHelpers.origin( origins, 2 ), //XXX schema name
-                QueryProcessorHelpers.getPrecision( type ), //XXX precision
-                0, // XXX scale; This is a workaround for a bug in Avatica with Decimals. There is no need to change the scale //getScale( type ),
-                QueryProcessorHelpers.origin( origins, 1 ), //XXX table name
-                null, //XXXcatalog name = namespace
-                fieldType.getPolyType(), //type
-                true, // read only
-                false, // writable
-                false // definitely writable
+                fieldName,
+                QueryProcessorHelpers.origin( origins, 0 )
         );
     }
 

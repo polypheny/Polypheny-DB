@@ -167,8 +167,6 @@ public class PolyImplementation {
             default -> tupleType;
         };
         final List<ColumnMetaData> columns = QueryProcessorHelpers.getColumnMetaDataList(
-                statement.getTransaction().getTypeFactory(),
-                x,
                 QueryProcessorHelpers.makeStruct( statement.getTransaction().getTypeFactory(), x ),
                 preparedResult.getFieldOrigins() );
 

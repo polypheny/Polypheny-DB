@@ -53,15 +53,15 @@ public class RestResult {
     private final Kind kind;
     private final ResultIterator iterator;
     private final AlgDataType dataType;
-    List<ColumnMetaData> columns;
+    private final List<ColumnMetaData> columns;
     private List<Map<String, Object>> result;
     @Getter
     private long executionTime;
 
-    boolean containsFiles = false;
-    File zipFile;
-    FileOutputStream fos;
-    ZipOutputStream zipOut;
+    private final boolean containsFiles = false;
+    private File zipFile;
+    private FileOutputStream fos;
+    private ZipOutputStream zipOut;
 
 
     public RestResult( Kind Kind, ResultIterator iterator, AlgDataType dataType, List<ColumnMetaData> columns ) {

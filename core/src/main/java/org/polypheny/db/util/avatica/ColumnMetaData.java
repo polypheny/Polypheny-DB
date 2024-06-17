@@ -37,7 +37,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.lang.reflect.Type;
 import java.sql.Array;
-import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Struct;
@@ -49,66 +48,20 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import org.polypheny.db.type.PolyType;
 
 /**
  * Metadata for a column.
  *
  * <p>(Compare with {@link java.sql.ResultSetMetaData}.)
- *
- * @param ordinal 0-based
  */
 public record ColumnMetaData(
-        int ordinal,
-        boolean autoIncrement,
-        boolean caseSensitive,
-        boolean searchable,
-        boolean currency,
-        int nullable,
-        boolean signed,
-        int displaySize,
         String label,
-        String columnName,
-        String schemaName,
-        int precision,
-        int scale,
-        String tableName,
-        String catalogName,
-        PolyType type,
-        boolean readOnly,
-        boolean writable,
-        boolean definitelyWritable
-) {
+        String columnName ) {
 
     @JsonCreator
     public ColumnMetaData(
-            @JsonProperty("ordinal") int ordinal,
-            @JsonProperty("autoIncrement") boolean autoIncrement,
-            @JsonProperty("caseSensitive") boolean caseSensitive,
-            @JsonProperty("searchable") boolean searchable,
-            @JsonProperty("currency") boolean currency,
-            @JsonProperty("nullable") int nullable,
-            @JsonProperty("signed") boolean signed,
-            @JsonProperty("displaySize") int displaySize,
             @JsonProperty("label") String label,
-            @JsonProperty("columnName") String columnName,
-            @JsonProperty("schemaName") String schemaName,
-            @JsonProperty("precision") int precision,
-            @JsonProperty("scale") int scale,
-            @JsonProperty("tableName") String tableName,
-            @JsonProperty("catalogName") String catalogName,
-            @JsonProperty("type") PolyType type,
-            @JsonProperty("readOnly") boolean readOnly,
-            @JsonProperty("writable") boolean writable,
-            @JsonProperty("definitelyWritable") boolean definitelyWritable ) {
-        this.ordinal = ordinal;
-        this.autoIncrement = autoIncrement;
-        this.caseSensitive = caseSensitive;
-        this.searchable = searchable;
-        this.currency = currency;
-        this.nullable = nullable;
-        this.signed = signed;
-        this.displaySize = displaySize;
+            @JsonProperty("columnName") String columnName ) {
         this.label = label;
         // Per the JDBC spec this should be just columnName.
         // For example, the query
@@ -118,15 +71,6 @@ public record ColumnMetaData(
         //     (label=y, column=c table=t)
         // But DbUnit requires every column to have a name. Duh.
         this.columnName = first( columnName, label );
-        this.schemaName = schemaName;
-        this.precision = precision;
-        this.scale = scale;
-        this.tableName = tableName;
-        this.catalogName = catalogName;
-        this.type = type;
-        this.readOnly = readOnly;
-        this.writable = writable;
-        this.definitelyWritable = definitelyWritable;
     }
 
 
@@ -134,25 +78,7 @@ public record ColumnMetaData(
     public boolean equals( Object o ) {
         return o == this
                 || o instanceof ColumnMetaData
-                && autoIncrement == ((ColumnMetaData) o).autoIncrement
-                && caseSensitive == ((ColumnMetaData) o).caseSensitive
-                && Objects.equals( catalogName, ((ColumnMetaData) o).catalogName )
-                && Objects.equals( columnName, ((ColumnMetaData) o).columnName )
-                && currency == ((ColumnMetaData) o).currency
-                && definitelyWritable == ((ColumnMetaData) o).definitelyWritable
-                && displaySize == ((ColumnMetaData) o).displaySize
-                && Objects.equals( label, ((ColumnMetaData) o).label )
-                && nullable == ((ColumnMetaData) o).nullable
-                && ordinal == ((ColumnMetaData) o).ordinal
-                && precision == ((ColumnMetaData) o).precision
-                && readOnly == ((ColumnMetaData) o).readOnly
-                && scale == ((ColumnMetaData) o).scale
-                && Objects.equals( schemaName, ((ColumnMetaData) o).schemaName )
-                && searchable == ((ColumnMetaData) o).searchable
-                && signed == ((ColumnMetaData) o).signed
-                && Objects.equals( tableName, ((ColumnMetaData) o).tableName )
-                && Objects.equals( type, ((ColumnMetaData) o).type )
-                && writable == ((ColumnMetaData) o).writable;
+                && Objects.equals( columnName, ((ColumnMetaData) o).columnName );
     }
 
 
@@ -160,36 +86,6 @@ public record ColumnMetaData(
         return t0 != null ? t0 : t1;
     }
 
-
-    /**
-     * Creates a ColumnMetaData for result sets that are not based on a struct
-     * but need to have a single 'field' for purposes of
-     * {@link java.sql.ResultSetMetaData}.
-     */
-    public static ColumnMetaData dummy( PolyType type, boolean nullable ) {
-        return new ColumnMetaData(
-                0,
-                false,
-                true,
-                false,
-                false,
-                nullable
-                        ? DatabaseMetaData.columnNullable
-                        : DatabaseMetaData.columnNoNulls,
-                true,
-                -1,
-                null,
-                null,
-                null,
-                -1,
-                -1,
-                null,
-                null,
-                type,
-                true,
-                false,
-                false );
-    }
 
 
     /**
