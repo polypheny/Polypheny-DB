@@ -35,8 +35,6 @@ package org.polypheny.db.util.avatica;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import java.lang.reflect.Type;
 import java.sql.Array;
 import java.sql.DatabaseMetaData;
@@ -51,7 +49,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import lombok.Getter;
+import org.polypheny.db.type.PolyType;
 
 /**
  * Metadata for a column.
@@ -76,11 +74,10 @@ public record ColumnMetaData(
         int scale,
         String tableName,
         String catalogName,
-        ColumnMetaData.AvaticaType type,
+        PolyType type,
         boolean readOnly,
         boolean writable,
-        boolean definitelyWritable,
-        String columnClassName
+        boolean definitelyWritable
 ) {
 
     @JsonCreator
@@ -100,11 +97,10 @@ public record ColumnMetaData(
             @JsonProperty("scale") int scale,
             @JsonProperty("tableName") String tableName,
             @JsonProperty("catalogName") String catalogName,
-            @JsonProperty("type") ColumnMetaData.AvaticaType type,
+            @JsonProperty("type") PolyType type,
             @JsonProperty("readOnly") boolean readOnly,
             @JsonProperty("writable") boolean writable,
-            @JsonProperty("definitelyWritable") boolean definitelyWritable,
-            @JsonProperty("columnClassName") String columnClassName ) {
+            @JsonProperty("definitelyWritable") boolean definitelyWritable ) {
         this.ordinal = ordinal;
         this.autoIncrement = autoIncrement;
         this.caseSensitive = caseSensitive;
@@ -131,7 +127,6 @@ public record ColumnMetaData(
         this.readOnly = readOnly;
         this.writable = writable;
         this.definitelyWritable = definitelyWritable;
-        this.columnClassName = columnClassName;
     }
 
 
@@ -142,7 +137,6 @@ public record ColumnMetaData(
                 && autoIncrement == ((ColumnMetaData) o).autoIncrement
                 && caseSensitive == ((ColumnMetaData) o).caseSensitive
                 && Objects.equals( catalogName, ((ColumnMetaData) o).catalogName )
-                && Objects.equals( columnClassName, ((ColumnMetaData) o).columnClassName )
                 && Objects.equals( columnName, ((ColumnMetaData) o).columnName )
                 && currency == ((ColumnMetaData) o).currency
                 && definitelyWritable == ((ColumnMetaData) o).definitelyWritable
@@ -168,37 +162,11 @@ public record ColumnMetaData(
 
 
     /**
-     * Creates a {@link ColumnMetaData.ScalarType}.
-     */
-    public static ColumnMetaData.ScalarType scalar( int type, String typeName, ColumnMetaData.Rep rep ) {
-        return new ColumnMetaData.ScalarType( type, typeName, rep );
-    }
-
-
-    /**
-     * Creates a {@link ColumnMetaData.StructType}.
-     */
-    public static ColumnMetaData.StructType struct( List<ColumnMetaData> columns ) {
-        return new ColumnMetaData.StructType( columns );
-    }
-
-
-    /**
-     * Creates an {@link ColumnMetaData.ArrayType}.
-     */
-    public static ColumnMetaData.ArrayType array(
-            ColumnMetaData.AvaticaType componentType, String typeName,
-            ColumnMetaData.Rep rep ) {
-        return new ColumnMetaData.ArrayType( Types.ARRAY, typeName, rep, componentType );
-    }
-
-
-    /**
      * Creates a ColumnMetaData for result sets that are not based on a struct
      * but need to have a single 'field' for purposes of
      * {@link java.sql.ResultSetMetaData}.
      */
-    public static ColumnMetaData dummy( ColumnMetaData.AvaticaType type, boolean nullable ) {
+    public static ColumnMetaData dummy( PolyType type, boolean nullable ) {
         return new ColumnMetaData(
                 0,
                 false,
@@ -220,16 +188,7 @@ public record ColumnMetaData(
                 type,
                 true,
                 false,
-                false,
-                type.columnClassName() );
-    }
-
-
-    public ColumnMetaData setRep( ColumnMetaData.Rep rep ) {
-        return new ColumnMetaData( ordinal, autoIncrement, caseSensitive, searchable,
-                currency, nullable, signed, displaySize, label, columnName, schemaName,
-                precision, scale, tableName, catalogName, type.setRep( rep ), readOnly,
-                writable, definitelyWritable, columnClassName );
+                false );
     }
 
 
@@ -263,7 +222,7 @@ public record ColumnMetaData(
         STRING( String.class, Types.VARCHAR ),
 
         /**
-         * Values are represented as some sub-class of {@link Number}.
+         * Values are represented as some subclass of {@link Number}.
          * The JSON encoding does this.
          */
         NUMBER( Number.class, Types.NUMERIC ),
@@ -351,160 +310,6 @@ public record ColumnMetaData(
                 default -> resultSet.getObject( i );
             };
         }
-
-
-    }
-
-
-    /**
-     * Base class for a column type.
-     */
-    @JsonTypeInfo(
-            use = JsonTypeInfo.Id.NAME,
-            property = "type",
-            defaultImpl = ColumnMetaData.ScalarType.class)
-    @JsonSubTypes({
-            @JsonSubTypes.Type(value = ColumnMetaData.ScalarType.class, name = "scalar"),
-            @JsonSubTypes.Type(value = ColumnMetaData.StructType.class, name = "struct"),
-            @JsonSubTypes.Type(value = ColumnMetaData.ArrayType.class, name = "array") })
-    public static class AvaticaType {
-
-        public final int id;
-        @Getter
-        public final String name;
-
-        /**
-         * The type of the field that holds the value. Not a JDBC property.
-         */
-        public final ColumnMetaData.Rep rep;
-
-
-        public AvaticaType( int id, String name, ColumnMetaData.Rep rep ) {
-            this.id = id;
-            this.name = Objects.requireNonNull( name );
-            this.rep = Objects.requireNonNull( rep );
-        }
-
-
-        public String columnClassName() {
-            return SqlType.valueOf( id ).boxedClass().getName();
-        }
-
-
-        public ColumnMetaData.AvaticaType setRep( ColumnMetaData.Rep rep ) {
-            throw new UnsupportedOperationException();
-        }
-
-
-        @Override
-        public int hashCode() {
-            return Objects.hash( id, name, rep );
-        }
-
-
-        @Override
-        public boolean equals( Object o ) {
-            return o == this
-                    || o instanceof ColumnMetaData.AvaticaType
-                    && id == ((ColumnMetaData.AvaticaType) o).id
-                    && Objects.equals( name, ((ColumnMetaData.AvaticaType) o).name )
-                    && rep == ((ColumnMetaData.AvaticaType) o).rep;
-        }
-
-    }
-
-
-    /**
-     * Scalar type.
-     */
-    public static class ScalarType extends ColumnMetaData.AvaticaType {
-
-        @JsonCreator
-        public ScalarType(
-                @JsonProperty("id") int id,
-                @JsonProperty("name") String name,
-                @JsonProperty("rep") ColumnMetaData.Rep rep ) {
-            super( id, name, rep );
-        }
-
-
-        @Override
-        public ColumnMetaData.AvaticaType setRep( ColumnMetaData.Rep rep ) {
-            return new ColumnMetaData.ScalarType( id, name, rep );
-        }
-
-    }
-
-
-    /**
-     * Record type.
-     */
-    public static class StructType extends ColumnMetaData.AvaticaType {
-
-        public final List<ColumnMetaData> columns;
-
-
-        @JsonCreator
-        public StructType( List<ColumnMetaData> columns ) {
-            super( Types.STRUCT, "STRUCT", ColumnMetaData.Rep.OBJECT );
-            this.columns = columns;
-        }
-
-
-        @Override
-        public int hashCode() {
-            return Objects.hash( id, name, rep, columns );
-        }
-
-
-        @Override
-        public boolean equals( Object o ) {
-            return o == this
-                    || o instanceof ColumnMetaData.StructType
-                    && super.equals( o )
-                    && Objects.equals( columns, ((ColumnMetaData.StructType) o).columns );
-        }
-
-    }
-
-
-    /**
-     * Array type.
-     */
-    @Getter
-    public static class ArrayType extends ColumnMetaData.AvaticaType {
-
-        private final ColumnMetaData.AvaticaType component;
-
-
-        /**
-         * Not for public use. Use {@link ColumnMetaData#array(ColumnMetaData.AvaticaType, String, ColumnMetaData.Rep)}.
-         */
-        @JsonCreator
-        public ArrayType(
-                @JsonProperty("type") int type, @JsonProperty("name") String typeName,
-                @JsonProperty("rep") ColumnMetaData.Rep representation, @JsonProperty("component") ColumnMetaData.AvaticaType component ) {
-            super( type, typeName, representation );
-            this.component = component;
-        }
-
-
-        @Override
-        public int hashCode() {
-            return Objects.hash( id, name, rep, component );
-        }
-
-
-        @Override
-        public boolean equals( Object o ) {
-            return o == this
-                    || o instanceof ColumnMetaData.ArrayType
-                    && super.equals( o )
-                    && Objects.equals( component, ((ColumnMetaData.ArrayType) o).component );
-        }
-
     }
 
 }
-
-// End ColumnMetaData.java
