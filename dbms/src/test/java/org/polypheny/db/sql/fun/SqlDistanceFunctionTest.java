@@ -22,7 +22,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.sql.Types;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
@@ -31,9 +30,6 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
-import org.polypheny.db.util.CoreUtil;
-import org.polypheny.db.util.avatica.ColumnMetaData;
-import org.polypheny.db.util.avatica.ColumnMetaData.Rep;
 
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
@@ -256,9 +252,9 @@ public class SqlDistanceFunctionTest {
             try ( Statement statement = connection.createStatement() ) {
                 PreparedStatement preparedStatement = connection.prepareStatement( "SELECT id, distance(myarray, cast(? as INTEGER ARRAY), cast( ? as VARCHAR)) as dist FROM knninttest ORDER BY id" );
 
-                preparedStatement.setArray( 1, CoreUtil.createArray(
-                        ColumnMetaData.scalar( Types.INTEGER, "INTEGER", Rep.STRING ),
-                        ImmutableList.of( 1, 1 ) ) );
+                preparedStatement.setArray( 1, connection.createArrayOf(
+                        "INTEGER",
+                        new Object[]{ 1, 1 } ) );
                 preparedStatement.setString( 2, "L2SQUARED" );
 
                 TestHelper.checkResultSet(

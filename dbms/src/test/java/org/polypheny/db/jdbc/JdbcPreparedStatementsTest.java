@@ -28,7 +28,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Time;
 import java.sql.Timestamp;
-import java.sql.Types;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
@@ -36,9 +35,6 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
-import org.polypheny.db.util.CoreUtil;
-import org.polypheny.db.util.avatica.ColumnMetaData;
-import org.polypheny.db.util.avatica.ColumnMetaData.Rep;
 import org.polypheny.db.util.avatica.SqlType;
 
 
@@ -1091,15 +1087,15 @@ public class JdbcPreparedStatementsTest {
                     PreparedStatement preparedInsert = connection.prepareStatement( "INSERT INTO psarrtest(tinteger,tintarr) VALUES (?, ?)" );
 
                     preparedInsert.setInt( 1, 1 );
-                    preparedInsert.setArray( 2, CoreUtil.createArray(
-                            ColumnMetaData.scalar( Types.INTEGER, "INTEGER", Rep.INTEGER ),
-                            ImmutableList.of( 1, 2 ) ) );
+                    preparedInsert.setArray( 2, connection.createArrayOf(
+                            "INTEGER",
+                            new Object[]{ 1, 2 } ) );
                     preparedInsert.execute();
 
                     preparedInsert.setInt( 1, 2 );
-                    preparedInsert.setArray( 2, CoreUtil.createArray(
-                            ColumnMetaData.scalar( Types.INTEGER, "INTEGER", Rep.INTEGER ),
-                            ImmutableList.of( 4, 5 ) ) );
+                    preparedInsert.setArray( 2, connection.createArrayOf(
+                            "INTEGER",
+                            new Object[]{ 4, 5 } ) );
                     preparedInsert.execute();
 
                     PreparedStatement preparedSelect = connection.prepareStatement( "SELECT tinteger,tintarr FROM psarrtest WHERE tinteger < ?" );
@@ -1134,15 +1130,15 @@ public class JdbcPreparedStatementsTest {
                     PreparedStatement preparedInsert = connection.prepareStatement( "INSERT INTO psarrtest(tinteger,tvarchararr) VALUES (?, ?)" );
 
                     preparedInsert.setInt( 1, 1 );
-                    preparedInsert.setArray( 2, CoreUtil.createArray(
-                            ColumnMetaData.scalar( Types.VARCHAR, "VARCHAR", Rep.STRING ),
-                            ImmutableList.of( "Hans", "Georg" ) ) );
+                    preparedInsert.setArray( 2, connection.createArrayOf(
+                            "VARCHAR",
+                            new Object[]{ "Hans", "Georg" } ) );
                     preparedInsert.addBatch();
 
                     preparedInsert.setInt( 1, 2 );
-                    preparedInsert.setArray( 2, CoreUtil.createArray(
-                            ColumnMetaData.scalar( Types.VARCHAR, "VARCHAR", Rep.STRING ),
-                            ImmutableList.of( "Lisa", "Livia" ) ) );
+                    preparedInsert.setArray( 2, connection.createArrayOf(
+                            "VARCHAR",
+                            new Object[]{ "Lisa", "Livia" } ) );
                     preparedInsert.addBatch();
 
                     preparedInsert.executeBatch();
