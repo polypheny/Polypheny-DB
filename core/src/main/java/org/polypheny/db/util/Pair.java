@@ -48,17 +48,15 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import javax.annotation.Nonnull;
 import lombok.Value;
 import lombok.experimental.NonFinal;
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.util.Pair.PairSerializer;
 
 
 /**
- * Pair of objects.
+ * Wrapper object for a pair of objects.
  * <p>
- * Because a pair implements {@link #equals(Object)}, {@link #hashCode()} and {@link #compareTo(Pair)}, it can be used in any kind of {@link java.util.Collection}.
+ * Because a pair implements {@link #equals(Object)} and {@link #hashCode()}, it can be used in any kind of {@link java.util.Collection}.
  *
  * @param <T1> Left-hand type
  * @param <T2> Right-hand type
@@ -66,7 +64,7 @@ import org.polypheny.db.util.Pair.PairSerializer;
 @Value
 @NonFinal
 @JsonSerialize(using = PairSerializer.class)
-public class Pair<T1, T2> implements Comparable<Pair<T1, T2>>, Map.Entry<T1, T2>, Serializable {
+public class Pair<T1, T2> implements Map.Entry<T1, T2>, Serializable {
 
     @Serialize
     @JsonProperty
@@ -134,26 +132,6 @@ public class Pair<T1, T2> implements Comparable<Pair<T1, T2>>, Map.Entry<T1, T2>
         int keyHash = left == null ? 0 : left.hashCode();
         int valueHash = right == null ? 0 : right.hashCode();
         return keyHash ^ valueHash;
-    }
-
-
-    @Override
-    public int compareTo( @Nonnull Pair<T1, T2> that ) {
-        throw new GenericRuntimeException( "Is (not) still used" );
-        /*int c;
-        if ( this.left instanceof Comparable<?> && that.left instanceof Comparable<?>){
-            c = compare( (Comparable) left, (Comparable) that.left );
-            if ( c == 0 ) {
-                c = compare( (Comparable) right, (Comparable) that.right );
-            }
-            return c;
-        }
-
-        if ( left.equals( that.left ) && right.equals( that.right ) ){
-            return 0;
-        }
-        return -1;
-         */
     }
 
 
