@@ -79,7 +79,6 @@ import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.checker.PolyOperandTypeChecker;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
-import org.polypheny.db.util.Bug;
 import org.polypheny.db.util.Holder;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.PolyphenyDbAssert;
@@ -128,20 +127,15 @@ import org.polypheny.db.util.temporal.DateTimeUtils;
  */
 public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
-    // TODO: Change message when Fnl3Fixed to something like "Invalid character for cast: PC=0 Code=22018"
-    public static final String INVALID_CHAR_MESSAGE = Bug.FNL3_FIXED ? null : "(?s).*";
+    public static final String INVALID_CHAR_MESSAGE = "(?s).*";
 
-    // TODO: Change message when Fnl3Fixed to something like Overflow during calculation or cast: PC=0 Code=22003"
-    public static final String OUT_OF_RANGE_MESSAGE = Bug.FNL3_FIXED ? null : "(?s).*";
+    public static final String OUT_OF_RANGE_MESSAGE = "(?s).*";
 
-    // TODO: Change message when Fnl3Fixed to something like "Division by zero: PC=0 Code=22012"
-    public static final String DIVISION_BY_ZERO_MESSAGE = Bug.FNL3_FIXED ? null : "(?s).*";
+    public static final String DIVISION_BY_ZERO_MESSAGE = "(?s).*";
 
-    // TODO: Change message when Fnl3Fixed to something like "String right truncation: PC=0 Code=22001"
-    public static final String STRING_TRUNC_MESSAGE = Bug.FNL3_FIXED ? null : "(?s).*";
+    public static final String STRING_TRUNC_MESSAGE = "(?s).*";
 
-    // TODO: Change message when Fnl3Fixed to something like "Invalid datetime format: PC=0 Code=22007"
-    public static final String BAD_DATETIME_MESSAGE = Bug.FNL3_FIXED ? null : "(?s).*";
+    public static final String BAD_DATETIME_MESSAGE = "(?s).*";
 
     // Error messages when an invalid time unit is given as input to extract for a particular input type.
     public static final String INVALID_EXTRACT_UNIT_CONVERTLET_ERROR = "Extract.*from.*type data is not supported";
@@ -150,7 +144,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
     public static final String LITERAL_OUT_OF_RANGE_MESSAGE = "(?s).*Numeric literal.*out of range.*";
 
-    public static final boolean TODO = false;
 
     /**
      * Regular expression for a SQL TIME(0) value.
@@ -367,18 +360,10 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
             value = getCastString( value, type, false );
         }
 
-        // currently no exception thrown for truncation
-        if ( Bug.DT239_FIXED ) {
-            checkCastFails( value, "VARCHAR(" + (len - 1) + ")", STRING_TRUNC_MESSAGE, true );
-        }
 
         checkCastToStringOkay( value, "VARCHAR(" + len + ")", expected );
         checkCastToStringOkay( value, "VARCHAR(" + (len + 5) + ")", expected );
 
-        // currently no exception thrown for truncation
-        if ( Bug.DT239_FIXED ) {
-            checkCastFails( value, "CHAR(" + (len - 1) + ")", STRING_TRUNC_MESSAGE, true );
-        }
 
         checkCastToStringOkay( value, "CHAR(" + len + ")", expected );
         checkCastToStringOkay( value, "CHAR(" + (len + 5) + ")", expected + spaces );
@@ -402,9 +387,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
         tester.checkString( "cast(1.29 as varchar(10))", "1.29", "VARCHAR(10) NOT NULL" );
         tester.checkString( "cast(.48 as varchar(10))", ".48", "VARCHAR(10) NOT NULL" );
-        if ( Bug.CALCITE_2539_FIXED ) {
-            tester.checkFails( "cast(2.523 as char(2))", STRING_TRUNC_MESSAGE, true );
-        }
 
         tester.checkString( "cast(-0.29 as varchar(10))", "-.29", "VARCHAR(10) NOT NULL" );
         tester.checkString( "cast(-1.29 as varchar(10))", "-1.29", "VARCHAR(10) NOT NULL" );
@@ -414,19 +396,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
         checkCastToString( "CAST(0 AS DOUBLE)", "CHAR(3)", "0E0" );
         checkCastToString( "-1.20e-07", "CHAR(7)", "-1.2E-7" );
         checkCastToString( "cast(0e0 as varchar(5))", "CHAR(3)", "0E0" );
-        if ( TODO ) {
-            checkCastToString( "cast(-45e-2 as varchar(17))", "CHAR(7)", "-4.5E-1" );
-        }
-        if ( TODO ) {
-            checkCastToString( "cast(4683442.3432498375e0 as varchar(20))", "CHAR(19)", "4.683442343249838E6" );
-        }
-        if ( TODO ) {
-            checkCastToString( "cast(-0.1 as real)", "CHAR(5)", "-1E-1" );
-        }
-        if ( Bug.CALCITE_2539_FIXED ) {
-            tester.checkFails( "cast(1.3243232e0 as varchar(4))", STRING_TRUNC_MESSAGE, true );
-            tester.checkFails( "cast(1.9e5 as char(4))", STRING_TRUNC_MESSAGE, true );
-        }
 
         // string
         checkCastToString( "'abc'", "CHAR(1)", "a" );
@@ -461,13 +430,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
         checkCastToString( "True", "CHAR(6)", "TRUE  " );
         checkCastToString( "True", "VARCHAR(6)", "TRUE" );
         checkCastToString( "False", "CHAR(5)", "FALSE" );
-
-        if ( Bug.CALCITE_2539_FIXED ) {
-            tester.checkFails( "cast(true as char(3))", INVALID_CHAR_MESSAGE, true );
-            tester.checkFails( "cast(false as char(4))", INVALID_CHAR_MESSAGE, true );
-            tester.checkFails( "cast(true as varchar(3))", INVALID_CHAR_MESSAGE, true );
-            tester.checkFails( "cast(false as varchar(4))", INVALID_CHAR_MESSAGE, true );
-        }
     }
 
 
@@ -493,21 +455,12 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
                 // Literal of range
                 checkCastFails( MAX_OVERFLOW_NUMERIC_STRINGS[i], type, LITERAL_OUT_OF_RANGE_MESSAGE, false );
                 checkCastFails( MIN_OVERFLOW_NUMERIC_STRINGS[i], type, LITERAL_OUT_OF_RANGE_MESSAGE, false );
-            } else {
-                if ( Bug.CALCITE_2539_FIXED ) {
-                    checkCastFails( MAX_OVERFLOW_NUMERIC_STRINGS[i], type, OUT_OF_RANGE_MESSAGE, true );
-                    checkCastFails( MIN_OVERFLOW_NUMERIC_STRINGS[i], type, OUT_OF_RANGE_MESSAGE, true );
-                }
             }
 
             // Convert from string to type
             checkCastToScalarOkay( "'" + MAX_NUMERIC_STRINGS[i] + "'", type, MAX_NUMERIC_STRINGS[i] );
             checkCastToScalarOkay( "'" + MIN_NUMERIC_STRINGS[i] + "'", type, MIN_NUMERIC_STRINGS[i] );
 
-            if ( Bug.CALCITE_2539_FIXED ) {
-                checkCastFails( "'" + MAX_OVERFLOW_NUMERIC_STRINGS[i] + "'", type, OUT_OF_RANGE_MESSAGE, true );
-                checkCastFails( "'" + MIN_OVERFLOW_NUMERIC_STRINGS[i] + "'", type, OUT_OF_RANGE_MESSAGE, true );
-            }
 
             // Convert from type to string
             checkCastToString( MAX_NUMERIC_STRINGS[i], null, null );
@@ -516,9 +469,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
             checkCastToString( MIN_NUMERIC_STRINGS[i], null, null );
             checkCastToString( MIN_NUMERIC_STRINGS[i], type, null );
 
-            if ( Bug.CALCITE_2539_FIXED ) {
-                checkCastFails( "'notnumeric'", type, INVALID_CHAR_MESSAGE, true );
-            }
         }
     }
 
@@ -835,16 +785,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
     public void testCastInvalid() {
         // Before POLYPHENYDB-1439 was fixed, constant reduction would kick in and generate Java constants that throw when the class is loaded, thus ExceptionInInitializerError.
         tester.checkScalarExact( "cast('15' as integer)", "INTEGER NOT NULL", "15" );
-        if ( Bug.CALCITE_2539_FIXED ) {
-            tester.checkFails( "cast('15.4' as integer)", "xxx", true );
-            tester.checkFails( "cast('15.6' as integer)", "xxx", true );
-            tester.checkFails( "cast('ue' as boolean)", "xxx", true );
-            tester.checkFails( "cast('' as boolean)", "xxx", true );
-            tester.checkFails( "cast('' as integer)", "xxx", true );
-            tester.checkFails( "cast('' as real)", "xxx", true );
-            tester.checkFails( "cast('' as double)", "xxx", true );
-            tester.checkFails( "cast('' as smallint)", "xxx", true );
-        }
     }
 
 
@@ -871,14 +811,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
                     "TIME(0) NOT NULL" );
         }
 
-        if ( Bug.FRG282_FIXED ) {
-            // test precision
-            tester.checkScalar(
-                    "cast(TIME '12:42:25.34' as TIME(2))",
-                    "12:42:25.34",
-                    "TIME(2) NOT NULL" );
-        }
-
         tester.checkScalar(
                 "cast(DATE '1945-02-24' as DATE)",
                 "1945-02-24",
@@ -896,12 +828,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
                 null,
                 "12:42:25" );
 
-        if ( TODO ) {
-            checkCastToString(
-                    "TIME '12:42:25.34'",
-                    null,
-                    "12:42:25.34" );
-        }
 
         // Generate the current date as a string, e.g. "2007-04-18". The value is guaranteed to be good for at least 2 minutes, which should give us time to run the rest of the tests.
         final String today = new SimpleDateFormat( "yyyy-MM-dd", Locale.ROOT ).format( getCalendarNotTooNear( Calendar.DAY_OF_MONTH ).getTime() );
@@ -959,39 +885,11 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
                 "12:42:25",
                 "TIME(0) NOT NULL" );
 
-        if ( Bug.FRG282_FIXED ) {
-            tester.checkScalar(
-                    "cast('12:42:25.34' as TIME(2))",
-                    "12:42:25.34",
-                    "TIME(2) NOT NULL" );
-        }
 
         tester.checkFails(
                 "cast('nottime' as TIME)",
                 BAD_DATETIME_MESSAGE,
                 true );
-        if ( Bug.CALCITE_2539_FIXED ) {
-            tester.checkFails(
-                    "cast('1241241' as TIME)",
-                    BAD_DATETIME_MESSAGE,
-                    true );
-            tester.checkFails(
-                    "cast('12:54:78' as TIME)",
-                    BAD_DATETIME_MESSAGE,
-                    true );
-            tester.checkFails(
-                    "cast('12:34:5' as TIME)",
-                    BAD_DATETIME_MESSAGE,
-                    true );
-            tester.checkFails(
-                    "cast('12:3:45' as TIME)",
-                    BAD_DATETIME_MESSAGE,
-                    true );
-            tester.checkFails(
-                    "cast('1:23:45' as TIME)",
-                    BAD_DATETIME_MESSAGE,
-                    true );
-        }
 
         // timestamp <-> string
         checkCastToString(
@@ -999,13 +897,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
                 null,
                 "1945-02-24 12:42:25" );
 
-        if ( TODO ) {
-            // TODO: casting allows one to discard precision without error
-            checkCastToString(
-                    "TIMESTAMP '1945-02-24 12:42:25.34'",
-                    null,
-                    "1945-02-24 12:42:25.34" );
-        }
 
         tester.checkScalar(
                 "cast('1945-02-24 12:42:25' as TIMESTAMP)",
@@ -1037,38 +928,11 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
                 "2004-02-29 00:00:00",
                 "TIMESTAMP(0) NOT NULL" );
 
-        if ( Bug.FRG282_FIXED ) {
-            tester.checkScalar(
-                    "cast('1945-02-24 12:42:25.34' as TIMESTAMP(2))",
-                    "1945-02-24 12:42:25.34",
-                    "TIMESTAMP(2) NOT NULL" );
-        }
         tester.checkFails(
                 "cast('nottime' as TIMESTAMP)",
                 BAD_DATETIME_MESSAGE,
                 true );
 
-        if ( Bug.CALCITE_2539_FIXED ) {
-            tester.checkFails(
-                    "cast('1241241' as TIMESTAMP)",
-                    BAD_DATETIME_MESSAGE,
-                    true );
-
-            tester.checkFails(
-                    "cast('1945-20-24 12:42:25.34' as TIMESTAMP)",
-                    BAD_DATETIME_MESSAGE,
-                    true );
-
-            tester.checkFails(
-                    "cast('1945-01-24 25:42:25.34' as TIMESTAMP)",
-                    BAD_DATETIME_MESSAGE,
-                    true );
-
-            tester.checkFails(
-                    "cast('1945-1-24 12:23:34.454' as TIMESTAMP)",
-                    BAD_DATETIME_MESSAGE,
-                    true );
-        }
 
         // date <-> string
         checkCastToString( "DATE '1945-02-24'", null, "1945-02-24" );
@@ -1094,16 +958,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
                 BAD_DATETIME_MESSAGE,
                 true );
 
-        if ( Bug.CALCITE_2539_FIXED ) {
-            tester.checkFails(
-                    "cast('52534253' as DATE)",
-                    BAD_DATETIME_MESSAGE,
-                    true );
-            tester.checkFails(
-                    "cast('1945-30-24' as DATE)",
-                    BAD_DATETIME_MESSAGE,
-                    true );
-        }
 
         // cast null
         tester.checkNull( "cast(null as date)" );
@@ -1261,17 +1115,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
                 "a",
                 "CHAR(1)" );
 
-        if ( TODO ) {
-            tester.checkScalar(
-                    "case 1 when 1 then row(1,2) when 2 then row(2,3) end",
-                    "ROW(INTEGER NOT NULL, INTEGER NOT NULL)",
-                    "row(1,2)" );
-
-            tester.checkScalar(
-                    "case 1 when 1 then row('a','b') when 2 then row('ab','cd') end",
-                    "ROW(CHAR(2) NOT NULL, CHAR(2) NOT NULL)",
-                    "row('a ','b ')" );
-        }
 
         // multiple values in some cases (introduced in SQL:2011)
         tester.checkString(
@@ -1605,25 +1448,10 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
                 10,
                 "BIGINT NOT NULL" );
 
-        if ( Bug.CALCITE_2539_FIXED ) {
-            tester.checkFails(
-                    "{fn DAYOFWEEK(DATE '2014-12-10')}",
-                    "cannot translate call EXTRACT.*",
-                    true );
-
-            tester.checkFails(
-                    "{fn DAYOFYEAR(DATE '2014-12-10')}",
-                    "cannot translate call EXTRACT.*",
-                    true );
-        }
 
         tester.checkScalar( "{fn HOUR(TIMESTAMP '2014-12-10 12:34:56')}", 12, "BIGINT NOT NULL" );
         tester.checkScalar( "{fn MINUTE(TIMESTAMP '2014-12-10 12:34:56')}", 34, "BIGINT NOT NULL" );
         tester.checkScalar( "{fn MONTH(DATE '2014-12-10')}", 12, "BIGINT NOT NULL" );
-
-        if ( false ) {
-            tester.checkScalar( "{fn MONTHNAME(date)}", null, "" );
-        }
 
         tester.checkType( "{fn NOW()}", "TIMESTAMP(0) NOT NULL" );
         tester.checkScalar( "{fn QUARTER(DATE '2014-12-10')}", "4", "BIGINT NOT NULL" );
@@ -1631,9 +1459,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
         tester.checkScalar( "{fn TIMESTAMPADD(HOUR, 5, TIMESTAMP '2014-03-29 12:34:56')}", "2014-03-29 17:34:56", "TIMESTAMP(0) NOT NULL" );
         tester.checkScalar( "{fn TIMESTAMPDIFF(HOUR, TIMESTAMP '2014-03-29 12:34:56', TIMESTAMP '2014-03-29 12:34:56')}", "0", "BIGINT NOT NULL" );
 
-        if ( Bug.CALCITE_2539_FIXED ) {
-            tester.checkFails( "{fn WEEK(DATE '2014-12-10')}", "cannot translate call EXTRACT.*", true );
-        }
         tester.checkScalar( "{fn YEAR(DATE '2014-12-10')}", 2014, "BIGINT NOT NULL" );
 
         // System Functions
@@ -1653,31 +1478,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
     @Test
     public void testSelect() {
         tester.check( "select * from (values(1))", SqlTests.INTEGER_TYPE_CHECKER, "1", 0 );
-
-        // Check return type on scalar sub-query in select list.  Note return type is always nullable even if sub-query select value is NOT NULL. Bug FRG-189 causes this test to fail only in SqlOperatorTest; not in subtypes.
-        if ( Bug.FRG189_FIXED || (getClass() != SqlOperatorTest.class) && Bug.TODO_FIXED ) {
-            tester.checkType(
-                    "SELECT *,(SELECT * FROM (VALUES(1))) FROM (VALUES(2))",
-                    "RecordType(INTEGER NOT NULL EXPR$0, INTEGER EXPR$1) NOT NULL" );
-            tester.checkType(
-                    "SELECT *,(SELECT * FROM (VALUES(CAST(10 as BIGINT)))) FROM (VALUES(CAST(10 as bigint)))",
-                    "RecordType(BIGINT NOT NULL EXPR$0, BIGINT EXPR$1) NOT NULL" );
-            tester.checkType(
-                    " SELECT *,(SELECT * FROM (VALUES(10.5))) FROM (VALUES(10.5))",
-                    "RecordType(DECIMAL(3, 1) NOT NULL EXPR$0, DECIMAL(3, 1) EXPR$1) NOT NULL" );
-            tester.checkType(
-                    "SELECT *,(SELECT * FROM (VALUES('this is a char'))) FROM (VALUES('this is a char too'))",
-                    "RecordType(CHAR(18) NOT NULL EXPR$0, CHAR(14) EXPR$1) NOT NULL" );
-            tester.checkType(
-                    "SELECT *,(SELECT * FROM (VALUES(true))) FROM (values(false))",
-                    "RecordType(BOOLEAN NOT NULL EXPR$0, BOOLEAN EXPR$1) NOT NULL" );
-            tester.checkType(
-                    " SELECT *,(SELECT * FROM (VALUES(cast('abcd' as varchar(10))))) FROM (VALUES(CAST('abcd' as varchar(10))))",
-                    "RecordType(VARCHAR(10) NOT NULL EXPR$0, VARCHAR(10) EXPR$1) NOT NULL" );
-            tester.checkType(
-                    "SELECT *, (SELECT * FROM (VALUES(TIMESTAMP '2006-01-01 12:00:05'))) FROM (VALUES(TIMESTAMP '2006-01-01 12:00:05'))",
-                    "RecordType(TIMESTAMP(0) NOT NULL EXPR$0, TIMESTAMP(0) EXPR$1) NOT NULL" );
-        }
     }
 
 
@@ -1904,9 +1704,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
         }
         tester.checkNull( "1e1 / cast(null as float)" );
 
-        if ( Bug.CALCITE_2539_FIXED ) {
-            tester.checkFails( "100.1 / 0.00000000000000001", OUT_OF_RANGE_MESSAGE, true );
-        }
     }
 
 
@@ -2130,10 +1927,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
         tester.checkBoolean( "3 in (0, 1, 2)", false );
         tester.checkBoolean( "cast(null as integer) in (0, 1, 2)", null );
         tester.checkBoolean( "cast(null as integer) in (0, cast(null as integer), 2)", null );
-        if ( Bug.FRG327_FIXED ) {
-            tester.checkBoolean( "cast(null as integer) in (0, null, 2)", null );
-            tester.checkBoolean( "1 in (0, null, 2)", null );
-        }
 
         if ( !enable ) {
             return;
@@ -2141,10 +1934,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
         // AND has lower precedence than IN
         tester.checkBoolean( "false and true in (false, false)", false );
 
-        if ( !Bug.TODO_FIXED ) {
-            return;
-        }
-        tester.checkFails( "'foo' in (^)^", "(?s).*Encountered \"\\)\" at .*", false );
     }
 
 
@@ -2158,21 +1947,10 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
         }
         tester.checkBoolean( "cast(null as integer) not in (0, 1, 2)", null );
         tester.checkBoolean( "cast(null as integer) not in (0, cast(null as integer), 2)", null );
-        if ( Bug.FRG327_FIXED ) {
-            tester.checkBoolean( "cast(null as integer) not in (0, null, 2)", null );
-            tester.checkBoolean( "1 not in (0, null, 2)", null );
-        }
 
         // AND has lower precedence than NOT IN
         tester.checkBoolean( "true and false not in (true, true)", true );
 
-        if ( !Bug.TODO_FIXED ) {
-            return;
-        }
-        tester.checkFails(
-                "'foo' not in (^)^",
-                "(?s).*Encountered \"\\)\" at .*",
-                false );
     }
 
 
@@ -2474,32 +2252,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
         tester.checkNull( "1e1-cast(null as double)" );
         tester.checkNull( "cast(null as tinyint) - cast(null as smallint)" );
 
-        // TODO: Fix bug
-        if ( Bug.FNL25_FIXED ) {
-            // Should throw out of range error
-            tester.checkFails(
-                    "cast(100 as tinyint) - cast(-100 as tinyint)", OUT_OF_RANGE_MESSAGE,
-                    true );
-            tester.checkFails(
-                    "cast(-20000 as smallint) - cast(20000 as smallint)",
-                    OUT_OF_RANGE_MESSAGE,
-                    true );
-            tester.checkFails(
-                    "cast(1.5e9 as integer) - cast(-1.5e9 as integer)",
-                    OUT_OF_RANGE_MESSAGE,
-                    true );
-            tester.checkFails(
-                    "cast(-5e18 as bigint) - cast(5e18 as bigint)", OUT_OF_RANGE_MESSAGE,
-                    true );
-            tester.checkFails(
-                    "cast(5e18 as decimal(19,0)) - cast(-5e18 as decimal(19,0))",
-                    OUT_OF_RANGE_MESSAGE,
-                    true );
-            tester.checkFails(
-                    "cast(-5e8 as decimal(19,10)) - cast(5e8 as decimal(19,10))",
-                    OUT_OF_RANGE_MESSAGE,
-                    true );
-        }
     }
 
 
@@ -2635,9 +2387,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
                 "08:25:52",
                 "TIME(0) NOT NULL" );
 
-        if ( Bug.DT1684_FIXED ) {
-            tester.checkBoolean( "(date '1969-04-29' + (CURRENT_DATE - date '1969-04-29') day / 2) is not null", Boolean.TRUE );
-        }
         // TODO: Add tests for year month intervals (currently not supported)
     }
 
@@ -2676,29 +2425,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
         tester.checkNull( "2e-3*cast(null as integer)" );
         tester.checkNull( "cast(null as tinyint) * cast(4 as smallint)" );
 
-        if ( Bug.FNL25_FIXED ) {
-            // Should throw out of range error
-            tester.checkFails(
-                    "cast(100 as tinyint) * cast(-2 as tinyint)", OUT_OF_RANGE_MESSAGE,
-                    true );
-            tester.checkFails(
-                    "cast(200 as smallint) * cast(200 as smallint)", OUT_OF_RANGE_MESSAGE,
-                    true );
-            tester.checkFails(
-                    "cast(1.5e9 as integer) * cast(-2 as integer)", OUT_OF_RANGE_MESSAGE,
-                    true );
-            tester.checkFails(
-                    "cast(5e9 as bigint) * cast(2e9 as bigint)", OUT_OF_RANGE_MESSAGE,
-                    true );
-            tester.checkFails(
-                    "cast(2e9 as decimal(19,0)) * cast(-5e9 as decimal(19,0))",
-                    OUT_OF_RANGE_MESSAGE,
-                    true );
-            tester.checkFails(
-                    "cast(5e4 as decimal(19,10)) * cast(2e4 as decimal(19,10))",
-                    OUT_OF_RANGE_MESSAGE,
-                    true );
-        }
     }
 
 
@@ -2714,16 +2440,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
                 "INTERVAL HOUR TO SECOND NOT NULL" );
         tester.checkNull( "interval '2' day * cast(null as bigint)" );
         tester.checkNull( "cast(null as interval month) * 2" );
-        if ( TODO ) {
-            tester.checkScalar(
-                    "interval '3-2' year to month * 15e-1",
-                    "+04-09",
-                    "INTERVAL YEAR TO MONTH NOT NULL" );
-            tester.checkScalar(
-                    "interval '3-4' year to month * 4.5",
-                    "+15-00",
-                    "INTERVAL YEAR TO MONTH NOT NULL" );
-        }
     }
 
 
@@ -2871,31 +2587,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
         tester.checkNull( "cast(null as tinyint)+1" );
         tester.checkNull( "1e-2+cast(null as double)" );
 
-        if ( Bug.FNL25_FIXED ) {
-            // Should throw out of range error
-            tester.checkFails(
-                    "cast(100 as tinyint) + cast(100 as tinyint)", OUT_OF_RANGE_MESSAGE,
-                    true );
-            tester.checkFails(
-                    "cast(-20000 as smallint) + cast(-20000 as smallint)",
-                    OUT_OF_RANGE_MESSAGE,
-                    true );
-            tester.checkFails(
-                    "cast(1.5e9 as integer) + cast(1.5e9 as integer)",
-                    OUT_OF_RANGE_MESSAGE,
-                    true );
-            tester.checkFails(
-                    "cast(5e18 as bigint) + cast(5e18 as bigint)", OUT_OF_RANGE_MESSAGE,
-                    true );
-            tester.checkFails(
-                    "cast(-5e18 as decimal(19,0)) + cast(-5e18 as decimal(19,0))",
-                    OUT_OF_RANGE_MESSAGE,
-                    true );
-            tester.checkFails(
-                    "cast(5e8 as decimal(19,10)) + cast(5e8 as decimal(19,10))",
-                    OUT_OF_RANGE_MESSAGE,
-                    true );
-        }
     }
 
 
@@ -3296,12 +2987,7 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
                 "++interval '-6:2:8' hour to second",
                 "-6:02:08.000000",
                 "INTERVAL HOUR TO SECOND NOT NULL" );
-        if ( Bug.FRG254_FIXED ) {
-            tester.checkScalar(
-                    "+interval '6:2:8.234' hour to second",
-                    "+06:02:08.234",
-                    "INTERVAL HOUR TO SECOND NOT NULL" );
-        }
+
         tester.checkScalar(
                 "+interval '5' month",
                 "+5",
@@ -3560,86 +3246,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
                         + "                    \\^",
                 true );
 
-        if ( Bug.CALCITE_2539_FIXED ) {
-            tester.checkFails(
-                    "'cd' similar to '[(a-e)]d' ",
-                    "Invalid regular expression: \\[\\(a-e\\)\\]d at 1",
-                    true );
-
-            tester.checkFails(
-                    "'yd' similar to '[(a-e)]d' ",
-                    "Invalid regular expression: \\[\\(a-e\\)\\]d at 1",
-                    true );
-        }
-
-        // all the following tests wrong results due to missing functionality or defect (FRG-375, 377).
-
-        if ( Bug.FRG375_FIXED ) {
-            tester.checkBoolean( "'cd' similar to '[a-e^c]d' ", Boolean.FALSE ); // FRG-375
-        }
-
-        // following tests use regular character set identifiers. Not implemented yet. FRG-377.
-        if ( Bug.FRG377_FIXED ) {
-            tester.checkBoolean(
-                    "'y' similar to '[:ALPHA:]*'",
-                    Boolean.TRUE );
-
-            tester.checkBoolean(
-                    "'yd32' similar to '[:LOWER:]{2}[:DIGIT:]*'",
-                    Boolean.TRUE );
-
-            tester.checkBoolean(
-                    "'yd32' similar to '[:ALNUM:]*'",
-                    Boolean.TRUE );
-
-            tester.checkBoolean(
-                    "'yd32' similar to '[:ALNUM:]*[:DIGIT:]?'",
-                    Boolean.TRUE );
-
-            tester.checkBoolean(
-                    "'yd32' similar to '[:ALNUM:]?[:DIGIT:]*'",
-                    Boolean.FALSE );
-
-            tester.checkBoolean(
-                    "'yd3223' similar to '([:LOWER:]{2})[:DIGIT:]{2,5}'",
-                    Boolean.TRUE );
-
-            tester.checkBoolean(
-                    "'yd3223' similar to '[:LOWER:]{2}[:DIGIT:]{2,}'",
-                    Boolean.TRUE );
-
-            tester.checkBoolean(
-                    "'yd3223' similar to '[:LOWER:]{2}||[:DIGIT:]{4}'",
-                    Boolean.TRUE );
-
-            tester.checkBoolean(
-                    "'yd3223' similar to '[:LOWER:]{2}[:DIGIT:]{3}'",
-                    Boolean.FALSE );
-
-            tester.checkBoolean(
-                    "'yd  3223' similar to '[:UPPER:]{2}  [:DIGIT:]{3}'",
-                    Boolean.FALSE );
-
-            tester.checkBoolean(
-                    "'YD  3223' similar to '[:UPPER:]{2}  [:DIGIT:]{3}'",
-                    Boolean.FALSE );
-
-            tester.checkBoolean(
-                    "'YD  3223' similar to '[:UPPER:]{2}||[:WHITESPACE:]*[:DIGIT:]{4}'",
-                    Boolean.TRUE );
-
-            tester.checkBoolean(
-                    "'YD\t3223' similar to '[:UPPER:]{2}[:SPACE:]*[:DIGIT:]{4}'",
-                    Boolean.FALSE );
-
-            tester.checkBoolean(
-                    "'YD\t3223' similar to '[:UPPER:]{2}[:WHITESPACE:]*[:DIGIT:]{4}'",
-                    Boolean.TRUE );
-
-            tester.checkBoolean(
-                    "'YD\t\t3223' similar to '([:UPPER:]{2}[:WHITESPACE:]+)||[:DIGIT:]{4}'",
-                    Boolean.TRUE );
-        }
     }
 
 
@@ -4277,7 +3883,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
         tester.checkString( "initcap('ab cd Ef 12')", "Ab Cd Ef 12", "CHAR(11) NOT NULL" );
         tester.checkNull( "initcap(cast(null as varchar(1)))" );
 
-        // dtbug 232
         tester.checkFails(
                 "^initcap(cast(null as date))^",
                 "Cannot apply 'INITCAP' to arguments of type 'INITCAP\\(<DATE>\\)'\\. Supported form\\(s\\): 'INITCAP\\(<CHARACTER>\\)'",
@@ -5306,13 +4911,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
                 "bbcc",
                 "VARBINARY(3) NOT NULL" );
 
-        if ( Bug.FRG296_FIXED ) {
-            // substring regexp not supported yet
-            tester.checkString(
-                    "substring('foobar' from '%#\"o_b#\"%' for'#')",
-                    "oob",
-                    "xx" );
-        }
         tester.checkNull( "substring(cast(null as varchar(1)),1,2)" );
     }
 
@@ -5729,39 +5327,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
     }
 
 
-    @Test
-    public void testWeek() {
-        tester.setFor( OperatorRegistry.get( OperatorName.WEEK ), VM_FENNEL, VM_JAVA );
-        if ( Bug.CALCITE_2539_FIXED ) {
-            // TODO: Not implemented in operator test execution code
-            tester.checkFails(
-                    "week(date '2008-1-23')",
-                    "cannot translate call EXTRACT.*",
-                    true );
-            tester.checkFails(
-                    "week(cast(null as date))",
-                    "cannot translate call EXTRACT.*",
-                    true );
-        }
-    }
-
-
-    @Test
-    public void testDayOfYear() {
-        tester.setFor( OperatorRegistry.get( OperatorName.DAYOFYEAR ), VM_FENNEL, VM_JAVA );
-        if ( Bug.CALCITE_2539_FIXED ) {
-            // TODO: Not implemented in operator test execution code
-            tester.checkFails(
-                    "dayofyear(date '2008-1-23')",
-                    "cannot translate call EXTRACT.*",
-                    true );
-            tester.checkFails(
-                    "dayofyear(cast(null as date))",
-                    "cannot translate call EXTRACT.*",
-                    true );
-        }
-    }
-
 
     @Test
     public void testDayOfMonth() {
@@ -5774,21 +5339,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
     }
 
 
-    @Test
-    public void testDayOfWeek() {
-        tester.setFor( OperatorRegistry.get( OperatorName.DAYOFWEEK ), VM_FENNEL, VM_JAVA );
-        if ( Bug.CALCITE_2539_FIXED ) {
-            // TODO: Not implemented in operator test execution code
-            tester.checkFails(
-                    "dayofweek(date '2008-1-23')",
-                    "cannot translate call EXTRACT.*",
-                    true );
-            tester.checkFails(
-                    "dayofweek(cast(null as date))",
-                    "cannot translate call EXTRACT.*",
-                    true );
-        }
-    }
 
 
     @Test
@@ -5831,45 +5381,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
     public void testExtractIntervalYearMonth() {
         tester.setFor( OperatorRegistry.get( OperatorName.EXTRACT ), VM_FENNEL, VM_JAVA );
 
-        if ( TODO ) {
-            // Not supported, fails in type validation because the extract unit is not YearMonth interval type.
-
-            tester.checkScalar(
-                    "extract(epoch from interval '4-2' year to month)",
-                    // number of seconds elapsed since timestamp '1970-01-01 00:00:00' + input interval
-                    "131328000",
-                    "BIGINT NOT NULL" );
-
-            tester.checkScalar(
-                    "extract(second from interval '4-2' year to month)",
-                    "0",
-                    "BIGINT NOT NULL" );
-
-            tester.checkScalar(
-                    "extract(millisecond from interval '4-2' year to month)",
-                    "0",
-                    "BIGINT NOT NULL" );
-
-            tester.checkScalar(
-                    "extract(microsecond from interval '4-2' year to month)",
-                    "0",
-                    "BIGINT NOT NULL" );
-
-            tester.checkScalar(
-                    "extract(minute from interval '4-2' year to month)",
-                    "0",
-                    "BIGINT NOT NULL" );
-
-            tester.checkScalar(
-                    "extract(hour from interval '4-2' year to month)",
-                    "0",
-                    "BIGINT NOT NULL" );
-
-            tester.checkScalar(
-                    "extract(day from interval '4-2' year to month)",
-                    "0",
-                    "BIGINT NOT NULL" );
-        }
 
         tester.checkScalar(
                 "extract(month from interval '4-2' year to month)",
@@ -5907,14 +5418,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
     public void testExtractIntervalDayTime() {
         tester.setFor( OperatorRegistry.get( OperatorName.EXTRACT ), VM_FENNEL, VM_JAVA );
 
-        if ( TODO ) {
-            // Not implemented in operator test
-            tester.checkScalar(
-                    "extract(epoch from interval '2 3:4:5.678' day to second)",
-                    // number of seconds elapsed since timestamp '1970-01-01 00:00:00' + input interval
-                    "183845.678",
-                    "BIGINT NOT NULL" );
-        }
 
         tester.checkScalar(
                 "extract(millisecond from interval '2 3:4:5.678' day to second)",
@@ -5946,25 +5449,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
                 "2",
                 "BIGINT NOT NULL" );
 
-        // Postgres doesn't support DOW, ISODOW, DOY and WEEK on INTERVAL DAY TIME type. SQL standard doesn't have extract units for DOW, ISODOW, DOY and WEEK.
-        if ( Bug.CALCITE_2539_FIXED ) {
-            tester.checkFails(
-                    "extract(doy from interval '2 3:4:5.678' day to second)",
-                    INVALID_EXTRACT_UNIT_CONVERTLET_ERROR,
-                    true );
-            tester.checkFails(
-                    "extract(dow from interval '2 3:4:5.678' day to second)",
-                    INVALID_EXTRACT_UNIT_CONVERTLET_ERROR,
-                    true );
-            tester.checkFails(
-                    "extract(week from interval '2 3:4:5.678' day to second)",
-                    INVALID_EXTRACT_UNIT_CONVERTLET_ERROR,
-                    true );
-            tester.checkFails(
-                    "extract(isodow from interval '2 3:4:5.678' day to second)",
-                    INVALID_EXTRACT_UNIT_CONVERTLET_ERROR,
-                    true );
-        }
     }
 
 
@@ -6172,25 +5656,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
                 "2008",
                 "BIGINT NOT NULL" );
 
-        if ( Bug.CALCITE_2539_FIXED ) {
-            // TODO: Not implemented in operator test execution code
-            tester.checkFails(
-                    "extract(doy from timestamp '2008-2-23 12:34:56')",
-                    "cannot translate call EXTRACT.*",
-                    true );
-
-            // TODO: Not implemented in operator test execution code
-            tester.checkFails(
-                    "extract(dow from timestamp '2008-2-23 12:34:56')",
-                    "cannot translate call EXTRACT.*",
-                    true );
-
-            // TODO: Not implemented in operator test execution code
-            tester.checkFails(
-                    "extract(week from timestamp '2008-2-23 12:34:56')",
-                    "cannot translate call EXTRACT.*",
-                    true );
-        }
 
         tester.checkScalar(
                 "extract(decade from timestamp '2008-2-23 12:34:56')",
@@ -7538,96 +7003,7 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
         tester.checkAgg( "bit_or(x)", values, 3, 0 );
     }
 
-    /**
-     * Tests that CAST fails when given a value just outside the valid range for that type. For example,
-     *
-     * <ul>
-     * <li>CAST(-200 AS TINYINT) fails because the value is less than -128;
-     * <li>CAST(1E-999 AS FLOAT) fails because the value underflows;
-     * <li>CAST(123.4567891234567 AS FLOAT) fails because the value loses precision.
-     * </ul>
-     */
-    // TODO MV: enable
-//    @Test 
-//    public void testLiteralAtLimit() {
-//        tester.setFor( StdOperatorRegistry.get( OperatorName.CAST );
-//        if ( !enable ) {
-//            return;
-//        }
-//        final List<RelDataType> types = SqlLimitsTest.getTypes( tester.getValidator().getTypeFactory() );
-//        for ( RelDataType type : types ) {
-//            for ( Object o : getValues( (BasicSqlType) type, true ) ) {
-//                SqlLiteral literal = type.getPolyType().createLiteral( o, SqlParserPos.ZERO );
-//                SqlString literalString = literal.toSqlString( AnsiSqlDialect.DEFAULT );
-//                final String expr = "CAST(" + literalString + " AS " + type + ")";
-//                try {
-//                    tester.checkType( expr, type.getFullTypeString() );
-//
-//                    if ( type.getPolyType() == PolyType.BINARY ) {
-//                        // Casting a string/binary values may change the value. For example, CAST(X'AB' AS BINARY(2)) yields X'AB00'.
-//                    } else {
-//                        tester.checkScalar(
-//                                expr + " = " + literalString,
-//                                true,
-//                                "BOOLEAN NOT NULL" );
-//                    }
-//                } catch ( Error | RuntimeException e ) {
-//                    System.out.println( "Failed for expr=[" + expr + "]" );
-//                    throw e;
-//                }
-//            }
-//        }
-//    }
 
-
-    /**
-     * Tests that CAST fails when given a value just outside the valid range for that type. For example,
-     *
-     * <ul>
-     * <li>CAST(-200 AS TINYINT) fails because the value is less than -128;
-     * <li>CAST(1E-999 AS FLOAT) fails because the value underflows;
-     * <li>CAST(123.4567891234567 AS FLOAT) fails because the value loses precision.
-     * </ul>
-     */
-
-    // TODO MV: enable
-//    @Test 
-//    public void testLiteralBeyondLimit() {
-//        tester.setFor( StdOperatorRegistry.get( OperatorName.CAST );
-//        final List<RelDataType> types = SqlLimitsTest.getTypes( tester.getValidator().getTypeFactory() );
-//        for ( RelDataType type : types ) {
-//            for ( Object o : getValues( (BasicSqlType) type, false ) ) {
-//                SqlLiteral literal = type.getPolyType().createLiteral( o, SqlParserPos.ZERO );
-//                SqlString literalString = literal.toSqlString( AnsiSqlDialect.DEFAULT );
-//
-//                if ( (type.getPolyType() == PolyType.BIGINT)
-//                        || ((type.getPolyType() == PolyType.DECIMAL)
-//                        && (type.getPrecision() == 19)) ) {
-//                    // Values which are too large to be literals fail at validate time.
-//                    tester.checkFails(
-//                            "CAST(^" + literalString + "^ AS " + type + ")",
-//                            "Numeric literal '.*' out of range",
-//                            false );
-//                } else if (
-//                        (type.getPolyType() == PolyType.CHAR)
-//                                || (type.getPolyType() == PolyType.VARCHAR)
-//                                || (type.getPolyType() == PolyType.BINARY)
-//                                || (type.getPolyType() == PolyType.VARBINARY) ) {
-//                    // Casting overlarge string/binary values do not fail - they are truncated. See testCastTruncates().
-//                } else {
-//                    if ( Bug.CALCITE_2539_FIXED ) {
-//                        // Value outside legal bound should fail at runtime (not validate time).
-//                        //
-//                        // NOTE: Because Java and Fennel calcs give different errors, the pattern hedges its bets.
-//                        tester.checkFails(
-//                                "CAST(" + literalString + " AS " + type + ")",
-//                                "(?s).*(Overflow during calculation or cast\\.|Code=22003).*",
-//                                true );
-//                    }
-//                }
-//            }
-//        }
-//    }
     @Test
     public void testCastTruncates() {
         tester.setFor( OperatorRegistry.get( OperatorName.CAST ) );

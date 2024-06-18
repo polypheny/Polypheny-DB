@@ -148,7 +148,6 @@ import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.inference.PolyOperandTypeInference;
 import org.polypheny.db.type.inference.ReturnTypes;
 import org.polypheny.db.util.AccessType;
-import org.polypheny.db.util.Bug;
 import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.ImmutableNullableList;
@@ -516,7 +515,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                 }
             }
             // If NATURAL JOIN or USING is present, move key fields to the front of the list, per standard SQL. Disabled if there are dynamic fields.
-            if ( !hasDynamicStruct || Bug.CALCITE_2400_FIXED ) {
+            if ( !hasDynamicStruct ) {
                 new Permute( scope.getNode().getSqlFrom(), 0 ).permute( selectItems, fields );
             }
             return true;

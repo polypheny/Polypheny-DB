@@ -90,7 +90,6 @@ import org.polypheny.db.rex.RexSimplify;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.AlgBuilderFactory;
-import org.polypheny.db.util.Bug;
 import org.polypheny.db.util.ControlFlowException;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Litmus;
@@ -1262,7 +1261,7 @@ public class SubstitutionVisitor {
 
     public static MutableAlg unifyAggregates( MutableAggregate query, MutableAggregate target ) {
         if ( query.getGroupType() != Aggregate.Group.SIMPLE || target.getGroupType() != Aggregate.Group.SIMPLE ) {
-            throw new AssertionError( Bug.CALCITE_461_FIXED );
+            throw new AssertionError( "Non-simple group encountered" );
         }
         MutableAlg result;
         if ( query.groupSet.equals( target.groupSet ) ) {

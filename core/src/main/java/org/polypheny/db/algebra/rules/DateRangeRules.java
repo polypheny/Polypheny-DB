@@ -74,7 +74,6 @@ import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.rex.RexVisitorImpl;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.AlgBuilderFactory;
-import org.polypheny.db.util.Bug;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.TimestampString;
 import org.polypheny.db.util.Util;
@@ -267,7 +266,6 @@ public abstract class DateRangeRules {
         ExtractShuttle( RexBuilder rexBuilder, TimeUnitRange timeUnit, Map<RexNode, RangeSet<Calendar>> operandRanges, ImmutableSortedSet<TimeUnitRange> timeUnitRanges, String timeZone ) {
             this.rexBuilder = Objects.requireNonNull( rexBuilder );
             this.timeUnit = Objects.requireNonNull( timeUnit );
-            Bug.upgrade( "Change type to Map<RexNode, RangeSet<Calendar>> when [POLYPHENYDB-1367] is fixed" );
             this.operandRanges = Objects.requireNonNull( operandRanges );
             this.timeUnitRanges = Objects.requireNonNull( timeUnitRanges );
             this.timeZone = timeZone;

@@ -49,11 +49,9 @@ import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.AlgOptUtil;
-import org.polypheny.db.plan.volcano.AlgSubset;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexUtil;
-import org.polypheny.db.util.Bug;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.NumberUtil;
@@ -264,24 +262,5 @@ public class AlgMdDistinctRowCount implements MetadataHandler<BuiltInMetadata.Di
     }
 
 
-    public Double getDistinctRowCount( AlgSubset alg, AlgMetadataQuery mq, ImmutableBitSet groupKey, RexNode predicate ) {
-        final AlgNode best = alg.getBest();
-        if ( best != null ) {
-            return mq.getDistinctRowCount( best, groupKey, predicate );
-        }
-        if ( !Bug.CALCITE_1048_FIXED ) {
-            return getDistinctRowCount( (AlgNode) alg, mq, groupKey, predicate );
-        }
-        Double d = null;
-        for ( AlgNode r2 : alg.getAlgs() ) {
-            try {
-                Double d2 = mq.getDistinctRowCount( r2, groupKey, predicate );
-                d = NumberUtil.min( d, d2 );
-            } catch ( CyclicMetadataException e ) {
-                // Ignore this algebra expression; there will be non-cyclic ones in this set.
-            }
-        }
-        return d;
-    }
 
 }

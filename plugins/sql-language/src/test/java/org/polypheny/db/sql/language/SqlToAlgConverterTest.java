@@ -39,7 +39,6 @@ import org.polypheny.db.sql.DiffRepository;
 import org.polypheny.db.sql.language.fun.SqlCaseOperator;
 import org.polypheny.db.sql.language.validate.SqlDelegatingConformance;
 import org.polypheny.db.sql.sql2alg.SqlToAlgConverter;
-import org.polypheny.db.util.Bug;
 import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.TestUtil;
@@ -2330,17 +2329,6 @@ public class SqlToAlgConverterTest extends SqlToAlgTestBase {
         sql( sql ).ok();
     }
 
-
-    @Test
-    @Disabled // refactor
-    public void testInterval() {
-        // temporarily disabled per DTbug 1212
-        if ( !Bug.DT785_FIXED ) {
-            return;
-        }
-        final String sql = "values(cast(interval '1' hour as interval hour to second))";
-        sql( sql ).ok();
-    }
 
 
     @Test

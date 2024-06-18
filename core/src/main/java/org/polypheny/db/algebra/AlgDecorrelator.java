@@ -115,7 +115,6 @@ import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.rex.RexVisitorImpl;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.AlgBuilderFactory;
-import org.polypheny.db.util.Bug;
 import org.polypheny.db.util.Holder;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Litmus;
@@ -442,7 +441,7 @@ public class AlgDecorrelator implements AlgProducingVisitor<Frame> {
      */
     public Frame decorrelateAlg( LogicalRelAggregate alg ) {
         if ( alg.getGroupType() != Aggregate.Group.SIMPLE ) {
-            throw new AssertionError( Bug.CALCITE_461_FIXED );
+            throw new AssertionError( "Non-simple group encountered" );
         }
         //
         // Rewrite logic:

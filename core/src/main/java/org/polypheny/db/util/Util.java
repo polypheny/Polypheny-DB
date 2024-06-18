@@ -627,7 +627,6 @@ public class Util {
      * which was introduced in Guava 20, but we don't require Guava version 20 yet.
      */
     public static void throwIfUnchecked( Throwable throwable ) {
-        Bug.upgrade( "Remove when minimum Guava version is 20" );
         Objects.requireNonNull( throwable );
         if ( throwable instanceof RuntimeException ) {
             throw (RuntimeException) throwable;
@@ -1764,8 +1763,6 @@ public class Util {
 
     /**
      * Returns a {@code Collector} that accumulates the input elements into a Guava {@code ImmutableList} via a {@code ImmutableList.Builder}.
-     * <p>
-     * It will be obsolete when we move to {@link Bug#upgrade Guava 21.0}, which has {@code ImmutableList.toImmutableList()}.
      *
      * @param <T> Type of the input elements
      * @return a {@code Collector} that collects all the input elements into an {@link ImmutableList}, in encounter order
