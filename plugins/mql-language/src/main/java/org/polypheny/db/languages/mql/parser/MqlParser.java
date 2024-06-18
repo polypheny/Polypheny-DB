@@ -98,9 +98,9 @@ public class MqlParser implements Parser {
 
 
     /**
-     * Parses an SQL statement.
+     * Parses an MQL statement.
      *
-     * @return top-level SqlNode representing stmt
+     * @return top-level MqlNode representing stmt
      */
     public MqlNode parseStmt() throws NodeParseException {
         return parseQuery();
@@ -116,7 +116,7 @@ public class MqlParser implements Parser {
 
 
     /**
-     * Interface to define the configuration for a SQL parser.
+     * Interface to define the configuration for a MQL parser.
      *
      * @see ConfigBuilder
      */
