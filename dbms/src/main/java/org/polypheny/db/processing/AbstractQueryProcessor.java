@@ -77,11 +77,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.algebra.polyalg.PolyAlgMetadata.GlobalStats;
-import org.polypheny.db.algebra.polyalg.parser.PolyAlgParser;
-import org.polypheny.db.algebra.polyalg.parser.PolyAlgToAlgConverter;
-import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.Entity;
@@ -89,7 +85,6 @@ import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
-import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.Information;
 import org.polypheny.db.information.InformationCode;
@@ -107,12 +102,10 @@ import org.polypheny.db.monitoring.events.QueryEvent;
 import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.partition.properties.PartitionProperty;
-import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.plan.volcano.VolcanoPlanner;
 import org.polypheny.db.prepare.Prepare.PreparedResult;
 import org.polypheny.db.prepare.Prepare.PreparedResultImpl;
 import org.polypheny.db.processing.caching.ImplementationCache;
@@ -279,50 +272,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         queryAnalyzer.registerInformation( informationQueryPlan );
 
         attachPolyAlgPlan( logicalRoot.alg );
-        //testPolyAlgParserDuringDevelopment(logicalRoot.alg); // TODO: Delete as soon as PolyAlgParser is working
-    }
-
-
-    private void testPolyAlgParserDuringDevelopment( AlgNode alg ) {
-        AlgDataTypeFactory factory = AlgDataTypeFactory.DEFAULT;
-        AlgCluster cluster = AlgCluster.create( new VolcanoPlanner(), new RexBuilder( factory ), null, null );
-        Snapshot snapshot = Catalog.snapshot();
-
-        StringBuilder sb = new StringBuilder();
-        alg.buildPolyAlgebra( sb, "" );
-
-        String polyAlg = sb.toString();
-        System.out.println( "\n===== Logical Query Plan =====" );
-        System.out.println( polyAlg );
-        System.out.print( "----> " );
-        try {
-            PolyAlgParser parser = PolyAlgParser.create( polyAlg );
-            PolyAlgNode node = (PolyAlgNode) parser.parseQuery();
-            System.out.println( "Successfully parsed input!\n" );
-
-            PolyAlgToAlgConverter converter = new PolyAlgToAlgConverter( PlanType.LOGICAL, snapshot, cluster );
-
-            AlgRoot root = converter.convert( node );
-
-            System.out.println( "Successfully built AlgNode Tree!\n" );
-
-            sb.setLength( 0 ); // reset StringBuilder
-            root.alg.buildPolyAlgebra( sb, "" );
-            String roundTripPolyAlg = sb.toString();
-            System.out.println( ">>>>> Logical Query Plan (parsed) <<<<<" );
-            System.out.println( sb );
-            if ( polyAlg.replace( "PROJECT#", "PROJECT" ).equals( roundTripPolyAlg ) ) {
-                System.out.println( "----> Plans are equal!" );
-            } else {
-                log.warn( "Plans are not equal" );
-            }
-            System.out.println();
-
-        } catch ( Exception e ) {
-            System.out.println( "Could not parse input correctly:" );
-            e.printStackTrace();
-        }
-
     }
 
 
@@ -339,7 +288,14 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             InformationGroup group = new InformationGroup( page, "Logical PolyAlg Query Plan" );
             queryAnalyzer.addPage( page );
             queryAnalyzer.addGroup( group );
-            queryAnalyzer.registerInformation( new InformationPolyAlg( group, jsonString, PlanType.LOGICAL ) );
+
+            InformationPolyAlg infoPolyAlg = new InformationPolyAlg( group, jsonString, PlanType.LOGICAL );
+            if ( attachTextualPolyAlg() ) {
+                // when testing, we want to access the human-readable form
+                infoPolyAlg.setTextualPolyAlg( alg.buildPolyAlgebra( (String) null ) );
+            }
+
+            queryAnalyzer.registerInformation( infoPolyAlg );
 
         } catch ( Exception e ) {
             e.printStackTrace();
@@ -626,7 +582,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         final Convention resultConvention = ENABLE_BINDABLE ? BindableConvention.INSTANCE : EnumerableConvention.INSTANCE;
 
         PreparedResult<PolyValue> preparedResult = implement( root, parameterRowType );
-        UiRoutingPageUtil.addPhysicalPlanPage( root.alg, statement.getTransaction().getQueryAnalyzer(), statement.getIndex() );
+        UiRoutingPageUtil.addPhysicalPlanPage( root.alg, statement.getTransaction().getQueryAnalyzer(), statement.getIndex(), attachTextualPolyAlg() );
         return createPolyImplementation(
                 preparedResult,
                 root.kind,
@@ -1531,7 +1487,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 UiRoutingPageUtil.outputSingleResult(
                         proposed.plans.get( 0 ),
                         statement.getTransaction().getQueryAnalyzer(),
-                        statement.getIndex() );
+                        statement.getIndex(), attachTextualPolyAlg() );
                 addGeneratedCodeToQueryAnalyzer( proposed.plans.get( 0 ).generatedCodes() );
             }
             return new Pair<>( proposed.plans.get( 0 ).result(), proposed.plans.get( 0 ).proposedRoutingPlan() );
@@ -1549,7 +1505,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
             if ( statement.getTransaction().isAnalyze() ) {
                 AlgNode optimalNode = proposed.plans.get( index ).optimalNode();
-                UiRoutingPageUtil.addPhysicalPlanPage( optimalNode, statement.getTransaction().getQueryAnalyzer(), statement.getIndex() );
+                UiRoutingPageUtil.addPhysicalPlanPage( optimalNode, statement.getTransaction().getQueryAnalyzer(),
+                        statement.getIndex(), attachTextualPolyAlg() );
                 addGeneratedCodeToQueryAnalyzer( proposed.plans.get( index ).generatedCodes() );
             }
 
@@ -1592,6 +1549,11 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 statement );
 
         return (CachedProposedRoutingPlan) routingPlan;
+    }
+
+
+    private boolean attachTextualPolyAlg() {
+        return statement.getTransaction().getOrigin().equals( "PolyAlgParsingTest" );
     }
 
 

@@ -35,6 +35,7 @@ package org.polypheny.db.algebra.enumerable;
 
 
 import com.google.common.collect.ImmutableList;
+import java.util.List;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -46,6 +47,10 @@ import org.polypheny.db.algebra.core.JoinInfo;
 import org.polypheny.db.algebra.core.SemiJoin;
 import org.polypheny.db.algebra.metadata.AlgMdCollation;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.polyalg.arguments.IntArg;
+import org.polypheny.db.algebra.polyalg.arguments.ListArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
+import org.polypheny.db.algebra.polyalg.arguments.RexArg;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgPlanner;
@@ -83,6 +88,15 @@ public class EnumerableSemiJoin extends SemiJoin implements EnumerableAlg {
             // Semantic error not possible. Must be a bug. Convert to internal error.
             throw new AssertionError( e );
         }
+    }
+
+
+    public static EnumerableSemiJoin create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+        RexArg condition = args.getArg( "condition", RexArg.class );
+        ImmutableList<Integer> leftKeys = ImmutableList.copyOf( args.getListArg( "leftKeys", IntArg.class ).map( IntArg::getArg ) );
+        ImmutableList<Integer> rightKeys = ImmutableList.copyOf( args.getListArg( "rightKeys", IntArg.class ).map( IntArg::getArg ) );
+
+        return create( children.get( 0 ), children.get( 1 ), condition.getNode(), leftKeys, rightKeys );
     }
 
 
@@ -140,6 +154,15 @@ public class EnumerableSemiJoin extends SemiJoin implements EnumerableAlg {
                                                 leftResult.physType().generateAccessor( leftKeys ),
                                                 rightResult.physType().generateAccessor( rightKeys ) ) ) )
                         .toBlock() );
+    }
+
+
+    @Override
+    public PolyAlgArgs collectAttributes() {
+        PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
+        return args.put( 0, new RexArg( condition ) )
+                .put( "leftKeys", new ListArg<>( leftKeys, IntArg::new ) )
+                .put( "rightKeys", new ListArg<>( rightKeys, IntArg::new ) );
     }
 
 }

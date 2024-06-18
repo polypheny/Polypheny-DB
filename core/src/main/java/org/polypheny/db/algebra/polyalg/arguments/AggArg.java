@@ -57,7 +57,7 @@ public class AggArg implements PolyAlgArg {
 
 
     private String aggToString( List<String> inputFieldNames ) {
-        StringBuilder buf = new StringBuilder( agg.getAggregation().toString() );
+        StringBuilder buf = new StringBuilder( agg.getAggregation().getOperatorName().toString() );
         buf.append( "(" );
         List<Integer> argList = agg.getArgList();
         AlgCollation collation = agg.getCollation();
@@ -111,7 +111,7 @@ public class AggArg implements PolyAlgArg {
     public ObjectNode serialize( AlgNode context, @NonNull List<String> inputFieldNames, ObjectMapper mapper ) {
         ObjectNode node = mapper.createObjectNode();
         node.put( "arg", toPolyAlg( context, inputFieldNames ) ); // might be useful as a preview
-        node.put( "function", agg.getAggregation().toString() );
+        node.put( "function", agg.getAggregation().getOperatorName().toString() );
         node.put( "distinct", agg.isDistinct() );
         node.put( "approximate", agg.isApproximate() );
 

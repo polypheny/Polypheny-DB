@@ -34,8 +34,10 @@ import org.polypheny.db.algebra.enumerable.EnumerableInterpreter;
 import org.polypheny.db.algebra.enumerable.EnumerableIntersect;
 import org.polypheny.db.algebra.enumerable.EnumerableJoin;
 import org.polypheny.db.algebra.enumerable.EnumerableLimit;
+import org.polypheny.db.algebra.enumerable.EnumerableMergeJoin;
 import org.polypheny.db.algebra.enumerable.EnumerableMinus;
 import org.polypheny.db.algebra.enumerable.EnumerableProject;
+import org.polypheny.db.algebra.enumerable.EnumerableSemiJoin;
 import org.polypheny.db.algebra.enumerable.EnumerableSort;
 import org.polypheny.db.algebra.enumerable.EnumerableTransformer;
 import org.polypheny.db.algebra.enumerable.EnumerableUnion;
@@ -393,6 +395,18 @@ public class PolyAlgRegistry {
                 .param( Parameter.builder().name( "condition" ).alias( "on" ).type( ParamType.REX ).simpleType( SimpleType.REX_PREDICATE ).build() )
                 .param( Parameter.builder().name( "type" ).type( ParamType.JOIN_TYPE_ENUM ).defaultValue( new EnumArg<>( JoinAlgType.INNER, ParamType.JOIN_TYPE_ENUM ) ).build() )
                 .param( Parameter.builder().name( "variables" ).type( ParamType.CORR_ID ).simpleType( SimpleType.HIDDEN ).multiValued( 1 ).defaultValue( ListArg.EMPTY ).build() )
+                .param( Parameter.builder().name( "leftKeys" ).multiValued( 1 ).type( ParamType.INTEGER ).defaultValue( ListArg.EMPTY ).build() )
+                .param( Parameter.builder().name( "rightKeys" ).multiValued( 1 ).type( ParamType.INTEGER ).defaultValue( ListArg.EMPTY ).build() )
+                .build() );
+        declarations.put( EnumerableMergeJoin.class, PolyAlgDeclaration.builder()
+                .creator( EnumerableMergeJoin::create ).model( null )
+                .opName( "E_MERGE_JOIN" ).numInputs( 2 ).opTags( physTags )
+                .params( getParams( EnumerableJoin.class ) )
+                .build() );
+        declarations.put( EnumerableSemiJoin.class, PolyAlgDeclaration.builder()
+                .creator( EnumerableSemiJoin::create ).model( null )
+                .opName( "E_SEMI_JOIN" ).numInputs( 2 ).opTags( physTags )
+                .param( Parameter.builder().name( "condition" ).alias( "on" ).type( ParamType.REX ).simpleType( SimpleType.REX_PREDICATE ).build() )
                 .param( Parameter.builder().name( "leftKeys" ).multiValued( 1 ).type( ParamType.INTEGER ).defaultValue( ListArg.EMPTY ).build() )
                 .param( Parameter.builder().name( "rightKeys" ).multiValued( 1 ).type( ParamType.INTEGER ).defaultValue( ListArg.EMPTY ).build() )
                 .build() );

@@ -122,7 +122,7 @@ public class Transformer extends AbstractAlgNode {
             inModelTrait = ModelTrait.RELATIONAL;
         }
         AlgDataType type = switch ( outModelTrait.dataModel() ) {
-            case DOCUMENT -> DocumentType.ofDoc();
+            case DOCUMENT -> DocumentType.ofId();
             case GRAPH -> GraphType.of();
             case RELATIONAL -> switch ( inModelTrait.dataModel() ) {
                 case DOCUMENT -> DocumentType.ofCrossRelational();

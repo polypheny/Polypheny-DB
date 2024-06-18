@@ -18,6 +18,8 @@ package org.polypheny.db.information;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.UUID;
+import lombok.Getter;
+import lombok.Setter;
 
 public class InformationPolyAlg extends Information {
 
@@ -26,6 +28,10 @@ public class InformationPolyAlg extends Information {
 
     @JsonProperty
     public String planType;
+
+    @Getter
+    @Setter
+    private String textualPolyAlg; // this is only not null during testing, where it is desirable to have the human-readable PolyAlgebra
 
 
     /**

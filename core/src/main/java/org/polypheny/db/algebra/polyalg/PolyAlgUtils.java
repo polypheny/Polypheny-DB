@@ -91,17 +91,18 @@ public class PolyAlgUtils {
             return exp;
         }
         String sanitized = sanitizeAlias( alias );
-        if (sanitized.equals( exp )) {
+        if ( sanitized.equals( exp ) ) {
             return exp;
         }
         return exp + " AS " + sanitized;
     }
 
+
     public static String sanitizeAlias( String alias ) {
-        if ((alias.startsWith( "'" ) && alias.endsWith( "'" )) || (alias.startsWith( "\"" ) && alias.endsWith( "\"" ))  ) {
+        if ( (alias.startsWith( "'" ) && alias.endsWith( "'" )) || (alias.startsWith( "\"" ) && alias.endsWith( "\"" )) ) {
             return alias;
         }
-        if (alias.matches( "[a-zA-Z#$@öÖäÄüÜàÀçÇáÁèÈíÍîÎóÓòôÔÒíÍëËâÂïÏéÉñÑß.\\d-]*" )) {
+        if ( alias.matches( "[a-zA-Z#$@öÖäÄüÜàÀçÇáÁèÈíÍîÎóÓòôÔÒíÍëËâÂïÏéÉñÑß.\\d-]*" ) ) {
             return alias;
         }
         return "'" + alias + "'";
@@ -250,7 +251,7 @@ public class PolyAlgUtils {
     public static ObjectNode wrapInRename( AlgNode child, ListArg<RexArg> projections, AlgNode context, List<String> inputFieldNames, ObjectMapper mapper, GlobalStats gs ) {
         ObjectNode node = mapper.createObjectNode();
         PolyAlgDeclaration decl = PolyAlgRegistry.getDeclaration( LogicalRelProject.class );
-        node.put( "opName", decl.opName);
+        node.put( "opName", decl.opName );
 
         ObjectNode argNode = mapper.createObjectNode();
         argNode.put( "type", ParamType.LIST.name() );
@@ -295,7 +296,12 @@ public class PolyAlgUtils {
 
         @Override
         public String visitLocalRef( RexLocalRef localRef ) {
-            return RexLocalRef.PREFIX + localRef.getIndex() + ":" + localRef.getType();
+            String type = localRef.getType().toString();
+            if ( type.contains( "[" ) ) {
+                // DocumentTypes should probably be handled better
+                type = localRef.getType().getPolyType().getTypeName();
+            }
+            return RexLocalRef.PREFIX + localRef.getIndex() + ":" + type;
         }
 
 
@@ -355,7 +361,12 @@ public class PolyAlgUtils {
 
         @Override
         public String visitDynamicParam( RexDynamicParam dynamicParam ) {
-            return "?" + dynamicParam.getIndex() + ":" + dynamicParam.type;
+            String type = dynamicParam.type.toString();
+            if ( type.contains( "[" ) ) {
+                // DocumentTypes should probably be handled better
+                type = dynamicParam.type.getPolyType().getTypeName();
+            }
+            return "?" + dynamicParam.getIndex() + ":" + type;
         }
 
 
@@ -391,13 +402,13 @@ public class PolyAlgUtils {
 
         @Override
         public String visitTableInputRef( RexTableIndexRef fieldRef ) {
-            return "===tableInputRef=== " + fieldRef;
+            throw new NotImplementedException( "tableInputRef can not yet be serialized to PolyAlgebra" );
         }
 
 
         @Override
         public String visitPatternFieldRef( RexPatternFieldRef fieldRef ) {
-            return "===patternFieldRef=== " + fieldRef;
+            throw new NotImplementedException( "patternFieldRef can not yet be serialized to PolyAlgebra" );
         }
 
 
@@ -583,7 +594,7 @@ public class PolyAlgUtils {
             }
 
             StringBuilder sb = new StringBuilder();
-            if (withPrefix) {
+            if ( withPrefix ) {
                 sb.append( "PolyEdge (" ).append( edge.source ).append( ")" );
             }
             sb.append( left );
@@ -594,7 +605,7 @@ public class PolyAlgUtils {
                         .append( "]" );
             }
             sb.append( right );
-            if (withPrefix) {
+            if ( withPrefix ) {
                 sb.append( "(" ).append( edge.target ).append( ")" );
             }
             return sb.toString();
@@ -624,11 +635,11 @@ public class PolyAlgUtils {
 
         private <K extends PolyValue, V extends PolyValue> String visitPolyDictionary( PolyDictionary dict ) {
             List<String> propsList = new ArrayList<>();
-            for ( Entry<PolyString, PolyValue> entry : dict.map.entrySet()) {
+            for ( Entry<PolyString, PolyValue> entry : dict.map.entrySet() ) {
                 PolyValue value = entry.getValue();
-                String valueStr = visitPolyValue(value);
-                if (valueStr == null) {
-                    valueStr = switch(value.type) {
+                String valueStr = visitPolyValue( value );
+                if ( valueStr == null ) {
+                    valueStr = switch ( value.type ) {
                         case VARCHAR, CHAR, TEXT -> value.asString().toTypedString( false );
                         default -> value.toString();
                     };

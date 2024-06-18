@@ -381,6 +381,11 @@ public abstract class Aggregate extends SingleAlg {
         AggCallBinding callBinding = aggCall.createBinding( this );
         AlgDataType type = aggFunction.inferReturnType( callBinding );
         AlgDataType expectedType = aggCall.type;
+        if (type.isNullable() != expectedType.isNullable()) {
+            // During PolyAlgebra parsing, the type might become non-nullable. We do not want to throw an error in this case.
+            AlgDataTypeFactory factory = AlgDataTypeFactory.DEFAULT;
+            expectedType = factory.createTypeWithNullability( expectedType, type.isNullable() );
+        }
         return AlgOptUtil.eq( "aggCall type", expectedType, "inferred type", type, litmus );
     }
 

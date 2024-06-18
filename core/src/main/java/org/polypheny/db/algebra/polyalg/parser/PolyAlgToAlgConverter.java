@@ -345,7 +345,8 @@ public class PolyAlgToAlgConverter {
                 case POLY_VALUE -> builder.makeLiteral( literal.toPolyValue() );
                 case STRING -> {
                     String str = literal.toString();
-                    if ( ctx.getNonNullDataModel() != DataModel.RELATIONAL ) {
+                    DataModel dataModel = ctx.getNonNullDataModel();
+                    if ( dataModel == DataModel.DOCUMENT || (dataModel == DataModel.GRAPH && str.contains( "@" )) ) {
                         String[] idxSplit = str.split( "@", 2 );
                         Integer idx = null;
                         if ( idxSplit.length == 2 ) {

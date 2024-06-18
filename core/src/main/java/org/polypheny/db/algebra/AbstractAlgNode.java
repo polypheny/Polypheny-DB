@@ -370,7 +370,11 @@ public abstract class AbstractAlgNode implements AlgNode {
                 PolyAlgUtils.uniquifiedInputFieldNames( this ) :
                 PolyAlgUtils.getInputFieldNamesList( this );
         sb.append( prefix == null ? "" : prefix ).append( decl.opName );
-        sb.append( collectAttributes().toPolyAlgebra( this, inputFieldNames ) );
+        if ( decl.hasParams() ) {
+            sb.append( collectAttributes().toPolyAlgebra( this, inputFieldNames ) );
+        } else {
+            sb.append( "[]" );
+        }
 
         int size = getInputs().size();
         if ( size == 0 ) {
@@ -388,8 +392,10 @@ public abstract class AbstractAlgNode implements AlgNode {
             if ( projections == null ) {
                 child.buildPolyAlgebra( sb, nextPrefix );
             } else {
-                sb.append( nextPrefix )
-                        .append( PolyAlgRegistry.getDeclaration( LogicalRelProject.class ).opName )
+                if ( nextPrefix != null ) {
+                    sb.append( nextPrefix );
+                }
+                sb.append( PolyAlgRegistry.getDeclaration( LogicalRelProject.class ).opName )
                         .append( projections.toPolyAlg( child, child.getTupleType().getFieldNames() ) )
                         .append( "(\n" );
                 child.buildPolyAlgebra( sb, nextPrefix == null ? null : nextPrefix + INDENT );
