@@ -267,7 +267,6 @@ public class AlgFieldTrimmer implements AlgProducingVisitor3<TrimResult, Immutab
         final int newFieldCount = newRel.getTupleType().getFieldCount();
         assert mapping.getTargetCount() + extraFields.size() == newFieldCount
                 : "target: " + mapping.getTargetCount() + " + " + extraFields.size() + " != " + newFieldCount;
-        assert newFieldCount > 0 : "alg has no fields after trim: " + alg;
         if ( newRel.equals( alg ) ) {
             return result( alg, mapping );
         }
