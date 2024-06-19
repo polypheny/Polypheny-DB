@@ -30,7 +30,6 @@ import org.polypheny.db.adapter.DocumentDataSource;
 import org.polypheny.db.adapter.DocumentScanDelegate;
 import org.polypheny.db.adapter.Scannable;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
-import org.polypheny.db.adapter.annotations.AdapterSettingDirectory;
 import org.polypheny.db.adapter.annotations.AdapterSettingString;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.catalogs.AdapterCatalog;
@@ -49,7 +48,6 @@ import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.transaction.PolyXid;
-import org.polypheny.db.util.Sources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,7 +57,7 @@ import org.slf4j.LoggerFactory;
         description = "An adapter for querying JSON files. A JSON file can be specified by path. Currently, this adapter only supports read operations.",
         usedModes = DeployMode.EMBEDDED,
         defaultMode = DeployMode.EMBEDDED)
-@AdapterSettingString(name = "jsonFile", defaultValue = "classpath://articles.json", description = "Path to the JSON file which is to be integrated as this source.", position = 1)
+@AdapterSettingString(name = "jsonFiles", defaultValue = "classpath://articles.json", description = "Path to the JSON file(s) to be integrated as this source.", position = 1)
 public class JsonSource extends DataSource<DocAdapterCatalog> implements DocumentDataSource, Scannable {
 
     private static final Logger log = LoggerFactory.getLogger( JsonSource.class );
@@ -67,13 +65,12 @@ public class JsonSource extends DataSource<DocAdapterCatalog> implements Documen
     private final DocumentScanDelegate delegate;
     private JsonNamespace namespace;
 
-    private URL jsonFile;
+    private URL jsonFiles;
 
 
     public JsonSource( final long storeId, final String uniqueName, final Map<String, String> settings, DeployMode mode ) {
         super( storeId, uniqueName, settings, mode, true, new DocAdapterCatalog( storeId ), List.of( DataModel.DOCUMENT ) );
-        this.jsonFile = getJsonFileUrl( settings.get("jsonFile") );
-        //URL url = getJsonFileUrl( "classpath://articles.json" );
+        this.jsonFiles = getJsonFilesUrl( settings.get( "jsonFiles" ) );
         this.delegate = new DocumentScanDelegate( this, getAdapterCatalog() );
         long namespaceId = Catalog.getInstance().createNamespace( uniqueName, DataModel.DOCUMENT, true );
         this.namespace = new JsonNamespace( uniqueName, namespaceId, getAdapterId() );
@@ -83,18 +80,17 @@ public class JsonSource extends DataSource<DocAdapterCatalog> implements Documen
     @Override
     protected void reloadSettings( List<String> updatedSettings ) {
         if ( updatedSettings.contains( "directory" ) ) {
-            this.jsonFile = getJsonFileUrl( settings.get( "jsonFile" ) );
-            //.jsonFile = getJsonFileUrl( "classpath://articles.json" );
+            this.jsonFiles = getJsonFilesUrl( settings.get( "jsonFile" ) );
         }
     }
 
 
-    private URL getJsonFileUrl( String file ) {
-        if ( file.startsWith( "classpath://" ) ) {
-            return this.getClass().getClassLoader().getResource( file.replace( "classpath://", "" ) + "/" );
+    private URL getJsonFilesUrl( String files ) {
+        if ( files.startsWith( "classpath://" ) ) {
+            return this.getClass().getClassLoader().getResource( files.replace( "classpath://", "" ) + "/" );
         }
         try {
-            return new File( file ).toURI().toURL();
+            return new File( files ).toURI().toURL();
         } catch ( MalformedURLException e ) {
             throw new GenericRuntimeException( e );
         }
@@ -121,11 +117,8 @@ public class JsonSource extends DataSource<DocAdapterCatalog> implements Documen
 
     @Override
     public List<ExportedDocument> getExportedCollection() {
-        if ( !Sources.of( jsonFile ).file().isFile() ) {
-            throw new RuntimeException( "File must be a single JSON file, not a directory." );
-        }
         try {
-            return JsonMetaRetriever.getDocuments( jsonFile );
+            return JsonMetaRetriever.getDocuments( jsonFiles );
         } catch ( IOException e ) {
             throw new RuntimeException( "Failed to retrieve documents from json file." );
         }
@@ -142,17 +135,21 @@ public class JsonSource extends DataSource<DocAdapterCatalog> implements Documen
     public void restoreCollection( AllocationCollection allocation, List<PhysicalEntity> entities, Context context ) {
         PhysicalEntity collection = entities.get( 0 ); // TODO: set breakpoint and take a look at what's in this list...
         updateNamespace( collection.getNamespaceName(), collection.getNamespaceId() );
-        PhysicalCollection physicalCollection = new JsonCollection.Builder()
-                .url( jsonFile )
-                .collectionId( collection.getId() )
-                .allocationId( allocation.getId() )
-                .logicalId( collection.getLogicalId() )
-                .namespaceId( namespace.getId() )
-                .collectionName( collection.getName() )
-                .namespaceName( namespace.getName() )
-                .adapter( this )
-                .build();
-        adapterCatalog.addPhysical( allocation, physicalCollection );
+        try {
+            PhysicalCollection physicalCollection = new JsonCollection.Builder()
+                    .url( JsonMetaRetriever.findDocumentUrl( jsonFiles, collection.getName() ))
+                    .collectionId( collection.getId() )
+                    .allocationId( allocation.getId() )
+                    .logicalId( collection.getLogicalId() )
+                    .namespaceId( namespace.getId() )
+                    .collectionName( collection.getName() )
+                    .namespaceName( namespace.getName() )
+                    .adapter( this )
+                    .build();
+            adapterCatalog.addPhysical( allocation, physicalCollection );
+        } catch ( MalformedURLException e ) {
+            throw new RuntimeException( "Malformed URL." );
+        }
     }
 
 
@@ -164,18 +161,22 @@ public class JsonSource extends DataSource<DocAdapterCatalog> implements Documen
                 logical,
                 allocation
         );
-        PhysicalCollection physicalCollection = new JsonCollection.Builder()
-                .url( jsonFile )
-                .collectionId( collection.getId() )
-                .allocationId( allocation.getId() )
-                .logicalId( collection.getLogicalId() )
-                .namespaceId( namespace.getId() )
-                .collectionName( collection.getName() )
-                .namespaceName( namespace.getName() )
-                .adapter( this )
-                .build();
-        adapterCatalog.replacePhysical( physicalCollection );
-        return List.of( physicalCollection );
+        try {
+            PhysicalCollection physicalCollection = new JsonCollection.Builder()
+                    .url( JsonMetaRetriever.findDocumentUrl( jsonFiles, collection.getName() ))
+                    .collectionId( collection.getId() )
+                    .allocationId( allocation.getId() )
+                    .logicalId( collection.getLogicalId() )
+                    .namespaceId( namespace.getId() )
+                    .collectionName( collection.getName() )
+                    .namespaceName( namespace.getName() )
+                    .adapter( this )
+                    .build();
+            adapterCatalog.replacePhysical( physicalCollection );
+            return List.of( physicalCollection );
+        } catch ( MalformedURLException e ) {
+            throw new RuntimeException( "Malformed URL." );
+        }
     }
 
 
