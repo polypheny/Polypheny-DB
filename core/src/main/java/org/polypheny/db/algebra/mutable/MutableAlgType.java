@@ -35,7 +35,7 @@ package org.polypheny.db.algebra.mutable;
 
 
 /**
- * Type of {@code MutableRel}.
+ * Type of {@link MutableAlg}.
  */
 public enum MutableAlgType {
     AGGREGATE,
