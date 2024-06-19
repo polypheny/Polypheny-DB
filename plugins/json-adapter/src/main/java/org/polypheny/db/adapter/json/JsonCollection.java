@@ -21,12 +21,21 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.DataContext.Variable;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.enumerable.EnumerableConvention;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.catalogs.DocAdapterCatalog;
 import org.polypheny.db.catalog.entity.physical.PhysicalCollection;
+import org.polypheny.db.plan.AlgCluster;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.plan.Convention;
 import org.polypheny.db.schema.types.ScannableEntity;
+import org.polypheny.db.schema.types.TranslatableEntity;
 import org.polypheny.db.type.entity.PolyValue;
 
 public class JsonCollection extends PhysicalCollection implements ScannableEntity {
@@ -43,15 +52,27 @@ public class JsonCollection extends PhysicalCollection implements ScannableEntit
 
 
     @Override
+    public Expression asExpression() {
+        Expression argExp = Expressions.constant( this.id );
+        return Expressions.convert_( Expressions.call( Expressions.call( this.adapter.asExpression(), "getAdapterCatalog" ), "getPhysical", argExp ), JsonCollection.class );
+    }
+
+
+    @Override
     public Enumerable<PolyValue[]> scan( DataContext dataContext ) {
         dataContext.getStatement().getTransaction().registerInvolvedAdapter( adapter );
-        final AtomicBoolean cancelFlag = Variable.CANCEL_FLAG.get(dataContext);
+        final AtomicBoolean cancelFlag = Variable.CANCEL_FLAG.get( dataContext );
         return new AbstractEnumerable<>() {
             @Override
             public Enumerator<PolyValue[]> enumerator() {
                 return new JsonEnumerator( url );
             }
         };
+    }
+
+    
+    public AlgNode toAlg( AlgCluster cluster, AlgTraitSet traitSet ) {
+        return new JsonScan( cluster, this, new int[]{ 0 } );
     }
 
 
@@ -108,7 +129,8 @@ public class JsonCollection extends PhysicalCollection implements ScannableEntit
             return this;
         }
 
-        public Builder adapter(Adapter<DocAdapterCatalog> adapter) {
+
+        public Builder adapter( Adapter<DocAdapterCatalog> adapter ) {
             this.adapter = adapter;
             return this;
         }

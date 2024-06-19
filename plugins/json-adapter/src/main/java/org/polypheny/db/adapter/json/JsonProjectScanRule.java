@@ -18,7 +18,7 @@ package org.polypheny.db.adapter.json;
 
 import java.util.List;
 import org.polypheny.db.algebra.core.AlgFactories;
-import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.rex.RexIndexRef;
@@ -32,7 +32,7 @@ public class JsonProjectScanRule extends AlgOptRule {
 
     public JsonProjectScanRule( AlgBuilderFactory algBuilderFactory ) {
         super(
-                operand( LogicalDocumentProject.class, operand( JsonScan.class, none() ) ),
+                operand( LogicalDocumentScan.class, none() ),
                 algBuilderFactory,
                 "JsonProjectScanRule"
         );
@@ -41,13 +41,8 @@ public class JsonProjectScanRule extends AlgOptRule {
 
     @Override
     public void onMatch( AlgOptRuleCall call ) {
-        final LogicalDocumentProject project = call.alg( 0 );
-        final JsonScan scan = call.alg( 1 );
-        int[] fields = getProjectFields( project.getChildExps() );
-        if ( fields == null ) {
-            return;
-        }
-        call.transformTo( new JsonScan( scan.getCluster(), scan.getCollection(), fields ) );
+        final LogicalDocumentScan scan = call.alg( 0 );
+        call.transformTo( new JsonScan( scan.getCluster(), scan.getEntity().unwrap( JsonCollection.class ).orElseThrow(), new int[]{0} ) );
 
     }
 

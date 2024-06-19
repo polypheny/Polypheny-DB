@@ -63,9 +63,7 @@ public abstract class Adapter<ACatalog extends AdapterCatalog> implements Scanna
     public final ACatalog adapterCatalog;
 
 
-    @Getter
     public final long adapterId;
-    @Getter
     private final String uniqueName;
 
     protected final Map<String, String> settings;
