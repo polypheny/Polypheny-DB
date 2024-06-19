@@ -69,8 +69,8 @@ public class JsonSource extends DataSource<DocAdapterCatalog> implements Documen
     private URL jsonFile;
 
 
-    public JsonSource( final long storeId, final String uniqueName, final Map<String, String> settings ) {
-        super( storeId, uniqueName, settings, true, new DocAdapterCatalog( storeId ), List.of( DataModel.DOCUMENT ) );
+    public JsonSource( final long storeId, final String uniqueName, final Map<String, String> settings, DeployMode mode ) {
+        super( storeId, uniqueName, settings, mode, true, new DocAdapterCatalog( storeId ), List.of( DataModel.DOCUMENT ) );
         //this.jsonFile = getJsonFileUrl( settings );
         URL url = getJsonFileUrl( "classpath://articles.json" );
         this.jsonFile = url;

@@ -38,7 +38,7 @@ import org.polypheny.db.schema.types.ScannableEntity;
 import org.polypheny.db.schema.types.TranslatableEntity;
 import org.polypheny.db.type.entity.PolyValue;
 
-public class JsonCollection extends PhysicalCollection implements ScannableEntity {
+public class JsonCollection extends PhysicalCollection implements ScannableEntity, TranslatableEntity {
 
     private final URL url;
     private final Adapter<DocAdapterCatalog> adapter;
@@ -73,6 +73,16 @@ public class JsonCollection extends PhysicalCollection implements ScannableEntit
     
     public AlgNode toAlg( AlgCluster cluster, AlgTraitSet traitSet ) {
         return new JsonScan( cluster, this, new int[]{ 0 } );
+    }
+
+    public Enumerable<PolyValue[]> project( final DataContext dataContext, final int[] fields ) {
+        dataContext.getStatement().getTransaction().registerInvolvedAdapter( adapter );
+        return new AbstractEnumerable<>() {
+            @Override
+            public Enumerator<PolyValue[]> enumerator() {
+                return new JsonEnumerator( url );
+            }
+        };
     }
 
 
