@@ -42,7 +42,7 @@ import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgCluster;
-import org.polypheny.db.util.avatica.Spaces;
+import org.polypheny.db.util.Spaces;
 
 
 /**

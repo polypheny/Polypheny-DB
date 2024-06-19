@@ -99,7 +99,7 @@ import org.polypheny.db.type.entity.temporal.PolyDate;
 import org.polypheny.db.type.entity.temporal.PolyTime;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 import org.polypheny.db.util.BsonUtil;
-import org.polypheny.db.util.avatica.ByteString;
+import org.polypheny.db.util.ByteString;
 
 @Value
 @Slf4j

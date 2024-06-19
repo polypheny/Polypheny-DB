@@ -37,13 +37,13 @@ import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.sql.language.parser.SqlParserUtil;
 import org.polypheny.db.sql.language.parser.SqlParserUtil.StringAndPos;
+import org.polypheny.db.sql.language.util.SqlTypeRepresentation;
 import org.polypheny.db.sql.language.utils.SqlTester.ParameterChecker;
 import org.polypheny.db.sql.language.utils.SqlTester.ResultChecker;
 import org.polypheny.db.sql.language.utils.SqlTester.TypeChecker;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.TestUtil;
 import org.polypheny.db.util.Util;
-import org.polypheny.db.util.avatica.ColumnMetaData;
 
 
 /**
@@ -193,7 +193,7 @@ public abstract class SqlTests {
     public static void compareResultSet( ResultSet resultSet, Set<String> refSet ) throws Exception {
         Set<String> actualSet = new HashSet<>();
         final int columnType = resultSet.getMetaData().getColumnType( 1 );
-        final ColumnMetaData.Rep rep = rep( columnType );
+        final SqlTypeRepresentation rep = rep( columnType );
         while ( resultSet.next() ) {
             final String s = resultSet.getString( 1 );
             final String s0 = s == null ? "0" : s;
@@ -238,19 +238,19 @@ public abstract class SqlTests {
     }
 
 
-    private static ColumnMetaData.Rep rep( int columnType ) {
+    private static SqlTypeRepresentation rep( int columnType ) {
         return switch ( columnType ) {
-            case Types.BOOLEAN -> ColumnMetaData.Rep.BOOLEAN;
-            case Types.TINYINT -> ColumnMetaData.Rep.BYTE;
-            case Types.SMALLINT -> ColumnMetaData.Rep.SHORT;
-            case Types.INTEGER -> ColumnMetaData.Rep.INTEGER;
-            case Types.BIGINT -> ColumnMetaData.Rep.LONG;
-            case Types.REAL -> ColumnMetaData.Rep.FLOAT;
-            case Types.DOUBLE -> ColumnMetaData.Rep.DOUBLE;
-            case Types.TIME -> ColumnMetaData.Rep.JAVA_SQL_TIME;
-            case Types.TIMESTAMP -> ColumnMetaData.Rep.JAVA_SQL_TIMESTAMP;
-            case Types.DATE -> ColumnMetaData.Rep.JAVA_SQL_DATE;
-            default -> ColumnMetaData.Rep.OBJECT;
+            case Types.BOOLEAN -> SqlTypeRepresentation.BOOLEAN;
+            case Types.TINYINT -> SqlTypeRepresentation.BYTE;
+            case Types.SMALLINT -> SqlTypeRepresentation.SHORT;
+            case Types.INTEGER -> SqlTypeRepresentation.INTEGER;
+            case Types.BIGINT -> SqlTypeRepresentation.LONG;
+            case Types.REAL -> SqlTypeRepresentation.FLOAT;
+            case Types.DOUBLE -> SqlTypeRepresentation.DOUBLE;
+            case Types.TIME -> SqlTypeRepresentation.JAVA_SQL_TIME;
+            case Types.TIMESTAMP -> SqlTypeRepresentation.JAVA_SQL_TIMESTAMP;
+            case Types.DATE -> SqlTypeRepresentation.JAVA_SQL_DATE;
+            default -> SqlTypeRepresentation.OBJECT;
         };
     }
 

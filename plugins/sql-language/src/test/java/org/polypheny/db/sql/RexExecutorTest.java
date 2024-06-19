@@ -65,9 +65,9 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.type.inference.InferTypes;
 import org.polypheny.db.type.inference.ReturnTypes;
+import org.polypheny.db.util.ByteString;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.Util;
-import org.polypheny.db.util.avatica.ByteString;
 
 
 /**

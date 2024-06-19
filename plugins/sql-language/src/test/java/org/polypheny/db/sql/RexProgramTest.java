@@ -67,6 +67,7 @@ import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.inference.ReturnTypes;
+import org.polypheny.db.util.ByteString;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.PolyphenyDbAssert;
@@ -75,7 +76,6 @@ import org.polypheny.db.util.TimeString;
 import org.polypheny.db.util.TimestampString;
 import org.polypheny.db.util.TimestampWithTimeZoneString;
 import org.polypheny.db.util.Util;
-import org.polypheny.db.util.avatica.ByteString;
 
 
 /**

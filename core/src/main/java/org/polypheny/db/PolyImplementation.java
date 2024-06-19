@@ -50,7 +50,6 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
-import org.polypheny.db.util.avatica.ColumnMetaData;
 
 
 @Getter
@@ -64,7 +63,7 @@ public class PolyImplementation {
     private final DataModel dataModel;
     private final ExecutionTimeMonitor executionTimeMonitor;
     private final Convention resultConvention;
-    private List<ColumnMetaData> fields;
+    private List<String> fields;
     private final PreparedResult<PolyValue> preparedResult;
     private final Statement statement;
 
@@ -155,7 +154,7 @@ public class PolyImplementation {
     }
 
 
-    public List<ColumnMetaData> getFields() {
+    public List<String> getFields() {
         if ( fields != null ) {
             return fields;
         }
@@ -166,12 +165,11 @@ public class PolyImplementation {
                     AlgOptUtil.createDmlRowType( kind, statement.getTransaction().getTypeFactory() );
             default -> tupleType;
         };
-        final List<ColumnMetaData> columns = QueryProcessorHelpers.getColumnMetaDataList(
-                QueryProcessorHelpers.makeStruct( statement.getTransaction().getTypeFactory(), x ),
-                preparedResult.getFieldOrigins() );
+        final List<String> fieldNames = QueryProcessorHelpers.getFieldNames(
+                QueryProcessorHelpers.makeStruct( statement.getTransaction().getTypeFactory(), x ) );
 
-        this.fields = columns;
-        return columns;
+        this.fields = fieldNames;
+        return fieldNames;
 
     }
 

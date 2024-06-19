@@ -43,9 +43,9 @@ import org.polypheny.db.sql.language.SqlLiteral;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlUnresolvedFunction;
 import org.polypheny.db.sql.language.fun.SqlStdOperatorTable;
+import org.polypheny.db.util.Casing;
 import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.Glossary;
-import org.polypheny.db.util.avatica.Casing;
 
 
 /**

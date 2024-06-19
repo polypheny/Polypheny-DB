@@ -24,7 +24,7 @@ import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Map;
 import org.polypheny.db.languages.Parser.ParserConfig;
-import org.polypheny.db.util.avatica.Quoting;
+import org.polypheny.db.util.Quoting;
 
 
 /**

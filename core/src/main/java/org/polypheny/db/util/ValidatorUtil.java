@@ -35,7 +35,6 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.type.PolyTypeUtil;
-import org.polypheny.db.util.avatica.ByteString;
 
 @Slf4j
 public class ValidatorUtil {

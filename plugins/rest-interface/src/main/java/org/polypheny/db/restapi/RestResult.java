@@ -44,7 +44,6 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
-import org.polypheny.db.util.avatica.ColumnMetaData;
 
 
 @Slf4j
@@ -53,7 +52,7 @@ public class RestResult {
     private final Kind kind;
     private final ResultIterator iterator;
     private final AlgDataType dataType;
-    private final List<ColumnMetaData> columns;
+    private final List<String> fields;
     private List<Map<String, Object>> result;
     @Getter
     private long executionTime;
@@ -64,11 +63,11 @@ public class RestResult {
     private ZipOutputStream zipOut;
 
 
-    public RestResult( Kind Kind, ResultIterator iterator, AlgDataType dataType, List<ColumnMetaData> columns ) {
+    public RestResult( Kind Kind, ResultIterator iterator, AlgDataType dataType, List<String> fields ) {
         this.kind = Kind;
         this.iterator = iterator;
         this.dataType = dataType;
-        this.columns = columns;
+        this.fields = fields;
     }
 
 
@@ -101,7 +100,7 @@ public class RestResult {
         }
         List<Map<String, Object>> result = new ArrayList<>();
         Map<String, Object> map = new HashMap<>();
-        map.put( columns.get( 0 ).columnName(), rowsChanged );
+        map.put( fields.get( 0 ), rowsChanged );
         result.add( map );
         this.result = result;
     }
@@ -119,7 +118,7 @@ public class RestResult {
             for ( AlgDataTypeField type : dataType.getFields() ) {
                 PolyValue o = row[i];
 
-                String columnName = columns.get( i ).columnName();
+                String columnName = fields.get( i );
                 if ( o == null ) {
                     temp.put( columnName, null );
                     continue;

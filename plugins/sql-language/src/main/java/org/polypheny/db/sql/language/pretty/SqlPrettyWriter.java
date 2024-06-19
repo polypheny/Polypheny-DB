@@ -40,9 +40,9 @@ import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.sql.language.dialect.AnsiSqlDialect;
 import org.polypheny.db.sql.language.util.SqlString;
+import org.polypheny.db.util.Spaces;
 import org.polypheny.db.util.Unsafe;
 import org.polypheny.db.util.Util;
-import org.polypheny.db.util.avatica.Spaces;
 
 
 /**

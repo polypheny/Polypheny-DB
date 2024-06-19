@@ -87,6 +87,7 @@ import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.temporal.PolyDate;
 import org.polypheny.db.type.entity.temporal.PolyTime;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
+import org.polypheny.db.util.ByteString;
 import org.polypheny.db.util.Collation;
 import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.DateString;
@@ -94,7 +95,6 @@ import org.polypheny.db.util.NlsString;
 import org.polypheny.db.util.TimeString;
 import org.polypheny.db.util.TimestampString;
 import org.polypheny.db.util.Util;
-import org.polypheny.db.util.avatica.ByteString;
 import org.polypheny.db.util.temporal.DateTimeUtils;
 import org.polypheny.db.util.temporal.TimeUnit;
 

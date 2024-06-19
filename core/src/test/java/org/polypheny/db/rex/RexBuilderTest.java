@@ -50,6 +50,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.type.entity.PolyBoolean;
+import org.polypheny.db.util.ByteString;
 import org.polypheny.db.util.Collation;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.NlsString;
@@ -58,7 +59,6 @@ import org.polypheny.db.util.RunMode;
 import org.polypheny.db.util.TimeString;
 import org.polypheny.db.util.TimestampString;
 import org.polypheny.db.util.Util;
-import org.polypheny.db.util.avatica.ByteString;
 import org.polypheny.db.util.temporal.DateTimeUtils;
 
 

@@ -72,11 +72,10 @@ import org.polypheny.db.sql.language.SqlOperator;
 import org.polypheny.db.sql.language.SqlSelect;
 import org.polypheny.db.sql.language.pretty.SqlPrettyWriter;
 import org.polypheny.db.sql.language.util.SqlString;
+import org.polypheny.db.sql.language.util.SqlTypeRepresentation;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
-import org.polypheny.db.util.avatica.ColumnMetaData;
-import org.polypheny.db.util.avatica.ColumnMetaData.Rep;
 
 
 /**
@@ -113,12 +112,12 @@ public class JdbcTable extends PhysicalTable implements TranslatableEntity, Scan
     }
 
 
-    private List<Pair<ColumnMetaData.Rep, Integer>> fieldClasses( final JavaTypeFactory typeFactory ) {
+    private List<Pair<SqlTypeRepresentation, Integer>> fieldClasses( final JavaTypeFactory typeFactory ) {
         final AlgDataType rowType = getTupleType();
         return rowType.getFields().stream().map( f -> {
             final AlgDataType type = f.getType();
             final Class<?> clazz = (Class<?>) typeFactory.getJavaClass( type );
-            final Rep rep = Util.first( Rep.of( clazz ), Rep.OBJECT );
+            final SqlTypeRepresentation rep = Util.first( SqlTypeRepresentation.of( clazz ), SqlTypeRepresentation.OBJECT );
             return Pair.of( rep, type.getPolyType().getJdbcOrdinal() );
         } ).toList();
     }

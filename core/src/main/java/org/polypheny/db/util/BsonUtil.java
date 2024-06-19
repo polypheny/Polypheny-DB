@@ -67,7 +67,6 @@ import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.type.entity.numerical.PolyLong;
-import org.polypheny.db.util.avatica.ByteString;
 
 
 public class BsonUtil {

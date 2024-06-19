@@ -39,8 +39,8 @@ import org.polypheny.db.sql.language.SqlUtil;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.sql.language.fun.SqlFloorFunction;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.SqlType;
 import org.polypheny.db.type.inference.ReturnTypes;
-import org.polypheny.db.util.avatica.SqlType;
 
 
 /**

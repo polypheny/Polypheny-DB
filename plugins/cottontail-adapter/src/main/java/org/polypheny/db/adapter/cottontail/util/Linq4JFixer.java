@@ -33,7 +33,7 @@ import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.type.entity.temporal.PolyDate;
 import org.polypheny.db.type.entity.temporal.PolyTime;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
-import org.polypheny.db.util.avatica.ByteString;
+import org.polypheny.db.util.ByteString;
 import org.vitrivr.cottontail.client.language.basics.Distances;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.AtomicBooleanOperand;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.AtomicBooleanPredicate;

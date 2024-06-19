@@ -118,8 +118,8 @@ import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.type.entity.relational.PolyMap;
 import org.polypheny.db.util.BsonUtil;
+import org.polypheny.db.util.ByteString;
 import org.polypheny.db.util.Static;
-import org.polypheny.db.util.avatica.ByteString;
 
 
 /**

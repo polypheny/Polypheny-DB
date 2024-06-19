@@ -25,7 +25,6 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.util.avatica.ColumnMetaData;
 
 
 /**
@@ -82,23 +81,14 @@ public class QueryProcessorHelpers {
     }
 
 
-    public static List<ColumnMetaData> getColumnMetaDataList( AlgDataType jdbcType, List<List<String>> originList ) {
-        final List<ColumnMetaData> columns = new ArrayList<>();
+    public static List<String> getFieldNames( AlgDataType jdbcType ) {
+        final List<String> fieldNames = new ArrayList<>();
         for ( Ord<AlgDataTypeField> pair : Ord.zip( jdbcType.getFields() ) ) {
             final AlgDataTypeField field = pair.e;
-            columns.add( QueryProcessorHelpers.metaData( field.getName(), originList.get( pair.i ) ) );
+            fieldNames.add( field.getName() );
         }
-        return columns;
+        return fieldNames;
     }
 
-
-    public static ColumnMetaData metaData(
-            String fieldName,
-            List<String> origins ) {
-        return new ColumnMetaData(
-                fieldName,
-                QueryProcessorHelpers.origin( origins, 0 )
-        );
-    }
 
 }

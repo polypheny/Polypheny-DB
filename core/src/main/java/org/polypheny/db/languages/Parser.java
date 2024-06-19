@@ -21,9 +21,9 @@ import java.util.Objects;
 import org.polypheny.db.algebra.constant.ConformanceEnum;
 import org.polypheny.db.algebra.constant.Lex;
 import org.polypheny.db.nodes.Node;
+import org.polypheny.db.util.Casing;
 import org.polypheny.db.util.Conformance;
-import org.polypheny.db.util.avatica.Casing;
-import org.polypheny.db.util.avatica.Quoting;
+import org.polypheny.db.util.Quoting;
 
 public interface Parser {
 

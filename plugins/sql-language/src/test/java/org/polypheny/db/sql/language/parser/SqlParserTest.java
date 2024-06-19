@@ -65,14 +65,14 @@ import org.polypheny.db.sql.language.dialect.PolyphenyDbSqlDialect;
 import org.polypheny.db.sql.language.parser.SqlAbstractParserImpl.Metadata;
 import org.polypheny.db.sql.language.pretty.SqlPrettyWriter;
 import org.polypheny.db.sql.language.utils.SqlValidatorTestCase;
+import org.polypheny.db.util.Casing;
 import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.ConversionUtil;
+import org.polypheny.db.util.Quoting;
 import org.polypheny.db.util.SourceStringReader;
 import org.polypheny.db.util.Sources;
 import org.polypheny.db.util.TestUtil;
 import org.polypheny.db.util.Util;
-import org.polypheny.db.util.avatica.Casing;
-import org.polypheny.db.util.avatica.Quoting;
 
 
 /**

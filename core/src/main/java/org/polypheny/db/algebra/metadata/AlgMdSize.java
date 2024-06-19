@@ -59,10 +59,10 @@ import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.BuiltInMethod;
+import org.polypheny.db.util.ByteString;
 import org.polypheny.db.util.ImmutableNullableList;
 import org.polypheny.db.util.NlsString;
 import org.polypheny.db.util.Pair;
-import org.polypheny.db.util.avatica.ByteString;
 
 
 /**

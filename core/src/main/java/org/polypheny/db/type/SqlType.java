@@ -12,48 +12,13 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- * This file incorporates code covered by the following terms:
- *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to you under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 
-package org.polypheny.db.util.avatica;
+package org.polypheny.db.type;
 
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.net.URL;
-import java.sql.Array;
-import java.sql.Blob;
-import java.sql.Clob;
-import java.sql.NClob;
-import java.sql.Ref;
-import java.sql.RowId;
-import java.sql.Struct;
-import java.sql.Time;
-import java.sql.Timestamp;
 import java.sql.Types;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Collection;
-import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import org.polypheny.db.util.CoreUtil;
 
 /**
  * Extends the information in {@link java.sql.Types}.
@@ -306,75 +271,60 @@ import org.polypheny.db.util.CoreUtil;
  * -->
  */
 public enum SqlType {
-    BIT( Types.BIT, boolean.class ),
-    BOOLEAN( Types.BOOLEAN, boolean.class ),
-    TINYINT( Types.TINYINT, byte.class ),
-    SMALLINT( Types.SMALLINT, short.class ),
-    INTEGER( Types.INTEGER, int.class ),
-    BIGINT( Types.BIGINT, long.class ),
-    NUMERIC( Types.NUMERIC, BigDecimal.class ),
-    DECIMAL( Types.DECIMAL, BigDecimal.class ),
-    FLOAT( Types.FLOAT, double.class ),
-    REAL( Types.REAL, float.class ),
-    DOUBLE( Types.DOUBLE, double.class ),
-    DATE( Types.DATE, java.sql.Date.class, int.class ),
-    TIME( Types.TIME, Time.class, int.class ),
-    TIMESTAMP( Types.TIMESTAMP, Timestamp.class, long.class ),
-    INTERVAL_YEAR_MONTH( Types.OTHER, Boolean.class ),
-    INTERVAL_DAY_TIME( Types.OTHER, Boolean.class ),
-    CHAR( Types.CHAR, String.class ),
-    VARCHAR( Types.VARCHAR, String.class ),
-    LONGVARCHAR( Types.LONGVARCHAR, String.class ),
-    BINARY( Types.BINARY, byte[].class, ByteString.class, String.class ),
-    VARBINARY( Types.VARBINARY, byte[].class, ByteString.class, String.class ),
-    LONGVARBINARY( Types.LONGVARBINARY, byte[].class, ByteString.class,
-            String.class ),
-    NULL( Types.NULL, Void.class ),
-    ANY( Types.JAVA_OBJECT, Object.class ),
-    SYMBOL( Types.OTHER, Object.class ),
-    MULTISET( Types.ARRAY, List.class ),
-    ARRAY( Types.ARRAY, Array.class ),
-    BLOB( Types.BLOB, Blob.class ),
-    CLOB( Types.CLOB, Clob.class ),
-    SQLXML( Types.SQLXML, java.sql.SQLXML.class ),
-    MAP( Types.OTHER, Map.class ),
-    DISTINCT( Types.DISTINCT, Object.class ),
-    STRUCT( Types.STRUCT, Struct.class ),
-    REF( Types.REF, Ref.class ),
-    DATALINK( Types.DATALINK, URL.class ),
-    JAVA_OBJECT( Types.JAVA_OBJECT, Object.class ),
-    ROWID( Types.ROWID, RowId.class ),
-    NCHAR( Types.NCHAR, String.class ),
-    NVARCHAR( Types.NVARCHAR, String.class ),
-    LONGNVARCHAR( Types.LONGNVARCHAR, String.class ),
-    NCLOB( Types.NCLOB, NClob.class ),
-    ROW( Types.STRUCT, Object.class ),
-    OTHER( Types.OTHER, Object.class ),
-    CURSOR( 2012, Object.class ),
-    TIME_WITH_TIMEZONE( 2013, String.class ),
-    TIMESTAMP_WITH_TIMEZONE( 2014, String.class ),
-    COLUMN_LIST( Types.OTHER + 2, Object.class );
+    BIT( Types.BIT ),
+    BOOLEAN( Types.BOOLEAN ),
+    TINYINT( Types.TINYINT ),
+    SMALLINT( Types.SMALLINT ),
+    INTEGER( Types.INTEGER ),
+    BIGINT( Types.BIGINT ),
+    NUMERIC( Types.NUMERIC ),
+    DECIMAL( Types.DECIMAL ),
+    FLOAT( Types.FLOAT ),
+    REAL( Types.REAL ),
+    DOUBLE( Types.DOUBLE ),
+    DATE( Types.DATE ),
+    TIME( Types.TIME ),
+    TIMESTAMP( Types.TIMESTAMP ),
+    INTERVAL_YEAR_MONTH( Types.OTHER ),
+    INTERVAL_DAY_TIME( Types.OTHER ),
+    CHAR( Types.CHAR ),
+    VARCHAR( Types.VARCHAR ),
+    LONGVARCHAR( Types.LONGVARCHAR ),
+    BINARY( Types.BINARY ),
+    VARBINARY( Types.VARBINARY ),
+    LONGVARBINARY( Types.LONGVARBINARY
+    ),
+    NULL( Types.NULL ),
+    ANY( Types.JAVA_OBJECT ),
+    SYMBOL( Types.OTHER ),
+    MULTISET( Types.ARRAY ),
+    ARRAY( Types.ARRAY ),
+    BLOB( Types.BLOB ),
+    CLOB( Types.CLOB ),
+    SQLXML( Types.SQLXML ),
+    MAP( Types.OTHER ),
+    DISTINCT( Types.DISTINCT ),
+    STRUCT( Types.STRUCT ),
+    REF( Types.REF ),
+    DATALINK( Types.DATALINK ),
+    JAVA_OBJECT( Types.JAVA_OBJECT ),
+    ROWID( Types.ROWID ),
+    NCHAR( Types.NCHAR ),
+    NVARCHAR( Types.NVARCHAR ),
+    LONGNVARCHAR( Types.LONGNVARCHAR ),
+    NCLOB( Types.NCLOB ),
+    ROW( Types.STRUCT ),
+    OTHER( Types.OTHER ),
+    CURSOR( 2012 ),
+    TIME_WITH_TIMEZONE( 2013 ),
+    TIMESTAMP_WITH_TIMEZONE( 2014 ),
+    COLUMN_LIST( Types.OTHER + 2 );
 
     /**
      * Type id as appears in {@link java.sql.Types},
      * e.g. {@link java.sql.Types#INTEGER}.
      */
     public final int id;
-
-    /**
-     * Default Java type for this SQL type, as described in table B-1.
-     */
-    public final Class<?> clazz;
-
-    /**
-     * Class used internally in Calcite to represent instances of this type.
-     */
-    public final Class<?> internal;
-
-    /**
-     * Class used to serialize values of this type as JSON.
-     */
-    public final Class<?> serial;
 
     private static final Map<Integer, SqlType> BY_ID = new HashMap<>();
 
@@ -386,21 +336,8 @@ public enum SqlType {
     }
 
 
-    SqlType( int id, Class<?> clazz, Class<?> internal, Class<?> serial ) {
+    SqlType( int id ) {
         this.id = id;
-        this.clazz = clazz;
-        this.internal = internal;
-        this.serial = serial;
-    }
-
-
-    SqlType( int id, Class<?> clazz, Class<?> internal ) {
-        this( id, clazz, internal, internal );
-    }
-
-
-    SqlType( int id, Class<?> clazz ) {
-        this( id, clazz, clazz, clazz );
     }
 
 
@@ -413,151 +350,4 @@ public enum SqlType {
     }
 
 
-    public static final Map<Class<?>, EnumSet<SqlType>> SET_LIST;
-    public static final Map<SqlType.Method, EnumSet<SqlType>> GET_LIST;
-
-
-    static {
-        SET_LIST = new HashMap<>();
-        GET_LIST = new HashMap<>();
-
-        EnumSet<SqlType> numericTypes = EnumSet.of( TINYINT, SMALLINT, INTEGER,
-                BIGINT, REAL, FLOAT, DOUBLE, DECIMAL, NUMERIC, BIT, BOOLEAN );
-        Class<?>[] numericClasses = {
-                BigDecimal.class, Boolean.class, Byte.class, Short.class, Integer.class,
-                Long.class, Float.class, Double.class
-        };
-        EnumSet<SqlType> charTypes = EnumSet.of( CHAR, VARCHAR, LONGVARCHAR );
-        EnumSet<SqlType> ncharTypes = EnumSet.of( NCHAR, NVARCHAR, LONGNVARCHAR );
-        EnumSet<SqlType> binaryTypes = EnumSet.of( BINARY, VARBINARY, LONGVARBINARY );
-        EnumSet<SqlType> dateTimeTypes = EnumSet.of( DATE, TIME, TIMESTAMP );
-        final EnumSet<SqlType> numericCharTypes = concat( numericTypes, charTypes );
-        SET_LIST.put( String.class,
-                concat( numericCharTypes, binaryTypes, dateTimeTypes, ncharTypes ) );
-        for ( Class<?> clazz : numericClasses ) {
-            SET_LIST.put( clazz, numericCharTypes );
-        }
-        SET_LIST.put( byte[].class, binaryTypes );
-        SET_LIST.put( BigInteger.class,
-                EnumSet.of( BIGINT, CHAR, VARCHAR, LONGVARCHAR ) );
-        SET_LIST.put( java.sql.Date.class,
-                concat( charTypes, EnumSet.of( DATE, TIMESTAMP ) ) );
-        SET_LIST.put( Time.class,
-                concat( charTypes, EnumSet.of( TIME, TIMESTAMP ) ) );
-        SET_LIST.put( Timestamp.class,
-                concat( charTypes, EnumSet.of( DATE, TIME, TIMESTAMP ) ) );
-        SET_LIST.put( Array.class, EnumSet.of( ARRAY ) );
-        SET_LIST.put( Blob.class, EnumSet.of( BLOB ) );
-        SET_LIST.put( Clob.class, EnumSet.of( CLOB ) );
-        SET_LIST.put( Struct.class, EnumSet.of( STRUCT ) );
-        SET_LIST.put( Ref.class, EnumSet.of( REF ) );
-        SET_LIST.put( URL.class, EnumSet.of( DATALINK ) );
-        SET_LIST.put( Class.class, EnumSet.of( JAVA_OBJECT ) );
-        SET_LIST.put( RowId.class, EnumSet.of( ROWID ) );
-        SET_LIST.put( NClob.class, EnumSet.of( NCLOB ) );
-        SET_LIST.put( java.sql.SQLXML.class, EnumSet.of( SQLXML ) );
-        SET_LIST.put( Calendar.class,
-                concat( charTypes, EnumSet.of( DATE, TIME, TIMESTAMP ) ) );
-        SET_LIST.put( java.util.Date.class,
-                concat( charTypes, EnumSet.of( DATE, TIME, TIMESTAMP ) ) );
-
-        EnumSet<SqlType.Method> numericMethods =
-                EnumSet.of( SqlType.Method.GET_BYTE, SqlType.Method.GET_SHORT, SqlType.Method.GET_INT,
-                        SqlType.Method.GET_LONG, SqlType.Method.GET_FLOAT, SqlType.Method.GET_DOUBLE,
-                        SqlType.Method.GET_BIG_DECIMAL, SqlType.Method.GET_BOOLEAN );
-        for ( SqlType.Method method : numericMethods ) {
-            GET_LIST.put( method, numericCharTypes );
-        }
-        GET_LIST.put( SqlType.Method.GET_BYTE, EnumSet.of( ROWID ) );
-        for ( SqlType.Method method : EnumSet.of( SqlType.Method.GET_STRING, SqlType.Method.GET_N_STRING ) ) {
-            GET_LIST.put( method,
-                    concat( numericCharTypes, binaryTypes, dateTimeTypes,
-                            EnumSet.of( DATALINK ), ncharTypes ) );
-        }
-        GET_LIST.put( SqlType.Method.GET_BYTES, binaryTypes );
-        GET_LIST.put( SqlType.Method.GET_DATE,
-                concat( charTypes, EnumSet.of( DATE, TIMESTAMP ) ) );
-        GET_LIST.put( SqlType.Method.GET_TIME,
-                concat( charTypes, EnumSet.of( TIME, TIMESTAMP ) ) );
-        GET_LIST.put( SqlType.Method.GET_TIMESTAMP,
-                concat( charTypes, EnumSet.of( DATE, TIME, TIMESTAMP ) ) );
-        GET_LIST.put( SqlType.Method.GET_ASCII_STREAM,
-                concat( charTypes, binaryTypes, EnumSet.of( CLOB, NCLOB ) ) );
-        GET_LIST.put( SqlType.Method.GET_BINARY_STREAM,
-                concat( binaryTypes, EnumSet.of( BLOB, SQLXML ) ) );
-        GET_LIST.put( SqlType.Method.GET_CHARACTER_STREAM,
-                concat( charTypes, binaryTypes, ncharTypes,
-                        EnumSet.of( CLOB, NCLOB, SQLXML ) ) );
-        GET_LIST.put( SqlType.Method.GET_N_CHARACTER_STREAM,
-                concat(
-                        charTypes, binaryTypes, ncharTypes, EnumSet.of( CLOB, NCLOB, SQLXML ) ) );
-        GET_LIST.put( SqlType.Method.GET_CLOB, EnumSet.of( CLOB, NCLOB ) );
-        GET_LIST.put( SqlType.Method.GET_N_CLOB, EnumSet.of( CLOB, NCLOB ) );
-        GET_LIST.put( SqlType.Method.GET_BLOB, EnumSet.of( BLOB ) );
-        GET_LIST.put( SqlType.Method.GET_ARRAY, EnumSet.of( ARRAY ) );
-        GET_LIST.put( SqlType.Method.GET_REF, EnumSet.of( REF ) );
-        GET_LIST.put( SqlType.Method.GET_URL, EnumSet.of( DATALINK ) );
-        GET_LIST.put( SqlType.Method.GET_OBJECT, EnumSet.allOf( SqlType.class ) );
-        GET_LIST.put( SqlType.Method.GET_ROW_ID, EnumSet.of( ROWID ) );
-        GET_LIST.put( SqlType.Method.GET_SQLXML, EnumSet.of( SQLXML ) );
-    }
-
-
-    @SafeVarargs
-    private static <E extends Enum<E>> EnumSet<E> concat( Collection<E>... ess ) {
-        final List<E> list = new ArrayList<>();
-        for ( Collection<E> es : ess ) {
-            list.addAll( es );
-        }
-        return EnumSet.copyOf( list );
-    }
-
-
-    /**
-     * Returns the boxed type.
-     */
-    public Class<?> boxedClass() {
-        return CoreUtil.box( clazz );
-    }
-
-
-    /**
-     * Getter methods in {@link java.sql.ResultSet}.
-     */
-    public enum Method {
-        GET_BYTE( "getByte" ),
-        GET_SHORT( "getShort" ),
-        GET_INT( "getInt" ),
-        GET_LONG( "getLong" ),
-        GET_FLOAT( "getFloat" ),
-        GET_DOUBLE( "getDouble" ),
-        GET_BIG_DECIMAL( "getBigDecimal" ),
-        GET_BOOLEAN( "getBoolean" ),
-        GET_STRING( "getString" ),
-        GET_N_STRING( "getNString" ),
-        GET_BYTES( "getBytes" ),
-        GET_DATE( "getDate" ),
-        GET_TIME( "getTime" ),
-        GET_TIMESTAMP( "getTimestamp" ),
-        GET_ASCII_STREAM( "getAsciiStream" ),
-        GET_BINARY_STREAM( "getBinaryStream" ),
-        GET_CHARACTER_STREAM( "getCharacterStream" ),
-        GET_N_CHARACTER_STREAM( "getNCharacterStream" ),
-        GET_CLOB( "getClob" ),
-        GET_N_CLOB( "getNClob" ),
-        GET_BLOB( "getBlob" ),
-        GET_ARRAY( "getArray" ),
-        GET_REF( "getRef" ),
-        GET_URL( "getURL" ),
-        GET_OBJECT( "getObject" ),
-        GET_ROW_ID( "getRowId" ),
-        GET_SQLXML( "getSQLXML" );
-
-        public final String methodName;
-
-
-        Method( String methodName ) {
-            this.methodName = methodName;
-        }
-    }
 }

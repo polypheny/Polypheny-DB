@@ -37,10 +37,10 @@ import org.polypheny.db.sql.language.parser.SqlAbstractParserImpl;
 import org.polypheny.db.sql.language.parser.SqlParser;
 import org.polypheny.db.sql.language.validate.SqlValidator;
 import org.polypheny.db.sql.language.validate.SqlValidatorUtil;
+import org.polypheny.db.util.Casing;
 import org.polypheny.db.util.Conformance;
+import org.polypheny.db.util.Quoting;
 import org.polypheny.db.util.SourceStringReader;
-import org.polypheny.db.util.avatica.Casing;
-import org.polypheny.db.util.avatica.Quoting;
 
 
 /**

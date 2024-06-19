@@ -46,7 +46,7 @@ import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.util.Pair;
-import org.polypheny.db.util.avatica.Spacer;
+import org.polypheny.db.util.Spacer;
 
 
 /**

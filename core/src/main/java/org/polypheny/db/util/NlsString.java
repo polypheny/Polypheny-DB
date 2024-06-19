@@ -54,7 +54,6 @@ import javax.annotation.Nonnull;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.functions.Functions;
-import org.polypheny.db.util.avatica.ByteString;
 
 
 /**

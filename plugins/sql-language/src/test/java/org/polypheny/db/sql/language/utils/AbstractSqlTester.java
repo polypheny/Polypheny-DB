@@ -56,11 +56,11 @@ import org.polypheny.db.sql.language.utils.SqlValidatorTestCase.Tester;
 import org.polypheny.db.sql.language.validate.SqlValidator;
 import org.polypheny.db.sql.language.validate.SqlValidatorNamespace;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.util.Casing;
 import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.Quoting;
 import org.polypheny.db.util.Util;
-import org.polypheny.db.util.avatica.Casing;
-import org.polypheny.db.util.avatica.Quoting;
 
 
 /**

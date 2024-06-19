@@ -25,9 +25,9 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.sql.language.SqlTestFactory;
 import org.polypheny.db.sql.language.utils.SqlValidatorTestCase.Tester;
+import org.polypheny.db.util.Casing;
 import org.polypheny.db.util.Conformance;
-import org.polypheny.db.util.avatica.Casing;
-import org.polypheny.db.util.avatica.Quoting;
+import org.polypheny.db.util.Quoting;
 
 
 /**

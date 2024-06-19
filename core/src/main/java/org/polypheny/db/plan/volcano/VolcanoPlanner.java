@@ -100,8 +100,8 @@ import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.SaffronProperties;
+import org.polypheny.db.util.Spaces;
 import org.polypheny.db.util.Util;
-import org.polypheny.db.util.avatica.Spaces;
 
 
 /**

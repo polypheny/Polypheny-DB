@@ -41,7 +41,7 @@ PARSER_BEGIN(PigletParser)
 
 package org.polypheny.db.piglet.parser;
 
-import org.polypheny.db.util.avatica.Casing;
+import org.polypheny.db.util.Casing;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.util.CoreUtil;

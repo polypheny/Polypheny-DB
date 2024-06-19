@@ -50,8 +50,8 @@ import org.polypheny.db.nodes.NodeVisitor;
 import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.Spacer;
 import org.polypheny.db.util.Util;
-import org.polypheny.db.util.avatica.Spacer;
 
 
 /**

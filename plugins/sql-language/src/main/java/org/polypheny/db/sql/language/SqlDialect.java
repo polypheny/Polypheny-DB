@@ -59,10 +59,10 @@ import org.polypheny.db.sql.language.util.SqlTypeUtil;
 import org.polypheny.db.type.BasicPolyType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
+import org.polypheny.db.type.SqlType;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.category.PolyBlob;
-import org.polypheny.db.util.avatica.SqlType;
 import org.polypheny.db.util.temporal.DateTimeUtils;
 import org.polypheny.db.util.temporal.TimeUnit;
 

@@ -40,7 +40,7 @@ import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.BitString;
-import org.polypheny.db.util.avatica.ByteString;
+import org.polypheny.db.util.ByteString;
 
 @Value
 public class PolyBinary extends PolyValue {

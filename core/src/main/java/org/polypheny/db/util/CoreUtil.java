@@ -44,7 +44,6 @@ import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.runtime.Resources;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
-import org.polypheny.db.util.avatica.Casing;
 
 public class CoreUtil {
 
