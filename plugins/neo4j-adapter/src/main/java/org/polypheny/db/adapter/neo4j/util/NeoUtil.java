@@ -109,12 +109,12 @@ public interface NeoUtil {
             case BIGINT:
                 return v -> PolyBigDecimal.of( v.asLong() );
             case DECIMAL:
-                return v -> PolyBigDecimal.of( v.asDouble() );
+                return v -> v instanceof StringValue ? PolyBigDecimal.of( v.asString() ) : PolyBigDecimal.of( v.asDouble() );
             case FLOAT:
             case REAL:
-                return v -> PolyFloat.of( v.asNumber() );
+                return v -> v instanceof StringValue ? PolyFloat.of( Float.valueOf( v.asString() ) ) : PolyFloat.of( v.asNumber() );
             case DOUBLE:
-                return v -> PolyDouble.of( v.asNumber() );
+                return v -> v instanceof StringValue ? PolyDouble.of( Double.valueOf( v.asString() ) ) : PolyDouble.of( v.asNumber() );
             case INTERVAL:
                 break;
             case ANY:
@@ -301,6 +301,7 @@ public interface NeoUtil {
                 return literal.value.asList().toString();
             case BINARY:
             case VARBINARY:
+                return literal.value.asBinary().as64String();
             case FILE:
             case IMAGE:
             case VIDEO:
@@ -349,10 +350,6 @@ public interface NeoUtil {
                 return o -> String.format( "%s > %s", o.get( 0 ), o.get( 1 ) );
             case GREATER_THAN_OR_EQUAL:
                 return o -> String.format( "%s >= %s", o.get( 0 ), o.get( 1 ) );
-            case IN:
-                return o -> String.format( "%s IN %s", o.get( 0 ), o.get( 1 ) );
-            case NOT_IN:
-                return o -> String.format( "%s NOT IN %s", o.get( 0 ), o.get( 1 ) );
             case LESS_THAN:
                 return o -> String.format( "%s < %s", o.get( 0 ), o.get( 1 ) );
             case LESS_THAN_OR_EQUAL:
@@ -543,6 +540,7 @@ public interface NeoUtil {
         if ( p.getTraitSet().contains( ModelTrait.GRAPH ) ) {
             return false;
         }
+
         if ( p.getTupleType().getFieldNames().stream().anyMatch( n -> n.matches( "^[0-9].*" ) ) ) {
             return false;
         }
@@ -563,7 +561,9 @@ public interface NeoUtil {
         }
 
         if ( value.isNumber() ) {
-            return value.asNumber().DoubleValue();
+            if ( type.getType() == PolyType.DECIMAL ) {
+                return value.asNumber().bigDecimalValue().toPlainString();
+            }
         }
         if ( value.isList() ) {
             if ( isNested ) {
@@ -573,23 +573,22 @@ public interface NeoUtil {
         }
 
         return switch ( type.getType() ) {
-            case DATE -> value.asTemporal().getDaysSinceEpoch();
-            case TIME -> value.asTemporal().getMillisSinceEpoch();
-            case TIMESTAMP -> value.asTemporal().getMillisSinceEpoch();
+            case DATE, TIME, TIMESTAMP -> value.asTemporal().getMillisSinceEpoch();
             case DOCUMENT -> value.asDocument().toTypedJson();
-            case INTEGER -> value.asNumber().IntValue();
+            case TINYINT, INTEGER, SMALLINT -> value.asNumber().IntValue();
             case BIGINT -> value.asNumber().LongValue();
             case VARCHAR, TEXT, CHAR -> value.asString().value;
             case BOOLEAN -> value.asBoolean().value;
-            case BINARY, VARBINARY, FILE, IMAGE, VIDEO, AUDIO -> value.asBlob().asByteArray();
-            case FLOAT, REAL, DOUBLE, DECIMAL -> value.asNumber().doubleValue();
+            case BINARY, VARBINARY, FILE, IMAGE, VIDEO, AUDIO -> value.asBinary().value;
+            case FLOAT, REAL, DOUBLE -> value.asNumber().doubleValue();
+            case DECIMAL -> value.asNumber().bigDecimalValue();
             case ARRAY -> value.asList().value.stream().map( e -> {
                 if ( isNested ) {
                     return e.toTypedJson();
                 }
                 return fixParameterValue( e, type.asList().types.get( 0 ), true );
             } ).toList();
-            default -> throw new NotImplementedException();
+            default -> throw new NotImplementedException( "Poly to Neo4j value" );
         };
     }
 

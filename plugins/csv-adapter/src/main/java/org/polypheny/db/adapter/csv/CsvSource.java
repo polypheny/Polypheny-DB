@@ -90,8 +90,8 @@ public class CsvSource extends DataSource<RelAdapterCatalog> implements Relation
     private Map<String, List<ExportedColumn>> exportedColumnCache;
 
 
-    public CsvSource( final long storeId, final String uniqueName, final Map<String, String> settings ) {
-        super( storeId, uniqueName, settings, true, new RelAdapterCatalog( storeId ), List.of( DataModel.RELATIONAL ) );
+    public CsvSource( final long storeId, final String uniqueName, final Map<String, String> settings, final DeployMode mode ) {
+        super( storeId, uniqueName, settings, mode, true, new RelAdapterCatalog( storeId ), List.of( DataModel.RELATIONAL ) );
 
         this.connectionMethod = settings.containsKey( "method" ) ? ConnectionMethod.from( settings.get( "method" ).toUpperCase() ) : ConnectionMethod.UPLOAD;
 

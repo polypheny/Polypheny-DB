@@ -35,9 +35,9 @@ import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
+import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Transaction;
-import org.neo4j.driver.exceptions.Neo4jException;
 import org.pf4j.Extension;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
@@ -158,8 +158,8 @@ public class Neo4jPlugin extends PolyPlugin {
         private String host;
 
 
-        public Neo4jStore( final long adapterId, final String uniqueName, final Map<String, String> adapterSettings ) {
-            super( adapterId, uniqueName, adapterSettings, true, new GraphAdapterCatalog( adapterId ) );
+        public Neo4jStore( final long adapterId, final String uniqueName, final Map<String, String> adapterSettings, DeployMode mode ) {
+            super( adapterId, uniqueName, adapterSettings, mode, true, new GraphAdapterCatalog( adapterId ) );
 
             this.user = "neo4j";
             if ( !settings.containsKey( "password" ) ) {
@@ -262,11 +262,12 @@ public class Neo4jPlugin extends PolyPlugin {
             Transaction trx = transactionProvider.getDdlTransaction();
             try {
                 for ( String query : queries ) {
-                    trx.run( query );
+                    Result result = trx.run( query );
+                    result.consume();
                 }
 
                 transactionProvider.commitDdlTransaction();
-            } catch ( Neo4jException e ) {
+            } catch ( Exception e ) {
                 transactionProvider.rollbackDdlTransaction();
                 throw new GenericRuntimeException( e );
             }
@@ -311,6 +312,7 @@ public class Neo4jPlugin extends PolyPlugin {
 
         @Override
         public void dropTable( Context context, long allocId ) {
+            transactionProvider.commitAll();
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
             PhysicalEntity physical = adapterCatalog.fromAllocation( allocId, PhysicalEntity.class );
 

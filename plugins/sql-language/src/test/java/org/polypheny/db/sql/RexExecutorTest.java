@@ -36,6 +36,7 @@ import java.util.function.Function;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.linq4j.QueryProvider;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
@@ -362,7 +363,7 @@ public class RexExecutorTest extends SqlLanguageDependent {
 
 
         @Override
-        public void addParameterValues( long index, AlgDataType type, List<PolyValue> data ) {
+        public void addParameterValues( long index, @NotNull AlgDataType type, List<PolyValue> data ) {
             throw new UnsupportedOperationException();
         }
 

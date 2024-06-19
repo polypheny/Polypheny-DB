@@ -198,14 +198,26 @@ shadowJar {
 task deletePlugins(type: Delete) {
     delete 'src/main/resources/plugins'
 }
+task deletePluginsBuild(type: Delete) {
+    delete "$buildDir/classes/plugins"
+}
 task copyPlugins(type: Copy, dependsOn: deletePlugins) {
     from('../build/plugins')
     into('src/main/resources/plugins')
     include('*.zip')
 }
+task copyPluginsBuild(type: Copy, dependsOn: deletePluginsBuild) {
+    from('../build/plugins')
+    into("$buildDir/classes/plugins")
+    include('*.zip')
+}
+jar.dependsOn(copyPlugins)
 shadowJar.dependsOn(copyPlugins)
+jar.dependsOn(copyPluginsBuild)
+shadowJar.dependsOn(copyPluginsBuild)
 copyPlugins.dependsOn(":plugins:assemblePlugins")
-
+copyPluginsBuild.dependsOn(":plugins:assemblePlugins")
+compileTestJava.dependsOn(copyPluginsBuild)
 
 // due to gradle 7.6+
 configurations {
@@ -288,22 +300,21 @@ shadowDistZip {
     dependsOn(jar)
 }
 
-def getCurrentBranch() {
-    def branch = ""
-    def proc = "git rev-parse --abbrev-ref HEAD".execute()
-    proc.in.eachLine { line -> branch = line }
+def getLastLine(String cmd) {
+    def output = ""
+    def proc = cmd.execute()
+    proc.in.eachLine { line -> output = line }
     proc.err.eachLine { line -> println line }
     proc.waitFor()
-    branch
+    output
+}
+
+def getCurrentBranch() {
+    getLastLine("git rev-parse --abbrev-ref HEAD")
 }
 
 def getCurrentHash() {
-    def hash = ""
-    def proc = "git rev-parse --short HEAD".execute()
-    proc.in.eachLine { line -> hash = line }
-    proc.err.eachLine { line -> println line }
-    proc.waitFor()
-    hash
+    getLastLine("git rev-parse --short HEAD")
 }
 
 task createProperties() {
@@ -311,8 +322,8 @@ task createProperties() {
         new File("$buildDir/version.properties").withWriter { w ->
             Properties p = new Properties()
             p['version'] = version
-            p['branch'] = getCurrentBranch()
-            p['hash'] = getCurrentHash()
+            p['branch'] = System.getenv("GIT_BRANCH") ?: getCurrentBranch()
+            p['hash'] = System.getenv("GIT_HASH") ?: getCurrentHash()
             p.store w, null
         }
         // copy needed, otherwise the bean VersionController can't load the file at startup when running complete-app tests.

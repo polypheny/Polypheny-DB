@@ -92,6 +92,8 @@ public interface Transaction {
 
     void updateAccessMode( AccessMode accessCandidate );
 
+    TransactionManager getTransactionManager();
+
     /**
      * Flavor, how multimedia results should be returned from a store.
      */

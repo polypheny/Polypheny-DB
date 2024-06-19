@@ -91,8 +91,8 @@ public class ExcelSource extends DataSource<RelAdapterCatalog> implements Relati
     public String sheetName;
 
 
-    public ExcelSource( final long storeId, final String uniqueName, final Map<String, String> settings ) {
-        super( storeId, uniqueName, settings, true, new RelAdapterCatalog( storeId ), List.of( DataModel.RELATIONAL ) );
+    public ExcelSource( final long storeId, final String uniqueName, final Map<String, String> settings, final DeployMode mode ) {
+        super( storeId, uniqueName, settings, mode, true, new RelAdapterCatalog( storeId ), List.of( DataModel.RELATIONAL ) );
 
         this.connectionMethod = settings.containsKey( "method" ) ? ConnectionMethod.from( settings.get( "method" ) ) : ConnectionMethod.UPLOAD;
         // Validate maxStringLength setting

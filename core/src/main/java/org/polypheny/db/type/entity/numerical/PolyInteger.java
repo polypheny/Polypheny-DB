@@ -115,12 +115,6 @@ public class PolyInteger extends PolyNumber {
 
 
     @Override
-    public int hashCode() {
-        return Objects.hash( super.hashCode(), value );
-    }
-
-
-    @Override
     public Expression asExpression() {
         return Expressions.new_( PolyInteger.class, Expressions.constant( value ) );
     }
@@ -223,6 +217,12 @@ public class PolyInteger extends PolyNumber {
     @Override
     public PolyNumber negate() {
         return PolyInteger.of( -value );
+    }
+
+
+    @Override
+    public int hashCode() {
+        return Objects.hash( super.hashCode(), value );
     }
 
 

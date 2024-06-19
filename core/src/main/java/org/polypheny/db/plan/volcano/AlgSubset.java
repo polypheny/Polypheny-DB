@@ -154,6 +154,12 @@ public class AlgSubset extends AbstractAlgNode {
     }
 
 
+    @Override
+    public boolean containsEntity() {
+        return set.alg.containsEntity();
+    }
+
+
     public AlgNode getOriginal() {
         return set.alg;
     }
@@ -280,7 +286,6 @@ public class AlgSubset extends AbstractAlgNode {
         }
         return list;
     }
-
 
 
     /**

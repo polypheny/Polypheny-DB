@@ -270,11 +270,6 @@ public interface Modifiable extends Scannable {
     }
 
 
-    static void dropCollectionSubstitute( Modifiable modifiable, long allocation ) {
-        modifiable.getCatalog().removeAllocAndPhysical( allocation );
-    }
-
-
     default AlgNode getModify( long allocId, Modify<?> modify, AlgBuilder builder ) {
         if ( modify.getEntity().unwrap( AllocationTable.class ).isPresent() ) {
             return getRelModify( allocId, (RelModify<?>) modify, builder );

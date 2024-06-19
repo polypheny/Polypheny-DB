@@ -24,6 +24,7 @@ import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.enumerable.EnumerableConvention;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.tools.AlgBuilderFactory;
+import org.polypheny.db.util.Util;
 
 
 /**
@@ -42,7 +43,7 @@ public class MongoToEnumerableConverterRule extends ConverterRule {
     public MongoToEnumerableConverterRule( AlgBuilderFactory algBuilderFactory ) {
         super(
                 AlgNode.class,
-                r -> true,
+                Util::containsEntity,
                 MongoAlg.CONVENTION,
                 EnumerableConvention.INSTANCE,
                 algBuilderFactory,

@@ -53,7 +53,7 @@ public class SqlLanguagePluginTest extends SqlLanguageDependent {
     public void testQueryWithSemicolon() {
         QueryContext context = getContext( "SELECT * FROM employee WHERE ename = ';'" );
 
-        List<ParsedQueryContext> res = sql.splitter().apply( context );
+        List<ParsedQueryContext> res = sql.parser().apply( context );
         assertEquals( 1, res.size() );
     }
 
@@ -62,7 +62,7 @@ public class SqlLanguagePluginTest extends SqlLanguageDependent {
     public void testTwoQueries() {
         QueryContext context = getContext( "SELECT * FROM employee WHERE ename = 'a'; SELECT * FROM employee WHERE ename = 'b'" );
 
-        List<ParsedQueryContext> res = sql.splitter().apply( context );
+        List<ParsedQueryContext> res = sql.parser().apply( context );
         assertEquals( 2, res.size() );
     }
 
@@ -71,7 +71,7 @@ public class SqlLanguagePluginTest extends SqlLanguageDependent {
     public void testTwoQueriesWithSemicolon() {
         QueryContext context = getContext( "SELECT * FROM employee WHERE ename = ';'; SELECT * FROM employee WHERE ename = ';'" );
 
-        List<ParsedQueryContext> res = sql.splitter().apply( context );
+        List<ParsedQueryContext> res = sql.parser().apply( context );
         assertEquals( 2, res.size() );
     }
 

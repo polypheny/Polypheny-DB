@@ -538,4 +538,3 @@ public class Interpreter extends AbstractEnumerable<PolyValue[]> implements Auto
     }
 
 }
-

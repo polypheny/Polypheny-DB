@@ -42,6 +42,7 @@ import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
+import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.util.Static;
 
 
@@ -70,7 +71,7 @@ public class SqlJsonValueFunction extends SqlFunction {
                         operandTypes[i] = typeFactory.createPolyType( PolyType.ANY );
                     }
                 },
-                null,
+                OperandTypes.VARIADIC,
                 FunctionCategory.SYSTEM );
         this.returnAny = returnAny;
     }

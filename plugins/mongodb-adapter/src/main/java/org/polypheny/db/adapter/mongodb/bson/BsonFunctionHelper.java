@@ -33,16 +33,17 @@ import org.polypheny.db.util.BsonUtil;
 
 public class BsonFunctionHelper extends BsonDocument {
 
-    static String decimalCast = "if( arr1.length > 1) {\n"
-            + "                if ( arr1[0].toString().includes('NumberDecimal')) {\n"
-            + "                    arr1 = arr1.map( a => parseFloat(a.toString().replace('NumberDecimal(\\\"','').replace('\\\")', '')))\n"
-            + "                }\n"
-            + "            }\n"
-            + "            if( arr1.length > 1) {\n"
-            + "                if ( arr2[0].toString().includes('NumberDecimal')) {\n"
-            + "                    arr2 = arr2.map( a => parseFloat(a.toString().replace('NumberDecimal(\\\"','').replace('\\\")', '')))\n"
-            + "                }\n"
-            + "            }";
+    static String decimalCast = """
+            if( arr1.length > 1) {
+                            if ( arr1[0].toString().includes('NumberDecimal')) {
+                                arr1 = arr1.map( a => parseFloat(a.toString().replace('NumberDecimal(\\"','').replace('\\")', '')))
+                            }
+                        }
+                        if( arr1.length > 1) {
+                            if ( arr2[0].toString().includes('NumberDecimal')) {
+                                arr2 = arr2.map( a => parseFloat(a.toString().replace('NumberDecimal(\\"','').replace('\\")', '')))
+                            }
+                        }""";
 
     static String l2Function = "function(arr1, arr2){"
             + decimalCast

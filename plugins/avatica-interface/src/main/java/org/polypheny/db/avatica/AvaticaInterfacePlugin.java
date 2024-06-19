@@ -61,13 +61,13 @@ public class AvaticaInterfacePlugin extends PolyPlugin {
         Map<String, String> settings = new HashMap<>();
         settings.put( "port", "20591" );
         settings.put( "serialization", "PROTOBUF" );
-        QueryInterfaceManager.addInterfaceType( "avatica", AvaticaInterface.class, settings );
+        QueryInterfaceManager.addInterfaceTemplate( AvaticaInterface.INTERFACE_NAME, AvaticaInterface.INTERFACE_DESCRIPTION, AvaticaInterface.AVAILABLE_SETTINGS, AvaticaInterface::new );
     }
 
 
     @Override
     public void stop() {
-        QueryInterfaceManager.removeInterfaceType( AvaticaInterface.class );
+        QueryInterfaceManager.removeInterfaceType( AvaticaInterface.INTERFACE_NAME );
     }
 
 
@@ -82,7 +82,7 @@ public class AvaticaInterfacePlugin extends PolyPlugin {
         @SuppressWarnings("WeakerAccess")
         public static final List<QueryInterfaceSetting> AVAILABLE_SETTINGS = ImmutableList.of(
                 new QueryInterfaceSettingInteger( "port", false, true, false, 20591 ),
-                new QueryInterfaceSettingList( "serialization", false, true, false, ImmutableList.of( "PROTOBUF", "JSON" ) )
+                new QueryInterfaceSettingList( "serialization", false, true, false, ImmutableList.of( "PROTOBUF", "JSON" ), "PROTOBUF" )
         );
 
 
@@ -94,8 +94,8 @@ public class AvaticaInterfacePlugin extends PolyPlugin {
         private final HttpServerDispatcher httpServerDispatcher;
 
 
-        public AvaticaInterface( TransactionManager transactionManager, Authenticator authenticator, long ifaceId, String uniqueName, Map<String, String> settings ) {
-            super( transactionManager, authenticator, ifaceId, uniqueName, settings, true, true );
+        public AvaticaInterface( TransactionManager transactionManager, Authenticator authenticator, String uniqueName, Map<String, String> settings ) {
+            super( transactionManager, authenticator, uniqueName, settings, true, true );
             metricsSystemConfiguration = NoopMetricsSystemConfiguration.getInstance();
             metricsSystem = NoopMetricsSystem.getInstance();
 

@@ -76,16 +76,14 @@ public class HttpInterfacePlugin extends PolyPlugin {
     @Override
     public void afterCatalogInit() {
         // Add HTTP interface
-        Map<String, String> httpSettings = new HashMap<>();
-        httpSettings.put( "port", "13137" );
-        httpSettings.put( "maxUploadSizeMb", "10000" );
-        QueryInterfaceManager.addInterfaceType( "http", HttpInterface.class, httpSettings );
+        QueryInterfaceManager.addInterfaceTemplate( HttpInterface.INTERFACE_NAME, HttpInterface.INTERFACE_DESCRIPTION,
+                HttpInterface.AVAILABLE_SETTINGS, HttpInterface::new );
     }
 
 
     @Override
     public void stop() {
-        QueryInterfaceManager.removeInterfaceType( HttpInterface.class );
+        QueryInterfaceManager.removeInterfaceType( HttpInterface.INTERFACE_NAME );
     }
 
 
@@ -116,8 +114,8 @@ public class HttpInterfacePlugin extends PolyPlugin {
         private static Javalin server;
 
 
-        public HttpInterface( TransactionManager transactionManager, Authenticator authenticator, long ifaceId, String uniqueName, Map<String, String> settings ) {
-            super( transactionManager, authenticator, ifaceId, uniqueName, settings, true, false );
+        public HttpInterface( TransactionManager transactionManager, Authenticator authenticator, String uniqueName, Map<String, String> settings ) {
+            super( transactionManager, authenticator, uniqueName, settings, true, false );
             this.uniqueName = uniqueName;
             this.port = Integer.parseInt( settings.get( "port" ) );
             if ( !Util.checkIfPortIsAvailable( port ) ) {

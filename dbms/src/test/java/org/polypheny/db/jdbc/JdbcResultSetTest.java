@@ -26,23 +26,21 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.PolyphenyDb;
 import org.polypheny.db.TestHelper.JdbcConnection;
+import org.polypheny.jdbc.PolyphenyResultSet;
 
 
-@SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Tag("adapter")
-@Disabled
 public class JdbcResultSetTest {
 
-    private static final String TABLE_SQL = "CREATE TABLE IF NOT EXISTS resultset_test (id INT, hex_value VARCHAR(2))";
-    private static final String DROP_TABLE_SQL = "DROP TABLE resultset_test";
+    private static final String TABLE_SQL = "CREATE TABLE resultset_test (id INT PRIMARY KEY, hex_value VARCHAR(2))";
+    private static final String DROP_TABLE_SQL = "DROP TABLE IF EXISTS resultset_test";
     private static final String DATA_SQL = buildInsertSql();
 
-    private static final String SELECT_SQL = "SELECT * FROM resultset_test";
+    private static final String SELECT_SQL = "SELECT * FROM resultset_test ORDER BY id";
 
 
     private static String buildInsertSql() {
@@ -61,6 +59,7 @@ public class JdbcResultSetTest {
 
     private void createTableWithData( Connection connection ) throws SQLException {
         try ( Statement statement = connection.createStatement(); ) {
+            statement.execute( DROP_TABLE_SQL );
             statement.execute( TABLE_SQL );
             statement.execute( DATA_SQL );
         }
@@ -122,9 +121,8 @@ public class JdbcResultSetTest {
                 Statement statement = connection.createStatement() ) {
             createTableWithData( connection );
             ResultSet rs = statement.executeQuery( SELECT_SQL );
-            while ( rs.next() ) {
-                // intentionally empty, do nothing
-            }
+            while ( rs.next() )
+                ;
             assertTrue( rs.isAfterLast() );
             rs.close();
             statement.executeUpdate( DROP_TABLE_SQL );
@@ -168,7 +166,7 @@ public class JdbcResultSetTest {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true );
                 Connection connection = jdbcConnection.getConnection();
                 Statement statement = connection.createStatement() ) {
-            statement.executeUpdate( "CREATE TABLE IF NOT EXISTS my_table (id INT, nullvalue VARCHAR(30))" );
+            statement.executeUpdate( "CREATE TABLE IF NOT EXISTS my_table (id INT PRIMARY KEY, nullvalue VARCHAR(30))" );
             statement.executeUpdate( "INSERT INTO my_table VALUES (1, NULL)" );
             ResultSet rs = statement.executeQuery( "SELECT * FROM my_table" );
             rs.next();
@@ -500,7 +498,7 @@ public class JdbcResultSetTest {
             createTableWithData( connection );
             ResultSet rs = statement.executeQuery( SELECT_SQL );
             assertTrue( rs.absolute( -5 ) );
-            assertEquals( 46, rs.getRow() );
+            assertEquals( 21, rs.getRow() );
             rs.close();
             statement.executeUpdate( DROP_TABLE_SQL );
         }
@@ -676,7 +674,7 @@ public class JdbcResultSetTest {
 
 
     @Test
-    public void illegalFetchDirectionThrowsExceptionTest() {
+    public void illegalFetchDirectionThrowsExceptionTest() throws SQLException {
         assertThrows( SQLException.class, () -> {
             try ( JdbcConnection jdbcConnection = new JdbcConnection( true );
                     Connection connection = jdbcConnection.getConnection();
@@ -990,6 +988,38 @@ public class JdbcResultSetTest {
             createTableWithData( connection );
             ResultSet rs = statement.executeQuery( SELECT_SQL );
             assertEquals( ResultSet.CLOSE_CURSORS_AT_COMMIT, rs.getHoldability() );
+            rs.close();
+            statement.executeUpdate( DROP_TABLE_SQL );
+        }
+    }
+
+
+    @Test
+    public void isWrapperForTest() throws SQLException {
+        try (
+                JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
+                Connection connection = polyphenyDbConnection.getConnection();
+                Statement statement = connection.createStatement();
+        ) {
+            createTableWithData( connection );
+            ResultSet rs = statement.executeQuery( SELECT_SQL );
+            assertTrue( rs.isWrapperFor( PolyphenyResultSet.class ) );
+            rs.close();
+            statement.executeUpdate( DROP_TABLE_SQL );
+        }
+    }
+
+
+    @Test
+    public void unwrapTest() throws SQLException {
+        try (
+                JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
+                Connection connection = polyphenyDbConnection.getConnection();
+                Statement statement = connection.createStatement();
+        ) {
+            createTableWithData( connection );
+            ResultSet rs = statement.executeQuery( SELECT_SQL );
+            PolyphenyResultSet polyRs = rs.unwrap( PolyphenyResultSet.class );
             rs.close();
             statement.executeUpdate( DROP_TABLE_SQL );
         }

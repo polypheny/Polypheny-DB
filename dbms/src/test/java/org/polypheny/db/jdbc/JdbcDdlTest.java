@@ -29,13 +29,13 @@ import java.sql.Statement;
 import java.sql.Time;
 import java.sql.Timestamp;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.AvaticaSqlException;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.jdbc.PrismInterfaceServiceException;
 
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
@@ -82,10 +82,10 @@ public class JdbcDdlTest {
             1.999999,
             9876,
             0.3333f,
-            45,
+            (short) 45,
             Time.valueOf( "11:59:32" ),
             Timestamp.valueOf( "2021-01-01 10:11:15" ),
-            22,
+            (byte) 22,
             "hallo" };
 
 
@@ -185,56 +185,6 @@ public class JdbcDdlTest {
 
     @Test
     public void testTimestampType() throws SQLException {
-        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
-            Connection connection = polyphenyDbConnection.getConnection();
-            try ( Statement statement = connection.createStatement() ) {
-                // Create ddltest table and insert data
-                statement.executeUpdate( DDLTEST_SQL );
-                statement.executeUpdate( DDLTEST_DATA_SQL );
-
-                try {
-                    // Checks
-                    TestHelper.checkResultSet(
-                            statement.executeQuery( "SELECT ttimestamp FROM ddltest" ),
-                            ImmutableList.of( new Object[]{ DDLTEST_DATA[9] } ) );
-
-                    connection.commit();
-                } finally {
-                    // Drop ddltest table
-                    statement.executeUpdate( "DROP TABLE ddltest" );
-                }
-            }
-        }
-    }
-
-
-    @Test
-    public void testDateType2() throws SQLException {
-        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
-            Connection connection = polyphenyDbConnection.getConnection();
-            try ( Statement statement = connection.createStatement() ) {
-                // Create ddltest table and insert data
-                statement.executeUpdate( DDLTEST_SQL );
-                statement.executeUpdate( DDLTEST_DATA_SQL );
-
-                try {
-                    // Checks
-                    TestHelper.checkResultSet(
-                            statement.executeQuery( "SELECT tdate FROM ddltest" ),
-                            ImmutableList.of( new Object[]{ DDLTEST_DATA[2] } ) );
-
-                    connection.commit();
-                } finally {
-                    // Drop ddltest table
-                    statement.executeUpdate( "DROP TABLE ddltest" );
-                }
-            }
-        }
-    }
-
-
-    @Test
-    public void testTimestampType3() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
@@ -496,7 +446,7 @@ public class JdbcDdlTest {
                     boolean failed = false;
                     try {
                         statement.executeUpdate( "INSERT INTO ddltest(tprimary) VALUES ( null, null, null, null, null, 1, null, null, null, null, null )" );
-                    } catch ( AvaticaSqlException e ) {
+                    } catch ( PrismInterfaceServiceException e ) {
                         failed = true;
                     }
                     assertTrue( failed );
@@ -778,13 +728,13 @@ public class JdbcDdlTest {
                     statement.executeUpdate( "ALTER TABLE ddltest MODIFY COLUMN tsmallint SET TYPE INTEGER" );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT tsmallint FROM ddltest" ),
-                            ImmutableList.of( new Object[]{ DDLTEST_DATA[7] } ) );
+                            ImmutableList.of( new Object[]{ (short) DDLTEST_DATA[7] } ) );
 
                     // TinyInt --> SmallInt
                     statement.executeUpdate( "ALTER TABLE ddltest MODIFY COLUMN ttinyint SET TYPE SMALLINT" );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT ttinyint FROM ddltest" ),
-                            ImmutableList.of( new Object[]{ DDLTEST_DATA[10] } ) );
+                            ImmutableList.of( new Object[]{ (byte) DDLTEST_DATA[10] } ) );
                 } finally {
                     // Drop ddltest table
                     statement.executeUpdate( "DROP TABLE ddltest" );

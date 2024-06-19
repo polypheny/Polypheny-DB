@@ -575,7 +575,9 @@ public class MongoFilter extends Filter implements MongoAlg {
 
             if ( node.operands.get( 1 ).isA( Kind.DYNAMIC_PARAM ) ) {
                 BsonDynamic identifier = new BsonDynamic( node.operands.get( 2 ).unwrap( RexDynamicParam.class )
-                        .orElseThrow() ).setPolyFunction( "joinPoint" ).adjustType( PolyType.VARCHAR );
+                        .orElseThrow() )
+                        .setPolyFunction( "joinPoint" )
+                        .adjustType( PolyType.VARCHAR );
                 BsonKeyValue keyValue = new BsonKeyValue( identifier, new BsonDocument().append( "$exists", new BsonDynamic( node.operands.get( 1 ).unwrap( RexDynamicParam.class ).orElseThrow() ) ) );
                 attachCondition( null, keyValue.placeholderKey, keyValue );
             } else if ( node.operands.get( 2 ).unwrap( RexCall.class ).isPresent() ) {
@@ -1035,16 +1037,17 @@ public class MongoFilter extends Filter implements MongoAlg {
             String randomName = getRandomName();
             this.preProjections.put( randomName, BsonFunctionHelper.getFunction( right, rowType, implementor ) );
 
-            switch ( left.getKind() ) {
-                case LITERAL:
+            return switch ( left.getKind() ) {
+                case LITERAL -> {
                     attachCondition( op, randomName, BsonUtil.getAsBson( (RexLiteral) left, bucket ) );
-                    return true;
-                case DYNAMIC_PARAM:
+                    yield true;
+                }
+                case DYNAMIC_PARAM -> {
                     attachCondition( op, randomName, new BsonDynamic( (RexDynamicParam) left ) );
-                    return true;
-                default:
-                    return false;
-            }
+                    yield true;
+                }
+                default -> false;
+            };
 
         }
 

@@ -76,17 +76,14 @@ public abstract class Adapter<ACatalog extends AdapterCatalog> implements Scanna
     private final Map<Long, Namespace> namespaces = new ConcurrentHashMap<>();
 
 
-    public Adapter( long adapterId, String uniqueName, Map<String, String> settings, ACatalog catalog ) {
+    public Adapter( long adapterId, String uniqueName, Map<String, String> settings, DeployMode mode, ACatalog catalog ) {
         this.adapterCatalog = catalog;
         this.properties = getClass().getAnnotation( AdapterProperties.class );
         if ( getClass().getAnnotation( AdapterProperties.class ) == null ) {
             throw new GenericRuntimeException( "The used adapter does not annotate its properties correctly." );
         }
-        if ( !settings.containsKey( "mode" ) ) {
-            throw new GenericRuntimeException( "The adapter does not specify a mode which is necessary." );
-        }
 
-        this.deployMode = DeployMode.fromString( settings.get( "mode" ) );
+        this.deployMode = mode;
 
         this.adapterId = adapterId;
         this.uniqueName = uniqueName;

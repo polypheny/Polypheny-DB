@@ -18,11 +18,11 @@ package org.polypheny.db.ddl;
 
 import java.util.Map;
 import org.apache.calcite.linq4j.function.Deterministic;
-import org.polypheny.db.adapter.DeployMode;
+import org.polypheny.db.adapter.java.AdapterTemplate;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.catalog.logistic.DataModel;
-import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceTemplate;
+import org.polypheny.db.util.PolyphenyHomeDirManager;
 import org.polypheny.db.util.RunMode;
 
 @Deterministic
@@ -51,6 +51,7 @@ public class DefaultInserter {
 
         restoreAdapters( ddlManager, catalog, mode );
 
+        catalog.executeCommitActions();
         catalog.commit();
 
     }
@@ -65,22 +66,27 @@ public class DefaultInserter {
         catalog.updateSnapshot();
 
         // Deploy default store (HSQLDB)
-        Map<String, String> defaultStore = Catalog.snapshot().getAdapterTemplate( Catalog.defaultStore.getAdapterName(), AdapterType.STORE ).orElseThrow().getDefaultSettings();
-        ddlManager.createStore( "hsqldb", Catalog.defaultStore.getAdapterName(), AdapterType.STORE, defaultStore, DeployMode.EMBEDDED );
+        AdapterTemplate storeTemplate = Catalog.snapshot().getAdapterTemplate( Catalog.defaultStore.getAdapterName(), AdapterType.STORE ).orElseThrow();
+        ddlManager.createStore( "hsqldb", Catalog.defaultStore.getAdapterName(), AdapterType.STORE, storeTemplate.getDefaultSettings(), storeTemplate.getDefaultMode() );
 
         if ( mode == RunMode.TEST ) {
             return; // source adapters create schema structure, which we do not want for testing
         }
 
         // Deploy default source (CSV with HR data)
-        Map<String, String> defaultSource = Catalog.snapshot().getAdapterTemplate( Catalog.defaultSource.getAdapterName(), AdapterType.SOURCE ).orElseThrow().getDefaultSettings();
-        ddlManager.createSource( "hr", Catalog.defaultSource.getAdapterName(), Catalog.defaultNamespaceId, AdapterType.SOURCE, defaultSource, DeployMode.REMOTE );
+        AdapterTemplate sourceTemplate = Catalog.snapshot().getAdapterTemplate( Catalog.defaultSource.getAdapterName(), AdapterType.SOURCE ).orElseThrow();
+        ddlManager.createSource( "hr", Catalog.defaultSource.getAdapterName(), Catalog.defaultNamespaceId, AdapterType.SOURCE, sourceTemplate.getDefaultSettings(), sourceTemplate.getDefaultMode() );
 
 
     }
 
 
     private static void restoreUsers( Catalog catalog ) {
+        if ( catalog.getUsers().values().stream().anyMatch( u -> u.getName().equals( "system" ) ) ) {
+            catalog.commit();
+            return;
+        }
+
         //////////////
         // init users
         long systemId = catalog.createUser( "system", "" );
@@ -97,18 +103,17 @@ public class DefaultInserter {
         if ( !Catalog.getInstance().getInterfaces().isEmpty() ) {
             return;
         }
-        Catalog.getInstance().getInterfaceTemplates().values().forEach( i -> Catalog.getInstance().createQueryInterface( i.interfaceName, i.clazz.getName(), i.defaultSettings ) );
+        Catalog.getInstance().getInterfaceTemplates().values().forEach( i -> Catalog.getInstance().createQueryInterface( i.interfaceName().toLowerCase(), i.interfaceName(), i.getDefaultSettings() ) );
+        // TODO: This is ugly, both because it is racy, and depends on a string (which might be changed)
+        if ( Catalog.getInstance().getInterfaceTemplates().values().stream().anyMatch( t -> t.interfaceName().equals( "Prism Interface (Unix transport)" ) ) ) {
+            Catalog.getInstance().createQueryInterface(
+                    "prism interface (unix transport @ .polypheny)",
+                    "Prism Interface (Unix transport)",
+                    Map.of( "path", PolyphenyHomeDirManager.getInstance().registerNewGlobalFile( "polypheny-prism.sock" ).getAbsolutePath() )
+            );
+        }
         Catalog.getInstance().commit();
 
-    }
-
-
-    public static void restoreAvatica() {
-        if ( Catalog.snapshot().getQueryInterface( "avatica" ).isPresent() ) {
-            return;
-        }
-        QueryInterfaceTemplate avatica = Catalog.snapshot().getInterfaceTemplate( "AvaticaInterface" ).orElseThrow();
-        Catalog.getInstance().createQueryInterface( "avatica", avatica.clazz.getName(), avatica.defaultSettings );
     }
 
 }

@@ -42,6 +42,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 import org.apache.calcite.linq4j.QueryProvider;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeAll;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.adapter.DataContext;
@@ -154,7 +155,7 @@ public abstract class RexProgramBuilderBase {
 
 
         @Override
-        public void addParameterValues( long index, AlgDataType type, List<PolyValue> data ) {
+        public void addParameterValues( long index, @NotNull AlgDataType type, List<PolyValue> data ) {
             throw new UnsupportedOperationException( "This operation is not supported for " + getClass().getSimpleName() );
         }
 

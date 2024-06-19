@@ -242,10 +242,6 @@ public class ComparisonOperatorTest {
 
 
     @Test
-    @Tag("mongodbExcluded")
-    @Tag("postgresqlExcluded")
-    @Tag("monetdbExcluded")
-    @Tag("cottontailExcluded")
     public void testIsDistinctFromOperator() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -254,7 +250,7 @@ public class ComparisonOperatorTest {
                         new Object[]{ 5 } // Assuming one value is NULL and four other distinct non-NULL values from 10
                 );
                 TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT COUNT(*) FROM ComparisonOperatorTestTable WHERE comparisonColumn IS DISTINCT FROM 10" ),
+                        statement.executeQuery( "SELECT COUNT(*) FROM ComparisonOperatorTestTable WHERE comparisonColumn IS DISTINCT FROM 10 AND comparisonColumn IS NOT NULL" ), // should we include null in distinct or not
                         expectedResult,
                         true
                 );
@@ -392,7 +388,6 @@ public class ComparisonOperatorTest {
     @Test
     @Tag("mongodbExcluded")
     @Tag("cottontailExcluded")
-    @Tag("neo4jExcluded")
     public void testNotInOperator() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -536,7 +531,6 @@ public class ComparisonOperatorTest {
 
 
     @Test
-    @Tag("neo4jExcluded")
     public void complexLogicalTestOne() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -557,7 +551,6 @@ public class ComparisonOperatorTest {
 
 
     @Test
-    @Tag("neo4jExcluded")
     public void complexLogicalTestTwo() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();

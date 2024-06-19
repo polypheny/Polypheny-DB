@@ -108,9 +108,9 @@ public class LanguageManager {
                 throw new GenericRuntimeException( String.format( "%s query is empty", context.getLanguage().serializedName() ) );
             }
 
-            parsedQueries = context.getLanguage().splitter().apply( context );
+            parsedQueries = context.getLanguage().parser().apply( context );
         } catch ( Throwable e ) {
-            log.warn( "Error on preparing query: " + e.getMessage() );
+            log.warn( "Error on preparing query: {}", e.getMessage() );
             if ( transaction.isAnalyze() ) {
                 transaction.getQueryAnalyzer().attachStacktrace( e );
             }
@@ -133,7 +133,7 @@ public class LanguageManager {
             try {
                 // test if parsing was successful
                 if ( parsed.getQueryNode().isEmpty() ) {
-                    Exception e = new GenericRuntimeException( "Error during parsing of query \"" + context.getQuery() + "\"" );
+                    Exception e = new GenericRuntimeException( "Error during parsing of query \"%s\"".formatted( context.getQuery() ) );
                     return handleParseException( statement, parsed, transaction, e, implementationContexts );
                 }
 
@@ -194,7 +194,7 @@ public class LanguageManager {
                 implementationContexts.add( new ImplementationContext( implementation, parsed, statement, null ) );
 
             } catch ( Throwable e ) {
-                log.warn( "Caught exception: ", e );
+                log.warn( "Caught exception: ", e ); // TODO: This should not log in all cases, at least not with stacktrace
                 if ( transaction.isAnalyze() ) {
                     transaction.getQueryAnalyzer().attachStacktrace( e );
                 }
@@ -260,6 +260,16 @@ public class LanguageManager {
     public static List<ParsedQueryContext> toQueryNodes( QueryContext queries ) {
         Processor processor = queries.getLanguage().processorSupplier().get();
         List<String> splitQueries = processor.splitStatements( queries.getQuery() );
+
+        return splitQueries.stream().flatMap( q -> processor.parse( q ).stream().map( single -> Pair.of( single, q ) ) )
+                .map( p -> ParsedQueryContext.fromQuery( p.right, p.left, queries ) )
+                .toList();
+    }
+
+
+    public static List<ParsedQueryContext> toUnsplitQueryNodes( QueryContext queries ) {
+        Processor processor = queries.getLanguage().processorSupplier().get();
+        List<String> splitQueries = List.of( queries.getQuery() );
 
         return splitQueries.stream().flatMap( q -> processor.parse( q ).stream().map( single -> Pair.of( single, q ) ) )
                 .map( p -> ParsedQueryContext.fromQuery( p.right, p.left, queries ) )

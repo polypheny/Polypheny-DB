@@ -111,8 +111,8 @@ public class GoogleSheetSource extends DataSource<RelAdapterCatalog> implements 
     Credential credentials;
 
 
-    public GoogleSheetSource( final long storeId, final String uniqueName, final Map<String, String> settings ) {
-        super( storeId, uniqueName, settings, true, new RelAdapterCatalog( storeId ), List.of( DataModel.RELATIONAL ) );
+    public GoogleSheetSource( final long storeId, final String uniqueName, final Map<String, String> settings, DeployMode mode ) {
+        super( storeId, uniqueName, settings, mode, true, new RelAdapterCatalog( storeId ), List.of( DataModel.RELATIONAL ) );
 
         this.clientId = getSettingOrFail( "oAuth-Client-ID", settings );
         this.clientKey = getSettingOrFail( "oAuth-Client-Key", settings );

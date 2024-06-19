@@ -290,7 +290,7 @@ public class Functions {
     @SuppressWarnings("unused")
     public static <T> Enumerable<PolyValue[]> streamRight( final DataContext context, final Enumerable<PolyValue[]> baz, final Function0<Enumerable<PolyValue[]>> executorCall, final List<PolyType> polyTypes ) {
         AlgDataTypeFactory factory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
-        List<AlgDataType> algDataTypes = polyTypes.stream().map( typeName -> typeName == PolyType.ARRAY ? factory.createArrayType( factory.createPolyType( PolyType.ANY ), -1 ) : factory.createPolyType( typeName ) ).toList();
+        List<AlgDataType> algDataTypes = polyTypes.stream().map( typeName -> typeName == PolyType.ARRAY ? factory.createArrayType( factory.createPolyType( PolyType.ANY ), -1 ) : deriveType( factory, typeName ) ).toList();
 
         boolean single = polyTypes.size() == 1;
 
@@ -320,6 +320,14 @@ public class Functions {
         context.setParameterValues( valuesBackup );
 
         return Linq4j.asEnumerable( results );
+    }
+
+
+    private static AlgDataType deriveType( AlgDataTypeFactory factory, PolyType type ) {
+        if ( type == PolyType.CHAR ) {
+            return factory.createPolyType( PolyType.VARCHAR );
+        }
+        return factory.createPolyType( type );
     }
 
 
@@ -879,10 +887,12 @@ public class Functions {
 
 
     /**
-     * SQL <code>=</code> operator applied to Object values (including String; neither side may be null).
+     * SQL <code>=</code> operator applied to number values.
      */
     public static PolyBoolean eq( PolyNumber b0, PolyNumber b1 ) {
-        if ( b0 == null || b1 == null ) {
+        if ( (b0 == null || b0.isNull()) && (b1 == null || b1.isNull()) ) {
+            return PolyBoolean.TRUE;
+        } else if ( b0 == null || b0.isNull() || b1 == null || b1.isNull() ) {
             return PolyBoolean.FALSE;
         }
         return PolyBoolean.of( b0.bigDecimalValue().stripTrailingZeros().equals( b1.bigDecimalValue().stripTrailingZeros() ) );
@@ -924,6 +934,9 @@ public class Functions {
      * SQL <code>&lt;gt;</code> operator applied to Object values (including String; neither side may be null).
      */
     public static PolyBoolean ne( PolyValue b0, PolyValue b1 ) {
+        if ( b0.isNull() || b1.isNull() ) {
+            return PolyBoolean.FALSE;
+        }
         return PolyBoolean.of( b0.compareTo( b1 ) != 0 );
     }
 
@@ -951,6 +964,9 @@ public class Functions {
 
 
     public static PolyBoolean lt( PolyNumber b0, PolyNumber b1 ) {
+        if ( b0.isNull() || b1.isNull() ) {
+            return PolyBoolean.FALSE;
+        }
         return PolyBoolean.of( PolyNumber.compareTo( b0, b1 ) < 0 );
     }
 
@@ -992,6 +1008,9 @@ public class Functions {
 
 
     public static PolyBoolean le( PolyNumber b0, PolyNumber b1 ) {
+        if ( b0.isNull() || b1.isNull() ) {
+            return PolyBoolean.FALSE;
+        }
         return PolyBoolean.of( b0.compareTo( b1 ) <= 0 );
     }
 
@@ -999,9 +1018,12 @@ public class Functions {
 
 
     /**
-     * SQL <code>&gt;</code> operator applied to boolean values.
+     * SQL <code>&gt;</code> operator applied to numeric values.
      */
     public static PolyBoolean gt( PolyNumber b0, PolyNumber b1 ) {
+        if ( b0.isNull() || b1.isNull() ) {
+            return PolyBoolean.FALSE;
+        }
         return PolyBoolean.of( b0.bigDecimalValue().compareTo( b1.bigDecimalValue() ) > 0 );
     }
 
@@ -1033,6 +1055,9 @@ public class Functions {
      * SQL <code>&ge;</code> operator applied to BigDecimal values.
      */
     public static PolyBoolean ge( PolyNumber b0, PolyNumber b1 ) {
+        if ( b0.isNull() || b1.isNull() ) {
+            return PolyBoolean.FALSE;
+        }
         return PolyBoolean.of( b0.bigDecimalValue().compareTo( b1.bigDecimalValue() ) >= 0 );
     }
 

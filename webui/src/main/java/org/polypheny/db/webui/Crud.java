@@ -141,8 +141,8 @@ import org.polypheny.db.docker.models.InstancesAndAutoDocker;
 import org.polypheny.db.docker.models.UpdateDockerRequest;
 import org.polypheny.db.iface.QueryInterface;
 import org.polypheny.db.iface.QueryInterfaceManager;
-import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceInformation;
 import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceInformationRequest;
+import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceTemplate;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationObserver;
@@ -202,7 +202,6 @@ import org.polypheny.db.webui.models.TableConstraint;
 import org.polypheny.db.webui.models.Uml;
 import org.polypheny.db.webui.models.UnderlyingTables;
 import org.polypheny.db.webui.models.catalog.AdapterModel;
-import org.polypheny.db.webui.models.catalog.AdapterModel.AdapterSettingValueModel;
 import org.polypheny.db.webui.models.catalog.PolyTypeModel;
 import org.polypheny.db.webui.models.catalog.SnapshotModel;
 import org.polypheny.db.webui.models.catalog.UiColumnDefinition;
@@ -2085,32 +2084,40 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     /**
      * Deploy a new adapter
      */
-    void addAdapter( final Context ctx ) throws ServletException, IOException {
+    void createAdapter( final Context ctx ) throws ServletException, IOException {
         initMultipart( ctx );
         String body = "";
         Map<String, InputStream> inputStreams = new HashMap<>();
 
-        // collect all files e.g. csv files
-        for ( Part part : ctx.req.getParts() ) {
-            if ( part.getName().equals( "body" ) ) {
-                body = IOUtils.toString( ctx.req.getPart( "body" ).getInputStream(), StandardCharsets.UTF_8 );
-            } else {
-                inputStreams.put( part.getName(), part.getInputStream() );
+        final AdapterModel a;
+        if ( ctx.isMultipartFormData() ) {
+            // collect all files e.g. csv files
+            for ( Part part : ctx.req.getParts() ) {
+                if ( part.getName().equals( "body" ) ) {
+                    body = IOUtils.toString( ctx.req.getPart( "body" ).getInputStream(), StandardCharsets.UTF_8 );
+                } else {
+                    inputStreams.put( part.getName(), part.getInputStream() );
+                }
             }
+            a = HttpServer.mapper.readValue( body, AdapterModel.class );
+        } else if ( "application/json".equals( ctx.contentType() ) ) {
+            a = ctx.bodyAsClass( AdapterModel.class );
+        } else {
+            ctx.status( HttpCode.BAD_REQUEST );
+            return;
         }
 
-        AdapterModel a = HttpServer.mapper.readValue( body, AdapterModel.class );
         Map<String, String> settings = new HashMap<>();
 
         ConnectionMethod method = ConnectionMethod.UPLOAD;
         if ( a.settings.containsKey( "method" ) ) {
-            method = ConnectionMethod.valueOf( a.settings.get( "method" ).value().toUpperCase() );
+            method = ConnectionMethod.valueOf( a.settings.get( "method" ).toUpperCase() );
         }
         AdapterTemplate adapter = AdapterManager.getAdapterTemplate( a.adapterName, a.type );
         Map<String, AbstractAdapterSetting> allSettings = adapter.settings.stream().collect( Collectors.toMap( e -> e.name, e -> e ) );
 
-        for ( AdapterSettingValueModel entry : a.settings.values() ) {
-            AbstractAdapterSetting set = allSettings.get( entry.name() );
+        for ( Map.Entry<String, String> entry : a.settings.entrySet() ) {
+            AbstractAdapterSetting set = allSettings.get( entry.getKey() );
             if ( set == null ) {
                 continue;
             }
@@ -2121,19 +2128,19 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                         ctx.json( RelationalResult.builder().exception( e ).build() );
                         return;
                     }
-                    settings.put( set.name, entry.value() );
+                    settings.put( set.name, entry.getValue() );
                 } else {
-                    List<String> fileNames = HttpServer.mapper.readValue( entry.value(), new TypeReference<>() {
+                    List<String> fileNames = HttpServer.mapper.readValue( entry.getValue(), new TypeReference<>() {
                     } );
                     String directory = handleUploadFiles( inputStreams, fileNames, setting, a );
                     settings.put( set.name, directory );
                 }
-
-
             } else {
-                settings.put( set.name, entry.value() );
+                settings.put( set.name, entry.getValue() );
             }
         }
+
+        settings.put( "mode", a.mode.toString() );
 
         String query = String.format( "ALTER ADAPTERS ADD \"%s\" USING '%s' AS '%s' WITH '%s'", a.name, a.adapterName, a.type, Crud.gson.toJson( settings ) );
         QueryLanguage language = QueryLanguage.from( "sql" );
@@ -2220,47 +2227,42 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
     void getAvailableQueryInterfaces( final Context ctx ) {
         QueryInterfaceManager qim = QueryInterfaceManager.getInstance();
-        List<QueryInterfaceInformation> interfaces = qim.getAvailableQueryInterfaceTypes();
-        ctx.result( QueryInterfaceInformation.toJson( interfaces.toArray( new QueryInterfaceInformation[0] ) ) );
+        List<QueryInterfaceTemplate> interfaces = qim.getAvailableQueryInterfaceTemplates();
+        ctx.json( interfaces );
     }
 
 
     void addQueryInterface( final Context ctx ) {
-        QueryInterfaceManager qim = QueryInterfaceManager.getInstance();
         QueryInterfaceInformationRequest request = ctx.bodyAsClass( QueryInterfaceInformationRequest.class );
-        String generatedQuery = String.format( "ALTER INTERFACES ADD \"%s\" USING '%s' WITH '%s'", request.uniqueName, request.clazzName, gson.toJson( request.currentSettings ) );
         try {
-            qim.addQueryInterface( Catalog.getInstance(), request.clazzName, request.uniqueName, request.currentSettings );
-            ctx.json( RelationalResult.builder().affectedTuples( 1 ).query( generatedQuery ).build() );
+            QueryInterfaceManager.getInstance().createQueryInterface( request.interfaceName(), request.uniqueName(), request.currentSettings() );
+            ctx.status( 200 );
         } catch ( RuntimeException e ) {
             log.error( "Exception while deploying query interface", e );
-            ctx.json( RelationalResult.builder().error( e.getMessage() ).query( generatedQuery ).build() );
+            ctx.status( 500 ).result( e.getMessage() );
         }
     }
 
 
     void updateQueryInterfaceSettings( final Context ctx ) {
         QueryInterfaceModel request = ctx.bodyAsClass( QueryInterfaceModel.class );
-        QueryInterfaceManager qim = QueryInterfaceManager.getInstance();
         try {
-            qim.getQueryInterface( request.uniqueName ).updateSettings( request.currentSettings );
-            ctx.json( RelationalResult.builder().affectedTuples( 1 ).build() );
+            QueryInterfaceManager.getInstance().getQueryInterface( request.uniqueName ).updateSettings( request.currentSettings );
+            ctx.status( 200 );
         } catch ( Exception e ) {
-            ctx.json( RelationalResult.builder().error( e.getMessage() ).build() );
+            ctx.status( 500 ).result( e.getMessage() );
         }
     }
 
 
     void removeQueryInterface( final Context ctx ) {
         String uniqueName = ctx.body();
-        QueryInterfaceManager qim = QueryInterfaceManager.getInstance();
-        String generatedQuery = String.format( "ALTER INTERFACES DROP \"%s\"", uniqueName );
         try {
-            qim.removeQueryInterface( Catalog.getInstance(), uniqueName );
-            ctx.json( RelationalResult.builder().affectedTuples( 1 ).query( generatedQuery ).build() );
+            QueryInterfaceManager.getInstance().removeQueryInterface( Catalog.getInstance(), uniqueName );
+            ctx.status( 200 );
         } catch ( RuntimeException e ) {
             log.error( "Could not remove query interface {}", ctx.body(), e );
-            ctx.json( RelationalResult.builder().error( e.getMessage() ).query( generatedQuery ).build() );
+            ctx.status( 500 ).result( e.getMessage() );
         }
     }
 
@@ -2485,10 +2487,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                         false,
                         false
                 );
-
-
             } else {
-
                 viewType = "View";
                 List<DataStore<?>> store = null;
                 PlacementType placementType = PlacementType.AUTOMATIC;
@@ -2513,8 +2512,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                         gson.toJson( request.topNode ),
                         QueryLanguage.from( "rel" )
                 );
-
-
             }
             try {
                 transaction.commit();

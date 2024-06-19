@@ -39,6 +39,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.Getter;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.CorrelationId;
 import org.polypheny.db.algebra.metadata.AlgMetadataProvider;
@@ -60,6 +61,7 @@ public class AlgCluster {
     @Getter
     private final AlgDataTypeFactory typeFactory;
     @Getter
+    @NotNull
     private final AlgPlanner planner;
     private final AtomicInteger nextCorrel;
     @Getter

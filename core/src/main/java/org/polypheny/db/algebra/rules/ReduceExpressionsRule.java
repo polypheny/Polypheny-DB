@@ -200,8 +200,7 @@ public abstract class ReduceExpressionsRule extends AlgOptRule {
                 alwaysTrue = !alwaysTrue;
             }
             RexNode operand = ((RexCall) rexNode).getOperands().get( 0 );
-            if ( operand instanceof RexIndexRef ) {
-                RexIndexRef inputRef = (RexIndexRef) operand;
+            if ( operand instanceof RexIndexRef inputRef ) {
                 if ( !inputRef.getType().isNullable() ) {
                     if ( alwaysTrue ) {
                         call.transformTo( filter.getInput() );

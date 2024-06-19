@@ -122,6 +122,9 @@ public class PolyphenyDb {
     @Option(name = { "-mode" }, description = "Special system configuration for running tests", typeConverterProvider = PolyModesConverter.class)
     public static RunMode mode = RunMode.PRODUCTION;
 
+    @Option(name = { "-noAutoDocker" }, description = "Do not perform automatic setup with a local Docker instance")
+    public static boolean noAutoDocker = false;
+
     @Option(name = { "-gui" }, description = "Show splash screen on startup and add taskbar gui")
     public boolean desktopMode = false;
 
@@ -278,7 +281,7 @@ public class PolyphenyDb {
         String uuid = generateOrLoadPolyphenyUUID();
 
         if ( mode == RunMode.TEST ) {
-            uuid = "polypheny-test";
+            uuid += "-polypheny-test";
         }
 
         log.info( "Polypheny UUID: " + uuid );
@@ -358,9 +361,11 @@ public class PolyphenyDb {
         StatusService.initialize( transactionManager, server.getServer() );
 
         Catalog.resetDocker = resetDocker; // TODO: Needed?
-        log.debug( "Setting Docker Timeouts" );
-        RuntimeConfig.DOCKER_TIMEOUT.setInteger( mode == RunMode.DEVELOPMENT || mode == RunMode.TEST ? 5 : RuntimeConfig.DOCKER_TIMEOUT.getInteger() );
-        initializeDockerManager();
+        if ( !noAutoDocker ) {
+            log.debug( "Setting Docker Timeouts" );
+            RuntimeConfig.DOCKER_TIMEOUT.setInteger( mode == RunMode.DEVELOPMENT || mode == RunMode.TEST ? 5 : RuntimeConfig.DOCKER_TIMEOUT.getInteger() );
+            performAutoSetup();
+        }
 
         // Initialize plugin manager
         PolyPluginManager.init( resetPlugins );
@@ -438,6 +443,7 @@ public class PolyphenyDb {
         log.info( "                                       http://localhost:{}", RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
         log.info( "****************************************************************************************************" );
         isReady = true;
+        server.setReady( true );
 
         // Initialize statistic settings
         StatisticsManager.getInstance().initializeStatisticSettings();
@@ -465,7 +471,7 @@ public class PolyphenyDb {
     }
 
 
-    private void initializeDockerManager() {
+    private void performAutoSetup() {
         if ( AutoDocker.getInstance().isAvailable() ) {
             if ( mode == RunMode.TEST ) {
                 resetDocker = true;

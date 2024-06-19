@@ -35,7 +35,6 @@ import org.polypheny.db.adapter.jdbc.JdbcSchema;
 import org.polypheny.db.adapter.jdbc.JdbcTable;
 import org.polypheny.db.adapter.jdbc.JdbcUtils;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
-import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.catalog.catalogs.RelAdapterCatalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
@@ -75,9 +74,10 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
             final long storeId,
             final String uniqueName,
             final Map<String, String> settings,
+            final DeployMode mode,
             final SqlDialect dialect,
             final boolean persistent ) {
-        super( storeId, uniqueName, settings, persistent, new RelAdapterCatalog( storeId ) );
+        super( storeId, uniqueName, settings, mode, persistent, new RelAdapterCatalog( storeId ) );
         this.dialect = dialect;
 
         if ( deployMode == DeployMode.DOCKER ) {
@@ -263,12 +263,17 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
             PolyType collectionsType = column.collectionsType == PolyType.ARRAY ? null : column.collectionsType; // nested array was not suppored
 
             builder.append( " " ).append( getTypeString( type ) );
-            if ( column.length != null && doesTypeUseLength( type ) ) {
-                builder.append( "(" ).append( column.length );
-                if ( column.scale != null ) {
-                    builder.append( "," ).append( column.scale );
+            if ( doesTypeUseLength( type ) ) {
+                if ( column.length == null && dialect.handleMissingLength( type ).isPresent() ) {
+                    builder.append( dialect.handleMissingLength( type ).get() );
+                } else if ( column.length != null ) {
+                    builder.append( "(" ).append( column.length );
+                    if ( column.scale != null ) {
+                        builder.append( "," ).append( column.scale );
+                    }
+                    builder.append( ")" );
                 }
-                builder.append( ")" );
+
             }
             if ( collectionsType != null ) {
                 builder.append( " " ).append( getTypeString( column.collectionsType ) );
@@ -403,7 +408,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
         try {
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
             connectionFactory.getOrCreateConnectionHandler( context.getStatement().getTransaction().getXid() ).executeUpdate( builder.toString() );
-        } catch ( SQLException | ConnectionHandlerException e ) {
+        } catch ( Exception e ) {
             throw new GenericRuntimeException( e );
         }
     }

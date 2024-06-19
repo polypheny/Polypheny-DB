@@ -1,0 +1,141 @@
+plugins {
+    id 'java'
+    id "com.google.protobuf" version "$protobuf_plugin_version"
+}
+
+
+apply plugin: "com.google.protobuf"
+
+group "org.polypheny"
+
+configurations {
+    tests {
+        extendsFrom testRuntimeOnly
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compileOnly project(path: ':core')
+    compileOnly project(path: ':dbms')
+    compileOnly project(path: ':plugins:sql-language')
+    compileOnly project(path: ':plugins:mql-language')
+
+    // Prism API files (protobuf files), needs to be implementation due to the prism-api-version.properties
+    implementation group: 'org.polypheny', name: 'prism', version: prism_api_version
+
+    // Protobuf
+    implementation group: 'com.google.protobuf', name: 'protobuf-java', version: protobuf_version
+
+
+    // --- Test Compile ---
+    testImplementation project(path: ':dbms', configuration: 'test')
+    testImplementation project(path: ':core', configuration: 'tests')
+    testImplementation project(path: ':core')
+    testRuntimeOnly project(path: ':dbms')
+    //testImplementation project(path: ':plugins:mql-language')
+
+}
+
+// compile protos on build
+compileJava.dependsOn(generateProto)
+compileTestJava.mustRunAfter(javadoc)
+compileTestJava.mustRunAfter(jar)
+compileTestJava.mustRunAfter(plugin)
+processResources.dependsOn(extractIncludeProto)
+
+test.dependsOn(":dbms:shadowJar")
+
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:${protobuf_version}"
+    }
+
+    generateProtoTasks {
+        all().each { task ->
+            task.builtins {
+                java {}
+            }
+        }
+    }
+}
+
+sourceSets {
+    main {
+        java {
+            srcDirs = ["src/main/java", "build/generated/source/proto/main/java"]
+        }
+        proto {
+            srcDirs = ["build/extracted-include-protos/main"]
+        }
+        resources {
+            srcDirs = ["src/main/resources"]
+        }
+        output.resourcesDir = file(project.buildDir.absolutePath + "/classes")
+
+    }
+    test {
+        java {
+            srcDirs = ["src/test/java"]
+        }
+        resources {
+            srcDirs = ["src/test/resources"]
+        }
+        output.resourcesDir = file(project.buildDir.absolutePath + "/test-classes")
+    }
+}
+
+delombok {
+    dependsOn(':plugins:prism-interface:generateProto')
+    dependsOn(':plugins:sql-language:processResources')
+    dependsOn(':plugins:mql-language:processResources')
+}
+
+compileJava {
+    dependsOn(":core:processResources")
+}
+
+extractIncludeProto {
+    dependsOn(':core:generateVersionProperties')
+    dependsOn(':core:compileJava')
+    dependsOn(':dbms:compileJava')
+    dependsOn(':plugins:sql-language:compileJava')
+    dependsOn(':plugins:mql-language:compileJava')
+}
+
+
+/**
+ * Tests
+ */
+test {
+    maxHeapSize = "2g" // Increase heap size (default is 512MB)
+}
+
+/**
+ * JARs
+ */
+jar {
+    manifest {
+        attributes "Manifest-Version": "1.0"
+        attributes "Copyright": "The Polypheny Project (polypheny.org)"
+        attributes "Version": "$project.version"
+    }
+}
+
+java {
+    withJavadocJar()
+    withSourcesJar()
+    sourcesJar.dependsOn(generateProto)
+}
+
+
+/**
+ * LICENSEE
+ */
+licensee {
+    allow('Apache-2.0')
+    allow('BSD-3-Clause')
+}

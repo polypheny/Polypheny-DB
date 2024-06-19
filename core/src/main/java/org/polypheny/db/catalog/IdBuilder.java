@@ -16,39 +16,61 @@
 
 package org.polypheny.db.catalog;
 
+import io.activej.serializer.annotations.Deserialize;
+import io.activej.serializer.annotations.Serialize;
 import java.util.concurrent.atomic.AtomicLong;
 import lombok.Value;
 
 @Value
 public class IdBuilder {
 
-    AtomicLong snapshotId;
-    AtomicLong namespaceId;
-    AtomicLong entityId;
+    @Serialize
+    public AtomicLong snapshotId;
 
-    AtomicLong physicalId;
+    @Serialize
+    public AtomicLong namespaceId;
 
-    AtomicLong allocId;
-    AtomicLong fieldId;
+    @Serialize
+    public AtomicLong entityId;
 
-    AtomicLong userId;
+    @Serialize
+    public AtomicLong physicalId;
 
-    AtomicLong indexId;
+    @Serialize
+    public AtomicLong allocId;
 
-    AtomicLong keyId;
+    @Serialize
+    public AtomicLong fieldId;
 
-    AtomicLong adapterId;
+    @Serialize
+    public AtomicLong userId;
 
-    AtomicLong adapterTemplateId;
+    @Serialize
+    public AtomicLong indexId;
 
-    AtomicLong interfaceId;
+    @Serialize
+    public AtomicLong keyId;
 
-    AtomicLong constraintId;
+    @Serialize
+    public AtomicLong adapterId;
 
-    AtomicLong groupId;
+    @Serialize
+    public AtomicLong adapterTemplateId;
 
-    AtomicLong partitionId;
-    AtomicLong placementId;
+    @Serialize
+    public AtomicLong interfaceId;
+
+    @Serialize
+    public AtomicLong constraintId;
+
+    @Serialize
+    public AtomicLong groupId;
+
+    @Serialize
+    public AtomicLong partitionId;
+
+    @Serialize
+    public AtomicLong placementId;
 
     private static IdBuilder INSTANCE;
 
@@ -83,22 +105,22 @@ public class IdBuilder {
 
 
     public IdBuilder(
-            AtomicLong snapshotId,
-            AtomicLong namespaceId,
-            AtomicLong entityId,
-            AtomicLong fieldId,
-            AtomicLong userId,
-            AtomicLong allocId,
-            AtomicLong physicalId,
-            AtomicLong indexId,
-            AtomicLong keyId,
-            AtomicLong adapterId,
-            AtomicLong adapterTemplateId,
-            AtomicLong interfaceId,
-            AtomicLong constraintId,
-            AtomicLong groupId,
-            AtomicLong partitionId,
-            AtomicLong placementId ) {
+            @Deserialize("snapshotId") AtomicLong snapshotId,
+            @Deserialize("namespaceId") AtomicLong namespaceId,
+            @Deserialize("entityId") AtomicLong entityId,
+            @Deserialize("fieldId") AtomicLong fieldId,
+            @Deserialize("userId") AtomicLong userId,
+            @Deserialize("allocId") AtomicLong allocId,
+            @Deserialize("physicalId") AtomicLong physicalId,
+            @Deserialize("indexId") AtomicLong indexId,
+            @Deserialize("keyId") AtomicLong keyId,
+            @Deserialize("adapterId") AtomicLong adapterId,
+            @Deserialize("adapterTemplateId") AtomicLong adapterTemplateId,
+            @Deserialize("interfaceId") AtomicLong interfaceId,
+            @Deserialize("constraintId") AtomicLong constraintId,
+            @Deserialize("groupId") AtomicLong groupId,
+            @Deserialize("partitionId") AtomicLong partitionId,
+            @Deserialize("placementId") AtomicLong placementId ) {
         this.snapshotId = snapshotId;
         this.namespaceId = namespaceId;
         this.entityId = entityId;
@@ -197,6 +219,28 @@ public class IdBuilder {
 
     public long getNewAdapterTemplateId() {
         return adapterTemplateId.getAndIncrement();
+    }
+
+
+    public synchronized void restore( IdBuilder idBuilder ) {
+        this.snapshotId.set( idBuilder.snapshotId.longValue() );
+        this.namespaceId.set( idBuilder.namespaceId.longValue() );
+        this.entityId.set( idBuilder.entityId.longValue() );
+        this.fieldId.set( idBuilder.fieldId.longValue() );
+
+        this.indexId.set( idBuilder.indexId.longValue() );
+        this.keyId.set( idBuilder.keyId.longValue() );
+        this.userId.set( idBuilder.userId.longValue() );
+        this.allocId.set( idBuilder.allocId.longValue() );
+        this.physicalId.set( idBuilder.physicalId.longValue() );
+        this.constraintId.set( idBuilder.constraintId.longValue() );
+
+        this.adapterId.set( idBuilder.adapterId.longValue() );
+        this.adapterTemplateId.set( idBuilder.adapterTemplateId.longValue() );
+        this.interfaceId.set( idBuilder.interfaceId.longValue() );
+        this.groupId.set( idBuilder.groupId.longValue() );
+        this.partitionId.set( idBuilder.partitionId.longValue() );
+        this.placementId.set( idBuilder.placementId.longValue() );
     }
 
 }
