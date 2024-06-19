@@ -2330,7 +2330,6 @@ public class SqlToAlgConverterTest extends SqlToAlgTestBase {
     }
 
 
-
     @Test
     @Disabled // refactor
     public void testStream() {
@@ -3856,4 +3855,3 @@ public class SqlToAlgConverterTest extends SqlToAlgTestBase {
     }
 
 }
-

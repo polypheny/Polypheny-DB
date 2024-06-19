@@ -262,5 +262,4 @@ public class AlgMdDistinctRowCount implements MetadataHandler<BuiltInMetadata.Di
     }
 
 
-
 }

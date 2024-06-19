@@ -360,10 +360,8 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
             value = getCastString( value, type, false );
         }
 
-
         checkCastToStringOkay( value, "VARCHAR(" + len + ")", expected );
         checkCastToStringOkay( value, "VARCHAR(" + (len + 5) + ")", expected );
-
 
         checkCastToStringOkay( value, "CHAR(" + len + ")", expected );
         checkCastToStringOkay( value, "CHAR(" + (len + 5) + ")", expected + spaces );
@@ -460,7 +458,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
             // Convert from string to type
             checkCastToScalarOkay( "'" + MAX_NUMERIC_STRINGS[i] + "'", type, MAX_NUMERIC_STRINGS[i] );
             checkCastToScalarOkay( "'" + MIN_NUMERIC_STRINGS[i] + "'", type, MIN_NUMERIC_STRINGS[i] );
-
 
             // Convert from type to string
             checkCastToString( MAX_NUMERIC_STRINGS[i], null, null );
@@ -828,7 +825,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
                 null,
                 "12:42:25" );
 
-
         // Generate the current date as a string, e.g. "2007-04-18". The value is guaranteed to be good for at least 2 minutes, which should give us time to run the rest of the tests.
         final String today = new SimpleDateFormat( "yyyy-MM-dd", Locale.ROOT ).format( getCalendarNotTooNear( Calendar.DAY_OF_MONTH ).getTime() );
 
@@ -885,7 +881,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
                 "12:42:25",
                 "TIME(0) NOT NULL" );
 
-
         tester.checkFails(
                 "cast('nottime' as TIME)",
                 BAD_DATETIME_MESSAGE,
@@ -896,7 +891,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
                 "TIMESTAMP '1945-02-24 12:42:25'",
                 null,
                 "1945-02-24 12:42:25" );
-
 
         tester.checkScalar(
                 "cast('1945-02-24 12:42:25' as TIMESTAMP)",
@@ -933,7 +927,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
                 BAD_DATETIME_MESSAGE,
                 true );
 
-
         // date <-> string
         checkCastToString( "DATE '1945-02-24'", null, "1945-02-24" );
         checkCastToString( "DATE '1945-2-24'", null, "1945-02-24" );
@@ -957,7 +950,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
                 "cast('notdate' as DATE)",
                 BAD_DATETIME_MESSAGE,
                 true );
-
 
         // cast null
         tester.checkNull( "cast(null as date)" );
@@ -1114,7 +1106,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
                 "case when 'a' = cast(null as varchar(1)) then null else 'a' end",
                 "a",
                 "CHAR(1)" );
-
 
         // multiple values in some cases (introduced in SQL:2011)
         tester.checkString(
@@ -1447,7 +1438,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
                 "{fn DAYOFMONTH(DATE '2014-12-10')}",
                 10,
                 "BIGINT NOT NULL" );
-
 
         tester.checkScalar( "{fn HOUR(TIMESTAMP '2014-12-10 12:34:56')}", 12, "BIGINT NOT NULL" );
         tester.checkScalar( "{fn MINUTE(TIMESTAMP '2014-12-10 12:34:56')}", 34, "BIGINT NOT NULL" );
@@ -5327,7 +5317,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
     }
 
 
-
     @Test
     public void testDayOfMonth() {
         tester.setFor( OperatorRegistry.get( OperatorName.DAYOFMONTH ), VM_FENNEL, VM_JAVA );
@@ -5337,8 +5326,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
                 "BIGINT NOT NULL" );
         tester.checkNull( "dayofmonth(cast(null as date))" );
     }
-
-
 
 
     @Test
@@ -5381,7 +5368,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
     public void testExtractIntervalYearMonth() {
         tester.setFor( OperatorRegistry.get( OperatorName.EXTRACT ), VM_FENNEL, VM_JAVA );
 
-
         tester.checkScalar(
                 "extract(month from interval '4-2' year to month)",
                 "2",
@@ -5417,7 +5403,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
     @Test
     public void testExtractIntervalDayTime() {
         tester.setFor( OperatorRegistry.get( OperatorName.EXTRACT ), VM_FENNEL, VM_JAVA );
-
 
         tester.checkScalar(
                 "extract(millisecond from interval '2 3:4:5.678' day to second)",
@@ -5655,7 +5640,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
                 "extract(isoyear from timestamp '2008-2-23 12:34:56')",
                 "2008",
                 "BIGINT NOT NULL" );
-
 
         tester.checkScalar(
                 "extract(decade from timestamp '2008-2-23 12:34:56')",

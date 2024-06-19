@@ -2362,7 +2362,7 @@ public class AlgDecorrelator implements AlgProducingVisitor<Frame> {
     /**
      * A correlation and a field.
      */
-    record CorDef(CorrelationId corr, int field) implements Comparable<CorDef> {
+    record CorDef( CorrelationId corr, int field ) implements Comparable<CorDef> {
 
 
         @Override
@@ -2405,7 +2405,7 @@ public class AlgDecorrelator implements AlgProducingVisitor<Frame> {
      * <li>{@link #mapFieldAccessToCorRef} maps a rex field access to the corVar it represents. Because typeFlattener does not clone or modify a correlated field access this map does not need to be updated.</li>
      * </ol>
      */
-    private record CorelMap(Multimap<AlgNode, CorRef> mapRefRelToCorRef, SortedMap<CorrelationId, AlgNode> mapCorToCorRel, Map<RexFieldAccess, CorRef> mapFieldAccessToCorRef) {
+    private record CorelMap( Multimap<AlgNode, CorRef> mapRefRelToCorRef, SortedMap<CorrelationId, AlgNode> mapCorToCorRel, Map<RexFieldAccess, CorRef> mapFieldAccessToCorRef ) {
 
         // TODO: create immutable copies of all maps
         private CorelMap( Multimap<AlgNode, CorRef> mapRefRelToCorRef, SortedMap<CorrelationId, AlgNode> mapCorToCorRel, Map<RexFieldAccess, CorRef> mapFieldAccessToCorRef ) {

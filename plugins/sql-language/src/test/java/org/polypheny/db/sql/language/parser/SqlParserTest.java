@@ -2459,8 +2459,6 @@ public class SqlParserTest extends SqlLanguageDependent {
     }
 
 
-
-
     @Test
     public void testExplicitTableInJoin() {
         check(
