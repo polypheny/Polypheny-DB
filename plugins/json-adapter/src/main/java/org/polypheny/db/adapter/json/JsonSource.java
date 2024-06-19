@@ -31,6 +31,7 @@ import org.polypheny.db.adapter.DocumentScanDelegate;
 import org.polypheny.db.adapter.Scannable;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.annotations.AdapterSettingDirectory;
+import org.polypheny.db.adapter.annotations.AdapterSettingString;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.catalogs.AdapterCatalog;
 import org.polypheny.db.catalog.catalogs.DocAdapterCatalog;
@@ -58,7 +59,7 @@ import org.slf4j.LoggerFactory;
         description = "An adapter for querying JSON files. A JSON file can be specified by path. Currently, this adapter only supports read operations.",
         usedModes = DeployMode.EMBEDDED,
         defaultMode = DeployMode.EMBEDDED)
-@AdapterSettingDirectory(name = "jsonFile", defaultValue = "classpath://articles.json", description = "Path to the JSON file which is to be integrated as this source.", position = 1)
+@AdapterSettingString(name = "jsonFile", defaultValue = "classpath://articles.json", description = "Path to the JSON file which is to be integrated as this source.", position = 1)
 public class JsonSource extends DataSource<DocAdapterCatalog> implements DocumentDataSource, Scannable {
 
     private static final Logger log = LoggerFactory.getLogger( JsonSource.class );
@@ -71,9 +72,8 @@ public class JsonSource extends DataSource<DocAdapterCatalog> implements Documen
 
     public JsonSource( final long storeId, final String uniqueName, final Map<String, String> settings, DeployMode mode ) {
         super( storeId, uniqueName, settings, mode, true, new DocAdapterCatalog( storeId ), List.of( DataModel.DOCUMENT ) );
-        //this.jsonFile = getJsonFileUrl( settings );
-        URL url = getJsonFileUrl( "classpath://articles.json" );
-        this.jsonFile = url;
+        this.jsonFile = getJsonFileUrl( settings.get("jsonFile") );
+        //URL url = getJsonFileUrl( "classpath://articles.json" );
         this.delegate = new DocumentScanDelegate( this, getAdapterCatalog() );
         long namespaceId = Catalog.getInstance().createNamespace( uniqueName, DataModel.DOCUMENT, true );
         this.namespace = new JsonNamespace( uniqueName, namespaceId, getAdapterId() );
@@ -83,8 +83,8 @@ public class JsonSource extends DataSource<DocAdapterCatalog> implements Documen
     @Override
     protected void reloadSettings( List<String> updatedSettings ) {
         if ( updatedSettings.contains( "directory" ) ) {
-            //this.jsonFile = getJsonFileUrl( settings.get( "jsonFile" ) );
-            this.jsonFile = getJsonFileUrl( "classpath://articles.json" );
+            this.jsonFile = getJsonFileUrl( settings.get( "jsonFile" ) );
+            //.jsonFile = getJsonFileUrl( "classpath://articles.json" );
         }
     }
 
