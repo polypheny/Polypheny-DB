@@ -411,6 +411,11 @@ public class PolyAlgParsingTest {
 
 
     @Test
+    public void cypherExtractFromPathTest() throws NodeParseException {
+        executeQueryRoundTrip( "MATCH (n)-[r]->(m) RETURN r", QueryLanguage.from( "cypher" ) );
+    }
+
+    @Test
     public void mongoCrossModelTest() throws NodeParseException {
         executeQueryRoundTrip( "db.polyalg_test.find({'gender': 'Female'})", QueryLanguage.from( "mql" ) );
     }
