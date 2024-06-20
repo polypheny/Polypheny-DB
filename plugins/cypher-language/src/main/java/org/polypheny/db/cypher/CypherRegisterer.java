@@ -45,7 +45,7 @@ public class CypherRegisterer {
 
         register( OperatorName.CYPHER_HAS_LABEL, new LangFunctionOperator( OperatorName.CYPHER_HAS_LABEL.name(), Kind.CYPHER_FUNCTION, PolyType.BOOLEAN ) );
 
-        register( OperatorName.CYPHER_PATH_MATCH, new LangFunctionOperator( OperatorName.CYPHER_PATH_MATCH.name(), Kind.CYPHER_FUNCTION, PolyType.PATH ) );
+        register( OperatorName.CYPHER_PATH_MATCH, new LangFunctionOperator( OperatorName.CYPHER_PATH_MATCH.name(), Kind.CYPHER_FUNCTION, CypherPathMatchUtil::inferReturnType, CypherPathMatchUtil::inferReturnType ) );
 
         register( OperatorName.CYPHER_NODE_EXTRACT, new LangFunctionOperator( OperatorName.CYPHER_NODE_EXTRACT.name(), Kind.CYPHER_FUNCTION, PolyType.NODE ) );
 

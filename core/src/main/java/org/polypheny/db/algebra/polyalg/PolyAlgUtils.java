@@ -90,7 +90,7 @@ public class PolyAlgUtils {
         if ( alias == null || alias.equals( exp ) || isCastWithSameName( exp, alias ) ) {
             return exp;
         }
-        String sanitized = sanitizeAlias( alias );
+        String sanitized = sanitizeIdentifier( alias );
         if ( sanitized.equals( exp ) ) {
             return exp;
         }
@@ -98,14 +98,14 @@ public class PolyAlgUtils {
     }
 
 
-    public static String sanitizeAlias( String alias ) {
+    public static String sanitizeIdentifier( String alias ) {
         if ( (alias.startsWith( "'" ) && alias.endsWith( "'" )) || (alias.startsWith( "\"" ) && alias.endsWith( "\"" )) ) {
             return alias;
         }
-        if ( alias.matches( "[a-zA-Z#$@öÖäÄüÜàÀçÇáÁèÈíÍîÎóÓòôÔÒíÍëËâÂïÏéÉñÑß.\\d-]*" ) ) {
+        if ( alias.matches( "[a-zA-Z#$@öÖäÄüÜàÀçÇáÁèÈíÍîÎóÓòôÔÒíÍëËâÂïÏéÉñÑß.\\d]*" ) ) {
             return alias;
         }
-        return "'" + alias + "'";
+        return "\"" + alias + "\"";
     }
 
 
@@ -290,7 +290,7 @@ public class PolyAlgUtils {
 
         @Override
         public String visitIndexRef( RexIndexRef inputRef ) {
-            return names.get( inputRef.getIndex() );
+            return sanitizeIdentifier(names.get( inputRef.getIndex() ));
         }
 
 

@@ -280,7 +280,7 @@ public class PolyAlgToAlgConverter {
             case DISTRIBUTION_TYPE_ENUM -> new EnumArg<>( exp.toEnum( AlgDistribution.Type.class ), pType );
             case DATAMODEL_ENUM -> new EnumArg<>( exp.toEnum( DataModel.class ), pType );
             case POLY_TYPE_ENUM -> new EnumArg<>( exp.toEnum( PolyType.class ), pType );
-            case FIELD -> new FieldArg( ctx.getFieldOrdinal( exp.toIdentifier() ) );
+            case FIELD -> new FieldArg( ctx.getFieldOrdinalOrThrow( exp.toIdentifier() ) );
             case LIST -> ListArg.EMPTY;
             case COLLATION -> new CollationArg( convertCollation( exp, ctx ) );
             case CORR_ID -> new CorrelationArg( new CorrelationId( exp.toString() ) );
@@ -338,7 +338,12 @@ public class PolyAlgToAlgConverter {
         if ( type == null ) {
             // no explicit type information, so we can only guess which one from the LiteralType the parser detected:
             return switch ( literal.getType() ) {
-                case QUOTED -> builder.makeLiteral( literal.toUnquotedString() );
+                case QUOTED -> {
+                    String str = literal.toUnquotedString();
+                    int idx = ctx.getFieldOrdinal( str );
+                    // limitation: cannot have string literal in double quotes called the same as a field, as we would always pick the field
+                    yield idx >= 0 && literal.isDoubleQuoted() ? RexIndexRef.of( idx, ctx.fields ) : builder.makeLiteral( str );
+                }
                 case NUMBER -> AlgBuilder.literal( literal.toNumber(), builder );
                 case BOOLEAN -> AlgBuilder.literal( literal.toBoolean(), builder );
                 case NULL -> AlgBuilder.literal( null, builder );
@@ -355,7 +360,7 @@ public class PolyAlgToAlgConverter {
                         yield RexNameRef.create( List.of( idxSplit[0].split( "\\." ) ), idx, ctx.children.get( 0 ).getTupleType() );
                     } else {
                         // indexRef
-                        int idx = ctx.getFieldOrdinal( str );
+                        int idx = ctx.getFieldOrdinalOrThrow( str );
                         yield RexIndexRef.of( idx, ctx.fields );
                     }
                 }
@@ -506,7 +511,7 @@ public class PolyAlgToAlgConverter {
     private AlgFieldCollation convertCollation( PolyAlgExpression exp, Context ctx ) {
         List<PolyAlgLiteral> literals = exp.getLiterals();
         int size = literals.size();
-        int fieldIndex = ctx.getFieldOrdinal( literals.get( 0 ).toString() );
+        int fieldIndex = ctx.getFieldOrdinalOrThrow( literals.get( 0 ).toString() );
         return switch ( size ) {
             case 1 -> new AlgFieldCollation( fieldIndex );
             case 2 -> new AlgFieldCollation( fieldIndex, literals.get( 1 ).toDirection() );
@@ -528,14 +533,14 @@ public class PolyAlgToAlgConverter {
             if ( child.getLiterals().size() == 2 && child.getLiterals().get( 0 ).toString().equals( "DISTINCT" ) ) {
                 isDistinct = true;
             }
-            args.add( ctx.getFieldOrdinal( fieldName ) );
+            args.add( ctx.getFieldOrdinalOrThrow( fieldName ) );
         }
 
         int filter = -1;
         PolyAlgExpressionExtension extension = exp.getExtension( ExtensionType.FILTER );
         if ( extension != null ) {
             PolyAlgLiteral filterLiteral = extension.getLiterals().get( 0 );
-            filter = ctx.getFieldOrdinal( filterLiteral.toString() );
+            filter = ctx.getFieldOrdinalOrThrow( filterLiteral.toString() );
         }
         boolean isApproximate = exp.getExtension( ExtensionType.APPROXIMATE ) != null;
         // TODO: parse WITHIN clause for Collation (low priority, since not supported by practically all AggFunctions)
@@ -589,8 +594,8 @@ public class PolyAlgToAlgConverter {
         }
 
 
-        private int getFieldOrdinal( String fieldName ) {
-            int idx = fieldNames.indexOf( fieldName );
+        private int getFieldOrdinalOrThrow( String fieldName ) {
+            int idx = getFieldOrdinal( fieldName );
             if ( idx < 0 ) {
                 throw new GenericRuntimeException( "Invalid field name: '" + fieldName + "'" );
             }
@@ -598,8 +603,13 @@ public class PolyAlgToAlgConverter {
         }
 
 
+        private int getFieldOrdinal( String fieldName ) {
+            return fieldNames.indexOf( fieldName );
+        }
+
+
         private AlgDataType getDataTypeFromFieldName( String fieldName ) {
-            int ord = getFieldOrdinal( fieldName );
+            int ord = getFieldOrdinalOrThrow( fieldName );
             int offset = 0;
             for ( AlgNode child : children ) {
                 int count = child.getTupleType().getFieldCount();

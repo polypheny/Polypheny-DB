@@ -228,7 +228,7 @@ public class PolyAlgExpression extends PolyAlgNode {
     public String toString() {
         StringBuilder sb = new StringBuilder();
         for ( PolyAlgLiteral literal : literals ) {
-            sb.append( literal );
+            sb.append( literal.toUnquotedString() );
         }
         if ( isCall() ) {
             StringJoiner joiner = new StringJoiner( ", " );

@@ -106,10 +106,10 @@ public class PolyAlgParsingTest {
      * Executes the query and checks whether both the result and the (logical and allocation) PolyAlgebra are still equal after one round-trip.
      * For this we do the following:
      * Query -> AlgNode1 -> Result1
-     * |
-     * PolyAlg1 -> AlgNode2 -> Result2
-     * |
-     * PolyAlg2
+     *
+     * AlgNode1 -> PolyAlg1 -> AlgNode2 -> Result2
+     *
+     * AlgNode2 -> PolyAlg2
      *
      * Then we check whether PolyAlg1 equals PolyAlg2 and Result1 equals Result2.
      */
@@ -395,6 +395,11 @@ public class PolyAlgParsingTest {
     @Test
     public void sqlInsertTest() throws NodeParseException {
         executeQueryRoundTrip( "INSERT INTO polyalg_test VALUES (7, 'Mike', 12, 'Male')", QueryLanguage.from( "sql" ) );
+    }
+
+    @Test
+    public void sqlAliasWithSpaceFilterTest() throws NodeParseException {
+        executeQueryRoundTrip( "SELECT *, 'foo value' FROM (SELECT foo AS \"foo value\" FROM polyalg_test) WHERE \"foo value\" < 10", QueryLanguage.from( "sql" ) );
     }
 
 

@@ -105,6 +105,7 @@ public class PolyAlgLiteral extends PolyAlgNode {
         return Pair.of( new CorrelationId( parts[0] ), parts[1] );
     }
 
+
     public int toLocalRef() {
         checkType( LiteralType.LOCAL_REF );
         return Integer.parseInt( str.substring( RexLocalRef.PREFIX.length() ) );
@@ -122,6 +123,11 @@ public class PolyAlgLiteral extends PolyAlgNode {
             return str.substring( 1, str.length() - 1 );
         }
         return str;
+    }
+
+
+    public boolean isDoubleQuoted() {
+        return type == LiteralType.QUOTED && str.charAt( 0 ) == '"';
     }
 
 

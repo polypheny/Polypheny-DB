@@ -777,7 +777,14 @@ public class RexBuilder {
      * Creates a literal for the specified PolyValue with no precision or scale.
      */
     public RexLiteral makeLiteral( PolyValue o ) {
-        return makeLiteral( o, typeFactory.createPolyType( o.getType() ) );
+        AlgDataType type = switch ( o.getType() ) {
+            case PATH -> typeFactory.createPathType( o.asPath().getPathType(
+                    typeFactory.createPolyType( PolyType.NODE ),
+                    typeFactory.createPolyType( PolyType.EDGE )
+            ) );
+            default -> typeFactory.createPolyType( o.getType() );
+        };
+        return makeLiteral( o, type );
     }
 
 
