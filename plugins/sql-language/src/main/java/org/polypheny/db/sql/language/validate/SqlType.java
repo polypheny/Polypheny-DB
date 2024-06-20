@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.type;
+package org.polypheny.db.sql.language.validate;
 
 import java.sql.Types;
 import java.util.HashMap;

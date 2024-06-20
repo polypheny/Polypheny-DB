@@ -61,8 +61,8 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.sql.language.validate.SqlType;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.SqlType;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.type.entity.temporal.PolyDate;
@@ -252,7 +252,7 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
      */
     private static void setDynamicParam( PreparedStatement preparedStatement, int i, PolyValue value, AlgDataType type, int sqlType, ConnectionHandler connectionHandler ) throws SQLException {
         if ( value == null || value.isNull() ) {
-            preparedStatement.setNull( i, SqlType.NULL.id );
+            preparedStatement.setNull( i, Types.NULL );
             return;
         }
 

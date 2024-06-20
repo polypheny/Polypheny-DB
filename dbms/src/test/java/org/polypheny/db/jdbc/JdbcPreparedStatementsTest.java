@@ -28,6 +28,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.sql.Types;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
@@ -35,7 +36,6 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
-import org.polypheny.db.type.SqlType;
 
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
@@ -481,11 +481,11 @@ public class JdbcPreparedStatementsTest {
                         PreparedStatement preparedInsert2 = connection.prepareStatement( "INSERT INTO pstest(tinteger,tvarchar) VALUES (?, ?)" );
 
                         preparedInsert2.setInt( 1, 3 );
-                        preparedInsert2.setNull( 2, SqlType.VARCHAR.id );
+                        preparedInsert2.setNull( 2, Types.VARCHAR );
                         preparedInsert2.execute();
 
                         preparedInsert2.setInt( 1, 4 );
-                        preparedInsert2.setNull( 2, SqlType.VARCHAR.id );
+                        preparedInsert2.setNull( 2, Types.VARCHAR );
                         preparedInsert2.execute();
 
                         connection.commit();
@@ -509,12 +509,12 @@ public class JdbcPreparedStatementsTest {
                     PreparedStatement preparedInsert = connection.prepareStatement( "INSERT INTO pstest(tinteger,tbigint,tvarchar) VALUES (?, ?, ?)" );
 
                     preparedInsert.setInt( 1, 1 );
-                    preparedInsert.setNull( 2, SqlType.BIGINT.id );
+                    preparedInsert.setNull( 2, Types.BIGINT );
                     preparedInsert.setString( 3, "Alice" );
                     preparedInsert.execute();
 
                     preparedInsert.setInt( 1, 2 );
-                    preparedInsert.setNull( 2, SqlType.BIGINT.id );
+                    preparedInsert.setNull( 2, Types.BIGINT );
                     preparedInsert.setString( 3, "Bob" );
                     preparedInsert.execute();
 
@@ -873,14 +873,14 @@ public class JdbcPreparedStatementsTest {
                     PreparedStatement preparedSelect = connection.prepareStatement(
                             "SELECT * FROM pstest WHERE tinteger = ?" );
 
-                    preparedInsert.setNull( 1, SqlType.BIGINT.id );
-                    preparedInsert.setNull( 2, SqlType.BOOLEAN.id );
-                    preparedInsert.setNull( 3, SqlType.DATE.id );
-                    preparedInsert.setNull( 4, SqlType.DECIMAL.id );
-                    preparedInsert.setNull( 5, SqlType.DOUBLE.id );
-                    preparedInsert.setNull( 7, SqlType.FLOAT.id );
-                    preparedInsert.setNull( 9, SqlType.TIME.id );
-                    preparedInsert.setNull( 10, SqlType.TIMESTAMP.id );
+                    preparedInsert.setNull( 1, Types.BIGINT );
+                    preparedInsert.setNull( 2, Types.BOOLEAN );
+                    preparedInsert.setNull( 3, Types.DATE );
+                    preparedInsert.setNull( 4, Types.DECIMAL );
+                    preparedInsert.setNull( 5, Types.DOUBLE );
+                    preparedInsert.setNull( 7, Types.FLOAT );
+                    preparedInsert.setNull( 9, Types.TIME );
+                    preparedInsert.setNull( 10, Types.TIMESTAMP );
 
                     preparedInsert.setInt( 6, 1 );
                     preparedInsert.setString( 12, "Foo" );

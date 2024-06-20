@@ -166,7 +166,7 @@ public class SqlProcessor extends Processor {
         } catch ( Exception e ) {
             log.error( "Exception while validating query", e );
             String message = e.getLocalizedMessage();
-            throw new GenericRuntimeException( message == null ? "null" : message, -1, "", "Sever error encountered" );
+            throw new GenericRuntimeException( "Exception while validating query:" + (message == null ? "unrecoverable error" : message) );
         }
         stopWatch.stop();
         if ( log.isTraceEnabled() ) {

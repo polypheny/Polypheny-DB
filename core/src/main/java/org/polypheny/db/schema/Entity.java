@@ -35,7 +35,6 @@ package org.polypheny.db.schema;
 
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.nodes.Call;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
@@ -43,12 +42,12 @@ import org.polypheny.db.util.Wrapper;
 
 
 /**
- * Table.
+ * Entity.
  * <p>
- * The typical way for a table to be created is when Polypheny-DB interrogates a user-defined schema in order to validate
+ * The typical way for an entity to be created is when Polypheny-DB interrogates a user-defined schema in order to validate
  * names appearing in a SQL query.
  * <p>
- * Note that a table does not know its name. It is in fact possible for a table to be used more than once, perhaps under
+ * Note that an entity does not know its name. It is in fact possible for an entity to be used more than once, perhaps under
  * multiple names or under multiple schemas. (Compare with the <a href="http://en.wikipedia.org/wiki/Inode">i-node</a> concept
  * in the UNIX filesystem.)
  * <p>
@@ -104,11 +103,6 @@ public interface Entity {
      * @return true iff the given aggregate call is valid
      */
     boolean rolledUpColumnValidInsideAgg( String column, Call call, Node parent );
-
-
-    default DataModel getNamespaceType() {
-        return DataModel.RELATIONAL;
-    }
 
 
 }
