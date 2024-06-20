@@ -54,6 +54,7 @@ import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArg;
 import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.algebra.polyalg.arguments.RexArg;
 import org.polypheny.db.algebra.polyalg.arguments.StringArg;
+import org.polypheny.db.algebra.polyalg.arguments.WindowGroupArg;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.Convention;
@@ -68,6 +69,7 @@ public class PolyAlgDeclaration {
     public final Convention convention; // null: no convention (i.e. not a physical operator)
     private final int numInputs; // -1 if arbitrary amount is allowed
     public final ImmutableSet<OperatorTag> opTags;
+    private final boolean isNotFullyImplemented; //
 
     public final ImmutableList<Parameter> posParams;
     public final ImmutableList<Parameter> kwParams;
@@ -85,6 +87,7 @@ public class PolyAlgDeclaration {
             TriFunction<PolyAlgArgs, List<AlgNode>, AlgCluster, AlgNode> creator,
             @Singular ImmutableSet<OperatorTag> opTags,
             int numInputs,
+            boolean isNotFullyImplemented,
             @Singular ImmutableList<Parameter> params ) {
         this.opName = opName;
         this.opAliases = (opAliases != null) ? opAliases : ImmutableSet.of();
@@ -92,6 +95,7 @@ public class PolyAlgDeclaration {
         this.convention = convention;
         this.creator = creator;
         this.numInputs = numInputs;
+        this.isNotFullyImplemented = isNotFullyImplemented;
         this.opTags = (opTags != null) ? opTags : ImmutableSet.of();
         params = (params != null) ? params : ImmutableList.of();
 
@@ -258,6 +262,10 @@ public class PolyAlgDeclaration {
         }
         node.set( "kwParams", kwArr );
 
+        if (isNotFullyImplemented) {
+            node.put( "notRegistered", true ); // disables editing for this node in the UI
+        }
+
         return node;
     }
 
@@ -416,7 +424,12 @@ public class PolyAlgDeclaration {
         /**
          * Correlation ID
          */
-        CORR_ID( CorrelationArg.class );
+        CORR_ID( CorrelationArg.class ),
+
+        /**
+         * Window.Group
+         */
+        WINDOW_GROUP( WindowGroupArg.class);
 
         private final Class<? extends PolyAlgArg> argClass;
         private final Class<? extends Enum<?>> enumClass;

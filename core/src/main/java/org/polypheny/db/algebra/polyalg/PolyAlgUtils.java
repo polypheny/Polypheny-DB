@@ -28,6 +28,7 @@ import java.util.Map.Entry;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
@@ -74,6 +75,7 @@ import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Quadruple;
 import org.polypheny.db.util.ValidatorUtil;
 
+@Slf4j
 public class PolyAlgUtils {
 
     private static final Pattern CAST_PATTERN;
@@ -334,6 +336,7 @@ public class PolyAlgUtils {
 
         @Override
         public String visitOver( RexOver over ) {
+            log.warn( "Serialization is not yet correctly implemented for RexWindow." );
             boolean withType = over.isA( Kind.CAST ) || over.isA( Kind.NEW_SPECIFICATION );
             final StringBuilder sb = new StringBuilder( OperatorRegistry.getUniqueName( over.op ) );
             sb.append( "(" );

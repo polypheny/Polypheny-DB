@@ -85,6 +85,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelUnion;
 import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.algebra.logical.relational.LogicalRelViewScan;
 import org.polypheny.db.algebra.logical.relational.LogicalSortExchange;
+import org.polypheny.db.algebra.logical.relational.LogicalWindow;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.OperatorTag;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.ParamTag;
@@ -226,6 +227,12 @@ public class PolyAlgRegistry {
                 .param( Parameter.builder().name( "sort" ).aliases( List.of( "collation", "order" ) ).multiValued( 1 ).type( ParamType.COLLATION ).simpleType( SimpleType.SIMPLE_COLLATION ).build() )
                 .param( Parameter.builder().name( "distributionType" ).alias( "type" ).type( ParamType.DISTRIBUTION_TYPE_ENUM ).build() )
                 .param( Parameter.builder().name( "numbers" ).multiValued( 1 ).type( ParamType.REX ).defaultValue( ListArg.EMPTY ).build() )
+                .build() );
+        declarations.put( LogicalWindow.class, PolyAlgDeclaration.builder()
+                .creator( LogicalWindow::create ).model( DataModel.RELATIONAL )
+                .opName( "REL_WINDOW" ).opAlias( "WINDOW" ).numInputs( 1 ).opTags( logAllProTags ).isNotFullyImplemented( true )
+                .param( Parameter.builder().name( "constants" ).multiValued( 1 ).type( ParamType.REX ).defaultValue( ListArg.EMPTY ).build() )
+                .param( Parameter.builder().name( "groups" ).multiValued( 1 ).type( ParamType.WINDOW_GROUP ).defaultValue( ListArg.EMPTY ).build() )
                 .build() );
 
         // DOCUMENT

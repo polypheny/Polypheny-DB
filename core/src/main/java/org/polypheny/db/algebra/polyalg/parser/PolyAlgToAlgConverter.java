@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.IntStream;
+import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgDistribution;
@@ -284,6 +285,7 @@ public class PolyAlgToAlgConverter {
             case LIST -> ListArg.EMPTY;
             case COLLATION -> new CollationArg( convertCollation( exp, ctx ) );
             case CORR_ID -> new CorrelationArg( new CorrelationId( exp.toString() ) );
+            case WINDOW_GROUP -> throw new NotImplementedException("Parsing of WindowGroup arguments is not yet supported.");
             default -> throw new IllegalStateException( "Unexpected value: " + p.getType() );
         };
     }
