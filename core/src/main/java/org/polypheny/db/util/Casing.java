@@ -14,25 +14,21 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.webui.models.requests;
+package org.polypheny.db.util;
 
-import lombok.experimental.SuperBuilder;
-import lombok.extern.jackson.Jacksonized;
-
-@SuperBuilder
-@Jacksonized
-public class QueryExplorationRequest extends UIRequest {
+public enum Casing {
+    /**
+     * The case of identifiers is not changed.
+     */
+    UNCHANGED,
 
     /**
-     * A query from the SQL console
+     * Identifiers are converted to upper-case.
      */
-    public String query;
+    TO_UPPER,
 
     /**
-     * TRUE if information about the query execution should be added to the Query Analyzer (InformationManager)
+     * Identifiers are converted to lower-case.
      */
-    public boolean analyze;
-
-    public int cPage;
-
+    TO_LOWER
 }

@@ -179,7 +179,6 @@ public abstract class PolyNumber extends PolyValue {
 
     @NotNull
     public PolyNumber floor( @NotNull PolyNumber b1 ) {
-        log.warn( "optimize" );
         final BigDecimal[] bigDecimals = bigDecimalValue().divideAndRemainder( b1.bigDecimalValue() );
         BigDecimal r = bigDecimals[1];
         if ( r.signum() < 0 ) {

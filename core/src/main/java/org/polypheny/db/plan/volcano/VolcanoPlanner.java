@@ -59,7 +59,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.util.Spaces;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgVisitor;
@@ -101,6 +100,7 @@ import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.SaffronProperties;
+import org.polypheny.db.util.Spaces;
 import org.polypheny.db.util.Util;
 
 
@@ -1546,7 +1546,7 @@ public class VolcanoPlanner extends AbstractAlgPlanner {
     // implement RelOptPlanner
     @Override
     public void registerMetadataProviders( List<AlgMetadataProvider> list ) {
-        list.add( 0, new VolcanoRelMetadataProvider() );
+        list.add( 0, new VolcanoAlgMetadataProvider() );
     }
 
 

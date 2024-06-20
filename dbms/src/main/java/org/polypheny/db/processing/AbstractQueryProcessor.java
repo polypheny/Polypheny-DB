@@ -36,7 +36,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.Meta.CursorFactory;
 import org.apache.commons.lang3.time.StopWatch;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.PolyImplementation;
@@ -52,6 +51,7 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.AlgStructuredTypeFlattener;
+import org.polypheny.db.algebra.constant.ConformanceEnum;
 import org.polypheny.db.algebra.constant.ExplainFormat;
 import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.constant.Kind;
@@ -1096,7 +1096,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 enumerable = EnumerableCalc.create( enumerable, program );
             }
 
-            final Conformance conformance = statement.getPrepareContext().config().conformance();
+            final Conformance conformance = ConformanceEnum.DEFAULT;
 
             final Map<String, Object> internalParameters = new LinkedHashMap<>();
             internalParameters.put( "_conformance", conformance );
@@ -1131,7 +1131,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
 
             @Override
-            public Bindable<PolyValue[]> getBindable( CursorFactory cursorFactory ) {
+            public Bindable<PolyValue[]> getBindable() {
                 return bindable;
             }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,11 +41,11 @@ import java.util.List;
 
 /**
  * Read-only list that is the concatenation of sub-lists.
- *
+ * <p>
  * The list is read-only; attempts to call methods such as {@link #add(Object)} or {@link #set(int, Object)} will throw.
- *
+ * <p>
  * Changes to the backing lists, including changes in length, will be reflected in this list.
- *
+ * <p>
  * This class is not thread-safe. Changes to backing lists will cause unspecified behavior.
  *
  * @param <T> Element type
@@ -165,5 +165,5 @@ public class CompositeList<T> extends AbstractList<T> {
         }
         return n;
     }
-}
 
+}

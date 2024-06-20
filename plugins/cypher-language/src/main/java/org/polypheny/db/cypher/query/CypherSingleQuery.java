@@ -24,6 +24,7 @@ import org.polypheny.db.cypher.clause.CypherClause;
 import org.polypheny.db.cypher.clause.CypherQuery;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.ExecutableStatement;
+import org.polypheny.db.nodes.Node;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
@@ -61,6 +62,12 @@ public class CypherSingleQuery extends CypherQuery implements ExecutableStatemen
     @Override
     public CypherKind getCypherKind() {
         return CypherKind.SINGLE;
+    }
+
+
+    @Override
+    public List<? extends Node> getInputs() {
+        return clauses;
     }
 
 

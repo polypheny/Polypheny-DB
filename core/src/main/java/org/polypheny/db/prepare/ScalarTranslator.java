@@ -14,15 +14,25 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.avatica;
+package org.polypheny.db.prepare;
 
-import lombok.RequiredArgsConstructor;
+import java.util.List;
+import org.apache.calcite.linq4j.tree.BlockStatement;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.ParameterExpression;
+import org.polypheny.db.rex.RexNode;
 
-@RequiredArgsConstructor
-public class PrimitiveDatabase {
+/**
+ * Translator from Java AST to {@link RexNode}.
+ */
+interface ScalarTranslator {
 
-    public final String tableCat;
-    public final String owner;
-    public final String defaultSchema;
+    RexNode toRex( BlockStatement statement );
+
+    List<RexNode> toRexList( BlockStatement statement );
+
+    RexNode toRex( Expression expression );
+
+    ScalarTranslator bind( List<ParameterExpression> parameterList, List<RexNode> values );
 
 }

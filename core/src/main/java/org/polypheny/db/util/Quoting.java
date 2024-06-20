@@ -14,17 +14,28 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.webui.crud;
+package org.polypheny.db.util;
 
-import java.util.function.BiFunction;
-import org.polypheny.db.processing.ImplementationContext;
-import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
-import org.polypheny.db.webui.models.requests.UIRequest;
-import org.polypheny.db.webui.models.results.Result.ResultBuilder;
+public enum Quoting {
+    /**
+     * Quote identifiers in double-quotes. For example, {@code "my id"}.
+     */
+    DOUBLE_QUOTE( "\"" ),
 
-public class ResultBuilderContext {
+    /**
+     * Quote identifiers in back-quotes. For example, {@code `my id`}.
+     */
+    BACK_TICK( "`" ),
 
-    BiFunction<ParsedQueryContext, UIRequest, ResultBuilder<?, ?, ?, ?>> ddlBuilder;
-    BiFunction<ImplementationContext, UIRequest, ResultBuilder<?, ?, ?, ?>> builder;
+    /**
+     * Quote identifiers in brackets. For example, {@code [my id]}.
+     */
+    BRACKET( "[" );
 
+    public final String string;
+
+
+    Quoting( String string ) {
+        this.string = string;
+    }
 }

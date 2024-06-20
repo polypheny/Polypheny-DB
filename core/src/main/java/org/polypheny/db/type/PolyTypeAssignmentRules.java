@@ -154,6 +154,7 @@ public class PolyTypeAssignmentRules {
         rule.clear();
         rule.add( PolyType.TEXT );
         rule.add( PolyType.VARCHAR );
+        rule.add( PolyType.DOCUMENT );
         rules.add( PolyType.TEXT, rule );
 
         // CHAR is assignable from...
@@ -197,6 +198,7 @@ public class PolyTypeAssignmentRules {
         // DOCUMENT is assignable from...
         rule.clear();
         rule.add( PolyType.VARCHAR );
+        rule.add( PolyType.TEXT );
         rule.add( PolyType.ANY );
         rule.add( PolyType.DOCUMENT );
         rules.add( PolyType.DOCUMENT, rule );

@@ -87,7 +87,7 @@ import org.polypheny.db.util.Util;
 
 /**
  * Implementation of {@link JavaTypeFactory}.
- *
+ * <p>
  * <strong>NOTE: This class is experimental and subject to change/removal without notice</strong>.</p>
  */
 @Slf4j
@@ -122,7 +122,7 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
 
     /**
      * Returns the type of a field.
-     *
+     * <p>
      * Takes into account {@link Array} annotations if present.
      */
     private Type fieldType( Field field ) {
@@ -144,27 +144,23 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
         if ( type instanceof AlgDataType ) {
             return (AlgDataType) type;
         }
-        if ( type instanceof SyntheticRecordType ) {
-            final SyntheticRecordType syntheticRecordType = (SyntheticRecordType) type;
+        if ( type instanceof SyntheticRecordType syntheticRecordType ) {
             return syntheticRecordType.algType;
         }
-        if ( type instanceof Types.ArrayType ) {
-            final Types.ArrayType arrayType = (Types.ArrayType) type;
+        if ( type instanceof Types.ArrayType arrayType ) {
             final AlgDataType componentRelType = createType( arrayType.getComponentType() );
             return createArrayType( createTypeWithNullability( componentRelType, arrayType.componentIsNullable() ), arrayType.maximumCardinality() );
         }
-        if ( type instanceof Types.MapType ) {
-            final Types.MapType mapType = (Types.MapType) type;
+        if ( type instanceof Types.MapType mapType ) {
             final AlgDataType keyRelType = createType( mapType.getKeyType() );
             final AlgDataType valueRelType = createType( mapType.getValueType() );
             return createMapType(
                     createTypeWithNullability( keyRelType, mapType.keyIsNullable() ),
                     createTypeWithNullability( valueRelType, mapType.valueIsNullable() ) );
         }
-        if ( !(type instanceof Class) ) {
+        if ( !(type instanceof Class<?> clazz) ) {
             throw new UnsupportedOperationException( "TODO: implement " + type );
         }
-        final Class<?> clazz = (Class<?>) type;
         switch ( Primitive.flavor( clazz ) ) {
             case PRIMITIVE:
                 return createJavaType( clazz );
@@ -264,13 +260,6 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
                 case ANY:
                     return PolyValue.class;
 
-            }
-            if ( type instanceof AlgRecordType && type.getPolyType() == PolyType.ROW ) {
-                if ( type instanceof JavaRecordType ) {
-                    return ((JavaRecordType) type).clazz;
-                } else {
-                    return createSyntheticType( (AlgRecordType) type );
-                }
             }
         }
         log.debug( "Could not find corresponding class for PolyType" );

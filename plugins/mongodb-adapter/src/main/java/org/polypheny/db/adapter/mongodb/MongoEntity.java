@@ -88,6 +88,7 @@ import org.polypheny.db.catalog.entity.physical.PhysicalCollection;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalField;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
@@ -351,7 +352,10 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
 
     @Override
     public PhysicalEntity normalize() {
-        return new PhysicalCollection( id, allocationId, logicalId, namespaceId, name, namespaceName, adapterId );
+        if ( dataModel == DataModel.DOCUMENT ) {
+            return new PhysicalCollection( id, allocationId, logicalId, namespaceId, name, namespaceName, adapterId );
+        }
+        return new PhysicalTable( id, allocationId, logicalId, name, fields.stream().map( f -> f.unwrap( PhysicalColumn.class ).orElseThrow() ).toList(), namespaceId, namespaceName, uniqueFieldIds, adapterId );
     }
 
 

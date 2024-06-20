@@ -48,6 +48,8 @@ import org.polypheny.db.adapter.RelationalModifyDelegate;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.catalogs.RelAdapterCatalog;
+import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
+import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
@@ -519,6 +521,32 @@ public class FileStore extends DataStore<RelAdapterCatalog> {
     }
 
 
+    @Override
+    public void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities, Context context ) {
+        for ( PhysicalEntity entity : entities ) {
+            PhysicalTable table = entity.unwrap( PhysicalTable.class ).orElseThrow();
+            updateNamespace( table.namespaceName, table.namespaceId );
+            adapterCatalog.addPhysical( alloc, currentNamespace.createFileTable( table.unwrap( PhysicalTable.class ).orElseThrow(), table.unwrap( PhysicalTable.class ).orElseThrow().uniqueFieldIds ) );
+        }
+    }
+
+
+    @Override
+    public void restoreGraph( AllocationGraph alloc, List<PhysicalEntity> entities, Context context ) {
+        // already created substitution with the restore tables
+        // restore link between alloc and physical
+        adapterCatalog.addPhysical( alloc, entities.toArray( new PhysicalEntity[]{} ) );
+    }
+
+
+    @Override
+    public void restoreCollection( AllocationCollection alloc, List<PhysicalEntity> entities, Context context ) {
+        // already created substitution with the restore tables
+        // restore link between alloc and physical
+        adapterCatalog.addPhysical( alloc, entities.toArray( new PhysicalEntity[]{} ) );
+    }
+
+
     @SuppressWarnings("unused")
     public interface Exclude {
 
@@ -539,6 +567,12 @@ public class FileStore extends DataStore<RelAdapterCatalog> {
         void refreshTable( long allocId );
 
         void createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocationWrapper );
+
+        void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities, Context context );
+
+        void restoreGraph( AllocationGraph alloc, List<PhysicalEntity> entities, Context context );
+
+        void restoreCollection( AllocationCollection alloc, List<PhysicalEntity> entities, Context context );
 
     }
 

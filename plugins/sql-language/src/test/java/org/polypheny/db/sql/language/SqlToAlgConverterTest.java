@@ -22,7 +22,6 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayDeque;
 import java.util.Deque;
-import java.util.Properties;
 import java.util.Set;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -30,11 +29,8 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgVisitor;
 import org.polypheny.db.algebra.constant.ConformanceEnum;
 import org.polypheny.db.algebra.constant.ExplainLevel;
-import org.polypheny.db.algebra.constant.NullCollation;
 import org.polypheny.db.algebra.core.CorrelationId;
 import org.polypheny.db.algebra.externalize.AlgXmlWriter;
-import org.polypheny.db.config.PolyphenyDbConnectionConfigImpl;
-import org.polypheny.db.config.PolyphenyDbConnectionProperty;
 import org.polypheny.db.languages.NodeToAlgConverter;
 import org.polypheny.db.languages.NodeToAlgConverter.Config;
 import org.polypheny.db.languages.OperatorRegistry;
@@ -43,7 +39,6 @@ import org.polypheny.db.sql.DiffRepository;
 import org.polypheny.db.sql.language.fun.SqlCaseOperator;
 import org.polypheny.db.sql.language.validate.SqlDelegatingConformance;
 import org.polypheny.db.sql.sql2alg.SqlToAlgConverter;
-import org.polypheny.db.util.Bug;
 import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.TestUtil;
@@ -2337,18 +2332,6 @@ public class SqlToAlgConverterTest extends SqlToAlgTestBase {
 
     @Test
     @Disabled // refactor
-    public void testInterval() {
-        // temporarily disabled per DTbug 1212
-        if ( !Bug.DT785_FIXED ) {
-            return;
-        }
-        final String sql = "values(cast(interval '1' hour as interval hour to second))";
-        sql( sql ).ok();
-    }
-
-
-    @Test
-    @Disabled // refactor
     public void testStream() {
         final String sql = "select stream productId from orders where productId = 10";
         sql( sql ).ok();
@@ -3610,10 +3593,7 @@ public class SqlToAlgConverterTest extends SqlToAlgTestBase {
                   rank() over(partition by empno order by deptno)
                 from emp
                 order by row_number() over(partition by empno order by deptno)""";
-        Properties properties = new Properties();
-        properties.setProperty( PolyphenyDbConnectionProperty.DEFAULT_NULL_COLLATION.camelName(), NullCollation.LOW.name() );
-        PolyphenyDbConnectionConfigImpl connectionConfig = new PolyphenyDbConnectionConfigImpl( properties );
-        TesterImpl tester = new TesterImpl( getDiffRepos(), false, false, true, false, null, SqlToAlgConverter.Config.DEFAULT, ConformanceEnum.DEFAULT, Contexts.of( connectionConfig ) );
+        TesterImpl tester = new TesterImpl( getDiffRepos(), false, false, true, false, null, SqlToAlgConverter.Config.DEFAULT, ConformanceEnum.DEFAULT, Contexts.of() );
         sql( sql ).with( tester ).ok();
     }
 
@@ -3875,4 +3855,3 @@ public class SqlToAlgConverterTest extends SqlToAlgTestBase {
     }
 
 }
-
