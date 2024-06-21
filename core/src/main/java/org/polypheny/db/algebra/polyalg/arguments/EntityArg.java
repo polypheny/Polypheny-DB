@@ -67,6 +67,8 @@ public class EntityArg implements PolyAlgArg {
         if ( entity instanceof AllocationEntity e ) {
             if ( e.dataModel != DataModel.GRAPH ) {
                 this.entityName = snapshot.getLogicalEntity( e.logicalId ).orElseThrow().name;
+            } else if (!e.name.startsWith( AllocationEntity.PREFIX )) {
+                this.entityName = e.name;
             }
             this.partitionName = snapshot.alloc().getPartition( e.partitionId ).orElseThrow().name;
         }

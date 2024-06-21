@@ -36,6 +36,7 @@ import org.polypheny.db.catalog.logistic.PartitionType;
 @SuperBuilder(toBuilder = true)
 @SerializeClass(subclasses = { AllocationTable.class, AllocationGraph.class, AllocationCollection.class })
 public abstract class AllocationEntity extends Entity {
+    public static String PREFIX = "$alloc$";
 
     @Serialize
     public long adapterId;
@@ -60,7 +61,7 @@ public abstract class AllocationEntity extends Entity {
             long namespaceId,
             long adapterId,
             DataModel type ) {
-        super( id, "$alloc$" + id, namespaceId, EntityType.ENTITY, type, true );
+        super( id, PREFIX + id, namespaceId, EntityType.ENTITY, type, true );
         this.adapterId = adapterId;
         this.logicalId = logicalId;
         this.partitionId = partitionId;

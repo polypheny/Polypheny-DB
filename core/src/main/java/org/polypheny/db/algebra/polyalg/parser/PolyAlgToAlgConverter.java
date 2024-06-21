@@ -285,7 +285,7 @@ public class PolyAlgToAlgConverter {
             case LIST -> ListArg.EMPTY;
             case COLLATION -> new CollationArg( convertCollation( exp, ctx ) );
             case CORR_ID -> new CorrelationArg( new CorrelationId( exp.toString() ) );
-            case WINDOW_GROUP -> throw new NotImplementedException("Parsing of WindowGroup arguments is not yet supported.");
+            case WINDOW_GROUP -> throw new NotImplementedException( "Parsing of WindowGroup arguments is not yet supported." );
             default -> throw new IllegalStateException( "Unexpected value: " + p.getType() );
         };
     }
@@ -427,7 +427,11 @@ public class PolyAlgToAlgConverter {
         LogicalNamespace ns = snapshot.getNamespace( namespaceName ).orElseThrow( () -> new GenericRuntimeException( "no namespace named " + namespaceName ) );
 
         if ( planType == PlanType.ALLOCATION ) {
-            return getAllocationEntity( atSplit, ns, rest );
+            AllocationEntity e = getAllocationEntity( atSplit, ns, rest );
+            if ( ns.dataModel == DataModel.GRAPH && rest != null ) {
+                return e.withName( rest );
+            }
+            return e;
         }
 
         return switch ( ns.dataModel ) {
@@ -439,7 +443,14 @@ public class PolyAlgToAlgConverter {
                 }
                 yield snapshot.rel().getTable( ns.id, rest ).orElseThrow( () -> exception );
             }
-            case DOCUMENT -> snapshot.doc().getCollection( ns.id, rest ).orElseThrow( () -> exception );
+            case DOCUMENT -> {
+                if ( rest == null ) {
+                    yield new SubstitutionGraph( ns.id, "sub", false, ns.caseSensitive, List.of() );
+                } else if ( ctx.getNonNullDataModel() == DataModel.GRAPH ) {
+                    yield getSubGraph( ns, rest );
+                }
+                yield snapshot.doc().getCollection( ns.id, rest ).orElseThrow( () -> exception );
+            }
             case GRAPH -> {
                 if ( rest == null ) {
                     yield snapshot.graph().getGraph( ns.id ).orElseThrow( () -> new GenericRuntimeException( "no graph with id " + ns.id ) );

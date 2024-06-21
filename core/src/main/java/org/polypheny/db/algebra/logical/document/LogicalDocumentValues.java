@@ -30,11 +30,11 @@ import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexDynamicParam;
+import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.type.entity.document.PolyDocument;
 
 
 public class LogicalDocumentValues extends DocumentValues implements RelationalTransformable {
-
 
     /**
      * Java representation of multiple documents, which can be retrieved in the original BSON format form
@@ -82,7 +82,7 @@ public class LogicalDocumentValues extends DocumentValues implements RelationalT
     public static AlgNode create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
         ListArg<StringArg> documents = args.getListArg( "docs", StringArg.class );
         ListArg<RexArg> dynamic = args.getListArg( "dynamic", RexArg.class );
-        final AlgTraitSet traitSet = cluster.traitSetOf( Convention.NONE );
+        final AlgTraitSet traitSet = cluster.traitSetOf( ModelTrait.DOCUMENT ).plus( Convention.NONE );
         return new LogicalDocumentValues( cluster, traitSet,
                 documents.map( s -> PolyDocument.fromJson( s.getArg() ).asDocument() ),
                 dynamic.map( r -> (RexDynamicParam) r.getNode() ) );
