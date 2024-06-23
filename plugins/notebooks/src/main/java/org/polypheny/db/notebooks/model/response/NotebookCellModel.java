@@ -50,6 +50,9 @@ public class NotebookCellModel {
     @Getter
     private List<Object> outputs;
 
+     @Getter
+    private boolean showOutput;
+
 
     public NotebookCellModel( String code ) {
         this( code, new LinkedList<>() );
@@ -59,6 +62,7 @@ public class NotebookCellModel {
     public NotebookCellModel( String code, List<Object> outputs ) {
         this.cellType = "code";
         this.presentType="skip";
+        this.showOutput=true;
         this.id = UUID.randomUUID().toString();
         this.source = code;
         this.metadata = new CellMetadataModel();
