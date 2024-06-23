@@ -31,6 +31,10 @@ public class NotebookCellModel {
     private String cellType;
 
     @Getter
+    @SerializedName("cell_present")
+    private String presentType;
+
+    @Getter
     private String id;
 
     @Getter
@@ -54,6 +58,7 @@ public class NotebookCellModel {
 
     public NotebookCellModel( String code, List<Object> outputs ) {
         this.cellType = "code";
+        this.presentType="skip";
         this.id = UUID.randomUUID().toString();
         this.source = code;
         this.metadata = new CellMetadataModel();
