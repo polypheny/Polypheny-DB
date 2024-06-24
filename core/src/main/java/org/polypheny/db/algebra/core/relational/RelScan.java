@@ -92,7 +92,7 @@ public abstract class RelScan<E extends Entity> extends Scan<E> implements RelAl
      * Returns an identity projection for the given table.
      */
     public static ImmutableList<Integer> identity( Entity entity ) {
-        return ImmutableList.copyOf( IntStream.range( 0, entity.getTupleType().getFieldCount() ).boxed().collect( Collectors.toList() ) );
+        return ImmutableList.copyOf( IntStream.range( 0, entity.getTupleType().getFieldCount() ).boxed().toList() );
     }
 
 

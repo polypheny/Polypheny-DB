@@ -150,7 +150,7 @@ public class SqlAlterTableAddPartitions extends SqlAlterTable {
                                 table,
                                 partitionType.getSimple(),
                                 partitionColumn.getSimple(),
-                                partitionGroupNamesList.stream().map( n -> (Identifier) n ).collect( Collectors.toList() ),
+                                partitionGroupNamesList.stream().map( n -> (Identifier) n ).toList(),
                                 numPartitionGroups,
                                 numPartitions,
                                 partitionQualifierList.stream().map( l -> l.stream().map( e -> (Node) e ).toList() ).toList(),

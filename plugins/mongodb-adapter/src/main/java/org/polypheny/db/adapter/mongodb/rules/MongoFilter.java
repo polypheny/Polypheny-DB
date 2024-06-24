@@ -406,7 +406,7 @@ public class MongoFilter extends Filter implements MongoAlg {
             /*shallowCopy.put( "$not", new BsonArray(
                     List.of( new BsonDocument(
                             this.map.entrySet().stream().map( e -> new BsonElement( e.getKey(), new BsonArray( e.getValue() ) ) )
-                                    .collect( Collectors.toList() ) ) ) ) );*/
+                                    .toList() ) ) ) );*/
             //mergeMaps( this.map, shallowCopy, "$not" );
             //this.map = shallowCopy;
 
@@ -630,11 +630,11 @@ public class MongoFilter extends Filter implements MongoAlg {
             String key = MongoRules.translateDocValueAsKey( rowType, node.operands.get( 0 ).unwrap( RexNameRef.class ).orElseThrow() );
 
             if ( node.operands.get( 1 ).unwrap( RexCall.class ).isPresent() ) {
-                List<BsonValue> types = ((RexCall) node.operands.get( 1 )).operands
+                List<BsonInt32> types = ((RexCall) node.operands.get( 1 )).operands
                         .stream()
                         .map( el -> ((RexLiteral) el).value.asNumber().intValue() )
                         .map( BsonInt32::new )
-                        .collect( Collectors.toList() );
+                        .toList();
                 attachCondition( "$type", key, new BsonArray( types ) );
             } else if ( node.operands.get( 1 ).isA( Kind.DYNAMIC_PARAM ) ) {
                 attachCondition( "$type", key, new BsonDynamic( (RexDynamicParam) node.operands.get( 1 ) ) );
@@ -955,7 +955,7 @@ public class MongoFilter extends Filter implements MongoAlg {
                 } else {
                     throw new GenericRuntimeException( "Input in array is not translatable." );
                 }
-            } ).collect( Collectors.toList() ) );
+            } ).toList() );
             if ( right.op.getKind() == Kind.CAST ) {
                 if ( array.size() == 1 ) {
                     return (BsonDocument) array.get( 0 );
@@ -977,7 +977,7 @@ public class MongoFilter extends Filter implements MongoAlg {
         private BsonValue getOperation( Operator op, ImmutableList<RexNode> operands ) {
             String operator = getOp( op );
 
-            return new BsonDocument( operator, new BsonArray( operands.stream().map( this::getSingle ).collect( Collectors.toList() ) ) );
+            return new BsonDocument( operator, new BsonArray( operands.stream().map( this::getSingle ).toList() ) );
 
         }
 

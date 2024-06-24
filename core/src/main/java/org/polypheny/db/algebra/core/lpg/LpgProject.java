@@ -89,7 +89,7 @@ public abstract class LpgProject extends SingleAlg implements LpgAlg {
 
     @Override
     public AlgNode accept( RexShuttle shuttle ) {
-        List<RexNode> exp = this.projects.stream().map( p -> (RexNode) p ).collect( Collectors.toList() );
+        List<RexNode> exp = this.projects.stream().map( p -> (RexNode) p ).toList();
         List<RexNode> exps = shuttle.apply( exp );
         if ( exp == exps ) {
             return this;

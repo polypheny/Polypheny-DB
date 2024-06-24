@@ -50,7 +50,7 @@ public class PrismValueDeserializer {
     public static List<List<PolyValue>> deserializeParameterLists( List<IndexedParameters> parameterListsList ) {
         return transpose( parameterListsList.stream()
                 .map( parameterList -> deserializeParameterList( parameterList.getParametersList() ) )
-                .collect( Collectors.toList() ) );
+                .toList() );
     }
 
 
@@ -69,7 +69,7 @@ public class PrismValueDeserializer {
 
 
     public static List<PolyValue> deserializeParameterList( List<ProtoValue> valuesList ) {
-        return valuesList.stream().map( PrismValueDeserializer::deserializeProtoValue ).collect( Collectors.toList() );
+        return valuesList.stream().map( PrismValueDeserializer::deserializeProtoValue ).toList();
     }
 
 
@@ -123,7 +123,7 @@ public class PrismValueDeserializer {
     private static PolyValue deserializeToPolyList( ProtoValue protoValue ) {
         List<PolyValue> values = protoValue.getList().getValuesList().stream()
                 .map( PrismValueDeserializer::deserializeProtoValue )
-                .collect( Collectors.toList() );
+                .toList();
         return new PolyList<>( values );
     }
 

@@ -223,7 +223,7 @@ public class IndexManager {
     public List<Index> getIndices( LogicalNamespace schema, LogicalTable table ) {
         return this.indexById.values().stream()
                 .filter( index -> index.schema.equals( schema ) && index.table.equals( table ) )
-                .collect( Collectors.toList() );
+                .toList();
     }
 
 

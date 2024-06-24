@@ -171,7 +171,7 @@ public class SqlValidatorUtil {
      * Checks that there are no duplicates in a list of {@link SqlIdentifier}.
      */
     public static void checkIdentifierListForDuplicates( List<SqlNode> columnList, SqlValidatorImpl.ValidationErrorFunction validationErrorFunction ) {
-        final List<List<String>> names = columnList.stream().map( o -> ((SqlIdentifier) o).names ).collect( Collectors.toList() );
+        final List<ImmutableList<String>> names = columnList.stream().map( o -> ((SqlIdentifier) o).names ).toList();
         final int i = Util.firstDuplicate( names );
         if ( i >= 0 ) {
             throw validationErrorFunction.apply( columnList.get( i ), Static.RESOURCE.duplicateNameInColumnList( Util.last( names.get( i ) ) ) );

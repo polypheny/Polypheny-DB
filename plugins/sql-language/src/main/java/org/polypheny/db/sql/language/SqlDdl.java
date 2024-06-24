@@ -110,7 +110,7 @@ public abstract class SqlDdl extends SqlCall {
     protected List<LogicalColumn> getColumns( Context context, long tableId, SqlNodeList columns ) {
         return columns.getList().stream()
                 .map( c -> getColumn( context, tableId, (SqlIdentifier) c ) )
-                .collect( Collectors.toList() );
+                .toList();
     }
 
 

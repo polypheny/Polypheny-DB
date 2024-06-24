@@ -126,7 +126,7 @@ public class SqlAlterTableAddIndex extends SqlAlterTable {
                 DdlManager.getInstance().createPolyphenyIndex(
                         logicalTable,
                         indexMethodName,
-                        columnList.getList().stream().map( Node::toString ).collect( Collectors.toList() ),
+                        columnList.getList().stream().map( Node::toString ).toList(),
                         indexName.getSimple(),
                         unique,
                         statement );

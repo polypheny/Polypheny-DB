@@ -87,7 +87,7 @@ public class SqlAlterTableAddPrimaryKey extends SqlAlterTable {
 
         DdlManager.getInstance().createPrimaryKey(
                 logicalTable,
-                columnList.getList().stream().map( Node::toString ).collect( Collectors.toList() ),
+                columnList.getList().stream().map( Node::toString ).toList(),
                 statement );
 
     }

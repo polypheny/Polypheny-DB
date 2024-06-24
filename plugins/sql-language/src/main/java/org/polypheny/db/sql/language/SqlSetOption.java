@@ -141,7 +141,7 @@ public class SqlSetOption extends SqlAlter {
 
     @Override
     public List<SqlNode> getSqlOperandList() {
-        return getOperandList().stream().map( e -> (SqlNode) e ).collect( Collectors.toList() );
+        return getOperandList().stream().map( e -> (SqlNode) e ).toList();
     }
 
 

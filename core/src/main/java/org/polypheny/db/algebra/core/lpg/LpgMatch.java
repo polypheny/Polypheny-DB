@@ -85,12 +85,12 @@ public abstract class LpgMatch extends SingleAlg implements LpgAlg {
 
     @Override
     public AlgNode accept( RexShuttle shuttle ) {
-        List<RexNode> exp = this.matches.stream().map( m -> (RexNode) m ).collect( Collectors.toList() );
+        List<RexNode> exp = this.matches.stream().map( m -> (RexNode) m ).toList();
         List<RexNode> exps = shuttle.apply( exp );
         if ( exp == exps ) {
             return this;
         }
-        return new LogicalLpgMatch( getCluster(), traitSet, input, exps.stream().map( e -> (RexCall) e ).collect( Collectors.toList() ), names );
+        return new LogicalLpgMatch( getCluster(), traitSet, input, exps.stream().map( e -> (RexCall) e ).toList(), names );
     }
 
 }

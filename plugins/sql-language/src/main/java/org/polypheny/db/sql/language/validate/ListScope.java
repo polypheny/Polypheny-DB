@@ -74,7 +74,7 @@ public abstract class ListScope extends DelegatingScope {
      * @return list of child namespaces
      */
     public List<SqlValidatorNamespace> getChildren() {
-        return children.stream().map( scopeChild -> scopeChild.namespace ).collect( Collectors.toList() );
+        return children.stream().map( scopeChild -> scopeChild.namespace ).toList();
     }
 
 
@@ -84,7 +84,7 @@ public abstract class ListScope extends DelegatingScope {
      * @return list of child namespaces
      */
     List<String> getChildNames() {
-        return children.stream().map( scopeChild -> scopeChild.name ).collect( Collectors.toList() );
+        return children.stream().map( scopeChild -> scopeChild.name ).toList();
     }
 
 

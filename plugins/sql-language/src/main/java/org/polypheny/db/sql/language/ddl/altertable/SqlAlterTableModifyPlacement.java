@@ -140,7 +140,7 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
 
         DdlManager.getInstance().modifyPlacement(
                 table,
-                getColumns( context, table.id, columns ).stream().map( c -> c.id ).collect( Collectors.toList() ),
+                getColumns( context, table.id, columns ).stream().map( c -> c.id ).toList(),
                 partitionGroups,
                 partitionGroupNames.stream()
                         .map( SqlIdentifier::toString )

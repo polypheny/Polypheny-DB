@@ -82,7 +82,7 @@ public class PrismUtils {
 
 
     public static List<Row> serializeToRows( List<List<PolyValue>> rows ) {
-        return rows.stream().map( PrismUtils::serializeToRow ).collect( Collectors.toList() );
+        return rows.stream().map( PrismUtils::serializeToRow ).toList();
     }
 
 

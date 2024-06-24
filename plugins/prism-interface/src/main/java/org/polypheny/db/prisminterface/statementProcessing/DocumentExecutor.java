@@ -139,7 +139,7 @@ public class DocumentExecutor extends Executor {
             );
         }
         startOrResumeStopwatch( executionStopWatch );
-        List<PolyValue> data = iterator.getNextBatch( fetchSize ).stream().map( p -> p.get( 0 ) ).collect( Collectors.toList() );
+        List<PolyValue> data = iterator.getNextBatch( fetchSize ).stream().map( p -> p.get( 0 ) ).toList();
         executionStopWatch.stop();
         return PrismUtils.buildDocumentFrame( !iterator.hasMoreRows(), data );
     }

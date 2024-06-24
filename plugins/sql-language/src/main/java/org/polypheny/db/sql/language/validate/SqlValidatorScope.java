@@ -238,7 +238,7 @@ public interface SqlValidatorScope extends ValidatorScope {
          * Returns a list ["step1", "step2"].
          */
         List<String> stepNames() {
-            return steps().stream().map( input -> input.name ).collect( Collectors.toList() );
+            return steps().stream().map( input -> input.name ).toList();
         }
 
 

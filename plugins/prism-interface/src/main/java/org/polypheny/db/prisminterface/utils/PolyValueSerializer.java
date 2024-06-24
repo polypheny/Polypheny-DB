@@ -60,12 +60,12 @@ public class PolyValueSerializer {
 
 
     public static List<ProtoValue> serializeList( List<PolyValue> valuesList ) {
-        return valuesList.stream().map( PolyValueSerializer::serialize ).collect( Collectors.toList() );
+        return valuesList.stream().map( PolyValueSerializer::serialize ).toList();
     }
 
 
     public static List<ProtoEntry> serializeToProtoEntryList( PolyMap<PolyValue, PolyValue> polyMap ) {
-        return polyMap.entrySet().stream().map( PolyValueSerializer::serializeToProtoEntry ).collect( Collectors.toList() );
+        return polyMap.entrySet().stream().map( PolyValueSerializer::serializeToProtoEntry ).toList();
     }
 
 

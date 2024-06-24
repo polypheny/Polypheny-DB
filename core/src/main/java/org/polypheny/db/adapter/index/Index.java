@@ -97,7 +97,7 @@ public abstract class Index {
         }
         final AlgNode scan = builder
                 .relScan( table )
-                .project( cols.stream().map( builder::field ).collect( Collectors.toList() ) )
+                .project( cols.stream().map( builder::field ).toList() )
                 .build();
         final QueryProcessor processor = statement.getQueryProcessor();
         final PolyImplementation implementation = processor.prepareQuery( AlgRoot.of( scan, Kind.SELECT ), false );

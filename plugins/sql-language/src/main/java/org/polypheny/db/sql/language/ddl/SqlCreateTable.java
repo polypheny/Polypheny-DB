@@ -257,7 +257,7 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
                                 getTableFailOnEmpty( context, new SqlIdentifier( tableName, ParserPos.ZERO ) ),
                                 partitionType.getSimple(),
                                 partitionColumn.getSimple(),
-                                partitionGroupNamesList.stream().map( n -> (Identifier) n ).collect( Collectors.toList() ),
+                                partitionGroupNamesList.stream().map( n -> (Identifier) n ).toList(),
                                 numPartitionGroups,
                                 numPartitions,
                                 partitionQualifierList.stream().map( l -> l.stream().map( e -> (Node) e ).toList() ).toList(),
@@ -313,13 +313,13 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
                     constraint.getConstraintType(),
                     constraint.getFields().getSqlList().stream()
                             .map( SqlNode::toString )
-                            .collect( Collectors.toList() ) );
+                            .toList() );
             case FOREIGN -> new ConstraintInformation(
                     constraintName,
                     constraint.getConstraintType(),
                     constraint.getFields().getSqlList().stream()
                             .map( SqlNode::toString )
-                            .collect( Collectors.toList() ),
+                            .toList(),
                     ((SqlForeignKeyConstraint) constraint).getReferencedEntity().toString(),
                     ((SqlForeignKeyConstraint) constraint).getReferencedField().toString() );
         };

@@ -46,7 +46,7 @@ public class SqlArrayLiteral extends SqlLiteral {
         }
         if ( PolyTypeFamily.NUMERIC == component.getPolyType().getFamily() ) {
             AlgDataType finalComponent = component;
-            return PolyList.copyOf( list.stream().map( a -> adjustGeneric( a, finalComponent ) ).collect( Collectors.toList() ) );
+            return PolyList.copyOf( list.stream().map( a -> adjustGeneric( a, finalComponent ) ).toList() );
         }
         return list;
     }
@@ -54,7 +54,7 @@ public class SqlArrayLiteral extends SqlLiteral {
 
     private static PolyValue adjustGeneric( PolyValue value, AlgDataType component ) {
         if ( value.isList() ) {
-            return PolyList.copyOf( value.asList().stream().map( e -> adjustGeneric( e, component ) ).collect( Collectors.toList() ) );
+            return PolyList.copyOf( value.asList().stream().map( e -> adjustGeneric( e, component ) ).toList() );
         }
         return PolyValue.convert( value, component.getPolyType() );
     }

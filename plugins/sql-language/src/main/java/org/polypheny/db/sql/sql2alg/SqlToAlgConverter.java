@@ -1264,7 +1264,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                                         pair.left,
                                         ensureSqlType(
                                                 pair.left.getType(),
-                                                bb.convertExpression( pair.right ) ) ) ).collect( Collectors.toList() ) );
+                                                bb.convertExpression( pair.right ) ) ) ).toList() );
             }
             comparisons.add( rexComparison );
         }
@@ -4472,7 +4472,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                                                 lookupOrCreateGroupExpr( fieldCollation.left ),
                                                 fieldCollation.getDirection(),
                                                 fieldCollation.getNullDirection() ) )
-                                .collect( Collectors.toList() ) );
+                                .toList() );
             }
 
             final AggregateCall aggCall =
