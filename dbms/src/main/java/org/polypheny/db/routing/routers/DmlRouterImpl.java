@@ -657,7 +657,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
     public AlgNode routeDocumentDml( LogicalDocumentModify alg, Statement statement, @Nullable AllocationEntity target, @Nullable List<Long> excludedPlacements ) {
         Snapshot snapshot = statement.getTransaction().getSnapshot();
 
-        LogicalCollection collection = alg.entity.unwrap( LogicalCollection.class ).orElseThrow();
+        LogicalCollection collection = alg.entity.unwrap( LogicalCollection.class ).orElseThrow( () -> new GenericRuntimeException( String.format( "%s is not a collection", alg.entity.name ) ) );
 
         List<AlgNode> modifies = new ArrayList<>();
 
