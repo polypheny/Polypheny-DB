@@ -36,16 +36,6 @@ public enum PlacementType {
     }
 
 
-    public static PlacementType getById( int id ) {
-        for ( PlacementType e : values() ) {
-            if ( e.id == id ) {
-                return e;
-            }
-        }
-        throw new RuntimeException( "Unknown PlacementType with id: " + id );
-    }
-
-
     public static PlacementType parse( @NonNull String str ) {
         if ( str.equalsIgnoreCase( "MANUAL" ) ) {
             return PlacementType.MANUAL;

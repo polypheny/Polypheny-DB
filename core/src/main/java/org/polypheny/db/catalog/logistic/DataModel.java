@@ -40,26 +40,6 @@ public enum DataModel {
     }
 
 
-    public static DataModel getById( final int id ) {
-        for ( DataModel t : values() ) {
-            if ( t.id == id ) {
-                return t;
-            }
-        }
-        throw new RuntimeException( "Unknown NamespaceType with id: " + id );
-    }
-
-
-    public static DataModel getByName( final String name ) {
-        for ( DataModel t : values() ) {
-            if ( t.name().equalsIgnoreCase( name ) ) {
-                return t;
-            }
-        }
-        throw new RuntimeException( "Unknown NamespaceType with name: " + name );
-    }
-
-
     public ModelTrait getModelTrait() {
         if ( this == DataModel.RELATIONAL ) {
             return ModelTrait.RELATIONAL;

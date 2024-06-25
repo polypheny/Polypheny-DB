@@ -35,16 +35,6 @@ public enum PartitionType {
     }
 
 
-    public static PartitionType getById( final int id ) {
-        for ( PartitionType t : values() ) {
-            if ( t.id == id ) {
-                return t;
-            }
-        }
-        throw new RuntimeException( "Unknown PartitionType with id: " + id );
-    }
-
-
     public static PartitionType getByName( final String name ) {
         for ( PartitionType t : values() ) {
             if ( t.name().equalsIgnoreCase( name ) ) {

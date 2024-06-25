@@ -38,26 +38,6 @@ public enum EntityType {
     }
 
 
-    public static EntityType getById( final int id ) {
-        for ( EntityType t : values() ) {
-            if ( t.id == id ) {
-                return t;
-            }
-        }
-        throw new GenericRuntimeException( "Unknown EntityType with id: " + id );
-    }
-
-
-    public static EntityType getByName( final String name ) {
-        for ( EntityType t : values() ) {
-            if ( t.name().equalsIgnoreCase( name ) ) {
-                return t;
-            }
-        }
-        throw new GenericRuntimeException( "Unknown EntityType with name: " + name );
-    }
-
-
     // Used for creating ResultSets
     public PolyValue[] getParameterArray() {
         return new PolyValue[]{ PolyString.of( name() ) };

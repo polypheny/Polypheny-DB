@@ -35,16 +35,6 @@ public enum IndexType {
     }
 
 
-    public static IndexType getById( int id ) {
-        for ( IndexType e : values() ) {
-            if ( e.id == id ) {
-                return e;
-            }
-        }
-        throw new RuntimeException( "Unknown indexType with id: " + id );
-    }
-
-
     public static IndexType parse( @NonNull String str ) {
         if ( str.equalsIgnoreCase( "MANUAL" ) ) {
             return IndexType.MANUAL;
