@@ -189,6 +189,8 @@ class PIService {
                     break;
                 }
             }
+        } catch ( EOFException e ) {
+            throw e;
         } catch ( Throwable t ) {
             if ( t.getCause() instanceof PIServiceException p && p.getCause() instanceof EOFException eof ) {
                 throw eof;
