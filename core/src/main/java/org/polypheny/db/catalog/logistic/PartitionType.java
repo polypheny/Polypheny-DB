@@ -17,6 +17,7 @@
 package org.polypheny.db.catalog.logistic;
 
 import lombok.Getter;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 
 @Getter
 public enum PartitionType {
@@ -41,7 +42,7 @@ public enum PartitionType {
                 return t;
             }
         }
-        throw new RuntimeException( "Unknown PartitionType with name: " + name );
+        throw new GenericRuntimeException( "Unknown PartitionType with name: " + name );
     }
 
 }

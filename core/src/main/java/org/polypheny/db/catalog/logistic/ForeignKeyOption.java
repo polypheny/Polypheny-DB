@@ -17,6 +17,7 @@
 package org.polypheny.db.catalog.logistic;
 
 import lombok.NonNull;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 
 public enum ForeignKeyOption {
     NONE( -1 ),
@@ -39,16 +40,6 @@ public enum ForeignKeyOption {
     }
 
 
-    public static ForeignKeyOption getById( int id ) {
-        for ( ForeignKeyOption e : values() ) {
-            if ( e.id == id ) {
-                return e;
-            }
-        }
-        throw new RuntimeException( "Unknown ForeignKeyOption with id: " + id );
-    }
-
-
     public static ForeignKeyOption parse( @NonNull String str ) {
         if ( str.equalsIgnoreCase( "NONE" ) ) {
             return ForeignKeyOption.NONE;
@@ -61,6 +52,6 @@ public enum ForeignKeyOption {
         } else if ( str.equalsIgnoreCase( "SET DEFAULT" ) ) {
             return ForeignKeyOption.SET_DEFAULT;
         }*/
-        throw new RuntimeException( "Unknown ForeignKeyOption with name: " + str );
+        throw new GenericRuntimeException( "Unknown ForeignKeyOption with name: " + str );
     }
 }
