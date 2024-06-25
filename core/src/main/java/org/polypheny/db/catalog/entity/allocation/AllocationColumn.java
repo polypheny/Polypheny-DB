@@ -72,7 +72,6 @@ public class AllocationColumn implements PolyObject {
     }
 
 
-
     public String getLogicalColumnName() {
         return Catalog.snapshot().rel().getColumn( columnId ).orElseThrow().name;
     }

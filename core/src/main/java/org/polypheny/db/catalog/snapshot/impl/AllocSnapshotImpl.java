@@ -533,6 +533,7 @@ public class AllocSnapshotImpl implements AllocSnapshot {
         return Optional.ofNullable( adapterLogicalToPlacement.get( Pair.of( adapterId, logicalEntityId ) ) );
     }
 
+
     @Override
     public @NonNull List<AllocationEntity> getFromLogical( long logicalId ) {
         return Optional.ofNullable( logicalAllocs.get( logicalId ) ).orElse( List.of() );

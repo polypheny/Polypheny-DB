@@ -188,11 +188,11 @@ public class LogicalColumn implements PolyObject, Comparable<LogicalColumn> {
 
     @Override
     public int compareTo( LogicalColumn o ) {
-        int comp = Long.compare(this.namespaceId, o.namespaceId);
+        int comp = Long.compare( this.namespaceId, o.namespaceId );
         if ( comp == 0 ) {
-            comp = Long.compare(this.tableId, o.tableId);
+            comp = Long.compare( this.tableId, o.tableId );
             if ( comp == 0 ) {
-                return Long.compare(this.id, o.id);
+                return Long.compare( this.id, o.id );
             } else {
                 return comp;
             }
@@ -214,7 +214,7 @@ public class LogicalColumn implements PolyObject, Comparable<LogicalColumn> {
      * @param ordinalPosition position
      */
 
-    public record PrimitiveCatalogColumn(String tableCat, String tableSchem, String tableName, String columnName, int dataType, String typeName, Integer columnSize, Integer bufferLength, Integer decimalDigits, Integer numPrecRadix, int nullable, String remarks, String columnDef, Integer sqlDataType, Integer sqlDatetimeSub, Integer charOctetLength, int ordinalPosition, String isNullable, String collation) {
+    public record PrimitiveCatalogColumn( String tableCat, String tableSchem, String tableName, String columnName, int dataType, String typeName, Integer columnSize, Integer bufferLength, Integer decimalDigits, Integer numPrecRadix, int nullable, String remarks, String columnDef, Integer sqlDataType, Integer sqlDatetimeSub, Integer charOctetLength, int ordinalPosition, String isNullable, String collation ) {
 
     }
 

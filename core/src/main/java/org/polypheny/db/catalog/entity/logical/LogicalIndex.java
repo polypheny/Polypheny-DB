@@ -126,7 +126,7 @@ public class LogicalIndex implements Serializable {
     // Used for creating ResultSets
 
 
-    public record LogicalIndexField(long indexId, int ordinalPosition, String fieldName, LogicalIndex index) implements PolyObject {
+    public record LogicalIndexField( long indexId, int ordinalPosition, String fieldName, LogicalIndex index ) implements PolyObject {
 
         @Serial
         private static final long serialVersionUID = -5596459769680478780L;
@@ -138,7 +138,7 @@ public class LogicalIndex implements Serializable {
         }
 
 
-        public record PrimitiveCatalogIndexColumn(String tableCat, String tableSchem, String tableName, boolean nonUnique, String indexQualifier, String indexName, int type, int ordinalPosition, String columnName, Integer ascOrDesc, int cardinality, String pages, String filterCondition, int location, int indexType) {
+        public record PrimitiveCatalogIndexColumn( String tableCat, String tableSchem, String tableName, boolean nonUnique, String indexQualifier, String indexName, int type, int ordinalPosition, String columnName, Integer ascOrDesc, int cardinality, String pages, String filterCondition, int location, int indexType ) {
 
         }
 

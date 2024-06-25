@@ -94,7 +94,7 @@ public class LogicalPrimaryKey extends LogicalKey {
         }
 
 
-        public record PrimitiveCatalogPrimaryKeyColumn(String tableCat, String tableSchem, String tableName, String columnName, int keySeq, String pkName) {
+        public record PrimitiveCatalogPrimaryKeyColumn( String tableCat, String tableSchem, String tableName, String columnName, int keySeq, String pkName ) {
 
         }
 

@@ -225,7 +225,6 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, PolySer
     }
 
 
-
     @Override
     public void updatePartition( long partitionId, Long partitionGroupId ) {
 
@@ -247,6 +246,7 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, PolySer
         tables.remove( allocId );
         change();
     }
+
 
     @Override
     public AllocationPlacement addPlacement( long logicalEntityId, long namespaceId, long adapterId ) {

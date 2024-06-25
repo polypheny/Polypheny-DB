@@ -119,6 +119,7 @@ public class DocAdapterCatalog extends AdapterCatalog {
         return column;
     }
 
+
     public PhysicalTable createTable(
             String namespaceName,
             String tableName,

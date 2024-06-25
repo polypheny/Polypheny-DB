@@ -153,7 +153,7 @@ public abstract class Entity implements PolyObject, Wrapper, Serializable, Catal
         if ( !this.getClass().getSimpleName().equals( o.getClass().getSimpleName() ) ) {
             return -1;
         }
-        return Long.compare(this.id, o.id);
+        return Long.compare( this.id, o.id );
     }
 
 }

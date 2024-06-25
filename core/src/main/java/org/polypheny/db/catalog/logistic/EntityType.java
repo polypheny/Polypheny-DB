@@ -18,7 +18,6 @@ package org.polypheny.db.catalog.logistic;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 
