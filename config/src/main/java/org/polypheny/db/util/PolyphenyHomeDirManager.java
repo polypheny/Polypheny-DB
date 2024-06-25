@@ -84,10 +84,10 @@ public class PolyphenyHomeDirManager {
             if ( fileLock.isPresent() ) {
                 lock = fileLock.get();
             } else {
-                throw new RuntimeException( "There is already another Polypheny instance running in this directory" ); // TODO: Somehow get access to GenericRuntimeException
+                throw new RuntimeException( "There is already another Polypheny instance running in this directory" );
             }
         } catch ( IOException e ) {
-            throw new RuntimeException( "Failed to open lockfile", e ); // TODO: Somehow get access to GenericRuntimeException
+            throw new RuntimeException( "Failed to open lockfile", e );
         }
         Runtime.getRuntime().addShutdownHook( new Thread( () -> {
             for ( File file : deleteOnExit ) {
