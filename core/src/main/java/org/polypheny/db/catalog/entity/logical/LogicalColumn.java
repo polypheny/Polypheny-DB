@@ -188,11 +188,11 @@ public class LogicalColumn implements PolyObject, Comparable<LogicalColumn> {
 
     @Override
     public int compareTo( LogicalColumn o ) {
-        int comp = (int) (this.namespaceId - o.namespaceId);
+        int comp = Long.compare(this.namespaceId, o.namespaceId);
         if ( comp == 0 ) {
-            comp = (int) (this.tableId - o.tableId);
+            comp = Long.compare(this.tableId, o.tableId);
             if ( comp == 0 ) {
-                return (int) (this.id - o.id);
+                return Long.compare(this.id, o.id);
             } else {
                 return comp;
             }

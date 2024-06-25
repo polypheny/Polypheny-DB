@@ -81,7 +81,7 @@ public class LogicalNamespace implements PolyObject, Comparable<LogicalNamespace
     @Override
     public int compareTo( LogicalNamespace o ) {
         if ( o != null ) {
-            return (int) (this.id - o.id);
+            return Long.compare(this.id, o.id);
         }
 
         return -1;

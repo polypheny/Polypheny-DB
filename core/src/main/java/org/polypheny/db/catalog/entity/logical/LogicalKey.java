@@ -96,7 +96,7 @@ public abstract class LogicalKey implements PolyObject, Comparable<LogicalKey> {
 
     @Override
     public int compareTo( @NotNull LogicalKey o ) {
-        return (int) (this.id - o.id);
+        return Long.compare( this.id, o.id );
     }
 
 
