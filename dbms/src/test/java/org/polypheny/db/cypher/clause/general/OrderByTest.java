@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.cypher;
+package org.polypheny.db.cypher.clause.general;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.adapter.java.Array;
+import org.polypheny.db.cypher.CypherTestTemplate;
 import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.webui.models.results.GraphResult;
 import java.util.Arrays;

@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.cypher;
+package org.polypheny.db.cypher.clause.general;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.polypheny.db.cypher.CypherTestTemplate;
 import org.polypheny.db.webui.models.results.GraphResult;
 
 public class FilterTest extends CypherTestTemplate {
@@ -38,6 +39,7 @@ public class FilterTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_ANIMAL );
         GraphResult res = execute( "MATCH (p) WHERE p.age > 3 RETURN p" );
+
         assertNode( res, 0 );
 
         assert containsRows( res, true, false );

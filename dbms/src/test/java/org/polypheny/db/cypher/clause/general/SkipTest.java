@@ -14,17 +14,18 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.cypher;
+package org.polypheny.db.cypher.clause.general;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.polypheny.db.cypher.CypherTestTemplate;
 import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.cypher.helper.TestNode;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.models.results.GraphResult;
 import java.util.Arrays;
 
-public class SkipTest  extends  CypherTestTemplate{
+public class SkipTest  extends CypherTestTemplate {
 
     @BeforeEach
     public void reset() {

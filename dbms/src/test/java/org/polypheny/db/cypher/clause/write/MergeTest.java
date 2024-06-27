@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.cypher;
+package org.polypheny.db.cypher.clause.write;
 
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.polypheny.db.cypher.CypherTestTemplate;
 import org.polypheny.db.cypher.helper.TestEdge;
 import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.cypher.helper.TestNode;

@@ -14,55 +14,18 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.cypher;
+package org.polypheny.db.cypher.clause.write;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.polypheny.db.cypher.helper.TestLiteral;
-import org.polypheny.db.webui.models.results.GraphResult;
+import org.polypheny.db.cypher.CypherTestTemplate;
 
-public class TemporalTest  extends CypherTestTemplate {
-
+public class ForeachTest  extends CypherTestTemplate {
     @BeforeEach
     public void reset() {
         tearDown();
         createGraph();
     }
-
-
-    @Test
-    public void dateFunTest() {
-
-        GraphResult res = execute( "RETURN DATE('2023-05-18')\n" );
-
-
-    }
-
-
-    @Test
-    public void timeFunTest() {
-
-        GraphResult res = execute( "RETURN TIME('12:34:56')" );
-
-
-    }
-
-    @Test
-    public void dateTimeFunTest() {
-
-        GraphResult res = execute( "RETURN DATETIME('2023-05-18T12:34:56')" );
-
-
-    }
-
-    @Test
-    public void durationBetweenFunTest() {
-
-        GraphResult res = execute( "RETURN duration.between(DATE('2023-05-18'), DATE('2023-06-18'))" );
-
-
-    }
-
 
 
 
