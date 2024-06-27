@@ -33,7 +33,6 @@ import lombok.Value;
 import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.tree.Expression;
-import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
@@ -90,7 +89,7 @@ public abstract class AdapterCatalog {
 
 
     public Expression asExpression() {
-        return Expressions.call( Catalog.CATALOG_EXPRESSION, "getAdapterCatalog", Expressions.constant( adapterId ) );
+        return Catalog.PHYSICAL_EXPRESSION.apply( adapterId );
     }
 
 
