@@ -80,7 +80,7 @@ public class LogicalDocumentProject extends DocumentProject {
 
 
     @Override
-    public PolyAlgArgs collectAttributes() {
+    public PolyAlgArgs bindArguments() {
         PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
 
         return args.put( "includes", new ListArg<>( includes, RexArg::new ) )

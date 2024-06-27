@@ -69,7 +69,7 @@ public class LogicalLpgAggregate extends LpgAggregate {
 
 
     @Override
-    public PolyAlgArgs collectAttributes() {
+    public PolyAlgArgs bindArguments() {
         PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
 
         args.put( "groups", new ListArg<>( groups, RexArg::new ) );

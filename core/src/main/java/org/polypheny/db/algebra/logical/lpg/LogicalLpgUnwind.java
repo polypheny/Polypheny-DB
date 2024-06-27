@@ -66,7 +66,7 @@ public class LogicalLpgUnwind extends LpgUnwind {
 
 
     @Override
-    public PolyAlgArgs collectAttributes() {
+    public PolyAlgArgs bindArguments() {
         PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
         return args.put( "index", new IntArg( index ) )
                 .put( "alias", new StringArg( alias ) );

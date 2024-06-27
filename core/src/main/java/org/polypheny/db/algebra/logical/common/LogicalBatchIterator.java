@@ -63,7 +63,7 @@ public class LogicalBatchIterator extends BatchIterator {
 
 
     @Override
-    public PolyAlgArgs collectAttributes() {
+    public PolyAlgArgs bindArguments() {
         return new PolyAlgArgs( getPolyAlgDeclaration() );
     }
 

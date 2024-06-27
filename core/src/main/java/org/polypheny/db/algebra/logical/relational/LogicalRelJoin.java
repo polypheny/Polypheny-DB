@@ -154,8 +154,8 @@ public final class LogicalRelJoin extends Join implements RelAlg {
 
 
     @Override
-    public PolyAlgArgs collectAttributes() {
-        PolyAlgArgs args = super.collectAttributes();
+    public PolyAlgArgs bindArguments() {
+        PolyAlgArgs args = super.bindArguments();
         return args.put( "semiJoinDone", new BooleanArg( semiJoinDone ) );
     }
 

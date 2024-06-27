@@ -171,13 +171,13 @@ public class PolyAlgToAlgConverter {
 
             if ( namedArg.isPositionalArg() ) {
                 if ( noMorePosArgs ) {
-                    throw new GenericRuntimeException( "Positional argument after keyword argument" );
+                    throw new GenericRuntimeException( "Positional argument after keyword argument encountered for " + decl.opName );
                 }
                 if ( canUnpack ) {
                     argsToCombine.add( aliasedArg );
                     continue;
                 } else {
-                    p = decl.getPos( i ); // TODO: handle invalid arguments
+                    p = decl.getPos( i );
                     if ( p == null ) {
                         throw new GenericRuntimeException( "Too many positional arguments were given for " + decl.opName );
                     }
@@ -192,7 +192,7 @@ public class PolyAlgToAlgConverter {
             }
 
             if ( usedParams.contains( p ) ) {
-                throw new GenericRuntimeException( "Argument " + p.getName() + " was used more than once" );
+                throw new GenericRuntimeException( "Argument " + p.getName() + " was used more than once for " + decl.opName );
             }
             usedParams.add( p );
             converted.put( p, buildArg( p, aliasedArg, ctx ) );
@@ -209,7 +209,7 @@ public class PolyAlgToAlgConverter {
             }
         }
         if ( !converted.validate( true ) ) {
-            throw new GenericRuntimeException( "Missing positional argument" );
+            throw new GenericRuntimeException( "Missing positional argument for " + decl.opName );
         }
 
         return converted;

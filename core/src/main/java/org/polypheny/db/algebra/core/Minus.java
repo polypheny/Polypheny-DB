@@ -84,7 +84,7 @@ public abstract class Minus extends SetOp {
 
 
     @Override
-    public PolyAlgArgs collectAttributes() {
+    public PolyAlgArgs bindArguments() {
         PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
         return args.put( "all", new BooleanArg( all ) );
     }

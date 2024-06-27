@@ -78,7 +78,7 @@ public class LogicalDocumentAggregate extends DocumentAggregate {
 
 
     @Override
-    public PolyAlgArgs collectAttributes() {
+    public PolyAlgArgs bindArguments() {
         PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
 
         if ( getGroup().isPresent() ) {

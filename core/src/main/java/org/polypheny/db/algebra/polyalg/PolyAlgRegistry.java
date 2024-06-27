@@ -551,6 +551,16 @@ public class PolyAlgRegistry {
      * Registers the specified declaration for the given AlgNode class.
      * This is only allowed during the initialization of Polypheny-DB.
      * As soon as a UI instance has requested the registry, this will result in an assertion error.
+     * <p>
+     * General steps to follow for adding support for a new AlgNode:
+     * <ol>
+     *     <li>Create a {@link PolyAlgDeclaration} that declares the parameters and their corresponding types.
+     *     If no fitting {@link ParamType} exists yet, you can create a new one together with a corresponding {@link org.polypheny.db.algebra.polyalg.arguments.PolyAlgArg}</li>
+     *     <li>Implement {@link AlgNode#bindArguments()} or use the implementation of a superclass
+     *     (given that it is compatible with the declaration). </li>
+     *     <li>Write a static creator method in your AlgNode that has the signature {@code create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster )} </li>
+     *     <li>Register the declaration once during initialization using this method.</li>
+     * </ol>
      *
      * @param clazz The class for which the PolyAlgDeclaration is being registered
      * @param decl The PolyAlgDeclaration to register

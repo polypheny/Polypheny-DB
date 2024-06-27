@@ -78,7 +78,7 @@ public class LogicalDocumentFilter extends DocumentFilter {
 
 
     @Override
-    public PolyAlgArgs collectAttributes() {
+    public PolyAlgArgs bindArguments() {
         PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
         args.put( "condition", new RexArg( condition ) );
         return args;

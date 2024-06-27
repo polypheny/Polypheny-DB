@@ -122,7 +122,7 @@ public abstract class LpgValues extends AbstractAlgNode implements LpgAlg {
 
 
     @Override
-    public PolyAlgArgs collectAttributes() {
+    public PolyAlgArgs bindArguments() {
         PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
 
         // we wrap nodes and edges in RexLiterals which allows us to use RexArgs => we can leave parsing of nodes to the PolyAlgParser

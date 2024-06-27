@@ -311,7 +311,7 @@ public final class LogicalWindow extends Window implements RelAlg {
 
 
     @Override
-    public PolyAlgArgs collectAttributes() {
+    public PolyAlgArgs bindArguments() {
         PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
         return args.put( "constants", new ListArg<>( constants, RexArg::new ) )
                 .put( "groups", new ListArg<>( groups, WindowGroupArg::new ) );

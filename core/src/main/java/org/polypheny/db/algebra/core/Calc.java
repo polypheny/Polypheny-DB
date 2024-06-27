@@ -187,7 +187,7 @@ public abstract class Calc extends SingleAlg {
 
 
     @Override
-    public PolyAlgArgs collectAttributes() {
+    public PolyAlgArgs bindArguments() {
         PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
         PolyAlgArg exprs = new ListArg<>( program.getExprList(), RexArg::new, args.getDecl().canUnpackValues() );
         PolyAlgArg projects = new ListArg<>( program.getProjectList(), RexArg::new, program.getOutputRowType().getFieldNames(), args.getDecl().canUnpackValues() );

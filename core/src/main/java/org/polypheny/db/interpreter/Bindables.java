@@ -311,7 +311,7 @@ public class Bindables {
 
 
         @Override
-        public PolyAlgArgs collectAttributes() {
+        public PolyAlgArgs bindArguments() {
             PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
             List<String> fieldNames = entity.getTupleType().getFieldNames();
             PolyAlgArg filtersArg = new ListArg<>( filters, f -> new RexArg( f, fieldNames ), args.getDecl().canUnpackValues() );

@@ -262,7 +262,7 @@ public abstract class Join extends BiAlg {
     }
 
     @Override
-    public PolyAlgArgs collectAttributes() {
+    public PolyAlgArgs bindArguments() {
         PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
 
         args.put( 0, new RexArg( condition ) )

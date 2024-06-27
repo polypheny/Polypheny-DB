@@ -97,7 +97,7 @@ public final class LogicalRelExchange extends Exchange implements RelAlg {
 
 
     @Override
-    public PolyAlgArgs collectAttributes() {
+    public PolyAlgArgs bindArguments() {
         PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
         return args.put( "distributionType", new EnumArg<>( distribution.getType(), ParamType.DISTRIBUTION_TYPE_ENUM ) )
                 .put( "numbers", new ListArg<>( distribution.getKeys(), IntArg::new ) );

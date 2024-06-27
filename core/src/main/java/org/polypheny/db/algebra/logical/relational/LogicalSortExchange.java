@@ -98,7 +98,7 @@ public class LogicalSortExchange extends SortExchange implements RelAlg {
 
 
     @Override
-    public PolyAlgArgs collectAttributes() {
+    public PolyAlgArgs bindArguments() {
         PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
 
         return args.put( "sort", new ListArg<>( collation.getFieldCollations(), CollationArg::new ) )

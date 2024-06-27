@@ -151,7 +151,7 @@ public final class LogicalRelCorrelate extends Correlate implements RelAlg {
 
 
     @Override
-    public PolyAlgArgs collectAttributes() {
+    public PolyAlgArgs bindArguments() {
         PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
         PolyAlgArg columns = new ListArg<>( requiredColumns.asList(), FieldArg::new );
 

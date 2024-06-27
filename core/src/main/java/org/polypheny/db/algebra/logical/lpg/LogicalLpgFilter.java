@@ -67,7 +67,7 @@ public class LogicalLpgFilter extends LpgFilter {
 
 
     @Override
-    public PolyAlgArgs collectAttributes() {
+    public PolyAlgArgs bindArguments() {
         PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
         args.put( "condition", new RexArg( getCondition() ) );
         return args;

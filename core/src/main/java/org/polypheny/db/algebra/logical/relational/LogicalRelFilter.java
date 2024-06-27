@@ -140,8 +140,8 @@ public final class LogicalRelFilter extends Filter implements RelAlg {
 
 
     @Override
-    public PolyAlgArgs collectAttributes() {
-        PolyAlgArgs args = super.collectAttributes();
+    public PolyAlgArgs bindArguments() {
+        PolyAlgArgs args = super.bindArguments();
         return args.put( "variables", new ListArg<>( variablesSet.asList(), CorrelationArg::new ) );
     }
 

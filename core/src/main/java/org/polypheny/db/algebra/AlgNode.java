@@ -287,14 +287,14 @@ public interface AlgNode extends AlgOptNode, Cloneable {
     PolyAlgDeclaration getPolyAlgDeclaration();
 
     /**
-     * Collects the attributes characterizing this instance for the purpose of creating the PolyAlgebra representation.
+     * Binds the arguments defining the state of this instance to the corresponding parameters. This is done for the purpose of creating the PolyAlgebra representation.
      * The returned PolyAlgArgs contains every {@link org.polypheny.db.algebra.polyalg.arguments.PolyAlgArg} relevant for this AlgNode instance.
      * The corresponding {@link org.polypheny.db.algebra.polyalg.PolyAlgDeclaration} must be identical to {@code getPolyAlgDeclaration()}.
      * Its parameters can be used to retrieve corresponding argument values.
      *
      * @return PolyAlgArgs that maps parameters of the declaration to {@link org.polypheny.db.algebra.polyalg.arguments.PolyAlgArg} that wraps the corresponding attribute
      */
-    PolyAlgArgs collectAttributes();
+    PolyAlgArgs bindArguments();
 
     /**
      * Receives notification that this expression is about to be registered. The implementation of this method must at least register all child expressions.

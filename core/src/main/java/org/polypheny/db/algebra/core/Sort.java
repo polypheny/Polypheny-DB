@@ -210,7 +210,7 @@ public abstract class Sort extends SingleAlg {
 
 
     @Override
-    public PolyAlgArgs collectAttributes() {
+    public PolyAlgArgs bindArguments() {
         PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
 
         PolyAlgArg collArg = new ListArg<>(

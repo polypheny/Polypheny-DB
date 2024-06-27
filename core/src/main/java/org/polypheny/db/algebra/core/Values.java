@@ -209,7 +209,7 @@ public abstract class Values extends AbstractAlgNode {
 
 
     @Override
-    public PolyAlgArgs collectAttributes() {
+    public PolyAlgArgs bindArguments() {
         PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
 
         args.put( "names", new ListArg<>( rowType.getFieldNames(), StringArg::new ) );

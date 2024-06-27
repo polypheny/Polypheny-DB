@@ -328,7 +328,7 @@ public abstract class Project extends SingleAlg {
 
 
     @Override
-    public PolyAlgArgs collectAttributes() {
+    public PolyAlgArgs bindArguments() {
         PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
         PolyAlgArg projectsArg = new ListArg<>( exps, RexArg::new, rowType.getFieldNames(), args.getDecl().canUnpackValues() );
 

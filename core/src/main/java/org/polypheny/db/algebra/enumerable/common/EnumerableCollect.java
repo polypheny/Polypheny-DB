@@ -76,7 +76,7 @@ public class EnumerableCollect extends Collect implements EnumerableAlg {
 
 
     @Override
-    public PolyAlgArgs collectAttributes() {
+    public PolyAlgArgs bindArguments() {
         PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
         return args.put( "field", new StringArg( fieldName ) );
     }

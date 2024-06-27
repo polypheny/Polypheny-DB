@@ -158,7 +158,7 @@ public class EnumerableSemiJoin extends SemiJoin implements EnumerableAlg {
 
 
     @Override
-    public PolyAlgArgs collectAttributes() {
+    public PolyAlgArgs bindArguments() {
         PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
         return args.put( 0, new RexArg( condition ) )
                 .put( "leftKeys", new ListArg<>( leftKeys, IntArg::new ) )

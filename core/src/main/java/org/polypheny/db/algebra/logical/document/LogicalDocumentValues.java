@@ -121,7 +121,7 @@ public class LogicalDocumentValues extends DocumentValues implements RelationalT
 
 
     @Override
-    public PolyAlgArgs collectAttributes() {
+    public PolyAlgArgs bindArguments() {
         PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
         return args.put( "docs", new ListArg<>( documents, d -> new StringArg( d.toJson() ) ) )
                 .put( "dynamic", new ListArg<>( dynamicDocuments, RexArg::new ) );

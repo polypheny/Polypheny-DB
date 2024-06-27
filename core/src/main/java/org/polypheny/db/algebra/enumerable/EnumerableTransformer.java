@@ -534,8 +534,8 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
 
 
     @Override
-    public PolyAlgArgs collectAttributes() {
-        PolyAlgArgs args = super.collectAttributes();
+    public PolyAlgArgs bindArguments() {
+        PolyAlgArgs args = super.bindArguments();
         args.put( "isCrossModel", new BooleanArg( isCrossModel ) );
         return args;
     }

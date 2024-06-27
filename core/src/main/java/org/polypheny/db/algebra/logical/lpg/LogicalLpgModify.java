@@ -115,7 +115,7 @@ public class LogicalLpgModify extends LpgModify<Entity> implements RelationalTra
 
 
     @Override
-    public PolyAlgArgs collectAttributes() {
+    public PolyAlgArgs bindArguments() {
         PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
 
         args.put( "entity", new EntityArg( entity, Catalog.snapshot(), DataModel.GRAPH ) )

@@ -84,7 +84,7 @@ public class LogicalDocumentSort extends DocumentSort implements DocumentAlg {
 
 
     @Override
-    public PolyAlgArgs collectAttributes() {
+    public PolyAlgArgs bindArguments() {
         PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
 
         PolyAlgArg collArg = new ListArg<>( collation.getFieldCollations(), CollationArg::new );

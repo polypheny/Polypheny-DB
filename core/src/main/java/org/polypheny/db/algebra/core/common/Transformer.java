@@ -135,7 +135,7 @@ public class Transformer extends AbstractAlgNode {
 
 
     @Override
-    public PolyAlgArgs collectAttributes() {
+    public PolyAlgArgs bindArguments() {
         PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
         args.put( "out", new EnumArg<>( outModelTrait.dataModel(), ParamType.DATAMODEL_ENUM ) );
         if ( names != null ) {

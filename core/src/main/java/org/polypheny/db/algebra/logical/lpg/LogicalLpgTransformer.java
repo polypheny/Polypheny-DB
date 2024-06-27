@@ -70,7 +70,7 @@ public class LogicalLpgTransformer extends LpgTransformer {
 
 
     @Override
-    public PolyAlgArgs collectAttributes() {
+    public PolyAlgArgs bindArguments() {
         PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
 
         return args.put( "operation", new EnumArg<>( operation, ParamType.POLY_TYPE_ENUM ) )

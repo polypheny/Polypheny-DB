@@ -42,11 +42,8 @@ import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
-import org.polypheny.db.algebra.polyalg.arguments.CorrelationArg;
 import org.polypheny.db.algebra.polyalg.arguments.DoubleArg;
-import org.polypheny.db.algebra.polyalg.arguments.ListArg;
 import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
-import org.polypheny.db.algebra.polyalg.arguments.RexArg;
 import org.polypheny.db.interpreter.Interpreter;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
@@ -135,7 +132,7 @@ public class EnumerableInterpreter extends SingleAlg implements EnumerableAlg {
 
 
     @Override
-    public PolyAlgArgs collectAttributes() {
+    public PolyAlgArgs bindArguments() {
         PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
         args.put( "factor", new DoubleArg( factor ) );
         return args;

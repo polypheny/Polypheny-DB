@@ -215,7 +215,7 @@ public abstract class RelModify<E extends Entity> extends Modify<E> implements R
     }
 
     @Override
-    public PolyAlgArgs collectAttributes() {
+    public PolyAlgArgs bindArguments() {
         PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
 
         if ( getUpdateColumns() != null ) {

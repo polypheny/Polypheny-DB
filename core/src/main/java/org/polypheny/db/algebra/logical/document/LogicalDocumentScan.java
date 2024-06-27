@@ -68,7 +68,7 @@ public class LogicalDocumentScan extends DocumentScan<Entity> implements Relatio
 
 
     @Override
-    public PolyAlgArgs collectAttributes() {
+    public PolyAlgArgs bindArguments() {
         PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
         return args.put( 0, new EntityArg( entity, Catalog.snapshot(), DataModel.DOCUMENT ) );
     }

@@ -371,7 +371,7 @@ public abstract class AbstractAlgNode implements AlgNode {
                 PolyAlgUtils.getInputFieldNamesList( this );
         sb.append( prefix == null ? "" : prefix ).append( decl.opName );
         if ( decl.hasParams() ) {
-            sb.append( collectAttributes().toPolyAlgebra( this, inputFieldNames ) );
+            sb.append( bindArguments().toPolyAlgebra( this, inputFieldNames ) );
         } else {
             sb.append( "[]" );
         }
@@ -423,7 +423,7 @@ public abstract class AbstractAlgNode implements AlgNode {
 
         node.put( "opName", decl.opName );
         if ( decl.hasParams() ) {
-            node.set( "arguments", collectAttributes().serialize( this, inputFieldNames, mapper ) );
+            node.set( "arguments", bindArguments().serialize( this, inputFieldNames, mapper ) );
         } else {
             node.set( "arguments", mapper.createObjectNode() );
         }
@@ -486,8 +486,8 @@ public abstract class AbstractAlgNode implements AlgNode {
 
 
     @Override
-    public PolyAlgArgs collectAttributes() {
-        // TODO: Move implementation from abstract class into child classes
+    public PolyAlgArgs bindArguments() {
+        // Any AlgNode registered in the PolyAlgRegistry should probably not use this generic implementation!
         return new PolyAlgArgs( getPolyAlgDeclaration() );
     }
 

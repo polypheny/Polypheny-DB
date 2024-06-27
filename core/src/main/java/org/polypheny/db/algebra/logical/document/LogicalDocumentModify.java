@@ -86,7 +86,7 @@ public class LogicalDocumentModify extends DocumentModify<Entity> implements Rel
 
 
     @Override
-    public PolyAlgArgs collectAttributes() {
+    public PolyAlgArgs bindArguments() {
         PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
 
         args.put( "entity", new EntityArg( entity, Catalog.snapshot(), DataModel.DOCUMENT ) )

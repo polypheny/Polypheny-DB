@@ -169,7 +169,7 @@ public abstract class RelScan<E extends Entity> extends Scan<E> implements RelAl
 
 
     @Override
-    public PolyAlgArgs collectAttributes() {
+    public PolyAlgArgs bindArguments() {
         PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
         return args.put( "entity", new EntityArg( entity, Catalog.snapshot(), DataModel.RELATIONAL ) );
     }

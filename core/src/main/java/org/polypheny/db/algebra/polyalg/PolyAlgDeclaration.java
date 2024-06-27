@@ -375,6 +375,14 @@ public class PolyAlgDeclaration {
     }
 
 
+    /**
+     * When creating a new ParamType, you also need to
+     * <ul>
+     *     <li>Create a corresponding {@link PolyAlgArg}</li>
+     *     <li>Write code for parsing the argument in {@link org.polypheny.db.algebra.polyalg.parser.PolyAlgToAlgConverter}</li>
+     *     <li>Add support for your new type to Polypheny-UI</li>
+     * </ul>
+     */
     @Getter
     public enum ParamType {
         /**

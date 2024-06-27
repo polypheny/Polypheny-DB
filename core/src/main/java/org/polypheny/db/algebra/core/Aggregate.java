@@ -443,7 +443,7 @@ public abstract class Aggregate extends SingleAlg {
 
 
     @Override
-    public PolyAlgArgs collectAttributes() {
+    public PolyAlgArgs bindArguments() {
         PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
 
         PolyAlgArg groupArg = new ListArg<>( groupSet.asList(), FieldArg::new, args.getDecl().canUnpackValues() );

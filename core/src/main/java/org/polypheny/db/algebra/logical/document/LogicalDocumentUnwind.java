@@ -48,7 +48,7 @@ public class LogicalDocumentUnwind extends DocumentUnwind {
 
 
     @Override
-    public PolyAlgArgs collectAttributes() {
+    public PolyAlgArgs bindArguments() {
         PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
         return args.put( "path", new StringArg( path ) );
     }

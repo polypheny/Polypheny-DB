@@ -160,7 +160,7 @@ public class EnumerableLimit extends SingleAlg implements EnumerableAlg {
 
 
     @Override
-    public PolyAlgArgs collectAttributes() {
+    public PolyAlgArgs bindArguments() {
         PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
 
         return args.put( "limit", new RexArg( fetch ) )

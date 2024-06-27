@@ -99,7 +99,7 @@ public abstract class LpgMatch extends SingleAlg implements LpgAlg {
 
 
     @Override
-    public PolyAlgArgs collectAttributes() {
+    public PolyAlgArgs bindArguments() {
         PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
         PolyAlgArg matchesArg = new ListArg<>(
                 matches, RexArg::new,
