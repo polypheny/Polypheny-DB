@@ -66,56 +66,62 @@ public class XmlToPolyConverter {
     }
 
 
-    public PolyValue nodeToPolyValue( Node node ) {
-        return switch ( node.getNodeType() ) {
+    public PolyValue nodeToPolyValue(Node node) {
+        return switch (node.getNodeType()) {
             case Node.ELEMENT_NODE -> {
-                String type = node.getAttributes().getNamedItem( "type" ) != null
-                        ? node.getAttributes().getNamedItem( "type" ).getNodeValue()
+                String type = node.getAttributes().getNamedItem("type") != null
+                        ? node.getAttributes().getNamedItem("type").getNodeValue()
                         : "string";
-                yield convertByType( node, type );
+                yield convertByType(node, type);
             }
-            case Node.TEXT_NODE -> new PolyString( node.getNodeValue().trim() );
-            case Node.ATTRIBUTE_NODE -> new PolyString( node.getNodeValue() );
+            case Node.TEXT_NODE, Node.ATTRIBUTE_NODE -> {
+                String value = node.getNodeValue().trim();
+                yield value.isEmpty() ? new PolyNull() : new PolyString(value);
+            }
             default -> new PolyNull();
         };
     }
 
-
-    private PolyValue convertByType( Node node, String type ) {
+    private PolyValue convertByType(Node node, String type) {
         String value = node.getTextContent().trim();
-        return switch ( type ) {
-            case "boolean" -> new PolyBoolean( Boolean.parseBoolean( value ) );
-            case "integer" -> new PolyLong( Long.parseLong( value ) );
-            case "decimal" -> new PolyBigDecimal( new java.math.BigDecimal( value ) );
-            case "float" -> new PolyFloat( Float.parseFloat( value ) );
-            case "double" -> new PolyDouble( Double.parseDouble( value ) );
+        if (value.isEmpty()) {
+            return new PolyNull();
+        }
+        return switch (type) {
+            case "boolean" -> new PolyBoolean(Boolean.parseBoolean(value));
+            case "integer" -> new PolyLong(Long.parseLong(value));
+            case "decimal" -> new PolyBigDecimal(new java.math.BigDecimal(value));
+            case "float" -> new PolyFloat(Float.parseFloat(value));
+            case "double" -> new PolyDouble(Double.parseDouble(value));
             case "date" -> {
-                LocalDate date = LocalDate.parse( value, DateTimeFormatter.ISO_DATE );
-                yield new PolyDate( date.atStartOfDay().toInstant( java.time.ZoneOffset.UTC ).toEpochMilli() );
+                LocalDate date = LocalDate.parse(value, DateTimeFormatter.ISO_DATE);
+                yield new PolyDate(date.atStartOfDay().toInstant(java.time.ZoneOffset.UTC).toEpochMilli());
             }
             case "time" -> {
-                LocalTime time = LocalTime.parse( value, DateTimeFormatter.ISO_TIME );
-                yield new PolyTime( (int) (time.toNanoOfDay() / 1000000) );
+                LocalTime time = LocalTime.parse(value, DateTimeFormatter.ISO_TIME);
+                yield new PolyTime((int) (time.toNanoOfDay() / 1000000));
             }
             case "dateTime" -> {
-                LocalDateTime dateTime = LocalDateTime.parse( value, DateTimeFormatter.ISO_DATE_TIME );
-                yield new PolyTimestamp( dateTime.toInstant( java.time.ZoneOffset.UTC ).toEpochMilli() );
+                LocalDateTime dateTime = LocalDateTime.parse(value, DateTimeFormatter.ISO_DATE_TIME);
+                yield new PolyTimestamp(dateTime.toInstant(java.time.ZoneOffset.UTC).toEpochMilli());
             }
             case "base64Binary" -> {
-                byte[] binaryData = Base64.getDecoder().decode( value );
-                yield new PolyBinary( binaryData, binaryData.length );
+                byte[] binaryData = Base64.getDecoder().decode(value);
+                yield new PolyBinary(binaryData, binaryData.length);
             }
             case "hexBinary" -> {
                 try {
-                    byte[] hexBinaryData = Hex.decodeHex( value.toCharArray() );
-                    yield new PolyBinary( hexBinaryData, hexBinaryData.length );
-                } catch ( Exception e ) {
-                    yield new PolyString( value );  // Handle error case appropriately
+                    byte[] hexBinaryData = Hex.decodeHex(value.toCharArray());
+                    yield new PolyBinary(hexBinaryData, hexBinaryData.length);
+                } catch (Exception e) {
+                    yield new PolyString(value);  // Handle error case appropriately
                 }
             }
-            default -> new PolyString( value );
+            case "list" -> nodeToPolyList(node);
+            default -> new PolyString(value);
         };
     }
+
 
 
     public PolyValue nodeToPolyList( Node node ) {
