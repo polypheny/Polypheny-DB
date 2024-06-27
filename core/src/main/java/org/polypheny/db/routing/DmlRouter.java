@@ -34,7 +34,7 @@ public interface DmlRouter {
     /**
      * Routes DML queries and returns a RelNode.
      */
-    AlgNode routeDml( LogicalRelModify node, Statement statement );
+    AlgNode routeRelationalDml( LogicalRelModify node, Statement statement );
 
     /**
      * Routes conditional executes and directly returns a RelNode.
