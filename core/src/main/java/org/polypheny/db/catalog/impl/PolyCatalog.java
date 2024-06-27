@@ -342,8 +342,8 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
 
     @Override
-    public <S extends AdapterCatalog> Optional<S> getAdapterCatalog( long id ) {
-        return Optional.ofNullable( (S) adapterCatalogs.get( id ) );
+    public Optional<AdapterCatalog> getAdapterCatalog( long id ) {
+        return Optional.ofNullable( adapterCatalogs.get( id ) );
     }
 
 
