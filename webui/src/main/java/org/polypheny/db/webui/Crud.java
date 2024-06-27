@@ -2224,7 +2224,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     }
 
 
-    void addQueryInterface( final Context ctx ) {
+    void createQueryInterface( final Context ctx ) {
         QueryInterfaceInformationRequest request = ctx.bodyAsClass( QueryInterfaceInformationRequest.class );
         try {
             QueryInterfaceManager.getInstance().createQueryInterface( request.interfaceName(), request.uniqueName(), request.currentSettings() );
