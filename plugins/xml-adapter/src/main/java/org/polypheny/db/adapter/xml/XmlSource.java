@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adapter.json;
+package org.polypheny.db.adapter.xml;
 
 import java.io.File;
 import java.io.IOException;
@@ -23,6 +23,7 @@ import java.net.URL;
 import java.nio.file.NoSuchFileException;
 import java.util.List;
 import java.util.Map;
+import javax.xml.parsers.ParserConfigurationException;
 import lombok.experimental.Delegate;
 import org.pf4j.Extension;
 import org.polypheny.db.adapter.DataSource;
@@ -51,42 +52,39 @@ import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.transaction.PolyXid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.xml.sax.SAXException;
 
 @Extension
 @AdapterProperties(
-        name = "JSON",
-        description = "An adapter for querying JSON files. A single JSON file or a directory containing multiple JSON files can be specified by path. Currently, this adapter only supports read operations.",
+        name = "XML",
+        description = "An adapter for querying XML files. An XML file or a directory containing multiple XML files can be specified by path. Currently, this adapter only supports read operations.",
         usedModes = DeployMode.EMBEDDED,
         defaultMode = DeployMode.EMBEDDED)
-@AdapterSettingString(name = "jsonFiles", defaultValue = "classpath://articles.json", description = "Path to the JSON file(s) to be integrated as this source.", position = 1)
-public class JsonSource extends DataSource<DocAdapterCatalog> implements DocumentDataSource, Scannable {
-
-    private static final Logger log = LoggerFactory.getLogger( JsonSource.class );
+@AdapterSettingString(name = "xmlFiles", defaultValue = "classpath://cars.xml", description = "Path to the XML file(s) to be integrated as this source.", position = 1)
+public class XmlSource extends DataSource<DocAdapterCatalog> implements DocumentDataSource, Scannable {
+    private static final Logger log = LoggerFactory.getLogger( XmlSource.class );
     @Delegate(excludes = Excludes.class)
     private final DocumentScanDelegate delegate;
-    private JsonNamespace namespace;
+    private XmlNamespace namespace;
+    private URL xmlFiles;
 
-    private URL jsonFiles;
-
-
-    public JsonSource( final long storeId, final String uniqueName, final Map<String, String> settings, DeployMode mode ) {
+    public XmlSource( final long storeId, final String uniqueName, final Map<String, String> settings, DeployMode mode ) {
         super( storeId, uniqueName, settings, mode, true, new DocAdapterCatalog( storeId ), List.of( DataModel.DOCUMENT ) );
-        this.jsonFiles = getJsonFilesUrl( settings.get( "jsonFiles" ) );
+        this.xmlFiles = getXmlFilesUrl( settings.get( "xmlFiles" ) );
         this.delegate = new DocumentScanDelegate( this, getAdapterCatalog() );
         long namespaceId = Catalog.getInstance().createNamespace( uniqueName, DataModel.DOCUMENT, true );
-        this.namespace = new JsonNamespace( uniqueName, namespaceId, getAdapterId() );
+        this.namespace = new XmlNamespace( uniqueName, namespaceId, getAdapterId() );
     }
-
 
     @Override
     protected void reloadSettings( List<String> updatedSettings ) {
         if ( updatedSettings.contains( "directory" ) ) {
-            this.jsonFiles = getJsonFilesUrl( settings.get( "jsonFiles" ) );
+            this.xmlFiles = getXmlFilesUrl( settings.get( "xmlFiles" ) );
         }
     }
 
 
-    private URL getJsonFilesUrl( String files ) {
+    private URL getXmlFilesUrl( String files ) {
         if ( files.startsWith( "classpath://" ) ) {
             return this.getClass().getClassLoader().getResource( files.replace( "classpath://", "" ) + "/" );
         }
@@ -97,10 +95,9 @@ public class JsonSource extends DataSource<DocAdapterCatalog> implements Documen
         }
     }
 
-
     @Override
     public void updateNamespace( String name, long id ) {
-        namespace = new JsonNamespace( name, id, adapterId );
+        namespace = new XmlNamespace( name, id, adapterId );
     }
 
 
@@ -119,12 +116,13 @@ public class JsonSource extends DataSource<DocAdapterCatalog> implements Documen
     @Override
     public List<ExportedDocument> getExportedCollection() {
         try {
-            return JsonMetaRetriever.getDocuments( jsonFiles );
+            return XmlMetaRetriever.getDocuments( xmlFiles );
         } catch ( IOException e ) {
-            throw new RuntimeException( "Failed to retrieve documents from json file." );
+            throw new RuntimeException( "Failed to retrieve documents from XML file." );
+        } catch ( ParserConfigurationException | SAXException e ) {
+            throw new RuntimeException( e );
         }
     }
-
 
     @Override
     public AdapterCatalog getCatalog() {
@@ -137,8 +135,8 @@ public class JsonSource extends DataSource<DocAdapterCatalog> implements Documen
         PhysicalEntity collection = entities.get( 0 ); // TODO: set breakpoint and take a look at what's in this list...
         updateNamespace( collection.getNamespaceName(), collection.getNamespaceId() );
         try {
-            PhysicalCollection physicalCollection = new JsonCollection.Builder()
-                    .url( JsonMetaRetriever.findDocumentUrl( jsonFiles, collection.getName() ))
+            PhysicalCollection physicalCollection = new XmlCollection.Builder()
+                    .url( XmlMetaRetriever.findDocumentUrl( xmlFiles, collection.getName() ))
                     .collectionId( collection.getId() )
                     .allocationId( allocation.getId() )
                     .logicalId( collection.getLogicalId() )
@@ -149,10 +147,9 @@ public class JsonSource extends DataSource<DocAdapterCatalog> implements Documen
                     .build();
             adapterCatalog.addPhysical( allocation, physicalCollection );
         } catch ( MalformedURLException | NoSuchFileException e ) {
-            throw new RuntimeException( e );
+            throw new RuntimeException( e);
         }
     }
-
 
     @Override
     public List<PhysicalEntity> createCollection( Context context, LogicalCollection logical, AllocationCollection allocation ) {
@@ -163,8 +160,8 @@ public class JsonSource extends DataSource<DocAdapterCatalog> implements Documen
                 allocation
         );
         try {
-            PhysicalCollection physicalCollection = new JsonCollection.Builder()
-                    .url( JsonMetaRetriever.findDocumentUrl( jsonFiles, collection.getName() ))
+            PhysicalCollection physicalCollection = new XmlCollection.Builder()
+                    .url( XmlMetaRetriever.findDocumentUrl( xmlFiles, collection.getName() ))
                     .collectionId( collection.getId() )
                     .allocationId( allocation.getId() )
                     .logicalId( collection.getLogicalId() )
@@ -180,7 +177,6 @@ public class JsonSource extends DataSource<DocAdapterCatalog> implements Documen
         }
     }
 
-
     @Override
     public void dropCollection( Context context, AllocationCollection allocation ) {
         // TODO: What is this supposed to do?
@@ -190,78 +186,76 @@ public class JsonSource extends DataSource<DocAdapterCatalog> implements Documen
     @Override
     public void renameLogicalColumn( long id, String newColumnName ) {
         // TODO: Ask David: Why is this part of this interface?
-        log.debug( "NOT SUPPORTED: JSON source does not support method logicalColumn()" );
+        log.debug( "NOT SUPPORTED: XML source does not support method logicalColumn()" );
     }
 
 
     @Override
     public void truncate( Context context, long allocId ) {
-        log.debug( "NOT SUPPORTED: JSON source does not support method commit()." );
+        log.debug( "NOT SUPPORTED: XML source does not support method commit()." );
     }
 
 
     @Override
     public boolean prepare( PolyXid xid ) {
-        log.debug( "NOT SUPPORTED: JSON source does not support method prepare()." );
+        log.debug( "NOT SUPPORTED: XML source does not support method prepare()." );
         return true;
     }
 
 
     @Override
     public void commit( PolyXid xid ) {
-        log.debug( "NOT SUPPORTED: JSON source does not support method commit()." );
+        log.debug( "NOT SUPPORTED: XML source does not support method commit()." );
     }
 
 
     @Override
     public void rollback( PolyXid xid ) {
-        log.debug( "NOT SUPPORTED: JSON source does not support method rollback()." );
+        log.debug( "NOT SUPPORTED: XML source does not support method rollback()." );
     }
 
 
     @Override
     public void dropTable( Context context, long allocId ) {
-        log.debug( "NOT SUPPORTED: JSON source does not support method dropTable()" );
+        log.debug( "NOT SUPPORTED: XML source does not support method dropTable()" );
     }
 
 
     @Override
     public List<PhysicalEntity> createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation ) {
-        log.debug( "NOT SUPPORTED: JSON source does not support method createTable()." );
+        log.debug( "NOT SUPPORTED: XML source does not support method createTable()." );
         return null;
     }
 
 
     @Override
     public void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities, Context context ) {
-        log.debug( "NOT SUPPORTED: JSON source does not support method restoreTable()." );
+        log.debug( "NOT SUPPORTED: XML source does not support method restoreTable()." );
     }
 
 
     @Override
     public List<PhysicalEntity> createGraph( Context context, LogicalGraph logical, AllocationGraph allocation ) {
-        log.debug( "NOT SUPPORTED: JSON source does not support method createGraph()" );
+        log.debug( "NOT SUPPORTED: XML source does not support method createGraph()" );
         return null;
     }
 
 
     @Override
     public void dropGraph( Context context, AllocationGraph allocation ) {
-        log.debug( "NOT SUPPORTED: JSON source does not support method dropGraph()" );
+        log.debug( "NOT SUPPORTED: XML source does not support method dropGraph()" );
     }
 
 
     @Override
     public void restoreGraph( AllocationGraph alloc, List<PhysicalEntity> entities, Context context ) {
-        log.debug( "NOT SUPPORTED: JSON source does not support method restoreGraph()." );
+        log.debug( "NOT SUPPORTED: XML source does not support method restoreGraph()." );
     }
-
 
     @Override
     public DocumentDataSource asDocumentDataSource() {
         return this;
     }
-
 
     private interface Excludes {
 
@@ -272,7 +266,4 @@ public class JsonSource extends DataSource<DocAdapterCatalog> implements Documen
         void restoreCollection( AllocationTable alloc, List<PhysicalEntity> entities );
 
     }
-
 }
-
-

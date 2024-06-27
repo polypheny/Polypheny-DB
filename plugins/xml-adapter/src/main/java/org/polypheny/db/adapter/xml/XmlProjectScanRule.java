@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adapter.json;
+package org.polypheny.db.adapter.xml;
 
 import java.util.List;
 import org.polypheny.db.algebra.core.AlgFactories;
@@ -25,12 +25,12 @@ import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.tools.AlgBuilderFactory;
 
-public class JsonProjectScanRule extends AlgOptRule {
+public class XmlProjectScanRule extends AlgOptRule {
 
-    public static final JsonProjectScanRule INSTANCE = new JsonProjectScanRule( AlgFactories.LOGICAL_BUILDER );
+    public static final XmlProjectScanRule INSTANCE = new XmlProjectScanRule( AlgFactories.LOGICAL_BUILDER );
 
 
-    public JsonProjectScanRule( AlgBuilderFactory algBuilderFactory ) {
+    public XmlProjectScanRule( AlgBuilderFactory algBuilderFactory ) {
         super(
                 operand( LogicalDocumentScan.class, none() ),
                 algBuilderFactory,
@@ -42,7 +42,7 @@ public class JsonProjectScanRule extends AlgOptRule {
     @Override
     public void onMatch( AlgOptRuleCall call ) {
         final LogicalDocumentScan scan = call.alg( 0 );
-        call.transformTo( new JsonScan( scan.getCluster(), scan.getEntity().unwrap( JsonCollection.class ).orElseThrow(), new int[]{ 0 } ) );
+        call.transformTo( new XmlScan( scan.getCluster(), scan.getEntity().unwrap( XmlCollection.class ).orElseThrow(), new int[]{ 0 } ) );
 
     }
 

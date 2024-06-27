@@ -14,10 +14,8 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adapter.json;
+package org.polypheny.db.adapter.xml;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -28,64 +26,74 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import org.polypheny.db.adapter.DocumentDataSource.ExportedDocument;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.EntityType;
-import org.polypheny.db.util.Source;
 import org.polypheny.db.util.Sources;
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+import org.xml.sax.SAXException;
 
-public class JsonMetaRetriever {
+public class XmlMetaRetriever {
 
-    public static List<ExportedDocument> getDocuments( URL jsonFiles ) throws IOException {
+    public static List<ExportedDocument> getDocuments( URL xmlFiles ) throws IOException, ParserConfigurationException, SAXException {
         List<ExportedDocument> exportedDocuments = new LinkedList<>();
-        Set<String> fileNames = getFileNames( jsonFiles );
-        for (String fileName : fileNames) {
-            URL jsonFile = new URL( jsonFiles, fileName );
-            ObjectMapper objectMapper = new ObjectMapper();
-            JsonNode rootNode = objectMapper.readTree( jsonFile );
-            String entityName = deriveEntityName( jsonFile.getFile() );
-            if ( !(rootNode.isArray() || rootNode.isObject()) ) {
-                throw new RuntimeException( "JSON file does not contain a valid top-level structure (neither an object nor an array)" );
+        Set<String> fileNames = getFileNames( xmlFiles );
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder builder = factory.newDocumentBuilder();
+        for ( String fileName : fileNames ) {
+            URL xmlFile = new URL( xmlFiles, fileName );
+            // TODO: adapt to handle more diverse document structures
+            Document document = builder.parse( xmlFile.openStream() );
+            document.getDocumentElement().normalize();
+            String entityName = deriveEntityName( xmlFile.getFile() );
+            Node rootNode = document.getDocumentElement();
+            if ( rootNode.getNodeType() != Node.ELEMENT_NODE ) {
+                throw new RuntimeException( "XML file does not contain a valid top-level element node" );
             }
             exportedDocuments.add( new ExportedDocument( entityName, false, EntityType.SOURCE ) );
         }
         return exportedDocuments;
     }
 
-    public static URL findDocumentUrl(URL jsonFiles, String name) throws MalformedURLException, NoSuchFileException {
-        String[] extensions = { ".json", ".json.gz" };
-        String path = jsonFiles.getPath();
+
+    public static URL findDocumentUrl( URL xmlFiles, String name ) throws MalformedURLException, NoSuchFileException {
+        String[] extensions = { ".xml", ".xml.gz" };
+        String path = xmlFiles.getPath();
 
         for ( String ext : extensions ) {
             if ( path.endsWith( name + ext + "/" ) ) {
-                return jsonFiles;
+                return xmlFiles;
             }
         }
 
-        Set<String> fileNames = getFileNames( jsonFiles );
+        Set<String> fileNames = getFileNames( xmlFiles );
         for ( String file : fileNames ) {
             for ( String ext : extensions ) {
                 if ( file.equals( name + ext ) ) {
-                    return new URL( jsonFiles, file );
+                    return new URL( xmlFiles, file );
                 }
             }
         }
 
-        throw new NoSuchFileException( "No XML file(s) found under the URL '" + jsonFiles + "'" );
+        throw new NoSuchFileException( "No XML file(s) found under the URL '" + xmlFiles + "'" );
     }
 
 
-    private static Set<String> getFileNames( URL jsonFiles ) {
+    private static Set<String> getFileNames( URL xmlFiles ) {
         Set<String> fileNames;
-        if ( Sources.of( jsonFiles ).file().isFile() ) {
-            fileNames = Set.of( jsonFiles.getPath() );
+        if ( Sources.of( xmlFiles ).file().isFile() ) {
+            fileNames = Set.of( xmlFiles.getPath() );
             return fileNames;
         }
-        File[] files = Sources.of( jsonFiles )
+        File[] files = Sources.of( xmlFiles )
                 .file()
-                .listFiles( ( d, name ) -> name.endsWith( ".json" ));
+                .listFiles( ( d, name ) -> name.endsWith( ".xml" ) );
         if ( files == null ) {
-            throw new GenericRuntimeException( "No .json files where found." );
+            throw new GenericRuntimeException( "No .xml files where found." );
         }
         fileNames = Arrays.stream( files )
                 .sequential()
@@ -100,8 +108,8 @@ public class JsonMetaRetriever {
         return fileName
                 .substring( fileName.lastIndexOf( '/' ) + 1 )  // extract file name after last "/"
                 .toLowerCase()
-                .replace( ".json.gz", "" )
-                .replace( ".json", "" )
+                .replace( ".xml.gz", "" )
+                .replace( ".xml", "" )
                 .replaceAll( "[^a-z0-9_]+", "" )  // remove invalid characters
                 .trim();
     }

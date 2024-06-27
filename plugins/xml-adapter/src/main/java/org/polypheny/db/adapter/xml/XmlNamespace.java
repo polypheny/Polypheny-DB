@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adapter.json;
+package org.polypheny.db.adapter.xml;
 
 import java.util.Optional;
 import lombok.Getter;
@@ -24,12 +24,12 @@ import org.polypheny.db.plan.Convention;
 import org.polypheny.db.schema.Namespace;
 
 @Getter
-public class JsonNamespace extends Namespace {
+public class XmlNamespace extends Namespace {
 
     String name;
 
 
-    public JsonNamespace( String name, long id, long adapterId ) {
+    public XmlNamespace( String name, long id, long adapterId ) {
         super( id, adapterId );
         this.name = name;
     }

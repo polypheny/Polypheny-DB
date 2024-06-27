@@ -30,7 +30,7 @@ public interface DocumentDataSource {
     class ExportedDocument {
 
         private final String name;
-        private final boolean isModifyable;
+        private final boolean isModifiable;
         private final EntityType type;
 
     }

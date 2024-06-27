@@ -72,7 +72,6 @@ import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
-import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalForeignKey;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalIndex;
@@ -245,7 +244,7 @@ public class DdlManagerImpl extends DdlManager {
 
         for ( ExportedDocument exportedDocument : exportedCollections ) {
             String documentName = getUniqueEntityName( namespace, exportedDocument.getName(), ( ns, en ) -> catalog.getSnapshot().doc().getCollection( ns, en ) );
-            LogicalCollection logicalCollection = catalog.getLogicalDoc( namespace ).addCollection( documentName, exportedDocument.getType(), exportedDocument.isModifyable() );
+            LogicalCollection logicalCollection = catalog.getLogicalDoc( namespace ).addCollection( documentName, exportedDocument.getType(), exportedDocument.isModifiable() );
             AllocationPartition partition = catalog.getAllocDoc( namespace ).addPartition( logicalCollection, PartitionType.NONE, null );
             AllocationPlacement placement = catalog.getAllocDoc( namespace ).addPlacement( logicalCollection, adapter.getAdapterId() );
             AllocationCollection allocationCollection = catalog.getAllocDoc( namespace ).addAllocation( logicalCollection, placement.getId(), partition.getId(), adapter.getAdapterId() );

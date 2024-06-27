@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Cars>
+    <Car>
+        <Make type="string">Ferrari</Make>
+        <Model type="string">488 GTB</Model>
+        <Year type="integer">2019</Year>
+        <Price type="decimal">262647</Price>
+        <Color type="string">Red</Color>
+        <KilometersDriven type="integer">12000</KilometersDriven>
+    </Car>
+    <Car>
+        <Make type="string">Lamborghini</Make>
+        <Model type="string">Huracan</Model>
+        <Year type="integer">2020</Year>
+        <Price type="decimal">261274</Price>
+        <Color type="string">Yellow</Color>
+        <KilometersDriven type="integer">8000</KilometersDriven>
+    </Car>
+    <Car>
+        <Make type="string">Porsche</Make>
+        <Model type="string">911 Turbo S</Model>
+        <Year type="integer">2021</Year>
+        <Price type="decimal">203500</Price>
+        <Color type="string">Black</Color>
+        <KilometersDriven type="integer">5000</KilometersDriven>
+    </Car>
+    <Car>
+        <Make type="string">McLaren</Make>
+        <Model type="string">720S</Model>
+        <Year type="integer">2018</Year>
+        <Price type="decimal">299000</Price>
+        <Color type="string">Orange</Color>
+        <KilometersDriven type="integer">15000</KilometersDriven>
+    </Car>
+    <Car>
+        <Make type="string">Aston Martin</Make>
+        <Model type="string">DB11</Model>
+        <Year type="integer">2019</Year>
+        <Price type="decimal">205600</Price>
+        <Color type="string">Blue</Color>
+        <KilometersDriven type="integer">10000</KilometersDriven>
+    </Car>
+</Cars>
