@@ -24,7 +24,6 @@ import io.activej.serializer.annotations.SerializeNullable;
 import java.io.Serial;
 import java.util.List;
 import javax.annotation.Nullable;
-import lombok.Getter;
 import lombok.Value;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.catalog.entity.PolyObject;
@@ -52,7 +51,6 @@ public class AllocationPartition implements PolyObject {
     @Serialize
     public long groupId;
 
-    @Getter
     @Serialize
     @SerializeNullable
     public String name;

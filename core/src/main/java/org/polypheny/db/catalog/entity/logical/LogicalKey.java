@@ -22,7 +22,6 @@ import io.activej.serializer.annotations.SerializeClass;
 import java.io.Serial;
 import java.util.ArrayList;
 import java.util.List;
-import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 import org.jetbrains.annotations.NotNull;
@@ -36,7 +35,6 @@ import org.polypheny.db.type.entity.numerical.PolyLong;
 
 @Value
 @NonFinal
-@EqualsAndHashCode
 @SerializeClass(subclasses = { LogicalGenericKey.class, LogicalPrimaryKey.class, LogicalForeignKey.class })
 public abstract class LogicalKey implements PolyObject, Comparable<LogicalKey> {
 

@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nullable;
-import lombok.Getter;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
@@ -51,35 +50,27 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, PolySer
 
     IdBuilder idBuilder = IdBuilder.getInstance();
 
-    @Getter
     @Serialize
     public LogicalNamespace namespace;
 
-    @Getter
     public BinarySerializer<PolyAllocRelCatalog> serializer = PolySerializable.buildSerializer( PolyAllocRelCatalog.class );
 
     @Serialize
-    @Getter
     public ConcurrentHashMap<Long, AllocationTable> tables;
 
     @Serialize
-    @Getter
     public ConcurrentHashMap<Pair<Long, Long>, AllocationColumn> columns; //placementId, columnId
 
     @Serialize
-    @Getter
     public ConcurrentHashMap<Long, PartitionProperty> properties;
 
     @Serialize
-    @Getter
     public ConcurrentHashMap<Long, AllocationPartitionGroup> partitionGroups;
 
     @Serialize
-    @Getter
     public ConcurrentHashMap<Long, AllocationPartition> partitions;
 
     @Serialize
-    @Getter
     public ConcurrentHashMap<Long, AllocationPlacement> placements;
 
 

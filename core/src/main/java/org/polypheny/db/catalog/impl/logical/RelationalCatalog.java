@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
-import lombok.Getter;
 import lombok.Value;
 import lombok.experimental.SuperBuilder;
 import org.jetbrains.annotations.Nullable;
@@ -71,38 +70,30 @@ import org.polypheny.db.type.entity.PolyValue;
 @SuperBuilder(toBuilder = true)
 public class RelationalCatalog implements PolySerializable, LogicalRelationalCatalog {
 
-    @Getter
     public BinarySerializer<RelationalCatalog> serializer = PolySerializable.buildSerializer( RelationalCatalog.class );
 
     public IdBuilder idBuilder = IdBuilder.getInstance();
 
     @Serialize
-    @Getter
     public Map<Long, LogicalTable> tables;
 
     @Serialize
-    @Getter
     public Map<Long, LogicalColumn> columns;
 
-    @Getter
     public Map<Long, AlgNode> nodes;
 
     @Serialize
-    @Getter
     public LogicalNamespace logicalNamespace;
 
     @Serialize
-    @Getter
     public Map<Long, LogicalIndex> indexes;
 
     // while keys "belong" to a specific table, they can reference other namespaces, atm they are place here, might change later
     @Serialize
-    @Getter
     public Map<Long, LogicalKey> keys;
 
 
     @Serialize
-    @Getter
     public Map<Long, LogicalConstraint> constraints;
 
 

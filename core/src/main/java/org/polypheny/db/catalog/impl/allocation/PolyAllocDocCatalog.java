@@ -23,7 +23,6 @@ import java.beans.PropertyChangeSupport;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import lombok.Getter;
 import lombok.Value;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.IdBuilder;
@@ -43,19 +42,15 @@ public class PolyAllocDocCatalog implements PolySerializable, AllocationDocument
 
     IdBuilder idBuilder = IdBuilder.getInstance();
 
-    @Getter
     @Serialize
     public LogicalNamespace namespace;
 
-    @Getter
     @Serialize
     public ConcurrentHashMap<Long, AllocationCollection> collections;
 
-    @Getter
     @Serialize
     public ConcurrentHashMap<Long, AllocationPlacement> placements;
 
-    @Getter
     @Serialize
     public ConcurrentHashMap<Long, AllocationPartition> partitions;
 
@@ -86,7 +81,6 @@ public class PolyAllocDocCatalog implements PolySerializable, AllocationDocument
     }
 
 
-    @Getter
     public BinarySerializer<PolyAllocDocCatalog> serializer = PolySerializable.buildSerializer( PolyAllocDocCatalog.class );
 
 

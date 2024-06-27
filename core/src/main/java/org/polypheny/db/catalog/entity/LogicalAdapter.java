@@ -22,7 +22,6 @@ import io.activej.serializer.annotations.Serialize;
 import java.io.Serial;
 import java.util.HashMap;
 import java.util.Map;
-import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.Value;
 import lombok.experimental.SuperBuilder;
@@ -31,7 +30,6 @@ import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 
-@EqualsAndHashCode
 @Value
 @SuperBuilder(toBuilder = true)
 public class LogicalAdapter implements PolyObject {

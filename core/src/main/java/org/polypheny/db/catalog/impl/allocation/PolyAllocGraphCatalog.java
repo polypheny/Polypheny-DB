@@ -43,21 +43,16 @@ public class PolyAllocGraphCatalog implements PolySerializable, AllocationGraphC
 
     IdBuilder idBuilder = IdBuilder.getInstance();
 
-    @Getter
     @Serialize
     public LogicalNamespace namespace;
-    @Getter
     public BinarySerializer<PolyAllocGraphCatalog> serializer = PolySerializable.buildSerializer( PolyAllocGraphCatalog.class );
 
-    @Getter
     @Serialize
     public ConcurrentHashMap<Long, AllocationGraph> graphs;
 
-    @Getter
     @Serialize
     public ConcurrentHashMap<Long, AllocationPlacement> placements;
 
-    @Getter
     @Serialize
     public ConcurrentHashMap<Long, AllocationPartition> partitions;
 

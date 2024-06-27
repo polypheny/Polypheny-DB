@@ -21,7 +21,6 @@ import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.io.Serial;
 import lombok.EqualsAndHashCode;
-import lombok.Getter;
 import lombok.NonNull;
 import lombok.Value;
 import lombok.With;
@@ -33,7 +32,6 @@ import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 
 
-@EqualsAndHashCode(callSuper = false)
 @With
 @Value
 @NonFinal // for testing
@@ -45,10 +43,8 @@ public class LogicalNamespace implements PolyObject, Comparable<LogicalNamespace
     @Serialize
     public long id;
     @Serialize
-    @Getter
     public String name;
     @Serialize
-    @Getter
     @EqualsAndHashCode.Exclude
     public DataModel dataModel;
     @Serialize

@@ -24,7 +24,6 @@ import java.io.Serial;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
-import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.Value;
 import lombok.experimental.SuperBuilder;
@@ -38,7 +37,6 @@ import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.type.entity.numerical.PolyLong;
 
 
-@EqualsAndHashCode(callSuper = false)
 @Value
 @SuperBuilder(toBuilder = true)
 public class LogicalIndex implements Serializable {
