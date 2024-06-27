@@ -26,6 +26,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
+import lombok.Getter;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.jetbrains.annotations.NotNull;
@@ -44,7 +47,9 @@ public class AdapterManager {
 
     private final Map<Long, Adapter<?>> adapterById = new HashMap<>();
     private final Map<String, Adapter<?>> adapterByName = new HashMap<>();
-
+    @Getter
+    private final Map<Long, AdapterTemplate> adapterTemplates = new ConcurrentHashMap<>();
+    private final AtomicLong idBuilder = new AtomicLong();
 
     private static final AdapterManager INSTANCE = new AdapterManager();
 
@@ -62,30 +67,39 @@ public class AdapterManager {
     public static long addAdapterTemplate( Class<? extends Adapter<?>> clazz, String adapterName, Function5<Long, String, Map<String, String>, DeployMode, Adapter<?>> deployer ) {
         List<AbstractAdapterSetting> settings = AdapterTemplate.getAllSettings( clazz );
         AdapterProperties properties = clazz.getAnnotation( AdapterProperties.class );
-        return Catalog.getInstance().createAdapterTemplate( clazz, adapterName, properties.description(), List.of( properties.usedModes() ), settings, deployer );
+        long id = AdapterManager.getInstance().idBuilder.getAndIncrement();
+        AdapterManager.getInstance().adapterTemplates.put( id, new AdapterTemplate( id, clazz, adapterName, settings, List.of( properties.usedModes() ), properties.description(), deployer ) );
+        return id;
     }
 
 
     public static void removeAdapterTemplate( long templateId ) {
-        AdapterTemplate template = Catalog.snapshot().getAdapterTemplate( templateId ).orElseThrow();
+        AdapterTemplate template = getAdapterTemplate( templateId ).orElseThrow();
         if ( Catalog.snapshot().getAdapters().stream().anyMatch( a -> a.adapterName.equals( template.adapterName ) && a.type == template.adapterType ) ) {
             throw new GenericRuntimeException( "Adapter is still deployed!" );
         }
-        Catalog.getInstance().dropAdapterTemplate( templateId );
+        AdapterManager.getInstance().adapterTemplates.remove( templateId );
+    }
+
+
+    public static Optional<AdapterTemplate> getAdapterTemplate( long id ) {
+        return Optional.ofNullable( AdapterManager.getInstance().adapterTemplates.get( id ) );
     }
 
 
     public static AdapterTemplate getAdapterTemplate( String name, AdapterType adapterType ) {
-        return Catalog.snapshot().getAdapterTemplate( name, adapterType ).orElseThrow( () -> new GenericRuntimeException( "No adapter template found for name: " + name + " of type: " + adapterType ) );
+        return AdapterManager.getInstance().adapterTemplates.values().stream()
+                .filter( t -> t.adapterName.equalsIgnoreCase( name ) && t.adapterType == adapterType )
+                .findFirst().orElseThrow( () -> new GenericRuntimeException( "No adapter template found for name: " + name + " of type: " + adapterType ) );
     }
 
 
     public List<AdapterInformation> getAdapterTemplates( AdapterType adapterType ) {
-        List<AdapterTemplate> adapterTemplates = Catalog.snapshot().getAdapterTemplates( adapterType );
+        List<AdapterTemplate> templates = adapterTemplates.values().stream().filter( t -> t.adapterType == adapterType ).toList();
 
         List<AdapterInformation> result = new ArrayList<>();
 
-        for ( AdapterTemplate adapterTemplate : adapterTemplates ) {
+        for ( AdapterTemplate adapterTemplate : templates ) {
             // Exclude abstract classes
             if ( !Modifier.isAbstract( adapterTemplate.getClazz().getModifiers() ) ) {
 
