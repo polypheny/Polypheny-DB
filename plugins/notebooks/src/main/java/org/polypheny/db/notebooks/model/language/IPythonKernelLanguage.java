@@ -16,6 +16,7 @@
 
 package org.polypheny.db.notebooks.model.language;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -34,7 +35,7 @@ public class IPythonKernelLanguage implements JupyterKernelLanguage {
 
     @Override
     public List<JupyterQueryPart> transformToQuery( String query, String language, String namespace, String varName, boolean expandParams ) {
-        List<JupyterQueryPart> queries = new LinkedList<>();
+        List<JupyterQueryPart> queries = new ArrayList<>();
         String cleanQuery = query.strip();
 
         // -i: use stdin, -j: output json, -t: query is template
@@ -54,7 +55,7 @@ public class IPythonKernelLanguage implements JupyterKernelLanguage {
 
     @Override
     public List<String> exportedQuery( String query, String language, String namespace, String varName, boolean expandParams ) {
-        List<String> code = new LinkedList<>();
+        List<String> code = new ArrayList<>();
         String cleanQuery = query.strip();
         code.add( (expandParams ? "%%poly -t " : "%%poly ") + language + " " + namespace + "\n" + cleanQuery );
         code.add( varName + " = _" );
