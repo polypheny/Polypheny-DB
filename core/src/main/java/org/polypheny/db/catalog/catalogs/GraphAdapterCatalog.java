@@ -23,7 +23,6 @@ import java.util.Map;
 import java.util.SortedSet;
 import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
-import lombok.Getter;
 import lombok.Value;
 import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
@@ -42,7 +41,6 @@ import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.util.Pair;
 
 
-@Getter
 @EqualsAndHashCode(callSuper = true)
 @Value
 public class GraphAdapterCatalog extends AdapterCatalog {

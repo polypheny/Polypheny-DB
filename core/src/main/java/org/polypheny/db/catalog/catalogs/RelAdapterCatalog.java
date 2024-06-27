@@ -26,7 +26,6 @@ import java.util.Optional;
 import java.util.SortedSet;
 import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
-import lombok.Getter;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
@@ -44,7 +43,6 @@ import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.util.Pair;
 
-@Getter
 @EqualsAndHashCode(callSuper = true)
 @Value
 @Slf4j

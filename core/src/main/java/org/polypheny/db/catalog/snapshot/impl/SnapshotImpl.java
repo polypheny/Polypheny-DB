@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
-import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Value;
 import lombok.experimental.Accessors;
@@ -48,7 +47,6 @@ import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceTemplate;
 
 @Value
 @Accessors(fluent = true)
-@EqualsAndHashCode
 public class SnapshotImpl implements Snapshot {
 
 

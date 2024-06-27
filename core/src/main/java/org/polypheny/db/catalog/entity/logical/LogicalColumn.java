@@ -20,7 +20,6 @@ import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.annotations.SerializeNullable;
 import java.io.Serial;
-import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.Value;
 import lombok.experimental.NonFinal;
@@ -38,7 +37,6 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
 
 
-@EqualsAndHashCode()
 @Value
 @SuperBuilder(toBuilder = true)
 @NonFinal

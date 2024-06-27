@@ -27,7 +27,6 @@ import java.util.Optional;
 import java.util.TreeSet;
 import java.util.function.BinaryOperator;
 import java.util.stream.Collectors;
-import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
@@ -51,7 +50,6 @@ import org.polypheny.db.util.Pair;
 
 @Value
 @Slf4j
-@EqualsAndHashCode
 public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
     ImmutableMap<Long, LogicalNamespace> namespaces;

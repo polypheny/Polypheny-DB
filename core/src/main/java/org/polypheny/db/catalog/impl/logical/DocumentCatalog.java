@@ -22,7 +22,6 @@ import io.activej.serializer.annotations.Serialize;
 import java.beans.PropertyChangeSupport;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import lombok.Getter;
 import lombok.Value;
 import lombok.experimental.SuperBuilder;
 import org.polypheny.db.catalog.Catalog;
@@ -35,7 +34,6 @@ import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.util.CatalogEvent;
 import org.polypheny.db.type.PolySerializable;
 
-@Getter
 @Value
 @SuperBuilder(toBuilder = true)
 public class DocumentCatalog implements PolySerializable, LogicalDocumentCatalog {
@@ -44,9 +42,7 @@ public class DocumentCatalog implements PolySerializable, LogicalDocumentCatalog
 
     IdBuilder idBuilder = IdBuilder.getInstance();
     @Serialize
-    @Getter
     public Map<Long, LogicalCollection> collections;
-    @Getter
     @Serialize
     public LogicalNamespace logicalNamespace;
 
