@@ -32,9 +32,6 @@ import org.polypheny.db.catalog.entity.PolyObject;
 import org.polypheny.db.catalog.logistic.Collation;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.entity.PolyString;
-import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.type.entity.numerical.PolyInteger;
 
 
 @Value
@@ -156,31 +153,6 @@ public class LogicalColumn implements PolyObject, Comparable<LogicalColumn> {
 
     public String getTableName() {
         return Catalog.snapshot().rel().getTable( tableId ).orElseThrow().name;
-    }
-
-
-    @Override
-    public PolyValue[] getParameterArray() {
-        return new PolyValue[]{
-                PolyString.of( Catalog.DATABASE_NAME ),
-                PolyString.of( getNamespaceName() ),
-                PolyString.of( getTableName() ),
-                PolyString.of( name ),
-                PolyInteger.of( type.getJdbcOrdinal() ),
-                PolyString.of( type.name() ),
-                PolyInteger.of( length ),
-                null,
-                PolyInteger.of( scale ),
-                null,
-                PolyInteger.of( nullable ? 1 : 0 ),
-                PolyString.of( "" ),
-                PolyString.of( defaultValue == null ? null : defaultValue.value.toJson() ),
-                null,
-                null,
-                null,
-                PolyInteger.of( position ),
-                PolyString.of( nullable ? "YES" : "NO" ),
-                PolyString.of( PolyObject.getEnumNameOrNull( collation ) ) };
     }
 
 

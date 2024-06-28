@@ -26,8 +26,6 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.PolyObject;
 import org.polypheny.db.catalog.logistic.PlacementType;
-import org.polypheny.db.type.entity.PolyString;
-import org.polypheny.db.type.entity.PolyValue;
 
 
 @Value
@@ -72,15 +70,6 @@ public class AllocationColumn implements PolyObject {
 
     public String getLogicalColumnName() {
         return Catalog.snapshot().rel().getColumn( columnId ).orElseThrow().name;
-    }
-
-
-    // Used for creating ResultSets
-    @Override
-    public PolyValue[] getParameterArray() {
-        return new PolyValue[]{
-                PolyString.of( "alloc_" + columnId ),
-                PolyString.of( placementType.name() ) };
     }
 
 

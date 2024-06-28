@@ -30,7 +30,6 @@ import org.polypheny.db.catalog.entity.PolyObject;
 import org.polypheny.db.catalog.logistic.DataPlacementRole;
 import org.polypheny.db.catalog.logistic.PartitionType;
 import org.polypheny.db.catalog.logistic.PlacementType;
-import org.polypheny.db.type.entity.PolyValue;
 
 
 /**
@@ -106,12 +105,6 @@ public class AllocationPartition implements PolyObject {
         this.isUnbound = isUnbound;
         this.name = name;
         this.qualifiers = qualifiers == null ? List.of() : ImmutableList.copyOf( qualifiers );
-    }
-
-
-    @Override
-    public PolyValue[] getParameterArray() {
-        return new PolyValue[0];
     }
 
 }

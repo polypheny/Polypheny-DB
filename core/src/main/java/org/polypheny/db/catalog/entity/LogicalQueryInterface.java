@@ -25,8 +25,6 @@ import java.util.Map;
 import lombok.NonNull;
 import lombok.Value;
 import lombok.experimental.SuperBuilder;
-import org.polypheny.db.type.entity.PolyString;
-import org.polypheny.db.type.entity.PolyValue;
 
 
 @Value
@@ -56,13 +54,5 @@ public class LogicalQueryInterface implements PolyObject {
         this.interfaceName = interfaceName;
         this.settings = ImmutableMap.copyOf( settings );
     }
-
-
-    // Used for creating ResultSets
-    @Override
-    public PolyValue[] getParameterArray() {
-        return new PolyValue[]{ PolyString.of( name ) };
-    }
-
 
 }

@@ -27,8 +27,6 @@ import lombok.Value;
 import lombok.experimental.SuperBuilder;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.DeployMode;
-import org.polypheny.db.type.entity.PolyString;
-import org.polypheny.db.type.entity.PolyValue;
 
 @Value
 @SuperBuilder(toBuilder = true)
@@ -70,13 +68,6 @@ public class LogicalAdapter implements PolyObject {
         this.settings = new HashMap<>( settings );
         this.adapterTypeName = getAdapterName();
         this.mode = mode;
-    }
-
-
-    // Used for creating ResultSets
-    @Override
-    public PolyValue[] getParameterArray() {
-        return new PolyValue[]{ PolyString.of( uniqueName ) };
     }
 
 }

@@ -20,20 +20,14 @@ package org.polypheny.db.catalog.entity.logical;
 import com.google.common.collect.ImmutableList;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
-import java.io.Serial;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.PolyObject;
 import org.polypheny.db.catalog.logistic.ForeignKeyOption;
 import org.polypheny.db.catalog.snapshot.Snapshot;
-import org.polypheny.db.type.entity.PolyString;
-import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.type.entity.numerical.PolyInteger;
 
 @Value
 @EqualsAndHashCode(callSuper = true)
@@ -101,70 +95,6 @@ public class LogicalForeignKey extends LogicalKey {
             fieldsNames.add( snapshot.rel().getColumn( fieldId ).orElseThrow().name );
         }
         return fieldsNames;
-    }
-
-
-    // Used for creating ResultSets
-    public List<LogicalForeignKeyField> getCatalogForeignKeyFields() {
-        int i = 1;
-        List<LogicalForeignKeyField> list = new ArrayList<>();
-        List<String> referencedKeyFieldNames = getReferencedKeyFieldNames();
-        for ( String columnName : getFieldNames() ) {
-            list.add( new LogicalForeignKeyField( entityId, name, i, referencedKeyFieldNames.get( i - 1 ), columnName ) );
-            i++;
-        }
-        return list;
-    }
-
-
-    public PolyValue[] getParameterArray( String referencedKeyFieldName, String foreignKeyFieldName, int keySeq ) {
-        return new PolyValue[]{
-                PolyString.of( Catalog.DATABASE_NAME ),
-                PolyString.of( getReferencedKeyNamespaceName() ),
-                PolyString.of( getReferencedKeyEntityName() ),
-                PolyString.of( referencedKeyFieldName ),
-                PolyString.of( Catalog.DATABASE_NAME ),
-                PolyString.of( getSchemaName() ),
-                PolyString.of( getTableName() ),
-                PolyString.of( foreignKeyFieldName ),
-                PolyInteger.of( keySeq ),
-                PolyInteger.of( updateRule.getId() ),
-                PolyInteger.of( deleteRule.getId() ),
-                PolyString.of( name ),
-                null,
-                null };
-    }
-
-
-    // Used for creating ResultSets
-    @RequiredArgsConstructor
-    public static class LogicalForeignKeyField implements PolyObject {
-
-        @Serial
-        private static final long serialVersionUID = 3287177728197412000L;
-
-        private final long entityId;
-        private final String foreignKeyName;
-
-        private final int keySeq;
-        private final String referencedKeyFieldName;
-        private final String foreignKeyFieldName;
-
-
-        @Override
-        public PolyValue[] getParameterArray() {
-            return Catalog.snapshot()
-                    .rel()
-                    .getForeignKey( entityId, foreignKeyName )
-                    .orElseThrow()
-                    .getParameterArray( referencedKeyFieldName, foreignKeyFieldName, keySeq );
-        }
-
-
-        public record PrimitiveCatalogForeignKeyColumn( String pktableCat, String pktableSchem, String pktableName, String pkcolumnName, String fktableCat, String fktableSchem, String fktableName, String fkcolumnName, int keySeq, Integer updateRule, Integer deleteRule, String fkName, String pkName, Integer deferrability ) {
-
-        }
-
     }
 
 }

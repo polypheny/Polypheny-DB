@@ -25,11 +25,8 @@ import lombok.NonNull;
 import lombok.Value;
 import lombok.With;
 import lombok.experimental.NonFinal;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.PolyObject;
 import org.polypheny.db.catalog.logistic.DataModel;
-import org.polypheny.db.type.entity.PolyString;
-import org.polypheny.db.type.entity.PolyValue;
 
 
 @With
@@ -60,17 +57,6 @@ public class LogicalNamespace implements PolyObject, Comparable<LogicalNamespace
         this.name = name;
         this.dataModel = dataModel;
         this.caseSensitive = caseSensitive;
-    }
-
-
-    // Used for creating ResultSets
-    @Override
-    public PolyValue[] getParameterArray() {
-        return new PolyValue[]{
-                PolyString.of( name ),
-                PolyString.of( Catalog.DATABASE_NAME ),
-                PolyString.of( Catalog.USER_NAME ),
-                PolyString.of( PolyObject.getEnumNameOrNull( dataModel ) ) };
     }
 
 

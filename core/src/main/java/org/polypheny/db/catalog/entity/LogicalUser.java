@@ -21,8 +21,6 @@ import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.io.Serial;
 import lombok.Value;
-import org.polypheny.db.type.entity.PolyString;
-import org.polypheny.db.type.entity.PolyValue;
 
 
 @Value
@@ -43,13 +41,6 @@ public class LogicalUser implements PolyObject, Comparable<LogicalUser> {
         this.id = id;
         this.name = name;
         this.password = password;
-    }
-
-
-    // Used for creating ResultSets
-    @Override
-    public PolyValue[] getParameterArray() {
-        return new PolyValue[]{ PolyString.of( name ) };
     }
 
 

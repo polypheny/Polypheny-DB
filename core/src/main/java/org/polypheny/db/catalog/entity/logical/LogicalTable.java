@@ -40,8 +40,6 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.schema.ColumnStrategy;
-import org.polypheny.db.type.entity.PolyString;
-import org.polypheny.db.type.entity.PolyValue;
 
 @EqualsAndHashCode(callSuper = false)
 @SuperBuilder(toBuilder = true)
@@ -70,26 +68,6 @@ public class LogicalTable extends LogicalEntity {
         if ( type == EntityType.ENTITY && !modifiable ) {
             throw new GenericRuntimeException( "Tables of table type TABLE must be modifiable!" );
         }
-    }
-
-
-    // Used for creating ResultSets
-    @Override
-    public PolyValue[] getParameterArray() {
-        return new PolyValue[]{
-                PolyString.of( Catalog.DATABASE_NAME ),
-                PolyString.of( getNamespaceName() ),
-                PolyString.of( name ),
-                PolyString.of( entityType.name() ),
-                PolyString.of( "" ),
-                null,
-                null,
-                null,
-                null,
-                null,
-                PolyString.of( Catalog.USER_NAME )
-
-        };
     }
 
 

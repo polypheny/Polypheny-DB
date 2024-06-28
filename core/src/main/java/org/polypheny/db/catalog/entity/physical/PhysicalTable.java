@@ -35,7 +35,6 @@ import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.catalogs.AdapterCatalog;
 import org.polypheny.db.catalog.logistic.DataModel;
-import org.polypheny.db.type.entity.PolyValue;
 
 @EqualsAndHashCode(callSuper = true)
 @Value
@@ -78,12 +77,6 @@ public class PhysicalTable extends PhysicalEntity {
         }
 
         return AlgDataTypeImpl.proto( fieldInfo.build() );
-    }
-
-
-    @Override
-    public PolyValue[] getParameterArray() {
-        return new PolyValue[0];
     }
 
 

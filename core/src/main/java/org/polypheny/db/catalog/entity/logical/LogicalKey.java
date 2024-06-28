@@ -28,9 +28,6 @@ import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.PolyObject;
 import org.polypheny.db.catalog.snapshot.Snapshot;
-import org.polypheny.db.type.entity.PolyString;
-import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.type.entity.numerical.PolyLong;
 
 
 @Value
@@ -83,12 +80,6 @@ public abstract class LogicalKey implements PolyObject, Comparable<LogicalKey> {
             columnNames.add( snapshot.rel().getColumn( columnId ).orElseThrow().name );
         }
         return columnNames;
-    }
-
-
-    @Override
-    public PolyValue[] getParameterArray() {
-        return new PolyValue[]{ PolyLong.of( id ), PolyLong.of( entityId ), PolyString.of( getTableName() ), PolyLong.of( namespaceId ), PolyString.of( getSchemaName() ), null, null };
     }
 
 

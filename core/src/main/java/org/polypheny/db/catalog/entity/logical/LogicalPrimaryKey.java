@@ -19,18 +19,9 @@ package org.polypheny.db.catalog.entity.logical;
 
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
-import java.io.Serial;
-import java.util.LinkedList;
-import java.util.List;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import lombok.Value;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.PolyObject;
-import org.polypheny.db.type.entity.PolyString;
-import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.type.entity.numerical.PolyInteger;
 
 
 @Value
@@ -50,54 +41,6 @@ public class LogicalPrimaryKey extends LogicalKey {
                 EnforcementTime.ON_QUERY );
 
         this.key = key;
-    }
-
-
-    // Used for creating ResultSets
-    public List<LogicalPrimaryKeyField> getCatalogPrimaryKeyColumns() {
-        int i = 1;
-        List<LogicalPrimaryKeyField> list = new LinkedList<>();
-        for ( String columnName : getFieldNames() ) {
-            list.add( new LogicalPrimaryKeyField( id, i++, columnName ) );
-        }
-        return list;
-    }
-
-
-    public PolyValue[] getParameterArray( String columnName, int keySeq ) {
-        return new PolyValue[]{
-                PolyString.of( Catalog.DATABASE_NAME ),
-                PolyString.of( getSchemaName() ),
-                PolyString.of( getTableName() ),
-                PolyString.of( columnName ),
-                PolyInteger.of( keySeq ), null };
-    }
-
-
-    // Used for creating ResultSets
-    @RequiredArgsConstructor
-    public static class LogicalPrimaryKeyField implements PolyObject {
-
-        @Serial
-        private static final long serialVersionUID = -2669773639977732201L;
-
-        private final long pkId;
-
-        private final int keySeq;
-
-        private final String fieldName;
-
-
-        @Override
-        public PolyValue[] getParameterArray() {
-            return Catalog.snapshot().rel().getPrimaryKey( pkId ).orElseThrow().getParameterArray( fieldName, keySeq );
-        }
-
-
-        public record PrimitiveCatalogPrimaryKeyColumn( String tableCat, String tableSchem, String tableName, String columnName, int keySeq, String pkName ) {
-
-        }
-
     }
 
 }

@@ -33,8 +33,6 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.logistic.DataModel;
-import org.polypheny.db.type.entity.PolyString;
-import org.polypheny.db.type.entity.PolyValue;
 
 @EqualsAndHashCode(callSuper = true)
 @Value
@@ -64,12 +62,6 @@ public class AllocationTable extends AllocationEntity {
         }
 
         return AlgDataTypeImpl.proto( fieldInfo.build() ).apply( AlgDataTypeFactory.DEFAULT );
-    }
-
-
-    @Override
-    public PolyValue[] getParameterArray() {
-        return new PolyString[0];
     }
 
 
