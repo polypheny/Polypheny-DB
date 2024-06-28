@@ -181,7 +181,7 @@ public class QueryInterfaceManager {
      * Model needed for the UI
      */
     public record QueryInterfaceCreateRequest(
-            @JsonSerialize String interfaceName,
+            @JsonSerialize String interfaceType,
             @JsonSerialize String uniqueName,
             @JsonSerialize Map<String, String> currentSettings ) {
     }
