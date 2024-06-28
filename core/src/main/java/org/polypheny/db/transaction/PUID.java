@@ -17,9 +17,11 @@
 package org.polypheny.db.transaction;
 
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.UUID;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 
 
 /**
@@ -28,6 +30,7 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(doNotUseGetters = true)
 public class PUID implements Serializable {
 
+    @Serial
     private static final long serialVersionUID = 1L;
 
     public static final PUID EMPTY_PUID = new PUID( 0L, 0L );
@@ -112,6 +115,7 @@ public class PUID implements Serializable {
     }
 
 
+    @Getter
     public enum Type {
         OTHER( (byte) 0x00 ),
         RANDOM( (byte) 0xff ),
@@ -139,9 +143,6 @@ public class PUID implements Serializable {
         }
 
 
-        public byte getIndicator() {
-            return indicator;
-        }
     }
 
 

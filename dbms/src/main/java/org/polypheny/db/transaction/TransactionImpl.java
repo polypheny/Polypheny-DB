@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -94,13 +95,12 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
     private final List<Statement> statements = new ArrayList<>();
 
-    private final List<String> changedTables = new ArrayList<>();
 
     @Getter
     private final Set<LogicalTable> logicalTables = new TreeSet<>();
 
     @Getter
-    private final List<Adapter<?>> involvedAdapters = new CopyOnWriteArrayList<>();
+    private final Set<Adapter<?>> involvedAdapters = new ConcurrentSkipListSet<>( (a,b) -> Math.toIntExact( a.adapterId - b.adapterId ) );
 
     private final Set<Lock> lockList = new HashSet<>();
     private boolean useCache = true;
@@ -146,9 +146,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
     @Override
     public void registerInvolvedAdapter( Adapter<?> adapter ) {
-        if ( !involvedAdapters.contains( adapter ) ) {
-            involvedAdapters.add( adapter );
-        }
+        involvedAdapters.add( adapter );
     }
 
 
@@ -283,17 +281,6 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
 
     @Override
-    public void addChangedTable( String qualifiedTableName ) {
-        if ( !this.changedTables.contains( qualifiedTableName ) ) {
-            if ( log.isDebugEnabled() ) {
-                log.debug( "Add changed table: {}", qualifiedTableName );
-            }
-            this.changedTables.add( qualifiedTableName );
-        }
-    }
-
-
-    @Override
     public int compareTo( @NonNull Object o ) {
         Transaction that = (Transaction) o;
         return this.xid.hashCode() - that.getXid().hashCode();
@@ -328,6 +315,18 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     @Override
     public boolean getUseCache() {
         return this.useCache;
+    }
+
+
+    @Override
+    public void addUsedTable( LogicalTable table ) {
+        this.logicalTables.add( table );
+    }
+
+
+    @Override
+    public void removeUsedTable( LogicalTable table ) {
+        this.logicalTables.remove( table );
     }
 
 

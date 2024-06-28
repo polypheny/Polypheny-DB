@@ -159,11 +159,14 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
     }
 
 
-    @SneakyThrows
     @Override
     public boolean prepare( PolyXid xid ) {
         if ( connectionFactory.hasConnectionHandler( xid ) ) {
-            return connectionFactory.getConnectionHandler( xid ).prepare();
+            try {
+                return connectionFactory.getConnectionHandler( xid ).prepare();
+            } catch ( ConnectionHandlerException e ) {
+                throw new GenericRuntimeException( e );
+            }
         } else {
             log.warn( "There is no connection to prepare (Unique name: {}, XID: {})! Returning true.", getUniqueName(), xid );
             return true;
@@ -171,22 +174,28 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
     }
 
 
-    @SneakyThrows
     @Override
     public void commit( PolyXid xid ) {
         if ( connectionFactory.hasConnectionHandler( xid ) ) {
-            connectionFactory.getConnectionHandler( xid ).commit();
+            try {
+                connectionFactory.getConnectionHandler( xid ).commit();
+            } catch ( ConnectionHandlerException e ) {
+                throw new GenericRuntimeException( e );
+            }
         } else {
             log.warn( "There is no connection to commit (Unique name: {}, XID: {})!", getUniqueName(), xid );
         }
     }
 
 
-    @SneakyThrows
     @Override
     public void rollback( PolyXid xid ) {
         if ( connectionFactory.hasConnectionHandler( xid ) ) {
-            connectionFactory.getConnectionHandler( xid ).rollback();
+            try {
+                connectionFactory.getConnectionHandler( xid ).rollback();
+            } catch ( ConnectionHandlerException e ) {
+                throw new GenericRuntimeException( e );
+            }
         } else {
             log.warn( "There is no connection to rollback (Unique name: {}, XID: {})!", getUniqueName(), xid );
         }

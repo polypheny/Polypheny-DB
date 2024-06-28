@@ -94,8 +94,6 @@ class ClientManager {
             log.trace( "User {} tries to establish connection via prism interface.", uuid );
         }
         final LogicalUser user = getUser( connectionRequest, t );
-        Transaction transaction = transactionManager.startTransaction( user.id, false, "prism-interface" );
-        transaction.commit();
         LogicalNamespace namespace = getNamespaceOrDefault( connectionRequest );
         boolean isAutocommit = getAutocommitOrDefault( connectionRequest );
         PIClient client = new PIClient(

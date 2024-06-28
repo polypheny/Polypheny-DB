@@ -74,29 +74,9 @@ public class JdbcSchema extends Namespace implements Expressible {
     @Getter
     private final JdbcConvention convention;
 
-    private final Map<String, JdbcTable> tableMap;
-
     public final Adapter<?> adapter;
     @Getter
     private final long id;
-
-
-    private JdbcSchema(
-            long id,
-            @NonNull ConnectionFactory connectionFactory,
-            @NonNull SqlDialect dialect,
-            JdbcConvention convention,
-            Map<String, JdbcTable> tableMap,
-            Adapter<?> adapter ) {
-        super( id, adapter.getAdapterId() );
-        this.id = id;
-        this.connectionFactory = connectionFactory;
-        this.dialect = dialect;
-        this.convention = convention;
-        this.tableMap = tableMap;
-        this.adapter = adapter;
-
-    }
 
 
     /**
@@ -118,7 +98,6 @@ public class JdbcSchema extends Namespace implements Expressible {
         this.dialect = dialect;
         convention.setJdbcSchema( this );
         this.convention = convention;
-        this.tableMap = new HashMap<>();
         this.adapter = adapter;
     }
 
@@ -155,62 +134,9 @@ public class JdbcSchema extends Namespace implements Expressible {
     }
 
 
-    protected Multimap<String, Function> getFunctions() {
-        // TODO: populate map from JDBC metadata
-        return ImmutableMultimap.of();
-    }
-
-
-    public synchronized ImmutableMap<String, JdbcTable> getTableMap() {
-        return ImmutableMap.copyOf( tableMap );
-    }
-
-
-    /**
-     * Given "INTEGER", returns BasicSqlType(INTEGER).
-     * Given "VARCHAR(10)", returns BasicSqlType(VARCHAR, 10).
-     * Given "NUMERIC(10, 2)", returns BasicSqlType(NUMERIC, 10, 2).
-     */
-    private AlgDataType parseTypeString( AlgDataTypeFactory typeFactory, String typeString ) {
-        int precision = -1;
-        int scale = -1;
-        int open = typeString.indexOf( "(" );
-        if ( open >= 0 ) {
-            int close = typeString.indexOf( ")", open );
-            if ( close >= 0 ) {
-                String rest = typeString.substring( open + 1, close );
-                typeString = typeString.substring( 0, open );
-                int comma = rest.indexOf( "," );
-                if ( comma >= 0 ) {
-                    precision = Integer.parseInt( rest.substring( 0, comma ) );
-                    scale = Integer.parseInt( rest.substring( comma ) );
-                } else {
-                    precision = Integer.parseInt( rest );
-                }
-            }
-        }
-        try {
-            final PolyType typeName = PolyType.valueOf( typeString );
-            return typeName.allowsPrecScale( true, true )
-                    ? typeFactory.createPolyType( typeName, precision, scale )
-                    : typeName.allowsPrecScale( true, false )
-                            ? typeFactory.createPolyType( typeName, precision )
-                            : typeFactory.createPolyType( typeName );
-        } catch ( IllegalArgumentException e ) {
-            return typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.ANY ), true );
-        }
-    }
-
-
-    protected Map<String, AlgProtoDataType> getTypes() {
-        // TODO: populate map from JDBC metadata
-        return ImmutableMap.of();
-    }
-
-
     @Override
     public Expression asExpression() {
-        return this.adapter.getNamespaceAsExpression( id ); //todo change
+        return this.adapter.getNamespaceAsExpression( id );
     }
 
 }

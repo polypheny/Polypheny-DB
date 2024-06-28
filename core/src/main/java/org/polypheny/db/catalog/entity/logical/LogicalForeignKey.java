@@ -152,7 +152,6 @@ public class LogicalForeignKey extends LogicalKey {
         private final String foreignKeyFieldName;
 
 
-        @SneakyThrows
         @Override
         public PolyValue[] getParameterArray() {
             return Catalog.snapshot()

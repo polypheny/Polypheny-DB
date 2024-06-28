@@ -48,7 +48,7 @@ public interface Transaction {
 
     void registerInvolvedAdapter( Adapter<?> adapter );
 
-    List<Adapter<?>> getInvolvedAdapters();
+    Set<Adapter<?>> getInvolvedAdapters();
 
     Snapshot getSnapshot();
 
@@ -68,8 +68,6 @@ public interface Transaction {
 
     LogicalNamespace getDefaultNamespace();
 
-    void addChangedTable( String qualifiedTableName );
-
     String getOrigin();
 
     MultimediaFlavor getFlavor();
@@ -82,7 +80,9 @@ public interface Transaction {
 
     boolean getUseCache();
 
-    Set<LogicalTable> getLogicalTables();
+    void addUsedTable(LogicalTable table);
+
+    void removeUsedTable(LogicalTable table);
 
     void setAcceptsOutdated( boolean acceptsOutdated );
 

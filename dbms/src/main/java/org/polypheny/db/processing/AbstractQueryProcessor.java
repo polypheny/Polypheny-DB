@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -78,8 +77,10 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.Entity;
+import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.config.RuntimeConfig;
@@ -536,8 +537,10 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         if ( plans == null ) {
             plans = route( indexLookupRoot, statement, logicalQueryInformation ).stream().map( p -> new Plan().proposedRoutingPlan( p ) ).toList();
         }
+
         return plans;
     }
+
 
 
     private void flattenPlans( List<Plan> plans ) {
@@ -564,7 +567,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         }
         // Locking
         try {
-            Collection<Entry<EntityIdentifier, LockMode>> idAccessMap = new ArrayList<>();
+            List<Entry<EntityIdentifier, LockMode>> idAccessMap = new ArrayList<>();
             // Get locks for individual entities
             EntityAccessMap accessMap = new EntityAccessMap( logicalRoot.alg, accessedPartitions );
             // Get a shared global schema lock (only DDLs acquire an exclusive global schema lock)
@@ -1185,8 +1188,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         logicalRoot.alg.accept( analyzer );
 
         // Get partitions of logical information
-        Map<Long, Set<String>> partitionValueFilterPerScan = analyzer.getPartitionValueFilterPerScan();
-        Map<Long, List<Long>> accessedPartitions = this.getAccessedPartitionsPerScan( logicalRoot.alg, partitionValueFilterPerScan );
+
+        Map<Long, List<Long>> accessedPartitions = extractPartitions( logicalRoot.alg.getEntities() );
 
         // Build queryClass from query-name and partitions.
         String queryHash = analyzer.getQueryName() + accessedPartitions;
@@ -1206,6 +1209,21 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         MaterializedViewManager.getInstance().notifyModifiedEntities( statement.getTransaction(), queryInformation.allModifiedEntities );
 
         return queryInformation;
+    }
+
+
+    private Map<Long, List<Long>> extractPartitions( Set<Entity> entities ) {
+        Map<Long, List<Long>> map = new HashMap<>();
+        for ( Entity entity : entities ) {
+            if ( entity.isLogical() ) {
+                map.computeIfAbsent( entity.getId(), k -> new ArrayList<>() ).add( entity.id );
+            }else if ( entity.isAllocation() ){
+                map.computeIfAbsent( ((AllocationEntity)entity).getLogicalId(), k -> new ArrayList<>() ).add( ((AllocationEntity) entity).getLogicalId() );
+            }else if( entity.isPhysical()){
+                map.computeIfAbsent( ((PhysicalEntity)entity).getLogicalId(), k -> new ArrayList<>() ).add( ((PhysicalEntity)entity).getLogicalId() );
+            }
+        }
+        return map;
     }
 
 
@@ -1490,7 +1508,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     @Override
     public void lock( Statement statement ) {
         try {
-            LockManager.INSTANCE.lock( Collections.singletonList( Pair.of( LockManager.GLOBAL_LOCK, LockMode.SHARED ) ), (TransactionImpl) statement.getTransaction() );
+            LockManager.INSTANCE.lock( List.of( Pair.of( LockManager.GLOBAL_LOCK, LockMode.SHARED ) ), (TransactionImpl) statement.getTransaction() );
         } catch ( DeadlockException e ) {
             throw new GenericRuntimeException( "DeadLock while locking to reevaluate statistics", e );
         }

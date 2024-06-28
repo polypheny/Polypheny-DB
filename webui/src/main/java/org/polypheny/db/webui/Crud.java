@@ -863,7 +863,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
      */
     void deleteTuple( final Context ctx ) {
         UIRequest request = ctx.bodyAsClass( UIRequest.class );
-        Transaction transaction = getTransaction();
 
         StringBuilder query = new StringBuilder();
 
@@ -880,9 +879,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                         .transactionManager( transactionManager )
                         .build(), UIRequest.builder().build() ).get( 0 );
 
-        if ( result.error == null && statisticCrud.isActiveTracking() ) {
-            transaction.addChangedTable( tableId );
-        }
         ctx.json( result );
     }
 
@@ -947,9 +943,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                         .transactionManager( transactionManager )
                         .build(), UIRequest.builder().build() ).get( 0 );
 
-        if ( result.error == null && result.data.length == 1 && statisticCrud.isActiveTracking() ) {
-            transaction.addChangedTable( fullName );
-        }
         ctx.json( result );
     }
 

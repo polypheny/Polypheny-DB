@@ -85,7 +85,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
     public Set<String> hashBasis = new HashSet<>();
 
-    public Map<Long, String> availableColumns = new LinkedHashMap<>(); // column id -> schemaName.tableName.ColumnName
+    public Map<Long, String> availableColumns = new HashMap<>(); // column id -> schemaName.tableName.ColumnName
 
     public Map<Long, Long> availableColumnsWithTable = new HashMap<>(); // columnId -> tableId
 

@@ -545,7 +545,7 @@ public class DdlManagerImpl extends DdlManager {
         catalog.getLogicalRel( table.namespaceId ).addForeignKey( table.id, columnIds, refTable.id, referencesIds, constraintName, onUpdate, onDelete );
         catalog.getLogicalRel( table.namespaceId ).addConstraint( table.id, ConstraintType.FOREIGN.name(), columnIds, ConstraintType.FOREIGN );
 
-        statement.getTransaction().getLogicalTables().add( table );
+        statement.getTransaction().addUsedTable( table );
     }
 
 
@@ -828,7 +828,7 @@ public class DdlManagerImpl extends DdlManager {
                 }
             }
         }
-        statement.getTransaction().getLogicalTables().add( table );
+        statement.getTransaction().addUsedTable( table );
 
     }
 
@@ -846,7 +846,7 @@ public class DdlManagerImpl extends DdlManager {
             columnIds.add( logicalColumn.id );
         }
         catalog.getLogicalRel( table.namespaceId ).addUniqueConstraint( table.id, constraintName, columnIds );
-        statement.getTransaction().getLogicalTables().add( table );
+        statement.getTransaction().addUsedTable( table );
 
     }
 
@@ -2959,7 +2959,7 @@ public class DdlManagerImpl extends DdlManager {
         prepareMonitoring( statement, Kind.DROP_TABLE, table );
 
         // ON_COMMIT constraint needs no longer to be enforced if entity does no longer exist
-        statement.getTransaction().getLogicalTables().remove( table );
+        statement.getTransaction().removeUsedTable( table );
 
         // Reset plan cache implementation cache & routing cache
         statement.getQueryProcessor().resetCaches();
