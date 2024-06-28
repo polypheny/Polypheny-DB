@@ -140,7 +140,7 @@ import org.polypheny.db.docker.models.InstancesAndAutoDocker;
 import org.polypheny.db.docker.models.UpdateDockerRequest;
 import org.polypheny.db.iface.QueryInterface;
 import org.polypheny.db.iface.QueryInterfaceManager;
-import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceInformationRequest;
+import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceCreateRequest;
 import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceTemplate;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
@@ -2225,7 +2225,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
 
     void createQueryInterface( final Context ctx ) {
-        QueryInterfaceInformationRequest request = ctx.bodyAsClass( QueryInterfaceInformationRequest.class );
+        QueryInterfaceCreateRequest request = ctx.bodyAsClass( QueryInterfaceCreateRequest.class );
         try {
             QueryInterfaceManager.getInstance().createQueryInterface( request.interfaceName(), request.uniqueName(), request.currentSettings() );
             ctx.status( 200 );
