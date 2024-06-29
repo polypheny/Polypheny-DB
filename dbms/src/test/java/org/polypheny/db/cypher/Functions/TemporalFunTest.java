@@ -21,7 +21,7 @@ import org.junit.jupiter.api.Test;
 import org.polypheny.db.cypher.CypherTestTemplate;
 import org.polypheny.db.webui.models.results.GraphResult;
 
-public class TemporalFunTest  extends CypherTestTemplate {
+public class TemporalFunTest extends CypherTestTemplate {
 
     @BeforeEach
     public void reset() {
@@ -38,6 +38,15 @@ public class TemporalFunTest  extends CypherTestTemplate {
 
     }
 
+    @Test
+    public void dateeeFunTest() {
+
+        GraphResult res = execute( "RETURN DATE('2023-05-18')\n" );
+
+
+    }
+
+
 
     @Test
     public void timeFunTest() {
@@ -47,6 +56,7 @@ public class TemporalFunTest  extends CypherTestTemplate {
 
     }
 
+
     @Test
     public void dateTimeFunTest() {
 
@@ -55,15 +65,14 @@ public class TemporalFunTest  extends CypherTestTemplate {
 
     }
 
+
     @Test
     public void durationBetweenFunTest() {
 
-        GraphResult res = execute( "" );
+        GraphResult res = execute( "RETURN duration.between(DATE('2023-05-18'), DATE('2023-06-18'))" );
 
 
     }
-
-
 
 
 }
