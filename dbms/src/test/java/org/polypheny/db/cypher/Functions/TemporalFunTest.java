@@ -39,7 +39,7 @@ public class TemporalFunTest extends CypherTestTemplate {
     }
 
     @Test
-    public void dateeeFunTest() {
+    public void dateeFunTest() {
 
         GraphResult res = execute( "RETURN DATE('2023-05-18')\n" );
 
