@@ -34,48 +34,130 @@ public class StringFunTest extends CypherTestTemplate {
     @Test
     public void upperFunTest() {
         GraphResult res = execute( "RETURN UPPER('hello')" );
-        containsRows( res, true, true, Row.of( TestLiteral.from( "HELLO" ) ) );
-         res = execute( "RETURN UPPER('hElLo')" );
-        containsRows( res, true, true, Row.of( TestLiteral.from( "HELLO" ) ) );
+        assert containsRows( res, true, true, Row.of( TestLiteral.from( "HELLO" ) ) );
+        res = execute( "RETURN UPPER('hElLo')" );
+        assert containsRows( res, true, true, Row.of( TestLiteral.from( "HELLO" ) ) );
 
 
+    }
 
+
+    @Test
+    public void EmptyUpperFunTest() {
+        GraphResult res = execute( "RETURN UPPER('')" );
+        assert containsRows( res, true, true, Row.of( TestLiteral.from( "" ) ) );
+    }
+
+
+    @Test
+    public void nullUpperFunTest() {
+        GraphResult res = execute( "RETURN UPPER(null)" );
+        assert containsRows( res, true, true, Row.of( TestLiteral.from( null ) ) );
     }
 
 
     @Test
     public void LowerFunTest() {
         GraphResult res = execute( "RETURN LOWER('WORLD')" );
-        containsRows( res, true, true, Row.of( TestLiteral.from( "world" ) ) );
+        assert containsRows( res, true, true, Row.of( TestLiteral.from( "world" ) ) );
+
         res = execute( "RETURN LOWER('WOrLd')" );
-        containsRows( res, true, true, Row.of( TestLiteral.from( "world" ) ) );
-
-
+        assert containsRows( res, true, true, Row.of( TestLiteral.from( "world" ) ) );
     }
 
+
     @Test
-    public void substringFunTest()
-    {
+    public void emptyLowerFunTest() {
+        GraphResult res = execute( "RETURN LOWER('')" );
+        assert containsRows( res, true, true, Row.of( TestLiteral.from( "" ) ) );
+    }
+
+
+    @Test
+    public void NullLowerFunTest() {
+        GraphResult res = execute( "RETURN LOWER(null)" );
+        assert containsRows( res, true, true, Row.of( TestLiteral.from( null ) ) );
+    }
+
+
+    @Test
+    public void normalSubstringFunTest() {
         GraphResult res = execute( "RETURN SUBSTRING('Hello, world!', 0, 5)" );
-        containsRows( res, true, true, Row.of( TestLiteral.from( "Hello" ) ) );
+        assert containsRows( res, true, true, Row.of( TestLiteral.from( "Hello" ) ) );
 
+        res = execute( "RETURN SUBSTRING('Hello, world!', 7, 5)" );
+        assert containsRows( res, true, true, Row.of( TestLiteral.from( "world" ) ) );
+
+        res = execute( "RETURN SUBSTRING('Hello, world!', 7, 0)" );
+        assert containsRows( res, true, true, Row.of( TestLiteral.from( "" ) ) );
     }
 
+
     @Test
-    public void trimFunTest()
-    {
+    public void exceedLengthSubstringFunTest() {
+        GraphResult res = execute( "RETURN SUBSTRING('Hello', 0, 10)" );
+        assert containsRows( res, true, true, Row.of( TestLiteral.from( "Hello" ) ) );
+    }
+
+
+    @Test
+    public void trimFunTest() {
         GraphResult res = execute( "RETURN TRIM('  hello  ')" );
-        containsRows( res, true, true, Row.of( TestLiteral.from( "hello" ) ) );
+        assert containsRows( res, true, true, Row.of( TestLiteral.from( "hello" ) ) );
 
+        res = execute( "RETURN TRIM('hello')" );
+        assert containsRows( res, true, true, Row.of( TestLiteral.from( "hello" ) ) );
+
+        res = execute( "RETURN TRIM('  ')" );
+        assert containsRows( res, true, true, Row.of( TestLiteral.from( "" ) ) );
     }
+
 
     @Test
-    public void replaceFunTest()
-    {
+    public void EmptyTrimFunTest() {
+        GraphResult res = execute( "RETURN TRIM('')" );
+        assert containsRows( res, true, true, Row.of( TestLiteral.from( "" ) ) );
+    }
+
+
+    @Test
+    public void NormalReplaceFunTest() {
         GraphResult res = execute( "RETURN REPLACE('Hello, world!', 'world', 'Cypher') " );
-        containsRows( res, true, true, Row.of( TestLiteral.from( "Hello, Cypher!" ) ) );
+        assert containsRows( res, true, true, Row.of( TestLiteral.from( "Hello, Cypher!" ) ) );
 
     }
+
+
+    @Test
+    public void caseSensitiveReplaceFunTest() {
+        GraphResult res = execute( "RETURN REPLACE('Hello, world!', 'WORLD', 'Cypher')" );
+        assert containsRows( res, true, true, Row.of( TestLiteral.from( "Hello, world!" ) ) );
+    }
+
+
+    @Test
+    public void removeSpacesReplaceFunTest() {
+        GraphResult res = execute( "RETURN REPLACE('Hello, world!', ' ', '')" );
+        assert containsRows( res, true, true, Row.of( TestLiteral.from( "Hello,world!" ) ) );
+    }
+
+
+    @Test
+    public void removeSubstringReplaceFunTest() {
+        GraphResult res = execute( "RETURN REPLACE('Hello, world!', 'world', '')" );
+        assert containsRows( res, true, true, Row.of( TestLiteral.from( "Hello, !" ) ) );
+    }
+//    @Test
+//    public void concatenateFunTest() {
+//        GraphResult res = execute("RETURN 'Hello' + ' ' + 'world!'");
+//        assert containsRows(res, true, true, Row.of(TestLiteral.from("Hello world!")));
+//    }
+//    @Test
+//    public void LengthFunTest() {
+//        GraphResult res = execute("RETURN LENGTH('Hello, world!')");
+//        assert containsRows(res, true, true, Row.of(TestLiteral.from(13)));
+//    }
+
 
 }
 
