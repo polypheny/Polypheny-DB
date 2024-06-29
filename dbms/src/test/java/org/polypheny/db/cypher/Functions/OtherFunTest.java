@@ -37,33 +37,33 @@ public class OtherFunTest extends CypherTestTemplate {
         GraphResult res = execute( "MATCH (a)-[r]->(b)\n"
                 + "RETURN TYPE(r)\n" );
 
-        containsRows( res, true, true, Row.of( TestLiteral.from( "OWNER_OF" ) ) );
+        assert containsRows( res, true, true, Row.of( TestLiteral.from( "OWNER_OF" ) ) );
 
     }
 
+
     @Test
-    public void idFunTest()
-    {
+    public void idFunTest() {
         execute( SINGLE_NODE_PERSON_1 );
-        GraphResult res =    execute( "MATCH (p:Person { name: 'Max' })\n"
+        GraphResult res = execute( "MATCH (p:Person { name: 'Max' })\n"
                 + "RETURN ID(p)\n" );
 
 //        containsRows( res, true, true, Row.of( TestLiteral.from(  ) ) );
     }
 
-    @Test
-    public void ExistFunTest()
-    {
-       execute( SINGLE_NODE_PERSON_1 );
-       GraphResult res  = execute( "MATCH (p:Person { name: 'Max' })\n"
-               + "RETURN EXISTS(p.age)\n" );
 
-        containsRows( res, true, true, Row.of( TestLiteral.from( false  ) ) );
+    @Test
+    public void ExistFunTest() {
+        execute( SINGLE_NODE_PERSON_1 );
+        GraphResult res = execute( "MATCH (p:Person { name: 'Max' })\n"
+                + "RETURN EXISTS(p.age)\n" );
+
+        assert containsRows( res, true, true, Row.of( TestLiteral.from( false ) ) );
 
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
         execute( "MATCH (p:Person { name: 'Ann' })\n"
                 + "RETURN EXISTS(p.age)\n" );
-              containsRows( res, true, true, Row.of( TestLiteral.from( true  ) ) );
+        assert containsRows( res, true, true, Row.of( TestLiteral.from( true ) ) );
     }
 
 

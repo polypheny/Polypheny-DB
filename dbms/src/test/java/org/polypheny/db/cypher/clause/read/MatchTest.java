@@ -354,6 +354,14 @@ public class MatchTest extends CypherTestTemplate {
                         TestNode.from( List.of( "Person" ), Pair.of( "name", "Max" ) ),
                         TestEdge.from( List.of( "OWNER_OF" ) ),
                         KIRA ) ) );
+
+        res = execute( "MATCH Path = (p:Person {name: 'Max'})-[rel:OWNER_OF]->(a:Animal {name:'Kira', age:3, type:'dog'}) RETURN Path " );
+        assert containsRows( res, true, true,
+                Row.of( TestPath.of(
+                        TestNode.from( List.of( "Person" ), Pair.of( "name", "Max" ) ),
+                        TestEdge.from( List.of( "OWNER_OF" ) ),
+                        KIRA ) ) );
+
     }
 
 

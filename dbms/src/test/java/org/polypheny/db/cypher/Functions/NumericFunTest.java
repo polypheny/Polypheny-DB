@@ -126,3 +126,5 @@ public class NumericFunTest extends CypherTestTemplate {
        // assert containsRows(res, true, true, Row.of(TestLiteral.from(null)));
     }
 }
+
+

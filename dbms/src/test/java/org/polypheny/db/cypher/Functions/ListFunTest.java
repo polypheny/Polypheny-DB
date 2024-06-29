@@ -30,55 +30,55 @@ public class ListFunTest extends CypherTestTemplate {
         createGraph();
     }
 
-    @Test
-    public void simpleSizeFunTest()
-    {
-      GraphResult res =   execute( "RETURN size([1, 2, 3])" );
-      containsRows( res , true , true  ,
-              Row.of( TestLiteral.from( 3)) );
-    }
 
     @Test
-    public void nullSizeFunTest()
-    {
-        GraphResult res =   execute( "RETURN size(null)" );
-        containsRows( res , true , true  ,
-                Row.of( TestLiteral.from( null  )  ) );
+    public void simpleSizeFunTest() {
+        GraphResult res = execute( "RETURN size([1, 2, 3])" );
+        assert containsRows( res, true, true,
+                Row.of( TestLiteral.from( 3 ) ) );
     }
 
+
     @Test
-    public void patternExpressionSizeFunTest()
-    {
-        execute( SINGLE_EDGE_1);
-        execute( SINGLE_EDGE_1);
-        GraphResult res =  execute( "MATCH (a)\n"
+    public void nullSizeFunTest() {
+        GraphResult res = execute( "RETURN size(null)" );
+        assert containsRows( res, true, true,
+                Row.of( TestLiteral.from( null ) ) );
+    }
+
+
+    @Test
+    public void patternExpressionSizeFunTest() {
+        execute( SINGLE_EDGE_1 );
+        execute( SINGLE_EDGE_1 );
+        GraphResult res = execute( "MATCH (a)\n"
                 + "WHERE a.name = 'Max'\n"
                 + "RETURN size((a)-[]->())) AS fof" );
 
-        containsRows( res , true , true  ,
-                Row.of( TestLiteral.from( 2  )  ) );
+        assert containsRows( res, true, true,
+                Row.of( TestLiteral.from( 2 ) ) );
 
     }
 
+
     @Test
-    public void stringSizeFunTest()
-    {
+    public void stringSizeFunTest() {
         execute( SINGLE_NODE_PERSON_1 );
 
-        GraphResult res =  execute( "MATCH (a)  RETURN size(a.name)" );
+        GraphResult res = execute( "MATCH (a)  RETURN size(a.name)" );
 
-        containsRows( res , true , true  ,
-                Row.of( TestLiteral.from( 3  )  ) );
+        assert containsRows( res, true, true,
+                Row.of( TestLiteral.from( 3 ) ) );
     }
 
 
     @Test
-    public void simpleRangeFunTest()
-    {
+    public void simpleRangeFunTest() {
 
-        GraphResult res =  execute( "RETURN RANGE(1, 3)" );
+        GraphResult res = execute( "RETURN RANGE(1, 3)" );
 
-        containsRows( res , true , true  ,
-                Row.of( TestLiteral.from( 1 ) , TestLiteral.from( 2   ) , TestLiteral.from( 3 )  ) );
+        assert containsRows( res, true, true,
+                Row.of( TestLiteral.from( 1 ), TestLiteral.from( 2 ), TestLiteral.from( 3 ) ) );
     }
+
 }
