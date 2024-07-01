@@ -1209,11 +1209,11 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         Map<Long, List<Long>> map = new HashMap<>();
         for ( Entity entity : entities ) {
             if ( entity.isLogical() ) {
-                map.computeIfAbsent( entity.getId(), k -> new ArrayList<>() ).add( entity.id );
+                map.computeIfAbsent( entity.getId(), k -> new ArrayList<>() ).addAll( Catalog.snapshot().alloc().getPartitionsFromLogical(  entity.getId()).stream().map( p -> p.id ).toList() );
             }else if ( entity.isAllocation() ){
-                map.computeIfAbsent( ((AllocationEntity)entity).getLogicalId(), k -> new ArrayList<>() ).add( ((AllocationEntity) entity).getLogicalId() );
-            }else if( entity.isPhysical()){
-                map.computeIfAbsent( ((PhysicalEntity)entity).getLogicalId(), k -> new ArrayList<>() ).add( ((PhysicalEntity)entity).getLogicalId() );
+                map.computeIfAbsent( ((AllocationEntity)entity).getLogicalId(), k -> new ArrayList<>() ).add( ((AllocationEntity) entity).getPartitionId() );
+            }else if( entity.isPhysical() ){
+                map.computeIfAbsent( ((PhysicalEntity)entity).getLogicalId(), k -> new ArrayList<>() ).add( ((PhysicalEntity)entity).getAllocationId() );
             }
         }
         return map;

@@ -300,6 +300,7 @@ public class HorizontalPartitioningTest {
 
                     statement.executeUpdate( "INSERT INTO hashpartition VALUES (1, 3, 'hans')" );
                     statement.executeUpdate( "INSERT INTO hashpartition VALUES (2, 7, 'bob')" );
+
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM hashpartition ORDER BY tprimary" ),
                             ImmutableList.of(

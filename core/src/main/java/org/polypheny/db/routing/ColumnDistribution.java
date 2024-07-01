@@ -128,9 +128,7 @@ public final class ColumnDistribution implements FieldDistribution {
 
 
     private List<AllocationPartition> getPossiblePartitions() {
-        List<AllocationPartition> partitions = new ArrayList<>();
-        snapshot.alloc().getPartitions().stream().filter( p -> p.logicalEntityId == logicalEntityId && sourcePartitions.contains( p.id ) ).forEach( partitions::add );
-        return partitions;
+        return snapshot.alloc().getPartitions().stream().filter( p -> p.logicalEntityId == logicalEntityId && sourcePartitions.contains( p.id ) ).toList();
     }
 
 
