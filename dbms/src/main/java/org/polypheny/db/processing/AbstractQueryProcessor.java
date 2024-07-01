@@ -139,7 +139,6 @@ import org.polypheny.db.tools.Program;
 import org.polypheny.db.tools.Programs;
 import org.polypheny.db.tools.RoutedAlgBuilder;
 import org.polypheny.db.transaction.EntityAccessMap;
-import org.polypheny.db.transaction.EntityAccessMap.EntityIdentifier;
 import org.polypheny.db.transaction.Lock.LockMode;
 import org.polypheny.db.transaction.LockManager;
 import org.polypheny.db.transaction.Statement;
@@ -312,6 +311,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             if ( isAnalyze ) {
                 statement.getProcessingDuration().start( "Locking" );
             }
+
             if ( lock ) {
                 this.acquireLock( isAnalyze, logicalRoot, logicalQueryInformation.getAccessedPartitions() );
             }
@@ -557,24 +557,17 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
 
     private void acquireLock( boolean isAnalyze, AlgRoot logicalRoot, Map<Long, List<Long>> accessedPartitions ) {
-        // TODO @HENNLO Check if this is this is necessary to pass the partitions explicitly.
-        // This currently only works for queries. Since DMLs are evaluated during routing.
-        // This SHOULD be adjusted
-
         if ( accessedPartitions.isEmpty() ) { // TODO: Does this happen for create table?
             // Do not acquire any locks if nothing is accessed
             return;
         }
         // Locking
         try {
-            List<Entry<EntityIdentifier, LockMode>> idAccessMap = new ArrayList<>();
             // Get locks for individual entities
             EntityAccessMap accessMap = new EntityAccessMap( logicalRoot.alg, accessedPartitions );
             // Get a shared global schema lock (only DDLs acquire an exclusive global schema lock)
-            idAccessMap.add( Pair.of( LockManager.GLOBAL_LOCK, LockMode.SHARED ) );
 
-            idAccessMap.addAll( accessMap.getAccessedEntityPair() );
-            LockManager.INSTANCE.lock( idAccessMap, (TransactionImpl) statement.getTransaction() );
+            LockManager.INSTANCE.lock( accessMap.getNeededLock(), (TransactionImpl) statement.getTransaction() );
         } catch ( DeadlockException e ) {
             throw new GenericRuntimeException( e );
         }
@@ -1497,7 +1490,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
     @Override
     public void unlock( Statement statement ) {
-        LockManager.INSTANCE.unlock( List.of( LockManager.GLOBAL_LOCK ), (TransactionImpl) statement.getTransaction() );
+        LockManager.INSTANCE.unlock( (TransactionImpl) statement.getTransaction() );
     }
 
 
@@ -1508,7 +1501,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     @Override
     public void lock( Statement statement ) {
         try {
-            LockManager.INSTANCE.lock( List.of( Pair.of( LockManager.GLOBAL_LOCK, LockMode.SHARED ) ), (TransactionImpl) statement.getTransaction() );
+            LockManager.INSTANCE.lock( LockMode.SHARED, (TransactionImpl) statement.getTransaction() );
         } catch ( DeadlockException e ) {
             throw new GenericRuntimeException( "DeadLock while locking to reevaluate statistics", e );
         }

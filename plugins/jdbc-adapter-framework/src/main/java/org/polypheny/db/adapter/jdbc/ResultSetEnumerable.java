@@ -78,7 +78,7 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
 
 
     // timestamp do factor in the timezones, which means that 10:00 is 9:00 with
-    // an one hour shift, as we lose this timezone information on retrieval
+    // a one hour shift, as we lose this timezone information on retrieval
     // therefore we use the offset if needed
     public final static int OFFSET = Calendar.getInstance().getTimeZone().getRawOffset();
 

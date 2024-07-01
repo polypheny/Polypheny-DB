@@ -102,7 +102,6 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     @Getter
     private final Set<Adapter<?>> involvedAdapters = new ConcurrentSkipListSet<>( (a,b) -> Math.toIntExact( a.adapterId - b.adapterId ) );
 
-    private final Set<Lock> lockList = new HashSet<>();
     private boolean useCache = true;
 
     private boolean acceptsOutdated = false;
@@ -233,6 +232,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
             return;
         }
         try {
+            log.warn( "rolling back transaction" );
             //  Rollback changes to the adapters
             for ( Adapter<?> adapter : involvedAdapters ) {
                 adapter.rollback( xid );
@@ -385,26 +385,6 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
         this.accessMode = accessModeCandidate;
 
     }
-
-    //
-    // For locking
-    //
-
-
-    Set<Lock> getLocks() {
-        return lockList;
-    }
-
-
-    void addLock( Lock lock ) {
-        lockList.add( lock );
-    }
-
-
-    void removeLock( Lock lock ) {
-        lockList.remove( lock );
-    }
-
 
     void abort() {
         Thread.currentThread().interrupt();

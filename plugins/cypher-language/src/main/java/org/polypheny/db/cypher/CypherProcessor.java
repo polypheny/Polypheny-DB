@@ -129,13 +129,13 @@ public class CypherProcessor extends Processor {
 
     @Override
     public void unlock( Statement statement ) {
-        LockManager.INSTANCE.unlock( List.of( LockManager.GLOBAL_LOCK ), (TransactionImpl) statement.getTransaction() );
+        LockManager.INSTANCE.unlock( (TransactionImpl) statement.getTransaction() );
     }
 
 
     @Override
     protected void lock( Statement statement ) throws DeadlockException {
-        LockManager.INSTANCE.lock( List.of( Pair.of( LockManager.GLOBAL_LOCK, LockMode.EXCLUSIVE ) ), (TransactionImpl) statement.getTransaction() );
+        LockManager.INSTANCE.lock( LockMode.EXCLUSIVE, (TransactionImpl) statement.getTransaction() );
     }
 
 
