@@ -44,7 +44,7 @@ public class LockManager {
         // Decide on which locking  approach to focus
         Stopwatch watch = Stopwatch.createStarted();
         while ( !handleSimpleLock(mode, transaction )){
-            if( watch.elapsed().getSeconds() > 200 ){
+            if( watch.elapsed().getSeconds() > 10 ){
                 throw new DeadlockException( new GenericRuntimeException( "Could not get lock after retry" ) );
             }
             try {
@@ -68,7 +68,7 @@ public class LockManager {
 
         } else {
             // get r
-            if ( !isExclusive ) {
+            if ( !isExclusive || owners.contains( transaction.getXid()) ) {
                 owners.add( transaction.getXid() );
                 return true;
             }
@@ -88,7 +88,6 @@ public class LockManager {
 
         if ( isExclusive ) {
             isExclusive = false;
-
         }
 
         owners.remove( transaction.getXid() );
