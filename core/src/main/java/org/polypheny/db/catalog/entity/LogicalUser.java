@@ -17,6 +17,7 @@
 package org.polypheny.db.catalog.entity;
 
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.io.Serial;
@@ -30,10 +31,13 @@ public class LogicalUser implements PolyObject, Comparable<LogicalUser> {
     private static final long serialVersionUID = 5022567585804699491L;
 
     @Serialize
+    @JsonProperty
     public long id;
     @Serialize
+    @JsonProperty
     public String name;
     @Serialize
+    @JsonProperty
     public String password;
 
 

@@ -2813,6 +2813,15 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         ctx.result( "" );
     }
 
+
+    void getCatalog( final Context ctx ) {
+        // Assigning the result to a variable causes an error when the switch expression is not exhaustive
+        Context ignore = switch ( Catalog.mode ) {
+            case PRODUCTION -> ctx.status( HttpCode.FORBIDDEN ).result( "Forbidden" );
+            case DEVELOPMENT, BENCHMARK, TEST -> ctx.json( Catalog.getInstance().getJson() );
+        };
+    }
+
     // -----------------------------------------------------------------------
     //                                Helper
     // -----------------------------------------------------------------------
