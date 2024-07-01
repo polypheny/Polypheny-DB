@@ -17,6 +17,8 @@
 package org.polypheny.db.catalog.entity.logical;
 
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.io.Serial;
@@ -43,15 +45,19 @@ public class LogicalNamespace implements PolyObject, Comparable<LogicalNamespace
     private static final long serialVersionUID = 3090632164988970558L;
 
     @Serialize
+    @JsonProperty
     public long id;
     @Serialize
     @Getter
+    @JsonProperty
     public String name;
     @Serialize
     @Getter
+    @JsonProperty
     @EqualsAndHashCode.Exclude
     public DataModel dataModel;
     @Serialize
+    @JsonProperty
     public boolean caseSensitive;
 
 

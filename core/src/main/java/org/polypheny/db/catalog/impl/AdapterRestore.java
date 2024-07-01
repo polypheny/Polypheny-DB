@@ -16,6 +16,7 @@
 
 package org.polypheny.db.catalog.impl;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.activej.serializer.annotations.SerializeRecord;
 import java.util.List;
 import java.util.Map;
@@ -30,9 +31,9 @@ import org.polypheny.db.prepare.Context;
 
 @SerializeRecord
 public record AdapterRestore(
-        long adapterId,
-        Map<Long, List<PhysicalEntity>> physicals,
-        Map<Long, AllocationEntity> allocations) {
+        @JsonSerialize long adapterId,
+        @JsonSerialize Map<Long, List<PhysicalEntity>> physicals,
+        @JsonSerialize Map<Long, AllocationEntity> allocations ) {
 
     public AdapterRestore(
             long adapterId,

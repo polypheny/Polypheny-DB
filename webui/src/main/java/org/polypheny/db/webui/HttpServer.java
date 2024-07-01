@@ -282,6 +282,8 @@ public class HttpServer implements Runnable {
 
         webuiServer.get( "/getFile/{file}", crud::getFile );
 
+        webuiServer.get( "/catalog.json", crud::getCatalog );
+
         webuiServer.get( "/getDocumentDatabases", crud.languageCrud::getDocumentDatabases );
 
         webuiServer.get( "/product", ctx -> ctx.result( "Polypheny-DB" ) );

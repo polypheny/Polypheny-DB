@@ -16,6 +16,7 @@
 
 package org.polypheny.db.catalog.impl.allocation;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
@@ -53,6 +54,7 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, PolySer
 
     @Getter
     @Serialize
+    @JsonProperty
     public LogicalNamespace namespace;
 
     @Getter
@@ -60,26 +62,32 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, PolySer
 
     @Serialize
     @Getter
+    @JsonProperty
     public ConcurrentHashMap<Long, AllocationTable> tables;
 
     @Serialize
     @Getter
+    @JsonProperty
     public ConcurrentHashMap<Pair<Long, Long>, AllocationColumn> columns; //placementId, columnId
 
     @Serialize
     @Getter
+    @JsonProperty
     public ConcurrentHashMap<Long, PartitionProperty> properties;
 
     @Serialize
     @Getter
+    @JsonProperty
     public ConcurrentHashMap<Long, AllocationPartitionGroup> partitionGroups;
 
     @Serialize
     @Getter
+    @JsonProperty
     public ConcurrentHashMap<Long, AllocationPartition> partitions;
 
     @Serialize
     @Getter
+    @JsonProperty
     public ConcurrentHashMap<Long, AllocationPlacement> placements;
 
 
@@ -225,7 +233,6 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, PolySer
     }
 
 
-
     @Override
     public void updatePartition( long partitionId, Long partitionGroupId ) {
 
@@ -247,6 +254,7 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, PolySer
         tables.remove( allocId );
         change();
     }
+
 
     @Override
     public AllocationPlacement addPlacement( long logicalEntityId, long namespaceId, long adapterId ) {

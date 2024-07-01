@@ -2842,6 +2842,11 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         ctx.result( "" );
     }
 
+
+    void getCatalog( final Context ctx ) {
+        ctx.json( Catalog.getInstance().getJson() );
+    }
+
     // -----------------------------------------------------------------------
     //                                Helper
     // -----------------------------------------------------------------------
