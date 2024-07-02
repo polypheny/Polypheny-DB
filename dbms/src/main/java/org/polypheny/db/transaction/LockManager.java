@@ -17,15 +17,16 @@
 package org.polypheny.db.transaction;
 
 
+import com.google.common.base.Stopwatch;
 import java.util.HashSet;
 import java.util.Set;
-import com.google.common.base.Stopwatch;
+import javax.transaction.xa.Xid;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.transaction.Lock.LockMode;
 import org.polypheny.db.util.DeadlockException;
-import javax.transaction.xa.Xid;
 
 @Slf4j
 public class LockManager {
@@ -44,7 +45,7 @@ public class LockManager {
         // Decide on which locking  approach to focus
         Stopwatch watch = Stopwatch.createStarted();
         while ( !handleSimpleLock(mode, transaction )){
-            if( watch.elapsed().getSeconds() > 10 ){
+            if ( watch.elapsed().getSeconds() > RuntimeConfig.LOCKING_MAX_TIMEOUT_SECONDS.getInteger() ) {
                 throw new DeadlockException( new GenericRuntimeException( "Could not get lock after retry" ) );
             }
             try {
@@ -60,7 +61,7 @@ public class LockManager {
         if ( mode == LockMode.EXCLUSIVE ) {
             // get w
             if ( owners.isEmpty() || (owners.size() == 1 && owners.contains( transaction.getXid() ))) {
-
+                log.debug( "x lock {}", transaction.getXid() );
                 isExclusive = true;
                 owners.add( transaction.getXid() );
                 return true;
@@ -69,6 +70,7 @@ public class LockManager {
         } else {
             // get r
             if ( !isExclusive || owners.contains( transaction.getXid()) ) {
+                log.debug( "r lock {}", transaction.getXid() );
                 owners.add( transaction.getXid() );
                 return true;
             }
@@ -80,7 +82,6 @@ public class LockManager {
 
 
     public synchronized void unlock( @NonNull TransactionImpl transaction ) {
-
         if ( !owners.contains( transaction.getXid()) ) {
             log.debug( "Transaction is no owner" );
             return;
@@ -89,7 +90,7 @@ public class LockManager {
         if ( isExclusive ) {
             isExclusive = false;
         }
-
+        log.debug( "release {}", transaction.getXid() );
         owners.remove( transaction.getXid() );
 
     }
