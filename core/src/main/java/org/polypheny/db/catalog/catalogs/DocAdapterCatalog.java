@@ -55,7 +55,7 @@ public class DocAdapterCatalog extends AdapterCatalog {
         List<PhysicalColumn> updates = new ArrayList<>();
         for ( PhysicalField field : fields.values() ) {
             if ( field.id == id ) {
-                updates.add( field.unwrap( PhysicalColumn.class ).orElseThrow().toBuilder().logicalName( newFieldName ).build() );
+                updates.add( field.unwrapOrThrow( PhysicalColumn.class ).toBuilder().logicalName( newFieldName ).build() );
             }
         }
         for ( PhysicalColumn u : updates ) {
@@ -75,7 +75,7 @@ public class DocAdapterCatalog extends AdapterCatalog {
 
 
     public <T extends PhysicalEntity> T fromAllocation( long id, Class<T> clazz ) {
-        return getPhysicalsFromAllocs( id ).get( 0 ).unwrap( clazz ).orElseThrow();
+        return getPhysicalsFromAllocs( id ).get( 0 ).unwrapOrThrow( clazz );
     }
 
 
@@ -96,7 +96,7 @@ public class DocAdapterCatalog extends AdapterCatalog {
 
 
     public PhysicalColumn getColumn( long columnId, long allocId ) {
-        return fields.get( Pair.of( allocId, columnId ) ).unwrap( PhysicalColumn.class ).orElseThrow();
+        return fields.get( Pair.of( allocId, columnId ) ).unwrapOrThrow( PhysicalColumn.class );
     }
 
 

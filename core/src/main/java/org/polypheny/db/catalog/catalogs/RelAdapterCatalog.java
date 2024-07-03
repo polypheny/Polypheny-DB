@@ -89,12 +89,12 @@ public class RelAdapterCatalog extends AdapterCatalog {
 
 
     public PhysicalTable getTable( long id ) {
-        return getPhysical( id ).unwrap( PhysicalTable.class ).orElseThrow();
+        return getPhysical( id ).unwrapOrThrow( PhysicalTable.class );
     }
 
 
     public PhysicalColumn getColumn( long id, long allocId ) {
-        return fields.get( Pair.of( allocId, id ) ).unwrap( PhysicalColumn.class ).orElseThrow();
+        return fields.get( Pair.of( allocId, id ) ).unwrapOrThrow( PhysicalColumn.class );
     }
 
 
@@ -137,12 +137,12 @@ public class RelAdapterCatalog extends AdapterCatalog {
         if ( allocs == null || allocs.isEmpty() ) {
             throw new GenericRuntimeException( "No physical table found for allocation with id %s", id );
         }
-        return allocs.get( 0 ).unwrap( PhysicalTable.class ).orElseThrow();
+        return allocs.get( 0 ).unwrapOrThrow( PhysicalTable.class );
     }
 
 
     public void dropColumn( long allocId, long columnId ) {
-        PhysicalColumn column = fields.get( Pair.of( allocId, columnId ) ).unwrap( PhysicalColumn.class ).orElseThrow();
+        PhysicalColumn column = fields.get( Pair.of( allocId, columnId ) ).unwrapOrThrow( PhysicalColumn.class );
         PhysicalTable table = fromAllocation( allocId );
         List<PhysicalColumn> pColumns = new ArrayList<>( table.columns );
         pColumns.remove( column );

@@ -66,7 +66,7 @@ public class GraphAdapterCatalog extends AdapterCatalog {
         List<PhysicalColumn> updates = new ArrayList<>();
         for ( PhysicalField field : fields.values() ) {
             if ( field.id == id ) {
-                updates.add( field.unwrap( PhysicalColumn.class ).orElseThrow().toBuilder().logicalName( newFieldName ).build() );
+                updates.add( field.unwrapOrThrow( PhysicalColumn.class ).toBuilder().logicalName( newFieldName ).build() );
             }
         }
         for ( PhysicalColumn u : updates ) {
@@ -97,7 +97,7 @@ public class GraphAdapterCatalog extends AdapterCatalog {
 
 
     public <E extends PhysicalEntity> E fromAllocation( long id, Class<E> clazz ) {
-        return getPhysicalsFromAllocs( id ).get( 0 ).unwrap( clazz ).orElseThrow();
+        return getPhysicalsFromAllocs( id ).get( 0 ).unwrapOrThrow( clazz );
     }
 
 
@@ -144,7 +144,7 @@ public class GraphAdapterCatalog extends AdapterCatalog {
 
 
     public PhysicalColumn updateColumnType( long allocId, LogicalColumn newCol ) {
-        PhysicalColumn old = getField( newCol.id, allocId ).unwrap( PhysicalColumn.class ).orElseThrow();
+        PhysicalColumn old = getField( newCol.id, allocId ).unwrapOrThrow( PhysicalColumn.class );
         PhysicalColumn column = new PhysicalColumn( old.name, newCol.tableId, allocId, old.adapterId, old.position, newCol );
         addColumn( column );
         return column;
