@@ -22,7 +22,6 @@ import io.activej.serializer.annotations.Serialize;
 import java.beans.PropertyChangeSupport;
 import java.sql.Timestamp;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -72,7 +71,10 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
 
     public BinarySerializer<RelationalCatalog> serializer = PolySerializable.buildSerializer( RelationalCatalog.class );
 
-    public IdBuilder idBuilder = IdBuilder.getInstance();
+    IdBuilder idBuilder = IdBuilder.getInstance();
+
+    @Serialize
+    public LogicalNamespace logicalNamespace;
 
     @Serialize
     public Map<Long, LogicalTable> tables;
@@ -82,8 +84,6 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
 
     public Map<Long, AlgNode> nodes;
 
-    @Serialize
-    public LogicalNamespace logicalNamespace;
 
     @Serialize
     public Map<Long, LogicalIndex> indexes;
@@ -92,12 +92,17 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
     @Serialize
     public Map<Long, LogicalKey> keys;
 
-
     @Serialize
     public Map<Long, LogicalConstraint> constraints;
 
-
     List<Long> tablesFlaggedForDeletion = new ArrayList<>();
+
+    PropertyChangeSupport listeners = new PropertyChangeSupport( this );
+
+
+    public RelationalCatalog( LogicalNamespace namespace ) {
+        this( namespace, Map.of(), Map.of(), Map.of(), Map.of(), Map.of() );
+    }
 
 
     public RelationalCatalog(
@@ -119,16 +124,8 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
     }
 
 
-    PropertyChangeSupport listeners = new PropertyChangeSupport( this );
-
-
     public void change( CatalogEvent event, Object oldValue, Object newValue ) {
         listeners.firePropertyChange( event.name(), oldValue, newValue );
-    }
-
-
-    public RelationalCatalog( LogicalNamespace namespace ) {
-        this( namespace, new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashMap<>() );
     }
 
 

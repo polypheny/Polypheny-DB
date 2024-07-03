@@ -20,7 +20,6 @@ import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.beans.PropertyChangeSupport;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.Value;
@@ -40,6 +39,8 @@ import org.polypheny.db.type.PolySerializable;
 @Value
 public class PolyAllocDocCatalog implements PolySerializable, AllocationDocumentCatalog {
 
+    public BinarySerializer<PolyAllocDocCatalog> serializer = PolySerializable.buildSerializer( PolyAllocDocCatalog.class );
+
     IdBuilder idBuilder = IdBuilder.getInstance();
 
     @Serialize
@@ -54,9 +55,11 @@ public class PolyAllocDocCatalog implements PolySerializable, AllocationDocument
     @Serialize
     public ConcurrentHashMap<Long, AllocationPartition> partitions;
 
+    PropertyChangeSupport listeners = new PropertyChangeSupport( this );
+
 
     public PolyAllocDocCatalog( LogicalNamespace namespace ) {
-        this( namespace, new HashMap<>(), new HashMap<>(), new HashMap<>() );
+        this( namespace, Map.of(), Map.of(), Map.of() );
     }
 
 
@@ -73,15 +76,9 @@ public class PolyAllocDocCatalog implements PolySerializable, AllocationDocument
     }
 
 
-    PropertyChangeSupport listeners = new PropertyChangeSupport( this );
-
-
     public void change() {
         listeners.firePropertyChange( "change", null, null );
     }
-
-
-    public BinarySerializer<PolyAllocDocCatalog> serializer = PolySerializable.buildSerializer( PolyAllocDocCatalog.class );
 
 
     @Override

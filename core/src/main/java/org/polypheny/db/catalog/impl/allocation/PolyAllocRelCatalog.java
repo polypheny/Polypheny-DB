@@ -20,7 +20,6 @@ import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.beans.PropertyChangeSupport;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -47,13 +46,12 @@ import org.polypheny.db.util.Pair;
 @Value
 public class PolyAllocRelCatalog implements AllocationRelationalCatalog, PolySerializable {
 
+    public BinarySerializer<PolyAllocRelCatalog> serializer = PolySerializable.buildSerializer( PolyAllocRelCatalog.class );
 
     IdBuilder idBuilder = IdBuilder.getInstance();
 
     @Serialize
     public LogicalNamespace namespace;
-
-    public BinarySerializer<PolyAllocRelCatalog> serializer = PolySerializable.buildSerializer( PolyAllocRelCatalog.class );
 
     @Serialize
     public ConcurrentHashMap<Long, AllocationTable> tables;
@@ -73,16 +71,11 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, PolySer
     @Serialize
     public ConcurrentHashMap<Long, AllocationPlacement> placements;
 
+    PropertyChangeSupport listeners = new PropertyChangeSupport( this );
+
 
     public PolyAllocRelCatalog( LogicalNamespace namespace ) {
-        this(
-                namespace,
-                new HashMap<>(),
-                new HashMap<>(),
-                new HashMap<>(),
-                new HashMap<>(),
-                new HashMap<>(),
-                new HashMap<>() );
+        this( namespace, Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of() );
     }
 
 
@@ -103,9 +96,6 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, PolySer
         this.placements = new ConcurrentHashMap<>( placements );
         listeners.addPropertyChangeListener( Catalog.getInstance().getChangeListener() );
     }
-
-
-    PropertyChangeSupport listeners = new PropertyChangeSupport( this );
 
 
     public void change() {

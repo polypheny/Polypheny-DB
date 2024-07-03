@@ -39,16 +39,20 @@ public class GraphCatalog implements PolySerializable, LogicalGraphCatalog {
 
     public BinarySerializer<GraphCatalog> serializer = PolySerializable.buildSerializer( GraphCatalog.class );
 
+    IdBuilder idBuilder = IdBuilder.getInstance();
+
     @Serialize
     public LogicalNamespace logicalNamespace;
-    public IdBuilder idBuilder = IdBuilder.getInstance();
 
     @Serialize
     public ConcurrentHashMap<Long, LogicalGraph> graphs;
 
 
+    PropertyChangeSupport listeners = new PropertyChangeSupport( this );
+
+
     public GraphCatalog( LogicalNamespace logicalNamespace ) {
-        this( logicalNamespace, new ConcurrentHashMap<>() );
+        this( logicalNamespace, Map.of() );
     }
 
 
@@ -62,9 +66,6 @@ public class GraphCatalog implements PolySerializable, LogicalGraphCatalog {
         addGraph( logicalNamespace.id, logicalNamespace.name, true );
         listeners.addPropertyChangeListener( Catalog.getInstance().getChangeListener() );
     }
-
-
-    PropertyChangeSupport listeners = new PropertyChangeSupport( this );
 
 
     public void change( CatalogEvent event, Object oldValue, Object newValue ) {

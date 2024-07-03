@@ -41,14 +41,18 @@ public class DocumentCatalog implements PolySerializable, LogicalDocumentCatalog
     public BinarySerializer<DocumentCatalog> serializer = PolySerializable.buildSerializer( DocumentCatalog.class );
 
     IdBuilder idBuilder = IdBuilder.getInstance();
-    @Serialize
-    public Map<Long, LogicalCollection> collections;
+
     @Serialize
     public LogicalNamespace logicalNamespace;
 
+    @Serialize
+    public Map<Long, LogicalCollection> collections;
+
+    PropertyChangeSupport listeners = new PropertyChangeSupport( this );
+
 
     public DocumentCatalog( LogicalNamespace logicalNamespace ) {
-        this( logicalNamespace, new ConcurrentHashMap<>() );
+        this( logicalNamespace, Map.of() );
     }
 
 
@@ -60,9 +64,6 @@ public class DocumentCatalog implements PolySerializable, LogicalDocumentCatalog
 
         listeners.addPropertyChangeListener( Catalog.getInstance().getChangeListener() );
     }
-
-
-    PropertyChangeSupport listeners = new PropertyChangeSupport( this );
 
 
     public void change( CatalogEvent event, Object oldValue, Object newValue ) {
