@@ -91,7 +91,7 @@ public class LogicalTable extends LogicalEntity {
 
 
     public List<ColumnStrategy> getColumnStrategies() {
-        return getColumns().stream().map( c -> c.nullable ? ColumnStrategy.NULLABLE : ColumnStrategy.NOT_NULLABLE ).collect( Collectors.toList() );
+        return getColumns().stream().map( c -> c.nullable ? ColumnStrategy.NULLABLE : ColumnStrategy.NOT_NULLABLE ).toList();
     }
 
 
@@ -101,12 +101,12 @@ public class LogicalTable extends LogicalEntity {
 
 
     public List<Long> getColumnIds() {
-        return getColumns().stream().sorted( Comparator.comparingInt( a -> a.position ) ).map( c -> c.id ).collect( Collectors.toList() );
+        return getColumns().stream().sorted( Comparator.comparingInt( a -> a.position ) ).map( c -> c.id ).toList();
     }
 
 
     public List<String> getColumnNames() {
-        return getColumns().stream().map( c -> c.name ).collect( Collectors.toList() );
+        return getColumns().stream().map( c -> c.name ).toList();
     }
 
 

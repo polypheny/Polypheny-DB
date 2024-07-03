@@ -87,7 +87,7 @@ public class GraphAdapterCatalog extends AdapterCatalog {
         List<AllocationColumn> columns = wrapper.columns;
         List<PhysicalColumn> pColumns = columns.stream()
                 .map( c -> new PhysicalColumn( columnNames.get( c.columnId ), logical.id, allocation.id, allocation.adapterId, c.position, logicalColumns.get( c.columnId ) ) )
-                .collect( Collectors.toList() );
+                .toList();
         long physicalId = IdBuilder.getInstance().getNewPhysicalId();
         PhysicalTable table = new PhysicalTable( physicalId, allocation.id, logical.id, tableName, pColumns, logical.namespaceId, namespaceName, pkIds, allocation.adapterId );
         pColumns.forEach( this::addColumn );

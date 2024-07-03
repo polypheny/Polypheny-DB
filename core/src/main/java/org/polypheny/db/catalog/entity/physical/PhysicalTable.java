@@ -58,7 +58,7 @@ public class PhysicalTable extends PhysicalEntity {
             @Deserialize("uniqueFieldIds") List<Long> uniqueFieldIds,
             @Deserialize("adapterId") long adapterId ) {
         super( id, allocationId, logicalId, name, namespaceId, namespaceName, uniqueFieldIds, DataModel.RELATIONAL, adapterId );
-        this.columns = ImmutableList.copyOf( columns.stream().sorted( Comparator.comparingInt( a -> a.position ) ).collect( Collectors.toList() ) );
+        this.columns = ImmutableList.copyOf( columns.stream().sorted( Comparator.comparingInt( a -> a.position ) ).toList() );
     }
 
 
@@ -87,12 +87,12 @@ public class PhysicalTable extends PhysicalEntity {
 
 
     public List<String> getColumnNames() {
-        return columns.stream().map( c -> c.name ).collect( Collectors.toList() );
+        return columns.stream().map( c -> c.name ).toList();
     }
 
 
     public List<Long> getColumnIds() {
-        return columns.stream().map( c -> c.id ).collect( Collectors.toList() );
+        return columns.stream().map( c -> c.id ).toList();
     }
 
 

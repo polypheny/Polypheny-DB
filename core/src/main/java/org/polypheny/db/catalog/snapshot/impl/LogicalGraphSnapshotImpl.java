@@ -70,7 +70,7 @@ public class LogicalGraphSnapshotImpl implements LogicalGraphSnapshot {
             return graphs;
         }
 
-        return graphNames.values().stream().filter( g -> g.caseSensitive ? g.name.matches( graphName.toRegex() ) : g.name.toLowerCase().matches( graphName.toRegex().toLowerCase() ) ).collect( Collectors.toList() );
+        return graphNames.values().stream().filter( g -> g.caseSensitive ? g.name.matches( graphName.toRegex() ) : g.name.toLowerCase().matches( graphName.toRegex().toLowerCase() ) ).toList();
     }
 
 

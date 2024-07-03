@@ -294,7 +294,6 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
             return this.namespaces.values().asList();
         }
         return this.namespaces.values().stream().filter( n -> n.caseSensitive ? n.name.matches( namespaceName.toRegex() ) : n.name.toLowerCase().matches( namespaceName.toRegex().toLowerCase() ) ).toList();
-
     }
 
 
@@ -432,13 +431,13 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
     @Override
     public @NotNull List<LogicalForeignKey> getForeignKeys( long tableId ) {
-        return foreignKeys.values().stream().filter( k -> k.entityId == tableId ).collect( Collectors.toList() );
+        return foreignKeys.values().stream().filter( k -> k.entityId == tableId ).toList();
     }
 
 
     @Override
     public @NonNull List<LogicalForeignKey> getExportedKeys( long tableId ) {
-        return foreignKeys.values().stream().filter( k -> k.referencedKeyEntityId == tableId ).collect( Collectors.toList() );
+        return foreignKeys.values().stream().filter( k -> k.referencedKeyEntityId == tableId ).toList();
     }
 
 
@@ -451,7 +450,7 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
     @Override
     public @NotNull List<LogicalConstraint> getConstraints( LogicalKey key ) {
-        return constraints.values().stream().filter( c -> c.keyId == key.id ).collect( Collectors.toList() );
+        return constraints.values().stream().filter( c -> c.keyId == key.id ).toList();
     }
 
 

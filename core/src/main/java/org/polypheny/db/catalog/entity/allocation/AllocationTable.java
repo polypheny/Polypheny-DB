@@ -77,7 +77,7 @@ public class AllocationTable extends AllocationEntity {
 
 
     public List<AllocationColumn> getColumns() {
-        return Catalog.snapshot().alloc().getColumns( placementId ).stream().sorted( Comparator.comparingLong( a -> a.position ) ).collect( Collectors.toList() );
+        return Catalog.snapshot().alloc().getColumns( placementId ).stream().sorted( Comparator.comparingLong( a -> a.position ) ).toList();
     }
 
 
@@ -87,7 +87,7 @@ public class AllocationTable extends AllocationEntity {
 
 
     public List<Long> getColumnIds() {
-        return getColumns().stream().map( c -> c.columnId ).collect( Collectors.toList() );
+        return getColumns().stream().map( c -> c.columnId ).toList();
     }
 
 
