@@ -162,14 +162,13 @@ public class LanguageCrud {
             results.add( builder.apply( executedContext, request, executedContext.getStatement() ).build() );
         }
 
-        commitAndFinish( executedContexts, transaction.getQueryAnalyzer(), results, executedContexts.stream().map( ExecutedContext::getExecutionTime ).reduce( Long::sum ).orElse( -1L ) );
+        commitAndFinish( executedContexts, transaction.getQueryAnalyzer(), results, executedContexts.stream().map( ExecutedContext::getExecutionTime ).reduce( (a,b) -> a + b ).orElse( -1L ) );
 
         return results;
     }
 
 
     public static void commitAndFinish( List<ExecutedContext> executedContexts, InformationManager queryAnalyzer, List<Result<?, ?>> results, long executionTime ) {
-        executionTime = System.nanoTime() - executionTime;
         String commitStatus = "Error on starting committing";
         for ( Transaction transaction : executedContexts.stream().flatMap( c -> c.getQuery().getTransactions().stream() ).toList() ) {
             // this has a lot of unnecessary no-op commits atm

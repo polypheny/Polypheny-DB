@@ -18,6 +18,7 @@ package org.polypheny.db.processing;
 
 
 import java.util.Optional;
+import com.google.common.base.Stopwatch;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.NonFinal;
@@ -51,14 +52,12 @@ public class ImplementationContext {
 
 
     public ExecutedContext execute( Statement statement ) {
-        long time = System.nanoTime();
+        Stopwatch stopwatch = Stopwatch.createStarted();
         try {
             ResultIterator result = implementation.execute( statement, query.getBatch(), query.isAnalysed(), query.isAnalysed(), false );
-            time = System.nanoTime() - time;
-            return new ExecutedContext( implementation, null, query, time, result, statement );
+            return new ExecutedContext( implementation, null, query, stopwatch.elapsed().getNano(), result, statement );
         } catch ( Throwable e ) {
-            time = System.nanoTime() - time;
-            return ExecutedContext.ofError( e, this, time );
+            return ExecutedContext.ofError( e, this, (long) stopwatch.elapsed().getNano() );
         }
 
     }
