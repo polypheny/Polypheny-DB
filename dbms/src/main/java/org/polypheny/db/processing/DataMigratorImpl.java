@@ -440,8 +440,8 @@ public class DataMigratorImpl implements DataMigrator {
         // this often leads to errors, and can be prevented by sorting
         List<AllocationColumn> placements = to.stream().sorted( Comparator.comparingLong( p -> p.columnId ) ).toList();
 
-        List<String> columnNames = new LinkedList<>();
-        List<RexNode> values = new LinkedList<>();
+        List<String> columnNames = new ArrayList<>();
+        List<RexNode> values = new ArrayList<>();
         for ( AllocationColumn ccp : placements ) {
             LogicalColumn logicalColumn = Catalog.getInstance().getSnapshot().rel().getColumn( ccp.columnId ).orElseThrow();
             columnNames.add( ccp.getLogicalColumnName() );

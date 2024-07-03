@@ -20,21 +20,36 @@ package org.polypheny.db.transaction;
 import com.google.common.base.Stopwatch;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 import javax.transaction.xa.Xid;
+import com.google.common.base.Supplier;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.transaction.Lock.LockMode;
 import org.polypheny.db.util.DeadlockException;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.Triple;
 
 @Slf4j
-public class LockManager {
+public class LockManager implements Runnable {
 
     public static final LockManager INSTANCE = new LockManager();
 
     private boolean isExclusive = false;
     private final Set<Xid> owners = new HashSet<>();
+    private final ConcurrentLinkedQueue<Thread> waiters = new ConcurrentLinkedQueue<>();
+    private final ReentrantLock lock = new ReentrantLock();
+    private final Condition condition = lock.newCondition();
 
 
     private LockManager() {
@@ -43,24 +58,74 @@ public class LockManager {
 
     public void lock( LockMode mode, @NonNull TransactionImpl transaction ) throws DeadlockException {
         // Decide on which locking  approach to focus
-        Stopwatch watch = Stopwatch.createStarted();
-        while ( !handleSimpleLock(mode, transaction )){
-            if ( watch.elapsed().getSeconds() > RuntimeConfig.LOCKING_MAX_TIMEOUT_SECONDS.getInteger() ) {
-                throw new DeadlockException( new GenericRuntimeException( "Could not get lock after retry" ) );
-            }
-            try {
-                Thread.sleep( 5 );
-            } catch ( InterruptedException e ) {
-                // ignored
+        synchronized ( this ) {
+            if ( owners.isEmpty() ) {
+                handleLockOrThrow( mode, transaction );
+                return;
             }
         }
+        Thread thread = Thread.currentThread();
+
+        waiters.add( thread );
+
+        Stopwatch watch = Stopwatch.createStarted();
+        // wait
+        while ( true ) {
+            lock.lock();
+            try {
+                while ( waiters.peek() != thread ) {
+                    if ( watch.elapsed().getSeconds() > RuntimeConfig.LOCKING_MAX_TIMEOUT_SECONDS.getInteger() ) {
+                        cleanup( thread );
+                        throw new DeadlockException( new GenericRuntimeException( "Could not acquire lock, after max timeout was reached" ) );
+                    }
+                    condition.await();
+                }
+            } catch ( InterruptedException e ) {
+                cleanup( thread );
+                throw new GenericRuntimeException( e );
+            }
+            lock.unlock();
+
+            synchronized ( this ) {
+                // try execute
+                if ( handleSimpleLock( mode, transaction ) ) {
+                    // remove successful
+                    waiters.poll();
+                    // signal
+                    signalAll();
+
+                    return;
+                }
+
+                if ( owners.isEmpty() ) {
+                    waiters.remove( thread );
+                    throw new GenericRuntimeException( "Could not acquire lock" );
+                }
+            }
+            // we wait until next signal
+        }
+
     }
+
+
+    private void cleanup( Thread thread ) {
+        waiters.remove( thread );
+        lock.unlock();
+    }
+
+
+    private void handleLockOrThrow( LockMode mode, @NotNull TransactionImpl transaction ) {
+        if ( !handleSimpleLock( mode, transaction ) ) {
+            throw new GenericRuntimeException( "Could not acquire lock, as single transaction" );
+        }
+    }
+
 
 
     private synchronized boolean handleSimpleLock( @NonNull LockMode mode, TransactionImpl transaction ) {
         if ( mode == LockMode.EXCLUSIVE ) {
             // get w
-            if ( owners.isEmpty() || (owners.size() == 1 && owners.contains( transaction.getXid() ))) {
+            if ( owners.isEmpty() || (owners.size() == 1 && owners.contains( transaction.getXid() )) ) {
                 log.debug( "x lock {}", transaction.getXid() );
                 isExclusive = true;
                 owners.add( transaction.getXid() );
@@ -69,7 +134,7 @@ public class LockManager {
 
         } else {
             // get r
-            if ( !isExclusive || owners.contains( transaction.getXid()) ) {
+            if ( !isExclusive || owners.contains( transaction.getXid() ) ) {
                 log.debug( "r lock {}", transaction.getXid() );
                 owners.add( transaction.getXid() );
                 return true;
@@ -80,9 +145,20 @@ public class LockManager {
     }
 
 
+    private void signalAll() {
+        lock.lock();
+        try{
+            synchronized ( condition ) {
+                condition.signalAll();
+            }
+        }finally {
+            lock.unlock();
+        }
+    }
+
 
     public synchronized void unlock( @NonNull TransactionImpl transaction ) {
-        if ( !owners.contains( transaction.getXid()) ) {
+        if ( !owners.contains( transaction.getXid() ) ) {
             log.debug( "Transaction is no owner" );
             return;
         }
@@ -93,6 +169,8 @@ public class LockManager {
         log.debug( "release {}", transaction.getXid() );
         owners.remove( transaction.getXid() );
 
+        // wake up waiters
+        signalAll();
     }
 
 
@@ -100,5 +178,10 @@ public class LockManager {
         unlock( transaction );
     }
 
+
+    @Override
+    public void run() {
+
+    }
 
 }
