@@ -21,6 +21,7 @@ import com.google.common.base.Stopwatch;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import javax.transaction.xa.Xid;
@@ -70,12 +71,12 @@ public class LockManager implements Runnable {
             lock.lock();
             try {
                 while ( waiters.peek() != thread ) {
-                    if ( watch.elapsed().getSeconds() > RuntimeConfig.LOCKING_MAX_TIMEOUT_SECONDS.getInteger() ) {
+                    log.debug( "wait {} ", transaction.getXid() );
+                    boolean successful = condition.await( RuntimeConfig.LOCKING_MAX_TIMEOUT_SECONDS.getInteger(), TimeUnit.SECONDS );
+                    if ( !successful ) {
                         cleanup( thread );
                         throw new DeadlockException( new GenericRuntimeException( "Could not acquire lock, after max timeout was reached" ) );
                     }
-                    log.debug( "wait {} ", transaction.getXid() );
-                    condition.await();
                 }
             } catch ( InterruptedException e ) {
                 cleanup( thread );
@@ -118,7 +119,6 @@ public class LockManager implements Runnable {
     }
 
 
-
     private synchronized boolean handleSimpleLock( @NonNull LockMode mode, TransactionImpl transaction ) {
         if ( mode == LockMode.EXCLUSIVE ) {
             // get w
@@ -149,11 +149,11 @@ public class LockManager implements Runnable {
 
     private void signalAll() {
         lock.lock();
-        try{
+        try {
             synchronized ( condition ) {
                 condition.signalAll();
             }
-        }finally {
+        } finally {
             lock.unlock();
         }
     }
