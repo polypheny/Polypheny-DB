@@ -196,9 +196,7 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
 
     @Override
     public void deleteTable( long tableId ) {
-        for ( Long columnId : tables.get( tableId ).getColumnIds() ) {
-            columns.remove( columnId );
-        }
+        tables.get( tableId ).getColumnIds().forEach( columns::remove );
         tables.remove( tableId );
         change( CatalogEvent.LOGICAL_REL_ENTITY_DROPPED, tableId, null );
     }
