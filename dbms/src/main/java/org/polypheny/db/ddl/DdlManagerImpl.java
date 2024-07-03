@@ -1657,7 +1657,7 @@ public class DdlManagerImpl extends DdlManager {
 
         AlgDataType fieldList = algNode.getTupleType();
 
-        List<FieldInformation> columns = getColumnInformation( projectedColumns, fieldList );
+        List<FieldInformation> columns = getViewColumnInformation( projectedColumns, fieldList );
 
         Map<Long, List<Long>> underlyingTables = new HashMap<>();
 
@@ -1753,7 +1753,7 @@ public class DdlManagerImpl extends DdlManager {
         );
 
         // Creates a list with all columns, tableId is needed to create the primary key
-        List<FieldInformation> fields = getColumnInformation( projectedColumns, fieldList, true, view.id );
+        List<FieldInformation> fields = getViewColumnInformation( projectedColumns, fieldList, true, view.id );
 
         Map<String, LogicalColumn> ids = new LinkedHashMap<>();
 
@@ -1953,12 +1953,12 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
-    private List<FieldInformation> getColumnInformation( List<String> projectedColumns, AlgDataType fieldList ) {
-        return getColumnInformation( projectedColumns, fieldList, false, 0 );
+    private List<FieldInformation> getViewColumnInformation( List<String> projectedColumns, AlgDataType fieldList ) {
+        return getViewColumnInformation( projectedColumns, fieldList, false, 0 );
     }
 
 
-    private List<FieldInformation> getColumnInformation( List<String> projectedColumns, AlgDataType fieldList, boolean addPrimary, long tableId ) {
+    private List<FieldInformation> getViewColumnInformation( List<String> projectedColumns, AlgDataType fieldList, boolean addPrimary, long tableId ) {
         List<FieldInformation> columns = new ArrayList<>();
 
         int position = 1;

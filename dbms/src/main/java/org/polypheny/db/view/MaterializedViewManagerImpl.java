@@ -336,7 +336,6 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
         addMaterializedInfo( materializedView.id, materializedView.getMaterializedCriteria() );
     }
 
-
     /**
      * Deletes all the data from a materialized view and adds the newest data to the materialized view
      *

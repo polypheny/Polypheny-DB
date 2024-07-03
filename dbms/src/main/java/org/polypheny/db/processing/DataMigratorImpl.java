@@ -91,6 +91,7 @@ import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.util.Pair;
+import org.polypheny.db.webui.models.catalog.FieldDefinition;
 
 
 @Slf4j
@@ -323,7 +324,7 @@ public class DataMigratorImpl implements DataMigrator {
             for ( AllocationColumn column : selectedColumns ) {
                 int i = 0;
                 for ( AlgDataTypeField metaData : implementation.getTupleType().getFields() ) {
-                    if ( metaData.getName().equalsIgnoreCase( column.getLogicalColumnName() ) ) {
+                    if ( FieldDefinition.normalizeViewColumnName( metaData.getName() ).equalsIgnoreCase( column.getLogicalColumnName() ) ) {
                         resultColMapping.put( column.getColumnId(), i );
                     }
                     i++;
