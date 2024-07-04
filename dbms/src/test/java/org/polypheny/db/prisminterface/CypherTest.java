@@ -62,7 +62,7 @@ public class CypherTest {
                 fail( "Driver must support unwrapping to PolyConnection" );
             }
             PolyStatement polyStatement = connection.unwrap( PolyConnection.class ).createPolyStatement();
-            GraphResult result = polyStatement.execute( "cyphertest", "cypher", "MATCH (n:Person) RETURN n" ).unwrap( GraphResult.class );
+            GraphResult result = polyStatement.execute( "cyphertest", "cypher", "MATCH (n:Person) RETURN n ORDER BY n.id" ).unwrap( GraphResult.class );
             Iterator<PolyGraphElement> elements = result.iterator();
 
             assertTrue( elements.hasNext() );
@@ -142,7 +142,7 @@ public class CypherTest {
             assertTrue( rows.hasNext() );
             PolyRow row = rows.next();
             assertEquals( "Alice", row.get( "n.name" ).asString() );
-            assertEquals( 1, row.get( "n.id" ).asInt() );
+            assertEquals( "1", row.get( "n.id" ).asString() );
 
             assertFalse( rows.hasNext() );
         }
