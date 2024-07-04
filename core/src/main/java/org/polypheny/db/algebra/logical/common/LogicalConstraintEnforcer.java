@@ -247,6 +247,9 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
             constraints.add( pkc );
         }
 
+        // get new constraints
+        constraints.addAll( statement.getTransaction().getUsedConstraints( table.id ).stream().filter( c -> c.type != ConstraintType.FOREIGN ).toList() );
+
         AlgNode constrainedNode;
 
         //

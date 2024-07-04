@@ -18,13 +18,13 @@ package org.polypheny.db.transaction;
 
 
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentSkipListSet;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
@@ -40,6 +40,7 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer.EnforcementInformation;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.LogicalConstraint;
 import org.polypheny.db.catalog.entity.LogicalUser;
 import org.polypheny.db.catalog.entity.logical.LogicalKey.EnforcementTime;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
@@ -97,7 +98,10 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
 
     @Getter
-    private final Set<LogicalTable> logicalTables = new TreeSet<>();
+    private final Set<LogicalTable> usedTables = new TreeSet<>();
+
+    @Getter
+    private final Map<Long, List<LogicalConstraint>> entityConstraints = new HashMap<>();
 
     @Getter
     private final Set<Adapter<?>> involvedAdapters = new ConcurrentSkipListSet<>( (a,b) -> Math.toIntExact( a.adapterId - b.adapterId ) );
@@ -172,11 +176,11 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
             }
         }
 
-        if ( !logicalTables.isEmpty() ) {
+        if ( !usedTables.isEmpty() ) {
             Statement statement = createStatement();
             QueryProcessor processor = statement.getQueryProcessor();
             List<EnforcementInformation> infos = ConstraintEnforceAttacher
-                    .getConstraintAlg( logicalTables, statement, EnforcementTime.ON_COMMIT );
+                    .getConstraintAlg( usedTables, statement, EnforcementTime.ON_COMMIT );
             List<PolyImplementation> results = infos
                     .stream()
                     .map( s -> processor.prepareQuery( AlgRoot.of( s.control(), Kind.SELECT ), s.control().getCluster().getTypeFactory().builder().build(), false, true, false ) ).toList();
@@ -320,13 +324,34 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
     @Override
     public void addUsedTable( LogicalTable table ) {
-        this.logicalTables.add( table );
+        this.usedTables.add( table );
     }
 
 
     @Override
     public void removeUsedTable( LogicalTable table ) {
-        this.logicalTables.remove( table );
+        this.usedTables.remove( usedTables );
+    }
+
+
+    @Override
+    public void getNewEntityConstraints( long entity ) {
+        this.entityConstraints.getOrDefault( entity, List.of() );
+    }
+
+
+    @Override
+    public void addNewConstraint( long entityId, LogicalConstraint constraint ) {
+        this.entityConstraints.putIfAbsent( entityId, new ArrayList<>() );
+        this.entityConstraints.get( entityId ).add( constraint );
+    }
+
+
+    @Override
+    public void removeNewConstraint( long entityId, LogicalConstraint constraint ) {
+        List<LogicalConstraint> constraints = this.entityConstraints.get( entityId );
+        constraints.remove( constraint );
+        this.entityConstraints.put( entityId, constraints );
     }
 
 
@@ -385,6 +410,13 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
         this.accessMode = accessModeCandidate;
 
     }
+
+
+    @Override
+    public List<LogicalConstraint> getUsedConstraints( long id ) {
+        return this.entityConstraints.getOrDefault( id, List.of() );
+    }
+
 
     void abort() {
         Thread.currentThread().interrupt();

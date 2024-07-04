@@ -22,6 +22,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.catalog.entity.LogicalConstraint;
 import org.polypheny.db.catalog.entity.LogicalUser;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
@@ -80,9 +81,15 @@ public interface Transaction {
 
     boolean getUseCache();
 
-    void addUsedTable(LogicalTable table);
+    void addUsedTable( LogicalTable table );
 
-    void removeUsedTable(LogicalTable table);
+    void removeUsedTable( LogicalTable table );
+
+    void getNewEntityConstraints( long entity );
+
+    void addNewConstraint( long entityId, LogicalConstraint constraint );
+
+    void removeNewConstraint( long entityId, LogicalConstraint constraint );
 
     void setAcceptsOutdated( boolean acceptsOutdated );
 
@@ -93,6 +100,8 @@ public interface Transaction {
     void updateAccessMode( AccessMode accessCandidate );
 
     TransactionManager getTransactionManager();
+
+    List<LogicalConstraint> getUsedConstraints( long id );
 
     /**
      * Flavor, how multimedia results should be returned from a store.
