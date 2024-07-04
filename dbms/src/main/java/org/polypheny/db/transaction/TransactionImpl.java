@@ -330,7 +330,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
     @Override
     public void removeUsedTable( LogicalTable table ) {
-        this.usedTables.remove( usedTables );
+        this.usedTables.remove( table );
     }
 
 
