@@ -16,6 +16,7 @@
 
 package org.polypheny.db.cypher.Functions;
 
+import org.checkerframework.checker.units.qual.K;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.cypher.CypherTestTemplate;
@@ -64,6 +65,64 @@ public class OtherFunTest extends CypherTestTemplate {
         execute( "MATCH (p:Person { name: 'Ann' })\n"
                 + "RETURN EXISTS(p.age)\n" );
         assert containsRows( res, true, true, Row.of( TestLiteral.from( true ) ) );
+    }
+
+
+
+    @Test
+    public void testCoalesceFunction() {
+        execute(SINGLE_NODE_PERSON_1);
+        execute(SINGLE_NODE_PERSON_2);
+        execute(SINGLE_NODE_PERSON_COMPLEX_1);
+        GraphResult result = execute("MATCH (p) RETURN p.name, coalesce(p.age, 0) AS age");
+
+
+        assert containsRows(result, true, false,
+                Row.of(TestLiteral.from( "Max" ) ,TestLiteral.from( 0 )),
+                Row.of(TestLiteral.from( "Hans" ) , TestLiteral.from( 0 )),
+                Row.of(TestLiteral.from( "Ann" ),TestLiteral.from( 45 )));
+    }
+
+    @Test
+    public void testIsNullFunction() {
+        execute(SINGLE_NODE_PERSON_1);
+        execute(SINGLE_NODE_PERSON_2);
+        execute(SINGLE_NODE_PERSON_COMPLEX_1);
+        GraphResult result = execute("MATCH (p) WHERE p.age IS NULL RETURN p");
+
+        assertNode(result, 0);
+
+        assert containsRows(result, true, false,
+                Row.of(HANS),
+                Row.of(MAX));
+    }
+
+    @Test
+    public void testIsNotNullFunction() {
+        execute(SINGLE_NODE_PERSON_1);
+        execute(SINGLE_NODE_PERSON_2);
+        execute(SINGLE_NODE_ANIMAL);
+        GraphResult result = execute("MATCH (p) WHERE p.type IS NOT NULL RETURN p");
+
+        assertNode(result, 0);
+
+        assert containsRows(result, true, false,
+                Row.of( KIRA) );
+    }
+
+    @Test
+    public void testDefaultValuesWithCoalesce() {
+        execute(SINGLE_NODE_PERSON_1);
+        execute(SINGLE_NODE_PERSON_2);
+        execute(SINGLE_NODE_PERSON_COMPLEX_1);
+        GraphResult result = execute("MATCH (p) RETURN p.name, coalesce(p.age, 'unknown') AS age");
+
+        assertNode(result, 0);
+
+        assert containsRows(result, true, false,
+                Row.of(TestLiteral.from( "Max" ) ,TestLiteral.from( "unknown")),
+                Row.of(TestLiteral.from( "Hans" ) , TestLiteral.from("unknown" )),
+                Row.of(TestLiteral.from( "Ann" ),TestLiteral.from( "unknown" )));
     }
 
 
