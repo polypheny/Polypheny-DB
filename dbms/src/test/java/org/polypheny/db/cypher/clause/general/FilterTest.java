@@ -19,35 +19,92 @@ package org.polypheny.db.cypher.clause.general;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.cypher.CypherTestTemplate;
+import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.webui.models.results.GraphResult;
 
 public class FilterTest extends CypherTestTemplate {
 
     @BeforeEach
-    public void reset() {
+    public void setUp() {
         tearDown();
         createGraph();
     }
 
     ///////////////////////////////////////////////
-    ///////// FILTER
+    /////////// FILTER
     ///////////////////////////////////////////////
 
 
     @Test
-    public void simplePropertyFilter() {
+    public void simpleConditionFilterTest() {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_ANIMAL );
-        GraphResult res = execute( "MATCH (p) WHERE p.age > 3 RETURN p" );
+        GraphResult result = execute( "MATCH (p) WHERE p.age > 3 RETURN p" );
 
-        assertNode( res, 0 );
+        assertNode( result, 0 );
 
-        assert containsRows( res, true, false );
+        assert containsRows( result, true, false );
 
-        res = execute( "MATCH (p) WHERE p.age >= 3 RETURN p" );
-        assertNode( res, 0 );
+        result = execute( "MATCH (p) WHERE p.age >= 3 RETURN p" );
+        assertNode( result, 0 );
 
-        assert containsRows( res, true, false, Row.of( KIRA ) );
+        assert containsRows( result, true, false, Row.of( KIRA ) );
     }
+
+
+    @Test
+    public void multipleConditionsFilterTest() {
+        execute( SINGLE_NODE_PERSON_COMPLEX_1 );
+        execute( SINGLE_NODE_PERSON_COMPLEX_2 );
+        execute( SINGLE_NODE_PERSON_COMPLEX_3 );
+        GraphResult result = execute( "MATCH (p) WHERE p.age >= 45 AND p.depno = 13 RETURN p.name" );
+
+        assert containsRows( result, true, false, Row.of( TestLiteral.from( "Ann" ) ) );
+
+        result = execute( "MATCH (p) WHERE p.age <= 32 OR p.depno = 13 RETURN p.name " );
+
+        assert containsRows( result, true, false, Row.of( TestLiteral.from( "Ann" ) ),
+                Row.of( TestLiteral.from( "Bob" ) ),
+                Row.of( TestLiteral.from( "Alex" ) ) );
+    }
+
+
+    @Test
+    public void existFilterTest() {
+        execute( SINGLE_NODE_PERSON_1 );
+        GraphResult result = execute( "MATCH (p) WHERE exists(p.age) RETURN p" );
+
+        assertEmpty( result );
+
+        result = execute( "MATCH (p) WHERE exists(p.name) RETURN p" );
+        assertNode( result, 0 );
+
+        assert containsRows( result, true, false, Row.of( MAX ) );
+    }
+
+
+    @Test
+    public void startWithFilterTest() {
+        execute( SINGLE_NODE_PERSON_1 );
+        execute( SINGLE_NODE_PERSON_2 );
+        execute( SINGLE_NODE_ANIMAL );
+        GraphResult result = execute( "MATCH (p) WHERE p.name STARTS WITH 'M' RETURN p.name" );
+
+        assert containsRows( result, true, false, Row.of( TestLiteral.from( "Max" ) ) );
+
+
+    }
+
+
+    @Test
+    public void containsFilterTest() {
+        execute( SINGLE_NODE_PERSON_1 );
+        execute( SINGLE_NODE_PERSON_2 );
+        execute( SINGLE_NODE_ANIMAL );
+        GraphResult result = execute( "MATCH (p) WHERE p.name CONTAINS 'H' RETURN p.name" );
+
+        assert containsRows( result, true, false, Row.of( TestLiteral.from( "Hans" ) ) );
+    }
+
 
 }
