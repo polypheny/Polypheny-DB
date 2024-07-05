@@ -16,6 +16,7 @@
 
 package org.polypheny.db.cypher.clause.write;
 
+import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -69,9 +70,8 @@ public class DmlDeleteTest extends CypherTestTemplate {
     public void twoNodeDeleteTest() {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_PERSON_2 );
-        execute( "MATCH (p:Person {name: 'Max'}), (h:Person {name: 'Hans'})\n"
+       GraphResult res =   execute( "MATCH (p:Person {name: 'Max'}), (h:Person {name: 'Hans'})\n"
                 + "DELETE p, h" );
-        GraphResult res = matchAndReturnAllNodes();
         assertEmpty( res );
     }
 
@@ -81,8 +81,11 @@ public class DmlDeleteTest extends CypherTestTemplate {
         execute( SINGLE_EDGE_1 );
         execute( "MATCH (:Person {name: 'Max'})-[rel:OWNER_OF]->(:Animal {name: 'Kira'}) \n"
                 + "DELETE rel" );
+        GraphResult res = execute( "MATCH (n)-[rel:OWNER_OF]->(a) \n"
+                + "RETURN rel" );
+        assertEmpty( res );
 
-        GraphResult res = matchAndReturnAllNodes();
+        res = matchAndReturnAllNodes();
         assert containsRows( res, true, false,
                 Row.of( TestNode.from( List.of( "Person" ), Pair.of( "name", "Max" ) ) ),
                 Row.of( TestNode.from(
@@ -93,63 +96,72 @@ public class DmlDeleteTest extends CypherTestTemplate {
 
     }
 
+
     @Test
     public void relationshipWithPropertiesDeleteTest() {
         execute( SINGLE_EDGE_2 );
-        execute( "MATCH (p:Person) -[rel:OWNER_OF]->(A:Animal) \n"
+        execute( "MATCH (:Person {name: 'Max'})-[rel:KNOWS {since: 1994}]->(:Person {name:'Hans'}) \n"
                 + "DELETE rel" );
 
-        GraphResult res =  execute( "MATCH (p:Person) -[rel:OWNER_OF]->(A:Animal)");
-         assertEmpty( res  );
+        GraphResult res = execute( "MATCH (p1)-[rel:KNOWS ]->(p2) RETURN rel " );
+        assertEmpty( res );
+
+        res = matchAndReturnAllNodes();
+        assert containsRows( res, true, false,
+                Row.of( TestNode.from( List.of( "Person" ), Pair.of( "name", "Max" ) ) ),
+                Row.of( TestNode.from(
+                        List.of( "Person" ),
+                        Pair.of( "name", "Hans" ),
+                        Pair.of( "age", 31 ))));
+
+
+
 
     }
 
 
     @Test
-    public void pathDeleteTest()
-    {
+    public void pathDeleteTest() {
 
         execute( SINGLE_EDGE_1 );
 
-         execute( "MATCH p =  (person:Person {name: 'Max'})-[rel:OWNER_OF]->( animal :Animal {name: 'Kira'})\n"
-                 + "DELETE p\n" );
+        execute( "MATCH p =  (person:Person {name: 'Max'})-[rel:OWNER_OF]->( animal :Animal {name: 'Kira'})\n"
+                + "DELETE p\n" );
 
-       GraphResult res =  matchAndReturnAllNodes() ;
-       GraphResult edges = execute(  "MATCH (p:Person) -[rel:OWNER_OF]->(A:Animal)");
-       assert  res.getData().length == 0 && edges.getData().length == 0 ;
+        GraphResult res = matchAndReturnAllNodes();
+        GraphResult relations = execute( "MATCH (p:Person) -[rel:OWNER_OF]->(A:Animal) RETURN rel " );
+        assert res.getData().length == 0 && relations.getData().length == 0;
 
 
     }
 
+
     @Test
-    public void  NodeWithAllRelationshipsDeleteTest()
-    {
+    public void NodeWithAllRelationshipsDeleteTest() {
         execute( SINGLE_EDGE_2 );
         execute( "MATCH (n:Person {name: 'MAX'})\n"
                 + "DETACH DELETE n" );
 
-
-        GraphResult res =  execute( "MATCH (p:Person) -[rel:OWNER_OF]->(A:Animal)");
-        assert  res.getData().length == 0 ;
+        GraphResult res = matchAndReturnAllNodes();
+        GraphResult relations = execute( "MATCH (p:Person) -[rel:OWNER_OF]->(A:Animal) Return rel" );
+        assert res.getData().length == 0 && relations.getData().length == 0;
 
     }
+
+
     @Test
-    public void allNodesAndRelationshipsDeleteTest ()
-    {
+    public void allNodesAndRelationshipsDeleteTest() {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_PERSON_2 );
         execute( SINGLE_EDGE_1 );
         execute( "MATCH (n)\n"
-                + "DETACH DELETE n" ) ;
+                + "DETACH DELETE n" );
 
-
-        GraphResult res =  matchAndReturnAllNodes() ;
-        GraphResult edges = execute(  "MATCH (p:Person) -[rel:OWNER_OF]->(A:Animal)");
-        assert  res.getData().length == 0 && edges.getData().length == 0 ;
+        GraphResult res = matchAndReturnAllNodes();
+        GraphResult relations = execute( "MATCH (p:Person) -[rel:OWNER_OF]->(A:Animal) Return  rel" );
+        assert res.getData().length == 0 && relations.getData().length == 0;
 
     }
-
-
 
 
 }
