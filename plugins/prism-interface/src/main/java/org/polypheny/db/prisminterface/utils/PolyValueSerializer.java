@@ -310,25 +310,29 @@ public class PolyValueSerializer {
 
 
     public static ProtoNode buildProtoNode( PolyNode polyNode ) {
-        return ProtoNode.newBuilder()
+        ProtoNode.Builder node = ProtoNode.newBuilder()
                 .setId( polyNode.getId().getValue() )
-                .setName( polyNode.getVariableName().getValue() )
-                .addAllLabels( polyNode.getLabels().stream().map( l -> ((PolyString) l).getValue() ).collect( Collectors.toList() ) )
-                .addAllProperties( serializeToProtoEntryList( polyNode.properties.asMap() ) )
-                .build();
+                .addAllLabels( polyNode.getLabels().stream().map( l -> l.getValue() ).collect( Collectors.toList() ) )
+                .addAllProperties( serializeToProtoEntryList( polyNode.properties.asMap() ) );
+        if ( !(polyNode.variableName == null) ) {
+            node.setName( polyNode.variableName.getValue() );
+        }
+        return node.build();
     }
 
 
     public static ProtoEdge buildProtoEdge( PolyEdge polyEdge ) {
-        return ProtoEdge.newBuilder()
+        ProtoEdge.Builder edge = ProtoEdge.newBuilder()
                 .setId( polyEdge.getId().getValue() )
-                .setName( polyEdge.getVariableName().getValue() )
-                .addAllLabels( polyEdge.getLabels().stream().map( l -> ((PolyString) l).getValue() ).collect( Collectors.toList() ) )
+                .addAllLabels( polyEdge.getLabels().stream().map( l -> l.getValue() ).collect( Collectors.toList() ) )
                 .addAllProperties( serializeToProtoEntryList( polyEdge.properties.asMap() ) )
                 .setSource( polyEdge.getSource().getValue() )
                 .setTarget( polyEdge.getTarget().getValue() )
-                .setDirection( buildProtoEdgeDirection( polyEdge.getDirection() ) )
-                .build();
+                .setDirection( buildProtoEdgeDirection( polyEdge.getDirection() ) );
+        if ( !(polyEdge.variableName == null) ) {
+            edge.setName( polyEdge.getVariableName().getValue() );
+        }
+        return edge.build();
     }
 
 
