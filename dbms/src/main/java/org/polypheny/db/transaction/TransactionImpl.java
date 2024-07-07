@@ -104,7 +104,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     private final Map<Long, List<LogicalConstraint>> entityConstraints = new HashMap<>();
 
     @Getter
-    private final Set<Adapter<?>> involvedAdapters = new ConcurrentSkipListSet<>( (a,b) -> Math.toIntExact( a.adapterId - b.adapterId ) );
+    private final Set<Adapter<?>> involvedAdapters = new ConcurrentSkipListSet<>( ( a, b ) -> Math.toIntExact( a.adapterId - b.adapterId ) );
 
     private boolean useCache = true;
 

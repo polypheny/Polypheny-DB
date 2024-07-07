@@ -61,9 +61,6 @@ import org.polypheny.db.plan.Convention;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.tools.AlgBuilder;
-import org.polypheny.db.transaction.EntityAccessMap;
-import org.polypheny.db.transaction.EntityAccessMap.EntityIdentifier;
-import org.polypheny.db.transaction.EntityAccessMap.EntityIdentifier.NamespaceLevel;
 import org.polypheny.db.transaction.Lock.LockMode;
 import org.polypheny.db.transaction.LockManager;
 import org.polypheny.db.transaction.PolyXid;
@@ -73,7 +70,6 @@ import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionImpl;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.util.DeadlockException;
-import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.background.BackgroundTask.TaskPriority;
 import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
 import org.polypheny.db.util.background.BackgroundTaskManager;
@@ -335,6 +331,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
 
         addMaterializedInfo( materializedView.id, materializedView.getMaterializedCriteria() );
     }
+
 
     /**
      * Deletes all the data from a materialized view and adds the newest data to the materialized view

@@ -400,7 +400,7 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
     }
 
 
-    public record EnforcementInformation(AlgNode control, List<Class<? extends Exception>> errorClasses, List<String> errorMessages) {
+    public record EnforcementInformation( AlgNode control, List<Class<? extends Exception>> errorClasses, List<String> errorMessages ) {
 
         /**
          * {@link EnforcementInformation} holds all needed information regarding a constraint.

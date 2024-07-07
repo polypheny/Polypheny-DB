@@ -379,7 +379,6 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
         // Check if there is already a primary key defined for this table and if so, delete it.
         LogicalTable table = tables.get( tableId );
 
-
         if ( table.primaryKey != null ) {
             if ( getKeyUniqueCount( table.primaryKey ) == 1 && isForeignKey( table.primaryKey ) ) {
                 // This primary key is the only constraint for the uniqueness of this key.

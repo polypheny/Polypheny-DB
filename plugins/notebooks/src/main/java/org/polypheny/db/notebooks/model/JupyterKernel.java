@@ -19,7 +19,6 @@ package org.polypheny.db.notebooks.model;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import java.io.IOException;
@@ -48,7 +47,6 @@ import org.polypheny.db.notebooks.model.language.JupyterKernelLanguage;
 import org.polypheny.db.notebooks.model.language.JupyterKernelLanguage.JupyterQueryPart;
 import org.polypheny.db.notebooks.model.language.JupyterLanguageFactory;
 import org.polypheny.db.processing.QueryContext;
-import org.polypheny.db.webui.HttpServer;
 import org.polypheny.db.webui.crud.LanguageCrud;
 import org.polypheny.db.webui.models.requests.QueryRequest;
 import org.polypheny.db.webui.models.results.Result;
@@ -436,9 +434,9 @@ public class JupyterKernel {
 
 
     /**
-         * Represents a query cell that is currently being executed.
-         */
-        private record ActivePolyCell( @Getter String language, @Getter String namespace ) {
+     * Represents a query cell that is currently being executed.
+     */
+    private record ActivePolyCell( @Getter String language, @Getter String namespace ) {
 
     }
 

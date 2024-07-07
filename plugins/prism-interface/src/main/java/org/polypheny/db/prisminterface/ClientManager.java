@@ -31,7 +31,6 @@ import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.prisminterface.PIPlugin.PrismInterface;
 import org.polypheny.db.prisminterface.transport.Transport;
 import org.polypheny.db.prisminterface.utils.PropertyUtils;
-import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.prism.ConnectionRequest;

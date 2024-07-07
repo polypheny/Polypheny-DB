@@ -422,7 +422,6 @@ public class DataMigratorImpl implements DataMigrator {
             builder.project( values, columnNames );
         }
 
-
         AlgNode node = LogicalRelModify.create( allocation, builder.build(), Modify.Operation.DELETE, null, null, false );
 
         return AlgRoot.of( node, Kind.DELETE );
@@ -659,7 +658,7 @@ public class DataMigratorImpl implements DataMigrator {
     }
 
 
-    private record Source(Statement sourceStatement, AlgRoot sourceAlg) {
+    private record Source( Statement sourceStatement, AlgRoot sourceAlg ) {
 
     }
 

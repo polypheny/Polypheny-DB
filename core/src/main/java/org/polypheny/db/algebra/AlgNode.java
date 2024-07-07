@@ -394,11 +394,11 @@ public interface AlgNode extends AlgOptNode, Cloneable {
         return getInputs().stream().anyMatch( AlgNode::containsEntity );
     }
 
-    default Set<Entity> getEntities(){
+    default Set<Entity> getEntities() {
         if ( getEntity() != null ) {
-            return Set.of(getEntity());
+            return Set.of( getEntity() );
         }
-        return getInputs().stream().map( AlgNode::getEntities ).reduce( (a,b) -> Stream.concat(a.stream(), b.stream()).collect( Collectors.toSet()) ).orElse( Set.of() );
+        return getInputs().stream().map( AlgNode::getEntities ).reduce( ( a, b ) -> Stream.concat( a.stream(), b.stream() ).collect( Collectors.toSet() ) ).orElse( Set.of() );
     }
 
     /**

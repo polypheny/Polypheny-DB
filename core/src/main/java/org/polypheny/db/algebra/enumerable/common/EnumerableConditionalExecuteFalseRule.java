@@ -17,7 +17,6 @@
 package org.polypheny.db.algebra.enumerable.common;
 
 
-import lombok.SneakyThrows;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.AlgFactories;

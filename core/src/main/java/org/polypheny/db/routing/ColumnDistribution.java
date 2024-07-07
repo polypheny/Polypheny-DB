@@ -341,7 +341,7 @@ public final class ColumnDistribution implements FieldDistribution {
     }
 
 
-    public record PartialPartition(AllocationEntity entity, List<AllocationColumn> columns) {
+    public record PartialPartition( AllocationEntity entity, List<AllocationColumn> columns ) {
 
     }
 
@@ -356,10 +356,9 @@ public final class ColumnDistribution implements FieldDistribution {
      *
      * </code></pre>
      *
-     *
      * @param partials
      */
-    public record FullPartition(long id, List<PartialPartition> partials) implements FieldDistribution {
+    public record FullPartition( long id, List<PartialPartition> partials ) implements FieldDistribution {
 
         public boolean needsJoin() {
             return partials.size() > 1;
@@ -383,7 +382,7 @@ public final class ColumnDistribution implements FieldDistribution {
     }
 
 
-    public record RoutedDistribution(LogicalEntity entity, List<FullPartition> partitions) {
+    public record RoutedDistribution( LogicalEntity entity, List<FullPartition> partitions ) {
 
         public boolean needsUnion() {
             return partitions.size() > 1;

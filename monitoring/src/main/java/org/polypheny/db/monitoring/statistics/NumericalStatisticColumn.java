@@ -19,12 +19,8 @@ package org.polypheny.db.monitoring.statistics;
 
 import com.google.gson.annotations.Expose;
 import java.util.List;
-import java.util.Set;
 import java.util.SortedSet;
-import java.util.TreeSet;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
-import java.util.concurrent.CopyOnWriteArraySet;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;

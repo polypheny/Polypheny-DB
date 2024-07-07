@@ -18,7 +18,6 @@ package org.polypheny.db.languages;
 
 import com.google.common.collect.ImmutableList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.StopWatch;

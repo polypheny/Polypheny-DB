@@ -17,8 +17,8 @@
 package org.polypheny.db.processing;
 
 
-import java.util.Optional;
 import com.google.common.base.Stopwatch;
+import java.util.Optional;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.NonFinal;

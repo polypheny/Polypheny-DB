@@ -170,6 +170,7 @@ public class EntityAccessMap {
         return accessLockMap.entrySet();
     }
 
+
     public LockMode getNeededLock() {
         return accessLockMap.values().stream().anyMatch( l -> l == LockMode.EXCLUSIVE ) ? LockMode.EXCLUSIVE : LockMode.SHARED;
     }

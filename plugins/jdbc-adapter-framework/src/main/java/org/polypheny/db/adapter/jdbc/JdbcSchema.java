@@ -33,11 +33,6 @@
 
 package org.polypheny.db.adapter.jdbc;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableMultimap;
-import com.google.common.collect.Multimap;
-import java.util.HashMap;
-import java.util.Map;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -47,16 +42,11 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.schema.Function;
 import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.schema.types.Expressible;
 import org.polypheny.db.sql.language.SqlDialect;
-import org.polypheny.db.type.PolyType;
 
 
 /**

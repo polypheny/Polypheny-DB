@@ -17,7 +17,6 @@
 package org.polypheny.db.cql;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgRoot;

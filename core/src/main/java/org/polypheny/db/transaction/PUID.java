@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -161,6 +161,7 @@ public class PUID implements Serializable {
         public static NodeId fromString( final String nodeId ) {
             return new NodeId( nodeId );
         }
+
     }
 
 
@@ -179,6 +180,7 @@ public class PUID implements Serializable {
         public static UserId fromString( final String userName ) {
             return new UserId( userName.getBytes() );
         }
+
     }
 
 
@@ -197,6 +199,7 @@ public class PUID implements Serializable {
         public static ConnectionId fromString( final String connectionId ) {
             return new ConnectionId( connectionId );
         }
+
     }
 
 
@@ -225,5 +228,7 @@ public class PUID implements Serializable {
         public static StatementId fromInt( final int statementId ) {
             return new StatementId( statementId );
         }
+
     }
+
 }
