@@ -2,6 +2,7 @@ package org.polypheny.db.prisminterface.transport;
 
 import java.io.EOFException;
 import java.io.IOException;
+import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -43,6 +44,7 @@ public abstract class SocketTransport implements Transport {
 
     public static Transport accept(SocketChannel con) {
         try {
+            con.setOption( StandardSocketOptions.TCP_NODELAY, true );
             return new PlainTransport(con);
         } catch (IOException e) {
             Util.closeNoThrow(con);
