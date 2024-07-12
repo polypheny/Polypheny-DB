@@ -50,7 +50,6 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.crud.LanguageCrud;
-import org.polypheny.db.webui.models.requests.AlgRequest;
 import org.polypheny.db.webui.models.requests.GraphRequest;
 import org.polypheny.db.webui.models.requests.PolyAlgRequest;
 import org.polypheny.db.webui.models.requests.QueryRequest;
@@ -204,55 +203,44 @@ public class WebSocket implements Consumer<WsConfig> {
                 RegisterRequest registerRequest = ctx.messageAsClass( RegisterRequest.class );
                 crud.authCrud.register( registerRequest, ctx );
                 break;
-            case "RelAlgRequest":
             case "EntityRequest":
-                Result<?, ?> result = null;
-                if ( request.type.equals( "RelAlgRequest" ) ) {
-                    AlgRequest algRequest = ctx.messageAsClass( AlgRequest.class );
-                    try {
-                        result = crud.executeAlg( algRequest, ctx.session );
-                    } catch ( Throwable t ) {
-                        ctx.send( RelationalResult.builder().error( t.getMessage() ).build() );
-                        return;
-                    }
-                } else {//TableRequest, is equal to UIRequest
-                    UIRequest uiRequest = ctx.messageAsClass( UIRequest.class );
-                    try {
-                        LogicalNamespace namespace = Catalog.getInstance().getSnapshot().getNamespace( uiRequest.namespace ).orElse( null );
-                        result = switch ( namespace == null ? DataModel.RELATIONAL : namespace.dataModel ) {
-                            case RELATIONAL -> crud.getTable( uiRequest );
-                            case DOCUMENT -> {
-                                String entity = Catalog.snapshot().doc().getCollection( uiRequest.entityId ).map( c -> c.name ).orElse( "" );
-                                yield LanguageCrud.anyQueryResult(
-                                        QueryContext.builder()
-                                                .query( String.format( "db.%s.find({})", entity ) )
-                                                .language( QueryLanguage.from( "mongo" ) )
-                                                .origin( POLYPHENY_UI )
-                                                .batch( uiRequest.noLimit ? -1 : crud.getPageSize() )
-                                                .transactionManager( crud.getTransactionManager() )
-                                                .informationTarget( i -> i.setSession( ctx.session ) )
-                                                .namespaceId( namespace.id )
-                                                .build(), uiRequest ).get( 0 );
-                            }
-                            case GRAPH -> LanguageCrud.anyQueryResult(
+                Result<?, ?> result;
+                UIRequest uiRequest = ctx.messageAsClass( UIRequest.class );
+                try {
+                    LogicalNamespace namespace = Catalog.getInstance().getSnapshot().getNamespace( uiRequest.namespace ).orElse( null );
+                    result = switch ( namespace == null ? DataModel.RELATIONAL : namespace.dataModel ) {
+                        case RELATIONAL -> crud.getTable( uiRequest );
+                        case DOCUMENT -> {
+                            String entity = Catalog.snapshot().doc().getCollection( uiRequest.entityId ).map( c -> c.name ).orElse( "" );
+                            yield LanguageCrud.anyQueryResult(
                                     QueryContext.builder()
-                                            .query( "MATCH (n) RETURN n" )
-                                            .language( QueryLanguage.from( "cypher" ) )
+                                            .query( String.format( "db.%s.find({})", entity ) )
+                                            .language( QueryLanguage.from( "mongo" ) )
                                             .origin( POLYPHENY_UI )
                                             .batch( uiRequest.noLimit ? -1 : crud.getPageSize() )
-                                            .namespaceId( namespace.id )
                                             .transactionManager( crud.getTransactionManager() )
                                             .informationTarget( i -> i.setSession( ctx.session ) )
+                                            .namespaceId( namespace.id )
                                             .build(), uiRequest ).get( 0 );
-                        };
-                        if ( result == null ) {
-                            throw new GenericRuntimeException( "Could not load data." );
                         }
-
-                    } catch ( Throwable t ) {
-                        ctx.send( RelationalResult.builder().error( t.getMessage() ).build() );
-                        return;
+                        case GRAPH -> LanguageCrud.anyQueryResult(
+                                QueryContext.builder()
+                                        .query( "MATCH (n) RETURN n" )
+                                        .language( QueryLanguage.from( "cypher" ) )
+                                        .origin( POLYPHENY_UI )
+                                        .batch( uiRequest.noLimit ? -1 : crud.getPageSize() )
+                                        .namespaceId( namespace.id )
+                                        .transactionManager( crud.getTransactionManager() )
+                                        .informationTarget( i -> i.setSession( ctx.session ) )
+                                        .build(), uiRequest ).get( 0 );
+                    };
+                    if ( result == null ) {
+                        throw new GenericRuntimeException( "Could not load data." );
                     }
+
+                } catch ( Throwable t ) {
+                    ctx.send( RelationalResult.builder().error( t.getMessage() ).build() );
+                    return;
                 }
                 if ( result.xid != null ) {
                     xIds.add( result.xid );
