@@ -63,9 +63,7 @@ public class CollationArg implements PolyAlgArg {
 
     @Override
     public ObjectNode serialize( AlgNode context, @NonNull List<String> inputFieldNames, ObjectMapper mapper ) {
-        ObjectNode node = serialize( coll, inputFieldNames, mapper );
-        node.put( "arg", toPolyAlg( context, inputFieldNames ) ); // might be useful as a preview
-        return node;
+        return serialize( coll, inputFieldNames, mapper );
     }
 
     public static ObjectNode serialize( AlgFieldCollation coll, @NonNull List<String> inputFieldNames, ObjectMapper mapper ) {

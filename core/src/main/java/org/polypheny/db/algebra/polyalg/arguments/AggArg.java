@@ -95,7 +95,6 @@ public class AggArg implements PolyAlgArg {
     private String getAggName( AlgNode context ) {
         String name = agg.getName();
         if ( name == null ) {
-            // TODO: make sure agg.getName() is never null
             Aggregate instance = (Aggregate) context;
             int i = instance.getAggCallList().indexOf( agg );
             if ( i != -1 ) {
@@ -110,7 +109,6 @@ public class AggArg implements PolyAlgArg {
     @Override
     public ObjectNode serialize( AlgNode context, @NonNull List<String> inputFieldNames, ObjectMapper mapper ) {
         ObjectNode node = mapper.createObjectNode();
-        node.put( "arg", toPolyAlg( context, inputFieldNames ) ); // might be useful as a preview
         node.put( "function", agg.getAggregation().getOperatorName().toString() );
         node.put( "distinct", agg.isDistinct() );
         node.put( "approximate", agg.isApproximate() );

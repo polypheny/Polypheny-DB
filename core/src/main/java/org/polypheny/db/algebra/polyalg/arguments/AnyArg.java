@@ -26,6 +26,7 @@ import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.ParamType;
 /**
  * PolyAlgArgument implementation for the case where no other ParamType fits better.
  * toPolyAlg() returns the default string representation of the object.
+ * This should be only used for the inner type of empty ListArgs
  */
 public class AnyArg implements PolyAlgArg {
 

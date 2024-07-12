@@ -45,7 +45,7 @@ public class LogicalLpgTransformer extends LpgTransformer {
 
     public static LogicalLpgTransformer create( List<AlgNode> inputs, List<PolyType> operationOrder, Operation operation ) {
         AlgTraitSet traitSet = inputs.get( 0 ).getTraitSet().replace( AlgCollations.EMPTY );
-        AlgDataType type = GraphType.of(); // TODO: make sure this is correct (rel -> graph)
+        AlgDataType type = GraphType.of();
         return new LogicalLpgTransformer( inputs.get( 0 ).getCluster(), traitSet, inputs, type, operationOrder, operation );
     }
 

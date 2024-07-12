@@ -290,7 +290,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             queryAnalyzer.addGroup( group );
 
             InformationPolyAlg infoPolyAlg = new InformationPolyAlg( group, jsonString, PlanType.LOGICAL );
-            if ( attachTextualPolyAlg() ) {
+            if ( shouldAttachTextualPolyAlg() ) {
                 // when testing, we want to access the human-readable form
                 infoPolyAlg.setTextualPolyAlg( alg.buildPolyAlgebra( (String) null ) );
             }
@@ -582,7 +582,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         final Convention resultConvention = ENABLE_BINDABLE ? BindableConvention.INSTANCE : EnumerableConvention.INSTANCE;
 
         PreparedResult<PolyValue> preparedResult = implement( root, parameterRowType );
-        UiRoutingPageUtil.addPhysicalPlanPage( root.alg, statement.getTransaction().getQueryAnalyzer(), statement.getIndex(), attachTextualPolyAlg() );
+        UiRoutingPageUtil.addPhysicalPlanPage( root.alg, statement.getTransaction().getQueryAnalyzer(), statement.getIndex(), shouldAttachTextualPolyAlg() );
         return createPolyImplementation(
                 preparedResult,
                 root.kind,
@@ -1487,7 +1487,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 UiRoutingPageUtil.outputSingleResult(
                         proposed.plans.get( 0 ),
                         statement.getTransaction().getQueryAnalyzer(),
-                        statement.getIndex(), attachTextualPolyAlg() );
+                        statement.getIndex(), shouldAttachTextualPolyAlg() );
                 addGeneratedCodeToQueryAnalyzer( proposed.plans.get( 0 ).generatedCodes() );
             }
             return new Pair<>( proposed.plans.get( 0 ).result(), proposed.plans.get( 0 ).proposedRoutingPlan() );
@@ -1506,7 +1506,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             if ( statement.getTransaction().isAnalyze() ) {
                 AlgNode optimalNode = proposed.plans.get( index ).optimalNode();
                 UiRoutingPageUtil.addPhysicalPlanPage( optimalNode, statement.getTransaction().getQueryAnalyzer(),
-                        statement.getIndex(), attachTextualPolyAlg() );
+                        statement.getIndex(), shouldAttachTextualPolyAlg() );
                 addGeneratedCodeToQueryAnalyzer( proposed.plans.get( index ).generatedCodes() );
             }
 
@@ -1552,7 +1552,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     }
 
 
-    private boolean attachTextualPolyAlg() {
+    private boolean shouldAttachTextualPolyAlg() {
         return statement.getTransaction().getOrigin().equals( "PolyAlgParsingTest" );
     }
 

@@ -257,6 +257,16 @@ public class PolyAlgToAlgConverter {
     }
 
 
+    /**
+     * Convertes the PolyAlgExpression for the specified parameter to a PolyAlgArg of the same parameter type.
+     * The logic for converting a new parameter type should be added here.
+     *
+     * @param p the target parameter
+     * @param exp the expression to convert
+     * @param alias an optional alias (null if not specified)
+     * @param ctx any additional context
+     * @return The converted PolyAlgArg instance whose getType() method must be compatible with p.
+     */
     private PolyAlgArg convertExpression( Parameter p, PolyAlgExpression exp, String alias, Context ctx ) {
         if ( p.requiresAlias && (alias == null || alias.isEmpty()) ) {
             throw new GenericRuntimeException( "Missing <AS> for " + p.getName() );
@@ -320,7 +330,7 @@ public class PolyAlgToAlgConverter {
 
     /**
      * Converts a PolyAlgLiteral into an appropriate RexNode.
-     * This does not have to be a RexLiteral, but can also be a RexIndexRef or RexDynamicParam.
+     * This does not have to be a RexLiteral, but can also be a RexIndexRef or RexDynamicParam or ...
      *
      * @param literal the PolyAlgLiteral to be converted
      * @param type the AlgDataType specified in the PolyAlgebra
@@ -328,7 +338,6 @@ public class PolyAlgToAlgConverter {
      * @return A RexNode representing the specified PolyAlgLiteral
      */
     private RexNode convertRexLiteral( PolyAlgLiteral literal, AlgDataType type, Context ctx ) {
-        // TODO: handle all cases of non-call RexNodes
 
         // first handle cases where explicit type doesn't matter
         if ( literal.getType() == LiteralType.CORRELATION_VAR ) {

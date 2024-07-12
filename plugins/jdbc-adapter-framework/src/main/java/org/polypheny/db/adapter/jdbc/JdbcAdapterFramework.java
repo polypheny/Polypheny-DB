@@ -75,7 +75,7 @@ public class JdbcAdapterFramework extends PolyPlugin {
                 .build() );
         PolyAlgRegistry.register( JdbcToEnumerableConverter.class, PolyAlgDeclaration.builder()
                 .creator( JdbcToEnumerableConverter::create ).model( DataModel.RELATIONAL )
-                .opName( "JDBC_TO_ENUMERABLE" ).convention( c ).numInputs( 1 ).opTags( physTags )
+                .opName( "JDBC_TO_E" ).convention( c ).numInputs( 1 ).opTags( physTags )
                 .build() );
         PolyAlgRegistry.register( JdbcJoin.class, PolyAlgDeclaration.builder()
                 .creator( JdbcJoin::create ).model( DataModel.RELATIONAL )

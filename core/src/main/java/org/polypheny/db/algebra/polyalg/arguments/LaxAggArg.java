@@ -63,7 +63,6 @@ public class LaxAggArg implements PolyAlgArg{
     @Override
     public ObjectNode serialize( AlgNode context, @NonNull List<String> inputFieldNames, ObjectMapper mapper ) {
         ObjectNode node = mapper.createObjectNode();
-        node.put( "arg", toPolyAlg( context, inputFieldNames ) ); // might be useful as a preview
         node.put("function", agg.function.toString());
         if (agg.getInput().isPresent()) {
             node.put("input", PolyAlgUtils.digestWithNames( agg.getInput().get(), inputFieldNames ));

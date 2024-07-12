@@ -292,7 +292,7 @@ public class PolyAlgUtils {
 
         @Override
         public String visitIndexRef( RexIndexRef inputRef ) {
-            return sanitizeIdentifier(names.get( inputRef.getIndex() ));
+            return sanitizeIdentifier( names.get( inputRef.getIndex() ) );
         }
 
 
@@ -388,9 +388,7 @@ public class PolyAlgUtils {
 
         @Override
         public String visitSubQuery( RexSubQuery subQuery ) {
-            /* TODO: make sure subquery is parsed correctly
-             */
-            final StringBuilder sb = new StringBuilder( OperatorRegistry.getUniqueName( subQuery.op ) );
+            /* final StringBuilder sb = new StringBuilder( OperatorRegistry.getUniqueName( subQuery.op ) );
             sb.append( "(" );
             for ( RexNode operand : subQuery.operands ) {
                 sb.append( operand );
@@ -399,7 +397,8 @@ public class PolyAlgUtils {
             sb.append( "{\n" );
             subQuery.alg.buildPolyAlgebra( sb );
             sb.append( "})" );
-            return "subQuery: " + sb;
+            return "subQuery: " + sb; */
+            throw new NotImplementedException( "RexSubQuery can not yet be serialized to PolyAlgebra" );
         }
 
 
@@ -563,12 +562,8 @@ public class PolyAlgUtils {
 
         private String visitPolyNode( PolyNode node, boolean withPrefix ) {
 
-            StringBuilder sb = new StringBuilder();
             String prefix = withPrefix ? "PolyNode " : "";
-            sb.append( prefix ).append( "(" )
-                    .append( visitGraphLabelProps( node.labels, node.properties, node.variableName ) )
-                    .append( ")" );
-            return sb.toString();
+            return prefix + "(" + visitGraphLabelProps( node.labels, node.properties, node.variableName ) + ")";
 
         }
 
@@ -636,7 +631,7 @@ public class PolyAlgUtils {
         }
 
 
-        private <K extends PolyValue, V extends PolyValue> String visitPolyDictionary( PolyDictionary dict ) {
+        private String visitPolyDictionary( PolyDictionary dict ) {
             List<String> propsList = new ArrayList<>();
             for ( Entry<PolyString, PolyValue> entry : dict.map.entrySet() ) {
                 PolyValue value = entry.getValue();
