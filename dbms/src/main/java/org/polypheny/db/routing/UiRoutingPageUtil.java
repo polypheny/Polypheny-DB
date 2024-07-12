@@ -23,8 +23,6 @@ import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
-import org.polypheny.db.algebra.constant.ExplainFormat;
-import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.polyalg.PolyAlgMetadata.GlobalStats;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
@@ -35,10 +33,8 @@ import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationPolyAlg;
 import org.polypheny.db.information.InformationPolyAlg.PlanType;
-import org.polypheny.db.information.InformationQueryPlan;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.processing.util.Plan;
 import org.polypheny.db.routing.ColumnDistribution.FullPartition;
 import org.polypheny.db.routing.ColumnDistribution.PartialPartition;
@@ -62,37 +58,12 @@ public class UiRoutingPageUtil {
         }
         addSelectedAdapterTable( queryAnalyzer, plan.proposedRoutingPlan(), page );
         final AlgRoot root = plan.proposedRoutingPlan().getRoutedRoot();
-        addRoutedPlanPage( root.alg, queryAnalyzer, stmtIdx, attachTextualPlan );
+        addRoutedPolyPlanPage( root.alg, queryAnalyzer, stmtIdx, false, attachTextualPlan );
     }
 
 
     public static void addPhysicalPlanPage( AlgNode optimalNode, InformationManager queryAnalyzer, int stmtIdx, boolean attachTextualPlan ) {
-        new Thread( () -> {
-            addRoutedPolyPlanPage( optimalNode, queryAnalyzer, stmtIdx, true, attachTextualPlan );
-            InformationPage page = new InformationPage( "Physical Query Plan" ).setStmtLabel( stmtIdx );
-            page.fullWidth();
-            InformationGroup group = new InformationGroup( page, "Physical Query Plan" );
-            queryAnalyzer.addPage( page );
-            queryAnalyzer.addGroup( group );
-            InformationQueryPlan informationQueryPlan = new InformationQueryPlan(
-                    group,
-                    AlgOptUtil.dumpPlan( "Physical Query Plan", optimalNode, ExplainFormat.JSON, ExplainLevel.ALL_ATTRIBUTES ) );
-            queryAnalyzer.registerInformation( informationQueryPlan );
-        } ).start();
-    }
-
-
-    private static void addRoutedPlanPage( AlgNode routedNode, InformationManager queryAnalyzer, int stmtIdx, boolean attachTextualPlan ) {
-        addRoutedPolyPlanPage( routedNode, queryAnalyzer, stmtIdx, false, attachTextualPlan );
-        InformationPage page = new InformationPage( "Routed Query Plan" ).setStmtLabel( stmtIdx );
-        page.fullWidth();
-        InformationGroup group = new InformationGroup( page, "Routed Query Plan" );
-        queryAnalyzer.addPage( page );
-        queryAnalyzer.addGroup( group );
-        InformationQueryPlan informationQueryPlan = new InformationQueryPlan(
-                group,
-                AlgOptUtil.dumpPlan( "Routed Query Plan", routedNode, ExplainFormat.JSON, ExplainLevel.ALL_ATTRIBUTES ) );
-        queryAnalyzer.registerInformation( informationQueryPlan );
+        new Thread( () -> addRoutedPolyPlanPage( optimalNode, queryAnalyzer, stmtIdx, true, attachTextualPlan ) ).start();
     }
 
 
@@ -104,13 +75,13 @@ public class UiRoutingPageUtil {
             ObjectNode objectNode = routedNode.serializePolyAlgebra( objectMapper, gs );
             String jsonString = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString( objectNode );
 
-            InformationPage page = new InformationPage( prefix + " PolyAlg Query Plan" ).setStmtLabel( stmtIdx );
+            InformationPage page = new InformationPage( prefix + " Query Plan" ).setStmtLabel( stmtIdx );
             page.fullWidth();
-            InformationGroup group = new InformationGroup( page, prefix + " PolyAlg Query Plan" );
+            InformationGroup group = new InformationGroup( page, prefix + " Query Plan" );
             queryAnalyzer.addPage( page );
             queryAnalyzer.addGroup( group );
             InformationPolyAlg infoPolyAlg = new InformationPolyAlg( group, jsonString, isPhysical ? PlanType.PHYSICAL : PlanType.ALLOCATION );
-            if (attachTextualPlan) {
+            if ( attachTextualPlan ) {
                 infoPolyAlg.setTextualPolyAlg( routedNode.buildPolyAlgebra( (String) null ) );
             }
             queryAnalyzer.registerInformation( infoPolyAlg );
@@ -226,7 +197,7 @@ public class UiRoutingPageUtil {
         if ( selectedPlan instanceof ProposedRoutingPlan plan ) {
             addSelectedAdapterTable( queryAnalyzer, plan, page );
             AlgRoot root = plan.getRoutedRoot();
-            addRoutedPlanPage( root.alg, queryAnalyzer, statement.getIndex(), statement.getTransaction().getOrigin().equals( "PolyAlgParsingTest" ) );
+            addRoutedPolyPlanPage( root.alg, queryAnalyzer, statement.getIndex(), false, statement.getTransaction().getOrigin().equals( "PolyAlgParsingTest" ) );
         }
 
     }

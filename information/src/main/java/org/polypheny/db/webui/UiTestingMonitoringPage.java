@@ -24,7 +24,6 @@ import org.polypheny.db.information.InformationHtml;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationProgress;
-import org.polypheny.db.information.InformationQueryPlan;
 import org.polypheny.db.information.InformationText;
 
 public class UiTestingMonitoringPage {
@@ -66,9 +65,8 @@ public class UiTestingMonitoringPage {
         Information i7 = new InformationProgress( g2, "progval", 30 );
 
         Information i8 = new InformationText( g2, "This is Text!!" );
-        Information i9 = new InformationQueryPlan( g2, "THIS IS QUERY PLAN" );
 
-        im.registerInformation( i1, i2, i3, i4, i5, i6, i7, i8, i9 );
+        im.registerInformation( i1, i2, i3, i4, i5, i6, i7, i8 );
     }
 
 }

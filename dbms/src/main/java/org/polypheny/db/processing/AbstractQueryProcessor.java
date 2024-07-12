@@ -93,7 +93,6 @@ import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationPolyAlg;
 import org.polypheny.db.information.InformationPolyAlg.PlanType;
-import org.polypheny.db.information.InformationQueryPlan;
 import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.interpreter.Interpreters;
 import org.polypheny.db.monitoring.events.DmlEvent;
@@ -232,7 +231,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             return implementPhysicalPlan( root, parameterRowType );
         }
         if ( !isRouted && statement.getTransaction().isAnalyze() ) {
-            attachQueryPlans( root );
+            attachPolyAlgPlan( root.alg );
         }
 
         if ( statement.getTransaction().isAnalyze() ) {
@@ -259,22 +258,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     }
 
 
-    private void attachQueryPlans( AlgRoot logicalRoot ) {
-        InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
-        InformationPage page = new InformationPage( "Logical Query Plan" ).setStmtLabel( statement.getIndex() );
-        page.fullWidth();
-        InformationGroup group = new InformationGroup( page, "Logical Query Plan" );
-        queryAnalyzer.addPage( page );
-        queryAnalyzer.addGroup( group );
-        InformationQueryPlan informationQueryPlan = new InformationQueryPlan(
-                group,
-                AlgOptUtil.dumpPlan( "Logical Query Plan", logicalRoot.alg, ExplainFormat.JSON, ExplainLevel.ALL_ATTRIBUTES ) );
-        queryAnalyzer.registerInformation( informationQueryPlan );
-
-        attachPolyAlgPlan( logicalRoot.alg );
-    }
-
-
     private void attachPolyAlgPlan( AlgNode alg ) {
         ObjectMapper objectMapper = new ObjectMapper();
         GlobalStats gs = GlobalStats.computeGlobalStats( alg );
@@ -283,9 +266,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             String jsonString = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString( objectNode );
 
             InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
-            InformationPage page = new InformationPage( "Logical PolyAlg Query Plan" ).setStmtLabel( statement.getIndex() );
+            InformationPage page = new InformationPage( "Logical Query Plan" ).setStmtLabel( statement.getIndex() );
             page.fullWidth();
-            InformationGroup group = new InformationGroup( page, "Logical PolyAlg Query Plan" );
+            InformationGroup group = new InformationGroup( page, "Logical Query Plan" );
             queryAnalyzer.addPage( page );
             queryAnalyzer.addGroup( group );
 
