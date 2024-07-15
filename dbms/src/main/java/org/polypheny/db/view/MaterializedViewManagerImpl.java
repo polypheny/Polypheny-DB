@@ -292,7 +292,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
                 return;
             }
 
-            LockManager.INSTANCE.lock( LockMode.EXCLUSIVE, (TransactionImpl) statement.getTransaction() );
+            LockManager.INSTANCE.lock( LockMode.EXCLUSIVE, statement.getTransaction() );
         } catch ( DeadlockException e ) {
             throw new GenericRuntimeException( "DeadLock while locking for materialized view update", e );
         }
@@ -399,7 +399,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
             }
         } finally {
             // Release lock
-            LockManager.INSTANCE.unlock( (TransactionImpl) transaction );
+            LockManager.INSTANCE.unlock( transaction );
         }
     }
 

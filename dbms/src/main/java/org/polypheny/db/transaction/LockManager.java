@@ -49,7 +49,7 @@ public class LockManager implements Runnable {
     }
 
 
-    public void lock( LockMode mode, @NonNull TransactionImpl transaction ) throws DeadlockException {
+    public void lock( LockMode mode, @NonNull Transaction transaction ) throws DeadlockException {
         // Decide on which locking  approach to focus
         synchronized ( this ) {
             if ( owners.isEmpty() ) {
@@ -112,14 +112,14 @@ public class LockManager implements Runnable {
     }
 
 
-    private void handleLockOrThrow( LockMode mode, @NotNull TransactionImpl transaction ) {
+    private void handleLockOrThrow( LockMode mode, @NotNull Transaction transaction ) {
         if ( !handleSimpleLock( mode, transaction ) ) {
             throw new GenericRuntimeException( "Could not acquire lock, as single transaction" );
         }
     }
 
 
-    private synchronized boolean handleSimpleLock( @NonNull LockMode mode, TransactionImpl transaction ) {
+    private synchronized boolean handleSimpleLock( @NonNull LockMode mode, Transaction transaction ) {
         if ( mode == LockMode.EXCLUSIVE ) {
             // get w
             if ( owners.isEmpty() || (owners.size() == 1 && owners.contains( transaction.getXid() )) ) {
@@ -159,7 +159,7 @@ public class LockManager implements Runnable {
     }
 
 
-    public synchronized void unlock( @NonNull TransactionImpl transaction ) {
+    public synchronized void unlock( @NonNull Transaction transaction ) {
         if ( !owners.contains( transaction.getXid() ) ) {
             log.debug( "Transaction is no owner" );
             return;
@@ -176,7 +176,7 @@ public class LockManager implements Runnable {
     }
 
 
-    public void removeTransaction( @NonNull TransactionImpl transaction ) {
+    public void removeTransaction( @NonNull Transaction transaction ) {
         unlock( transaction );
     }
 

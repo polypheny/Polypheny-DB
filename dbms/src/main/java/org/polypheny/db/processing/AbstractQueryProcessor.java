@@ -566,7 +566,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             EntityAccessMap accessMap = new EntityAccessMap( logicalRoot.alg, accessedPartitions );
             // Get a shared global schema lock (only DDLs acquire an exclusive global schema lock)
 
-            LockManager.INSTANCE.lock( accessMap.getNeededLock(), (TransactionImpl) statement.getTransaction() );
+            LockManager.INSTANCE.lock( accessMap.getNeededLock(), statement.getTransaction() );
         } catch ( DeadlockException e ) {
             throw new GenericRuntimeException( e );
         }
@@ -1489,7 +1489,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
     @Override
     public void unlock( Statement statement ) {
-        LockManager.INSTANCE.unlock( (TransactionImpl) statement.getTransaction() );
+        LockManager.INSTANCE.unlock( statement.getTransaction() );
     }
 
 
@@ -1500,7 +1500,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     @Override
     public void lock( Statement statement ) {
         try {
-            LockManager.INSTANCE.lock( LockMode.SHARED, (TransactionImpl) statement.getTransaction() );
+            LockManager.INSTANCE.lock( LockMode.SHARED, statement.getTransaction() );
         } catch ( DeadlockException e ) {
             throw new GenericRuntimeException( "DeadLock while locking to reevaluate statistics", e );
         }

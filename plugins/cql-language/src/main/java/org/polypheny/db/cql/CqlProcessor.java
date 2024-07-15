@@ -71,13 +71,13 @@ public class CqlProcessor extends Processor {
 
     @Override
     public void unlock( Statement statement ) {
-        LockManager.INSTANCE.unlock( (TransactionImpl) statement.getTransaction() );
+        LockManager.INSTANCE.unlock( statement.getTransaction() );
     }
 
 
     @Override
     protected void lock( Statement statement ) throws DeadlockException {
-        LockManager.INSTANCE.lock( LockMode.EXCLUSIVE, (TransactionImpl) statement.getTransaction() );
+        LockManager.INSTANCE.lock( LockMode.EXCLUSIVE, statement.getTransaction() );
     }
 
 
