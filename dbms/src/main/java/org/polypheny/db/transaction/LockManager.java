@@ -17,7 +17,6 @@
 package org.polypheny.db.transaction;
 
 
-import com.google.common.base.Stopwatch;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -65,7 +64,6 @@ public class LockManager implements Runnable {
 
         waiters.add( thread );
 
-        Stopwatch watch = Stopwatch.createStarted();
         // wait
         while ( true ) {
             lock.lock();
