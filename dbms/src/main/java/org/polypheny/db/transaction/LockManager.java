@@ -33,7 +33,7 @@ import org.polypheny.db.transaction.Lock.LockMode;
 import org.polypheny.db.util.DeadlockException;
 
 @Slf4j
-public class LockManager implements Runnable {
+public class LockManager {
 
     public static final LockManager INSTANCE = new LockManager();
 
@@ -176,12 +176,6 @@ public class LockManager implements Runnable {
 
     public void removeTransaction( @NonNull Transaction transaction ) {
         unlock( transaction );
-    }
-
-
-    @Override
-    public void run() {
-
     }
 
 }
