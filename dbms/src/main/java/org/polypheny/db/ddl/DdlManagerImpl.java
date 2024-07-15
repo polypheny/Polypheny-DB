@@ -141,11 +141,7 @@ public class DdlManagerImpl extends DdlManager {
         if ( entities.isEmpty() ) {
             return;
         }
-        List<String> views = new ArrayList<>();
-        for ( LogicalView view : entities ) {
-            views.add( view.name );
-        }
-        throw new GenericRuntimeException( "Cannot alter table because of underlying views: %s ", views.stream().map( String::valueOf ).collect( Collectors.joining( (", ") ) ) );
+        throw new GenericRuntimeException( "Cannot alter table because of underlying views: %s ", String.join( ", ", entities.stream().map( view -> view.name ).toList() ) );
 
     }
 
@@ -164,8 +160,8 @@ public class DdlManagerImpl extends DdlManager {
             throw new GenericRuntimeException( "Unknown storeId id: %i", storeId );
         }
         // Make sure it is a data storeId instance
-        if ( optionalAdapter.get() instanceof DataStore<?> ) {
-            return (DataStore<?>) optionalAdapter.get();
+        if ( optionalAdapter.get() instanceof DataStore<?> ds ) {
+            return ds;
         } else if ( optionalAdapter.get() instanceof DataSource ) {
             throw new GenericRuntimeException( "Can not use DDLs on Sources" );
         } else {
@@ -276,7 +272,7 @@ public class DdlManagerImpl extends DdlManager {
 
             catalog.attachCommitAction( () ->
                     // we can execute with initial logical and allocation data as this is a source and this will not change
-                    adapter.createTable( null, LogicalTableWrapper.of( logical, columns, List.of() ), AllocationTableWrapper.of( allocation.unwrap( AllocationTable.class ).orElseThrow(), aColumns ) ) );
+                    adapter.createTable( null, LogicalTableWrapper.of( logical, columns, List.of() ), AllocationTableWrapper.of( allocation.unwrapOrThrow( AllocationTable.class ), aColumns ) ) );
             catalog.updateSnapshot();
 
         }
@@ -639,7 +635,7 @@ public class DdlManagerImpl extends DdlManager {
         }
         AllocationPlacement placement = catalog.getSnapshot().alloc().getPlacement( location.getAdapterId(), table.id ).orElseThrow();
 
-        AllocationTable alloc = catalog.getSnapshot().alloc().getAlloc( placement.id, partitions.get( 0 ).id ).orElseThrow().unwrap( AllocationTable.class ).orElseThrow();
+        AllocationTable alloc = catalog.getSnapshot().alloc().getAlloc( placement.id, partitions.get( 0 ).id ).orElseThrow().unwrapOrThrow( AllocationTable.class );
 
         if ( !new HashSet<>( alloc.getColumns().stream().map( c -> c.columnId ).toList() ).containsAll( columnIds ) ) {
             throw new GenericRuntimeException( "Not all required columns for this index are placed on this storeId." );
@@ -761,7 +757,7 @@ public class DdlManagerImpl extends DdlManager {
 
         addAllocationsForPlacement( table.namespaceId, statement, table, placement.id, adjustedColumns, primaryKey.fieldIds, property.partitionIds, dataStore );
 
-        Catalog.getInstance().updateSnapshot();
+        catalog.updateSnapshot();
 
         List<LogicalColumn> finalColumns = adjustedColumns;
         catalog.attachCommitAction( () -> {
@@ -960,23 +956,23 @@ public class DdlManagerImpl extends DdlManager {
 
 
     private boolean isForeignKey( long key ) {
-        return Catalog.snapshot().rel().getKeys().stream().filter( k -> k instanceof LogicalForeignKey ).map( k -> (LogicalForeignKey) k ).anyMatch( k -> k.referencedKeyId == key );
+        return catalog.getSnapshot().rel().getKeys().stream().filter( k -> k instanceof LogicalForeignKey ).map( k -> (LogicalForeignKey) k ).anyMatch( k -> k.referencedKeyId == key );
     }
 
 
     private int getKeyUniqueCount( long keyId ) {
         int count = 0;
-        if ( Catalog.snapshot().rel().getPrimaryKey( keyId ).isPresent() ) {
+        if ( catalog.getSnapshot().rel().getPrimaryKey( keyId ).isPresent() ) {
             count++;
         }
 
-        for ( LogicalConstraint constraint : Catalog.snapshot().rel().getConstraints().stream().filter( c -> c.keyId == keyId ).toList() ) {
+        for ( LogicalConstraint constraint : catalog.getSnapshot().rel().getConstraints().stream().filter( c -> c.keyId == keyId ).toList() ) {
             if ( constraint.type == ConstraintType.UNIQUE ) {
                 count++;
             }
         }
 
-        for ( LogicalIndex index : Catalog.snapshot().rel().getIndexes().stream().filter( i -> i.keyId == keyId ).toList() ) {
+        for ( LogicalIndex index : catalog.getSnapshot().rel().getIndexes().stream().filter( i -> i.keyId == keyId ).toList() ) {
             if ( index.unique ) {
                 count++;
             }
@@ -1015,7 +1011,7 @@ public class DdlManagerImpl extends DdlManager {
             IndexManager.getInstance().deleteIndex( index );
         } else {
             DataStore<?> store = AdapterManager.getInstance().getStore( index.location ).orElseThrow();
-            AllocationPlacement placement = Catalog.snapshot().alloc().getPlacement( store.getAdapterId(), table.id ).orElseThrow();
+            AllocationPlacement placement = catalog.getSnapshot().alloc().getPlacement( store.getAdapterId(), table.id ).orElseThrow();
 
             catalog.attachCommitAction( () -> {
                 catalog.getSnapshot().alloc().getAllocsOfPlacement( placement.id ).forEach( allocation -> {
@@ -1287,7 +1283,7 @@ public class DdlManagerImpl extends DdlManager {
 
         // add columns
         for ( long columnId : toAdd ) {
-            createColumnPlacement( table, Catalog.snapshot().rel().getColumn( columnId ).orElseThrow(), store, statement );
+            createColumnPlacement( table, catalog.getSnapshot().rel().getColumn( columnId ).orElseThrow(), store, statement );
         }
         catalog.updateSnapshot();
 
@@ -1446,7 +1442,7 @@ public class DdlManagerImpl extends DdlManager {
             catalog.attachCommitAction( () -> {
                 for ( LogicalIndex currentIndex : catalog.getSnapshot().rel().getIndexes( table.id, false ) ) {
                     if ( currentIndex.location == storeId ) {
-                        store.addIndex( statement.getPrepareContext(), currentIndex, catalog.getSnapshot().alloc().getAllocsOfPlacement( placement.id ).stream().map( a -> a.unwrap( AllocationTable.class ).orElseThrow() ).toList() );
+                        store.addIndex( statement.getPrepareContext(), currentIndex, catalog.getSnapshot().alloc().getAllocsOfPlacement( placement.id ).stream().map( a -> a.unwrapOrThrow( AllocationTable.class ) ).toList() );
                     }
                 }
             } );
@@ -1540,15 +1536,11 @@ public class DdlManagerImpl extends DdlManager {
         Snapshot snapshot = statement.getTransaction().getSnapshot();
 
         // Check whether this placement even exists
-        Optional<AllocationPlacement> optionalPlacement = snapshot.alloc().getPlacement( store.getAdapterId(), table.id );
-        if ( optionalPlacement.isEmpty() ) {
-            throw new GenericRuntimeException( "The placement does not exist" );
-        }
+        AllocationPlacement placement = snapshot.alloc().getPlacement( store.getAdapterId(), table.id ).orElseThrow( () -> new GenericRuntimeException( "The placement does not exist" ) );
 
         // Check whether this storeId actually contains a placement of this column
-        if ( catalog.getSnapshot().alloc().getColumn( optionalPlacement.get().id, column.id ).isEmpty() ) {
-            throw new GenericRuntimeException( "The placement does not exist on the storeId" );
-        }
+        AllocationColumn allocationColumn = catalog.getSnapshot().alloc().getColumn( placement.id, column.id ).orElseThrow( () -> new GenericRuntimeException( "The placement does not exist on the storeId" ) );
+
         // Check whether there are any indexes located on the storeId requiring this column
         for ( LogicalIndex index : catalog.getSnapshot().rel().getIndexes( table.id, false ) ) {
             if ( index.location == store.getAdapterId() && index.key.fieldIds.contains( column.id ) ) {
@@ -1556,7 +1548,7 @@ public class DdlManagerImpl extends DdlManager {
             }
         }
 
-        if ( !validatePlacementsConstraints( optionalPlacement.get(), List.of( catalog.getSnapshot().alloc().getColumn( optionalPlacement.get().id, column.id ).orElseThrow() ), List.of() ) ) {
+        if ( !validatePlacementsConstraints( placement, List.of( allocationColumn ), List.of() ) ) {
             throw new GenericRuntimeException( "Cannot drop the placement as it is the last" );
         }
 
@@ -1567,14 +1559,14 @@ public class DdlManagerImpl extends DdlManager {
         }
         catalog.attachCommitAction( () -> {
             for ( AllocationPartition partition : catalog.getSnapshot().alloc().getPartitionsFromLogical( table.id ) ) {
-                AllocationEntity allocation = catalog.getSnapshot().alloc().getAlloc( optionalPlacement.get().id, partition.id ).orElseThrow();
+                AllocationEntity allocation = catalog.getSnapshot().alloc().getAlloc( placement.id, partition.id ).orElseThrow();
                 // Drop Column on store
                 store.dropColumn( statement.getPrepareContext(), allocation.id, column.id );
             }
         } );
 
         // Drop column placement
-        catalog.getAllocRel( table.namespaceId ).deleteColumn( optionalPlacement.get().id, column.id );
+        catalog.getAllocRel( table.namespaceId ).deleteColumn( placement.id, column.id );
 
         catalog.updateSnapshot();
 
@@ -1887,7 +1879,7 @@ public class DdlManagerImpl extends DdlManager {
                 // this partition is not placed on this storeId
                 continue;
             }
-            AllocationGraph alloc = optAlloc.get().unwrap( AllocationGraph.class ).orElseThrow();
+            AllocationGraph alloc = optAlloc.get().unwrapOrThrow( AllocationGraph.class );
 
             store.dropGraph( statement.getPrepareContext(), alloc );
 
@@ -1938,7 +1930,7 @@ public class DdlManagerImpl extends DdlManager {
             AdapterManager.getInstance()
                     .getStore( alloc.adapterId )
                     .orElseThrow()
-                    .dropGraph( statement.getPrepareContext(), alloc.unwrap( AllocationGraph.class ).orElseThrow() );
+                    .dropGraph( statement.getPrepareContext(), alloc.unwrapOrThrow( AllocationGraph.class ) );
             catalog.getAllocGraph( alloc.namespaceId ).deleteAllocation( alloc.id );
             catalog.getAllocGraph( alloc.namespaceId ).removePlacement( alloc.placementId );
         }
@@ -2011,26 +2003,23 @@ public class DdlManagerImpl extends DdlManager {
 
 
     private Map<Long, List<Long>> findUnderlyingTablesOfView( AlgNode algNode, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList ) {
-        if ( algNode instanceof LogicalRelScan ) {
-            List<Long> underlyingColumns = getUnderlyingColumns( algNode, fieldList );
-            underlyingTables.put( algNode.getEntity().id, underlyingColumns );
-        } else if ( algNode instanceof LogicalRelViewScan ) {
+        if ( algNode instanceof LogicalRelScan || algNode instanceof LogicalRelViewScan ) {
             List<Long> underlyingColumns = getUnderlyingColumns( algNode, fieldList );
             underlyingTables.put( algNode.getEntity().id, underlyingColumns );
         }
-        if ( algNode instanceof BiAlg ) {
-            findUnderlyingTablesOfView( ((BiAlg) algNode).getLeft(), underlyingTables, fieldList );
-            findUnderlyingTablesOfView( ((BiAlg) algNode).getRight(), underlyingTables, fieldList );
-        } else if ( algNode instanceof SingleAlg ) {
-            findUnderlyingTablesOfView( ((SingleAlg) algNode).getInput(), underlyingTables, fieldList );
+        if ( algNode instanceof BiAlg biAlg ) {
+            findUnderlyingTablesOfView( biAlg.getLeft(), underlyingTables, fieldList );
+            findUnderlyingTablesOfView( biAlg.getRight(), underlyingTables, fieldList );
+        } else if ( algNode instanceof SingleAlg singleAlg ) {
+            findUnderlyingTablesOfView( singleAlg.getInput(), underlyingTables, fieldList );
         }
         return underlyingTables;
     }
 
 
     private List<Long> getUnderlyingColumns( AlgNode algNode, AlgDataType fieldList ) {
-        LogicalTable table = algNode.getEntity().unwrap( LogicalTable.class ).orElseThrow();
-        List<LogicalColumn> columns = Catalog.getInstance().getSnapshot().rel().getColumns( table.id );
+        LogicalTable table = algNode.getEntity().unwrapOrThrow( LogicalTable.class );
+        List<LogicalColumn> columns = catalog.getSnapshot().rel().getColumns( table.id );
         List<String> logicalColumnNames = columns.stream().map( c -> c.name ).toList();
         List<Long> underlyingColumns = new ArrayList<>();
         for ( int i = 0; i < columns.size(); i++ ) {
@@ -2158,13 +2147,13 @@ public class DdlManagerImpl extends DdlManager {
         AllocationTable alloc = catalog.getAllocRel( namespaceId ).addAllocation( adapter.adapterId, placementId, partitionId, logical.id );
 
         Runnable action = () -> {
-            List<AllocationColumn> refreshedAColumns = Catalog.snapshot().alloc().getColumns( alloc.placementId );
+            List<AllocationColumn> refreshedAColumns = catalog.getSnapshot().alloc().getColumns( alloc.placementId );
             // we have to fetch them from scratch
-            LogicalTable refreshedLogical = Catalog.snapshot().rel().getTable( logical.id ).orElseThrow();
-            List<LogicalColumn> refreshedLColumns = Catalog.snapshot().rel().getColumns( logical.id );
+            LogicalTable refreshedLogical = catalog.getSnapshot().rel().getTable( logical.id ).orElseThrow();
+            List<LogicalColumn> refreshedLColumns = catalog.getSnapshot().rel().getColumns( logical.id );
             catalog.updateSnapshot();
-            List<Long> refreshedPks = Catalog.snapshot().rel().getKey( refreshedLogical.primaryKey ).orElseThrow().fieldIds;
-            AllocationTable refreshedAlloc = Catalog.snapshot().alloc().getAlloc( alloc.placementId, alloc.partitionId ).map( e -> e.unwrap( AllocationTable.class ).orElseThrow() ).orElseThrow();
+            List<Long> refreshedPks = catalog.getSnapshot().rel().getKey( refreshedLogical.primaryKey ).orElseThrow().fieldIds;
+            AllocationTable refreshedAlloc = catalog.getSnapshot().alloc().getAlloc( alloc.placementId, alloc.partitionId ).flatMap( e -> e.unwrap( AllocationTable.class ) ).orElseThrow();
 
             adapter.createTable( statement.getPrepareContext(), LogicalTableWrapper.of( refreshedLogical, sortByPosition( refreshedLColumns ), refreshedPks ), AllocationTableWrapper.of( refreshedAlloc, refreshedAColumns ) );
         };
@@ -2222,7 +2211,7 @@ public class DdlManagerImpl extends DdlManager {
             store.createCollection( statement.getPrepareContext(), logical, alloc );
         }
 
-        Catalog.getInstance().updateSnapshot();
+        catalog.updateSnapshot();
 
     }
 
@@ -2253,7 +2242,7 @@ public class DdlManagerImpl extends DdlManager {
 
         List<AllocationEntity> allocations = snapshot.alloc().getFromLogical( collection.id );
         for ( AllocationEntity allocation : allocations ) {
-            manager.getStore( allocation.adapterId ).orElseThrow().dropCollection( statement.getPrepareContext(), allocation.unwrap( AllocationCollection.class ).orElseThrow() );
+            manager.getStore( allocation.adapterId ).orElseThrow().dropCollection( statement.getPrepareContext(), allocation.unwrapOrThrow( AllocationCollection.class ) );
 
             catalog.getAllocDoc( allocation.namespaceId ).removeAllocation( allocation.id );
             catalog.getAllocDoc( allocation.namespaceId ).removePlacement( allocation.placementId );
@@ -2317,7 +2306,7 @@ public class DdlManagerImpl extends DdlManager {
                     // this partition is not placed on this storeId
                     continue;
                 }
-                AllocationCollection alloc = optAlloc.get().unwrap( AllocationCollection.class ).orElseThrow();
+                AllocationCollection alloc = optAlloc.get().unwrapOrThrow( AllocationCollection.class );
 
                 store.dropCollection( statement.getPrepareContext(), alloc );
 
@@ -2398,7 +2387,7 @@ public class DdlManagerImpl extends DdlManager {
                 dataMigrator.copyAllocationData(
                         statement.getTransaction(),
                         catalog.getSnapshot().getAdapter( store.getAdapterId() ).orElseThrow(),
-                        sourceAllocs.stream().map( s -> s.unwrap( AllocationTable.class ).orElseThrow() ).toList(),
+                        sourceAllocs.stream().map( s -> s.unwrapOrThrow( AllocationTable.class ) ).toList(),
                         result.right,
                         newAllocations.get( placement ),
                         unPartitionedTable );
@@ -2626,7 +2615,7 @@ public class DdlManagerImpl extends DdlManager {
                 .isPartitioned( true )
                 .internalPartitionFunction( PartitionType.valueOf( ((RawTemperaturePartitionInformation) partitionInfo.rawPartitionInformation).getInternalPartitionFunction().toString().toUpperCase() ) )
                 .partitionColumnId( logicalColumn.id )
-                .partitionGroupIds( ImmutableList.copyOf( partitionGroups.keySet().stream().map( g -> g.id ).collect( Collectors.toList() ) ) )
+                .partitionGroupIds( ImmutableList.copyOf( partitionGroups.keySet().stream().map( g -> g.id ).toList() ) )
                 .partitionIds( ImmutableList.copyOf( partitions.stream().map( p -> p.id ).toList() ) )
                 .partitionCostIndication( PartitionCostIndication.valueOf( ((RawTemperaturePartitionInformation) partitionInfo.rawPartitionInformation).getAccessPattern().toString().toUpperCase() ) )
                 .frequencyInterval( frequencyInterval )
@@ -2681,14 +2670,14 @@ public class DdlManagerImpl extends DdlManager {
                 continue;
             }
 
-            List<AllocationTable> sourceTables = new ArrayList<>( snapshot.alloc().getAllocsOfPlacement( placement.id ).stream().map( t -> t.unwrap( AllocationTable.class ).orElseThrow() ).toList() );
+            List<AllocationTable> sourceTables = new ArrayList<>( snapshot.alloc().getAllocsOfPlacement( placement.id ).stream().map( t -> t.unwrapOrThrow( AllocationTable.class ) ).toList() );
             List<Long> missingPartitions = new ArrayList<>( property.partitionIds );
             missingPartitions.removeAll( sourceTables.stream().map( s -> s.partitionId ).toList() );
 
             sources.addAll( sourceTables );
 
             for ( long missingPartition : missingPartitions ) {
-                sourceTables.addAll( snapshot.alloc().getAllocsOfPartitions( missingPartition ).stream().filter( a -> a.adapterId != store.adapterId ).map( a -> a.unwrap( AllocationTable.class ).orElseThrow() ).toList() );
+                sourceTables.addAll( snapshot.alloc().getAllocsOfPartitions( missingPartition ).stream().filter( a -> a.adapterId != store.adapterId ).map( a -> a.unwrapOrThrow( AllocationTable.class ) ).toList() );
             }
 
             List<AllocationColumn> columns = snapshot.alloc().getColumns( placement.id );
@@ -2734,7 +2723,7 @@ public class DdlManagerImpl extends DdlManager {
                     ds.addIndex(
                             statement.getPrepareContext(),
                             newIndex,
-                            catalog.getSnapshot().alloc().getAllocsOfPlacement( placement.id ).stream().map( e -> e.unwrap( AllocationTable.class ).orElseThrow() ).collect( Collectors.toList() ) );//catalog.getSnapshot().alloc().getPartitionsOnDataPlacement( ds.getAdapterId(), mergedTable.id ) );
+                            catalog.getSnapshot().alloc().getAllocsOfPlacement( placement.id ).stream().map( e -> e.unwrapOrThrow( AllocationTable.class ) ).toList() );//catalog.getSnapshot().alloc().getPartitionsOnDataPlacement( ds.getAdapterId(), mergedTable.id ) );
                 } );
             }
         }
