@@ -54,7 +54,7 @@ public class LogicalDocumentSort extends DocumentSort implements DocumentAlg {
 
 
     public static AlgNode create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
-        ListArg<CollationArg> collations = args.getListArg( "sort", CollationArg.class );
+        ListArg<CollationArg> collations = args.getListArg( "order", CollationArg.class );
         ListArg<RexArg> targets = args.getListArg( "targets", RexArg.class );
         RexArg limit = args.getArg( "limit", RexArg.class );
         RexArg offset = args.getArg( "offset", RexArg.class );
@@ -90,7 +90,7 @@ public class LogicalDocumentSort extends DocumentSort implements DocumentAlg {
         PolyAlgArg collArg = new ListArg<>( collation.getFieldCollations(), CollationArg::new );
         PolyAlgArg targetsArg = new ListArg<>( fieldExps, RexArg::new );
 
-        return args.put( "sort", collArg )
+        return args.put( "order", collArg )
                 .put( "targets", targetsArg )
                 .put( "limit", new RexArg( fetch ) )
                 .put( "offset", new RexArg( offset ) );

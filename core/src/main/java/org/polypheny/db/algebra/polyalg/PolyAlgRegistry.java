@@ -174,7 +174,7 @@ public class PolyAlgRegistry {
         declarations.put( LogicalRelSort.class, PolyAlgDeclaration.builder()
                 .creator( LogicalRelSort::create ).model( DataModel.RELATIONAL )
                 .opName( "REL_SORT" ).opAlias( "SORT" ).numInputs( 1 ).opTags( logAllTags )
-                .param( Parameter.builder().name( "sort" ).aliases( List.of( "collation", "order" ) ).type( ParamType.COLLATION ).simpleType( SimpleType.SIMPLE_COLLATION ).multiValued( 1 ).defaultValue( ListArg.EMPTY ).build() )
+                .param( Parameter.builder().name( "order" ).aliases( List.of( "collation", "key", "sort" ) ).type( ParamType.COLLATION ).simpleType( SimpleType.SIMPLE_COLLATION ).multiValued( 1 ).defaultValue( ListArg.EMPTY ).build() )
                 .param( Parameter.builder().name( "limit" ).alias( "fetch" ).type( ParamType.REX ).simpleType( SimpleType.REX_UINT ).defaultValue( RexArg.NULL ).build() )
                 .param( Parameter.builder().name( "offset" ).type( ParamType.REX ).simpleType( SimpleType.HIDDEN ).defaultValue( RexArg.NULL ).build() )
                 .build() );
@@ -224,7 +224,7 @@ public class PolyAlgRegistry {
         declarations.put( LogicalSortExchange.class, PolyAlgDeclaration.builder()
                 .creator( LogicalSortExchange::create ).model( DataModel.RELATIONAL )
                 .opName( "REL_SORT_EXCHANGE" ).opAlias( "SORT_EXCHANGE" ).numInputs( 1 ).opTags( logAllProTags )
-                .param( Parameter.builder().name( "sort" ).aliases( List.of( "collation", "order" ) ).multiValued( 1 ).type( ParamType.COLLATION ).simpleType( SimpleType.SIMPLE_COLLATION ).build() )
+                .param( Parameter.builder().name( "order" ).aliases( List.of( "collation", "sort", "key" ) ).multiValued( 1 ).type( ParamType.COLLATION ).simpleType( SimpleType.SIMPLE_COLLATION ).build() )
                 .param( Parameter.builder().name( "distributionType" ).alias( "type" ).type( ParamType.DISTRIBUTION_TYPE_ENUM ).build() )
                 .param( Parameter.builder().name( "numbers" ).multiValued( 1 ).type( ParamType.REX ).defaultValue( ListArg.EMPTY ).build() )
                 .build() );
@@ -249,7 +249,7 @@ public class PolyAlgRegistry {
         declarations.put( LogicalDocumentSort.class, PolyAlgDeclaration.builder()
                 .creator( LogicalDocumentSort::create ).model( DataModel.DOCUMENT )
                 .opName( "DOC_SORT" ).numInputs( 1 ).opTags( logAllTags )
-                .param( Parameter.builder().name( "sort" ).aliases( List.of( "collation", "order" ) ).type( ParamType.COLLATION ).simpleType( SimpleType.SIMPLE_COLLATION ).multiValued( 1 ).defaultValue( ListArg.EMPTY ).build() )
+                .param( Parameter.builder().name( "order" ).aliases( List.of( "collation", "key", "sort" ) ).type( ParamType.COLLATION ).simpleType( SimpleType.SIMPLE_COLLATION ).multiValued( 1 ).defaultValue( ListArg.EMPTY ).build() )
                 .param( Parameter.builder().name( "targets" ).multiValued( 1 ).type( ParamType.REX ).defaultValue( ListArg.EMPTY ).build() )
                 .param( Parameter.builder().name( "limit" ).alias( "fetch" ).type( ParamType.REX ).simpleType( SimpleType.REX_UINT ).defaultValue( RexArg.NULL ).build() )
                 .param( Parameter.builder().name( "offset" ).type( ParamType.REX ).simpleType( SimpleType.HIDDEN ).defaultValue( RexArg.NULL ).build() )
@@ -311,7 +311,7 @@ public class PolyAlgRegistry {
         declarations.put( LogicalLpgSort.class, PolyAlgDeclaration.builder()
                 .creator( LogicalLpgSort::create ).model( DataModel.GRAPH )
                 .opName( "LPG_SORT" ).numInputs( 1 ).opTags( logAllTags )
-                .param( Parameter.builder().name( "sort" ).aliases( List.of( "collation", "order" ) ).type( ParamType.COLLATION ).simpleType( SimpleType.SIMPLE_COLLATION ).multiValued( 1 ).defaultValue( ListArg.EMPTY ).build() )
+                .param( Parameter.builder().name( "order" ).aliases( List.of( "collation", "key", "sort" ) ).type( ParamType.COLLATION ).simpleType( SimpleType.SIMPLE_COLLATION ).multiValued( 1 ).defaultValue( ListArg.EMPTY ).build() )
                 .param( Parameter.builder().name( "limit" ).alias( "fetch" ).tag( ParamTag.NON_NEGATIVE ).type( ParamType.INTEGER ).defaultValue( IntArg.NULL ).build() )
                 .param( Parameter.builder().name( "skip" ).alias( "offset" ).tag( ParamTag.NON_NEGATIVE ).type( ParamType.INTEGER ).simpleType( SimpleType.HIDDEN ).defaultValue( IntArg.NULL ).build() )
                 .build() );

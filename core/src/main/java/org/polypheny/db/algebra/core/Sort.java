@@ -202,7 +202,7 @@ public abstract class Sort extends SingleAlg {
 
 
     protected static Triple<AlgCollation, RexNode, RexNode> extractArgs( PolyAlgArgs args ) {
-        ListArg<CollationArg> collations = args.getListArg( "sort", CollationArg.class );
+        ListArg<CollationArg> collations = args.getListArg( "order", CollationArg.class );
         RexArg limit = args.getArg( "limit", RexArg.class );
         RexArg offset = args.getArg( "offset", RexArg.class );
         return Triple.of( AlgCollations.of( collations.map( CollationArg::getColl ) ), offset.getNode(), limit.getNode() );
@@ -218,7 +218,7 @@ public abstract class Sort extends SingleAlg {
                 CollationArg::new,
                 args.getDecl().canUnpackValues() );
 
-        args.put( "sort", collArg )
+        args.put( "order", collArg )
                 .put( "limit", new RexArg( fetch ) )
                 .put( "offset", new RexArg( offset ) );
         return args;

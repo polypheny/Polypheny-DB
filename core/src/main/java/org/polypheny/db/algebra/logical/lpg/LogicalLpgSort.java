@@ -61,7 +61,7 @@ public class LogicalLpgSort extends LpgSort {
 
 
     public static LogicalLpgSort create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
-        ListArg<CollationArg> collations = args.getListArg( "sort", CollationArg.class );
+        ListArg<CollationArg> collations = args.getListArg( "order", CollationArg.class );
         IntArg limit = args.getArg( "limit", IntArg.class );
         IntArg skip = args.getArg( "skip", IntArg.class );
         return create( AlgCollations.of( collations.map( CollationArg::getColl ) ), children.get( 0 ), skip.getArg(), limit.getArg() );
@@ -112,7 +112,7 @@ public class LogicalLpgSort extends LpgSort {
                 collation.getFieldCollations(),
                 CollationArg::new );
 
-        args.put( "sort", collArg );
+        args.put( "order", collArg );
 
         if ( fetch != null ) {
             args.put( "limit", new IntArg( Integer.parseInt( fetch.toString() ) ) );

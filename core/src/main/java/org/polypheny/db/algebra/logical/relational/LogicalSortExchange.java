@@ -82,7 +82,7 @@ public class LogicalSortExchange extends SortExchange implements RelAlg {
 
 
     public static LogicalSortExchange create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
-        ListArg<CollationArg> collations = args.getListArg( "sort", CollationArg.class );
+        ListArg<CollationArg> collations = args.getListArg( "order", CollationArg.class );
         AlgDistribution.Type type = args.getEnumArg( "distributionType", AlgDistribution.Type.class ).getArg();
         List<Integer> numbers = args.getListArg( "numbers", IntArg.class ).map( IntArg::getArg );
         return create( children.get( 0 ),
@@ -101,7 +101,7 @@ public class LogicalSortExchange extends SortExchange implements RelAlg {
     public PolyAlgArgs bindArguments() {
         PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
 
-        return args.put( "sort", new ListArg<>( collation.getFieldCollations(), CollationArg::new ) )
+        return args.put( "order", new ListArg<>( collation.getFieldCollations(), CollationArg::new ) )
                 .put( "distributionType", new EnumArg<>( distribution.getType(), ParamType.DISTRIBUTION_TYPE_ENUM ) )
                 .put( "numbers", new ListArg<>( distribution.getKeys(), IntArg::new ) );
     }
