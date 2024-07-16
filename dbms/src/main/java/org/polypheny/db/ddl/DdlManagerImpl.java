@@ -787,7 +787,7 @@ public class DdlManagerImpl extends DdlManager {
             columnIds.add( logicalColumn.id );
         }
 
-        if ( oldPk != null && oldPk.key.fieldIds.containsAll( columnIds ) && columnIds.contains( oldPk.key.fieldIds ) ) {
+        if ( oldPk != null && oldPk.key.fieldIds.containsAll( columnIds ) && columnIds.containsAll( oldPk.key.fieldIds ) ) {
             return;
         }
 
