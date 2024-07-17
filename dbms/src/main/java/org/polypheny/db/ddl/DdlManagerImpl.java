@@ -340,7 +340,9 @@ public class DdlManagerImpl extends DdlManager {
                 }
 
                 if ( allocation.unwrap( AllocationCollection.class ).isPresent() ) {
-                    dropCollection( catalog.getSnapshot().doc().getCollection( allocation.adapterId ).orElseThrow(), statement );
+                    //TODO: currently each document source creates its own namespace which can be disposed of together with the source
+                    //dropNamespace( catalog.getSnapshot().doc().getCollection( allocation.logicalId ).orElseThrow().getNamespaceName(), true, statement);
+                    dropCollection( catalog.getSnapshot().doc().getCollection( allocation.logicalId ).orElseThrow(), statement );
                 } else if ( allocation.unwrap( AllocationTable.class ).isPresent() ) {
 
                     for ( LogicalForeignKey fk : catalog.getSnapshot().rel().getForeignKeys( allocation.logicalId ) ) {
@@ -2232,6 +2234,7 @@ public class DdlManagerImpl extends DdlManager {
         store.updateNamespace( logical.getNamespaceName(), namespaceId );
     }
 
+
     private void buildDocumentNamespace( long namespaceId, LogicalCollection logical, Adapter<?> store ) {
         store.updateNamespace( logical.getNamespaceName(), namespaceId );
     }
@@ -2295,11 +2298,15 @@ public class DdlManagerImpl extends DdlManager {
         Snapshot snapshot = catalog.getSnapshot();
 
         AdapterManager manager = AdapterManager.getInstance();
+        boolean isSource = false;
 
         List<AllocationEntity> allocations = snapshot.alloc().getFromLogical( collection.id );
         for ( AllocationEntity allocation : allocations ) {
-            manager.getStore( allocation.adapterId ).orElseThrow().dropCollection( statement.getPrepareContext(), allocation.unwrap( AllocationCollection.class ).orElseThrow() );
-
+            if ( manager.isStore( allocation.adapterId ) ) {
+                manager.getStore( allocation.adapterId ).orElseThrow().dropCollection( statement.getPrepareContext(), allocation.unwrap( AllocationCollection.class ).orElseThrow() );
+            } else {
+                manager.getSource( allocation.adapterId ).orElseThrow().dropCollection( statement.getPrepareContext(), allocation.unwrap( AllocationCollection.class ).orElseThrow() );
+            }
             catalog.getAllocDoc( allocation.namespaceId ).removeAllocation( allocation.id );
             catalog.getAllocDoc( allocation.namespaceId ).removePlacement( allocation.placementId );
         }
@@ -2307,7 +2314,6 @@ public class DdlManagerImpl extends DdlManager {
         catalog.getLogicalDoc( collection.namespaceId ).deleteCollection( collection.id );
 
         catalog.updateSnapshot();
-
         // Reset plan cache implementation cache & routing cache
         statement.getQueryProcessor().resetCaches();
     }
