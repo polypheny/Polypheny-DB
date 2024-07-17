@@ -26,12 +26,15 @@ import java.util.Map;
 import javax.xml.parsers.ParserConfigurationException;
 import lombok.experimental.Delegate;
 import org.pf4j.Extension;
+import org.polypheny.db.adapter.ConnectionMethod;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.DocumentDataSource;
 import org.polypheny.db.adapter.DocumentScanDelegate;
 import org.polypheny.db.adapter.Scannable;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
+import org.polypheny.db.adapter.annotations.AdapterSettingDirectory;
+import org.polypheny.db.adapter.annotations.AdapterSettingList;
 import org.polypheny.db.adapter.annotations.AdapterSettingString;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.catalogs.AdapterCatalog;
@@ -60,17 +63,22 @@ import org.xml.sax.SAXException;
         description = "An adapter for querying XML files. An XML file or a directory containing multiple XML files can be specified by path. Currently, this adapter only supports read operations.",
         usedModes = DeployMode.EMBEDDED,
         defaultMode = DeployMode.EMBEDDED)
-@AdapterSettingString(name = "xmlFiles", defaultValue = "classpath://cars.xml", description = "Path to the XML file(s) to be integrated as this source.", position = 1)
+@AdapterSettingList(name = "method", options = { "upload", "link" }, defaultValue = "upload", description = "If the supplied file(s) should be uploaded or a link to the local filesystem is used (sufficient permissions are required).", position = 1)
+@AdapterSettingDirectory(subOf = "method_upload", name = "directory", defaultValue = "classpath://articles.json", description = "Path to the XML file(s) to be integrated as this source.", position = 2)
+@AdapterSettingString(subOf = "method_link", defaultValue = "classpath://articles.json", name = "directoryName", description = "Path to the XML file(s) to be integrated as this source.", position = 2)
+
 public class XmlSource extends DataSource<DocAdapterCatalog> implements DocumentDataSource, Scannable {
     private static final Logger log = LoggerFactory.getLogger( XmlSource.class );
     @Delegate(excludes = Excludes.class)
     private final DocumentScanDelegate delegate;
     private XmlNamespace namespace;
+    private final ConnectionMethod connectionMethod;
     private URL xmlFiles;
 
     public XmlSource( final long storeId, final String uniqueName, final Map<String, String> settings, DeployMode mode ) {
         super( storeId, uniqueName, settings, mode, true, new DocAdapterCatalog( storeId ), List.of( DataModel.DOCUMENT ) );
-        this.xmlFiles = getXmlFilesUrl( settings.get( "xmlFiles" ) );
+        this.connectionMethod = settings.containsKey( "method" ) ? ConnectionMethod.from( settings.get( "method" ).toUpperCase() ) : ConnectionMethod.UPLOAD;
+        this.xmlFiles = getXmlFilesUrl( settings);
         this.delegate = new DocumentScanDelegate( this, getAdapterCatalog() );
         long namespaceId = Catalog.getInstance().createNamespace( uniqueName, DataModel.DOCUMENT, true );
         this.namespace = new XmlNamespace( uniqueName, namespaceId, getAdapterId() );
@@ -79,12 +87,17 @@ public class XmlSource extends DataSource<DocAdapterCatalog> implements Document
     @Override
     protected void reloadSettings( List<String> updatedSettings ) {
         if ( updatedSettings.contains( "directory" ) ) {
-            this.xmlFiles = getXmlFilesUrl( settings.get( "xmlFiles" ) );
+            this.xmlFiles = getXmlFilesUrl( settings );
         }
     }
 
 
-    private URL getXmlFilesUrl( String files ) {
+    private URL getXmlFilesUrl( final Map<String, String> settings ) {
+        String files = settings.get( "directory" );
+        if ( connectionMethod == ConnectionMethod.LINK ) {
+            files = settings.get( "directoryName" );
+        }
+
         if ( files.startsWith( "classpath://" ) ) {
             return this.getClass().getClassLoader().getResource( files.replace( "classpath://", "" ) + "/" );
         }
