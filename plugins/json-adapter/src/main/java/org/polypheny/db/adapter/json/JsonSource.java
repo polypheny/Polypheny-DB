@@ -25,12 +25,15 @@ import java.util.List;
 import java.util.Map;
 import lombok.experimental.Delegate;
 import org.pf4j.Extension;
+import org.polypheny.db.adapter.ConnectionMethod;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.DocumentDataSource;
 import org.polypheny.db.adapter.DocumentScanDelegate;
 import org.polypheny.db.adapter.Scannable;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
+import org.polypheny.db.adapter.annotations.AdapterSettingDirectory;
+import org.polypheny.db.adapter.annotations.AdapterSettingList;
 import org.polypheny.db.adapter.annotations.AdapterSettingString;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.catalogs.AdapterCatalog;
@@ -58,20 +61,24 @@ import org.slf4j.LoggerFactory;
         description = "An adapter for querying JSON files. A single JSON file or a directory containing multiple JSON files can be specified by path. Currently, this adapter only supports read operations.",
         usedModes = DeployMode.EMBEDDED,
         defaultMode = DeployMode.EMBEDDED)
-@AdapterSettingString(name = "jsonFiles", defaultValue = "classpath://articles.json", description = "Path to the JSON file(s) to be integrated as this source.", position = 1)
+@AdapterSettingList(name = "method", options = { "upload", "link" }, defaultValue = "upload", description = "If the supplied file(s) should be uploaded or a link to the local filesystem is used (sufficient permissions are required).", position = 1)
+@AdapterSettingDirectory(subOf = "method_upload", name = "directory", defaultValue = "classpath://articles.json", description = "Path to the JSON file(s) to be integrated as this source.", position = 2)
+@AdapterSettingString(subOf = "method_link", defaultValue = "classpath://articles.json", name = "directoryName", description = "Path to the JSON file(s) to be integrated as this source.", position = 2)
+
 public class JsonSource extends DataSource<DocAdapterCatalog> implements DocumentDataSource, Scannable {
 
     private static final Logger log = LoggerFactory.getLogger( JsonSource.class );
     @Delegate(excludes = Excludes.class)
     private final DocumentScanDelegate delegate;
     private JsonNamespace namespace;
-
+    private final ConnectionMethod connectionMethod;
     private URL jsonFiles;
 
 
     public JsonSource( final long storeId, final String uniqueName, final Map<String, String> settings, DeployMode mode ) {
         super( storeId, uniqueName, settings, mode, true, new DocAdapterCatalog( storeId ), List.of( DataModel.DOCUMENT ) );
-        this.jsonFiles = getJsonFilesUrl( settings.get( "jsonFiles" ) );
+        this.connectionMethod = settings.containsKey( "method" ) ? ConnectionMethod.from( settings.get( "method" ).toUpperCase() ) : ConnectionMethod.UPLOAD;
+        this.jsonFiles = getJsonFilesUrl( settings );
         this.delegate = new DocumentScanDelegate( this, getAdapterCatalog() );
         long namespaceId = Catalog.getInstance().createNamespace( uniqueName, DataModel.DOCUMENT, true );
         this.namespace = new JsonNamespace( uniqueName, namespaceId, getAdapterId() );
@@ -81,12 +88,17 @@ public class JsonSource extends DataSource<DocAdapterCatalog> implements Documen
     @Override
     protected void reloadSettings( List<String> updatedSettings ) {
         if ( updatedSettings.contains( "directory" ) ) {
-            this.jsonFiles = getJsonFilesUrl( settings.get( "jsonFiles" ) );
+            this.jsonFiles = getJsonFilesUrl( settings );
         }
     }
 
 
-    private URL getJsonFilesUrl( String files ) {
+    private URL getJsonFilesUrl( final Map<String, String> settings ) {
+        String files = settings.get( "directory" );
+        if ( connectionMethod == ConnectionMethod.LINK ) {
+            files = settings.get( "directoryName" );
+        }
+
         if ( files.startsWith( "classpath://" ) ) {
             return this.getClass().getClassLoader().getResource( files.replace( "classpath://", "" ) + "/" );
         }
