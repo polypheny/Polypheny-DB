@@ -19,7 +19,6 @@ package org.polypheny.db.adapter.postgres;
 
 import java.util.Objects;
 import java.util.Optional;
-import org.apache.calcite.avatica.SqlType;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.NullCollation;
@@ -39,6 +38,7 @@ import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlUtil;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.sql.language.fun.SqlFloorFunction;
+import org.polypheny.db.sql.language.validate.SqlType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.inference.ReturnTypes;
 

@@ -363,7 +363,7 @@ public enum PolyType {
 
     public static final List<PolyType> FRACTIONAL_TYPES = combine( APPROX_TYPES, ImmutableList.of( DECIMAL ) );
 
-    public static final List<PolyType> CHAR_TYPES = ImmutableList.of( CHAR, VARCHAR, JSON );
+    public static final List<PolyType> CHAR_TYPES = ImmutableList.of( CHAR, VARCHAR, JSON, TEXT );
 
     public static final List<PolyType> STRING_TYPES = combine( CHAR_TYPES, BINARY_TYPES );
 

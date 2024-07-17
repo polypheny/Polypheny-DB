@@ -57,7 +57,6 @@ import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.util.ImmutableNullableList;
 import org.polypheny.db.util.Pair;
 
 
@@ -132,13 +131,13 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
 
     @Override
     public List<Node> getOperandList() {
-        return ImmutableNullableList.of( name, columns, query );
+        return ImmutableList.of( name, columns, query );
     }
 
 
     @Override
     public List<SqlNode> getSqlOperandList() {
-        return ImmutableNullableList.of( name, columns, query );
+        return ImmutableList.of( name, columns, query );
     }
 
 

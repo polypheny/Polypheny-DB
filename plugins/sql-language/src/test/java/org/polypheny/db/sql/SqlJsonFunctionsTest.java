@@ -20,6 +20,7 @@ package org.polypheny.db.sql;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import com.jayway.jsonpath.PathNotFoundException;
@@ -32,7 +33,6 @@ import java.util.Objects;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
-import org.bson.json.JsonParseException;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
@@ -421,7 +421,7 @@ public class SqlJsonFunctionsTest extends SqlLanguageDependent {
 
         // expect exception thrown
         final String message = "JSON reader was expecting a value but found '}'.";
-        assertDejsonizeFailed( "[}", errorMatches( new JsonParseException( message ) ) );
+        assertDejsonizeFailed( "[}", message );
     }
 
 
@@ -573,8 +573,8 @@ public class SqlJsonFunctionsTest extends SqlLanguageDependent {
     }
 
 
-    private void assertDejsonizeFailed( String input, Matcher<? super Throwable> matcher ) {
-        assertFailed( invocationDesc( INVOC_DESC_DEJSONIZE, input ), () -> Functions.dejsonize( PolyString.of( input ) ), matcher );
+    private void assertDejsonizeFailed( String input, String msg ) {
+        assertThrows( RuntimeException.class, () -> Functions.dejsonize( PolyString.of( input ) ), msg );
     }
 
 

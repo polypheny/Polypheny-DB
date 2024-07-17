@@ -71,7 +71,6 @@ import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.util.Bug;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 import org.polypheny.db.util.temporal.TimeUnit;
@@ -144,8 +143,6 @@ public class RexSimplify {
 
     /**
      * Returns a RexSimplify the same as this but with a specified {@link #predicateElimination} value.
-     * <p>
-     * This is introduced temporarily, until {@link Bug#CALCITE_2401_FIXED [POLYPHENYDB-2401] is fixed}.
      */
     private RexSimplify withPredicateElimination( boolean predicateElimination ) {
         return predicateElimination == this.predicateElimination
@@ -1963,7 +1960,7 @@ public class RexSimplify {
      * @return simplified conjunction of predicates for the filter, null if always false
      */
     public RexNode simplifyFilterPredicates( Iterable<? extends RexNode> predicates ) {
-        final RexNode simplifiedAnds = withPredicateElimination( Bug.CALCITE_2401_FIXED ).simplifyAnds( predicates, FALSE );
+        final RexNode simplifiedAnds = withPredicateElimination( false ).simplifyAnds( predicates, FALSE );
         if ( simplifiedAnds.isAlwaysFalse() ) {
             return null;
         }

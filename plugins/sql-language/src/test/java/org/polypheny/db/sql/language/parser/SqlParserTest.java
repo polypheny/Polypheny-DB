@@ -42,8 +42,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import org.apache.calcite.avatica.util.Casing;
-import org.apache.calcite.avatica.util.Quoting;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
@@ -67,9 +65,10 @@ import org.polypheny.db.sql.language.dialect.PolyphenyDbSqlDialect;
 import org.polypheny.db.sql.language.parser.SqlAbstractParserImpl.Metadata;
 import org.polypheny.db.sql.language.pretty.SqlPrettyWriter;
 import org.polypheny.db.sql.language.utils.SqlValidatorTestCase;
-import org.polypheny.db.util.Bug;
+import org.polypheny.db.util.Casing;
 import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.ConversionUtil;
+import org.polypheny.db.util.Quoting;
 import org.polypheny.db.util.SourceStringReader;
 import org.polypheny.db.util.Sources;
 import org.polypheny.db.util.TestUtil;
@@ -2461,46 +2460,6 @@ public class SqlParserTest extends SqlLanguageDependent {
 
 
     @Test
-    public void testJoinOnParentheses() {
-        if ( !Bug.TODO_FIXED ) {
-            return;
-        }
-        check(
-                """
-                        select * from a
-                         left join (b join c as c1 on 1 = 1) on 2 = 2
-                        where 3 = 3""",
-                """
-                        SELECT *
-                        FROM `A`
-                        LEFT JOIN (`B` INNER JOIN `C` AS `C1` ON (1 = 1)) ON (2 = 2)
-                        WHERE (3 = 3)""" );
-    }
-
-
-    /**
-     * Same as {@link #testJoinOnParentheses()} but fancy aliases.
-     */
-    @Test
-    public void testJoinOnParenthesesPlus() {
-        if ( !Bug.TODO_FIXED ) {
-            return;
-        }
-        check(
-                """
-                        select * from a
-                         left join (b as b1 (x, y) join (select * from c) c1 on 1 = 1) on 2 = 2
-                        where 3 = 3""",
-                """
-                        SELECT *
-                        FROM `A`
-                        LEFT JOIN (`B` AS `B1` (`X`, `Y`) INNER JOIN (SELECT *
-                        FROM `C`) AS `C1` ON (1 = 1)) ON (2 = 2)
-                        WHERE (3 = 3)""" );
-    }
-
-
-    @Test
     public void testExplicitTableInJoin() {
         check(
                 "select * from a left join (table b) on 2 = 2 where 3 = 3",
@@ -2509,26 +2468,6 @@ public class SqlParserTest extends SqlLanguageDependent {
                         FROM `A`
                         LEFT JOIN (TABLE `B`) ON (2 = 2)
                         WHERE (3 = 3)""" );
-    }
-
-
-    @Test
-    public void testSubQueryInJoin() {
-        if ( !Bug.TODO_FIXED ) {
-            return;
-        }
-        check(
-                """
-                        select * from (select * from a cross join b) as ab
-                         left join ((table c) join d on 2 = 2) on 3 = 3
-                         where 4 = 4""",
-                """
-                        SELECT *
-                        FROM (SELECT *
-                        FROM `A`
-                        CROSS JOIN `B`) AS `AB`
-                        LEFT JOIN ((TABLE `C`) INNER JOIN `D` ON (2 = 2)) ON (3 = 3)
-                        WHERE (4 = 4)""" );
     }
 
 
@@ -3193,37 +3132,6 @@ public class SqlParserTest extends SqlLanguageDependent {
         check(
                 "values (--1+\n" + "2)",
                 "VALUES (ROW(2))" );
-
-        // end of multiline comment without start
-        if ( Bug.FRG73_FIXED ) {
-            checkFails( "values (1 */ 2)", "xx" );
-        }
-
-        // SQL:2003, 5.2, syntax rule #10 "Within a <bracket comment context>, any <solidus> immediately followed by an <asterisk> without any intervening <separator> shall be considered to be the <bracketed
-        // comment introducer> for a <separator> that is a <bracketed comment>".
-
-        // comment inside a comment Spec is unclear what should happen, but currently it crashes the parser, and that's bad
-        if ( Bug.FRG73_FIXED ) {
-            check( "values (1 + /* comment /* inner comment */ */ 2)", "xx" );
-        }
-
-        // single-line comment inside multiline comment is illegal
-        //
-        // SQL-2003, 5.2: "Note 63 - Conforming programs should not place <simple comment> within a <bracketed comment> because if such a <simple comment> contains the sequence of characeters "*/" without
-        // a preceding "/*" in the same <simple comment>, it will prematurely terminate the containing <bracketed comment>.
-        if ( Bug.FRG73_FIXED ) {
-            checkFails(
-                    "values /* multiline contains -- singline */ \n" + " (1)",
-                    "xxx" );
-        }
-
-        // non-terminated multiline comment inside singleline comment
-        if ( Bug.FRG73_FIXED ) {
-            // Test should fail, and it does, but it should give "*/" as the erroneous token.
-            checkFails(
-                    "values ( -- rest of line /* a comment  \n" + " 1, ^*/^ 2)",
-                    "Encountered \"/\\*\" at" );
-        }
 
         check(
                 "values (1 + /* comment -- rest of line\n" + " rest of comment */ 2)",
@@ -4388,36 +4296,6 @@ public class SqlParserTest extends SqlLanguageDependent {
         checkExp( "coalesce(v1)", "(COALESCE(`V1`))" );
         checkExp( "coalesce(v1,v2)", "(COALESCE(`V1`, `V2`))" );
         checkExp( "coalesce(v1,v2,v3)", "(COALESCE(`V1`, `V2`, `V3`))" );
-    }
-
-
-    @Test
-    public void testLiteralCollate() {
-        if ( !Bug.FRG78_FIXED ) {
-            return;
-        }
-
-        checkExp(
-                "'string' collate latin1$sv_SE$mega_strength",
-                "'string' COLLATE ISO-8859-1$sv_SE$mega_strength" );
-        checkExp(
-                "'a long '\n'string' collate latin1$sv_SE$mega_strength",
-                "'a long ' 'string' COLLATE ISO-8859-1$sv_SE$mega_strength" );
-        checkExp(
-                "x collate iso-8859-6$ar_LB$1",
-                "`X` COLLATE ISO-8859-6$ar_LB$1" );
-        checkExp(
-                "x.y.z collate shift_jis$ja_JP$2",
-                "`X`.`Y`.`Z` COLLATE SHIFT_JIS$ja_JP$2" );
-        checkExp(
-                "'str1'='str2' collate latin1$sv_SE",
-                "('str1' = 'str2' COLLATE ISO-8859-1$sv_SE$primary)" );
-        checkExp(
-                "'str1' collate latin1$sv_SE>'str2'",
-                "('str1' COLLATE ISO-8859-1$sv_SE$primary > 'str2')" );
-        checkExp(
-                "'str1' collate latin1$sv_SE<='str2' collate latin1$sv_FI",
-                "('str1' COLLATE ISO-8859-1$sv_SE$primary <= 'str2' COLLATE ISO-8859-1$sv_FI$primary)" );
     }
 
 

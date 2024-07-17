@@ -23,7 +23,6 @@ import java.util.Map;
 import java.util.TimeZone;
 import lombok.Getter;
 import lombok.Setter;
-import org.apache.calcite.avatica.AvaticaSite;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.DataContext;
@@ -111,11 +110,7 @@ public class DataContextImpl implements DataContext {
 
     @Override
     public synchronized Object get( String name ) {
-        Object o = map.get( name );
-        if ( o == AvaticaSite.DUMMY_VALUE ) {
-            return null;
-        }
-        return o;
+        return map.get( name );
     }
 
 

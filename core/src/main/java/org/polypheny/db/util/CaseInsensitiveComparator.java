@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,9 +40,9 @@ import java.util.Comparator;
 
 /**
  * Comparator that compares all strings differently, but if two strings are equal in case-insensitive match they are right next to each other.
- *
+ * <p>
  * Note: strings that differ only in upper-lower case are treated by this comparator as distinct.
- *
+ * <p>
  * In a collection sorted on this comparator, we can find case-insensitive matches for a given string using
  * {@link #floorKey(java.lang.String)} and {@link #ceilingKey(java.lang.String)}.
  */
@@ -54,16 +54,7 @@ class CaseInsensitiveComparator implements Comparator, Serializable {
     /**
      * Enables to create floor and ceiling keys for given string.
      */
-    private static final class Key {
-
-        public final String value;
-        public final int compareResult;
-
-
-        private Key( String value, int compareResult ) {
-            this.value = value;
-            this.compareResult = compareResult;
-        }
+    private record Key( String value, int compareResult ) {
 
 
         @Override

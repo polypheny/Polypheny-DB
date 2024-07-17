@@ -26,10 +26,6 @@ import javax.annotation.Nullable;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.ColumnMetaData;
-import org.apache.calcite.avatica.Meta;
-import org.apache.calcite.avatica.Meta.CursorFactory;
-import org.apache.calcite.avatica.Meta.StatementType;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
@@ -41,7 +37,6 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
-import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.monitoring.events.MonitoringType;
 import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.plan.AlgOptUtil;
@@ -50,7 +45,6 @@ import org.polypheny.db.prepare.Prepare.PreparedResult;
 import org.polypheny.db.processing.QueryProcessorHelpers;
 import org.polypheny.db.routing.ExecutionTimeMonitor;
 import org.polypheny.db.runtime.Bindable;
-import org.polypheny.db.runtime.Typed;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
@@ -68,9 +62,8 @@ public class PolyImplementation {
     private Bindable<PolyValue[]> bindable;
     private final DataModel dataModel;
     private final ExecutionTimeMonitor executionTimeMonitor;
-    private CursorFactory cursorFactory;
     private final Convention resultConvention;
-    private List<ColumnMetaData> fields;
+    private List<String> fields;
     private final PreparedResult<PolyValue> preparedResult;
     private final Statement statement;
 
@@ -140,31 +133,6 @@ public class PolyImplementation {
     }
 
 
-    public Class<?> getResultClass() {
-        Class<?> resultClazz = null;
-        if ( preparedResult instanceof Typed ) {
-            resultClazz = (Class<?>) ((Typed) preparedResult).getElementType();
-        }
-        return resultClazz;
-    }
-
-
-    public CursorFactory getCursorFactory() {
-        if ( cursorFactory != null ) {
-            return cursorFactory;
-        }
-        if ( resultConvention == null ) {
-            return Meta.CursorFactory.OBJECT;
-        }
-
-        cursorFactory = resultConvention == BindableConvention.INSTANCE
-                ? CursorFactory.ARRAY
-                : CursorFactory.deduce( getFields(), getResultClass() );
-
-        return cursorFactory;
-    }
-
-
     public Bindable<PolyValue[]> getBindable() {
         if ( Kind.DDL.contains( kind ) ) {
             return dataContext -> Linq4j.singletonEnumerable( new PolyInteger[]{ PolyInteger.of( 1 ) } );
@@ -173,7 +141,7 @@ public class PolyImplementation {
         if ( bindable != null ) {
             return bindable;
         }
-        bindable = preparedResult.getBindable( getCursorFactory() );
+        bindable = preparedResult.getBindable();
         return bindable;
     }
 
@@ -186,7 +154,7 @@ public class PolyImplementation {
     }
 
 
-    public List<ColumnMetaData> getFields() {
+    public List<String> getFields() {
         if ( fields != null ) {
             return fields;
         }
@@ -197,14 +165,11 @@ public class PolyImplementation {
                     AlgOptUtil.createDmlRowType( kind, statement.getTransaction().getTypeFactory() );
             default -> tupleType;
         };
-        final List<ColumnMetaData> columns = QueryProcessorHelpers.getColumnMetaDataList(
-                statement.getTransaction().getTypeFactory(),
-                x,
-                QueryProcessorHelpers.makeStruct( statement.getTransaction().getTypeFactory(), x ),
-                preparedResult.getFieldOrigins() );
+        final List<String> fieldNames = QueryProcessorHelpers.getFieldNames(
+                QueryProcessorHelpers.makeStruct( statement.getTransaction().getTypeFactory(), x ) );
 
-        this.fields = columns;
-        return columns;
+        this.fields = fieldNames;
+        return fieldNames;
 
     }
 
@@ -245,24 +210,6 @@ public class PolyImplementation {
         this.iterator = enumerable.iterator();
 
         return this.iterator;
-    }
-
-
-    public static Meta.StatementType toStatementType( Kind kind ) {
-        if ( kind == Kind.SELECT ) {
-            return Meta.StatementType.SELECT;
-        } else if ( Kind.DDL.contains( kind ) ) {
-            return Meta.StatementType.OTHER_DDL;
-        } else if ( Kind.DML.contains( kind ) ) {
-            return Meta.StatementType.IS_DML;
-        }
-
-        throw new GenericRuntimeException( "Illegal statement type: " + kind.name() );
-    }
-
-
-    public StatementType getStatementType() {
-        return toStatementType( this.kind );
     }
 
 

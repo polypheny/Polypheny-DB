@@ -16,7 +16,6 @@ toolchainManagement {
 
 
 // core modules
-include 'util'
 include 'core'
 include 'config'
 include 'information'
@@ -40,7 +39,6 @@ include 'plugins:cypher-language'
 include 'plugins:jdbc-adapter-framework'
 
 // interface plugins
-include 'plugins:avatica-interface'
 include 'plugins:rest-interface'
 include 'plugins:http-interface'
 include 'plugins:prism-interface'
@@ -50,7 +48,6 @@ include 'plugins:hsqldb-adapter'
 include 'plugins:neo4j-adapter'
 include 'plugins:cottontail-adapter'
 include 'plugins:ethereum-adapter'
-//include 'plugins:cassandra-adapter'
 include 'plugins:csv-adapter'
 include 'plugins:mysql-adapter'
 include 'plugins:postgres-adapter'

@@ -26,7 +26,6 @@ import java.util.List;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import lombok.Value;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.PolyObject;
@@ -152,7 +151,6 @@ public class LogicalForeignKey extends LogicalKey {
         private final String foreignKeyFieldName;
 
 
-        @SneakyThrows
         @Override
         public PolyValue[] getParameterArray() {
             return Catalog.snapshot()
@@ -163,7 +161,7 @@ public class LogicalForeignKey extends LogicalKey {
         }
 
 
-        public record PrimitiveCatalogForeignKeyColumn(String pktableCat, String pktableSchem, String pktableName, String pkcolumnName, String fktableCat, String fktableSchem, String fktableName, String fkcolumnName, int keySeq, Integer updateRule, Integer deleteRule, String fkName, String pkName, Integer deferrability) {
+        public record PrimitiveCatalogForeignKeyColumn( String pktableCat, String pktableSchem, String pktableName, String pkcolumnName, String fktableCat, String fktableSchem, String fktableName, String fkcolumnName, int keySeq, Integer updateRule, Integer deleteRule, String fkName, String pkName, Integer deferrability ) {
 
         }
 

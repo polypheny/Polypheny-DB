@@ -17,12 +17,8 @@
 package org.polypheny.db.util;
 
 import com.mongodb.client.gridfs.GridFSBucket;
-import java.io.PushbackInputStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.sql.Date;
-import java.sql.Time;
-import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -37,7 +33,6 @@ import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.commons.lang3.NotImplementedException;
@@ -51,22 +46,15 @@ import org.bson.BsonInt32;
 import org.bson.BsonInt64;
 import org.bson.BsonNull;
 import org.bson.BsonString;
-import org.bson.BsonType;
 import org.bson.BsonValue;
 import org.bson.Document;
-import org.bson.json.JsonWriterSettings;
 import org.bson.types.Decimal128;
 import org.bson.types.ObjectId;
 import org.polypheny.db.algebra.enumerable.EnumUtils;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.runtime.ComparableList;
-import org.polypheny.db.runtime.PolyCollections.FlatMap;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
@@ -143,7 +131,7 @@ public class BsonUtil {
 
     /**
      * Recursively iterates over the operation mappings and replaces them in them with the equivalent BSON compatible format
-     *
+     * <p>
      * "{"key": 3*10-18}" {@code ->} "{"key": {"subtract":[18, {"multiply": [3, 10]}]}}"
      *
      * @param calculation the calculation up to this point
@@ -266,7 +254,7 @@ public class BsonUtil {
             case JSON -> BsonUtil::handleDocument;
             case ARRAY -> {
                 Function<PolyValue, BsonValue> transformer = getBsonTransformer( types, bucket );
-                yield ( o ) -> new BsonArray( o.asList().stream().map( transformer::apply ).toList() );
+                yield ( o ) -> new BsonArray( o.asList().stream().map( transformer ).toList() );
             }
             case DOCUMENT -> o -> BsonDocument.parse( "{ k:" + (o.isString() ? o.asString().toQuotedJson() : o.toJson()) + "}" ).get( "k" );
             default -> BsonUtil::handleString;
@@ -294,14 +282,6 @@ public class BsonUtil {
         }
         throw new GenericRuntimeException( "The provided object is not a binary object." );
 
-    }
-
-
-    private static Object getObjFromRex( Object obj, Function<RexLiteral, Object> transformer ) {
-        if ( obj instanceof RexLiteral ) {
-            obj = transformer.apply( (RexLiteral) obj );
-        }
-        return obj;
     }
 
 
@@ -415,31 +395,6 @@ public class BsonUtil {
 
 
     /**
-     * Get the corresponding MongoDB class for a provided type.
-     *
-     * @param type the type, for which a class is needed
-     * @return the supported class
-     */
-    public static Class<?> getClassFromType( PolyType type ) {
-        return switch ( type ) {
-            case BOOLEAN -> Boolean.class;
-            case TINYINT -> Short.class;
-            case SMALLINT, INTEGER -> Integer.class;
-            case BIGINT -> Long.class;
-            case DECIMAL -> BigDecimal.class;
-            case FLOAT, REAL -> Float.class;
-            case DOUBLE -> Double.class;
-            case DATE -> Date.class;
-            case TIME -> Time.class;
-            case TIMESTAMP -> Timestamp.class;
-            case CHAR, VARCHAR, BINARY, VARBINARY -> String.class;
-            case FILE, IMAGE, VIDEO, AUDIO -> PushbackInputStream.class;
-            default -> throw new IllegalStateException( "Unexpected value: " + type );
-        };
-    }
-
-
-    /**
      * Helper method to transform an SQL like clause into the matching regex
      * _ {@code ->} .
      * % {@code ->} .*
@@ -498,107 +453,6 @@ public class BsonUtil {
             case CHAR, VARCHAR, BINARY, VARBINARY -> 2;
             default -> throw new IllegalStateException( "Unexpected value: " + type );
         };
-    }
-
-
-    public static RexLiteral getAsLiteral( BsonValue value, RexBuilder rexBuilder ) {
-        AlgDataType type = getTypeFromBson( value.getBsonType(), rexBuilder.getTypeFactory() );
-
-        return (RexLiteral) rexBuilder.makeLiteral( getUnderlyingValue( value ), type, false );
-    }
-
-
-    private static <T extends Comparable<T>> Comparable<?> getUnderlyingValue( BsonValue value ) {
-        switch ( value.getBsonType() ) {
-            case NULL:
-                return null;
-            case STRING:
-                return value.asString().getValue();
-            case INT32:
-                return value.asInt32().getValue();
-            case INT64:
-                return value.asInt64().getValue();
-            case DOUBLE:
-                return value.asDouble().doubleValue();
-            case BINARY:
-                return new ByteString( value.asBinary().getData() );
-            case BOOLEAN:
-                return value.asBoolean().getValue();
-            case ARRAY:
-                return ComparableList.copyOf( value.asArray().stream().map( BsonUtil::getUnderlyingValue ).map( e -> (T) e ).toList().listIterator() );
-            case DOCUMENT:
-                FlatMap<String, Comparable<?>> map = new FlatMap<>();
-                value.asDocument().forEach( ( key, val ) -> map.put( key, getUnderlyingValue( val ) ) );
-                return map;
-            case DATE_TIME:
-                return value.asDateTime().getValue();
-            case TIMESTAMP:
-                return value.asTimestamp().getValue();
-            case DECIMAL128:
-                return value.asDecimal128().decimal128Value().bigDecimalValue();
-            default:
-                throw new GenericRuntimeException( "The used Bson type is not supported." );
-        }
-    }
-
-
-    public static AlgDataType getTypeFromBson( BsonType type, AlgDataTypeFactory factory ) {
-        return switch ( type ) {
-            case INT32, DECIMAL128, INT64, DOUBLE -> factory.createPolyType( PolyType.DECIMAL );
-            case BINARY -> factory.createPolyType( PolyType.BINARY );
-            case BOOLEAN -> factory.createPolyType( PolyType.BOOLEAN );
-            case ARRAY -> factory.createArrayType( factory.createPolyType( PolyType.ANY ), -1 );
-            case DOCUMENT -> factory.createMapType( factory.createPolyType( PolyType.ANY ), factory.createPolyType( PolyType.ANY ) );
-            case DATE_TIME, TIMESTAMP -> factory.createPolyType( PolyType.TIMESTAMP );
-            default -> factory.createPolyType( PolyType.ANY );
-        };
-    }
-
-
-    public static String transformToBsonString( Map<RexLiteral, RexLiteral> map ) {
-        return transformToBson( map ).toJson( JsonWriterSettings.builder()/*.outputMode( JsonMode.EXTENDED )*/.build() );
-    }
-
-
-    public static Document transformToBson( Map<RexLiteral, RexLiteral> map ) {
-        Document doc = new Document();
-
-        for ( Entry<RexLiteral, RexLiteral> entry : map.entrySet() ) {
-            assert entry.getKey().getPolyType() == PolyType.CHAR;
-            doc.put( entry.getKey().value.asString().value, getAsBson( entry.getValue(), null ) );
-        }
-        return doc;
-
-    }
-
-
-    public static Comparable<?> getAsObject( BsonValue value ) {
-        switch ( value.getBsonType() ) {
-            case END_OF_DOCUMENT, TIMESTAMP, MIN_KEY, MAX_KEY, UNDEFINED, OBJECT_ID, DATE_TIME, JAVASCRIPT_WITH_SCOPE, SYMBOL, JAVASCRIPT, DB_POINTER, REGULAR_EXPRESSION:
-                break;
-            case DOUBLE:
-                return value.asDouble().decimal128Value();
-            case STRING:
-                return value.asString().getValue();
-            case DOCUMENT:
-                return value.asDocument().toJson();
-            case ARRAY:
-                return Arrays.toString( value.asArray().toArray() );
-            case BINARY:
-                return value.asBinary().asUuid();
-            case BOOLEAN:
-                return value.asBoolean().getValue();
-            case NULL:
-                return null;
-            case INT32:
-                return value.asInt32().getValue();
-            case INT64:
-                return value.asInt64().getValue();
-            case DECIMAL128:
-                return BigDecimal.valueOf( value.asDecimal128().doubleValue() );
-
-        }
-        throw new GenericRuntimeException( "BsonType cannot be transformed." );
     }
 
 

@@ -73,7 +73,6 @@ import org.polypheny.db.rex.RexProgramBuilder;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Conformance;
-import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 
 
@@ -106,10 +105,8 @@ public class JaninoRexCompiler implements Interpreter.ScalarCompiler {
         // public void execute(Context, Object[] outputValues)
         final InputGetter inputGetter =
                 new InputGetterImpl(
-                        ImmutableList.of(
-                                Pair.of(
-                                        Expressions.field( context_, BuiltInMethod.CONTEXT_VALUES.field ),
-                                        PhysTypeImpl.of( javaTypeFactory, inputRowType, JavaTupleFormat.ARRAY, false ) ) ) );
+                        Expressions.field( context_, BuiltInMethod.CONTEXT_VALUES.field ),
+                        PhysTypeImpl.of( javaTypeFactory, inputRowType, JavaTupleFormat.ARRAY, false ) );
         final Function1<String, InputGetter> correlates = a0 -> {
             throw new UnsupportedOperationException();
         };

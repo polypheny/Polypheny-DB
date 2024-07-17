@@ -90,7 +90,7 @@ public abstract class ListScope extends DelegatingScope {
 
     private ScopeChild findChild( List<String> names ) {
         for ( ScopeChild child : children ) {
-            if ( child.namespace.getEntity() != null && child.namespace.resolve().getDataModel() != DataModel.RELATIONAL ) {
+            if ( child.namespace.getEntity() != null && child.namespace.resolve().getDataModel() != DataModel.RELATIONAL && child.name.equals( Util.last( names ) ) ) {
                 return child;
             }
             NameMatcher nameMatcher = NameMatchers.withCaseSensitive( false );

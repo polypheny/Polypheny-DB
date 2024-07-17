@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.channels.SelectableChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -35,6 +36,16 @@ public class PlainTransport implements Transport {
     protected final SocketChannel con;
 
 
+    enum State {
+        READ_LENGTH,
+        READ_MESSAGE,
+    }
+
+
+    private State state;
+    private ByteBuffer bb;
+
+
     PlainTransport( SocketChannel con ) throws IOException {
         this( con, VERSION );
     }
@@ -43,6 +54,9 @@ public class PlainTransport implements Transport {
     protected PlainTransport( SocketChannel con, String version ) throws IOException {
         this.con = con;
         exchangeVersion( version );
+        state = State.READ_LENGTH;
+        bb = ByteBuffer.allocate( 8 );
+        con.configureBlocking( false );
     }
 
 
@@ -120,18 +134,36 @@ public class PlainTransport implements Transport {
     }
 
 
-    @Override
-    public byte[] receiveMessage() throws IOException {
-        ByteBuffer bb = ByteBuffer.allocate( 8 );
-        readEntireBuffer( bb );
-        bb.order( ByteOrder.LITTLE_ENDIAN ); // TODO Big endian like other network protocols?
-        long length = bb.getLong();
-        if ( length == 0 ) {
-            throw new IOException( "Invalid message length" );
+    public Optional<byte[]> tryReceiveMessage() throws IOException {
+        int res = con.read( bb );
+        if ( res == -1 ) {
+            throw new EOFException();
         }
-        bb = ByteBuffer.allocate( (int) length );
-        readEntireBuffer( bb );
-        return bb.array();
+        if ( bb.remaining() > 0 ) {
+            return Optional.empty();
+        }
+        bb.rewind();
+        // At this point we have read everything we want
+        if ( state == State.READ_LENGTH ) {
+            bb.order( ByteOrder.LITTLE_ENDIAN ); // TODO Big endian like other network protocols?
+            long length = bb.getLong();
+            if ( length == 0 ) {
+                throw new IOException( "Invalid message length" );
+            }
+            bb = ByteBuffer.allocate( (int) length );
+            state = State.READ_MESSAGE;
+            return tryReceiveMessage();
+        } else {
+            byte[] msg = bb.array();
+            bb = ByteBuffer.allocate( 8 );
+            state = State.READ_LENGTH;
+            return Optional.of( msg );
+        }
+    }
+
+
+    public SelectableChannel getChannel() {
+        return con;
     }
 
 

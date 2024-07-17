@@ -18,7 +18,6 @@ package org.polypheny.db.languages;
 
 import com.google.common.collect.ImmutableList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.StopWatch;
@@ -150,13 +149,13 @@ public class MqlProcessor extends Processor {
 
     @Override
     public void unlock( Statement statement ) {
-        LockManager.INSTANCE.unlock( Collections.singletonList( LockManager.GLOBAL_LOCK ), (TransactionImpl) statement.getTransaction() );
+        LockManager.INSTANCE.unlock( statement.getTransaction() );
     }
 
 
     @Override
     public void lock( Statement statement ) throws DeadlockException {
-        LockManager.INSTANCE.lock( Collections.singletonList( Pair.of( LockManager.GLOBAL_LOCK, LockMode.EXCLUSIVE ) ), (TransactionImpl) statement.getTransaction() );
+        LockManager.INSTANCE.lock( LockMode.EXCLUSIVE, statement.getTransaction() );
     }
 
 

@@ -17,9 +17,12 @@
 package org.polypheny.db.functions;
 
 import java.sql.Timestamp;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.Date;
 import java.util.TimeZone;
 import org.apache.calcite.linq4j.function.NonDeterministic;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.nodes.TimeUnitRange;
 import org.polypheny.db.type.entity.PolyInterval;
@@ -38,6 +41,7 @@ import org.polypheny.db.util.temporal.DateTimeUtils;
 public class TemporalFunctions {
 
     public static final TimeZone LOCAL_TZ = TimeZone.getDefault();
+    public static final String TIMEZONE = System.getProperty( "user.timezone" );
 
 
     @SuppressWarnings("unused")
@@ -478,7 +482,8 @@ public class TemporalFunctions {
     @SuppressWarnings("unused")
     public static PolyTimestamp currentTimestamp( DataContext root ) {
         // Cast required for JDK 1.6.
-        return PolyTimestamp.of( (long) DataContext.Variable.CURRENT_TIMESTAMP.get( root ) );
+        Date date = new Date();
+        return PolyTimestamp.of( date.getTime() + timeZone( root ).getRawOffset() );
     }
 
 
@@ -508,17 +513,18 @@ public class TemporalFunctions {
         if ( time < 0 ) {
             --date;
         }
-        return PolyDate.of( date );
+        return PolyDate.ofDays( date );
     }
 
 
     /**
      * SQL {@code LOCAL_TIMESTAMP} function.
      */
+    @NotNull
     @NonDeterministic
-    public static long localTimestamp( DataContext root ) {
-        // Cast required for JDK 1.6.
-        return DataContext.Variable.LOCAL_TIMESTAMP.get( root );
+    public static PolyTimestamp localTimestamp( DataContext root ) {
+        ZonedDateTime now = ZonedDateTime.now( ZoneId.of( TIMEZONE ) );
+        return PolyTimestamp.of( (now.toEpochSecond() + now.getOffset().getTotalSeconds()) * DateTimeUtils.MILLIS_PER_SECOND );
     }
 
 
@@ -528,13 +534,14 @@ public class TemporalFunctions {
     @SuppressWarnings("unused")
     @NonDeterministic
     public static PolyTime localTime( DataContext root ) {
-        return PolyTime.of( (int) (localTimestamp( root ) % DateTimeUtils.MILLIS_PER_DAY) );
+        ZonedDateTime now = ZonedDateTime.now( ZoneId.of( TIMEZONE ) );
+        return PolyTime.of( ((now.toEpochSecond() + now.getOffset().getTotalSeconds()) * DateTimeUtils.MILLIS_PER_SECOND) % DateTimeUtils.MILLIS_PER_DAY );
     }
 
 
     @NonDeterministic
     public static TimeZone timeZone( DataContext root ) {
-        return DataContext.Variable.TIME_ZONE.get( root );
+        return TimeZone.getTimeZone( TIMEZONE );
     }
 
 

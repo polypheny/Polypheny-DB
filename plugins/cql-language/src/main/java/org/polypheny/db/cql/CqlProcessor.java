@@ -17,7 +17,6 @@
 package org.polypheny.db.cql;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgRoot;
@@ -72,13 +71,13 @@ public class CqlProcessor extends Processor {
 
     @Override
     public void unlock( Statement statement ) {
-        LockManager.INSTANCE.unlock( Collections.singletonList( LockManager.GLOBAL_LOCK ), (TransactionImpl) statement.getTransaction() );
+        LockManager.INSTANCE.unlock( statement.getTransaction() );
     }
 
 
     @Override
     protected void lock( Statement statement ) throws DeadlockException {
-        LockManager.INSTANCE.lock( Collections.singletonList( Pair.of( LockManager.GLOBAL_LOCK, LockMode.EXCLUSIVE ) ), (TransactionImpl) statement.getTransaction() );
+        LockManager.INSTANCE.lock( LockMode.EXCLUSIVE, statement.getTransaction() );
     }
 
 

@@ -128,9 +128,7 @@ public final class ColumnDistribution implements FieldDistribution {
 
 
     private List<AllocationPartition> getPossiblePartitions() {
-        List<AllocationPartition> partitions = new ArrayList<>();
-        snapshot.alloc().getPartitions().stream().filter( p -> p.logicalEntityId == logicalEntityId && sourcePartitions.contains( p.id ) ).forEach( partitions::add );
-        return partitions;
+        return snapshot.alloc().getPartitions().stream().filter( p -> p.logicalEntityId == logicalEntityId && sourcePartitions.contains( p.id ) ).toList();
     }
 
 
@@ -343,7 +341,7 @@ public final class ColumnDistribution implements FieldDistribution {
     }
 
 
-    public record PartialPartition(AllocationEntity entity, List<AllocationColumn> columns) {
+    public record PartialPartition( AllocationEntity entity, List<AllocationColumn> columns ) {
 
     }
 
@@ -358,10 +356,9 @@ public final class ColumnDistribution implements FieldDistribution {
      *
      * </code></pre>
      *
-     *
      * @param partials
      */
-    public record FullPartition(long id, List<PartialPartition> partials) implements FieldDistribution {
+    public record FullPartition( long id, List<PartialPartition> partials ) implements FieldDistribution {
 
         public boolean needsJoin() {
             return partials.size() > 1;
@@ -385,7 +382,7 @@ public final class ColumnDistribution implements FieldDistribution {
     }
 
 
-    public record RoutedDistribution(LogicalEntity entity, List<FullPartition> partitions) {
+    public record RoutedDistribution( LogicalEntity entity, List<FullPartition> partitions ) {
 
         public boolean needsUnion() {
             return partitions.size() > 1;

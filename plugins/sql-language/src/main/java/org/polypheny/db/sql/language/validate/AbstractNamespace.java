@@ -224,17 +224,11 @@ abstract class AbstractNamespace implements SqlValidatorNamespace {
         }
         final AlgDataTypeFactory typeFactory = validator.getTypeFactory();
         final AlgDataType structType = toStruct( componentType, getNode() );
-        final AlgDataType collectionType;
-        switch ( type.getPolyType() ) {
-            case ARRAY:
-                collectionType = typeFactory.createArrayType( structType, -1 );
-                break;
-            case MULTISET:
-                collectionType = typeFactory.createMultisetType( structType, -1 );
-                break;
-            default:
-                throw new AssertionError( type );
-        }
+        final AlgDataType collectionType = switch ( type.getPolyType() ) {
+            case ARRAY -> typeFactory.createArrayType( structType, -1 );
+            case MULTISET -> typeFactory.createMultisetType( structType, -1 );
+            default -> throw new AssertionError( type );
+        };
         return typeFactory.createTypeWithNullability( collectionType, type.isNullable() );
     }
 

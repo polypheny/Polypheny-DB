@@ -50,4 +50,9 @@ public class FieldDefinition {
         return FieldDefinition.builder().name( field.getName() ).dataType( field.getType().getFullTypeString() ).build();
     }
 
+
+    public static String normalizeViewColumnName( String name ) {
+        return name.toLowerCase().replaceAll( "[^A-Za-z0-9]", "_" );
+    }
+
 }

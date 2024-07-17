@@ -505,6 +505,11 @@ public enum RuntimeConfig {
             "runtime/serialization",
             "How big the buffersize for catalog objects should be.",
             200000,
+            ConfigType.INTEGER ),
+    LOCKING_MAX_TIMEOUT_SECONDS(
+            "runtime/maxTimeout",
+            "How long a transactions should wait for a lock until it is aborted",
+            30,
             ConfigType.INTEGER );
 
 

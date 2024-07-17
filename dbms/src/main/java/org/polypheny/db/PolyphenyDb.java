@@ -20,7 +20,6 @@ import com.github.rvesse.airline.HelpOption;
 import com.github.rvesse.airline.SingleCommand;
 import com.github.rvesse.airline.annotations.Command;
 import com.github.rvesse.airline.annotations.Option;
-import com.github.rvesse.airline.annotations.OptionType;
 import com.github.rvesse.airline.parser.errors.ParseException;
 import java.awt.SystemTray;
 import java.io.BufferedReader;
@@ -137,7 +136,7 @@ public class PolyphenyDb {
     @Option(name = { "-defaultSource" }, description = "Type of default source")
     public static String defaultSourceName = "csv";
 
-    @Option(name = { "-c", "--config" }, description = "Path to the configuration file", type = OptionType.GLOBAL)
+    @Option(name = { "-c", "--config" }, description = "Path to the configuration file")
     protected String applicationConfPath;
 
     @Option(name = { "-v", "--version" }, description = "Current version of Polypheny-DB")
@@ -281,7 +280,7 @@ public class PolyphenyDb {
         String uuid = generateOrLoadPolyphenyUUID();
 
         if ( mode == RunMode.TEST ) {
-            uuid = "polypheny-test";
+            uuid += "-polypheny-test";
         }
 
         log.info( "Polypheny UUID: " + uuid );
