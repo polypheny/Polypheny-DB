@@ -276,7 +276,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
     @Override
     public StatementImpl createStatement() {
-        StatementImpl statement = new StatementImpl( this );
+        StatementImpl statement = new StatementImpl( this, statements.size() );
         statements.add( statement );
         return statement;
     }

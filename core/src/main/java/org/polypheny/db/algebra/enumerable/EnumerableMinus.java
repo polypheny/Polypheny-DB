@@ -41,6 +41,8 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Minus;
+import org.polypheny.db.algebra.polyalg.arguments.BooleanArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.util.BuiltInMethod;
@@ -54,6 +56,11 @@ public class EnumerableMinus extends Minus implements EnumerableAlg {
     public EnumerableMinus( AlgCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, boolean all ) {
         super( cluster, traitSet, inputs, all );
         assert !all;
+    }
+
+
+    public static EnumerableMinus create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+        return new EnumerableMinus( cluster, cluster.traitSet(), children, args.getArg( "all", BooleanArg.class ).toBool() );
     }
 
 

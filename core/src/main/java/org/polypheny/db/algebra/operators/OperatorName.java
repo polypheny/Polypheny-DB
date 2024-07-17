@@ -1425,7 +1425,6 @@ public enum OperatorName {
 
     CYPHER_LIKE( LangFunctionOperator.class ),
 
-    CYPHER_GRAPH_ONLY_LABEL( LangFunctionOperator.class ),
 
     // CROSS MODEL FUNCTION
 
@@ -1440,7 +1439,6 @@ public enum OperatorName {
     EXTRACT_NAME( LangFunctionOperator.class );
 
 
-    @Getter
     private final Class<? extends Operator> clazz;
 
 

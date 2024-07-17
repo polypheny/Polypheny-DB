@@ -1,0 +1,697 @@
+
+options {
+    STATIC = false;
+    IGNORE_CASE = true;
+    UNICODE_INPUT = true;
+}
+
+PARSER_BEGIN(PolyAlgParserImpl)
+
+package org.polypheny.db.algebra.polyalg.parser;
+
+import java.io.StringReader;
+import java.io.Reader;
+import java.util.HashMap;
+import java.util.Map;
+import org.polypheny.db.languages.ParserFactory;
+import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgLiteral;
+import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgLiteral.LiteralType;
+import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgAliasedArgument;
+import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgNamedArgument;
+import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgNode;
+import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgDataType;
+import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgOperator;
+import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgNodeList;
+import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgExpression;
+import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgExpressionExtension;
+import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgExpressionExtension.ExtensionType;
+import org.polypheny.db.algebra.core.CorrelationId;
+import org.polypheny.db.rex.RexLocalRef;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.numerical.PolyDouble;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.document.PolyDocument;
+import org.polypheny.db.type.entity.graph.PolyDictionary;
+import org.polypheny.db.type.entity.graph.PolyNode;
+import org.polypheny.db.type.entity.graph.PolyEdge;
+import org.polypheny.db.type.entity.graph.PolyEdge.EdgeDirection;
+import org.polypheny.db.type.entity.graph.PolyPath;
+import org.polypheny.db.algebra.polyalg.PolyAlgUtils;
+import org.polypheny.db.util.Quadruple;
+import java.util.Arrays;
+import java.util.List;
+import java.util.ArrayList;
+
+/**
+ * Parses Poly Algebra.
+ */
+public class PolyAlgParserImpl extends PolyAlgAbstractParserImpl {
+
+    /**
+     * ParserFactory implementation for creating parser.
+     */
+    public static final ParserFactory FACTORY = new ParserFactory() {
+        public PolyAlgAbstractParserImpl getParser(Reader reader) {
+            final PolyAlgParserImpl parser = new PolyAlgParserImpl(reader);
+          return parser;
+        }
+    };
+
+    /** Main entry point. */
+    public static void parse(String str) {
+        PolyAlgParserImpl parser = new PolyAlgParserImpl(new StringReader(str));
+
+        try {
+          parser.Input();
+          System.out.println("Successfully parsed input!");
+        } catch (Exception e) {
+          System.out.println("Could not parse input correctly:");
+          System.out.println(e.getMessage());
+          e.printStackTrace();
+        }
+    }
+
+    public PolyAlgParseException normalizeException(Throwable ex) {
+        try {
+            return convertException(ex);
+        } catch (ParseException e) {
+            throw new AssertionError(e);
+        }
+    }
+
+    PolyAlgParseException convertException(Throwable ex) throws ParseException {
+        if (ex instanceof PolyAlgParseException) {
+            return (PolyAlgParseException) ex;
+        }
+
+        ParserPos pos = null;
+        int[][] expectedTokenSequences = null;
+        String[] tokenImage = null;
+        if (ex instanceof ParseException) {
+            ParseException pex = (ParseException) ex;
+            expectedTokenSequences = pex.expectedTokenSequences;
+            tokenImage = pex.tokenImage;
+            if (pex.currentToken != null) {
+                final Token token = pex.currentToken.next;
+                pos = new ParserPos(
+                    token.beginLine,
+                    token.beginColumn,
+                    token.endLine,
+                    token.endColumn);
+            }
+        } else if (ex instanceof TokenMgrError) {
+            TokenMgrError tme = (TokenMgrError) ex;
+            expectedTokenSequences = null;
+            tokenImage = null;
+            // Example:
+            //    Lexical error at line 3, column 24.  Encountered "#" after "a".
+            final java.util.regex.Pattern pattern = java.util.regex.Pattern.compile(
+                "(?s)Lexical error at line ([0-9]+), column ([0-9]+).*");
+            java.util.regex.Matcher matcher = pattern.matcher(ex.getMessage());
+            if (matcher.matches()) {
+                int line = Integer.parseInt(matcher.group(1));
+                int column = Integer.parseInt(matcher.group(2));
+                pos = new ParserPos(line, column, line, column);
+            }
+        }
+        return new PolyAlgParseException(ex.getMessage(), pos, expectedTokenSequences, tokenImage, ex);
+    }
+
+
+    public PolyAlgNode parsePolyAlgEof() throws Exception {
+        return Input();
+    }
+
+}
+
+PARSER_END(PolyAlgParserImpl)
+
+SKIP :
+{
+  " "
+| "\t"
+| "\n"
+| "\r"
+| "\f"
+}
+
+TOKEN :
+{
+  <LCURL: "{">
+| <RCURL: "}">
+| <LPAR: "(">
+| <RPAR: ")">
+| <LBRACK: "[">
+| <RBRACK: "]">
+| <SEP: ",">
+| <EQUALS: "=">
+| <NEQ: "<>"> | <GEQ: ">="> | <LEQ: "<="> | <GT: ">"> | <LT: "<">
+| <PLUS: "+">
+| <MINUS: "-">
+| <COLON: ":">
+| <AS: "AS">
+| <BOOL: "TRUE" | "FALSE">
+| <NULL: "NULL">
+| <NOT_NULL: "NOT NULL">
+| <ARRAY: "ARRAY">
+| <DIR: "ASC" | "DESC" | "SASC" | "SDESC" | "CLU">
+| <NULL_DIR: "FIRST" | "LAST" | "UNSPECIFIED">
+| <FILTER: "FILTER"> // see AggregateCall
+| <APPROX: "APPROXIMATE">
+| <OVER: "OVER">
+| <POLY_NODE: "PolyNode">
+| <POLY_PATH: "PolyPath">
+| <POLY_EDGE: "PolyEdge">
+| <POLY_LIST: "PolyList">
+| <POLY_DOC: "PolyDocument">
+| <IDENTIFIER: (<LETTER> | <IDENTIFIER_SYMBOL>) (<LETTER> | <DIGIT> | <IDENTIFIER_SYMBOL>)*>
+
+| <UNSIGNED_INT: (<DIGIT>)+ >
+| <UNSIGNED_APPROX_DECIMAL: (<UNSIGNED_INT> | <UNSIGNED_DECIMAL>) <EXPONENT> >
+| <UNSIGNED_DECIMAL:
+      (<DIGIT>)+(".")?(<DIGIT>)*
+      | "."(<DIGIT>)+
+      >
+| <DYNAMIC_PARAM: "?" <UNSIGNED_INT> >
+| <#EXPONENT: ["e","E"] (["+","-"])? (["0"-"9"])+ >
+| <#LETTER: ["_","a"-"z","A"-"Z","ö", "Ö", "ä", "Ä", "ü", "Ü", "à", "À", "ç","Ç", "á", "Á", "è", "È","í","Í", "î", "Î","ó","Ó","ò", "ô", "Ô", "Ò" , "í", "Í", "ë", "Ë", "â", "Â", "ï", "Ï", "é", "É", "ñ", "Ñ", "ß"] >
+| <#DIGIT: ["0"-"9"]>
+| <#IDENTIFIER_SYMBOL: ["#", "@", "$", "."]>
+| <SYMBOL: ~[",","{","}","(",")","[", "]", "\"", "'", "="]>
+| <QUOTED:
+      "\""
+      (
+           "\\" ~[]     //any escaped character
+      |                 //or
+          ~["\"","\\"]  //any character except quote or backslash
+      )*
+      "\""
+      |
+      "'"
+      (
+           "\\" ~[]     //any escaped character
+      |                 //or
+          ~["'","\\"]  //any character except single-quote or backslash
+      )*
+      "'">
+}
+
+JAVACODE protected ParserPos getPos()
+{
+    return new ParserPos(
+        token.beginLine,
+        token.beginColumn,
+        token.endLine,
+        token.endColumn);
+}
+
+/** Root production. */
+PolyAlgNode Input() :
+{
+    PolyAlgNode n;
+}
+{
+    n = Operator() <EOF>
+    {return n;}
+}
+
+
+PolyAlgOperator Operator() :
+{
+    String opName;
+    List<PolyAlgNamedArgument> args = null;
+    List<PolyAlgOperator> children = null;
+}
+{
+    opName = OpName() <LBRACK> [args = Arguments()] <RBRACK> [<LPAR> [children = ChildOperators()] <RPAR>]
+    {return new PolyAlgOperator(opName, args, children, getPos());}
+}
+
+List<PolyAlgOperator> ChildOperators() :
+{
+    PolyAlgOperator o;
+    List<PolyAlgOperator> children = new ArrayList<>();
+}
+{
+    o = Operator() {children.add(o);} (<SEP> o = Operator() {children.add(o);})*
+    {return children;}
+}
+
+List<PolyAlgNamedArgument> Arguments() :
+{
+    PolyAlgNamedArgument n;
+    List<PolyAlgNamedArgument> args = new ArrayList<>();
+}
+{
+    n = NamedArgument() {args.add(n);} (<SEP> n = NamedArgument() {args.add(n);})*
+    {return args;}
+}
+
+PolyAlgNamedArgument NamedArgument() :
+{
+    String name = null;
+    PolyAlgAliasedArgument arg;
+}
+{
+    [LOOKAHEAD(2) name = ParamName() <EQUALS> ] arg = AliasedArgument()
+    {return new PolyAlgNamedArgument(name, arg, getPos());}
+}
+
+
+PolyAlgAliasedArgument AliasedArgument() :
+{
+    PolyAlgNode arg;
+    String alias = null;
+}
+{
+     arg = Argument() [<AS> alias = AliasName() ]
+     {return new PolyAlgAliasedArgument(arg, alias, getPos()); }
+}
+
+PolyAlgNode Argument() :
+{
+    PolyAlgNode n;
+}
+{
+     (
+         n = Expression()
+         |
+         n = ListArgument()
+     )
+     {return n;}
+}
+
+PolyAlgNode ListArgument() : // we return a PolyAlgNodeList instead of a List<PolyAlgNode> as an Argument() could also be a PolyAlgExpression
+{
+    List<PolyAlgNode> args = new ArrayList<>();
+    PolyAlgNode n;
+}
+{
+     <LBRACK> [n = AliasedArgument() {args.add(n);} (<SEP> n = AliasedArgument() {args.add(n);})*] <RBRACK>
+     {return new PolyAlgNodeList(args, getPos());}
+}
+
+PolyAlgExpression Expression():
+{
+    List<PolyAlgLiteral> literals = new ArrayList<>();
+    List<PolyAlgExpression> childExps = null;
+    Token t;
+    PolyAlgLiteral l;
+    PolyAlgDataType type = null;
+    PolyAlgExpression exp = null;
+    List<PolyAlgExpressionExtension> extensions = new ArrayList<>();
+    PolyAlgExpressionExtension extension;
+}
+{
+    (l = Literal() {literals.add(l);})+
+        [<LPAR> [childExps = ChildExpressions()] {if (childExps == null) childExps = List.of();}<RPAR>]
+        [<COLON> type = DataType()]  // TODO: handle OVER
+        (extension = ExpressionExtension() {extensions.add(extension);})*
+    {return new PolyAlgExpression(literals, childExps, type, extensions, getPos());}
+    |
+    <LPAR> [exp = Expression()] <RPAR>  // optional outer parentheses
+    {return exp == null ? new PolyAlgExpression(List.of(), null, null, List.of(), getPos()) : exp;}
+}
+
+List<PolyAlgExpression> ChildExpressions() : // List of expressions separated by <SEP>
+{
+    List<PolyAlgExpression> exps = new ArrayList<>();
+    PolyAlgExpression e;
+    PolyAlgDataType cast;
+}
+{
+    e = Expression() {exps.add(e);}
+        [<AS> cast = DataType() {e.setCast(cast);}] // cast type specification only makes sense if CAST(...) has 1 child expression
+        (<SEP> e = Expression() {exps.add(e);})*
+    {return exps;}
+}
+
+PolyAlgExpressionExtension ExpressionExtension() :
+{
+    List<PolyAlgLiteral> literals = new ArrayList<>();
+    PolyAlgLiteral l;
+    ExtensionType type;
+}
+{
+    (
+        <FILTER> l = Literal() {literals.add(l); type = ExtensionType.FILTER;}
+        |
+        <APPROX> {type = ExtensionType.APPROXIMATE;}
+        |
+        <OVER> <LPAR> (l = Literal() {literals.add(l);})* <RPAR> {type = ExtensionType.OVER;}
+    )
+    {return new PolyAlgExpressionExtension(literals, type); }
+
+}
+
+
+PolyAlgLiteral Literal() :
+{
+    String num, docStr;
+    Token t = null;
+    LiteralType type = LiteralType.DEFAULT;
+    PolyValue polyValue;
+}
+{
+    (
+        t = <IDENTIFIER> {
+            if (t.image.startsWith(CorrelationId.CORREL_PREFIX)) {
+                type = LiteralType.CORRELATION_VAR;
+            } else if (t.image.startsWith(RexLocalRef.PREFIX)) {
+                type = LiteralType.LOCAL_REF;
+            }
+        }
+        |
+        LOOKAHEAD(2) num = Number() {return new PolyAlgLiteral(num, LiteralType.NUMBER, getPos());}
+        |
+        t = <BOOL> {type = LiteralType.BOOLEAN;}
+        |
+        t = <NULL> {type = LiteralType.NULL;} | t = <NOT_NULL>
+        |
+        t = <QUOTED> {type = LiteralType.QUOTED;}
+        |
+        t = <SYMBOL>
+        |
+        t = <EQUALS> | t = <NEQ> | t = <GEQ> | t = <LEQ> | t = <GT> | t = <LT> | t = <PLUS> | t = <MINUS>
+        |
+        t = <DIR> {type = LiteralType.DIRECTION;} | t = <NULL_DIR> {type = LiteralType.NULL_DIRECTION;}
+        |
+        t = <DYNAMIC_PARAM> {type = LiteralType.DYNAMIC_PARAM;}
+        |
+        docStr = DocumentStr() {return new PolyAlgLiteral(docStr, LiteralType.DEFAULT, getPos());}
+        |
+        polyValue = SpecialPolyValue() {return new PolyAlgLiteral(polyValue, LiteralType.POLY_VALUE, getPos());}
+
+    )
+    {return new PolyAlgLiteral(t.image, type, getPos());}
+
+}
+
+/**
+* To be able to parse these PolyValues correctly, we need to prefix these PolyValues according to their type.
+* Otherwise, we do not have enough context to e.g. decide if we have a PolyList or a ListArgument.
+*/
+PolyValue SpecialPolyValue() :
+{
+    PolyValue value = null;
+    String str = null;
+}
+{
+    (
+        (<POLY_NODE> value = PolyNode())
+        |
+        (<POLY_PATH> value = PolyPath())
+        |
+        (<POLY_EDGE> value = PolyEdgeWithEnds())
+        |
+        (<POLY_LIST> str = ListStr() {value = PolyList.fromJson(str);} )
+        |
+        (<POLY_DOC> str = DocumentStr() {value = PolyDocument.fromJson(str);})
+    )
+
+    {return value;}
+}
+
+PolyValue PolyNode() :
+{
+    Token t;
+    Map<PolyString, PolyValue> properties = new HashMap<>();
+    PolyString name = null;
+    List<PolyString> labels = new ArrayList<>();
+    Token key = null;
+    PolyValue value = null;
+}
+{
+    <LPAR>
+        [t = <IDENTIFIER> {name = new PolyString( t.image );}]
+
+        (<COLON>
+            t = <IDENTIFIER> {labels.add(new PolyString( t.image ));}
+        )*
+
+        [<LCURL>[
+                key = <IDENTIFIER> <EQUALS> (
+                    t = <IDENTIFIER> {value = new PolyString(t.image);}
+                    |
+                    t = <UNSIGNED_INT> {value = new PolyInteger(Integer.parseInt(t.image));}
+                    |
+                    t = <UNSIGNED_DECIMAL> {value = new PolyDouble(Double.parseDouble(t.image));}
+                    |
+                    t = <QUOTED> {value = new PolyString(t.image.substring(1, t.image.length() - 1));}
+                )
+                {properties.put(new PolyString( key.image ), value);}
+                ( <SEP>
+                    key = <IDENTIFIER> <EQUALS> (
+                        t = <IDENTIFIER> {value = new PolyString(t.image);}
+                        |
+                        t = <UNSIGNED_INT> {value = new PolyInteger(Integer.parseInt(t.image));}
+                        |
+                        t = <UNSIGNED_DECIMAL> {value = new PolyDouble(Double.parseDouble(t.image));}
+                        |
+                        t = <QUOTED> {value = new PolyString(t.image.substring(1, t.image.length() - 1));}
+                    )
+                    {properties.put(new PolyString( key.image ), value);}
+                )*
+        ]<RCURL>]
+    <RPAR>
+    {return new PolyNode(PolyDictionary.ofDict(properties), labels, name);}
+}
+
+PolyValue PolyPath() :
+{
+    Token t;
+    PolyValue node = null;
+    Quadruple<PolyDictionary, List<PolyString>, PolyString, EdgeDirection> edge = null;
+    List<PolyNode> nodes = new ArrayList<>();
+    List<Quadruple<PolyDictionary, List<PolyString>, PolyString, EdgeDirection>> edgeArgs = new ArrayList<>();
+}
+{
+    node = PolyNode() {nodes.add((PolyNode) node);}
+    (LOOKAHEAD(2)
+        edge = PolyEdge() {edgeArgs.add(edge);}
+        node = PolyNode() {nodes.add((PolyNode) node);}
+    )+
+
+    {return PolyAlgUtils.buildPolyPath(nodes, edgeArgs);}
+}
+
+// We cannot yet create a PolyEdge, since we do not know source and target node
+Quadruple<PolyDictionary, List<PolyString>, PolyString, EdgeDirection> PolyEdge() :
+{
+    Token t;
+    Map<PolyString, PolyValue> properties = new HashMap<>();
+    PolyString name = null;
+    List<PolyString> labels = new ArrayList<>();
+    Token key = null;
+    PolyValue value = null;
+    EdgeDirection dir = EdgeDirection.NONE;
+}
+{
+
+    [<LT> {dir = EdgeDirection.RIGHT_TO_LEFT;}] <MINUS>
+    [
+        <LBRACK>
+            [t = <IDENTIFIER> {name = new PolyString( t.image );}]
+
+            (<COLON>
+                t = <IDENTIFIER> {labels.add(new PolyString( t.image ));}
+            )*
+
+            [<LCURL>[
+                    key = <IDENTIFIER> <EQUALS> (
+                        t = <IDENTIFIER> {value = new PolyString(t.image);}
+                        |
+                        t = <UNSIGNED_INT> {value = new PolyInteger(Integer.parseInt(t.image));}
+                        |
+                        t = <UNSIGNED_DECIMAL> {value = new PolyDouble(Double.parseDouble(t.image));}
+                        |
+                        t = <QUOTED> {value = new PolyString(t.image.substring(1, t.image.length() - 1));}
+                    )
+                    {properties.put(new PolyString( key.image ), value);}
+                    ( <SEP>
+                        key = <IDENTIFIER> <EQUALS> (
+                            t = <IDENTIFIER> {value = new PolyString(t.image);}
+                            |
+                            t = <UNSIGNED_INT> {value = new PolyInteger(Integer.parseInt(t.image));}
+                            |
+                            t = <UNSIGNED_DECIMAL> {value = new PolyDouble(Double.parseDouble(t.image));}
+                            |
+                            t = <QUOTED> {value = new PolyString(t.image.substring(1, t.image.length() - 1));}
+                        )
+                        {properties.put(new PolyString( key.image ), value);}
+                    )*
+            ]<RCURL>]
+        <RBRACK>
+    ]
+    <MINUS> [<GT> {dir = EdgeDirection.LEFT_TO_RIGHT;}]
+
+    {return new Quadruple<>(PolyDictionary.ofDict(properties), labels, name, dir);}
+}
+
+PolyEdge PolyEdgeWithEnds() :
+{
+    Token t;
+    String source, target;
+    Quadruple<PolyDictionary, List<PolyString>, PolyString, EdgeDirection> edge = null;
+
+}
+{
+    <LPAR> source = UUID() <RPAR>
+    edge = PolyEdge()
+    <LPAR> target = UUID() <RPAR>
+
+    {return new PolyEdge(edge.a, edge.b, new PolyString(source), new PolyString(target), edge.d, edge.c);}
+}
+
+/**
+* We do not parse serialized PolyLists and PolyDocuments ourselves (created with .toJson()).
+* Instead we just return it as a string. They can then be parsed using for example PolyDocument.fromJson(str);
+*/
+String ListStr() :
+{
+    StringBuilder sb = new StringBuilder();
+    String str;
+}
+{
+    <LBRACK> {sb.append("[");}
+    (
+        str = DocumentStr() { sb.append(str); }
+        |
+        str = ListStr() { sb.append(str); }
+        |
+        str = Number() { sb.append(str); }
+        |
+        <QUOTED> { sb.append( token.image); }
+        |
+        <COLON> { sb.append(token.image); }
+        |
+        <SEP> { sb.append(token.image); }
+        |
+        <BOOL> { sb.append(token.image); }
+    )*
+    <RBRACK> {sb.append("]");}
+    {return sb.toString();}
+}
+
+String DocumentStr() :
+{
+    StringBuilder sb = new StringBuilder();
+    String str;
+}
+{
+    <LCURL> {sb.append("{");}
+    (
+        str = DocumentStr() { sb.append(str); }
+        |
+        <QUOTED> { sb.append( token.image); }
+        |
+        <COLON> { sb.append(token.image); }
+        |
+        <LBRACK> { sb.append(token.image); }
+        |
+        <RBRACK> { sb.append(token.image); }
+        |
+        <SEP> { sb.append(token.image); }
+        |
+        <BOOL> { sb.append(token.image); }
+        |
+        str = Number() { sb.append(str); }
+    )*
+    <RCURL> {sb.append("}");}
+    {return sb.toString();}
+}
+
+PolyAlgDataType DataType() :
+{
+    String type;
+    Token t;
+    List<Integer> args = new ArrayList<>();
+    boolean nullable = true;
+    boolean isArray = false;
+}
+{
+    t = <IDENTIFIER> {type = t.image;} [<LPAR>
+        t = <UNSIGNED_INT> {args.add(Integer.parseInt(t.image));} (<SEP> t = <UNSIGNED_INT> {args.add(Integer.parseInt(t.image));})*
+    <RPAR>]
+    [<ARRAY> {isArray = true;}]
+    [<NULL> | <NOT_NULL> {nullable = false;} ]
+    {return new PolyAlgDataType(type, args, nullable, isArray, getPos());}
+}
+
+String UUID() :
+{
+    StringBuilder sb = new StringBuilder();
+}
+{
+    (<IDENTIFIER> {sb.append(token.image);} | <UNSIGNED_INT> {sb.append(token.image);} | <UNSIGNED_APPROX_DECIMAL> {sb.append(token.image);})+
+    <MINUS> {sb.append(token.image);} (<IDENTIFIER> {sb.append(token.image);} | <UNSIGNED_INT> {sb.append(token.image);} | <UNSIGNED_APPROX_DECIMAL> {sb.append(token.image);})+
+    <MINUS> {sb.append(token.image);} (<IDENTIFIER> {sb.append(token.image);} | <UNSIGNED_INT> {sb.append(token.image);} | <UNSIGNED_APPROX_DECIMAL> {sb.append(token.image);})+
+    <MINUS> {sb.append(token.image);} (<IDENTIFIER> {sb.append(token.image);} | <UNSIGNED_INT> {sb.append(token.image);} | <UNSIGNED_APPROX_DECIMAL> {sb.append(token.image);})+
+    <MINUS> {sb.append(token.image);} (<IDENTIFIER> {sb.append(token.image);} | <UNSIGNED_INT> {sb.append(token.image);} | <UNSIGNED_APPROX_DECIMAL> {sb.append(token.image);})+
+    {return sb.toString();}
+}
+
+String OpName() :
+{
+    Token t;
+}
+{
+    (
+        t = <IDENTIFIER>
+        |
+        t = <FILTER>
+    )
+    {return t.image;}
+}
+
+String AliasName() :
+{
+    Token t;
+    String name;
+}
+{
+    (
+        name = OpName()
+        |
+        t = <QUOTED> {name = t.image.substring(1, t.image.length()-1);}
+    )
+    {return name;}
+}
+
+String ParamName() :
+{
+    String name;
+}
+{
+    name = OpName()
+    {return name;}
+}
+
+String UnsignedNumber() :
+{
+    Token t;
+    String str;
+}
+{
+    (
+        t = <UNSIGNED_INT>
+        |
+        t = <UNSIGNED_DECIMAL>
+        |
+        t = <UNSIGNED_APPROX_DECIMAL>
+    )
+    { return t.image;}
+}
+
+String Number() :
+{
+    String num;
+}
+{
+    [<PLUS>] num = UnsignedNumber() {return num;}
+    |
+    <MINUS> num = UnsignedNumber() {return "-" + num;}
+}

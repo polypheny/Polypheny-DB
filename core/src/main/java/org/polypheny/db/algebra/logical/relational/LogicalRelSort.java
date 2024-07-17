@@ -42,10 +42,12 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.relational.RelAlg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.util.Triple;
 
 
 /**
@@ -79,6 +81,12 @@ public final class LogicalRelSort extends Sort implements RelAlg {
         collation = AlgCollationTraitDef.INSTANCE.canonize( collation );
         AlgTraitSet traitSet = input.getTraitSet().replace( Convention.NONE ).replace( collation );
         return new LogicalRelSort( input.getCluster(), traitSet, input, collation, fieldExps, offset, fetch );
+    }
+
+
+    public static LogicalRelSort create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+        Triple<AlgCollation, RexNode, RexNode> extracted = extractArgs( args );
+        return create( children.get( 0 ), extracted.left, extracted.middle, extracted.right );
     }
 
 

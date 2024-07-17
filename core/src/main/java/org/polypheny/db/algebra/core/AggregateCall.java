@@ -215,6 +215,18 @@ public class AggregateCall {
 
 
     public String toString() {
+        return toString( null );
+    }
+
+
+    /**
+     * If fieldNames is null, args are serialized to "$" + arg.
+     * Otherwise, the value in fieldNames at index arg is used.
+     *
+     * @param fieldNames list containing the field names referenced by argList.
+     * @return string representation of this instance.
+     */
+    public String toString( List<String> fieldNames ) {
         StringBuilder buf = new StringBuilder( aggFunction.toString() );
         buf.append( "(" );
         if ( distinct ) {
@@ -225,8 +237,12 @@ public class AggregateCall {
             if ( ++i > 0 ) {
                 buf.append( ", " );
             }
-            buf.append( "$" );
-            buf.append( arg );
+            if ( fieldNames == null ) {
+                buf.append( "$" );
+                buf.append( arg );
+            } else {
+                buf.append( fieldNames.get( arg ) );
+            }
         }
         buf.append( ")" );
         if ( !collation.equals( AlgCollations.EMPTY ) ) {

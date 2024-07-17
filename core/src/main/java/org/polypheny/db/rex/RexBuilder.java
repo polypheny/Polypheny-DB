@@ -62,6 +62,7 @@ import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.Function.FunctionType;
@@ -773,6 +774,29 @@ public class RexBuilder {
 
 
     /**
+     * Creates a literal for the specified PolyValue with no precision or scale.
+     */
+    public RexLiteral makeLiteral( PolyValue o ) {
+        AlgDataType type = switch ( o.getType() ) {
+            case PATH -> typeFactory.createPathType( o.asPath().getPathType(
+                    typeFactory.createPolyType( PolyType.NODE ),
+                    typeFactory.createPolyType( PolyType.EDGE )
+            ) );
+            default -> typeFactory.createPolyType( o.getType() );
+        };
+        return makeLiteral( o, type );
+    }
+
+
+    /**
+     * Creates a literal for the specified PolyValue and AlgDataType
+     */
+    public RexLiteral makeLiteral( PolyValue o, AlgDataType type ) {
+        return new RexLiteral( o, type, o.getType() );
+    }
+
+
+    /**
      * Creates a boolean literal.
      */
     public RexLiteral makeLiteral( boolean b ) {
@@ -1049,6 +1073,11 @@ public class RexBuilder {
                 interval,
                 typeFactory.createIntervalType( intervalQualifier ),
                 intervalQualifier.typeName() );
+    }
+
+
+    public RexLiteral makeDocumentLiteral( PolyValue v ) {
+        return makeLiteral( v, new DocumentType() );
     }
 
 
@@ -1442,14 +1471,6 @@ public class RexBuilder {
                 typeFactory.createPolyType( PolyType.BOOLEAN ),
                 OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_HAS_LABEL ),
                 List.of( makeInputRef( typeFactory.createPolyType( PolyType.NODE ), 0 ), makeLiteral( label ) ) );
-    }
-
-
-    public RexCall makeLabelFilter( String label ) {
-        return new RexCall(
-                typeFactory.createPolyType( PolyType.BOOLEAN ),
-                OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_GRAPH_ONLY_LABEL ),
-                List.of( makeInputRef( typeFactory.createPolyType( PolyType.GRAPH ), 0 ), makeLiteral( label ) ) );
     }
 
 

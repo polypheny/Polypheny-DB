@@ -1665,7 +1665,7 @@ public class MqlToAlgConverter {
      */
     private RexNode convertJsonSchema( BsonValue bsonValue, AlgDataType rowType ) {
         if ( bsonValue.isDocument() ) {
-            return new RexCall( nullableAny, OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_JSON_MATCH ), Collections.singletonList( RexIndexRef.of( getIndexOfParentField( "d", rowType ), rowType ) ) );
+            return new RexCall( nullableAny, OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_JSON_MATCH ), Collections.singletonList( RexIndexRef.of( getIndexOfParentField( DocumentType.DOCUMENT_FIELD, rowType ), rowType ) ) );
         } else {
             throw new GenericRuntimeException( "After $jsonSchema there needs to follow a document" );
         }

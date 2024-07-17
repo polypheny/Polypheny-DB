@@ -148,7 +148,10 @@ public class LanguageCrud {
         transaction.setUseCache( context.isUsesCache() );
         attachAnalyzerIfSpecified( context, crud, transaction );
 
-        List<ExecutedContext> executedContexts = LanguageManager.getINSTANCE().anyQuery( context.addTransaction( transaction ) );
+        if ( context.getTransactions().isEmpty() ) {
+            context.addTransaction( transaction );
+        }
+        List<ExecutedContext> executedContexts = LanguageManager.getINSTANCE().anyQuery( context );
 
         List<Result<?, ?>> results = new ArrayList<>();
         TriFunction<ExecutedContext, UIRequest, Statement, ResultBuilder<?, ?, ?, ?>> builder = REGISTER.get( context.getLanguage() );
