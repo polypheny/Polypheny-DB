@@ -353,7 +353,13 @@ public class PolyValueSerializer {
 
 
     public static ProtoPath buildProtoPath( PolyPath polyPath ) {
-        throw new NotImplementedException();
+        /*
+            TODO:   implement paths for graph results
+                    1) implement the proto value ProtoPath
+                    2) implement serialization here
+                    3) add fields to dummy class in drivers
+        */
+        throw new NotImplementedException("Paths can not yet be serialized.");
     }
 
 
