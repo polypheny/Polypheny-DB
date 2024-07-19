@@ -21,6 +21,7 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.entity.LogicalUser;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.prisminterface.metaRetrieval.PIClientInfoProperties;
 import org.polypheny.db.prisminterface.statements.StatementManager;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
@@ -37,7 +38,7 @@ public class PIClient {
     @Getter
     private final StatementManager statementManager;
     @Getter
-    private final PIClientInfoProperties PIClientInfoProperties;
+    private final org.polypheny.db.prisminterface.metaRetrieval.PIClientInfoProperties PIClientInfoProperties;
     @Getter
     @Setter
     private boolean isAutoCommit;
