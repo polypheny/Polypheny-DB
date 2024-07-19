@@ -28,6 +28,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.prisminterface.PIClient;
 import org.polypheny.db.prisminterface.statementProcessing.StatementProcessor;
+import org.polypheny.db.prisminterface.streaming.StreamingIndex;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
@@ -70,8 +71,8 @@ public class PIPreparedIndexedStatement extends PIPreparedStatement {
             statement.getDataContext().addParameterValues( i, types.get( i++ ), column );
         }
         StatementProcessor.implement( this );
+        streamingIndex = new StreamingIndex();
         updateCounts.add( StatementProcessor.executeAndGetResult( this ).getScalar() );
-        //}
         return updateCounts;
     }
 
@@ -93,6 +94,7 @@ public class PIPreparedIndexedStatement extends PIPreparedStatement {
             }
         }
         StatementProcessor.implement( this );
+        streamingIndex = new StreamingIndex();
         return StatementProcessor.executeAndGetResult( this, fetchSize );
     }
 

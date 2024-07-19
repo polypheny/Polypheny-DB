@@ -16,6 +16,7 @@
 
 package org.polypheny.db.prisminterface.statements;
 
+import io.grpc.ClientStreamTracer.StreamInfo;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +28,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.prisminterface.PIClient;
+import org.polypheny.db.prisminterface.streaming.StreamingIndex;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 
@@ -41,6 +43,7 @@ public abstract class PIStatement {
     @Setter
     private ResultIterator iterator;
     protected LogicalNamespace namespace;
+    protected StreamingIndex streamingIndex;
 
 
     protected PIStatement(
@@ -62,9 +65,18 @@ public abstract class PIStatement {
         try {
             iterator.close();
             iterator = null;
+            streamingIndex = null;
         } catch ( Exception e ) {
             throw new GenericRuntimeException( "Closing of open result iterator failed" );
         }
+    }
+
+
+    public StreamingIndex getStreamingIndexOrThrow() {
+        if (streamingIndex == null) {
+            throw new UnsupportedOperationException("This statement must be executed first for a result (and thus a streaming index) to exist.");
+        }
+        return streamingIndex;
     }
 
 

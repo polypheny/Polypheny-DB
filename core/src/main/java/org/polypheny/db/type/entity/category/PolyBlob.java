@@ -93,7 +93,10 @@ public class PolyBlob extends PolyValue {
 
     @Override
     public @Nullable Long deriveByteSize() {
-        return null;
+        if (value != null) {
+            return (long)value.length;
+        }
+        return 0L;
     }
 
 

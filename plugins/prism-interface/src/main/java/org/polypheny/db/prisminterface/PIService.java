@@ -104,6 +104,8 @@ import org.polypheny.prism.SqlTimeDateFunctionsRequest;
 import org.polypheny.prism.StatementBatchResponse;
 import org.polypheny.prism.StatementResponse;
 import org.polypheny.prism.StatementResult;
+import org.polypheny.prism.StreamFetchRequest;
+import org.polypheny.prism.StreamFrame;
 import org.polypheny.prism.TableTypesRequest;
 import org.polypheny.prism.TableTypesResponse;
 import org.polypheny.prism.TypesRequest;
@@ -299,6 +301,7 @@ class PIService {
             case EXECUTE_INDEXED_STATEMENT_BATCH_REQUEST -> executeIndexedStatementBatch( req.getExecuteIndexedStatementBatchRequest(), new ResponseMaker<>( req, "statement_batch_response" ) );
             case PREPARE_NAMED_STATEMENT_REQUEST -> prepareNamedStatement( req.getPrepareNamedStatementRequest(), new ResponseMaker<>( req, "prepared_statement_signature" ) );
             case EXECUTE_NAMED_STATEMENT_REQUEST -> executeNamedStatement( req.getExecuteNamedStatementRequest(), new ResponseMaker<>( req, "statement_result" ) );
+            case STREAM_FETCH_REQUEST -> fetchStream( req.getStreamFetchRequest(), new ResponseMaker<>( req, "stream_frame" ) );
             case FETCH_REQUEST -> fetchResult( req.getFetchRequest(), new ResponseMaker<>( req, "frame" ) );
             case CLOSE_STATEMENT_REQUEST -> closeStatement( req.getCloseStatementRequest(), new ResponseMaker<>( req, "close_statement_response" ) );
             case COMMIT_REQUEST -> commitTransaction( req.getCommitRequest(), new ResponseMaker<>( req, "commit_response" ) );
@@ -311,6 +314,7 @@ class PIService {
 
 
     private Response connect( ConnectionRequest request, ResponseMaker<ConnectionResponse> responseObserver ) throws TransactionException, AuthenticationException {
+
         if ( uuid != null ) {
             throw new PIServiceException( "Can only connect once per session" );
         }
@@ -489,6 +493,16 @@ class PIService {
         try {
             return responseObserver.makeResponse( statement.execute( PrismValueDeserializer.deserilaizeParameterMap( request.getParameters().getParametersMap() ), fetchSize ) );
         } catch ( Exception e ) {
+            throw new GenericRuntimeException( e );
+        }
+    }
+
+    private Response fetchStream( StreamFetchRequest request, ResponseMaker<StreamFrame> responseObserver ) {
+        PIClient client = getClient();
+        PIStatement statement = client.getStatementManager().getStatement( request.getStatementId() );
+        try {
+            return responseObserver.makeResponse(statement.getStreamingIndexOrThrow().get( request.getStreamId() ).get( request.getPosition(), request.getLength()));
+        } catch ( IOException e ) {
             throw new GenericRuntimeException( e );
         }
     }

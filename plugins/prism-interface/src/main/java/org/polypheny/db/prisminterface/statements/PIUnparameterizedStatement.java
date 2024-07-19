@@ -24,6 +24,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.prisminterface.PIClient;
 import org.polypheny.db.prisminterface.statementProcessing.StatementProcessor;
+import org.polypheny.db.prisminterface.streaming.StreamingIndex;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.prism.StatementResult;
@@ -53,8 +54,8 @@ public class PIUnparameterizedStatement extends PIStatement {
 
     public StatementResult execute( int fetchSize ) {
         statement = client.getOrCreateNewTransaction().createStatement();
-
         StatementProcessor.implement( this );
+        streamingIndex = new StreamingIndex();
         return StatementProcessor.executeAndGetResult( this, fetchSize );
     }
 

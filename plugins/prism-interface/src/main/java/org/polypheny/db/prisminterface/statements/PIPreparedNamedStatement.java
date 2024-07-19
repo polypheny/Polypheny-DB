@@ -26,6 +26,7 @@ import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.prisminterface.statementProcessing.NamedValueProcessor;
 import org.polypheny.db.prisminterface.PIClient;
 import org.polypheny.db.prisminterface.statementProcessing.StatementProcessor;
+import org.polypheny.db.prisminterface.streaming.StreamingIndex;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyValue;
@@ -69,6 +70,7 @@ public class PIPreparedNamedStatement extends PIPreparedStatement {
             statement.getDataContext().addParameterValues( i, PolyValue.deriveType( valueList.get( i ), this.statement.getDataContext().getTypeFactory() ), List.of( valueList.get( i ) ) );
         }
         StatementProcessor.implement( this );
+        streamingIndex = new StreamingIndex();
         return StatementProcessor.executeAndGetResult( this, fetchSize );
     }
 

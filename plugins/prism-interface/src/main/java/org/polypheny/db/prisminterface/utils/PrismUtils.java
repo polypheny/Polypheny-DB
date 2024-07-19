@@ -16,6 +16,7 @@
 
 package org.polypheny.db.prisminterface.utils;
 
+import com.google.protobuf.ByteString;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.polypheny.db.prisminterface.statements.PIPreparedStatement;
@@ -40,6 +41,7 @@ import org.polypheny.prism.Row;
 import org.polypheny.prism.StatementBatchResponse;
 import org.polypheny.prism.StatementResponse;
 import org.polypheny.prism.StatementResult;
+import org.polypheny.prism.StreamFrame;
 
 public class PrismUtils {
 
@@ -106,6 +108,13 @@ public class PrismUtils {
 
     private static List<ProtoPath> serilaizeToPaths( List<List<PolyValue>> data ) {
         return data.stream().map( e -> PolyValueSerializer.buildProtoPath( (PolyPath) (e.get( 0 )) ) ).collect( Collectors.toList() );
+    }
+
+    public static StreamFrame buildStreamFrame(byte[] data, boolean is_last) {
+        return StreamFrame.newBuilder()
+                .setData( ByteString.copyFrom(data) )
+                .setIsLast( is_last )
+                .build();
     }
 
 
