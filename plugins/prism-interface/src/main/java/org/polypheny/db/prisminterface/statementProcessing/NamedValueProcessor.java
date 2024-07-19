@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.prisminterface;
+package org.polypheny.db.prisminterface.statementProcessing;
 
 import java.util.ArrayList;
 import java.util.List;
