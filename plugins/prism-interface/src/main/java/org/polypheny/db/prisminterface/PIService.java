@@ -32,6 +32,8 @@ import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.iface.AuthenticationException;
 import org.polypheny.db.languages.QueryLanguage;
+import org.polypheny.db.prisminterface.metaRetrieval.DbMetaRetriever;
+import org.polypheny.db.prisminterface.metaRetrieval.PIClientInfoProperties;
 import org.polypheny.db.prisminterface.statementProcessing.StatementProcessor;
 import org.polypheny.db.prisminterface.statements.PIPreparedIndexedStatement;
 import org.polypheny.db.prisminterface.statements.PIPreparedNamedStatement;

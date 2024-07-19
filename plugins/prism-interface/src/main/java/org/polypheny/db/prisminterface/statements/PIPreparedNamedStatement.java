@@ -23,7 +23,7 @@ import lombok.Setter;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.languages.QueryLanguage;
-import org.polypheny.db.prisminterface.NamedValueProcessor;
+import org.polypheny.db.prisminterface.statementProcessing.NamedValueProcessor;
 import org.polypheny.db.prisminterface.PIClient;
 import org.polypheny.db.prisminterface.statementProcessing.StatementProcessor;
 import org.polypheny.db.transaction.Statement;

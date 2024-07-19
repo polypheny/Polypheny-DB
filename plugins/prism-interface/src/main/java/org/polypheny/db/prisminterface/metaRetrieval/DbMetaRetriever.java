@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.prisminterface;
+package org.polypheny.db.prisminterface.metaRetrieval;
 
 import java.sql.DatabaseMetaData;
 import java.util.Arrays;
@@ -39,6 +39,8 @@ import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
+import org.polypheny.db.prisminterface.metaRetrieval.PIClientInfoProperties;
+import org.polypheny.db.prisminterface.PIServiceException;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.prism.ClientInfoPropertyMeta;
 import org.polypheny.prism.ClientInfoPropertyMetaResponse;

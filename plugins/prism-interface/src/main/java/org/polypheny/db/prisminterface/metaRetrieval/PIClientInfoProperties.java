@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.prisminterface;
+package org.polypheny.db.prisminterface.metaRetrieval;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 
-class PIClientInfoProperties extends Properties {
+public class PIClientInfoProperties extends Properties {
 
     private static final int MAX_STRING_LENGTH = 2147483647;
     static final List<ClientInfoPropertiesDefault> DEFAULTS = Arrays.asList(
@@ -51,7 +51,7 @@ class PIClientInfoProperties extends Properties {
     );
 
 
-    PIClientInfoProperties() {
+    public PIClientInfoProperties() {
         super();
         DEFAULTS.forEach( p -> setProperty( p.key, p.default_value ) );
     }
