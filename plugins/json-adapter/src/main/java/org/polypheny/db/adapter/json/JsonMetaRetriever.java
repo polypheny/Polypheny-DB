@@ -56,12 +56,14 @@ public class JsonMetaRetriever {
         String[] extensions = { ".json", ".json.gz" };
         String path = jsonFiles.getPath();
 
+        // handle single file
         for ( String ext : extensions ) {
-            if ( path.endsWith( name + ext + "/" ) ) {
+            if ( path.endsWith( name + ext) ) {
                 return jsonFiles;
             }
         }
 
+        // handle directory
         Set<String> fileNames = getFileNames( jsonFiles );
         for ( String file : fileNames ) {
             for ( String ext : extensions ) {
@@ -71,7 +73,7 @@ public class JsonMetaRetriever {
             }
         }
 
-        throw new NoSuchFileException( "No XML file(s) found under the URL '" + jsonFiles + "'" );
+        throw new NoSuchFileException( "No JSON file(s) found under the URL '" + jsonFiles + "'" );
     }
 
 

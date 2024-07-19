@@ -65,7 +65,7 @@ public class XmlMetaRetriever {
         String path = xmlFiles.getPath();
 
         for ( String ext : extensions ) {
-            if ( path.endsWith( name + ext + "/" ) ) {
+            if ( path.endsWith( name + ext) ) {
                 return xmlFiles;
             }
         }

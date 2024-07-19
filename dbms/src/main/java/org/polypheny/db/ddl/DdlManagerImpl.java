@@ -334,16 +334,15 @@ public class DdlManagerImpl extends DdlManager {
         LogicalAdapter adapter = catalog.getSnapshot().getAdapter( name ).orElseThrow();
         if ( adapter.type == AdapterType.SOURCE ) {
             for ( AllocationEntity allocation : catalog.getSnapshot().alloc().getEntitiesOnAdapter( adapter.id ).orElse( List.of() ) ) {
-                // Make sure that there is only one adapter
-                if ( catalog.getSnapshot().alloc().getFromLogical( allocation.logicalId ).size() != 1 ) {
-                    throw new GenericRuntimeException( "The data source contains entities with more than one placement. This should not happen!" );
+                if ( catalog.getSnapshot().alloc().getFromLogical( allocation.logicalId ).isEmpty() ) {
+                    continue;
                 }
 
                 if ( allocation.unwrap( AllocationCollection.class ).isPresent() ) {
-                    //TODO: currently each document source creates its own namespace which can be disposed of together with the source
-                    //dropNamespace( catalog.getSnapshot().doc().getCollection( allocation.logicalId ).orElseThrow().getNamespaceName(), true, statement);
-                    dropCollection( catalog.getSnapshot().doc().getCollection( allocation.logicalId ).orElseThrow(), statement );
-                } else if ( allocation.unwrap( AllocationTable.class ).isPresent() ) {
+                    dropNamespace( catalog.getSnapshot().doc().getCollection( allocation.logicalId ).orElseThrow().getNamespaceName(), true, statement);
+                    continue;
+                }
+                if ( allocation.unwrap( AllocationTable.class ).isPresent() ) {
 
                     for ( LogicalForeignKey fk : catalog.getSnapshot().rel().getForeignKeys( allocation.logicalId ) ) {
                         catalog.getLogicalRel( allocation.namespaceId ).deleteForeignKey( fk.id );
