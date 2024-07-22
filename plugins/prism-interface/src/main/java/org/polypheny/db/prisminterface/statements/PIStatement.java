@@ -16,7 +16,6 @@
 
 package org.polypheny.db.prisminterface.statements;
 
-import io.grpc.ClientStreamTracer.StreamInfo;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -73,8 +72,8 @@ public abstract class PIStatement {
 
 
     public StreamingIndex getStreamingIndexOrThrow() {
-        if (streamingIndex == null) {
-            throw new UnsupportedOperationException("This statement must be executed first for a result (and thus a streaming index) to exist.");
+        if ( streamingIndex == null ) {
+            throw new UnsupportedOperationException( "This statement must be executed first for a result (and thus a streaming index) to exist." );
         }
         return streamingIndex;
     }

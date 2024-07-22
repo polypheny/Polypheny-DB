@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.polypheny.db.prisminterface.statements.PIPreparedStatement;
 import org.polypheny.db.prisminterface.statements.PIStatement;
+import org.polypheny.db.prisminterface.streaming.StreamingIndex;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.graph.PolyEdge;
@@ -41,6 +42,7 @@ import org.polypheny.prism.Row;
 import org.polypheny.prism.StatementBatchResponse;
 import org.polypheny.prism.StatementResponse;
 import org.polypheny.prism.StatementResult;
+import org.polypheny.prism.Stream;
 import org.polypheny.prism.StreamFrame;
 
 public class PrismUtils {
@@ -84,30 +86,30 @@ public class PrismUtils {
     }
 
 
-    private static Row serializeToRow( List<PolyValue> row ) {
+    private static Row serializeToRow( List<PolyValue> row, StreamingIndex streamingIndex ) {
         return Row.newBuilder()
-                .addAllValues( PolyValueSerializer.serializeList( row ) )
+                .addAllValues( PolyValueSerializer.serializeList( row, streamingIndex ) )
                 .build();
     }
 
 
-    public static List<Row> serializeToRows( List<List<PolyValue>> rows ) {
-        return rows.stream().map( PrismUtils::serializeToRow ).collect( Collectors.toList() );
+    public static List<Row> serializeToRows( List<List<PolyValue>> rows, StreamingIndex streamingIndex ) {
+        return rows.stream().map(r -> PrismUtils.serializeToRow(r, streamingIndex) ).collect( Collectors.toList() );
     }
 
 
-    private static List<ProtoNode> serializeToNodes( List<List<PolyValue>> data ) {
-        return data.stream().map( e -> PolyValueSerializer.buildProtoNode( (PolyNode) (e.get( 0 )) ) ).collect( Collectors.toList() );
+    private static List<ProtoNode> serializeToNodes( List<List<PolyValue>> data, StreamingIndex streamingIndex ) {
+        return data.stream().map( e -> PolyValueSerializer.buildProtoNode( (PolyNode) (e.get( 0 )), streamingIndex ) ).collect( Collectors.toList() );
     }
 
 
-    private static List<ProtoEdge> serializeToEdges( List<List<PolyValue>> data ) {
-        return data.stream().map( e -> PolyValueSerializer.buildProtoEdge( (PolyEdge) (e.get( 0 )) ) ).collect( Collectors.toList() );
+    private static List<ProtoEdge> serializeToEdges( List<List<PolyValue>> data, StreamingIndex streamingIndex ) {
+        return data.stream().map( e -> PolyValueSerializer.buildProtoEdge( (PolyEdge) (e.get( 0 )), streamingIndex ) ).collect( Collectors.toList() );
     }
 
 
-    private static List<ProtoPath> serilaizeToPaths( List<List<PolyValue>> data ) {
-        return data.stream().map( e -> PolyValueSerializer.buildProtoPath( (PolyPath) (e.get( 0 )) ) ).collect( Collectors.toList() );
+    private static List<ProtoPath> serilaizeToPaths( List<List<PolyValue>> data, StreamingIndex streamingIndex ) {
+        return data.stream().map( e -> PolyValueSerializer.buildProtoPath( (PolyPath) (e.get( 0 )), streamingIndex ) ).collect( Collectors.toList() );
     }
 
     public static StreamFrame buildStreamFrame(byte[] data, boolean is_last) {
@@ -118,10 +120,10 @@ public class PrismUtils {
     }
 
 
-    public static Frame buildRelationalFrame( boolean isLast, List<List<PolyValue>> rows, List<ColumnMeta> metas ) {
+    public static Frame buildRelationalFrame( boolean isLast, List<List<PolyValue>> rows, List<ColumnMeta> metas, StreamingIndex streamingIndex ) {
         RelationalFrame relationalFrame = RelationalFrame.newBuilder()
                 .addAllColumnMeta( metas )
-                .addAllRows( serializeToRows( rows ) )
+                .addAllRows( serializeToRows( rows, streamingIndex ) )
                 .build();
         return Frame.newBuilder()
                 .setIsLast( isLast )
@@ -130,10 +132,10 @@ public class PrismUtils {
     }
 
 
-    public static Frame buildDocumentFrame( boolean isLast, List<PolyValue> data ) {
+    public static Frame buildDocumentFrame( boolean isLast, List<PolyValue> data, StreamingIndex streamingIndex ) {
         List<ProtoDocument> documents = data.stream()
                 .map( PolyValue::asDocument )
-                .map( PolyValueSerializer::buildProtoDocument )
+                .map(d -> PolyValueSerializer.buildProtoDocument(d, streamingIndex) )
                 .toList();
         DocumentFrame documentFrame = DocumentFrame.newBuilder()
                 .addAllDocuments( documents )
@@ -145,14 +147,14 @@ public class PrismUtils {
     }
 
 
-    public static Frame buildGraphFrame( boolean isLast, List<List<PolyValue>> data ) {
+    public static Frame buildGraphFrame( boolean isLast, List<List<PolyValue>> data, StreamingIndex streamingIndex ) {
         GraphFrame.Builder graphFrameBuilder = GraphFrame.newBuilder();
         if ( !data.isEmpty() ) {
             PolyType elementType = data.get( 0 ).get( 0 ).getType();
             switch ( elementType ) {
-                case NODE -> graphFrameBuilder.addAllNodes( serializeToNodes( data ) );
-                case EDGE -> graphFrameBuilder.addAllEdges( serializeToEdges( data ) );
-                case PATH -> graphFrameBuilder.addAllPaths( serilaizeToPaths( data ) );
+                case NODE -> graphFrameBuilder.addAllNodes( serializeToNodes( data, streamingIndex ) );
+                case EDGE -> graphFrameBuilder.addAllEdges( serializeToEdges( data, streamingIndex ) );
+                case PATH -> graphFrameBuilder.addAllPaths( serilaizeToPaths( data, streamingIndex ) );
                 default -> throw new RuntimeException( "Should never be thrown!" );
             }
         }

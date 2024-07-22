@@ -99,7 +99,7 @@ public class DocumentExecutor extends Executor {
             executionStopWatch.stop();
             piStatement.getImplementation().getExecutionTimeMonitor().setExecutionTime( executionStopWatch.getNanoTime() );
         }
-        return PrismUtils.buildDocumentFrame( isLast, data );
+        return PrismUtils.buildDocumentFrame( isLast, data, piStatement.getStreamingIndex() );
     }
 
 }

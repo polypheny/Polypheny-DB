@@ -104,9 +104,9 @@ public class GraphExecutor extends Executor {
         }
         if (GraphMetaRetriever.retrievedResultIsRelational(piStatement.getImplementation())) {
             List<ColumnMeta> columnMetas = GraphMetaRetriever.retrieveColumnMetas( piStatement.getImplementation() );
-            return PrismUtils.buildRelationalFrame( isLast, data, columnMetas );
+            return PrismUtils.buildRelationalFrame( isLast, data, columnMetas, piStatement.getStreamingIndex() );
         }
-        return PrismUtils.buildGraphFrame( isLast, data );
+        return PrismUtils.buildGraphFrame( isLast, data, piStatement.getStreamingIndex() );
     }
 
 }

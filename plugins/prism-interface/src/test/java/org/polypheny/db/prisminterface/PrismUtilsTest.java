@@ -25,6 +25,7 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
+import org.polypheny.db.prisminterface.streaming.StreamingIndex;
 import org.polypheny.db.prisminterface.utils.PrismUtils;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyString;
@@ -54,7 +55,7 @@ public class PrismUtilsTest {
         List<PolyValue> row2 = List.of( new PolyString( "example" ), new PolyInteger( 24 ), new PolyBoolean( true ) );
 
         List<List<PolyValue>> inputRows = List.of( row1, row2 );
-        List<Row> prismRows = PrismUtils.serializeToRows( inputRows );
+        List<Row> prismRows = PrismUtils.serializeToRows( inputRows, new StreamingIndex() );
 
         Row prismRow1 = prismRows.get( 0 );
         List<ProtoValue> outputRow1 = prismRow1.getValuesList();
@@ -79,7 +80,7 @@ public class PrismUtilsTest {
     @Test
     public void serializeToRowsEmptyRowTest() {
         List<List<PolyValue>> inputRows = List.of();
-        List<Row> prismRows = PrismUtils.serializeToRows( inputRows );
+        List<Row> prismRows = PrismUtils.serializeToRows( inputRows, new StreamingIndex() );
         assertTrue( prismRows.isEmpty() );
     }
 
@@ -102,7 +103,7 @@ public class PrismUtilsTest {
                 List.of( node2 )
         );
 
-        Frame result = PrismUtils.buildGraphFrame( true, data );
+        Frame result = PrismUtils.buildGraphFrame( true, data, new StreamingIndex() );
 
         assertTrue( result.getIsLast() );
         assertEquals( 2, result.getGraphFrame().getNodesCount() );
@@ -115,7 +116,7 @@ public class PrismUtilsTest {
     public void buildGraphFrameWithEmptyNodesTest() {
         List<List<PolyValue>> data = List.of();
 
-        Frame result = PrismUtils.buildGraphFrame( true, data );
+        Frame result = PrismUtils.buildGraphFrame( true, data, new StreamingIndex() );
 
         assertTrue( result.getIsLast() );
         assertEquals( 0, result.getGraphFrame().getNodesCount() );
@@ -140,7 +141,7 @@ public class PrismUtilsTest {
                 List.of( node2 )
         );
 
-        Frame result = PrismUtils.buildGraphFrame( false, data );
+        Frame result = PrismUtils.buildGraphFrame( false, data, new StreamingIndex() );
 
         assertFalse( result.getIsLast() );
         assertEquals( 2, result.getGraphFrame().getEdgesCount() );

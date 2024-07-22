@@ -108,7 +108,7 @@ public class RelationalExecutor extends Executor {
             implementation.getExecutionTimeMonitor().setExecutionTime( executionStopWatch.getNanoTime() );
         }
         List<ColumnMeta> columnMetas = RelationalMetaRetriever.retrieveColumnMetas( implementation );
-        return PrismUtils.buildRelationalFrame( isLast, rows, columnMetas );
+        return PrismUtils.buildRelationalFrame( isLast, rows, columnMetas, piStatement.getStreamingIndex() );
     }
 
 }

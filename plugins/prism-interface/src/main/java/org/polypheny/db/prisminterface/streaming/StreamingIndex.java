@@ -21,17 +21,17 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public class StreamingIndex {
 
-    private final HashMap<Long, StreamableBlobWrapper> index = new HashMap<>();
+    private final HashMap<Long, StreamableBinaryWrapper> index = new HashMap<>();
     AtomicLong streamIdGenerator = new AtomicLong();
 
 
-    public long register(StreamableBlobWrapper streamableBlobWrapper ) {
+    public long register( StreamableBinaryWrapper streamableBinaryWrapper ) {
         long streamId = streamIdGenerator.incrementAndGet();
-        index.put( streamId, streamableBlobWrapper );
+        index.put( streamId, streamableBinaryWrapper );
         return streamId;
     }
 
-    public StreamableBlobWrapper get(long streamId) {
+    public StreamableBinaryWrapper get(long streamId) {
         return index.get( streamId );
     }
 
