@@ -105,10 +105,7 @@ public class MergeTest extends CypherTestTemplate {
 
         execute( "MERGE (charlie {name: 'Charlie Sheen'})" );
         GraphResult res = matchAndReturnAllNodes();
-        System.out.print("hello: ");
-        // Printing the data using Arrays.deepToString
-        String[][] data = res.getData();
-        System.out.println( Arrays.deepToString(data));
+
         assertNode( res, 0 );
         assert containsNodes( res, true, TestNode.from( List.of(),
                 Pair.of( "name", "Charlie Sheen" ) ) );
@@ -391,12 +388,6 @@ public class MergeTest extends CypherTestTemplate {
 
 
 
-
-    // do you want me to test this ??
-    @Test
-    public void UniqueConstrainsMergeTest() {
-
-    }
 
 
 }
