@@ -16,11 +16,12 @@
 
 package org.polypheny.db.transaction;
 
-import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
+import lombok.Getter;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.transaction.Transaction.AccessMode;
 
@@ -28,7 +29,8 @@ import org.polypheny.db.transaction.Transaction.AccessMode;
 // Based on code taken from https://github.com/dstibrany/LockManager
 public class Lock {
 
-    private final Set<TransactionImpl> owners = new HashSet<>();
+    @Getter
+    private final Set<TransactionImpl> owners = new CopyOnWriteArraySet<>();
     private final ReentrantLock lock = new ReentrantLock( true );
     private final Condition waiters = lock.newCondition();
     private final WaitForGraph waitForGraph;
@@ -109,11 +111,6 @@ public class Lock {
         }
 
         return lockMode;
-    }
-
-
-    Set<TransactionImpl> getOwners() {
-        return owners;
     }
 
 

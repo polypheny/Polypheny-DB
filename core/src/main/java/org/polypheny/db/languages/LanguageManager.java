@@ -241,7 +241,6 @@ public class LanguageManager {
 
     public List<ExecutedContext> anyQuery( QueryContext context ) {
         List<ImplementationContext> prepared = anyPrepareQuery( context, context.getTransactions().get( context.getTransactions().size() - 1 ) );
-
         List<ExecutedContext> executedContexts = new ArrayList<>();
 
         for ( ImplementationContext implementation : prepared ) {

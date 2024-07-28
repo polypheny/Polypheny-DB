@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
-import lombok.SneakyThrows;
 import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
 import org.pf4j.ExtensionPoint;
@@ -35,6 +34,7 @@ import org.polypheny.db.adapter.jdbc.JdbcSchema;
 import org.polypheny.db.adapter.jdbc.JdbcTable;
 import org.polypheny.db.adapter.jdbc.JdbcUtils;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
+import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.catalog.catalogs.RelAdapterCatalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
 import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
@@ -446,11 +446,14 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
     }
 
 
-    @SneakyThrows
     @Override
     public boolean prepare( PolyXid xid ) {
         if ( connectionFactory.hasConnectionHandler( xid ) ) {
-            return connectionFactory.getConnectionHandler( xid ).prepare();
+            try {
+                return connectionFactory.getConnectionHandler( xid ).prepare();
+            } catch ( ConnectionHandlerException e ) {
+                throw new GenericRuntimeException( e );
+            }
         } else {
             log.warn( "There is no connection to prepare (Uniquename: {}, XID: {})! Returning true.", getUniqueName(), xid );
             return true;
@@ -458,22 +461,28 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
     }
 
 
-    @SneakyThrows
     @Override
     public void commit( PolyXid xid ) {
         if ( connectionFactory.hasConnectionHandler( xid ) ) {
-            connectionFactory.getConnectionHandler( xid ).commit();
+            try {
+                connectionFactory.getConnectionHandler( xid ).commit();
+            } catch ( ConnectionHandlerException e ) {
+                throw new GenericRuntimeException( e );
+            }
         } else {
             log.warn( "There is no connection to commit (Uniquename: {}, XID: {})!", getUniqueName(), xid );
         }
     }
 
 
-    @SneakyThrows
     @Override
     public void rollback( PolyXid xid ) {
         if ( connectionFactory.hasConnectionHandler( xid ) ) {
-            connectionFactory.getConnectionHandler( xid ).rollback();
+            try {
+                connectionFactory.getConnectionHandler( xid ).rollback();
+            } catch ( ConnectionHandlerException e ) {
+                throw new GenericRuntimeException( e );
+            }
         } else {
             log.warn( "There is no connection to rollback (Uniquename: {}, XID: {})!", getUniqueName(), xid );
         }

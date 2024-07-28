@@ -64,7 +64,6 @@ public class MqlTest {
                 Result result = polyStatement.execute( "mqltest", MQL_LANGUAGE_NAME, TEST_QUERY );
                 assertEquals( ResultType.DOCUMENT, result.getResultType() );
             } );
-
         }
     }
 
