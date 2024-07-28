@@ -16,6 +16,7 @@
 
 package org.polypheny.db.cypher.clause.write;
 
+import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -51,11 +52,37 @@ public class DmlInsertTest extends CypherTestTemplate {
 
 
     @Test
-    public void insertEmptyNode() {
+    public void insertEmptyNodeWithNoVariableNoLabelTest() {
+        execute( "CREATE ()" );
+        GraphResult res = matchAndReturnAllNodes();
+        assertNode( res, 0 );
+        assert containsNodes( res, true, TestNode.from( List.of() ) );
+    }
+
+
+    @Test
+    public void insertEmptyNodeWithNoVariableTest() {
+        execute( "CREATE (:Person)" );
+        GraphResult res = matchAndReturnAllNodes();
+        assertNode( res, 0 );
+        assert containsNodes( res, true, TestNode.from( List.of( "Person" ) ) );
+    }
+
+
+    @Test
+    public void insertEmptyNoLabelNodeTest() {
         execute( "CREATE (p)" );
         GraphResult res = matchAndReturnAllNodes();
         assertNode( res, 0 );
         assert containsNodes( res, true, TestNode.from( List.of() ) );
+    }
+    @Test
+    public void  insertEmptyNodeTest()
+    {
+        execute( "CREATE (p:Person)" );
+        GraphResult res = matchAndReturnAllNodes();
+        assertNode( res, 0 );
+        assert containsNodes( res, true, TestNode.from( List.of( "Person" ) ) );
     }
 
 
@@ -67,26 +94,30 @@ public class DmlInsertTest extends CypherTestTemplate {
         assert containsNodes( res, true, TestNode.from( Pair.of( "name", "Max Muster" ) ) );
     }
 
+
     @Test
     public void insertNodeWithManyLabelsTest() {
         execute( "CREATE (p:Person :Employee )" );
         GraphResult res = matchAndReturnAllNodes();
-        assert containsNodes( res, true, TestNode.from(List.of("Person" , "Employee") ));
+        assert containsNodes( res, true, TestNode.from( List.of( "Person", "Employee" ) ) );
     }
+
+
     @Test
-    public void insertNodeWithManyLabelsAndPropertyTest ()
-    {
-        execute( "CREATE (n:Person:Employee {name :'MAX'})" );
-        GraphResult res = matchAndReturnAllNodes();
-        assert containsNodes( res, true, TestNode.from(List.of("Person" , "Employee") ,Pair.of( "name" , "Max" )));
+    public void insertNodeWithManyLabelsAndPropertyTest() {
+        execute( "CREATE (n:Person:Employee {name :'Max'})" );
+
+       GraphResult res = matchAndReturnAllNodes();
+     assert containsNodes( res, true, TestNode.from( List.of( "Person", "Employee" ), Pair.of( "name", "Max" ) ) );
 
     }
+
+
     @Test
-    public void insertNodeWithPropertyContainsListTest()
-    {
+    public void insertNodeWithPropertyContainsListTest() {
         execute( "CREATE ({l: [1 ,2,3]})" );
         GraphResult res = matchAndReturnAllNodes();
-        assert  res.getData().length == 1 ;
+        assert res.getData().length == 1;
 
     }
 
@@ -133,9 +164,29 @@ public class DmlInsertTest extends CypherTestTemplate {
         GraphResult res = execute(
                 "CREATE (p:Person {name: 'Max Muster'})\n"
                         + "RETURN p" );
+        assertNode( res, 0 );
+        assert containsNodes( res, true, TestNode.from( List.of() ) );
     }
 
+    @Test
+    public void insertSingleHopPathNoVariableTest()
+    {
+       execute( "CREATE (p:Person {name :'Max'}) -[ : OWNER_OF] ->(a: Animal {name :'Kira' , age: 3 , type :'dog'})" );
+        GraphResult res = matchAndReturnAllNodes();
+        // only select all nodes
+        assert containsNodes( res, true,
+                TestNode.from( List.of( "Person" ), Pair.of( "name", "Max" ) ),
+                TestNode.from(
+                        List.of( "Animal" ),
+                        Pair.of( "name", "Kira" ),
+                        Pair.of( "age", 3 ),
+                        Pair.of( "type", "dog" ) ) );
 
+        // only select all edges
+         res = execute( "MATCH ()-[r]->() RETURN r" );
+        assert containsEdges( res, true, TestEdge.from( List.of( "OWNER_OF" ) ) );
+
+    }
     @Test
     public void insertSingleHopPathTest() {
         execute( "CREATE (p:Person {name: 'Max'})-[rel:OWNER_OF]->(a:Animal {name:'Kira', age:3, type:'dog'})" );
@@ -147,6 +198,7 @@ public class DmlInsertTest extends CypherTestTemplate {
                         Pair.of( "name", "Kira" ),
                         Pair.of( "age", 3 ),
                         Pair.of( "type", "dog" ) ) );
+
     }
 
 
@@ -157,6 +209,42 @@ public class DmlInsertTest extends CypherTestTemplate {
         assert containsEdges( res, true, TestEdge.from( List.of( "OWNER_OF" ) ) );
     }
 
+    @Test
+    public void insertSingleHopPathWithMultiplePropertiesTest()
+    {
+        execute( "CREATE (p:Person {name: 'Max'})-[rel:KNOWS {since: 1994 , relation : 'friend'}]->(a:Person {name:'Hans', age:31})" );
+
+        // only select all nodes
+        GraphResult res = matchAndReturnAllNodes();
+        assert containsNodes( res, true,
+                TestNode.from( List.of( "Person" ), Pair.of( "name", "Max" ) ),
+                TestNode.from(
+                        List.of( "Person" ),
+                        Pair.of( "name", "Hans" ),
+                        Pair.of( "age", 31)));
+
+        // only select all edges
+       res = execute( "MATCH ()-[r]->() RETURN r" );
+        assert containsEdges( res, true, TestEdge.from( List.of( "KNOWS" ) ,
+                Pair.of( "since" , 1994 ) , Pair.of( "relation" ,"friend" )) );
+
+    }
+    @Test
+    public void insertSingleHopPathWithListPropertyTest() {
+        execute( "Create (p:Person:Employee {name: 'Max'})-[role:ACTED_IN {roles:['Neo', 42, 'Thomas Anderson']}]->(matrix:Movie {title: 'The Matrix'})" );
+        // only select all nodes
+        GraphResult res = matchAndReturnAllNodes();
+        assert containsNodes( res, true,
+                TestNode.from( List.of( "Person"  , "Employee"), Pair.of( "name", "Max" ) ),
+                TestNode.from(
+                        List.of( "Movie" ),
+                        Pair.of( "title", "The Matrix" ) ) );
+
+        // only select all edges
+        res = execute( "MATCH ()-[r]->() RETURN r" );
+        assert containsEdges( res, true, TestEdge.from( List.of( "ACTED_IN" ),
+                Pair.of( "roles", List.of( "Neo", 42, "Thomas Anderson" ) ) ) );
+    }
 
     @Test
     public void insertMultipleHopPathTest() {
