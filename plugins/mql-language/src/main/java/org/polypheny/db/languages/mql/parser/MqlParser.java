@@ -159,7 +159,7 @@ public class MqlParser implements Parser {
      * Implementation of {@link MqlParserConfig}.
      * Called by builder; all values are in private final fields.
      */
-    private record ConfigImpl(ParserFactory parserFactory) implements MqlParserConfig {
+    private record ConfigImpl( ParserFactory parserFactory ) implements MqlParserConfig {
 
         private ConfigImpl( ParserFactory parserFactory ) {
             this.parserFactory = Objects.requireNonNull( parserFactory );

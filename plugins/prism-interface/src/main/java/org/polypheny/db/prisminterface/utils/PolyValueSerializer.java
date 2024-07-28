@@ -19,7 +19,6 @@ package org.polypheny.db.prisminterface.utils;
 import com.google.protobuf.ByteString;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;

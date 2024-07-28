@@ -184,6 +184,7 @@ public class QueryInterfaceManager {
             @JsonSerialize String interfaceType,
             @JsonSerialize String uniqueName,
             @JsonSerialize Map<String, String> currentSettings ) {
+
     }
 
 

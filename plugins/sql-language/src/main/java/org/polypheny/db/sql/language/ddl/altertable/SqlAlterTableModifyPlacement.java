@@ -20,7 +20,6 @@ package org.polypheny.db.sql.language.ddl.altertable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.Value;

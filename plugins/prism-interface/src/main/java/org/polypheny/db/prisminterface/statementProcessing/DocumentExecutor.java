@@ -17,7 +17,6 @@
 package org.polypheny.db.prisminterface.statementProcessing;
 
 import java.util.List;
-import java.util.stream.Collectors;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.ResultIterator;

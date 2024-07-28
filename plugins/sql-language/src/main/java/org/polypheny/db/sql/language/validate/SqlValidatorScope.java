@@ -24,7 +24,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.StructKind;
@@ -339,9 +338,7 @@ public interface SqlValidatorScope extends ValidatorScope {
 
     }
 
-    /**
-     * A match found when looking up a name.
-     */
+
     /**
      * A match found when looking up a name.
      */
@@ -382,4 +379,3 @@ public interface SqlValidatorScope extends ValidatorScope {
     }
 
 }
-

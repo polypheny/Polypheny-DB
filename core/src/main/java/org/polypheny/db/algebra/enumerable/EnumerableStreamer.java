@@ -19,7 +19,6 @@ package org.polypheny.db.algebra.enumerable;
 
 import java.lang.reflect.Modifier;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.function.Function;
 import org.apache.calcite.linq4j.function.Function0;

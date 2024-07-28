@@ -17,7 +17,6 @@
 package org.polypheny.db.cypher.pattern;
 
 import java.util.List;
-import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import lombok.Getter;
 import org.polypheny.db.cypher.expression.CypherExpression;

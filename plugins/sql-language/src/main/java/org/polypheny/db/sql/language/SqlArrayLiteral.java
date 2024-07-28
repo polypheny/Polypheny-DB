@@ -16,7 +16,6 @@
 
 package org.polypheny.db.sql.language;
 
-import java.util.stream.Collectors;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.sql.language.SqlWriter.Frame;

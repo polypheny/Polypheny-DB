@@ -173,7 +173,7 @@ public class PolyphenyDb {
 
             polyphenyDb.runPolyphenyDb();
         } catch ( ParseException e ) {
-            log.error( "Error parsing command line parameters: " + e.getMessage() );
+            log.error( "Error parsing command line parameters: {}", e.getMessage() );
         } catch ( Throwable uncaught ) {
             if ( log.isErrorEnabled() ) {
                 log.error( "Uncaught Throwable.", uncaught );
@@ -269,7 +269,7 @@ public class PolyphenyDb {
             uuid += "-polypheny-test";
         }
 
-        log.info( "Polypheny UUID: " + uuid );
+        log.info( "Polypheny UUID: {}", uuid );
         RuntimeConfig.INSTANCE_UUID.setString( uuid );
 
         final ShutdownHelper sh = new ShutdownHelper();
@@ -419,7 +419,7 @@ public class PolyphenyDb {
             } catch ( GenericRuntimeException e ) {
                 // AutoDocker does not work in Windows containers
                 if ( mode == RunMode.TEST && !System.getenv( "RUNNER_OS" ).equals( "Windows" ) ) {
-                    log.error( "Failed to connect to Docker instance: " + e.getMessage() );
+                    log.error( "Failed to connect to Docker instance: {}", e.getMessage() );
                     throw e;
                 }
             }
