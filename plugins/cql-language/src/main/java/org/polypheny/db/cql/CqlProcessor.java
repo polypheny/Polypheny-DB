@@ -35,7 +35,6 @@ import org.polypheny.db.transaction.Lock.LockMode;
 import org.polypheny.db.transaction.LockManager;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
-import org.polypheny.db.transaction.TransactionImpl;
 import org.polypheny.db.util.DeadlockException;
 import org.polypheny.db.util.Pair;
 

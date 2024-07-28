@@ -179,7 +179,7 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
      * @param columnId The id of the column
      * @param type The type of the default value
      * @param defaultValue True if the column should allow null values, false if not.
-     * @return
+     * @return LogicalColumn
      */
     LogicalColumn setDefaultValue( long columnId, PolyType type, PolyValue defaultValue );
 

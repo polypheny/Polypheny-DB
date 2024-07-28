@@ -73,7 +73,6 @@ public class MqlCreateView extends MqlNode implements ExecutableStatement {
         AlgCollation algCollation = algRoot.collation;
 
         throw new GenericRuntimeException( "Document views are currently not supported" );
-
     }
 
 

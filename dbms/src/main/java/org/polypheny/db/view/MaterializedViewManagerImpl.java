@@ -67,7 +67,6 @@ import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
-import org.polypheny.db.transaction.TransactionImpl;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.util.DeadlockException;
 import org.polypheny.db.util.background.BackgroundTask.TaskPriority;

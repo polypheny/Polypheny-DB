@@ -481,7 +481,6 @@ public class TemporalFunctions {
     @NonDeterministic
     @SuppressWarnings("unused")
     public static PolyTimestamp currentTimestamp( DataContext root ) {
-        // Cast required for JDK 1.6.
         Date date = new Date();
         return PolyTimestamp.of( date.getTime() + timeZone( root ).getRawOffset() );
     }

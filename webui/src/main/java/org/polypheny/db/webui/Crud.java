@@ -2368,32 +2368,14 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
     // helper for relAlg materialized View
     private TimeUnit getFreshnessType( String freshnessId ) {
-        TimeUnit timeUnit;
-        switch ( freshnessId ) {
-            case "min":
-            case "minutes":
-                timeUnit = TimeUnit.MINUTES;
-                break;
-            case "hours":
-                timeUnit = TimeUnit.HOURS;
-                break;
-            case "sec":
-            case "seconds":
-                timeUnit = TimeUnit.SECONDS;
-                break;
-            case "days":
-            case "day":
-                timeUnit = TimeUnit.DAYS;
-                break;
-            case "millisec":
-            case "milliseconds":
-                timeUnit = TimeUnit.MILLISECONDS;
-                break;
-            default:
-                timeUnit = TimeUnit.MINUTES;
-                break;
-        }
-        return timeUnit;
+        return switch ( freshnessId ) {
+            case "min", "minutes" -> TimeUnit.MINUTES;
+            case "hours" -> TimeUnit.HOURS;
+            case "sec", "seconds" -> TimeUnit.SECONDS;
+            case "days", "day" -> TimeUnit.DAYS;
+            case "millisec", "milliseconds" -> TimeUnit.MILLISECONDS;
+            default -> TimeUnit.MINUTES;
+        };
     }
 
 
