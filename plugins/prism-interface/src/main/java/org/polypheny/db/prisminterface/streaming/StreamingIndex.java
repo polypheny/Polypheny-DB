@@ -35,4 +35,8 @@ public class StreamingIndex {
         return index.get( streamId );
     }
 
+    public void reset() {
+        index.clear();
+    }
+
 }

@@ -501,7 +501,7 @@ class PIService {
         PIClient client = getClient();
         PIStatement statement = client.getStatementManager().getStatement( request.getStatementId() );
         try {
-            return responseObserver.makeResponse(statement.getStreamingIndexOrThrow().get( request.getStreamId() ).get( request.getPosition(), request.getLength()));
+            return responseObserver.makeResponse(statement.getStreamingFramework().getIndex().get( request.getStreamId() ).get( request.getPosition(), request.getLength()));
         } catch ( IOException e ) {
             throw new GenericRuntimeException( e );
         }

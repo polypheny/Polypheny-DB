@@ -16,7 +16,6 @@
 
 package org.polypheny.db.prisminterface.statementProcessing;
 
-import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.PolyImplementation;
@@ -27,11 +26,8 @@ import org.polypheny.db.monitoring.events.MonitoringType;
 import org.polypheny.db.prisminterface.PIClient;
 import org.polypheny.db.prisminterface.PIServiceException;
 import org.polypheny.db.prisminterface.metaRetrieval.GraphMetaRetriever;
-import org.polypheny.db.prisminterface.metaRetrieval.RelationalMetaRetriever;
 import org.polypheny.db.prisminterface.statements.PIStatement;
-import org.polypheny.db.prisminterface.utils.PrismUtils;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.prism.ColumnMeta;
 import org.polypheny.prism.Frame;
 import org.polypheny.prism.StatementResult;
@@ -74,8 +70,8 @@ public class GraphExecutor extends Executor {
             return resultBuilder.build();
         }
         if ( Kind.DML.contains( implementation.getKind() ) ) {
-            try (ResultIterator iterator = implementation.execute( statement, -1 )) {
-                resultBuilder.setScalar( PolyImplementation.getRowsChanged( statement, iterator.getIterator(), MonitoringType.from(implementation.getKind()) ) );
+            try ( ResultIterator iterator = implementation.execute( statement, -1 ) ) {
+                resultBuilder.setScalar( PolyImplementation.getRowsChanged( statement, iterator.getIterator(), MonitoringType.from( implementation.getKind() ) ) );
             }
             client.commitCurrentTransactionIfAuto();
             return resultBuilder.build();
@@ -95,18 +91,13 @@ public class GraphExecutor extends Executor {
         throwOnIllegalState( piStatement );
         StopWatch executionStopWatch = piStatement.getExecutionStopWatch();
         ResultIterator iterator = piStatement.getIterator();
+        PolyImplementation implementation = piStatement.getImplementation();
         startOrResumeStopwatch( executionStopWatch );
-        List<List<PolyValue>> data = new ArrayList<>( iterator.getNextBatch( fetchSize ) );
-        boolean isLast = !iterator.hasMoreRows();
-        if ( isLast ) {
-            executionStopWatch.stop();
-            piStatement.getImplementation().getExecutionTimeMonitor().setExecutionTime( executionStopWatch.getNanoTime() );
+        if ( GraphMetaRetriever.retrievedResultIsRelational( implementation ) ) {
+            List<ColumnMeta> columnMetas = GraphMetaRetriever.retrieveColumnMetas( implementation );
+            return piStatement.getStreamingFramework().processRelationalResult( columnMetas, iterator, fetchSize );
         }
-        if (GraphMetaRetriever.retrievedResultIsRelational(piStatement.getImplementation())) {
-            List<ColumnMeta> columnMetas = GraphMetaRetriever.retrieveColumnMetas( piStatement.getImplementation() );
-            return PrismUtils.buildRelationalFrame( isLast, data, columnMetas, piStatement.getStreamingIndex() );
-        }
-        return PrismUtils.buildGraphFrame( isLast, data, piStatement.getStreamingIndex() );
+        return piStatement.getStreamingFramework().processGraphResult( iterator, fetchSize );
     }
 
 }

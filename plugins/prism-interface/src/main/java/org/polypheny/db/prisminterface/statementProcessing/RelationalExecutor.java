@@ -16,6 +16,7 @@
 
 package org.polypheny.db.prisminterface.statementProcessing;
 
+import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.PolyImplementation;
@@ -27,6 +28,7 @@ import org.polypheny.db.prisminterface.PIClient;
 import org.polypheny.db.prisminterface.PIServiceException;
 import org.polypheny.db.prisminterface.metaRetrieval.RelationalMetaRetriever;
 import org.polypheny.db.prisminterface.statements.PIStatement;
+import org.polypheny.db.prisminterface.streaming.SerializationHeuristic;
 import org.polypheny.db.prisminterface.utils.PrismUtils;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.entity.PolyValue;
@@ -100,15 +102,8 @@ public class RelationalExecutor extends Executor {
         PolyImplementation implementation = piStatement.getImplementation();
         ResultIterator iterator = piStatement.getIterator();
         startOrResumeStopwatch( executionStopWatch );
-        List<List<PolyValue>> rows = iterator.getNextBatch( fetchSize );
-        executionStopWatch.suspend();
-        boolean isLast = !iterator.hasMoreRows();
-        if ( isLast ) {
-            executionStopWatch.stop();
-            implementation.getExecutionTimeMonitor().setExecutionTime( executionStopWatch.getNanoTime() );
-        }
         List<ColumnMeta> columnMetas = RelationalMetaRetriever.retrieveColumnMetas( implementation );
-        return PrismUtils.buildRelationalFrame( isLast, rows, columnMetas, piStatement.getStreamingIndex() );
+        return piStatement.getStreamingFramework().processRelationalResult(columnMetas, iterator, fetchSize);
     }
 
 }

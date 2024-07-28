@@ -93,13 +93,7 @@ public class DocumentExecutor extends Executor {
         StopWatch executionStopWatch = piStatement.getExecutionStopWatch();
         ResultIterator iterator = piStatement.getIterator();
         startOrResumeStopwatch( executionStopWatch );
-        List<PolyValue> data = iterator.getNextBatch( fetchSize ).stream().map( p -> p.get( 0 ) ).collect( Collectors.toList() );
-        boolean isLast = !iterator.hasMoreRows();
-        if ( isLast ) {
-            executionStopWatch.stop();
-            piStatement.getImplementation().getExecutionTimeMonitor().setExecutionTime( executionStopWatch.getNanoTime() );
-        }
-        return PrismUtils.buildDocumentFrame( isLast, data, piStatement.getStreamingIndex() );
+        return piStatement.getStreamingFramework().processDocumentResult(iterator, fetchSize);
     }
 
 }

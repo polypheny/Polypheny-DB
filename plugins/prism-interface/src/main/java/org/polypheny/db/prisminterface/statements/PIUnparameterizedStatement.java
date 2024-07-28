@@ -55,7 +55,6 @@ public class PIUnparameterizedStatement extends PIStatement {
     public StatementResult execute( int fetchSize ) {
         statement = client.getOrCreateNewTransaction().createStatement();
         StatementProcessor.implement( this );
-        streamingIndex = new StreamingIndex();
         return StatementProcessor.executeAndGetResult( this, fetchSize );
     }
 

@@ -141,7 +141,9 @@ public abstract class OperatorImpl implements Operator {
      */
     @Override
     public String getAllowedSignatures( String opNameToUse ) {
-        assert operandTypeChecker != null : "If you see this, assign operandTypeChecker a value or override this function";
+        if (operandTypeChecker == null) {
+            throw new RuntimeException("If you see this, assign operandTypeChecker a value or override this function");
+        }
         return operandTypeChecker.getAllowedSignatures( this, opNameToUse ).trim();
     }
 

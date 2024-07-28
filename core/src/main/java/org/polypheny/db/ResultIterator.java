@@ -65,6 +65,38 @@ public class ResultIterator implements AutoCloseable {
         return getNextBatch( batch );
     }
 
+    public List<PolyValue> getNext() {
+        StopWatch stopWatch = null;
+        try {
+            if ( isTimed ) {
+                stopWatch = new StopWatch();
+                stopWatch.start();
+            }
+            List<PolyValue> res = null;
+            if (iterator.hasNext()) {
+                res = Lists.newArrayList( iterator.next() );
+            }
+            if ( isTimed ) {
+                stopWatch.stop();
+                executionTimeMonitor.setExecutionTime( stopWatch.getNanoTime() );
+            }
+
+            // Only if it is an index
+            if ( statementEvent != null && isIndex ) {
+                statementEvent.setIndexSize( 1 );
+            }
+
+            return res;
+        } catch ( Throwable t ) {
+            try {
+                close();
+                throw new GenericRuntimeException( t );
+            } catch ( Exception e ) {
+                throw new GenericRuntimeException( t );
+            }
+        }
+    }
+
 
     public List<List<PolyValue>> getNextBatch( int fetchSize ) {
         StopWatch stopWatch = null;

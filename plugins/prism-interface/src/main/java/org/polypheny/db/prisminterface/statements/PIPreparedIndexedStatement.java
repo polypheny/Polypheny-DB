@@ -71,7 +71,6 @@ public class PIPreparedIndexedStatement extends PIPreparedStatement {
             statement.getDataContext().addParameterValues( i, types.get( i++ ), column );
         }
         StatementProcessor.implement( this );
-        streamingIndex = new StreamingIndex();
         updateCounts.add( StatementProcessor.executeAndGetResult( this ).getScalar() );
         return updateCounts;
     }
@@ -94,7 +93,6 @@ public class PIPreparedIndexedStatement extends PIPreparedStatement {
             }
         }
         StatementProcessor.implement( this );
-        streamingIndex = new StreamingIndex();
         return StatementProcessor.executeAndGetResult( this, fetchSize );
     }
 

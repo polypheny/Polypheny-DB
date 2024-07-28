@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import com.google.common.collect.ImmutableList;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
+import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -186,7 +187,6 @@ public class JdbcMetaTest {
 
             // Check data
             final Object[] schemaPublic = new Object[]{ "public", null, "RELATIONAL" };
-            //final Object[] schemaDoc = new Object[]{ "doc", "APP", "pa", "DOCUMENT" };
             final Object[] schemaTest = new Object[]{ "test", null, "RELATIONAL" };
 
             TestHelper.checkResultSet(
@@ -707,6 +707,25 @@ public class JdbcMetaTest {
             TestHelper.checkResultSet(
                     connection.getMetaData().getIndexInfo( null, "%", null, true, false ),
                     ImmutableList.of( index1 ) );
+        }
+    }
+
+    @Test
+    void testMetaDataGetProceduresNotStrict() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false, false ) ) {
+            Connection con = polyphenyDbConnection.getConnection();
+            DatabaseMetaData meta = con.getMetaData();
+            meta.getProcedures( "public", ".*", ".*" );
+        }
+    }
+
+
+    @Test
+    void testMetaDataGetFunctionsNotStrict() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false, false ) ) {
+            Connection con = polyphenyDbConnection.getConnection();
+            DatabaseMetaData meta = con.getMetaData();
+            meta.getFunctions( "public", ".*", ".*" );
         }
     }
 

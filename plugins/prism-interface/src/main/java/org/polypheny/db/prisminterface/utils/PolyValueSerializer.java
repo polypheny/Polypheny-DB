@@ -203,7 +203,9 @@ public class PolyValueSerializer {
         ProtoBinary.Builder binaryBuilder = ProtoBinary.newBuilder();
         if (polyBinary.getValue().length > STREAM_LINIT ) {
             long streamId = streamingIndex.register( new StreamableBinaryWrapper( polyBinary ) );
-            binaryBuilder.setStreamId(streamId);
+            binaryBuilder
+                    .setStreamId(streamId)
+                    .setIsForwardOnly(true);
         } else {
             // TODO: optimization by sending first n bytes in streaming case too.
             binaryBuilder.setBinary( ByteString.copyFrom( polyBinary.getValue() ) );

@@ -70,7 +70,6 @@ public class PIPreparedNamedStatement extends PIPreparedStatement {
             statement.getDataContext().addParameterValues( i, PolyValue.deriveType( valueList.get( i ), this.statement.getDataContext().getTypeFactory() ), List.of( valueList.get( i ) ) );
         }
         StatementProcessor.implement( this );
-        streamingIndex = new StreamingIndex();
         return StatementProcessor.executeAndGetResult( this, fetchSize );
     }
 

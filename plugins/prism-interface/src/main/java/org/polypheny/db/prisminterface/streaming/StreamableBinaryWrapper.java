@@ -38,7 +38,7 @@ public class StreamableBinaryWrapper {
         }
         int end = ((int) position + length);
         byte[] data = Arrays.copyOfRange( binary.value, (int) position, end );
-        return PrismUtils.buildStreamFrame( data, end >= binary.value.length );
+        return PrismUtils.buildStreamFrame( data, end >= binary.value.length);
     }
 
 }
