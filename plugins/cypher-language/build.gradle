@@ -95,6 +95,8 @@ jar {
         attributes "Copyright": "The Polypheny Project (polypheny.org)"
         attributes "Version": "$project.version"
     }
+    duplicatesStrategy(DuplicatesStrategy.EXCLUDE)
+
 }
 java {
     withJavadocJar()
