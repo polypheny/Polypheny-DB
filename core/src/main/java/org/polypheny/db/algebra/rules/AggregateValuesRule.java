@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -75,11 +75,11 @@ public class AggregateValuesRule extends AlgOptRule {
      */
     public AggregateValuesRule( AlgBuilderFactory algBuilderFactory ) {
         super(
-                operandJ(
+                operand(
                         Aggregate.class,
                         null,
                         aggregate -> aggregate.getGroupCount() == 0,
-                        operandJ( Values.class, null, values -> values.getTuples().isEmpty(), none() ) ),
+                        operand( Values.class, null, values -> values.getTuples().isEmpty(), none() ) ),
                 algBuilderFactory, null );
     }
 

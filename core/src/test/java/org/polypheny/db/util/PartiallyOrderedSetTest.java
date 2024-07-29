@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,10 +50,8 @@ import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.function.Function;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.polypheny.db.test.PolyphenyDbAssert;
 
 
 /**
@@ -255,7 +253,7 @@ public class PartiallyOrderedSetTest {
         final int n = 30000;
         final PartiallyOrderedSet<Integer> poset =
                 new PartiallyOrderedSet<>( PartiallyOrderedSetTest::isBitSuperset,
-                        (Function<Integer, Iterable<Integer>>) i -> {
+                        i -> {
                             int r = Objects.requireNonNull( i ); // bits not yet cleared
                             final List<Integer> list = new ArrayList<>();
                             for ( int z = 1; r != 0; z <<= 1 ) {

@@ -74,6 +74,6 @@ javadoc {
 
 licensee {
     allow('MIT')
-
+    allow('Apache-2.0')
     allowDependency('org.postgresql', 'postgresql', '42.2.19') { because 'BSD 2-Clause' }
 }

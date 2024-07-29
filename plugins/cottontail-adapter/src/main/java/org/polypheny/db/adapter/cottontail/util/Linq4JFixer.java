@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,21 +19,21 @@ package org.polypheny.db.adapter.cottontail.util;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.calcite.avatica.util.ByteString;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyList;
-import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyFloat;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.type.entity.temporal.PolyDate;
 import org.polypheny.db.type.entity.temporal.PolyTime;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
+import org.polypheny.db.util.ByteString;
 import org.vitrivr.cottontail.client.language.basics.Distances;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.AtomicBooleanOperand;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.AtomicBooleanPredicate;
@@ -154,6 +154,7 @@ public class Linq4JFixer {
         return PolyDouble.of( (Double) data );
     }
 
+
     /**
      * Converts the given object and returns it as {@link Integer} object.
      *
@@ -216,7 +217,6 @@ public class Linq4JFixer {
         }
         return PolyBoolean.of( (Boolean) data );
     }
-
 
 
     public static PolyList<PolyBoolean> getBoolVector( Object data ) {

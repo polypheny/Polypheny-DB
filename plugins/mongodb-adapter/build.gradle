@@ -7,13 +7,10 @@ dependencies {
 
     implementation group: "org.mongodb", name: "mongodb-driver-sync", version: mongodb_driver_sync_version  // Apache 2.0
 
-
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
     testImplementation project(path: ":core")
 
-    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter', version: junit_jupiter_version
-    testImplementation group: "com.google.guava", name: "guava", version: guava_version
 }
 
 
@@ -78,5 +75,6 @@ java {
 }
 
 licensee {
+    allow('MIT')
     allow('Apache-2.0')
 }

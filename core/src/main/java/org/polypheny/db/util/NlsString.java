@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,7 +52,6 @@ import java.util.Locale;
 import java.util.Objects;
 import javax.annotation.Nonnull;
 import lombok.Getter;
-import org.apache.calcite.avatica.util.ByteString;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.functions.Functions;
 

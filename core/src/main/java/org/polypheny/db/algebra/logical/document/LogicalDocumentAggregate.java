@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.LaxAggregateCall;
 import org.polypheny.db.algebra.core.document.DocumentAggregate;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexNameRef;
@@ -33,7 +33,7 @@ public class LogicalDocumentAggregate extends DocumentAggregate {
     /**
      * Subclass of {@link DocumentAggregate} not targeted at any particular engine or calling convention.
      */
-    protected LogicalDocumentAggregate( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, @Nullable RexNameRef group, List<LaxAggregateCall> aggCalls ) {
+    protected LogicalDocumentAggregate( AlgCluster cluster, AlgTraitSet traits, AlgNode child, @Nullable RexNameRef group, List<LaxAggregateCall> aggCalls ) {
         super( cluster, traits, child, group, aggCalls );
     }
 
@@ -47,7 +47,7 @@ public class LogicalDocumentAggregate extends DocumentAggregate {
 
 
     private static LogicalDocumentAggregate create_( final AlgNode input, @Nullable RexNameRef group, List<LaxAggregateCall> aggCalls ) {
-        final AlgOptCluster cluster = input.getCluster();
+        final AlgCluster cluster = input.getCluster();
         final AlgTraitSet traitSet = cluster.traitSetOf( Convention.NONE );
         return new LogicalDocumentAggregate( cluster, traitSet, input, group, aggCalls );
     }

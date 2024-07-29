@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,7 +40,7 @@ import java.util.List;
 import java.util.Objects;
 import javax.annotation.Nonnull;
 import org.polypheny.db.plan.AlgMultipleTrait;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTrait;
 import org.polypheny.db.runtime.ComparableList;
 import org.polypheny.db.util.Util;
@@ -208,7 +208,7 @@ public class AlgDistributions {
 
 
         @Override
-        public void register( AlgOptPlanner planner ) {
+        public void register( AlgPlanner planner ) {
         }
 
 

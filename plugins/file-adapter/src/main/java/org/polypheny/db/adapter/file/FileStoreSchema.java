@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ package org.polypheny.db.adapter.file;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.Getter;
@@ -32,25 +31,22 @@ import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.file.FileAlg.FileImplementor.Operation;
-import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
-import org.polypheny.db.schema.Namespace.Schema;
-import org.polypheny.db.schema.impl.AbstractNamespace;
+import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.type.entity.PolyValue;
 
 
 @Getter
-public class FileStoreSchema extends AbstractNamespace implements FileSchema, Schema {
+public class FileStoreSchema extends Namespace implements FileSchema {
 
     private final String schemaName;
-    private final Map<String, Entity> tables = new HashMap<>();
     @Getter
     private final FileStore store;
     private final FileConvention convention;
 
 
-    public FileStoreSchema( long id, String schemaName, FileStore store ) {
-        super( id );
+    public FileStoreSchema( long id, long adapterId, String schemaName, FileStore store ) {
+        super( id, adapterId );
         this.schemaName = schemaName;
         this.store = store;
         final Expression expression = null;
@@ -69,11 +65,6 @@ public class FileStoreSchema extends AbstractNamespace implements FileSchema, Sc
         return store;
     }
 
-
-    @Override
-    public Long getAdapterId() {
-        return store.getAdapterId();
-    }
 
 
     public FileTranslatableEntity createFileTable( PhysicalTable table, List<Long> primary ) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,6 +58,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.algebra.type.GraphType;
+import org.polypheny.db.functions.GeoFunctions;
 import org.polypheny.db.runtime.Unit;
 import org.polypheny.db.type.AbstractPolyType;
 import org.polypheny.db.type.JavaToPolyTypeConversionRules;
@@ -78,7 +79,6 @@ import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.type.entity.graph.PolyNode;
 import org.polypheny.db.type.entity.graph.PolyPath;
 import org.polypheny.db.type.entity.relational.PolyMap;
-import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.type.entity.temporal.PolyDate;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 import org.polypheny.db.util.Pair;
@@ -87,7 +87,7 @@ import org.polypheny.db.util.Util;
 
 /**
  * Implementation of {@link JavaTypeFactory}.
- *
+ * <p>
  * <strong>NOTE: This class is experimental and subject to change/removal without notice</strong>.</p>
  */
 @Slf4j
@@ -122,7 +122,7 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
 
     /**
      * Returns the type of a field.
-     *
+     * <p>
      * Takes into account {@link Array} annotations if present.
      */
     private Type fieldType( Field field ) {
@@ -144,27 +144,23 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
         if ( type instanceof AlgDataType ) {
             return (AlgDataType) type;
         }
-        if ( type instanceof SyntheticRecordType ) {
-            final SyntheticRecordType syntheticRecordType = (SyntheticRecordType) type;
+        if ( type instanceof SyntheticRecordType syntheticRecordType ) {
             return syntheticRecordType.algType;
         }
-        if ( type instanceof Types.ArrayType ) {
-            final Types.ArrayType arrayType = (Types.ArrayType) type;
+        if ( type instanceof Types.ArrayType arrayType ) {
             final AlgDataType componentRelType = createType( arrayType.getComponentType() );
             return createArrayType( createTypeWithNullability( componentRelType, arrayType.componentIsNullable() ), arrayType.maximumCardinality() );
         }
-        if ( type instanceof Types.MapType ) {
-            final Types.MapType mapType = (Types.MapType) type;
+        if ( type instanceof Types.MapType mapType ) {
             final AlgDataType keyRelType = createType( mapType.getKeyType() );
             final AlgDataType valueRelType = createType( mapType.getValueType() );
             return createMapType(
                     createTypeWithNullability( keyRelType, mapType.keyIsNullable() ),
                     createTypeWithNullability( valueRelType, mapType.valueIsNullable() ) );
         }
-        if ( !(type instanceof Class) ) {
+        if ( !(type instanceof Class<?> clazz) ) {
             throw new UnsupportedOperationException( "TODO: implement " + type );
         }
-        final Class<?> clazz = (Class<?>) type;
         switch ( Primitive.flavor( clazz ) ) {
             case PRIMITIVE:
                 return createJavaType( clazz );
@@ -220,7 +216,6 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
                 case DATE:
                     return PolyDate.class;
                 case TIME:
-                case TIME_WITH_LOCAL_TIME_ZONE:
                     return PolyTemporal.class;
                 case DOUBLE:
                 case FLOAT: // sic
@@ -232,21 +227,8 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
                 case BIGINT:
                     return PolyNumber.class;
                 case TIMESTAMP:
-                case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
                     return PolyTimestamp.class;
-                case INTERVAL_YEAR:
-                case INTERVAL_YEAR_MONTH:
-                case INTERVAL_MONTH:
-                case INTERVAL_DAY:
-                case INTERVAL_DAY_HOUR:
-                case INTERVAL_DAY_MINUTE:
-                case INTERVAL_DAY_SECOND:
-                case INTERVAL_HOUR:
-                case INTERVAL_HOUR_MINUTE:
-                case INTERVAL_HOUR_SECOND:
-                case INTERVAL_MINUTE:
-                case INTERVAL_MINUTE_SECOND:
-                case INTERVAL_SECOND:
+                case INTERVAL:
                     return PolyInterval.class;
                 case BOOLEAN:
                     return PolyBoolean.class;
@@ -254,7 +236,7 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
                 case VARBINARY:
                     return PolyBinary.class;
                 case GEOMETRY:
-                    return PolyGeometry.class;
+                    return GeoFunctions.Geom.class;
                 case SYMBOL:
                     return PolySymbol.class;
                 case GRAPH:
@@ -278,13 +260,6 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
                 case ANY:
                     return PolyValue.class;
 
-            }
-            if ( type instanceof AlgRecordType && type.getPolyType() == PolyType.ROW ) {
-                if ( type instanceof JavaRecordType ) {
-                    return ((JavaRecordType) type).clazz;
-                } else {
-                    return createSyntheticType( (AlgRecordType) type );
-                }
             }
         }
         log.debug( "Could not find corresponding class for PolyType" );

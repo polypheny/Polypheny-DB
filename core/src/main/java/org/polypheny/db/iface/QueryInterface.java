@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ package org.polypheny.db.iface;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -39,8 +40,6 @@ public abstract class QueryInterface implements Runnable, PropertyChangeListener
     protected final transient Authenticator authenticator;
 
     @Getter
-    private final long queryInterfaceId;
-    @Getter
     private final String uniqueName;
 
     @Getter
@@ -54,16 +53,14 @@ public abstract class QueryInterface implements Runnable, PropertyChangeListener
     public QueryInterface(
             final TransactionManager transactionManager,
             final Authenticator authenticator,
-            final long queryInterfaceId,
             final String uniqueName,
             final Map<String, String> settings,
             final boolean supportsDml,
             final boolean supportsDdl ) {
         this.transactionManager = transactionManager;
         this.authenticator = authenticator;
-        this.queryInterfaceId = queryInterfaceId;
         this.uniqueName = uniqueName;
-        this.settings = settings;
+        this.settings = new HashMap<>( settings );
         this.supportsDml = supportsDml;
         this.supportsDdl = supportsDdl;
 
@@ -139,6 +136,9 @@ public abstract class QueryInterface implements Runnable, PropertyChangeListener
         public final boolean required;
         public final boolean modifiable;
 
+
+        public abstract String getDefault();
+
     }
 
 
@@ -150,6 +150,29 @@ public abstract class QueryInterface implements Runnable, PropertyChangeListener
         public QueryInterfaceSettingInteger( String name, boolean canBeNull, boolean required, boolean modifiable, Integer defaultValue ) {
             super( name, canBeNull, required, modifiable );
             this.defaultValue = defaultValue;
+        }
+
+
+        public String getDefault() {
+            return defaultValue.toString();
+        }
+
+    }
+
+
+    public static class QueryInterfaceSettingLong extends QueryInterfaceSetting {
+
+        public final Long defaultValue;
+
+
+        public QueryInterfaceSettingLong( String name, boolean canBeNull, boolean required, boolean modifiable, Long defaultValue ) {
+            super( name, canBeNull, required, modifiable );
+            this.defaultValue = defaultValue;
+        }
+
+
+        public String getDefault() {
+            return defaultValue.toString();
         }
 
     }
@@ -165,6 +188,11 @@ public abstract class QueryInterface implements Runnable, PropertyChangeListener
             this.defaultValue = defaultValue;
         }
 
+
+        public String getDefault() {
+            return defaultValue;
+        }
+
     }
 
 
@@ -178,17 +206,29 @@ public abstract class QueryInterface implements Runnable, PropertyChangeListener
             this.defaultValue = defaultValue;
         }
 
+
+        public String getDefault() {
+            return Boolean.toString( defaultValue );
+        }
+
     }
 
 
     public static class QueryInterfaceSettingList extends QueryInterfaceSetting {
 
         public final List<String> options;
+        public final String defaultValue;
 
 
-        public QueryInterfaceSettingList( String name, boolean canBeNull, boolean required, boolean modifiable, List<String> options ) {
+        public QueryInterfaceSettingList( String name, boolean canBeNull, boolean required, boolean modifiable, List<String> options, String defaultValue ) {
             super( name, canBeNull, required, modifiable );
             this.options = options;
+            this.defaultValue = defaultValue;
+        }
+
+
+        public String getDefault() {
+            return defaultValue;
         }
 
     }

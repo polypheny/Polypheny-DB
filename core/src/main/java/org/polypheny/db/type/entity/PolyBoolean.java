@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,18 +23,18 @@ import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.CompatibilityLevel;
 import io.activej.serializer.CorruptedDataException;
-import io.activej.serializer.SimpleSerializerDef;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.annotations.SerializeNullable;
+import io.activej.serializer.def.SimpleSerializerDef;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
-import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.ObjectUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 
@@ -95,18 +95,18 @@ public class PolyBoolean extends PolyValue {
     }
 
 
-    public static PolyBoolean convert( Object value ) {
+    public static PolyBoolean convert( @Nullable PolyValue value ) {
         if ( value == null ) {
             return null;
         }
-        if ( value instanceof PolyValue poly ) {
-            if ( poly.isBoolean() ) {
-                return poly.asBoolean();
-            } else if ( poly.isNumber() ) {
-                return poly.asBoolean();
-            }
+
+        if ( value.isBoolean() ) {
+            return value.asBoolean();
+        } else if ( value.isNumber() ) {
+            return value.asBoolean();
         }
-        throw new NotImplementedException( "convert value to Boolean" );
+
+        throw new GenericRuntimeException( getConvertError( value, PolyBoolean.class ) );
     }
 
 

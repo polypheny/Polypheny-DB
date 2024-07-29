@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,12 +52,16 @@ public abstract class Result<E, F> {
 
     public F[] header;
 
+
     /**
      * Exception with additional information
      */
     public Throwable exception;
 
     public String query;
+
+    @Builder.Default
+    public QueryType queryType = QueryType.DQL;
 
     /**
      * Transaction id, for the websocket. It will not be serialized to gson.
@@ -111,6 +115,7 @@ public abstract class Result<E, F> {
             this.exception = instance.exception;
             this.language$value = instance.language;
             this.error = instance.error;
+            this.queryType$value = instance.queryType;
 
             return self();
         }
@@ -122,7 +127,7 @@ public abstract class Result<E, F> {
 
         @Override
         public void serialize( QueryLanguage value, JsonGenerator gen, SerializerProvider serializers ) throws IOException {
-            gen.writeString( value.getSerializedName() );
+            gen.writeString( value.serializedName() );
         }
 
     }

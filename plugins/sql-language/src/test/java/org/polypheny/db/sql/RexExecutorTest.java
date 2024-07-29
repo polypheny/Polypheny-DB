@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,12 +33,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.function.Function;
-import org.apache.calcite.avatica.util.ByteString;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.QueryProvider;
-import org.junit.jupiter.api.Disabled;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.DataContext.SlimDataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.operators.OperatorName;
@@ -47,9 +46,6 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.prepare.ContextImpl;
-import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexExecutable;
 import org.polypheny.db.rex.RexExecutorImpl;
@@ -58,20 +54,18 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexSlot.SelfPopulatingList;
 import org.polypheny.db.rex.RexUtil;
-import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.sql.language.SqlBinaryOperator;
 import org.polypheny.db.sql.language.fun.SqlMonotonicBinaryOperator;
-import org.polypheny.db.tools.FrameworkConfig;
-import org.polypheny.db.tools.Frameworks;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.entity.PolyBoolean;
-import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.type.inference.InferTypes;
 import org.polypheny.db.type.inference.ReturnTypes;
+import org.polypheny.db.util.ByteString;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.Util;
 
@@ -79,6 +73,7 @@ import org.polypheny.db.util.Util;
 /**
  * Unit test for {@link org.polypheny.db.rex.RexExecutorImpl}.
  */
+@Slf4j
 public class RexExecutorTest extends SqlLanguageDependent {
 
     public RexExecutorTest() {
@@ -87,30 +82,6 @@ public class RexExecutorTest extends SqlLanguageDependent {
 
     protected void check( final Action action ) throws Exception {
         Snapshot snapshot = Catalog.snapshot();
-        FrameworkConfig config = Frameworks.newConfigBuilder()
-                .prepareContext( new ContextImpl(
-                        snapshot,
-                        new SlimDataContext() {
-                            @Override
-                            public JavaTypeFactory getTypeFactory() {
-                                return new JavaTypeFactoryImpl();
-                            }
-                        },
-                        "",
-                        0,
-                        null ) )
-                .build();
-        Frameworks.withPrepare(
-                new Frameworks.PrepareAction<Void>( config ) {
-                    @Override
-                    public Void apply( AlgOptCluster cluster, Snapshot snapshot ) {
-                        final RexBuilder rexBuilder = cluster.getRexBuilder();
-                        DataContext dataContext = Schemas.createDataContext( snapshot );
-                        final RexExecutorImpl executor = new RexExecutorImpl( dataContext );
-                        action.check( rexBuilder, executor );
-                        return null;
-                    }
-                } );
     }
 
 
@@ -217,7 +188,6 @@ public class RexExecutorTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // todo dl: Refactor
     public void testBinarySubstring() throws Exception {
         check( ( rexBuilder, executor ) -> {
             final List<RexNode> reducedValues = new ArrayList<>();
@@ -226,12 +196,12 @@ public class RexExecutorTest extends SqlLanguageDependent {
             final RexNode plus = rexBuilder.makeCall( OperatorRegistry.get( OperatorName.PLUS ), rexBuilder.makeExactLiteral( BigDecimal.ONE ), rexBuilder.makeExactLiteral( BigDecimal.ONE ) );
             RexLiteral four = rexBuilder.makeExactLiteral( BigDecimal.valueOf( 4 ) );
             final RexNode substring = rexBuilder.makeCall( OperatorRegistry.get( OperatorName.SUBSTRING ), binaryHello, plus, four );
-            executor.reduce( rexBuilder, ImmutableList.of( substring, plus ), reducedValues );
+            executor.reduce( rexBuilder, List.of( substring, plus ), reducedValues );
             assertThat( reducedValues.size(), equalTo( 2 ) );
             assertThat( reducedValues.get( 0 ), instanceOf( RexLiteral.class ) );
-            assertThat( ((RexLiteral) reducedValues.get( 0 )).getValue().toString(), equalTo( (Object) "656c6c6f" ) ); // substring('Hello world!, 2, 4)
+            assertThat( ((RexLiteral) reducedValues.get( 0 )).getValue().asString(), equalTo( PolyString.of( "656c6c6f".toUpperCase() ) ) ); // substring('Hello world!, 2, 4)
             assertThat( reducedValues.get( 1 ), instanceOf( RexLiteral.class ) );
-            assertThat( ((RexLiteral) reducedValues.get( 1 )).getValue(), equalTo( (Object) 2L ) );
+            assertThat( ((RexLiteral) reducedValues.get( 1 )).getValue().asNumber(), equalTo( PolyLong.of( 2L ) ) );
         } );
     }
 
@@ -309,7 +279,7 @@ public class RexExecutorTest extends SqlLanguageDependent {
             try {
                 runnable.join();
             } catch ( InterruptedException e ) {
-                e.printStackTrace();
+                log.warn( e.getMessage() );
             }
         }
         final int size = list.size();
@@ -331,7 +301,7 @@ public class RexExecutorTest extends SqlLanguageDependent {
     /**
      * Callback for {@link #check}. Test code will typically use {@code builder} to create some expressions, call {@link org.polypheny.db.rex.RexExecutorImpl#reduce} to evaluate them into a list, then check that the results are as expected.
      */
-    interface Action {
+    public interface Action {
 
         void check( RexBuilder rexBuilder, RexExecutorImpl executor );
 
@@ -393,7 +363,7 @@ public class RexExecutorTest extends SqlLanguageDependent {
 
 
         @Override
-        public void addParameterValues( long index, AlgDataType type, List<PolyValue> data ) {
+        public void addParameterValues( long index, @NotNull AlgDataType type, List<PolyValue> data ) {
             throw new UnsupportedOperationException();
         }
 
@@ -430,4 +400,3 @@ public class RexExecutorTest extends SqlLanguageDependent {
     }
 
 }
-

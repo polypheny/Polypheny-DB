@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,9 +50,9 @@ import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexChecker;
@@ -94,7 +94,7 @@ public abstract class Window extends SingleAlg {
      * @param rowType Output row type
      * @param groups Windows
      */
-    public Window( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, List<RexLiteral> constants, AlgDataType rowType, List<Group> groups ) {
+    public Window( AlgCluster cluster, AlgTraitSet traitSet, AlgNode input, List<RexLiteral> constants, AlgDataType rowType, List<Group> groups ) {
         super( cluster, traitSet, input );
         this.constants = ImmutableList.copyOf( constants );
         assert rowType != null;
@@ -202,12 +202,12 @@ public abstract class Window extends SingleAlg {
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         // Cost is proportional to the number of rows and the number of components (groups and aggregate functions). There is no I/O cost.
         //
         // TODO #1. Add memory cost.
         // TODO #2. MIN and MAX have higher CPU cost than SUM and COUNT.
-        final double rowsIn = mq.getRowCount( getInput() );
+        final double rowsIn = mq.getTupleCount( getInput() );
         int count = groups.size();
         for ( Group group : groups ) {
             count += group.aggCalls.size();

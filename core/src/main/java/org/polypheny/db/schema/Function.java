@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,8 +43,7 @@ import java.util.List;
  * The application may occur at compile time (for a macro) or at run time (for a regular function). The result may be a
  * relation, and so might any of the parameters.
  *
- * Functions are registered in a {@link Namespace}, and may be queried by name ({@link Namespace#getFunctions(String)}) then
- * overloads resolved based on parameter types.
+ * Functions are registered in a {@link Namespace}.
  *
  * @see TableMacro
  * @see ScalarFunction

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,9 +28,9 @@ import java.util.Map;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import org.apache.calcite.avatica.util.Spaces;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Sources;
+import org.polypheny.db.util.Spaces;
 import org.polypheny.db.util.Util;
 import org.polypheny.db.util.XmlOutput;
 import org.w3c.dom.CDATASection;

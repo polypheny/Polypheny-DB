@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.document.DocumentAlg;
 import org.polypheny.db.algebra.core.document.DocumentSort;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexNode;
@@ -34,7 +34,7 @@ public class LogicalDocumentSort extends DocumentSort implements DocumentAlg {
     /**
      * Subclass of {@link DocumentSort} not targeted at any particular engine or calling convention.
      */
-    public LogicalDocumentSort( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, AlgCollation collation, List<RexNode> targets, RexNode offset, RexNode fetch ) {
+    public LogicalDocumentSort( AlgCluster cluster, AlgTraitSet traits, AlgNode child, AlgCollation collation, List<RexNode> targets, RexNode offset, RexNode fetch ) {
         super( cluster, traits, child, collation, targets, offset, fetch );
     }
 

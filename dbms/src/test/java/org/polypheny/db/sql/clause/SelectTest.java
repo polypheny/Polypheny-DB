@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -83,6 +83,19 @@ public class SelectTest {
     }
 
 
+    @Test
+    public void selectNullTest() throws SQLException {
+        String select = "SELECT NULL";
+
+        try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.execute( select );
+            }
+        }
+    }
+
+
     @AfterAll
     public static void stop() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
@@ -101,7 +114,6 @@ public class SelectTest {
 
 
     @Test
-    @Tag("cottontailExcluded")
     public void nestedSelect() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -204,14 +216,14 @@ public class SelectTest {
     }
 
 
-    @Test // todo dl move
+    @Test
     public void getRowsTest() {
         Transaction trx = TestHelper.getInstance().getTransaction();
         org.polypheny.db.transaction.Statement statement = trx.createStatement();
 
         AlgBuilder builder = AlgBuilder.create( statement );
 
-        AlgNode scan = builder.scan( "public", "TableC" ).build();
+        AlgNode scan = builder.relScan( "public", "TableC" ).build();
         PolyImplementation impl = statement.getQueryProcessor().prepareQuery( AlgRoot.of( scan, Kind.SELECT ), false );
 
         ResultIterator iter = impl.execute( statement, 2 );
@@ -253,7 +265,8 @@ public class SelectTest {
 
     @Test
     public void insertUpdateTest() throws SQLException {
-        String ddl = "CREATE TABLE my_table (column1 INT NOT NULL, column2 VARCHAR(255), column3 INT, PRIMARY KEY (column1))";
+        String ddl1 = "DROP TABLE IF EXISTS my_table";
+        String ddl2 = "CREATE TABLE my_table (column1 INT NOT NULL, column2 VARCHAR(255), column3 INT, PRIMARY KEY (column1))";
         String insert = "INSERT INTO my_table (column1, column2, column3) VALUES (1, 'v1', 100), (2, 'v2', 200), (3, 'v3', 300)";
         String update = "UPDATE my_table SET column2 = 'foo' WHERE column1 = 1 AND column3 = 100";
 
@@ -261,7 +274,8 @@ public class SelectTest {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
 
-                statement.executeUpdate( ddl );
+                statement.executeUpdate( ddl1 );
+                statement.executeUpdate( ddl2 );
                 statement.executeUpdate( insert );
                 statement.executeUpdate( update );
 

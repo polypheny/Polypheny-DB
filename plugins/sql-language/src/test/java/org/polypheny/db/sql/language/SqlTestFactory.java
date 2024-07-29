@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,8 +23,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedMap;
 import java.util.Map;
 import java.util.Objects;
-import org.apache.calcite.avatica.util.Casing;
-import org.apache.calcite.avatica.util.Quoting;
 import org.polypheny.db.algebra.constant.ConformanceEnum;
 import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
@@ -34,19 +32,20 @@ import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.Parser.ParserConfig;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.sql.MockSqlOperatorTable;
-import org.polypheny.db.sql.language.advise.SqlAdvisor;
 import org.polypheny.db.sql.language.fun.OracleSqlOperatorTable;
 import org.polypheny.db.sql.language.parser.SqlAbstractParserImpl;
 import org.polypheny.db.sql.language.parser.SqlParser;
 import org.polypheny.db.sql.language.validate.SqlValidator;
-import org.polypheny.db.sql.language.validate.SqlValidatorWithHints;
+import org.polypheny.db.sql.language.validate.SqlValidatorUtil;
+import org.polypheny.db.util.Casing;
 import org.polypheny.db.util.Conformance;
+import org.polypheny.db.util.Quoting;
 import org.polypheny.db.util.SourceStringReader;
 
 
 /**
  * Default implementation of {@link SqlTestFactory}.
- *
+ * <p>
  * Suitable for most tests. If you want different behavior, you can extend; if you want a factory with different properties (e.g. SQL conformance level or identifier quoting), use {@link #with(String, Object)} to create a new factory.
  */
 public class SqlTestFactory {
@@ -72,7 +71,7 @@ public class SqlTestFactory {
 
 
     protected SqlTestFactory() {
-        this( DEFAULT_OPTIONS, null );//SqlValidatorUtil::newValidator );
+        this( DEFAULT_OPTIONS, SqlValidatorUtil::newValidator );
     }
 
 
@@ -81,7 +80,6 @@ public class SqlTestFactory {
         this.validatorFactory = validatorFactory;
         this.operatorTable = Suppliers.memoize( () -> createOperatorTable( (OperatorTable) options.get( "operatorTable" ) ) );
         this.typeFactory = Suppliers.memoize( () -> createTypeFactory( (Conformance) options.get( "conformance" ) ) );
-        Boolean caseSensitive = (Boolean) options.get( "caseSensitive" );
         this.parserConfig = Suppliers.memoize( () -> createParserConfig( options ) );
     }
 
@@ -90,11 +88,6 @@ public class SqlTestFactory {
         MockSqlOperatorTable opTab = new MockSqlOperatorTable( opTab0 );
         MockSqlOperatorTable.addRamp( opTab );
         return opTab;
-    }
-
-
-    public ParserConfig getParserConfig() {
-        return parserConfig.get();
     }
 
 
@@ -111,7 +104,6 @@ public class SqlTestFactory {
                 .setUnquotedCasing( (Casing) options.get( "unquotedCasing" ) )
                 .setQuotedCasing( (Casing) options.get( "quotedCasing" ) )
                 .setConformance( (Conformance) options.get( "conformance" ) )
-                .setCaseSensitive( (boolean) options.get( "caseSensitive" ) )
                 .build();
     }
 
@@ -119,15 +111,6 @@ public class SqlTestFactory {
     public SqlValidator getValidator() {
         final Conformance conformance = (Conformance) options.get( "conformance" );
         return validatorFactory.create( operatorTable.get(), typeFactory.get(), conformance );
-    }
-
-
-    public SqlAdvisor createAdvisor() {
-        SqlValidator validator = getValidator();
-        if ( validator instanceof SqlValidatorWithHints ) {
-            return new SqlAdvisor( (SqlValidatorWithHints) validator, parserConfig.get() );
-        }
-        throw new UnsupportedOperationException( "Validator should implement SqlValidatorWithHints, actual validator is " + validator );
     }
 
 
@@ -148,12 +131,6 @@ public class SqlTestFactory {
     }
 
 
-
-    public SqlTestFactory withValidator( ValidatorFactory newValidatorFactory ) {
-        return new SqlTestFactory( options, newValidatorFactory );
-    }
-
-
     public final Object get( String name ) {
         return options.get( name );
     }
@@ -171,9 +148,6 @@ public class SqlTestFactory {
         }
         if ( conformance.allowExtendedTrim() ) {
             typeSystem = new DelegatingTypeSystem( typeSystem ) {
-                public boolean allowExtendedTrim() {
-                    return true;
-                }
             };
         }
         return new JavaTypeFactoryImpl( typeSystem );

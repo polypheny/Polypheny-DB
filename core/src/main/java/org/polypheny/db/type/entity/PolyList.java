@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,9 +40,9 @@ import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.CompatibilityLevel;
 import io.activej.serializer.CorruptedDataException;
-import io.activej.serializer.SimpleSerializerDef;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
+import io.activej.serializer.def.SimpleSerializerDef;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -66,7 +66,7 @@ import org.polypheny.db.type.entity.PolyList.PolyListSerializer;
 import org.polypheny.db.util.Pair;
 
 @Slf4j
-@EqualsAndHashCode(callSuper = true)
+@EqualsAndHashCode(callSuper = false)
 @Value
 @JsonSerialize(using = PolyListSerializer.class)
 @JsonDeserialize(using = PolyListDeserializer.class)
@@ -92,6 +92,7 @@ public class PolyList<E extends PolyValue> extends PolyValue implements List<E> 
         this.value = new ArrayList<>( value );
     }
 
+
     public static <E extends PolyValue> PolyList<E> copyOf( List<E> value ) {
         return new PolyList<>( value );
     }
@@ -105,6 +106,7 @@ public class PolyList<E extends PolyValue> extends PolyValue implements List<E> 
     public static <E extends PolyValue> PolyList<E> copyOf( Iterator<E> iterator ) {
         return copyOf( Lists.newArrayList( iterator ) );
     }
+
 
     @SafeVarargs
     public PolyList( E... value ) {
@@ -122,6 +124,7 @@ public class PolyList<E extends PolyValue> extends PolyValue implements List<E> 
             return PolyNull.NULL.toTypedJson();
         }
     }
+
 
     public static PolyList<?> convert( @Nullable Object object ) {
         if ( object == null ) {
@@ -331,8 +334,8 @@ public class PolyList<E extends PolyValue> extends PolyValue implements List<E> 
             }
             gen.writeBoolean( false );
 
-            gen.writeFieldName( "@class" );
-            gen.writeString( PolyList.class.getCanonicalName() );
+            gen.writeFieldName( "@type" );
+            gen.writeString( "LIST" );
             gen.writeFieldName( "_es" );
             gen.writeStartArray();
             for ( PolyValue value : values ) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,7 +38,7 @@ import com.google.common.collect.ImmutableList;
 import java.util.Objects;
 import java.util.Set;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 
@@ -56,7 +56,7 @@ public abstract class EquiJoin extends Join {
      * Creates an EquiJoin.
      */
     public EquiJoin(
-            AlgOptCluster cluster,
+            AlgCluster cluster,
             AlgTraitSet traits,
             AlgNode left,
             AlgNode right,

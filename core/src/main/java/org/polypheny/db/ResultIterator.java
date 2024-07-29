@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,18 +16,15 @@
 
 package org.polypheny.db;
 
-import static org.reflections.Reflections.log;
 
 import com.google.common.collect.Lists;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.function.Function;
 import java.util.stream.StreamSupport;
-import javax.annotation.Nullable;
 import lombok.Value;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.StopWatch;
-import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.monitoring.events.StatementEvent;
@@ -36,11 +33,11 @@ import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.entity.PolyValue;
 
 
+@Slf4j
 @Value
 public class ResultIterator implements AutoCloseable {
 
-    Iterator<PolyValue[]>
-            iterator;
+    Iterator<PolyValue[]> iterator;
     int batch;
     ExecutionTimeMonitor executionTimeMonitor;
     boolean isIndex;
@@ -63,6 +60,11 @@ public class ResultIterator implements AutoCloseable {
 
 
     public List<List<PolyValue>> getNextBatch() {
+        return getNextBatch( batch );
+    }
+
+
+    public List<List<PolyValue>> getNextBatch( int fetchSize ) {
         StopWatch stopWatch = null;
         try {
             if ( isTimed ) {
@@ -71,7 +73,7 @@ public class ResultIterator implements AutoCloseable {
             }
             List<List<PolyValue>> res = new ArrayList<>();
             int i = 0;
-            while ( (batch < 0 || i++ < batch) && iterator.hasNext() ) {
+            while ( (fetchSize < 0 || i++ < fetchSize) && iterator.hasNext() ) {
                 res.add( Lists.newArrayList( iterator.next() ) );
             }
 
@@ -113,29 +115,17 @@ public class ResultIterator implements AutoCloseable {
     }
 
 
-    @NotNull
-    private <D> List<D> getNextBatch( @Nullable Function<PolyValue[], D> transformer ) {
+    public List<PolyValue[]> getTupleRows() {
         final Iterable<PolyValue[]> iterable = () -> iterator;
 
-        if ( transformer == null ) {
-            return (List<D>) StreamSupport
-                    .stream( iterable.spliterator(), false )
-                    .toList();
-        }
         return StreamSupport
                 .stream( iterable.spliterator(), false )
-                .map( transformer )
                 .toList();
     }
 
 
-    public List<PolyValue[]> getArrayRows() {
-        return getNextBatch( rowType.getFieldCount() == 1 ? e -> (PolyValue[]) e : null );
-    }
-
-
     @Override
-    public void close() throws Exception {
+    public void close() {
         try {
             if ( iterator instanceof AutoCloseable ) {
                 ((AutoCloseable) iterator).close();

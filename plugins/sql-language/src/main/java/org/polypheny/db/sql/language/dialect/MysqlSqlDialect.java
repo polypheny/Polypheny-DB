@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,6 @@ package org.polypheny.db.sql.language.dialect;
 
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.util.TimeUnit;
-import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.NullCollation;
@@ -29,6 +27,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.nodes.TimeUnitRange;
 import org.polypheny.db.sql.language.SqlBasicCall;
 import org.polypheny.db.sql.language.SqlCall;
 import org.polypheny.db.sql.language.SqlDataTypeSpec;
@@ -45,6 +44,7 @@ import org.polypheny.db.sql.language.fun.SqlCase;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.inference.InferTypes;
 import org.polypheny.db.type.inference.ReturnTypes;
+import org.polypheny.db.util.temporal.TimeUnit;
 
 
 /**

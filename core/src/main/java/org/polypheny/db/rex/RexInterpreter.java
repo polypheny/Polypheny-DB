@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,19 +42,19 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.IntPredicate;
-import org.apache.calcite.avatica.util.DateTimeUtils;
-import org.apache.calcite.avatica.util.TimeUnit;
-import org.apache.calcite.avatica.util.TimeUnitRange;
+import org.polypheny.db.nodes.TimeUnitRange;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 import org.polypheny.db.util.Util;
+import org.polypheny.db.util.temporal.DateTimeUtils;
+import org.polypheny.db.util.temporal.TimeUnit;
 
 
 /**
  * Evaluates {@link RexNode} expressions.
- *
+ * <p>
  * Caveats:
  * <ul>
  * <li>It uses interpretation, so it is not very efficient.</li>
@@ -346,7 +346,7 @@ public class RexInterpreter implements RexVisitor<PolyValue> {
             elseValue = Util.last( values );
         }
         for ( int i = 0; i < size; i += 2 ) {
-            if ( values.get( i ).isBoolean() && !values.get( i ).isNull() && values.get( i ).asBoolean().value.equals( true ) ) {
+            if ( values.get( i ).isBoolean() && !(values.get( i ) == null || values.get( i ).isNull()) && values.get( i ).asBoolean().value.equals( true ) ) {
                 return values.get( i + 1 );
             }
         }
@@ -379,7 +379,7 @@ public class RexInterpreter implements RexVisitor<PolyValue> {
 
     private boolean containsNull( List<PolyValue> values ) {
         for ( PolyValue value : values ) {
-            if ( value == N ) {
+            if ( value == N || value.isNull() ) {
                 return true;
             }
         }
@@ -396,7 +396,7 @@ public class RexInterpreter implements RexVisitor<PolyValue> {
 
 
         static Truthy of( PolyValue c ) {
-            return c.isNull() || !c.isBoolean() ? UNKNOWN : (c.asBoolean().value ? TRUE : FALSE);
+            return c == null || c.isNull() || !c.isBoolean() ? UNKNOWN : (c.asBoolean().value ? TRUE : FALSE);
         }
 
 

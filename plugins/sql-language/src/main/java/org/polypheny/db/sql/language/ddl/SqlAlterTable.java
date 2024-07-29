@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,9 @@
 package org.polypheny.db.sql.language.ddl;
 
 
+import lombok.EqualsAndHashCode;
+import lombok.Value;
+import lombok.experimental.NonFinal;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.sql.language.SqlAlter;
@@ -27,6 +30,9 @@ import org.polypheny.db.sql.language.SqlSpecialOperator;
 /**
  * Parse tree for {@code ALTER TABLE} statement.
  */
+@EqualsAndHashCode(callSuper = true)
+@Value
+@NonFinal
 public abstract class SqlAlterTable extends SqlAlter {
 
 

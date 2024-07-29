@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ import org.polypheny.db.adapter.neo4j.util.Translator;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.lpg.LpgFilter;
 import org.polypheny.db.catalog.logistic.DataModel;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.entity.PolyString;
@@ -43,7 +43,7 @@ public class NeoLpgFilter extends LpgFilter implements NeoGraphAlg {
      * @param traits Traits active for this node, including {@link DataModel#GRAPH}
      * @param input Input algebraic expression
      */
-    public NeoLpgFilter( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, RexNode condition ) {
+    public NeoLpgFilter( AlgCluster cluster, AlgTraitSet traits, AlgNode input, RexNode condition ) {
         super( cluster, traits, input, condition );
     }
 

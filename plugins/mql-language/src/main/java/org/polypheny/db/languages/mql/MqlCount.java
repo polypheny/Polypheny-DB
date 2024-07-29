@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,13 +33,13 @@ public class MqlCount extends MqlCollectionStatement implements MqlQueryStatemen
     private final BsonDocument options;
 
 
-    public MqlCount( ParserPos pos, String collection, BsonDocument query, BsonDocument options ) {
-        this( pos, collection, query, options, false );
+    public MqlCount( ParserPos pos, String collection, String namespace, BsonDocument query, BsonDocument options ) {
+        this( pos, collection, namespace, query, options, false );
     }
 
 
-    public MqlCount( ParserPos pos, String collection, BsonDocument query, BsonDocument options, boolean isEstimate ) {
-        super( collection, pos );
+    public MqlCount( ParserPos pos, String collection, String namespace, BsonDocument query, BsonDocument options, boolean isEstimate ) {
+        super( collection, namespace, pos );
         this.query = query;
         this.options = options;
         this.isEstimate = isEstimate;

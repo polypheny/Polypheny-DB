@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,7 +46,7 @@ import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgValues;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
-import org.polypheny.db.algebra.logical.relational.LogicalValues;
+import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
@@ -73,7 +73,7 @@ import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.partition.properties.PartitionProperty;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexNode;
@@ -91,6 +91,7 @@ import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.util.Pair;
+import org.polypheny.db.webui.models.catalog.FieldDefinition;
 
 
 @Slf4j
@@ -260,7 +261,7 @@ public class DataMigratorImpl implements DataMigrator {
 
         List<LogicalColumn> copyColumns = new ArrayList<>( columns );
         // we add the primary key columns to the list of columns to copy, if they are not already in the list
-        snapshot.rel().getPrimaryKey( source.primaryKey ).orElseThrow().columnIds.forEach( pkColumnId -> {
+        snapshot.rel().getPrimaryKey( source.primaryKey ).orElseThrow().fieldIds.forEach( pkColumnId -> {
             if ( columns.stream().noneMatch( c -> c.id == pkColumnId ) ) {
                 copyColumns.add( snapshot.rel().getColumn( pkColumnId ).orElseThrow() );
             }
@@ -322,8 +323,8 @@ public class DataMigratorImpl implements DataMigrator {
             Map<Long, Integer> resultColMapping = new HashMap<>();
             for ( AllocationColumn column : selectedColumns ) {
                 int i = 0;
-                for ( AlgDataTypeField metaData : implementation.getRowType().getFields() ) {
-                    if ( metaData.getName().equalsIgnoreCase( column.getLogicalColumnName() ) ) {
+                for ( AlgDataTypeField metaData : implementation.getTupleType().getFields() ) {
+                    if ( FieldDefinition.normalizeViewColumnName( metaData.getName() ).equalsIgnoreCase( column.getLogicalColumnName() ) ) {
                         resultColMapping.put( column.getColumnId(), i );
                     }
                     i++;
@@ -369,7 +370,7 @@ public class DataMigratorImpl implements DataMigrator {
                 }
                 List<AlgDataTypeField> fields;
                 if ( isMaterializedView ) {
-                    fields = targetAlg.alg.getEntity().getRowType().getFields();
+                    fields = targetAlg.alg.getEntity().getTupleType().getFields();
                 } else {
                     fields = sourceAlg.validatedRowType.getFields();
                 }
@@ -400,7 +401,7 @@ public class DataMigratorImpl implements DataMigrator {
 
     @Override
     public AlgRoot buildDeleteStatement( Statement statement, List<AllocationColumn> to, AllocationEntity allocation ) {
-        AlgOptCluster cluster = AlgOptCluster.create(
+        AlgCluster cluster = AlgCluster.create(
                 statement.getQueryProcessor().getPlanner(),
                 new RexBuilder( statement.getTransaction().getTypeFactory() ), null, statement.getTransaction().getSnapshot() );
         AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
@@ -415,12 +416,11 @@ public class DataMigratorImpl implements DataMigrator {
         AlgBuilder builder = AlgBuilder.create( statement, cluster );
 
         if ( to.isEmpty() ) {
-            builder.scan( allocation );
+            builder.relScan( allocation );
         } else {
-            builder.push( LogicalValues.createOneRow( cluster ) );
+            builder.push( LogicalRelValues.createOneRow( cluster ) );
             builder.project( values, columnNames );
         }
-
 
         AlgNode node = LogicalRelModify.create( allocation, builder.build(), Modify.Operation.DELETE, null, null, false );
 
@@ -431,7 +431,7 @@ public class DataMigratorImpl implements DataMigrator {
     @Override
     public AlgRoot buildInsertStatement( Statement statement, List<AllocationColumn> to, AllocationEntity allocation ) {
 
-        AlgOptCluster cluster = AlgOptCluster.create(
+        AlgCluster cluster = AlgCluster.create(
                 statement.getQueryProcessor().getPlanner(),
                 new RexBuilder( statement.getTransaction().getTypeFactory() ), null, statement.getDataContext().getSnapshot() );
         AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
@@ -440,15 +440,15 @@ public class DataMigratorImpl implements DataMigrator {
         // this often leads to errors, and can be prevented by sorting
         List<AllocationColumn> placements = to.stream().sorted( Comparator.comparingLong( p -> p.columnId ) ).toList();
 
-        List<String> columnNames = new LinkedList<>();
-        List<RexNode> values = new LinkedList<>();
+        List<String> columnNames = new ArrayList<>();
+        List<RexNode> values = new ArrayList<>();
         for ( AllocationColumn ccp : placements ) {
             LogicalColumn logicalColumn = Catalog.getInstance().getSnapshot().rel().getColumn( ccp.columnId ).orElseThrow();
             columnNames.add( ccp.getLogicalColumnName() );
             values.add( new RexDynamicParam( logicalColumn.getAlgDataType( typeFactory ), (int) logicalColumn.id ) );
         }
         AlgBuilder builder = AlgBuilder.create( statement, cluster );
-        builder.push( LogicalValues.createOneRow( cluster ) );
+        builder.push( LogicalRelValues.createOneRow( cluster ) );
         builder.project( values, columnNames );
 
         AlgNode node = LogicalRelModify.create( allocation, builder.build(), Operation.INSERT, null, null, false );
@@ -458,21 +458,21 @@ public class DataMigratorImpl implements DataMigrator {
 
 
     private AlgRoot buildUpdateStatement( Statement statement, List<AllocationColumn> to, AllocationEntity allocation ) {
-        AlgOptCluster cluster = AlgOptCluster.create(
+        AlgCluster cluster = AlgCluster.create(
                 statement.getQueryProcessor().getPlanner(),
                 new RexBuilder( statement.getTransaction().getTypeFactory() ), null, statement.getDataContext().getSnapshot() );
 
         AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
 
         AlgBuilder builder = AlgBuilder.create( statement, cluster );
-        builder.scan( allocation );
+        builder.relScan( allocation );
 
         // build condition
         RexNode condition = null;
         LogicalRelSnapshot snapshot = Catalog.getInstance().getSnapshot().rel();
         LogicalTable catalogTable = snapshot.getTable( to.get( 0 ).logicalTableId ).orElseThrow();
         LogicalPrimaryKey primaryKey = snapshot.getPrimaryKey( catalogTable.primaryKey ).orElseThrow();
-        for ( long cid : primaryKey.columnIds ) {
+        for ( long cid : primaryKey.fieldIds ) {
             AllocationColumn ccp = Catalog.getInstance().getSnapshot().alloc().getColumn( to.get( 0 ).placementId, cid ).orElseThrow();
             LogicalColumn logicalColumn = snapshot.getColumn( cid ).orElseThrow();
             RexNode c = builder.equals(
@@ -514,7 +514,7 @@ public class DataMigratorImpl implements DataMigrator {
     public AlgRoot getSourceIterator( Statement statement, ColumnDistribution placementDistribution ) {
 
         // Build Query
-        AlgOptCluster cluster = AlgOptCluster.create(
+        AlgCluster cluster = AlgCluster.create(
                 statement.getQueryProcessor().getPlanner(),
                 new RexBuilder( statement.getTransaction().getTypeFactory() ), null, statement.getDataContext().getSnapshot() );
 
@@ -552,7 +552,6 @@ public class DataMigratorImpl implements DataMigrator {
         //Map PartitionId to TargetStatementQueue
         Map<Long, AlgRoot> targetAlgs = new HashMap<>();
 
-        //AllocationTable allocation = snapshot.alloc().getAlloc( sourcePlacement.id, table.id ).map( a -> a.unwrap( AllocationTable.class ) ).orElseThrow();
         List<AllocationColumn> columns = snapshot.alloc().getColumns( targetTables.get( 0 ).placementId );
         for ( AllocationTable targetTable : targetTables ) {
             if ( targetTable.getColumns().size() == columns.size() ) {
@@ -580,7 +579,7 @@ public class DataMigratorImpl implements DataMigrator {
 
             do {
                 ResultIterator iter = result.execute( source.sourceStatement, batchSize );
-                List<List<PolyValue>> rows = iter.getNextBatch();//MetaImpl.collect( result.getCursorFactory(), LimitIterator.of( sourceIterator, batchSize ), new ArrayList<>() ).stream().map( r -> r.stream().map( e -> (PolyValue) e ).collect( Collectors.toList() ) ).collect( Collectors.toList() );
+                List<List<PolyValue>> rows = iter.getNextBatch();
                 iter.close();
                 if ( rows.isEmpty() ) {
                     continue;
@@ -659,7 +658,7 @@ public class DataMigratorImpl implements DataMigrator {
     }
 
 
-    private record Source(Statement sourceStatement, AlgRoot sourceAlg) {
+    private record Source( Statement sourceStatement, AlgRoot sourceAlg ) {
 
     }
 

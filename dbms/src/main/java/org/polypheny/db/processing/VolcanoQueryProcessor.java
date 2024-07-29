@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,7 +45,6 @@ import org.polypheny.db.algebra.rules.JoinPushExpressionsRule;
 import org.polypheny.db.algebra.rules.JoinPushThroughJoinRule;
 import org.polypheny.db.algebra.rules.ProjectFilterTransposeRule;
 import org.polypheny.db.algebra.rules.ProjectMergeRule;
-import org.polypheny.db.algebra.rules.ProjectScanRule;
 import org.polypheny.db.algebra.rules.ProjectWindowTransposeRule;
 import org.polypheny.db.algebra.rules.ReduceExpressionsRules;
 import org.polypheny.db.algebra.rules.ScanRule;
@@ -169,7 +168,7 @@ public class VolcanoQueryProcessor extends AbstractQueryProcessor {
 
     public VolcanoQueryProcessor( Statement statement ) {
         super( statement );
-        planner = new VolcanoPlanner( VolcanoCost.FACTORY, Contexts.of( statement.getPrepareContext().config() ) );
+        planner = new VolcanoPlanner( VolcanoCost.FACTORY, Contexts.empty() );
         planner.addAlgTraitDef( ConventionTraitDef.INSTANCE );
         if ( ENABLE_COLLATION_TRAIT ) {
             planner.addAlgTraitDef( AlgCollationTraitDef.INSTANCE );
@@ -191,8 +190,11 @@ public class VolcanoQueryProcessor extends AbstractQueryProcessor {
             }
         }
         planner.addRule( Bindables.BINDABLE_TABLE_SCAN_RULE );
-        planner.addRule( ProjectScanRule.INSTANCE );
-        planner.addRule( ProjectScanRule.INTERPRETER );
+
+        if ( ENABLE_MODEL_TRAIT ) {
+            planner.addAlgTraitDef( ModelTraitDef.INSTANCE );
+            planner.registerModelRules();
+        }
 
         if ( ENABLE_MODEL_TRAIT ) {
             planner.addAlgTraitDef( ModelTraitDef.INSTANCE );

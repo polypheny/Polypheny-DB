@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,22 +28,22 @@ import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgRecordType;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexLiteral;
 
 
 public class FileValues extends Values implements FileAlg {
 
-    protected FileValues( AlgOptCluster cluster, AlgDataType rowType, ImmutableList<ImmutableList<RexLiteral>> tuples, AlgTraitSet traits ) {
+    protected FileValues( AlgCluster cluster, AlgDataType rowType, ImmutableList<ImmutableList<RexLiteral>> tuples, AlgTraitSet traits ) {
         super( cluster, rowType, tuples, traits );
     }
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         return super.computeSelfCost( planner, mq );
     }
 

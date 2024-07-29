@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import java.util.Optional;
 import java.util.TreeSet;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
@@ -51,6 +52,7 @@ import org.polypheny.db.util.Pair;
 
 @Value
 @Slf4j
+@EqualsAndHashCode
 public class AllocSnapshotImpl implements AllocSnapshot {
 
     @NotNull
@@ -479,14 +481,14 @@ public class AllocSnapshotImpl implements AllocSnapshot {
 
 
     @Override
-    public @NonNull List<AllocationColumn> getColumnPlacementsOnAdapterPerTable( long adapterId, long tableId ) {
-        return Optional.ofNullable( adapterLogicalTablePlacements.get( Pair.of( adapterId, tableId ) ) ).orElse( List.of() );
+    public @NonNull List<AllocationColumn> getColumnPlacementsOnAdapterPerEntity( long adapterId, long entityId ) {
+        return Optional.ofNullable( adapterLogicalTablePlacements.get( Pair.of( adapterId, entityId ) ) ).orElse( List.of() );
     }
 
 
     @Override
-    public @NonNull Map<Long, List<Long>> getColumnPlacementsByAdapters( long tableId ) {
-        return Optional.ofNullable( logicalTablePlacementColumns.get( tableId ) ).orElse( Map.of() );
+    public @NonNull Map<Long, List<Long>> getColumnPlacementsByAdapters( long entityId ) {
+        return Optional.ofNullable( logicalTablePlacementColumns.get( entityId ) ).orElse( Map.of() );
     }
 
 
@@ -497,38 +499,38 @@ public class AllocSnapshotImpl implements AllocSnapshot {
 
 
     @Override
-    public List<String> getPartitionGroupNames( long tableId ) {
+    public List<String> getPartitionGroupNames( long entityId ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public List<AllocationColumn> getColumnPlacementsByPartitionGroup( long tableId, long partitionGroupId, long columnId ) {
+    public List<AllocationColumn> getColumnAllocsByPartitionGroup( long entityId, long partitionGroupId, long columnId ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public List<LogicalAdapter> getAdaptersByPartitionGroup( long tableId, long partitionGroupId ) {
+    public List<LogicalAdapter> getAdaptersByPartitionGroup( long entityId, long partitionGroupId ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public List<Long> getPartitionsOnDataPlacement( long adapterId, long tableId ) {
+    public List<Long> getPartitionsOnDataPlacement( long adapterId, long entityId ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public List<Long> getPartitionGroupsIndexOnDataPlacement( long adapterId, long tableId ) {
+    public List<Long> getPartitionGroupsIndexOnDataPlacement( long adapterId, long entityId ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public @NotNull Optional<AllocationPlacement> getPlacement( long adapterId, long logicalId ) {
-        return Optional.ofNullable( adapterLogicalToPlacement.get( Pair.of( adapterId, logicalId ) ) );
+    public @NotNull Optional<AllocationPlacement> getPlacement( long adapterId, long logicalEntityId ) {
+        return Optional.ofNullable( adapterLogicalToPlacement.get( Pair.of( adapterId, logicalEntityId ) ) );
     }
 
     @Override
@@ -625,94 +627,6 @@ public class AllocSnapshotImpl implements AllocSnapshot {
     public @NotNull List<AllocationEntity> getAllocsOfPartitions( long partitionId ) {
         return Optional.ofNullable( allocsOfPartitions.get( partitionId ) ).orElse( List.of() );
     }
-
-
-    @Override
-    public boolean equals( Object o ) {
-        if ( this == o ) {
-            return true;
-        }
-        if ( o == null || getClass() != o.getClass() ) {
-            return false;
-        }
-
-        AllocSnapshotImpl that = (AllocSnapshotImpl) o;
-
-        if ( !tables.equals( that.tables ) ) {
-            return false;
-        }
-        if ( !columns.equals( that.columns ) ) {
-            return false;
-        }
-        if ( !collections.equals( that.collections ) ) {
-            return false;
-        }
-        if ( !graphs.equals( that.graphs ) ) {
-            return false;
-        }
-        if ( !allocs.equals( that.allocs ) ) {
-            return false;
-        }
-        if ( !partitions.equals( that.partitions ) ) {
-            return false;
-        }
-        if ( !groups.equals( that.groups ) ) {
-            return false;
-        }
-        if ( !placements.equals( that.placements ) ) {
-            return false;
-        }
-        if ( !allocsOnAdapters.equals( that.allocsOnAdapters ) ) {
-            return false;
-        }
-        if ( !logicalColumnToAlloc.equals( that.logicalColumnToAlloc ) ) {
-            return false;
-        }
-        if ( !placementColumns.equals( that.placementColumns ) ) {
-            return false;
-        }
-        if ( !adapterLogicalTablePlacements.equals( that.adapterLogicalTablePlacements ) ) {
-            return false;
-        }
-        if ( !adapterPartitionTableAlloc.equals( that.adapterPartitionTableAlloc ) ) {
-            return false;
-        }
-        if ( !logicalAllocs.equals( that.logicalAllocs ) ) {
-            return false;
-        }
-        if ( !logicalTablePlacementColumns.equals( that.logicalTablePlacementColumns ) ) {
-            return false;
-        }
-        if ( !properties.equals( that.properties ) ) {
-            return false;
-        }
-        if ( !logicalToPartitions.equals( that.logicalToPartitions ) ) {
-            return false;
-        }
-        if ( !logicalToGroups.equals( that.logicalToGroups ) ) {
-            return false;
-        }
-        if ( !logicalToPlacements.equals( that.logicalToPlacements ) ) {
-            return false;
-        }
-        if ( !placementPartitionToAlloc.equals( that.placementPartitionToAlloc ) ) {
-            return false;
-        }
-        if ( !adapterLogicalToPlacement.equals( that.adapterLogicalToPlacement ) ) {
-            return false;
-        }
-        if ( !placementToPartitions.equals( that.placementToPartitions ) ) {
-            return false;
-        }
-        if ( !placementsOfColumn.equals( that.placementsOfColumn ) ) {
-            return false;
-        }
-        if ( !partitionsOfGroup.equals( that.partitionsOfGroup ) ) {
-            return false;
-        }
-        return entityPartitionNameToPartition.equals( that.entityPartitionNameToPartition );
-    }
-
 
 
 }

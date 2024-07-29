@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,14 +28,15 @@ import org.apache.calcite.linq4j.tree.NewExpression;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.polypheny.db.adapter.cottontail.util.CottontailTypeUtil;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.nodes.ArrayValueConstructor;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
@@ -58,7 +59,7 @@ public class CottontailProject extends Project implements CottontailAlg {
     private final boolean arrayProject;
 
 
-    public CottontailProject( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, List<? extends RexNode> projects, AlgDataType rowType, boolean arrayValueProject ) {
+    public CottontailProject( AlgCluster cluster, AlgTraitSet traitSet, AlgNode input, List<? extends RexNode> projects, AlgDataType rowType, boolean arrayValueProject ) {
         super( cluster, traitSet, input, projects, rowType );
         this.arrayProject = arrayValueProject;
     }
@@ -71,7 +72,7 @@ public class CottontailProject extends Project implements CottontailAlg {
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         return super.computeSelfCost( planner, mq ).multiplyBy( 0.1 );
     }
 
@@ -83,8 +84,11 @@ public class CottontailProject extends Project implements CottontailAlg {
         if ( !this.arrayProject ) {
             context.visitChild( 0, getInput() );
         }
+        if ( context.table == null ) {
+            searchUnderlyingEntity( context );
+        }
 
-        final List<AlgDataTypeField> fieldList = context.table.getRowType().getFields();
+        final List<AlgDataTypeField> fieldList = context.table.getTupleType().getFields();
         final List<String> physicalColumnNames = new ArrayList<>( fieldList.size() );
         final List<PolyType> columnTypes = new ArrayList<>( fieldList.size() );
 
@@ -106,13 +110,28 @@ public class CottontailProject extends Project implements CottontailAlg {
     }
 
 
+    private void searchUnderlyingEntity( CottontailImplementContext context ) {
+        accept( new AlgShuttleImpl() {
+
+            @Override
+            public AlgNode visit( AlgNode other ) {
+                if ( other.unwrap( CottontailScan.class ).isPresent() ) {
+                    other.unwrap( CottontailScan.class ).get().implement( context );
+                }
+                return super.visit( other );
+            }
+
+        } );
+    }
+
+
     /**
      * Constructs a {@link ParameterExpression} that generates a map containing the projected fields and field aliases.
      *
      * @param builder The {@link BlockBuilder} instance.
      * @param namedProjects List of projection to alias mappings.
      * @param physicalColumnNames List of physical column names in the underlying store.
-     * @param context
+     * @param context The {@link CottontailImplementContext} instance.
      * @return {@link ParameterExpression}
      */
     public static ParameterExpression makeProjectionAndKnnBuilder( BlockBuilder builder, List<Pair<RexNode, String>> namedProjects, List<String> physicalColumnNames, CottontailImplementContext context ) {

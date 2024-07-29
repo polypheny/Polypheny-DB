@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,7 +54,7 @@ public class AllocationTable extends AllocationEntity {
 
 
     @Override
-    public AlgDataType getRowType() {
+    public AlgDataType getTupleType() {
         final AlgDataTypeFactory.Builder fieldInfo = AlgDataTypeFactory.DEFAULT.builder();
 
         for ( AllocationColumn column : getColumns().stream().sorted( Comparator.comparingInt( a -> a.position ) ).toList() ) {

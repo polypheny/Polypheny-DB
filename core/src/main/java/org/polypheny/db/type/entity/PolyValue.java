@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,21 +34,23 @@ import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.CompatibilityLevel;
 import io.activej.serializer.CorruptedDataException;
-import io.activej.serializer.SerializerBuilder;
-import io.activej.serializer.SimpleSerializerDef;
+import io.activej.serializer.SerializerFactory;
 import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.annotations.SerializeClass;
+import io.activej.serializer.def.SimpleSerializerDef;
 import java.lang.reflect.Type;
 import java.sql.Timestamp;
+import java.util.Calendar;
+import java.util.List;
 import java.util.Optional;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
+import org.apache.calcite.linq4j.tree.Types;
 import org.apache.commons.lang3.NotImplementedException;
 import org.bson.BsonDocument;
 import org.bson.json.JsonParseException;
@@ -67,7 +69,6 @@ import org.polypheny.db.type.entity.PolyBoolean.PolyBooleanSerializerDef;
 import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.type.entity.spatial.PolyGeometry.PolyGeometrySerializerDef;
 import org.polypheny.db.type.entity.PolyList.PolyListSerializerDef;
-import org.polypheny.db.type.entity.PolyLong.PolyLongSerializerDef;
 import org.polypheny.db.type.entity.PolyNull.PolyNullSerializerDef;
 import org.polypheny.db.type.entity.PolyString.PolyStringSerializerDef;
 import org.polypheny.db.type.entity.category.PolyBlob;
@@ -92,12 +93,15 @@ import org.polypheny.db.type.entity.numerical.PolyFloat;
 import org.polypheny.db.type.entity.numerical.PolyFloat.PolyFloatSerializerDef;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.type.entity.numerical.PolyInteger.PolyIntegerSerializerDef;
+import org.polypheny.db.type.entity.numerical.PolyLong;
+import org.polypheny.db.type.entity.numerical.PolyLong.PolyLongSerializerDef;
 import org.polypheny.db.type.entity.relational.PolyMap;
 import org.polypheny.db.type.entity.relational.PolyMap.PolyMapSerializerDef;
 import org.polypheny.db.type.entity.temporal.PolyDate;
 import org.polypheny.db.type.entity.temporal.PolyTime;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 import org.polypheny.db.util.BsonUtil;
+import org.polypheny.db.util.ByteString;
 
 @Value
 @Slf4j
@@ -155,7 +159,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
 
     @JsonIgnore
     // used internally to serialize into binary format
-    public static BinarySerializer<PolyValue> serializer = SerializerBuilder.create( CLASS_LOADER )
+    public static BinarySerializer<PolyValue> serializer = SerializerFactory.builder()
             .with( PolyInteger.class, ctx -> new PolyIntegerSerializerDef() )
             .with( PolyValue.class, ctx -> new PolyValueSerializerDef() )
             .with( PolyString.class, ctx -> new PolyStringSerializerDef() )
@@ -173,9 +177,9 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             .with( PolyGraph.class, ctx -> new PolyGraphSerializerDef() )
             .with( PolyLong.class, ctx -> new PolyLongSerializerDef() )
             .with( PolyGeometry.class, ctx -> new PolyGeometrySerializerDef() )
-            .build( PolyValue.class );
+            .build().create( CLASS_LOADER, PolyValue.class );
 
-
+    @JsonIgnore
     public static final ObjectMapper JSON_WRAPPER = JsonMapper.builder()
             .configure( MapperFeature.REQUIRE_TYPE_ID_FOR_SUBTYPES, true )
             .configure( DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false )
@@ -234,14 +238,39 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             }
             case FILE, IMAGE, AUDIO, VIDEO -> o -> o.asBlob().asByteArray();
             case DOCUMENT -> o -> o.asDocument().toJson();
-            case GEOMETRY -> o -> o.asGeometry().toString();
+            case ANY -> o -> getPolyToJavaRuntime( o, arrayAsList );
             default -> throw new NotImplementedException( "meta: " + type.getFullTypeString() );
         };
     }
 
 
+    private static Object getPolyToJavaRuntime( PolyValue value, boolean arrayAsList ) {
+        if ( value == null || value.isNull() ) {
+            return null;
+        }
+
+        return switch ( value.type ) {
+            case VARCHAR, CHAR, TEXT -> value.asString().value;
+            case INTEGER, TINYINT, SMALLINT -> value.asNumber().IntValue();
+            case FLOAT, REAL -> value.asNumber().FloatValue();
+            case DOUBLE -> value.asNumber().DoubleValue();
+            case BIGINT -> value.asNumber().LongValue();
+            case DECIMAL -> value.asNumber().BigDecimalValue();
+            case DATE -> value.asDate().getDaysSinceEpoch();
+            case TIME -> value.asTime().getMillisOfDay();
+            case TIMESTAMP -> value.asTimestamp().millisSinceEpoch;
+            case BOOLEAN -> value.asBoolean().value;
+            case ARRAY -> arrayAsList
+                    ? (value.asList().value.stream().map( e -> getPolyToJavaRuntime( e, true ) ).toList())
+                    : value.asList().value.stream().map( e -> getPolyToJavaRuntime( e, false ) ).toList().toArray();
+            case FILE, IMAGE, AUDIO, VIDEO -> value.asBlob().asByteArray();
+            case DOCUMENT -> value.asDocument().toJson();
+            default -> throw new NotImplementedException( "meta: " + value.type );
+        };
+    }
+
+
     private static AlgDataType getAndDecreaseArrayDimensionIfNecessary( ArrayType type ) {
-        // depending on where the algtype is coming from it can be "ARRAY ARRAY ARRAY INTEGER" or "INTEGER ARRAY(2, 3)" todo dl find cause
         AlgDataType component = type.getComponentType();
         while ( component.getPolyType() == PolyType.ARRAY ) {
             component = component.getComponentType();
@@ -278,6 +307,20 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             throw new GenericRuntimeException( e );
         }
 
+    }
+
+
+    public static AlgDataType deriveType( PolyValue value, AlgDataTypeFactory typeFactory ) {
+        if ( value == null ) {
+            return typeFactory.createPolyType( PolyType.NULL );
+        }
+        PolyType type = value.type;
+
+        if ( type == PolyType.ARRAY ) {
+            return typeFactory.createArrayType( typeFactory.createPolyType( PolyType.ANY ), -1 );
+        }
+
+        return typeFactory.createPolyType( type );
     }
 
 
@@ -330,6 +373,12 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     }
 
 
+    @NotNull
+    protected static String getConvertError( @NotNull Object object, Class<? extends PolyValue> clazz ) {
+        return "Could not convert " + object + " to " + clazz.getSimpleName();
+    }
+
+
     @Nullable
     public abstract Long deriveByteSize();
 
@@ -365,6 +414,14 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     }
 
 
+    public static @NotNull Expression isNullExpression( Expression operand ) {
+        if ( Types.isArray( operand.getType() ) ) {
+            return Expressions.equal( operand, Expressions.constant( null ) );
+        }
+        return Expressions.foldOr( List.of( Expressions.equal( operand, Expressions.constant( null ) ), Expressions.call( operand, "isNull" ) ) );
+    }
+
+
     public static Class<? extends PolyValue> classFrom( PolyType polyType ) {
         return switch ( polyType ) {
             case BOOLEAN -> PolyBoolean.class;
@@ -375,22 +432,8 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             case DOUBLE -> PolyDouble.class;
             case DATE -> PolyDate.class;
             case TIME -> PolyTime.class;
-            case TIME_WITH_LOCAL_TIME_ZONE -> PolyTime.class;
             case TIMESTAMP -> PolyTimestamp.class;
-            case TIMESTAMP_WITH_LOCAL_TIME_ZONE -> PolyTimestamp.class;
-            case INTERVAL_YEAR -> PolyInterval.class;
-            case INTERVAL_YEAR_MONTH -> PolyInterval.class;
-            case INTERVAL_MONTH -> PolyInterval.class;
-            case INTERVAL_DAY -> PolyInterval.class;
-            case INTERVAL_DAY_HOUR -> PolyInterval.class;
-            case INTERVAL_DAY_MINUTE -> PolyInterval.class;
-            case INTERVAL_DAY_SECOND -> PolyInterval.class;
-            case INTERVAL_HOUR -> PolyInterval.class;
-            case INTERVAL_HOUR_MINUTE -> PolyInterval.class;
-            case INTERVAL_HOUR_SECOND -> PolyInterval.class;
-            case INTERVAL_MINUTE -> PolyInterval.class;
-            case INTERVAL_MINUTE_SECOND -> PolyInterval.class;
-            case INTERVAL_SECOND -> PolyInterval.class;
+            case INTERVAL -> PolyInterval.class;
             case CHAR -> PolyString.class;
             case VARCHAR -> PolyString.class;
             case BINARY -> PolyBinary.class;
@@ -425,7 +468,6 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     public static PolyValue deserialize( String json ) {
         return PolySerializable.deserialize( json, serializer );
     }
-
 
 
     @Override
@@ -829,12 +871,14 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
 
         switch ( type ) {
             case INTEGER:
-                return PolyInteger.from( value );
+                return PolyInteger.convert( value );
             case DOCUMENT:
                 // docs accept all
                 return value;
             case BIGINT:
-                return PolyLong.from( value );
+                return PolyLong.convert( value );
+            case VARCHAR:
+                return PolyString.convert( value );
         }
         if ( type.getFamily() == value.getType().getFamily() ) {
             return value;
@@ -856,22 +900,34 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
                 if ( object instanceof Number number ) {
                     yield PolyDate.of( number );
                 }
-                throw new NotImplementedException();
-            }
-            case TIME, TIME_WITH_LOCAL_TIME_ZONE -> {
-                if ( object instanceof Number number ) {
-                    yield PolyTime.of( number );
+                if ( object instanceof Calendar calendar ) {
+                    yield PolyDate.of( calendar.getTimeInMillis() );
                 }
                 throw new NotImplementedException();
             }
-            case TIMESTAMP, TIMESTAMP_WITH_LOCAL_TIME_ZONE -> {
+            case TIME -> {
+                if ( object instanceof Number number ) {
+                    yield PolyTime.of( number );
+                } else if ( object instanceof Calendar calendar ) {
+                    yield PolyTime.of( calendar.getTimeInMillis() );
+                }
+                throw new NotImplementedException();
+            }
+            case TIMESTAMP -> {
                 if ( object instanceof Timestamp timestamp ) {
                     yield PolyTimestamp.of( timestamp );
+                } else if ( object instanceof Calendar calendar ) {
+                    yield PolyTimestamp.of( calendar.getTimeInMillis() );
                 }
                 throw new NotImplementedException();
             }
             case CHAR, VARCHAR -> PolyString.of( (String) object );
-            case BINARY, VARBINARY -> PolyBinary.of( (ByteString) object );
+            case BINARY, VARBINARY -> {
+                if ( object instanceof byte[] bytes ) {
+                    yield PolyBinary.of( bytes );
+                }
+                yield PolyBinary.of( (ByteString) object );
+            }
             default -> throw new NotImplementedException();
         };
     }

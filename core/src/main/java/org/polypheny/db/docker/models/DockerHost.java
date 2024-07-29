@@ -17,12 +17,12 @@
 package org.polypheny.db.docker.models;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.docker.DockerUtils;
+import org.polypheny.db.docker.exceptions.DockerUserException;
 
-public record DockerHost(@JsonProperty String hostname, @JsonProperty String alias, @JsonProperty String registry,
-                         @JsonProperty int communicationPort, @JsonProperty int handshakePort, @JsonProperty int proxyPort) {
+public record DockerHost( @JsonProperty String hostname, @JsonProperty String alias, @JsonProperty String registry,
+                          @JsonProperty int communicationPort, @JsonProperty int handshakePort, @JsonProperty int proxyPort ) {
 
     public String getRegistryOrDefault() {
         return registry.isEmpty() ?
@@ -31,9 +31,9 @@ public record DockerHost(@JsonProperty String hostname, @JsonProperty String ali
     }
 
 
-    private int checkPortIsValid( int port ) {
+    private static int checkPortIsValid( int port ) {
         if ( port <= 0 || port > 65535 ) {
-            throw new GenericRuntimeException( "Invalid port number %d", port );
+            throw new DockerUserException( "Invalid port number %d", port );
         }
         return port;
     }
@@ -41,15 +41,15 @@ public record DockerHost(@JsonProperty String hostname, @JsonProperty String ali
 
     public DockerHost( String hostname, String alias, String registry, int communicationPort, int handshakePort, int proxyPort ) {
         if ( communicationPort == handshakePort || handshakePort == proxyPort || communicationPort == proxyPort ) {
-            throw new GenericRuntimeException( "Communication, handshake and proxy port must be different" );
+            throw new DockerUserException( "Communication, handshake and proxy port must be different" );
         }
         this.hostname = DockerUtils.normalizeHostname( hostname );
         if ( this.hostname.isEmpty() ) {
-            throw new GenericRuntimeException( "Hostname must not be empty" );
+            throw new DockerUserException( "Hostname must not be empty" );
         }
         this.alias = alias;
         if ( alias.isEmpty() ) {
-            throw new GenericRuntimeException( "Alias must not be empty" );
+            throw new DockerUserException( "Alias must not be empty" );
         }
         this.registry = registry;
         this.communicationPort = checkPortIsValid( communicationPort );

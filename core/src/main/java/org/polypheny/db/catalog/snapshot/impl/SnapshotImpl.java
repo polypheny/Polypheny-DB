@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Value;
 import lombok.experimental.Accessors;
@@ -47,6 +48,7 @@ import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceTemplate;
 
 @Value
 @Accessors(fluent = true)
+@EqualsAndHashCode
 public class SnapshotImpl implements Snapshot {
 
 
@@ -87,17 +89,17 @@ public class SnapshotImpl implements Snapshot {
 
         this.namespaces = ImmutableMap.copyOf( namespaces );
 
-        this.namespaceNames = ImmutableMap.copyOf( namespaces.values().stream().collect( Collectors.toMap( n -> n.caseSensitive ? n.name : n.name.toLowerCase(), n -> n ) ) );
+        this.namespaceNames = ImmutableMap.copyOf( namespaces.values().stream().collect( Collectors.toMap( n -> n.name.toLowerCase(), n -> n ) ) );
 
         this.alloc = alloc;
 
         this.users = ImmutableMap.copyOf( catalog.getUsers() );
-        this.userNames = ImmutableMap.copyOf( users.values().stream().collect( Collectors.toMap( u -> u.name, u -> u ) ) );
+        this.userNames = ImmutableMap.copyOf( users.values().stream().collect( Collectors.toMap( u -> u.name.toLowerCase(), u -> u ) ) );
         this.interfaces = ImmutableMap.copyOf( catalog.getInterfaces() );
-        this.interfaceNames = ImmutableMap.copyOf( interfaces.values().stream().collect( Collectors.toMap( i -> i.name, i -> i ) ) );
+        this.interfaceNames = ImmutableMap.copyOf( interfaces.values().stream().collect( Collectors.toMap( i -> i.name.toLowerCase(), i -> i ) ) );
         this.interfaceTemplates = ImmutableMap.copyOf( catalog.getInterfaceTemplates() );
         this.adapters = ImmutableMap.copyOf( catalog.getAdapters() );
-        this.adapterNames = ImmutableMap.copyOf( adapters.values().stream().collect( Collectors.toMap( a -> a.uniqueName, a -> a ) ) );
+        this.adapterNames = ImmutableMap.copyOf( adapters.values().stream().collect( Collectors.toMap( a -> a.uniqueName.toLowerCase(), a -> a ) ) );
         this.adapterTemplates = ImmutableMap.copyOf( catalog.getAdapterTemplates().values().stream().collect( Collectors.toMap( t -> t.id, t -> t ) ) );
     }
 
@@ -107,7 +109,7 @@ public class SnapshotImpl implements Snapshot {
         if ( name == null ) {
             return namespaces.values().asList();
         }
-        return namespaces.values().stream().filter( n -> n.caseSensitive ? n.name.matches( name.toRegex() ) : n.name.toLowerCase().matches( name.toLowerCase().toRegex() ) ).collect( Collectors.toList() );
+        return namespaces.values().stream().filter( n -> n.caseSensitive ? n.name.matches( name.toRegex() ) : n.name.toLowerCase().matches( name.toLowerCase().toRegex() ) ).toList();
     }
 
 
@@ -126,7 +128,7 @@ public class SnapshotImpl implements Snapshot {
         }
         namespace = namespaceNames.get( name.toLowerCase() );
 
-        if ( namespace != null && !namespace.caseSensitive ) {
+        if ( namespace != null ) {
             return Optional.of( namespace );
         }
 
@@ -136,7 +138,7 @@ public class SnapshotImpl implements Snapshot {
 
     @Override
     public @NotNull Optional<LogicalUser> getUser( String name ) {
-        return Optional.ofNullable( userNames.get( name ) );
+        return Optional.ofNullable( userNames.get( name.toLowerCase() ) );
     }
 
 
@@ -165,20 +167,14 @@ public class SnapshotImpl implements Snapshot {
 
 
     @Override
-    public @NotNull List<LogicalQueryInterface> getQueryInterfaces() {
-        return interfaces.values().asList();
+    public @NotNull Map<Long, LogicalQueryInterface> getQueryInterfaces() {
+        return ImmutableMap.copyOf( interfaces );
     }
 
 
     @Override
     public @NotNull Optional<LogicalQueryInterface> getQueryInterface( String uniqueName ) {
-        return Optional.ofNullable( interfaceNames.get( uniqueName ) );
-    }
-
-
-    @Override
-    public @NotNull Optional<LogicalQueryInterface> getQueryInterface( long id ) {
-        return Optional.ofNullable( interfaces.get( id ) );
+        return Optional.ofNullable( interfaceNames.get( uniqueName.toLowerCase() ) );
     }
 
 
@@ -207,7 +203,7 @@ public class SnapshotImpl implements Snapshot {
 
 
     @Override
-    public Optional<? extends LogicalEntity> getLogicalEntity( long id ) {
+    public @NotNull Optional<? extends LogicalEntity> getLogicalEntity( long id ) {
         if ( rel.getTable( id ).isPresent() ) {
             return rel.getTable( id );
         }
@@ -255,79 +251,5 @@ public class SnapshotImpl implements Snapshot {
         return Optional.empty();
     }
 
-
-    @Override
-    public boolean equals( Object o ) {
-        if ( this == o ) {
-            return true;
-        }
-        if ( o == null || getClass() != o.getClass() ) {
-            return false;
-        }
-
-        SnapshotImpl snapshot = (SnapshotImpl) o;
-
-        if ( !rel.equals( snapshot.rel ) ) {
-            return false;
-        }
-        if ( !doc.equals( snapshot.doc ) ) {
-            return false;
-        }
-        if ( !graph.equals( snapshot.graph ) ) {
-            return false;
-        }
-        if ( !alloc.equals( snapshot.alloc ) ) {
-            return false;
-        }
-        if ( !users.equals( snapshot.users ) ) {
-            return false;
-        }
-        if ( !userNames.equals( snapshot.userNames ) ) {
-            return false;
-        }
-        if ( !interfaces.equals( snapshot.interfaces ) ) {
-            return false;
-        }
-        if ( !interfaceTemplates.equals( snapshot.interfaceTemplates ) ) {
-            return false;
-        }
-        if ( !interfaceNames.equals( snapshot.interfaceNames ) ) {
-            return false;
-        }
-        if ( !adapters.equals( snapshot.adapters ) ) {
-            return false;
-        }
-        if ( !adapterTemplates.equals( snapshot.adapterTemplates ) ) {
-            return false;
-        }
-        if ( !adapterNames.equals( snapshot.adapterNames ) ) {
-            return false;
-        }
-        if ( !namespaces.equals( snapshot.namespaces ) ) {
-            return false;
-        }
-        return namespaceNames.equals( snapshot.namespaceNames );
-    }
-
-
-    @Override
-    public int hashCode() {
-        int result = rel.hashCode();
-        result = 31 * result + doc.hashCode();
-        result = 31 * result + graph.hashCode();
-        result = 31 * result + alloc.hashCode();
-        result = 31 * result + (int) (id ^ (id >>> 32));
-        result = 31 * result + users.hashCode();
-        result = 31 * result + userNames.hashCode();
-        result = 31 * result + interfaces.hashCode();
-        result = 31 * result + interfaceTemplates.hashCode();
-        result = 31 * result + interfaceNames.hashCode();
-        result = 31 * result + adapters.hashCode();
-        result = 31 * result + adapterTemplates.hashCode();
-        result = 31 * result + adapterNames.hashCode();
-        result = 31 * result + namespaces.hashCode();
-        result = 31 * result + namespaceNames.hashCode();
-        return result;
-    }
 
 }

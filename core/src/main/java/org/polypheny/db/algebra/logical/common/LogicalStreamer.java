@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,15 +33,15 @@ import org.polypheny.db.algebra.core.common.Streamer;
 import org.polypheny.db.algebra.core.document.DocumentValues;
 import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.core.relational.RelScan;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
-import org.polypheny.db.algebra.logical.relational.LogicalValues;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.volcano.AlgSubset;
 import org.polypheny.db.rex.RexBuilder;
@@ -67,7 +67,7 @@ public class LogicalStreamer extends Streamer {
      * @param provider provides the values which get streamed to the collector
      * @param collector uses the provided values and
      */
-    public LogicalStreamer( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode provider, AlgNode collector ) {
+    public LogicalStreamer( AlgCluster cluster, AlgTraitSet traitSet, AlgNode provider, AlgNode collector ) {
         super( cluster, traitSet, provider, collector );
     }
 
@@ -117,18 +117,18 @@ public class LogicalStreamer extends Streamer {
             source.addAll( modify.getSourceExpressions().stream().map( s -> replaceCorrelates( s, modify.getEntity() ) ).toList() );
 
             // we project the needed sources out and modify them to fit the prepared
-            query = LogicalProject.create( modify.getInput(), source, update );
+            query = LogicalRelProject.create( modify.getInput(), source, update );
         }
 
         /////// prepared
 
         if ( !modify.isInsert() ) {
             // get collection, which is modified
-            algBuilder.scan( modify.getEntity() );
+            algBuilder.relScan( modify.getEntity() );
             // at the moment no data model is able to conditionally insert
             attachFilter( modify, algBuilder, rexBuilder );
         } else {
-            if ( input.getTupleType().getFieldCount() != modify.getEntity().getRowType().getFieldCount() ) {
+            if ( input.getTupleType().getFieldCount() != modify.getEntity().getTupleType().getFieldCount() ) {
                 return null;
             }
             // attach a projection, so the values can be inserted on execution
@@ -152,9 +152,9 @@ public class LogicalStreamer extends Streamer {
 
 
     @NotNull
-    public static LogicalProject getCollector( RexBuilder rexBuilder, AlgNode input ) {
-        return LogicalProject.create(
-                LogicalValues.createOneRow( input.getCluster() ),
+    public static LogicalRelProject getCollector( RexBuilder rexBuilder, AlgNode input ) {
+        return LogicalRelProject.create(
+                LogicalRelValues.createOneRow( input.getCluster() ),
                 input.getTupleType()
                         .getFields()
                         .stream()
@@ -175,12 +175,12 @@ public class LogicalStreamer extends Streamer {
 
 
     public static void attachFilter( AlgNode modify, AlgBuilder algBuilder, RexBuilder rexBuilder ) {
-        List<Integer> indexes = IntStream.range( 0, modify.getEntity().getRowType().getFieldCount() ).boxed().toList();
+        List<Integer> indexes = IntStream.range( 0, modify.getEntity().getTupleType().getFieldCount() ).boxed().toList();
 
         if ( modify.getEntity().unwrap( PhysicalTable.class ).isPresent() ) {
             indexes = new ArrayList<>();
             for ( long fieldId : modify.getEntity().unwrap( PhysicalTable.class ).orElseThrow().getUniqueFieldIds() ) {
-                indexes.add( modify.getEntity().getRowType().getFieldIds().indexOf( fieldId ) );
+                indexes.add( modify.getEntity().getTupleType().getFieldIds().indexOf( fieldId ) );
             }
         }
 
@@ -193,14 +193,14 @@ public class LogicalStreamer extends Streamer {
         List<RexNode> fields = new ArrayList<>();
         int i = 0;
         int j = 0;
-        for ( AlgDataTypeField field : entity.getRowType().getFields() ) {
+        for ( AlgDataTypeField field : entity.getTupleType().getFields() ) {
             if ( !indexes.contains( i ) ) {
                 i++;
                 continue;
             }
             fields.add(
                     algBuilder.equals(
-                            rexBuilder.makeInputRef( entity.getRowType(), i ),
+                            rexBuilder.makeInputRef( entity.getTupleType(), i ),
                             rexBuilder.makeDynamicParam( field.getType(), i ) ) );
             i++;
             j++;
@@ -260,7 +260,7 @@ public class LogicalStreamer extends Streamer {
         @Override
         public RexNode visitFieldAccess( RexFieldAccess fieldAccess ) {
             int index = fieldAccess.getField().getIndex();
-            return new RexIndexRef( index, entity.getRowType().getFields().get( index ).getType() );
+            return new RexIndexRef( index, entity.getTupleType().getFields().get( index ).getType() );
         }
 
 

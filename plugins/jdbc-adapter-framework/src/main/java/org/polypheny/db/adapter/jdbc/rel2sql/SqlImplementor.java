@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,7 +62,7 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.CorrelationId;
 import org.polypheny.db.algebra.core.JoinAlgType;
-import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
@@ -114,6 +114,7 @@ import org.polypheny.db.sql.language.validate.SqlValidatorUtil;
 import org.polypheny.db.type.IntervalPolyType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
+import org.polypheny.db.type.entity.PolyInterval;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Util;
 import org.polypheny.db.util.ValidatorUtil;
@@ -217,7 +218,8 @@ public abstract class SqlImplementor {
         final SqlOperator op;
         final Context joinContext;
         switch ( node.getKind() ) {
-            case AND, OR, GEO:
+            case AND:
+            case OR:
                 operands = ((RexCall) node).getOperands();
                 op = (SqlOperator) ((RexCall) node).getOperator();
                 SqlNode sqlCondition = null;
@@ -230,7 +232,14 @@ public abstract class SqlImplementor {
                     }
                 }
                 return sqlCondition;
-            case EQUALS, IS_NOT_DISTINCT_FROM, NOT_EQUALS, GREATER_THAN, GREATER_THAN_OR_EQUAL, LESS_THAN, LESS_THAN_OR_EQUAL:
+
+            case EQUALS:
+            case IS_NOT_DISTINCT_FROM:
+            case NOT_EQUALS:
+            case GREATER_THAN:
+            case GREATER_THAN_OR_EQUAL:
+            case LESS_THAN:
+            case LESS_THAN_OR_EQUAL:
                 node = stripCastFromString( node );
                 operands = node.unwrap( RexCall.class ).orElseThrow().getOperands();
                 op = (SqlOperator) node.unwrap( RexCall.class ).orElseThrow().getOperator();
@@ -255,7 +264,8 @@ public abstract class SqlImplementor {
                 }
                 joinContext = leftContext.implementor().joinContext( leftContext, rightContext );
                 return joinContext.toSql( null, node );
-            case IS_NULL, IS_NOT_NULL:
+            case IS_NULL:
+            case IS_NOT_NULL:
                 operands = ((RexCall) node).getOperands();
                 if ( operands.size() == 1 && operands.get( 0 ) instanceof RexIndexRef op0 ) {
                     op = (SqlOperator) ((RexCall) node).getOperator();
@@ -336,7 +346,7 @@ public abstract class SqlImplementor {
 
 
     /**
-     * Creates a result based on a single relational expression.
+     * Creates a result based on a single algebra expression.
      */
     public Result result( SqlNode node, Collection<Clause> clauses, AlgNode alg, Map<String, AlgDataType> aliases ) {
         assert aliases == null
@@ -361,7 +371,7 @@ public abstract class SqlImplementor {
 
 
     /**
-     * Creates a result based on a join. (Each join could contain one or more relational expressions.)
+     * Creates a result based on a join. (Each join could contain one or more algebra expressions.)
      */
     public Result result( SqlNode join, Result leftResult, Result rightResult ) {
         final ImmutableMap.Builder<String, AlgDataType> builder = ImmutableMap.builder();
@@ -513,9 +523,8 @@ public abstract class SqlImplementor {
                         case BOOLEAN:
                             return SqlLiteral.createBoolean( literal.value.asBoolean().value, POS );
                         case INTERVAL_YEAR_MONTH:
-                        case INTERVAL_DAY_TIME:
-                            final boolean negative = literal.value.asInterval().value.signum() < 0;
-                            return SqlLiteral.createInterval( negative ? -1 : 1, literal.intervalString( literal.value.asInterval().value.abs() ), SqlIntervalQualifier.from( literal.getType().getIntervalQualifier() ), POS );
+                        case INTERVAL_TIME:
+                            return SqlLiteral.createInterval( literal.value.asInterval(), SqlIntervalQualifier.from( literal.getType().getIntervalQualifier() ), POS );
                         case DATE:
                             return SqlDateLiteral.createDate( literal.value.asDate(), POS );
                         case TIME:
@@ -526,10 +535,9 @@ public abstract class SqlImplementor {
                             return SqlBinaryStringLiteral.createBinaryString( literal.value.asBinary(), POS );
                         case ARRAY:
                             if ( dialect.supportsNestedArrays() ) {
-                                List<PolyValue> array = literal.getValue().asList();//toSql( program, e ) ).collect( Collectors.toList() );
+                                List<PolyValue> array = literal.getValue().asList();
                                 return SqlLiteral.createArray( array, literal.getType(), POS );
                             } else {
-                                // atm arrays in adapter which do not support arrays are compared in their serialized form, this should be changed todo dl
                                 return SqlLiteral.createCharString( literal.value.toTypedJson(), POS );
                             }
                         case GRAPH:
@@ -570,16 +578,16 @@ public abstract class SqlImplementor {
                     }
                     elseNode = caseNodeList.get( caseNodeList.size() - 1 );
                     return new SqlCase( POS, valueNode, new SqlNodeList( whenList, POS ), new SqlNodeList( thenList, POS ), elseNode );
-
                 case DYNAMIC_PARAM:
                     final RexDynamicParam caseParam = (RexDynamicParam) rex;
                     SqlDynamicParam sqlDynamicParam = new SqlDynamicParam( (int) caseParam.getIndex(), POS );
                     if ( caseParam.getType() instanceof IntervalPolyType ) {
                         if ( dialect.getIntervalParameterStrategy() == IntervalParameterStrategy.MULTIPLICATION ) {
+                            SqlIntervalQualifier intervalQualifier = (SqlIntervalQualifier) caseParam.getType().getIntervalQualifier();
                             return (SqlNode) OperatorRegistry.get( OperatorName.MULTIPLY ).createCall(
                                     POS,
                                     sqlDynamicParam,
-                                    SqlLiteral.createInterval( 1, "1", (SqlIntervalQualifier) caseParam.getType().getIntervalQualifier(), POS ) );
+                                    SqlLiteral.createInterval( PolyInterval.of( 1L, intervalQualifier ), intervalQualifier, POS ) );
                         } else if ( dialect.getIntervalParameterStrategy() == IntervalParameterStrategy.CAST ) {
                             return (SqlNode) OperatorRegistry.get( OperatorName.CAST ).createCall( POS, sqlDynamicParam, dialect.getCastSpec( caseParam.getType() ) );
                         } else if ( dialect.getIntervalParameterStrategy() == IntervalParameterStrategy.NONE ) {
@@ -590,7 +598,6 @@ public abstract class SqlImplementor {
                     } else {
                         return (SqlNode) OperatorRegistry.get( OperatorName.CAST ).createCall( POS, sqlDynamicParam, dialect.getCastSpec( caseParam.getType() ) );
                     }
-
                 case IN:
                     if ( rex instanceof RexSubQuery ) {
                         subQuery = (RexSubQuery) rex;
@@ -625,7 +632,6 @@ public abstract class SqlImplementor {
                         case SIMILAR -> (SqlNode) OperatorRegistry.get( OperatorName.NOT_SIMILAR_TO ).createCall( POS, ((SqlCall) node).getOperandList() );
                         default -> (SqlNode) OperatorRegistry.get( OperatorName.NOT ).createCall( POS, node );
                     };
-
                 default:
                     if ( rex instanceof RexOver ) {
                         return toSql( program, (RexOver) rex );
@@ -1036,8 +1042,8 @@ public abstract class SqlImplementor {
 
 
         /**
-         * Once you have a Result of implementing a child relational expression, call this method to create a Builder to
-         * implement the current relational expression by adding additional clauses to the SQL query.
+         * Once you have a Result of implementing a child algebra expression, call this method to create a Builder to
+         * implement the current algebra expression by adding additional clauses to the SQL query.
          * <p>
          * You need to declare which clauses you intend to add. If the clauses are "later", you can add to the same query.
          * For example, "GROUP BY" comes after "WHERE". But if they are the same or earlier, this method will
@@ -1047,7 +1053,7 @@ public abstract class SqlImplementor {
          * call {@link Builder#result(SqlNode, Collection, AlgNode, Map)} to fix the new query.
          *
          * @param alg Relational expression being implemented
-         * @param clauses Clauses that will be generated to implement current relational expression
+         * @param clauses Clauses that will be generated to implement current algebra expression
          * @return A builder
          */
         public Builder builder( AlgNode alg, boolean explicitColumnNames, Clause... clauses ) {
@@ -1061,9 +1067,9 @@ public abstract class SqlImplementor {
                     break;
                 }
             }
-            if ( alg instanceof LogicalAggregate
+            if ( alg instanceof LogicalRelAggregate
                     && !dialect.supportsNestedAggregations()
-                    && hasNestedAggregations( (LogicalAggregate) alg ) ) {
+                    && hasNestedAggregations( (LogicalRelAggregate) alg ) ) {
                 needNew = true;
             }
 
@@ -1108,7 +1114,7 @@ public abstract class SqlImplementor {
         }
 
 
-        private boolean hasNestedAggregations( LogicalAggregate alg ) {
+        private boolean hasNestedAggregations( LogicalRelAggregate alg ) {
             if ( node instanceof SqlSelect ) {
                 final SqlNodeList selectList = ((SqlSelect) node).getSqlSelectList();
                 if ( selectList != null ) {

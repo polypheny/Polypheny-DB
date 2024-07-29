@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,26 +23,21 @@ import lombok.Getter;
 import lombok.Setter;
 
 
+@Getter
 public class MaterializedCriteria implements Serializable {
 
 
     @Setter
-    @Getter
     private Timestamp lastUpdate;
 
-    @Getter
     private final CriteriaType criteriaType;
 
-    @Getter
     private final Integer interval;
 
-    @Getter
     private final TimeUnit timeUnit;
 
-    @Getter
     private final Long timeInMillis;
 
-    @Getter
     @Setter
     private int timesUpdated;
 

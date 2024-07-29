@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,8 +33,8 @@ import org.polypheny.db.algebra.logical.lpg.LogicalLpgFilter;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgProject;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgSort;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgValues;
-import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
@@ -142,12 +142,12 @@ public class LpgToEnumerableRule extends AlgOptRule {
             names.add( agg.name );
         }
 
-        LogicalProject project = (LogicalProject) LogicalProject.create( child, nodes, names ).copy( alg.getInput().getTraitSet().replace( ModelTrait.GRAPH ), alg.getInputs() );
+        LogicalRelProject project = (LogicalRelProject) LogicalRelProject.create( child, nodes, names ).copy( alg.getInput().getTraitSet().replace( ModelTrait.GRAPH ), alg.getInputs() );
 
         EnumerableProject enumerableProject = new EnumerableProject( project.getCluster(), alg.getInput().getTraitSet().replace( ModelTrait.GRAPH ).replace( EnumerableConvention.INSTANCE ), convert( project.getInput(), EnumerableConvention.INSTANCE ), project.getProjects(), project.getTupleType() );
 
         builder.push( enumerableProject );
-        builder.push( LogicalAggregate.create( builder.build(), groupSet, null, alg.aggCalls.stream().map( a -> a.toAggCall( alg.getTupleType(), alg.getCluster() ) ).collect( Collectors.toList() ) ) );
+        builder.push( LogicalRelAggregate.create( builder.build(), groupSet, null, alg.aggCalls.stream().map( a -> a.toAggCall( alg.getTupleType(), alg.getCluster() ) ).collect( Collectors.toList() ) ) );
 
         builder.rename( names );
 

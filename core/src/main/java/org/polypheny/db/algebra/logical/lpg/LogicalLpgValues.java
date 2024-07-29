@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.lpg.LpgValues;
 import org.polypheny.db.algebra.core.relational.RelationalTransformable;
-import org.polypheny.db.algebra.logical.relational.LogicalValues;
+import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
@@ -37,7 +37,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.snapshot.Snapshot;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.schema.trait.ModelTrait;
@@ -69,7 +69,7 @@ public class LogicalLpgValues extends LpgValues implements RelationalTransformab
     /**
      * Subclass of {@link LpgValues} not targeted at any particular engine or calling convention.
      */
-    public LogicalLpgValues( AlgOptCluster cluster, AlgTraitSet traitSet, Collection<PolyNode> nodes, Collection<PolyEdge> edges, ImmutableList<ImmutableList<RexLiteral>> values, AlgDataType rowType ) {
+    public LogicalLpgValues( AlgCluster cluster, AlgTraitSet traitSet, Collection<PolyNode> nodes, Collection<PolyEdge> edges, ImmutableList<ImmutableList<RexLiteral>> values, AlgDataType rowType ) {
         super( cluster, traitSet, nodes, edges, values, rowType );
         this.values = values;
 
@@ -80,7 +80,7 @@ public class LogicalLpgValues extends LpgValues implements RelationalTransformab
 
 
     public static LogicalLpgValues create(
-            AlgOptCluster cluster,
+            AlgCluster cluster,
             AlgTraitSet traitSet,
             AlgDataType rowType,
             ImmutableList<ImmutableList<RexLiteral>> values ) {
@@ -89,7 +89,7 @@ public class LogicalLpgValues extends LpgValues implements RelationalTransformab
 
 
     public static LogicalLpgValues create(
-            AlgOptCluster cluster,
+            AlgCluster cluster,
             AlgTraitSet traitSet,
             List<Pair<PolyString, PolyNode>> nodes,
             AlgDataType nodeType,
@@ -120,18 +120,18 @@ public class LogicalLpgValues extends LpgValues implements RelationalTransformab
     public List<AlgNode> getRelationalEquivalent( List<AlgNode> values, List<Entity> entities, Snapshot snapshot ) {
         AlgTraitSet out = traitSet.replace( ModelTrait.RELATIONAL );
 
-        AlgOptCluster cluster = AlgOptCluster.create( getCluster().getPlanner(), getCluster().getRexBuilder(), out, snapshot );
+        AlgCluster cluster = AlgCluster.create( getCluster().getPlanner(), getCluster().getRexBuilder(), out, snapshot );
 
-        LogicalValues nodeValues = new LogicalValues( cluster, out, entities.get( 0 ).getRowType(), getNodeValues( nodes ) );
-        LogicalValues nodePropertyValues = new LogicalValues( cluster, out, entities.get( 1 ).getRowType(), getNodePropertyValues( nodes ) );
+        LogicalRelValues nodeValues = new LogicalRelValues( cluster, out, entities.get( 0 ).getTupleType(), getNodeValues( nodes ) );
+        LogicalRelValues nodePropertyValues = new LogicalRelValues( cluster, out, entities.get( 1 ).getTupleType(), getNodePropertyValues( nodes ) );
 
         if ( edges.isEmpty() ) {
             return Arrays.asList( nodeValues, nodePropertyValues.tuples.isEmpty() ? null : nodePropertyValues );
         }
 
         assert entities.size() == 4 && entities.get( 2 ) != null && entities.get( 3 ) != null;
-        LogicalValues edgeValues = new LogicalValues( cluster, out, entities.get( 2 ).getRowType(), getEdgeValues( edges ) );
-        LogicalValues edgePropertyValues = new LogicalValues( cluster, out, entities.get( 3 ).getRowType(), getEdgePropertyValues( edges ) );
+        LogicalRelValues edgeValues = new LogicalRelValues( cluster, out, entities.get( 2 ).getTupleType(), getEdgeValues( edges ) );
+        LogicalRelValues edgePropertyValues = new LogicalRelValues( cluster, out, entities.get( 3 ).getTupleType(), getEdgePropertyValues( edges ) );
 
         return Arrays.asList(
                 nodeValues,

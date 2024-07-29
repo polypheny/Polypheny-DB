@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,23 +17,28 @@
 package org.polypheny.db.type.entity.document;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JacksonException;
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.TreeNode;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.jsontype.TypeDeserializer;
+import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import io.activej.serializer.BinaryInput;
 import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.CompatibilityLevel;
 import io.activej.serializer.CorruptedDataException;
-import io.activej.serializer.SimpleSerializerDef;
 import io.activej.serializer.annotations.Deserialize;
+import io.activej.serializer.def.SimpleSerializerDef;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -42,20 +47,23 @@ import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
-import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument.PolyDocumentDeserializer;
+import org.polypheny.db.type.entity.document.PolyDocument.PolyDocumentSerializer;
 import org.polypheny.db.type.entity.relational.PolyMap;
 import org.polypheny.db.util.Pair;
 
 @Slf4j
 @EqualsAndHashCode(callSuper = true)
 @JsonDeserialize(using = PolyDocumentDeserializer.class)
+@JsonSerialize(using = PolyDocumentSerializer.class)
 public class PolyDocument extends PolyMap<PolyString, PolyValue> {
 
     public static final PolyDocument EMPTY_DOCUMENT = PolyDocument.ofDocument( Map.of() );
@@ -97,21 +105,22 @@ public class PolyDocument extends PolyMap<PolyString, PolyValue> {
     }
 
 
-    public static PolyDocument parse( String string ) {
-        throw new GenericRuntimeException( "error on parsing Document" );
-    }
-
-
-    public static PolyDocument convert( Object value ) {
+    public static PolyDocument convert( @Nullable PolyValue value ) {
         if ( value == null ) {
             return null;
         }
-        if ( value instanceof PolyValue ) {
-            if ( ((PolyValue) value).isDocument() ) {
-                return ((PolyValue) value).asDocument();
-            }
+
+        if ( value.isDocument() ) {
+            return value.asDocument();
         }
-        throw new NotImplementedException( "convert value to Document" );
+
+        throw new GenericRuntimeException( getConvertError( value, PolyDocument.class ) );
+    }
+
+
+    @Override
+    public Expression asExpression() {
+        return Expressions.new_( PolyDocument.class, super.asExpression(), Expressions.constant( isUnset ) );
     }
 
 
@@ -122,14 +131,8 @@ public class PolyDocument extends PolyMap<PolyString, PolyValue> {
             } ).writeValueAsString( this );
         } catch ( JsonProcessingException e ) {
             log.warn( "Error on serializing typed JSON." );
-            return null;
+            return PolyNull.NULL.toTypedJson();
         }
-    }
-
-
-    @Override
-    public Expression asExpression() {
-        return Expressions.new_( PolyDocument.class, super.asExpression(), Expressions.constant( isUnset ) );
     }
 
 
@@ -184,10 +187,45 @@ public class PolyDocument extends PolyMap<PolyString, PolyValue> {
     }
 
 
-    static class PolyMapDeserializer extends StdDeserializer<PolyMap<?, ?>> {
+    static class PolyDocumentSerializer extends JsonSerializer<PolyDocument> {
 
 
-        protected PolyMapDeserializer() {
+        @Override
+        public void serializeWithType( PolyDocument value, JsonGenerator gen, SerializerProvider serializers, TypeSerializer typeSer ) throws IOException {
+            serialize( value, gen, serializers );
+        }
+
+
+        /**
+         * [{_k:{}, _v{}},{_k:{}, _v{}},...]
+         */
+        @Override
+        public void serialize( PolyDocument value, JsonGenerator gen, SerializerProvider serializers ) throws IOException {
+            gen.writeStartObject();
+            gen.writeFieldName( "@type" );
+            gen.writeString( value.mapType.name() );
+            gen.writeFieldName( "_ps" );
+            gen.writeStartArray();
+            for ( Entry<PolyString, PolyValue> pair : value.entrySet() ) {
+                gen.writeStartArray();
+                gen.writeString( pair.getKey().value );
+                serializers.findValueSerializer( pair.getValue().getClass() ).serializeWithType( pair.getValue(), gen, serializers, serializers.findTypeSerializer( JSON_WRAPPER.constructType( pair.getValue().getClass() ) ) );
+                gen.writeEndArray();
+            }
+            gen.writeEndArray();
+            gen.writeEndObject();
+        }
+
+    }
+
+
+    static class PolyDocumentDeserializer extends StdDeserializer<PolyDocument> {
+
+
+        public static final String KEY_VALUE_KEY = "_ps";
+
+
+        protected PolyDocumentDeserializer() {
             super( PolyMap.class );
         }
 
@@ -199,48 +237,18 @@ public class PolyDocument extends PolyMap<PolyString, PolyValue> {
 
 
         @Override
-        public PolyMap<?, ?> deserialize( JsonParser p, DeserializationContext ctxt ) throws IOException, JacksonException {
-            JsonNode node = p.getCodec().readTree( p );
-            Map<PolyValue, PolyValue> values = new HashMap<>();
-            ArrayNode elements = node.withArray( "_ps" );
-            for ( JsonNode element : elements ) {
-                Pair<PolyValue, PolyValue> el = deserializeElement( ctxt, element );
-                values.put( el.getKey(), el.getValue() );
-            }
-            return PolyMap.of( values, MapType.DOCUMENT );
-        }
-
-
-        private Pair<PolyValue, PolyValue> deserializeElement( DeserializationContext ctxt, JsonNode element ) throws IOException {
-            PolyValue key = ctxt.readTreeAsValue( element.get( "_k" ), PolyValue.class );
-            PolyValue value = ctxt.readTreeAsValue( element.get( "_v" ), PolyValue.class );
-            return Pair.of( key, value );
-        }
-
-    }
-
-
-    static class PolyDocumentDeserializer extends StdDeserializer<PolyMap<?, ?>> {
-
-
-        protected PolyDocumentDeserializer() {
-            super( PolyDocument.class );
-        }
-
-
-        @Override
-        public Object deserializeWithType( JsonParser p, DeserializationContext ctxt, TypeDeserializer typeDeserializer ) throws IOException {
-            return deserialize( p, ctxt );
-        }
-
-
-        @Override
         public PolyDocument deserialize( JsonParser p, DeserializationContext ctxt ) throws IOException {
-            JsonNode node = p.getCodec().readTree( p );
-            PolyMap<PolyString, PolyValue> value = ctxt.readTreeAsValue( node, PolyMap.class );
-            return PolyDocument.ofDocument( value );
-        }
+            TreeNode n = p.readValueAsTree();
 
+            Map<PolyString, PolyValue> values = new HashMap<>( n.size() );
+            for ( JsonNode e : ((ArrayNode) n.get( KEY_VALUE_KEY )) ) {
+                PolyString key = PolyString.of( e.get( 0 ).asText() );
+                PolyValue value = JSON_WRAPPER.readValue( e.get( 1 ).traverse( p.getCodec() ), PolyValue.class );
+                values.put( key, value );
+            }
+
+            return PolyDocument.ofDocument( values );
+        }
 
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,7 +37,6 @@ public interface LogicalRelSnapshot {
 
     /**
      * Get all tables of the specified schema which fit to the specified filters.
-     * <code>getTables(xid, databaseName, null, null, null)</code> returns all tables of the database.
      *
      * @param name Pattern for the table name. null returns all.
      * @return List of tables which fit to the specified filters. If there is no table which meets the criteria, an empty list is returned.
@@ -274,5 +273,7 @@ public interface LogicalRelSnapshot {
     @NotNull List<LogicalConstraint> getConstraints();
 
     @NotNull List<LogicalPrimaryKey> getPrimaryKeys();
+
+    @NotNull List<LogicalForeignKey> getForeignKeys();
 
 }

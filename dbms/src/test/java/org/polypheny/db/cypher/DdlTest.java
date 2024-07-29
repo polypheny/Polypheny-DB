@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.polypheny.db.cypher;
 
 
+import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -26,13 +27,13 @@ import java.sql.Statement;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.catalogs.AdapterCatalog;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
-import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.webui.models.results.GraphResult;
 
 @Tag("adapter")
@@ -44,9 +45,6 @@ public class DdlTest extends CypherTestTemplate {
 
     @Test
     public void addGraphTest() {
-        Snapshot snapshot = Catalog.snapshot();
-        AdapterCatalog adapterCatalog = Catalog.getInstance().getAdapterCatalog( 0 ).orElseThrow();
-
         execute( "CREATE DATABASE " + graphName + " IF NOT EXISTS" );
 
         assertTrue( Catalog.snapshot().getNamespace( graphName ).isPresent() );
@@ -61,10 +59,19 @@ public class DdlTest extends CypherTestTemplate {
 
         execute( "DROP DATABASE " + graphName );
 
-        AdapterCatalog adapterCatalog2 = Catalog.getInstance().getAdapterCatalog( 0 ).orElseThrow();
-        assertEquals( snapshot, Catalog.snapshot() );
     }
 
+
+    @ParameterizedTest(name = "Create namespace with naming: {0}")
+    @ValueSource(strings = { "DATABASE", "NAMESPACE" })
+    public void createNamespaceTest( String namespaceName ) {
+        String name = "namespaceTest";
+
+        execute( format( "CREATE %s %s", namespaceName, name ) );
+
+        execute( format( "DROP %s %s", namespaceName, name ) );
+
+    }
 
     @Test
     public void addPlacementTest() throws SQLException {

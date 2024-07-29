@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,7 +64,7 @@ public class PhysicalTable extends PhysicalEntity {
 
 
     @Override
-    public AlgDataType getRowType() {
+    public AlgDataType getTupleType() {
         return buildProto().apply( AlgDataTypeFactory.DEFAULT );
     }
 
@@ -110,7 +110,7 @@ public class PhysicalTable extends PhysicalEntity {
 
 
     public ImmutableList<Long> getPrimaryColumns() {
-        return Catalog.snapshot().rel().getPrimaryKey( Catalog.snapshot().rel().getTable( logicalId ).orElseThrow().primaryKey ).orElseThrow().columnIds;
+        return Catalog.snapshot().rel().getPrimaryKey( Catalog.snapshot().rel().getTable( logicalId ).orElseThrow().primaryKey ).orElseThrow().fieldIds;
     }
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,7 +40,6 @@ import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.algebra.type.GraphType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyList;
-import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
@@ -49,6 +48,7 @@ import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.type.entity.graph.PolyNode;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.type.entity.relational.PolyMap;
 
 public class CrossModelFunctions {

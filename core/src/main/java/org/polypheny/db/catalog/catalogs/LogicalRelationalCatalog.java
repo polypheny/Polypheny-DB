@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,10 +32,12 @@ import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.logical.LogicalView;
 import org.polypheny.db.catalog.impl.logical.RelationalCatalog;
 import org.polypheny.db.catalog.logistic.Collation;
+import org.polypheny.db.catalog.logistic.ConstraintType;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.ForeignKeyOption;
 import org.polypheny.db.catalog.logistic.IndexType;
 import org.polypheny.db.languages.QueryLanguage;
+import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
 
@@ -177,7 +179,7 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
      * @param columnId The id of the column
      * @param type The type of the default value
      * @param defaultValue True if the column should allow null values, false if not.
-     * @return
+     * @return LogicalColumn
      */
     LogicalColumn setDefaultValue( long columnId, PolyType type, PolyValue defaultValue );
 
@@ -194,9 +196,9 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
      *
      * @param tableId The id of the table
      * @param columnIds The id of key which will be part of the primary keys
-     * @return
+     * @param statement The statement used to attach constraint enforcement on commit
      */
-    LogicalTable addPrimaryKey( long tableId, List<Long> columnIds );
+    void addPrimaryKey( long tableId, List<Long> columnIds, Statement statement );
 
 
     /**
@@ -218,9 +220,21 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
      * @param tableId The id of the table
      * @param constraintName The name of the constraint
      * @param columnIds A list of column ids
-     * @return
+     * @param statement The statement to attach the constraint checks on commit
      */
-    LogicalTable addUniqueConstraint( long tableId, String constraintName, List<Long> columnIds );
+    void addUniqueConstraint( long tableId, String constraintName, List<Long> columnIds, Statement statement );
+
+
+    /**
+     * Add generic constraint.
+     *
+     * @param tableId The id of the table
+     * @param constraintName The name of the constraint
+     * @param columnIds A list of column ids
+     * @param type The type of the constraint
+     * @param statement
+     */
+    long addConstraint( long tableId, String constraintName, List<Long> columnIds, ConstraintType type, Statement statement );
 
     /**
      * Deletes the specified primary key (including the entry in the key table). If there is an index on this key, make sure to delete it first.

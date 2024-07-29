@@ -1,9 +1,26 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * This file incorporates code covered by the following terms:
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to you under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -35,7 +52,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -50,7 +66,6 @@ import org.apache.calcite.linq4j.tree.ConditionalStatement;
 import org.apache.calcite.linq4j.tree.ConstantExpression;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
-import org.apache.calcite.linq4j.tree.GotoStatement;
 import org.apache.calcite.linq4j.tree.MemberDeclaration;
 import org.apache.calcite.linq4j.tree.MethodCallExpression;
 import org.apache.calcite.linq4j.tree.NewArrayExpression;
@@ -62,8 +77,6 @@ import org.apache.calcite.linq4j.tree.Types;
 import org.apache.calcite.linq4j.tree.VisitorImpl;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.constant.ConformanceEnum;
-import org.polypheny.db.algebra.enumerable.EnumerableAlg.Prefer;
-import org.polypheny.db.algebra.enumerable.EnumerableAlg.Result;
 import org.polypheny.db.plan.AlgImplementor;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl.SyntheticRecordType;
 import org.polypheny.db.rex.RexBuilder;
@@ -108,23 +121,6 @@ public class EnumerableAlgImplementor extends JavaAlgImplementor {
 
     public ClassDeclaration implementRoot( EnumerableAlg rootAlg, EnumerableAlg.Prefer prefer ) {
         EnumerableAlg.Result result = rootAlg.implement( this, prefer );
-        if ( Objects.requireNonNull( prefer ) == Prefer.ARRAY ) {
-            if ( false && result.physType.getFormat() == JavaRowFormat.ARRAY /*&& rootAlg.getRowType().getFieldCount() == 1 dl we want this*/ ) {
-                BlockBuilder bb = new BlockBuilder();
-                Expression e = null;
-                for ( Statement statement : result.block.statements ) {
-                    if ( statement instanceof GotoStatement ) {
-                        e = bb.append( "v", ((GotoStatement) statement).expression );
-                    } else {
-                        bb.add( statement );
-                    }
-                }
-                if ( e != null ) {
-                    bb.add( Expressions.return_( null, Expressions.call( null, BuiltInMethod.SLICE0.method, e ) ) );
-                }
-                result = new Result( bb.toBlock(), result.physType, JavaRowFormat.SCALAR );
-            }
-        }
 
         final List<MemberDeclaration> memberDeclarations = new ArrayList<>();
         new TypeRegistrar( memberDeclarations ).go( result );
@@ -140,7 +136,7 @@ public class EnumerableAlgImplementor extends JavaAlgImplementor {
                                         Expressions.call( DataContext.ROOT, BuiltInMethod.DATA_CONTEXT_GET.method, Expressions.constant( input.name ) ),
                                         input.type ) ) );
 
-        BlockStatement block = Expressions.block( Iterables.concat( stashed, result.block.statements ) );
+        BlockStatement block = Expressions.block( Iterables.concat( stashed, result.block().statements ) );
         if ( contextCounter < 0 ) {
             // If the context was not set by ContextSwitcher we only need the initial one
             Statement assign = Expressions.declare( Modifier.FINAL, DataContext.ROOT, DataContext.INITIAL_ROOT );
@@ -165,7 +161,7 @@ public class EnumerableAlgImplementor extends JavaAlgImplementor {
                         Class.class,
                         BuiltInMethod.TYPED_GET_ELEMENT_TYPE.method.getName(),
                         ImmutableList.of(),
-                        Blocks.toFunctionBlock( Expressions.return_( null, Expressions.constant( result.physType.getJavaRowType() ) ) ) ) );
+                        Blocks.toFunctionBlock( Expressions.return_( null, Expressions.constant( result.physType().getJavaTupleType() ) ) ) ) );
         return Expressions.classDecl(
                 Modifier.PUBLIC,
                 "Baz",
@@ -423,7 +419,7 @@ public class EnumerableAlgImplementor extends JavaAlgImplementor {
 
 
     public EnumerableAlg.Result result( PhysType physType, BlockStatement block ) {
-        return new EnumerableAlg.Result( block, physType, JavaRowFormat.ARRAY );
+        return new EnumerableAlg.Result( block, physType, JavaTupleFormat.ARRAY );
     }
 
 
@@ -510,8 +506,8 @@ public class EnumerableAlgImplementor extends JavaAlgImplementor {
 
         public void go( EnumerableAlg.Result result ) {
             final Set<Type> types = new LinkedHashSet<>();
-            result.block.accept( new TypeFinder( types ) );
-            types.add( result.physType.getJavaRowType() );
+            result.block().accept( new TypeFinder( types ) );
+            types.add( result.physType().getJavaTupleType() );
             for ( Type type : types ) {
                 register( type );
             }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,12 @@
 
 package org.polypheny.db.transaction;
 
-import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
+import lombok.Getter;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.transaction.Transaction.AccessMode;
 
@@ -28,7 +29,8 @@ import org.polypheny.db.transaction.Transaction.AccessMode;
 // Based on code taken from https://github.com/dstibrany/LockManager
 public class Lock {
 
-    private final Set<TransactionImpl> owners = new HashSet<>();
+    @Getter
+    private final Set<TransactionImpl> owners = new CopyOnWriteArraySet<>();
     private final ReentrantLock lock = new ReentrantLock( true );
     private final Condition waiters = lock.newCondition();
     private final WaitForGraph waitForGraph;
@@ -81,7 +83,7 @@ public class Lock {
                 return;
             }
             while ( isXLocked() || sLockCount > 1 ) {
-                Set<TransactionImpl> ownersWithSelfRemoved = owners.stream().filter( ( ownerTxn ) -> !ownerTxn.equals( txn ) ).collect( Collectors.toSet() );
+                Set<TransactionImpl> ownersWithSelfRemoved = owners.stream().filter( ownerTxn -> !ownerTxn.equals( txn ) ).collect( Collectors.toSet() );
                 waitForGraph.add( txn, ownersWithSelfRemoved );
                 waitForGraph.detectDeadlock( txn );
                 waiters.await();
@@ -109,11 +111,6 @@ public class Lock {
         }
 
         return lockMode;
-    }
-
-
-    Set<TransactionImpl> getOwners() {
-        return owners;
     }
 
 

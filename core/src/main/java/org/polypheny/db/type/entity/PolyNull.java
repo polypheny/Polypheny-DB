@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,11 +23,10 @@ import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.CompatibilityLevel;
 import io.activej.serializer.CorruptedDataException;
-import io.activej.serializer.SimpleSerializerDef;
+import io.activej.serializer.def.SimpleSerializerDef;
 import java.math.BigDecimal;
 import java.util.Map;
 import lombok.NonNull;
-import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.jetbrains.annotations.NotNull;
@@ -46,11 +45,13 @@ import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyFloat;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.type.entity.relational.PolyMap;
 import org.polypheny.db.type.entity.relational.PolyMap.MapType;
 import org.polypheny.db.type.entity.temporal.PolyDate;
 import org.polypheny.db.type.entity.temporal.PolyTime;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
+import org.polypheny.db.util.ByteString;
 
 public class PolyNull extends PolyValue {
 
@@ -333,7 +334,7 @@ public class PolyNull extends PolyValue {
 
     @Override
     public @NotNull PolyInterval asInterval() {
-        return PolyInterval.of( null, null );
+        return PolyInterval.of( 0L, (Long) null );
     }
 
 

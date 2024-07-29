@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,6 @@ import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 import lombok.experimental.SuperBuilder;
-import org.polypheny.db.StatisticsManager;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
@@ -68,8 +67,8 @@ public abstract class PhysicalEntity extends Entity {
 
 
     @Override
-    public double getRowCount() {
-        return getRowCount( logicalId );
+    public double getTupleCount() {
+        return getTupleCount( logicalId );
     }
 
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,8 +38,8 @@ public class MqlCreateCollection extends MqlNode implements ExecutableStatement 
     private final String name;
 
 
-    public MqlCreateCollection( ParserPos pos, String name, BsonDocument options ) {
-        super( pos );
+    public MqlCreateCollection( ParserPos pos, String name, String namespace, BsonDocument options ) {
+        super( pos, namespace );
         this.name = name;
         this.options = options;
     }

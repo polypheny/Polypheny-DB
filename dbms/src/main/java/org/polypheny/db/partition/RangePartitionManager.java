@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
@@ -122,7 +121,7 @@ public class RangePartitionManager extends AbstractPartitionManager {
                 lowerBound = temp;
 
                 // Rearrange List values lower < upper
-                partitionGroupQualifiers.set( i, Stream.of( partitionGroupQualifiers.get( i ).get( 1 ), partitionGroupQualifiers.get( i ).get( 0 ) ).collect( Collectors.toList() ) );
+                partitionGroupQualifiers.set( i, Stream.of( partitionGroupQualifiers.get( i ).get( 1 ), partitionGroupQualifiers.get( i ).get( 0 ) ).toList() );
 
             } else if ( upperBound == lowerBound ) {
                 throw new GenericRuntimeException( "No Range specified. Lower and upper bound are equal:" + lowerBound + " = " + upperBound );

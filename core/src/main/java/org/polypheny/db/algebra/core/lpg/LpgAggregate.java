@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ import org.polypheny.db.algebra.core.LaxAggregateCall;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.DocumentType;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNameRef;
 import org.polypheny.db.schema.trait.ModelTrait;
@@ -45,7 +45,7 @@ public abstract class LpgAggregate extends SingleAlg implements LpgAlg {
      * Creates a {@link LpgAggregate}.
      * {@link ModelTrait#GRAPH} native node of a aggregate.
      */
-    protected LpgAggregate( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, @NotNull List<RexNameRef> groups, @NotNull List<LaxAggregateCall> aggCalls, AlgDataType tupleType ) {
+    protected LpgAggregate( AlgCluster cluster, AlgTraitSet traits, AlgNode child, @NotNull List<RexNameRef> groups, @NotNull List<LaxAggregateCall> aggCalls, AlgDataType tupleType ) {
         super( cluster, traits, child );
         this.groups = groups;
         this.aggCalls = aggCalls;

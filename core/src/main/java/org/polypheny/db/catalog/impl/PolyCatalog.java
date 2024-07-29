@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,10 +32,12 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.adapter.AbstractAdapterSetting;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
-import org.polypheny.db.adapter.AdapterManager.Function4;
+import org.polypheny.db.adapter.AdapterManager.Function5;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.java.AdapterTemplate;
 import org.polypheny.db.catalog.Catalog;
@@ -53,7 +55,6 @@ import org.polypheny.db.catalog.entity.LogicalAdapter;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.LogicalQueryInterface;
 import org.polypheny.db.catalog.entity.LogicalUser;
-import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -64,9 +65,14 @@ import org.polypheny.db.catalog.impl.logical.DocumentCatalog;
 import org.polypheny.db.catalog.impl.logical.GraphCatalog;
 import org.polypheny.db.catalog.impl.logical.RelationalCatalog;
 import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.catalog.persistance.FilePersister;
+import org.polypheny.db.catalog.persistance.InMemoryPersister;
+import org.polypheny.db.catalog.persistance.Persister;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.catalog.snapshot.impl.SnapshotBuilder;
+import org.polypheny.db.catalog.util.ConstraintCondition;
 import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceTemplate;
+import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.util.Pair;
 
@@ -83,7 +89,8 @@ public class PolyCatalog extends Catalog implements PolySerializable {
     /**
      * Constraints which have to be met before a commit can be executed.
      */
-    private final Collection<Pair<Supplier<Boolean>, String>> commitConstraints = new ConcurrentLinkedDeque<>();
+    private final Collection<ConstraintCondition> commitConstraints = new ConcurrentLinkedDeque<>();
+    private final Collection<Runnable> commitActions = new ConcurrentLinkedDeque<>();
 
 
     @Serialize
@@ -116,7 +123,9 @@ public class PolyCatalog extends Catalog implements PolySerializable {
     @Serialize
     public final Map<Long, AdapterRestore> adapterRestore;
 
-    public final IdBuilder idBuilder = IdBuilder.getInstance();
+    @Serialize
+    public final IdBuilder idBuilder;
+
     private final Persister persister;
 
     @Getter
@@ -136,7 +145,8 @@ public class PolyCatalog extends Catalog implements PolySerializable {
                 Map.of(),
                 Map.of(),
                 Map.of(),
-                Map.of() );
+                Map.of(),
+                IdBuilder.getInstance() );
 
     }
 
@@ -147,8 +157,10 @@ public class PolyCatalog extends Catalog implements PolySerializable {
             @Deserialize("allocationCatalogs") Map<Long, AllocationCatalog> allocationCatalogs,
             @Deserialize("adapterRestore") Map<Long, AdapterRestore> adapterRestore,
             @Deserialize("adapters") Map<Long, LogicalAdapter> adapters,
-            @Deserialize("interfaces") Map<Long, LogicalQueryInterface> interfaces ) {
+            @Deserialize("interfaces") Map<Long, LogicalQueryInterface> interfaces,
+            @Deserialize("idBuilder") IdBuilder idBuilder ) {
         // persistent data
+        this.idBuilder = idBuilder;
         this.users = new ConcurrentHashMap<>( users );
         this.logicalCatalogs = new ConcurrentHashMap<>( logicalCatalogs );
         this.allocationCatalogs = new ConcurrentHashMap<>( allocationCatalogs );
@@ -161,14 +173,13 @@ public class PolyCatalog extends Catalog implements PolySerializable {
         this.adapterCatalogs = new ConcurrentHashMap<>();
         this.interfaceTemplates = new ConcurrentHashMap<>();
 
-        this.persister = new Persister();
+        this.persister = memoryCatalog ? new InMemoryPersister() : new FilePersister();
 
     }
 
 
     @Override
     public void init() {
-        //new DefaultInserter();
         updateSnapshot();
 
         Catalog.afterInit.forEach( Runnable::run );
@@ -183,20 +194,6 @@ public class PolyCatalog extends Catalog implements PolySerializable {
     }
 
 
-    private void addNamespaceIfNecessary( AllocationEntity entity ) {
-        Adapter<?> adapter = AdapterManager.getInstance().getAdapter( entity.adapterId ).orElseThrow();
-
-        if ( adapter.getCurrentNamespace() == null || adapter.getCurrentNamespace().getId() != entity.namespaceId ) {
-            adapter.updateNamespace( entity.name, entity.namespaceId );
-        }
-
-        // re-add physical namespace, we could check first, but not necessary
-
-        getAdapterCatalog( entity.adapterId ).ifPresent( e -> e.addNamespace( entity.namespaceId, adapter.getCurrentNamespace() ) );
-
-    }
-
-
     @Override
     public void change() {
         // empty for now
@@ -205,21 +202,23 @@ public class PolyCatalog extends Catalog implements PolySerializable {
     }
 
 
+    @Override
+    public void executeCommitActions() {
+        // execute physical changes
+        commitActions.forEach( Runnable::run );
+    }
+
+
+    @Override
+    public void clearCommitActions() {
+        commitActions.clear();
+    }
+
+
     public synchronized void commit() {
         if ( !this.dirty.get() ) {
             log.debug( "Nothing changed" );
             return;
-        }
-        // check constraints e.g. primary key constraints
-        List<Pair<Boolean, String>> fails = commitConstraints
-                .stream()
-                .map( c -> Pair.of( c.left.get(), c.right ) )
-                .filter( c -> !c.left )
-                .toList();
-
-        if ( !fails.isEmpty() ) {
-            commitConstraints.clear();
-            throw new GenericRuntimeException( "DDL constraints not met: \n" + fails.stream().map( f -> f.right ).collect( Collectors.joining( ",\n " ) ) + "." );
         }
 
         log.debug( "commit" );
@@ -236,15 +235,40 @@ public class PolyCatalog extends Catalog implements PolySerializable {
         persister.write( backup );
         this.dirty.set( false );
         this.commitConstraints.clear();
+        this.commitActions.clear();
+    }
+
+
+    @Override
+    public Pair<@NotNull Boolean, @Nullable String> checkIntegrity() {
+        // check constraints e.g. primary key constraints
+        List<Pair<Boolean, String>> fails = commitConstraints
+                .stream()
+                .map( c -> Pair.of( c.condition().get(), c.errorMessage() ) )
+                .filter( c -> !c.left )
+                .toList();
+
+        if ( !fails.isEmpty() ) {
+            commitConstraints.clear();
+            return Pair.of( false, "DDL constraints not met: \n" + fails.stream().map( f -> f.right ).collect( Collectors.joining( ",\n " ) ) + "." );
+        }
+        return Pair.of( true, null );
     }
 
 
     public void rollback() {
+        long id = snapshot.id();
+
+        commitActions.clear();
+        commitConstraints.clear();
+
         restoreLastState();
 
         log.debug( "rollback" );
 
-        updateSnapshot();
+        if ( id != snapshot.id() ) {
+            updateSnapshot();
+        }
 
     }
 
@@ -264,6 +288,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
         interfaces.putAll( old.interfaces );
         adapterRestore.clear();
         adapterRestore.putAll( old.adapterRestore );
+        idBuilder.restore( old.idBuilder );
     }
 
 
@@ -407,10 +432,15 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
 
     @Override
-    public long createQueryInterface( String uniqueName, String clazz, Map<String, String> settings ) {
+    public long createQueryInterface( String uniqueName, String interfaceName, Map<String, String> settings ) {
         long id = idBuilder.getNewInterfaceId();
 
-        interfaces.put( id, new LogicalQueryInterface( id, uniqueName, clazz, settings ) );
+        synchronized ( this ) {
+            if ( interfaces.values().stream().anyMatch( l -> l.name.equals( uniqueName ) ) ) {
+                throw new GenericRuntimeException( "There is already a query interface with name " + uniqueName );
+            }
+            interfaces.put( id, new LogicalQueryInterface( id, uniqueName, interfaceName, settings ) );
+        }
 
         change();
         return id;
@@ -425,7 +455,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
 
     @Override
-    public long createAdapterTemplate( Class<? extends Adapter<?>> clazz, String adapterName, String description, List<DeployMode> modes, List<AbstractAdapterSetting> settings, Function4<Long, String, Map<String, String>, Adapter<?>> deployer ) {
+    public long createAdapterTemplate( Class<? extends Adapter<?>> clazz, String adapterName, String description, List<DeployMode> modes, List<AbstractAdapterSetting> settings, Function5<Long, String, Map<String, String>, DeployMode, Adapter<?>> deployer ) {
         long id = idBuilder.getNewAdapterTemplateId();
         adapterTemplates.put( id, new AdapterTemplate( id, clazz, adapterName, settings, modes, description, deployer ) );
         change();
@@ -455,7 +485,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
 
     @Override
-    public void restore() {
+    public void restore( Transaction transaction ) {
         this.backup = persister.read();
         if ( this.backup == null || this.backup.isEmpty() ) {
             log.warn( "No file found to restore" );
@@ -469,7 +499,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
         adapterRestore.forEach( ( id, restore ) -> {
             Adapter<?> adapter = AdapterManager.getInstance().getAdapter( id ).orElseThrow();
-            restore.activate( adapter );
+            restore.activate( adapter, transaction.createStatement().getPrepareContext() );
         } );
 
         updateSnapshot();
@@ -478,7 +508,13 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
     @Override
     public void attachCommitConstraint( Supplier<Boolean> constraintChecker, String description ) {
-        commitConstraints.add( Pair.of( constraintChecker, description ) );
+        commitConstraints.add( new ConstraintCondition( constraintChecker, description ) );
+    }
+
+
+    @Override
+    public void attachCommitAction( Runnable action ) {
+        commitActions.add( action );
     }
 
 

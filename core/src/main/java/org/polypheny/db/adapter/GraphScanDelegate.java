@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,6 +49,7 @@ public class GraphScanDelegate implements Scannable {
         return Scannable.getDocumentScanSubstitute( scannable, allocId, builder );
     }
 
+
     @Override
     public List<PhysicalEntity> createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation ) {
         return scannable.createTable( context, logical, allocation );
@@ -56,20 +57,20 @@ public class GraphScanDelegate implements Scannable {
 
 
     @Override
-    public void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities ) {
-        scannable.restoreTable( alloc, entities );
+    public void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities, Context context ) {
+        scannable.restoreTable( alloc, entities, context );
     }
 
 
     @Override
-    public void restoreGraph( AllocationGraph alloc, List<PhysicalEntity> entities ) {
-        scannable.restoreGraph( alloc, entities );
+    public void restoreGraph( AllocationGraph alloc, List<PhysicalEntity> entities, Context context ) {
+        scannable.restoreGraph( alloc, entities, context );
     }
 
 
     @Override
-    public void restoreCollection( AllocationCollection alloc, List<PhysicalEntity> entities ) {
-        Scannable.restoreCollectionSubstitute( scannable, alloc, entities );
+    public void restoreCollection( AllocationCollection alloc, List<PhysicalEntity> entities, Context context ) {
+        Scannable.restoreCollectionSubstitute( scannable, alloc, entities, context );
     }
 
 
@@ -105,7 +106,7 @@ public class GraphScanDelegate implements Scannable {
 
     @Override
     public void renameLogicalColumn( long id, String newColumnName ) {
-        getCatalog().renameLogicalColumn( id, newColumnName );
+        catalog.renameLogicalColumn( id, newColumnName );
     }
 
 }

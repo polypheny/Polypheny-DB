@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,15 +35,14 @@ package org.polypheny.db.algebra.rules;
 
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.Project;
-import org.polypheny.db.algebra.logical.relational.LogicalJoin;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelJoin;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.plan.AlgOptRule;
@@ -62,39 +61,39 @@ import org.polypheny.db.util.ValidatorUtil;
 
 
 /**
- * Planner rule that matches a {@link org.polypheny.db.algebra.core.Join} one of whose inputs is a {@link LogicalProject}, and pulls the project up.
+ * Planner rule that matches a {@link org.polypheny.db.algebra.core.Join} one of whose inputs is a {@link LogicalRelProject}, and pulls the project up.
  *
- * Projections are pulled up if the {@link LogicalProject} doesn't originate from a null generating input in an outer join.
+ * Projections are pulled up if the {@link LogicalRelProject} doesn't originate from a null generating input in an outer join.
  */
 public class JoinProjectTransposeRule extends AlgOptRule {
 
     public static final JoinProjectTransposeRule BOTH_PROJECT =
             new JoinProjectTransposeRule(
                     operand(
-                            LogicalJoin.class,
-                            operand( LogicalProject.class, any() ),
-                            operand( LogicalProject.class, any() ) ),
+                            LogicalRelJoin.class,
+                            operand( LogicalRelProject.class, any() ),
+                            operand( LogicalRelProject.class, any() ) ),
                     "JoinProjectTransposeRule(Project-Project)" );
 
     public static final JoinProjectTransposeRule LEFT_PROJECT =
             new JoinProjectTransposeRule(
-                    operand( LogicalJoin.class, some( operand( LogicalProject.class, any() ) ) ),
+                    operand( LogicalRelJoin.class, some( operand( LogicalRelProject.class, any() ) ) ),
                     "JoinProjectTransposeRule(Project-Other)" );
 
     public static final JoinProjectTransposeRule RIGHT_PROJECT =
             new JoinProjectTransposeRule(
                     operand(
-                            LogicalJoin.class,
+                            LogicalRelJoin.class,
                             operand( AlgNode.class, any() ),
-                            operand( LogicalProject.class, any() ) ),
+                            operand( LogicalRelProject.class, any() ) ),
                     "JoinProjectTransposeRule(Other-Project)" );
 
     public static final JoinProjectTransposeRule BOTH_PROJECT_INCLUDE_OUTER =
             new JoinProjectTransposeRule(
                     operand(
-                            LogicalJoin.class,
-                            operand( LogicalProject.class, any() ),
-                            operand( LogicalProject.class, any() ) ),
+                            LogicalRelJoin.class,
+                            operand( LogicalRelProject.class, any() ),
+                            operand( LogicalRelProject.class, any() ) ),
                     "Join(IncludingOuter)ProjectTransposeRule(Project-Project)",
                     true,
                     AlgFactories.LOGICAL_BUILDER );
@@ -102,8 +101,8 @@ public class JoinProjectTransposeRule extends AlgOptRule {
     public static final JoinProjectTransposeRule LEFT_PROJECT_INCLUDE_OUTER =
             new JoinProjectTransposeRule(
                     operand(
-                            LogicalJoin.class,
-                            some( operand( LogicalProject.class, any() ) ) ),
+                            LogicalRelJoin.class,
+                            some( operand( LogicalRelProject.class, any() ) ) ),
                     "Join(IncludingOuter)ProjectTransposeRule(Project-Other)",
                     true,
                     AlgFactories.LOGICAL_BUILDER );
@@ -111,9 +110,9 @@ public class JoinProjectTransposeRule extends AlgOptRule {
     public static final JoinProjectTransposeRule RIGHT_PROJECT_INCLUDE_OUTER =
             new JoinProjectTransposeRule(
                     operand(
-                            LogicalJoin.class,
+                            LogicalRelJoin.class,
                             operand( AlgNode.class, any() ),
-                            operand( LogicalProject.class, any() ) ),
+                            operand( LogicalRelProject.class, any() ) ),
                     "Join(IncludingOuter)ProjectTransposeRule(Other-Project)",
                     true,
                     AlgFactories.LOGICAL_BUILDER );
@@ -181,8 +180,7 @@ public class JoinProjectTransposeRule extends AlgOptRule {
                         rightJoinChild.getTupleType(),
                         JoinAlgType.INNER,
                         joinRel.getCluster().getTypeFactory(),
-                        null,
-                        Collections.emptyList() );
+                        null );
 
         // Create projection expressions, combining the projection expressions from the projects that feed into the join.
         // For the RHS projection expressions, shift them to the right by the number of fields on the LHS.

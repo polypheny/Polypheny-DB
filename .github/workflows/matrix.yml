@@ -26,21 +26,15 @@ jobs:
             -   name: Set env variable
                 run: |
                     echo "POLYPHENY_HOME=$GITHUB_WORKSPACE" >> $GITHUB_ENV
+            -   name: Print Java Version
+                timeout-minutes: 5
+                run: ./gradlew printJavaVersion
             -   name: Assemble
-                uses: nick-fields/retry@v2
-                with:
-                    max_attempts: 1
-                    timeout_minutes: 60
-                    command: ./gradlew assemble
+                timeout-minutes: 60
+                run: ./gradlew assemble
             -   name: Build Plugins
-                uses: nick-fields/retry@v2
-                with:
-                    max_attempts: 1
-                    timeout_minutes: 60
-                    command: ./gradlew assemblePlugins
+                timeout-minutes: 60
+                run: ./gradlew assemblePlugins
             -   name: Execute tests
-                uses: nick-fields/retry@v2
-                with:
-                    max_attempts: 1
-                    timeout_minutes: 30
-                    command: ./gradlew check
+                timeout-minutes: 30
+                run: ./gradlew check

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,11 +65,10 @@ import org.polypheny.db.algebra.AlgProducingVisitor.AlgConsumingVisitor;
 import org.polypheny.db.algebra.AlgVisitor;
 import org.polypheny.db.algebra.rules.CalcSplitRule;
 import org.polypheny.db.algebra.rules.FilterScanRule;
-import org.polypheny.db.algebra.rules.ProjectScanRule;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.hep.HepPlanner;
 import org.polypheny.db.plan.hep.HepProgram;
 import org.polypheny.db.plan.hep.HepProgramBuilder;
@@ -105,19 +104,17 @@ public class Interpreter extends AbstractEnumerable<PolyValue[]> implements Auto
     }
 
 
-    private AlgNode optimize( AlgNode rootRel ) {
+    private AlgNode optimize( AlgNode rootAlg ) {
         final HepProgram hepProgram =
                 new HepProgramBuilder()
                         .addRuleInstance( CalcSplitRule.INSTANCE )
                         .addRuleInstance( FilterScanRule.INSTANCE )
                         .addRuleInstance( FilterScanRule.INTERPRETER )
-                        .addRuleInstance( ProjectScanRule.INSTANCE )
-                        .addRuleInstance( ProjectScanRule.INTERPRETER )
                         .build();
         final HepPlanner planner = new HepPlanner( hepProgram );
-        planner.setRoot( rootRel );
-        rootRel = planner.findBestExp();
-        return rootRel;
+        planner.setRoot( rootAlg );
+        rootAlg = planner.findBestExp();
+        return rootAlg;
     }
 
 
@@ -323,7 +320,7 @@ public class Interpreter extends AbstractEnumerable<PolyValue[]> implements Auto
         //private static final String VISIT_METHOD_NAME = "visit";
 
 
-        CompilerImpl( Interpreter interpreter, AlgOptCluster cluster ) {
+        CompilerImpl( Interpreter interpreter, AlgCluster cluster ) {
             this.interpreter = interpreter;
             this.scalarCompiler = new JaninoRexCompiler( cluster.getRexBuilder() );
         }
@@ -541,4 +538,3 @@ public class Interpreter extends AbstractEnumerable<PolyValue[]> implements Auto
     }
 
 }
-

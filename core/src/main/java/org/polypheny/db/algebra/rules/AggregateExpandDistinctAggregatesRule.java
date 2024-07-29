@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,7 +59,7 @@ import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.fun.AggFunction;
-import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.languages.OperatorRegistry;
@@ -89,12 +89,12 @@ public final class AggregateExpandDistinctAggregatesRule extends AlgOptRule {
     /**
      * The default instance of the rule; operates only on logical expressions.
      */
-    public static final AggregateExpandDistinctAggregatesRule INSTANCE = new AggregateExpandDistinctAggregatesRule( LogicalAggregate.class, true, AlgFactories.LOGICAL_BUILDER );
+    public static final AggregateExpandDistinctAggregatesRule INSTANCE = new AggregateExpandDistinctAggregatesRule( LogicalRelAggregate.class, true, AlgFactories.LOGICAL_BUILDER );
 
     /**
      * Instance of the rule that operates only on logical expressions and generates a join.
      */
-    public static final AggregateExpandDistinctAggregatesRule JOIN = new AggregateExpandDistinctAggregatesRule( LogicalAggregate.class, false, AlgFactories.LOGICAL_BUILDER );
+    public static final AggregateExpandDistinctAggregatesRule JOIN = new AggregateExpandDistinctAggregatesRule( LogicalRelAggregate.class, false, AlgFactories.LOGICAL_BUILDER );
 
     public final boolean useGroupingSets;
 

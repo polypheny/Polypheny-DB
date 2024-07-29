@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,6 @@ import org.polypheny.db.adapter.file.FileConvention;
 import org.polypheny.db.adapter.file.FileSchema;
 import org.polypheny.db.adapter.file.FileTranslatableEntity;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.UnsupportedFromInsertShuttle;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.AlgFactories;
@@ -38,7 +37,8 @@ import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.enumerable.EnumerableConvention;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
+import org.polypheny.db.algebra.util.UnsupportedRelFromInsertShuttle;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -52,6 +52,7 @@ import org.polypheny.db.schema.document.DocumentRules;
 import org.polypheny.db.schema.types.ModifiableTable;
 import org.polypheny.db.tools.AlgBuilderFactory;
 import org.polypheny.db.util.UnsupportedRexCallVisitor;
+import org.polypheny.db.util.Util;
 
 
 @Slf4j
@@ -110,7 +111,7 @@ public class FileRules {
                 return false;
             }
 
-            if ( modify.isInsert() && UnsupportedFromInsertShuttle.contains( modify ) ) {
+            if ( modify.isInsert() && UnsupportedRelFromInsertShuttle.contains( modify ) ) {
                 return false;
             }
 
@@ -154,7 +155,7 @@ public class FileRules {
 
 
         public FileToEnumerableConverterRule( FileConvention convention, AlgBuilderFactory algBuilderFactory, Method enumeratorMethod, FileSchema fileSchema ) {
-            super( AlgNode.class, r -> true, convention, EnumerableConvention.INSTANCE, algBuilderFactory, "FileToEnumerableConverterRule:" + convention.getName() );
+            super( AlgNode.class, Util::containsEntity, convention, EnumerableConvention.INSTANCE, algBuilderFactory, "FileToEnumerableConverterRule:" + convention.getName() );
             this.enumeratorMethod = enumeratorMethod;
             this.fileSchema = fileSchema;
         }
@@ -182,7 +183,6 @@ public class FileRules {
         }
 
 
-
         /**
          * Needed for the {@link FileUnionRule}.
          * A FileUnion should only be generated during a multi-insert with arrays.
@@ -191,10 +191,10 @@ public class FileRules {
          */
         @Override
         public boolean matches( AlgOptRuleCall call ) {
-            if ( call.alg( 0 ) instanceof LogicalProject && !((LogicalProject) call.alg( 0 )).getProjects().isEmpty() ) {
+            if ( call.alg( 0 ) instanceof LogicalRelProject && !((LogicalRelProject) call.alg( 0 )).getProjects().isEmpty() ) {
                 //RexInputRef occurs in a select query, RexLiteral/RexCall/RexDynamicParam occur in insert/update/delete queries
                 boolean isSelect = true;
-                for ( RexNode node : ((LogicalProject) call.alg( 0 )).getProjects() ) {
+                for ( RexNode node : ((LogicalRelProject) call.alg( 0 )).getProjects() ) {
                     if ( node instanceof RexIndexRef ) {
                         continue;
                     }
@@ -355,7 +355,7 @@ public class FileRules {
 
         CheckingFunctionVisitor( AlgNode node ) {
             super( true );
-            isProject = node instanceof LogicalProject;
+            isProject = node instanceof LogicalRelProject;
         }
 
 

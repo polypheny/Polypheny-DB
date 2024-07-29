@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,10 +28,11 @@ import java.util.function.Supplier;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.pf4j.ExtensionPoint;
 import org.polypheny.db.adapter.AbstractAdapterSetting;
 import org.polypheny.db.adapter.Adapter;
-import org.polypheny.db.adapter.AdapterManager.Function4;
+import org.polypheny.db.adapter.AdapterManager.Function5;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.java.AdapterTemplate;
 import org.polypheny.db.catalog.catalogs.AdapterCatalog;
@@ -49,7 +50,9 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceTemplate;
-import org.polypheny.db.util.PolyMode;
+import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.RunMode;
 
 public abstract class Catalog implements ExtensionPoint {
 
@@ -70,7 +73,7 @@ public abstract class Catalog implements ExtensionPoint {
     private static Catalog INSTANCE = null;
     public static boolean resetCatalog;
     public static boolean memoryCatalog;
-    public static PolyMode mode;
+    public static RunMode mode;
 
     public static final Expression CATALOG_EXPRESSION = Expressions.call( Catalog.class, "getInstance" );
 
@@ -79,7 +82,7 @@ public abstract class Catalog implements ExtensionPoint {
 
 
     public static Catalog setAndGetInstance( Catalog catalog ) {
-        if ( INSTANCE != null && Catalog.mode != PolyMode.TEST ) {
+        if ( INSTANCE != null && Catalog.mode != RunMode.TEST ) {
             throw new GenericRuntimeException( "Setting the Catalog, when already set is not permitted." );
         }
         INSTANCE = catalog;
@@ -106,7 +109,13 @@ public abstract class Catalog implements ExtensionPoint {
 
     public abstract void change();
 
+    public abstract void executeCommitActions();
+
+    public abstract void clearCommitActions();
+
     public abstract void commit();
+
+    public abstract Pair<@NotNull Boolean, @Nullable String> checkIntegrity();
 
     public abstract void rollback();
 
@@ -192,7 +201,7 @@ public abstract class Catalog implements ExtensionPoint {
      * @param clazz The class name of the adapter
      * @param type The type of adapter
      * @param settings The configuration of the adapter
-     * @param mode
+     * @param mode The deploy mode of the adapter
      * @return The id of the newly added adapter
      */
     public abstract long createAdapter( String uniqueName, String clazz, AdapterType type, Map<String, String> settings, DeployMode mode );
@@ -217,11 +226,11 @@ public abstract class Catalog implements ExtensionPoint {
      * Add a query interface
      *
      * @param uniqueName The unique name of the query interface
-     * @param clazz The class name of the query interface
+     * @param interfaceName The class name of the query interface
      * @param settings The configuration of the query interface
      * @return The id of the newly added query interface
      */
-    public abstract long createQueryInterface( String uniqueName, String clazz, Map<String, String> settings );
+    public abstract long createQueryInterface( String uniqueName, String interfaceName, Map<String, String> settings );
 
     /**
      * Delete a query interface
@@ -230,7 +239,7 @@ public abstract class Catalog implements ExtensionPoint {
      */
     public abstract void dropQueryInterface( long id );
 
-    public abstract long createAdapterTemplate( Class<? extends Adapter<?>> clazz, String adapterName, String description, List<DeployMode> modes, List<AbstractAdapterSetting> settings, Function4<Long, String, Map<String, String>, Adapter<?>> deployer );
+    public abstract long createAdapterTemplate( Class<? extends Adapter<?>> clazz, String adapterName, String description, List<DeployMode> modes, List<AbstractAdapterSetting> settings, Function5<Long, String, Map<String, String>, DeployMode, Adapter<?>> deployer );
 
 
     public abstract void createInterfaceTemplate( String name, QueryInterfaceTemplate queryInterfaceTemplate );
@@ -274,9 +283,11 @@ public abstract class Catalog implements ExtensionPoint {
     public abstract PropertyChangeListener getChangeListener();
 
 
-    public abstract void restore();
+    public abstract void restore( Transaction transaction );
 
 
     public abstract void attachCommitConstraint( Supplier<Boolean> constraintChecker, String description );
+
+    public abstract void attachCommitAction( Runnable action );
 
 }

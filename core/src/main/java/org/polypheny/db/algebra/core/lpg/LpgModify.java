@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.Entity;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.trait.ModelTrait;
@@ -42,7 +42,7 @@ public abstract class LpgModify<E extends Entity> extends Modify<E> implements L
      * Creates a {@link LpgModify}.
      * {@link ModelTrait#GRAPH} node, which is able to modify an LPG graph.
      */
-    protected LpgModify( AlgOptCluster cluster, AlgTraitSet traits, E graph, AlgNode input, Operation operation, List<PolyString> ids, List<? extends RexNode> operations, AlgDataType dmlRowType ) {
+    protected LpgModify( AlgCluster cluster, AlgTraitSet traits, E graph, AlgNode input, Operation operation, List<PolyString> ids, List<? extends RexNode> operations, AlgDataType dmlRowType ) {
         super( cluster, traits.replace( ModelTrait.GRAPH ), graph, input );
         this.operation = operation;
         this.ids = ids;
@@ -53,12 +53,13 @@ public abstract class LpgModify<E extends Entity> extends Modify<E> implements L
 
     @Override
     public String algCompareString() {
-        return "$" + getClass().getSimpleName() +
+        return getClass().getSimpleName() +
                 "$" + entity.id +
                 "$" + entity.getLayer() +
+                "$" + operation +
                 "$" + (ids != null ? ids.hashCode() : "[]") +
                 "$" + (operations != null ? operations.hashCode() : "[]") +
-                "{" + input.algCompareString() + "}";
+                "{" + input.algCompareString() + "}&";
     }
 
 

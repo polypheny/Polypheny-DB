@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,7 +41,8 @@ import org.bouncycastle.tls.TlsNoCloseNotifyException;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.util.PolyMode;
+import org.polypheny.db.util.RunMode;
+import org.polypheny.db.util.Util;
 
 /**
  * The container is the main interaction instance for calling classes when interacting with Docker.
@@ -81,22 +82,17 @@ public final class DockerContainer {
 
 
     public DockerContainer start() throws IOException {
-        Optional<DockerInstance> maybeDockerInstance = getDockerInstance();
-        if ( maybeDockerInstance.isPresent() ) {
-            maybeDockerInstance.get().startContainer( this );
-            return this;
-        }
-        throw new IOException( "Cannot start container: not connected to docker host" );
+        getDockerInstance()
+                .orElseThrow( () -> new IOException( "Cannot start container: not connected to docker host" ) )
+                .startContainer( this );
+        return this;
     }
 
 
     public void stop() throws IOException {
-        Optional<DockerInstance> maybeDockerInstance = getDockerInstance();
-        if ( maybeDockerInstance.isPresent() ) {
-            maybeDockerInstance.get().stopContainer( this );
-        } else {
-            throw new IOException( "Cannot stop container: not connected to docker host" );
-        }
+        getDockerInstance()
+                .orElseThrow( () -> new IOException( "Cannot stop container: not connected to docker host" ) )
+                .stopContainer( this );
     }
 
 
@@ -105,34 +101,25 @@ public final class DockerContainer {
         getDockerInstance().ifPresent( d -> d.destroyContainer( this ) );
         containers.remove( containerId );
         synchronized ( this ) {
-            proxies.forEach( ( k, v ) -> {
-                try {
-                    v.close();
-                } catch ( IOException ignore ) {
-                    // ignore
-                }
-            } );
+            proxies.values().forEach( Util::closeNoThrow );
         }
     }
 
 
     public int execute( List<String> cmd ) throws IOException {
-        Optional<DockerInstance> maybeDockerInstance = getDockerInstance();
-        if ( maybeDockerInstance.isPresent() ) {
-            return maybeDockerInstance.get().execute( this, cmd );
-
-        }
-        throw new IOException( "Cannot execute command: not connected to docker host" );
+        return getDockerInstance()
+                .orElseThrow( () -> new IOException( "Cannot execute command: not connected to docker host" ) )
+                .execute( this, cmd );
     }
 
 
     public static String getPhysicalUniqueName( String uniqueName ) {
         // while not all Docker containers belong to an adapter we annotate it anyway
         String name = "polypheny_" + RuntimeConfig.INSTANCE_UUID.getString() + "_" + uniqueName;
-        if ( Catalog.mode != PolyMode.TEST ) {
-            return name;
+        if ( Catalog.mode == RunMode.TEST ) {
+            name += "_test";
         }
-        return name + "_test";
+        return name;
     }
 
 
@@ -156,18 +143,17 @@ public final class DockerContainer {
     }
 
 
-    private Runnable pipe( InputStream in, OutputStream out, String name ) {
-        return () -> {
+    private Thread pipe( InputStream in, OutputStream out, String name ) {
+        Thread t = new Thread( () -> {
             try ( in; out ) {
-                while ( true ) {
-                    byte[] buf = new byte[256];
-                    int n = in.read( buf );
-                    if ( n >= 0 ) {
+                int n;
+                do {
+                    byte[] buf = new byte[256]; // TODO: Optimize this value
+                    n = in.read( buf );
+                    if ( n > 0 ) {
                         out.write( buf, 0, n );
-                    } else {
-                        break;
                     }
-                }
+                } while ( n >= 0 );
             } catch ( TlsNoCloseNotifyException ignore ) {
                 // ignore
             } catch ( IOException e ) {
@@ -178,92 +164,75 @@ public final class DockerContainer {
                 }
                 log.error( "Pipe " + name, e );
             }
-        };
+        }, name );
+        t.start();
+        return t;
     }
 
 
-    private void startProxyForConnection( Socket local, int port ) {
+    private void startProxyForConnection( DockerInstance dockerInstance, Socket local, int port ) {
+        final PolyphenyTlsClient client;
         try {
-            DockerInstance dockerInstance = getDockerInstance().orElseThrow( () -> new IOException( "Not connected to Docker instance" ) );
-            Socket remote = new Socket( dockerInstance.getHost().hostname(), dockerInstance.getHost().proxyPort() );
-            PolyphenyKeypair kp = PolyphenyCertificateManager.loadClientKeypair( "docker", dockerInstance.getHost().hostname() );
-            byte[] serverCert = PolyphenyCertificateManager.loadServerCertificate( "docker", dockerInstance.getHost().hostname() );
-            PolyphenyTlsClient client = new PolyphenyTlsClient( kp, serverCert, remote.getInputStream(), remote.getOutputStream() );
-            InputStream remote_in = client.getInputStream().get();
-            OutputStream remote_out = client.getOutputStream().get();
-
-            remote_out.write( (containerId + ":" + port + "\n").getBytes( StandardCharsets.UTF_8 ) );
-
-            Thread copyToRemote = new Thread( pipe( local.getInputStream(), remote_out, String.format( "polypheny => %s", uniqueName ) ) );
-            Thread copyFromRemote = new Thread( pipe( remote_in, local.getOutputStream(), String.format( "polypheny <= %s", uniqueName ) ) );
-            new Thread( () -> {
-                copyToRemote.start();
-                copyFromRemote.start();
-                while ( copyToRemote.isAlive() ) {
-                    try {
-                        copyToRemote.join();
-                        break;
-                    } catch ( InterruptedException ignore ) {
-                        // try again
-                    }
-                }
-                while ( copyFromRemote.isAlive() ) {
-                    try {
-                        copyFromRemote.join();
-                        break;
-                    } catch ( InterruptedException ignore ) {
-                        // try again
-                    }
-                }
-                try {
-                    remote.close();
-                } catch ( IOException ignore ) {
-                    // ignore errors during cleanup
-                }
-            } ).start();
+            client = PolyphenyTlsClient.connect( "docker", dockerInstance.getHost().hostname(), dockerInstance.getHost().proxyPort() );
         } catch ( IOException e ) {
             if ( e instanceof SocketException || e instanceof EOFException ) {
                 // ignore
             } else if ( e instanceof TlsFatalAlert && ((TlsFatalAlert) e).getAlertDescription() == AlertDescription.handshake_failure ) {
                 // ignore
             } else {
-                log.info( "startProxyForConnection: " + e );
+                log.info( "startProxyForConnection", e );
             }
-            try {
-                local.close();
-            } catch ( IOException ignore ) {
-                // ignore errors during cleanup
-            }
+            Util.closeNoThrow( local );
+            return;
+        }
+        OutputStream remoteOut = client.getOutputStream().get();
+        try {
+            remoteOut.write( (containerId + ":" + port + "\n").getBytes( StandardCharsets.UTF_8 ) );
+            Thread copyToRemote = pipe( local.getInputStream(), remoteOut, String.format( "polypheny => %s", uniqueName ) );
+            Thread copyFromRemote = pipe( client.getInputStream().get(), local.getOutputStream(), String.format( "polypheny <= %s", uniqueName ) );
+            new Thread( () -> {
+                while ( true ) {
+                    try {
+                        copyToRemote.join();
+                        copyFromRemote.join();
+                        break;
+                    } catch ( InterruptedException ignore ) {
+
+                    }
+                }
+                log.info( "Pipe threads done, terminating..." );
+                client.close();
+            } );
+        } catch ( IOException e ) {
+            log.info( "startProxyForConnection", e );
+            client.close();
+            Util.closeNoThrow( local );
         }
     }
 
 
     private ServerSocket startServer( int port ) {
         try {
-            ServerSocket s = new ServerSocket( 0, 10, InetAddress.getLoopbackAddress() );
+            ServerSocket server = new ServerSocket( 0, 10, InetAddress.getLoopbackAddress() );
             Runnable r = () -> {
                 while ( true ) {
                     try {
-                        Socket local = s.accept();
-                        startProxyForConnection( local, port );
+                        Socket local = server.accept();
+                        DockerInstance dockerInstance = getDockerInstance().orElseThrow( () -> new IOException( "Not connected to docker host" ) );
+                        startProxyForConnection( dockerInstance, local, port );
                     } catch ( IOException e ) {
                         if ( !(e instanceof SocketException) || !e.getMessage().equals( "Socket closed" ) ) {
                             log.info( "Server Socket for port " + port + " closed", e );
                         }
                         synchronized ( this ) {
-                            try {
-                                proxies.remove( port ).close();
-                            } catch ( IOException ignore ) {
-                                // ignore errors during cleanup
-                            }
+                            Util.closeNoThrow( proxies.remove( port ) );
                         }
                         break;
                     }
                 }
             };
-            proxies.put( port, s );
             new Thread( r ).start();
-            return s;
+            return server;
         } catch ( Exception e ) {
             log.error( "Failed to start local proxy server: ", e );
             throw new GenericRuntimeException( e );
@@ -273,10 +242,7 @@ public final class DockerContainer {
 
     public HostAndPort connectToContainer( int port ) {
         synchronized ( this ) {
-            ServerSocket s = proxies.get( port );
-            if ( s == null ) {
-                s = startServer( port );
-            }
+            ServerSocket s = proxies.computeIfAbsent( port, this::startServer );
             return new HostAndPort( s.getInetAddress().getHostAddress(), s.getLocalPort() );
         }
     }
@@ -302,7 +268,7 @@ public final class DockerContainer {
     }
 
 
-    public record HostAndPort(String host, int port) {
+    public record HostAndPort( String host, int port ) {
 
     }
 

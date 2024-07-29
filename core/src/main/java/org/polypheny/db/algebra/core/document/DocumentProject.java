@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexIndexRef;
@@ -53,7 +53,7 @@ public abstract class DocumentProject extends SingleAlg implements DocumentAlg {
      * Creates a {@link DocumentProject}.
      * {@link ModelTrait#DOCUMENT} native node of a project.
      */
-    protected DocumentProject( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, @NotNull Map<String, ? extends RexNode> includes, @NotNull List<String> excludes ) {
+    protected DocumentProject( AlgCluster cluster, AlgTraitSet traits, AlgNode input, @NotNull Map<String, ? extends RexNode> includes, @NotNull List<String> excludes ) {
         super( cluster, traits, input );
         this.includes = includes;
         this.excludes = excludes;
@@ -95,7 +95,7 @@ public abstract class DocumentProject extends SingleAlg implements DocumentAlg {
                         PolyList.copyOf( includes.keySet().stream().filter( Objects::nonNull ).map( v -> PolyList.copyOf( Arrays.stream( v.split( "\\." ) ).map( PolyString::of ).collect( Collectors.toList() ) ) )
                                 .collect( Collectors.toList() ) ),
                         builder.getTypeFactory().createArrayType( builder.getTypeFactory().createPolyType( PolyType.CHAR, 255 ), -1 ), PolyType.ARRAY ) );
-        nodes.addAll( includes.entrySet().stream().filter( o -> Objects.nonNull( o.getKey() ) ).map( Entry::getValue ).collect( Collectors.toList() ) );
+        nodes.addAll( includes.entrySet().stream().filter( o -> Objects.nonNull( o.getKey() ) ).map( Entry::getValue ).toList() );
 
         if ( !includes.isEmpty() ) {
             doc = builder.makeCall( getTupleType(), OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_MERGE ), nodes );

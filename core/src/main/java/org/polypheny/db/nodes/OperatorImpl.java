@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,10 +18,10 @@ package org.polypheny.db.nodes;
 
 import java.util.List;
 import lombok.Getter;
+import lombok.Setter;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.operators.OperatorName;
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.BasicNodeVisitor.ArgHandler;
 import org.polypheny.db.nodes.Function.FunctionType;
@@ -61,6 +61,7 @@ public abstract class OperatorImpl implements Operator {
      */
     protected final PolyOperandTypeChecker operandTypeChecker;
 
+    @Setter
     @Getter
     private OperatorName operatorName;
 
@@ -74,17 +75,9 @@ public abstract class OperatorImpl implements Operator {
     }
 
 
-    public void setOperatorName( OperatorName operatorName ) {
-        if ( this.operatorName != null ) {
-            throw new GenericRuntimeException( "The operatorName can only be set once." );
-        }
-        this.operatorName = operatorName;
-    }
-
-
     /**
      * Returns whether the given operands are valid. If not valid and {@code fail}, throws an assertion error.
-     *
+     * <p>
      * Similar to {#@link #checkOperandCount}, but some operators may have different valid operands in {@link Node} and {@code RexNode} formats (some examples are CAST and AND),
      * and this method throws internal errors, not user errors.
      */
@@ -96,7 +89,7 @@ public abstract class OperatorImpl implements Operator {
 
     /**
      * Creates a call to this operand with an array of operands.
-     *
+     * <p>
      * The position of the resulting call is the union of the <code>pos</code> and the positions of all the operands.
      *
      * @param pos Parser position
@@ -111,7 +104,7 @@ public abstract class OperatorImpl implements Operator {
 
     /**
      * Creates a call to this operand with a list of operands contained in a {@link NodeList}.
-     *
+     * <p>
      * The position of the resulting call inferred from the SqlNodeList.
      *
      * @param nodeList List of arguments
@@ -125,7 +118,7 @@ public abstract class OperatorImpl implements Operator {
 
     /**
      * Creates a call to this operand with a list of operands.
-     *
+     * <p>
      * The position of the resulting call is the union of the <code>pos</code> and the positions of all the operands.
      */
     @Override
@@ -173,7 +166,7 @@ public abstract class OperatorImpl implements Operator {
 
     /**
      * Accepts a {@link NodeVisitor}, directing an {@link ArgHandler} to visit an operand of a call.
-     *
+     * <p>
      * The argument handler allows fine control about how the operands are visited, and how the results are combined.
      *
      * @param visitor Visitor
@@ -192,7 +185,7 @@ public abstract class OperatorImpl implements Operator {
 
     /**
      * Returns whether this operator is an aggregate function. By default, subclass type is used (an instance of SqlAggFunction is assumed to be an aggregator; anything else is not).
-     *
+     * <p>
      * Per SQL:2011, there are <dfn>aggregate functions</dfn> and <dfn>window functions</dfn>.
      * Every aggregate function (e.g. SUM) is also a window function.
      * There are window functions that are not aggregate functions, e.g. RANK, NTILE, LEAD, FIRST_VALUE.</p>
@@ -210,12 +203,12 @@ public abstract class OperatorImpl implements Operator {
 
     /**
      * Returns whether this is a window function that requires an OVER clause.
-     *
+     * <p>
      * For example, returns true for {@code RANK}, {@code DENSE_RANK} and other ranking functions; returns false for {@code SUM}, {@code COUNT}, {@code MIN}, {@code MAX}, {@code AVG}
      * (they can be used as non-window aggregate functions).
-     *
+     * <p>
      * If {@code requiresOver} returns true, then {@link #isAggregator()} must also return true.
-     *
+     * <p>
      * #@see #allowsFraming()
      *
      * @see #requiresOrder()
@@ -228,7 +221,7 @@ public abstract class OperatorImpl implements Operator {
 
     /**
      * Returns whether this is a window function that requires ordering.
-     *
+     * <p>
      * Per SQL:2011, 2, 6.10: "If &lt;ntile function&gt;, &lt;lead or lag function&gt;, RANK or DENSE_RANK is specified, then the window ordering clause shall be present."
      *
      * @see #isAggregator()
@@ -241,11 +234,11 @@ public abstract class OperatorImpl implements Operator {
 
     /**
      * Returns whether this is a group function.
-     *
+     * <p>
      * Group functions can only appear in the GROUP BY clause.
-     *
+     * <p>
      * Examples are {@code HOP}, {@code TUMBLE}, {@code SESSION}.
-     *
+     * <p>
      * Group functions have auxiliary functions, e.g. {@code HOP_START}, but these are not group functions.
      */
     @Override
@@ -256,7 +249,7 @@ public abstract class OperatorImpl implements Operator {
 
     /**
      * Returns whether this is an group auxiliary function.
-     *
+     * <p>
      * Examples are {@code HOP_START} and {@code HOP_END} (both auxiliary to {@code HOP}).
      *
      * @see #isGroup()
@@ -310,7 +303,7 @@ public abstract class OperatorImpl implements Operator {
 
     /**
      * Returns whether a call to this operator is monotonic.
-     *
+     * <p>
      * Default implementation returns {@link Monotonicity#NOT_MONOTONIC}.
      *
      * @param call Call to this operator with particular arguments and information about the monotonicity of the arguments

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,16 +22,15 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.AvaticaClientRuntimeException;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
+import org.polypheny.jdbc.PrismInterfaceServiceException;
 
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
@@ -159,16 +158,8 @@ public class ForeignKeyConstraintTest {
                 try {
                     statement.executeUpdate( "INSERT INTO constraint_test VALUES (1, 1, 1, 1), (2, 2, 2, 2)" );
                     connection.commit();
-                    try {
-                        statement.executeUpdate( "INSERT INTO constraint_test2 VALUES (3, 1), (4, 3)" );
-                        connection.commit();
-                        Assertions.fail( "Expected ConstraintViolationException was not thrown" );
-                    } catch ( AvaticaClientRuntimeException e ) {
-                        if ( !(e.getMessage().contains( "Remote driver error:" )
-                                && e.getMessage().contains( "Transaction violates foreign key constraint" )) ) {
-                            throw new RuntimeException( "Unexpected exception", e );
-                        }
-                    }
+                    statement.executeUpdate( "INSERT INTO constraint_test2 VALUES (3, 1), (4, 3)" );
+                    Assertions.assertThrows( PrismInterfaceServiceException.class, connection::commit, "Transaction violates foreign key constraint" );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT COUNT(ctid) FROM constraint_test" ),
                             ImmutableList.of( new Object[]{ 2L } )
@@ -188,7 +179,7 @@ public class ForeignKeyConstraintTest {
 
     @ParameterizedTest(name = "{index}. Create Index: {0}")
     @ValueSource(booleans = { false, true })
-    @Disabled // todo dl enable as soon as such inserts work correctly
+    //@Disabled // todo dl enable as soon as such inserts work correctly
     public void testInsertSelectNoConflict( boolean useIndex ) throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -232,7 +223,6 @@ public class ForeignKeyConstraintTest {
 
     @ParameterizedTest(name = "{index}. Create Index: {0}")
     @ValueSource(booleans = { false, true })
-    @Disabled // todo dl enable as soon as such inserts work correctly
     public void testInsertSelectConflict( boolean useIndex ) throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -251,15 +241,12 @@ public class ForeignKeyConstraintTest {
                 try {
                     statement.executeUpdate( "INSERT INTO constraint_test VALUES (1, 1, 1, 1), (2, 2, 2, 2)" );
 
-                    try {
-                        statement.executeUpdate( "INSERT INTO constraint_test2 SELECT ctid + 10 AS ct2id, ctid * 2 AS ctid FROM constraint_test" );
-                        Assertions.fail( "Expected ConstraintViolationException was not thrown" );
-                    } catch ( RuntimeException e ) {
-                        if ( !(e.getMessage().contains( "Remote driver error:" ) && e.getMessage().contains( "Transaction violates foreign key constraint" )) ) {
-                            throw new RuntimeException( "Unexpected exception", e );
-                        }
-                        connection.rollback();
-                    }
+                    Assertions.assertThrows(
+                            PrismInterfaceServiceException.class,
+                            () -> statement.executeUpdate( "INSERT INTO constraint_test2 SELECT ctid + 10 AS ct2id, ctid * 2 AS ctid FROM constraint_test" ),
+                            "Transaction violates foreign key constraint"
+                    );
+                    connection.rollback();
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM constraint_test ORDER BY ctid" ),
                             ImmutableList.of(
@@ -347,26 +334,18 @@ public class ForeignKeyConstraintTest {
                     statement.executeUpdate( "INSERT INTO constraint_test2 VALUES (3, 3), (1, 1)" );
                     connection.commit();
 
-                    try {
-                        statement.executeUpdate( "UPDATE constraint_test2 SET ctid = ctid + 2" );
+                    statement.executeUpdate( "UPDATE constraint_test2 SET ctid = ctid + 2" );
 
-                        TestHelper.checkResultSet(
-                                statement.executeQuery( "SELECT * FROM constraint_test2 ORDER BY ct2id" ),
-                                ImmutableList.of(
-                                        new Object[]{ 1, 3 },
-                                        new Object[]{ 3, 5 }
-                                ),
-                                false
-                        );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM constraint_test2 ORDER BY ct2id" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, 3 },
+                                    new Object[]{ 3, 5 }
+                            ),
+                            false
+                    );
 
-                        connection.commit();
-                        Assertions.fail( "Expected ConstraintViolationException was not thrown" );
-                    } catch ( RuntimeException e ) {
-                        if ( !(e.getMessage().contains( "Remote driver error:" )
-                                && e.getMessage().contains( "Transaction violates foreign key constraint" )) ) {
-                            throw new RuntimeException( "Unexpected exception", e );
-                        }
-                    }
+                    Assertions.assertThrows( PrismInterfaceServiceException.class, connection::commit, "Transaction violates foreign key constraint" );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM constraint_test ORDER BY ctid" ),
                             ImmutableList.of(
@@ -393,7 +372,7 @@ public class ForeignKeyConstraintTest {
 
     @ParameterizedTest(name = "{index}. Create Index: {0}")
     @ValueSource(booleans = { false, true })
-    @Tag("cottontailExcluded") // only with indexes
+    @Tag("cottontailExcluded") // only with indexes, cannot find column during update
     public void testUpdateInNoConflict( boolean useIndex ) throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -439,7 +418,7 @@ public class ForeignKeyConstraintTest {
 
     @ParameterizedTest(name = "{index}. Create Index: {0}")
     @ValueSource(booleans = { false, true })
-    @Tag("cottontailExcluded") // only with indexes
+    @Tag("cottontailExcluded") // only with indexes, cannot find column during update
     public void testUpdateInConflict( boolean useIndex ) throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -459,16 +438,8 @@ public class ForeignKeyConstraintTest {
                     statement.executeUpdate( "INSERT INTO constraint_test VALUES (1, 1, 1, 1), (2, 2, 2, 2), (3, 3, 3, 3)" );
                     statement.executeUpdate( "INSERT INTO constraint_test2 VALUES (1, 1), (3, 3)" );
                     connection.commit();
-                    try {
-                        statement.executeUpdate( "UPDATE constraint_test SET ctid = 4 WHERE ctid = 1" );
-                        connection.commit();
-                        Assertions.fail( "Expected ConstraintViolationException was not thrown" );
-                    } catch ( AvaticaClientRuntimeException e ) {
-                        if ( !(e.getMessage().contains( "Remote driver error:" )
-                                && e.getMessage().contains( "Transaction violates foreign key constraint" )) ) {
-                            throw new RuntimeException( "Unexpected exception", e );
-                        }
-                    }
+                    statement.executeUpdate( "UPDATE constraint_test SET ctid = 4 WHERE ctid = 1" );
+                    Assertions.assertThrows( PrismInterfaceServiceException.class, connection::commit, "Transaction violates foreign key constraint" );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM constraint_test ORDER BY ctid" ),
                             ImmutableList.of(
@@ -558,16 +529,8 @@ public class ForeignKeyConstraintTest {
                     statement.executeUpdate( "INSERT INTO constraint_test VALUES (1, 1, 1, 1), (2, 2, 2, 2), (3, 3, 3, 3)" );
                     statement.executeUpdate( "INSERT INTO constraint_test2 VALUES (1, 1), (3, 3)" );
                     connection.commit();
-                    try {
-                        statement.executeUpdate( "DELETE FROM constraint_test WHERE ctid = 1" );
-                        connection.commit();
-                        Assertions.fail( "Expected ConstraintViolationException was not thrown" );
-                    } catch ( AvaticaClientRuntimeException e ) {
-                        if ( !(e.getMessage().contains( "Remote driver error:" )
-                                && e.getMessage().contains( "Transaction violates foreign key constraint" )) ) {
-                            throw new RuntimeException( "Unexpected exception", e );
-                        }
-                    }
+                    statement.executeUpdate( "DELETE FROM constraint_test WHERE ctid = 1" );
+                    Assertions.assertThrows( PrismInterfaceServiceException.class, connection::commit, "Transaction violates foreign key constraint" );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM constraint_test ORDER BY ctid" ),
                             ImmutableList.of(

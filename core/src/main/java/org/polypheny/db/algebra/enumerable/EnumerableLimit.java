@@ -1,9 +1,26 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * This file incorporates code covered by the following terms:
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to you under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -30,7 +47,7 @@ import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.metadata.AlgMdCollation;
 import org.polypheny.db.algebra.metadata.AlgMdDistribution;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexLiteral;
@@ -49,10 +66,10 @@ public class EnumerableLimit extends SingleAlg implements EnumerableAlg {
 
     /**
      * Creates an EnumerableLimit.
-     *
+     * <p>
      * Use {@link #create} unless you know what you're doing.
      */
-    public EnumerableLimit( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, RexNode offset, RexNode fetch ) {
+    public EnumerableLimit( AlgCluster cluster, AlgTraitSet traitSet, AlgNode input, RexNode offset, RexNode fetch ) {
         super( cluster, traitSet, input );
         this.offset = offset;
         this.fetch = fetch;
@@ -65,7 +82,7 @@ public class EnumerableLimit extends SingleAlg implements EnumerableAlg {
      * Creates an EnumerableLimit.
      */
     public static EnumerableLimit create( final AlgNode input, RexNode offset, RexNode fetch ) {
-        final AlgOptCluster cluster = input.getCluster();
+        final AlgCluster cluster = input.getCluster();
         final AlgMetadataQuery mq = cluster.getMetadataQuery();
         final AlgTraitSet traitSet =
                 cluster.traitSetOf( EnumerableConvention.INSTANCE )
@@ -103,9 +120,9 @@ public class EnumerableLimit extends SingleAlg implements EnumerableAlg {
         final BlockBuilder builder = new BlockBuilder();
         final EnumerableAlg child = (EnumerableAlg) getInput();
         final Result result = implementor.visitChild( this, 0, child, pref );
-        final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getTupleType(), result.format );
+        final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getTupleType(), result.format() );
 
-        Expression v = builder.append( "child", result.block );
+        Expression v = builder.append( "child", result.block() );
         if ( offset != null ) {
             v = builder.append(
                     "offset",
@@ -123,8 +140,7 @@ public class EnumerableLimit extends SingleAlg implements EnumerableAlg {
 
 
     private static Expression getExpression( RexNode offset ) {
-        if ( offset instanceof RexDynamicParam ) {
-            final RexDynamicParam param = (RexDynamicParam) offset;
+        if ( offset instanceof RexDynamicParam param ) {
             return Expressions.convert_(
                     Expressions.call( DataContext.ROOT, BuiltInMethod.DATA_CONTEXT_GET_PARAMETER_VALUE.method, Expressions.constant( param.getIndex() ) ),
                     Integer.class );

@@ -1,6 +1,6 @@
 
 /**
- * Defines interfaces for constructing rule-based optimizers of relational expressions.
+ * Defines interfaces for constructing rule-based optimizers of algebra expressions.
  */
 
 package org.polypheny.db.plan;

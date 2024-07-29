@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,10 +38,11 @@ import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.QueryProvider;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.logical.relational.LogicalFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.nodes.Function.FunctionType;
@@ -111,7 +112,7 @@ public class VisitorDataContext implements DataContext {
 
 
     @Override
-    public void addParameterValues( long index, AlgDataType type, List<PolyValue> data ) {
+    public void addParameterValues( long index, @NotNull AlgDataType type, List<PolyValue> data ) {
         throw new UnsupportedOperationException( "This operation is not supported for " + getClass().getSimpleName() );
     }
 
@@ -146,7 +147,7 @@ public class VisitorDataContext implements DataContext {
     }
 
 
-    public static DataContext of( AlgNode targetRel, LogicalFilter queryRel ) {
+    public static DataContext of( AlgNode targetRel, LogicalRelFilter queryRel ) {
         return of( targetRel.getTupleType(), queryRel.getCondition() );
     }
 

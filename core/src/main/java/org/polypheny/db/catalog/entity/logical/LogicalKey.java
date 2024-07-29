@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import com.google.common.collect.ImmutableList;
 import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.annotations.SerializeClass;
 import java.io.Serial;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
@@ -29,14 +29,14 @@ import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.PolyObject;
 import org.polypheny.db.catalog.snapshot.Snapshot;
-import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.numerical.PolyLong;
 
 
-@EqualsAndHashCode
 @Value
 @NonFinal
+@EqualsAndHashCode
 @SerializeClass(subclasses = { LogicalGenericKey.class, LogicalPrimaryKey.class, LogicalForeignKey.class })
 public abstract class LogicalKey implements PolyObject, Comparable<LogicalKey> {
 
@@ -53,17 +53,17 @@ public abstract class LogicalKey implements PolyObject, Comparable<LogicalKey> {
     public long namespaceId;
 
     @Serialize
-    public ImmutableList<Long> columnIds;
+    public ImmutableList<Long> fieldIds;
 
     @Serialize
     public EnforcementTime enforcementTime;
 
 
-    public LogicalKey( long id, long entityId, long namespaceId, List<Long> columnIds, EnforcementTime enforcementTime ) {
+    public LogicalKey( long id, long entityId, long namespaceId, List<Long> fieldIds, EnforcementTime enforcementTime ) {
         this.id = id;
         this.entityId = entityId;
         this.namespaceId = namespaceId;
-        this.columnIds = ImmutableList.copyOf( columnIds );
+        this.fieldIds = ImmutableList.copyOf( fieldIds );
         this.enforcementTime = enforcementTime;
     }
 
@@ -78,10 +78,10 @@ public abstract class LogicalKey implements PolyObject, Comparable<LogicalKey> {
     }
 
 
-    public List<String> getColumnNames() {
+    public List<String> getFieldNames() {
         Snapshot snapshot = Catalog.snapshot();
-        List<String> columnNames = new LinkedList<>();
-        for ( long columnId : columnIds ) {
+        List<String> columnNames = new ArrayList<>();
+        for ( long columnId : fieldIds ) {
             columnNames.add( snapshot.rel().getColumn( columnId ).orElseThrow().name );
         }
         return columnNames;
@@ -105,42 +105,5 @@ public abstract class LogicalKey implements PolyObject, Comparable<LogicalKey> {
         ON_QUERY
     }
 
-
-    @Override
-    public boolean equals( Object o ) {
-        if ( this == o ) {
-            return true;
-        }
-        if ( o == null || getClass() != o.getClass() ) {
-            return false;
-        }
-
-        LogicalKey that = (LogicalKey) o;
-
-        if ( id != that.id ) {
-            return false;
-        }
-        if ( entityId != that.entityId ) {
-            return false;
-        }
-        if ( namespaceId != that.namespaceId ) {
-            return false;
-        }
-        if ( !columnIds.equals( that.columnIds ) ) {
-            return false;
-        }
-        return enforcementTime == that.enforcementTime;
-    }
-
-
-    @Override
-    public int hashCode() {
-        int result = (int) (id ^ (id >>> 32));
-        result = 31 * result + (int) (entityId ^ (entityId >>> 32));
-        result = 31 * result + (int) (namespaceId ^ (namespaceId >>> 32));
-        result = 31 * result + columnIds.hashCode();
-        result = 31 * result + (enforcementTime != null ? enforcementTime.hashCode() : 0);
-        return result;
-    }
 
 }

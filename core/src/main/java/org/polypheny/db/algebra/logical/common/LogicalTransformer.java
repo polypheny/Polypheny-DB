@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.core.common.Transformer;
 import org.polypheny.db.algebra.enumerable.EnumerableConvention;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.schema.trait.ModelTrait;
 
@@ -36,7 +36,7 @@ public class LogicalTransformer extends Transformer {
     /**
      * Subclass of {@link Transformer} not targeted at any particular engine or calling convention.
      */
-    public LogicalTransformer( AlgOptCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, List<String> names, ModelTrait inTraitSet, ModelTrait outTraitSet, AlgDataType rowType, boolean isCrossModel ) {
+    public LogicalTransformer( AlgCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, List<String> names, ModelTrait inTraitSet, ModelTrait outTraitSet, AlgDataType rowType, boolean isCrossModel ) {
         super(
                 cluster,
                 inputs,
@@ -54,7 +54,7 @@ public class LogicalTransformer extends Transformer {
     }
 
 
-    public static LogicalTransformer create( AlgOptCluster cluster, List<AlgNode> inputs, List<String> names, ModelTrait inTraitSet, ModelTrait outTraitSet, AlgDataType rowType, boolean isCrossModel ) {
+    public static LogicalTransformer create( AlgCluster cluster, List<AlgNode> inputs, List<String> names, ModelTrait inTraitSet, ModelTrait outTraitSet, AlgDataType rowType, boolean isCrossModel ) {
         return new LogicalTransformer( cluster, inputs.get( 0 ).getTraitSet().replace( AlgCollations.EMPTY ), inputs, names, inTraitSet, outTraitSet, rowType, isCrossModel );
     }
 

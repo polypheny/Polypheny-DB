@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.SetOp;
 import org.polypheny.db.algebra.core.Union;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 
 
@@ -30,7 +30,7 @@ public class LogicalLpgUnion extends Union {
     /**
      * Subclass of {@link Union} not targeted at any particular engine or calling convention.
      */
-    protected LogicalLpgUnion( AlgOptCluster cluster, AlgTraitSet traits, List<AlgNode> inputs, boolean all ) {
+    protected LogicalLpgUnion( AlgCluster cluster, AlgTraitSet traits, List<AlgNode> inputs, boolean all ) {
         super( cluster, traits, inputs, all );
     }
 

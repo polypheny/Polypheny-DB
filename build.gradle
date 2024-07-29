@@ -16,8 +16,9 @@ buildscript {
 
 
 plugins {
-    id 'java'
+    id "java"
     id "org.jetbrains.gradle.plugin.idea-ext" version "1.1.7"
+    id 'nebula.lint' version "$nebula_lint_version"
 }
 
 
@@ -50,6 +51,7 @@ allprojects {
     apply plugin: "io.freefair.lombok"
     apply plugin: "com.adarshr.test-logger"
     apply plugin: "com.jaredsburrows.license"
+    apply plugin: "nebula.lint"
 
     compileJava.options.encoding = "UTF-8"
     compileTestJava.options.encoding = "UTF-8"
@@ -57,7 +59,8 @@ allprojects {
 
     java {
         toolchain {
-            languageVersion = JavaLanguageVersion.of(17)
+            languageVersion.set(JavaLanguageVersion.of(17))
+            vendor = JvmVendorSpec.ADOPTIUM
         }
     }
 
@@ -86,13 +89,17 @@ allprojects {
     }
 
     tasks.withType(Javadoc) {
-        if (JavaVersion.current().isJava9Compatible()) {
-            options.addBooleanOption("html5", true)
-        }
+        options.addBooleanOption("html5", true)
         // Suppress most of the warnings
         options.addStringOption("Xdoclint:none", "-quiet")
         // Include private fields in JavaDoc
         options.memberLevel = JavadocMemberLevel.PRIVATE
+    }
+
+    gradleLint.rules = ['all-dependency', 'unused-dependency']
+
+    gradleLint {
+        alwaysRun = false
     }
 
     String storeName = System.getProperty("store.default") != null ? System.getProperty("store.default") : 'hsqldb'
@@ -135,16 +142,19 @@ allprojects {
         }
         annotationProcessor group: 'org.pf4j', name: 'pf4j', version: pf4j_version
 
+        implementation group: "org.slf4j", name: "slf4j-api", version: slf4j_api_version  // MIT
+        implementation group: "org.apache.logging.log4j", name: "log4j-slf4j2-impl", version: log4j_slf4j_impl_version  // Apache 2.0
+
         testCompileOnly(group: 'org.pf4j', name: 'pf4j', version: pf4j_version) {
             exclude group: "org.slf4j"
         }
         testImplementation(group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: junit_jupiter_version)
-        testRuntimeOnly(group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: junit_jupiter_version)
     }
 
     test {
         useJUnitPlatform()
     }
+
 
     licenseReport {
         generateJsonReport = true
@@ -152,6 +162,7 @@ allprojects {
         generateHtmlReport = false
         generateTextReport = false
     }
+
 
     idea {
         module {
@@ -204,6 +215,27 @@ allprojects {
 }
 
 
+task printJavaVersion {
+    doLast {
+        println("Java version used for running Gradle: " + org.gradle.api.JavaVersion.current())
+        println "Current JAVA_HOME used by Gradle: " + System.getProperty("java.home")
+
+        // Retrieve and print the Java version configured in the toolchain
+        // Check if a toolchain is configured and retrieve details
+        if (project.extensions.findByType(JavaPluginExtension.class)?.toolchain != null) {
+            def toolchainService = project.extensions.getByType(JavaToolchainService.class)
+            def javaCompiler = toolchainService.compilerFor {
+                languageVersion.set(project.extensions.getByType(JavaPluginExtension.class).toolchain.languageVersion.get())
+            }
+            println "Java version used by toolchain: " + javaCompiler.get().metadata.languageVersion
+            println "Toolchain JAVA_HOME: " + javaCompiler.get().metadata.installationPath
+        } else {
+            println "No toolchain configured."
+        }
+    }
+}
+
+
 idea {
     project {
         settings {
@@ -223,18 +255,18 @@ idea {
                 profiles {
                     ApacheLicense {
                         notice = 'Copyright 2019-$today.year The Polypheny Project\n' +
-                                '\n' +
-                                'Licensed under the Apache License, Version 2.0 (the \"License\");\n' +
-                                'you may not use this file except in compliance with the License.\n' +
-                                'You may obtain a copy of the License at\n' +
-                                '\n' +
-                                'http://www.apache.org/licenses/LICENSE-2.0\n' +
-                                '\n' +
-                                'Unless required by applicable law or agreed to in writing, software\n' +
-                                'distributed under the License is distributed on an \"AS IS\" BASIS,\n' +
-                                'WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n' +
-                                'See the License for the specific language governing permissions and\n' +
-                                'limitations under the License.'
+                            '\n' +
+                            'Licensed under the Apache License, Version 2.0 (the \"License\");\n' +
+                            'you may not use this file except in compliance with the License.\n' +
+                            'You may obtain a copy of the License at\n' +
+                            '\n' +
+                            'http://www.apache.org/licenses/LICENSE-2.0\n' +
+                            '\n' +
+                            'Unless required by applicable law or agreed to in writing, software\n' +
+                            'distributed under the License is distributed on an \"AS IS\" BASIS,\n' +
+                            'WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n' +
+                            'See the License for the specific language governing permissions and\n' +
+                            'limitations under the License.'
                         keyword = "Copyright"
                     }
                 }

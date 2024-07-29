@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,10 +42,10 @@ import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.entity.PolyValue;
 
 
+@Getter
 @Slf4j
 public class StatisticQueryProcessor {
 
-    @Getter
     private final TransactionManager transactionManager;
 
 
@@ -89,7 +89,7 @@ public class StatisticQueryProcessor {
                 .filter( n -> n.dataModel == DataModel.RELATIONAL )
                 .flatMap( n -> snapshot.rel().getTables( Pattern.of( n.name ), null ).stream().filter( t -> t.entityType != EntityType.VIEW ).flatMap( t -> snapshot.rel().getColumns( t.id ).stream() ) )
                 .map( QueryResult::fromCatalogColumn )
-                .collect( Collectors.toList() );
+                .toList();
     }
 
 
@@ -98,7 +98,7 @@ public class StatisticQueryProcessor {
      *
      * @return all the tables ids
      */
-    public List<LogicalTable> getAllTable() {
+    public List<LogicalTable> getAllRelEntites() {
         Snapshot snapshot = Catalog.getInstance().getSnapshot();
         return snapshot.getNamespaces( null ).stream().filter( n -> n.dataModel == DataModel.RELATIONAL )
                 .flatMap( n -> snapshot.rel().getTables( Pattern.of( n.name ), null ).stream().filter( t -> t.entityType != EntityType.VIEW ) ).collect( Collectors.toList() );

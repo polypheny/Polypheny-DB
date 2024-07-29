@@ -10,27 +10,17 @@ dependencies {
     compileOnly project(":core")
     compileOnly project(":plugins:sql-language")
 
-    implementation(group: "io.grpc", name: "grpc-all", version: cottontaildb_grpc_version) {
-        exclude group: "junit"
-    }
+    implementation group: "io.grpc", name: "grpc-all", version: cottontaildb_grpc_version
     // Cottontail DB
-    implementation(group: "org.vitrivr", name: "cottontaildb", version: cottontaildb_version) {
-        exclude group: "junit"
-    }
-    implementation(group: "org.vitrivr", name: "cottontaildb-proto", version: cottontaildb_driver_version) {
-        exclude group: "junit"
-    }
+    implementation(group: "org.vitrivr", name: "cottontaildb", version: cottontaildb_version)
+    implementation group: "org.vitrivr", name: "cottontaildb-proto", version: cottontaildb_driver_version
 
-    implementation group: "org.slf4j", name: "log4j-over-slf4j", version: slf4j_api_version
 
     // --- Test Compile ---
     testImplementation project(path: ":dbms", configuration: "test")
     testImplementation project(path: ":dbms")
     testImplementation project(path: ":core", configuration: "tests")
     testImplementation project(path: ":core")
-
-    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter', version: junit_jupiter_version
-
 }
 
 compileKotlin {
@@ -46,13 +36,15 @@ delombok {
     dependsOn(":plugins:sql-language:processResources")
 }
 
-inspectClassesForKotlinIC {
+/*inspectClassesForKotlinIC {
     dependsOn(":plugins:cottontail-adapter:compileTestKotlin")
 }
 
 plugin {
     dependsOn(":plugins:cottontail-adapter:compileTestKotlin")
-}
+}*/
+
+test.dependsOn(":dbms:shadowJar")
 
 
 sourceSets {
@@ -87,7 +79,7 @@ jar {
         attributes "Copyright": "The Polypheny Project (polypheny.org)"
         attributes "Version": "$project.version"
     }
-    dependsOn(":plugins:cottontail-adapter:compileTestKotlin")
+    //dependsOn(":plugins:cottontail-adapter:compileTestKotlin")
 }
 java {
     withJavadocJar()
@@ -95,12 +87,13 @@ java {
 }
 
 javadoc {
-    dependsOn(":plugins:cottontail-adapter:compileTestKotlin")
+    //dependsOn(":plugins:cottontail-adapter:compileTestKotlin")
 }
 
 licensee {
     allow('Apache-2.0')
     allow('MIT')
+    allow('BSD-2-Clause')
     allow('BSD-3-Clause')
 
     allow('EPL-1.0')

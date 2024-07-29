@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,13 +23,15 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.docker.exceptions.DockerUserException;
 import org.polypheny.db.docker.models.DockerHost;
+import org.polypheny.db.docker.models.DockerInstanceInfo;
+import org.polypheny.db.docker.models.HandshakeInfo;
 
 
 /**
@@ -46,21 +48,21 @@ public final class DockerInstance {
      * This set is needed for resetDocker and resetCatalog.  The first time we see a new UUID, we save it in the set
      * and remove all the containers belonging to us.
      */
-    private static final Set<String> seenUuids = new HashSet<>();
+    private static final Set<String> seenInstanceUuids = new HashSet<>();
 
     private final int instanceId;
 
     @Getter
     private DockerHost host;
-    private Set<String> uuids = new HashSet<>();
+    private Set<String> containerUuids = new HashSet<>();
 
     /**
-     * The UUID of the docker daemon we are talking to.  null if we are currently not connected.
+     * The UUID of the Docker daemon we are talking to.  null if we are currently not connected.
      */
     private String dockerInstanceUuid;
 
     /**
-     * The client object used to communicate with Docker.  null if not connected.
+     * The client object used to communicate with this Docker instance.  null if not connected.
      */
     private PolyphenyDockerClient client;
 
@@ -74,9 +76,9 @@ public final class DockerInstance {
     }
 
 
-    DockerInstance( Integer instanceId, DockerHost host ) {
-        this.host = host;
+    DockerInstance( int instanceId, DockerHost host ) {
         this.instanceId = instanceId;
+        this.host = host;
         this.dockerInstanceUuid = null;
         try {
             checkConnection();
@@ -87,9 +89,7 @@ public final class DockerInstance {
 
 
     private void connectToDocker() throws IOException {
-        PolyphenyKeypair kp = PolyphenyCertificateManager.loadClientKeypair( "docker", host.hostname() );
-        byte[] serverCertificate = PolyphenyCertificateManager.loadServerCertificate( "docker", host.hostname() );
-        this.client = new PolyphenyDockerClient( host.hostname(), host.communicationPort(), kp, serverCertificate );
+        this.client = PolyphenyDockerClient.connect( "docker", host.hostname(), host.communicationPort() );
         this.client.ping();
     }
 
@@ -97,29 +97,30 @@ public final class DockerInstance {
     private void handleNewDockerInstance() throws IOException {
         this.dockerInstanceUuid = this.client.getDockerId();
 
-        // seenUuids is used to lock out all the other DockerInstance instances
-        synchronized ( seenUuids ) {
+        // seenUuids is used to synchronize with other DockerInstance instances
+        synchronized ( seenInstanceUuids ) {
             for ( DockerInstance instance : DockerManager.getInstance().getDockerInstances().values() ) {
-                if ( instance != this && instance.dockerInstanceUuid.equals( dockerInstanceUuid ) ) {
-                    throw new GenericRuntimeException( "The same docker instance cannot be added twice" );
+                if ( instance != this && instance.dockerInstanceUuid != null && instance.dockerInstanceUuid.equals( dockerInstanceUuid ) ) {
+                    throw new DockerUserException( String.format( "Already connected to instance at '%s' with alias '%s'", this.host.hostname(), instance.host.alias() ) );
                 }
             }
         }
-
+        // What follows here is only to clean up old containers when Polypheny is reset.
         boolean first;
-        synchronized ( seenUuids ) {
-            first = seenUuids.add( this.dockerInstanceUuid ) && (Catalog.resetDocker || Catalog.resetCatalog);
+        synchronized ( seenInstanceUuids ) {
+            first = seenInstanceUuids.add( this.dockerInstanceUuid );
         }
 
-        if ( first ) {
-            List<ContainerInfo> containers = this.client.listContainers();
-            for ( String uuid : containers.stream().map( ContainerInfo::getUuid ).toList() ) {
-                try {
-                    this.client.deleteContainer( uuid );
-                } catch ( IOException e ) {
-                    log.error( "Failed to delete container " + uuid, e );
-                }
-            }
+        if ( first && (Catalog.resetDocker || Catalog.resetCatalog) ) {
+            this.client.listContainers().forEach(
+                    containerInfo -> {
+                        try {
+                            this.client.deleteContainer( containerInfo.getUuid() );
+                        } catch ( IOException e ) {
+                            log.error( "Failed to delete container " + containerInfo.getUuid(), e );
+                        }
+                    }
+            );
         }
     }
 
@@ -132,18 +133,17 @@ public final class DockerInstance {
 
             if ( status == Status.NEW ) {
                 handleNewDockerInstance();
-                status = Status.DISCONNECTED; // This is so that the next block is executed as well, but that we never rerun handleNewDockerInstance
+                status = Status.DISCONNECTED; // This is so that the next block is executed as well, but that we never run handleNewDockerInstance again
             }
 
             // We only get here, if connectToDocker worked
             if ( status != Status.CONNECTED ) {
                 Set<String> uuids = new HashSet<>();
-                List<ContainerInfo> containers = this.client.listContainers();
-                for ( ContainerInfo containerInfo : containers ) {
-                    uuids.add( containerInfo.getUuid() );
-                    new DockerContainer( containerInfo.getUuid(), containerInfo.getName() );
-                }
-                this.uuids = uuids;
+                this.client.listContainers().forEach( c -> {
+                    uuids.add( c.getUuid() );
+                    new DockerContainer( c.getUuid(), c.getName() );
+                } );
+                this.containerUuids = uuids;
                 status = Status.CONNECTED;
             } else {
                 client.ping();
@@ -152,7 +152,7 @@ public final class DockerInstance {
     }
 
 
-    public boolean isConnected() {
+    boolean isConnected() {
         try {
             checkConnection();
             return true;
@@ -165,7 +165,9 @@ public final class DockerInstance {
     public void reconnect() {
         synchronized ( this ) {
             try {
-                status = Status.DISCONNECTED;
+                if ( status != Status.NEW ) {
+                    status = Status.DISCONNECTED;
+                }
                 checkConnection();
             } catch ( IOException e ) {
                 log.info( "Failed to reconnect: " + e );
@@ -174,12 +176,22 @@ public final class DockerInstance {
     }
 
 
-    public DockerStatus probeDockerStatus() {
-        return new DockerStatus( instanceId, isConnected() );
+    public void ping() {
+        synchronized ( this ) {
+            if ( status == Status.CONNECTED && client != null && client.isConnected() ) {
+                try {
+                    client.ping();
+                } catch ( IOException e ) {
+                    throw new DockerUserException( e );
+                }
+            } else {
+                throw new DockerUserException( "Not connected" );
+            }
+        }
     }
 
 
-    public Map<String, Object> getMap() {
+    public DockerInstanceInfo getInfo() {
         synchronized ( this ) {
             int numberOfContainers = -1;
             try {
@@ -189,17 +201,7 @@ public final class DockerInstance {
             } catch ( IOException e ) {
                 // ignore
             }
-            return Map.of(
-                    "id", instanceId,
-                    "host", host.hostname(),
-                    "alias", host.alias(),
-                    "connected", isConnected(),
-                    "registry", host.registry(),
-                    "communicationPort", host.communicationPort(),
-                    "handshakePort", host.handshakePort(),
-                    "proxyPort", host.proxyPort(),
-                    "numberOfContainers", numberOfContainers
-            );
+            return new DockerInstanceInfo( instanceId, status == Status.CONNECTED, numberOfContainers, host );
         }
     }
 
@@ -225,7 +227,7 @@ public final class DockerInstance {
     void destroyContainer( DockerContainer container ) {
         synchronized ( this ) {
             try {
-                uuids.remove( container.getContainerId() );
+                containerUuids.remove( container.getContainerId() );
                 client.deleteContainer( container.getContainerId() );
             } catch ( IOException e ) {
                 if ( e.getMessage().startsWith( "No such container" ) ) {
@@ -254,7 +256,7 @@ public final class DockerInstance {
 
     boolean hasContainer( String uuid ) {
         synchronized ( this ) {
-            return uuids.contains( uuid );
+            return containerUuids.contains( uuid );
         }
     }
 
@@ -269,24 +271,25 @@ public final class DockerInstance {
     }
 
 
-    void updateConfig( String host, String alias, String registry ) {
-        throw new NotImplementedException( "Updating configurations has been temporarily disabled" );
-        /*
+    Optional<HandshakeInfo> updateConfig( String hostname, String alias, String registry ) {
         synchronized ( this ) {
-            if ( !this.host.hostname().equals( host ) ) {
+            DockerHost newHost = new DockerHost( hostname, alias, registry, this.getHost().communicationPort(), this.getHost().handshakePort(), this.getHost().proxyPort() );
+            if ( !this.host.hostname().equals( hostname ) ) {
                 client.close();
-                this.host = host;
                 status = Status.NEW;
+                // TODO: Copy/Move keys...
+                // TODO: Restart all proxy connections
                 try {
+                    this.host = newHost;
                     checkConnection();
                 } catch ( IOException e ) {
-                    log.info( "Failed to connect to " + host );
+                    log.info( "Failed to connect to '" + hostname + "': " + e.getMessage() );
+                    return Optional.of( HandshakeManager.getInstance().newHandshake( newHost, null, true ) );
                 }
             }
-            this.alias = alias;
-            this.registry = registry;
+            this.host = newHost;
+            return Optional.empty();
         }
-         */
     }
 
 
@@ -296,7 +299,9 @@ public final class DockerInstance {
                 client.close();
                 client = null;
             }
-            status = Status.DISCONNECTED;
+            if ( status != Status.NEW ) {
+                status = Status.DISCONNECTED;
+            }
         }
     }
 
@@ -351,7 +356,7 @@ public final class DockerInstance {
                 }
 
                 String uuid = client.createAndStartContainer( DockerContainer.getPhysicalUniqueName( uniqueName ), imageNameWithRegistry, exposedPorts, initCommand, environmentVariables, List.of() );
-                uuids.add( uuid );
+                containerUuids.add( uuid );
                 return new DockerContainer( uuid, uniqueName );
             }
         }

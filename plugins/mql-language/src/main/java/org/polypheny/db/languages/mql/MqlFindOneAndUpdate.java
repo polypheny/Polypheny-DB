@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,8 +45,8 @@ public class MqlFindOneAndUpdate extends MqlCollectionStatement implements MqlQu
     private final BsonDocument collation;
 
 
-    public MqlFindOneAndUpdate( ParserPos pos, String collection, BsonDocument query, BsonValue updateOrPipeline, BsonDocument options ) {
-        super( collection, pos );
+    public MqlFindOneAndUpdate( ParserPos pos, String collection, String namespace, BsonDocument query, BsonValue updateOrPipeline, BsonDocument options ) {
+        super( collection, namespace, pos );
         this.query = query;
         if ( updateOrPipeline.isArray() ) {
             this.pipeline = updateOrPipeline.asArray();

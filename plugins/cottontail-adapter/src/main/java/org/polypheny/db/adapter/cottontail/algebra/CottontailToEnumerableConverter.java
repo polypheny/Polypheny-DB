@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,6 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.cottontail.CottontailConvention;
 import org.polypheny.db.adapter.cottontail.CottontailEntity;
 import org.polypheny.db.adapter.cottontail.algebra.CottontailAlg.CottontailImplementContext;
 import org.polypheny.db.adapter.cottontail.enumberable.CottontailDeleteEnumerable;
@@ -36,15 +35,15 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterImpl;
 import org.polypheny.db.algebra.enumerable.EnumerableAlg;
 import org.polypheny.db.algebra.enumerable.EnumerableAlgImplementor;
-import org.polypheny.db.algebra.enumerable.JavaRowFormat;
+import org.polypheny.db.algebra.enumerable.JavaTupleFormat;
 import org.polypheny.db.algebra.enumerable.PhysType;
 import org.polypheny.db.algebra.enumerable.PhysTypeImpl;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.type.ArrayType;
@@ -74,7 +73,7 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
      * @param traits the output traits of this converter
      * @param child child alg (provides input traits)
      */
-    public CottontailToEnumerableConverter( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child ) {
+    public CottontailToEnumerableConverter( AlgCluster cluster, AlgTraitSet traits, AlgNode child ) {
         super( cluster, ConventionTraitDef.INSTANCE, traits, child );
     }
 
@@ -86,7 +85,7 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         return super.computeSelfCost( planner, mq ).multiplyBy( .1 );
     }
 
@@ -98,9 +97,8 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
         cottontailContext.blockBuilder = list;
         cottontailContext.visitChild( 0, getInput() );
 
-        final CottontailConvention convention = (CottontailConvention) getInput().getConvention();
         final AlgDataType rowType = getTupleType();
-        final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), rowType, pref.prefer( JavaRowFormat.ARRAY ) );
+        final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), rowType, pref.prefer( JavaTupleFormat.ARRAY ) );
         final Expression enumerable;
 
         switch ( cottontailContext.queryType ) {

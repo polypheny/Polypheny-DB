@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.cql.BooleanGroup.ColumnOpsBooleanOperator;
+import org.polypheny.db.cql.BooleanGroup.FieldOpsBooleanOperator;
 import org.polypheny.db.cql.exception.UnexpectedTypeException;
 import org.polypheny.db.cql.utils.Tree;
 import org.polypheny.db.cql.utils.Tree.NodeType;
@@ -50,7 +50,7 @@ import org.polypheny.db.util.Pair;
 
 /**
  * Packaging information and algorithm to convert a {@link CqlQuery}
- * to relational algebra ({@link AlgNode}, {@link AlgRoot}, {@link RexNode})
+ * to algebra ({@link AlgNode}, {@link AlgRoot}, {@link RexNode})
  */
 @Slf4j
 public class Cql2AlgConverter {
@@ -69,7 +69,7 @@ public class Cql2AlgConverter {
 
     /**
      * Packaging of all algorithms involved in converting {@link CqlQuery}
-     * to relational algebra.
+     * to algebra.
      *
      * @param algBuilder {@link AlgBuilder}.
      * @param rexBuilder {@link RexBuilder}.
@@ -119,8 +119,8 @@ public class Cql2AlgConverter {
     private void setScanColumnOrdinalities() {
         cqlQuery.queryRelation().traverse( TraversalType.INORDER, ( treeNode, nodeType, direction, frame ) -> {
             if ( nodeType == NodeType.DESTINATION_NODE && treeNode.isLeaf() ) {
-                TableIndex tableIndex = treeNode.getExternalNode();
-                for ( Long id : tableIndex.catalogTable.getColumnIds() ) {
+                EntityIndex entityIndex = treeNode.getExternalNode();
+                for ( Long id : entityIndex.catalogTable.getColumnIds() ) {
                     tableScanColumnOrdinalities.put( id, tableScanColumnOrdinalities.size() );
                 }
             }
@@ -130,7 +130,7 @@ public class Cql2AlgConverter {
 
 
     /**
-     * Generates table scan i.e. Combines all the tables that
+     * Generates table relScan i.e. Combines all the tables that
      * are to be queried using the {@link Combiner}.
      *
      * @param algBuilder {@link AlgBuilder}.
@@ -138,8 +138,8 @@ public class Cql2AlgConverter {
      * @return {@link AlgBuilder}.
      */
     private AlgBuilder generateScan( AlgBuilder algBuilder, RexBuilder rexBuilder ) {
-        log.debug( "Generating table scan." );
-        Tree<Combiner, TableIndex> tableOperations = cqlQuery.queryRelation();
+        log.debug( "Generating table relScan." );
+        Tree<Combiner, EntityIndex> tableOperations = cqlQuery.queryRelation();
         AtomicReference<AlgBuilder> algBuilderAtomicReference = new AtomicReference<>( algBuilder );
 
         tableOperations.traverse( TraversalType.POSTORDER, ( treeNode, nodeType, direction, frame ) -> {
@@ -148,7 +148,7 @@ public class Cql2AlgConverter {
                     if ( treeNode.isLeaf() ) {
                         LogicalTable table = treeNode.getExternalNode().catalogTable;
                         algBuilderAtomicReference.set(
-                                algBuilderAtomicReference.get().scan( Catalog.getInstance().getSnapshot().getNamespace( table.namespaceId ).orElseThrow().name, table.name )
+                                algBuilderAtomicReference.get().relScan( Catalog.getInstance().getSnapshot().getNamespace( table.namespaceId ).orElseThrow().name, table.name )
                         );
                     } else {
                         Combiner combiner = treeNode.getInternalNode();
@@ -184,7 +184,7 @@ public class Cql2AlgConverter {
      */
     private AlgBuilder generateProjections( AlgBuilder algBuilder, RexBuilder rexBuilder ) {
         log.debug( "Generating initial projection." );
-        Tree<Combiner, TableIndex> queryRelation = cqlQuery.queryRelation();
+        Tree<Combiner, EntityIndex> queryRelation = cqlQuery.queryRelation();
         AlgNode baseNode = algBuilder.peek();
         List<RexNode> inputRefs = new ArrayList<>();
         List<String> columnNames = new ArrayList<>();
@@ -193,9 +193,9 @@ public class Cql2AlgConverter {
         queryRelation.traverse( TraversalType.INORDER, ( treeNode, nodeType, direction, frame ) -> {
             if ( nodeType == NodeType.DESTINATION_NODE && treeNode.isLeaf() ) {
                 try {
-                    TableIndex tableIndex = treeNode.getExternalNode();
-                    String columnNamePrefix = tableIndex.fullyQualifiedName + ".";
-                    LogicalTable catalogTable = tableIndex.catalogTable;
+                    EntityIndex entityIndex = treeNode.getExternalNode();
+                    String columnNamePrefix = entityIndex.fullyQualifiedName + ".";
+                    LogicalTable catalogTable = entityIndex.catalogTable;
                     for ( LogicalColumn column : catalog.getSnapshot().rel().getColumns( catalogTable.id ) ) {
                         int ordinal = tableScanColumnOrdinalities.size();
                         RexNode inputRef = rexBuilder.makeInputRef( baseNode, ordinal );
@@ -218,7 +218,7 @@ public class Cql2AlgConverter {
 
 
     /**
-     * Convert {@link Filter}s to relational algebra.
+     * Convert {@link Filter}s to algebra.
      *
      * @param algBuilder {@link AlgBuilder}.
      * @param rexBuilder {@link RexBuilder}.
@@ -226,7 +226,7 @@ public class Cql2AlgConverter {
      */
     private AlgBuilder generateFilters( AlgBuilder algBuilder, RexBuilder rexBuilder ) {
         log.debug( "Generating filters." );
-        Tree<BooleanGroup<ColumnOpsBooleanOperator>, Filter> filters = cqlQuery.filters();
+        Tree<BooleanGroup<FieldOpsBooleanOperator>, Filter> filters = cqlQuery.filters();
         if ( filters == null ) {
             return algBuilder;
         }
@@ -247,22 +247,22 @@ public class Cql2AlgConverter {
                         Filter filter = treeNode.getExternalNode();
                         rexNode = filter.convert2RexNode( baseNode, rexBuilder, filterMap );
                     } else {
-                        BooleanGroup<ColumnOpsBooleanOperator> booleanGroup = treeNode.getInternalNode();
-                        if ( booleanGroup.booleanOperator == ColumnOpsBooleanOperator.AND ) {
+                        BooleanGroup<FieldOpsBooleanOperator> booleanGroup = treeNode.getInternalNode();
+                        if ( booleanGroup.booleanOperator == FieldOpsBooleanOperator.AND ) {
                             log.debug( "Found 'AND'." );
                             rexNode = rexBuilder.makeCall(
                                     OperatorRegistry.get( OperatorName.AND ),
                                     secondToLastRexNode.get(),
                                     lastRexNode.get()
                             );
-                        } else if ( booleanGroup.booleanOperator == ColumnOpsBooleanOperator.OR ) {
+                        } else if ( booleanGroup.booleanOperator == FieldOpsBooleanOperator.OR ) {
                             log.debug( "Found 'OR'." );
                             rexNode = rexBuilder.makeCall(
                                     OperatorRegistry.get( OperatorName.OR ),
                                     secondToLastRexNode.get(),
                                     lastRexNode.get()
                             );
-                        } else if ( booleanGroup.booleanOperator == ColumnOpsBooleanOperator.NOT ) {
+                        } else if ( booleanGroup.booleanOperator == FieldOpsBooleanOperator.NOT ) {
                             log.debug( "Found 'NOT'." );
                             rexNode = rexBuilder.makeCall(
                                     OperatorRegistry.get( OperatorName.NOT ),
@@ -297,7 +297,7 @@ public class Cql2AlgConverter {
 
 
     /**
-     * Convert sort specifications to relational algebra.
+     * Convert sort specifications to algebra.
      *
      * @param algBuilder {@link AlgBuilder}.
      * @param rexBuilder {@link RexBuilder}.
@@ -305,19 +305,19 @@ public class Cql2AlgConverter {
      */
     private AlgBuilder generateSort( AlgBuilder algBuilder, RexBuilder rexBuilder ) {
         log.debug( "Generating sort." );
-        List<Pair<ColumnIndex, Map<String, Modifier>>> sortSpecifications = cqlQuery.sortSpecifications();
+        List<Pair<FieldIndex, Map<String, Modifier>>> sortSpecifications = cqlQuery.sortSpecifications();
         List<RexNode> sortingNodes = new ArrayList<>();
         AlgNode baseNode = algBuilder.peek();
-        for ( Pair<ColumnIndex, Map<String, Modifier>> sortSpecification : sortSpecifications ) {
-            ColumnIndex columnIndex = sortSpecification.left;
+        for ( Pair<FieldIndex, Map<String, Modifier>> sortSpecification : sortSpecifications ) {
+            FieldIndex fieldIndex = sortSpecification.left;
 
             int ordinality;
-            if ( projectionColumnOrdinalities.containsKey( columnIndex.logicalColumn.id ) ) {
-                ordinality = projectionColumnOrdinalities.get( columnIndex.logicalColumn.id );
-            } else if ( tableScanColumnOrdinalities.containsKey( columnIndex.logicalColumn.id ) ) {
-                ordinality = tableScanColumnOrdinalities.get( columnIndex.logicalColumn.id );
+            if ( projectionColumnOrdinalities.containsKey( fieldIndex.logicalColumn.id ) ) {
+                ordinality = projectionColumnOrdinalities.get( fieldIndex.logicalColumn.id );
+            } else if ( tableScanColumnOrdinalities.containsKey( fieldIndex.logicalColumn.id ) ) {
+                ordinality = tableScanColumnOrdinalities.get( fieldIndex.logicalColumn.id );
             } else {
-                throw new GenericRuntimeException( "Column ordinality not found for column: " + columnIndex.logicalColumn.name );
+                throw new GenericRuntimeException( "Column ordinality not found for column: " + fieldIndex.logicalColumn.name );
             }
 
             RexNode sortingNode = rexBuilder.makeInputRef( baseNode, ordinality );

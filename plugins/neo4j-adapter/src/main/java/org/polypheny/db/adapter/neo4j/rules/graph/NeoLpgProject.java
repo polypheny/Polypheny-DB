@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ import org.polypheny.db.adapter.neo4j.util.NeoStatements.NeoStatement;
 import org.polypheny.db.adapter.neo4j.util.Translator;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.lpg.LpgProject;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.trait.ModelTrait;
@@ -46,7 +46,7 @@ public class NeoLpgProject extends LpgProject implements NeoGraphAlg {
      * @param traits Traits active for this node, including {@link ModelTrait#GRAPH}
      * @param input Input algebraic expression
      */
-    public NeoLpgProject( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, List<PolyString> names, List<? extends RexNode> projects ) {
+    public NeoLpgProject( AlgCluster cluster, AlgTraitSet traits, AlgNode input, List<PolyString> names, List<? extends RexNode> projects ) {
         super( cluster, traits, input, projects, names );
     }
 

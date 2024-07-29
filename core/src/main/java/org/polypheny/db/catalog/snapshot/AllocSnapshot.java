@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,12 +36,12 @@ public interface AllocSnapshot {
     Optional<List<AllocationEntity>> getEntitiesOnAdapter( long id );
 
     /**
-     * Gets a collective list of column placements per column on an adapter.
+     * Gets a collective list of field placements per field on an adapter.
      * Effectively used to retrieve all relevant placements including partitions.
      *
      * @param placementId The id of the adapter
-     * @param columnId The id of the column
-     * @return The specific column placement
+     * @param columnId The id of the field
+     * @return The specific field placement
      */
     @NotNull
     Optional<AllocationColumn> getColumn( long placementId, long columnId );
@@ -49,97 +49,97 @@ public interface AllocSnapshot {
     /**
      * Get all column placements of a column
      *
-     * @param columnId The id of the specific column
-     * @return List of column placements of specific column
+     * @param columnId The id of the specific field
+     * @return List of column placements of specific field
      */
     @NotNull
     Optional<List<AllocationColumn>> getColumnFromLogical( long columnId );
 
     /**
-     * Get column placements of a specific table on a specific adapter on column detail level.
-     * Only returns one ColumnPlacement per column on adapter. Ignores multiplicity due to different partitionsIds
+     * Get column placements of a specific entity on a specific adapter on field detail level.
+     * Only returns one ColumnPlacement per field on adapter. Ignores multiplicity due to different partitionsIds
      *
      * @param adapterId The id of the adapter
-     * @return List of column placements of the table on the specified adapter
+     * @return List of column placements of the entity on the specified adapter
      */
     @NotNull
-    List<AllocationColumn> getColumnPlacementsOnAdapterPerTable( long adapterId, long tableId );
+    List<AllocationColumn> getColumnPlacementsOnAdapterPerEntity( long adapterId, long entityId );
 
 
     /**
-     * Gets all column placements of a table structured by the id of the adapters.
+     * Gets all column placements of an entity structured by the id of the adapters.
      *
-     * @param tableId The id of the table for the requested column placements
+     * @param entityId The id of the entity for the requested field placements
      * @return The requested collection
      */
     @NotNull
-    Map<Long, List<Long>> getColumnPlacementsByAdapters( long tableId );
+    Map<Long, List<Long>> getColumnPlacementsByAdapters( long entityId );
 
 
     /**
-     * Get a List of all partitions belonging to a specific table
+     * Get a List of all partitions belonging to a specific entity
      *
-     * @param partitionGroupId Table to be queried
-     * @return list of all partitions on this table
+     * @param partitionGroupId Entity to be queried
+     * @return list of all partitions on this entity
      */
     List<AllocationPartition> getPartitions( long partitionGroupId );
 
     /**
-     * Get a list of all partition name belonging to a specific table
+     * Get a list of all partition name belonging to a specific entity
      *
-     * @param tableId Table to be queried
-     * @return list of all partition names on this table
+     * @param entityId Entity to be queried
+     * @return list of all partition names on this entity
      */
-    List<String> getPartitionGroupNames( long tableId );
+    List<String> getPartitionGroupNames( long entityId );
 
     /**
      * Get placements by partition. Identify the location of partitions.
      * Essentially returns all ColumnPlacements which hold the specified partitionID.
      *
-     * @param tableId The id of the table
+     * @param entityId The id of the entity
      * @param partitionGroupId The id of the partition
      * @param columnId The id of tje column
-     * @return List of CatalogColumnPlacements
+     * @return List of allocation columns
      */
-    List<AllocationColumn> getColumnPlacementsByPartitionGroup( long tableId, long partitionGroupId, long columnId );
+    List<AllocationColumn> getColumnAllocsByPartitionGroup( long entityId, long partitionGroupId, long columnId );
 
     /**
      * Get adapters by partition. Identify the location of partitions/replicas
      * Essentially returns all adapters which hold the specified partitionID
      *
-     * @param tableId The unique id of the table
+     * @param entityId The unique id of the entity
      * @param partitionGroupId The unique id of the partition
-     * @return List of CatalogAdapters
+     * @return List of adapters
      */
-    List<LogicalAdapter> getAdaptersByPartitionGroup( long tableId, long partitionGroupId );
+    List<LogicalAdapter> getAdaptersByPartitionGroup( long entityId, long partitionGroupId );
 
     /**
-     * Get all partitions of a DataPlacement (identified by adapterId and tableId)
+     * Get all partitions of a DataPlacement (identified by adapterId and entityId)
      *
      * @param adapterId The unique id of the adapter
-     * @param tableId The unique id of the table
+     * @param entityId The unique id of the entity
      * @return List of partitionIds
      */
-    List<Long> getPartitionsOnDataPlacement( long adapterId, long tableId );
+    List<Long> getPartitionsOnDataPlacement( long adapterId, long entityId );
 
     /**
      * Returns list with the index of the partitions on this store from  0..numPartitions
      *
      * @param adapterId The unique id of the adapter
-     * @param tableId The unique id of the table
-     * @return List of partitionId Indices
+     * @param entityId The unique id of the entity
+     * @return List of partitionId indices
      */
-    List<Long> getPartitionGroupsIndexOnDataPlacement( long adapterId, long tableId );
+    List<Long> getPartitionGroupsIndexOnDataPlacement( long adapterId, long entityId );
 
     /**
-     * Returns a specific DataPlacement of a given table.
+     * Returns a specific DataPlacement of a given entity.
      *
      * @param adapterId adapter where placement is located
-     * @param logicalTableId table to retrieve the placement from
-     * @return DataPlacement of a table placed on a specific store
+     * @param logicalEntityId entity to retrieve the placement from
+     * @return DataPlacement of an entity placed on a specific store
      */
     @NotNull
-    Optional<AllocationPlacement> getPlacement( long adapterId, long logicalTableId );
+    Optional<AllocationPlacement> getPlacement( long adapterId, long logicalEntityId );
 
     @NotNull
     List<AllocationEntity> getFromLogical( long logicalId );

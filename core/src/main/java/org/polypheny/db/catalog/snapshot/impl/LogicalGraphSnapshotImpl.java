@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,16 +20,19 @@ import com.google.common.collect.ImmutableMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
+import lombok.EqualsAndHashCode;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.catalogs.LogicalGraphCatalog;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.catalog.snapshot.LogicalGraphSnapshot;
 
+@Slf4j
+@EqualsAndHashCode
 public class LogicalGraphSnapshotImpl implements LogicalGraphSnapshot {
 
     private final ImmutableMap<Long, LogicalGraph> graphs;
@@ -70,30 +73,5 @@ public class LogicalGraphSnapshotImpl implements LogicalGraphSnapshot {
         return graphNames.values().stream().filter( g -> g.caseSensitive ? g.name.matches( graphName.toRegex() ) : g.name.toLowerCase().matches( graphName.toRegex().toLowerCase() ) ).collect( Collectors.toList() );
     }
 
-
-    @Override
-    public boolean equals( Object o ) {
-        if ( this == o ) {
-            return true;
-        }
-        if ( o == null || getClass() != o.getClass() ) {
-            return false;
-        }
-
-        LogicalGraphSnapshotImpl that = (LogicalGraphSnapshotImpl) o;
-
-        if ( !Objects.equals( graphs, that.graphs ) ) {
-            return false;
-        }
-        return Objects.equals( graphNames, that.graphNames );
-    }
-
-
-    @Override
-    public int hashCode() {
-        int result = graphs != null ? graphs.hashCode() : 0;
-        result = 31 * result + (graphNames != null ? graphNames.hashCode() : 0);
-        return result;
-    }
 
 }

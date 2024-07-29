@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.enumerable.EnumerableConvention;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.tools.AlgBuilderFactory;
+import org.polypheny.db.util.Util;
 
 
 public class CottontailToEnumerableConverterRule extends ConverterRule {
@@ -32,11 +33,11 @@ public class CottontailToEnumerableConverterRule extends ConverterRule {
     public CottontailToEnumerableConverterRule( AlgBuilderFactory algBuilderFactory ) {
         super(
                 AlgNode.class,
-                r -> true,
+                Util::containsEntity,
                 CottontailConvention.INSTANCE,
                 EnumerableConvention.INSTANCE,
                 algBuilderFactory,
-                "CottontailToEnumerableConverterRule" );
+                CottontailToEnumerableConverterRule.class.getSimpleName() );
     }
 
 

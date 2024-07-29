@@ -17,19 +17,16 @@
 package org.polypheny.db.adapter.postgres;
 
 
-import com.google.common.collect.ImmutableList;
-import java.util.List;
 import java.util.Objects;
-import org.apache.calcite.avatica.SqlType;
-import org.apache.calcite.avatica.util.TimeUnitRange;
+import java.util.Optional;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.NullCollation;
-import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.algebra.type.AlgDataTypeSystemImpl;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.nodes.TimeUnitRange;
 import org.polypheny.db.sql.language.SqlBasicCall;
 import org.polypheny.db.sql.language.SqlCall;
 import org.polypheny.db.sql.language.SqlDataTypeSpec;
@@ -41,6 +38,7 @@ import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlUtil;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.sql.language.fun.SqlFloorFunction;
+import org.polypheny.db.sql.language.validate.SqlType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.inference.ReturnTypes;
 
@@ -60,7 +58,7 @@ public class PostgresqlSqlDialect extends SqlDialect {
                     if ( Objects.requireNonNull( typeName ) == PolyType.VARCHAR ) {// From htup_details.h in postgresql:
                         // MaxAttrSize is a somewhat arbitrary upper limit on the declared size of data fields of char(n) and similar types.  It need not have anything
                         // directly to do with the *actual* upper limit of varlena values, which is currently 1Gb (see TOAST structures in postgres.h).  I've set it
-                        // at 10Mb which seems like a reasonable number --- tgl 8/6/00. */
+                        // at 10Mb which seems like a reasonable number --- tgl 8/6/00.
                         return 10 * 1024 * 1024;
                     }
                     return super.getMaxPrecision( typeName );
@@ -99,23 +97,13 @@ public class PostgresqlSqlDialect extends SqlDialect {
         return true;
     }
 
-    @Override
-    public boolean supportsPostGIS() {
-        return true;
-    }
 
-    public List<OperatorName> supportedGeoFunctions() {
-        return ImmutableList.of(OperatorName.ST_GEOMFROMTEXT, OperatorName.ST_TRANSFORM, OperatorName.ST_EQUALS,
-                OperatorName.ST_ISSIMPLE, OperatorName.ST_ISCLOSED, OperatorName.ST_ISEMPTY,  OperatorName.ST_ISRING,
-                OperatorName.ST_NUMPOINTS, OperatorName.ST_DIMENSION, OperatorName.ST_LENGTH, OperatorName.ST_AREA,
-                OperatorName.ST_ENVELOPE, OperatorName.ST_BOUNDARY, OperatorName.ST_CONVEXHULL, OperatorName.ST_CENTROID,
-                OperatorName.ST_CENTROID, OperatorName.ST_DISJOINT, OperatorName.ST_TOUCHES, OperatorName.ST_INTERSECTS,
-                OperatorName.ST_CROSSES, OperatorName.ST_WITHIN, OperatorName.ST_CONTAINS, OperatorName.ST_OVERLAPS,
-                OperatorName.ST_COVERS, OperatorName.ST_COVEREDBY, OperatorName.ST_RELATE,
-                OperatorName.ST_INTERSECTION, OperatorName.ST_UNION, OperatorName.ST_DIFFERENCE, OperatorName.ST_SYMDIFFERENCE,
-                OperatorName.ST_X, OperatorName.ST_Y, OperatorName.ST_Z, OperatorName.ST_STARTPOINT, OperatorName.ST_ENDPOINT,
-                OperatorName.ST_EXTERIORRING, OperatorName.ST_NUMINTERIORRING, OperatorName.ST_INTERIORRINGN,
-                OperatorName.ST_NUMGEOMETRIES, OperatorName.ST_GEOMETRYN);
+    @Override
+    public Optional<String> handleMissingLength( PolyType type ) {
+        return switch ( type ) {
+            case VARBINARY, VARCHAR, BINARY -> Optional.of( "VARYING" );
+            default -> Optional.empty();
+        };
     }
 
 
@@ -130,9 +118,6 @@ public class PostgresqlSqlDialect extends SqlDialect {
             case DOUBLE:
                 // Postgres has a double type but it is named differently
                 castSpec = "_double precision";
-                break;
-            case GEOMETRY:
-                castSpec = "_GEOMETRY";
                 break;
             case VARBINARY:
             case FILE:
@@ -160,19 +145,7 @@ public class PostgresqlSqlDialect extends SqlDialect {
                     default -> "_" + t.getName() + brackets;
                 };
                 break;
-            case INTERVAL_YEAR_MONTH:
-            case INTERVAL_DAY:
-            case INTERVAL_DAY_HOUR:
-            case INTERVAL_DAY_MINUTE:
-            case INTERVAL_DAY_SECOND:
-            case INTERVAL_HOUR_MINUTE:
-            case INTERVAL_HOUR:
-            case INTERVAL_HOUR_SECOND:
-            case INTERVAL_MINUTE:
-            case INTERVAL_MONTH:
-            case INTERVAL_SECOND:
-            case INTERVAL_MINUTE_SECOND:
-            case INTERVAL_YEAR:
+            case INTERVAL:
                 castSpec = "interval";
                 break;
             default:
@@ -191,12 +164,6 @@ public class PostgresqlSqlDialect extends SqlDialect {
             case REAL -> "float4";
             default -> super.getArrayComponentTypeString( type );
         };
-    }
-
-
-    @Override
-    protected boolean requiresAliasForFromItems() {
-        return true;
     }
 
 
@@ -267,4 +234,3 @@ public class PostgresqlSqlDialect extends SqlDialect {
     }
 
 }
-

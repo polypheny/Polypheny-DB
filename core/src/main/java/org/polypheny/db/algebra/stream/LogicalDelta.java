@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,7 +38,7 @@ import java.util.List;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgInput;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 
@@ -56,7 +56,7 @@ public final class LogicalDelta extends Delta {
      * @param cluster Cluster that this relational expression belongs to
      * @param input Input relational expression
      */
-    public LogicalDelta( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input ) {
+    public LogicalDelta( AlgCluster cluster, AlgTraitSet traits, AlgNode input ) {
         super( cluster, traits, input );
     }
 

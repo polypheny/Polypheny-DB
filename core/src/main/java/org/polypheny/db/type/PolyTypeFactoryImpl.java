@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,6 +61,9 @@ public class PolyTypeFactoryImpl extends AlgDataTypeFactoryImpl {
     public AlgDataType createPolyType( PolyType typeName ) {
         if ( typeName.allowsPrec() ) {
             return createPolyType( typeName, typeSystem.getDefaultPrecision( typeName ) );
+        }
+        if ( typeName == PolyType.ARRAY ) {
+            return new ArrayType( new BasicPolyType( AlgDataTypeSystem.DEFAULT, PolyType.ANY ), true );
         }
         assertBasic( typeName );
         AlgDataType newType = new BasicPolyType( typeSystem, typeName );
@@ -341,7 +344,10 @@ public class PolyTypeFactoryImpl extends AlgDataTypeFactoryImpl {
                         }
                     }
 
-                    resultType = createPolyType( newTypeName, precision );
+                    if ( newTypeName != PolyType.TEXT ) {
+                        resultType = createPolyType( newTypeName, precision );
+                    }
+
                 }
                 Charset charset = null;
                 Collation collation = null;

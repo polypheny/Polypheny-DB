@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,11 +24,13 @@ import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.CompatibilityLevel;
 import io.activej.serializer.CorruptedDataException;
-import io.activej.serializer.SimpleSerializerDef;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
+import io.activej.serializer.def.SimpleSerializerDef;
 import java.math.BigDecimal;
+import java.util.Objects;
 import lombok.EqualsAndHashCode;
+import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.commons.lang3.ObjectUtils;
@@ -40,16 +42,18 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
 
-@EqualsAndHashCode(callSuper = true)
+@Value
 public class PolyDouble extends PolyNumber {
 
     @Serialize
     @JsonProperty
+    @Nullable
+    @EqualsAndHashCode.Include
     public Double value;
 
 
     @JsonCreator
-    public PolyDouble( @Deserialize("value") @JsonProperty("value") Double value ) {
+    public PolyDouble( @Deserialize("value") @JsonProperty("value") @Nullable Double value ) {
         super( PolyType.DOUBLE );
         this.value = value;
     }
@@ -86,20 +90,22 @@ public class PolyDouble extends PolyNumber {
     }
 
 
-    public static PolyDouble convert( @Nullable Object object ) {
-        if ( object == null ) {
+    public static PolyDouble convert( @Nullable PolyValue value ) {
+        if ( value == null ) {
             return null;
         }
 
-        if ( object instanceof PolyValue ) {
-            if ( ((PolyValue) object).isDouble() ) {
-                return ((PolyValue) object).asDouble();
-            } else if ( ((PolyValue) object).isNumber() ) {
-                return PolyDouble.of( ((PolyValue) object).asNumber().DoubleValue() );
-            }
+        if ( value.isDouble() ) {
+            return value.asDouble();
+        } else if ( value.isNumber() ) {
+            return PolyDouble.of( value.asNumber().DoubleValue() );
+        } else if ( value.isTemporal() ) {
+            return PolyDouble.of( value.asTemporal().getMillisSinceEpoch() );
+        } else if ( value.isString() ) {
+            return PolyDouble.of( Double.parseDouble( value.asString().value ) );
         }
 
-        throw new GenericRuntimeException( "Could not convert Integer" );
+        throw new GenericRuntimeException( getConvertError( value, PolyDouble.class ) );
     }
 
 
@@ -182,7 +188,7 @@ public class PolyDouble extends PolyNumber {
 
 
     @Override
-    public @Nullable Long deriveByteSize() {
+    public @NotNull Long deriveByteSize() {
         return 8L;
     }
 
@@ -190,6 +196,12 @@ public class PolyDouble extends PolyNumber {
     @Override
     public Object toJava() {
         return value;
+    }
+
+
+    @Override
+    public int hashCode() {
+        return Objects.hash( super.hashCode(), value );
     }
 
 

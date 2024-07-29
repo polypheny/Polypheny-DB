@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,8 @@ import org.polypheny.db.adapter.mongodb.MongoAlg;
 import org.polypheny.db.adapter.mongodb.MongoConvention;
 import org.polypheny.db.adapter.mongodb.MongoEntity;
 import org.polypheny.db.algebra.AlgCollations;
+import org.polypheny.db.algebra.AlgFieldCollation.Direction;
+import org.polypheny.db.algebra.AlgFieldCollation.NullDirection;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.InvalidAlgException;
@@ -38,24 +40,22 @@ import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.core.document.DocumentAggregate;
-import org.polypheny.db.algebra.core.document.DocumentAlg.DocType;
-import org.polypheny.db.algebra.core.document.DocumentFilter;
 import org.polypheny.db.algebra.core.document.DocumentModify;
 import org.polypheny.db.algebra.core.document.DocumentSort;
 import org.polypheny.db.algebra.core.document.DocumentValues;
 import org.polypheny.db.algebra.core.relational.RelModify;
-import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentAggregate;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentFilter;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
-import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
-import org.polypheny.db.algebra.logical.relational.LogicalFilter;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgTrait;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -126,9 +126,6 @@ public class MongoRules {
                 && ((RexLiteral) op1).getValue().isString() ) {
             return ((RexLiteral) op1).getValue().asString().value;
         }
-        /*if ( op0 instanceof RexInputRef && op1 instanceof RexDynamicParam ) {
-            return new BsonDynamic( (RexDynamicParam) op1 ).toJson();
-        }*/
 
         op0.getType().getPolyType();
         return null;
@@ -211,17 +208,6 @@ public class MongoRules {
 
 
     public static BsonValue translateDocValue( AlgDataType rowType, RexNameRef ref ) {
-        /*RexIndexRef parent = (RexIndexRef) call.getOperands().get( 0 );
-
-        if ( call.operands.get( 1 ).isA( Kind.DYNAMIC_PARAM ) ) {
-            return new BsonDynamic( (RexDynamicParam) call.operands.get( 1 ) ).setIsValue( true, prefix + rowType.getFieldNames().get( parent.getIndex() ) );
-        }
-        RexCall names = (RexCall) call.operands.get( 1 );
-
-        return new BsonString( prefix + names.operands
-                .stream()
-                .map( n -> ((RexLiteral) n).value.asString().value )
-                .collect( Collectors.joining( "." ) ) );*/
         return new BsonString( ref.getIndex()
                 .map( i -> rowType.getFieldNames().get( i ) + "." + ref.getName() )
                 .orElse( ref.getName() ) );
@@ -253,7 +239,16 @@ public class MongoRules {
 
 
         private MongoSortRule() {
-            super( Sort.class, r -> true, Convention.NONE, MongoAlg.CONVENTION, "MongoSortRule" );
+            super( Sort.class, MongoSortRule::supports, Convention.NONE, MongoAlg.CONVENTION, "MongoSortRule" );
+        }
+
+
+        public static boolean supports( Sort sort ) {
+            // null is always less in mongodb, so we leave that to Polypheny
+            return sort.collation.getFieldCollations().stream().noneMatch( c ->
+                    (c.direction == Direction.ASCENDING && c.nullDirection == NullDirection.FIRST)
+                            || (c.direction == Direction.DESCENDING && c.nullDirection == NullDirection.LAST) );
+
         }
 
 
@@ -303,7 +298,7 @@ public class MongoRules {
 
 
     /**
-     * Rule to convert a {@link LogicalFilter} to a {@link MongoFilter}.
+     * Rule to convert a {@link LogicalRelFilter} to a {@link MongoFilter}.
      */
     private static class MongoFilterRule extends MongoConverterRule {
 
@@ -312,7 +307,7 @@ public class MongoRules {
 
         private MongoFilterRule() {
             super(
-                    LogicalFilter.class,
+                    LogicalRelFilter.class,
                     MongoFilterRule::supports,
                     Convention.NONE,
                     MongoAlg.CONVENTION,
@@ -320,14 +315,14 @@ public class MongoRules {
         }
 
 
-        private static boolean supports( LogicalFilter filter ) {
+        private static boolean supports( LogicalRelFilter filter ) {
             return (MongoConvention.mapsDocuments || !DocumentRules.containsDocument( filter )) && !containsIncompatible( filter );
         }
 
 
         @Override
         public AlgNode convert( AlgNode alg ) {
-            final LogicalFilter filter = (LogicalFilter) alg;
+            final LogicalRelFilter filter = (LogicalRelFilter) alg;
             final AlgTraitSet traitSet = filter.getTraitSet().replace( out );
             return new MongoFilter(
                     alg.getCluster(),
@@ -347,8 +342,7 @@ public class MongoRules {
         private MongoDocumentFilterRule() {
             super(
                     LogicalDocumentFilter.class,
-                    project -> (MongoConvention.mapsDocuments || !DocumentRules.containsDocument( project ))
-                            && !containsIncompatible( project ),
+                    project -> MongoConvention.mapsDocuments || !DocumentRules.containsDocument( project ),
                     Convention.NONE,
                     MongoAlg.CONVENTION,
                     MongoDocumentFilterRule.class.getSimpleName() );
@@ -370,7 +364,7 @@ public class MongoRules {
 
 
     /**
-     * Rule to convert a {@link LogicalProject} to a {@link MongoProject}.
+     * Rule to convert a {@link LogicalRelProject} to a {@link MongoProject}.
      */
     private static class MongoProjectRule extends MongoConverterRule {
 
@@ -379,7 +373,7 @@ public class MongoRules {
 
         private MongoProjectRule() {
             super(
-                    LogicalProject.class,
+                    LogicalRelProject.class,
                     project -> (MongoConvention.mapsDocuments || !DocumentRules.containsDocument( project ))
                             && !containsIncompatible( project )
                             && !UnsupportedRexCallVisitor.containsModelItem( project.getProjects() ),
@@ -391,7 +385,7 @@ public class MongoRules {
 
         @Override
         public AlgNode convert( AlgNode alg ) {
-            final LogicalProject project = (LogicalProject) alg;
+            final LogicalRelProject project = (LogicalRelProject) alg;
             final AlgTraitSet traitSet = project.getTraitSet().replace( out );
             return new MongoProject(
                     project.getCluster(),
@@ -469,12 +463,16 @@ public class MongoRules {
             Operator operator = call.getOperator();
             if ( operator.getOperatorName() == OperatorName.COALESCE
                     || operator.getOperatorName() == OperatorName.EXTRACT
+                    || operator.getOperatorName() == OperatorName.ABS
+                    || operator.getOperatorName() == OperatorName.PI
                     || operator.getOperatorName() == OperatorName.OVERLAY
+                    || call.operands.stream().anyMatch( o -> o.isA( Kind.QUERY ) )
                     || operator.getOperatorName() == OperatorName.COT
+                    || operator.getOperatorName() == OperatorName.TRIM
+                    || operator.getOperatorName() == OperatorName.INITCAP
+                    || operator.getOperatorName() == OperatorName.SUBSTRING
                     || operator.getOperatorName() == OperatorName.FLOOR
                     || operator.getOperatorName() == OperatorName.DISTANCE
-                    || operator.getOperatorName() == OperatorName.MQL_NEAR
-                    || operator.getOperatorName() == OperatorName.MQL_NEAR_SPHERE
                     || (operator.getOperatorName() == OperatorName.CAST && call.operands.get( 0 ).getType().getPolyType() == PolyType.DATE)
                     || operator instanceof SqlDatetimeSubtractionOperator
                     || operator instanceof SqlDatetimePlusOperator ) {
@@ -539,7 +537,7 @@ public class MongoRules {
     public static class MongoDocuments extends DocumentValues implements MongoAlg {
 
 
-        public MongoDocuments( AlgOptCluster cluster, List<PolyDocument> documentTuples, List<RexDynamicParam> dynamicParams, AlgTraitSet traitSet ) {
+        public MongoDocuments( AlgCluster cluster, List<PolyDocument> documentTuples, List<RexDynamicParam> dynamicParams, AlgTraitSet traitSet ) {
             super( cluster, traitSet, documentTuples, dynamicParams );
         }
 
@@ -586,7 +584,7 @@ public class MongoRules {
 
 
             @Override
-            public AlgNode visit( RelScan<?> scan ) {
+            public AlgNode visit( LogicalRelScan scan ) {
                 supported = false;
                 return super.visit( scan );
             }
@@ -666,7 +664,7 @@ public class MongoRules {
 
 
     /**
-     * Rule to convert an {@link LogicalAggregate}
+     * Rule to convert an {@link LogicalRelAggregate}
      * to an {@link MongoAggregate}.
      */
     private static class MongoAggregateRule extends MongoConverterRule {
@@ -675,12 +673,12 @@ public class MongoRules {
 
 
         private MongoAggregateRule() {
-            super( LogicalAggregate.class, MongoAggregateRule::supported, Convention.NONE, MongoAlg.CONVENTION,
+            super( LogicalRelAggregate.class, MongoAggregateRule::supported, Convention.NONE, MongoAlg.CONVENTION,
                     MongoAggregateRule.class.getSimpleName() );
         }
 
 
-        private static boolean supported( LogicalAggregate aggregate ) {
+        private static boolean supported( LogicalRelAggregate aggregate ) {
             return aggregate.getAggCallList().stream().noneMatch( AggregateCall::isDistinct )
                     && aggregate.getModel() != DataModel.DOCUMENT
                     && aggregate.getAggCallList().stream().noneMatch( a -> a.getAggregation().getKind() == Kind.SINGLE_VALUE )
@@ -690,7 +688,7 @@ public class MongoRules {
 
         @Override
         public AlgNode convert( AlgNode alg ) {
-            final LogicalAggregate agg = (LogicalAggregate) alg;
+            final LogicalRelAggregate agg = (LogicalRelAggregate) alg;
             final AlgTraitSet traitSet = agg.getTraitSet().replace( out );
             try {
                 return new MongoAggregate(

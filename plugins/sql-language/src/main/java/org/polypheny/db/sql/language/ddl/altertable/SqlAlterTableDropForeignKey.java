@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,8 @@ package org.polypheny.db.sql.language.ddl.altertable;
 import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Node;
@@ -76,6 +78,10 @@ public class SqlAlterTableDropForeignKey extends SqlAlterTable {
     @Override
     public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
         LogicalTable logicalTable = getTableFailOnEmpty( context, table );
+
+        if ( logicalTable.entityType != EntityType.ENTITY ) {
+            throw new GenericRuntimeException( String.format( "The entity with the name %s is not a relational entity but of type: %s", table, logicalTable.entityType ) );
+        }
 
         DdlManager.getInstance().dropForeignKey( logicalTable, foreignKeyName.getSimple() );
     }

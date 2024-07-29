@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,13 +30,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.util.ByteString;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.catalog.snapshot.Snapshot;
-import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.type.PolyTypeUtil;
 
 @Slf4j
@@ -55,11 +52,9 @@ public class ValidatorUtil {
      * @param joinType Type of join
      * @param typeFactory Type factory
      * @param fieldNameList List of names of fields; if null, field names are inherited and made unique
-     * @param systemFieldList List of system fields that will be prefixed to output row type; typically empty but must not be null
      * @return join type
      */
-    public static AlgDataType deriveJoinRowType( AlgDataType leftType, AlgDataType rightType, JoinAlgType joinType, AlgDataTypeFactory typeFactory, List<String> fieldNameList, List<AlgDataTypeField> systemFieldList ) {
-        assert systemFieldList != null;
+    public static AlgDataType deriveJoinRowType( AlgDataType leftType, AlgDataType rightType, JoinAlgType joinType, AlgDataTypeFactory typeFactory, List<String> fieldNameList ) {
         switch ( joinType ) {
             case LEFT:
                 rightType = typeFactory.createTypeWithNullability( rightType, true );
@@ -74,27 +69,25 @@ public class ValidatorUtil {
             default:
                 break;
         }
-        return createJoinType( typeFactory, leftType, rightType, fieldNameList, systemFieldList );
+        return createJoinType( typeFactory, leftType, rightType, fieldNameList );
     }
 
 
     /**
      * Returns the type the row which results when two relations are joined.
-     *
+     * <p>
      * The resulting row type consists of the system fields (if any), followed by the fields of the left type, followed by the fields of the right type. The field name list, if present, overrides the original names of the fields.
      *
      * @param typeFactory Type factory
      * @param leftType Type of left input to join
      * @param rightType Type of right input to join, or null for semi-join
      * @param fieldNameList If not null, overrides the original names of the fields
-     * @param systemFieldList List of system fields that will be prefixed to output row type; typically empty but must not be null
      * @return type of row which results when two relations are joined
      */
-    public static AlgDataType createJoinType( AlgDataTypeFactory typeFactory, AlgDataType leftType, AlgDataType rightType, List<String> fieldNameList, List<AlgDataTypeField> systemFieldList ) {
+    public static AlgDataType createJoinType( AlgDataTypeFactory typeFactory, AlgDataType leftType, AlgDataType rightType, List<String> fieldNameList ) {
         assert (fieldNameList == null)
                 || (fieldNameList.size()
-                == (systemFieldList.size()
-                + leftType.getFieldCount()
+                == (leftType.getFieldCount()
                 + rightType.getFieldCount()));
         List<String> nameList = new ArrayList<>();
         final List<AlgDataType> typeList = new ArrayList<>();
@@ -105,7 +98,6 @@ public class ValidatorUtil {
                 typeFactory.getTypeSystem().isSchemaCaseSensitive()
                         ? new HashSet<>()
                         : new TreeSet<>( String.CASE_INSENSITIVE_ORDER );
-        addFields( systemFieldList, typeList, nameList, ids, uniqueNameList );
         addFields( leftType.getFields(), typeList, nameList, ids, uniqueNameList );
         if ( rightType != null ) {
             addFields( rightType.getFields(), typeList, nameList, ids, uniqueNameList );
@@ -185,7 +177,7 @@ public class ValidatorUtil {
 
     /**
      * Makes sure that the names in a list are unique.
-     *
+     * <p>
      * Does not modify the input list. Returns the input list if the strings are unique, otherwise allocates a new list.
      *
      * @param nameList List of strings
@@ -199,7 +191,7 @@ public class ValidatorUtil {
 
     /**
      * Makes sure that the names in a list are unique.
-     *
+     * <p>
      * Does not modify the input list. Returns the input list if the strings are unique, otherwise allocates a new list.
      *
      * @param nameList List of strings
@@ -255,34 +247,6 @@ public class ValidatorUtil {
                 }
             }
         }
-    }
-
-
-    /**
-     * Finds and returns {@link PolyphenyDbSchema} nested to the given rootSchema with specified schemaPath.
-     *
-     * Uses the case-sensitivity policy of specified nameMatcher.
-     *
-     * If not found, returns null.
-     *
-     * @param schemaPath full schema path of required schema
-     * @param nameMatcher name matcher
-     * @return PolyphenyDbSchema that corresponds specified schemaPath
-     */
-    public static Snapshot getSchema( Snapshot snapshot, Iterable<String> schemaPath, NameMatcher nameMatcher ) {
-
-        return snapshot;
-    }
-
-
-    public static AlgDataType createTypeFromProjection( AlgDataType type, List<String> columnNameList, AlgDataTypeFactory typeFactory, boolean caseSensitive ) {
-        // If the names in columnNameList and type have case-sensitive differences, the resulting type will use those from type. These are presumably more canonical.
-        final List<AlgDataTypeField> fields = new ArrayList<>( columnNameList.size() );
-        for ( String name : columnNameList ) {
-            AlgDataTypeField field = type.getField( name, caseSensitive, false );
-            fields.add( type.getFields().get( field.getIndex() ) );
-        }
-        return typeFactory.createStructType( fields );
     }
 
 

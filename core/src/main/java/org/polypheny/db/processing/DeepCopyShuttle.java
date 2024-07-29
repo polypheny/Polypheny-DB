@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,27 +16,25 @@
 
 package org.polypheny.db.processing;
 
-import com.google.common.collect.ImmutableList;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.core.Project;
-import org.polypheny.db.algebra.core.TableFunctionScan;
 import org.polypheny.db.algebra.core.Values;
-import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
-import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
-import org.polypheny.db.algebra.logical.relational.LogicalCorrelate;
-import org.polypheny.db.algebra.logical.relational.LogicalExchange;
-import org.polypheny.db.algebra.logical.relational.LogicalFilter;
-import org.polypheny.db.algebra.logical.relational.LogicalIntersect;
-import org.polypheny.db.algebra.logical.relational.LogicalJoin;
-import org.polypheny.db.algebra.logical.relational.LogicalMatch;
-import org.polypheny.db.algebra.logical.relational.LogicalMinus;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalRelCorrelate;
+import org.polypheny.db.algebra.logical.relational.LogicalRelExchange;
+import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalRelIntersect;
+import org.polypheny.db.algebra.logical.relational.LogicalRelJoin;
+import org.polypheny.db.algebra.logical.relational.LogicalRelMatch;
+import org.polypheny.db.algebra.logical.relational.LogicalRelMinus;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
-import org.polypheny.db.algebra.logical.relational.LogicalSort;
-import org.polypheny.db.algebra.logical.relational.LogicalUnion;
-import org.polypheny.db.algebra.logical.relational.LogicalValues;
+import org.polypheny.db.algebra.logical.relational.LogicalRelSort;
+import org.polypheny.db.algebra.logical.relational.LogicalRelTableFunctionScan;
+import org.polypheny.db.algebra.logical.relational.LogicalRelUnion;
+import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.plan.AlgTraitSet;
 
 /**
@@ -50,30 +48,30 @@ public class DeepCopyShuttle extends AlgShuttleImpl {
 
 
     @Override
-    public AlgNode visit( RelScan<?> scan ) {
+    public AlgNode visit( LogicalRelScan scan ) {
         final AlgNode node = super.visit( scan );
         return new LogicalRelScan( node.getCluster(), copy( node.getTraitSet() ), node.getEntity() );
     }
 
 
     @Override
-    public AlgNode visit( TableFunctionScan scan ) {
+    public AlgNode visit( LogicalRelTableFunctionScan scan ) {
         final AlgNode node = super.visit( scan );
         return node.copy( copy( node.getTraitSet() ), node.getInputs() );
     }
 
 
     @Override
-    public AlgNode visit( LogicalValues values ) {
+    public AlgNode visit( LogicalRelValues values ) {
         final Values node = (Values) super.visit( values );
-        return new LogicalValues( node.getCluster(), copy( node.getTraitSet() ), node.getTupleType(), node.getTuples() );
+        return new LogicalRelValues( node.getCluster(), copy( node.getTraitSet() ), node.getTupleType(), node.getTuples() );
     }
 
 
     @Override
-    public AlgNode visit( LogicalFilter filter ) {
-        final LogicalFilter node = (LogicalFilter) super.visit( filter );
-        return new LogicalFilter(
+    public AlgNode visit( LogicalRelFilter filter ) {
+        final LogicalRelFilter node = (LogicalRelFilter) super.visit( filter );
+        return new LogicalRelFilter(
                 node.getCluster(),
                 copy( node.getTraitSet() ),
                 node.getInput().accept( this ),
@@ -83,9 +81,9 @@ public class DeepCopyShuttle extends AlgShuttleImpl {
 
 
     @Override
-    public AlgNode visit( LogicalProject project ) {
+    public AlgNode visit( LogicalRelProject project ) {
         final Project node = (Project) super.visit( project );
-        return new LogicalProject(
+        return new LogicalRelProject(
                 node.getCluster(),
                 copy( node.getTraitSet() ),
                 node.getInput(),
@@ -95,9 +93,9 @@ public class DeepCopyShuttle extends AlgShuttleImpl {
 
 
     @Override
-    public AlgNode visit( LogicalJoin join ) {
+    public AlgNode visit( LogicalRelJoin join ) {
         final AlgNode node = super.visit( join );
-        return new LogicalJoin(
+        return new LogicalRelJoin(
                 node.getCluster(),
                 copy( node.getTraitSet() ),
                 super.visit( join.getLeft() ),
@@ -105,43 +103,42 @@ public class DeepCopyShuttle extends AlgShuttleImpl {
                 join.getCondition(),
                 join.getVariablesSet(),
                 join.getJoinType(),
-                join.isSemiJoinDone(),
-                ImmutableList.copyOf( join.getSystemFieldList() ) );
+                join.isSemiJoinDone() );
     }
 
 
     @Override
-    public AlgNode visit( LogicalCorrelate correlate ) {
+    public AlgNode visit( LogicalRelCorrelate correlate ) {
         final AlgNode node = super.visit( correlate );
         return node.copy( copy( node.getTraitSet() ), node.getInputs() );
     }
 
 
     @Override
-    public AlgNode visit( LogicalUnion union ) {
+    public AlgNode visit( LogicalRelUnion union ) {
         final AlgNode node = super.visit( union );
         return node.copy( copy( node.getTraitSet() ), node.getInputs() );
     }
 
 
     @Override
-    public AlgNode visit( LogicalIntersect intersect ) {
+    public AlgNode visit( LogicalRelIntersect intersect ) {
         final AlgNode node = super.visit( intersect );
         return node.copy( copy( node.getTraitSet() ), node.getInputs() );
     }
 
 
     @Override
-    public AlgNode visit( LogicalMinus minus ) {
+    public AlgNode visit( LogicalRelMinus minus ) {
         final AlgNode node = super.visit( minus );
         return node.copy( copy( node.getTraitSet() ), node.getInputs() );
     }
 
 
     @Override
-    public AlgNode visit( LogicalAggregate aggregate ) {
+    public AlgNode visit( LogicalRelAggregate aggregate ) {
         final AlgNode node = super.visit( aggregate );
-        return new LogicalAggregate(
+        return new LogicalRelAggregate(
                 node.getCluster(),
                 copy( node.getTraitSet() ),
                 super.visit( aggregate.getInput() ),
@@ -153,21 +150,21 @@ public class DeepCopyShuttle extends AlgShuttleImpl {
 
 
     @Override
-    public AlgNode visit( LogicalMatch match ) {
+    public AlgNode visit( LogicalRelMatch match ) {
         final AlgNode node = super.visit( match );
         return node.copy( copy( node.getTraitSet() ), node.getInputs() );
     }
 
 
     @Override
-    public AlgNode visit( LogicalSort sort ) {
+    public AlgNode visit( LogicalRelSort sort ) {
         final AlgNode node = super.visit( sort );
         return node.copy( copy( node.getTraitSet() ), node.getInputs() );
     }
 
 
     @Override
-    public AlgNode visit( LogicalExchange exchange ) {
+    public AlgNode visit( LogicalRelExchange exchange ) {
         final AlgNode node = super.visit( exchange );
         return node.copy( copy( node.getTraitSet() ), node.getInputs() );
     }

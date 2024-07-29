@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,6 @@ package org.polypheny.db.adapter;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSerializer;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -28,8 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
-import lombok.AllArgsConstructor;
-import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.jetbrains.annotations.NotNull;
@@ -63,7 +59,7 @@ public class AdapterManager {
     }
 
 
-    public static long addAdapterTemplate( Class<? extends Adapter<?>> clazz, String adapterName, Function4<Long, String, Map<String, String>, Adapter<?>> deployer ) {
+    public static long addAdapterTemplate( Class<? extends Adapter<?>> clazz, String adapterName, Function5<Long, String, Map<String, String>, DeployMode, Adapter<?>> deployer ) {
         List<AbstractAdapterSetting> settings = AdapterTemplate.getAllSettings( clazz );
         AdapterProperties properties = clazz.getAnnotation( AdapterProperties.class );
         return Catalog.getInstance().createAdapterTemplate( clazz, adapterName, properties.description(), List.of( properties.usedModes() ), settings, deployer );
@@ -80,8 +76,33 @@ public class AdapterManager {
 
 
     public static AdapterTemplate getAdapterTemplate( String name, AdapterType adapterType ) {
-        return Catalog.snapshot().getAdapterTemplate( name, adapterType ).orElseThrow();
+        return Catalog.snapshot().getAdapterTemplate( name, adapterType ).orElseThrow( () -> new GenericRuntimeException( "No adapter template found for name: " + name + " of type: " + adapterType ) );
     }
+
+
+    public List<AdapterInformation> getAdapterTemplates( AdapterType adapterType ) {
+        List<AdapterTemplate> adapterTemplates = Catalog.snapshot().getAdapterTemplates( adapterType );
+
+        List<AdapterInformation> result = new ArrayList<>();
+
+        for ( AdapterTemplate adapterTemplate : adapterTemplates ) {
+            // Exclude abstract classes
+            if ( !Modifier.isAbstract( adapterTemplate.getClazz().getModifiers() ) ) {
+
+                AdapterProperties properties = adapterTemplate.getClazz().getAnnotation( AdapterProperties.class );
+                if ( properties == null ) {
+                    throw new GenericRuntimeException( adapterTemplate.getClazz().getSimpleName() + " does not annotate the adapter correctly" );
+                }
+                // Merge annotated AdapterSettings into settings
+                List<AbstractAdapterSetting> settings = AbstractAdapterSetting.fromAnnotations( adapterTemplate.getClazz().getAnnotations(), adapterTemplate.getClazz().getAnnotation( AdapterProperties.class ) );
+
+                result.add( new AdapterInformation( properties.name(), properties.description(), adapterType, settings, List.of( properties.usedModes() ) ) );
+            }
+        }
+
+        return result;
+    }
+
 
     @NotNull
     public Optional<Adapter<?>> getAdapter( String uniqueName ) {
@@ -105,6 +126,7 @@ public class AdapterManager {
         return getAdapter( uniqueName ).filter( a -> a instanceof DataStore<?> ).map( a -> (DataStore<?>) a );
 
     }
+
 
     @NotNull
     public Optional<DataStore<?>> getStore( long id ) {
@@ -146,44 +168,17 @@ public class AdapterManager {
     }
 
 
-    public List<AdapterInformation> getAvailableAdapters( AdapterType adapterType ) {
-        List<AdapterTemplate> adapterTemplates = Catalog.snapshot().getAdapterTemplates( adapterType );
-
-        List<AdapterInformation> result = new ArrayList<>();
-
-        for ( AdapterTemplate adapterTemplate : adapterTemplates ) {
-            // Exclude abstract classes
-            if ( !Modifier.isAbstract( adapterTemplate.getClazz().getModifiers() ) ) {
-
-                AdapterProperties properties = adapterTemplate.getClazz().getAnnotation( AdapterProperties.class );
-                if ( properties == null ) {
-                    throw new GenericRuntimeException( adapterTemplate.getClazz().getSimpleName() + " does not annotate the adapter correctly" );
-                }
-                // Merge annotated AdapterSettings into settings
-                List<AbstractAdapterSetting> settings = AbstractAdapterSetting.fromAnnotations( adapterTemplate.getClazz().getAnnotations(), adapterTemplate.getClazz().getAnnotation( AdapterProperties.class ) );
-
-                result.add( new AdapterInformation( properties.name(), properties.description(), adapterType, settings, List.of( properties.usedModes() ) ) );
-            }
-        }
-
-        return result;
-    }
-
-
     public Adapter<?> addAdapter( String adapterName, String uniqueName, AdapterType adapterType, DeployMode mode, Map<String, String> settings ) {
         uniqueName = uniqueName.toLowerCase();
         if ( getAdapters().containsKey( uniqueName ) ) {
             throw new GenericRuntimeException( "There is already an adapter with this unique name" );
-        }
-        if ( !settings.containsKey( "mode" ) ) {
-            throw new GenericRuntimeException( "The adapter does not specify a mode which is necessary." );
         }
 
         AdapterTemplate adapterTemplate = AdapterTemplate.fromString( adapterName, adapterType );
 
         long adapterId = Catalog.getInstance().createAdapter( uniqueName, adapterName, adapterType, settings, mode );
         try {
-            Adapter<?> adapter = adapterTemplate.getDeployer().get( adapterId, uniqueName, settings );
+            Adapter<?> adapter = adapterTemplate.getDeployer().get( adapterId, uniqueName, settings, mode );
             adapterByName.put( adapter.getUniqueName(), adapter );
             adapterById.put( adapter.getAdapterId(), adapter );
             return adapter;
@@ -206,7 +201,9 @@ public class AdapterManager {
         // Check if the store has any placements
         List<AllocationEntity> placements = Catalog.getInstance().getSnapshot().alloc().getEntitiesOnAdapter( logicalAdapter.id ).orElseThrow( () -> new GenericRuntimeException( "There is still data placed on this data store" ) );
         if ( !placements.isEmpty() ) {
-            throw new GenericRuntimeException( "There is still data placed on this data store" );
+            if ( adapterInstance instanceof DataStore<?> ) {
+                throw new GenericRuntimeException( "There is still data placed on this data store" );
+            }
         }
 
         // Shutdown store
@@ -225,37 +222,15 @@ public class AdapterManager {
      * Restores adapters from catalog
      */
     public void restoreAdapters( List<LogicalAdapter> adapters ) {
-        try {
-            for ( LogicalAdapter adapter : adapters ) {
-                Constructor<?> ctor = AdapterTemplate.fromString( adapter.adapterName, adapter.type ).getClazz().getConstructor( long.class, String.class, Map.class );
-                Adapter<?> instance = (Adapter<?>) ctor.newInstance( adapter.id, adapter.uniqueName, adapter.settings );
-                adapterByName.put( instance.getUniqueName(), instance );
-                adapterById.put( instance.getAdapterId(), instance );
-            }
-        } catch ( NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException e ) {
-            throw new GenericRuntimeException( "Something went wrong while restoring adapters from the catalog.", e );
+        for ( LogicalAdapter adapter : adapters ) {
+            Adapter<?> instance = AdapterTemplate.fromString( adapter.adapterName, adapter.type ).getDeployer().get( adapter.id, adapter.uniqueName, adapter.settings, adapter.mode );
+            adapterByName.put( instance.getUniqueName(), instance );
+            adapterById.put( instance.getAdapterId(), instance );
         }
     }
 
 
-    public List<AdapterInformation> getAvailableAdapters() {
-        List<AdapterInformation> adapters = new ArrayList<>( getAvailableAdapters( AdapterType.STORE ) );
-        adapters.addAll( getAvailableAdapters( AdapterType.SOURCE ) );
-        return adapters;
-    }
-
-
-    @AllArgsConstructor
-    @Value
-    public static class AdapterInformation {
-
-        public String name;
-        public String description;
-        public AdapterType type;
-        public List<AbstractAdapterSetting> settings;
-
-        public List<DeployMode> modes;
-
+    public record AdapterInformation( String name, String description, AdapterType type, List<AbstractAdapterSetting> settings, List<DeployMode> modes ) {
 
         public static JsonSerializer<AdapterInformation> getSerializer() {
             return ( src, typeOfSrc, context ) -> {
@@ -272,9 +247,9 @@ public class AdapterManager {
 
 
     @FunctionalInterface
-    public interface Function4<P1, P2, P3, R> {
+    public interface Function5<P1, P2, P3, P4, R> {
 
-        R get( P1 p1, P2 p2, P3 p3 );
+        R get( P1 p1, P2 p2, P3 p3, P4 p4 );
 
     }
 

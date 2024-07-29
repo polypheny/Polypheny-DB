@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,9 +37,6 @@ package org.polypheny.db.adapter.jdbc;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
-import org.apache.calcite.avatica.ColumnMetaData;
-import org.apache.calcite.avatica.ColumnMetaData.Rep;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Queryable;
@@ -58,7 +55,7 @@ import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexNode;
@@ -75,6 +72,7 @@ import org.polypheny.db.sql.language.SqlOperator;
 import org.polypheny.db.sql.language.SqlSelect;
 import org.polypheny.db.sql.language.pretty.SqlPrettyWriter;
 import org.polypheny.db.sql.language.util.SqlString;
+import org.polypheny.db.sql.language.util.SqlTypeRepresentation;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
@@ -114,14 +112,14 @@ public class JdbcTable extends PhysicalTable implements TranslatableEntity, Scan
     }
 
 
-    private List<Pair<ColumnMetaData.Rep, Integer>> fieldClasses( final JavaTypeFactory typeFactory ) {
-        final AlgDataType rowType = getRowType();
+    private List<Pair<SqlTypeRepresentation, Integer>> fieldClasses( final JavaTypeFactory typeFactory ) {
+        final AlgDataType rowType = getTupleType();
         return rowType.getFields().stream().map( f -> {
             final AlgDataType type = f.getType();
             final Class<?> clazz = (Class<?>) typeFactory.getJavaClass( type );
-            final Rep rep = Util.first( Rep.of( clazz ), Rep.OBJECT );
+            final SqlTypeRepresentation rep = Util.first( SqlTypeRepresentation.of( clazz ), SqlTypeRepresentation.OBJECT );
             return Pair.of( rep, type.getPolyType().getJdbcOrdinal() );
-        } ).collect( Collectors.toList() );
+        } ).toList();
     }
 
 
@@ -170,7 +168,7 @@ public class JdbcTable extends PhysicalTable implements TranslatableEntity, Scan
 
 
     @Override
-    public AlgNode toAlg( AlgOptCluster cluster, AlgTraitSet traitSet ) {
+    public AlgNode toAlg( AlgCluster cluster, AlgTraitSet traitSet ) {
         jdbcSchema.getConvention().register( cluster.getPlanner() );
         return new JdbcScan( cluster, this, jdbcSchema.getConvention() );
     }
@@ -195,7 +193,7 @@ public class JdbcTable extends PhysicalTable implements TranslatableEntity, Scan
 
     @Override
     public Modify<?> toModificationTable(
-            AlgOptCluster cluster,
+            AlgCluster cluster,
             AlgTraitSet algTraits,
             Entity table,
             AlgNode input,

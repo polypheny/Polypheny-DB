@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.experimental.SuperBuilder;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
@@ -55,7 +56,7 @@ import org.polypheny.db.catalog.entity.physical.PhysicalField;
 import org.polypheny.db.catalog.entity.physical.PhysicalGraph;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexNode;
@@ -66,8 +67,9 @@ import org.polypheny.db.schema.types.TranslatableEntity;
 import org.polypheny.db.type.entity.PolyValue;
 
 /**
- * Relational Neo4j representation of a {@link org.polypheny.db.schema.PolyphenyDbSchema} entity
+ * Relational Neo4j representation of a {@link PhysicalEntity} entity
  */
+@Slf4j
 @SuperBuilder(toBuilder = true)
 public class NeoEntity extends PhysicalEntity implements TranslatableEntity, ModifiableTable, QueryableEntity {
 
@@ -85,7 +87,7 @@ public class NeoEntity extends PhysicalEntity implements TranslatableEntity, Mod
 
 
     @Override
-    public AlgNode toAlg( AlgOptCluster cluster, AlgTraitSet traitSet ) {
+    public AlgNode toAlg( AlgCluster cluster, AlgTraitSet traitSet ) {
         return new NeoScan( cluster, traitSet.replace( NeoConvention.INSTANCE ), this );
     }
 
@@ -98,7 +100,7 @@ public class NeoEntity extends PhysicalEntity implements TranslatableEntity, Mod
      */
     @Override
     public Modify<Entity> toModificationTable(
-            AlgOptCluster cluster,
+            AlgCluster cluster,
             AlgTraitSet traits,
             Entity physical,
             AlgNode child,
@@ -151,11 +153,11 @@ public class NeoEntity extends PhysicalEntity implements TranslatableEntity, Mod
     }
 
 
-    public AlgDataType getRowType() {
+    public AlgDataType getTupleType() {
         if ( dataModel == DataModel.RELATIONAL ) {
             return buildProto().apply( AlgDataTypeFactory.DEFAULT );
         }
-        return super.getRowType();
+        return super.getTupleType();
     }
 
 
@@ -178,16 +180,17 @@ public class NeoEntity extends PhysicalEntity implements TranslatableEntity, Mod
 
         public NeoQueryable( DataContext dataContext, Snapshot snapshot, NeoEntity entity ) {
             super( dataContext, snapshot, entity );
-            this.rowType = entity.getRowType();
+            this.rowType = entity.getTupleType();
         }
 
 
         @Override
         public Enumerator<PolyValue[]> enumerator() {
             return execute(
-                    String.format( "MATCH (n:%s) RETURN %s", entity.name, buildAllQuery() ),
+                    "MATCH (n:%s) RETURN %s".formatted( entity.name, buildAllQuery() ),
                     getTypes(),
-                    Map.of() ).enumerator();
+                    Map.of(),
+                    false ).enumerator();
         }
 
 
@@ -208,19 +211,26 @@ public class NeoEntity extends PhysicalEntity implements TranslatableEntity, Mod
          * @param prepared mapping of parameters and their components if they are collections
          */
         @SuppressWarnings("UnusedDeclaration")
-        public Enumerable<PolyValue[]> execute( String query, NestedPolyType types, Map<Long, NestedPolyType> prepared ) {
+        public Enumerable<PolyValue[]> execute( String query, NestedPolyType types, Map<Long, NestedPolyType> prepared, boolean needsPreparedReturn ) {
             Transaction trx = getTrx();
 
             dataContext.getStatement().getTransaction().registerInvolvedAdapter( entity.namespace.store );
 
+            if ( log.isDebugEnabled() ) {
+                log.warn( "Executing query: {}", query );
+            }
+
             List<Result> results = new ArrayList<>();
             if ( dataContext.getParameterValues().size() == 1 ) {
-                results.add( trx.run( query, toParameters( dataContext.getParameterValues().get( 0 ), prepared, false ) ) );
+                String adjustedQuery = needsPreparedReturn ? query + " RETURN 1" : query;
+                results.add( trx.run( adjustedQuery, toParameters( dataContext.getParameterValues().get( 0 ), prepared, false ) ) );
             } else if ( !dataContext.getParameterValues().isEmpty() ) {
+                String adjustedQuery = needsPreparedReturn ? query + " RETURN " + dataContext.getParameterValues().size() : query;
                 for ( Map<Long, PolyValue> value : dataContext.getParameterValues() ) {
-                    results.add( trx.run( query, toParameters( value, prepared, false ) ) );
+                    results.add( trx.run( adjustedQuery, toParameters( value, prepared, false ) ) );
                 }
             } else {
+                String adjustedQuery = needsPreparedReturn ? query + " RETURN 1" : query;
                 results.add( trx.run( query ) );
             }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,18 +24,18 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import lombok.Getter;
 import lombok.Value;
-import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
-import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.functions.TemporalFunctions;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.category.PolyTemporal;
+import org.polypheny.db.util.temporal.DateTimeUtils;
 
 @Getter
 @Value
@@ -44,19 +44,30 @@ public class PolyDate extends PolyTemporal {
     public static final DateFormat dateFormat = new SimpleDateFormat( "yyyy-MM-dd" );
 
     @JsonProperty
+    @Nullable
     public Long millisSinceEpoch;
 
 
     @JsonCreator
     public PolyDate( @JsonProperty("millisSinceEpoch") Long millisSinceEpoch ) {
         super( PolyType.DATE );
-        this.millisSinceEpoch = millisSinceEpoch == null ? null : millisSinceEpoch - millisSinceEpoch % DateTimeUtils.MILLIS_PER_DAY; // move to 00:00:00
+        this.millisSinceEpoch = millisSinceEpoch == null ? null : normalize( millisSinceEpoch );
+    }
+
+
+    private Long normalize( @NotNull Long millisSinceEpoch ) {
+        if ( millisSinceEpoch < 0 ) {
+            long diff = millisSinceEpoch % DateTimeUtils.MILLIS_PER_DAY;
+            return millisSinceEpoch - (diff == 0 ? 0 : DateTimeUtils.MILLIS_PER_DAY + diff); // move to 00:00:00
+        }
+        return millisSinceEpoch - millisSinceEpoch % DateTimeUtils.MILLIS_PER_DAY; // move to 00:00:00
     }
 
 
     public static PolyDate of( Long millisSinceEpoch ) {
         return new PolyDate( millisSinceEpoch );
     }
+
 
     public static PolyDate of( PolyNumber number ) {
         return new PolyDate( number.longValue() );
@@ -93,23 +104,28 @@ public class PolyDate extends PolyTemporal {
     }
 
 
+    public java.sql.Date asSqlDate( long offset ) {
+        return new java.sql.Date( millisSinceEpoch + offset );
+    }
+
+
     public static PolyDate of( Date date ) {
         return new PolyDate( TemporalFunctions.dateToLong( date ) );
     }
 
 
-    public static PolyDate convert( Object value ) {
+    public static PolyDate convert( @Nullable PolyValue value ) {
         if ( value == null ) {
             return null;
         }
-        if ( value instanceof PolyValue poly ) {
-            if ( poly.isDate() ) {
-                return poly.asDate();
-            } else if ( poly.isNumber() ) {
-                return ofDays( poly.asNumber().intValue() );
-            }
+
+        if ( value.isDate() ) {
+            return value.asDate();
+        } else if ( value.isNumber() ) {
+            return ofDays( value.asNumber().intValue() );
         }
-        throw new NotImplementedException( "convert value to Boolean" );
+
+        throw new GenericRuntimeException( getConvertError( value, PolyDate.class ) );
     }
 
 
@@ -150,6 +166,14 @@ public class PolyDate extends PolyTemporal {
 
 
     @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + (millisSinceEpoch != null ? millisSinceEpoch.hashCode() : 0);
+        return result;
+    }
+
+
+    @Override
     public String toString() {
         return toJson();
     }
@@ -177,5 +201,6 @@ public class PolyDate extends PolyTemporal {
     public PolySerializable copy() {
         return PolySerializable.deserialize( serialize(), PolyDate.class );
     }
+
 
 }

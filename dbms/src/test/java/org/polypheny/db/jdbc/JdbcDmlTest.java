@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,7 +68,6 @@ public class JdbcDmlTest {
                                     new Object[]{ 4, 6, "hans" },
                                     new Object[]{ 5, 3, "georg" },
                                     new Object[]{ 6, 2, "jack" } ) );
-                    connection.commit();
                 } finally {
                     // Drop table
                     statement.executeUpdate( "DROP TABLE multiinserttest" );

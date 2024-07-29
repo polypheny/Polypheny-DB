@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,21 +20,21 @@ import com.google.common.collect.ImmutableList;
 import org.polypheny.db.adapter.mongodb.MongoAlg;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexLiteral;
 
 public class MongoValues extends Values implements MongoAlg {
 
 
-    MongoValues( AlgOptCluster cluster, AlgDataType rowType, ImmutableList<ImmutableList<RexLiteral>> tuples, AlgTraitSet traitSet ) {
+    MongoValues( AlgCluster cluster, AlgDataType rowType, ImmutableList<ImmutableList<RexLiteral>> tuples, AlgTraitSet traitSet ) {
         super( cluster, rowType, tuples, traitSet );
     }
 
 
     @Override
     public void implement( Implementor implementor ) {
-
+        // handled by Implementor
     }
 
 }

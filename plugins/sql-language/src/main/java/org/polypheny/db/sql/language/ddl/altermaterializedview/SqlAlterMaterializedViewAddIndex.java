@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.polypheny.db.adapter.DataStore;
@@ -112,15 +111,15 @@ public class SqlAlterMaterializedViewAddIndex extends SqlAlterMaterializedView {
 
     @Override
     public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
-        LogicalTable catalogTable = getTableFailOnEmpty( context, table );
+        LogicalTable table = getTableFailOnEmpty( context, this.table );
         String indexMethodName = indexMethod != null ? indexMethod.getSimple() : null;
 
         try {
             if ( storeName != null && storeName.getSimple().equalsIgnoreCase( IndexManager.POLYPHENY ) ) {
                 DdlManager.getInstance().createPolyphenyIndex(
-                        catalogTable,
+                        table,
                         indexMethodName,
-                        columnList.getList().stream().map( Node::toString ).collect( Collectors.toList() ),
+                        columnList.getList().stream().map( Node::toString ).toList(),
                         indexName.getSimple(),
                         unique,
                         statement );
@@ -135,9 +134,9 @@ public class SqlAlterMaterializedViewAddIndex extends SqlAlterMaterializedView {
                     }
                 }
                 DdlManager.getInstance().createIndex(
-                        catalogTable,
+                        table,
                         indexMethodName,
-                        columnList.getList().stream().map( Node::toString ).collect( Collectors.toList() ),
+                        columnList.getList().stream().map( Node::toString ).toList(),
                         indexName.getSimple(),
                         unique,
                         storeInstance,

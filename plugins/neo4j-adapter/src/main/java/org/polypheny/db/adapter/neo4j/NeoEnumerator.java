@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.polypheny.db.adapter.neo4j;
 
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.function.Function1;
 import org.neo4j.driver.Record;
@@ -25,9 +26,9 @@ import org.polypheny.db.type.entity.PolyValue;
 
 
 /**
- * Neo4j representation of a {@link Enumerator}.
- *
+ * Neo4j's representation of a {@link Enumerator}.
  */
+@Slf4j
 public class NeoEnumerator implements Enumerator<PolyValue[]> {
 
     private final List<Result> results;

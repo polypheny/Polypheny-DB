@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -70,8 +70,8 @@ import org.polypheny.db.util.Pair;
 
 
 /**
- * Shuttle class, which saves the state of the relational Neo4j algebra nodes it passes through when needed.
- * This state is then later used to build the relational code ({@link org.apache.calcite.linq4j.tree.Expression}), which represents the passed algebra tree.
+ * Shuttle class, which saves the state of the algebra Neo4j algebra nodes it passes through when needed.
+ * This state is then later used to build the algebra code ({@link org.apache.calcite.linq4j.tree.Expression}), which represents the passed algebra tree.
  */
 public class NeoRelationalImplementor extends AlgShuttleImpl {
 
@@ -99,6 +99,9 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
     @Setter
     @Getter
     private AlgNode last;
+
+    @Getter
+    private boolean needsPreparedReturn;
 
 
     public void add( OperatorStatement statement ) {
@@ -165,7 +168,7 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
     public void addPreparedValues() {
         if ( last instanceof NeoProject ) {
             add( createProjectValues( (NeoProject) last, entity, this ) );
-            addRowCount( 1 );
+            this.needsPreparedReturn = true;
             return;
         }
         throw new GenericRuntimeException( "" );
@@ -193,7 +196,7 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
     public static Pair<Integer, NeoStatements.OperatorStatement> createCreate( ImmutableList<ImmutableList<RexLiteral>> values, NeoEntity entity ) {
         int nodeI = 0;
         List<NeoStatements.NeoStatement> nodes = new ArrayList<>();
-        AlgDataType rowType = entity.getRowType();
+        AlgDataType rowType = entity.getTupleType();
 
         for ( ImmutableList<RexLiteral> row : values ) {
             int pos = 0;
@@ -239,7 +242,7 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
 
     public static OperatorStatement createProjectValues( NeoProject last, NeoEntity entity, NeoRelationalImplementor implementor ) {
         List<PropertyStatement> properties = new ArrayList<>();
-        List<AlgDataTypeField> fields = entity.getRowType().getFields();
+        List<AlgDataTypeField> fields = entity.getTupleType().getFields();
 
         int i = 0;
         for ( RexNode project : last.getProjects() ) {
@@ -278,7 +281,7 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
         OperatorStatement statement = statements.get( statements.size() - 1 );
         if ( statements.get( statements.size() - 1 ).type != StatementType.RETURN ) {
             if ( isDml ) {
-                addRowCountEntity();
+                needsPreparedReturn = true;
             } else if ( statement.type == StatementType.WITH ) {
                 // can replace
                 statements.remove( statements.size() - 1 );
@@ -299,7 +302,7 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
 
     private Map<String, String> getToPhysicalMapping( @Nullable AlgNode node ) {
         Map<String, String> mapping = new HashMap<>();
-        for ( AlgDataTypeField field : entity.getRowType().getFields() ) {
+        for ( AlgDataTypeField field : entity.getTupleType().getFields() ) {
             mapping.put( field.getName(), entity.name + "." + field.getPhysicalName() );
         }
 

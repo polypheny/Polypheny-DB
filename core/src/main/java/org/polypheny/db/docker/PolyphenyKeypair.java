@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,7 +54,7 @@ final class PolyphenyKeypair {
 
         // XXX: If we would save pkinfo1 directly, it would not be
         // understood by the openssl(1).  With this dance,
-        // so openssl(1) can read the key.
+        // openssl(1) can read the key.
         PrivateKeyInfo pkinfo1 = PrivateKeyInfoFactory.createPrivateKeyInfo( key );
         PrivateKeyInfo pkinfo = new PrivateKeyInfo( pkinfo1.getPrivateKeyAlgorithm(), pkinfo1.parsePrivateKey() );
         PolyphenyCertificateUtils.saveAsPemOverwrite( keyfile, "PRIVATE KEY", pkinfo.getEncoded( "DER" ) );
@@ -71,7 +71,7 @@ final class PolyphenyKeypair {
         PolyphenyKeypair kp = new PolyphenyKeypair( cert, sk );
 
         if ( !kp.getUuid().equals( uuid ) ) {
-            throw new IOException( "Loaded certificate UUID does not match the expected UUID" );
+            throw new IOException( "Loaded certificate UUID does not match the current Polypheny instance UUID" );
         }
 
         return kp;

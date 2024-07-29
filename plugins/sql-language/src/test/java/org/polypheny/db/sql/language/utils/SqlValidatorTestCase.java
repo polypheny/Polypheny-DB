@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import org.junit.jupiter.api.extension.ParameterResolver;
 import org.junit.jupiter.api.extension.TestExecutionExceptionHandler;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.languages.NodeParseException;
+import org.polypheny.db.sql.SqlLanguageDependent;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlTestFactory;
 import org.polypheny.db.sql.language.parser.SqlParserUtil;
@@ -41,7 +42,7 @@ import org.polypheny.db.util.Conformance;
  * Second, it can override the {@link #getTester} method to return a different implementation of the {@link Tester} object. This encapsulates the differences between test environments, for example, which SQL parser or validator to use.
  */
 @ExtendWith(TesterConfigurationExtension.class)
-public class SqlValidatorTestCase {
+public class SqlValidatorTestCase extends SqlLanguageDependent {
 
     protected SqlTester tester;
 
@@ -158,7 +159,7 @@ public class SqlValidatorTestCase {
     /**
      * Fluent testing API.
      */
-    static class Sql {
+    public static class Sql {
 
         private final SqlTester tester;
         private final String sql;

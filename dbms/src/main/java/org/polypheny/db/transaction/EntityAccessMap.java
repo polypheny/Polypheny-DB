@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -106,7 +106,7 @@ public class EntityAccessMap {
      * Constructs a EntityAccessMap for all entities accessed by a {@link AlgNode} and its descendants.
      *
      * @param alg the {@link AlgNode} for which to build the map
-     * @param accessedPartitions tableScanId to Partitions
+     * @param accessedPartitions entityId to partitions
      */
     public EntityAccessMap( AlgNode alg, Map<Long, List<Long>> accessedPartitions ) {
         // NOTE: This method must NOT retain a reference to the input alg, because we use it for cached statements, and we
@@ -116,7 +116,7 @@ public class EntityAccessMap {
         //TODO @HENNLO remove this and rather integrate EntityAccessMap directly into Query Processor when DML Partitions can be queried
         this.accessedPartitions = accessedPartitions;
 
-        AlgOptUtil.go( new TableAlgVisitor(), alg );
+        AlgOptUtil.go( new EntityAlgVisitor(), alg );
         this.accessLockMap = evaluateAccessLockMap();
     }
 
@@ -171,10 +171,15 @@ public class EntityAccessMap {
     }
 
 
+    public LockMode getNeededLock() {
+        return accessLockMap.values().stream().anyMatch( l -> l == LockMode.EXCLUSIVE ) ? LockMode.EXCLUSIVE : LockMode.SHARED;
+    }
+
+
     /**
      * Determines whether an entity is accessed at all.
      *
-     * @param entityIdentifier qualified name of the entitiy of interest
+     * @param entityIdentifier qualified name of the entity of interest
      * @return true if entity is accessed
      */
     public boolean isEntityAccessed( EntityIdentifier entityIdentifier ) {
@@ -207,9 +212,9 @@ public class EntityAccessMap {
 
 
     /**
-     * Determines the access mode of a Entity.
+     * Determines the access mode of an entity.
      *
-     * @param entityIdentifier qualified name of the Entity of interest
+     * @param entityIdentifier qualified name of the entity of interest
      * @return access mode
      */
     public Mode getEntityAccessMode( @NonNull EntityAccessMap.EntityIdentifier entityIdentifier ) {
@@ -222,62 +227,67 @@ public class EntityAccessMap {
 
 
     /**
-     * Constructs a qualified name for an optimizer Entity reference.
+     * Constructs a qualified name for an optimizer entity reference.
      *
-     * @param table table of interest
+     * @param entity entity of interest
      * @return qualified name
      */
-    public EntityIdentifier getQualifiedName( Entity table, long partitionId ) {
-        return new EntityIdentifier( table.id, partitionId, NamespaceLevel.ENTITY_LEVEL );
+    public EntityIdentifier getQualifiedName( Entity entity, long partitionId ) {
+        return new EntityIdentifier( entity.id, partitionId, NamespaceLevel.ENTITY_LEVEL );
     }
 
 
     /**
-     * Visitor that finds all tables in a tree.
+     * Visitor that finds all entities in a tree.
      */
-    private class TableAlgVisitor extends AlgVisitor {
+    private class EntityAlgVisitor extends AlgVisitor {
 
 
         @Override
         public void visit( AlgNode p, int ordinal, AlgNode parent ) {
             super.visit( p, ordinal, parent );
-            Entity table = p.getEntity();
-            if ( table == null ) {
+            Entity entity = p.getEntity();
+            if ( entity == null ) {
                 return;
             }
 
             if ( p instanceof LpgAlg ) {
-                attachGraph( p );
+                attachLpg( p );
                 return;
             }
             if ( p instanceof DocumentAlg ) {
-                attachDocument( (AlgNode & DocumentAlg) p );
+                attachDoc( (AlgNode & DocumentAlg) p );
                 return;
             }
 
+            attachRel( p, entity );
+        }
+
+
+        private void attachRel( AlgNode p, Entity entity ) {
             Mode newAccess;
 
             //  FIXME: Don't rely on object type here; eventually someone is going to write a rule which transforms to
-            //  something which doesn't inherit TableModify, and this will break. Need to make this explicit in the
+            //  something which doesn't inherit Modify, and this will break. Need to make this explicit in the
             //  {@link AlgNode} interface.
             if ( p.unwrap( RelModify.class ).isPresent() ) {
                 newAccess = Mode.WRITE_ACCESS;
                 if ( RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() ) {
-                    extractWriteConstraints( table.unwrap( LogicalTable.class ).orElseThrow() );
+                    extractWriteConstraints( entity.unwrap( LogicalTable.class ).orElseThrow() );
                 }
             } else {
                 newAccess = Mode.READ_ACCESS;
             }
 
             // TODO @HENNLO Integrate PartitionIds into Entities
-            // If table has no info which partitions are accessed, ergo has no concrete entries in map
+            // If entity has no info which partitions are accessed, ergo has no concrete entries in map
             // assume that all are accessed. --> Add all to AccessMap
             List<Long> relevantAllocations;
             if ( accessedPartitions.containsKey( p.getEntity().id ) ) {
                 relevantAllocations = accessedPartitions.get( p.getEntity().id );
             } else {
-                if ( table.dataModel == DataModel.RELATIONAL ) {
-                    List<AllocationEntity> allocations = Catalog.getInstance().getSnapshot().alloc().getFromLogical( table.id );
+                if ( entity.dataModel == DataModel.RELATIONAL ) {
+                    List<AllocationEntity> allocations = Catalog.getInstance().getSnapshot().alloc().getFromLogical( entity.id );
                     relevantAllocations = allocations.stream().map( a -> a.id ).toList();
                 } else {
                     relevantAllocations = List.of();
@@ -286,7 +296,7 @@ public class EntityAccessMap {
             }
 
             for ( long allocationId : relevantAllocations ) {
-                EntityIdentifier key = getQualifiedName( table, allocationId );
+                EntityIdentifier key = getQualifiedName( entity, allocationId );
                 Mode oldAccess = accessMap.get( key );
                 if ( (oldAccess != null) && (oldAccess != newAccess) ) {
                     newAccess = Mode.READWRITE_ACCESS;
@@ -296,7 +306,7 @@ public class EntityAccessMap {
         }
 
 
-        private <T extends AlgNode & DocumentAlg> void attachDocument( T p ) {
+        private <T extends AlgNode & DocumentAlg> void attachDoc( T p ) {
 
             Mode newAccess;
             if ( p instanceof DocumentModify ) {
@@ -306,13 +316,13 @@ public class EntityAccessMap {
             } else {
                 return;
             }
-            // as documents are using the same id space as tables this will work
+            // as documents are using the same id space as entity this will work
             EntityIdentifier key = new EntityIdentifier( p.getId(), 0, NamespaceLevel.ENTITY_LEVEL );
             accessMap.put( key, newAccess );
         }
 
 
-        private void attachGraph( AlgNode p ) {
+        private void attachLpg( AlgNode p ) {
 
             Mode newAccess;
             if ( p instanceof LpgModify ) {
@@ -322,14 +332,14 @@ public class EntityAccessMap {
             } else {
                 return;
             }
-            // as graph is on the namespace level in the full polyschema it is unique and can be used like this
+            // as graph is on the namespace level
             EntityIdentifier key = new EntityIdentifier( p.getEntity().id, 0, NamespaceLevel.NAMESPACE_LEVEL );
             accessMap.put( key, newAccess );
         }
 
 
         /**
-         * Retrieves an access map for linked tables based on foreign key constraints
+         * Retrieves an access map for linked logical based on foreign key constraints
          */
         private void extractWriteConstraints( LogicalTable logicalTable ) {
 
@@ -355,7 +365,7 @@ public class EntityAccessMap {
         long entityId;
 
         long allocationId;
-        // the locking checks for an existing EntityIdentifier, which is identified, by its id an partition
+        // the locking checks for an existing EntityIdentifier, which is identified, by its id a partition
         // this is done on the entity level, the graph model defines the graph on the namespace level and this could lead to conflicts
         // therefore we can add the level to the identifier
         NamespaceLevel namespaceLevel;

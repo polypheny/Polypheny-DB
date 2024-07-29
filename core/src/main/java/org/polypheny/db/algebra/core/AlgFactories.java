@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,25 +52,25 @@ import org.polypheny.db.algebra.core.common.ConditionalExecute.Condition;
 import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
-import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
-import org.polypheny.db.algebra.logical.relational.LogicalCorrelate;
-import org.polypheny.db.algebra.logical.relational.LogicalExchange;
-import org.polypheny.db.algebra.logical.relational.LogicalFilter;
-import org.polypheny.db.algebra.logical.relational.LogicalIntersect;
-import org.polypheny.db.algebra.logical.relational.LogicalJoin;
-import org.polypheny.db.algebra.logical.relational.LogicalMatch;
-import org.polypheny.db.algebra.logical.relational.LogicalMinus;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalRelCorrelate;
+import org.polypheny.db.algebra.logical.relational.LogicalRelExchange;
+import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalRelIntersect;
+import org.polypheny.db.algebra.logical.relational.LogicalRelJoin;
+import org.polypheny.db.algebra.logical.relational.LogicalRelMatch;
+import org.polypheny.db.algebra.logical.relational.LogicalRelMinus;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
+import org.polypheny.db.algebra.logical.relational.LogicalRelSort;
+import org.polypheny.db.algebra.logical.relational.LogicalRelUnion;
+import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.algebra.logical.relational.LogicalRelViewScan;
-import org.polypheny.db.algebra.logical.relational.LogicalSort;
 import org.polypheny.db.algebra.logical.relational.LogicalSortExchange;
-import org.polypheny.db.algebra.logical.relational.LogicalUnion;
-import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.logistic.EntityType;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.Contexts;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
@@ -110,7 +110,7 @@ public class AlgFactories {
 
     public static final ValuesFactory DEFAULT_VALUES_FACTORY = new ValuesFactoryImpl();
 
-    public static final ScanFactory DEFAULT_TABLE_SCAN_FACTORY = new ScanFactoryImpl();
+    public static final ScanFactory DEFAULT_TABLE_SCAN_FACTORY = new RelScanFactoryImpl();
 
     public static final DocumentsFactory DEFAULT_DOCUMENTS_FACTORY = new DocumentsFactoryImpl();
 
@@ -142,7 +142,7 @@ public class AlgFactories {
 
 
     /**
-     * Can create a {@link LogicalProject} of the appropriate type for this rule's calling convention.
+     * Can create a {@link LogicalRelProject} of the appropriate type for this rule's calling convention.
      */
     public interface ProjectFactory {
 
@@ -156,13 +156,13 @@ public class AlgFactories {
 
     /**
      * Implementation of {@link ProjectFactory} that returns a vanilla
-     * {@link LogicalProject}.
+     * {@link LogicalRelProject}.
      */
     private static class ProjectFactoryImpl implements ProjectFactory {
 
         @Override
         public AlgNode createProject( AlgNode input, List<? extends RexNode> childExprs, List<String> fieldNames ) {
-            return LogicalProject.create( input, childExprs, fieldNames );
+            return LogicalRelProject.create( input, childExprs, fieldNames );
         }
 
     }
@@ -188,7 +188,7 @@ public class AlgFactories {
 
         @Override
         public AlgNode createSort( AlgNode input, AlgCollation collation, RexNode offset, RexNode fetch ) {
-            return LogicalSort.create( input, collation, offset, fetch );
+            return LogicalRelSort.create( input, collation, offset, fetch );
         }
 
     }
@@ -214,7 +214,7 @@ public class AlgFactories {
 
         @Override
         public AlgNode createExchange( AlgNode input, AlgDistribution distribution ) {
-            return LogicalExchange.create( input, distribution );
+            return LogicalRelExchange.create( input, distribution );
         }
 
     }
@@ -270,11 +270,11 @@ public class AlgFactories {
         public AlgNode createSetOp( Kind kind, List<AlgNode> inputs, boolean all ) {
             switch ( kind ) {
                 case UNION:
-                    return LogicalUnion.create( inputs, all );
+                    return LogicalRelUnion.create( inputs, all );
                 case EXCEPT:
-                    return LogicalMinus.create( inputs, all );
+                    return LogicalRelMinus.create( inputs, all );
                 case INTERSECT:
-                    return LogicalIntersect.create( inputs, all );
+                    return LogicalRelIntersect.create( inputs, all );
                 default:
                     throw new AssertionError( "not a set op: " + kind );
             }
@@ -284,7 +284,7 @@ public class AlgFactories {
 
 
     /**
-     * Can create a {@link LogicalAggregate} of the appropriate type for this rule's calling convention.
+     * Can create a {@link LogicalRelAggregate} of the appropriate type for this rule's calling convention.
      */
     public interface AggregateFactory {
 
@@ -302,7 +302,7 @@ public class AlgFactories {
 
 
     /**
-     * Implementation of {@link AlgFactories.AggregateFactory} that returns a vanilla {@link LogicalAggregate}.
+     * Implementation of {@link AlgFactories.AggregateFactory} that returns a vanilla {@link LogicalRelAggregate}.
      */
     private static class AggregateFactoryImpl implements AggregateFactory {
 
@@ -314,14 +314,14 @@ public class AlgFactories {
                 ImmutableBitSet groupSet,
                 ImmutableList<ImmutableBitSet> groupSets,
                 List<AggregateCall> aggCalls ) {
-            return LogicalAggregate.create( input, indicator, groupSet, groupSets, aggCalls );
+            return LogicalRelAggregate.create( input, indicator, groupSet, groupSets, aggCalls );
         }
 
     }
 
 
     /**
-     * Can create a {@link LogicalFilter} of the appropriate type for this rule's calling convention.
+     * Can create a {@link LogicalRelFilter} of the appropriate type for this rule's calling convention.
      */
     public interface FilterFactory {
 
@@ -334,13 +334,13 @@ public class AlgFactories {
 
 
     /**
-     * Implementation of {@link AlgFactories.FilterFactory} that returns a vanilla {@link LogicalFilter}.
+     * Implementation of {@link AlgFactories.FilterFactory} that returns a vanilla {@link LogicalRelFilter}.
      */
     private static class FilterFactoryImpl implements FilterFactory {
 
         @Override
         public AlgNode createFilter( AlgNode input, RexNode condition ) {
-            return LogicalFilter.create( input, condition );
+            return LogicalRelFilter.create( input, condition );
         }
 
     }
@@ -348,7 +348,7 @@ public class AlgFactories {
 
     /**
      * Can create a join of the appropriate type for a rule's calling convention.
-     *
+     * <p>
      * The result is typically a {@link Join}.
      */
     public interface JoinFactory {
@@ -375,7 +375,7 @@ public class AlgFactories {
 
 
     /**
-     * Implementation of {@link JoinFactory} that returns a vanilla {@link LogicalJoin}.
+     * Implementation of {@link JoinFactory} that returns a vanilla {@link LogicalRelJoin}.
      */
     private static class JoinFactoryImpl implements JoinFactory {
 
@@ -387,14 +387,13 @@ public class AlgFactories {
                 Set<CorrelationId> variablesSet,
                 JoinAlgType joinType,
                 boolean semiJoinDone ) {
-            return LogicalJoin.create(
+            return LogicalRelJoin.create(
                     left,
                     right,
                     condition,
                     variablesSet,
                     joinType,
-                    semiJoinDone,
-                    ImmutableList.of() );
+                    semiJoinDone );
         }
 
     }
@@ -402,7 +401,7 @@ public class AlgFactories {
 
     /**
      * Can create a correlate of the appropriate type for a rule's calling convention.
-     *
+     * <p>
      * The result is typically a {@link Correlate}.
      */
     public interface CorrelateFactory {
@@ -427,7 +426,7 @@ public class AlgFactories {
 
 
     /**
-     * Implementation of {@link CorrelateFactory} that returns a vanilla {@link LogicalCorrelate}.
+     * Implementation of {@link CorrelateFactory} that returns a vanilla {@link LogicalRelCorrelate}.
      */
     private static class CorrelateFactoryImpl implements CorrelateFactory {
 
@@ -438,7 +437,7 @@ public class AlgFactories {
                 CorrelationId correlationId,
                 ImmutableBitSet requiredColumns,
                 SemiJoinType joinType ) {
-            return LogicalCorrelate.create(
+            return LogicalRelCorrelate.create(
                     left,
                     right,
                     correlationId,
@@ -488,19 +487,19 @@ public class AlgFactories {
         /**
          * Creates a Values.
          */
-        AlgNode createValues( AlgOptCluster cluster, AlgDataType rowType, List<ImmutableList<RexLiteral>> tuples );
+        AlgNode createValues( AlgCluster cluster, AlgDataType rowType, List<ImmutableList<RexLiteral>> tuples );
 
     }
 
 
     /**
-     * Implementation of {@link ValuesFactory} that returns a {@link LogicalValues}.
+     * Implementation of {@link ValuesFactory} that returns a {@link LogicalRelValues}.
      */
     private static class ValuesFactoryImpl implements ValuesFactory {
 
         @Override
-        public AlgNode createValues( AlgOptCluster cluster, AlgDataType rowType, List<ImmutableList<RexLiteral>> tuples ) {
-            return LogicalValues.create( cluster, rowType, ImmutableList.copyOf( tuples ) );
+        public AlgNode createValues( AlgCluster cluster, AlgDataType rowType, List<ImmutableList<RexLiteral>> tuples ) {
+            return LogicalRelValues.create( cluster, rowType, ImmutableList.copyOf( tuples ) );
         }
 
     }
@@ -509,7 +508,7 @@ public class AlgFactories {
     public interface DocumentsFactory {
 
         AlgNode createDocuments(
-                AlgOptCluster cluster,
+                AlgCluster cluster,
                 List<PolyDocument> documents,
                 AlgDataType rowType );
 
@@ -520,7 +519,7 @@ public class AlgFactories {
 
         @Override
         public AlgNode createDocuments(
-                AlgOptCluster cluster,
+                AlgCluster cluster,
                 List<PolyDocument> documents,
                 AlgDataType rowType ) {
             return LogicalDocumentValues.create(
@@ -539,7 +538,7 @@ public class AlgFactories {
         /**
          * Creates a {@link RelScan}.
          */
-        AlgNode createScan( AlgOptCluster cluster, Entity entity );
+        AlgNode createRelScan( AlgCluster cluster, Entity entity );
 
     }
 
@@ -547,11 +546,11 @@ public class AlgFactories {
     /**
      * Implementation of {@link ScanFactory} that returns a {@link LogicalRelScan}.
      */
-    private static class ScanFactoryImpl implements ScanFactory {
+    private static class RelScanFactoryImpl implements ScanFactory {
 
         @Override
-        public AlgNode createScan( AlgOptCluster cluster, Entity entity ) {
-            // Check if RelOptTable contains a View, in this case a LogicalViewScan needs to be created
+        public AlgNode createRelScan( AlgCluster cluster, Entity entity ) {
+            // Check if AlgOptTable contains a View, in this case a LogicalViewScan needs to be created
             if ( entity.entityType == EntityType.VIEW ) {
                 return LogicalRelViewScan.create( cluster, entity );
             } else {
@@ -566,7 +565,7 @@ public class AlgFactories {
      * Creates a {@link ScanFactory} that can expand {@link TranslatableEntity} instances.
      *
      * @param scanFactory Factory for non-translatable tables
-     * @return Table scan factory
+     * @return Table relScan factory
      */
     @Nonnull
     public static ScanFactory expandingScanFactory( @Nonnull ScanFactory scanFactory ) {
@@ -575,7 +574,7 @@ public class AlgFactories {
             if ( oTranslatableTable.isPresent() ) {
                 return oTranslatableTable.get().toAlg( cluster, cluster.traitSet() );
             }
-            return scanFactory.createScan( cluster, entity );
+            return scanFactory.createRelScan( cluster, entity );
         };
     }
 
@@ -607,7 +606,7 @@ public class AlgFactories {
 
 
     /**
-     * Implementation of {@link MatchFactory} that returns a {@link LogicalMatch}.
+     * Implementation of {@link MatchFactory} that returns a {@link LogicalRelMatch}.
      */
     private static class MatchFactoryImpl implements MatchFactory {
 
@@ -626,7 +625,7 @@ public class AlgFactories {
                 List<RexNode> partitionKeys,
                 AlgCollation orderKeys,
                 RexNode interval ) {
-            return LogicalMatch.create(
+            return LogicalRelMatch.create(
                     input,
                     rowType,
                     pattern,
@@ -664,7 +663,7 @@ public class AlgFactories {
 
 
     /**
-     * Implementation of {@link MatchFactory} that returns a {@link LogicalMatch}.
+     * Implementation of {@link MatchFactory} that returns a {@link LogicalRelMatch}.
      */
     private static class ConditionalExecuteFactoryImpl implements ConditionalExecuteFactory {
 

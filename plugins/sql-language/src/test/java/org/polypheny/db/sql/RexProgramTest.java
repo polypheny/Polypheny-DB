@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import org.apache.calcite.avatica.util.ByteString;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.algebra.constant.Kind;
@@ -56,21 +55,22 @@ import org.polypheny.db.rex.RexLocalRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexProgram;
 import org.polypheny.db.rex.RexProgramBuilder;
+import org.polypheny.db.rex.RexProgramBuilderBase;
 import org.polypheny.db.rex.RexSimplify;
 import org.polypheny.db.rex.RexUnknownAs;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.sql.language.SqlOperator;
 import org.polypheny.db.sql.language.SqlSpecialOperator;
-import org.polypheny.db.test.PolyphenyDbAssert;
-import org.polypheny.db.test.RexProgramBuilderBase;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeAssignmentRules;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.inference.ReturnTypes;
+import org.polypheny.db.util.ByteString;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.ImmutableBitSet;
+import org.polypheny.db.util.PolyphenyDbAssert;
 import org.polypheny.db.util.TestUtil;
 import org.polypheny.db.util.TimeString;
 import org.polypheny.db.util.TimestampString;
@@ -1832,7 +1832,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
                                         && literal.value.asString().value.length()
                                         > toType.getPrecision())
                                         || (literal.getPolyType() == PolyType.BINARY
-                                        && literal.value.asBinary().value.length()
+                                        && literal.value.asBinary().length()
                                         > toType.getPrecision());
                         boolean couldSimplify = !cast.equals( simplified );
                         final String reason = (expectedSimplify
@@ -1885,44 +1885,19 @@ public class RexProgramTest extends RexProgramBuilderBase {
         final RexLiteral literalDate = rexBuilder.makeDateLiteral( new DateString( "2011-07-20" ) );
         final RexLiteral literalTime = rexBuilder.makeTimeLiteral( new TimeString( "12:34:56" ), 0 );
         final RexLiteral literalTimestamp = rexBuilder.makeTimestampLiteral( new TimestampString( "2011-07-20 12:34:56" ), 0 );
-        final RexLiteral literalTimeLTZ = rexBuilder.makeTimeWithLocalTimeZoneLiteral( new TimeString( 1, 23, 45 ), 0 );
         final RexLiteral timeLTZChar1 = rexBuilder.makeLiteral( "12:34:45 America/Los_Angeles" );
         final RexLiteral timeLTZChar2 = rexBuilder.makeLiteral( "12:34:45 UTC" );
         final RexLiteral timeLTZChar3 = rexBuilder.makeLiteral( "12:34:45 GMT+01" );
         final RexLiteral timestampLTZChar1 = rexBuilder.makeLiteral( "2011-07-20 12:34:56 Asia/Tokyo" );
         final RexLiteral timestampLTZChar2 = rexBuilder.makeLiteral( "2011-07-20 12:34:56 GMT+01" );
         final RexLiteral timestampLTZChar3 = rexBuilder.makeLiteral( "2011-07-20 12:34:56 UTC" );
-        final RexLiteral literalTimestampLTZ = rexBuilder.makeTimestampWithLocalTimeZoneLiteral( new TimestampString( 2011, 7, 20, 8, 23, 45 ), 0 );
 
         final AlgDataType dateType = typeFactory.createPolyType( PolyType.DATE );
         final AlgDataType timeType = typeFactory.createPolyType( PolyType.TIME );
         final AlgDataType timestampType = typeFactory.createPolyType( PolyType.TIMESTAMP );
-        final AlgDataType timeLTZType = typeFactory.createPolyType( PolyType.TIME_WITH_LOCAL_TIME_ZONE );
-        final AlgDataType timestampLTZType = typeFactory.createPolyType( PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE );
         final AlgDataType varCharType = typeFactory.createPolyType( PolyType.VARCHAR, 40 );
 
-        checkSimplify( cast( timeLTZChar1, timeLTZType ), "20:34:45:TIME_WITH_LOCAL_TIME_ZONE(0)" );
-        checkSimplify( cast( timeLTZChar2, timeLTZType ), "12:34:45:TIME_WITH_LOCAL_TIME_ZONE(0)" );
-        checkSimplify( cast( timeLTZChar3, timeLTZType ), "11:34:45:TIME_WITH_LOCAL_TIME_ZONE(0)" );
-        checkSimplifyUnchanged( cast( literalTimeLTZ, timeLTZType ) );
-        checkSimplify( cast( timestampLTZChar1, timestampLTZType ), "2011-07-20 03:34:56:TIMESTAMP_WITH_LOCAL_TIME_ZONE(0)" );
-        checkSimplify( cast( timestampLTZChar2, timestampLTZType ), "2011-07-20 11:34:56:TIMESTAMP_WITH_LOCAL_TIME_ZONE(0)" );
-        checkSimplify( cast( timestampLTZChar3, timestampLTZType ), "2011-07-20 12:34:56:TIMESTAMP_WITH_LOCAL_TIME_ZONE(0)" );
-        checkSimplifyUnchanged( cast( literalTimestampLTZ, timestampLTZType ) );
-        checkSimplify( cast( literalDate, timestampLTZType ), "2011-07-20 07:00:00:TIMESTAMP_WITH_LOCAL_TIME_ZONE(0)" );
-        checkSimplify( cast( literalTime, timestampLTZType ), "1970-01-01 20:34:56:TIMESTAMP_WITH_LOCAL_TIME_ZONE(0)" );
-        checkSimplify( cast( literalTimestamp, timestampLTZType ), "2011-07-20 19:34:56:TIMESTAMP_WITH_LOCAL_TIME_ZONE(0)" );
         checkSimplify( cast( literalTimestamp, dateType ), "2011-07-20" );
-        checkSimplify( cast( literalTimestampLTZ, dateType ), "2011-07-20" );
-        checkSimplify( cast( literalTimestampLTZ, timeType ), "01:23:45" );
-        checkSimplify( cast( literalTimestampLTZ, timestampType ), "2011-07-20 01:23:45" );
-        checkSimplify( cast( literalTimeLTZ, timeType ), "17:23:45" );
-        checkSimplify( cast( literalTime, timeLTZType ), "20:34:56:TIME_WITH_LOCAL_TIME_ZONE(0)" );
-        checkSimplify( cast( literalTimestampLTZ, timeLTZType ), "08:23:45:TIME_WITH_LOCAL_TIME_ZONE(0)" );
-        checkSimplify( cast( literalTimeLTZ, varCharType ), "'17:23:45 America/Los_Angeles':VARCHAR(40)" );
-        checkSimplify( cast( literalTimestampLTZ, varCharType ), "'2011-07-20 01:23:45 America/Los_Angeles':VARCHAR(40)" );
-        checkSimplify( cast( literalTimeLTZ, timestampType ), "1969-12-31 17:23:45" ); // - 9 from utc
-        checkSimplify( cast( literalTimeLTZ, timestampLTZType ), "1970-01-01 01:23:45:TIMESTAMP_WITH_LOCAL_TIME_ZONE(0)" );
     }
 
 

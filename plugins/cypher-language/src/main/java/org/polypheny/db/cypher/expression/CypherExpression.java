@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,26 +76,15 @@ public class CypherExpression extends CypherNode {
 
 
     public Pair<PolyString, RexNode> getRex( CypherContext context, RexType type ) {
-        OperatorName operatorName;
-        switch ( this.type ) {
-            case PATTERN:
-                // EveryPathPattern
-                //return pattern.getPatternMatch( context );
-            case ALL:
-                operatorName = OperatorName.CYPHER_ALL_MATCH;
-                break;
-            case ANY:
-                operatorName = OperatorName.CYPHER_ANY_MATCH;
-                break;
-            case NONE:
-                operatorName = OperatorName.CYPHER_NONE_MATCH;
-                break;
-            case SINGLE:
-                operatorName = OperatorName.CYPHER_SINGLE_MATCH;
-                break;
-            default:
-                throw new UnsupportedOperationException();
-        }
+        OperatorName operatorName = switch ( this.type ) {
+            // EveryPathPattern
+            //return pattern.getPatternMatch( context );
+            case PATTERN, ALL -> OperatorName.CYPHER_ALL_MATCH;
+            case ANY -> OperatorName.CYPHER_ANY_MATCH;
+            case NONE -> OperatorName.CYPHER_NONE_MATCH;
+            case SINGLE -> OperatorName.CYPHER_SINGLE_MATCH;
+            default -> throw new UnsupportedOperationException();
+        };
 
         //  ANY ( Variable IN Expression(list) Where? )
         //  MATCH p = (a)-[*1..3]->(b)

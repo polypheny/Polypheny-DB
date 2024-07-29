@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,7 +42,6 @@ import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.inference.ReturnTypes;
 import org.polypheny.db.util.ControlFlowException;
-import org.polypheny.db.util.ImmutableNullableList;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Static;
 import org.polypheny.db.util.Util;
@@ -182,13 +181,13 @@ public class SqlWindow extends SqlCall implements Window {
 
     @Override
     public List<Node> getOperandList() {
-        return ImmutableNullableList.of( declName, refName, partitionList, orderList, isRows, lowerBound, upperBound, allowPartial );
+        return ImmutableList.of( declName, refName, partitionList, orderList, isRows, lowerBound, upperBound, allowPartial );
     }
 
 
     @Override
     public List<SqlNode> getSqlOperandList() {
-        return ImmutableNullableList.of( declName, refName, partitionList, orderList, isRows, (SqlNode) lowerBound, (SqlNode) upperBound, allowPartial );
+        return ImmutableList.of( declName, refName, partitionList, orderList, isRows, (SqlNode) lowerBound, (SqlNode) upperBound, allowPartial );
     }
 
 
@@ -676,7 +675,7 @@ public class SqlWindow extends SqlCall implements Window {
                         case DATE:
                         case TIME:
                         case TIMESTAMP:
-                            if ( PolyTypeFamily.INTERVAL_DAY_TIME != bndTypeFam && PolyTypeFamily.INTERVAL_YEAR_MONTH != bndTypeFam ) {
+                            if ( PolyTypeFamily.INTERVAL_TIME != bndTypeFam && PolyTypeFamily.INTERVAL_YEAR_MONTH != bndTypeFam ) {
                                 throw validator.newValidationError( boundVal, Static.RESOURCE.orderByRangeMismatch() );
                             }
                             break;
@@ -865,4 +864,3 @@ public class SqlWindow extends SqlCall implements Window {
     }
 
 }
-

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,7 +38,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.core.SemiJoin;
-import org.polypheny.db.algebra.logical.relational.LogicalFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.tools.AlgBuilderFactory;
@@ -63,7 +63,7 @@ public class SemiJoinFilterTransposeRule extends AlgOptRule {
      */
     public SemiJoinFilterTransposeRule( AlgBuilderFactory algBuilderFactory ) {
         super(
-                operand( SemiJoin.class, some( operand( LogicalFilter.class, any() ) ) ),
+                operand( SemiJoin.class, some( operand( LogicalRelFilter.class, any() ) ) ),
                 algBuilderFactory, null );
     }
 
@@ -72,7 +72,7 @@ public class SemiJoinFilterTransposeRule extends AlgOptRule {
     @Override
     public void onMatch( AlgOptRuleCall call ) {
         SemiJoin semiJoin = call.alg( 0 );
-        LogicalFilter filter = call.alg( 1 );
+        LogicalRelFilter filter = call.alg( 1 );
 
         AlgNode newSemiJoin =
                 SemiJoin.create(

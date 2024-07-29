@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,10 +57,10 @@ public class RexPermuteInputsShuttle extends RexShuttle {
      * Creates a RexPermuteInputsShuttle.
      *
      * The mapping provides at most one target for every source. If a source has no targets and is referenced in the expression, {@link TargetMapping#getTarget(int)}
-     * will give an error. Otherwise the mapping gives a unique target.
+     * will give an error. Otherwise, the mapping gives a unique target.
      *
      * @param mapping Mapping
-     * @param inputs Input relational expressions
+     * @param inputs Input algebra expressions
      */
     public RexPermuteInputsShuttle( TargetMapping mapping, AlgNode... inputs ) {
         this( mapping, fields( inputs ) );

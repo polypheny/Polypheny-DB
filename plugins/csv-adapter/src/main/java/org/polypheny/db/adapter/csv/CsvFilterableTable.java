@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,7 +52,7 @@ import org.polypheny.db.util.Source;
 
 /**
  * Table based on a CSV file that can implement simple filtering.
- *
+ * <p>
  * It implements the {@link FilterableEntity} interface, so Polypheny-DB gets data by calling the {@link #scan(DataContext, List)} method.
  */
 public class CsvFilterableTable extends CsvTable implements FilterableEntity {

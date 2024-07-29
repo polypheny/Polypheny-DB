@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,15 +33,15 @@ import org.polypheny.db.algebra.convert.ConverterImpl;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.enumerable.EnumerableAlg;
 import org.polypheny.db.algebra.enumerable.EnumerableAlgImplementor;
-import org.polypheny.db.algebra.enumerable.JavaRowFormat;
+import org.polypheny.db.algebra.enumerable.JavaTupleFormat;
 import org.polypheny.db.algebra.enumerable.PhysType;
 import org.polypheny.db.algebra.enumerable.PhysTypeImpl;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.runtime.Hook;
@@ -50,12 +50,12 @@ import org.polypheny.db.util.Pair;
 
 
 /**
- * Relational expression representing a scan of a table in a Mongo data source.
+ * Relational expression representing a relScan of a table in a Mongo data source.
  */
 @Slf4j
 public class MongoToEnumerableConverter extends ConverterImpl implements EnumerableAlg {
 
-    protected MongoToEnumerableConverter( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input ) {
+    protected MongoToEnumerableConverter( AlgCluster cluster, AlgTraitSet traits, AlgNode input ) {
         super( cluster, ConventionTraitDef.INSTANCE, traits, input );
     }
 
@@ -67,7 +67,7 @@ public class MongoToEnumerableConverter extends ConverterImpl implements Enumera
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         return super.computeSelfCost( planner, mq ).multiplyBy( .1 );
     }
 
@@ -79,7 +79,7 @@ public class MongoToEnumerableConverter extends ConverterImpl implements Enumera
         mongoImplementor.visitChild( 0, getInput() );
 
         final AlgDataType rowType = getTupleType();
-        final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), rowType, pref.prefer( JavaRowFormat.ARRAY ) );
+        final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), rowType, pref.prefer( JavaTupleFormat.ARRAY ) );
 
         if ( mongoImplementor.getEntity() == null ) {
             return implementor.result( physType, new BlockBuilder().toBlock() );

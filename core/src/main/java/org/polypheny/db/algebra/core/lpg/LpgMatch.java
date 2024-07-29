@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgRecordType;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
@@ -48,7 +48,7 @@ public abstract class LpgMatch extends SingleAlg implements LpgAlg {
      * Creates a {@link LpgMatch}.
      * {@link ModelTrait#GRAPH} node, which represents a <code>MATCH</code> operator.
      */
-    protected LpgMatch( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, List<RexCall> matches, List<PolyString> names ) {
+    protected LpgMatch( AlgCluster cluster, AlgTraitSet traits, AlgNode input, List<RexCall> matches, List<PolyString> names ) {
         super( cluster, traits, input );
         this.matches = matches;
         this.names = names;
@@ -70,10 +70,10 @@ public abstract class LpgMatch extends SingleAlg implements LpgAlg {
 
     @Override
     public String algCompareString() {
-        return "$" + getClass().getSimpleName() +
-                "$" + matches.hashCode() +
-                "$" + names.hashCode() +
-                "$" + input.algCompareString();
+        return getClass().getSimpleName() + "$" +
+                matches.hashCode() + "$" +
+                names.hashCode() + "$" +
+                input.algCompareString() + "&";
     }
 
 

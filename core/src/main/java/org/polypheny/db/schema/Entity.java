@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,6 @@ package org.polypheny.db.schema;
 
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.nodes.Call;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
@@ -43,16 +42,15 @@ import org.polypheny.db.util.Wrapper;
 
 
 /**
- * Table.
- *
- * The typical way for a table to be created is when Polypheny-DB interrogates a user-defined schema in order to validate
- * names appearing in a SQL query. Polypheny-DB finds the schema by calling {@link Namespace#getSubNamespace(String)} on the
- * connection's root schema, then gets a table by calling {@link Namespace#getEntity(String)}.
- *
- * Note that a table does not know its name. It is in fact possible for a table to be used more than once, perhaps under
+ * Entity.
+ * <p>
+ * The typical way for an entity to be created is when Polypheny-DB interrogates a user-defined schema in order to validate
+ * names appearing in a SQL query.
+ * <p>
+ * Note that an entity does not know its name. It is in fact possible for an entity to be used more than once, perhaps under
  * multiple names or under multiple schemas. (Compare with the <a href="http://en.wikipedia.org/wiki/Inode">i-node</a> concept
  * in the UNIX filesystem.)
- *
+ * <p>
  * A particular table instance may also implement {@link Wrapper}, to give access to sub-objects.
  *
  * @see TableMacro
@@ -61,16 +59,16 @@ public interface Entity {
 
     /**
      * Returns this table's row type.
-     *
+     * <p>
      * This is a struct type whose fields describe the names and types of the columns in this table.
-     *
+     * <p>
      * The implementer must use the type factory provided. This ensures that the type is converted into a canonical form;
      * other equal types in the same query will use the same object.
      *
      * @param typeFactory Type factory with which to create the type
      * @return Row type
      */
-    AlgDataType getRowType( AlgDataTypeFactory typeFactory );
+    AlgDataType getTupleType( AlgDataTypeFactory typeFactory );
 
     default AlgDataTypeFactory getTypeFactory() {
         return new JavaTypeFactoryImpl();
@@ -91,11 +89,6 @@ public interface Entity {
     Long getAdapterId();
 
     /**
-     * Type of table.
-     */
-    TableType getJdbcTableType();
-
-    /**
      * Determines whether the given {@code column} has been rolled up.
      */
     boolean isRolledUp( String column );
@@ -111,19 +104,6 @@ public interface Entity {
      */
     boolean rolledUpColumnValidInsideAgg( String column, Call call, Node parent );
 
-
-    default DataModel getNamespaceType() {
-        return DataModel.RELATIONAL;
-    }
-
-    interface Table {
-
-    }
-
-
-    interface Collection {
-
-    }
 
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,9 +39,10 @@ import java.util.List;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
 import org.polypheny.db.algebra.AlgInput;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.catalog.entity.Entity;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.schema.trait.ModelTrait;
@@ -76,7 +77,7 @@ public final class LogicalRelScan extends RelScan<Entity> {
      * <p>
      * Use {@link #create} unless you know what you're doing.
      */
-    public LogicalRelScan( AlgOptCluster cluster, AlgTraitSet traitSet, Entity table ) {
+    public LogicalRelScan( AlgCluster cluster, AlgTraitSet traitSet, Entity table ) {
         super( cluster, traitSet, table );
     }
 
@@ -97,12 +98,18 @@ public final class LogicalRelScan extends RelScan<Entity> {
     }
 
 
+    @Override
+    public AlgNode accept( AlgShuttle shuttle ) {
+        return shuttle.visit( this );
+    }
+
+
     /**
      * Creates a LogicalScan.
      *
      * @param cluster Cluster
      */
-    public static LogicalRelScan create( AlgOptCluster cluster, final Entity entity ) {
+    public static LogicalRelScan create( AlgCluster cluster, final Entity entity ) {
 
         final AlgTraitSet traitSet =
                 cluster.traitSetOf( Convention.NONE )

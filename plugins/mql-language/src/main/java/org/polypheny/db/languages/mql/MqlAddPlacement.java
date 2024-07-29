@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,8 +35,8 @@ import org.polypheny.db.transaction.Statement;
 
 public class MqlAddPlacement extends MqlCollectionStatement implements ExecutableStatement {
 
-    public MqlAddPlacement( ParserPos pos, String collection, List<String> stores ) {
-        super( collection, pos );
+    public MqlAddPlacement( ParserPos pos, String collection, String namespace, List<String> stores ) {
+        super( collection, namespace, pos );
         this.stores = stores;
     }
 

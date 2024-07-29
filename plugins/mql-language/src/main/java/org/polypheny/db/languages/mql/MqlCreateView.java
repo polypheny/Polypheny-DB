@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,13 +22,15 @@ import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.PlacementType;
-import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.languages.mql.Mql.Type;
 import org.polypheny.db.nodes.ExecutableStatement;
 import org.polypheny.db.prepare.Context;
+import org.polypheny.db.processing.Processor;
+import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
 
@@ -40,8 +42,8 @@ public class MqlCreateView extends MqlNode implements ExecutableStatement {
     private final BsonArray pipeline;
 
 
-    public MqlCreateView( ParserPos pos, String name, String source, BsonArray pipeline ) {
-        super( pos );
+    public MqlCreateView( ParserPos pos, String name, String namespace, String source, BsonArray pipeline ) {
+        super( pos, namespace );
         this.source = source;
         this.name = name;
         this.pipeline = pipeline;
@@ -50,30 +52,27 @@ public class MqlCreateView extends MqlNode implements ExecutableStatement {
 
     @Override
     public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
-        Long database = parsedQueryContext.getQueryNode().orElseThrow().getNamespaceId();
+        long database = parsedQueryContext.getQueryNode().orElseThrow().getNamespaceId();
 
-        long schemaId = context.getSnapshot().getNamespace( database ).orElseThrow().id;
+        long namespaceId = context.getSnapshot().getNamespace( database ).orElseThrow().id;
 
-        AlgRoot algRoot = statement.getTransaction()
-                .getProcessor( QueryLanguage.from( "mongo" ) )
-                .translate( statement, parsedQueryContext );
+        QueryContext queryContext = QueryContext.builder()
+                .query( buildQuery() )
+                .origin( "MQL create view" )
+                .language( parsedQueryContext.getLanguage() )
+                .namespaceId( parsedQueryContext.getNamespaceId() )
+                .transactionManager( parsedQueryContext.getTransactionManager() )
+                .transactions( parsedQueryContext.getTransactions() )
+                .build();
+        Processor processor = statement.getTransaction().getProcessor( QueryLanguage.from( "mongo" ) );
+
+        AlgRoot algRoot = processor.translate( statement, ParsedQueryContext.fromQuery( buildQuery(), processor.parse( buildQuery() ).get( 0 ), queryContext ) );
         PlacementType placementType = PlacementType.AUTOMATIC;
 
         AlgNode algNode = algRoot.alg;
         AlgCollation algCollation = algRoot.collation;
 
-        DdlManager.getInstance().createView(
-                name,
-                schemaId,
-                algNode,
-                algCollation,
-                true,
-                statement,
-                placementType,
-                algRoot.alg.getTupleType().getFieldNames(),
-                buildQuery(),
-                QueryLanguage.from( "mongo" ) );
-
+        throw new GenericRuntimeException( "Document views are currently not supported" );
     }
 
 

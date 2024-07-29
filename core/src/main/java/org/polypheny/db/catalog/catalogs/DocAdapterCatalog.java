@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package org.polypheny.db.catalog.catalogs;
 
-import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.annotations.Deserialize;
 import java.util.ArrayList;
 import java.util.List;
@@ -40,15 +39,12 @@ import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalField;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
-import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.util.Pair;
 
 @Getter
 @EqualsAndHashCode(callSuper = true)
 @Value
 public class DocAdapterCatalog extends AdapterCatalog {
-
-    public BinarySerializer<DocAdapterCatalog> serializer = PolySerializable.buildSerializer( DocAdapterCatalog.class );
 
 
     public DocAdapterCatalog( long adapterId ) {
@@ -149,10 +145,5 @@ public class DocAdapterCatalog extends AdapterCatalog {
         return collection;
     }
 
-
-    @Override
-    public PolySerializable copy() {
-        return PolySerializable.deserialize( serialize(), DocAdapterCatalog.class );
-    }
 
 }

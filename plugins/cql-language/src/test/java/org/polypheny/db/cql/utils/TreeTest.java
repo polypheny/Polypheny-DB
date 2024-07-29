@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.concurrent.atomic.AtomicInteger;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.cql.exception.UnexpectedTypeException;
 import org.polypheny.db.cql.utils.Tree.NodeType;
@@ -84,9 +83,8 @@ public class TreeTest {
 
 
     @Test
-    @Disabled // refactor
     public void testGetInternalNodeThrowsUnexpectedTypeException() {
-        assertThrows( UnexpectedTypeException.class, () -> tree.left.getInternalNode() );
+        assertThrows( UnexpectedTypeException.class, () -> tree.left.left.getInternalNode() );
     }
 
 

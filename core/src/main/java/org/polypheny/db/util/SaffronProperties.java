@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,7 +51,7 @@ import org.polypheny.db.runtime.Resources.StringProp;
 
 /**
  * Provides an environment for debugging information, et cetera, used by saffron.
- *
+ * <p>
  * It is a singleton, accessed via the {@link #INSTANCE} object. It is
  * populated from System properties if saffron is invoked via a <code>
  * main()</code> method, from a <code>javax.servlet.ServletContext</code> if
@@ -122,7 +122,7 @@ public interface SaffronProperties {
      * maximum size of the cache of metadata handlers. A typical value is
      * the number of queries being concurrently prepared multiplied by the number
      * of types of metadata.
-     *
+     * <p>
      * If the value is less than 0, there is no limit. The default is 1,000.
      */
     @Resource("saffron.metadata.handler.cache.maximum.size")

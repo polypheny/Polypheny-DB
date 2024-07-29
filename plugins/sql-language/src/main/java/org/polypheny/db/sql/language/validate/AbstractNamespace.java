@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.algebra.type.GraphType;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.sql.language.SqlNode;
+import org.polypheny.db.util.NameMatchers;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 
@@ -79,13 +80,13 @@ abstract class AbstractNamespace implements SqlValidatorNamespace {
 
 
     @Override
-    public final void validate( AlgDataType targetRowType ) {
+    public final void validate( AlgDataType targetTupleType ) {
         switch ( status ) {
             case UNVALIDATED:
                 try {
                     status = SqlValidatorImpl.Status.IN_PROGRESS;
                     Preconditions.checkArgument( rowType == null, "Namespace.rowType must be null before validate has been called" );
-                    AlgDataType type = validateImpl( targetRowType );
+                    AlgDataType type = validateImpl( targetTupleType );
                     Preconditions.checkArgument( type != null, "validateImpl() returned null" );
                     setType( type );
                 } finally {
@@ -113,7 +114,7 @@ abstract class AbstractNamespace implements SqlValidatorNamespace {
 
 
     @Override
-    public AlgDataType getRowType() {
+    public AlgDataType getTupleType() {
         if ( rowType instanceof GraphType ) {
             return GraphType.ofRelational();
         }
@@ -130,13 +131,13 @@ abstract class AbstractNamespace implements SqlValidatorNamespace {
 
     @Override
     public AlgDataType getRowTypeSansSystemColumns() {
-        return getRowType();
+        return getTupleType();
     }
 
 
     @Override
     public AlgDataType getType() {
-        Util.discard( getRowType() );
+        Util.discard( getTupleType() );
         return type;
     }
 
@@ -155,21 +156,21 @@ abstract class AbstractNamespace implements SqlValidatorNamespace {
 
 
     @Override
-    public Entity getTable() {
+    public Entity getEntity() {
         return null;
     }
 
 
     @Override
     public SqlValidatorNamespace lookupChild( String name ) {
-        return validator.lookupFieldNamespace( getRowType(), name );
+        return validator.lookupFieldNamespace( getTupleType(), name );
     }
 
 
     @Override
     public boolean fieldExists( String name ) {
-        final AlgDataType rowType = getRowType();
-        return validator.snapshot.nameMatcher.field( rowType, name ) != null;
+        final AlgDataType rowType = getTupleType();
+        return NameMatchers.withCaseSensitive( false ).field( rowType, name ) != null;
     }
 
 
@@ -223,17 +224,11 @@ abstract class AbstractNamespace implements SqlValidatorNamespace {
         }
         final AlgDataTypeFactory typeFactory = validator.getTypeFactory();
         final AlgDataType structType = toStruct( componentType, getNode() );
-        final AlgDataType collectionType;
-        switch ( type.getPolyType() ) {
-            case ARRAY:
-                collectionType = typeFactory.createArrayType( structType, -1 );
-                break;
-            case MULTISET:
-                collectionType = typeFactory.createMultisetType( structType, -1 );
-                break;
-            default:
-                throw new AssertionError( type );
-        }
+        final AlgDataType collectionType = switch ( type.getPolyType() ) {
+            case ARRAY -> typeFactory.createArrayType( structType, -1 );
+            case MULTISET -> typeFactory.createMultisetType( structType, -1 );
+            default -> throw new AssertionError( type );
+        };
         return typeFactory.createTypeWithNullability( collectionType, type.isNullable() );
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,6 +59,9 @@ public abstract class DdlManager {
     public static DdlManager INSTANCE = null;
 
 
+    public static final List<String> blockedNamespaceNames = List.of( "namespace", "db", "schema", "graph", "database" );
+
+
     /**
      * Sets a new DdlManager and returns it.
      *
@@ -94,19 +97,34 @@ public abstract class DdlManager {
      * @param type the namespace type, RELATIONAL, DOCUMENT, etc.
      * @param ifNotExists whether to silently ignore if a namespace with this name does already exist
      * @param replace whether to replace an existing namespace with this name
+     * @param statement the query statement
      */
-    public abstract long createNamespace( String name, DataModel type, boolean ifNotExists, boolean replace );
+    public abstract long createNamespace( String name, DataModel type, boolean ifNotExists, boolean replace, Statement statement );
 
     /**
-     * Adds a new adapter (data store or data source)
+     * Adds a new data store(adapter)
      *
-     * @param uniqueName unique name of the newly created adapter
-     * @param adapterName name of adapter, which is used to create the adapter
-     * @param adapterType the specific {@link AdapterType} for the adapter to create
-     * @param config configuration for the adapter
-     * @param mode
+     * @param uniqueName unique name of the newly created store
+     * @param adapterName name of store, which is used to create the store
+     * @param adapterType the specific {@link AdapterType} for the store to create
+     * @param config configuration for the store
+     * @param mode the deploy mode
      */
-    public abstract void createAdapter( String uniqueName, String adapterName, AdapterType adapterType, Map<String, String> config, DeployMode mode );
+    public abstract void createStore( String uniqueName, String adapterName, AdapterType adapterType, Map<String, String> config, DeployMode mode );
+
+
+    /**
+     * Adds a new data source(adapter)
+     *
+     * @param uniqueName unique name of the newly created source
+     * @param adapterName name of source, which is used to create the source
+     * @param namespace the target namespace for the adapter
+     * @param adapterType the specific {@link AdapterType} for the source to create
+     * @param config configuration for the source
+     * @param mode the deploy mode
+     */
+    public abstract void createSource( String uniqueName, String adapterName, long namespace, AdapterType adapterType, Map<String, String> config, DeployMode mode );
+
 
     /**
      * Drop an adapter
@@ -161,7 +179,7 @@ public abstract class DdlManager {
      * @param onUpdate how to enforce the constraint on updated
      * @param onDelete how to enforce the constraint on delete
      */
-    public abstract void createForeignKey( LogicalTable table, LogicalTable refTable, List<String> columnNames, List<String> refColumnNames, String constraintName, ForeignKeyOption onUpdate, ForeignKeyOption onDelete );
+    public abstract void createForeignKey( LogicalTable table, LogicalTable refTable, List<String> columnNames, List<String> refColumnNames, String constraintName, ForeignKeyOption onUpdate, ForeignKeyOption onDelete, Statement statement );
 
     /**
      * Adds an index to a table
@@ -216,7 +234,7 @@ public abstract class DdlManager {
      * @param columnNames the names of the columns which are part of the constraint
      * @param constraintName the name of the unique constraint
      */
-    public abstract void createUniqueConstraint( LogicalTable table, List<String> columnNames, String constraintName );
+    public abstract void createUniqueConstraint( LogicalTable table, List<String> columnNames, String constraintName, Statement statement );
 
     /**
      * Drop a specific column in a table
@@ -379,14 +397,6 @@ public abstract class DdlManager {
     public abstract void dropColumnPlacement( LogicalTable table, LogicalColumn column, DataStore<?> store, Statement statement );
 
     /**
-     * Change the owner of a table
-     *
-     * @param table the table
-     * @param newOwnerName the name of the new owner
-     */
-    public abstract void alterTableOwner( LogicalTable table, String newOwnerName );
-
-    /**
      * Rename a table (changing the logical name of the table)
      *
      * @param table the table to be renamed
@@ -465,9 +475,8 @@ public abstract class DdlManager {
 
     /**
      * Adds a new constraint to a table
-     *
      */
-    public abstract void createConstraint( ConstraintInformation information, long namespaceId, List<Long> columnIds, long tableId );
+    public abstract void createConstraint( ConstraintInformation information, long namespaceId, List<Long> columnIds, long tableId, Statement statement );
 
     /**
      * Drop a NAMESPACE
@@ -555,23 +564,7 @@ public abstract class DdlManager {
      * Helper class which holds all information required for creating a column,
      * decoupled from a specific query language
      */
-    @Value
-    public static class FieldInformation {
-
-        public String name;
-        public ColumnTypeInformation typeInformation;
-        public Collation collation;
-        public PolyValue defaultValue;
-        public int position;
-
-
-        public FieldInformation( String name, ColumnTypeInformation typeInformation, Collation collation, PolyValue defaultValue, int position ) {
-            this.name = name;
-            this.typeInformation = typeInformation;
-            this.collation = collation;
-            this.defaultValue = defaultValue;
-            this.position = position;
-        }
+    public record FieldInformation( String name, ColumnTypeInformation typeInformation, Collation collation, PolyValue defaultValue, int position ) {
 
     }
 
@@ -611,18 +604,8 @@ public abstract class DdlManager {
      * Helper class, which holds all type information for a column
      * decoupled from the used query language
      */
-    @Value
-    public static class ColumnTypeInformation {
 
-        public PolyType type;
-        @Nullable
-        public PolyType collectionType;
-        public Integer precision;
-        public Integer scale;
-        public Integer dimension;
-        public Integer cardinality;
-        public Boolean nullable;
-
+    public record ColumnTypeInformation( PolyType type, @Nullable PolyType collectionType, Integer precision, Integer scale, Integer dimension, Integer cardinality, Boolean nullable ) {
 
         public ColumnTypeInformation(
                 PolyType type,

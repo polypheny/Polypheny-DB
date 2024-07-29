@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 import lombok.Data;
 import org.jetbrains.annotations.NotNull;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.nodes.IntervalQualifier;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
@@ -116,9 +117,7 @@ public class DocumentType implements AlgDataType, AlgDataTypeFamily {
 
     private String computeDigest() {
         assert fixed != null;
-        return getClass().getSimpleName() +
-                fixed.stream().map( f -> f.getType().getFullTypeString() ).collect( Collectors.joining( "$" ) ) +
-                String.join( "$", excluded );
+        return DataModel.DOCUMENT.name();
     }
 
 

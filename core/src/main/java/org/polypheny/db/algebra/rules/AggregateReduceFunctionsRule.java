@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,13 +48,13 @@ import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.fun.AggFunction;
-import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptRuleOperand;
@@ -91,7 +91,7 @@ public class AggregateReduceFunctionsRule extends AlgOptRule {
     /**
      * The singleton.
      */
-    public static final AggregateReduceFunctionsRule INSTANCE = new AggregateReduceFunctionsRule( operand( LogicalAggregate.class, any() ), AlgFactories.LOGICAL_BUILDER );
+    public static final AggregateReduceFunctionsRule INSTANCE = new AggregateReduceFunctionsRule( operand( LogicalRelAggregate.class, any() ), AlgFactories.LOGICAL_BUILDER );
 
 
     /**
@@ -411,7 +411,7 @@ public class AggregateReduceFunctionsRule extends AlgOptRule {
         //     / nullif(count(x) - 1, 0),
         //     .5)
         final int nGroups = oldAggRel.getGroupCount();
-        final AlgOptCluster cluster = oldAggRel.getCluster();
+        final AlgCluster cluster = oldAggRel.getCluster();
         final RexBuilder rexBuilder = cluster.getRexBuilder();
         final AlgDataTypeFactory typeFactory = cluster.getTypeFactory();
 
@@ -541,7 +541,7 @@ public class AggregateReduceFunctionsRule extends AlgOptRule {
 
 
     private RexNode getSumAggregatedRexNodeWithBinding( Aggregate oldAggRel, AggregateCall oldCall, List<AggregateCall> newCalls, Map<AggregateCall, RexNode> aggCallMapping, AlgDataType operandType, int argOrdinal, int filter ) {
-        AlgOptCluster cluster = oldAggRel.getCluster();
+        AlgCluster cluster = oldAggRel.getCluster();
         final AggregateCall sumArgSquaredAggCall = createAggregateCallWithBinding( cluster.getTypeFactory(), OperatorRegistry.getAgg( OperatorName.SUM ), operandType, oldAggRel, oldCall, argOrdinal, filter );
 
         return cluster.getRexBuilder().addAggCall( sumArgSquaredAggCall, oldAggRel.getGroupCount(), oldAggRel.indicator, newCalls, aggCallMapping, ImmutableList.of( sumArgSquaredAggCall.getType() ) );
@@ -577,7 +577,7 @@ public class AggregateReduceFunctionsRule extends AlgOptRule {
         //    sum(y * y, x) - sum(y, x) * sum(y, x) / regr_count(x, y)
         //
 
-        final AlgOptCluster cluster = oldAggRel.getCluster();
+        final AlgCluster cluster = oldAggRel.getCluster();
         final RexBuilder rexBuilder = cluster.getRexBuilder();
         final AlgDataTypeFactory typeFactory = cluster.getTypeFactory();
         final AlgDataType argXType = getFieldType( oldAggRel.getInput(), xIndex );
@@ -635,7 +635,7 @@ public class AggregateReduceFunctionsRule extends AlgOptRule {
         // covar_samp(x, y) ==>
         //     (sum(x * y) - sum(x) * sum(y) / regr_count(x, y))
         //     / regr_count(count(x, y) - 1, 0)
-        final AlgOptCluster cluster = oldAggRel.getCluster();
+        final AlgCluster cluster = oldAggRel.getCluster();
         final RexBuilder rexBuilder = cluster.getRexBuilder();
         final AlgDataTypeFactory typeFactory = cluster.getTypeFactory();
         assert oldCall.getArgList().size() == 2 : oldCall.getArgList();

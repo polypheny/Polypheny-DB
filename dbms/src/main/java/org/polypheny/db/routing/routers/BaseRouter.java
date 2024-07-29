@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,7 +43,7 @@ import org.polypheny.db.algebra.logical.common.LogicalTransformer;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
-import org.polypheny.db.algebra.logical.relational.LogicalValues;
+import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
@@ -121,17 +121,17 @@ public abstract class BaseRouter implements Router {
         if ( entity.unwrap( LogicalTable.class ).isPresent() ) {
             List<AllocationEntity> allocations = statement.getTransaction().getSnapshot().alloc().getFromLogical( entity.id );
             table = entity.unwrap( LogicalTable.class ).orElseThrow();
-            builder.scan( allocations.get( 0 ) );
+            builder.relScan( allocations.get( 0 ) );
         } else if ( entity.unwrap( AllocationTable.class ).isPresent() ) {
-            builder.scan( entity.unwrap( AllocationTable.class ).get() );
+            builder.relScan( entity.unwrap( AllocationTable.class ).get() );
             table = statement.getTransaction().getSnapshot().rel().getTable( entity.unwrap( AllocationTable.class ).orElseThrow().logicalId ).orElseThrow();
         } else {
             throw new NotImplementedException();
         }
 
-        if ( table.getRowType().getFieldCount() == builder.peek().getTupleType().getFieldCount() && !table.getRowType().equals( builder.peek().getTupleType() ) ) {
+        if ( table.getTupleType().getFieldCount() == builder.peek().getTupleType().getFieldCount() && !table.getTupleType().equals( builder.peek().getTupleType() ) ) {
             // we adjust the
-            Map<String, Integer> namesIndexMapping = table.getRowType().getFields().stream().collect( Collectors.toMap( AlgDataTypeField::getName, AlgDataTypeField::getIndex ) );
+            Map<String, Integer> namesIndexMapping = table.getTupleType().getFields().stream().collect( Collectors.toMap( AlgDataTypeField::getName, AlgDataTypeField::getIndex ) );
             List<Integer> target = builder.peek().getTupleType().getFields().stream().map( f -> namesIndexMapping.get( f.getName() ) ).toList();
             builder.permute( Mappings.bijection( target ) );
         }
@@ -162,12 +162,12 @@ public abstract class BaseRouter implements Router {
     }
 
 
-    public RoutedAlgBuilder handleValues( LogicalValues node, RoutedAlgBuilder builder ) {
+    public RoutedAlgBuilder handleValues( LogicalRelValues node, RoutedAlgBuilder builder ) {
         return builder.values( node.tuples, node.getTupleType() );
     }
 
 
-    protected List<RoutedAlgBuilder> handleValues( LogicalValues node, List<RoutedAlgBuilder> builders ) {
+    protected List<RoutedAlgBuilder> handleValues( LogicalRelValues node, List<RoutedAlgBuilder> builders ) {
         return builders.stream().map( builder -> builder.values( node.tuples, node.getTupleType() ) ).toList();
     }
 

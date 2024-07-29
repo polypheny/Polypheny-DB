@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,6 @@ import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.file.FileAlg.FileImplementor;
 import org.polypheny.db.adapter.file.FileAlg.FileImplementor.Operation;
-import org.polypheny.db.adapter.file.FileConvention;
 import org.polypheny.db.adapter.file.FileMethod;
 import org.polypheny.db.adapter.file.FileSchema;
 import org.polypheny.db.adapter.file.FileTranslatableEntity;
@@ -45,9 +44,9 @@ import org.polypheny.db.algebra.enumerable.PhysType;
 import org.polypheny.db.algebra.enumerable.PhysTypeImpl;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.type.PolyType;
@@ -60,7 +59,7 @@ public class FileToEnumerableConverter extends ConverterImpl implements Enumerab
     private final FileSchema fileSchema;
 
 
-    public FileToEnumerableConverter( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, Method enumeratorMethod, FileSchema fileSchema ) {
+    public FileToEnumerableConverter( AlgCluster cluster, AlgTraitSet traits, AlgNode input, Method enumeratorMethod, FileSchema fileSchema ) {
         super( cluster, ConventionTraitDef.INSTANCE, traits, input );
         this.enumeratorMethod = enumeratorMethod;
         this.fileSchema = fileSchema;
@@ -74,7 +73,7 @@ public class FileToEnumerableConverter extends ConverterImpl implements Enumerab
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         return super.computeSelfCost( planner, mq ).multiplyBy( 0.1 );
     }
 
@@ -82,7 +81,6 @@ public class FileToEnumerableConverter extends ConverterImpl implements Enumerab
     @Override
     public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
         final BlockBuilder list = new BlockBuilder();
-        FileConvention convention = (FileConvention) getInput().getConvention();
         PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getTupleType(), pref.preferArray() );
 
         FileImplementor fileImplementor = new FileImplementor();

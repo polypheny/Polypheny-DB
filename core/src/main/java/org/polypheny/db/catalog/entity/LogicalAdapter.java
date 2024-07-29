@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package org.polypheny.db.catalog.entity;
 
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
+import java.io.Serial;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.EqualsAndHashCode;
@@ -35,6 +36,7 @@ import org.polypheny.db.type.entity.PolyValue;
 @SuperBuilder(toBuilder = true)
 public class LogicalAdapter implements PolyObject {
 
+    @Serial
     private static final long serialVersionUID = -6140489767408917639L;
 
     @Serialize

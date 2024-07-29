@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import org.polypheny.db.algebra.core.JoinAlgType;
 
 
 /**
- * Model for a {@link AlgNode} coming from the RelAlg-Builder in the UI
+ * Model for a {@link AlgNode} coming from the Alg-Builder in the UI
  */
 public class UIAlgNode {
 
@@ -33,49 +33,66 @@ public class UIAlgNode {
     /**
      * ExpressionType of the AlgNode, e.g. Scan
      */
+    @JsonProperty
     public String type;
 
     /**
      * ExpressionType of Table, e.g. Table, View
      */
-    public String tableType;
+    @JsonProperty
+    public String entityType;
+
+    //tableScan
+    @JsonProperty
+    public String entityName;
 
     /**
      * Children of this node in the tree
      */
+    @JsonProperty
     public UIAlgNode[] children;
 
     /**
      * Number of inputs of a node.
      * Required by the AlgBuilder
      */
+    @JsonProperty
     public int inputCount;
 
-    //tableScan
-    public String tableName;
 
     //join
+    @JsonProperty
     public JoinAlgType join;
     //join condition
+    @JsonProperty
     public String operator;
+    @JsonProperty
     public String col1;
+    @JsonProperty
     public String col2;
 
     //filter
     //(String operator)
+    @JsonProperty
     public String field;
+    @JsonProperty
     public String filter;
 
     //project
+    @JsonProperty
     public String[] fields;
 
     //aggregate
+    @JsonProperty
     public String groupBy;
+    @JsonProperty
     public String aggregation;
+    @JsonProperty
     public String alias;
     //(String field)
 
     //sort
+    @JsonProperty
     public SortState[] sortColumns;
 
     //union, minus

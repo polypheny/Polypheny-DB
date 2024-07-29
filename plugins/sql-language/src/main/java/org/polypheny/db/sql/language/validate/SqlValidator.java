@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -79,7 +79,7 @@ import org.polypheny.db.util.Util;
  * {@link SqlValidatorNamespace#unwrap(Class)} and
  * {@link SqlValidatorNamespace#isWrapperFor(Class)} instead.
  *
- * The validator builds the map by making a quick scan over the query when the root {@link SqlNode} is first provided. Thereafter, it supplies the correct scope or namespace object when it calls validation methods.
+ * The validator builds the map by making a quick relScan over the query when the root {@link SqlNode} is first provided. Thereafter, it supplies the correct scope or namespace object when it calls validation methods.
  *
  * The methods {@link #getSelectScope}, {@link #getFromScope}, {@link #getWhereScope}, {@link #getGroupScope}, {@link #getHavingScope}, {@link #getOrderScope} and {@link #getJoinScope} get the correct scope to resolve
  * names in a particular clause of a SQL statement.

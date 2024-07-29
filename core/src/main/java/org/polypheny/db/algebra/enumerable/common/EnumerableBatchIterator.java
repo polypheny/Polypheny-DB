@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ import org.polypheny.db.algebra.core.common.BatchIterator;
 import org.polypheny.db.algebra.enumerable.EnumUtils;
 import org.polypheny.db.algebra.enumerable.EnumerableAlg;
 import org.polypheny.db.algebra.enumerable.EnumerableAlgImplementor;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.util.BuiltInMethod;
 
@@ -44,7 +44,7 @@ public class EnumerableBatchIterator extends BatchIterator implements Enumerable
      * @param traits The trait set
      * @param input Input relational expression
      */
-    protected EnumerableBatchIterator( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input ) {
+    protected EnumerableBatchIterator( AlgCluster cluster, AlgTraitSet traits, AlgNode input ) {
         super( cluster, traits, input );
     }
 
@@ -74,10 +74,10 @@ public class EnumerableBatchIterator extends BatchIterator implements Enumerable
                         EnumUtils.overridingMethodDecl(
                                 BuiltInMethod.BATCH_ITERATOR_GET_ENUM.method,
                                 EnumUtils.NO_PARAMS,
-                                Blocks.toFunctionBlock( result.block ) ) ) ) ) );
+                                Blocks.toFunctionBlock( result.block() ) ) ) ) ) );
 
         builder.add( Expressions.return_( null, builder.append( "test", Expressions.call( BuiltInMethod.BATCH.method, Expressions.constant( DataContext.ROOT ), _baz ) ) ) );
-        return implementor.result( result.physType, builder.toBlock() );
+        return implementor.result( result.physType(), builder.toBlock() );
     }
 
 }

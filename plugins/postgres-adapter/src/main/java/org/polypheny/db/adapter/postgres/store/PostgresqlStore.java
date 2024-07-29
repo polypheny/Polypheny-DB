@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -88,8 +88,8 @@ public class PostgresqlStore extends AbstractJdbcStore {
     private DockerContainer container;
 
 
-    public PostgresqlStore( long storeId, String uniqueName, final Map<String, String> settings ) {
-        super( storeId, uniqueName, settings, PostgresqlSqlDialect.DEFAULT, true );
+    public PostgresqlStore( final long storeId, final String uniqueName, final Map<String, String> settings, final DeployMode mode ) {
+        super( storeId, uniqueName, settings, mode, PostgresqlSqlDialect.DEFAULT, true );
     }
 
 
@@ -111,11 +111,8 @@ public class PostgresqlStore extends AbstractJdbcStore {
             DockerInstance instance = DockerManager.getInstance().getInstanceById( instanceId )
                     .orElseThrow( () -> new GenericRuntimeException( "No docker instance with id " + instanceId ) );
             try {
-                // TODO: change to polypheny/postgres after merge of PR in Polypheny-Docker repository
-                container = instance.newBuilder( "postgis/postgis:16-3.4-alpine", getUniqueName() )
+                container = instance.newBuilder( "polypheny/postgres:latest", getUniqueName() )
                         .withEnvironmentVariable( "POSTGRES_PASSWORD", settings.get( "password" ) )
-                        .withEnvironmentVariable( "POSTGRES_USER", username )
-                        .withEnvironmentVariable( "POSTGRES_DBNAME", database )
                         .createAndStart();
             } catch ( IOException e ) {
                 throw new GenericRuntimeException( e );
@@ -265,13 +262,11 @@ public class PostgresqlStore extends AbstractJdbcStore {
             case "brin":
                 builder.append( "brin" );
                 break;
-            case "gist":
-                builder.append( "gist" );
-                break;
         }
+
         builder.append( "(" );
         boolean first = true;
-        for ( long columnId : index.key.columnIds ) {
+        for ( long columnId : index.key.fieldIds ) {
             if ( !first ) {
                 builder.append( ", " );
             }
@@ -297,15 +292,13 @@ public class PostgresqlStore extends AbstractJdbcStore {
     }
 
 
-
     @Override
     public List<IndexMethodModel> getAvailableIndexMethods() {
         return ImmutableList.of(
                 new IndexMethodModel( "btree", "B-TREE" ),
                 new IndexMethodModel( "hash", "HASH" ),
                 new IndexMethodModel( "gin", "GIN (Generalized Inverted Index)" ),
-                new IndexMethodModel( "brin", "BRIN (Block Range index)" ),
-                new IndexMethodModel( "gist", "GiST (Generalized Search Tree)" )
+                new IndexMethodModel( "brin", "BRIN (Block Range index)" )
         );
     }
 
@@ -343,7 +336,6 @@ public class PostgresqlStore extends AbstractJdbcStore {
             case DOUBLE -> "FLOAT";
             case DECIMAL -> "DECIMAL";
             case VARCHAR -> "VARCHAR";
-            case GEOMETRY -> "GEOMETRY";
             case JSON, TEXT -> "TEXT";
             case DATE -> "DATE";
             case TIME -> "TIME";
@@ -364,7 +356,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
 
 
     @Override
-    public String getDefaultPhysicalNamespaceName() {
+    public String getDefaultPhysicalSchemaName() {
         return "public";
     }
 
@@ -426,7 +418,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
 
 
     @Override
-    public void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities ) {
+    public void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities, Context context ) {
         PhysicalEntity table = entities.get( 0 );
         updateNamespace( table.namespaceName, table.namespaceId );
         adapterCatalog.addPhysical( alloc, currentJdbcSchema.createJdbcTable( table.unwrap( PhysicalTable.class ).orElseThrow() ) );

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,7 +49,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.SqlType;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
@@ -62,9 +61,12 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.sql.language.validate.SqlType;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.numerical.PolyLong;
+import org.polypheny.db.type.entity.temporal.PolyDate;
+import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 import org.polypheny.db.util.Static;
 
 
@@ -76,7 +78,7 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
 
 
     // timestamp do factor in the timezones, which means that 10:00 is 9:00 with
-    // an one hour shift, as we lose this timezone information on retrieval
+    // a one hour shift, as we lose this timezone information on retrieval
     // therefore we use the offset if needed
     public final static int OFFSET = Calendar.getInstance().getTimeZone().getRawOffset();
 
@@ -250,7 +252,7 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
      */
     private static void setDynamicParam( PreparedStatement preparedStatement, int i, PolyValue value, AlgDataType type, int sqlType, ConnectionHandler connectionHandler ) throws SQLException {
         if ( value == null || value.isNull() ) {
-            preparedStatement.setNull( i, SqlType.NULL.id );
+            preparedStatement.setNull( i, Types.NULL );
             return;
         }
 
@@ -279,21 +281,25 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
                 preparedStatement.setBoolean( i, value.asBoolean().value );
                 break;
             case DATE:
-                preparedStatement.setDate( i, value.asDate().asSqlDate() );
+                if ( connectionHandler.getDialect().handlesUtcIncorrectly() ) {
+                    preparedStatement.setDate( i, PolyDate.of( value.asDate().millisSinceEpoch ).asSqlDate( OFFSET ), Calendar.getInstance( TimeZone.getTimeZone( "UTC" ) ) );
+                } else {
+                    preparedStatement.setDate( i, value.asDate().asSqlDate() );
+                }
                 break;
             case TIME:
                 preparedStatement.setTime( i, value.asTime().asSqlTime(), Calendar.getInstance( TimeZone.getTimeZone( "UTC" ) ) );
                 break;
             case TIMESTAMP:
-                preparedStatement.setTimestamp( i, value.asTimestamp().asSqlTimestamp(), Calendar.getInstance( TimeZone.getTimeZone( "UTC" ) ) );
+                if ( connectionHandler.getDialect().handlesUtcIncorrectly() ) {
+                    preparedStatement.setTimestamp( i, PolyTimestamp.of( value.asTimestamp().millisSinceEpoch + OFFSET ).asSqlTimestamp() );
+                } else {
+                    preparedStatement.setTimestamp( i, value.asTimestamp().asSqlTimestamp(), Calendar.getInstance( TimeZone.getTimeZone( "UTC" ) ) );
+                }
                 break;
             case VARBINARY:
             case BINARY:
-                if ( !connectionHandler.getDialect().supportsComplexBinary() ) {
-                    preparedStatement.setString( i, value.asBinary().toTypedJson() );
-                } else {
-                    preparedStatement.setBytes( i, value.asBinary().value.getBytes() );
-                }
+                handleBinary( preparedStatement, i, value, connectionHandler );
                 break;
             case ARRAY:
                 if ( (type.getComponentType().getPolyType() == PolyType.ARRAY && connectionHandler.getDialect().supportsNestedArrays()) || (type.getComponentType().getPolyType() != PolyType.ARRAY) && connectionHandler.getDialect().supportsArrays() ) {
@@ -309,16 +315,18 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
             case FILE:
             case VIDEO:
                 if ( connectionHandler.getDialect().supportsBinaryStream() ) {
-                    preparedStatement.setBinaryStream( i, value.asBlob().asBinaryStream() );
+                    if ( value.isBlob() ) {
+                        preparedStatement.setBinaryStream( i, value.asBlob().asBinaryStream() );
+                    } else {
+                        handleBinary( preparedStatement, i, value, connectionHandler );
+                    }
+
                 } else {
-                    preparedStatement.setBytes( i, value.asBlob().asByteArray() );
-                }
-                break;
-            case GEOMETRY:
-                if ( connectionHandler.getDialect().supportsGeoJson() ) {
-                    preparedStatement.setString( i, value.asGeometry().toJson() );
-                } else {
-                    preparedStatement.setString( i, value.asGeometry().toString() );
+                    if ( value.isBlob() ) {
+                        preparedStatement.setBytes( i, value.asBlob().asByteArray() );
+                    } else {
+                        handleBinary( preparedStatement, i, value, connectionHandler );
+                    }
                 }
                 break;
             case TEXT:
@@ -331,15 +339,45 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
     }
 
 
+    private static void handleBinary( PreparedStatement preparedStatement, int i, PolyValue value, ConnectionHandler connectionHandler ) throws SQLException {
+        if ( !connectionHandler.getDialect().supportsComplexBinary() ) {
+            preparedStatement.setString( i, value.asBinary().toTypedJson() );
+        } else {
+            preparedStatement.setBytes( i, value.asBinary().value );
+        }
+    }
+
+
     private static Array getArray( PolyValue value, AlgDataType type, ConnectionHandler connectionHandler ) throws SQLException {
         SqlType componentType;
         AlgDataType t = type;
         while ( t.getComponentType().getPolyType() == PolyType.ARRAY ) {
             t = t.getComponentType();
         }
+
         componentType = SqlType.valueOf( t.getComponentType().getPolyType().getJdbcOrdinal() );
+        if ( t.getComponentType().getPolyType() == PolyType.ANY ) {
+            componentType = estimateFittingType( value.asList().value );
+        }
         Object[] array = (Object[]) PolyValue.wrapNullableIfNecessary( PolyValue.getPolyToJava( type, false ), type.isNullable() ).apply( value );
         return connectionHandler.createArrayOf( connectionHandler.getDialect().getArrayComponentTypeString( componentType ), array );
+    }
+
+
+    public static SqlType estimateFittingType( List<PolyValue> value ) {
+        if ( value.isEmpty() ) {
+            return SqlType.NULL;
+        } else if ( value.stream().allMatch( PolyValue::isBoolean ) ) {
+            return SqlType.BOOLEAN;
+        } else if ( value.stream().allMatch( PolyValue::isNumber ) ) {
+            return SqlType.NUMERIC;
+        } else if ( value.stream().allMatch( PolyValue::isBinary ) ) {
+            return SqlType.BINARY;
+        } else if ( value.stream().allMatch( PolyValue::isString ) ) {
+            return SqlType.VARCHAR;
+        }
+
+        return SqlType.ANY;
     }
 
 
@@ -542,4 +580,3 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
     }
 
 }
-

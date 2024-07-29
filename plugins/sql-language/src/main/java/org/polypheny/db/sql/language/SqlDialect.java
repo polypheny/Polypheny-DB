@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,13 +18,13 @@ package org.polypheny.db.sql.language;
 
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import java.sql.ResultSet;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
 import lombok.NonNull;
@@ -32,13 +32,10 @@ import lombok.Value;
 import lombok.With;
 import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.SqlType;
-import org.apache.calcite.avatica.util.DateTimeUtils;
-import org.apache.calcite.avatica.util.TimeUnit;
-import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.apache.calcite.linq4j.function.Experimental;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
+import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.NullCollation;
@@ -54,15 +51,20 @@ import org.polypheny.db.algebra.type.AlgDataTypeSystemImpl;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.nodes.TimeUnitRange;
 import org.polypheny.db.sql.language.dialect.JethroDataSqlDialect;
 import org.polypheny.db.sql.language.dialect.JethroDataSqlDialect.JethroInfo;
 import org.polypheny.db.sql.language.util.SqlBuilder;
 import org.polypheny.db.sql.language.util.SqlTypeUtil;
+import org.polypheny.db.sql.language.validate.SqlType;
 import org.polypheny.db.type.BasicPolyType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
+import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.category.PolyBlob;
+import org.polypheny.db.util.temporal.DateTimeUtils;
+import org.polypheny.db.util.temporal.TimeUnit;
 
 
 /**
@@ -142,8 +144,8 @@ public class SqlDialect {
     String identifierEscapedQuote;
 
     @NonNull
-    protected
-    NullCollation nullCollation;
+    protected NullCollation nullCollation;
+
     @NonNull
     AlgDataTypeSystem dataTypeSystem;
 
@@ -286,7 +288,11 @@ public class SqlDialect {
 
 
     public void unparseCall( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
-        ((SqlOperator) call.getOperator()).unparse( writer, call, leftPrec, rightPrec );
+        if ( OperatorName.PI == call.getOperator().getOperatorName() ) {
+            writer.literal( "PI()" );
+        } else {
+            ((SqlOperator) call.getOperator()).unparse( writer, call, leftPrec, rightPrec );
+        }
     }
 
 
@@ -362,10 +368,12 @@ public class SqlDialect {
     public void unparseSqlIntervalLiteral( SqlWriter writer, SqlIntervalLiteral literal, int leftPrec, int rightPrec ) {
         SqlIntervalLiteral.IntervalValue interval = (SqlIntervalLiteral.IntervalValue) literal.getValue();
         writer.keyword( "INTERVAL" );
-        if ( interval.getSign() == -1 ) {
+        if ( interval.isNegative() || interval.millis < 0 || interval.months < 0 ) {
             writer.print( "-" );
         }
-        writer.literal( "'" + literal.getValue().toString() + "'" );
+        String intervalStr = literal.getValue().toString();
+        intervalStr = intervalStr.startsWith( "-" ) ? intervalStr.substring( 1 ) : intervalStr;
+        writer.literal( "'" + intervalStr + "'" );
         unparseSqlIntervalQualifier( writer, interval.getIntervalQualifier(), AlgDataTypeSystem.DEFAULT );
     }
 
@@ -417,33 +425,8 @@ public class SqlDialect {
     };
 
 
-    /**
-     * Converts a string literal back into a string. For example, <code>'can''t run'</code> becomes <code>can't run</code>.
-     */
-    public String unquoteStringLiteral( String val ) {
-        if ( (val != null)
-                && (val.charAt( 0 ) == '\'')
-                && (val.charAt( val.length() - 1 ) == '\'') ) {
-            if ( val.length() > 2 ) {
-                val = FakeUtil.replace( val, "''", "'" );
-                return val.substring( 1, val.length() - 1 );
-            } else {
-                // zero length string
-                return "";
-            }
-        }
-        return val;
-    }
-
-
     protected boolean allowsAs() {
         return true;
-    }
-
-
-    // -- behaviors --
-    protected boolean requiresAliasForFromItems() {
-        return false;
     }
 
 
@@ -539,18 +522,6 @@ public class SqlDialect {
     }
 
 
-    /**
-     * Returns whether this dialect supports a given function or operator.
-     * It only applies to built-in scalar functions and operators, since user-defined functions and procedures should be read by JdbcSchema.
-     */
-    public boolean supportsFunction( SqlOperator operator, AlgDataType type, List<AlgDataType> paramTypes ) {
-        return switch ( operator.kind ) {
-            case AND, BETWEEN, CASE, CAST, CEIL, COALESCE, DIVIDE, EQUALS, FLOOR, GREATER_THAN, GREATER_THAN_OR_EQUAL, IN, IS_NULL, IS_NOT_NULL, LESS_THAN, LESS_THAN_OR_EQUAL, MINUS, MOD, NOT, NOT_IN, NOT_EQUALS, NVL, OR, PLUS, ROW, TIMES -> true;
-            default -> BUILT_IN_OPERATORS_LIST.contains( operator );
-        };
-    }
-
-
     public CalendarPolicy getCalendarPolicy() {
         return CalendarPolicy.NULL;
     }
@@ -559,7 +530,11 @@ public class SqlDialect {
     public SqlNode getCastSpec( AlgDataType type ) {
         if ( type instanceof BasicPolyType ) {
             int precision = type.getPrecision();
-            if ( List.of( PolyType.JSON, PolyType.NODE, PolyType.GEOMETRY ).contains( type.getPolyType() ) ) {
+            if ( type.getPolyType() == PolyType.JSON ) {
+                precision = 2024;
+                type = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT ).createPolyType( PolyType.VARCHAR, precision );
+            }
+            if ( type.getPolyType() == PolyType.NODE ) {
                 precision = 2024;
                 type = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT ).createPolyType( PolyType.VARCHAR, precision );
             }
@@ -755,27 +730,18 @@ public class SqlDialect {
         return true;
     }
 
-    public boolean supportsGeoJson() {
-        return false;
-    }
-
-    public boolean supportsPostGIS() {
-        return false;
-    }
-
-    public List<OperatorName> supportedGeoFunctions() {
-        return ImmutableList.of();
-    }
-
 
     public boolean supportsComplexBinary() {
         return true;
     }
 
 
-    public Expression getExpression( AlgDataType fieldType, Expression child ) {
+    public Expression handleRetrieval( AlgDataType fieldType, Expression child, ParameterExpression resultSet_, int index ) {
+        final String methodName = fieldType.isNullable() ? "ofNullable" : "of";
         return switch ( fieldType.getPolyType() ) {
-            case TEXT -> Expressions.call( PolyString.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( child, String.class ) );
+            case FILE, AUDIO, VIDEO, IMAGE -> Expressions.call( PolyBlob.class, methodName, Expressions.convert_( child, byte[].class ) );
+            case TEXT -> Expressions.call( PolyString.class, methodName, Expressions.convert_( child, String.class ) );
+            case VARBINARY -> Expressions.call( PolyBinary.class, "fromTypedJson", Expressions.convert_( child, String.class ), Expressions.constant( PolyBinary.class ) );
             default -> child;
         };
 
@@ -812,6 +778,26 @@ public class SqlDialect {
     }
 
 
+    /**
+     * Some databases handle UTC time incorrectly and shift the time by the timezone offset.
+     */
+    public boolean handlesUtcIncorrectly() {
+        return false;
+    }
+
+
+    /**
+     * Some adapters support different handling for missing length parameters.
+     * Like they allow for VARCHAR instead of VARCHAR(length) or VARCHAR VARYING if no length is provided.
+     *
+     * @param type the type for which a length is supported but not provided.
+     * @return the handling used if no length is provided, empty if no handling is necessary.
+     */
+    public Optional<String> handleMissingLength( PolyType type ) {
+        return Optional.empty();
+    }
+
+
     public enum IntervalParameterStrategy {CAST, MULTIPLICATION, NONE}
 
 
@@ -824,13 +810,6 @@ public class SqlDialect {
      * A few utility functions copied from org.polypheny.db.util.Util. We have copied them because we wish to keep SqlDialect's dependencies to a minimum.
      */
     public static class FakeUtil {
-
-        public static Error newInternal( Throwable e, String s ) {
-            String message = "Internal error: \u0000" + s;
-            AssertionError ae = new AssertionError( message );
-            ae.initCause( e );
-            return ae;
-        }
 
 
         /**

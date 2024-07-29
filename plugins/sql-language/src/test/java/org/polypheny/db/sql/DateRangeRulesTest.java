@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import java.util.Calendar;
 import java.util.Set;
-import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.BeforeAll;
@@ -33,6 +32,7 @@ import org.polypheny.db.TestHelper;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.rules.DateRangeRules;
 import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.nodes.TimeUnitRange;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.TimestampString;
@@ -48,6 +48,7 @@ public class DateRangeRulesTest {
     public static void setUp() {
         TestHelper.getInstance();
     }
+
 
     @Test
     public void testExtractYearFromDateColumn() {
@@ -678,16 +679,7 @@ public class DateRangeRulesTest {
     public void testFloorRewriteWithTimezone() {
         final Calendar c = Util.calendar();
         c.clear();
-        c.set( 2010, Calendar.FEBRUARY, 1, 11, 30, 0 );
         final Fixture2 f = new Fixture2();
-        checkDateRange(
-                f,
-                f.eq( f.floorHour, f.timestampLocalTzLiteral( TimestampString.fromCalendarFields( c ) ) ),
-                "IST",
-                is( "AND(>=($9, 2010-02-01 17:00:00), <($9, 2010-02-01 18:00:00))" ),
-                CoreMatchers.any( String.class ) );
-
-        c.clear();
         c.set( 2010, Calendar.FEBRUARY, 1, 11, 0, 0 );
         checkDateRange(
                 f,
@@ -774,4 +766,3 @@ public class DateRangeRulesTest {
     }
 
 }
-

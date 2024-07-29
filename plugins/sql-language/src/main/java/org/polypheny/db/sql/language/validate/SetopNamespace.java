@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,13 +56,13 @@ public class SetopNamespace extends AbstractNamespace {
     @Override
     public Monotonicity getMonotonicity( String columnName ) {
         Monotonicity monotonicity = null;
-        int index = getRowType().getFieldNames().indexOf( columnName );
+        int index = getTupleType().getFieldNames().indexOf( columnName );
         if ( index < 0 ) {
             return Monotonicity.NOT_MONOTONIC;
         }
         for ( SqlNode operand : call.getSqlOperandList() ) {
             final SqlValidatorNamespace namespace = validator.getSqlNamespace( operand );
-            monotonicity = combine( monotonicity, namespace.getMonotonicity( namespace.getRowType().getFieldNames().get( index ) ) );
+            monotonicity = combine( monotonicity, namespace.getMonotonicity( namespace.getTupleType().getFieldNames().get( index ) ) );
         }
         return monotonicity;
     }

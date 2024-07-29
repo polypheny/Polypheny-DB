@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,15 +25,15 @@ import org.polypheny.db.algebra.type.AlgRecordType;
 
 /**
  * Record type based on a Java class. The fields of the type are the fields of the class.
- *
+ * <p>
  * <strong>NOTE: This class is experimental and subject to change/removal without notice</strong>.
  */
 public class JavaRecordType extends AlgRecordType {
 
-    final Class clazz;
+    final Class<?> clazz;
 
 
-    public JavaRecordType( List<AlgDataTypeField> fields, Class clazz ) {
+    public JavaRecordType( List<AlgDataTypeField> fields, Class<?> clazz ) {
         super( fields );
         this.clazz = Objects.requireNonNull( clazz );
     }

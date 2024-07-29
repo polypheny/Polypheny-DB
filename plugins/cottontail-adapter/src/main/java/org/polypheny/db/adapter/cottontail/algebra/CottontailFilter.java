@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,9 +36,9 @@ import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
@@ -80,7 +80,7 @@ public class CottontailFilter extends Filter implements CottontailAlg {
             Object.class );
 
 
-    public CottontailFilter( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, RexNode condition ) {
+    public CottontailFilter( AlgCluster cluster, AlgTraitSet traits, AlgNode child, RexNode condition ) {
         super( cluster, traits.replace( ModelTrait.RELATIONAL ), child, condition );
     }
 
@@ -95,7 +95,7 @@ public class CottontailFilter extends Filter implements CottontailAlg {
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         return super.computeSelfCost( planner, mq ).multiplyBy( 0.1 );
     }
 
@@ -114,7 +114,6 @@ public class CottontailFilter extends Filter implements CottontailAlg {
             // intentionally empty
         }
 
-//        Translator translator = new Translator( this.getRowType() )
         return predicate;
     }
 

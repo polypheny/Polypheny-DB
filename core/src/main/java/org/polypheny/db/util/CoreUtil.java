@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,11 +23,12 @@ import java.math.BigDecimal;
 import java.nio.charset.Charset;
 import java.nio.charset.UnsupportedCharsetException;
 import java.text.MessageFormat;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.StringTokenizer;
 import java.util.stream.Collectors;
-import org.apache.calcite.avatica.util.Casing;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
@@ -47,9 +48,21 @@ import org.polypheny.db.type.PolyTypeFamily;
 public class CoreUtil {
 
 
+    private static final Map<Class<?>, Class<?>> BOX = new HashMap<>() {{
+        put( boolean.class, Boolean.class );
+        put( byte.class, Byte.class );
+        put( char.class, Character.class );
+        put( short.class, Short.class );
+        put( int.class, Integer.class );
+        put( long.class, Long.class );
+        put( float.class, Float.class );
+        put( double.class, Double.class );
+    }};
+
+
     /**
      * Extracts the values from a collation name.
-     *
+     * <p>
      * Collation names are on the form <i>charset$locale$strength</i>.
      *
      * @param in The collation name
@@ -92,10 +105,9 @@ public class CoreUtil {
         return switch ( name ) {
             case "BIG5" -> "Big5";
             case "LATIN1" -> "ISO-8859-1";
-            case "GB2312", "GBK" -> name;
+            case "GB2312", "GBK", "UTF-16BE", "UTF-16LE", "ISO-8859-1", "UTF-8" -> name;
             case "UTF8" -> "UTF-8";
             case "UTF16" -> Charsets.UTF_16.name();
-            case "UTF-16BE", "UTF-16LE", "ISO-8859-1", "UTF-8" -> name;
             default -> null;
         };
     }
@@ -179,7 +191,7 @@ public class CoreUtil {
 
     /**
      * Returns whether a node represents the NULL value.
-     *
+     * <p>
      * Examples:
      *
      * <ul>
@@ -189,8 +201,7 @@ public class CoreUtil {
      * </ul>
      */
     public static boolean isNullLiteral( Node node, boolean allowCast ) {
-        if ( node instanceof Literal ) {
-            Literal literal = (Literal) node;
+        if ( node instanceof Literal literal ) {
             if ( literal.getTypeName() == PolyType.NULL ) {
                 assert null == literal.getValue();
                 return true;
@@ -202,10 +213,8 @@ public class CoreUtil {
         if ( allowCast ) {
             if ( node.getKind() == Kind.CAST ) {
                 Call call = (Call) node;
-                if ( isNullLiteral( call.operand( 0 ), false ) ) {
-                    // node is "CAST(NULL as type)"
-                    return true;
-                }
+                // node is "CAST(NULL as type)"
+                return isNullLiteral( call.operand( 0 ), false );
             }
         }
         return false;
@@ -214,7 +223,7 @@ public class CoreUtil {
 
     /**
      * Creates the type of an {@link org.polypheny.db.util.NlsString}.
-     *
+     * <p>
      * The type inherits the NlsString's {@link Charset} and {@link Collation}, if they are set, otherwise it gets the system defaults.
      *
      * @param typeFactory Type factory
@@ -293,7 +302,7 @@ public class CoreUtil {
 
             case VALUES:
                 Call call = (Call) query;
-                assert call.getOperandList().size() > 0 : "VALUES must have at least one operand";
+                assert !call.getOperandList().isEmpty() : "VALUES must have at least one operand";
                 final Call row = call.operand( 0 );
                 assert row.getOperandList().size() > i : "VALUES has too few columns";
                 return row.operand( i );
@@ -366,14 +375,11 @@ public class CoreUtil {
             assert s.startsWith( startQuote ) && s.endsWith( endQuote ) : s;
             s = s.substring( 1, s.length() - 1 ).replace( escape, endQuote );
         }
-        switch ( casing ) {
-            case TO_UPPER:
-                return s.toUpperCase( Locale.ROOT );
-            case TO_LOWER:
-                return s.toLowerCase( Locale.ROOT );
-            default:
-                return s;
-        }
+        return switch ( casing ) {
+            case TO_UPPER -> s.toUpperCase( Locale.ROOT );
+            case TO_LOWER -> s.toLowerCase( Locale.ROOT );
+            default -> s;
+        };
     }
 
 
@@ -381,7 +387,7 @@ public class CoreUtil {
      * Trims a string for given characters from left and right. E.g. {@code trim("aBaac123AabC","abBcC")} returns {@code "123A"}.
      */
     public static String trim( String s, String chars ) {
-        if ( s.length() == 0 ) {
+        if ( s.isEmpty() ) {
             return "";
         }
 
@@ -410,35 +416,21 @@ public class CoreUtil {
 
 
     /**
-     * The components of a collation definition, per the SQL standard.
+     * Returns the boxed class. For example, {@code box(int.class)}
+     * returns {@code java.lang.Integer}.
      */
-    public static class ParsedCollation {
-
-        private final Charset charset;
-        private final Locale locale;
-        private final String strength;
-
-
-        public ParsedCollation( Charset charset, Locale locale, String strength ) {
-            this.charset = charset;
-            this.locale = locale;
-            this.strength = strength;
+    public static Class<?> box( Class<?> clazz ) {
+        if ( clazz.isPrimitive() ) {
+            return BOX.get( clazz );
         }
+        return clazz;
+    }
 
 
-        public Charset getCharset() {
-            return charset;
-        }
-
-
-        public Locale getLocale() {
-            return locale;
-        }
-
-
-        public String getStrength() {
-            return strength;
-        }
+    /**
+     * The components of a collation definition, per the language standard.
+     */
+    public record ParsedCollation( Charset charset, Locale locale, String strength ) {
 
     }
 

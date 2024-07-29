@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,7 +44,7 @@ public class TemperatureAwarePartitionManager extends AbstractPartitionManager {
     public long getTargetPartitionId( LogicalTable table, PartitionProperty property, String columnValue ) {
         // Get partition manager
         PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
-        //PartitionProperty property = Catalog.getInstance().getSnapshot().alloc().getPartitionProperty( targetEntities.id ).orElseThrow();
+
         PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( ((TemperaturePartitionProperty) property).getInternalPartitionFunction() );
 
         return partitionManager.getTargetPartitionId( table, property, columnValue );

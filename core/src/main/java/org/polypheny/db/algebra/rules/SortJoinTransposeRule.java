@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,8 +44,8 @@ import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.JoinInfo;
 import org.polypheny.db.algebra.core.Sort;
-import org.polypheny.db.algebra.logical.relational.LogicalJoin;
-import org.polypheny.db.algebra.logical.relational.LogicalSort;
+import org.polypheny.db.algebra.logical.relational.LogicalRelJoin;
+import org.polypheny.db.algebra.logical.relational.LogicalRelSort;
 import org.polypheny.db.algebra.metadata.AlgMdUtil;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.plan.AlgOptRule;
@@ -61,7 +61,7 @@ import org.polypheny.db.tools.AlgBuilderFactory;
  */
 public class SortJoinTransposeRule extends AlgOptRule {
 
-    public static final SortJoinTransposeRule INSTANCE = new SortJoinTransposeRule( LogicalSort.class, LogicalJoin.class, AlgFactories.LOGICAL_BUILDER );
+    public static final SortJoinTransposeRule INSTANCE = new SortJoinTransposeRule( LogicalRelSort.class, LogicalRelJoin.class, AlgFactories.LOGICAL_BUILDER );
 
 
     /**

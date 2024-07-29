@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,7 +41,6 @@ import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalIndex;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
-import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.docker.DockerContainer;
@@ -79,8 +78,8 @@ public class MonetdbStore extends AbstractJdbcStore {
     private DockerContainer container;
 
 
-    public MonetdbStore( long storeId, String uniqueName, final Map<String, String> settings ) {
-        super( storeId, uniqueName, settings, MonetdbSqlDialect.DEFAULT, true );
+    public MonetdbStore( final long storeId, final String uniqueName, final Map<String, String> settings, final DeployMode mode ) {
+        super( storeId, uniqueName, settings, mode, MonetdbSqlDialect.DEFAULT, true );
     }
 
 
@@ -301,20 +300,20 @@ public class MonetdbStore extends AbstractJdbcStore {
     @Override
     protected String getTypeString( PolyType type ) {
         if ( type.getFamily() == PolyTypeFamily.MULTIMEDIA ) {
-            return "BLOB";
+            return "TEXT";
         }
         return switch ( type ) {
             case BOOLEAN -> "BOOLEAN";
-            case VARBINARY -> "VARCHAR";//throw new GenericRuntimeException( "Unsupported datatype: " + type.name() );
+            case VARBINARY, BINARY -> "TEXT";
             case TINYINT -> "SMALLINT"; // there seems to be an issue with tinyints and the jdbc driver
             case SMALLINT -> "SMALLINT";
             case INTEGER -> "INT";
-            case BIGINT -> "BIGINT";
+            case BIGINT -> "HUGEINT";
             case REAL -> "REAL";
             case DOUBLE -> "DOUBLE";
             case DECIMAL -> "DECIMAL";
             case VARCHAR -> "VARCHAR";
-            case JSON, ARRAY, TEXT, GEOMETRY -> "TEXT";
+            case JSON, ARRAY, TEXT -> "TEXT";
             case DATE -> "DATE";
             case TIME -> "TIME";
             case TIMESTAMP -> "TIMESTAMP";
@@ -324,7 +323,7 @@ public class MonetdbStore extends AbstractJdbcStore {
 
 
     @Override
-    public String getDefaultPhysicalNamespaceName() {
+    public String getDefaultPhysicalSchemaName() {
         return "public";
     }
 
@@ -384,12 +383,5 @@ public class MonetdbStore extends AbstractJdbcStore {
         return false;
     }
 
-
-    @Override
-    public void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities ) {
-        PhysicalEntity table = entities.get( 0 );
-        updateNamespace( table.namespaceName, table.namespaceId );
-        adapterCatalog.addPhysical( alloc, currentJdbcSchema.createJdbcTable( table.unwrap( PhysicalTable.class ).orElseThrow() ) );
-    }
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.logical.LogicalView;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexBuilder;
@@ -42,14 +42,14 @@ public class LogicalRelViewScan extends RelScan<Entity> {
     private final AlgCollation algCollation;
 
 
-    public LogicalRelViewScan( AlgOptCluster cluster, AlgTraitSet traitSet, Entity table, AlgNode algNode, AlgCollation algCollation ) {
+    public LogicalRelViewScan( AlgCluster cluster, AlgTraitSet traitSet, Entity table, AlgNode algNode, AlgCollation algCollation ) {
         super( cluster, traitSet, table );
         this.algNode = algNode;
         this.algCollation = algCollation;
     }
 
 
-    public static AlgNode create( AlgOptCluster cluster, final Entity entity ) {
+    public static AlgNode create( AlgCluster cluster, final Entity entity ) {
 
         final AlgTraitSet traitSet =
                 cluster.traitSetOf( Convention.NONE )
@@ -76,7 +76,7 @@ public class LogicalRelViewScan extends RelScan<Entity> {
 
 
     @Override
-    public AlgNode unfoldView( @Nullable AlgNode parent, int index, AlgOptCluster cluster ) {
+    public AlgNode unfoldView( @Nullable AlgNode parent, int index, AlgCluster cluster ) {
         AlgNode unfolded = unfoldView( cluster ).unfoldView( this, 0, cluster );
         if ( parent != null ) {
             parent.replaceInput( index, unfolded );
@@ -85,7 +85,7 @@ public class LogicalRelViewScan extends RelScan<Entity> {
     }
 
 
-    public AlgNode unfoldView( AlgOptCluster cluster ) {
+    public AlgNode unfoldView( AlgCluster cluster ) {
         RexBuilder rexBuilder = this.getCluster().getRexBuilder();
         final List<RexNode> exprs = new ArrayList<>();
         final AlgDataType rowType = this.getTupleType();
@@ -96,7 +96,7 @@ public class LogicalRelViewScan extends RelScan<Entity> {
 
         algNode.replaceCluster( cluster );
 
-        return LogicalProject.create( algNode, exprs, this.getTupleType().getFieldNames() );
+        return LogicalRelProject.create( algNode, exprs, this.getTupleType().getFieldNames() );
     }
 
 }

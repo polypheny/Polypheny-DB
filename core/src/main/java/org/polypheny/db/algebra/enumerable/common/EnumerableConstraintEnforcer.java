@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.common.ConstraintEnforcer;
 import org.polypheny.db.algebra.enumerable.EnumerableAlg;
 import org.polypheny.db.algebra.enumerable.EnumerableAlgImplementor;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.util.BuiltInMethod;
 
@@ -39,7 +39,7 @@ public class EnumerableConstraintEnforcer extends ConstraintEnforcer implements 
      * Left is the initial dml query, which modifies the entity
      * right is the control query, which tests if still all conditions are correct
      */
-    public EnumerableConstraintEnforcer( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode modify, AlgNode control, List<Class<? extends Exception>> exceptionClass, List<String> exceptionMessage ) {
+    public EnumerableConstraintEnforcer( AlgCluster cluster, AlgTraitSet traitSet, AlgNode modify, AlgNode control, List<Class<? extends Exception>> exceptionClass, List<String> exceptionMessage ) {
         super( cluster, traitSet, modify, control, exceptionClass, exceptionMessage );
     }
 
@@ -68,11 +68,10 @@ public class EnumerableConstraintEnforcer extends ConstraintEnforcer implements 
         Result control = implementor.visitChild( this, 1, (EnumerableAlg) getRight(), pref );
 
         // Move executor enumerable into a lambda so parameters get not prematurely
-        FunctionExpression<Function<?>> expCall = Expressions.lambda( modify.block );
+        FunctionExpression<Function<?>> expCall = Expressions.lambda( modify.block() );
 
         // we wrap the control query into a lambda, so we can call it later with adjusted parameters
-        //Expression cont = builder.append( builder.newName( "control" + System.nanoTime() ), control.block );
-        FunctionExpression<Function<?>> controlLambda = Expressions.lambda( control.block );
+        FunctionExpression<Function<?>> controlLambda = Expressions.lambda( control.block() );
 
         MethodCallExpression transformContext = Expressions.call(
                 BuiltInMethod.ENFORCE_CONSTRAINT.method,
@@ -84,7 +83,7 @@ public class EnumerableConstraintEnforcer extends ConstraintEnforcer implements 
 
         builder.add( Expressions.return_( null, transformContext ) );
 
-        return implementor.result( modify.physType, builder.toBlock() );
+        return implementor.result( modify.physType(), builder.toBlock() );
     }
 
 }

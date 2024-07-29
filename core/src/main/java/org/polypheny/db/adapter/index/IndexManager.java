@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -178,8 +178,8 @@ public class IndexManager {
                 persistent,
                 Catalog.getInstance().getSnapshot().getNamespace( key.namespaceId ).orElseThrow(),
                 table,
-                key.getColumnNames(),
-                pk.getColumnNames() );
+                key.getFieldNames(),
+                pk.getFieldNames() );
         indexById.put( id, index );
         indexByName.put( name, index );
         final Transaction tx = statement.getTransaction();

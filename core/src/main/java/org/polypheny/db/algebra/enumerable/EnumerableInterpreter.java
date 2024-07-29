@@ -1,9 +1,26 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * This file incorporates code covered by the following terms:
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to you under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -26,18 +43,17 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.interpreter.Interpreter;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.util.BuiltInMethod;
 
 
 /**
  * Relational expression that executes its children using an interpreter.
- *
- * Although quite a few kinds of {@link AlgNode} can be interpreted, this is only created by default for {@link org.polypheny.db.schema.types.FilterableEntity} and
- * {@link org.polypheny.db.schema.types.ProjectableFilterableEntity}.
+ * <p>
+ * Although quite a few kinds of {@link AlgNode} can be interpreted, this is only created by default for {@link org.polypheny.db.schema.types.FilterableEntity}.
  */
 public class EnumerableInterpreter extends SingleAlg implements EnumerableAlg {
 
@@ -46,7 +62,7 @@ public class EnumerableInterpreter extends SingleAlg implements EnumerableAlg {
 
     /**
      * Creates an EnumerableInterpreter.
-     *
+     * <p>
      * Use {@link #create} unless you know what you're doing.
      *
      * @param cluster Cluster
@@ -54,7 +70,7 @@ public class EnumerableInterpreter extends SingleAlg implements EnumerableAlg {
      * @param input Input relation
      * @param factor Cost multiply factor
      */
-    public EnumerableInterpreter( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, double factor ) {
+    public EnumerableInterpreter( AlgCluster cluster, AlgTraitSet traitSet, AlgNode input, double factor ) {
         super( cluster, traitSet, input );
         assert getConvention() instanceof EnumerableConvention;
         this.factor = factor;
@@ -74,7 +90,7 @@ public class EnumerableInterpreter extends SingleAlg implements EnumerableAlg {
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         return super.computeSelfCost( planner, mq ).multiplyBy( factor );
     }
 
@@ -87,7 +103,9 @@ public class EnumerableInterpreter extends SingleAlg implements EnumerableAlg {
 
     @Override
     public String algCompareString() {
-        return this.getClass().getSimpleName() + "$" + input.algCompareString() + "$" + factor + "&";
+        return this.getClass().getSimpleName() + "$"
+                + input.algCompareString() + "$"
+                + factor + "&";
     }
 
 
@@ -95,7 +113,7 @@ public class EnumerableInterpreter extends SingleAlg implements EnumerableAlg {
     public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
         final JavaTypeFactory typeFactory = implementor.getTypeFactory();
         final BlockBuilder builder = new BlockBuilder();
-        final PhysType physType = PhysTypeImpl.of( typeFactory, getTupleType(), JavaRowFormat.ARRAY );
+        final PhysType physType = PhysTypeImpl.of( typeFactory, getTupleType(), JavaTupleFormat.ARRAY );
         final Expression interpreter_ = builder.append( builder.newName( "interpreter" + System.nanoTime() ), Expressions.new_( Interpreter.class, implementor.getRootExpression(), implementor.stash( getInput(), AlgNode.class ) ) );
         final Expression sliced_ =
                 getTupleType().getFieldCount() == 1

@@ -40,6 +40,8 @@ import org.polypheny.db.adapter.annotations.AdapterSettingString;
 import org.polypheny.db.adapter.cottontail.util.CottontailNameUtil;
 import org.polypheny.db.adapter.cottontail.util.CottontailTypeUtil;
 import org.polypheny.db.catalog.catalogs.RelAdapterCatalog;
+import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
+import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
@@ -103,6 +105,8 @@ public class CottontailStore extends DataStore<RelAdapterCatalog> {
     @Delegate(excludes = Exclude.class)
     private final RelationalModifyDelegate delegate;
 
+    public static final String DEFAULT_DATABASE = "public";
+
     // Running embedded
     private final boolean isEmbedded;
     @Expose(serialize = false, deserialize = false)
@@ -119,11 +123,11 @@ public class CottontailStore extends DataStore<RelAdapterCatalog> {
     private final transient CottontailWrapper wrapper;
 
 
-    public CottontailStore( long storeId, String uniqueName, Map<String, String> settings ) {
-        super( storeId, uniqueName, settings, true, new RelAdapterCatalog( storeId ) );
+    public CottontailStore( long storeId, String uniqueName, Map<String, String> settings, DeployMode mode ) {
+        super( storeId, uniqueName, settings, mode, true, new RelAdapterCatalog( storeId ) );
 
         this.dbName = settings.get( "database" );
-        this.isEmbedded = settings.get( "mode" ).equalsIgnoreCase( "embedded" );
+        this.isEmbedded = this.deployMode == DeployMode.EMBEDDED;
         this.dbPort = Integer.parseInt( settings.get( "port" ) );
 
         engine = Engine.valueOf( settings.get( "engine" ).trim() );
@@ -175,10 +179,13 @@ public class CottontailStore extends DataStore<RelAdapterCatalog> {
     @Override
     public List<PhysicalEntity> createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocationWrapper ) {
         context.getStatement().getTransaction().registerInvolvedAdapter( this );
-        /* Begin or continue Cottontail DB transaction. */
-        final long txId = this.wrapper.beginOrContinue( context.getStatement().getTransaction() );
 
         final String physicalTableName = CottontailNameUtil.createPhysicalTableName( allocationWrapper.table.id, 0 );
+
+        if ( this.currentNamespace == null ) {
+            updateNamespace( DEFAULT_DATABASE, allocationWrapper.table.id );
+            adapterCatalog.addNamespace( allocationWrapper.table.namespaceId, currentNamespace );
+        }
 
         PhysicalTable table = adapterCatalog.createTable(
                 logical.table.getNamespaceName(),
@@ -188,6 +195,18 @@ public class CottontailStore extends DataStore<RelAdapterCatalog> {
                 logical.columns.stream().collect( Collectors.toMap( c -> c.id, c -> c ) ),
                 logical.pkIds,
                 allocationWrapper );
+
+        executeCreateTable( table, physicalTableName, context );
+
+        updateNativePhysical( table.allocationId );
+
+        return List.of( table );
+    }
+
+
+    private void executeCreateTable( PhysicalTable table, String physicalTableName, Context context ) {
+        /* Begin or continue Cottontail DB transaction. */
+        final long txId = this.wrapper.beginOrContinue( context.getStatement().getTransaction() );
 
         /* Prepare CREATE TABLE message. */
         final List<ColumnDefinition> columns = this.buildColumnDefinitions( table.columns );
@@ -208,12 +227,6 @@ public class CottontailStore extends DataStore<RelAdapterCatalog> {
         if ( !success ) {
             throw new GenericRuntimeException( "Unable to create table." );
         }
-
-        // adapterCatalog.replacePhysical( new CottontailEntity( currentNamespace, this.currentNamespace.getCottontailSchema().getName(), table, this ) );
-
-        updateNativePhysical( table.allocationId );
-
-        return List.of( table );
     }
 
 
@@ -435,7 +448,7 @@ public class CottontailStore extends DataStore<RelAdapterCatalog> {
                                 .setName( physical.name ) );
 
         final IndexDefinition.Builder definition = IndexDefinition.newBuilder().setType( indexType ).setName( indexName );
-        for ( long columnId : index.key.columnIds ) {
+        for ( long columnId : index.key.fieldIds ) {
             PhysicalColumn column = adapterCatalog.getColumn( columnId, allocation.id );
             definition.addColumns( ColumnName.newBuilder().setName( column.name ) );
         }
@@ -617,6 +630,37 @@ public class CottontailStore extends DataStore<RelAdapterCatalog> {
     }
 
 
+    @Override
+    public void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities, Context context ) {
+        for ( PhysicalEntity entity : entities ) {
+            PhysicalTable table = entity.unwrap( PhysicalTable.class ).orElseThrow();
+            if ( !isPersistent() ) {
+                executeCreateTable( table, table.name, context );
+            }
+
+            updateNamespace( table.namespaceName, table.namespaceId );
+            adapterCatalog.addPhysical( alloc, table.unwrap( PhysicalTable.class ).orElseThrow() );
+        }
+        updateNativePhysical( alloc.id );
+    }
+
+
+    @Override
+    public void restoreGraph( AllocationGraph alloc, List<PhysicalEntity> entities, Context context ) {
+        // already created substitution with the restore tables
+        // restore link between alloc and physical
+        adapterCatalog.addPhysical( alloc, entities.toArray( new PhysicalEntity[]{} ) );
+    }
+
+
+    @Override
+    public void restoreCollection( AllocationCollection alloc, List<PhysicalEntity> entities, Context context ) {
+        // already created substitution with the restore tables
+        // restore link between alloc and physical
+        adapterCatalog.addPhysical( alloc, entities.toArray( new PhysicalEntity[]{} ) );
+    }
+
+
     @SuppressWarnings("unused")
     public interface Exclude {
 
@@ -635,6 +679,12 @@ public class CottontailStore extends DataStore<RelAdapterCatalog> {
         void refreshTable( long allocId );
 
         void createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocationWrapper );
+
+        void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities, Context context );
+
+        void restoreGraph( AllocationGraph alloc, List<PhysicalEntity> entities, Context context );
+
+        void restoreCollection( AllocationCollection alloc, List<PhysicalEntity> entities, Context context );
 
     }
 

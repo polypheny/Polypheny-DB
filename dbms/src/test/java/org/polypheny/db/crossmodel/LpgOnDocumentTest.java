@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,7 +67,7 @@ public class LpgOnDocumentTest extends CrossModelTestTemplate {
 
 
     public static Row dataAsRow() {
-        return Row.of( TestNode.from( List.of( COLLECTION_NAME ), TEST_MAP.entrySet().stream().filter( e -> !e.getKey().equals( "_id" ) ).map( e -> Pair.of( e.getKey(), e.getValue() ) ).collect( Collectors.toList() ).toArray( new Pair[0] ) ) );
+        return Row.of( TestNode.from( List.of( COLLECTION_NAME ), TEST_MAP.entrySet().stream().filter( e -> !e.getKey().equals( "_id" ) ).map( e -> Pair.of( e.getKey(), e.getValue() ) ).toList().toArray( new Pair[0] ) ) );
     }
 
 

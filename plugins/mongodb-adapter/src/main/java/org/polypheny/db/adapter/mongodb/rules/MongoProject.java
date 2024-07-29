@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,9 +36,9 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.logistic.DataModel;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexIndexRef;
@@ -53,10 +53,9 @@ import org.polypheny.db.util.Util;
  */
 public class MongoProject extends Project implements MongoAlg {
 
-    public MongoProject( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, List<? extends RexNode> projects, AlgDataType rowType ) {
+    public MongoProject( AlgCluster cluster, AlgTraitSet traitSet, AlgNode input, List<? extends RexNode> projects, AlgDataType rowType ) {
         super( cluster, traitSet, input, projects, adjustRowType( rowType, projects, input ) );
         assert getConvention() == CONVENTION;
-        //assert getConvention() == input.getConvention(); // TODO DL fix logicalFilter bug
     }
 
 
@@ -82,7 +81,7 @@ public class MongoProject extends Project implements MongoAlg {
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         return super.computeSelfCost( planner, mq ).multiplyBy( 0.1 );
     }
 
@@ -90,12 +89,12 @@ public class MongoProject extends Project implements MongoAlg {
     @Override
     public void implement( Implementor implementor ) {
         implementor.visitChild( 0, getInput() );
-        final RexToMongoTranslator translator = new RexToMongoTranslator( getCluster().getTypeFactory(), MongoRules.mongoFieldNames( getInput().getTupleType() ), implementor, DataModel.RELATIONAL );
+        final RexToMongoTranslator translator = new RexToMongoTranslator( MongoRules.mongoFieldNames( getInput().getTupleType() ), implementor, DataModel.RELATIONAL );
         final List<String> items = new ArrayList<>();
         final List<String> excludes = new ArrayList<>();
         final List<String> unwinds = new ArrayList<>();
         // We use our specialized rowType to derive the mapped underlying column identifiers
-        AlgDataType mongoRowType = implementor.getRowType();
+        AlgDataType mongoRowType = implementor.getTupleType();
 
         BsonDocument documents = new BsonDocument();
 
@@ -112,9 +111,9 @@ public class MongoProject extends Project implements MongoAlg {
                 continue;
             }
 
-            if ( pair.left instanceof RexCall ) {
-                if ( ((RexCall) pair.left).operands.get( 0 ).isA( Kind.MQL_ADD_FIELDS ) ) {
-                    Pair<String, RexNode> ret = MongoRules.getAddFields( (RexCall) ((RexCall) pair.left).operands.get( 0 ), rowType );
+            if ( pair.left instanceof RexCall call ) {
+                if ( call.operands.get( 0 ).isA( Kind.MQL_ADD_FIELDS ) ) {
+                    Pair<String, RexNode> ret = MongoRules.getAddFields( (RexCall) call.operands.get( 0 ), rowType );
                     String expr = ret.right.accept( translator );
                     implementor.preProjections.add( new BsonDocument( ret.left, BsonDocument.parse( expr ) ) );
                     items.add( "'" + ret.left.split( "\\." )[0] + "':1" );
@@ -147,7 +146,7 @@ public class MongoProject extends Project implements MongoAlg {
 
             items.add( expr.equals( "'$" + name + "'" )
                     ? MongoRules.maybeQuote( name ) + ": " + 1
-                    : "\"" + MongoRules.maybeQuote( name ) + "\": " + expr );
+                    : "\"" + name + "\": " + expr );
         }
         List<String> mergedItems;
 
@@ -197,11 +196,10 @@ public class MongoProject extends Project implements MongoAlg {
         public Void visitCall( RexCall call ) {
             if ( call.isA( kind ) ) {
                 containsKind = true;
-                return null;
             } else {
                 call.operands.forEach( node -> node.accept( this ) );
-                return null;
             }
+            return null;
         }
 
     }

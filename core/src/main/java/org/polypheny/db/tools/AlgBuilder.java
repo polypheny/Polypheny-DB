@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -96,10 +96,10 @@ import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgMatch;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgProject;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
-import org.polypheny.db.algebra.logical.relational.LogicalFilter;
-import org.polypheny.db.algebra.logical.relational.LogicalJoin;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
-import org.polypheny.db.algebra.logical.relational.LogicalSort;
+import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalRelJoin;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelSort;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -118,9 +118,8 @@ import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptPredicateList;
-import org.polypheny.db.plan.AlgOptSchema;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Context;
@@ -167,8 +166,8 @@ import org.polypheny.db.util.mapping.Mappings;
  * the particular relational expression. But it makes common tasks more straightforward and concise.
  * <p>
  * {@code AlgBuilder} uses factories to create relational expressions.
- * By default, it uses the default factories, which create logical relational expressions ({@link LogicalFilter},
- * {@link LogicalProject} and so forth). But you could override those factories so that, say, {@code filter} creates
+ * By default, it uses the default factories, which create logical relational expressions ({@link LogicalRelFilter},
+ * {@link LogicalRelProject} and so forth). But you could override those factories so that, say, {@code filter} creates
  * instead a {@code HiveFilter}.
  * <p>
  * It is not thread-safe.
@@ -176,7 +175,7 @@ import org.polypheny.db.util.mapping.Mappings;
 public class AlgBuilder {
 
     @Getter
-    protected final AlgOptCluster cluster;
+    protected final AlgCluster cluster;
     protected final Snapshot snapshot;
     private final AlgFactories.FilterFactory filterFactory;
     private final AlgFactories.ProjectFactory projectFactory;
@@ -197,7 +196,7 @@ public class AlgBuilder {
     private final RexSimplify simplifier;
 
 
-    protected AlgBuilder( Context context, AlgOptCluster cluster, Snapshot snapshot ) {
+    protected AlgBuilder( Context context, AlgCluster cluster, Snapshot snapshot ) {
         this.cluster = cluster;
         this.snapshot = snapshot;
         if ( context == null ) {
@@ -250,33 +249,14 @@ public class AlgBuilder {
     }
 
 
-    /**
-     * Creates a AlgBuilder.
-     */
-    public static AlgBuilder create( FrameworkConfig config ) {
-        final AlgOptCluster[] cluster = new AlgOptCluster[1];
-        final Snapshot[] snapshot = new Snapshot[1];
-        Frameworks.withPrepare(
-                new Frameworks.PrepareAction<Void>( config ) {
-                    @Override
-                    public Void apply( AlgOptCluster c, Snapshot s ) {
-                        cluster[0] = c;
-                        snapshot[0] = s;
-                        return null;
-                    }
-                } );
-        return new AlgBuilder( config.getContext(), cluster[0], config.getSnapshot() );
-    }
-
-
     public static AlgBuilder create( Statement statement ) {
         final RexBuilder rexBuilder = new RexBuilder( statement.getTransaction().getTypeFactory() );
-        final AlgOptCluster cluster = AlgOptCluster.create( statement.getQueryProcessor().getPlanner(), rexBuilder, null, statement.getTransaction().getSnapshot() );
+        final AlgCluster cluster = AlgCluster.create( statement.getQueryProcessor().getPlanner(), rexBuilder, null, statement.getTransaction().getSnapshot() );
         return create( statement, cluster );
     }
 
 
-    public static AlgBuilder create( Statement statement, AlgOptCluster cluster ) {
+    public static AlgBuilder create( Statement statement, AlgCluster cluster ) {
         return new AlgBuilder( Contexts.EMPTY_CONTEXT, cluster, statement.getTransaction().getSnapshot() );
     }
 
@@ -310,7 +290,7 @@ public class AlgBuilder {
 
     /**
      * Creates a {@link AlgBuilderFactory}, a partially-created AlgBuilder.
-     * Just add a {@link AlgOptCluster} and a {@link AlgOptSchema}
+     * Just add a {@link AlgCluster}
      */
     public static AlgBuilderFactory proto( final Context context ) {
         return ( cluster, snapshot ) -> new AlgBuilder( context, cluster, snapshot );
@@ -329,7 +309,7 @@ public class AlgBuilder {
 
     /**
      * Adds a relational expression to be the input to the next relational expression constructed.
-     *
+     * <p>
      * This method is usual when you want to weave in relational expressions that are not supported by the builder. If, while
      * creating such expressions, you need to use previously built expressions as inputs, call
      * {@link #build()} to pop those inputs.
@@ -380,7 +360,7 @@ public class AlgBuilder {
 
     /**
      * Returns the final relational expression.
-     *
+     * <p>
      * Throws if the stack is empty.
      */
     public AlgNode build() {
@@ -487,7 +467,7 @@ public class AlgBuilder {
 
     /**
      * Creates a reference to a field by name.
-     *
+     * <p>
      * Equivalent to {@code field(1, 0, fieldName)}.
      *
      * @param fieldName Field name
@@ -506,7 +486,7 @@ public class AlgBuilder {
      */
     public RexIndexRef field( int inputCount, int inputOrdinal, String fieldName ) {
         final Frame frame = peek_( inputCount, inputOrdinal );
-        final List<String> fieldNames = frame.relFields().stream().map( AlgDataTypeField::getName ).collect( Collectors.toList() );
+        final List<String> fieldNames = frame.relFields().stream().map( AlgDataTypeField::getName ).toList();
         int i = fieldNames.indexOf( fieldName );
         if ( i >= 0 ) {
             return field( inputCount, inputOrdinal, i );
@@ -518,7 +498,7 @@ public class AlgBuilder {
 
     /**
      * Creates a reference to an input field by ordinal.
-     *
+     * <p>
      * Equivalent to {@code field(1, 0, ordinal)}.
      *
      * @param fieldOrdinal Field ordinal
@@ -756,7 +736,7 @@ public class AlgBuilder {
 
     /**
      * Creates an AND.
-     *
+     * <p>
      * Simplifies the expression a little:
      * {@code e AND TRUE} becomes {@code e};
      * {@code e AND e2 AND NOT e} becomes {@code e2}.
@@ -954,7 +934,7 @@ public class AlgBuilder {
 
     /**
      * Creates a group key, identified by field positions in the underlying relational expression.
-     *
+     * <p>
      * This method of creating a group key does not allow you to group on new expressions, only column projections, but is
      * efficient, especially when you are coming from an existing {@link Aggregate}.
      */
@@ -965,7 +945,7 @@ public class AlgBuilder {
 
     /**
      * Creates a group key with grouping sets, both identified by field positions in the underlying relational expression.
-     *
+     * <p>
      * This method of creating a group key does not allow you to group on new expressions, only column projections, but is
      * efficient, especially when you are coming from an existing {@link Aggregate}.
      */
@@ -1015,7 +995,7 @@ public class AlgBuilder {
 
     /**
      * Creates a call to an aggregate function.
-     *
+     * <p>
      * To add other operands, apply
      * {@link AggCall#distinct()},
      * {@link AggCall#approximate(boolean)},
@@ -1037,7 +1017,7 @@ public class AlgBuilder {
 
     /**
      * Creates a call to an aggregate function.
-     *
+     * <p>
      * To add other operands, apply
      * {@link AggCall#distinct()},
      * {@link AggCall#approximate(boolean)},
@@ -1326,14 +1306,14 @@ public class AlgBuilder {
 
     /**
      * Creates a {@link RelScan} of the table with a given name.
-     *
+     * <p>
      * Throws if the table does not exist.
-     *
+     * <p>
      * Returns this builder.
      *
      * @param tableNames Name of table (can optionally be qualified)
      */
-    public AlgBuilder scan( List<String> tableNames ) {
+    public AlgBuilder relScan( List<String> tableNames ) {
         final List<String> names = ImmutableList.copyOf( tableNames );
         final LogicalTable entity;
         if ( tableNames.size() == 2 ) {
@@ -1344,17 +1324,17 @@ public class AlgBuilder {
             throw new GenericRuntimeException( "Invalid table name: " + String.join( ".", names ) );
         }
 
-        final AlgNode scan = scanFactory.createScan( cluster, entity );
+        final AlgNode scan = scanFactory.createRelScan( cluster, entity );
         push( scan );
-        rename( entity.getRowType().getFieldNames() );
+        rename( entity.getTupleType().getFieldNames() );
         return this;
     }
 
 
-    public AlgBuilder scan( @Nonnull Entity entity ) {
-        final AlgNode scan = scanFactory.createScan( cluster, entity );
+    public AlgBuilder relScan( @Nonnull Entity entity ) {
+        final AlgNode scan = scanFactory.createRelScan( cluster, entity );
         push( scan );
-        rename( entity.getRowType().getFieldNames() );
+        rename( entity.getTupleType().getFieldNames() );
         return this;
     }
 
@@ -1372,8 +1352,8 @@ public class AlgBuilder {
     }
 
 
-    public AlgBuilder scan( @Nonnull PhysicalEntity entity ) {
-        final AlgNode scan = scanFactory.createScan( cluster, entity );
+    public AlgBuilder relScan( @Nonnull PhysicalEntity entity ) {
+        final AlgNode scan = scanFactory.createRelScan( cluster, entity );
         push( scan );
         return this;
     }
@@ -1381,15 +1361,15 @@ public class AlgBuilder {
 
     /**
      * Creates a {@link RelScan} of the table with a given name.
-     *
+     * <p>
      * Throws if the table does not exist.
-     *
+     * <p>
      * Returns this builder.
      *
      * @param tableNames Name of table (can optionally be qualified)
      */
-    public AlgBuilder scan( String... tableNames ) {
-        return scan( ImmutableList.copyOf( tableNames ) );
+    public AlgBuilder relScan( String... tableNames ) {
+        return relScan( ImmutableList.copyOf( tableNames ) );
     }
 
 
@@ -1413,13 +1393,13 @@ public class AlgBuilder {
 
     public AlgBuilder lpgScan( long logicalId ) {
         LogicalGraph graph = snapshot.graph().getGraph( logicalId ).orElseThrow();
-        stack.add( new Frame( new LogicalLpgScan( cluster, cluster.traitSet().replace( ModelTrait.GRAPH ), graph, graph.getRowType() ) ) );
+        stack.add( new Frame( new LogicalLpgScan( cluster, cluster.traitSet().replace( ModelTrait.GRAPH ), graph, graph.getTupleType() ) ) );
         return this;
     }
 
 
     public AlgBuilder lpgScan( Entity entity ) {
-        stack.add( new Frame( new LogicalLpgScan( cluster, cluster.traitSet().replace( ModelTrait.GRAPH ), entity, entity.getRowType() ) ) );
+        stack.add( new Frame( new LogicalLpgScan( cluster, cluster.traitSet().replace( ModelTrait.GRAPH ), entity, entity.getTupleType() ) ) );
         return this;
     }
 
@@ -1446,7 +1426,7 @@ public class AlgBuilder {
 
     /**
      * Creates a {@link Filter} of an array of predicates.
-     *
+     * <p>
      * The predicates are combined using AND, and optimized in a similar way to the {@link #and} method.
      * If the result is TRUE no filter is created.
      */
@@ -1457,7 +1437,7 @@ public class AlgBuilder {
 
     /**
      * Creates a {@link Filter} of a list of predicates.
-     *
+     * <p>
      * The predicates are combined using AND, and optimized in a similar way to the {@link #and} method.
      * If the result is TRUE no filter is created.
      */
@@ -1491,7 +1471,7 @@ public class AlgBuilder {
 
     /**
      * Creates a {@link Project} of the given list of expressions.
-     *
+     * <p>
      * Infers names as would {@link #project(Iterable, Iterable)} if all suggested names were null.
      *
      * @param nodes Expressions
@@ -1531,7 +1511,7 @@ public class AlgBuilder {
 
     /**
      * Creates a {@link Project} of the given list of expressions, using the given names.
-     *
+     * <p>
      * Names are deduced as follows:
      * <ul>
      * <li>If the length of {@code fieldNames} is greater than the index of the current entry in {@code nodes}, and the entry in {@code fieldNames} is not null, uses it; otherwise</li>
@@ -1659,7 +1639,7 @@ public class AlgBuilder {
 
     /**
      * Whether to attempt to merge consecutive {@link Project} operators.
-     *
+     * <p>
      * The default implementation returns {@code true}; subclasses may disable merge by overriding to return {@code false}.
      */
     @Experimental
@@ -1670,10 +1650,10 @@ public class AlgBuilder {
 
     /**
      * Creates a {@link Project} of the given expressions and field names, and optionally optimizing.
-     *
+     * <p>
      * If {@code fieldNames} is null, or if a particular entry in {@code fieldNames} is null, derives field names from
      * the input expressions.
-     *
+     * <p>
      * If {@code force} is false, and the input is a {@code Project}, and the expressions  make the trivial
      * projection ($0, $1, ...), modifies the input.
      *
@@ -1720,9 +1700,9 @@ public class AlgBuilder {
 
     /**
      * Ensures that the field names match those given.
-     *
+     * <p>
      * If all fields have the same name, adds nothing; if any fields do not have the same name, adds a {@link Project}.
-     *
+     * <p>
      * Note that the names can be short-lived. Other {@code AlgBuilder} operations make no guarantees about the field names
      * of the rows they produce.
      *
@@ -1757,7 +1737,7 @@ public class AlgBuilder {
 
     /**
      * Infers the alias of an expression.
-     *
+     * <p>
      * If the expression was created by {@link #alias}, replaces the expression in the project list.
      */
     private String inferAlias( List<RexNode> exprList, RexNode expr, int i ) {
@@ -2099,7 +2079,7 @@ public class AlgBuilder {
 
     /**
      * Creates a {@link Join} using USING syntax.
-     *
+     * <p>
      * For each of the field names, both left and right inputs must have a field of that name. Constructs a join condition
      * that the left and right fields are equal.
      *
@@ -2151,10 +2131,10 @@ public class AlgBuilder {
 
     /**
      * Creates a {@link Values}.
-     *
+     * <p>
      * The {@code values} array must have the same number of entries as {@code fieldNames}, or an integer multiple if you
      * wish to create multiple rows.
-     *
+     * <p>
      * If there are zero rows, or if all values of an any column are null, this method cannot deduce the type of columns.
      * For these cases, call {@link #values(Iterable, AlgDataType)}.
      *
@@ -2232,10 +2212,10 @@ public class AlgBuilder {
 
     /**
      * Creates a relational expression that reads from an input and throws all of the rows away.
-     *
+     * <p>
      * Note that this method always pops one relational expression from the stack. {@code values}, in contrast, does not
      * pop any relational expressions, and always produces a leaf.
-     *
+     * <p>
      * The default implementation creates a {@link Values} with the same specified row type as the input, and ignores the
      * input entirely. But schema-on-query systems such as Drill might override this method to create a relation expression
      * that retains the input, just to read its schema.
@@ -2248,7 +2228,7 @@ public class AlgBuilder {
 
     /**
      * Creates a {@link Values} with a specified row type.
-     *
+     * <p>
      * This method can handle cases that {@link #values(String[], Object...)} cannot, such as all values of a column being
      * null, or there being zero rows.
      *
@@ -2265,7 +2245,7 @@ public class AlgBuilder {
 
     /**
      * Creates a {@link Values} with a specified row type.
-     *
+     * <p>
      * This method can handle cases that {@link #values(String[], Object...)} cannot, such as all values of a column being
      * null, or there being zero rows.
      *
@@ -2349,7 +2329,7 @@ public class AlgBuilder {
 
     /**
      * Creates a {@link Sort} by field ordinals.
-     *
+     * <p>
      * Negative fields mean descending: -1 means field(0) descending, -2 means field(1) descending, etc.
      */
     public AlgBuilder sort( int... fields ) {
@@ -2551,8 +2531,8 @@ public class AlgBuilder {
                 builder.makeInputRef( nodesScan.getTupleType().getFields().get( 0 ).getType(), 0 ),
                 builder.makeInputRef( propertiesScan.getTupleType().getFields().get( 0 ).getType(), nodesScan.getTupleType().getFields().size() ) );
 
-        LogicalJoin join = new LogicalJoin( nodesScan.getCluster(), out, nodesScan, propertiesScan, nodeCondition, Set.of(), JoinAlgType.LEFT, false, ImmutableList.of() );
-        return LogicalSort.create(
+        LogicalRelJoin join = new LogicalRelJoin( nodesScan.getCluster(), out, nodesScan, propertiesScan, nodeCondition, Set.of(), JoinAlgType.LEFT, false );
+        return LogicalRelSort.create(
                 join,
                 ImmutableList.of( RexIndexRef.of( 0, join.getTupleType().getFields() ) ),
                 AlgCollations.of( 0 ),
@@ -2663,7 +2643,7 @@ public class AlgBuilder {
 
     /**
      * Clears the stack.
-     *
+     * <p>
      * The builder's state is now the same as when it was created.
      */
     public void clear() {
@@ -2727,7 +2707,7 @@ public class AlgBuilder {
 
         /**
          * Assigns an alias to this group key.
-         *
+         * <p>
          * Used to assign field names in the {@code group} operation.
          */
         GroupKey alias( String alias );
@@ -2925,7 +2905,7 @@ public class AlgBuilder {
 
     /**
      * Collects the extra expressions needed for {@link #aggregate}.
-     *
+     * <p>
      * The extra expressions come from the group key and as arguments to aggregate calls, and later there will be
      * a {@link #project} or a {@link #rename(List)} if necessary.
      */
@@ -2966,7 +2946,7 @@ public class AlgBuilder {
 
     /**
      * Builder stack frame.
-     *
+     * <p>
      * Describes a previously created relational expression and information about how table aliases map into its row type.
      */
     private static class Frame {

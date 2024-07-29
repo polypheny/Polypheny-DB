@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -296,13 +296,21 @@ public class CottontailTypeUtil {
                 }
                 break;
             }
+            case VARBINARY:
+                if ( value.isBinary() ) {
+                    return builder.setStringData( value.asBinary().as64String() ).build();
+                }
+                break;
             case FILE:
             case IMAGE:
             case AUDIO:
             case VIDEO:
                 if ( value.isBlob() ) {
                     return builder.setStringData( value.asBlob().as64String() ).build();
+                } else if ( value.isBinary() ) {
+                    return builder.setStringData( value.asBinary().as64String() ).build();
                 }
+                break;
         }
 
         log.error( "Conversion not possible! value: {}, type: {}", value.getClass().getCanonicalName(), actualType );

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,9 +31,9 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.algebra.type.GraphType;
+import org.polypheny.db.catalog.CatalogType;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
-import org.polypheny.db.catalog.refactor.CatalogType;
 import org.polypheny.db.schema.Statistic;
 import org.polypheny.db.schema.Statistics;
 import org.polypheny.db.schema.types.Expressible;
@@ -82,7 +82,7 @@ public abstract class Entity implements PolyObject, Wrapper, Serializable, Catal
     }
 
 
-    public AlgDataType getRowType() {
+    public AlgDataType getTupleType() {
         return switch ( dataModel ) {
             case RELATIONAL -> throw new UnsupportedOperationException( "Should be overwritten by child" );
             case DOCUMENT -> DocumentType.ofId();
@@ -92,8 +92,8 @@ public abstract class Entity implements PolyObject, Wrapper, Serializable, Catal
 
 
     @Override
-    public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
-        return getRowType();
+    public AlgDataType getTupleType( AlgDataTypeFactory typeFactory ) {
+        return getTupleType();
     }
 
 
@@ -109,13 +109,13 @@ public abstract class Entity implements PolyObject, Wrapper, Serializable, Catal
     }
 
 
-    public double getRowCount() {
-        return getRowCount( id );
+    public double getTupleCount() {
+        return getTupleCount( id );
     }
 
 
-    public double getRowCount( long id ) {
-        Long count = StatisticsManager.getInstance().rowCountPerTable( id );
+    public double getTupleCount( long id ) {
+        Long count = StatisticsManager.getInstance().tupleCountPerEntity( id );
         if ( count == null ) {
             return 0;
         }
@@ -128,7 +128,7 @@ public abstract class Entity implements PolyObject, Wrapper, Serializable, Catal
     }
 
 
-    public Boolean isKey( ImmutableBitSet columns ) {
+    public Boolean isKey( ImmutableBitSet fields ) {
         return null;
     }
 

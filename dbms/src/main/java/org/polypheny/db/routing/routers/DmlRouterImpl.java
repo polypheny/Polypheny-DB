@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -52,12 +51,12 @@ import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
-import org.polypheny.db.algebra.logical.relational.LogicalFilter;
 import org.polypheny.db.algebra.logical.relational.LogicalModifyCollect;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
-import org.polypheny.db.algebra.logical.relational.LogicalValues;
+import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
@@ -77,7 +76,7 @@ import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.partition.properties.PartitionProperty;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.processing.WhereClauseVisitor;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
@@ -101,7 +100,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
     @Override
     public AlgNode routeDml( LogicalRelModify modify, Statement statement ) {
-        AlgOptCluster cluster = modify.getCluster();
+        AlgCluster cluster = modify.getCluster();
 
         if ( modify.entity == null ) {
             throw new GenericRuntimeException( "Unexpected operator!" );
@@ -114,7 +113,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         LogicalTable table = oTable.get();
 
         List<LogicalColumn> columns = catalog.getSnapshot().rel().getColumns( table.id );
-        List<Long> columnIds = columns.stream().map( c -> c.id ).collect( Collectors.toList() );
+        List<Long> columnIds = columns.stream().map( c -> c.id ).toList();
 
         // Make sure that this table can be modified
         if ( !table.modifiable ) {
@@ -129,7 +128,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         }
 
         long pkid = table.primaryKey;
-        List<Long> pkColumnIds = catalog.getSnapshot().rel().getPrimaryKey( pkid ).orElseThrow().columnIds;
+        List<Long> pkColumnIds = catalog.getSnapshot().rel().getPrimaryKey( pkid ).orElseThrow().fieldIds;
         LogicalColumn pkColumn = catalog.getSnapshot().rel().getColumn( pkColumnIds.get( 0 ) ).orElseThrow();
 
         // Essentially gets a list of all stores where this table resides
@@ -203,7 +202,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                 WhereClauseVisitor whereClauseVisitor = new WhereClauseVisitor( statement, columnIds.indexOf( property.partitionColumnId ) );
                 modify.accept( new AlgShuttleImpl() {
                     @Override
-                    public AlgNode visit( LogicalFilter filter ) {
+                    public AlgNode visit( LogicalRelFilter filter ) {
                         super.visit( filter );
                         filter.accept( whereClauseVisitor );
                         return filter;
@@ -215,7 +214,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
                     whereClauseValues = whereClauseVisitor.getValues().stream()
                             .map( PolyValue::toJson )
-                            .collect( Collectors.toList() );
+                            .toList();
                     if ( log.isDebugEnabled() ) {
                         log.debug( "Found Where Clause Values: {}", whereClauseValues );
                     }
@@ -338,20 +337,20 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
     }
 
 
-    private Triple<Long, String, Boolean> handleDmlInsert( List<String> updateColumns, LogicalRelModify modify, List<Long> columnIds, List<LogicalColumn> columns, PartitionProperty property, LogicalTable table, Set<Long> accessedPartitionList, PartitionManager partitionManager, AllocationPlacement pkPlacement, Statement statement, List<AllocationColumn> placementsOnAdapter, AlgOptCluster cluster, List<AlgNode> modifies, List<? extends RexNode> sourceExpressions, List<Map<Long, PolyValue>> allValues ) {
+    private Triple<Long, String, Boolean> handleDmlInsert( List<String> updateColumns, LogicalRelModify modify, List<Long> columnIds, List<LogicalColumn> columns, PartitionProperty property, LogicalTable table, Set<Long> accessedPartitionList, PartitionManager partitionManager, AllocationPlacement pkPlacement, Statement statement, List<AllocationColumn> placementsOnAdapter, AlgCluster cluster, List<AlgNode> modifies, List<? extends RexNode> sourceExpressions, List<Map<Long, PolyValue>> allValues ) {
         String partitionValue = null;
         long identPart = -1;
         boolean worstCaseRouting;
         boolean operationWasRewritten = false;
         int i;
-        if ( modify.getInput() instanceof LogicalValues ) {
+        if ( modify.getInput() instanceof LogicalRelValues ) {
             // Get fieldList and map columns to index since they could be in arbitrary order
             int partitionColumnIndex = -1;
             for ( int j = 0; j < (modify.getInput()).getTupleType().getFields().size(); j++ ) {
                 String columnFieldName = (modify.getInput()).getTupleType().getFields().get( j ).getName();
 
                 // Retrieve columnId of fieldName and map it to its fieldList location of INSERT Stmt
-                int columnIndex = columns.stream().map( c -> c.name ).collect( Collectors.toList() ).indexOf( columnFieldName );
+                int columnIndex = columns.stream().map( c -> c.name ).toList().indexOf( columnFieldName );
 
                 // Determine location of partitionColumn in fieldList
                 if ( columnIds.get( columnIndex ) == property.partitionColumnId ) {
@@ -365,7 +364,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
             // Will executed all required tuples that belong on the same partition jointly
             Map<Long, List<ImmutableList<RexLiteral>>> tuplesOnPartition = new HashMap<>();
-            for ( ImmutableList<RexLiteral> currentTuple : ((LogicalValues) modify.getInput()).tuples ) {
+            for ( ImmutableList<RexLiteral> currentTuple : ((LogicalRelValues) modify.getInput()).tuples ) {
 
                 if ( partitionColumnIndex == -1 || currentTuple.get( partitionColumnIndex ).getValue() == null ) {
                     partitionValue = PartitionManager.NULL_STRING;
@@ -390,7 +389,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                 }
 
                 for ( ImmutableList<RexLiteral> row : partitionMapping.getValue() ) {
-                    LogicalValues newLogicalValues = new LogicalValues(
+                    LogicalRelValues newLogicalRelValues = new LogicalRelValues(
                             modify.getCluster(),
                             modify.getCluster().traitSet(),
                             (modify.getInput()).getTupleType(),
@@ -399,7 +398,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                     AllocationEntity allocation = catalog.getSnapshot().alloc().getAlloc( pkPlacement.id, currentPartitionId ).orElseThrow();
 
                     AlgNode input = buildDml(
-                            newLogicalValues,
+                            newLogicalRelValues,
                             RoutedAlgBuilder.create( statement, cluster ),
                             table,
                             placementsOnAdapter,
@@ -424,14 +423,14 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             }
             operationWasRewritten = true;
 
-        } else if ( modify.getInput() instanceof LogicalProject
-                && ((LogicalProject) modify.getInput()).getInput() instanceof LogicalValues ) {
+        } else if ( modify.getInput() instanceof LogicalRelProject
+                && ((LogicalRelProject) modify.getInput()).getInput() instanceof LogicalRelValues ) {
 
             String partitionColumnName = catalog.getSnapshot().rel().getColumn( property.partitionColumnId ).orElseThrow().name;
             List<String> fieldNames = modify.getInput().getTupleType().getFieldNames();
 
             LogicalRelModify ltm = modify;
-            LogicalProject lproject = (LogicalProject) ltm.getInput();
+            LogicalRelProject lproject = (LogicalRelProject) ltm.getInput();
 
             List<RexNode> fieldValues = lproject.getProjects();
 
@@ -440,7 +439,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
                 if ( partitionColumnName.equals( columnName ) ) {
 
-                    if ( ((LogicalProject) modify.getInput()).getProjects().get( i ).getKind().equals( Kind.DYNAMIC_PARAM ) ) {
+                    if ( ((LogicalRelProject) modify.getInput()).getProjects().get( i ).getKind().equals( Kind.DYNAMIC_PARAM ) ) {
 
                         // Needed to identify the column which contains the partition value
                         long partitionValueIndex = ((RexDynamicParam) fieldValues.get( i )).getIndex();
@@ -500,7 +499,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
                         operationWasRewritten = true;
                     } else {
-                        partitionValue = ((LogicalProject) modify.getInput()).getProjects().get( i ).toString().replace( "'", "" );
+                        partitionValue = ((LogicalRelProject) modify.getInput()).getProjects().get( i ).toString().replace( "'", "" );
                         identPart = (int) partitionManager.getTargetPartitionId( table, property, partitionValue );
                         accessedPartitionList.add( identPart );
                     }
@@ -767,7 +766,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                     statement,
                     target,
                     excludedPlacements ) );
-        } else if ( node instanceof LogicalValues values ) {
+        } else if ( node instanceof LogicalRelValues values ) {
 
             return super.handleValues( values, builder );
         } else if ( node instanceof LogicalDocumentValues ) {
@@ -785,7 +784,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             List<AllocationColumn> placements,
             AllocationEntity allocEntity,
             Statement statement,
-            AlgOptCluster cluster,
+            AlgCluster cluster,
             boolean remapParameterValues,
             List<Map<Long, PolyValue>> parameterValues ) {
         for ( int i = 0; i < node.getInputs().size(); i++ ) {
@@ -807,9 +806,9 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             return handleDocuments( (LogicalDocumentValues) node, builder );
         } else if ( node instanceof Values ) {
             return handleValues( node, builder, table, placements );
-        } else if ( node instanceof LogicalProject ) {
+        } else if ( node instanceof LogicalRelProject ) {
             return handleLogicalProject( node, builder, table, placements, statement, remapParameterValues, parameterValues );
-        } else if ( node instanceof LogicalFilter ) {
+        } else if ( node instanceof LogicalRelFilter ) {
             return handleLogicalFilter( node, builder, table, placements, statement );
         } else {
             return super.handleGeneric( node, builder );
@@ -828,10 +827,10 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
     private RoutedAlgBuilder handleLogicalFilter( AlgNode node, RoutedAlgBuilder builder, LogicalTable table, List<AllocationColumn> placements, Statement statement ) {
         List<LogicalColumn> columns = statement.getTransaction().getSnapshot().rel().getColumns( table.id );
         if ( columns.size() != placements.size() ) { // partitioned, check if there is a illegal condition
-            RexCall call = ((RexCall) ((LogicalFilter) node).getCondition());
+            RexCall call = ((RexCall) ((LogicalRelFilter) node).getCondition());
 
             for ( RexNode operand : call.operands ) {
-                dmlConditionCheck( (LogicalFilter) node, table, placements, operand );
+                dmlConditionCheck( (LogicalRelFilter) node, table, placements, operand );
             }
         }
         return super.handleGeneric( node, builder );
@@ -854,13 +853,13 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         List<LogicalColumn> columns = statement.getTransaction().getSnapshot().rel().getColumns( table.id );
         PartitionProperty property = statement.getTransaction().getSnapshot().alloc().getPartitionProperty( table.id ).orElseThrow();
         if ( columns.size() == placements.size() ) { // full placement, generic handling is sufficient
-            if ( property.isPartitioned && remapParameterValues ) {  //  && ((LogicalProject) node).getInput().getRowType().toString().equals( "RecordType(INTEGER ZERO)" )
+            if ( property.isPartitioned && remapParameterValues ) {
                 return remapParameterizedDml( node, builder, statement, parameterValues );
             } else {
                 return super.handleGeneric( node, builder );
             }
         } else { // vertically partitioned, adjust project
-            if ( ((LogicalProject) node).getInput().getTupleType().toString().equals( "RecordType(INTEGER ZERO)" ) ) {
+            if ( ((LogicalRelProject) node).getInput().getTupleType().toString().equals( "RecordType(INTEGER ZERO)" ) ) {
                 if ( property.isPartitioned && remapParameterValues ) {
                     builder = remapParameterizedDml( node, builder, statement, parameterValues );
                 }
@@ -875,7 +874,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                 for ( AllocationColumn ccp : placements ) {
                     rexNodes.add( builder.field( ccp.getLogicalColumnName() ) );
                 }
-                for ( RexNode rexNode : ((LogicalProject) node).getProjects() ) {
+                for ( RexNode rexNode : ((LogicalRelProject) node).getProjects() ) {
                     if ( !(rexNode instanceof RexIndexRef) ) {
                         rexNodes.add( rexNode );
                     }
@@ -887,7 +886,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
 
     private AlgBuilder handleValues( AlgNode node, RoutedAlgBuilder builder, LogicalTable table, List<AllocationColumn> placements ) {
-        LogicalValues values = (LogicalValues) node;
+        LogicalRelValues values = (LogicalRelValues) node;
 
         builder = super.handleValues( values, builder );
 
@@ -916,7 +915,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         }
 
         long pkid = catalogTable.primaryKey;
-        List<Long> pkColumnIds = snapshot.rel().getPrimaryKey( pkid ).orElseThrow().columnIds;
+        List<Long> pkColumnIds = snapshot.rel().getPrimaryKey( pkid ).orElseThrow().fieldIds;
         LogicalColumn pkColumn = snapshot.rel().getColumn( pkColumnIds.get( 0 ) ).orElseThrow();
         List<AllocationColumn> pkPlacements = snapshot.alloc().getColumnFromLogical( pkColumn.id ).orElseThrow();
 
@@ -937,7 +936,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
     }
 
 
-    private void dmlConditionCheck( LogicalFilter node, LogicalTable catalogTable, List<AllocationColumn> placements, RexNode operand ) {
+    private void dmlConditionCheck( LogicalRelFilter node, LogicalTable catalogTable, List<AllocationColumn> placements, RexNode operand ) {
         if ( operand instanceof RexIndexRef ) {
             int index = ((RexIndexRef) operand).getIndex();
             AlgDataTypeField field = node.getInput().getTupleType().getFields().get( index );
@@ -983,7 +982,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         }
 
         List<RexNode> projects = new ArrayList<>();
-        for ( RexNode project : ((LogicalProject) node).getProjects() ) {
+        for ( RexNode project : ((LogicalRelProject) node).getProjects() ) {
             if ( project instanceof RexDynamicParam ) {
                 long newIndex = parameterValues.get( 0 ).size();
                 long oldIndex = ((RexDynamicParam) project).getIndex();
@@ -997,11 +996,11 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             }
         }
 
-        LogicalValues logicalValues = LogicalValues.createOneRow( node.getCluster() );
-        LogicalProject newProject = new LogicalProject(
+        LogicalRelValues logicalRelValues = LogicalRelValues.createOneRow( node.getCluster() );
+        LogicalRelProject newProject = new LogicalRelProject(
                 node.getCluster(),
                 node.getTraitSet(),
-                logicalValues,
+                logicalRelValues,
                 projects,
                 node.getTupleType()
         );

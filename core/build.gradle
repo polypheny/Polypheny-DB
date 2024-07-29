@@ -1,9 +1,16 @@
-//import ca.coglinc.gradle.plugins.javacc.CompileJavaccTask
+buildscript {
+    dependencies {
+        // Protobuf
+        classpath group: "com.google.protobuf", name: "protobuf-gradle-plugin", version: protobuf_plugin_version
+    }
+}
 
 group "org.polypheny"
 
+
 apply plugin: "io.freefair.lombok"
 apply plugin: "com.google.protobuf"
+
 
 configurations {
     //javacc
@@ -19,50 +26,27 @@ configurations {
 }
 
 
-
-buildscript {
-    dependencies {
-        // JavaCC (https://github.com/johnmartel/javaccPlugin)
-        classpath group: "gradle.plugin.ca.coglinc2", name: "javacc-gradle-plugin", version: javacc_plugin_version
-        // Protobuf
-        classpath group: "com.google.protobuf", name: "protobuf-gradle-plugin", version: protobuf_plugin_version
-    }
-}
-
-
 dependencies {
-    annotationProcessor project(':util')
-    implementation project(':util')
-
     api project(":config")
     api project(":information")
 
-    implementation(group: "org.pf4j", name: "pf4j", version: pf4j_version) {
-        exclude group: "org.slf4j"
-    }
+    implementation group: "org.pf4j", name: "pf4j", version: pf4j_version
     implementation group: "commons-codec", name: "commons-codec", version: commons_codec_version  // Apache 2.0
     api group: "org.apache.commons", name: "commons-lang3", version: commons_lang3_version  // Apache 2.0
-    api group: "org.apache.commons", name: "commons-dbcp2", version: commons_dbcp2_version  // Apache 2.0
 
     api group: "com.google.guava", name: "guava", version: guava_version
-    api(group: "org.reflections", name: "reflections", version: reflections_version) // BSD 2-clause
     api group: "com.google.code.gson", name: "gson", version: gson_version  // Apache 2.0
     implementation group: "com.esri.geometry", name: "esri-geometry-api", version: esri_geometry_api_version  // Apache 2.0
     api group: "com.fasterxml.jackson.core", name: "jackson-core", version: jackson_core_version  // Apache 2.0
     api group: "com.fasterxml.jackson.core", name: "jackson-databind", version: jackson_databind_version  // Apache 2.0
     api group: "com.google.code.findbugs", name: "jsr305", version: jsr305_version  // Apache 2.0
-    implementation(group: "com.jayway.jsonpath", name: "json-path", version: json_path_version) { exclude(module: "json-smart"); exclude(group: "org.slf4j") }  // Apache 2.0
+    implementation group: "com.jayway.jsonpath", name: "json-path", version: json_path_version // Apache 2.0
     implementation group: "org.codehaus.janino", name: "janino", version: janino_version  // BSD
     implementation group: "org.codehaus.janino", name: "commons-compiler", version: commons_compiler_version  // BSD
     implementation group: "com.j256.simplemagic", name: "simplemagic", version: simplemagic_version // ISC
 
     api(group: "org.apache.calcite", name: "calcite-linq4j", version: calcite_linq4j_version) {
         exclude(module: "guava")
-        exclude(module: "avatica-core")
-    } // Apache 2.0
-    api(group: "org.polypheny.avatica", name: "avatica-core", version: avatica_core_version) {
-        exclude(module: "protobuf-java")
-        exclude group: "org.apache.calcite", module: "avatica-core"
     } // Apache 2.0
 
     implementation group: "com.drewnoakes", name: "metadata-extractor", version: metadata_extractor_version // Apache 2.0
@@ -98,10 +82,6 @@ protobuf {
     }
 }
 
-/*tasks.withType(JavaCompile).configureEach {
-    options.annotationProcessorGeneratedSourcesDirectory = file("${buildDir}/generated/sources/annotationProcessor")
-}*/
-
 
 sourceSets {
     main {
@@ -127,15 +107,13 @@ sourceSets {
     }
 }
 
-/*tasks.withType(JavaCompile).configureEach {
-    options.annotationProcessorPath = configurations.annotationProcessor
-}*/
 
-task generateVersionProperties(type: Copy) {
+tasks.register('generateVersionProperties', Copy) {
     from "src/main/resources/version"
     into project.buildDir.absolutePath + "/classes"
     expand(version: project.version, versionMajor: versionMajor, versionMinor: versionMinor, buildTimestamp: new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"))
 }
+
 compileJava {
     dependsOn("generateVersionProperties")
     dependsOn(":config:processResources")
@@ -152,9 +130,7 @@ delombok {
 extractIncludeProto {
     dependsOn(":config:compileJava")
     dependsOn(":information:compileJava")
-    dependsOn(":util:compileJava")
 }
-
 
 
 /**
@@ -166,9 +142,7 @@ javadoc {
     // Include private fields in JavaDoc
     options.memberLevel = JavadocMemberLevel.PRIVATE
     // Use HTML 5 for JavaDoc
-    if (JavaVersion.current().isJava9Compatible()) {
-        options.addBooleanOption("html5", true)
-    }
+    options.addBooleanOption("html5", true)
 }
 
 
@@ -191,18 +165,25 @@ jar {
         attributes "Version": "$project.version"
     }
 }
-task sourcesJar(type: Jar, dependsOn: classes) {
+
+tasks.register('sourcesJar', Jar) {
+    dependsOn classes
     archiveClassifier = "sources"
     from sourceSets.main.allSource
 }
-task javadocJar(type: Jar, dependsOn: javadoc) {
+
+tasks.register('javadocJar', Jar) {
+    dependsOn javadoc
     archiveClassifier = "javadoc"
     from javadoc.destinationDir
 }
-task testJar(type: Jar, dependsOn: testClasses) {
+
+tasks.register('testJar', Jar) {
+    dependsOn testClasses
     archiveClassifier = "tests"
     from sourceSets.test.output
 }
+
 artifacts {
     //archives jar // regular jar containing only the compiled source
     archives sourcesJar // jar file containing the java doc files

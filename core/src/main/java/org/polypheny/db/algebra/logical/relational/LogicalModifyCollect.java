@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.ModifyCollect;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 
@@ -35,7 +35,7 @@ public final class LogicalModifyCollect extends ModifyCollect {
      * <p>
      * Use {@link #create} unless you know what you're doing.
      */
-    public LogicalModifyCollect( AlgOptCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, boolean all ) {
+    public LogicalModifyCollect( AlgCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, boolean all ) {
         super( cluster, traitSet, inputs, all );
     }
 
@@ -44,7 +44,7 @@ public final class LogicalModifyCollect extends ModifyCollect {
      * Creates a LogicalModifyCollect.
      */
     public static LogicalModifyCollect create( List<AlgNode> inputs, boolean all ) {
-        final AlgOptCluster cluster = inputs.get( 0 ).getCluster();
+        final AlgCluster cluster = inputs.get( 0 ).getCluster();
         final AlgTraitSet traitSet = cluster.traitSetOf( Convention.NONE );
         return new LogicalModifyCollect( cluster, traitSet, inputs, all );
     }

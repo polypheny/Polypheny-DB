@@ -1,9 +1,26 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * This file incorporates code covered by the following terms:
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to you under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -17,19 +34,15 @@
 package org.polypheny.db.algebra.enumerable;
 
 
+import java.util.Objects;
 import org.apache.calcite.linq4j.tree.BlockStatement;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.AlgFactories;
 
 
 /**
- * A relational expression of one of the {@link EnumerableConvention} calling conventions.
+ * An algebraic expression of one of the {@link EnumerableConvention} calling conventions.
  */
 public interface EnumerableAlg extends AlgNode {
-
-    AlgFactories.FilterFactory FILTER_FACTORY = EnumerableFilter::create;
-
-    AlgFactories.ProjectFactory PROJECT_FACTORY = EnumerableProject::create;
 
 
     /**
@@ -67,58 +80,40 @@ public interface EnumerableAlg extends AlgNode {
         ANY;
 
 
-        public JavaRowFormat preferCustom() {
-            return prefer( JavaRowFormat.CUSTOM );
+        public JavaTupleFormat preferCustom() {
+            return prefer( JavaTupleFormat.CUSTOM );
         }
 
 
-        public JavaRowFormat preferArray() {
-            return prefer( JavaRowFormat.ARRAY );
+        public JavaTupleFormat preferArray() {
+            return prefer( JavaTupleFormat.ARRAY );
         }
 
 
-        public JavaRowFormat prefer( JavaRowFormat format ) {
-            switch ( this ) {
-                case CUSTOM:
-                    return JavaRowFormat.CUSTOM;
-                case ARRAY:
-                    return JavaRowFormat.ARRAY;
-                default:
-                    return format;
+        public JavaTupleFormat prefer( JavaTupleFormat format ) {
+            return switch ( this ) {
+                case CUSTOM -> JavaTupleFormat.CUSTOM;
+                case ARRAY -> JavaTupleFormat.ARRAY;
+                default -> format;
+            };
+        }
+
+
+        public Prefer of( JavaTupleFormat format ) {
+            if ( Objects.requireNonNull( format ) == JavaTupleFormat.ARRAY ) {
+                return ARRAY;
             }
-        }
-
-
-        public Prefer of( JavaRowFormat format ) {
-            switch ( format ) {
-                case ARRAY:
-                    return ARRAY;
-                default:
-                    return CUSTOM;
-            }
+            return CUSTOM;
         }
     }
 
 
     /**
      * Result of implementing an enumerable relational expression by generating Java code.
+     *
+     * @param physType Describes the Java type returned by this relational expression, and the mapping between it and the fields of the logical row type.
      */
-    class Result {
-
-        public final BlockStatement block;
-
-        /**
-         * Describes the Java type returned by this relational expression, and the mapping between it and the fields of the logical row type.
-         */
-        public final PhysType physType;
-        public final JavaRowFormat format;
-
-
-        public Result( BlockStatement block, PhysType physType, JavaRowFormat format ) {
-            this.block = block;
-            this.physType = physType;
-            this.format = format;
-        }
+    record Result(BlockStatement block, PhysType physType, JavaTupleFormat format) {
 
     }
 

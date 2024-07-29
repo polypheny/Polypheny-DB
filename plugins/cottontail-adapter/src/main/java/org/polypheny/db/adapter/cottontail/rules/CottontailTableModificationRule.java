@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,17 +18,20 @@ package org.polypheny.db.adapter.cottontail.rules;
 
 
 import java.util.Optional;
+import lombok.Getter;
 import org.polypheny.db.adapter.cottontail.CottontailConvention;
 import org.polypheny.db.adapter.cottontail.CottontailEntity;
 import org.polypheny.db.adapter.cottontail.algebra.CottontailTableModify;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.UnsupportedFromInsertShuttle;
 import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.core.relational.RelModify;
+import org.polypheny.db.algebra.util.UnsupportedRelFromInsertShuttle;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
+import org.polypheny.db.rex.RexFieldAccess;
+import org.polypheny.db.rex.RexVisitorImpl;
 import org.polypheny.db.schema.types.ModifiableTable;
 import org.polypheny.db.tools.AlgBuilderFactory;
 
@@ -41,7 +44,7 @@ public class CottontailTableModificationRule extends CottontailConverterRule {
 
 
     private static boolean supports( RelModify<?> modify ) {
-        return !modify.isInsert() || !UnsupportedFromInsertShuttle.contains( modify );
+        return !modify.isInsert() || !UnsupportedRelFromInsertShuttle.contains( modify );
     }
 
 
@@ -56,7 +59,26 @@ public class CottontailTableModificationRule extends CottontailConverterRule {
             return false;
         }
 
+        if ( containsAccess( modify ) ) {
+            return false;
+        }
+
+        if ( modify.isInsert() && modify.containsScan() ) {
+            return false;
+        }
+
         return modify.getOperation() != Modify.Operation.MERGE;
+    }
+
+
+    private boolean containsAccess( RelModify<?> modify ) {
+        if ( modify.getSourceExpressions() == null ) {
+            return false;
+        }
+
+        AccessFinder visitor = new AccessFinder();
+        modify.getSourceExpressions().forEach( rexNode -> rexNode.accept( visitor ) );
+        return visitor.containsAccess;
     }
 
 
@@ -86,5 +108,24 @@ public class CottontailTableModificationRule extends CottontailConverterRule {
         );
     }
 
+
+    @Getter
+    private static class AccessFinder extends RexVisitorImpl<Void> {
+
+        public boolean containsAccess = false;
+
+
+        public AccessFinder() {
+            super( true );
+        }
+
+
+        @Override
+        public Void visitFieldAccess( RexFieldAccess fieldAccess ) {
+            containsAccess = true;
+            return null;
+        }
+
+    }
 
 }

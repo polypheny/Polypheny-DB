@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.polypheny.db.adapter;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -58,14 +59,11 @@ public abstract class Adapter<ACatalog extends AdapterCatalog> implements Scanna
     private final AdapterProperties properties;
     protected final DeployMode deployMode;
     protected String deploymentId;
-    @Getter
-    private final String adapterName;
+    public final String adapterName;
     public final ACatalog adapterCatalog;
 
 
-    @Getter
     public final long adapterId;
-    @Getter
     private final String uniqueName;
 
     protected final Map<String, String> settings;
@@ -78,17 +76,14 @@ public abstract class Adapter<ACatalog extends AdapterCatalog> implements Scanna
     private final Map<Long, Namespace> namespaces = new ConcurrentHashMap<>();
 
 
-    public Adapter( long adapterId, String uniqueName, Map<String, String> settings, ACatalog catalog ) {
+    public Adapter( long adapterId, String uniqueName, Map<String, String> settings, DeployMode mode, ACatalog catalog ) {
         this.adapterCatalog = catalog;
         this.properties = getClass().getAnnotation( AdapterProperties.class );
         if ( getClass().getAnnotation( AdapterProperties.class ) == null ) {
             throw new GenericRuntimeException( "The used adapter does not annotate its properties correctly." );
         }
-        if ( !settings.containsKey( "mode" ) ) {
-            throw new GenericRuntimeException( "The adapter does not specify a mode which is necessary." );
-        }
 
-        this.deployMode = DeployMode.fromString( settings.get( "mode" ) );
+        this.deployMode = mode;
 
         this.adapterId = adapterId;
         this.uniqueName = uniqueName;
@@ -204,10 +199,15 @@ public abstract class Adapter<ACatalog extends AdapterCatalog> implements Scanna
             // we only need to check settings which apply to the used mode
             if ( !s.appliesTo
                     .stream()
-                    .map( setting -> setting.getModes( Arrays.asList( properties.usedModes() ) ) )
+                    .flatMap( setting -> setting.getModes( List.of( properties.usedModes() ) ).stream() )
                     .toList().contains( deployMode ) ) {
                 continue;
             }
+            if ( !initialSetup && settings.containsKey( s.name ) && settings.get( s.name ).equals( s.getValue() ) ) {
+                // we can leave the setting as it is
+                return;
+            }
+
             if ( newSettings.containsKey( s.name ) ) {
                 if ( s.modifiable || initialSetup ) {
                     String newValue = newSettings.get( s.name );
@@ -264,13 +264,13 @@ public abstract class Adapter<ACatalog extends AdapterCatalog> implements Scanna
 
         group.setRefreshFunction( () -> {
             physicalColumnNames.reset();
-            List<PhysicalEntity> physicalsOnAdapter = new ArrayList<>();//snapshot.physical().getPhysicalsOnAdapter( adapterId );
+            Collection<PhysicalEntity> physicalsOnAdapter = getAdapterCatalog().physicals.values();
 
             for ( PhysicalEntity entity : physicalsOnAdapter ) {
-                if ( entity.dataModel != DataModel.RELATIONAL ) {
+                if ( entity.dataModel != DataModel.RELATIONAL || entity.unwrap( PhysicalTable.class ).isEmpty() ) {
                     continue;
                 }
-                PhysicalTable physicalTable = (PhysicalTable) entity;
+                PhysicalTable physicalTable = entity.unwrap( PhysicalTable.class ).get();
 
                 for ( PhysicalColumn column : physicalTable.columns ) {
                     physicalColumnNames.addRow(

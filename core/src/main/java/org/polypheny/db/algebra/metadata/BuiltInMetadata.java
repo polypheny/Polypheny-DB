@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -93,8 +93,8 @@ public abstract class BuiltInMetadata {
 
         /**
          * Determines the set of unique minimal keys for this expression. A key is represented as an {@link ImmutableBitSet}, where each bit position represents a 0-based output column ordinal.
-         *
-         * Nulls can be ignored if the relational expression has filtered out null values.
+         * <p>
+         * Nulls can be ignored if the algebra expression has filtered out null values.
          *
          * @param ignoreNulls if true, ignore null values when determining whether the keys are unique
          * @return set of keys, or null if this information cannot be determined (whereas empty set indicates definitely no keys at all)
@@ -121,16 +121,16 @@ public abstract class BuiltInMetadata {
         MetadataDef<ColumnUniqueness> DEF = MetadataDef.of( ColumnUniqueness.class, ColumnUniqueness.Handler.class, BuiltInMethod.COLUMN_UNIQUENESS.method );
 
         /**
-         * Determines whether a specified set of columns from a specified relational expression are unique.
-         *
-         * For example, if the relational expression is a {@code Scan} to T(A, B, C, D) whose key is (A, B), then:
+         * Determines whether a specified set of columns from a specified algebra expression are unique.
+         * <p>
+         * For example, if the algebra expression is a {@code Scan} to T(A, B, C, D) whose key is (A, B), then:
          * <ul>
          * <li>{@code areColumnsUnique([0, 1])} yields true,
          * <li>{@code areColumnsUnique([0])} yields false,
          * <li>{@code areColumnsUnique([0, 2])} yields false.
          * </ul>
          *
-         * Nulls can be ignored if the relational expression has filtered out null values.
+         * Nulls can be ignored if the algebra expression has filtered out null values.
          *
          * @param columns column mask representing the subset of columns for which uniqueness will be determined
          * @param ignoreNulls if true, ignore null values when determining column uniqueness
@@ -175,12 +175,12 @@ public abstract class BuiltInMetadata {
 
 
     /**
-     * Metadata about how a relational expression is distributed.
-     *
-     * If you are an operator consuming a relational expression, which subset of the rows are you seeing? You might be seeing all of them (BROADCAST or SINGLETON), only those whose key column values have a particular hash
+     * Metadata about how an algebra expression is distributed.
+     * <p>
+     * If you are an operator consuming an algebra expression, which subset of the rows are you seeing? You might be seeing all of them (BROADCAST or SINGLETON), only those whose key column values have a particular hash
      * code (HASH) or only those whose column values have particular values or ranges of values (RANGE).
-     *
-     * When a relational expression is partitioned, it is often partitioned among nodes, but it may be partitioned among threads running on the same node.
+     * <p>
+     * When an algebra expression is partitioned, it is often partitioned among nodes, but it may be partitioned among threads running on the same node.
      */
     public interface Distribution extends Metadata {
 
@@ -204,9 +204,9 @@ public abstract class BuiltInMetadata {
 
 
     /**
-     * Metadata about the node types in a relational expression.
-     *
-     * For each relational expression, it returns a multimap from the class to the nodes instantiating that class. Each node will appear in the multimap only once.
+     * Metadata about the node types in an algebra expression.
+     * <p>
+     * For each algebra expression, it returns a multimap from the class to the nodes instantiating that class. Each node will appear in the multimap only once.
      */
     public interface NodeTypes extends Metadata {
 
@@ -230,26 +230,26 @@ public abstract class BuiltInMetadata {
 
 
     /**
-     * Metadata about the number of rows returned by a relational expression.
+     * Metadata about the number of tuples returned by an expression.
      */
-    public interface RowCount extends Metadata {
+    public interface TupleCount extends Metadata {
 
-        MetadataDef<RowCount> DEF = MetadataDef.of( RowCount.class, RowCount.Handler.class, BuiltInMethod.ROW_COUNT.method );
+        MetadataDef<TupleCount> DEF = MetadataDef.of( TupleCount.class, TupleCount.Handler.class, BuiltInMethod.TUPLE_COUNT.method );
 
         /**
-         * Estimates the number of rows which will be returned by a relational expression. The default implementation for this query asks the alg itself
-         * via {@link AlgNode#estimateRowCount}, but metadata providers can override this with their own cost models.
+         * Estimates the number of rows which will be returned by an algebra expression. The default implementation for this query asks the alg itself
+         * via {@link AlgNode#estimateTupleCount}, but metadata providers can override this with their own cost models.
          *
          * @return estimated row count, or null if no reliable estimate can be determined
          */
-        Double getRowCount();
+        Double getTupleCount();
 
         /**
          * Handler API.
          */
-        interface Handler extends MetadataHandler<RowCount> {
+        interface Handler extends MetadataHandler<TupleCount> {
 
-            Double getRowCount( AlgNode r, AlgMetadataQuery mq );
+            Double getTupleCount( AlgNode r, AlgMetadataQuery mq );
 
         }
 
@@ -257,15 +257,15 @@ public abstract class BuiltInMetadata {
 
 
     /**
-     * Metadata about the maximum number of rows returned by a relational expression.
+     * Metadata about the maximum number of rows returned by an algebra expression.
      */
     public interface MaxRowCount extends Metadata {
 
         MetadataDef<MaxRowCount> DEF = MetadataDef.of( MaxRowCount.class, MaxRowCount.Handler.class, BuiltInMethod.MAX_ROW_COUNT.method );
 
         /**
-         * Estimates the max number of rows which will be returned by a relational expression.
-         *
+         * Estimates the max number of rows which will be returned by a algebra expression.
+         * <p>
          * The default implementation for this query returns {@link Double#POSITIVE_INFINITY}, but metadata providers can override this with their own cost models.
          *
          * @return upper bound on the number of rows returned
@@ -285,15 +285,15 @@ public abstract class BuiltInMetadata {
 
 
     /**
-     * Metadata about the minimum number of rows returned by a relational expression.
+     * Metadata about the minimum number of rows returned by a algebra expression.
      */
     public interface MinRowCount extends Metadata {
 
         MetadataDef<MinRowCount> DEF = MetadataDef.of( MinRowCount.class, MinRowCount.Handler.class, BuiltInMethod.MIN_ROW_COUNT.method );
 
         /**
-         * Estimates the minimum number of rows which will be returned by a relational expression.
-         *
+         * Estimates the minimum number of rows which will be returned by a algebra expression.
+         * <p>
          * The default implementation for this query returns 0, but metadata providers can override this with their own cost models.
          *
          * @return lower bound on the number of rows returned
@@ -313,7 +313,7 @@ public abstract class BuiltInMetadata {
 
 
     /**
-     * Metadata about the number of distinct rows returned by a set of columns in a relational expression.
+     * Metadata about the number of distinct rows returned by a set of columns in a algebra expression.
      */
     public interface DistinctRowCount extends Metadata {
 
@@ -342,14 +342,14 @@ public abstract class BuiltInMetadata {
 
 
     /**
-     * Metadata about the proportion of original rows that remain in a relational expression.
+     * Metadata about the proportion of original rows that remain in a algebra expression.
      */
     public interface PercentageOriginalRows extends Metadata {
 
         MetadataDef<PercentageOriginalRows> DEF = MetadataDef.of( PercentageOriginalRows.class, PercentageOriginalRows.Handler.class, BuiltInMethod.PERCENTAGE_ORIGINAL_ROWS.method );
 
         /**
-         * Estimates the percentage of the number of rows actually produced by a relational expression out of the number of rows it would produce if all single-table filter conditions were removed.
+         * Estimates the percentage of the number of rows actually produced by a algebra expression out of the number of rows it would produce if all single-table filter conditions were removed.
          *
          * @return estimated percentage (between 0.0 and 1.0), or null if no reliable estimate can be determined
          */
@@ -403,17 +403,17 @@ public abstract class BuiltInMetadata {
         MetadataDef<Size> DEF = MetadataDef.of( Size.class, Size.Handler.class, BuiltInMethod.AVERAGE_ROW_SIZE.method, BuiltInMethod.AVERAGE_COLUMN_SIZES.method );
 
         /**
-         * Determines the average size (in bytes) of a row from this relational expression.
+         * Determines the average size (in bytes) of a row from this algebra expression.
          *
          * @return average size of a row, in bytes, or null if not known
          */
         Double averageRowSize();
 
         /**
-         * Determines the average size (in bytes) of a value of a column in this relational expression.
-         *
+         * Determines the average size (in bytes) of a value of a column in this algebra expression.
+         * <p>
          * Null values are included (presumably they occupy close to 0 bytes).
-         *
+         * <p>
          * It is left to the caller to decide whether the size is the compressed size, the uncompressed size, or memory allocation when the value is wrapped in an object in the Java heap.
          * The uncompressed size is probably a good compromise.
          *
@@ -472,10 +472,10 @@ public abstract class BuiltInMetadata {
 
         /**
          * Given the input expression applied on the given {@link AlgNode}, this provider returns the expression with its lineage resolved.
-         *
+         * <p>
          * In particular, the result will be a set of nodes which might contain references to columns in Scan operators ({@link RexTableIndexRef}). An expression can have more than one lineage expression due to
          * Union operators. However, we do not check column equality in Filter predicates. Each Scan operator below the node is identified uniquely by its qualified name and its entity number.
-         *
+         * <p>
          * For example, if the expression is {@code $0 + 2} and {@code $0} originated from column {@code $3} in the {@code 0} occurrence of table {@code A} in the plan, result will be: {@code A.#0.$3 + 2}.
          * Occurrences are generated in no particular order, but it is guaranteed that if two expressions referred to the same table, the qualified name + occurrence will be the same.
          *
@@ -505,10 +505,10 @@ public abstract class BuiltInMetadata {
 
         /**
          * This provider returns the tables used by a given plan.
-         *
+         * <p>
          * In particular, the result will be a set of unique table references ({@link AlgTableRef}) corresponding to each Scan operator in the plan. These table references are
          * composed by the table qualified name and an entity number.
-         *
+         * <p>
          * Importantly, the table identifiers returned by this metadata provider will be consistent with the unique identifiers used by the {@link ExpressionLineage} provider,
          * meaning that it is guaranteed that same table will use same unique identifiers in both.
          *
@@ -529,14 +529,14 @@ public abstract class BuiltInMetadata {
 
 
     /**
-     * Metadata about the cost of evaluating a relational expression, including all of its inputs.
+     * Metadata about the cost of evaluating an algebra expression, including all of its inputs.
      */
     public interface CumulativeCost extends Metadata {
 
         MetadataDef<CumulativeCost> DEF = MetadataDef.of( CumulativeCost.class, CumulativeCost.Handler.class, BuiltInMethod.CUMULATIVE_COST.method );
 
         /**
-         * Estimates the cost of executing a relational expression, including the cost of its inputs. The default implementation for this query adds {@link NonCumulativeCost#getNonCumulativeCost}
+         * Estimates the cost of executing an algebra expression, including the cost of its inputs. The default implementation for this query adds {@link NonCumulativeCost#getNonCumulativeCost}
          * to the cumulative cost of each input, but metadata providers can override this with their own cost models, e.g. to take into account interactions between expressions.
          *
          * @return estimated cost, or null if no reliable estimate can be determined
@@ -556,14 +556,14 @@ public abstract class BuiltInMetadata {
 
 
     /**
-     * Metadata about the cost of evaluating a relational expression, not including its inputs.
+     * Metadata about the cost of evaluating an algebra expression, not including its inputs.
      */
     public interface NonCumulativeCost extends Metadata {
 
         MetadataDef<NonCumulativeCost> DEF = MetadataDef.of( NonCumulativeCost.class, NonCumulativeCost.Handler.class, BuiltInMethod.NON_CUMULATIVE_COST.method );
 
         /**
-         * Estimates the cost of executing a relational expression, not counting the cost of its inputs. (However, the non-cumulative cost is still usually dependent on the row counts of the inputs.)
+         * Estimates the cost of executing an algebra expression, not counting the cost of its inputs. (However, the non-cumulative cost is still usually dependent on the row counts of the inputs.)
          * The default implementation for this query asks the alg itself via {@link AlgNode#computeSelfCost}, but metadata providers can override this with their own cost models.
          *
          * @return estimated cost, or null if no reliable estimate can be determined
@@ -583,14 +583,14 @@ public abstract class BuiltInMetadata {
 
 
     /**
-     * Metadata about whether a relational expression should appear in a plan.
+     * Metadata about whether an algebra expression should appear in a plan.
      */
     public interface ExplainVisibility extends Metadata {
 
         MetadataDef<ExplainVisibility> DEF = MetadataDef.of( ExplainVisibility.class, ExplainVisibility.Handler.class, BuiltInMethod.EXPLAIN_VISIBILITY.method );
 
         /**
-         * Determines whether a relational expression should be visible in EXPLAIN PLAN output at a particular level of detail.
+         * Determines whether an algebra expression should be visible in EXPLAIN PLAN output at a particular level of detail.
          *
          * @param explainLevel level of detail
          * @return true for visible, false for invisible
@@ -610,14 +610,14 @@ public abstract class BuiltInMetadata {
 
 
     /**
-     * Metadata about the predicates that hold in the rows emitted from a relational expression.
+     * Metadata about the predicates that hold in the rows emitted from an algebra expression.
      */
     public interface Predicates extends Metadata {
 
         MetadataDef<Predicates> DEF = MetadataDef.of( Predicates.class, Predicates.Handler.class, BuiltInMethod.PREDICATES.method );
 
         /**
-         * Derives the predicates that hold on rows emitted from a relational expression.
+         * Derives the predicates that hold on rows emitted from an algebra expression.
          *
          * @return Predicate list
          */
@@ -636,9 +636,9 @@ public abstract class BuiltInMetadata {
 
 
     /**
-     * Metadata about the predicates that hold in the rows emitted from a relational expression.
-     *
-     * The difference with respect to {@link Predicates} provider is that this provider tries to extract ALL predicates even if they are not applied on the output expressions of the relational expression; we rely
+     * Metadata about the predicates that hold in the rows emitted from an algebra expression.
+     * <p>
+     * The difference with respect to {@link Predicates} provider is that this provider tries to extract ALL predicates even if they are not applied on the output expressions of the algebra expression; we rely
      * on {@link RexTableIndexRef} to reference origin columns in {@link RelScan} for the result predicates.
      */
     public interface AllPredicates extends Metadata {
@@ -646,7 +646,7 @@ public abstract class BuiltInMetadata {
         MetadataDef<AllPredicates> DEF = MetadataDef.of( AllPredicates.class, AllPredicates.Handler.class, BuiltInMethod.ALL_PREDICATES.method );
 
         /**
-         * Derives the predicates that hold on rows emitted from a relational expression.
+         * Derives the predicates that hold on rows emitted from an algebra expression.
          *
          * @return predicate list, or null if the provider cannot infer the lineage for any of the expressions contained in any of the predicates
          */
@@ -665,15 +665,15 @@ public abstract class BuiltInMetadata {
 
 
     /**
-     * Metadata about the degree of parallelism of a relational expression, and how its operators are assigned to processes with independent resource pools.
+     * Metadata about the degree of parallelism of an algebra expression, and how its operators are assigned to processes with independent resource pools.
      */
     public interface Parallelism extends Metadata {
 
         MetadataDef<Parallelism> DEF = MetadataDef.of( Parallelism.class, Parallelism.Handler.class, BuiltInMethod.IS_PHASE_TRANSITION.method, BuiltInMethod.SPLIT_COUNT.method );
 
         /**
-         * Returns whether each physical operator implementing this relational expression belongs to a different process than its inputs.
-         *
+         * Returns whether each physical operator implementing this algebra expression belongs to a different process than its inputs.
+         * <p>
          * A collection of operators processing all of the splits of a particular stage in the query pipeline is called a "phase". A phase starts with a leaf node such as a {@link RelScan},
          * or with a phase-change node such as an {@link org.polypheny.db.algebra.core.Exchange}. Hadoop's shuffle operator (a form of sort-exchange) causes data to be sent across the network.
          */
@@ -681,9 +681,9 @@ public abstract class BuiltInMetadata {
 
         /**
          * Returns the number of distinct splits of the data.
-         *
+         * <p>
          * Note that splits must be distinct. For broadcast, where each copy is the same, returns 1.
-         *
+         * <p>
          * Thus the split count is the <em>proportion</em> of the data seen by each operator instance.
          */
         Integer splitCount();
@@ -714,23 +714,23 @@ public abstract class BuiltInMetadata {
                 BuiltInMethod.CUMULATIVE_MEMORY_WITHIN_PHASE_SPLIT.method );
 
         /**
-         * Returns the expected amount of memory, in bytes, required by a physical operator implementing this relational expression, across all splits.
-         *
+         * Returns the expected amount of memory, in bytes, required by a physical operator implementing this algebra expression, across all splits.
+         * <p>
          * How much memory is used depends very much on the algorithm; for example, an implementation of {@link org.polypheny.db.algebra.core.Aggregate} that loads all data into a hash table requires approximately
          * {@code rowCount * averageRowSize} bytes, whereas an implementation that assumes that the input is sorted requires only {@code averageRowSize} bytes to maintain a single accumulator for each aggregate function.
          */
         Double memory();
 
         /**
-         * Returns the cumulative amount of memory, in bytes, required by the physical operator implementing this relational expression, and all other operators within the same phase, across all splits.
+         * Returns the cumulative amount of memory, in bytes, required by the physical operator implementing this algebra expression, and all other operators within the same phase, across all splits.
          *
          * @see Parallelism#splitCount()
          */
         Double cumulativeMemoryWithinPhase();
 
         /**
-         * Returns the expected cumulative amount of memory, in bytes, required by the physical operator implementing this relational expression, and all operators within the same phase, within each split.
-         *
+         * Returns the expected cumulative amount of memory, in bytes, required by the physical operator implementing this algebra expression, and all operators within the same phase, within each split.
+         * <p>
          * Basic formula:
          *
          * <blockquote>

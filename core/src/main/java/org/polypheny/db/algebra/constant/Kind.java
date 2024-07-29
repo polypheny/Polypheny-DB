@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -116,11 +116,6 @@ public enum Kind {
      * distance functions.
      */
     DISTANCE,
-
-    /**
-     * GEO functions.
-     */
-    GEO,
 
     /**
      * POSITION Function
@@ -1323,26 +1318,6 @@ public enum Kind {
      * Document model {@code $exists} operator
      */
     MQL_EXISTS,
-
-    /**
-     * Document model {@code $geoIntersects} operator
-     */
-    MQL_GEO_INTERSECTS,
-
-    /**
-     * Document model {@code $geoWithin} operator
-     */
-    MQL_GEO_WITHIN,
-
-    /**
-     * Document model {@code $near} operator
-     */
-    MQL_NEAR,
-
-    /**
-     * Document model {@code $nearSphere} operator
-     */
-    MQL_NEAR_SPHERE,
     /*
      * Deserialize operator
      */
@@ -1595,11 +1570,7 @@ public enum Kind {
             MQL_UPDATE_RENAME,
             MQL_JSONIFY,
             MQL_UPDATE,
-            MQL_EXISTS,
-            MQL_GEO_INTERSECTS,
-            MQL_GEO_WITHIN,
-            MQL_NEAR,
-            MQL_NEAR_SPHERE);
+            MQL_EXISTS );
 
     /**
      * Lower-case name.

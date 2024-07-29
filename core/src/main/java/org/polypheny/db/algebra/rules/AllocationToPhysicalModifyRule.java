@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,8 +24,8 @@ import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentModify;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
+import org.polypheny.db.catalog.CatalogType.State;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
-import org.polypheny.db.catalog.refactor.CatalogType.State;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.Convention;
@@ -38,7 +38,7 @@ public class AllocationToPhysicalModifyRule extends AlgOptRule {
 
 
     public AllocationToPhysicalModifyRule( Class<? extends Modify<?>> modify ) {
-        super( operandJ( modify, Convention.NONE, AllocationToPhysicalModifyRule::canApply, any() ), AlgFactories.LOGICAL_BUILDER, modify.getSimpleName() + "ToPhysical" );
+        super( operand( modify, Convention.NONE, AllocationToPhysicalModifyRule::canApply, any() ), AlgFactories.LOGICAL_BUILDER, modify.getSimpleName() + "ToPhysical" );
     }
 
 

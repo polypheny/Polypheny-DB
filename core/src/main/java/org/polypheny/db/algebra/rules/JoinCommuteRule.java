@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,7 +41,7 @@ import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.Project;
-import org.polypheny.db.algebra.logical.relational.LogicalJoin;
+import org.polypheny.db.algebra.logical.relational.LogicalRelJoin;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.plan.AlgOptRule;
@@ -87,7 +87,7 @@ public class JoinCommuteRule extends AlgOptRule {
 
 
     private JoinCommuteRule( boolean swapOuter ) {
-        this( LogicalJoin.class, AlgFactories.LOGICAL_BUILDER, swapOuter );
+        this( LogicalRelJoin.class, AlgFactories.LOGICAL_BUILDER, swapOuter );
     }
 
 
@@ -124,11 +124,6 @@ public class JoinCommuteRule extends AlgOptRule {
     @Override
     public void onMatch( final AlgOptRuleCall call ) {
         Join join = call.alg( 0 );
-
-        if ( !join.getSystemFieldList().isEmpty() ) {
-            // FIXME Enable this rule for joins with system fields
-            return;
-        }
 
         final AlgNode swapped = swap( join, this.swapOuter, call.builder() );
         if ( swapped == null ) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,8 +32,8 @@ public class MqlAggregate extends MqlCollectionStatement {
     private final BsonDocument option;
 
 
-    public MqlAggregate( ParserPos pos, String collection, BsonArray pipeline, BsonDocument option ) {
-        super( collection, pos );
+    public MqlAggregate( ParserPos pos, String collection, String namespace, BsonArray pipeline, BsonDocument option ) {
+        super( collection, namespace, pos );
         this.pipeline = pipeline;
         this.option = option;
         enforceNonEmptyProject( pipeline );

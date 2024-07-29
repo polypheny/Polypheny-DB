@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ import java.util.Map;
 import java.util.TreeMap;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.cql.ColumnIndex;
+import org.polypheny.db.cql.FieldIndex;
 import org.polypheny.db.cql.Modifier;
 import org.polypheny.db.cql.Projections;
 import org.polypheny.db.cql.Projections.AggregationFunctions;
@@ -36,8 +36,8 @@ import org.polypheny.db.cql.utils.helper.AlgBuildTestHelper;
 public class ProjectionsTest extends AlgBuildTestHelper {
 
     private final Projections projections;
-    private final ColumnIndex empname;
-    private final ColumnIndex deptname;
+    private final FieldIndex empname;
+    private final FieldIndex deptname;
     private final Map<String, Modifier> empnameModifiers = new TreeMap<>( String.CASE_INSENSITIVE_ORDER );
     private final Map<String, Modifier> deptnameModifiers = new TreeMap<>( String.CASE_INSENSITIVE_ORDER );
 
@@ -45,8 +45,8 @@ public class ProjectionsTest extends AlgBuildTestHelper {
     public ProjectionsTest() throws UnknownIndexException {
         super( AlgBuildLevel.INITIAL_PROJECTION );
         projections = new Projections();
-        empname = ColumnIndex.createIndex( "test", "employee", "empname" );
-        deptname = ColumnIndex.createIndex( "test", "dept", "deptname" );
+        empname = FieldIndex.createIndex( "test", "employee", "empname" );
+        deptname = FieldIndex.createIndex( "test", "dept", "deptname" );
     }
 
 
@@ -61,10 +61,10 @@ public class ProjectionsTest extends AlgBuildTestHelper {
         testCases.put( "", null );
         testCases.put( "abc", null );
 
-        ColumnIndex columnIndex = ColumnIndex.createIndex( "test", "employee", "empname" );
+        FieldIndex fieldIndex = FieldIndex.createIndex( "test", "employee", "empname" );
 
         testCases.forEach( ( modifierName, expected ) ->
-                testGetAggregateFunctionHelper( columnIndex, modifierName, expected ) );
+                testGetAggregateFunctionHelper( fieldIndex, modifierName, expected ) );
     }
 
 
@@ -115,10 +115,10 @@ public class ProjectionsTest extends AlgBuildTestHelper {
     }
 
 
-    private void testGetAggregateFunctionHelper( ColumnIndex columnIndex, String modifierName, String expected ) {
+    private void testGetAggregateFunctionHelper( FieldIndex fieldIndex, String modifierName, String expected ) {
         Map<String, Modifier> modifiers = new TreeMap<>( String.CASE_INSENSITIVE_ORDER );
         modifiers.put( modifierName, new Modifier( modifierName ) );
-        String actual = Projections.getAggregationFunction( columnIndex, modifiers );
+        String actual = Projections.getAggregationFunction( fieldIndex, modifiers );
         assertEquals( expected, actual );
     }
 

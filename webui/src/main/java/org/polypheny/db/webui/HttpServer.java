@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 
 package org.polypheny.db.webui;
-
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -36,6 +35,7 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.StatusNotificationService;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -60,6 +60,8 @@ public class HttpServer implements Runnable {
     private static HttpServer INSTANCE = null;
     @Getter
     private WebSocket webSocketHandler;
+    @Setter
+    private boolean isReady = false;
 
 
     public static HttpServer getInstance() {
@@ -264,7 +266,7 @@ public class HttpServer implements Runnable {
 
         webuiServer.get( "/getAvailableSources", crud::getAvailableSources );
 
-        webuiServer.post( "/createAdapter", crud::addAdapter );
+        webuiServer.post( "/createAdapter", crud::createAdapter );
 
         webuiServer.post( "/pathAccess", crud::startAccessRequest );
 
@@ -284,37 +286,43 @@ public class HttpServer implements Runnable {
 
         webuiServer.get( "/product", ctx -> ctx.result( "Polypheny-DB" ) );
 
+        webuiServer.get( "/isReady", ctx -> ctx.result( String.valueOf( isReady ) ) );
+
     }
 
 
     private static void attachDockerRoutes( Javalin webuiServer, Crud crud ) {
-        webuiServer.post( "/addDockerInstance", crud::addDockerInstance );
+        webuiServer.post( "/docker/instances/create", crud::createDockerInstance );
 
-        webuiServer.post( "/testDockerInstance/{dockerId}", crud::testDockerInstance );
+        webuiServer.get( "/docker/instances", crud::getDockerInstances );
 
-        webuiServer.get( "/getDockerInstance/{dockerId}", crud::getDockerInstance );
+        webuiServer.get( "/docker/instances/{dockerId}", crud::getDockerInstance );
 
-        webuiServer.get( "/getDockerInstances", crud::getDockerInstances );
+        webuiServer.patch( "/docker/instances/{dockerId}", crud::updateDockerInstance );
 
-        webuiServer.post( "/updateDockerInstance", crud::updateDockerInstance );
+        webuiServer.post( "/docker/instances/{dockerId}/reconnect", crud::reconnectToDockerInstance );
 
-        webuiServer.post( "/reconnectToDockerInstance", crud::reconnectToDockerInstance );
+        webuiServer.post( "/docker/instances/{dockerId}/ping", crud::pingDockerInstance );
 
-        webuiServer.post( "/removeDockerInstance", crud::removeDockerInstance );
+        webuiServer.delete( "/docker/instances/{dockerId}", crud::deleteDockerInstance );
 
-        webuiServer.get( "/getAutoDockerStatus", crud::getAutoDockerStatus );
+        webuiServer.get( "/docker/auto", crud::getAutoDockerStatus );
 
-        webuiServer.post( "/doAutoHandshake", crud::doAutoHandshake );
+        webuiServer.post( "/docker/auto", crud::doAutoHandshake );
 
-        webuiServer.post( "/startHandshake", crud::startHandshake );
+        webuiServer.get( "/docker/handshakes", crud::getHandshakes );
 
-        webuiServer.get( "/getHandshake/{hostname}", crud::getHandshake );
+        webuiServer.get( "/docker/handshakes/{id}", crud::getHandshake );
 
-        webuiServer.post( "/cancelHandshake", crud::cancelHandshake );
+        webuiServer.post( "/docker/handshakes/{id}/restart", crud::restartHandshake );
 
-        webuiServer.get( "/getDockerSettings", crud::getDockerSettings );
+        webuiServer.post( "/docker/handshakes/{id}/cancel", crud::cancelHandshake );
 
-        webuiServer.post( "/changeDockerSettings", crud::changeDockerSettings );
+        webuiServer.delete( "/docker/handshakes/{id}", crud::deleteHandshake );
+
+        webuiServer.get( "/docker/settings", crud::getDockerSettings );
+
+        webuiServer.patch( "/docker/settings", crud::updateDockerSettings );
     }
 
 
@@ -346,7 +354,7 @@ public class HttpServer implements Runnable {
     private static void attachCatalogMetaRoutes( Javalin webuiServer, Crud crud ) {
         webuiServer.post( "/getSchemaTree", crud.catalogCrud::getSchemaTree );
 
-        webuiServer.get( "/getSnapshot", crud.catalogCrud::getSnapshot );
+        webuiServer.post( "/getSnapshot", crud.catalogCrud::getSnapshot );
 
         webuiServer.get( "/getTypeSchemas", crud.catalogCrud::getTypeNamespaces );
 

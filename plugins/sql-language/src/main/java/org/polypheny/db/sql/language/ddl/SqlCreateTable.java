@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,9 +22,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.Ord;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.Catalog;
@@ -54,31 +57,43 @@ import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.util.ImmutableNullableList;
 import org.polypheny.db.util.Pair;
 
 
 /**
  * Parse tree for {@code CREATE TABLE} statement.
  */
+@EqualsAndHashCode(callSuper = true)
 @Slf4j
+@Value
 public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
 
-    private final SqlIdentifier name;
-    private final SqlNodeList columns;
-    private final SqlNode query;
-    private final SqlIdentifier store;
-    private final SqlIdentifier partitionColumn;
-    private final SqlIdentifier partitionType;
-    private final int numPartitionGroups;
-    private final int numPartitions;
-    private final List<SqlIdentifier> partitionGroupNamesList;
-    private final RawPartitionInformation rawPartitionInfo;
+    SqlIdentifier name;
+    SqlNodeList columns;
 
-    private final List<List<SqlNode>> partitionQualifierList;
+    @Nullable
+    SqlNode query; // for "CREATE TABLE ... AS query"; may be null
+
+    @Nullable
+    SqlIdentifier store; // ON STORE [storeId name];
+
+    @Nullable
+    SqlIdentifier partitionColumn;
+
+    @Nullable
+    SqlIdentifier partitionType; // PARTITION BY (HASH | RANGE | LIST);
+
+    int numPartitionGroups;
+    int numPartitions;
+
+    @Nullable
+    List<SqlIdentifier> partitionGroupNamesList; // can only be used in association with PARTITION BY and PARTITIONS
+    RawPartitionInformation rawPartitionInfo;
+
+    List<List<SqlNode>> partitionQualifierList;
 
     private static final SqlOperator OPERATOR = new SqlSpecialOperator( "CREATE TABLE", Kind.CREATE_TABLE );
-    private final Snapshot snapshot = Catalog.getInstance().getSnapshot();
+    Snapshot snapshot = Catalog.getInstance().getSnapshot();
 
 
     /**
@@ -89,26 +104,26 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
             boolean replace,
             boolean ifNotExists,
             SqlIdentifier name,
-            SqlNodeList columns,
-            SqlNode query,
-            SqlIdentifier store,
-            SqlIdentifier partitionType,
-            SqlIdentifier partitionColumn,
+            @Nullable SqlNodeList columns,
+            @Nullable SqlNode query,
+            @Nullable SqlIdentifier store,
+            @Nullable SqlIdentifier partitionType,
+            @Nullable SqlIdentifier partitionColumn,
             int numPartitionGroups,
             int numPartitions,
-            List<SqlIdentifier> partitionGroupNamesList,
+            @Nullable List<SqlIdentifier> partitionGroupNamesList,
             List<List<SqlNode>> partitionQualifierList,
             RawPartitionInformation rawPartitionInfo ) {
         super( OPERATOR, pos, replace, ifNotExists );
         this.name = Objects.requireNonNull( name );
-        this.columns = columns; // May be null
-        this.query = query; // for "CREATE TABLE ... AS query"; may be null
-        this.store = store; // ON STORE [storeId name]; may be null
-        this.partitionType = partitionType; // PARTITION BY (HASH | RANGE | LIST); may be null
-        this.partitionColumn = partitionColumn; // May be null
-        this.numPartitionGroups = numPartitionGroups; // May be null and can only be used in association with PARTITION BY
+        this.columns = columns;
+        this.query = query;
+        this.store = store;
+        this.partitionType = partitionType;
+        this.partitionColumn = partitionColumn;
+        this.numPartitionGroups = numPartitionGroups;
         this.numPartitions = numPartitions;
-        this.partitionGroupNamesList = partitionGroupNamesList; // May be null and can only be used in association with PARTITION BY and PARTITIONS
+        this.partitionGroupNamesList = partitionGroupNamesList;
         this.partitionQualifierList = partitionQualifierList;
         this.rawPartitionInfo = rawPartitionInfo;
     }
@@ -116,13 +131,13 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
 
     @Override
     public List<Node> getOperandList() {
-        return ImmutableNullableList.of( name, columns, query );
+        return ImmutableList.of( name, columns, query );
     }
 
 
     @Override
     public List<SqlNode> getSqlOperandList() {
-        return ImmutableNullableList.of( name, columns, query );
+        return ImmutableList.of( name, columns, query );
     }
 
 
@@ -245,7 +260,7 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
                                 partitionGroupNamesList.stream().map( n -> (Identifier) n ).collect( Collectors.toList() ),
                                 numPartitionGroups,
                                 numPartitions,
-                                partitionQualifierList.stream().map( l -> l.stream().map( e -> (Node) e ).collect( Collectors.toList() ) ).collect( Collectors.toList() ), // TODO DL, there needs to be a better way...
+                                partitionQualifierList.stream().map( l -> l.stream().map( e -> (Node) e ).toList() ).toList(),
                                 rawPartitionInfo ),
                         stores,
                         statement );
@@ -263,8 +278,7 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
 
         int position = 1;
         for ( Ord<SqlNode> c : Ord.zip( columns.getSqlList() ) ) {
-            if ( c.e instanceof SqlColumnDeclaration ) {
-                final SqlColumnDeclaration columnDeclaration = (SqlColumnDeclaration) c.e;
+            if ( c.e instanceof SqlColumnDeclaration columnDeclaration ) {
 
                 PolyValue defaultValue = columnDeclaration.getExpression() == null ? null : SqlLiteral.toPoly( columnDeclaration.getExpression() );
 
@@ -276,8 +290,7 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
                                 defaultValue,
                                 position ) );
 
-            } else if ( c.e instanceof SqlKeyConstraint ) {
-                SqlKeyConstraint constraint = (SqlKeyConstraint) c.e;
+            } else if ( c.e instanceof SqlKeyConstraint constraint ) {
                 String constraintName = constraint.getName() != null ? constraint.getName().getSimple() : null;
 
                 constraintInformation.add( getConstraintInformation( constraintName, constraint ) );
@@ -294,27 +307,22 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
 
     @NotNull
     private ConstraintInformation getConstraintInformation( String constraintName, SqlKeyConstraint constraint ) {
-        switch ( constraint.getConstraintType() ) {
-            case PRIMARY:
-            case UNIQUE:
-                return new ConstraintInformation(
-                        constraintName,
-                        constraint.getConstraintType(),
-                        constraint.getColumns().getSqlList().stream()
-                                .map( SqlNode::toString )
-                                .collect( Collectors.toList() ) );
-            case FOREIGN:
-                return new ConstraintInformation(
-                        constraintName,
-                        constraint.getConstraintType(),
-                        constraint.getColumns().getSqlList().stream()
-                                .map( SqlNode::toString )
-                                .collect( Collectors.toList() ),
-                        ((SqlForeignKeyConstraint) constraint).getReferencedTable().toString(),
-                        ((SqlForeignKeyConstraint) constraint).getReferencedColumn().toString() );
-            default:
-                throw new AssertionError( constraint.getConstraintType() );
-        }
+        return switch ( constraint.getConstraintType() ) {
+            case PRIMARY, UNIQUE -> new ConstraintInformation(
+                    constraintName,
+                    constraint.getConstraintType(),
+                    constraint.getFields().getSqlList().stream()
+                            .map( SqlNode::toString )
+                            .collect( Collectors.toList() ) );
+            case FOREIGN -> new ConstraintInformation(
+                    constraintName,
+                    constraint.getConstraintType(),
+                    constraint.getFields().getSqlList().stream()
+                            .map( SqlNode::toString )
+                            .collect( Collectors.toList() ),
+                    ((SqlForeignKeyConstraint) constraint).getReferencedEntity().toString(),
+                    ((SqlForeignKeyConstraint) constraint).getReferencedField().toString() );
+        };
     }
 
 

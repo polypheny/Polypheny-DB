@@ -14,6 +14,7 @@ public interface BackgroundTask {
     }
 
 
+    @Getter
     enum TaskSchedulingType {
         EVERY_SECOND( 1000, TaskDelayType.DELAYED ),
         EVERY_FIVE_SECONDS( 5000, TaskDelayType.DELAYED ),
@@ -33,9 +34,7 @@ public interface BackgroundTask {
         EVERY_FIFTEEN_MINUTES_FIXED( 900000, TaskDelayType.FIXED ),
         EVERY_THIRTY_MINUTES_FIXED( 1800000, TaskDelayType.FIXED );
 
-        @Getter
         private final TaskDelayType delayType;
-        @Getter
         private final long millis;
 
 

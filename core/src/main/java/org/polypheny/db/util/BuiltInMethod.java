@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,7 +51,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TimeZone;
-import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.EnumerableDefaults;
@@ -70,7 +69,6 @@ import org.apache.calcite.linq4j.tree.FunctionExpression;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.java.ReflectiveSchema;
 import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.enumerable.AggregateLambdaFactory;
@@ -101,10 +99,10 @@ import org.polypheny.db.algebra.metadata.BuiltInMetadata.Parallelism;
 import org.polypheny.db.algebra.metadata.BuiltInMetadata.PercentageOriginalRows;
 import org.polypheny.db.algebra.metadata.BuiltInMetadata.PopulationSize;
 import org.polypheny.db.algebra.metadata.BuiltInMetadata.Predicates;
-import org.polypheny.db.algebra.metadata.BuiltInMetadata.RowCount;
 import org.polypheny.db.algebra.metadata.BuiltInMetadata.Selectivity;
 import org.polypheny.db.algebra.metadata.BuiltInMetadata.Size;
 import org.polypheny.db.algebra.metadata.BuiltInMetadata.TableReferences;
+import org.polypheny.db.algebra.metadata.BuiltInMetadata.TupleCount;
 import org.polypheny.db.algebra.metadata.BuiltInMetadata.UniqueKeys;
 import org.polypheny.db.algebra.metadata.Metadata;
 import org.polypheny.db.catalog.snapshot.Snapshot;
@@ -112,13 +110,12 @@ import org.polypheny.db.functions.CrossModelFunctions;
 import org.polypheny.db.functions.CypherFunctions;
 import org.polypheny.db.functions.Functions;
 import org.polypheny.db.functions.Functions.FlatProductInputType;
-import org.polypheny.db.functions.GeoFunctions;
 import org.polypheny.db.functions.MqlFunctions;
-import org.polypheny.db.functions.RefactorFunctions;
 import org.polypheny.db.functions.TemporalFunctions;
 import org.polypheny.db.interpreter.Context;
 import org.polypheny.db.interpreter.Row;
 import org.polypheny.db.interpreter.Scalar;
+import org.polypheny.db.nodes.TimeUnitRange;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.runtime.ArrayBindable;
 import org.polypheny.db.runtime.BinarySearch;
@@ -128,12 +125,10 @@ import org.polypheny.db.runtime.Enumerables;
 import org.polypheny.db.runtime.RandomFunction;
 import org.polypheny.db.runtime.SortedMultiMap;
 import org.polypheny.db.runtime.Utilities;
-import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.types.QueryableEntity;
 import org.polypheny.db.schema.types.ScannableEntity;
 import org.polypheny.db.type.entity.PolyBoolean;
-import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.type.entity.PolyInterval;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyString;
@@ -145,7 +140,6 @@ import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.type.entity.graph.PolyNode;
 import org.polypheny.db.type.entity.graph.PolyPath;
-import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.type.entity.temporal.PolyDate;
 import org.polypheny.db.type.entity.temporal.PolyTime;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
@@ -169,19 +163,12 @@ public enum BuiltInMethod {
     BATCH_ITERATOR_GET_ENUM( BatchIteratorEnumerable.class, "getEnumerable" ),
     INTO( ExtendedEnumerable.class, "into", Collection.class ),
     REMOVE_ALL( ExtendedEnumerable.class, "removeAll", Collection.class ),
-    SCHEMA_GET_SUB_SCHEMA( Namespace.class, "getSubNamespace", String.class ),
 
-    SCHEMA_GET_TABLE( Namespace.class, "getEntity", String.class ),
     SCHEMA_PLUS_UNWRAP( SchemaPlus.class, "unwrapOrThrow", Class.class ),
-    /*SCHEMAS_ENUMERABLE_SCANNABLE( Schemas.class, "enumerable", ScannableEntity.class, DataContext.class ),
-    SCHEMAS_ENUMERABLE_FILTERABLE( Schemas.class, "enumerable", FilterableEntity.class, DataContext.class ),
-    SCHEMAS_ENUMERABLE_PROJECTABLE_FILTERABLE( Schemas.class, "enumerable", ProjectableFilterableEntity.class, DataContext.class ),
-    SCHEMAS_QUERYABLE( Schemas.class, "queryable", DataContext.class, Snapshot.class, Class.class, String.class ),*/
-    REFLECTIVE_SCHEMA_GET_TARGET( ReflectiveSchema.class, "getTarget" ),
     DATA_CONTEXT_GET( DataContext.class, "get", String.class ),
     DATA_CONTEXT_GET_PARAMETER_VALUE( DataContext.class, "getParameterValue", long.class ),
     DATA_CONTEXT_GET_ROOT_SCHEMA( DataContext.class, "getSnapshot" ),
-    //JDBC_SCHEMA_DATA_SOURCE( JdbcSchema.class, "getDataSource" ),
+
     ROW_VALUE( Row.class, "getObject", int.class ),
     ROW_AS_COPY( Row.class, "asCopy", Object[].class ),
     JOIN( ExtendedEnumerable.class, "hashJoin", Enumerable.class, Function1.class, Function1.class, Function2.class, EqualityComparer.class, boolean.class,
@@ -189,7 +176,6 @@ public enum BuiltInMethod {
     MERGE_JOIN( EnumerableDefaults.class, "mergeJoin", Enumerable.class, Enumerable.class, Function1.class, Function1.class, Function2.class, boolean.class, boolean.class ),
     SLICE0( Enumerables.class, "slice0", Enumerable.class ),
     SEMI_JOIN( EnumerableDefaults.class, "semiJoin", Enumerable.class, Enumerable.class, Function1.class, Function1.class ),
-    // THETA_JOIN( Functions.class, "thetaJoin", Enumerable.class, Enumerable.class, Predicate2.class, Function2.class, boolean.class, boolean.class ), // todo fix
     SINGLE_SUM( Functions.class, "singleSum", Enumerable.class ),
     CORRELATE_JOIN( ExtendedEnumerable.class, "correlateJoin", JoinType.class, Function1.class, Function2.class ),
     SELECT( ExtendedEnumerable.class, "select", Function1.class ),
@@ -407,7 +393,7 @@ public enum BuiltInMethod {
     COLLATIONS( Collation.class, "collations" ),
     DISTRIBUTION( Distribution.class, "distribution" ),
     NODE_TYPES( NodeTypes.class, "getNodeTypes" ),
-    ROW_COUNT( RowCount.class, "getRowCount" ),
+    TUPLE_COUNT( TupleCount.class, "getTupleCount" ),
     MAX_ROW_COUNT( MaxRowCount.class, "getMaxRowCount" ),
     MIN_ROW_COUNT( MinRowCount.class, "getMinRowCount" ),
     DISTINCT_ROW_COUNT( DistinctRowCount.class, "getDistinctRowCount", ImmutableBitSet.class, RexNode.class ),
@@ -437,67 +423,6 @@ public enum BuiltInMethod {
     AGG_LAMBDA_FACTORY_ACC_SINGLE_GROUP_RESULT_SELECTOR( AggregateLambdaFactory.class, "singleGroupResultSelector", Function1.class ),
     RESULTSET_GETBYTES( ResultSet.class, "getBytes", int.class ),
     RESULTSET_GETBINARYSTREAM( ResultSet.class, "getBinaryStream", int.class ),
-    UNWRAP_INTERVAL( RefactorFunctions.class, "unwrap", PolyInterval.class ),
-    // GEO METHODS
-    ST_GEOMFROMTEXT( GeoFunctions.class, "stGeomFromText", PolyString.class ),
-    ST_GEOMFROMTWKB( GeoFunctions.class, "stGeomFromTWKB", PolyString.class ),
-    ST_GEOMFROMGEOJSON( GeoFunctions.class, "stGeomFromGeoJson", PolyString.class ),
-    ST_ASTEXT( GeoFunctions.class, "stAsText", PolyGeometry.class ),
-    ST_ASTWKB( GeoFunctions.class, "stAsTWKB", PolyGeometry.class ),
-    ST_ASGEOJSON( GeoFunctions.class, "stAsGeoJson", PolyGeometry.class ),
-    ST_TRANSFORM( GeoFunctions.class, "stTransform", PolyGeometry.class, PolyNumber.class ),
-    // Common properties
-    ST_ISSIMPLE( GeoFunctions.class, "stIsSimple", PolyGeometry.class ),
-    ST_ISEMPTY( GeoFunctions.class, "stIsEmpty", PolyGeometry.class ),
-    ST_NUMPOINTS( GeoFunctions.class, "stNumPoints", PolyGeometry.class ),
-    ST_DIMENSION( GeoFunctions.class, "stDimension", PolyGeometry.class ),
-    ST_LENGTH( GeoFunctions.class, "stLength", PolyGeometry.class ),
-    ST_AREA( GeoFunctions.class, "stArea", PolyGeometry.class ),
-    ST_ENVELOPE( GeoFunctions.class, "stEnvelope", PolyGeometry.class ),
-    ST_BOUNDARY( GeoFunctions.class, "stBoundary", PolyGeometry.class ),
-    ST_BOUNDARYDIMENSION( GeoFunctions.class, "stBoundaryDimension", PolyGeometry.class ),
-    ST_CONVEXHULL( GeoFunctions.class, "stConvexHull", PolyGeometry.class ),
-    ST_CENTROID( GeoFunctions.class, "stCentroid", PolyGeometry.class ),
-    ST_REVERSE( GeoFunctions.class, "stReverse", PolyGeometry.class ),
-    ST_BUFFER( GeoFunctions.class, "stBuffer", PolyGeometry.class, PolyNumber.class ),
-    // Spatial relationships
-    ST_EQUALS( GeoFunctions.class, "stEquals", PolyGeometry.class, PolyGeometry.class ),
-    ST_DWITHIN( GeoFunctions.class, "stDWithin", PolyGeometry.class, PolyGeometry.class, PolyNumber.class ),
-    ST_DISJOINT( GeoFunctions.class, "stDisjoint", PolyGeometry.class, PolyGeometry.class ),
-    ST_TOUCHES( GeoFunctions.class, "stTouches", PolyGeometry.class, PolyGeometry.class ),
-    ST_INTERSECTS( GeoFunctions.class, "stIntersects", PolyGeometry.class, PolyGeometry.class ),
-    ST_CROSSES( GeoFunctions.class, "stCrosses", PolyGeometry.class, PolyGeometry.class ),
-    ST_WITHIN( GeoFunctions.class, "stWithin", PolyGeometry.class, PolyGeometry.class ),
-    ST_CONTAINS( GeoFunctions.class, "stContains", PolyGeometry.class, PolyGeometry.class ),
-    ST_OVERLAPS( GeoFunctions.class, "stOverlaps", PolyGeometry.class, PolyGeometry.class ),
-    ST_COVERS( GeoFunctions.class, "stCovers", PolyGeometry.class, PolyGeometry.class ),
-    ST_COVEREDBY( GeoFunctions.class, "stCoveredBy", PolyGeometry.class, PolyGeometry.class ),
-    ST_RELATE( GeoFunctions.class, "stRelate", PolyGeometry.class, PolyGeometry.class, PolyString.class ),
-    // Yield metric values
-    ST_DISTANCE( GeoFunctions.class, "stDistance", PolyGeometry.class, PolyGeometry.class ),
-    // Set operations
-    ST_INTERSECTION( GeoFunctions.class, "stIntersection", PolyGeometry.class, PolyGeometry.class ),
-    ST_UNION( GeoFunctions.class, "stUnion", PolyGeometry.class, PolyGeometry.class ),
-    ST_DIFFERENCE( GeoFunctions.class, "stDifference", PolyGeometry.class, PolyGeometry.class ),
-    ST_SYMDIFFERENCE( GeoFunctions.class, "stSymDifference", PolyGeometry.class, PolyGeometry.class ),
-    // on Points
-    ST_X( GeoFunctions.class, "stX", PolyGeometry.class ),
-    ST_Y( GeoFunctions.class, "stY", PolyGeometry.class ),
-    ST_Z( GeoFunctions.class, "stZ", PolyGeometry.class ),
-    // on LineStrings
-    ST_ISCLOSED( GeoFunctions.class, "stIsClosed", PolyGeometry.class ),
-    ST_ISRING( GeoFunctions.class, "stIsRing", PolyGeometry.class ),
-    ST_ISCOORDINATE( GeoFunctions.class, "stIsCoordinate", PolyGeometry.class, PolyGeometry.class ),
-    ST_STARTPOINT( GeoFunctions.class, "stStartPoint", PolyGeometry.class ),
-    ST_ENDPOINT( GeoFunctions.class, "stEndPoint", PolyGeometry.class ),
-    // on Polygons
-    ST_ISRECTANGLE( GeoFunctions.class, "stIsRectangle", PolyGeometry.class ),
-    ST_EXTERIORRING( GeoFunctions.class, "stExteriorRing", PolyGeometry.class ),
-    ST_NUMINTERIORRING( GeoFunctions.class, "stNumInteriorRing", PolyGeometry.class ),
-    ST_INTERIORRINGN( GeoFunctions.class, "stInteriorRingN", PolyGeometry.class, PolyInteger.class ),
-    // on GeometryCollection
-    ST_NUMGEOMETRIES( GeoFunctions.class, "stNumGeometries", PolyGeometry.class ),
-    ST_GEOMETRYN( GeoFunctions.class, "stGeometryN", PolyGeometry.class, PolyInteger.class ),
     /// MQL BUILT-IN METHODS
     MQL_EQ( MqlFunctions.class, "docEq", PolyValue.class, PolyValue.class ),
     MQL_GT( MqlFunctions.class, "docGt", PolyValue.class, PolyValue.class ),
@@ -521,10 +446,6 @@ public enum BuiltInMethod {
     MQL_EXISTS( MqlFunctions.class, "docExists", PolyValue.class, PolyValue.class, List.class ),
     MQL_MERGE( MqlFunctions.class, "mergeDocument", PolyValue.class, PolyList.class, PolyValue[].class ),
     MQL_NOT_UNSET( MqlFunctions.class, "notUnset", PolyValue.class ),
-    MQL_GEO_INTERSECTS( MqlFunctions.class, "docGeoIntersects", PolyValue.class, PolyValue.class ),
-    MQL_GEO_WITHIN( MqlFunctions.class, "docGeoWithin", PolyValue.class, PolyValue.class ),
-    MQL_NEAR( MqlFunctions.class, "docNear", PolyValue.class, PolyValue.class, PolyValue.class, PolyValue.class ),
-    MQL_NEAR_SPHERE( MqlFunctions.class, "docNearSphere", PolyValue.class, PolyValue.class, PolyValue.class, PolyValue.class ),
 
     MQL_PROJECT_INCLUDES( MqlFunctions.class, "projectIncludes", PolyValue.class, PolyList.class, PolyValue[].class ),
     MQL_REPLACE_ROOT( MqlFunctions.class, "replaceRoot", PolyValue.class ),
@@ -548,10 +469,6 @@ public enum BuiltInMethod {
     CYPHER_SET_LABELS( CypherFunctions.class, "setLabels", GraphPropertyHolder.class, List.class, PolyBoolean.class ),
     CYPHER_REMOVE_LABELS( CypherFunctions.class, "removeLabels", GraphPropertyHolder.class, List.class ),
     CYPHER_REMOVE_PROPERTY( CypherFunctions.class, "removeProperty", GraphPropertyHolder.class, String.class ),
-    CYPHER_GEO_DISTANCE( GeoFunctions.class, "stDistance", PolyValue.class, PolyValue.class ),
-    CYPHER_GEO_CONTAINS( GeoFunctions.class, "stContains", PolyValue.class, PolyValue.class ),
-    CYPHER_GEO_INTERSECTS( GeoFunctions.class, "stIntersects", PolyValue.class, PolyValue.class ),
-    CYPHER_GEO_WITHIN( GeoFunctions.class, "stWithin", PolyValue.class, PolyValue.class ),
     TO_NODE( CypherFunctions.class, "toNode", Enumerable.class ),
     TO_EDGE( CypherFunctions.class, "toEdge", Enumerable.class ),
     TO_GRAPH( CypherFunctions.class, "toGraph", Enumerable.class, Enumerable.class ),

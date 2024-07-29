@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,10 +50,10 @@ import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
@@ -74,7 +74,7 @@ import org.polypheny.db.util.JsonBuilder;
  */
 public class MongoFilter extends Filter implements MongoAlg {
 
-    public MongoFilter( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode child, RexNode condition ) {
+    public MongoFilter( AlgCluster cluster, AlgTraitSet traitSet, AlgNode child, RexNode condition ) {
         super( cluster, traitSet, child, condition );
         assert getConvention() == CONVENTION;
         assert getConvention() == child.getConvention();
@@ -82,7 +82,7 @@ public class MongoFilter extends Filter implements MongoAlg {
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         return super.computeSelfCost( planner, mq ).multiplyBy( 0.1 );
     }
 
@@ -98,11 +98,8 @@ public class MongoFilter extends Filter implements MongoAlg {
         implementor.visitChild( 0, getInput() );
         // to not break the existing functionality for now we have to handle it this way
         Translator translator;
-        /*if ( implementor.getStaticRowType() != null && implementor.getStaticRowType() instanceof MongoRowType ) {
-            translator = new Translator( MongoRules.mongoFieldNames( getRowType() ), (MongoRowType) implementor.getStaticRowType(), implementor );
-        } else {*/
+
         translator = new Translator( MongoRules.mongoFieldNames( getTupleType() ), getTupleType(), implementor );
-        //}
         translator.translateMatch( condition, implementor );
     }
 
@@ -228,7 +225,7 @@ public class MongoFilter extends Filter implements MongoAlg {
                 } else if ( entry.getKey().equals( "$or" ) || entry.getKey().equals( "$and" ) ) {
                     doc.put( entry.getKey(), new BsonArray( entry.getValue() ) );
                 } else {
-                    ands.addAll( entry.getValue().stream().map( e -> new BsonDocument( entry.getKey(), e ) ).collect( Collectors.toList() ) );
+                    ands.addAll( entry.getValue().stream().map( e -> new BsonDocument( entry.getKey(), e ) ).toList() );
                 }
             }
             if ( !ands.isEmpty() ) {
@@ -348,18 +345,6 @@ public class MongoFilter extends Filter implements MongoAlg {
                     return;
                 case MQL_EXISTS:
                     translateExists( (RexCall) node );
-                    return;
-                case MQL_GEO_INTERSECTS:
-                    translateGeoIntersects( (RexCall) node );
-                    return;
-                case MQL_GEO_WITHIN:
-                    translateGeoWithin( (RexCall) node );
-                    return;
-                case MQL_NEAR:
-                    translateNear( (RexCall) node );
-                    return;
-                case MQL_NEAR_SPHERE:
-                    translateNearSphere( (RexCall) node );
                     return;
                 case DYNAMIC_PARAM:
                     translateBooleanDyn( (RexDynamicParam) node );
@@ -590,7 +575,9 @@ public class MongoFilter extends Filter implements MongoAlg {
 
             if ( node.operands.get( 1 ).isA( Kind.DYNAMIC_PARAM ) ) {
                 BsonDynamic identifier = new BsonDynamic( node.operands.get( 2 ).unwrap( RexDynamicParam.class )
-                        .orElseThrow() ).setPolyFunction( "joinPoint" ).adjustType( PolyType.VARCHAR );
+                        .orElseThrow() )
+                        .setPolyFunction( "joinPoint" )
+                        .adjustType( PolyType.VARCHAR );
                 BsonKeyValue keyValue = new BsonKeyValue( identifier, new BsonDocument().append( "$exists", new BsonDynamic( node.operands.get( 1 ).unwrap( RexDynamicParam.class ).orElseThrow() ) ) );
                 attachCondition( null, keyValue.placeholderKey, keyValue );
             } else if ( node.operands.get( 2 ).unwrap( RexCall.class ).isPresent() ) {
@@ -699,97 +686,6 @@ public class MongoFilter extends Filter implements MongoAlg {
             BsonValue value = getParamAsValue( node.operands.get( 1 ) );
             attachCondition( null, left, new BsonDocument( "$size", value ) );
 
-        }
-
-
-        /**
-         * Translates a {@link Kind#MQL_GEO_INTERSECTS } to its form:
-         * <pre>
-         *      { <field>: { $geoIntersects: { $geometry: {<GeoJSON>} } }
-         * </pre>
-         *
-         * @param node the untranslated node
-         */
-        private void translateGeoIntersects( RexCall node ) {
-            if ( node.operands.size() != 2 ) {
-                return;
-            }
-            // field
-            String left = getParamAsKey( node.operands.get( 0 ) );
-            // $geometry
-            BsonValue geometry = getParamAsValue( node.operands.get( 1 ) );
-            attachCondition( null, left, new BsonDocument()
-                    .append( "$geoIntersects", new BsonDocument()
-                            .append( "$geometry", geometry ) ) );
-        }
-
-
-        /**
-         * Translates a {@link Kind#MQL_GEO_WITHIN } to its form:
-         * <pre>
-         *      { <field>: { $geoWithin: { $geometry: {<GeoJSON>} } }
-         * </pre>
-         *
-         * @param node the untranslated node
-         */
-        private void translateGeoWithin( RexCall node ) {
-            if ( node.operands.size() != 2 ) {
-                return;
-            }
-            // field
-            String left = getParamAsKey( node.operands.get( 0 ) );
-            // $geometry
-            BsonValue geometry = getParamAsValue( node.operands.get( 1 ) );
-            attachCondition( null, left, new BsonDocument()
-                    .append( "$geoWithin", new BsonDocument()
-                            .append( "$geometry", geometry ) ) );
-        }
-
-
-        /**
-         * Translates a {@link Kind#MQL_NEAR } to its form:
-         * <pre>
-         *      { <field>: { $near: { $geometry: {<GeoJSON>}, $minDistance: <minDistance>, $maxDistance: <maxDistance> } }
-         * </pre>
-         *
-         * @param node the untranslated node
-         */
-        private void translateNear( RexCall node ) {
-            attachNearCondition( node, false );
-        }
-
-
-        /**
-         * Translates a {@link Kind#MQL_NEAR_SPHERE } to its form:
-         * <pre>
-         *      { <field>: { $nearSphere: { $geometry: {<GeoJSON>}, $minDistance: <minDistance>, $maxDistance: <maxDistance> } }
-         * </pre>
-         *
-         * @param node the untranslated node
-         */
-        private void translateNearSphere( RexCall node ) {
-            attachNearCondition( node, true );
-        }
-
-
-        private void attachNearCondition( RexCall node, boolean spherical ) {
-            String opName = spherical ? "$nearSphere" : "$near";
-            if ( node.operands.size() != 4 ) {
-                return;
-            }
-            // field
-            String left = getParamAsKey( node.operands.get( 0 ) );
-            // $geometry
-            BsonValue geometry = getParamAsValue( node.operands.get( 1 ) );
-            // $minDistance
-            BsonValue minDistance = getParamAsValue( node.operands.get( 2 ) );
-            // $maxDistance
-            BsonValue maxDistance = getParamAsValue( node.operands.get( 3 ) );
-            attachCondition( null, left, new BsonDocument()
-                    .append( opName, new BsonDocument()
-                            .append( "$geometry", geometry )
-                            .append( "$minDistance", minDistance )
-                            .append( "$maxDistance", maxDistance ) ) );
         }
 
 
@@ -1141,16 +1037,17 @@ public class MongoFilter extends Filter implements MongoAlg {
             String randomName = getRandomName();
             this.preProjections.put( randomName, BsonFunctionHelper.getFunction( right, rowType, implementor ) );
 
-            switch ( left.getKind() ) {
-                case LITERAL:
+            return switch ( left.getKind() ) {
+                case LITERAL -> {
                     attachCondition( op, randomName, BsonUtil.getAsBson( (RexLiteral) left, bucket ) );
-                    return true;
-                case DYNAMIC_PARAM:
+                    yield true;
+                }
+                case DYNAMIC_PARAM -> {
                     attachCondition( op, randomName, new BsonDynamic( (RexDynamicParam) left ) );
-                    return true;
-                default:
-                    return false;
-            }
+                    yield true;
+                }
+                default -> false;
+            };
 
         }
 

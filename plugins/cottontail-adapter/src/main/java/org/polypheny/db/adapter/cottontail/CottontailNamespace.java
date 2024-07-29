@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,23 +17,16 @@
 package org.polypheny.db.adapter.cottontail;
 
 
-import com.google.common.collect.ImmutableMap;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.Getter;
 import lombok.NonNull;
-import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.catalog.entity.Entity;
-import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.schema.Namespace;
-import org.polypheny.db.schema.Namespace.Schema;
-import org.polypheny.db.schema.SchemaVersion;
-import org.polypheny.db.schema.impl.AbstractNamespace;
 import org.vitrivr.cottontail.grpc.CottontailGrpc;
 
 
-public class CottontailNamespace extends AbstractNamespace implements Schema {
+public class CottontailNamespace extends Namespace {
 
     @Getter
     private final CottontailConvention convention = CottontailConvention.INSTANCE;
@@ -59,7 +52,7 @@ public class CottontailNamespace extends AbstractNamespace implements Schema {
             Map<String, String> physicalToLogicalTableNameMap,
             CottontailStore cottontailStore,
             String name ) {
-        super( id );
+        super( id, cottontailStore.adapterId );
         this.wrapper = wrapper;
         this.tableMap = tableMap;
         this.physicalToLogicalTableNameMap = physicalToLogicalTableNameMap;
@@ -74,7 +67,7 @@ public class CottontailNamespace extends AbstractNamespace implements Schema {
             CottontailWrapper wrapper,
             CottontailStore cottontailStore,
             String name ) {
-        super( id );
+        super( id, cottontailStore.adapterId );
         this.wrapper = wrapper;
         this.cottontailStore = cottontailStore;
         this.tableMap = new HashMap<>();
@@ -90,7 +83,6 @@ public class CottontailNamespace extends AbstractNamespace implements Schema {
             CottontailWrapper wrapper,
             CottontailStore cottontailStore
     ) {
-        //final CottontailConvention convention = CottontailConvention.of( name );
         return new CottontailNamespace( id, wrapper, cottontailStore, name );
     }
 
@@ -100,27 +92,5 @@ public class CottontailNamespace extends AbstractNamespace implements Schema {
         dataContext.getStatement().getTransaction().registerInvolvedAdapter( this.cottontailStore );
     }
 
-
-    @Override
-    public Namespace snapshot( SchemaVersion version ) {
-        return new CottontailNamespace(
-                this.id,
-                this.wrapper,
-                this.tableMap,
-                this.physicalToLogicalTableNameMap,
-                this.cottontailStore,
-                this.name );
-    }
-
-    @Override
-    public Expression getExpression( Snapshot snapshot, long id ) {
-        return null;
-    }
-
-
-    @Override
-    protected Map<String, Entity> getTables() {
-        return ImmutableMap.copyOf( this.tableMap );
-    }
 
 }

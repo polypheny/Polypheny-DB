@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,10 +24,11 @@ import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.enumerable.EnumerableConvention;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.tools.AlgBuilderFactory;
+import org.polypheny.db.util.Util;
 
 
 /**
- * Rule to convert a relational expression from {@link MongoAlg#CONVENTION} to {@link EnumerableConvention}.
+ * Rule to convert an algebra expression from {@link MongoAlg#CONVENTION} to {@link EnumerableConvention}.
  */
 public class MongoToEnumerableConverterRule extends ConverterRule {
 
@@ -37,12 +38,12 @@ public class MongoToEnumerableConverterRule extends ConverterRule {
     /**
      * Creates a MongoToEnumerableConverterRule.
      *
-     * @param algBuilderFactory Builder for relational expressions
+     * @param algBuilderFactory Builder for algebra expressions
      */
     public MongoToEnumerableConverterRule( AlgBuilderFactory algBuilderFactory ) {
         super(
                 AlgNode.class,
-                r -> true,
+                Util::containsEntity,
                 MongoAlg.CONVENTION,
                 EnumerableConvention.INSTANCE,
                 algBuilderFactory,

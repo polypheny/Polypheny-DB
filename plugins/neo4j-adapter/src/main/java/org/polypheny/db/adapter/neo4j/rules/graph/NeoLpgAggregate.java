@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,9 +35,9 @@ import org.polypheny.db.algebra.core.lpg.LpgProject;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNameRef;
@@ -51,7 +51,7 @@ public class NeoLpgAggregate extends LpgAggregate implements NeoGraphAlg {
      * @param cluster Cluster this expression belongs to
      * @param traits Traits active for this node, including {@link org.polypheny.db.catalog.logistic.DataModel#GRAPH}
      */
-    public NeoLpgAggregate( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, @NotNull List<RexNameRef> groups, List<LaxAggregateCall> aggCalls, AlgDataType tupleType ) {
+    public NeoLpgAggregate( AlgCluster cluster, AlgTraitSet traits, AlgNode child, @NotNull List<RexNameRef> groups, List<LaxAggregateCall> aggCalls, AlgDataType tupleType ) {
         super( cluster, traits, child, groups, aggCalls, tupleType );
     }
 
@@ -63,7 +63,7 @@ public class NeoLpgAggregate extends LpgAggregate implements NeoGraphAlg {
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         return super.computeSelfCost( planner, mq ).multiplyBy( 0.2 );
     }
 

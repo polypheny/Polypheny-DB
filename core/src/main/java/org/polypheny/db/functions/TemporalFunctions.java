@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,27 +17,31 @@
 package org.polypheny.db.functions;
 
 import java.sql.Timestamp;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.Date;
 import java.util.TimeZone;
-import org.apache.calcite.avatica.util.DateTimeUtils;
-import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.apache.calcite.linq4j.function.NonDeterministic;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.nodes.TimeUnitRange;
 import org.polypheny.db.type.entity.PolyInterval;
-import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.category.PolyTemporal;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.type.entity.temporal.PolyDate;
 import org.polypheny.db.type.entity.temporal.PolyTime;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 import org.polypheny.db.util.TimeWithTimeZoneString;
 import org.polypheny.db.util.TimestampWithTimeZoneString;
+import org.polypheny.db.util.temporal.DateTimeUtils;
 
 public class TemporalFunctions {
 
     public static final TimeZone LOCAL_TZ = TimeZone.getDefault();
+    public static final String TIMEZONE = System.getProperty( "user.timezone" );
 
 
     @SuppressWarnings("unused")
@@ -60,13 +64,13 @@ public class TemporalFunctions {
 
     @SuppressWarnings("unused")
     public static PolyString intervalYearMonthToString( PolyInterval interval, TimeUnitRange unit ) {
-        return PolyString.of( DateTimeUtils.intervalYearMonthToString( interval.value.intValue(), unit ) );
+        return PolyString.of( DateTimeUtils.intervalYearMonthToString( interval.millis.intValue(), unit ) );
     }
 
 
     @SuppressWarnings("unused")
     public static PolyString intervalDayTimeToString( PolyInterval interval, TimeUnitRange unit, PolyNumber scale ) {
-        return PolyString.of( DateTimeUtils.intervalDayTimeToString( interval.value.intValue(), unit, scale.intValue() ) );
+        return PolyString.of( DateTimeUtils.intervalDayTimeToString( interval.millis.intValue(), unit, scale.intValue() ) );
     }
 
 
@@ -398,7 +402,7 @@ public class TemporalFunctions {
      * Converse of {@link #internalToTime(PolyNumber)}.
      */
     public static long timeToLong( java.sql.Time v ) {
-        return toLong( v, LOCAL_TZ );//% DateTimeUtils.MILLIS_PER_DAY);
+        return toLong( v, LOCAL_TZ );
     }
 
 
@@ -433,6 +437,7 @@ public class TemporalFunctions {
     }
 
 
+    @SuppressWarnings("unused")
     public static Long toLongOptional( Timestamp v ) {
         if ( v == null ) {
             return null;
@@ -476,8 +481,8 @@ public class TemporalFunctions {
     @NonDeterministic
     @SuppressWarnings("unused")
     public static PolyTimestamp currentTimestamp( DataContext root ) {
-        // Cast required for JDK 1.6.
-        return PolyTimestamp.of( (long) DataContext.Variable.CURRENT_TIMESTAMP.get( root ) );
+        Date date = new Date();
+        return PolyTimestamp.of( date.getTime() + timeZone( root ).getRawOffset() );
     }
 
 
@@ -507,17 +512,18 @@ public class TemporalFunctions {
         if ( time < 0 ) {
             --date;
         }
-        return PolyDate.of( date );
+        return PolyDate.ofDays( date );
     }
 
 
     /**
      * SQL {@code LOCAL_TIMESTAMP} function.
      */
+    @NotNull
     @NonDeterministic
-    public static long localTimestamp( DataContext root ) {
-        // Cast required for JDK 1.6.
-        return DataContext.Variable.LOCAL_TIMESTAMP.get( root );
+    public static PolyTimestamp localTimestamp( DataContext root ) {
+        ZonedDateTime now = ZonedDateTime.now( ZoneId.of( TIMEZONE ) );
+        return PolyTimestamp.of( (now.toEpochSecond() + now.getOffset().getTotalSeconds()) * DateTimeUtils.MILLIS_PER_SECOND );
     }
 
 
@@ -527,13 +533,14 @@ public class TemporalFunctions {
     @SuppressWarnings("unused")
     @NonDeterministic
     public static PolyTime localTime( DataContext root ) {
-        return PolyTime.of( (int) (localTimestamp( root ) % DateTimeUtils.MILLIS_PER_DAY) );
+        ZonedDateTime now = ZonedDateTime.now( ZoneId.of( TIMEZONE ) );
+        return PolyTime.of( ((now.toEpochSecond() + now.getOffset().getTotalSeconds()) * DateTimeUtils.MILLIS_PER_SECOND) % DateTimeUtils.MILLIS_PER_DAY );
     }
 
 
     @NonDeterministic
     public static TimeZone timeZone( DataContext root ) {
-        return DataContext.Variable.TIME_ZONE.get( root );
+        return TimeZone.getTimeZone( TIMEZONE );
     }
 
 

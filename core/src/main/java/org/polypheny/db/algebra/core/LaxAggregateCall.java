@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
@@ -68,7 +68,7 @@ public class LaxAggregateCall {
     }
 
 
-    public AggregateCall toAggCall( AlgDataType rowType, AlgOptCluster cluster ) {
+    public AggregateCall toAggCall( AlgDataType rowType, AlgCluster cluster ) {
         int index = rowType.getFieldNames().indexOf( name );
         if ( index < 0 && getInput().isPresent() && getInput().get().unwrap( RexIndexRef.class ).isPresent() ) {
             index = getInput().get().unwrap( RexIndexRef.class ).get().getIndex();
@@ -78,7 +78,7 @@ public class LaxAggregateCall {
     }
 
 
-    public AlgDataType getType( AlgOptCluster cluster ) {
+    public AlgDataType getType( AlgCluster cluster ) {
         AlgDataType type = getType( cluster, function );
         if ( type == null ) {
             throw new GenericRuntimeException( "Unknown aggregate function: " + function.getKind() );
@@ -87,7 +87,7 @@ public class LaxAggregateCall {
     }
 
 
-    public static AlgDataType getType( AlgOptCluster cluster, AggFunction function ) {
+    public static AlgDataType getType( AlgCluster cluster, AggFunction function ) {
         return switch ( function.getKind() ) {
             case COUNT -> cluster.getTypeFactory().createPolyType( PolyType.BIGINT );
             case SUM, AVG, MIN, MAX -> cluster.getTypeFactory().createTypeWithNullability( cluster.getTypeFactory().createPolyType( PolyType.DOUBLE ), true );
@@ -96,7 +96,7 @@ public class LaxAggregateCall {
     }
 
 
-    public Optional<AlgDataType> requiresCast( AlgOptCluster cluster ) {
+    public Optional<AlgDataType> requiresCast( AlgCluster cluster ) {
         return switch ( function.getKind() ) {
             case COUNT -> Optional.empty();
             case SUM, AVG, MAX, MIN -> Optional.ofNullable( cluster.getTypeFactory().createTypeWithNullability( cluster.getTypeFactory().createPolyType( PolyType.DOUBLE ), true ) );

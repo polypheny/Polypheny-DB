@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,13 @@
 
 package org.polypheny.db.adapter;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import lombok.Getter;
 import lombok.experimental.Accessors;
+import org.polypheny.db.adapter.DeployMode.DeploySetting;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.ConfigObject;
@@ -37,19 +38,22 @@ import org.polypheny.db.config.RuntimeConfig;
 public class BindableAbstractAdapterSettingsList<T extends ConfigObject> extends AbstractAdapterSettingList {
 
     private final transient Function<T, String> mapper;
+    @Getter
     private final transient Class<T> clazz;
-    private Map<Integer, String> alias;
+    @Getter
+    private Map<String, String> alias;
+    @Getter
     private final String nameAlias;
     public RuntimeConfig boundConfig;
 
 
-    public BindableAbstractAdapterSettingsList( String name, String nameAlias, boolean canBeNull, String subOf, boolean required, boolean modifiable, List<T> options, Function<T, String> mapper, Class<T> clazz ) {
-        super( name, canBeNull, subOf, required, modifiable, options.stream().map( ( el ) -> String.valueOf( el.getId() ) ).collect( Collectors.toList() ), new ArrayList<>(), null, 1000 );
+    public BindableAbstractAdapterSettingsList( String name, String nameAlias, boolean canBeNull, String subOf, boolean required, boolean modifiable, List<T> options, List<DeploySetting> appliesTo, Function<T, String> mapper, Class<T> clazz ) {
+        super( name, canBeNull, subOf, required, modifiable, options.stream().map( el -> String.valueOf( el.getId() ) ).toList(), appliesTo, null, 1000 );
         this.mapper = mapper;
         this.clazz = clazz;
         this.dynamic = true;
         this.nameAlias = nameAlias;
-        this.alias = options.stream().collect( Collectors.toMap( ConfigObject::getId, mapper ) );
+        this.alias = options.stream().collect( Collectors.toMap( c -> String.valueOf( c.getId() ), mapper ) );
     }
 
 
@@ -82,8 +86,8 @@ public class BindableAbstractAdapterSettingsList<T extends ConfigObject> extends
 
     public void refreshFromConfig() {
         if ( boundConfig != null ) {
-            options = boundConfig.getList( clazz ).stream().map( ( el ) -> String.valueOf( el.id ) ).collect( Collectors.toList() );
-            alias = boundConfig.getList( clazz ).stream().collect( Collectors.toMap( ConfigObject::getId, mapper ) );
+            options = boundConfig.getList( clazz ).stream().map( el -> String.valueOf( el.id ) ).toList();
+            alias = boundConfig.getList( clazz ).stream().collect( Collectors.toMap( c -> String.valueOf( c.getId() ), mapper ) );
         }
     }
 

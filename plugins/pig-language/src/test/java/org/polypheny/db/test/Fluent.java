@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -73,8 +73,8 @@ class Fluent {
 
 
     public Fluent explainContains( String expected ) throws ParseException {
+        final PigAlgBuilder builder = PigAlgBuilderTest.builder();
         final Program program = parseProgram( pig );
-        final PigAlgBuilder builder = PigAlgBuilder.create( PigRelBuilderTest.config().build() );
         new Handler( builder ).handle( program );
         assertThat( Util.toLinux( AlgOptUtil.toString( builder.peek() ) ), is( expected ) );
         return this;
@@ -113,7 +113,7 @@ class Fluent {
 
     public Fluent returns( Function<String, Void> checker ) throws ParseException {
         final Program program = parseProgram( pig );
-        final PigAlgBuilder builder = PigAlgBuilder.create( PigRelBuilderTest.config().build() );
+        final PigAlgBuilder builder = PigAlgBuilderTest.builder();
         final StringWriter sw = new StringWriter();
         new PolyphenyDbHandler( builder, sw ).handle( program );
         checker.apply( Util.toLinux( sw.toString() ) );

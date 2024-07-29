@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,11 +49,9 @@ import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.AlgOptUtil;
-import org.polypheny.db.plan.volcano.AlgSubset;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexUtil;
-import org.polypheny.db.util.Bug;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.NumberUtil;
@@ -86,7 +84,7 @@ public class AlgMdDistinctRowCount implements MetadataHandler<BuiltInMetadata.Di
         // REVIEW zfong: Broadbase code does not take into consideration selectivity of predicates passed in.  Also, they assume the rows are unique even if the table is not
         boolean uniq = AlgMdUtil.areColumnsDefinitelyUnique( mq, alg, groupKey );
         if ( uniq ) {
-            return NumberUtil.multiply( mq.getRowCount( alg ), mq.getSelectivity( alg, predicate ) );
+            return NumberUtil.multiply( mq.getTupleCount( alg ), mq.getSelectivity( alg, predicate ) );
         }
         return null;
     }
@@ -208,7 +206,7 @@ public class AlgMdDistinctRowCount implements MetadataHandler<BuiltInMetadata.Di
         double selectivity = AlgMdUtil.guessSelectivity( predicate );
 
         // assume half the rows are duplicates
-        double nRows = alg.estimateRowCount( mq ) / 2;
+        double nRows = alg.estimateTupleCount( mq ) / 2;
         return AlgMdUtil.numDistinctVals( nRows, nRows * selectivity );
     }
 
@@ -260,28 +258,8 @@ public class AlgMdDistinctRowCount implements MetadataHandler<BuiltInMetadata.Di
             distinctRowCount *= subRowCount;
         }
 
-        return AlgMdUtil.numDistinctVals( distinctRowCount, mq.getRowCount( alg ) );
+        return AlgMdUtil.numDistinctVals( distinctRowCount, mq.getTupleCount( alg ) );
     }
 
-
-    public Double getDistinctRowCount( AlgSubset alg, AlgMetadataQuery mq, ImmutableBitSet groupKey, RexNode predicate ) {
-        final AlgNode best = alg.getBest();
-        if ( best != null ) {
-            return mq.getDistinctRowCount( best, groupKey, predicate );
-        }
-        if ( !Bug.CALCITE_1048_FIXED ) {
-            return getDistinctRowCount( (AlgNode) alg, mq, groupKey, predicate );
-        }
-        Double d = null;
-        for ( AlgNode r2 : alg.getAlgs() ) {
-            try {
-                Double d2 = mq.getDistinctRowCount( r2, groupKey, predicate );
-                d = NumberUtil.min( d, d2 );
-            } catch ( CyclicMetadataException e ) {
-                // Ignore this relational expression; there will be non-cyclic ones in this set.
-            }
-        }
-        return d;
-    }
 
 }

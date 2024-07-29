@@ -1,9 +1,26 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * This file incorporates code covered by the following terms:
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to you under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -19,6 +36,7 @@ package org.polypheny.db.algebra.enumerable;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Streams;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
@@ -35,7 +53,6 @@ import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.ConstantExpression;
@@ -76,21 +93,20 @@ import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyList;
-import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.category.PolyTemporal;
 import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
+import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.type.entity.temporal.PolyDate;
 import org.polypheny.db.type.entity.temporal.PolyTime;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.ControlFlowException;
-import org.polypheny.db.util.Pair;
-import org.polypheny.db.util.Util;
+import org.polypheny.db.util.temporal.DateTimeUtils;
 
 
 /**
@@ -101,10 +117,8 @@ import org.polypheny.db.util.Util;
 public class RexToLixTranslator {
 
     public static final Map<Method, Operator> JAVA_TO_SQL_METHOD_MAP =
-            Util.mapOf(
-                    findMethod( String.class, "toUpperCase" ), OperatorRegistry.get( OperatorName.UPPER ),
+            Map.of( findMethod( String.class, "toUpperCase" ), OperatorRegistry.get( OperatorName.UPPER ),
                     findMethod( Functions.class, "substring", PolyString.class, PolyNumber.class, PolyNumber.class ), OperatorRegistry.get( OperatorName.SUBSTRING ),
-                    findMethod( Functions.class, "charLength", PolyString.class ), OperatorRegistry.get( OperatorName.CHARACTER_LENGTH ),
                     findMethod( Functions.class, "charLength", PolyString.class ), OperatorRegistry.get( OperatorName.CHAR_LENGTH ),
                     findMethod( Functions.class, "translate3", String.class, String.class, String.class ), OperatorRegistry.get( OperatorName.ORACLE_TRANSLATE3 ) );
 
@@ -195,7 +209,7 @@ public class RexToLixTranslator {
             InputGetter inputGetter, Function1<String, InputGetter> correlates ) {
         List<Type> storageTypes = null;
         if ( outputPhysType != null ) {
-            final AlgDataType rowType = outputPhysType.getRowType();
+            final AlgDataType rowType = outputPhysType.getTupleType();
             storageTypes = new ArrayList<>( rowType.getFieldCount() );
             for ( int i = 0; i < rowType.getFieldCount(); i++ ) {
                 storageTypes.add( outputPhysType.getJavaFieldType( i ) );
@@ -247,52 +261,15 @@ public class RexToLixTranslator {
             case DATE -> switch ( sourceType.getPolyType() ) {
                 case CHAR, VARCHAR -> Expressions.call( BuiltInMethod.STRING_TO_DATE.method, operand );
                 case TIMESTAMP -> Expressions.call( PolyDate.class, "of", Expressions.call( operand, "LongValue" ) );
-                case TIMESTAMP_WITH_LOCAL_TIME_ZONE -> RexImpTable.optimize2(
-                        operand,
-                        Expressions.call(
-                                BuiltInMethod.TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_DATE.method,
-                                operand,
-                                Expressions.call( BuiltInMethod.TIME_ZONE.method, root ) ) );
                 default -> convert;
             };
             case TIME -> switch ( sourceType.getPolyType() ) {
                 case CHAR, VARCHAR -> Expressions.call( BuiltInMethod.STRING_TO_TIME.method, operand );
-                case TIME_WITH_LOCAL_TIME_ZONE -> RexImpTable.optimize2(
-                        operand,
-                        Expressions.call(
-                                BuiltInMethod.TIME_WITH_LOCAL_TIME_ZONE_TO_TIME.method,
-                                operand,
-                                Expressions.call( BuiltInMethod.TIME_ZONE.method, root ) ) );
                 case TIMESTAMP -> Expressions.call( PolyTime.class, "of",
                         Expressions.call(
                                 BuiltInMethod.FLOOR_MOD.method,
                                 Expressions.call( operand, BuiltInMethod.MILLIS_SINCE_EPOCH_POLY.method ),
                                 PolyLong.of( DateTimeUtils.MILLIS_PER_DAY ).asExpression() ) );
-                case TIMESTAMP_WITH_LOCAL_TIME_ZONE -> RexImpTable.optimize2(
-                        operand,
-                        Expressions.call(
-                                BuiltInMethod.TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_TIME.method,
-                                operand,
-                                Expressions.call( BuiltInMethod.TIME_ZONE.method, root ) ) );
-                default -> convert;
-            };
-            case TIME_WITH_LOCAL_TIME_ZONE -> switch ( sourceType.getPolyType() ) {
-                case CHAR, VARCHAR -> Expressions.call( BuiltInMethod.STRING_TO_TIME_WITH_LOCAL_TIME_ZONE.method, operand );
-                case TIME -> Expressions.call(
-                        BuiltInMethod.TIME_STRING_TO_TIME_WITH_LOCAL_TIME_ZONE.method,
-                        RexImpTable.optimize2(
-                                operand,
-                                Expressions.call( BuiltInMethod.UNIX_TIME_TO_STRING.method, operand ) ),
-                        Expressions.call( BuiltInMethod.TIME_ZONE.method, root ) );
-                case TIMESTAMP -> Expressions.call(
-                        BuiltInMethod.TIMESTAMP_STRING_TO_TIMESTAMP_WITH_LOCAL_TIME_ZONE.method,
-                        RexImpTable.optimize2(
-                                operand,
-                                Expressions.call( BuiltInMethod.UNIX_TIMESTAMP_TO_STRING.method, operand ) ),
-                        Expressions.call( BuiltInMethod.TIME_ZONE.method, root ) );
-                case TIMESTAMP_WITH_LOCAL_TIME_ZONE -> RexImpTable.optimize2(
-                        operand,
-                        Expressions.call( BuiltInMethod.TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_TIME_WITH_LOCAL_TIME_ZONE.method, operand ) );
                 default -> convert;
             };
             case TIMESTAMP -> switch ( sourceType.getPolyType() ) {
@@ -305,54 +282,6 @@ public class RexToLixTranslator {
                                 Expressions.convert_( Expressions.call( BuiltInMethod.CURRENT_DATE.method, root ), long.class ),
                                 PolyTemporal.MILLIS_OF_DAY ),
                         Expressions.call( operand, BuiltInMethod.MILLIS_SINCE_EPOCH_POLY.method ) ) );
-                case TIME_WITH_LOCAL_TIME_ZONE -> RexImpTable.optimize2(
-                        operand,
-                        Expressions.call(
-                                BuiltInMethod.TIME_WITH_LOCAL_TIME_ZONE_TO_TIMESTAMP.method,
-                                Expressions.call(
-                                        BuiltInMethod.UNIX_DATE_TO_STRING.method,
-                                        Expressions.call( BuiltInMethod.CURRENT_DATE.method, root ) ),
-                                operand,
-                                Expressions.call( BuiltInMethod.TIME_ZONE.method, root ) ) );
-                case TIMESTAMP_WITH_LOCAL_TIME_ZONE -> RexImpTable.optimize2(
-                        operand,
-                        Expressions.call(
-                                BuiltInMethod.TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_TIMESTAMP.method,
-                                operand,
-                                Expressions.call( BuiltInMethod.TIME_ZONE.method, root ) ) );
-                default -> convert;
-            };
-            case TIMESTAMP_WITH_LOCAL_TIME_ZONE -> switch ( sourceType.getPolyType() ) {
-                case CHAR, VARCHAR -> Expressions.call(
-                        BuiltInMethod.STRING_TO_TIMESTAMP_WITH_LOCAL_TIME_ZONE.method,
-                        operand );
-                case DATE, TIME -> Expressions.call(
-                        BuiltInMethod.TIMESTAMP_STRING_TO_TIMESTAMP_WITH_LOCAL_TIME_ZONE.method,
-                        RexImpTable.optimize2(
-                                operand,
-                                Expressions.call(
-                                        BuiltInMethod.UNIX_TIMESTAMP_TO_STRING.method,
-                                        Expressions.call( PolyTimestamp.class, "of",
-                                                Expressions.call( operand, "longValue" ) ) ) ),
-                        Expressions.call( BuiltInMethod.TIME_ZONE.method, root ) );
-                case TIME_WITH_LOCAL_TIME_ZONE -> RexImpTable.optimize2(
-                        operand,
-                        Expressions.call(
-                                BuiltInMethod.TIME_WITH_LOCAL_TIME_ZONE_TO_TIMESTAMP_WITH_LOCAL_TIME_ZONE.method,
-                                Expressions.call(
-                                        BuiltInMethod.UNIX_DATE_TO_STRING.method,
-                                        Expressions.call( BuiltInMethod.CURRENT_DATE.method, root ) ),
-                                operand ) );
-                case TIMESTAMP -> Expressions.call(
-                        BuiltInMethod.TIMESTAMP_STRING_TO_TIMESTAMP_WITH_LOCAL_TIME_ZONE.method,
-                        RexImpTable.optimize2(
-                                operand,
-                                Expressions.call(
-                                        BuiltInMethod.UNIX_TIMESTAMP_TO_STRING.method,
-                                        operand ) ),
-                        Expressions.call(
-                                BuiltInMethod.TIME_ZONE.method,
-                                root ) );
                 default -> convert;
             };
             case BOOLEAN -> switch ( sourceType.getPolyType() ) {
@@ -374,36 +303,17 @@ public class RexToLixTranslator {
                             Expressions.call(
                                     BuiltInMethod.UNIX_TIME_TO_STRING.method,
                                     operand ) );
-                    case TIME_WITH_LOCAL_TIME_ZONE -> RexImpTable.optimize2(
-                            operand,
-                            Expressions.call(
-                                    BuiltInMethod.TIME_WITH_LOCAL_TIME_ZONE_TO_STRING.method,
-                                    operand,
-                                    Expressions.call( BuiltInMethod.TIME_ZONE.method, root ) ) );
                     case TIMESTAMP -> RexImpTable.optimize2(
                             operand,
                             Expressions.call(
                                     BuiltInMethod.UNIX_TIMESTAMP_TO_STRING.method,
                                     operand ) );
-                    case TIMESTAMP_WITH_LOCAL_TIME_ZONE -> RexImpTable.optimize2(
-                            operand,
-                            Expressions.call(
-                                    BuiltInMethod.TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_STRING.method,
-                                    operand,
-                                    Expressions.call( BuiltInMethod.TIME_ZONE.method, root ) ) );
-                    case INTERVAL_YEAR, INTERVAL_YEAR_MONTH, INTERVAL_MONTH -> RexImpTable.optimize2(
+                    case INTERVAL -> RexImpTable.optimize2(
                             operand,
                             Expressions.call(
                                     BuiltInMethod.INTERVAL_YEAR_MONTH_TO_STRING.method,
                                     operand,
                                     Expressions.constant( interval.getTimeUnitRange() ) ) );
-                    case INTERVAL_DAY, INTERVAL_DAY_HOUR, INTERVAL_DAY_MINUTE, INTERVAL_DAY_SECOND, INTERVAL_HOUR, INTERVAL_HOUR_MINUTE, INTERVAL_HOUR_SECOND, INTERVAL_MINUTE, INTERVAL_MINUTE_SECOND, INTERVAL_SECOND -> RexImpTable.optimize2(
-                            operand,
-                            Expressions.call(
-                                    BuiltInMethod.INTERVAL_DAY_TIME_TO_STRING.method,
-                                    operand,
-                                    Expressions.constant( interval.getTimeUnitRange() ),
-                                    Expressions.constant( interval.getFractionalSecondPrecision( typeFactory.getTypeSystem() ) ) ) );
                     case BOOLEAN -> RexImpTable.optimize2(
                             operand,
                             Expressions.call(
@@ -466,19 +376,7 @@ public class RexToLixTranslator {
                             Expressions.constant( (long) Math.pow( 10, 3 - targetScale ) ) );
                 }
                 break;
-            case INTERVAL_YEAR:
-            case INTERVAL_YEAR_MONTH:
-            case INTERVAL_MONTH:
-            case INTERVAL_DAY:
-            case INTERVAL_DAY_HOUR:
-            case INTERVAL_DAY_MINUTE:
-            case INTERVAL_DAY_SECOND:
-            case INTERVAL_HOUR:
-            case INTERVAL_HOUR_MINUTE:
-            case INTERVAL_HOUR_SECOND:
-            case INTERVAL_MINUTE:
-            case INTERVAL_MINUTE_SECOND:
-            case INTERVAL_SECOND:
+            case INTERVAL:
                 if ( Objects.requireNonNull( sourceType.getPolyType().getFamily() ) == PolyTypeFamily.NUMERIC ) {
                     final BigDecimal multiplier = targetType.getPolyType().getEndUnit().multiplier;
                     final BigDecimal divider = BigDecimal.ONE;
@@ -607,8 +505,7 @@ public class RexToLixTranslator {
      * Dereferences an expression if it is a {@link RexLocalRef}.
      */
     public RexNode deref( RexNode expr ) {
-        if ( expr instanceof RexLocalRef ) {
-            RexLocalRef ref = (RexLocalRef) expr;
+        if ( expr instanceof RexLocalRef ref ) {
             final RexNode e2 = program.getExprList().get( ref.getIndex() );
             assert ref.getType().equals( e2.getType() );
             return e2;
@@ -669,98 +566,18 @@ public class RexToLixTranslator {
                     return RexImpTable.FALSE_EXPR;
             }
         }
-        /*Type javaClass = typeFactory.getJavaClass( type );
-        final Object value2;
-        switch ( literal.getType().getPolyType() ) {
-            case DECIMAL:
-                final BigDecimal bd = literal.value.asBigDecimal();
-                if ( javaClass == float.class ) {
-                    return Expressions.constant( bd, javaClass );
-                } else if ( javaClass == double.class ) {
-                    return Expressions.constant( bd, javaClass );
-                }
-                assert javaClass == BigDecimal.class;
-                return Expressions.new_( BigDecimal.class, Expressions.constant( bd.toString() ) );
-            case DATE:
-            case TIME:
-            case TIME_WITH_LOCAL_TIME_ZONE:
-            case INTERVAL_YEAR:
-            case INTERVAL_YEAR_MONTH:
-            case INTERVAL_MONTH:
-                value2 = literal.getValue( Integer.class );
-                javaClass = int.class;
-                break;
-            case TIMESTAMP:
-            case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-            case INTERVAL_DAY:
-            case INTERVAL_DAY_HOUR:
-            case INTERVAL_DAY_MINUTE:
-            case INTERVAL_DAY_SECOND:
-            case INTERVAL_HOUR:
-            case INTERVAL_HOUR_MINUTE:
-            case INTERVAL_HOUR_SECOND:
-            case INTERVAL_MINUTE:
-            case INTERVAL_MINUTE_SECOND:
-            case INTERVAL_SECOND:
-                value2 = literal.getValue( Long.class );
-                javaClass = long.class;
-                break;
-            case CHAR:
-            case VARCHAR:
-                value2 = literal.getValue( String.class );
-                break;
-            case BINARY:
-            case VARBINARY:
-                return Expressions.new_(
-                        ByteString.class,
-                        Expressions.constant( literal.getValue( byte[].class ), byte[].class ) );
-            case SYMBOL:
-                value2 = literal.getValue( Enum.class );
-                javaClass = value2.getClass();
-                break;
-            case ARRAY:
-                AlgDataType componentType;
-                if ( type.getComponentType() != null ) {
-                    componentType = type.getComponentType();
-                } else {
-                    componentType = type;
-                }
-                value2 = literal.getValue( List.class ).stream().map( e -> translateLiteral( (RexLiteral) e, componentType, typeFactory, nullAs ) ).collect( Collectors.toList() );
-                javaClass = List.class;
-                break;
-            case EDGE:
-                return literal.getValue( PolyEdge.class ).asExpression();
-            case NODE:
-                return literal.getValue( PolyNode.class ).asExpression();
-            case PATH:
-                return literal.getValue( PolyPath.class ).asExpression();
-            case DOCUMENT:
-                return ((PolyValue) literal.getValue()).asExpression();
-            default:
-                final Primitive primitive = Primitive.ofBoxOr( javaClass );
-                final Comparable<?> value = literal.getValue( Comparable.class );
-                if ( primitive != null && value instanceof Number ) {
-                    value2 = primitive.number( (Number) value );
-                } else {
-                    value2 = value;
-                }
-        }
-        return Expressions.constant( value2, javaClass );*/
         return literal.value.asExpression();
     }
 
 
     public List<Expression> translateList( List<RexNode> operandList, RexImpTable.NullAs nullAs ) {
-        return translateList( operandList, nullAs, EnumUtils.internalTypes( operandList ) );
+        // we use default storage type in this case
+        return translateList( operandList, nullAs, operandList.stream().map( o -> (Type) null ).toList() );
     }
 
 
     public List<Expression> translateList( List<RexNode> operandList, RexImpTable.NullAs nullAs, List<? extends Type> storageTypes ) {
-        final List<Expression> list = new ArrayList<>();
-        for ( Pair<RexNode, ? extends Type> e : Pair.zip( operandList, storageTypes ) ) {
-            list.add( translate( e.left, nullAs, e.right ) );
-        }
-        return list;
+        return Streams.zip( operandList.stream(), storageTypes.stream(), ( a, b ) -> translate( a, nullAs, b ) ).toList();
     }
 
 
@@ -772,7 +589,8 @@ public class RexToLixTranslator {
      * @return translated expressions
      */
     public List<Expression> translateList( List<? extends RexNode> operandList ) {
-        return translateList( operandList, EnumUtils.internalTypes( operandList ) );
+        // we use default storage type in this case
+        return translateList( operandList, operandList.stream().map( o -> (Type) null ).toList() );
     }
 
 
@@ -880,7 +698,7 @@ public class RexToLixTranslator {
             // E.g. from "Short" to "Integer"
             // Generate "x == null ? null : Integer.valueOf(x.intValue())"
             return EnumUtils.condition(
-                    Expressions.equal( operand, RexImpTable.NULL_EXPR ),
+                    PolyValue.isNullExpression( operand ),
                     RexImpTable.NULL_EXPR,
                     Expressions.box( Expressions.unbox( operand, toBox ), toBox ) );
         } else if ( fromPrimitive != null && toBox != null ) {
@@ -928,7 +746,7 @@ public class RexToLixTranslator {
                 // E.g. from "Integer" to "BigDecimal".
                 // Generate "x == null ? null : new BigDecimal(x.intValue())"
                 return EnumUtils.condition(
-                        Expressions.equal( operand, RexImpTable.NULL_EXPR ),
+                        PolyValue.isNullExpression( operand ),
                         RexImpTable.NULL_EXPR,
                         Expressions.new_( BigDecimal.class, Expressions.unbox( operand, fromBox ) ) );
             }
@@ -940,7 +758,7 @@ public class RexToLixTranslator {
             // E.g. from "Object" to "BigDecimal".
             // Generate "x == null ? null : SqlFunctions.toBigDecimal(x)"
             return EnumUtils.condition(
-                    Expressions.equal( operand, RexImpTable.NULL_EXPR ),
+                    PolyValue.isNullExpression( operand ),
                     RexImpTable.NULL_EXPR,
                     Expressions.call( Functions.class, "toBigDecimal", operand ) );
         } else if ( toType == String.class ) {
@@ -965,7 +783,7 @@ public class RexToLixTranslator {
                 // E.g. from "BigDecimal" to "String"
                 // Generate "x.toString()"
                 return EnumUtils.condition(
-                        Expressions.equal( operand, RexImpTable.NULL_EXPR ),
+                        PolyValue.isNullExpression( operand ),
                         RexImpTable.NULL_EXPR,
                         Expressions.call(
                                 Functions.class,
@@ -975,12 +793,13 @@ public class RexToLixTranslator {
                 // E.g. from "BigDecimal" to "String"
                 // Generate "x == null ? null : x.toString()"
                 return EnumUtils.condition(
-                        Expressions.equal( operand, RexImpTable.NULL_EXPR ),
+                        PolyValue.isNullExpression( operand ),
                         RexImpTable.NULL_EXPR,
                         Expressions.call( operand, "toString" ) );
             }
         }
         if ( Types.isAssignableFrom( PolyValue.class, toType ) ) {
+            operand = Expressions.convert_( operand, PolyValue.class );
             if ( toType == PolyNumber.class && !Types.isAssignableFrom( toType, operand.type ) ) {
                 return Expressions.call( PolyBigDecimal.class, "convert", operand );
             } else if ( toType == PolyString.class ) {
@@ -1002,7 +821,7 @@ public class RexToLixTranslator {
             } else if ( toType == PolyTime.class ) {
                 return Expressions.call( PolyTime.class, "convert", operand );
             }
-            log.warn( "Converter missing " + toType );
+            log.debug( "Converter missing " + toType );
         }
 
         return Expressions.convert_( operand, toType );
@@ -1153,24 +972,10 @@ public class RexToLixTranslator {
 
     private static Expression scaleIntervalToNumber( AlgDataType sourceType, AlgDataType targetType, Expression operand ) {
         if ( Objects.requireNonNull( targetType.getPolyType().getFamily() ) == PolyTypeFamily.NUMERIC ) {
-            switch ( sourceType.getPolyType() ) {
-                case INTERVAL_YEAR:
-                case INTERVAL_YEAR_MONTH:
-                case INTERVAL_MONTH:
-                case INTERVAL_DAY:
-                case INTERVAL_DAY_HOUR:
-                case INTERVAL_DAY_MINUTE:
-                case INTERVAL_DAY_SECOND:
-                case INTERVAL_HOUR:
-                case INTERVAL_HOUR_MINUTE:
-                case INTERVAL_HOUR_SECOND:
-                case INTERVAL_MINUTE:
-                case INTERVAL_MINUTE_SECOND:
-                case INTERVAL_SECOND:
-                    // Scale to the given field.
-                    final BigDecimal multiplier = BigDecimal.ONE;
-                    final BigDecimal divider = sourceType.getPolyType().getEndUnit().multiplier;
-                    return RexImpTable.multiplyDivide( operand, multiplier, divider );
+            if ( Objects.requireNonNull( sourceType.getPolyType() ) == PolyType.INTERVAL ) {// Scale to the given field.
+                final BigDecimal multiplier = BigDecimal.ONE;
+                final BigDecimal divider = sourceType.getPolyType().getEndUnit().multiplier;
+                return RexImpTable.multiplyDivide( operand, multiplier, divider );
             }
         }
         return operand;
@@ -1192,28 +997,49 @@ public class RexToLixTranslator {
      */
     public static class InputGetterImpl implements InputGetter {
 
-        private final List<Pair<Expression, PhysType>> inputs;
+        private final Expression expression;
+        private final PhysType type;
 
 
-        public InputGetterImpl( List<Pair<Expression, PhysType>> inputs ) {
-            this.inputs = inputs;
+        public InputGetterImpl( Expression expression, PhysType type ) {
+            this.expression = expression;
+            this.type = type;
         }
 
 
         @Override
         public Expression field( BlockBuilder list, int index, Type storageType ) {
-            int offset = 0;
-            for ( Pair<Expression, PhysType> input : inputs ) {
-                final PhysType physType = input.right;
-                int fieldCount = physType.getRowType().getFieldCount();
-                if ( index >= offset + fieldCount ) {
-                    offset += fieldCount;
-                    continue;
-                }
-                final Expression left = list.append( "current", input.left );
-                return physType.fieldReference( left, index - offset, storageType );
+
+            final PhysType physType = type;
+            int fieldCount = physType.getTupleType().getFieldCount();
+            if ( index >= fieldCount ) {
+                throw new GenericRuntimeException( "Index too high" );
             }
-            throw new IllegalArgumentException( "Unable to find field #" + index );
+            final Expression left = list.append( "current", expression );
+            return physType.fieldReference( left, index, storageType );
+
+        }
+
+    }
+
+
+    public record JoinInputGetterImpl( Expression expressionsLeft, PhysType typeLeft, Expression expressionsRight, PhysType typeRight ) implements InputGetter {
+
+        @Override
+        public Expression field( BlockBuilder list, int index, Type storageType ) {
+            int fieldCount = typeLeft.getTupleType().getFieldCount();
+            if ( index >= fieldCount ) {
+                int offset = fieldCount;
+                fieldCount = typeRight.getTupleType().getFieldCount();
+                if ( index >= offset + fieldCount ) {
+                    throw new GenericRuntimeException( "Index too high" );
+                }
+                final Expression left = list.append( "current", expressionsRight );
+                return typeRight.fieldReference( left, index - offset, storageType );
+            }
+
+            final Expression left = list.append( "current", expressionsLeft );
+            return typeLeft.fieldReference( left, index, storageType );
         }
 
     }
@@ -1234,4 +1060,3 @@ public class RexToLixTranslator {
     }
 
 }
-

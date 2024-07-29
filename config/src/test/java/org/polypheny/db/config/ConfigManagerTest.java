@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,8 +37,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.exception.ConfigRuntimeException;
-import org.polypheny.db.util.PolyMode;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
+import org.polypheny.db.util.RunMode;
 
 
 public class ConfigManagerTest implements ConfigListener {
@@ -49,7 +49,7 @@ public class ConfigManagerTest implements ConfigListener {
 
     @BeforeAll
     public static void setupTestEnvironment() {
-        PolyphenyHomeDirManager.setModeAndGetInstance( PolyMode.TEST );
+        PolyphenyHomeDirManager.setModeAndGetInstance( RunMode.TEST );
         ConfigManager cm = ConfigManager.getInstance();
 
         // Check if the correct file will be accessed

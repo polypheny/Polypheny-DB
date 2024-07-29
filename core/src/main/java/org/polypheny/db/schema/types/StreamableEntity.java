@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,14 +22,14 @@ import org.polypheny.db.schema.Entity;
 
 
 /**
- * Table that can be converted to a stream.
+ * Entity that can be converted to a namespace.
  *
  * @see Delta
  */
 public interface StreamableEntity extends Typed {
 
     /**
-     * Returns an enumerator over the rows in this Table. Each row is represented as an array of its column values.
+     * Returns an enumerator over the tuples in this entity. Each tuple is represented as an array of its field values.
      */
     Entity stream();
 

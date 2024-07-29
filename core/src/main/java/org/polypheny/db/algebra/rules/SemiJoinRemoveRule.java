@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,7 +44,7 @@ import org.polypheny.db.tools.AlgBuilderFactory;
 /**
  * Planner rule that removes a {@link SemiJoin}s from a join tree.
  *
- * It is invoked after attempts have been made to convert a SemiJoin to an indexed scan on a join factor have failed. Namely, if the join factor does not reduce to a single table that can be scanned using an index.
+ * It is invoked after attempts have been made to convert a SemiJoin to an indexed relScan on a join factor have failed. Namely, if the join factor does not reduce to a single table that can be scanned using an index.
  *
  * It should only be enabled if all SemiJoins in the plan are advisory; that is, they can be safely dropped without affecting the semantics of the query.
  */

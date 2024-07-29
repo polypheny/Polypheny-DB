@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,7 +67,13 @@ public class AlphabeticStatisticColumn extends StatisticColumn {
         }
 
         for ( PolyValue val : values ) {
-            insert( val == null ? null : val.asString() );
+            if ( val == null ) {
+                insert( (PolyValue) null );
+            } else if ( val.isString() ) {
+                insert( val.asString() );
+            } else {
+                log.warn( "Value is not a string: {}", val.toString() );
+            }
         }
     }
 

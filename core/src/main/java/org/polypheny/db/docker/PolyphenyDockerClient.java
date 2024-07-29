@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,6 @@ package org.polypheny.db.docker;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.InetSocketAddress;
-import java.net.Socket;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,35 +28,39 @@ import lombok.Getter;
 
 final class PolyphenyDockerClient {
 
-    private final Socket con;
     private final PolyphenyTlsClient client;
     private final InputStream in;
     private final OutputStream out;
-    private final String dockerId;
+    private String dockerId;
 
-    private static final int VERSION = 1; // In sync with polypheny-docker-connector
+    private static final int CONNECTOR_VERSION = 1; // Keep in sync with polypheny-docker-connector
     private final transient AtomicInteger counter;
 
     @Getter
     private boolean connected;
 
 
-    PolyphenyDockerClient( String hostname, int port, PolyphenyKeypair kp, byte[] serverCertificate ) throws IOException {
-        con = new Socket();
-        con.connect( new InetSocketAddress( hostname, port ), 5000 );
-        this.client = new PolyphenyTlsClient( kp, serverCertificate, con.getInputStream(), con.getOutputStream() );
-
+    private PolyphenyDockerClient( String context, String hostname, int port ) throws IOException {
+        this.client = PolyphenyTlsClient.connect( context, hostname, port );
         this.in = client.getInputStream().get();
         this.out = client.getOutputStream().get();
 
         this.counter = new AtomicInteger();
+    }
 
-        VersionResponse resp = executeRequest( newRequest().setVersion( VersionRequest.newBuilder().setVersion( VERSION ) ) ).getVersion();
-        if ( resp.getVersion() != VERSION ) {
-            throw new IOException( String.format( "Version mismatch: try to update either the docker container or Polypheny (docker container is version %d, Polypheny version is %d)", resp.getVersion(), VERSION ) );
+
+    static PolyphenyDockerClient connect( String context, String hostname, int port ) throws IOException {
+        PolyphenyDockerClient client = new PolyphenyDockerClient( context, hostname, port );
+
+        VersionResponse resp = client.executeRequest( client.newRequest().setVersion( VersionRequest.newBuilder().setVersion( CONNECTOR_VERSION ) ) ).getVersion();
+        if ( resp.getVersion() < CONNECTOR_VERSION ) {
+            throw new IOException( String.format( "Version mismatch: trying to update Docker container (Docker container is version %d, Polypheny version is %d)", resp.getVersion(), CONNECTOR_VERSION ) );
+        } else if ( resp.getVersion() > CONNECTOR_VERSION ) {
+            throw new IOException( String.format( "Version mismatch: Docker container is newer than Polypheny (Docker container is version %d, Polypheny version is %d)", resp.getVersion(), CONNECTOR_VERSION ) );
         }
-        this.dockerId = resp.getUuid();
-        this.connected = true;
+        client.dockerId = resp.getUuid();
+        client.connected = true;
+        return client;
     }
 
 
@@ -70,11 +72,6 @@ final class PolyphenyDockerClient {
     void close() {
         connected = false;
         client.close();
-
-        try {
-            con.close();
-        } catch ( IOException ignore ) {
-        }
     }
 
 

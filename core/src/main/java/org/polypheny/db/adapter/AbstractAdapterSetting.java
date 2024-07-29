@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.Value;
@@ -56,6 +55,8 @@ public abstract class AbstractAdapterSetting {
     @Getter
     public List<DeploySetting> appliesTo;
 
+    public List<String> filenames = new ArrayList<>();
+
 
     public AbstractAdapterSetting( final AdapterSettingType type, final String name, final boolean canBeNull, final String subOf, final boolean required, final boolean modifiable, List<DeploySetting> appliesTo, String defaultValue, int position ) {
         this.type = type;
@@ -80,7 +81,7 @@ public abstract class AbstractAdapterSetting {
      *
      * @param annotations collection of annotations
      * @param properties which are defined by the corresponding Adapter
-     * @return a map containing the available modes and the corresponding collections of AdapterSettings
+     * @return a collection containing the available modes and the corresponding collections of AdapterSettings
      */
     public static List<AbstractAdapterSetting> fromAnnotations( Annotation[] annotations, AdapterProperties properties ) {
         List<AbstractAdapterSetting> settings = new ArrayList<>();
@@ -108,16 +109,6 @@ public abstract class AbstractAdapterSetting {
                 Arrays.stream( ((AdapterSettingDirectory.List) annotation).value() ).forEach( el -> settings.add( AbstractAdapterSettingDirectory.fromAnnotation( el ) ) );
             }
         }
-        settings.add( new AbstractAdapterSettingList(
-                "mode",
-                false,
-                null,
-                true,
-                false,
-                Arrays.stream( properties.usedModes() ).map( DeployMode::getName ).collect( Collectors.toList() ),
-                List.of( DeploySetting.ALL ),
-                properties.defaultMode().getName(),
-                0 ) );
 
         return settings;
     }

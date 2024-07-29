@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,24 +20,21 @@ import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.util.Objects;
 import lombok.Getter;
-import org.apache.calcite.avatica.util.TimeUnit;
-import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.util.temporal.TimeUnit;
 
+@Getter
 public class IntervalQualifierImpl implements IntervalQualifier {
 
-    @Getter
     @Serialize
     private final TimeUnitRange timeUnitRange;
 
     @Serialize
-    @Getter
     private final int startPrecision;
 
     @Serialize
-    @Getter
     private final int fractionalSecondPrecision;
 
 
@@ -46,7 +43,7 @@ public class IntervalQualifierImpl implements IntervalQualifier {
             int startPrecision,
             TimeUnit endUnit,
             int fractionalSecondPrecision ) {
-        this( TimeUnitRange.of( Objects.requireNonNull( startUnit ), endUnit == startUnit ? null : endUnit ), startPrecision, fractionalSecondPrecision );
+        this( TimeUnitRange.from( Objects.requireNonNull( startUnit ), endUnit == startUnit ? null : endUnit ), startPrecision, fractionalSecondPrecision );
     }
 
 
@@ -63,7 +60,7 @@ public class IntervalQualifierImpl implements IntervalQualifier {
 
     @Override
     public PolyType typeName() {
-        return IntervalQualifier.getRangePolyType( timeUnitRange );
+        return PolyType.INTERVAL;
     }
 
 

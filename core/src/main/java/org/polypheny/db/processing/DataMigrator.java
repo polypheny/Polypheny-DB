@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,7 +52,7 @@ public interface DataMigrator {
             AllocationPlacement target );
 
     /**
-     * Currently used to to transfer data if unpartitioned is about to be partitioned.
+     * Currently used to transfer data if unpartitioned is about to be partitioned.
      *
      * @param transaction Transactional scope
      * @param store Target Store where data should be migrated to

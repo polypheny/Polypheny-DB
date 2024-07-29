@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,16 +18,12 @@ package org.polypheny.db.restapi;
 
 
 import com.google.gson.Gson;
-import com.j256.simplemagic.ContentInfo;
-import com.j256.simplemagic.ContentInfoUtil;
 import io.javalin.http.Context;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.PushbackInputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -35,13 +31,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.ColumnMetaData;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.ResultIterator;
 import org.polypheny.db.algebra.constant.Kind;
@@ -59,22 +52,22 @@ public class RestResult {
     private final Kind kind;
     private final ResultIterator iterator;
     private final AlgDataType dataType;
-    List<ColumnMetaData> columns;
+    private final List<String> fields;
     private List<Map<String, Object>> result;
     @Getter
     private long executionTime;
 
-    boolean containsFiles = false;
-    File zipFile;
-    FileOutputStream fos;
-    ZipOutputStream zipOut;
+    private final boolean containsFiles = false;
+    private File zipFile;
+    private FileOutputStream fos;
+    private ZipOutputStream zipOut;
 
 
-    public RestResult( Kind Kind, ResultIterator iterator, AlgDataType dataType, List<ColumnMetaData> columns ) {
+    public RestResult( Kind Kind, ResultIterator iterator, AlgDataType dataType, List<String> fields ) {
         this.kind = Kind;
         this.iterator = iterator;
         this.dataType = dataType;
-        this.columns = columns;
+        this.fields = fields;
     }
 
 
@@ -92,7 +85,7 @@ public class RestResult {
         List<PolyValue[]> object;
         int rowsChanged = -1;
         while ( iterator.hasMoreRows() ) {
-            object = iterator.getArrayRows();
+            object = iterator.getTupleRows();
             int num;
             if ( object != null && object.get( 0 ).getClass().isArray() ) {
                 num = object.get( 0 )[0].asNumber().intValue();
@@ -107,7 +100,7 @@ public class RestResult {
         }
         List<Map<String, Object>> result = new ArrayList<>();
         Map<String, Object> map = new HashMap<>();
-        map.put( columns.get( 0 ).columnName, rowsChanged );
+        map.put( fields.get( 0 ), rowsChanged );
         result.add( map );
         this.result = result;
     }
@@ -118,14 +111,14 @@ public class RestResult {
         stopWatch.start();
         List<Map<String, Object>> result = new ArrayList<>();
         while ( iterator.hasMoreRows() ) {
-            PolyValue[] row = iterator.getArrayRows().get( 0 );
+            PolyValue[] row = iterator.getTupleRows().get( 0 );
 
             Map<String, Object> temp = new HashMap<>();
             int i = 0;
             for ( AlgDataTypeField type : dataType.getFields() ) {
                 PolyValue o = row[i];
 
-                String columnName = columns.get( i ).columnName;
+                String columnName = fields.get( i );
                 if ( o == null ) {
                     temp.put( columnName, null );
                     continue;
@@ -136,7 +129,7 @@ public class RestResult {
                 } else {
                     switch ( type.getType().getPolyType() ) {
                         case TIMESTAMP:
-                            LocalDateTime localDateTime = o.asTimestamp().asSqlTimestamp().toInstant().atOffset( ZoneOffset.UTC ).toLocalDateTime();//.toLocalDateTime(); //LocalDateTime.ofEpochSecond( nanoSeconds / 1000L, (int) ((nanoSeconds % 1000) * 1000), ZoneOffset.UTC );
+                            LocalDateTime localDateTime = o.asTimestamp().asSqlTimestamp().toInstant().atOffset( ZoneOffset.UTC ).toLocalDateTime();
                             temp.put( columnName, localDateTime.toString() );
                             break;
                         case TIME:
@@ -181,75 +174,6 @@ public class RestResult {
         stopWatch.stop();
         this.executionTime = stopWatch.getNanoTime();
         this.result = result;
-    }
-
-
-    private String addZipEntry( final Object data ) {
-        //see https://www.baeldung.com/java-compress-and-uncompress
-        containsFiles = true;
-        String tempFileName = UUID.randomUUID().toString();
-        try {
-            if ( zipFile == null ) {
-                zipFile = new File( System.getProperty( "user.home" ), ".polypheny/tmp/" + UUID.randomUUID().toString() + ".zip" );
-                fos = new FileOutputStream( zipFile );
-                zipOut = new ZipOutputStream( fos );
-            }
-            ZipEntry zipEntry = new ZipEntry( tempFileName + getContentType( data ) );
-            zipOut.putNextEntry( zipEntry );
-            if ( data instanceof File ) {
-                File f = ((File) data);
-                FileInputStream fis = new FileInputStream( f );
-                byte[] bytes = new byte[1024];
-                int len;
-                while ( (len = fis.read( bytes )) > 0 ) {
-                    zipOut.write( bytes, 0, len );
-                }
-                fis.close();
-            } else if ( data instanceof InputStream ) {
-                IOUtils.copyLarge( (InputStream) data, fos );
-            } else if ( data instanceof byte[] ) {
-                fos.write( (byte[]) data );
-            }
-            //zipOut.close();
-            //fos.close();
-        } catch ( IOException e ) {
-            log.error( "Could not write to zip file", e );
-        }
-        return tempFileName;
-    }
-
-
-    private String getContentType( Object o ) {
-        ContentInfoUtil util = new ContentInfoUtil();
-        ContentInfo info;
-        if ( o instanceof File ) {
-            try {
-                info = util.findMatch( (File) o );
-            } catch ( IOException e ) {
-                log.error( "Could not determine content type of file {}", ((File) o).getAbsolutePath() );
-                return "";
-            }
-        } else if ( o instanceof byte[] ) {
-            info = util.findMatch( (byte[]) o );
-        } else if ( o instanceof InputStream ) {
-            PushbackInputStream pbis = new PushbackInputStream( (InputStream) o, ContentInfoUtil.DEFAULT_READ_SIZE );
-            byte[] buffer = new byte[ContentInfoUtil.DEFAULT_READ_SIZE];
-            try {
-                pbis.read( buffer );
-                info = util.findMatch( buffer );
-                pbis.unread( buffer );
-            } catch ( IOException e ) {
-                log.error( "Could not determine content type of InputStream" );
-                return "";
-            }
-        } else {
-            throw new GenericRuntimeException( "Unexpected data for content type detection: " + o.getClass().getSimpleName() );
-        }
-        if ( info != null && info.getFileExtensions() != null && info.getFileExtensions().length > 0 ) {
-            return "." + info.getFileExtensions()[0];
-        } else {
-            return "";
-        }
     }
 
 

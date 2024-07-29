@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -88,10 +88,11 @@ import org.polypheny.db.catalog.entity.physical.PhysicalCollection;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalField;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexNode;
@@ -101,8 +102,8 @@ import org.polypheny.db.schema.types.ModifiableTable;
 import org.polypheny.db.schema.types.QueryableEntity;
 import org.polypheny.db.schema.types.TranslatableEntity;
 import org.polypheny.db.transaction.PolyXid;
-import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.util.BsonUtil;
 import org.polypheny.db.util.Util;
 
@@ -133,7 +134,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
      * Creates a MongoTable.
      */
     MongoEntity( PhysicalEntity physical, List<? extends PhysicalField> fields, MongoNamespace namespace, TransactionProvider transactionProvider ) {
-        super( physical.id, physical.allocationId, physical.logicalId, physical.name, physical.namespaceId, physical.namespaceName, physical.getUniqueFieldIds(), physical.dataModel, physical.adapterId );
+        super( physical.id, physical.allocationId, physical.logicalId, physical.name, physical.namespaceId, physical.namespaceName.toLowerCase(), physical.getUniqueFieldIds(), physical.dataModel, physical.adapterId );
         this.physical = physical;
         this.mongoNamespace = namespace;
         this.transactionProvider = transactionProvider;
@@ -144,11 +145,11 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
 
 
     @Override
-    public AlgDataType getRowType() {
+    public AlgDataType getTupleType() {
         if ( dataModel == DataModel.RELATIONAL ) {
             return buildProto().apply( AlgDataTypeFactory.DEFAULT );
         }
-        return super.getRowType();
+        return super.getTupleType();
     }
 
 
@@ -170,7 +171,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
 
 
     @Override
-    public AlgNode toAlg( AlgOptCluster cluster, AlgTraitSet traitSet ) {
+    public AlgNode toAlg( AlgCluster cluster, AlgTraitSet traitSet ) {
         return new MongoScan( cluster, traitSet.replace( MongoAlg.CONVENTION ), this );
     }
 
@@ -281,7 +282,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
 
     @Override
     public Modify<?> toModificationTable(
-            AlgOptCluster cluster,
+            AlgCluster cluster,
             AlgTraitSet traitSet,
             Entity table,
             AlgNode child,
@@ -301,7 +302,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
 
     @Override
     public Modify<?> toModificationCollection(
-            AlgOptCluster cluster,
+            AlgCluster cluster,
             AlgTraitSet traits,
             Entity collection,
             AlgNode child,
@@ -351,7 +352,10 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
 
     @Override
     public PhysicalEntity normalize() {
-        return new PhysicalCollection( id, allocationId, logicalId, namespaceId, name, namespaceName, adapterId );
+        if ( dataModel == DataModel.DOCUMENT ) {
+            return new PhysicalCollection( id, allocationId, logicalId, namespaceId, name, namespaceName, adapterId );
+        }
+        return new PhysicalTable( id, allocationId, logicalId, name, fields.stream().map( f -> f.unwrap( PhysicalColumn.class ).orElseThrow() ).toList(), namespaceId, namespaceName, uniqueFieldIds, adapterId );
     }
 
 
@@ -475,7 +479,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
                         return inserts.size();
                     } else {
                         // direct
-                        List<Document> docs = operations.stream().map( BsonDocument::parse ).map( BsonUtil::asDocument ).collect( Collectors.toList() );
+                        List<Document> docs = operations.stream().map( BsonDocument::parse ).map( BsonUtil::asDocument ).toList();
                         entity.getCollection().insertMany( session, docs );
                         return docs.size();
                     }

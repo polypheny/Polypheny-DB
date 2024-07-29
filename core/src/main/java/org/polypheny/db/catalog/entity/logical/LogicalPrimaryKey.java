@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ import io.activej.serializer.annotations.Serialize;
 import java.io.Serial;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Objects;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -35,7 +34,7 @@ import org.polypheny.db.type.entity.numerical.PolyInteger;
 
 
 @Value
-@EqualsAndHashCode(callSuper = true)
+@EqualsAndHashCode(callSuper = false)
 public class LogicalPrimaryKey extends LogicalKey {
 
     @Serialize
@@ -47,7 +46,7 @@ public class LogicalPrimaryKey extends LogicalKey {
                 key.id,
                 key.entityId,
                 key.namespaceId,
-                key.columnIds,
+                key.fieldIds,
                 EnforcementTime.ON_QUERY );
 
         this.key = key;
@@ -55,11 +54,11 @@ public class LogicalPrimaryKey extends LogicalKey {
 
 
     // Used for creating ResultSets
-    public List<LogicalPrimaryKeyColumn> getCatalogPrimaryKeyColumns() {
+    public List<LogicalPrimaryKeyField> getCatalogPrimaryKeyColumns() {
         int i = 1;
-        List<LogicalPrimaryKeyColumn> list = new LinkedList<>();
-        for ( String columnName : getColumnNames() ) {
-            list.add( new LogicalPrimaryKeyColumn( id, i++, columnName ) );
+        List<LogicalPrimaryKeyField> list = new LinkedList<>();
+        for ( String columnName : getFieldNames() ) {
+            list.add( new LogicalPrimaryKeyField( id, i++, columnName ) );
         }
         return list;
     }
@@ -75,35 +74,9 @@ public class LogicalPrimaryKey extends LogicalKey {
     }
 
 
-    @Override
-    public boolean equals( Object o ) {
-        if ( this == o ) {
-            return true;
-        }
-        if ( o == null || getClass() != o.getClass() ) {
-            return false;
-        }
-        if ( !super.equals( o ) ) {
-            return false;
-        }
-
-        LogicalPrimaryKey that = (LogicalPrimaryKey) o;
-
-        return Objects.equals( key, that.key );
-    }
-
-
-    @Override
-    public int hashCode() {
-        int result = super.hashCode();
-        result = 31 * result + (key != null ? key.hashCode() : 0);
-        return result;
-    }
-
-
     // Used for creating ResultSets
     @RequiredArgsConstructor
-    public static class LogicalPrimaryKeyColumn implements PolyObject {
+    public static class LogicalPrimaryKeyField implements PolyObject {
 
         @Serial
         private static final long serialVersionUID = -2669773639977732201L;
@@ -112,54 +85,16 @@ public class LogicalPrimaryKey extends LogicalKey {
 
         private final int keySeq;
 
-        private final String columnName;
+        private final String fieldName;
 
 
         @Override
         public PolyValue[] getParameterArray() {
-            return Catalog.snapshot().rel().getPrimaryKey( pkId ).orElseThrow().getParameterArray( columnName, keySeq );
+            return Catalog.snapshot().rel().getPrimaryKey( pkId ).orElseThrow().getParameterArray( fieldName, keySeq );
         }
 
 
-        @Override
-        public boolean equals( Object o ) {
-            if ( this == o ) {
-                return true;
-            }
-            if ( o == null || getClass() != o.getClass() ) {
-                return false;
-            }
-
-            LogicalPrimaryKeyColumn that = (LogicalPrimaryKeyColumn) o;
-
-            if ( pkId != that.pkId ) {
-                return false;
-            }
-            if ( keySeq != that.keySeq ) {
-                return false;
-            }
-            return Objects.equals( columnName, that.columnName );
-        }
-
-
-        @Override
-        public int hashCode() {
-            int result = (int) (pkId ^ (pkId >>> 32));
-            result = 31 * result + keySeq;
-            result = 31 * result + (columnName != null ? columnName.hashCode() : 0);
-            return result;
-        }
-
-
-        @RequiredArgsConstructor
-        public static class PrimitiveCatalogPrimaryKeyColumn {
-
-            public final String tableCat;
-            public final String tableSchem;
-            public final String tableName;
-            public final String columnName;
-            public final int keySeq;
-            public final String pkName;
+        public record PrimitiveCatalogPrimaryKeyColumn(String tableCat, String tableSchem, String tableName, String columnName, int keySeq, String pkName) {
 
         }
 

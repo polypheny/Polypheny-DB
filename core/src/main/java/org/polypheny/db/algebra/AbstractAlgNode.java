@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,16 +54,31 @@ import org.polypheny.db.algebra.metadata.Metadata;
 import org.polypheny.db.algebra.metadata.MetadataFactory;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.Entity;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTrait;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.ConventionTraitDef;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexCorrelVariable;
+import org.polypheny.db.rex.RexDynamicParam;
+import org.polypheny.db.rex.RexElementRef;
+import org.polypheny.db.rex.RexFieldAccess;
+import org.polypheny.db.rex.RexIndexRef;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexLocalRef;
+import org.polypheny.db.rex.RexNameRef;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexOver;
+import org.polypheny.db.rex.RexPatternFieldRef;
+import org.polypheny.db.rex.RexRangeRef;
 import org.polypheny.db.rex.RexShuttle;
+import org.polypheny.db.rex.RexSubQuery;
+import org.polypheny.db.rex.RexTableIndexRef;
+import org.polypheny.db.rex.RexVisitor;
 import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.schema.trait.ModelTraitDef;
 import org.polypheny.db.util.Litmus;
@@ -74,7 +89,7 @@ import org.slf4j.Logger;
 
 
 /**
- * Base class for every relational expression ({@link AlgNode}).
+ * Base class for every algebraic expression ({@link AlgNode}).
  */
 @SuperBuilder(toBuilder = true)
 public abstract class AbstractAlgNode implements AlgNode {
@@ -98,7 +113,7 @@ public abstract class AbstractAlgNode implements AlgNode {
     protected AlgDataType rowType;
 
     /**
-     * A short description of this relational expression's type, inputs, and other properties. The string uniquely identifies
+     * A short description of this expression's type, inputs, and other properties. The string uniquely identifies
      * the node; another node is equivalent if and only if it has the same value.
      * Computed by {@link #computeDigest}, assigned by {@link #onRegister}, returned by {@link #getDigest()}.
      *
@@ -110,7 +125,7 @@ public abstract class AbstractAlgNode implements AlgNode {
     // Setter is used to set the cluster in Views
     @Setter
     @Getter
-    private transient AlgOptCluster cluster;
+    private transient AlgCluster cluster;
 
     /**
      * unique id of this object -- for debugging
@@ -119,7 +134,7 @@ public abstract class AbstractAlgNode implements AlgNode {
     protected final int id;
 
     /**
-     * The RelTraitSet that describes the traits of this AlgNode.
+     * The AlgTraitSet that describes the traits of this AlgNode.
      * Setter is used to set the cluster in Views
      */
     @Setter
@@ -128,9 +143,9 @@ public abstract class AbstractAlgNode implements AlgNode {
 
 
     /**
-     * Creates an <code>AbstractRelNode</code>.
+     * Creates an <code>AbstractAlgNode</code>.
      */
-    public AbstractAlgNode( AlgOptCluster cluster, AlgTraitSet traitSet ) {
+    public AbstractAlgNode( AlgCluster cluster, AlgTraitSet traitSet ) {
         super();
         assert cluster != null;
         this.cluster = cluster;
@@ -144,7 +159,7 @@ public abstract class AbstractAlgNode implements AlgNode {
 
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        // Note that empty set equals empty set, so relational expressions with zero inputs do not generally need to implement their own copy method.
+        // Note that empty set equals empty set, so expressions with zero inputs do not generally need to implement their own copy method.
         if ( getInputs().equals( inputs ) && traitSet == getTraitSet() ) {
             return this;
         }
@@ -184,7 +199,7 @@ public abstract class AbstractAlgNode implements AlgNode {
 
 
     @Override
-    public void register( AlgOptPlanner planner ) {
+    public void register( AlgPlanner planner ) {
         Util.discard( planner );
     }
 
@@ -239,7 +254,7 @@ public abstract class AbstractAlgNode implements AlgNode {
 
 
     @Override
-    public double estimateRowCount( AlgMetadataQuery mq ) {
+    public double estimateTupleCount( AlgMetadataQuery mq ) {
         return 1.0;
     }
 
@@ -290,11 +305,10 @@ public abstract class AbstractAlgNode implements AlgNode {
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         // by default, assume cost is proportional to number of rows
-        double rowCount = mq.getRowCount( this );
-        double bytesPerRow = 1;
-        return planner.getCostFactory().makeCost( rowCount, rowCount, 0 );
+        double tupleCount = mq.getTupleCount( this );
+        return planner.getCostFactory().makeCost( tupleCount, tupleCount, 0 );
     }
 
 
@@ -302,10 +316,9 @@ public abstract class AbstractAlgNode implements AlgNode {
     public final <M extends Metadata> M metadata( Class<M> metadataClass, AlgMetadataQuery mq ) {
         final MetadataFactory factory = cluster.getMetadataFactory();
         final M metadata = factory.query( this, mq, metadataClass );
-        assert metadata != null : "no provider found (rel=" + this + ", m=" + metadataClass + "); a backstop provider is recommended";
-        // Usually the metadata belongs to the alg that created it. RelSubset and HepAlgVertex are notable exceptions, so
+        assert metadata != null : "no provider found (alg=" + this + ", m=" + metadataClass + "); a backstop provider is recommended";
+        // Usually the metadata belongs to the alg that created it. AlgSubset and HepAlgVertex are notable exceptions, so
         // disable the assert. It's not worth the performance hit to override this method for them.
-        //   assert metadata.rel() == this : "someone else's metadata";
         return metadata;
     }
 
@@ -317,7 +330,7 @@ public abstract class AbstractAlgNode implements AlgNode {
 
 
     /**
-     * Describes the inputs and attributes of this relational expression.
+     * Describes the inputs and attributes of this expression.
      * Each node should call {@code super.explainTerms}, then call the {@link AlgWriterImpl#input(String, AlgNode)} and
      * {@link AlgWriterImpl#item(String, Object)} methods for each input and attribute.
      *
@@ -327,27 +340,24 @@ public abstract class AbstractAlgNode implements AlgNode {
     public AlgWriter explainTerms( AlgWriter pw ) {
         ModelTrait trait = getTraitSet().getTrait( ModelTraitDef.INSTANCE );
         if ( trait != null ) {
-            return pw.item( "model", trait.getDataModel().name() );
+            return pw.item( "model", trait.dataModel().name() );
         }
         return pw;
     }
 
 
     @Override
-    public AlgNode onRegister( AlgOptPlanner planner ) {
+    public AlgNode onRegister( AlgPlanner planner ) {
         List<AlgNode> oldInputs = getInputs();
         List<AlgNode> inputs = new ArrayList<>( oldInputs.size() );
         for ( final AlgNode input : oldInputs ) {
             AlgNode e = planner.ensureRegistered( input, null );
-            if ( e != input ) {
-                // TODO: change 'equal' to 'eq', which is stronger.
-                assert AlgOptUtil.equal(
-                        "rowtype of alg before registration",
-                        input.getTupleType(),
-                        "rowtype of alg after registration",
-                        e.getTupleType(),
-                        Litmus.THROW );
-            }
+            assert e == input || AlgOptUtil.equal(
+                    "tupletype of alg before registration",
+                    input.getTupleType(),
+                    "tupletype of alg after registration",
+                    e.getTupleType(),
+                    Litmus.THROW );
             inputs.add( e );
         }
         AlgNode r = this;
@@ -395,7 +405,7 @@ public abstract class AbstractAlgNode implements AlgNode {
 
 
     @Override
-    public void replaceCluster( AlgOptCluster cluster ) {
+    public void replaceCluster( AlgCluster cluster ) {
         for ( AlgNode input : getInputs() ) {
             input.replaceCluster( cluster );
         }
@@ -429,8 +439,7 @@ public abstract class AbstractAlgNode implements AlgNode {
                             }
                             pw.write( value.left );
                             pw.write( "=" );
-                            if ( value.right instanceof AlgNode ) {
-                                AlgNode input = (AlgNode) value.right;
+                            if ( value.right instanceof AlgNode input ) {
                                 pw.write( input.getAlgTypeName() );
                                 pw.write( "#" );
                                 pw.write( Integer.toString( input.getId() ) );
@@ -443,6 +452,95 @@ public abstract class AbstractAlgNode implements AlgNode {
                 };
         explain( pw );
         return sw.toString();
+    }
+
+
+    public static class AlgComparatorBuilder extends AlgShuttleImpl implements RexVisitor<String> {
+
+
+        @Override
+        public String visitIndexRef( RexIndexRef inputRef ) {
+            return "$" + inputRef.getIndex();
+        }
+
+
+        @Override
+        public String visitLocalRef( RexLocalRef localRef ) {
+            return "l$" + localRef.getIndex();
+        }
+
+
+        @Override
+        public String visitLiteral( RexLiteral literal ) {
+            return literal.value == null ? "null" : literal.value.toJson();
+        }
+
+
+        @Override
+        public String visitCall( RexCall call ) {
+            return call.op.getName() + "(" + call.getOperands().stream().map( operand -> operand.accept( this ) ).reduce( ( s, s2 ) -> s + "," + s2 ).orElse( "" ) + ")";
+        }
+
+
+        @Override
+        public String visitOver( RexOver over ) {
+            return "$over";
+        }
+
+
+        @Override
+        public String visitCorrelVariable( RexCorrelVariable correlVariable ) {
+            return "$" + correlVariable.id;
+        }
+
+
+        @Override
+        public String visitDynamicParam( RexDynamicParam dynamicParam ) {
+            return "$" + dynamicParam.getIndex() + "(" + dynamicParam.getType().getFullTypeString() + ")";
+        }
+
+
+        @Override
+        public String visitRangeRef( RexRangeRef rangeRef ) {
+            return "$" + rangeRef.getOffset() + "[" + rangeRef.getOffset() + ".." + rangeRef.getOffset() + "]";
+        }
+
+
+        @Override
+        public String visitFieldAccess( RexFieldAccess fieldAccess ) {
+            return fieldAccess.toString();
+        }
+
+
+        @Override
+        public String visitSubQuery( RexSubQuery subQuery ) {
+            return "$subquery[" + subQuery.alg.accept( this ) + "]";
+        }
+
+
+        @Override
+        public String visitTableInputRef( RexTableIndexRef fieldRef ) {
+            return "$table" + fieldRef.getIndex();
+        }
+
+
+        @Override
+        public String visitPatternFieldRef( RexPatternFieldRef fieldRef ) {
+            return "$pattern" + fieldRef.getIndex();
+        }
+
+
+        @Override
+        public String visitNameRef( RexNameRef nameRef ) {
+            return "$name" + nameRef.getName();
+        }
+
+
+        @Override
+        public String visitElementRef( RexElementRef rexElementRef ) {
+            return "$element(" + rexElementRef.getCollectionRef().accept( this ) + ")";
+        }
+
     }
 
 

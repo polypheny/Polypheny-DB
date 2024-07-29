@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import org.polypheny.db.plugins.PolyPlugin;
 import org.polypheny.db.plugins.PolyPluginManager;
 import org.polypheny.db.webui.crud.LanguageCrud;
 
+@SuppressWarnings("unused")
 public class CypherLanguagePlugin extends PolyPlugin {
 
 
@@ -50,7 +51,8 @@ public class CypherLanguagePlugin extends PolyPlugin {
                 CypherParserImpl.FACTORY,
                 CypherProcessor::new,
                 null,
-                LanguageManager::toQueryNodes );
+                LanguageManager::toQueryNodes,
+                c -> c );
         LanguageManager.getINSTANCE().addQueryLanguage( language );
         PolyPluginManager.AFTER_INIT.add( () -> LanguageCrud.addToResult( language, LanguageCrud::getGraphResult ) );
 

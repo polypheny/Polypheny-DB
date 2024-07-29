@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@
 package org.polypheny.db.sql;
 
 import java.util.List;
+import lombok.SneakyThrows;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.polypheny.db.PolyphenyDb;
 import org.polypheny.db.TestHelper;
@@ -31,12 +33,13 @@ import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.util.PolyMode;
+import org.polypheny.db.util.RunMode;
 
 public class SqlLanguageDependent {
 
 
     public static TestHelper testHelper;
+
 
     @BeforeAll
     public static void startUp() {
@@ -44,15 +47,58 @@ public class SqlLanguageDependent {
     }
 
 
+    @AfterAll
+    public static void tearDown() {
+        removeTestSchema();
+        removeHrSchema();
+    }
+
+
+    @SneakyThrows
+    private static void removeHrSchema() {
+
+        TransactionManager transactionManager = testHelper.getTransactionManager();
+
+        Transaction transaction = transactionManager.startTransaction( Catalog.defaultUserId, false, "Sql Test" );
+
+        DdlManager manager = DdlManager.getInstance();
+
+        Catalog.snapshot().rel().getTable( Catalog.defaultNamespaceId, "hr" ).ifPresent( table -> {
+            manager.dropTable( table, transaction.createStatement() );
+        } );
+        transaction.commit();
+    }
+
+
+    @SneakyThrows
+    private static void removeTestSchema() {
+        TransactionManager transactionManager = testHelper.getTransactionManager();
+
+        Transaction transaction = transactionManager.startTransaction( Catalog.defaultUserId, false, "Sql Test" );
+
+        DdlManager manager = DdlManager.getInstance();
+
+        Catalog.snapshot().rel().getTable( Catalog.defaultNamespaceId, "dept" ).ifPresent( table -> {
+            manager.dropTable( table, transaction.createStatement() );
+        } );
+
+        Catalog.snapshot().rel().getTable( Catalog.defaultNamespaceId, "emp" ).ifPresent( table -> {
+            manager.dropTable( table, transaction.createStatement() );
+        } );
+        transaction.commit();
+    }
+
+
+    @SneakyThrows
     public static void setupSqlAndSchema() {
-        PolyphenyDb.mode = PolyMode.TEST;
+        PolyphenyDb.mode = RunMode.TEST;
         testHelper = TestHelper.getInstance();
         createTestSchema( testHelper );
         createHrSchema( testHelper );
     }
 
 
-    private static void createHrSchema( TestHelper testHelper ) {
+    private static void createHrSchema( TestHelper testHelper ) throws TransactionException {
 
         TransactionManager transactionManager = testHelper.getTransactionManager();
 
@@ -71,6 +117,8 @@ public class SqlLanguageDependent {
         );
 
         manager.createTable( Catalog.defaultNamespaceId, "hr", columns, constraints, true, null, null, transaction.createStatement() );
+
+        transaction.commit();
 
     }
 
@@ -104,7 +152,7 @@ public class SqlLanguageDependent {
                 new FieldInformation( "mgr", new ColumnTypeInformation( PolyType.INTEGER, null, null, null, null, null, true ), null, null, 3 ),
                 new FieldInformation( "hiredate", new ColumnTypeInformation( PolyType.DATE, null, null, null, null, null, true ), null, null, 4 ),
                 new FieldInformation( "salary", new ColumnTypeInformation( PolyType.DECIMAL, null, null, 7, 2, null, true ), null, null, 5 ),
-                new FieldInformation( "deptno", new ColumnTypeInformation( PolyType.INTEGER, null, null, 0, 0, null, true ), null, null, 5 )
+                new FieldInformation( "deptno", new ColumnTypeInformation( PolyType.INTEGER, null, null, null, null, null, true ), null, null, 6 )
         );
 
         constraints = List.of(
@@ -114,7 +162,7 @@ public class SqlLanguageDependent {
         manager.createTable( Catalog.defaultNamespaceId, "emp", columns, constraints, true, null, null, transaction.createStatement() );
 
         // "CREATE TABLE contact.customer(fname VARCHAR(50) NOT NULL, PRIMARY KEY (fname))"
-        long id = manager.createNamespace( "customer", DataModel.RELATIONAL, true, false );
+        long id = manager.createNamespace( "customer", DataModel.RELATIONAL, true, false, transaction.createStatement() );
 
         columns = List.of(
                 new FieldInformation( "fname", new ColumnTypeInformation( PolyType.VARCHAR, null, 50, null, null, null, false ), null, null, 0 )

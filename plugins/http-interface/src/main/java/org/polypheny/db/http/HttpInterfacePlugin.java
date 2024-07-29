@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,16 +76,14 @@ public class HttpInterfacePlugin extends PolyPlugin {
     @Override
     public void afterCatalogInit() {
         // Add HTTP interface
-        Map<String, String> httpSettings = new HashMap<>();
-        httpSettings.put( "port", "13137" );
-        httpSettings.put( "maxUploadSizeMb", "10000" );
-        QueryInterfaceManager.addInterfaceType( "http", HttpInterface.class, httpSettings );
+        QueryInterfaceManager.addInterfaceTemplate( HttpInterface.INTERFACE_NAME, HttpInterface.INTERFACE_DESCRIPTION,
+                HttpInterface.AVAILABLE_SETTINGS, HttpInterface::new );
     }
 
 
     @Override
     public void stop() {
-        QueryInterfaceManager.removeInterfaceType( HttpInterface.class );
+        QueryInterfaceManager.removeInterfaceType( HttpInterface.INTERFACE_NAME );
     }
 
 
@@ -116,8 +114,8 @@ public class HttpInterfacePlugin extends PolyPlugin {
         private static Javalin server;
 
 
-        public HttpInterface( TransactionManager transactionManager, Authenticator authenticator, long ifaceId, String uniqueName, Map<String, String> settings ) {
-            super( transactionManager, authenticator, ifaceId, uniqueName, settings, true, false );
+        public HttpInterface( TransactionManager transactionManager, Authenticator authenticator, String uniqueName, Map<String, String> settings ) {
+            super( transactionManager, authenticator, uniqueName, settings, true, false );
             this.uniqueName = uniqueName;
             this.port = Integer.parseInt( settings.get( "port" ) );
             if ( !Util.checkIfPortIsAvailable( port ) ) {
@@ -139,7 +137,7 @@ public class HttpInterfacePlugin extends PolyPlugin {
                 } ) );
             } ).start( port );*/
 
-            this.server = Javalin.create( config -> {
+            server = Javalin.create( config -> {
                 config.jsonMapper( new JavalinJackson( new ObjectMapper() {
                     {
                         setSerializationInclusion( JsonInclude.Include.NON_NULL );
@@ -169,7 +167,7 @@ public class HttpInterfacePlugin extends PolyPlugin {
 
 
         public void addRoute( QueryLanguage language ) {
-            for ( String route : language.getOtherNames() ) {
+            for ( String route : language.otherNames() ) {
                 log.info( "Added HTTP Route: /{}", route );
                 server.post( route, ctx -> anyQuery( language, ctx ) );
             }
@@ -273,7 +271,7 @@ public class HttpInterfacePlugin extends PolyPlugin {
                 DecimalFormat df = new DecimalFormat( "0.0", symbols );
                 statementsTable.reset();
                 for ( Map.Entry<QueryLanguage, AtomicLong> entry : statementCounters.entrySet() ) {
-                    statementsTable.addRow( entry.getKey().getSerializedName(), df.format( total == 0 ? 0 : (entry.getValue().longValue() / total) * 100 ) + " %", entry.getValue().longValue() );
+                    statementsTable.addRow( entry.getKey().serializedName(), df.format( total == 0 ? 0 : (entry.getValue().longValue() / total) * 100 ) + " %", entry.getValue().longValue() );
                 }
             }
 

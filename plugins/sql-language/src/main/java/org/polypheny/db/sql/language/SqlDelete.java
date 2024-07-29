@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,8 @@ package org.polypheny.db.sql.language;
 
 
 import java.util.List;
+import lombok.Getter;
+import lombok.Setter;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.languages.ParserPos;
@@ -31,12 +33,14 @@ import org.polypheny.db.util.ImmutableNullableList;
 /**
  * A <code>SqlDelete</code> is a node of a parse tree which represents a DELETE statement.
  */
+@Getter
 public class SqlDelete extends SqlCall {
 
     public static final SqlSpecialOperator OPERATOR = new SqlSpecialOperator( "DELETE", Kind.DELETE );
 
     SqlNode targetTable;
     SqlNode condition;
+    @Setter
     SqlSelect sourceSelect;
     SqlIdentifier alias;
 
@@ -101,43 +105,6 @@ public class SqlDelete extends SqlCall {
     }
 
 
-    /**
-     * @return the identifier for the target table of the deletion
-     */
-    public SqlNode getTargetTable() {
-        return targetTable;
-    }
-
-
-    /**
-     * @return the alias for the target table of the deletion
-     */
-    public SqlIdentifier getAlias() {
-        return alias;
-    }
-
-
-    /**
-     * Gets the filter condition for rows to be deleted.
-     *
-     * @return the condition expression for the data to be deleted, or null for all rows in the table
-     */
-    public SqlNode getCondition() {
-        return condition;
-    }
-
-
-    /**
-     * Gets the source SELECT expression for the data to be deleted. This returns null before the condition has been expanded by
-     * {@code SqlValidatorImpl#performUnconditionalRewrites(SqlNode, boolean)}.
-     *
-     * @return the source SELECT for the data to be inserted
-     */
-    public SqlSelect getSourceSelect() {
-        return sourceSelect;
-    }
-
-
     @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
         final SqlWriter.Frame frame = writer.startList( SqlWriter.FrameTypeEnum.SELECT, "DELETE FROM", "" );
@@ -161,10 +128,6 @@ public class SqlDelete extends SqlCall {
         validator.validateDelete( this );
     }
 
-
-    public void setSourceSelect( SqlSelect sourceSelect ) {
-        this.sourceSelect = sourceSelect;
-    }
 
 }
 

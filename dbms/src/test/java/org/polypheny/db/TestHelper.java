@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,7 +40,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
-import java.util.Properties;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -71,14 +70,14 @@ import org.polypheny.db.routing.RoutingManager;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.entity.PolyList;
-import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyFloat;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.util.Pair;
-import org.polypheny.db.util.PolyMode;
+import org.polypheny.db.util.RunMode;
 import org.polypheny.db.webui.HttpServer;
 import org.polypheny.db.webui.models.results.DocResult;
 import org.polypheny.db.webui.models.results.GraphResult;
@@ -106,7 +105,7 @@ public class TestHelper {
         log.info( "Starting Polypheny-DB..." );
 
         Runnable runnable = () -> {
-            PolyphenyDb.mode = PolyMode.TEST;
+            PolyphenyDb.mode = RunMode.TEST;
             String defaultStoreName = System.getProperty( "store.default" );
             if ( defaultStoreName != null ) {
                 polyphenyDb.defaultStoreName = defaultStoreName;
@@ -225,7 +224,7 @@ public class TestHelper {
 
     public static void executeSQL( String sql ) throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
-            try ( Statement statement = jdbcConnection.connection.createStatement() ) {
+            try ( Statement statement = jdbcConnection.getConnection().createStatement() ) {
                 statement.execute( sql );
             }
         }
@@ -295,56 +294,10 @@ public class TestHelper {
             int j = 0;
             while ( j < expectedRow.length ) {
                 if ( expectedRow.length >= j + 1 ) {
-                    int columnType = rsmd.getColumnType( j + 1 );
-                    if ( columnType == Types.BINARY ) {
-                        if ( expectedRow[j] == null ) {
-                            assertNull( row[j], "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "': " );
-                        } else {
-                            assertEquals(
-                                    new String( (byte[]) expectedRow[j] ),
-                                    new String( (byte[]) row[j] ),
-                                    "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'" );
-                        }
-                    } else if ( columnType != Types.ARRAY ) {
-                        if ( expectedRow[j] != null ) {
-                            if ( columnType == Types.FLOAT || columnType == Types.REAL ) {
-                                float diff = Math.abs( (float) expectedRow[j] - (float) row[j] );
-                                assertTrue( diff < EPSILON,
-                                        "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "': The difference between the expected float and the received float exceeds the epsilon. Difference: " + (diff - EPSILON) );
-                            } else if ( columnType == Types.DOUBLE ) {
-                                double diff = Math.abs( (double) expectedRow[j] - (double) row[j] );
-                                assertTrue( diff < EPSILON,
-                                        "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "': The difference between the expected double and the received double exceeds the epsilon. Difference: " + (diff - EPSILON) );
-                            } else if ( columnType == Types.DECIMAL ) { // Decimals are exact // but not for calculations?
-                                BigDecimal expectedResult = new BigDecimal( expectedRow[j].toString() );
-                                double diff = Math.abs( expectedResult.doubleValue() - ((BigDecimal) row[j]).doubleValue() );
-                                if ( isConvertingDecimals ) {
-                                    assertTrue( diff < EPSILON,
-                                            "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "': The difference between the expected decimal and the received decimal exceeds the epsilon. Difference: " + (diff - EPSILON) );
-                                } else {
-                                    assertEquals( 0, expectedResult.doubleValue() - ((BigDecimal) row[j]).doubleValue(), 0.0, "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'" );
-                                }
-                            } else if ( expectedRow[j] != null && row[j] != null && expectedRow[j] instanceof Number && row[j] instanceof Number ) {
-                                assertEquals( ((Number) expectedRow[j]).longValue(), ((Number) row[j]).longValue(), "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'" );
-                            } else {
-                                assertEquals(
-                                        expectedRow[j],
-                                        row[j],
-                                        "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'"
-                                );
-                            }
-                        } else {
-                            assertEquals(
+                    int columnType = rsmd.getColumnType( j + 1 ); // this leads to errors if expected is different aka expected is decimal and actual is integer
+                    String columnName = rsmd.getColumnName( j + 1 );
 
-                                    expectedRow[j],
-                                    row[j],
-                                    "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'"
-                            );
-                        }
-
-                    } else {
-                        checkArray( rsmd, row, expectedRow, j );
-                    }
+                    checkValue( isConvertingDecimals, row[j], expectedRow[j], columnType, columnName );
                     j++;
                 } else {
                     fail( "More data available then expected." );
@@ -355,21 +308,71 @@ public class TestHelper {
     }
 
 
-    private static void checkArray( ResultSetMetaData rsmd, Object[] row, Object[] expectedRow, int j ) throws SQLException {
-        List<?> resultList = (List<?>) row[j];
+    private static void checkValue( boolean isConvertingDecimals, Object actualValue, Object expectedValue, int columnType, String columnName ) {
+        if ( columnType != Types.ARRAY ) {
+            checkScalar( columnName, actualValue, expectedValue, isConvertingDecimals, columnType );
+        } else {
+            checkArray( columnName, actualValue, expectedValue, isConvertingDecimals, columnType );
+        }
+    }
 
-        if ( expectedRow[j] == null ) {
-            assertNull( resultList, "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "': " );
+
+    private static void checkScalar( String columnName, Object actualValue, Object expectedValue, boolean isConvertingDecimals, int columnType ) {
+        if ( expectedValue == null ) {
+            assertNull( actualValue, "Unexpected data in column '%s'".formatted( columnName ) );
+        } else if ( columnType == Types.BINARY ) {
+            assertEquals(
+                    new String( (byte[]) expectedValue ),
+                    new String( (byte[]) actualValue ),
+                    "Unexpected data in column '%s'".formatted( columnName ) );
+        } else if ( columnType == Types.FLOAT || columnType == Types.REAL ) {
+            float diff = Math.abs( (float) expectedValue - (float) actualValue );
+            assertTrue( diff < EPSILON,
+                    "Unexpected data in column '%s': The difference between the expected float and the received float exceeds the epsilon. Difference: %s".formatted( columnName, diff - EPSILON ) );
+        } else if ( columnType == Types.DOUBLE ) {
+            double diff = Math.abs( (double) expectedValue - (double) actualValue );
+            assertTrue( diff < EPSILON,
+                    "Unexpected data in column '%s': The difference between the expected double and the received double exceeds the epsilon. Difference: %s".formatted( columnName, diff - EPSILON ) );
+        } else if ( columnType == Types.DECIMAL || (expectedValue instanceof Float || expectedValue instanceof Double) ) { // Decimals are exact // but not for calculations?
+            BigDecimal expectedResult = new BigDecimal( expectedValue.toString() );
+            BigDecimal actualResult = new BigDecimal( actualValue.toString() );
+            double diff = Math.abs( expectedResult.doubleValue() - actualResult.doubleValue() );
+            if ( isConvertingDecimals ) {
+                assertTrue( diff < EPSILON,
+                        "Unexpected data in column '%s': The difference between the expected decimal and the received decimal exceeds the epsilon. Difference: %s".formatted( columnName, diff - EPSILON ) );
+            } else {
+                assertEquals( 0, expectedResult.doubleValue() - actualResult.doubleValue(), 0.0, "Unexpected data in column '%s'".formatted( columnName ) );
+            }
+        } else if ( expectedValue instanceof Number expectedNumber && actualValue instanceof Number actualNumber ) {
+            assertEquals( expectedNumber.longValue(), actualNumber.longValue(), "Unexpected data in column '%s'".formatted( columnName ) );
+        } else if ( expectedValue instanceof List<?> expectedList && actualValue instanceof List<?> actualList
+                && (columnType == Types.ARRAY || columnType == Types.OTHER) ) {
+            for ( int i = 0; i < expectedList.size(); i++ ) {
+                checkValue( isConvertingDecimals, actualList.get( i ), expectedList.get( i ), Types.OTHER, columnName );
+            }
+        } else {
+            assertEquals(
+                    expectedValue,
+                    actualValue,
+                    "Unexpected data in column '%s'".formatted( columnName )
+            );
+        }
+
+    }
+
+
+    private static void checkArray( String columnName, Object actualValue, Object expectedValue, boolean isConvertingDecimals, int columnType ) {
+        List<?> resultList = (List<?>) actualValue;
+
+        if ( expectedValue == null ) {
+            assertNull( resultList, "Unexpected data in column '%s'".formatted( columnName ) );
             return;
         }
 
-        List<?> expectedArray = toList( (Object[]) expectedRow[j] );//(Object[]) expectedRow[j];
+        List<?> expectedArray = toList( (Object[]) expectedValue );
 
         for ( int k = 0; k < expectedArray.size(); k++ ) {
-            assertEquals(
-                    expectedArray.get( k ),
-                    resultList.get( k ),
-                    "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "' at position: " + k + 1 );
+            checkValue( isConvertingDecimals, resultList.get( k ), expectedArray.get( k ), Types.OTHER, columnName ); // we have rather unspecific component types for arrays
         }
     }
 
@@ -551,7 +554,7 @@ public class TestHelper {
                 }
                 parsedResults.add( doc );
             }
-            List<BsonValue> parsedExpected = expected.stream().map( e -> e != null ? BsonDocument.parse( e ) : null ).collect( Collectors.toList() );
+            List<BsonValue> parsedExpected = expected.stream().map( e -> e != null ? (BsonValue) BsonDocument.parse( e ) : null ).toList();
 
             if ( unordered ) {
                 assertTrue( areDocumentEqual( parsedExpected, parsedResults ),
@@ -713,33 +716,53 @@ public class TestHelper {
     public static class JdbcConnection implements AutoCloseable {
 
         private final static String dbHost = "localhost";
-        private final static int port = 20591;
+        private final static int port = 20590;
 
-        private final Connection connection;
+        private final Connection conn;
+
+
+        public JdbcConnection( boolean autoCommit, boolean strictMode ) throws SQLException {
+            try {
+                Class.forName( "org.polypheny.jdbc.PolyphenyDriver" );
+            } catch ( ClassNotFoundException e ) {
+                log.error( "Polypheny JDBC Driver not found", e );
+            }
+            final String url = "jdbc:polypheny://" + dbHost + ":" + port + "/?strict=" + strictMode;
+            log.debug( "Connecting to database @ {}", url );
+
+            conn = DriverManager.getConnection( url, "pa", "" );
+            conn.setAutoCommit( autoCommit );
+        }
 
 
         public JdbcConnection( boolean autoCommit ) throws SQLException {
             try {
-                Class.forName( "org.polypheny.jdbc.Driver" );
+                Class.forName( "org.polypheny.jdbc.PolyphenyDriver" );
             } catch ( ClassNotFoundException e ) {
                 log.error( "Polypheny JDBC Driver not found", e );
             }
-            final String url = "jdbc:polypheny:http://" + dbHost + ":" + port;
+            final String url = "jdbc:polypheny://" + dbHost + ":" + port + "/?strict=false";
             log.debug( "Connecting to database @ {}", url );
 
-            Properties props = new Properties();
-            props.setProperty( "user", "pa" );
-            props.setProperty( "serialization", "PROTOBUF" );
+            conn = DriverManager.getConnection( url, "pa", "" );
+            conn.setAutoCommit( autoCommit );
+        }
 
-            connection = DriverManager.getConnection( url, props );
-            connection.setAutoCommit( autoCommit );
+
+        public Connection getConnection() {
+            return conn;
         }
 
 
         @Override
         public void close() throws SQLException {
-            connection.commit();
-            connection.close();
+            if ( conn.isClosed() ) {
+                return;
+            }
+            if ( !conn.getAutoCommit() ) {
+                conn.commit();
+            }
+            conn.close();
         }
 
     }

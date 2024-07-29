@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.polypheny.db.nodes;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.constant.Kind;
@@ -60,6 +61,14 @@ public interface Node extends Cloneable, Visitable {
         return litmus.succeed();
     }
 
+    default Optional<String> switchesNamespace() {
+        return getInputs().stream().map( Node::switchesNamespace ).findAny().orElse( Optional.empty() );
+    }
+
+    default List<? extends Node> getInputs() {
+        return List.of();
+    }
+
     /**
      * Creates a copy of a SqlNode.
      */
@@ -91,6 +100,11 @@ public interface Node extends Cloneable, Visitable {
         return Catalog.defaultNamespaceId;
     }
 
+    @Nullable
+    default String getNamespaceName() {
+        return null;
+    }
+
     /**
      * Returns whether this node is structurally equivalent to another node.
      * Some examples:
@@ -102,6 +116,7 @@ public interface Node extends Cloneable, Visitable {
      */
     boolean equalsDeep( Node node, Litmus litmus );
 
-    @Nullable String getEntity();
+    @Nullable
+    String getEntity();
 
 }

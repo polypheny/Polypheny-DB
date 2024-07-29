@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package org.polypheny.db.catalog.catalogs;
 
-import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.annotations.Deserialize;
 import java.util.ArrayList;
 import java.util.List;
@@ -40,15 +39,13 @@ import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalField;
 import org.polypheny.db.catalog.entity.physical.PhysicalGraph;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
-import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.util.Pair;
+
 
 @Getter
 @EqualsAndHashCode(callSuper = true)
 @Value
 public class GraphAdapterCatalog extends AdapterCatalog {
-
-    public BinarySerializer<GraphAdapterCatalog> serializer = PolySerializable.buildSerializer( GraphAdapterCatalog.class );
 
 
     public GraphAdapterCatalog( long adapterId ) {
@@ -90,7 +87,9 @@ public class GraphAdapterCatalog extends AdapterCatalog {
             AllocationTableWrapper wrapper ) {
         AllocationTable allocation = wrapper.table;
         List<AllocationColumn> columns = wrapper.columns;
-        List<PhysicalColumn> pColumns = columns.stream().map( c -> new PhysicalColumn( columnNames.get( c.columnId ), logical.id, allocation.id, allocation.adapterId, c.position, logicalColumns.get( c.columnId ) ) ).collect( Collectors.toList() );
+        List<PhysicalColumn> pColumns = columns.stream()
+                .map( c -> new PhysicalColumn( columnNames.get( c.columnId ), logical.id, allocation.id, allocation.adapterId, c.position, logicalColumns.get( c.columnId ) ) )
+                .collect( Collectors.toList() );
         long physicalId = IdBuilder.getInstance().getNewPhysicalId();
         PhysicalTable table = new PhysicalTable( physicalId, allocation.id, logical.id, tableName, pColumns, logical.namespaceId, namespaceName, pkIds, allocation.adapterId );
         pColumns.forEach( this::addColumn );
@@ -143,14 +142,6 @@ public class GraphAdapterCatalog extends AdapterCatalog {
 
     public void dropColumn( long allocId, long columnId ) {
         fields.remove( Pair.of( allocId, columnId ) );
-    }
-
-
-
-
-    @Override
-    public PolySerializable copy() {
-        return PolySerializable.deserialize( serialize(), GraphAdapterCatalog.class );
     }
 
 

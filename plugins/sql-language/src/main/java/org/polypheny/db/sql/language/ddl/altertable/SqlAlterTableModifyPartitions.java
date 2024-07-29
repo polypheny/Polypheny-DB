@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -156,14 +156,6 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
             }
         }
 
-        // Check if in-memory dataPartitionPlacement Map should even be changed and therefore start costly partitioning
-        // Avoid unnecessary partitioning when the placement is already partitioned in the same way it has been specified
-        /*if ( tempPartitionList.equals( catalog.getSnapshot().alloc().getPartitionGroupsOnDataPlacement( storeId, tableId ) ) ) {
-            log.info( "The data placement for table: '{}' on storeId: '{}' already contains all specified partitions of statement: {}",
-                    table.name, storeName, partitionGroupList );
-            return;
-        }*/ // todo dl
-        // Update
         DdlManager.getInstance().modifyPartitionPlacement(
                 table,
                 partitionList,

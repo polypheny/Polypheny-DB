@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,10 +24,10 @@ import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.CompatibilityLevel;
 import io.activej.serializer.CorruptedDataException;
-import io.activej.serializer.SimpleSerializerDef;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.annotations.SerializeNullable;
+import io.activej.serializer.def.SimpleSerializerDef;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.util.Objects;
@@ -38,6 +38,7 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.commons.lang3.ObjectUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
@@ -50,11 +51,12 @@ public class PolyBigDecimal extends PolyNumber {
     @JsonProperty
     @Serialize
     @SerializeNullable
+    @Nullable
     public BigDecimal value;
 
 
     @JsonCreator
-    public PolyBigDecimal( @JsonProperty("value") @Deserialize("value") BigDecimal value ) {
+    public PolyBigDecimal( @JsonProperty("value") @Deserialize("value") @Nullable BigDecimal value ) {
         super( PolyType.DECIMAL );
         this.value = value;
     }
@@ -81,6 +83,9 @@ public class PolyBigDecimal extends PolyNumber {
 
 
     public static PolyBigDecimal of( Number value, int precision, int scale ) {
+        if ( value instanceof BigDecimal bigDecimal ) {
+            return PolyBigDecimal.of( bigDecimal );
+        }
         return PolyBigDecimal.of( value.doubleValue() );
     }
 
@@ -101,22 +106,7 @@ public class PolyBigDecimal extends PolyNumber {
     }
 
 
-    public static PolyBigDecimal convert( Object value ) {
-        if ( value == null ) {
-            return null;
-        }
-
-        if ( value instanceof PolyNumber ) {
-            return PolyBigDecimal.of( ((PolyNumber) value).bigDecimalValue() );
-        } else if ( value instanceof PolyValue ) {
-            log.warn( "error in Decimal convert" );
-            return null;
-        }
-        return null;
-    }
-
-
-    public static PolyBigDecimal convert( PolyValue value ) {
+    public static PolyBigDecimal convert( @Nullable PolyValue value ) {
         if ( value == null ) {
             return null;
         }
@@ -127,7 +117,7 @@ public class PolyBigDecimal extends PolyNumber {
         } else if ( value.isString() ) {
             return PolyBigDecimal.of( value.asString().value );
         }
-        return null;
+        throw new GenericRuntimeException( getConvertError( value, PolyBigDecimal.class ) );
     }
 
 
@@ -169,7 +159,7 @@ public class PolyBigDecimal extends PolyNumber {
 
     @Override
     public @NotNull PolyNumber divide( @NotNull PolyNumber other ) {
-        return PolyBigDecimal.of( value.divide( other.bigDecimalValue(), MathContext.DECIMAL64 ) );
+        return PolyBigDecimal.of( value.divide( other.bigDecimalValue(), new MathContext( Math.max( value.precision(), 64 ) ) ) );
     }
 
 
@@ -204,37 +194,6 @@ public class PolyBigDecimal extends PolyNumber {
 
 
     @Override
-    public boolean equals( Object o ) {
-        if ( this == o ) {
-            return true;
-        }
-        if ( o == null ) {
-            return false;
-        }
-
-        if ( !(o instanceof PolyValue) ) {
-            return false;
-        }
-
-        if ( ((PolyValue) o).isNull() ) {
-            return false;
-        }
-
-        if ( !((PolyValue) o).isNumber() ) {
-            return false;
-        }
-        BigDecimal that = ((PolyValue) o).asNumber().bigDecimalValue();
-        return Objects.equals( value.stripTrailingZeros(), that.stripTrailingZeros() );
-    }
-
-
-    @Override
-    public int hashCode() {
-        return Objects.hash( super.hashCode(), value );
-    }
-
-
-    @Override
     public int compareTo( @NotNull PolyValue o ) {
         if ( !o.isNumber() ) {
             return -1;
@@ -259,6 +218,43 @@ public class PolyBigDecimal extends PolyNumber {
     @Override
     public @NotNull Long deriveByteSize() {
         return value == null ? 1 : 32L;
+    }
+
+
+    @Override
+    public boolean isNull() {
+        return value == null;
+    }
+
+
+    @Override
+    public boolean equals( Object o ) {
+        if ( this == o ) {
+            return true;
+        }
+        if ( o == null ) {
+            return false;
+        }
+
+        if ( !(o instanceof PolyValue val) ) {
+            return false;
+        }
+
+        if ( val.isNull() ) {
+            return false;
+        }
+
+        if ( !val.isNumber() ) {
+            return false;
+        }
+        BigDecimal that = val.asNumber().bigDecimalValue();
+        return Objects.equals( value.stripTrailingZeros(), that.stripTrailingZeros() );
+    }
+
+
+    @Override
+    public int hashCode() {
+        return Objects.hash( super.hashCode(), value );
     }
 
 

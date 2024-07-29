@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,52 +55,38 @@ public enum SemiJoinType {
 
 
     public static SemiJoinType of( JoinAlgType joinType ) {
-        switch ( joinType ) {
-            case INNER:
-                return INNER;
-            case LEFT:
-                return LEFT;
-        }
-        throw new IllegalArgumentException( "Unsupported join type for semi-join " + joinType );
+        return switch ( joinType ) {
+            case INNER -> INNER;
+            case LEFT -> LEFT;
+            default -> throw new IllegalArgumentException( "Unsupported join type for semi-join " + joinType );
+        };
     }
 
 
     public JoinAlgType toJoinType() {
-        switch ( this ) {
-            case INNER:
-                return JoinAlgType.INNER;
-            case LEFT:
-                return JoinAlgType.LEFT;
-        }
-        throw new IllegalStateException( "Unable to convert " + this + " to JoinRelType" );
+        return switch ( this ) {
+            case INNER -> JoinAlgType.INNER;
+            case LEFT -> JoinAlgType.LEFT;
+            default -> throw new IllegalStateException( "Unable to convert " + this + " to JoinAlgType" );
+        };
     }
 
 
     public JoinType toLinq4j() {
-        switch ( this ) {
-            case INNER:
-                return JoinType.INNER;
-            case LEFT:
-                return JoinType.LEFT;
-            case SEMI:
-                return JoinType.LEFT_SEMI_JOIN;
-            case ANTI:
-                return JoinType.COMMA;
-        }
-        throw new IllegalStateException( "Unable to convert " + this + " to JoinRelType" );
+        return switch ( this ) {
+            case INNER -> JoinType.INNER;
+            case LEFT -> JoinType.LEFT;
+            case SEMI -> JoinType.LEFT_SEMI_JOIN;
+            case ANTI -> JoinType.COMMA;
+        };
     }
 
 
     public boolean returnsJustFirstInput() {
-        switch ( this ) {
-            case INNER:
-            case LEFT:
-                return false;
-            case SEMI:
-            case ANTI:
-                return true;
-        }
-        throw new IllegalStateException( "Unable to convert " + this + " to JoinRelType" );
+        return switch ( this ) {
+            case INNER, LEFT -> false;
+            case SEMI, ANTI -> true;
+        };
     }
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,9 +23,9 @@ import java.io.Serial;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import lombok.With;
+import lombok.experimental.NonFinal;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.PolyObject;
 import org.polypheny.db.catalog.logistic.DataModel;
@@ -36,6 +36,7 @@ import org.polypheny.db.type.entity.PolyValue;
 @EqualsAndHashCode(callSuper = false)
 @With
 @Value
+@NonFinal // for testing
 public class LogicalNamespace implements PolyObject, Comparable<LogicalNamespace> {
 
     @Serial
@@ -87,13 +88,7 @@ public class LogicalNamespace implements PolyObject, Comparable<LogicalNamespace
     }
 
 
-    @RequiredArgsConstructor
-    public static class PrimitiveCatalogSchema {
-
-        public final String tableSchem;
-        public final String tableCatalog;
-        public final String owner;
-        public final String schemaType;
+    public record PrimitiveCatalogSchema(String tableSchem, String tableCatalog, String owner, String schemaType) {
 
     }
 

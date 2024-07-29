@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,7 +43,7 @@ public class LogicalQueryInterface implements PolyObject {
     @Serialize
     public String name;
     @Serialize
-    public String clazz;
+    public String interfaceName;
     @Serialize
     public ImmutableMap<String, String> settings;
 
@@ -51,11 +51,11 @@ public class LogicalQueryInterface implements PolyObject {
     public LogicalQueryInterface(
             @Deserialize("id") final long id,
             @Deserialize("name") @NonNull final String uniqueName,
-            @Deserialize("clazz") @NonNull final String clazz,
+            @Deserialize("interfaceName") @NonNull final String interfaceName,
             @Deserialize("settings") @NonNull final Map<String, String> settings ) {
         this.id = id;
         this.name = uniqueName;
-        this.clazz = clazz;
+        this.interfaceName = interfaceName;
         this.settings = ImmutableMap.copyOf( settings );
     }
 

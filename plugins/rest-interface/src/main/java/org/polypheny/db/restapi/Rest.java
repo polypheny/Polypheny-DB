@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,9 +40,8 @@ import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.core.relational.RelModify;
-import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
-import org.polypheny.db.algebra.logical.relational.LogicalValues;
+import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
@@ -51,8 +50,8 @@ import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgCluster;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.restapi.RequestParser.Filters;
 import org.polypheny.db.restapi.exception.RestException;
 import org.polypheny.db.restapi.models.requests.ResourceDeleteRequest;
@@ -168,11 +167,11 @@ public class Rest {
 
         // Table Modify
 
-        AlgOptPlanner planner = statement.getQueryProcessor().getPlanner();
-        AlgOptCluster cluster = AlgOptCluster.create( planner, rexBuilder, null, Catalog.getInstance().getSnapshot() );
+        AlgPlanner planner = statement.getQueryProcessor().getPlanner();
+        AlgCluster cluster = AlgCluster.create( planner, rexBuilder, null, Catalog.getInstance().getSnapshot() );
 
         // Values
-        AlgDataType tableRowType = table.getRowType();
+        AlgDataType tableRowType = table.getTupleType();
         List<AlgDataTypeField> tableRows = tableRowType.getFields();
         List<String> valueColumnNames = this.valuesColumnNames( resourcePatchRequest.values );
         List<RexNode> rexValues = this.valuesNode( statement, algBuilder, rexBuilder, resourcePatchRequest, tableRows, inputStreams ).get( 0 );
@@ -225,8 +224,8 @@ public class Rest {
 
         // Table Modify
 
-        AlgOptPlanner planner = statement.getQueryProcessor().getPlanner();
-        AlgOptCluster cluster = AlgOptCluster.create( planner, rexBuilder, null, Catalog.getInstance().getSnapshot() );
+        AlgPlanner planner = statement.getQueryProcessor().getPlanner();
+        AlgCluster cluster = AlgCluster.create( planner, rexBuilder, null, Catalog.getInstance().getSnapshot() );
 
         AlgNode algNode = algBuilder.build();
         RelModify<?> modify = new LogicalRelModify(
@@ -269,15 +268,15 @@ public class Rest {
         LogicalTable table = getLogicalTable( transaction.getSnapshot(), insertValueRequest.tables.get( 0 ).getNamespaceName(), insertValueRequest.tables.get( 0 ).getName() );
 
         // Values
-        AlgDataType tableRowType = table.getRowType();
+        AlgDataType tableRowType = table.getTupleType();
         List<AlgDataTypeField> tableRows = tableRowType.getFields();
 
-        AlgOptPlanner planner = statement.getQueryProcessor().getPlanner();
-        AlgOptCluster cluster = AlgOptCluster.create( planner, rexBuilder, null, Catalog.getInstance().getSnapshot() );
+        AlgPlanner planner = statement.getQueryProcessor().getPlanner();
+        AlgCluster cluster = AlgCluster.create( planner, rexBuilder, null, Catalog.getInstance().getSnapshot() );
 
         List<String> valueColumnNames = this.valuesColumnNames( insertValueRequest.values );
         List<RexNode> rexValues = this.valuesNode( statement, algBuilder, rexBuilder, insertValueRequest, tableRows, inputStreams ).get( 0 );
-        algBuilder.push( LogicalValues.createOneRow( cluster ) );
+        algBuilder.push( LogicalRelValues.createOneRow( cluster ) );
         algBuilder.project( rexValues, valueColumnNames );
 
         // Table Modify
@@ -312,11 +311,11 @@ public class Rest {
         boolean firstTable = true;
         for ( LogicalTable catalogTable : tables ) {
             if ( firstTable ) {
-                algBuilder = algBuilder.scan( catalogTable.getNamespaceName(), catalogTable.name );
+                algBuilder = algBuilder.relScan( catalogTable.getNamespaceName(), catalogTable.name );
                 firstTable = false;
             } else {
                 algBuilder = algBuilder
-                        .scan( catalogTable.getNamespaceName(), catalogTable.name )
+                        .relScan( catalogTable.getNamespaceName(), catalogTable.name )
                         .join( JoinAlgType.INNER, rexBuilder.makeLiteral( true ) );
             }
         }
@@ -342,13 +341,6 @@ public class Rest {
                     AlgDataTypeField typeField = filterMap.get( column.getColumn().name );
                     RexNode inputRef = rexBuilder.makeInputRef( baseNodeForFilters, typeField.getIndex() );
                     PolyValue param = filterOperationPair.right;
-                    /*if ( param instanceof TimestampString ) {
-                        param = PolyTimeStamp.of( ((TimestampString) param).getMillisSinceEpoch() );
-                    } else if ( param instanceof TimeString ) {
-                        param = PolyTime.of( ((TimeString) param).getMillisOfDay() );
-                    } else if ( param instanceof DateString ) {
-                        param = PolyDate.of( ((DateString) param).toCalendar().getTime() );
-                    }*/
                     statement.getDataContext().addParameterValues( index, typeField.getType(), ImmutableList.of( param ) );
                     RexNode rightHandSide = rexBuilder.makeDynamicParam( typeField.getType(), index );
                     index++;
@@ -360,7 +352,6 @@ public class Rest {
             if ( req != null && log.isDebugEnabled() ) {
                 log.debug( "Finished processing filters. Session ID: {}.", req.getSession().getId() );
             }
-//            algBuilder = algBuilder.filter( filterNodes );
             if ( req != null && log.isDebugEnabled() ) {
                 log.debug( "Added filters to relation. Session ID: {}.", req.getSession().getId() );
             }
@@ -470,7 +461,7 @@ public class Rest {
                 inputFields.add( column.getLogicalIndex() );
                 String fieldName = column.getAlias();
                 AggregateCall aggregateCall = AggregateCall.create(
-                        (Operator & AggFunction) column.getAggregate(),
+                        column.getAggregate(),
                         false,
                         false,
                         inputFields,
@@ -514,10 +505,10 @@ public class Rest {
 
 
     AlgBuilder sort( AlgBuilder algBuilder, RexBuilder rexBuilder, List<Pair<RequestColumn, Boolean>> sorts, int limit, int offset ) {
-        if ( (sorts == null || sorts.size() == 0) && (limit >= 0 || offset >= 0) ) {
+        if ( (sorts == null || sorts.isEmpty()) && (limit >= 0 || offset >= 0) ) {
             algBuilder = algBuilder.limit( offset, limit );
 //            log.debug( "Added limit and offset to relation. Session ID: {}.", req.session().id() );
-        } else if ( sorts != null && sorts.size() != 0 ) {
+        } else if ( sorts != null && !sorts.isEmpty() ) {
             List<RexNode> sortingNodes = new ArrayList<>();
             AlgNode baseNodeForSorts = algBuilder.peek();
             for ( Pair<RequestColumn, Boolean> sort : sorts ) {
@@ -555,7 +546,7 @@ public class Rest {
             log.debug( "AlgRoot was prepared." );
 
             final ResultIterator iter = result.execute( statement, 1 );
-            restResult = new RestResult( algRoot.kind, iter, result.rowType, result.getColumns() );
+            restResult = new RestResult( algRoot.kind, iter, result.tupleType, result.getFields() );
             restResult.transform();
             long executionTime = restResult.getExecutionTime();
             if ( !algRoot.kind.belongsTo( Kind.DML ) ) {

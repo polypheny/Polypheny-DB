@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,6 @@ import org.polypheny.db.adapter.jdbc.stores.AbstractJdbcStore;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalIndex;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
@@ -64,8 +63,8 @@ import org.polypheny.db.util.PolyphenyHomeDirManager;
 public class HsqldbStore extends AbstractJdbcStore {
 
 
-    public HsqldbStore( final long storeId, final String uniqueName, final Map<String, String> settings ) {
-        super( storeId, uniqueName, settings, HsqldbSqlDialect.DEFAULT, settings.get( "type" ).equals( "File" ) );
+    public HsqldbStore( final long storeId, final String uniqueName, final Map<String, String> settings, final DeployMode mode ) {
+        super( storeId, uniqueName, settings, mode, HsqldbSqlDialect.DEFAULT, settings.get( "type" ).equals( "File" ) );
     }
 
 
@@ -122,7 +121,7 @@ public class HsqldbStore extends AbstractJdbcStore {
 
         builder.append( "(" );
         boolean first = true;
-        for ( long columnId : index.key.columnIds ) {
+        for ( long columnId : index.key.fieldIds ) {
             if ( !first ) {
                 builder.append( ", " );
             }
@@ -207,24 +206,18 @@ public class HsqldbStore extends AbstractJdbcStore {
             case DATE -> "DATE";
             case TIME -> "TIME";
             case TIMESTAMP -> "TIMESTAMP";
+            case ARRAY -> "LONGVARCHAR";
             case TEXT -> "VARCHAR(200000)"; // clob can sadly not be used as pk which puts arbitrary limit on the value
-            case JSON, NODE, EDGE, DOCUMENT, ARRAY, GEOMETRY -> "LONGVARCHAR";
+            case JSON, NODE, EDGE, DOCUMENT -> "LONGVARCHAR";
             default -> throw new GenericRuntimeException( "Unknown type: " + type.name() );
         };
     }
 
 
     @Override
-    public String getDefaultPhysicalNamespaceName() {
+    public String getDefaultPhysicalSchemaName() {
         return "PUBLIC";
     }
 
-
-    @Override
-    public void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities ) {
-        PhysicalEntity table = entities.get( 0 );
-        updateNamespace( table.namespaceName, table.namespaceId );
-        adapterCatalog.addPhysical( alloc, currentJdbcSchema.createJdbcTable( table.unwrap( PhysicalTable.class ).orElseThrow() ) );
-    }
 
 }

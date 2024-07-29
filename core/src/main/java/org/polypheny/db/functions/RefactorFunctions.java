@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,11 +19,8 @@ package org.polypheny.db.functions;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.polypheny.db.type.entity.PolyInterval;
-import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.util.Pair;
 
@@ -82,9 +79,5 @@ public class RefactorFunctions {
         return PolyDocument.ofDocument( map );
     }
 
-
-    public static PolyNumber unwrap( PolyInterval interval ) {
-        return PolyLong.of( interval.value );
-    }
 
 }

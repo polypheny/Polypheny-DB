@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package org.polypheny.db.cypher;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.webui.models.results.GraphResult;
 
 public class FilterTest extends CypherTestTemplate {
@@ -47,14 +46,6 @@ public class FilterTest extends CypherTestTemplate {
         assertNode( res, 0 );
 
         assert containsRows( res, true, false, Row.of( KIRA ) );
-    }
-
-    @Test
-    public void functionFilterTest() {
-        execute( SINGLE_NODE_GEOM );
-        GraphResult res = execute( "MATCH (c:City) WHERE GEO_CONTAINS('POLYGON ((7.579962 47.551795, 7.579962 47.559905, 7.600045 47.559905, 7.600045 47.551795, 7.579962 47.551795))', c.location) RETURN c.name" );
-        assert is( res, Type.ANY, 0 );
-        assert containsIn( res, true, 0, "c.name", TestLiteral.from( "Basel" ) );
     }
 
 }

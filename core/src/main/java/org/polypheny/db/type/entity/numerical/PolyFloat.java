@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,11 +24,13 @@ import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.CompatibilityLevel;
 import io.activej.serializer.CorruptedDataException;
-import io.activej.serializer.SimpleSerializerDef;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
+import io.activej.serializer.def.SimpleSerializerDef;
 import java.math.BigDecimal;
+import java.util.Objects;
 import lombok.EqualsAndHashCode;
+import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.commons.lang3.ObjectUtils;
@@ -40,16 +42,19 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
 
-@EqualsAndHashCode(callSuper = true)
+@Value
+@EqualsAndHashCode(onlyExplicitlyIncluded = true, callSuper = false)
 public class PolyFloat extends PolyNumber {
 
     @Serialize
     @JsonProperty
+    @Nullable
+    @EqualsAndHashCode.Include
     public Float value;
 
 
     @JsonCreator
-    public PolyFloat( @Deserialize("value") @JsonProperty("value") Float value ) {
+    public PolyFloat( @Deserialize("value") @JsonProperty("value") @Nullable Float value ) {
         super( PolyType.FLOAT );
         this.value = value;
     }
@@ -70,20 +75,22 @@ public class PolyFloat extends PolyNumber {
     }
 
 
-    public static PolyFloat convert( @Nullable Object object ) {
+    public static PolyFloat convert( @Nullable PolyValue object ) {
         if ( object == null ) {
             return null;
         }
 
-        if ( object instanceof PolyValue ) {
-            if ( ((PolyValue) object).isFloat() ) {
-                return ((PolyValue) object).asFloat();
-            } else if ( ((PolyValue) object).isNumber() ) {
-                return PolyFloat.ofNullable( ((PolyValue) object).asNumber().FloatValue() );
-            }
+        if ( object.isFloat() ) {
+            return object.asFloat();
+        } else if ( object.isNumber() ) {
+            return PolyFloat.ofNullable( object.asNumber().FloatValue() );
+        } else if ( object.isTemporal() ) {
+            return PolyFloat.of( object.asTemporal().getMillisSinceEpoch() );
+        } else if ( object.isString() ) {
+            return PolyFloat.of( Float.parseFloat( object.asString().value ) );
         }
 
-        throw new GenericRuntimeException( "Could not convert Integer" );
+        throw new GenericRuntimeException( getConvertError( object, PolyFloat.class ) );
     }
 
 
@@ -140,7 +147,7 @@ public class PolyFloat extends PolyNumber {
 
     @Override
     public BigDecimal bigDecimalValue() {
-        return BigDecimal.valueOf( value );
+        return value == null ? null : new BigDecimal( Float.toString( value ) );
     }
 
 
@@ -181,7 +188,7 @@ public class PolyFloat extends PolyNumber {
 
 
     @Override
-    public @Nullable Long deriveByteSize() {
+    public @NotNull Long deriveByteSize() {
         return 4L;
     }
 
@@ -189,6 +196,12 @@ public class PolyFloat extends PolyNumber {
     @Override
     public Object toJava() {
         return value;
+    }
+
+
+    @Override
+    public int hashCode() {
+        return Objects.hash( super.hashCode(), value );
     }
 
 

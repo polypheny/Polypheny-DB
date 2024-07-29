@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,12 +25,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import lombok.SneakyThrows;
 import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.pf4j.ExtensionPoint;
 import org.polypheny.db.adapter.DataSource;
+import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.RelationalScanDelegate;
 import org.polypheny.db.adapter.jdbc.JdbcSchema;
 import org.polypheny.db.adapter.jdbc.JdbcUtils;
@@ -65,13 +65,14 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
 
 
     public AbstractJdbcSource(
-            long storeId,
-            String uniqueName,
-            Map<String, String> settings,
-            String diverClass,
-            SqlDialect dialect,
-            boolean readOnly ) {
-        super( storeId, uniqueName, settings, readOnly, new RelAdapterCatalog( storeId ) );
+            final long storeId,
+            final String uniqueName,
+            final Map<String, String> settings,
+            final DeployMode mode,
+            final String diverClass,
+            final SqlDialect dialect,
+            final boolean readOnly ) {
+        super( storeId, uniqueName, settings, mode, readOnly, new RelAdapterCatalog( storeId ) );
         this.connectionFactory = createConnectionFactory( settings, dialect, diverClass );
         this.dialect = dialect;
         // Register the JDBC Pool Size as information in the information manager and enable it
@@ -135,19 +136,8 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
     protected abstract String getConnectionUrl( final String dbHostname, final int dbPort, final String dbName );
 
 
-    /*@Override
-    public void createNewSchema( Snapshot snapshot, String name, long id ) {
-        currentJdbcSchema = JdbcSchema.create( id, snapshot, name, connectionFactory, dialect, this );
-    }*/
-
-
     @Override
     public void truncate( Context context, long allocId ) {
-        // We get the physical schema / table name by checking existing column placements of the same logical table placed on this store.
-        // This works because there is only one physical table for each logical table on JDBC stores. The reason for choosing this
-        // approach rather than using the default physical schema / table names is that this approach allows truncating linked tables.
-        // String physicalTableName = context.getSnapshot().alloc().getPartitionPlacementsByTableOnAdapter( getAdapterId(), catalogTable.id ).get( 0 ).physicalTableName;
-        // String physicalSchemaName = context.getSnapshot().alloc().getPartitionPlacementsByTableOnAdapter( getAdapterId(), catalogTable.id ).get( 0 ).physicalSchemaName;
         PhysicalTable table = adapterCatalog.getTable( allocId );
         StringBuilder builder = new StringBuilder();
         builder.append( "TRUNCATE TABLE " )
@@ -168,11 +158,14 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
     }
 
 
-    @SneakyThrows
     @Override
     public boolean prepare( PolyXid xid ) {
         if ( connectionFactory.hasConnectionHandler( xid ) ) {
-            return connectionFactory.getConnectionHandler( xid ).prepare();
+            try {
+                return connectionFactory.getConnectionHandler( xid ).prepare();
+            } catch ( ConnectionHandlerException e ) {
+                throw new GenericRuntimeException( e );
+            }
         } else {
             log.warn( "There is no connection to prepare (Unique name: {}, XID: {})! Returning true.", getUniqueName(), xid );
             return true;
@@ -180,22 +173,28 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
     }
 
 
-    @SneakyThrows
     @Override
     public void commit( PolyXid xid ) {
         if ( connectionFactory.hasConnectionHandler( xid ) ) {
-            connectionFactory.getConnectionHandler( xid ).commit();
+            try {
+                connectionFactory.getConnectionHandler( xid ).commit();
+            } catch ( ConnectionHandlerException e ) {
+                throw new GenericRuntimeException( e );
+            }
         } else {
             log.warn( "There is no connection to commit (Unique name: {}, XID: {})!", getUniqueName(), xid );
         }
     }
 
 
-    @SneakyThrows
     @Override
     public void rollback( PolyXid xid ) {
         if ( connectionFactory.hasConnectionHandler( xid ) ) {
-            connectionFactory.getConnectionHandler( xid ).rollback();
+            try {
+                connectionFactory.getConnectionHandler( xid ).rollback();
+            } catch ( ConnectionHandlerException e ) {
+                throw new GenericRuntimeException( e );
+            }
         } else {
             log.warn( "There is no connection to rollback (Unique name: {}, XID: {})!", getUniqueName(), xid );
         }
@@ -260,16 +259,12 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
                                 scale = row.getInt( "DECIMAL_DIGITS" );
                                 break;
                             case TIME:
-                            case TIME_WITH_LOCAL_TIME_ZONE:
-                                type = PolyType.TIME;
                                 length = row.getInt( "DECIMAL_DIGITS" );
                                 if ( length > 3 ) {
                                     throw new GenericRuntimeException( "Unsupported precision for data type time: " + length );
                                 }
                                 break;
                             case TIMESTAMP:
-                            case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-                                type = PolyType.TIMESTAMP;
                                 length = row.getInt( "DECIMAL_DIGITS" );
                                 if ( length > 3 ) {
                                     throw new GenericRuntimeException( "Unsupported precision for data type timestamp: " + length );
@@ -314,8 +309,23 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
     }
 
 
+    protected void updateNativePhysical( long allocId ) {
+        PhysicalTable table = adapterCatalog.fromAllocation( allocId );
+        adapterCatalog.replacePhysical( this.currentJdbcSchema.createJdbcTable( table ) );
+    }
+
+
+    @Override
+    public void renameLogicalColumn( long id, String newColumnName ) {
+        adapterCatalog.renameLogicalColumn( id, newColumnName );
+        adapterCatalog.fields.values().stream().filter( c -> c.id == id ).forEach( c -> updateNativePhysical( c.allocId ) );
+    }
+
+
     @SuppressWarnings("unused")
     public interface Exclude {
+
+        void renameLogicalColumn( long id, String newColumnName );
 
         void updateTable( long allocId );
 

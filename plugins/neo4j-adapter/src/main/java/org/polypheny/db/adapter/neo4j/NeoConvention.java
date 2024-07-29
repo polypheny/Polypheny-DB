@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,8 @@ package org.polypheny.db.adapter.neo4j;
 import org.polypheny.db.adapter.neo4j.rules.NeoAlg;
 import org.polypheny.db.adapter.neo4j.rules.NeoGraphRules;
 import org.polypheny.db.adapter.neo4j.rules.NeoRules;
-import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptRule;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.Convention;
 
 public class NeoConvention extends Convention.Impl {
@@ -34,7 +34,7 @@ public class NeoConvention extends Convention.Impl {
 
 
     @Override
-    public void register( AlgOptPlanner planner ) {
+    public void register( AlgPlanner planner ) {
         for ( AlgOptRule rule : NeoRules.RULES ) {
             planner.addRuleDuringRuntime( rule );
         }

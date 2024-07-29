@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -112,7 +112,6 @@ public class ProjectJoinTransposeRule extends AlgOptRule {
         int[] adjustments = pushProject.getAdjustments();
         if ( join.getCondition() != null ) {
             List<AlgDataTypeField> projJoinFieldList = new ArrayList<>();
-            projJoinFieldList.addAll( join.getSystemFieldList() );
             projJoinFieldList.addAll( leftProjAlg.getTupleType().getFields() );
             projJoinFieldList.addAll( rightProjAlg.getTupleType().getFields() );
             newJoinFilter = pushProject.convertRefsAndExprs( join.getCondition(), projJoinFieldList, adjustments );

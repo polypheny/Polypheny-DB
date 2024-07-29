@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,8 +30,8 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.cottontail.CottontailEntity;
 import org.polypheny.db.adapter.cottontail.CottontailWrapper;
 import org.polypheny.db.adapter.cottontail.util.CottontailTypeUtil;
-import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.DeleteMessage;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Metadata;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Where;

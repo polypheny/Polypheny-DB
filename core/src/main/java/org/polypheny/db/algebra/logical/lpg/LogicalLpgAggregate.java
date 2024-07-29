@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.LaxAggregateCall;
 import org.polypheny.db.algebra.core.lpg.LpgAggregate;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNameRef;
 
@@ -31,7 +31,7 @@ import org.polypheny.db.rex.RexNameRef;
 public class LogicalLpgAggregate extends LpgAggregate {
 
 
-    public LogicalLpgAggregate( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, @NotNull List<RexNameRef> groups, List<LaxAggregateCall> aggCalls, AlgDataType tupleType ) {
+    public LogicalLpgAggregate( AlgCluster cluster, AlgTraitSet traits, AlgNode child, @NotNull List<RexNameRef> groups, List<LaxAggregateCall> aggCalls, AlgDataType tupleType ) {
         super( cluster, traits, child, groups, aggCalls, tupleType );
     }
 

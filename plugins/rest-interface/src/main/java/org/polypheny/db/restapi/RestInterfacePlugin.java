@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,6 @@
 
 package org.polypheny.db.restapi;
 
-
-import static io.javalin.apibuilder.ApiBuilder.before;
-import static io.javalin.apibuilder.ApiBuilder.path;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -42,6 +39,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import javax.servlet.MultipartConfigElement;
@@ -87,20 +85,16 @@ public class RestInterfacePlugin extends PolyPlugin {
     }
 
 
-
     @Override
     public void afterCatalogInit() {
         // Add REST interface
-        Map<String, String> restSettings = new HashMap<>();
-        restSettings.put( "port", "8089" );
-        restSettings.put( "maxUploadSizeMb", "10000" );
-        QueryInterfaceManager.addInterfaceType( "rest", HttpRestServer.class, restSettings );
+        QueryInterfaceManager.addInterfaceTemplate( HttpRestServer.INTERFACE_NAME, HttpRestServer.INTERFACE_DESCRIPTION, HttpRestServer.AVAILABLE_SETTINGS, HttpRestServer::new );
     }
 
 
     @Override
     public void stop() {
-        QueryInterfaceManager.removeInterfaceType( HttpRestServer.class );
+        QueryInterfaceManager.removeInterfaceType( HttpRestServer.INTERFACE_NAME );
     }
 
 
@@ -135,8 +129,8 @@ public class RestInterfacePlugin extends PolyPlugin {
         private Javalin restServer;
 
 
-        public HttpRestServer( TransactionManager transactionManager, Authenticator authenticator, long ifaceId, String uniqueName, Map<String, String> settings ) {
-            super( transactionManager, authenticator, ifaceId, uniqueName, settings, true, false );
+        public HttpRestServer( TransactionManager transactionManager, Authenticator authenticator, String uniqueName, Map<String, String> settings ) {
+            super( transactionManager, authenticator, uniqueName, settings, true, false );
             this.requestParser = new RequestParser( transactionManager, authenticator, Catalog.USER_NAME, Catalog.DATABASE_NAME );
             this.uniqueName = uniqueName;
             this.port = Integer.parseInt( settings.get( "port" ) );
@@ -180,8 +174,8 @@ public class RestInterfacePlugin extends PolyPlugin {
 
         private void restRoutes( Javalin restServer, Rest rest ) {
             restServer.routes( () -> {
-                path( "/restapi/v1", () -> {
-                    before( "/*", ctx -> {
+                ApiBuilder.path( "/restapi/v1", () -> {
+                    ApiBuilder.before( "/*", ctx -> {
                         log.debug( "Checking authentication of request with id: {}.", (Object) ctx.sessionAttribute( "id" ) );
                         try {
                             LogicalUser logicalUser = this.requestParser.parseBasicAuthentication( ctx );
@@ -301,61 +295,60 @@ public class RestInterfacePlugin extends PolyPlugin {
                 throw new GenericRuntimeException( "Could not process multipart request", t );
             }
 
-            switch ( type ) {
-                case POST:
-                    String resName = params.get( "resName" );
-                    String[] projections = params.get( "_project" ) == null ? null : gson.fromJson( params.get( "_project" ), String[].class );
-                    List<Object> insertValues = params.get( "data" ) == null ? null : gson.fromJson( params.get( "data" ), List.class );
-                    Map<String, String[]> filterMap = new HashMap<>();
-                    params.forEach( ( k, v ) -> {
-                        if ( !k.startsWith( "_" ) && !k.equals( "data" ) && !k.equals( "resName" ) ) {
-                            String[] filters;
-                            try {
-                                filters = gson.fromJson( v, String[].class );
-                            } catch ( Throwable t ) {
-                                filters = new String[]{ v };
-                            }
-                            filterMap.put( k, filters );
-                        }
-                    } );
-                    try {
-                        ResourcePostRequest resourcePatchRequest = requestParser.parsePostMultipartRequest( resName, projections, insertValues );
-                        resourcePatchRequest.useDynamicParams = true;
-                        return rest.processPostResource( resourcePatchRequest, null, inputStreams );
-                    } catch ( ParserException e ) {
-                        log.error( "ParserException", e );
-                        ctx.status( 400 );
-                        Map<String, Object> bodyReturn = new HashMap<>();
-                        bodyReturn.put( "system", "parser" );
-                        bodyReturn.put( "subsystem", e.getErrorCode().subsystem );
-                        bodyReturn.put( "error_code", e.getErrorCode().code );
-                        bodyReturn.put( "error", e.getErrorCode().name );
-                        bodyReturn.put( "error_description", e.getErrorCode().description );
-                        bodyReturn.put( "violating_input", e.getViolatingInput() );
-                        return gson.toJson( bodyReturn );
-                    } catch ( RestException e ) {
-                        log.error( "RestException", e );
-                        ctx.status( 400 );
-                        Map<String, Object> bodyReturn = new HashMap<>();
-                        bodyReturn.put( "system", "rest" );
-                        bodyReturn.put( "subsystem", e.getErrorCode().subsystem );
-                        bodyReturn.put( "error_code", e.getErrorCode().code );
-                        bodyReturn.put( "error", e.getErrorCode().name );
-                        bodyReturn.put( "error_description", e.getErrorCode().description );
-                        return gson.toJson( bodyReturn );
-                    } catch ( Throwable t ) {
-                        log.error( "Rest multipart error", t );
-                        throw t;
-                    } finally {
+            if ( Objects.requireNonNull( type ) == RequestType.POST ) {
+                String resName = params.get( "resName" );
+                String[] projections = params.get( "_project" ) == null ? null : gson.fromJson( params.get( "_project" ), String[].class );
+                List<Object> insertValues = params.get( "data" ) == null ? null : gson.fromJson( params.get( "data" ), List.class );
+                Map<String, String[]> filterMap = new HashMap<>();
+                params.forEach( ( k, v ) -> {
+                    if ( !k.startsWith( "_" ) && !k.equals( "data" ) && !k.equals( "resName" ) ) {
+                        String[] filters;
                         try {
-                            inputStreams.clear();
-                            for ( Part part : ctx.req.getParts() ) {
-                                part.delete();
-                            }
-                        } catch ( ServletException | IOException e ) {
-                            log.error( "Could not delete temporary files", e );
+                            filters = gson.fromJson( v, String[].class );
+                        } catch ( Throwable t ) {
+                            filters = new String[]{ v };
                         }
+                        filterMap.put( k, filters );
                     }
+                } );
+                try {
+                    ResourcePostRequest resourcePatchRequest = requestParser.parsePostMultipartRequest( resName, projections, insertValues );
+                    resourcePatchRequest.useDynamicParams = true;
+                    return rest.processPostResource( resourcePatchRequest, null, inputStreams );
+                } catch ( ParserException e ) {
+                    log.error( "ParserException", e );
+                    ctx.status( 400 );
+                    Map<String, Object> bodyReturn = new HashMap<>();
+                    bodyReturn.put( "system", "parser" );
+                    bodyReturn.put( "subsystem", e.getErrorCode().subsystem );
+                    bodyReturn.put( "error_code", e.getErrorCode().code );
+                    bodyReturn.put( "error", e.getErrorCode().name );
+                    bodyReturn.put( "error_description", e.getErrorCode().description );
+                    bodyReturn.put( "violating_input", e.getViolatingInput() );
+                    return gson.toJson( bodyReturn );
+                } catch ( RestException e ) {
+                    log.error( "RestException", e );
+                    ctx.status( 400 );
+                    Map<String, Object> bodyReturn = new HashMap<>();
+                    bodyReturn.put( "system", "rest" );
+                    bodyReturn.put( "subsystem", e.getErrorCode().subsystem );
+                    bodyReturn.put( "error_code", e.getErrorCode().code );
+                    bodyReturn.put( "error", e.getErrorCode().name );
+                    bodyReturn.put( "error_description", e.getErrorCode().description );
+                    return gson.toJson( bodyReturn );
+                } catch ( Throwable t ) {
+                    log.error( "Rest multipart error", t );
+                    throw t;
+                } finally {
+                    try {
+                        inputStreams.clear();
+                        for ( Part part : ctx.req.getParts() ) {
+                            part.delete();
+                        }
+                    } catch ( ServletException | IOException e ) {
+                        log.error( "Could not delete temporary files", e );
+                    }
+                }
             }
             log.error( "processMultipart should never reach this point in the code!" );
             throw new GenericRuntimeException( "processMultipart should never reach this point in the code!" );

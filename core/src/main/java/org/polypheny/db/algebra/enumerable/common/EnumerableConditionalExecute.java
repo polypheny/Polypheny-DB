@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,13 +26,13 @@ import org.polypheny.db.algebra.core.common.ConditionalExecute;
 import org.polypheny.db.algebra.enumerable.EnumUtils;
 import org.polypheny.db.algebra.enumerable.EnumerableAlg;
 import org.polypheny.db.algebra.enumerable.EnumerableAlgImplementor;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 
 
 public class EnumerableConditionalExecute extends ConditionalExecute implements EnumerableAlg {
 
-    private EnumerableConditionalExecute( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode left, AlgNode right, Condition condition, Class<? extends Exception> exceptionClass, String exceptionMessage ) {
+    private EnumerableConditionalExecute( AlgCluster cluster, AlgTraitSet traitSet, AlgNode left, AlgNode right, Condition condition, Class<? extends Exception> exceptionClass, String exceptionMessage ) {
         super( cluster, traitSet, left, right, condition, exceptionClass, exceptionMessage );
     }
 
@@ -42,38 +42,29 @@ public class EnumerableConditionalExecute extends ConditionalExecute implements 
         final BlockBuilder builder = new BlockBuilder();
         final Result conditionResult = implementor.visitChild( this, 0, (EnumerableAlg) getLeft(), pref );
         Expression call = Expressions.call(
-                builder.append( builder.newName( "condition" + System.nanoTime() ), conditionResult.block ),
+                builder.append( builder.newName( "condition" + System.nanoTime() ), conditionResult.block() ),
                 "count" );
 
-        Expression conditionExp = null;
-        switch ( this.condition ) {
-            case GREATER_ZERO:
-                conditionExp = Expressions.greaterThan(
-                        call,
-                        Expressions.constant( 0 ) );
-                break;
-            case EQUAL_TO_ZERO:
-                conditionExp = Expressions.equal(
-                        call,
-                        Expressions.constant( 0 ) );
-                break;
-            case TRUE:
-                conditionExp = Expressions.constant( true );
-                break;
-            case FALSE:
-                conditionExp = Expressions.constant( false );
-                break;
-        }
+        Expression conditionExp = switch ( this.condition ) {
+            case GREATER_ZERO -> Expressions.greaterThan(
+                    call,
+                    Expressions.constant( 0 ) );
+            case EQUAL_TO_ZERO -> Expressions.equal(
+                    call,
+                    Expressions.constant( 0 ) );
+            case TRUE -> Expressions.constant( true );
+            case FALSE -> Expressions.constant( false );
+        };
         final Result actionResult = implementor.visitChild( this, 1, (EnumerableAlg) getRight(), pref );
 
         builder.add(
                 EnumUtils.ifThenElse(
                         conditionExp,
-                        actionResult.block,
+                        actionResult.block(),
                         Expressions.throw_( Expressions.new_( exceptionClass, Expressions.constant( exceptionMessage ) ) )
                 )
         );
-        return implementor.result( actionResult.physType, builder.toBlock() );
+        return implementor.result( actionResult.physType(), builder.toBlock() );
     }
 
 

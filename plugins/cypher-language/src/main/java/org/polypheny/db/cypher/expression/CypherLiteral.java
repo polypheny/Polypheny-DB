@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -105,31 +105,23 @@ public class CypherLiteral extends CypherExpression {
     @Override
     public PolyValue getComparable() {
 
-        switch ( literalType ) {
-            case TRUE:
-                return PolyBoolean.of( true );
-            case FALSE:
-                return PolyBoolean.of( false );
-            case NULL:
-                return null;
-            case LIST:
-                List<PolyValue> list = listValue.stream().map( CypherExpression::getComparable ).collect( Collectors.toList() );
-                return new PolyList<>( list );
-            case MAP:
+        return switch ( literalType ) {
+            case TRUE -> PolyBoolean.of( true );
+            case FALSE -> PolyBoolean.of( false );
+            case NULL -> null;
+            case LIST -> {
+                List<PolyValue> list = listValue.stream().map( CypherExpression::getComparable ).toList();
+                yield new PolyList<>( list );
+            }
+            case MAP -> {
                 Map<PolyString, PolyValue> map = mapValue.entrySet().stream().collect( Collectors.toMap( e -> PolyString.of( e.getKey() ), e -> e.getValue().getComparable() ) );
-                return new PolyDictionary( map );
-            case STRING:
-            case HEX:
-            case OCTAL:
-                return PolyString.of( (String) value );
-            case DOUBLE:
-                return PolyDouble.of( (Double) value );
-            case DECIMAL:
-                return PolyInteger.of( (Integer) value );
-            case STAR:
-                throw new UnsupportedOperationException();
-        }
-        throw new UnsupportedOperationException();
+                yield new PolyDictionary( map );
+            }
+            case STRING, HEX, OCTAL -> PolyString.of( (String) value );
+            case DOUBLE -> PolyDouble.of( (Double) value );
+            case DECIMAL -> PolyInteger.of( (Integer) value );
+            case STAR -> throw new UnsupportedOperationException();
+        };
     }
 
 
@@ -145,14 +137,14 @@ public class CypherLiteral extends CypherExpression {
                 node = context.rexBuilder.makeLiteral( null, context.typeFactory.createPolyType( PolyType.VARCHAR, 255 ), false );
                 break;
             case LIST:
-                List<RexNode> list = listValue.stream().map( e -> e.getRex( context, type ).right ).collect( Collectors.toList() );
+                List<RexNode> list = listValue.stream().map( e -> e.getRex( context, type ).right ).toList();
                 AlgDataType dataType = context.typeFactory.createPolyType( PolyType.ANY );
 
                 if ( !list.isEmpty() && list.stream().allMatch( e -> PolyTypeUtil.equalSansNullability( context.typeFactory, e.getType(), list.get( 0 ).getType() ) ) ) {
                     dataType = list.get( 0 ).getType();
                 }
                 dataType = context.typeFactory.createArrayType( dataType, -1 );
-                node = context.rexBuilder.makeLiteral( PolyList.copyOf( list.stream().map( e -> ((RexLiteral) e).value ).collect( Collectors.toList() ) ), dataType, false );
+                node = context.rexBuilder.makeLiteral( PolyList.copyOf( list.stream().map( e -> ((RexLiteral) e).value ).toList() ), dataType, false );
                 break;
             case MAP:
             case STAR:

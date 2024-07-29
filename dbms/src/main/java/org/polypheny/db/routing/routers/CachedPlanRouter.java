@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.core.document.DocumentScan;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
-import org.polypheny.db.algebra.logical.relational.LogicalValues;
+import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.routing.ColumnDistribution;
 import org.polypheny.db.routing.RoutingContext;
 import org.polypheny.db.routing.dto.CachedProposedRoutingPlan;
@@ -52,8 +52,8 @@ public class CachedPlanRouter extends BaseRouter {
 
         if ( node.unwrap( LogicalRelScan.class ).isPresent() && node.getEntity() != null ) {
             return builder.push( super.buildJoinedScan( (ColumnDistribution) cachedPlan.fieldDistribution, context ) );
-        } else if ( node instanceof LogicalValues ) {
-            return super.handleValues( (LogicalValues) node, builder );
+        } else if ( node instanceof LogicalRelValues ) {
+            return super.handleValues( (LogicalRelValues) node, builder );
         } else {
             return super.handleGeneric( node, builder );
         }

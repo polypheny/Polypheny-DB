@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,10 @@ import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.allocation.AllocationPartition;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -44,27 +47,33 @@ public class ListPartitionManager extends AbstractPartitionManager {
         long unboundPartitionId = -1;
         long selectedPartitionId = -1;
 
-        // Process all accumulated CatalogPartitions
-        /*for ( AllocationEntity entity : targetEntities ) {
-            if ( targetProperty.isUnbound ) {
-                unboundPartitionId = catalogPartition.id;
+        // Process all accumulated partitions
+
+        for ( long partitionId : property.partitionIds ) {
+            Optional<AllocationPartition> optionalPartition = Catalog.snapshot().alloc().getPartition( partitionId );
+            if ( optionalPartition.isEmpty() ) {
+                continue;
+            }
+            AllocationPartition partition = optionalPartition.get();
+            if ( partition.qualifiers.isEmpty() ) {
+                unboundPartitionId = partition.id;
                 break;
             }
 
-            for ( int i = 0; i < catalogPartition.partitionQualifiers.size(); i++ ) {
+            for ( int i = 0; i < partition.qualifiers.size(); i++ ) {
                 // Could be int
-                if ( catalogPartition.partitionQualifiers.get( i ).equals( columnValue ) ) {
+                if ( partition.qualifiers.get( i ).equals( columnValue ) ) {
                     if ( log.isDebugEnabled() ) {
                         log.debug( "Found column value: {} on partitionID {} with qualifiers: {}",
                                 columnValue,
-                                catalogPartition.id,
-                                catalogPartition.partitionQualifiers );
+                                partition.id,
+                                partition.qualifiers );
                     }
-                    selectedPartitionId = catalogPartition.id;
+                    selectedPartitionId = partition.id;
                     break;
                 }
             }
-        }*/
+        }
 
         // If no concrete partition could be identified, report back the unbound/default partition
         if ( selectedPartitionId == -1 ) {

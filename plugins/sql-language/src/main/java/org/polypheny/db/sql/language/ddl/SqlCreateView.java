@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -152,8 +152,7 @@ public class SqlCreateView extends SqlCreate implements ExecutableStatement {
         List<String> columnName = new ArrayList<>();
 
         for ( Ord<Node> c : Ord.zip( columnList ) ) {
-            if ( c.e instanceof SqlIdentifier ) {
-                SqlIdentifier sqlIdentifier = (SqlIdentifier) c.e;
+            if ( c.e instanceof SqlIdentifier sqlIdentifier ) {
                 columnName.add( sqlIdentifier.getSimple() );
 
             } else {
@@ -186,25 +185,5 @@ public class SqlCreateView extends SqlCreate implements ExecutableStatement {
         query.unparse( writer, 0, 0 );
     }
 
-
-    /*
-    public void execute( Context context ) {
-        final Pair<PolyphenyDbSchema, String> pair = SqlDdlNodes.schema( context, true, name );
-        final SchemaPlus schemaPlus = pair.left.plus();
-        for ( Function function : schemaPlus.getFunctions( pair.right ) ) {
-            if ( function.getParameters().isEmpty() ) {
-                if ( !getReplace() ) {
-                    throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.viewExists( pair.right ) );
-                }
-                pair.left.removeFunction( pair.right );
-            }
-        }
-        final SqlNode q = SqlDdlNodes.renameColumns( columnList, query );
-        final String sql = q.toSqlString( PolyphenyDbSqlDialect.DEFAULT ).getSql();
-        final ViewTableMacro viewTableMacro = ViewTable.viewMacro( schemaPlus, sql, pair.left.path( null ), context.getObjectPath(), false );
-        final TranslatableTable x = viewTableMacro.apply( ImmutableList.of() );
-        Util.discard( x );
-        schemaPlus.add( pair.right, viewTableMacro );
-    } */
 
 }

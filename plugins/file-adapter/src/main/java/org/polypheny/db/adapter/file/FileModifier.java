@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,9 +24,9 @@ import java.util.List;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.file.FileAlg.FileImplementor.Operation;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.numerical.PolyLong;
 
 
 public class FileModifier extends FileEnumerator {

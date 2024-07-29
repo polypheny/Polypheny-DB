@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,9 +33,9 @@ import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexLiteral;
@@ -51,14 +51,14 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc;
  */
 public class CottontailSort extends Sort implements CottontailAlg {
 
-    public CottontailSort( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, AlgCollation collation, RexNode offset, RexNode fetch ) {
+    public CottontailSort( AlgCluster cluster, AlgTraitSet traits, AlgNode child, AlgCollation collation, RexNode offset, RexNode fetch ) {
         super( cluster, traits, child, collation, null, offset, fetch );
     }
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
-        final double rowCount = mq.getRowCount( this ) + 0.01;
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
+        final double rowCount = mq.getTupleCount( this ) + 0.01;
         return planner.getCostFactory().makeCost( rowCount, 0, 0 );
     }
 

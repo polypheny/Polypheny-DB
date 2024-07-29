@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,10 +51,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
 import javax.annotation.Nonnull;
-import org.apache.calcite.avatica.AvaticaConnection;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgHomogeneousShuttle;
@@ -81,10 +78,10 @@ import org.polypheny.db.algebra.enumerable.document.MergeDocumentFilterRule;
 import org.polypheny.db.algebra.externalize.AlgJsonWriter;
 import org.polypheny.db.algebra.externalize.AlgWriterImpl;
 import org.polypheny.db.algebra.externalize.AlgXmlWriter;
-import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
 import org.polypheny.db.algebra.logical.relational.LogicalCalc;
-import org.polypheny.db.algebra.logical.relational.LogicalFilter;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.rules.AggregateProjectPullUpConstantsRule;
@@ -127,6 +124,7 @@ import org.polypheny.db.rex.RexVisitorImpl;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.AlgBuilderFactory;
 import org.polypheny.db.type.ArrayType;
+import org.polypheny.db.type.BasicPolyType;
 import org.polypheny.db.type.MultisetPolyType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.ImmutableBitSet;
@@ -396,7 +394,7 @@ public abstract class AlgOptUtil {
 
 
     @Deprecated // to be removed before 2.0
-    public static AlgNode createExistsPlan( AlgOptCluster cluster, AlgNode seekRel, List<RexNode> conditions, RexLiteral extraExpr, String extraName ) {
+    public static AlgNode createExistsPlan( AlgCluster cluster, AlgNode seekRel, List<RexNode> conditions, RexLiteral extraExpr, String extraName ) {
         assert extraExpr == null || extraName != null;
         AlgNode ret = seekRel;
 
@@ -433,7 +431,7 @@ public abstract class AlgOptUtil {
                             null,
                             extraName );
 
-            ret = LogicalAggregate.create( ret, ImmutableBitSet.of(), null, ImmutableList.of( aggCall ) );
+            ret = LogicalRelAggregate.create( ret, ImmutableBitSet.of(), null, ImmutableList.of( aggCall ) );
         }
 
         return ret;
@@ -472,12 +470,12 @@ public abstract class AlgOptUtil {
                 }
         }
         AlgNode ret = seekAlg;
-        final AlgOptCluster cluster = seekAlg.getCluster();
+        final AlgCluster cluster = seekAlg.getCluster();
         final RexBuilder rexBuilder = cluster.getRexBuilder();
         final int keyCount = ret.getTupleType().getFieldCount();
         final boolean outerJoin = notIn || logic == AlgOptUtil.Logic.TRUE_FALSE_UNKNOWN;
         if ( !outerJoin ) {
-            final LogicalAggregate aggregate = LogicalAggregate.create( ret, ImmutableBitSet.range( keyCount ), null, ImmutableList.of() );
+            final LogicalRelAggregate aggregate = LogicalRelAggregate.create( ret, ImmutableBitSet.range( keyCount ), null, ImmutableList.of() );
             return new Exists( aggregate, false, false );
         }
 
@@ -507,7 +505,7 @@ public abstract class AlgOptUtil {
                         null,
                         null );
 
-        ret = LogicalAggregate.create( ret, ImmutableBitSet.range( projectedKeyCount ), null, ImmutableList.of( aggCall ) );
+        ret = LogicalRelAggregate.create( ret, ImmutableBitSet.range( projectedKeyCount ), null, ImmutableList.of( aggCall ) );
 
         return switch ( logic ) {
             case TRUE_FALSE_UNKNOWN, UNKNOWN_AS_TRUE -> new Exists( ret, true, true );
@@ -569,7 +567,7 @@ public abstract class AlgOptUtil {
      * Creates a filter using the default factory, or returns the original relational expression if the condition is trivial.
      */
     public static AlgNode createFilter( AlgNode child, Iterable<? extends RexNode> conditions, AlgFactories.FilterFactory filterFactory ) {
-        final AlgOptCluster cluster = child.getCluster();
+        final AlgCluster cluster = child.getCluster();
         final RexNode condition = RexUtil.composeConjunction( cluster.getRexBuilder(), conditions, true );
         if ( condition == null ) {
             return child;
@@ -673,7 +671,7 @@ public abstract class AlgOptUtil {
      * @param alg underlying rel
      * @return alg implementing SingleValueAgg
      */
-    public static AlgNode createSingleValueAggAlg( AlgOptCluster cluster, AlgNode alg ) {
+    public static AlgNode createSingleValueAggAlg( AlgCluster cluster, AlgNode alg ) {
         final int aggCallCnt = alg.getTupleType().getFieldCount();
         final List<AggregateCall> aggCalls = new ArrayList<>();
 
@@ -692,7 +690,7 @@ public abstract class AlgOptUtil {
                             null ) );
         }
 
-        return LogicalAggregate.create( alg, ImmutableBitSet.of(), null, aggCalls );
+        return LogicalRelAggregate.create( alg, ImmutableBitSet.of(), null, aggCalls );
     }
 
 
@@ -774,7 +772,7 @@ public abstract class AlgOptUtil {
     }
 
 
-    public static RexNode splitCorrelatedFilterCondition( LogicalFilter filter, List<RexNode> joinKeys, List<RexNode> correlatedJoinKeys, boolean extractCorrelatedFieldAccess ) {
+    public static RexNode splitCorrelatedFilterCondition( LogicalRelFilter filter, List<RexNode> joinKeys, List<RexNode> correlatedJoinKeys, boolean extractCorrelatedFieldAccess ) {
         final List<RexNode> nonEquiList = new ArrayList<>();
         splitCorrelatedFilterCondition( filter, filter.getCondition(), joinKeys, correlatedJoinKeys, nonEquiList, extractCorrelatedFieldAccess );
         // Convert the remainders into a list that are AND'ed together.
@@ -784,7 +782,7 @@ public abstract class AlgOptUtil {
 
     private static void splitJoinCondition( List<AlgDataTypeField> sysFieldList, List<AlgNode> inputs, RexNode condition, List<List<RexNode>> joinKeys, List<Integer> filterNulls, List<Operator> rangeOp, List<RexNode> nonEquiList ) {
         final int sysFieldCount = sysFieldList.size();
-        final AlgOptCluster cluster = inputs.get( 0 ).getCluster();
+        final AlgCluster cluster = inputs.get( 0 ).getCluster();
         final RexBuilder rexBuilder = cluster.getRexBuilder();
         final AlgDataTypeFactory typeFactory = cluster.getTypeFactory();
 
@@ -1017,7 +1015,7 @@ public abstract class AlgOptUtil {
     }
 
 
-    private static void splitCorrelatedFilterCondition( LogicalFilter filter, RexNode condition, List<RexIndexRef> joinKeys, List<RexNode> correlatedJoinKeys, List<RexNode> nonEquiList ) {
+    private static void splitCorrelatedFilterCondition( LogicalRelFilter filter, RexNode condition, List<RexIndexRef> joinKeys, List<RexNode> correlatedJoinKeys, List<RexNode> nonEquiList ) {
         if ( condition instanceof RexCall ) {
             RexCall call = (RexCall) condition;
             if ( call.getOperator().getKind() == Kind.AND ) {
@@ -1049,7 +1047,7 @@ public abstract class AlgOptUtil {
     }
 
 
-    private static void splitCorrelatedFilterCondition( LogicalFilter filter, RexNode condition, List<RexNode> joinKeys, List<RexNode> correlatedJoinKeys, List<RexNode> nonEquiList, boolean extractCorrelatedFieldAccess ) {
+    private static void splitCorrelatedFilterCondition( LogicalRelFilter filter, RexNode condition, List<RexNode> joinKeys, List<RexNode> correlatedJoinKeys, List<RexNode> nonEquiList, boolean extractCorrelatedFieldAccess ) {
         if ( condition instanceof RexCall ) {
             RexCall call = (RexCall) condition;
             if ( call.getOperator().getKind() == Kind.AND ) {
@@ -1213,14 +1211,14 @@ public abstract class AlgOptUtil {
 
     @Deprecated // to be removed before 2.0
     public static void projectJoinInputs( AlgNode[] inputAlgs, List<RexNode> leftJoinKeys, List<RexNode> rightJoinKeys, int systemColCount, List<Integer> leftKeys, List<Integer> rightKeys, List<Integer> outputProj ) {
-        AlgNode leftRel = inputAlgs[0];
-        AlgNode rightRel = inputAlgs[1];
-        final AlgOptCluster cluster = leftRel.getCluster();
+        AlgNode leftAlg = inputAlgs[0];
+        AlgNode rightAlg = inputAlgs[1];
+        final AlgCluster cluster = leftAlg.getCluster();
         final RexBuilder rexBuilder = cluster.getRexBuilder();
         final AlgDataTypeSystem typeSystem = cluster.getTypeFactory().getTypeSystem();
 
-        int origLeftInputSize = leftRel.getTupleType().getFieldCount();
-        int origRightInputSize = rightRel.getTupleType().getFieldCount();
+        int origLeftInputSize = leftAlg.getTupleType().getFieldCount();
+        int origRightInputSize = rightAlg.getTupleType().getFieldCount();
 
         final List<RexNode> newLeftFields = new ArrayList<>();
         final List<String> newLeftFieldNames = new ArrayList<>();
@@ -1236,7 +1234,7 @@ public abstract class AlgOptUtil {
         }
 
         for ( i = 0; i < origLeftInputSize; i++ ) {
-            final AlgDataTypeField field = leftRel.getTupleType().getFields().get( i );
+            final AlgDataTypeField field = leftAlg.getTupleType().getFields().get( i );
             newLeftFields.add( rexBuilder.makeInputRef( field.getType(), i ) );
             newLeftFieldNames.add( field.getName() );
             outputProj.add( systemColCount + i );
@@ -1259,7 +1257,7 @@ public abstract class AlgOptUtil {
 
         int leftFieldCount = origLeftInputSize + newLeftKeyCount;
         for ( i = 0; i < origRightInputSize; i++ ) {
-            final AlgDataTypeField field = rightRel.getTupleType().getFields().get( i );
+            final AlgDataTypeField field = rightAlg.getTupleType().getFields().get( i );
             newRightFields.add( rexBuilder.makeInputRef( field.getType(), i ) );
             newRightFieldNames.add( field.getName() );
             outputProj.add( systemColCount + leftFieldCount + i );
@@ -1284,19 +1282,19 @@ public abstract class AlgOptUtil {
 
         // added project if need to produce new keys than the original input fields
         if ( newLeftKeyCount > 0 ) {
-            leftRel = algBuilder.push( leftRel )
+            leftAlg = algBuilder.push( leftAlg )
                     .project( newLeftFields, newLeftFieldNames, true )
                     .build();
         }
 
         if ( newRightKeyCount > 0 ) {
-            rightRel = algBuilder.push( rightRel )
+            rightAlg = algBuilder.push( rightAlg )
                     .project( newRightFields, newRightFieldNames )
                     .build();
         }
 
-        inputAlgs[0] = leftRel;
-        inputAlgs[1] = rightRel;
+        inputAlgs[0] = leftAlg;
+        inputAlgs[1] = rightAlg;
     }
 
 
@@ -1328,7 +1326,7 @@ public abstract class AlgOptUtil {
     }
 
 
-    public static void registerAbstractAlgs( AlgOptPlanner planner ) {
+    public static void registerAbstractAlgs( AlgPlanner planner ) {
         planner.addRule( AggregateProjectPullUpConstantsRule.INSTANCE2 );
         planner.addRule( UnionPullUpConstantsRule.INSTANCE );
         planner.addRule( PruneEmptyRules.UNION_INSTANCE );
@@ -1364,7 +1362,7 @@ public abstract class AlgOptUtil {
     public static String dumpPlan( String header, AlgNode alg, ExplainFormat format, ExplainLevel detailLevel ) {
         StringWriter sw = new StringWriter();
         PrintWriter pw = new PrintWriter( sw );
-        if ( !header.equals( "" ) ) {
+        if ( !header.isEmpty() ) {
             pw.println( header );
         }
         AlgWriter planWriter;
@@ -1399,22 +1397,17 @@ public abstract class AlgOptUtil {
      * @return created type
      */
     public static AlgDataType createDmlRowType( Kind kind, AlgDataTypeFactory typeFactory ) {
-        switch ( kind ) {
-            case INSERT:
-            case DELETE:
-            case UPDATE:
-                return typeFactory.createStructType(
-                        ImmutableList.of(
-                                new AlgDataTypeFieldImpl( -1L, AvaticaConnection.ROWCOUNT_COLUMN_NAME, 0,
-                                        typeFactory.createPolyType( PolyType.BIGINT ) ) ) );
-            case EXPLAIN:
-                return typeFactory.createStructType(
-                        ImmutableList.of(
-                                new AlgDataTypeFieldImpl( -1L, AvaticaConnection.PLAN_COLUMN_NAME, 0,
-                                        typeFactory.createPolyType( PolyType.VARCHAR, AlgDataType.PRECISION_NOT_SPECIFIED ) ) ) );
-            default:
-                throw Util.unexpected( kind );
-        }
+        return switch ( kind ) {
+            case INSERT, DELETE, UPDATE -> typeFactory.createStructType(
+                    ImmutableList.of(
+                            new AlgDataTypeFieldImpl( -1L, "ROWCOUNT", 0,
+                                    typeFactory.createPolyType( PolyType.BIGINT ) ) ) );
+            case EXPLAIN -> typeFactory.createStructType(
+                    ImmutableList.of(
+                            new AlgDataTypeFieldImpl( -1L, "EXPLAIN", 0,
+                                    typeFactory.createPolyType( PolyType.VARCHAR, AlgDataType.PRECISION_NOT_SPECIFIED ) ) ) );
+            default -> throw Util.unexpected( kind );
+        };
     }
 
 
@@ -1443,6 +1436,9 @@ public abstract class AlgOptUtil {
         // This is why we have to handle it differently here and actually compare the properties
         // of the array types.
         // This means we are comparing the component type, cardinality, and dimension.
+        if ( type1 instanceof BasicPolyType && type1.getPolyType() == PolyType.ARRAY && type1.getPolyType() == type2.getPolyType() ) {
+            return litmus.succeed();
+        }
         if ( type1.getPolyType() == PolyType.ARRAY && type2.getPolyType() == PolyType.ARRAY ) {
             ArrayType arrayType1 = (ArrayType) type1;
             ArrayType arrayType2 = (ArrayType) type2;
@@ -2081,14 +2077,14 @@ public abstract class AlgOptUtil {
 
 
     /**
-     * Creates a new {@link MultiJoin} to reflect projection references from a {@link LogicalProject}
+     * Creates a new {@link MultiJoin} to reflect projection references from a {@link LogicalRelProject}
      * that is on top of the {@link MultiJoin}.
      *
      * @param multiJoin the original MultiJoin
      * @param project the LogicalProject on top of the MultiJoin
      * @return the new MultiJoin
      */
-    public static MultiJoin projectMultiJoin( MultiJoin multiJoin, LogicalProject project ) {
+    public static MultiJoin projectMultiJoin( MultiJoin multiJoin, LogicalRelProject project ) {
         // Locate all input references in the projection expressions as well the post-join filter.  Since the filter effectively sits in between the LogicalProject and the MultiJoin,
         // the projection needs to include those filter references.
         ImmutableBitSet inputRefs = InputFinder.bits( project.getProjects(), multiJoin.getPostJoinFilter() );
@@ -2149,7 +2145,7 @@ public abstract class AlgOptUtil {
 
 
     /**
-     * Creates a {@link LogicalProject} that projects particular fields of its input, according to a mapping.
+     * Creates a {@link LogicalRelProject} that projects particular fields of its input, according to a mapping.
      */
     public static AlgNode createProject( AlgNode child, Mappings.TargetMapping mapping ) {
         return createProject( child, Mappings.asList( mapping.inverse() ) );
@@ -2325,7 +2321,7 @@ public abstract class AlgOptUtil {
      * Optimizations:
      *
      * <ul>
-     * <li>If the relational expression is a {@link LogicalCalc} or {@link LogicalProject} that is already acting as a permutation, combines the new permutation with the old;</li>
+     * <li>If the relational expression is a {@link LogicalCalc} or {@link LogicalRelProject} that is already acting as a permutation, combines the new permutation with the old;</li>
      * <li>If the permutation is the identity, returns the original relational expression.</li>
      * </ul>
      *
@@ -2348,8 +2344,8 @@ public abstract class AlgOptUtil {
                 return permute( alg, permutation2, null );
             }
         }
-        if ( alg instanceof LogicalProject ) {
-            Permutation permutation1 = ((LogicalProject) alg).getPermutation();
+        if ( alg instanceof LogicalRelProject ) {
+            Permutation permutation1 = ((LogicalRelProject) alg).getPermutation();
             if ( permutation1 != null ) {
                 Permutation permutation2 = permutation.product( permutation1 );
                 return permute( alg, permutation2, null );
@@ -2360,7 +2356,7 @@ public abstract class AlgOptUtil {
         final List<RexNode> exprList = new ArrayList<>();
         final List<RexLocalRef> projectRefList = new ArrayList<>();
         final List<AlgDataTypeField> fields = alg.getTupleType().getFields();
-        final AlgOptCluster cluster = alg.getCluster();
+        final AlgCluster cluster = alg.getCluster();
         for ( int i = 0; i < permutation.getTargetCount(); i++ ) {
             int target = permutation.getTarget( i );
             final AlgDataTypeField targetField = fields.get( target );
@@ -2847,23 +2843,6 @@ public abstract class AlgOptUtil {
 
 
     /**
-     * Shuttle that finds the set of inputs that are used.
-     */
-    public static class InputReferencedVisitor extends RexShuttle {
-
-        public final SortedSet<Integer> inputPosReferenced = new TreeSet<>();
-
-
-        @Override
-        public RexNode visitIndexRef( RexIndexRef inputRef ) {
-            inputPosReferenced.add( inputRef.getIndex() );
-            return inputRef;
-        }
-
-    }
-
-
-    /**
      * Converts types to descriptive strings.
      */
     public static class TypeDumper {
@@ -3146,4 +3125,3 @@ public abstract class AlgOptUtil {
     }
 
 }
-

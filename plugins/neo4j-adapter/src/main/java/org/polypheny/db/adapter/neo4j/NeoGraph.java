@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,7 +54,7 @@ import org.polypheny.db.catalog.entity.physical.PhysicalField;
 import org.polypheny.db.catalog.entity.physical.PhysicalGraph;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.functions.Functions;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexNode;
@@ -104,7 +104,7 @@ public class NeoGraph extends PhysicalGraph implements TranslatableEntity, Modif
      */
     @Override
     public Modify<?> toModificationTable(
-            AlgOptCluster cluster,
+            AlgCluster cluster,
             AlgTraitSet traits,
             Entity table,
             AlgNode child,
@@ -126,7 +126,7 @@ public class NeoGraph extends PhysicalGraph implements TranslatableEntity, Modif
 
     @Override
     public Modify<?> toModificationGraph(
-            AlgOptCluster cluster,
+            AlgCluster cluster,
             AlgTraitSet traits,
             Entity graph,
             AlgNode child,
@@ -146,7 +146,7 @@ public class NeoGraph extends PhysicalGraph implements TranslatableEntity, Modif
 
 
     @Override
-    public AlgNode toAlg( AlgOptCluster cluster, AlgTraitSet traitSet ) {
+    public AlgNode toAlg( AlgCluster cluster, AlgTraitSet traitSet ) {
         return new NeoLpgScan( cluster, cluster.traitSetOf( NeoConvention.INSTANCE ).replace( ModelTrait.GRAPH ), this );
     }
 

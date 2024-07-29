@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,12 +60,13 @@ import org.polypheny.db.util.PolyphenyHomeDirManager;
 
 
 /**
- * A data source that can Query a File System
+ * A data source that can query a file system
  */
 @Slf4j
 @AdapterProperties(
         name = "QFS",
-        description = "This data source maps a file system on the Polypheny-DB host system as a relational table and allows to query it.", usedModes = DeployMode.EMBEDDED,
+        description = "This data source maps a file system on the Polypheny-DB host system as a relational entity and allows to query it.",
+        usedModes = DeployMode.EMBEDDED,
         defaultMode = DeployMode.EMBEDDED)
 @AdapterSettingString(name = "rootDir", defaultValue = "")
 public class Qfs extends DataSource<RelAdapterCatalog> {
@@ -80,8 +81,8 @@ public class Qfs extends DataSource<RelAdapterCatalog> {
     private QfsSchema currentNamespace;
 
 
-    public Qfs( long adapterId, String uniqueName, Map<String, String> settings ) {
-        super( adapterId, uniqueName, settings, true, new RelAdapterCatalog( adapterId ) );
+    public Qfs( long adapterId, String uniqueName, Map<String, String> settings, DeployMode mode ) {
+        super( adapterId, uniqueName, settings, mode, true, new RelAdapterCatalog( adapterId ) );
         init( settings );
         registerInformationPage( uniqueName );
         this.delegate = new RelationalScanDelegate( this, adapterCatalog );
@@ -98,7 +99,7 @@ public class Qfs extends DataSource<RelAdapterCatalog> {
 
     @Override
     public void updateNamespace( String name, long id ) {
-        currentNamespace = new QfsSchema( id, name, this );
+        currentNamespace = new QfsSchema( id, adapterId, name, this );
     }
 
 
@@ -343,10 +344,13 @@ public class Qfs extends DataSource<RelAdapterCatalog> {
     @SuppressWarnings("UnnecessaryModifier")
     public static interface Exclude {
 
+        @SuppressWarnings("unused")
         void createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation );
 
+        @SuppressWarnings("unused")
         List<PhysicalEntity> refreshTable( long allocId );
 
+        @SuppressWarnings("unused")
         void dropTable( Context context, long allocId );
 
     }

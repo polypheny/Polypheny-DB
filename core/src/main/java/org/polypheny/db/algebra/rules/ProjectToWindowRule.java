@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,7 +50,7 @@ import org.polypheny.db.algebra.core.Calc;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.logical.relational.LogicalCalc;
 import org.polypheny.db.algebra.logical.relational.LogicalWindow;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptRuleOperand;
@@ -110,7 +110,7 @@ public abstract class ProjectToWindowRule extends AlgOptRule {
          */
         public CalcToWindowRule( AlgBuilderFactory algBuilderFactory ) {
             super(
-                    operandJ( Calc.class, null, calc -> RexOver.containsOver( calc.getProgram() ), any() ),
+                    operand( Calc.class, null, calc -> RexOver.containsOver( calc.getProgram() ), any() ),
                     algBuilderFactory, "ProjectToWindowRule" );
         }
 
@@ -140,7 +140,7 @@ public abstract class ProjectToWindowRule extends AlgOptRule {
          */
         public ProjectToLogicalProjectAndWindowRule( AlgBuilderFactory algBuilderFactory ) {
             super(
-                    operandJ(
+                    operand(
                             Project.class,
                             null,
                             project -> RexOver.containsOver( project.getProjects(), null ),
@@ -223,7 +223,7 @@ public abstract class ProjectToWindowRule extends AlgOptRule {
 
 
                     @Override
-                    protected AlgNode makeRel( AlgOptCluster cluster, AlgTraitSet traitSet, AlgBuilder algBuilder, AlgNode input, RexProgram program ) {
+                    protected AlgNode makeRel( AlgCluster cluster, AlgTraitSet traitSet, AlgBuilder algBuilder, AlgNode input, RexProgram program ) {
                         assert !program.containsAggs();
                         program = program.normalize( cluster.getRexBuilder(), null );
                         return super.makeRel( cluster, traitSet, algBuilder, input, program );
@@ -261,7 +261,7 @@ public abstract class ProjectToWindowRule extends AlgOptRule {
 
 
                     @Override
-                    protected AlgNode makeRel( AlgOptCluster cluster, AlgTraitSet traitSet, AlgBuilder algBuilder, AlgNode input, RexProgram program ) {
+                    protected AlgNode makeRel( AlgCluster cluster, AlgTraitSet traitSet, AlgBuilder algBuilder, AlgNode input, RexProgram program ) {
                         Preconditions.checkArgument( program.getCondition() == null, "WindowedAggregateRel cannot accept a condition" );
                         return LogicalWindow.create( cluster, traitSet, algBuilder, input, program );
                     }

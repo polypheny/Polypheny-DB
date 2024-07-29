@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,12 +29,12 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptRuleOperand;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.ConventionTraitDef;
@@ -58,7 +58,7 @@ public class ComboRuleTest {
         planner.addRule( new AddIntermediateNodeRule() );
         planner.addRule( new GoodSingleRule() );
 
-        AlgOptCluster cluster = newCluster( planner );
+        AlgCluster cluster = newCluster( planner );
         NoneLeafAlg leafRel = new NoneLeafAlg( cluster, "a" );
         NoneSingleAlg singleRel = new NoneSingleAlg( cluster, leafRel );
         NoneSingleAlg singleRel2 = new NoneSingleAlg( cluster, singleRel );
@@ -77,14 +77,14 @@ public class ComboRuleTest {
         final int nodesBelowCount;
 
 
-        IntermediateNode( AlgOptCluster cluster, AlgNode input, int nodesBelowCount ) {
+        IntermediateNode( AlgCluster cluster, AlgNode input, int nodesBelowCount ) {
             super( cluster, cluster.traitSetOf( PHYS_CALLING_CONVENTION ), input );
             this.nodesBelowCount = nodesBelowCount;
         }
 
 
         @Override
-        public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+        public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
             return planner.getCostFactory().makeCost( 100, 100, 100 ).multiplyBy( 1.0 / nodesBelowCount );
         }
 

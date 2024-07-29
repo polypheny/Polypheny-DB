@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,10 +47,10 @@ import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptRule;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexDigestIncludeType;
 import org.polypheny.db.rex.RexLiteral;
@@ -82,7 +82,7 @@ public abstract class Values extends AbstractAlgNode {
      * @param rowType Row type for tuples produced by this rel
      * @param tuples 2-dimensional array of tuple values to be produced; outer list contains tuples; each inner list is one tuple; all tuples must be of same length, conforming to rowType
      */
-    protected Values( AlgOptCluster cluster, AlgDataType rowType, ImmutableList<ImmutableList<RexLiteral>> tuples, AlgTraitSet traits ) {
+    protected Values( AlgCluster cluster, AlgDataType rowType, ImmutableList<ImmutableList<RexLiteral>> tuples, AlgTraitSet traits ) {
         super( cluster, traits );
         this.rowType = rowType;
         this.tuples = tuples;
@@ -135,8 +135,8 @@ public abstract class Values extends AbstractAlgNode {
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
-        double dRows = mq.getRowCount( this );
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
+        double dRows = mq.getTupleCount( this );
 
         // Assume CPU is negligible since values are precomputed.
         double dCpu = 1;
@@ -147,7 +147,7 @@ public abstract class Values extends AbstractAlgNode {
 
     // implement AlgNode
     @Override
-    public double estimateRowCount( AlgMetadataQuery mq ) {
+    public double estimateTupleCount( AlgMetadataQuery mq ) {
         return tuples.size();
     }
 

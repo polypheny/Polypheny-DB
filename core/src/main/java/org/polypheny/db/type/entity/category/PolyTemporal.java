@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,12 +21,12 @@ import java.math.MathContext;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import lombok.experimental.NonFinal;
-import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
+import org.polypheny.db.type.entity.numerical.PolyLong;
+import org.polypheny.db.util.temporal.DateTimeUtils;
 
 @NonFinal
 public abstract class PolyTemporal extends PolyNumber {

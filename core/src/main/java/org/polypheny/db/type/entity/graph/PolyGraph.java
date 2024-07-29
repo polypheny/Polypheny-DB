@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,9 +23,9 @@ import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.CompatibilityLevel;
 import io.activej.serializer.CorruptedDataException;
-import io.activej.serializer.SimpleSerializerDef;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
+import io.activej.serializer.def.SimpleSerializerDef;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -171,10 +171,10 @@ public class PolyGraph extends GraphObject {
             for ( Pair<PolyString, PolyString> namedId : namedPathId ) {
                 if ( i % 2 == 0 ) {
                     element = this.nodes.get( namedId.right ).copyNamed( namedId.left );
-                    nodes.add( (PolyNode) element );
+                    nodes.add( element.asNode() );
                 } else {
                     element = this.edges.get( namedId.right ).copyNamed( namedId.left );
-                    edges.add( (PolyEdge) element );
+                    edges.add( element.asEdge() );
                 }
                 path.add( element );
                 names.add( null );

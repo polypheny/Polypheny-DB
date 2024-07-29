@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 package org.polypheny.db.sql.language;
 
 
-import static org.apache.calcite.avatica.util.DateTimeUtils.ymdToUnixDate;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -38,13 +37,12 @@ import static org.polypheny.db.functions.Functions.trim;
 import static org.polypheny.db.functions.Functions.upper;
 import static org.polypheny.db.functions.TemporalFunctions.addMonths;
 import static org.polypheny.db.functions.TemporalFunctions.subtractMonths;
+import static org.polypheny.db.util.temporal.DateTimeUtils.ymdToUnixDate;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import org.apache.calcite.avatica.util.ByteString;
-import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
@@ -52,12 +50,14 @@ import org.polypheny.db.functions.Functions;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.runtime.Utilities;
 import org.polypheny.db.type.entity.PolyBoolean;
-import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.type.entity.temporal.PolyDate;
+import org.polypheny.db.util.ByteString;
+import org.polypheny.db.util.temporal.DateTimeUtils;
 
 
 /**
@@ -595,7 +595,7 @@ public class FunctionsTest {
             assertThat( Functions.lt( PolyString.of( "1" ), PolyLong.of( 2L ) ), is( PolyBoolean.FALSE ) );
             fail( "'lt' on non-numeric different type is not possible" );
         } catch ( PolyphenyDbException e ) {
-            assertThat( e.getMessage(), is( "Invalid types for comparison: class org.polypheny.db.type.entity.PolyString < class org.polypheny.db.type.entity.PolyLong" ) );
+            assertThat( e.getMessage(), is( "Invalid types for comparison: class org.polypheny.db.type.entity.PolyString < class org.polypheny.db.type.entity.numerical.PolyLong" ) );
         }
     }
 
@@ -627,7 +627,7 @@ public class FunctionsTest {
             assertThat( Functions.le( PolyString.of( "2" ), PolyLong.of( 2L ) ), is( PolyBoolean.FALSE ) );
             fail( "'le' on non-numeric different type is not possible" );
         } catch ( PolyphenyDbException e ) {
-            assertThat( e.getMessage(), is( "Invalid types for comparison: class org.polypheny.db.type.entity.PolyString <= class org.polypheny.db.type.entity.PolyLong" ) );
+            assertThat( e.getMessage(), is( "Invalid types for comparison: class org.polypheny.db.type.entity.PolyString <= class org.polypheny.db.type.entity.numerical.PolyLong" ) );
         }
     }
 
@@ -651,7 +651,7 @@ public class FunctionsTest {
             assertThat( Functions.gt( PolyString.of( "2" ), PolyLong.of( 1L ) ), is( PolyBoolean.FALSE ) );
             fail( "'gt' on non-numeric different type is not possible" );
         } catch ( PolyphenyDbException e ) {
-            assertThat( e.getMessage(), is( "Invalid types for comparison: class org.polypheny.db.type.entity.PolyString > class org.polypheny.db.type.entity.PolyLong" ) );
+            assertThat( e.getMessage(), is( "Invalid types for comparison: class org.polypheny.db.type.entity.PolyString > class org.polypheny.db.type.entity.numerical.PolyLong" ) );
         }
     }
 
@@ -683,7 +683,7 @@ public class FunctionsTest {
             assertThat( Functions.ge( PolyString.of( "2" ), PolyLong.of( 2L ) ), is( PolyBoolean.FALSE ) );
             fail( "'ge' on non-numeric different type is not possible" );
         } catch ( PolyphenyDbException e ) {
-            assertThat( e.getMessage(), is( "Invalid types for comparison: class org.polypheny.db.type.entity.PolyString >= class org.polypheny.db.type.entity.PolyLong" ) );
+            assertThat( e.getMessage(), is( "Invalid types for comparison: class org.polypheny.db.type.entity.PolyString >= class org.polypheny.db.type.entity.numerical.PolyLong" ) );
         }
     }
 
@@ -709,7 +709,7 @@ public class FunctionsTest {
             Functions.plusAny( PolyString.of( "2" ), PolyLong.of( 2 ) );
             fail( "'plus' on non-numeric type is not possible" );
         } catch ( PolyphenyDbException e ) {
-            assertThat( e.getMessage(), is( "Invalid types for arithmetic: class org.polypheny.db.type.entity.PolyString + class org.polypheny.db.type.entity.PolyLong" ) );
+            assertThat( e.getMessage(), is( "Invalid types for arithmetic: class org.polypheny.db.type.entity.PolyString + class org.polypheny.db.type.entity.numerical.PolyLong" ) );
         }
     }
 
@@ -735,7 +735,7 @@ public class FunctionsTest {
             Functions.minusAny( PolyString.of( "2" ), PolyLong.of( 2L ) );
             fail( "'minus' on non-numeric type is not possible" );
         } catch ( PolyphenyDbException e ) {
-            assertThat( e.getMessage(), is( "Invalid types for arithmetic: class org.polypheny.db.type.entity.PolyString - class org.polypheny.db.type.entity.PolyLong" ) );
+            assertThat( e.getMessage(), is( "Invalid types for arithmetic: class org.polypheny.db.type.entity.PolyString - class org.polypheny.db.type.entity.numerical.PolyLong" ) );
         }
     }
 
@@ -761,7 +761,7 @@ public class FunctionsTest {
             Functions.multiplyAny( PolyString.of( "2" ), PolyLong.of( 2L ) );
             fail( "'multiply' on non-numeric type is not possible" );
         } catch ( PolyphenyDbException e ) {
-            assertThat( e.getMessage(), is( "Invalid types for arithmetic: class org.polypheny.db.type.entity.PolyString * class org.polypheny.db.type.entity.PolyLong" ) );
+            assertThat( e.getMessage(), is( "Invalid types for arithmetic: class org.polypheny.db.type.entity.PolyString * class org.polypheny.db.type.entity.numerical.PolyLong" ) );
         }
     }
 
@@ -787,7 +787,7 @@ public class FunctionsTest {
             Functions.divideAny( PolyString.of( "5" ), PolyLong.of( 2L ) );
             fail( "'divide' on non-numeric type is not possible" );
         } catch ( PolyphenyDbException e ) {
-            assertThat( e.getMessage(), is( "Invalid types for arithmetic: class org.polypheny.db.type.entity.PolyString / class org.polypheny.db.type.entity.PolyLong" ) );
+            assertThat( e.getMessage(), is( "Invalid types for arithmetic: class org.polypheny.db.type.entity.PolyString / class org.polypheny.db.type.entity.numerical.PolyLong" ) );
         }
     }
 
@@ -834,4 +834,3 @@ public class FunctionsTest {
     }
 
 }
-

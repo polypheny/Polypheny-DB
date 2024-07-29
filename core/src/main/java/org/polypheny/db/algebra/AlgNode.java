@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,8 @@ package org.polypheny.db.algebra;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.core.Correlate;
 import org.polypheny.db.algebra.core.CorrelationId;
@@ -46,15 +48,16 @@ import org.polypheny.db.algebra.metadata.Metadata;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgImplementor;
-import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptNode;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
+import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.schema.trait.ModelTraitDef;
 import org.polypheny.db.util.Glossary;
 import org.polypheny.db.util.Litmus;
@@ -130,7 +133,6 @@ public interface AlgNode extends AlgOptNode, Cloneable {
     AlgDataType getTupleType();
 
 
-
     /**
      * Returns the type of the rows expected for an input. Defaults to {@link #getTupleType}.
      *
@@ -150,12 +152,12 @@ public interface AlgNode extends AlgOptNode, Cloneable {
     /**
      * Returns an estimate of the number of rows this relational expression will return.
      * <p>
-     * Don't call this method directly. Instead, use {@link AlgMetadataQuery#getRowCount}, which gives plugins a chance to override the rel's default ideas about row count.
+     * Don't call this method directly. Instead, use {@link AlgMetadataQuery#getTupleCount}, which gives plugins a chance to override the rel's default ideas about row count.
      *
      * @param mq Metadata query
      * @return Estimate of the number of rows this relational expression will return
      */
-    double estimateRowCount( AlgMetadataQuery mq );
+    double estimateTupleCount( AlgMetadataQuery mq );
 
     /**
      * Returns the names of variables that are set in this relational expression but also used and therefore not available to parents of this relational expression.
@@ -212,7 +214,7 @@ public interface AlgNode extends AlgOptNode, Cloneable {
      * @param mq Metadata query
      * @return Cost of this plan (not including children)
      */
-    AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq );
+    AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq );
 
     /**
      * Returns a metadata interface.
@@ -242,7 +244,7 @@ public interface AlgNode extends AlgOptNode, Cloneable {
      * @param planner Planner that plans this relational node
      * @return Relational expression that should be used by the planner
      */
-    AlgNode onRegister( AlgOptPlanner planner );
+    AlgNode onRegister( AlgPlanner planner );
 
     /**
      * Computes the digest, assigns it, and returns it. For planner use only.
@@ -306,12 +308,12 @@ public interface AlgNode extends AlgOptNode, Cloneable {
     /**
      * Registers any special rules specific to this kind of relational expression.
      * <p>
-     * The planner calls this method this first time that it sees a relational expression of this class. The derived class should call {@link AlgOptPlanner#addRule} for each rule,
+     * The planner calls this method this first time that it sees a relational expression of this class. The derived class should call {@link AlgPlanner#addRule} for each rule,
      * and then call {@code super.register}.
      *
      * @param planner Planner to be used to register additional relational expressions
      */
-    void register( AlgOptPlanner planner );
+    void register( AlgPlanner planner );
 
     /**
      * Accepts a visit from a shuttle.
@@ -352,9 +354,8 @@ public interface AlgNode extends AlgOptNode, Cloneable {
      * Expands node
      * If a part of AlgNode is a LogicalViewScan it is replaced
      * Else recursively hands call down if view in deeper level
-     *
      */
-    default AlgNode unfoldView( @Nullable AlgNode parent, int index, AlgOptCluster cluster ) {
+    default AlgNode unfoldView( @Nullable AlgNode parent, int index, AlgCluster cluster ) {
         int i = 0;
         for ( AlgNode node : getInputs() ) {
             node.unfoldView( this, i++, cluster );
@@ -363,14 +364,14 @@ public interface AlgNode extends AlgOptNode, Cloneable {
     }
 
     default DataModel getModel() {
-        return Objects.requireNonNull( getTraitSet().getTrait( ModelTraitDef.INSTANCE ) ).getDataModel();
+        return Objects.requireNonNullElse( getTraitSet().getTrait( ModelTraitDef.INSTANCE ), ModelTrait.RELATIONAL ).dataModel();
     }
 
     default boolean containsView() {
         return getInputs().stream().anyMatch( AlgNode::containsView );
     }
 
-    default void replaceCluster( AlgOptCluster cluster ) {
+    default void replaceCluster( AlgCluster cluster ) {
         // empty on purpose
     }
 
@@ -386,8 +387,22 @@ public interface AlgNode extends AlgOptNode, Cloneable {
         return getInputs().stream().anyMatch( AlgNode::containsScan );
     }
 
+    default boolean containsEntity() {
+        if ( getEntity() != null ) {
+            return true;
+        }
+        return getInputs().stream().anyMatch( AlgNode::containsEntity );
+    }
+
+    default Set<Entity> getEntities() {
+        if ( getEntity() != null ) {
+            return Set.of( getEntity() );
+        }
+        return getInputs().stream().map( AlgNode::getEntities ).reduce( ( a, b ) -> Stream.concat( a.stream(), b.stream() ).collect( Collectors.toSet() ) ).orElse( Set.of() );
+    }
+
     /**
-     * Context of a relational expression, for purposes of checking validity.
+     * Context of an algebra expression, for purposes of checking validity.
      */
     interface Context {
 
@@ -396,4 +411,3 @@ public interface AlgNode extends AlgOptNode, Cloneable {
     }
 
 }
-

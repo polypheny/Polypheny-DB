@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,6 @@ import java.util.stream.Collectors;
 import org.bson.BsonArray;
 import org.bson.BsonBoolean;
 import org.bson.BsonDocument;
-import org.bson.BsonDouble;
 import org.bson.BsonInt32;
 import org.bson.BsonNumber;
 import org.bson.BsonRegularExpression;
@@ -85,7 +84,7 @@ import org.polypheny.db.languages.mql.MqlInsert;
 import org.polypheny.db.languages.mql.MqlQueryStatement;
 import org.polypheny.db.languages.mql.MqlUpdate;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
@@ -117,7 +116,7 @@ import org.polypheny.db.util.TimestampString;
 public class MqlToAlgConverter {
 
     private final Snapshot snapshot;
-    private final AlgOptCluster cluster;
+    private final AlgCluster cluster;
     private RexBuilder builder;
     public static final String MONGO = "mongo";
     private final static Map<String, Operator> mappings = new HashMap<>() {{
@@ -205,10 +204,6 @@ public class MqlToAlgConverter {
         operators.add( "$all" );
         operators.add( "$elemMatch" );
         operators.add( "$size" );
-        operators.add( "$geoIntersects" );
-        operators.add( "$geoWithin" );
-        operators.add( "$near" );
-        operators.add( "$nearSphere" );
     }
 
 
@@ -219,7 +214,7 @@ public class MqlToAlgConverter {
     private Entity entity;
 
 
-    public MqlToAlgConverter( Snapshot snapshot, AlgOptCluster cluster ) {
+    public MqlToAlgConverter( Snapshot snapshot, AlgCluster cluster ) {
         this.snapshot = snapshot;
         this.cluster = Objects.requireNonNull( cluster );
         this.any = this.cluster.getTypeFactory().createPolyType( PolyType.ANY );
@@ -260,50 +255,33 @@ public class MqlToAlgConverter {
     public AlgRoot convert( MqlCollectionStatement query ) {
         Type kind = query.getMqlKind();
         this.entity = getEntity( query, namespaceId );
-        if ( entity == null ) {
-            throw new GenericRuntimeException( "The used collection does not exist." );
-        }
 
         AlgNode node = LogicalDocumentScan.create( cluster, entity );
         this.usesDocumentModel = true;
 
-        AlgDataType rowType = entity.getRowType();
+        AlgDataType rowType = entity.getTupleType();
 
         this.builder = new RexBuilder( cluster.getTypeFactory() );
 
-        AlgRoot root;
-
-        switch ( kind ) {
-            case FIND:
+        return switch ( kind ) {
+            case FIND -> {
                 AlgNode find = convertFind( (MqlFind) query, rowType, node );
-                root = AlgRoot.of( find, find.getTupleType(), Kind.SELECT );
-                break;
-            case COUNT:
+                yield AlgRoot.of( find, find.getTupleType(), Kind.SELECT );
+            }
+            case COUNT -> {
                 AlgNode count = convertCount( (MqlCount) query, rowType, node );
-                root = AlgRoot.of( count, count.getTupleType(), Kind.SELECT );
-                break;
-            case AGGREGATE:
+                yield AlgRoot.of( count, count.getTupleType(), Kind.SELECT );
+            }
+            case AGGREGATE -> {
                 AlgNode aggregate = convertAggregate( (MqlAggregate) query, rowType, node );
-                root = AlgRoot.of( aggregate, Kind.SELECT );
-                break;
+                yield AlgRoot.of( aggregate, Kind.SELECT );
+            }
             /// dmls
-            case INSERT:
-                root = AlgRoot.of( convertInsert( (MqlInsert) query, entity ), Kind.INSERT );
-                break;
-            case DELETE:
-            case FIND_DELETE:
-                root = AlgRoot.of( convertDelete( (MqlDelete) query, entity, node ), Kind.DELETE );
-                break;
-            case UPDATE:
-                root = AlgRoot.of( convertUpdate( (MqlUpdate) query, entity, node ), Kind.UPDATE );
-                break;
-            default:
-                throw new IllegalStateException( "Unexpected value: " + kind );
-        }
-        /*if ( usesDocumentModel ) {
-            root.usesDocumentModel = true;
-        }*/
-        return root;
+            case INSERT -> AlgRoot.of( convertInsert( (MqlInsert) query, entity ), Kind.INSERT );
+            case DELETE, FIND_DELETE -> AlgRoot.of( convertDelete( (MqlDelete) query, entity, node ), Kind.DELETE );
+            case UPDATE -> AlgRoot.of( convertUpdate( (MqlUpdate) query, entity, node ), Kind.UPDATE );
+            default -> throw new IllegalStateException( "Unexpected value: " + kind );
+        };
     }
 
 
@@ -335,15 +313,15 @@ public class MqlToAlgConverter {
      */
     private AlgNode convertUpdate( MqlUpdate query, Entity entity, AlgNode node ) {
         if ( !query.getQuery().isEmpty() ) {
-            node = convertQuery( query, entity.getRowType(), node );
+            node = convertQuery( query, entity.getTupleType(), node );
             if ( query.isOnlyOne() ) {
                 node = wrapLimit( node, 1 );
             }
         }
         if ( query.isUsesPipeline() ) {
-            node = convertReducedPipeline( query, entity.getRowType(), node, entity );
+            node = convertReducedPipeline( query, entity.getTupleType(), node, entity );
         } else {
-            node = translateUpdate( query, entity.getRowType(), node, entity );
+            node = translateUpdate( query, entity.getTupleType(), node, entity );
         }
 
         return node;
@@ -352,7 +330,7 @@ public class MqlToAlgConverter {
 
     /**
      * Translates an update document
-     *
+     * <p>
      * this method is implemented like the reduced update pipeline,
      * but in fact could be combined and therefore optimized a lot more
      */
@@ -370,7 +348,7 @@ public class MqlToAlgConverter {
             Map<String, RexNode> temp = new HashMap<>();
             switch ( op ) {
                 case ("$currentDate"):
-                    temp = translateCurrentDate( entry.getValue().asDocument(), rowType );
+                    temp = translateCurrentDate( entry.getValue().asDocument() );
                     updateOp = UpdateOperation.REPLACE;
                     break;
                 case "$inc":
@@ -390,7 +368,7 @@ public class MqlToAlgConverter {
                     updateOp = UpdateOperation.REPLACE;
                     break;
                 case "$rename":
-                    renames.putAll( translateRename( entry.getValue().asDocument(), rowType ) );
+                    renames.putAll( translateRename( entry.getValue().asDocument() ) );
                     updateOp = UpdateOperation.RENAME;
                     break;
                 case "$set":
@@ -400,7 +378,7 @@ public class MqlToAlgConverter {
                 /*case ("$setOnInsert"):
                     updates.putAll( translateSet(  ) );*/
                 case "$unset":
-                    temp = translateUnset( entry.getValue().asDocument(), rowType );
+                    temp = translateUnset( entry.getValue().asDocument() );
                     updateOp = UpdateOperation.REMOVE;
                     break;
                 case "$addToSet":
@@ -473,7 +451,6 @@ public class MqlToAlgConverter {
                 directUpdates.put( nodeEntry.getKey(), nodeEntry.getValue() );
                 if ( updateOp == UpdateOperation.RENAME ) {
                     throw new GenericRuntimeException( "You cannot rename a fixed field in an update, as this is a ddl" );
-                    // TODO DL maybe find way to trigger ddl later
                 }
             } else {
                 String childName = null;
@@ -540,7 +517,7 @@ public class MqlToAlgConverter {
      * Start translation of db.collection.update({$unset: "key"})
      * this excludes the defined key from the document
      */
-    private Map<String, RexNode> translateUnset( BsonDocument doc, AlgDataType rowType ) {
+    private Map<String, RexNode> translateUnset( BsonDocument doc ) {
         Map<String, RexNode> updates = new HashMap<>();
         for ( Entry<String, BsonValue> entry : doc.entrySet() ) {
             updates.put( entry.getKey(), null );
@@ -572,7 +549,7 @@ public class MqlToAlgConverter {
      * Start translation of db.collection.update({$rename: {"key": "newKey"}})
      * renames the specified key, named "key" to "newKey"
      */
-    private Map<String, String> translateRename( BsonDocument doc, AlgDataType rowType ) {
+    private Map<String, String> translateRename( BsonDocument doc ) {
         Map<String, String> updates = new HashMap<>();
         for ( Entry<String, BsonValue> entry : doc.entrySet() ) {
             updates.put( entry.getKey(), entry.getValue().asString().getValue() );
@@ -615,7 +592,7 @@ public class MqlToAlgConverter {
      * Start translation of db.collection.update({$currentDate: {"key": {"$type": "timestamp"}}})
      * this replaces the value of the given key, with the current date in timestamp or date format
      */
-    private Map<String, RexNode> translateCurrentDate( BsonDocument value, AlgDataType rowType ) {
+    private Map<String, RexNode> translateCurrentDate( BsonDocument value ) {
         Map<String, RexNode> updates = new HashMap<>();
         for ( Entry<String, BsonValue> entry : value.entrySet() ) {
             RexLiteral timeOrDate;
@@ -655,31 +632,22 @@ public class MqlToAlgConverter {
                 throw new GenericRuntimeException( "The update document needs one key and a document." );
             }
             BsonDocument doc = value.asDocument().get( key ).asDocument();
-            switch ( key ) {
-                case "$addFields":
-                case "$set":
+            updateOp = switch ( key ) {
+                case "$addFields", "$set" -> {
                     updates.putAll( translateAddToSet( doc, rowType ) );
-                    updateOp = UpdateOperation.REPLACE;
-                    break;
-                case "$project":
-                case "$unset":
-                    updates.putAll( translateUnset( doc, rowType ) );
-                    updateOp = UpdateOperation.REMOVE;
-                    break;
-                default:
-                    throw new GenericRuntimeException( "The used statement is not supported in the update aggregation pipeline" );
-            }
+                    yield UpdateOperation.REPLACE;
+                }
+                case "$project", "$unset" -> {
+                    updates.putAll( translateUnset( doc ) );
+                    yield UpdateOperation.REMOVE;
+                }
+                default -> throw new GenericRuntimeException( "The used statement is not supported in the update aggregation pipeline" );
+            };
 
             mergeUpdates( mergedUpdates, rowType, updates, updateOp );
             updates.clear();
 
         }
-        Pair<List<String>, List<RexNode>> adjusted = DocumentUtil.transformUpdateRelational(
-                Pair.toMap( mergedUpdates.get( UpdateOperation.REPLACE ) ),
-                Pair.left( mergedUpdates.get( UpdateOperation.REMOVE ) ),
-                mergedUpdates.get( UpdateOperation.REPLACE ).stream().collect( Collectors.toMap( u -> u.left, u -> ((RexLiteral) u.right).value.asString().value ) ), // todo change
-                rowType,
-                node );
 
         return LogicalDocumentModify.create( entity, node, Operation.UPDATE, null, null, null );
 
@@ -691,7 +659,7 @@ public class MqlToAlgConverter {
      */
     private AlgNode convertDelete( MqlDelete query, Entity table, AlgNode node ) {
         if ( !query.getQuery().isEmpty() ) {
-            node = convertQuery( query, table.getRowType(), node );
+            node = convertQuery( query, table.getTupleType(), node );
         }
         if ( query.isOnlyOne() ) {
             node = wrapLimit( node, 1 );
@@ -717,7 +685,7 @@ public class MqlToAlgConverter {
     private AlgNode convertInsert( MqlInsert query, Entity entity ) {
         return LogicalDocumentModify.create(
                 entity,
-                convertMultipleValues( query.getValues(), entity.getRowType() ),
+                convertMultipleValues( query.getValues() ),
                 Modify.Operation.INSERT,
                 null,
                 null,
@@ -741,10 +709,9 @@ public class MqlToAlgConverter {
      * representation
      *
      * @param array the values, which are inserted
-     * @param rowType row definition, which is used to determine fixed columns
      * @return the {@link Values} representation of the values
      */
-    private AlgNode convertMultipleValues( BsonArray array, AlgDataType rowType ) {
+    private AlgNode convertMultipleValues( BsonArray array ) {
         LogicalDocumentValues docs = (LogicalDocumentValues) LogicalDocumentValues.create( cluster, array.asArray().stream().map( a -> BsonUtil.toPolyValue( a ).asDocument() ).toList() );
         if ( usesDocumentModel ) {
             return docs;
@@ -756,27 +723,8 @@ public class MqlToAlgConverter {
 
 
     /**
-     * Returns a RelDataType for the given BsonValue
-     *
-     * @param value the untransformed BSON
-     */
-    private AlgDataType getRelDataType( BsonValue value ) {
-        PolyType polyType = getPolyType( value );
-        switch ( polyType ) {
-            case CHAR:
-            case BINARY:
-            case VARCHAR:
-            case VARBINARY:
-                return cluster.getTypeFactory().createPolyType( polyType, value.asString().getValue().length() );
-            default:
-                return cluster.getTypeFactory().createPolyType( getPolyType( value ) );
-        }
-    }
-
-
-    /**
      * Starts converting of aggregation pipeline
-     *
+     * <p>
      * Example:
      * <pre>
      * db.collection.aggregate([
@@ -840,19 +788,6 @@ public class MqlToAlgConverter {
             }
         }
 
-        AlgNode finalNode = node;
-        /*node = LogicalDocumentProject.create( node,
-                node.getRowType().getFieldList()
-                        .stream()
-                        .map( el -> {
-                            RexIndexRef ref = new RexIndexRef( el.getIndex(), finalNode.getRowType().getFieldList().get( el.getIndex() ).getType() );
-                            /*if ( !el.getName().equals( "_id" ) ) {
-                                return DocumentUtil.createJsonify( ref, jsonType );
-                            } else {
-                            return ref;
-                            //}
-                        } )
-                        .collect( Collectors.toList() ), node.getRowType().getFieldNames() );*/
         return node;
     }
 
@@ -912,7 +847,7 @@ public class MqlToAlgConverter {
     /**
      * Transforms the $unwind stage in the aggregation pipeline
      * this operation unfolds a specified array into multiple records
-     *
+     * <p>
      * {"test","key",[3,1,"te"]} {@literal ->} {"test","key",3},{"test","key",1},{"test","key","te"}
      *
      * @param value the unparsed $unwind operation
@@ -1064,9 +999,9 @@ public class MqlToAlgConverter {
         }
 
         Map<String, AggFunction> nameOps = new HashMap<>();
-        //List<String> aggNames = new ArrayList<>();
+
         Map<String, RexNode> nameNodes = new HashMap<>();
-        //List<String> names = new ArrayList<>();
+
 
         for ( Entry<String, BsonValue> entry : value.asDocument().entrySet() ) {
             if ( entry.getKey().equals( "_id" ) ) {
@@ -1076,9 +1011,7 @@ public class MqlToAlgConverter {
                     nameNodes.put( "_id", getIdentifier( entry.getValue().asString().getValue().substring( 1 ), rowType ) );
                 } else if ( entry.getValue().isDocument() ) {
                     for ( Entry<String, BsonValue> idEntry : entry.getValue().asDocument().entrySet() ) {
-                        nameNodes.put( idEntry.getValue().asString().getValue().substring( 0 ), getIdentifier( idEntry.getValue().asString().getValue().substring( 1 ), rowType ) );
-                        //names.add( idEntry.getValue().asString().getValue().substring( 1 ) );
-                        //nodes.add( getIdentifier( idEntry.getValue().asString().getValue().substring( 1 ), rowType ) );
+                        nameNodes.put( idEntry.getValue().asString().getValue(), getIdentifier( idEntry.getValue().asString().getValue().substring( 1 ), rowType ) );
                     }
                 } else {
                     throw new GenericRuntimeException( "$group takes as _id values either a document or a string" );
@@ -1089,38 +1022,16 @@ public class MqlToAlgConverter {
                 }
                 BsonDocument doc = entry.getValue().asDocument();
                 nameOps.put( entry.getKey(), accumulators.get( doc.getFirstKey() ) );
-                // ops.add( accumulators.get( doc.getFirstKey() ) );
-                //aggNames.add( entry.getKey() );
-                //names.add( entry.getKey() );
+
                 AlgDataType nullableDouble = cluster.getTypeFactory().createTypeWithNullability( cluster.getTypeFactory().createPolyType( PolyType.DOUBLE ), true );
                 // when using aggregations MongoQl automatically casts to doubles
                 String key = doc.get( doc.getFirstKey() ).asString().getValue().substring( 1 );
-                //nodes.add( new RexNameRef( key, nullableDouble ) );
+
                 nameNodes.put( entry.getKey(), new RexNameRef( key, null, nullableDouble ) );
             }
         }
 
-        //node = LogicalDocumentProject.create( node, nodes, names );
-
         return groupBy( value, nameNodes, node, node.getTupleType(), nameOps );
-    }
-
-
-    private RexNode convertExpression( BsonValue value, AlgDataType rowType ) {
-        if ( value.isDocument() ) {
-            BsonDocument doc = value.asDocument();
-            if ( mathOperators.containsKey( doc.getFirstKey() ) ) {
-                return convertMath( doc.getFirstKey(), null, doc.get( doc.getFirstKey() ), rowType, false );
-            } else {
-                return convertSingleMath( doc.getFirstKey(), doc.get( doc.getFirstKey() ), rowType );
-            }
-
-        } else if ( value.isString() ) {
-            return getIdentifier( value.asString().getValue().substring( 1 ), rowType );
-        } else if ( value.isNumber() ) {
-            return convertLiteral( value );
-        }
-        return null;
     }
 
 
@@ -1140,7 +1051,7 @@ public class MqlToAlgConverter {
 
         if ( !groupBy.isNull() ) {
             String groupName = groupBy.asString().getValue().substring( 1 );
-            int index = rowType.getFieldNames().indexOf( groupName );
+            rowType.getFieldNames().indexOf( groupName );
 
             node = LogicalDocumentAggregate.create(
                     node,
@@ -1286,32 +1197,18 @@ public class MqlToAlgConverter {
                         return node;
                     }
                 } else {
-                    switch ( key ) {
-                        case "$exists":
-                            return convertExists( bsonValue, parentKey, rowType );
-                        case "$type":
-                            return convertType( bsonValue, parentKey, rowType );
-                        case "$expr":
-                            return convertExpr( bsonValue, parentKey, rowType );
-                        case "$jsonSchema":
+                    return switch ( key ) {
+                        case "$exists" -> convertExists( bsonValue, parentKey, rowType );
+                        case "$type" -> convertType( bsonValue, parentKey, rowType );
+                        case "$expr" -> convertExpr( bsonValue, parentKey, rowType );
+                        case "$jsonSchema" ->
                             // jsonSchema is a general match
-                            return convertJsonSchema( bsonValue, rowType );
-                        case "$all":
-                            return convertAll( bsonValue, parentKey, rowType );
-                        case "$elemMatch":
-                            return convertElemMatch( bsonValue, parentKey, rowType );
-                        case "$size":
-                            return convertSize( bsonValue, parentKey, rowType );
-                        case "$geoIntersects":
-                            return convertGeoIntersects( bsonValue, parentKey, rowType );
-                        case "$geoWithin":
-                            return convertGeoWithin( bsonValue, parentKey, rowType );
-                        case "$near":
-                            return convertNear( bsonValue, parentKey, rowType );
-                        case "$nearSphere":
-                            return convertNearSphere( bsonValue, parentKey, rowType );
-                    }
-                    return translateLogical( key, parentKey, bsonValue, rowType );
+                                convertJsonSchema( bsonValue, rowType );
+                        case "$all" -> convertAll( bsonValue, parentKey, rowType );
+                        case "$elemMatch" -> convertElemMatch( bsonValue, parentKey, rowType );
+                        case "$size" -> convertSize( bsonValue, parentKey, rowType );
+                        default -> translateLogical( key, parentKey, bsonValue, rowType );
+                    };
                 }
             }  // handle others
         }
@@ -1355,11 +1252,6 @@ public class MqlToAlgConverter {
         AlgDataType type = cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN );
 
         return new RexCall( type, OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_EQUALS ), Arrays.asList( node, rexRemainder ) );
-    }
-
-
-    private AlgDataType getDefaultDataField() {
-        return DocumentType.ofId();
     }
 
 
@@ -1563,46 +1455,18 @@ public class MqlToAlgConverter {
 
 
     private RexNode getIdentifier( String parentKey, AlgDataType rowType, boolean useAccess ) {
-        List<String> rowNames = rowType.getFieldNames();
-        //if ( false ) {
         if ( useAccess ) {
             return attachAccess( parentKey, rowType );
-        } /*else {
-                return attachRef( parentKey, rowType );
-            }*/
-        //}
+        }
         // as it is possible to query relational schema with mql we have to block this step when this happens
         if ( !usesDocumentModel ) {
             throw new GenericRuntimeException( "The used identifier is not part of the table." );
         }
 
-        /*if ( elemMatchActive ) {
-            return RexIndexRef.of( 0, rowType );
-        }*/
-
-        //if ( rowNames.contains( parentKey.split( "\\." )[0] ) ) {
-        String[] keys = parentKey.split( "\\." );
-        // we fix sub-documents in elemMatch queries by only passing the sub-key
-        // that the replacing then only uses the array element and searches the sub-key there
-           /*if ( !elemMatchActive || keys.length == 1 ) {
-                return translateDocValue(  0, rowType, parentKey, useAccess );
-            } else {
-                //List<String> names = Arrays.asList( keys );
-                //names.remove( 0 );
-                return translateDocValue( 0, rowType, parentKey, useAccess );
-            }*/
-
-        //}
         // we look if we already extracted a part of the document
 
-        return translateDocValue( null, rowType, parentKey, useAccess );
+        return translateDocValue( null, parentKey );
 
-    }
-
-
-    private RexNode attachRef( String parentKey, AlgDataType rowType ) {
-        AlgDataTypeField field = rowType.getField( parentKey, false, false );
-        return RexIndexRef.of( field.getIndex(), rowType );
     }
 
 
@@ -1637,7 +1501,7 @@ public class MqlToAlgConverter {
                     toRemove.add( operand );
                 }
             }
-            if ( toAdd.size() > 0 ) {
+            if ( !toAdd.isEmpty() ) {
                 operands.addAll( toAdd );
                 operands.removeAll( toRemove );
             }
@@ -1929,134 +1793,6 @@ public class MqlToAlgConverter {
 
 
     /**
-     * Converts a $geoIntersects filter field
-     * <pre>
-     *      { <field>: { $geoIntersects: { $geometry: {<GeoJSON>} } }
-     * </pre>
-     *
-     * @param bson the $geoIntersects information as BSON,
-     * which is a document with the necessary keys ($geoIntersects.$geometry)
-     * @param parentKey the key of the parent document
-     * @param rowType the rowType of the node which is filtered by $geoIntersects
-     * @return the filtered node
-     */
-    private RexNode convertGeoIntersects( BsonValue bson, String parentKey, AlgDataType rowType ) {
-        if ( !bson.isDocument() ) {
-            throw new GenericRuntimeException( "$geoIntersects has to be a document." );
-        }
-        BsonDocument geoIntersects = bson.asDocument();
-        if ( !geoIntersects.containsKey( "$geometry" ) || !geoIntersects.get( "$geometry" ).isDocument() ) {
-            throw new GenericRuntimeException( "$geoIntersects.$geometry has to be a document." );
-        }
-        BsonDocument geometry = geoIntersects.get( "$geometry" ).asDocument();
-
-        return new RexCall(
-                cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ),
-                OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_GEO_INTERSECTS ),
-                Arrays.asList(
-                        getIdentifier( parentKey, rowType ),
-                        convertLiteral( geometry ) ));
-    }
-
-
-    /**
-     * Converts a $geoWithin filter field
-     * <pre>
-     *      { <field>: { $geoWithin: { $geometry: {<GeoJSON>} } }
-     * </pre>
-     *
-     * @param bson the $geoWithin information as BSON,
-     * which is a document with the necessary keys ($geoWithin.$geometry)
-     * @param parentKey the key of the parent document
-     * @param rowType the rowType of the node which is filtered by $geoWithin
-     * @return the filtered node
-     */
-    private RexNode convertGeoWithin( BsonValue bson, String parentKey, AlgDataType rowType ) {
-        if ( !bson.isDocument() ) {
-            throw new GenericRuntimeException( "$geoWithin has to be a document." );
-        }
-        BsonDocument geoWithin = bson.asDocument();
-        if ( !geoWithin.containsKey( "$geometry" ) || !geoWithin.get( "$geometry" ).isDocument() ) {
-            throw new GenericRuntimeException( "$geoWithin.$geometry has to be a document." );
-        }
-        BsonDocument geometry = geoWithin.get( "$geometry" ).asDocument();
-
-        return new RexCall(
-                cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ),
-                OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_GEO_WITHIN ),
-                Arrays.asList(
-                        getIdentifier( parentKey, rowType ),
-                        convertLiteral( geometry ) ));
-    }
-
-
-    /**
-     * Converts a $near filter field
-     * <pre>
-     *      { <field>: { $near: { $geometry: {<GeoJSON>}, $minDistance: <minDistance>, $maxDistance: <maxDistance> } }
-     * </pre>
-     *
-     * @param bson the $near information as BSON,
-     * which is a document with the necessary keys ($near.$geometry)
-     * @param parentKey the key of the parent document
-     * @param rowType the rowType of the node which is filtered by $near
-     * @return the filtered node
-     */
-    private RexNode convertNear( BsonValue bson, String parentKey, AlgDataType rowType ) {
-        return convertNearRexCall( bson, parentKey, rowType, false );
-    }
-
-
-    /**
-     * Converts a $nearSphere filter field
-     * <pre>
-     *      { <field>: { $nearSphere: { $geometry: {<GeoJSON>}, $minDistance: <minDistance>, $maxDistance: <maxDistance> } }
-     * </pre>
-     *
-     * @param bson the $nearSphere information as BSON,
-     * which is a document with the necessary keys ($nearSphere.$geometry)
-     * @param parentKey the key of the parent document
-     * @param rowType the rowType of the node which is filtered by $nearSphere
-     * @return the filtered node
-     */
-    private RexNode convertNearSphere( BsonValue bson, String parentKey, AlgDataType rowType ) {
-        return convertNearRexCall( bson, parentKey, rowType, true );
-    }
-
-
-    private RexNode convertNearRexCall( BsonValue bson, String parentKey, AlgDataType rowType, boolean spherical ) {
-        String funcName = spherical ? "$nearSphere" : "$near";
-        OperatorName opName = spherical ? OperatorName.MQL_NEAR_SPHERE : OperatorName.MQL_NEAR;
-        if ( !bson.isDocument() ) {
-            throw new GenericRuntimeException( funcName + " has to be a document." );
-        }
-        BsonDocument near = bson.asDocument();
-        double minDistance = 0;
-        double maxDistance = Double.MAX_VALUE;
-
-        if ( !near.containsKey( "$geometry" ) || !near.get( "$geometry" ).isDocument() ) {
-            throw new GenericRuntimeException( funcName + ".$geometry has to be a document." );
-        }
-        BsonDocument geometry = near.get( "$geometry" ).asDocument();
-        if ( near.containsKey( "$minDistance" ) ) {
-            minDistance = near.get( "$minDistance" ).isNumber() ? near.get( "$minDistance" ).asNumber().asDouble().doubleValue() : minDistance;
-        }
-        if ( near.containsKey( "$maxDistance" ) ) {
-            maxDistance = near.get( "$maxDistance" ).isNumber() ? near.get( "$maxDistance" ).asNumber().asDouble().doubleValue() : maxDistance;
-        }
-
-        return new RexCall(
-                cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ),
-                OperatorRegistry.get( QueryLanguage.from( MONGO ), opName ),
-                Arrays.asList(
-                        getIdentifier( parentKey, rowType ),
-                        convertLiteral( geometry ),
-                        convertLiteral( new BsonDouble( minDistance ) ),
-                        convertLiteral( new BsonDouble( maxDistance ) ) ));
-    }
-
-
-    /**
      * Inverts the provided node by wrapping it in a NOT
      *
      * @param node the node, which is wrapped
@@ -2083,41 +1819,14 @@ public class MqlToAlgConverter {
      * </pre>
      *
      * @param index positions of the column in which the parent document is stored
-     * @param rowType the row information of the collection/table
      * @param key the key in the form "key2.key22"
-     * @param useAccess if access or input operations should be used
      * @return the node, which defines the retrieval of the underlying key
      */
-    private RexNode translateDocValue( @Nullable Integer index, AlgDataType rowType, String key, boolean useAccess ) {
+    public RexNode translateDocValue( @Nullable Integer index, String key ) {
         //RexCall filter;
         List<String> names = Arrays.asList( key.split( "\\." ) );
-        /*if ( elemMatchActive ) {
-            names = names.subList( 1, names.size() );
-        }*/
-        //filter = getStringArray( names );
 
         return this.subElement.orElseGet( () -> new RexNameRef( names, index, DocumentType.ofDoc() ) );
-
-        /*return new RexCall(
-                new DocumentType(),
-                OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_QUERY_VALUE ),
-                Arrays.asList(
-                        RexIndexRef.of( index, rowType ),
-                        filter ) );*/
-    }
-
-
-    private RexCall getNestedArray( List<List<String>> lists ) {
-        List<RexNode> nodes = new ArrayList<>();
-        for ( List<String> list : lists ) {
-            nodes.add( getStringArray( list ) );
-        }
-
-        return new RexCall(
-                cluster.getTypeFactory().createArrayType( cluster.getTypeFactory().createArrayType(
-                        cluster.getTypeFactory().createPolyType( PolyType.CHAR, 200 ),
-                        -1 ), nodes.size() ),
-                OperatorRegistry.get( OperatorName.ARRAY_VALUE_CONSTRUCTOR ), nodes );
     }
 
 
@@ -2190,60 +1899,6 @@ public class MqlToAlgConverter {
         }
 
         return getFixedCall( operands, op, PolyType.BOOLEAN );
-    }
-
-
-    /**
-     * Helper method, which returns a PolyType for a BsonValue
-     */
-    private PolyType getPolyType( BsonValue bsonValue ) {
-        switch ( bsonValue.getBsonType() ) {
-            case END_OF_DOCUMENT:
-                break;
-            case DOUBLE:
-                return PolyType.DOUBLE;
-            case STRING:
-                return PolyType.CHAR;
-            case DOCUMENT:
-                return PolyType.JSON;
-            case ARRAY:
-                break;
-            case BINARY:
-                return PolyType.BINARY;
-            case UNDEFINED:
-                break;
-            case OBJECT_ID:
-                break;
-            case BOOLEAN:
-                return PolyType.BOOLEAN;
-            case DATE_TIME:
-                return PolyType.BIGINT;
-            case NULL:
-                return PolyType.NULL;
-            case REGULAR_EXPRESSION:
-                break;
-            case DB_POINTER:
-                break;
-            case JAVASCRIPT:
-                break;
-            case SYMBOL:
-                break;
-            case JAVASCRIPT_WITH_SCOPE:
-                break;
-            case INT32:
-                return PolyType.INTEGER;
-            case TIMESTAMP:
-                return PolyType.BIGINT;
-            case INT64:
-                return PolyType.BIGINT;
-            case DECIMAL128:
-                return PolyType.DECIMAL;
-            case MIN_KEY:
-                break;
-            case MAX_KEY:
-                break;
-        }
-        throw new GenericRuntimeException( "Not implemented " );
     }
 
 
@@ -2326,18 +1981,6 @@ public class MqlToAlgConverter {
             if ( !includes.containsKey( DocumentType.DOCUMENT_ID ) ) {
                 includes.put( DocumentType.DOCUMENT_ID, getIdentifier( DocumentType.DOCUMENT_ID, rowType ) );
             }
-
-            if ( isAddFields ) {
-                /*for ( AlgDataTypeField field : rowType.getFieldList() ) {
-                    if ( !includesOrder.contains( field.getName() ) ) {
-                        includesOrder.add( field.getName() );
-                        values.add( RexIndexRef.of( field.getIndex(), rowType ) );
-                    }
-                }*/
-            }
-
-            // the _data field does no longer exist, as we made a projection "out" of it
-            // this._dataExists = false;
 
             return LogicalDocumentProject.create( node, new ArrayList<>( includes.values() ), new ArrayList<>( includes.keySet() ) );
         }

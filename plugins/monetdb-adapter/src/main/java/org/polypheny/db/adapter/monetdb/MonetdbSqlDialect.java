@@ -17,12 +17,13 @@
 package org.polypheny.db.adapter.monetdb;
 
 
+import javax.annotation.Nullable;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import nl.cwi.monetdb.jdbc.MonetClob;
-import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
+import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.UnaryExpression;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
@@ -35,6 +36,7 @@ import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.nodes.TimeUnitRange;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexLiteral;
@@ -47,6 +49,9 @@ import org.polypheny.db.sql.language.SqlIdentifier;
 import org.polypheny.db.sql.language.SqlLiteral;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlWriter;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyBinary;
+import org.polypheny.db.type.entity.PolyValue;
 
 
 /**
@@ -105,15 +110,18 @@ public class MonetdbSqlDialect extends SqlDialect {
                 // We need to flag the type with an underscore to flag the type (the underscore is removed in the unparse method)
                 castSpec = "_TEXT";
                 break;
-            case VARBINARY:
+            case VARBINARY, BINARY:
                 castSpec = "_TEXT";
+                break;
+            case BIGINT:
+                castSpec = "_HUGEINT";
                 break;
             case FILE:
             case IMAGE:
             case VIDEO:
             case AUDIO:
                 // We need to flag the type with an underscore to flag the type (the underscore is removed in the unparse method)
-                castSpec = "_BLOB";
+                castSpec = "_TEXT";
                 break;
             default:
                 return super.getCastSpec( type );
@@ -124,14 +132,31 @@ public class MonetdbSqlDialect extends SqlDialect {
 
 
     @Override
-    public Expression getExpression( AlgDataType fieldType, Expression child ) {
+    public Expression handleRetrieval( AlgDataType fieldType, Expression child, ParameterExpression resultSet_, int index ) {
         return switch ( fieldType.getPolyType() ) {
-            case TEXT -> {
-                UnaryExpression client = Expressions.convert_( child, MonetClob.class );
-                yield super.getExpression( fieldType, Expressions.call( MonetdbSqlDialect.class, "toString", client ) );
+            case FILE, AUDIO, IMAGE, VIDEO -> {
+                UnaryExpression client = Expressions.convert_( Expressions.call( resultSet_, "getObject", Expressions.constant( index ) ), MonetClob.class );
+                yield Expressions.call(
+                        MonetdbSqlDialect.class,
+                        "nullableFromTypedJson",
+                        Expressions.convert_( Expressions.call( MonetdbSqlDialect.class, "toString", client ), String.class ),
+                        Expressions.constant( PolyBinary.class ) );
             }
-            default -> super.getExpression( fieldType, child );
+            case TEXT, VARBINARY -> {
+                UnaryExpression client = Expressions.convert_( child, MonetClob.class );
+                yield super.handleRetrieval( fieldType, Expressions.call( MonetdbSqlDialect.class, "toString", client ), resultSet_, index );
+            }
+            default -> super.handleRetrieval( fieldType, child, resultSet_, index );
         };
+    }
+
+
+    @SuppressWarnings("unused")
+    public static PolyValue nullableFromTypedJson( @Nullable String value, Class<? extends PolyValue> type ) {
+        if ( value == null ) {
+            return null;
+        }
+        return PolyValue.fromTypedJson( value, type );
     }
 
 
@@ -170,6 +195,12 @@ public class MonetdbSqlDialect extends SqlDialect {
     @Override
     public boolean supportsJoin( Join join ) {
         return join.getInputs().stream().noneMatch( AlgNode::containsJoin );// monetdb seems to have an error with nested joins and aliases
+    }
+
+
+    @Override
+    public boolean handlesUtcIncorrectly() {
+        return true;
     }
 
 
@@ -232,6 +263,10 @@ public class MonetdbSqlDialect extends SqlDialect {
                         && type.value.asSymbol().value instanceof TimeUnitRange ) {
                     supportsRex = false;
                 }
+
+            } else if ( call.getKind() == Kind.EXTRACT && call.getOperands().size() >= 2 // second is value to extract from
+                    && PolyType.DATETIME_TYPES.contains( call.getOperands().get( 1 ).getType().getPolyType() ) ) {
+                supportsRex = false;
             } else if ( call.getKind() == Kind.IS_NOT_TRUE || call.getKind() == Kind.IS_NOT_FALSE ) {
                 supportsRex = false;
             } else if ( call.getKind() == Kind.LIKE && call.getOperands().size() == 3 && call.getOperands().get( 2 ) instanceof RexDynamicParam ) {
@@ -239,6 +274,12 @@ public class MonetdbSqlDialect extends SqlDialect {
             } else if ( call.op.getOperatorName() == OperatorName.OVERLAY ) {
                 supportsRex = false;
             } else if ( call.op.getOperatorName() == OperatorName.ATAN2 ) {
+                supportsRex = false;
+            } else if ( call.op.getOperatorName() == OperatorName.TRIM ) {
+                supportsRex = false;
+            } else if ( call.op.getOperatorName() == OperatorName.SUBSTRING ) {
+                supportsRex = false;
+            } else if ( call.op.getOperatorName() == OperatorName.HOUR ) {
                 supportsRex = false;
             }
             return super.visitCall( call );

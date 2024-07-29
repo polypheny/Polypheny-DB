@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.commons.io.FileUtils;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.file.FileAlg.FileImplementor.Operation;
 import org.polypheny.db.adapter.file.Value.InputValue;
@@ -49,17 +50,16 @@ import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction.MultimediaFlavor;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.PolyTypeUtil;
-import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyBlob;
+import org.polypheny.db.type.entity.numerical.PolyLong;
 
 
 @Slf4j
 public class FileEnumerator implements Enumerator<PolyValue[]> {
 
     private final Runnable updateFiles;
-    private final FileTranslatableEntity entity;
     PolyValue[] current;
     final Operation operation;
     final List<File> columnFolders = new ArrayList<>();
@@ -88,7 +88,7 @@ public class FileEnumerator implements Enumerator<PolyValue[]> {
      * @param rootPath The rootPath is required to know where the files to iterate are placed
      * @param partitionId The id of the partition
      * @param columnIds Ids of the columns that come from a tableScan. If there is no filter, the enumerator will only iterate over the columns that are specified by the projection
-     * @param entity DataTypes of the columns that are given by the {@code columnIds} array
+     * @param entity The entity that is target of the operation
      * @param projectionMapping Mapping on how to project a table. E.g. the array [3,2] means that the row [a,b,c,d,e] will be projected to [c,b].
      * In case of an UPDATE operation, the projectionMapping represents the indexes of the columns that will be updated, e.g. [2,3] means that b and c will be updated.
      * @param dataContext DataContext
@@ -105,8 +105,6 @@ public class FileEnumerator implements Enumerator<PolyValue[]> {
             final DataContext dataContext,
             final @Nullable Condition condition,
             final @Nullable List<List<PolyValue>> updates ) {
-
-        this.entity = entity;
 
         this.operation = operation;
         if ( operation == Operation.DELETE || operation == Operation.UPDATE ) {
@@ -138,8 +136,8 @@ public class FileEnumerator implements Enumerator<PolyValue[]> {
         // If there is a projection and no filter, it is sufficient to just load the data of the projected columns.
         // If a filter is given, the whole table has to be loaded (because of the column references)
         // If we have an UPDATE operation, the whole table has to be loaded as well, to generate the hashes
-        this.columnTypes = entity.getRowType().getFields();
-        this.projectedTypes = entity.getRowType().getFields();
+        this.columnTypes = entity.getTupleType().getFields();
+        this.projectedTypes = entity.getTupleType().getFields();
 
         if ( condition == null && projectionMapping != null && operation != Operation.UPDATE ) {
             List<AlgDataTypeField> projectedTypes = new ArrayList<>( Collections.nCopies( projectionMapping.size(), null ) );
@@ -148,7 +146,7 @@ public class FileEnumerator implements Enumerator<PolyValue[]> {
                 AlgDataTypeField field = null;
                 if ( value.valueType == ValueType.INPUT ) {
                     int index = ((InputValue) projectionMapping.get( i )).getIndex();
-                    field = entity.getRowType().getFields().get( index );
+                    field = entity.getTupleType().getFields().get( index );
                 }
                 projectedTypes.set( i, field );
             }
@@ -518,7 +516,7 @@ public class FileEnumerator implements Enumerator<PolyValue[]> {
 
 
         @Override
-        public void addParameterValues( long index, AlgDataType type, List<PolyValue> data ) {
+        public void addParameterValues( long index, @NotNull AlgDataType type, List<PolyValue> data ) {
             throw new GenericRuntimeException( "Not supported" );
         }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,13 +22,14 @@ import org.bson.BsonDocument;
 import org.bson.BsonInt64;
 import org.bson.BsonNull;
 import org.bson.BsonString;
+import org.polypheny.db.adapter.mongodb.util.MongoDynamic;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.type.PolyType;
 
+@Getter
 public class BsonDynamic extends BsonDocument {
 
-    @Getter
     private final long id;
 
 
@@ -38,58 +39,58 @@ public class BsonDynamic extends BsonDocument {
 
 
     private static String getTypeString( AlgDataType type ) {
-        return type.getPolyType() != PolyType.ARRAY
+        String textualType = type.getPolyType() != PolyType.ARRAY
                 ? type.getPolyType().getTypeName()
                 : "ARRAY$" + getTypeString( type.getComponentType() );
+        return textualType + (type.getPrecision() == AlgDataType.PRECISION_NOT_SPECIFIED ? "" : "|" + (type.getPolyType() == PolyType.DECIMAL ? type.getScale() : type.getPrecision()));
     }
 
 
     public BsonDynamic( long id, String polyTypeName ) {
-        super();
         this.id = id;
-        append( "_dyn", new BsonInt64( id ) );
-        append( "_type", new BsonString( polyTypeName ) );
-        append( "_reg", new BsonBoolean( false ) );
-        append( "_func", new BsonBoolean( false ) );
-        append( "_functionName", BsonNull.VALUE );
+        append( MongoDynamic.MONGO_DYNAMIC_INDEX_KEY, new BsonInt64( id ) );
+        append( MongoDynamic.MONGO_DYNAMIC_TYPE_KEY, new BsonString( polyTypeName ) );
+        append( MongoDynamic.MONGO_DYNAMIC_REGEX_KEY, new BsonBoolean( false ) );
+        append( MongoDynamic.MONGO_DYNAMIC_FUNC_BODY_KEY, new BsonBoolean( false ) );
+        append( MongoDynamic.MONGO_DYNAMIC_FUNC_NAME_KEY, BsonNull.VALUE );
     }
 
 
     public static BsonDocument addFunction( BsonDocument doc, String functionName ) {
-        return doc.append( "_functionName", new BsonString( functionName ) );
+        return doc.append( MongoDynamic.MONGO_DYNAMIC_FUNC_NAME_KEY, new BsonString( functionName ) );
     }
 
 
     public static BsonDocument changeType( BsonDocument doc, PolyType polyType ) {
-        return doc.append( "_type", new BsonString( polyType.getTypeName() ) );
+        return doc.append( MongoDynamic.MONGO_DYNAMIC_TYPE_KEY, new BsonString( polyType.getTypeName() ) );
     }
 
 
     public BsonDynamic setIsRegex( boolean isRegex ) {
-        append( "_reg", new BsonBoolean( isRegex ) );
+        append( MongoDynamic.MONGO_DYNAMIC_REGEX_KEY, new BsonBoolean( isRegex ) );
         return this;
     }
 
 
     public boolean isRegex() {
-        return getBoolean( "_reg" ).getValue();
+        return getBoolean( MongoDynamic.MONGO_DYNAMIC_REGEX_KEY ).getValue();
     }
 
 
     public BsonDynamic setIsFunc( boolean isFunc ) {
-        append( "_func", new BsonBoolean( isFunc ) );
+        append( MongoDynamic.MONGO_DYNAMIC_FUNC_BODY_KEY, new BsonBoolean( isFunc ) );
         return this;
     }
 
 
     public BsonDynamic setPolyFunction( String functionName ) {
-        append( "_functionName", new BsonString( functionName ) );
+        append( MongoDynamic.MONGO_DYNAMIC_FUNC_NAME_KEY, new BsonString( functionName ) );
         return this;
     }
 
 
     public BsonDynamic adjustType( PolyType polyType ) {
-        append( "_type", new BsonString( polyType.getTypeName() ) );
+        append( MongoDynamic.MONGO_DYNAMIC_TYPE_KEY, new BsonString( polyType.getTypeName() ) );
         return this;
     }
 

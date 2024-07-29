@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,7 +48,7 @@ public abstract class AbstractPartitionManager implements PartitionManager {
     public boolean probePartitionGroupDistributionChange( LogicalTable table, int storeId, long columnId, int threshold ) {
         // Check for the specified columnId if we still have a ColumnPlacement for every partitionGroup
         for ( Long partitionIds : Catalog.getInstance().getSnapshot().alloc().getPartitionProperty( table.id ).orElseThrow().partitionIds ) {
-            List<AllocationColumn> ccps = catalog.getSnapshot().alloc().getColumnPlacementsByPartitionGroup( table.id, partitionIds, columnId );
+            List<AllocationColumn> ccps = catalog.getSnapshot().alloc().getColumnAllocsByPartitionGroup( table.id, partitionIds, columnId );
             if ( ccps.size() <= threshold ) {
                 for ( AllocationColumn placement : ccps ) {
                     if ( placement.adapterId == storeId ) {
@@ -136,7 +136,7 @@ public abstract class AbstractPartitionManager implements PartitionManager {
                     if ( !adapterPlacements.containsKey( placement.id ) ) {
                         adapterPlacements.put( placement.id, new HashMap<>() );
                     }
-                    List<AllocationColumn> placementColumns = catalog.getSnapshot().alloc().getColumnPlacementsOnAdapterPerTable( placement.adapterId, table.id );
+                    List<AllocationColumn> placementColumns = catalog.getSnapshot().alloc().getColumnPlacementsOnAdapterPerEntity( placement.adapterId, table.id );
                     adapterPlacements.get( placement.id ).put( partitionId, placementColumns );
                 }
             }

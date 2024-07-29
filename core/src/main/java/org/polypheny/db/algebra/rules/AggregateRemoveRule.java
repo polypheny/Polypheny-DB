@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,7 +37,7 @@ package org.polypheny.db.algebra.rules;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.AlgFactories;
-import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.functions.Functions;
 import org.polypheny.db.plan.AlgOptRule;
@@ -52,7 +52,7 @@ import org.polypheny.db.tools.AlgBuilderFactory;
  */
 public class AggregateRemoveRule extends AlgOptRule {
 
-    public static final AggregateRemoveRule INSTANCE = new AggregateRemoveRule( LogicalAggregate.class, AlgFactories.LOGICAL_BUILDER );
+    public static final AggregateRemoveRule INSTANCE = new AggregateRemoveRule( LogicalRelAggregate.class, AlgFactories.LOGICAL_BUILDER );
 
 
     /**

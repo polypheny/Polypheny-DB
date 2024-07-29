@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,9 +34,9 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.common.Streamer;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.util.BuiltInMethod;
 
@@ -54,7 +54,7 @@ public class EnumerableStreamer extends Streamer implements EnumerableAlg {
      * @param provider provides the values which get streamed to the collector
      * @param collector uses the provided values and
      */
-    public EnumerableStreamer( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode provider, AlgNode collector ) {
+    public EnumerableStreamer( AlgCluster cluster, AlgTraitSet traitSet, AlgNode provider, AlgNode collector ) {
         super( cluster, traitSet, provider, collector );
     }
 
@@ -65,7 +65,7 @@ public class EnumerableStreamer extends Streamer implements EnumerableAlg {
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         return super.computeSelfCost( planner, mq ).plus( left.computeSelfCost( planner, mq ) ).plus( right.computeSelfCost( planner, mq ) ).multiplyBy( 100 );
     }
 
@@ -77,7 +77,7 @@ public class EnumerableStreamer extends Streamer implements EnumerableAlg {
 
         final Result prepared = implementor.visitChild( this, 1, (EnumerableAlg) getRight(), pref );
 
-        Expression executor = builder.append( builder.newName( "executor" + System.nanoTime() ), prepared.block );
+        Expression executor = builder.append( builder.newName( "executor" + System.nanoTime() ), prepared.block() );
 
         ParameterExpression exp = Expressions.parameter( Types.of( Function0.class, Enumerable.class ), builder.newName( "executor" + System.nanoTime() ) );
 
@@ -89,13 +89,13 @@ public class EnumerableStreamer extends Streamer implements EnumerableAlg {
         MethodCallExpression transformContext = Expressions.call(
                 BuiltInMethod.STREAM_RIGHT.method,
                 Expressions.constant( DataContext.ROOT ),
-                builder.append( builder.newName( "query" + System.nanoTime() ), query.block ),
+                builder.append( builder.newName( "query" + System.nanoTime() ), query.block() ),
                 exp,
                 Expressions.constant( getLeft().getTupleType().getFields().stream().map( f -> f.getType().getPolyType() ).collect( Collectors.toList() ) ) );
 
         builder.add( Expressions.return_( null, builder.append( "test", transformContext ) ) );
 
-        return implementor.result( prepared.physType, builder.toBlock() );
+        return implementor.result( prepared.physType(), builder.toBlock() );
     }
 
 

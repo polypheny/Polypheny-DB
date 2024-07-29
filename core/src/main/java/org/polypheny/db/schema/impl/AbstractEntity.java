@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,7 +42,6 @@ import org.polypheny.db.nodes.Node;
 import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.Statistic;
 import org.polypheny.db.schema.Statistics;
-import org.polypheny.db.schema.TableType;
 import org.polypheny.db.util.Wrapper;
 
 
@@ -75,12 +74,6 @@ public abstract class AbstractEntity implements Entity, Wrapper {
 
 
     @Override
-    public TableType getJdbcTableType() {
-        return TableType.TABLE;
-    }
-
-
-    @Override
     public boolean isRolledUp( String column ) {
         return false;
     }
@@ -97,7 +90,7 @@ public abstract class AbstractEntity implements Entity, Wrapper {
         if ( id == null ) {
             return Statistics.UNKNOWN;
         }
-        Long rowCount = StatisticsManager.getInstance().rowCountPerTable( id );
+        Long rowCount = StatisticsManager.getInstance().tupleCountPerEntity( id );
 
         if ( rowCount == null ) {
             return Statistics.UNKNOWN;

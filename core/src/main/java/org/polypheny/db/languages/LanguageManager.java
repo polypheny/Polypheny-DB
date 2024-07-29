@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ package org.polypheny.db.languages;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +27,7 @@ import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.nodes.ExecutableStatement;
@@ -84,11 +84,18 @@ public class LanguageManager {
     }
 
 
+    public List<ImplementationContext> anyPrepareQuery( QueryContext context, Transaction transaction ) {
+        return anyPrepareQuery( context, context.getStatement() != null ? context.getStatement() : transaction.createStatement() );
+    }
+
+
+    // This method is still called from the Avatica interface and leaves the statement management to the caller.
+    // This should be refactored to use the new method only transmitting the transaction as soon as the
+    // new prism interface is enabled
     public List<ImplementationContext> anyPrepareQuery( QueryContext context, Statement statement ) {
         Transaction transaction = statement.getTransaction();
-
         if ( transaction.isAnalyze() ) {
-            context.getInformationTarget().accept( transaction.getQueryAnalyzer() );
+            context.getInformationTarget().accept( statement.getTransaction().getQueryAnalyzer() );
         }
 
         if ( transaction.isAnalyze() ) {
@@ -97,9 +104,14 @@ public class LanguageManager {
         List<ParsedQueryContext> parsedQueries;
 
         try {
-            parsedQueries = context.getLanguage().getSplitter().apply( context );
+            // handle empty query
+            if ( context.getQuery().trim().isEmpty() ) {
+                throw new GenericRuntimeException( String.format( "%s query is empty", context.getLanguage().serializedName() ) );
+            }
+
+            parsedQueries = context.getLanguage().parser().apply( context );
         } catch ( Throwable e ) {
-            log.warn( "Error on preparing query: " + e.getMessage() );
+            log.warn( "Error on preparing query: {}", e.getMessage() );
             if ( transaction.isAnalyze() ) {
                 transaction.getQueryAnalyzer().attachStacktrace( e );
             }
@@ -111,14 +123,23 @@ public class LanguageManager {
             statement.getOverviewDuration().stop( "Parsing" );
         }
 
-        Processor processor = context.getLanguage().getProcessorSupplier().get();
+        Processor processor = context.getLanguage().processorSupplier().get();
         List<ImplementationContext> implementationContexts = new ArrayList<>();
         boolean previousDdl = false;
+        int i = 0;
+        String changedNamespace = null;
         for ( ParsedQueryContext parsed : parsedQueries ) {
+            if ( i != 0 ) {
+                statement = transaction.createStatement();
+            }
+            if ( changedNamespace != null ) {
+                parsed = parsed.toBuilder().namespaceId( Catalog.snapshot().getNamespace( changedNamespace ).map( n -> n.id ).orElse( parsed.getNamespaceId() ) ).build();
+            }
+
             try {
                 // test if parsing was successful
                 if ( parsed.getQueryNode().isEmpty() ) {
-                    Exception e = new GenericRuntimeException( "Error during parsing of query \"" + context.getQuery() + "\"" );
+                    Exception e = new GenericRuntimeException( "Error during parsing of query \"%s\"".formatted( context.getQuery() ) );
                     return handleParseException( statement, parsed, transaction, e, implementationContexts );
                 }
 
@@ -151,7 +172,7 @@ public class LanguageManager {
                         parsed.addTransaction( transaction );
                     }
                     previousDdl = false;
-                    if ( context.getLanguage().getValidatorSupplier() != null ) {
+                    if ( parsed.getLanguage().validatorSupplier() != null ) {
                         if ( transaction.isAnalyze() ) {
                             statement.getOverviewDuration().start( "Validation" );
                         }
@@ -159,7 +180,7 @@ public class LanguageManager {
                                 transaction,
                                 parsed.getQueryNode().get(),
                                 RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() );
-                        parsed = ParsedQueryContext.fromQuery( parsed.getQuery(), validated.left, context );
+                        parsed = ParsedQueryContext.fromQuery( parsed.getQuery(), validated.left, parsed );
                         if ( transaction.isAnalyze() ) {
                             statement.getOverviewDuration().stop( "Validation" );
                         }
@@ -176,10 +197,13 @@ public class LanguageManager {
                     }
                     implementation = statement.getQueryProcessor().prepareQuery( root, true );
                 }
+                // queries are able to switch the context of the following queries
+                changedNamespace = parsed.getQueryNode().orElseThrow().switchesNamespace().orElse( changedNamespace );
+
                 implementationContexts.add( new ImplementationContext( implementation, parsed, statement, null ) );
 
             } catch ( Throwable e ) {
-                log.warn( "Caught exception: ", e );
+                log.warn( "Caught exception: ", e ); // TODO: This should not log in all cases, at least not with stacktrace
                 if ( transaction.isAnalyze() ) {
                     transaction.getQueryAnalyzer().attachStacktrace( e );
                 }
@@ -187,6 +211,7 @@ public class LanguageManager {
                 implementationContexts.add( ImplementationContext.ofError( e, parsed, statement ) );
                 return implementationContexts;
             }
+            i++;
         }
         return implementationContexts;
     }
@@ -208,15 +233,14 @@ public class LanguageManager {
                 transaction.rollback();
             } catch ( TransactionException ex ) {
                 // Ignore
+                log.warn( "Error during rollback: " + ex.getMessage() );
             }
         }
     }
 
 
-    public List<ExecutedContext> anyQuery( QueryContext context, Statement statement ) {
-        List<ImplementationContext> prepared = anyPrepareQuery( context, statement );
-        Transaction transaction = statement.getTransaction();
-
+    public List<ExecutedContext> anyQuery( QueryContext context ) {
+        List<ImplementationContext> prepared = anyPrepareQuery( context, context.getTransactions().get( context.getTransactions().size() - 1 ) );
         List<ExecutedContext> executedContexts = new ArrayList<>();
 
         for ( ImplementationContext implementation : prepared ) {
@@ -226,6 +250,7 @@ public class LanguageManager {
                 }
                 executedContexts.add( implementation.execute( implementation.getStatement() ) );
             } catch ( Throwable e ) {
+                Transaction transaction = implementation.getStatement().getTransaction();
                 if ( transaction.isAnalyze() && implementation.getException().isEmpty() ) {
                     transaction.getQueryAnalyzer().attachStacktrace( e );
                 }
@@ -241,8 +266,18 @@ public class LanguageManager {
 
 
     public static List<ParsedQueryContext> toQueryNodes( QueryContext queries ) {
-        Processor processor = queries.getLanguage().getProcessorSupplier().get();
-        List<String> splitQueries = Arrays.stream( queries.getQuery().split( ";" ) ).filter( q -> !q.trim().isEmpty() ).toList();
+        Processor processor = queries.getLanguage().processorSupplier().get();
+        List<String> splitQueries = processor.splitStatements( queries.getQuery() );
+
+        return splitQueries.stream().flatMap( q -> processor.parse( q ).stream().map( single -> Pair.of( single, q ) ) )
+                .map( p -> ParsedQueryContext.fromQuery( p.right, p.left, queries ) )
+                .toList();
+    }
+
+
+    public static List<ParsedQueryContext> toUnsplitQueryNodes( QueryContext queries ) {
+        Processor processor = queries.getLanguage().processorSupplier().get();
+        List<String> splitQueries = List.of( queries.getQuery() );
 
         return splitQueries.stream().flatMap( q -> processor.parse( q ).stream().map( single -> Pair.of( single, q ) ) )
                 .map( p -> ParsedQueryContext.fromQuery( p.right, p.left, queries ) )

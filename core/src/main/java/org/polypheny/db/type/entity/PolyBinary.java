@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,33 +23,36 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+import com.google.common.io.BaseEncoding;
 import java.io.IOException;
 import java.util.Arrays;
-import lombok.EqualsAndHashCode;
+import java.util.BitSet;
+import java.util.Objects;
 import lombok.Value;
-import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
+import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.BitString;
-import org.polypheny.db.util.ConversionUtil;
+import org.polypheny.db.util.ByteString;
 
-@EqualsAndHashCode(callSuper = true)
 @Value
 public class PolyBinary extends PolyValue {
 
-    public static final PolyBinary EMPTY = new PolyBinary( ByteString.EMPTY );
+    public static final PolyBinary EMPTY = new PolyBinary( new byte[0], null );
 
     @JsonProperty()
-    @JsonSerialize(using = ByteStringSerializer.class)
-    @JsonDeserialize(using = ByteStringDeserializer.class)
-    public ByteString value;
+    public byte[] value;
+
+    @JsonProperty()
+    @Nullable
+    public Integer count;
 
 
     /**
@@ -58,19 +61,30 @@ public class PolyBinary extends PolyValue {
      * @param value The value of the PolyBinary
      */
     @JsonCreator
-    public PolyBinary( @JsonProperty("value") ByteString value ) {
+    public PolyBinary( @JsonProperty("value") byte[] value, @JsonProperty("count") Integer count ) {
         super( PolyType.BINARY );
         this.value = value;
+        this.count = count;
+    }
+
+
+    public static PolyBinary of( byte[] value, int count ) {
+        return new PolyBinary( value, count );
+    }
+
+
+    public PolyBinary of( BitString value ) {
+        return PolyBinary.of( value.getAsByteArray() );
     }
 
 
     public static PolyBinary of( ByteString value ) {
-        return new PolyBinary( value );
+        return new PolyBinary( value.getBytes(), null );
     }
 
 
     public static PolyBinary of( byte[] value ) {
-        return new PolyBinary( new ByteString( value ) );
+        return new PolyBinary( value, null );
     }
 
 
@@ -89,25 +103,32 @@ public class PolyBinary extends PolyValue {
      * Converts this bit string to a hex string, such as "7AB".
      */
     public String toHexString() {
-        byte[] bytes = value.getBytes();
-        String s = ConversionUtil.toStringFromByteArray( bytes, 16 );
-        switch ( value.getBytes().length % 8 ) {
-            case 1: // B'1' -> X'1'
-            case 2: // B'10' -> X'2'
-            case 3: // B'100' -> X'4'
-            case 4: // B'1000' -> X'8'
-                return s.substring( 1 );
-            case 5: // B'10000' -> X'10'
-            case 6: // B'100000' -> X'20'
-            case 7: // B'1000000' -> X'40'
-            case 0: // B'10000000' -> X'80', and B'' -> X''
-                return s;
+        String s = BaseEncoding.base16().omitPadding().encode( value );
+        BitSet set = BitSet.valueOf( value );
+        String out = switch ( set.length() ) { // B'1' -> X'1'
+            // B'10' -> X'2'
+            // B'100' -> X'4'
+            case 1, 2, 3, 4 -> // B'1000' -> X'8'
+                    s.substring( 1 ); // B'10000' -> X'10'
+            // B'100000' -> X'20'
+            // B'1000000' -> X'40'
+            case 5, 6, 7, 0 -> // B'10000000' -> X'80', and B'' -> X''
+                    s;
+            default -> s;
+        };
+
+        if ( count != null && count != out.length() ) {
+            if ( count > out.length() ) {
+                return StringUtils.leftPad( out, count, "0" );
+            }
+            return out.substring( out.length() - count );
         }
-        if ( (value.getBytes().length % 8) == 4 ) {
-            return s.substring( 1 );
-        } else {
-            return s;
-        }
+        return out;
+    }
+
+
+    public String as64String() {
+        return Base64.encodeBase64String( value );
     }
 
 
@@ -119,13 +140,13 @@ public class PolyBinary extends PolyValue {
 
     @Override
     public Object toJava() {
-        return value == null ? null : value.getBytes();
+        return value;
     }
 
 
     @Override
     public Expression asExpression() {
-        return Expressions.call( PolyBinary.class, "of", Expressions.constant( value.getBytes() ) );
+        return Expressions.call( PolyBinary.class, "of", Expressions.constant( value ) );
     }
 
 
@@ -142,13 +163,43 @@ public class PolyBinary extends PolyValue {
 
 
     public int getBitCount() {
-        return BitString.createFromBytes( value.getBytes() ).getBitCount();
+        return BitString.createFromBytes( value ).getBitCount();
     }
 
 
     @Override
     public @NotNull Long deriveByteSize() {
-        return (long) (value == null ? 1 : value.getBytes().length);
+        return (long) (value == null ? 1 : value.length);
+    }
+
+
+    @Override
+    public boolean equals( Object o ) {
+        if ( this == o ) {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() ) {
+            return false;
+        }
+        if ( !super.equals( o ) ) {
+            return false;
+        }
+
+        PolyBinary that = (PolyBinary) o;
+
+        if ( Arrays.equals( value, that.value ) ) {
+            return true;
+        }
+
+        return Objects.equals( new ByteString( value ).toBase64String().toUpperCase(), new ByteString( that.value ).toBase64String().toUpperCase() );
+    }
+
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + (value != null ? value.hashCode() : 0);
+        return result;
     }
 
 
@@ -157,12 +208,17 @@ public class PolyBinary extends PolyValue {
      */
     public PolyBinary padRight( int length ) {
         if ( value == null ) {
-            return PolyBinary.of( (ByteString) null );
+            return PolyBinary.of( (byte[]) null );
         }
-        if ( this.value.length() >= length ) {
+        if ( this.value.length >= length ) {
             return this;
         }
-        return PolyBinary.of( new ByteString( Arrays.copyOf( value.getBytes(), length ) ) );
+        return PolyBinary.of( new ByteString( Arrays.copyOf( value, length ) ) );
+    }
+
+
+    public int length() {
+        return value.length;
     }
 
 

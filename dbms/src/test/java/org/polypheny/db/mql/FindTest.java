@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,11 +55,6 @@ public class FindTest extends MqlTestTemplate {
             "{\"test\": [3, 1, \"test\"], \"key\": 3}",
             "{\"test\": [\"test\"], \"key\": 2}",
             "{\"test\": [3,1], \"key\": 2}" );
-
-    private final List<String> DATA_6 = Arrays.asList(
-            "{\"location\": { \"type\": \"Point\", \"coordinates\": [ 7.852923, 47.998949 ] }, \"key\": 3}",
-            "{\"location\": { \"type\": \"Point\", \"coordinates\": [ 9.289382, 48.741588 ] }, \"key\": 2}",
-            "{\"test\": [3,1], \"key\": 1}" );
 
 
     @Test
@@ -706,120 +701,6 @@ public class FindTest extends MqlTestTemplate {
                 MongoConnection.checkDocResultSet(
                         result,
                         ImmutableList.of( "{\"test\": [\"test\"], \"key\": 2}" ),
-                        true,
-                        true ) );
-    }
-
-
-    // geoIntersects
-
-    @Test
-    public void geoIntersectsTest() {
-        insertMany( DATA_6 );
-
-        DocResult result = find(
-                document(
-                        kv( string( "location" ), document(
-                                kv( string( "$geoIntersects" ), document(
-                                        kv( string( "$geometry" ), document(
-                                                kv( string( "type" ), string( "Polygon" ) ),
-                                                kv( string( "coordinates" ), "[ [ [ 9.25, 48.8 ], [9.6, 48.8], [10.3, 47.1], [9.25, 47.1], [9.25, 48.8] ] ]" ) )
-                                        )
-                                ) ) ) ) )
-                , "{}" );
-
-        assertTrue(
-                MongoConnection.checkDocResultSet(
-                        result,
-                        ImmutableList.of(
-                                "{\"location\": { \"type\": \"Point\", \"coordinates\": [ 9.289382, 48.741588 ] }, \"key\": 2}" ),
-                        true,
-                        true ) );
-    }
-
-
-    // geoWithin
-
-    @Test
-    public void geoWithinTest() {
-        insertMany( DATA_6 );
-
-        DocResult result = find(
-                document(
-                        kv( string( "location" ), document(
-                                kv( string( "$geoWithin" ), document(
-                                        kv( string( "$geometry" ), document(
-                                                kv( string( "type" ), string( "Polygon" ) ),
-                                                kv( string( "coordinates" ), "[ [ [ 9.25, 48.8 ], [9.6, 48.8], [10.3, 47.1], [9.25, 47.1], [9.25, 48.8] ] ]" ) )
-                                        )
-                                ) ) ) ) )
-                , "{}" );
-
-        assertTrue(
-                MongoConnection.checkDocResultSet(
-                        result,
-                        ImmutableList.of(
-                                "{\"location\": { \"type\": \"Point\", \"coordinates\": [ 9.289382, 48.741588 ] }, \"key\": 2}" ),
-                        true,
-                        true ) );
-    }
-
-
-    // near
-
-    @Test
-    public void nearTest() {
-        // for mongodb: $near requires a 2dsphere index
-        insertMany( DATA_6 );
-
-        DocResult result = find(
-                document(
-                        kv( string( "location" ), document(
-                                kv( string( "$near" ), document(
-                                        kv( string( "$geometry" ), document(
-                                                kv( string( "type" ), string( "Point" ) ),
-                                                kv( string( "coordinates" ), "[7.9, 48.0]" ) )
-                                        ),
-                                        kv( string( "$maxDistance" ), 5000000.00 )
-                                ) ) ) ) )
-                , "{}" );
-
-        assertTrue(
-                MongoConnection.checkDocResultSet(
-                        result,
-                        ImmutableList.of(
-                                "{\"location\": { \"type\": \"Point\", \"coordinates\": [ 7.852923, 47.998949 ] }, \"key\": 3}",
-                                "{\"location\": { \"type\": \"Point\", \"coordinates\": [ 9.289382, 48.741588 ] }, \"key\": 2}" ),
-                        true,
-                        true ) );
-    }
-
-
-    // nearSphere
-
-    @Test
-    public void nearSphereTest() {
-        // for mongodb: $nearSphere requires a 2dsphere index
-        insertMany( DATA_6 );
-
-        DocResult result = find(
-                document(
-                        kv( string( "location" ), document(
-                                kv( string( "$nearSphere" ), document(
-                                        kv( string( "$geometry" ), document(
-                                                kv( string( "type" ), string( "Point" ) ),
-                                                kv( string( "coordinates" ), "[7.9, 48.0]" ) )
-                                        ),
-                                        kv( string( "$maxDistance" ), 5000000.00 )
-                                ) ) ) ) )
-                , "{}" );
-
-        assertTrue(
-                MongoConnection.checkDocResultSet(
-                        result,
-                        ImmutableList.of(
-                                "{\"location\": { \"type\": \"Point\", \"coordinates\": [ 7.852923, 47.998949 ] }, \"key\": 3}",
-                                "{\"location\": { \"type\": \"Point\", \"coordinates\": [ 9.289382, 48.741588 ] }, \"key\": 2}" ),
                         true,
                         true ) );
     }

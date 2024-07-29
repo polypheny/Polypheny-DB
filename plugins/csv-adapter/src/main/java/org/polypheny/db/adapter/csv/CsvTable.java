@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,20 +68,6 @@ public abstract class CsvTable extends PhysicalTable {
         this.fields = fields;
         this.csvSource = csvSource;
     }
-
-
-    /*@Override
-    public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
-        if ( protoRowType != null ) {
-            return protoRowType.apply( typeFactory );
-        }
-        if ( fieldTypes == null ) {
-            fieldTypes = new ArrayList<>();
-            return CsvEnumerator.deduceRowType( (JavaTypeFactory) typeFactory, source, fieldTypes );
-        } else {
-            return CsvEnumerator.deduceRowType( (JavaTypeFactory) typeFactory, source, null );
-        }
-    }*/
 
 
     /**

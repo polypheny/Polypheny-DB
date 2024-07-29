@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package org.polypheny.db.catalog.catalogs;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Streams;
-import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.annotations.Deserialize;
 import java.util.ArrayList;
 import java.util.List;
@@ -43,7 +42,6 @@ import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalField;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.util.Pair;
 
 @Getter
@@ -52,8 +50,6 @@ import org.polypheny.db.util.Pair;
 @Slf4j
 @NonFinal
 public class RelAdapterCatalog extends AdapterCatalog {
-
-    public BinarySerializer<GraphAdapterCatalog> serializer = PolySerializable.buildSerializer( GraphAdapterCatalog.class );
 
 
     public RelAdapterCatalog( long adapterId ) {
@@ -162,9 +158,5 @@ public class RelAdapterCatalog extends AdapterCatalog {
     }
 
 
-    @Override
-    public PolySerializable copy() {
-        return PolySerializable.deserialize( serialize(), RelAdapterCatalog.class );
-    }
 
 }

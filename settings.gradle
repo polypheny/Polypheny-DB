@@ -1,5 +1,5 @@
 plugins {
-    id("org.gradle.toolchains.foojay-resolver") version "0.7.0"
+    id("org.gradle.toolchains.foojay-resolver") version "0.8.0"
 }
 
 rootProject.name = 'Polypheny-DB'
@@ -16,7 +16,6 @@ toolchainManagement {
 
 
 // core modules
-include 'util'
 include 'core'
 include 'config'
 include 'information'
@@ -27,10 +26,7 @@ include 'dbms'
 
 include 'plugins'
 
-// catalog
-// include 'plugins:mapdb-catalog'
-
-include 'plugins:mapdb-monitoring'
+include 'plugins:inmemory-monitoring'
 
 // language plugins
 include 'plugins:sql-language'
@@ -43,16 +39,15 @@ include 'plugins:cypher-language'
 include 'plugins:jdbc-adapter-framework'
 
 // interface plugins
-include 'plugins:avatica-interface'
 include 'plugins:rest-interface'
 include 'plugins:http-interface'
+include 'plugins:prism-interface'
 
 // adapters plugins
 include 'plugins:hsqldb-adapter'
 include 'plugins:neo4j-adapter'
 include 'plugins:cottontail-adapter'
 include 'plugins:ethereum-adapter'
-//include 'plugins:cassandra-adapter'
 include 'plugins:csv-adapter'
 include 'plugins:mysql-adapter'
 include 'plugins:postgres-adapter'

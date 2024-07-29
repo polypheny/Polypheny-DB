@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.polypheny.db.catalog.snapshot;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import javax.annotation.Nullable;
 import org.jetbrains.annotations.NotNull;
@@ -32,44 +33,41 @@ import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.Pattern;
-import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceTemplate;
 import org.polypheny.db.nodes.Identifier;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.util.NameMatcher;
-import org.polypheny.db.util.NameMatchers;
 
 public interface Snapshot extends OperatorTable {
-
-    NameMatcher nameMatcher = NameMatchers.withCaseSensitive( RuntimeConfig.RELATIONAL_CASE_SENSITIVE.getBoolean() );
 
     long id();
 
 
     /**
-     * Get all schemas which fit to the specified filter pattern.
-     * <code>getNamespaces(xid, null, null)</code> returns all schemas of all databases.
+     * Get all namespaces which fit to the specified filter pattern.
      *
-     * @param name Pattern for the schema name. null returns all.
-     * @return List of schemas which fit to the specified filter. If there is no schema which meets the criteria, an empty list is returned.
+     * @param name Pattern for the namespace name. null returns all.
+     * @return List of namespaces which fit to the specified filter. If there is no namespace which meets the criteria, an empty list is returned.
      */
-    @NotNull List<LogicalNamespace> getNamespaces( @Nullable Pattern name );
+    @NotNull
+    List<LogicalNamespace> getNamespaces( @Nullable Pattern name );
 
     /**
-     * Returns the schema with the specified id.
+     * Returns the namespace with the specified id.
      *
-     * @param id The id of the schema
-     * @return The schema
+     * @param id The id of the namespace
+     * @return The namespace
      */
-    @NotNull Optional<LogicalNamespace> getNamespace( long id );
+    @NotNull
+    Optional<LogicalNamespace> getNamespace( long id );
 
     /**
-     * Returns the schema with the given name in the specified database.
+     * Returns the namespace with the given name.
      *
-     * @param name The name of the schema
-     * @return The schema
+     * @param name The name of the namespace
+     * @return The namespace
      */
-    @NotNull Optional<LogicalNamespace> getNamespace( String name );
+    @NotNull
+    Optional<LogicalNamespace> getNamespace( String name );
 
 
     /**
@@ -78,7 +76,8 @@ public interface Snapshot extends OperatorTable {
      * @param name The name of the user
      * @return The user
      */
-    @NotNull Optional<LogicalUser> getUser( String name );
+    @NotNull
+    Optional<LogicalUser> getUser( String name );
 
     /**
      * Get the user with the specified id.
@@ -86,7 +85,8 @@ public interface Snapshot extends OperatorTable {
      * @param id The id of the user
      * @return The user
      */
-    @NotNull Optional<LogicalUser> getUser( long id );
+    @NotNull
+    Optional<LogicalUser> getUser( long id );
 
     /**
      * Get list of all adapters
@@ -100,23 +100,25 @@ public interface Snapshot extends OperatorTable {
      *
      * @return The adapter
      */
-    @NotNull Optional<LogicalAdapter> getAdapter( String uniqueName );
+    @NotNull
+    Optional<LogicalAdapter> getAdapter( String uniqueName );
 
     /**
      * Get an adapter by its id
      *
      * @return The adapter
      */
-    @NotNull Optional<LogicalAdapter> getAdapter( long id );
+    @NotNull
+    Optional<LogicalAdapter> getAdapter( long id );
 
 
     /*
-     * Get list of all query interfaces
+     * Get map of all query interfaces
      *
-     * @return List of query interfaces
+     * @return Map of query interfaces
      */
     @NotNull
-    List<LogicalQueryInterface> getQueryInterfaces();
+    Map<Long, LogicalQueryInterface> getQueryInterfaces();
 
     /**
      * Get a query interface by its unique name
@@ -127,17 +129,8 @@ public interface Snapshot extends OperatorTable {
     @NotNull
     Optional<LogicalQueryInterface> getQueryInterface( String uniqueName );
 
-    /**
-     * Get a query interface by its id
-     *
-     * @param id The id of the query interface
-     * @return The CatalogQueryInterface
-     */
     @NotNull
-    Optional<LogicalQueryInterface> getQueryInterface( long id );
-
-    @NotNull Optional<QueryInterfaceTemplate> getInterfaceTemplate( String name );
-
+    Optional<QueryInterfaceTemplate> getInterfaceTemplate( String name );
 
 
     List<LogicalTable> getTablesForPeriodicProcessing();

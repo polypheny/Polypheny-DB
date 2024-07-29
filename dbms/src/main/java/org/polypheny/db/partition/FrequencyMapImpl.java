@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,9 +39,7 @@ import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
-import org.polypheny.db.catalog.logistic.DataPlacementRole;
 import org.polypheny.db.catalog.logistic.PartitionType;
-import org.polypheny.db.catalog.logistic.PlacementType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
@@ -338,19 +336,11 @@ public class FrequencyMapImpl extends FrequencyMap {
             if ( !hotPartitionsToCreate.isEmpty() ) {
                 Catalog.getInstance().getSnapshot().alloc().getPartitionsOnDataPlacement( store.getAdapterId(), table.id );
 
-                for ( long partitionId : hotPartitionsToCreate ) {
-                    catalog.getAllocRel( table.namespaceId ).addPartition(
-                            table.namespaceId,
-                            store.getAdapterId(),
-                            table.id,
-                            PlacementType.AUTOMATIC,
-                            DataPlacementRole.UP_TO_DATE );
-                }
 
                 store.createTable( statement.getPrepareContext(), LogicalTableWrapper.of( null, null, null ), AllocationTableWrapper.of( null, null ) );
 
                 List<LogicalColumn> logicalColumns = new ArrayList<>();
-                catalog.getSnapshot().alloc().getColumnPlacementsOnAdapterPerTable( store.getAdapterId(), table.id ).forEach( cp -> logicalColumns.add( catalog.getSnapshot().rel().getColumn( cp.columnId ).orElseThrow() ) );
+                catalog.getSnapshot().alloc().getColumnPlacementsOnAdapterPerEntity( store.getAdapterId(), table.id ).forEach( cp -> logicalColumns.add( catalog.getSnapshot().rel().getColumn( cp.columnId ).orElseThrow() ) );
 
                 AllocationPlacement placement = catalog.getSnapshot().alloc().getPlacement( store.getAdapterId(), table.id ).orElseThrow();
 

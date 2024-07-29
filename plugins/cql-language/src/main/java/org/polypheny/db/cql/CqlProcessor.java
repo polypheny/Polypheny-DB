@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 package org.polypheny.db.cql;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgRoot;
@@ -35,7 +35,6 @@ import org.polypheny.db.transaction.Lock.LockMode;
 import org.polypheny.db.transaction.LockManager;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
-import org.polypheny.db.transaction.TransactionImpl;
 import org.polypheny.db.util.DeadlockException;
 import org.polypheny.db.util.Pair;
 
@@ -71,13 +70,13 @@ public class CqlProcessor extends Processor {
 
     @Override
     public void unlock( Statement statement ) {
-        LockManager.INSTANCE.unlock( Collections.singletonList( LockManager.GLOBAL_LOCK ), (TransactionImpl) statement.getTransaction() );
+        LockManager.INSTANCE.unlock( statement.getTransaction() );
     }
 
 
     @Override
     protected void lock( Statement statement ) throws DeadlockException {
-        LockManager.INSTANCE.lock( Collections.singletonList( Pair.of( LockManager.GLOBAL_LOCK, LockMode.EXCLUSIVE ) ), (TransactionImpl) statement.getTransaction() );
+        LockManager.INSTANCE.lock( LockMode.EXCLUSIVE, statement.getTransaction() );
     }
 
 
@@ -90,6 +89,12 @@ public class CqlProcessor extends Processor {
     @Override
     public AlgDataType getParameterRowType( Node left ) {
         return null;
+    }
+
+
+    @Override
+    public List<String> splitStatements( String statements ) {
+        return Arrays.stream( statements.split( ";" ) ).filter( q -> !q.trim().isEmpty() ).toList();
     }
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ import org.polypheny.db.rex.RexCall;
 
 /**
  * Implementation of {@link NotNullImplementor} that calls a given {@link java.lang.reflect.Method}.
- *
+ * <p>
  * When method is not static, a new instance of the required class is created.
  */
 public class ReflectiveCallNotNullImplementor implements NotNullImplementor {

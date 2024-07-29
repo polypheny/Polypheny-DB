@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,29 +17,34 @@
 package org.polypheny.db.sql.language;
 
 
+import static org.polypheny.db.rex.RexLiteral.pad;
 import static org.polypheny.db.util.Static.RESOURCE;
 
+import com.google.common.collect.ImmutableList;
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import lombok.Getter;
-import org.apache.calcite.avatica.util.TimeUnit;
-import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.IntervalQualifier;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.NodeVisitor;
+import org.polypheny.db.nodes.TimeUnitRange;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.sql.language.validate.SqlValidator;
 import org.polypheny.db.sql.language.validate.SqlValidatorScope;
 import org.polypheny.db.type.PolyIntervalQualifier;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyInterval;
+import org.polypheny.db.util.CompositeList;
 import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Util;
+import org.polypheny.db.util.temporal.TimeUnit;
 
 
 /**
@@ -88,22 +93,20 @@ import org.polypheny.db.util.Util;
  * <p>An instance of this class is immutable.
  */
 public class SqlIntervalQualifier extends SqlNode implements IntervalQualifier {
-    //~ Static fields/initializers ---------------------------------------------
+
+    private static final List<TimeUnit> TIME_UNITS = ImmutableList.copyOf( TimeUnit.values() );
 
     private static final BigDecimal ZERO = BigDecimal.ZERO;
     private static final BigDecimal THOUSAND = BigDecimal.valueOf( 1000 );
     private static final BigDecimal INT_MAX_VALUE_PLUS_ONE =
             BigDecimal.valueOf( Integer.MAX_VALUE ).add( BigDecimal.ONE );
 
-    //~ Instance fields --------------------------------------------------------
 
     private final int startPrecision;
     @Getter
     public final TimeUnitRange timeUnitRange;
     @Getter
     private final int fractionalSecondPrecision;
-
-    //~ Constructors -----------------------------------------------------------
 
 
     public SqlIntervalQualifier(
@@ -116,8 +119,7 @@ public class SqlIntervalQualifier extends SqlNode implements IntervalQualifier {
         if ( endUnit == startUnit ) {
             endUnit = null;
         }
-        this.timeUnitRange =
-                TimeUnitRange.of( Objects.requireNonNull( startUnit ), endUnit );
+        this.timeUnitRange = TimeUnitRange.of( Objects.requireNonNull( startUnit ), endUnit );
         this.startPrecision = startPrecision;
         this.fractionalSecondPrecision = fractionalSecondPrecision;
     }
@@ -162,12 +164,10 @@ public class SqlIntervalQualifier extends SqlNode implements IntervalQualifier {
                 ParserPos.ZERO );
     }
 
-    //~ Methods ----------------------------------------------------------------
-
 
     @Override
     public PolyType typeName() {
-        return IntervalQualifier.getRangePolyType( this.timeUnitRange );
+        return PolyType.INTERVAL;
     }
 
 
@@ -443,19 +443,11 @@ public class SqlIntervalQualifier extends SqlNode implements IntervalQualifier {
         // YEAR and DAY can never be secondary units,
         // nor can unit be null.
         assert unit != null;
-        switch ( unit ) {
-            case YEAR:
-            case DAY:
-            default:
-                throw Util.unexpected( unit );
-
-                // Secondary field limits, as per section 4.6.3 of SQL2003 spec
-            case MONTH:
-            case HOUR:
-            case MINUTE:
-            case SECOND:
-                return unit.isValidValue( field );
-        }
+        // Secondary field limits, as per section 4.6.3 of SQL2003 spec
+        return switch ( unit ) {
+            default -> throw Util.unexpected( unit );
+            case MONTH, HOUR, MINUTE, SECOND -> unit.isValidValue( field );
+        };
     }
 
 
@@ -1168,48 +1160,34 @@ public class SqlIntervalQualifier extends SqlNode implements IntervalQualifier {
         // Validate remaining string according to the pattern
         // that corresponds to the start and end units as
         // well as explicit or implicit precision and range.
-        switch ( timeUnitRange ) {
-            case YEAR:
-                return evaluateIntervalLiteralAsYear( typeSystem, sign, value, value0,
-                        pos );
-            case YEAR_TO_MONTH:
-                return evaluateIntervalLiteralAsYearToMonth( typeSystem, sign, value,
-                        value0, pos );
-            case MONTH:
-                return evaluateIntervalLiteralAsMonth( typeSystem, sign, value, value0,
-                        pos );
-            case DAY:
-                return evaluateIntervalLiteralAsDay( typeSystem, sign, value, value0, pos );
-            case DAY_TO_HOUR:
-                return evaluateIntervalLiteralAsDayToHour( typeSystem, sign, value, value0,
-                        pos );
-            case DAY_TO_MINUTE:
-                return evaluateIntervalLiteralAsDayToMinute( typeSystem, sign, value,
-                        value0, pos );
-            case DAY_TO_SECOND:
-                return evaluateIntervalLiteralAsDayToSecond( typeSystem, sign, value,
-                        value0, pos );
-            case HOUR:
-                return evaluateIntervalLiteralAsHour( typeSystem, sign, value, value0,
-                        pos );
-            case HOUR_TO_MINUTE:
-                return evaluateIntervalLiteralAsHourToMinute( typeSystem, sign, value,
-                        value0, pos );
-            case HOUR_TO_SECOND:
-                return evaluateIntervalLiteralAsHourToSecond( typeSystem, sign, value,
-                        value0, pos );
-            case MINUTE:
-                return evaluateIntervalLiteralAsMinute( typeSystem, sign, value, value0,
-                        pos );
-            case MINUTE_TO_SECOND:
-                return evaluateIntervalLiteralAsMinuteToSecond( typeSystem, sign, value,
-                        value0, pos );
-            case SECOND:
-                return evaluateIntervalLiteralAsSecond( typeSystem, sign, value, value0,
-                        pos );
-            default:
-                throw invalidValueException( pos, value0 );
-        }
+        return switch ( timeUnitRange ) {
+            case YEAR -> evaluateIntervalLiteralAsYear( typeSystem, sign, value, value0,
+                    pos );
+            case YEAR_TO_MONTH -> evaluateIntervalLiteralAsYearToMonth( typeSystem, sign, value,
+                    value0, pos );
+            case MONTH -> evaluateIntervalLiteralAsMonth( typeSystem, sign, value, value0,
+                    pos );
+            case DAY -> evaluateIntervalLiteralAsDay( typeSystem, sign, value, value0, pos );
+            case DAY_TO_HOUR -> evaluateIntervalLiteralAsDayToHour( typeSystem, sign, value, value0,
+                    pos );
+            case DAY_TO_MINUTE -> evaluateIntervalLiteralAsDayToMinute( typeSystem, sign, value,
+                    value0, pos );
+            case DAY_TO_SECOND -> evaluateIntervalLiteralAsDayToSecond( typeSystem, sign, value,
+                    value0, pos );
+            case HOUR -> evaluateIntervalLiteralAsHour( typeSystem, sign, value, value0,
+                    pos );
+            case HOUR_TO_MINUTE -> evaluateIntervalLiteralAsHourToMinute( typeSystem, sign, value,
+                    value0, pos );
+            case HOUR_TO_SECOND -> evaluateIntervalLiteralAsHourToSecond( typeSystem, sign, value,
+                    value0, pos );
+            case MINUTE -> evaluateIntervalLiteralAsMinute( typeSystem, sign, value, value0,
+                    pos );
+            case MINUTE_TO_SECOND -> evaluateIntervalLiteralAsMinuteToSecond( typeSystem, sign, value,
+                    value0, pos );
+            case SECOND -> evaluateIntervalLiteralAsSecond( typeSystem, sign, value, value0,
+                    pos );
+            default -> throw invalidValueException( pos, value0 );
+        };
     }
 
 
@@ -1222,7 +1200,7 @@ public class SqlIntervalQualifier extends SqlNode implements IntervalQualifier {
         return CoreUtil.newContextException(
                 pos,
                 RESOURCE.unsupportedIntervalLiteral(
-                        "'" + value + "'", "INTERVAL " + toString() ) );
+                        "'" + value + "'", "INTERVAL " + this ) );
     }
 
 
@@ -1238,5 +1216,84 @@ public class SqlIntervalQualifier extends SqlNode implements IntervalQualifier {
                         value, type.name() + "(" + precision + ")" ) );
     }
 
-}
 
+    /**
+     * Returns a list of the time units covered by an interval type such as HOUR TO SECOND.
+     * Adds MILLISECOND if the end is SECOND, to deal with fractional seconds.
+     */
+    private static TimeUnit getSmallerTimeUnit( TimeUnit timeUnit ) {
+        return switch ( timeUnit ) {
+            case YEAR -> TimeUnit.MONTH;
+            case MONTH -> TimeUnit.DAY;
+            case DAY -> TimeUnit.HOUR;
+            case HOUR -> TimeUnit.MINUTE;
+            case MINUTE -> TimeUnit.SECOND;
+            case SECOND -> TimeUnit.MILLISECOND;
+            case DOY -> null;
+            default -> throw new AssertionError( timeUnit );
+        };
+    }
+
+
+    /**
+     * Returns a list of the time units covered by an interval type such as HOUR TO SECOND. Adds MILLISECOND if the end is SECOND, to deal with fractional seconds.
+     */
+    private static List<TimeUnit> getTimeUnits( TimeUnitRange unitRange ) {
+        final TimeUnit start = unitRange.startUnit;
+        final TimeUnit end = unitRange.endUnit == null ? start : unitRange.endUnit;
+        final List<TimeUnit> list = TIME_UNITS.subList( start.ordinal(), end.ordinal() + 1 );
+        if ( end == TimeUnit.SECOND ) {
+            return CompositeList.of( list, ImmutableList.of( TimeUnit.MILLISECOND ) );
+        }
+        return list;
+    }
+
+
+    public static String intervalString( PolyInterval value, IntervalQualifier intervalQualifier ) {
+        final List<TimeUnit> timeUnits = getTimeUnits( intervalQualifier.getTimeUnitRange() );
+        final StringBuilder b = new StringBuilder();
+        BigDecimal v = value.getLeap( intervalQualifier ).bigDecimalValue().abs();
+
+        int sign = value.millis < 0 ? -1 : 1;
+        for ( TimeUnit timeUnit : timeUnits ) {
+            if ( timeUnit.multiplier == null ) {
+                // qualifier without timeunit are valid on their own (e.g. DOW, DOY)
+                break;
+            }
+            final BigDecimal[] result = v.divideAndRemainder( timeUnit.multiplier );
+            if ( !b.isEmpty() ) {
+                b.append( timeUnit.separator );
+            }
+            final int width = -1;//b.isEmpty() ? -1 : width( timeUnit ); // don't pad 1st
+            pad( b, result[0].toString(), width );
+            v = result[1];
+        }
+
+        // we don't lose smaller values
+        TimeUnit lastTimeUnit = Util.last( timeUnits );
+        while ( v.intValue() != 0 && lastTimeUnit != null ) {
+            lastTimeUnit = getSmallerTimeUnit( lastTimeUnit );
+            if ( lastTimeUnit == null ) {
+                break; // special unit we ignore
+            }
+            if ( !b.isEmpty() ) {
+                b.append( lastTimeUnit.separator );
+            }
+            BigDecimal[] result = v.divideAndRemainder( lastTimeUnit.multiplier );
+            pad( b, result[0].toString(), -1 );
+            v = result[1];
+        }
+
+        if ( Util.last( timeUnits ) == TimeUnit.MILLISECOND ) {
+            while ( b.toString().matches( ".*\\.[0-9]*0" ) ) {
+                if ( b.toString().endsWith( ".0" ) ) {
+                    b.setLength( b.length() - 2 ); // remove ".0"
+                } else {
+                    b.setLength( b.length() - 1 ); // remove "0"
+                }
+            }
+        }
+        return sign == -1 ? "-" + b : b.toString();
+    }
+
+}

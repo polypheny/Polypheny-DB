@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,6 @@ import org.apache.commons.lang3.NotImplementedException;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.functions.spatial.GeoDistanceFunctions;
 import org.polypheny.db.schema.document.DocumentUtil;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyList;
@@ -40,9 +39,6 @@ import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.document.PolyDocument;
-import org.polypheny.db.type.entity.spatial.GeometryTopologicalException;
-import org.polypheny.db.type.entity.spatial.InvalidGeometryException;
-import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.util.Pair;
 
@@ -378,7 +374,7 @@ public class MqlFunctions {
     /**
      * Retrieves an element in the underlying array
      *
-     * @param input the array to scan
+     * @param input the array to relScan
      * @param index the element, which is retrieved, negative starts form behind
      * @return the element at the specified position, else null
      */
@@ -398,7 +394,7 @@ public class MqlFunctions {
     /**
      * Retrieves an element in the underlying array
      *
-     * @param input the array to scan
+     * @param input the array to relScan
      * @param index the element, which is retrieved, negative starts form behind
      * @return the element at the specified position, else null
      */
@@ -411,7 +407,7 @@ public class MqlFunctions {
     /**
      * Retrieves an element in the underlying array
      *
-     * @param input the array to scan
+     * @param input the array to relScan
      * @param index the element, which is retrieved, negative starts form behind
      * @return the element at the specified position, else null
      */
@@ -631,7 +627,7 @@ public class MqlFunctions {
     /**
      * Removes the provided filter from the doc
      *
-     * @param doc the document to scan
+     * @param doc the document to relScan
      * @param excluded the element to exclude
      */
     private static void excludeBson( PolyValue doc, List<List<PolyString>> excluded ) {
@@ -722,91 +718,6 @@ public class MqlFunctions {
     }
 
 
-    /**
-     * Tests if the object/document is $geoIntersects the provided geometry
-     *
-     * @param input the object/document
-     * @param geometry the $geometry to test if it is $geoIntersects. In GeoJSON format
-     * @return <code>TRUE</code> if the provided object/document is $geoIntersects the given geometry
-     */
-    @SuppressWarnings("UnusedDeclaration")
-    public static PolyBoolean docGeoIntersects( PolyValue input, PolyValue geometry ) {
-        PolyGeometry inputGeom = validateAndCreateGeometry( input );
-        PolyGeometry geom = validateAndCreateGeometry( geometry );
-        if ( inputGeom == null || geom == null ) {
-            return PolyBoolean.FALSE;
-        }
-        return PolyBoolean.of( inputGeom.intersects( geom ) );
-    }
-
-
-    /**
-     * Tests if the object/document is $geoWithin the provided geometry
-     *
-     * @param input the object/document
-     * @param geometry the $geometry to test if it is $geoWithin. In GeoJSON format
-     * @return <code>TRUE</code> if the provided object/document is $geoWithin the given geometry
-     */
-    @SuppressWarnings("UnusedDeclaration")
-    public static PolyBoolean docGeoWithin( PolyValue input, PolyValue geometry ) {
-        PolyGeometry inputGeom = validateAndCreateGeometry( input );
-        PolyGeometry geom = validateAndCreateGeometry( geometry );
-        if ( inputGeom == null || geom == null ) {
-            return PolyBoolean.FALSE;
-        }
-        return PolyBoolean.of( inputGeom.within( geom ) );
-    }
-
-    /**
-     * Tests if the object/document is $near the provided geolocation on the <strong>plane</strong>.
-     *
-     * @param input the object/document
-     * @param geometry the $geometry to test if it is $near. In GeoJSON format
-     * @param minDistance of the $near filter
-     * @param maxDistance of the $near filter
-     * @return <code>TRUE</code> if the provided object/document is $near the given geometry
-     */
-    @SuppressWarnings("UnusedDeclaration")
-    public static PolyBoolean docNear( PolyValue input, PolyValue geometry, PolyValue minDistance, PolyValue maxDistance ) {
-        if ( input == null || !input.isDocument() || !geometry.isDocument() || !minDistance.isDouble() || !maxDistance.isDouble() ) {
-            return PolyBoolean.FALSE;
-        }
-        // calculate the distance between input and geometry argument
-        double distance;
-        try {
-            distance = calculateGeomDistance( input.asDocument(), geometry.asDocument(), false );
-        } catch ( InvalidGeometryException | GeometryTopologicalException e ) {
-            return PolyBoolean.FALSE;
-        }
-        return PolyBoolean.of( minDistance.asDouble().value <= distance && distance <= maxDistance.asDouble().value );
-    }
-
-
-    /**
-     * Tests if the object/document is $nearSphere the provided geolocation on the <strong>sphere</strong>.
-     *
-     * @param input the object/document
-     * @param geometry the $geometry to test if it is $nearSphere. In GeoJSON format
-     * @param minDistance of the $nearSphere filter
-     * @param maxDistance of the $nearSphere filter
-     * @return <code>TRUE</code> if the provided object/document is $nearSphere the given geometry
-     */
-    @SuppressWarnings("UnusedDeclaration")
-    public static PolyBoolean docNearSphere( PolyValue input, PolyValue geometry, PolyValue minDistance, PolyValue maxDistance ) {
-        if ( input == null || !input.isDocument() || !geometry.isDocument() || !minDistance.isDouble() || !maxDistance.isDouble() ) {
-            return PolyBoolean.FALSE;
-        }
-        // calculate the distance between input and geometry argument
-        double distance;
-        try {
-            distance = calculateGeomDistance( input.asDocument(), geometry.asDocument(), true );
-        } catch ( InvalidGeometryException | GeometryTopologicalException e ) {
-            return PolyBoolean.FALSE;
-        }
-        return PolyBoolean.of( minDistance.asDouble().value <= distance && distance <= maxDistance.asDouble().value );
-    }
-
-
     @SuppressWarnings("UnusedDeclaration")
     public static PolyList<?> getAsList( PolyValue value ) {
         return value != null && value.isList() ? value.asList() : PolyList.of( value );
@@ -859,39 +770,6 @@ public class MqlFunctions {
             default:
                 return null;
         }
-    }
-
-
-    private static PolyGeometry validateAndCreateGeometry( PolyValue input ) {
-        if ( input == null || !input.isDocument() ) {
-            return null;
-        }
-        PolyGeometry geom;
-        try {
-            geom = PolyGeometry.fromGeoJson( input.asDocument().toJson() );
-        } catch ( InvalidGeometryException e ) {
-            return null;
-        }
-        return geom;
-    }
-
-
-    /**
-     * Calculate the distance between 2 {@link PolyGeometry}.
-     * See {@link PolyGeometry#distance}
-     *
-     * @param doc1 {@link PolyGeometry}
-     * @param doc2 another {@link PolyGeometry}
-     * @param spherical use the spheroid to calculate the distance
-     * @return the distance in meters if <strong>spherical</strong>, otherwise in Cartesian coordinate units
-     */
-    private static double calculateGeomDistance( PolyDocument doc1, PolyDocument doc2, boolean spherical ) throws InvalidGeometryException, GeometryTopologicalException {
-        PolyGeometry geom1;
-        PolyGeometry geom2;
-        int srid = spherical ? PolyGeometry.WGS_84 : PolyGeometry.NO_SRID;
-        geom1 = PolyGeometry.fromGeoJson( doc1.toJson(), srid );
-        geom2 = PolyGeometry.fromGeoJson( doc2.toJson(), srid );
-        return geom1.distance( geom2 );
     }
 
 }

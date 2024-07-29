@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,10 +31,25 @@
  * limitations under the License.
  */
 
+
 options {
-    STATIC = false;
-    IGNORE_CASE = true;
-    UNICODE_INPUT = true;
+  STATIC = false;
+  LOOKAHEAD = 2;
+  CHOICE_AMBIGUITY_CHECK = 2;
+  OTHER_AMBIGUITY_CHECK = 1;
+  FORCE_LA_CHECK = false;
+  DEBUG_PARSER = false;
+  DEBUG_LOOKAHEAD = false;
+  DEBUG_TOKEN_MANAGER = false;
+  ERROR_REPORTING = true;
+  UNICODE_INPUT = true;
+  IGNORE_CASE = true;
+  BUILD_PARSER = true;
+  BUILD_TOKEN_MANAGER = true;
+  SANITY_CHECK = true;
+  COMMON_TOKEN_ACTION = false;
+  JDK_VERSION = "1.17";
+  TOKEN_MANAGER_USES_PARSER = true;
 }
 
 
@@ -161,9 +176,9 @@ import org.polypheny.db.nodes.Explain;
 import org.polypheny.db.nodes.Identifier;
 import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.algebra.operators.OperatorName;
-import org.apache.calcite.avatica.util.Casing;
-import org.apache.calcite.avatica.util.DateTimeUtils;
-import org.apache.calcite.avatica.util.TimeUnit;
+import org.polypheny.db.util.Casing;
+import org.polypheny.db.util.temporal.DateTimeUtils;
+import org.polypheny.db.util.temporal.TimeUnit;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.algebra.json.JsonConstructorNullClause;
@@ -1935,17 +1950,33 @@ void TableElement(List<SqlNode> list) :
     final String collation;
     SqlIdentifier refTable;
     SqlIdentifier refColumn;
+    final boolean primary;
 }
 {
     id = SimpleIdentifier()
     (
         type = DataType()
         (
-            <NULL> { nullable = true; }
+            <PRIMARY> <KEY>
+            {
+              primary = true;
+              nullable = false;
+            }
             |
-            <NOT> <NULL> { nullable = false; }
+            <NULL> {
+              primary = false;
+              nullable = true;
+            }
             |
-            { nullable = true; }
+            <NOT> <NULL> {
+              primary = false;
+              nullable = false;
+            }
+            |
+            {
+              nullable = true;
+              primary = false;
+            }
         )
         (
             [ <GENERATED> <ALWAYS> ]
@@ -1983,6 +2014,9 @@ void TableElement(List<SqlNode> list) :
         )
         {
             list.add( SqlDdlNodes.column(s.add(id).end(this), id, type.withNullable(nullable), collation, e, strategy));
+            if ( primary ) {
+                list.add( SqlDdlNodes.primary( s.add(id ).end( this ), id, new SqlNodeList( List.of( id ), s.end(this) ) ) );
+            }
         }
         |
             { list.add(id); }

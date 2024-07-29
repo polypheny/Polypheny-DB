@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -93,7 +93,7 @@ public class PolyPluginManager extends DefaultPluginManager {
         final File jarFile = new File( PolyPluginManager.class.getProtectionDomain().getCodeSource().getLocation().getPath() );
         File pluginsFolder = PolyphenyHomeDirManager.getInstance().registerNewFolder( "plugins" );
         if ( jarFile.isFile() ) {  // Run with JAR file
-            // Copy plugins bundled into the jar file to the designated plugins folder.
+            // Copy plugins bundled into the jar file to the designated plugins' folder.
             // Overwrites existing plugins with same name (name includes version number).
             try {
                 final JarFile jar = new JarFile( jarFile );

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,7 +44,7 @@ import org.polypheny.db.algebra.core.lpg.LpgProject;
 import org.polypheny.db.algebra.core.lpg.LpgValues;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexCall;
@@ -64,7 +64,7 @@ public class NeoLpgModify extends LpgModify<NeoGraph> implements NeoGraphAlg {
      * @param traits Traits active for this node, including {@link ModelTrait#GRAPH}
      * @param input Input algebraic expression
      */
-    public NeoLpgModify( AlgOptCluster cluster, AlgTraitSet traits, NeoGraph graph, AlgNode input, Operation operation, List<PolyString> ids, List<? extends RexNode> operations ) {
+    public NeoLpgModify( AlgCluster cluster, AlgTraitSet traits, NeoGraph graph, AlgNode input, Operation operation, List<PolyString> ids, List<? extends RexNode> operations ) {
         super( cluster, traits, graph, input, operation, ids, operations, AlgOptUtil.createDmlRowType( Kind.INSERT, cluster.getTypeFactory() ) );
     }
 

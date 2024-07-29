@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,9 +31,9 @@ import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
@@ -44,13 +44,13 @@ import org.polypheny.db.type.PolyType;
 
 public class FileTableModify extends RelModify<FileTranslatableEntity> implements FileAlg {
 
-    public FileTableModify( AlgOptCluster cluster, AlgTraitSet traits, FileTranslatableEntity table, AlgNode child, Operation operation, List<String> updateColumnList, List<? extends RexNode> sourceExpressionList, boolean flattened ) {
+    public FileTableModify( AlgCluster cluster, AlgTraitSet traits, FileTranslatableEntity table, AlgNode child, Operation operation, List<String> updateColumnList, List<? extends RexNode> sourceExpressionList, boolean flattened ) {
         super( cluster, traits, table, child, operation, updateColumnList, sourceExpressionList, flattened );
     }
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         return super.computeSelfCost( planner, mq ).multiplyBy( 0.1 );
     }
 
@@ -70,7 +70,7 @@ public class FileTableModify extends RelModify<FileTranslatableEntity> implement
 
 
     @Override
-    public void register( AlgOptPlanner planner ) {
+    public void register( AlgPlanner planner ) {
         getConvention().register( planner );
     }
 
@@ -92,11 +92,11 @@ public class FileTableModify extends RelModify<FileTranslatableEntity> implement
                 for ( RexNode src : getSourceExpressions() ) {
                     if ( src instanceof RexLiteral ) {
                         String logicalName = getUpdateColumns().get( i );
-                        AlgDataTypeField field = entity.getRowType().getField( logicalName, false, false );
+                        AlgDataTypeField field = entity.getTupleType().getField( logicalName, false, false );
                         values.add( new LiteralValue( Math.toIntExact( field.getId() ), ((RexLiteral) src).value ) );
                     } else if ( src instanceof RexDynamicParam ) {
                         String logicalName = getUpdateColumns().get( i );
-                        AlgDataTypeField field = entity.getRowType().getField( logicalName, false, false );
+                        AlgDataTypeField field = entity.getTupleType().getField( logicalName, false, false );
                         values.add( new DynamicValue( Math.toIntExact( field.getId() ), ((RexDynamicParam) src).getIndex() ) );
                     } else if ( src instanceof RexCall && src.getType().getPolyType() == PolyType.ARRAY ) {
                         values.add( FileUtil.fromArrayRexCall( (RexCall) src ) );

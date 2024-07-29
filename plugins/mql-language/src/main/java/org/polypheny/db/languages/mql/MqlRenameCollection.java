@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,8 +33,8 @@ public class MqlRenameCollection extends MqlCollectionStatement implements Execu
     private final boolean dropTarget;
 
 
-    public MqlRenameCollection( ParserPos pos, String collection, String newName, Boolean dropTarget ) {
-        super( collection, pos );
+    public MqlRenameCollection( ParserPos pos, String collection, String namespace, String newName, Boolean dropTarget ) {
+        super( collection, namespace, pos );
         this.newName = newName;
         this.dropTarget = dropTarget != null && dropTarget;
     }

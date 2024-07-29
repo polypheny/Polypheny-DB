@@ -36,18 +36,12 @@ dependencies {
     implementation project(":webui")
     implementation project(":monitoring")
 
-    ////// Logging
-    implementation group: "org.apache.logging.log4j", name: "log4j-core", version: log4j_core_version  // Apache 2.0
-    implementation group: "org.apache.logging.log4j", name: "log4j-api", version: log4j_api_version  // Apache 2.0
-    implementation group: "org.apache.logging.log4j", name: "log4j-slf4j-impl", version: log4j_slf4j_impl_version  // Apache 2.0
 
     ////// SLF4J
-    implementation group: "org.pf4j", name: "pf4j", version: pf4j_version  // Apache 2.0
     implementation group: "io.javalin", name: "javalin", version: javalin_version  // Apache 2.0
 
     implementation group: "com.github.rvesse", name: "airline", version: airline_version  // Apache 2.0
 
-    implementation group: "com.j256.simplemagic", name: "simplemagic", version: simplemagic_version
     implementation group: "org.jetbrains", name: "annotations", version: jetbrains_annotations_version  // ISC
 
     // workaround to fix cottontail todo remove: when grpc-all is same in cottontail and for plugin
@@ -55,17 +49,11 @@ dependencies {
         exclude group: "junit"
     } // Apache 2.0
 
-    implementation group: "org.ow2.asm", name: "asm", version: asm_version  // Apache 2.0
-
-
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
 
     // Workaround so org.polypheny.db.docker gets the right protobuf during testing
     testImplementation group: "com.google.protobuf", name: "protobuf-java", version: protobuf_version // BSD 3-clause
-
-    testImplementation group: "com.fasterxml.jackson.core", name: "jackson-core", version: jackson_core_version  // Apache 2.0
-    testImplementation group: "com.fasterxml.jackson.core", name: "jackson-databind", version: jackson_databind_version  // Apache 2.0
 
     testImplementation(group: "org.polypheny", name: "polypheny-jdbc-driver", version: polypheny_jdbc_driver_version) {
         exclude(group: "com.fasterxml.jackson.core")
@@ -75,10 +63,8 @@ dependencies {
     testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter', version: junit_jupiter_version
     testRuntimeOnly(group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: junit_jupiter_version)
     testImplementation group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version  // BSD 3-clause
-
     testImplementation group: "com.konghq", name: "unirest-java", version: unirest_version // MIT
-
-    implementation group: "org.mongodb", name: "mongodb-driver-sync", version: mongodb_driver_sync_version  // Apache 2.0
+    testImplementation group: "org.mongodb", name: "mongodb-driver-sync", version: mongodb_driver_sync_version  // Apache 2.0
 
     // GIS
     testImplementation group: "org.locationtech.jts", name: "jts-core", version: jts_version // Eclipse Public License 2.0 && Eclipse Distribution License 1.0 (BSD-3 Clause)
@@ -118,10 +104,10 @@ licensee {
     allowDependency('com.adobe.xmp', 'xmpcore', '6.0.6') { because 'BSD 3-Clause' }
     allowDependency('org.bouncycastle', 'bcpkix-jdk15on', '1.67') { because 'MIT license' }
     allowDependency('org.bouncycastle', 'bcprov-jdk15on', '1.67') { because 'MIT license' }
-    allowDependency('org.bouncycastle', 'bcprov-jdk18on', '1.76') { because 'MIT license' }
-    allowDependency('org.bouncycastle', 'bcpkix-jdk18on', '1.76') { because 'MIT license' }
-    allowDependency('org.bouncycastle', 'bcutil-jdk18on', '1.76') { because 'MIT license' }
-    allowDependency('org.bouncycastle', 'bctls-jdk18on', '1.73') { because 'MIT license' }
+    allowDependency('org.bouncycastle', 'bcprov-jdk18on', '1.77') { because 'MIT license' }
+    allowDependency('org.bouncycastle', 'bcpkix-jdk18on', '1.77') { because 'MIT license' }
+    allowDependency('org.bouncycastle', 'bcutil-jdk18on', '1.77') { because 'MIT license' }
+    allowDependency('org.bouncycastle', 'bctls-jdk18on', '1.77') { because 'MIT license' }
     allowDependency('jakarta.xml.bind', 'jakarta.xml.bind-api', '2.3.3') { because 'Eclipse Distribution License 1.0' }
     allowDependency('org.codehaus.janino', 'janino', '3.0.11') { because 'BSD 3-Clause' }
     allowDependency('org.codehaus.janino', 'commons-compiler', '3.0.11') { because 'BSD 3-Clause' }
@@ -141,6 +127,7 @@ licensee {
     allowDependency('org.ow2.asm', 'asm', '9.4') { because 'BSD 3-Clause' }
     allowDependency('org.ow2.asm', 'asm-tree', '9.4') { because 'BSD 3-Clause' }
     allowDependency('org.ow2.asm', 'asm-commons', '9.4') { because 'BSD 3-Clause' }
+
 
     // Glassfish
     allowDependency('org.glassfish.hk2.external', 'jakarta.inject', '2.6.1') { because 'Eclipse Public License v. 2.0' }
@@ -199,14 +186,26 @@ shadowJar {
 task deletePlugins(type: Delete) {
     delete 'src/main/resources/plugins'
 }
+task deletePluginsBuild(type: Delete) {
+    delete "$buildDir/classes/plugins"
+}
 task copyPlugins(type: Copy, dependsOn: deletePlugins) {
     from('../build/plugins')
     into('src/main/resources/plugins')
     include('*.zip')
 }
+task copyPluginsBuild(type: Copy, dependsOn: deletePluginsBuild) {
+    from('../build/plugins')
+    into("$buildDir/classes/plugins")
+    include('*.zip')
+}
+jar.dependsOn(copyPlugins)
 shadowJar.dependsOn(copyPlugins)
+jar.dependsOn(copyPluginsBuild)
+shadowJar.dependsOn(copyPluginsBuild)
 copyPlugins.dependsOn(":plugins:assemblePlugins")
-
+copyPluginsBuild.dependsOn(":plugins:assemblePlugins")
+compileTestJava.dependsOn(copyPluginsBuild)
 
 // due to gradle 7.6+
 configurations {
@@ -246,7 +245,7 @@ tasks.register('runDevReset', JavaExec) {
     description = 'Run the main class with JavaExecTask'
     classpath sourceSets.main.runtimeClasspath
     mainClass = 'org.polypheny.db.PolyphenyDb'
-    args = ['-resetCatalog', '-mode', 'dev']  // '-resetPlugins'
+    args = ['-resetCatalog', '-resetDocker', '-mode', 'dev']  // '-resetPlugins'
 }
 
 tasks.register('runDev', JavaExec) {
@@ -289,22 +288,21 @@ shadowDistZip {
     dependsOn(jar)
 }
 
-def getCurrentBranch() {
-    def branch = ""
-    def proc = "git rev-parse --abbrev-ref HEAD".execute()
-    proc.in.eachLine { line -> branch = line }
+def getLastLine(String cmd) {
+    def output = ""
+    def proc = cmd.execute()
+    proc.in.eachLine { line -> output = line }
     proc.err.eachLine { line -> println line }
     proc.waitFor()
-    branch
+    output
+}
+
+def getCurrentBranch() {
+    getLastLine("git rev-parse --abbrev-ref HEAD")
 }
 
 def getCurrentHash() {
-    def hash = ""
-    def proc = "git rev-parse --short HEAD".execute()
-    proc.in.eachLine { line -> hash = line }
-    proc.err.eachLine { line -> println line }
-    proc.waitFor()
-    hash
+    getLastLine("git rev-parse --short HEAD")
 }
 
 task createProperties() {
@@ -312,8 +310,8 @@ task createProperties() {
         new File("$buildDir/version.properties").withWriter { w ->
             Properties p = new Properties()
             p['version'] = version
-            p['branch'] = getCurrentBranch()
-            p['hash'] = getCurrentHash()
+            p['branch'] = System.getenv("GIT_BRANCH") ?: getCurrentBranch()
+            p['hash'] = System.getenv("GIT_HASH") ?: getCurrentHash()
             p.store w, null
         }
         // copy needed, otherwise the bean VersionController can't load the file at startup when running complete-app tests.

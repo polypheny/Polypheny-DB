@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -259,8 +259,8 @@ public class StatisticsTest {
                 LogicalTable catalogTableNation = snapshot.rel().getTable( "statisticschema", "nation" ).orElseThrow();
                 LogicalTable catalogTableRegion = snapshot.rel().getTable( "statisticschema", "region" ).orElseThrow();
 
-                Long rowCountNation = StatisticsManager.getInstance().rowCountPerTable( catalogTableNation.id );
-                Long rowCountRegion = StatisticsManager.getInstance().rowCountPerTable( catalogTableRegion.id );
+                Long rowCountNation = StatisticsManager.getInstance().tupleCountPerEntity( catalogTableNation.id );
+                Long rowCountRegion = StatisticsManager.getInstance().tupleCountPerEntity( catalogTableRegion.id );
 
                 assertEquals( 3, rowCountNation );
                 assertEquals( 2, rowCountRegion );
@@ -312,7 +312,7 @@ public class StatisticsTest {
                     continue;
                 }
                 LogicalTable catalogTableNation = Catalog.snapshot().rel().getTable( "statisticschema", "nationdelete" ).orElseThrow();
-                Long rowCount = StatisticsManager.getInstance().rowCountPerTable( catalogTableNation.id );
+                Long rowCount = StatisticsManager.getInstance().tupleCountPerEntity( catalogTableNation.id );
                 // potentially table exists not yet in statistics but in catalog
                 if ( rowCount != null && rowCount == target ) {
                     successfull = true;

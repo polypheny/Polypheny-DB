@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -116,15 +116,14 @@ public class CatalogTest {
 
             // Check number of columns
             int totalColumns = rsmd.getColumnCount();
-            assertEquals( 3, totalColumns, "Wrong number of columns" );
+            assertEquals( 2, totalColumns, "Wrong number of columns" );
 
             // Check column names
             assertEquals( "TABLE_CAT", rsmd.getColumnName( 1 ), "Wrong column name" );
-            assertEquals( "OWNER", rsmd.getColumnName( 2 ), "Wrong column name" );
-            assertEquals( "DEFAULT_SCHEMA", rsmd.getColumnName( 3 ), "Wrong column name" );
+            assertEquals( "DEFAULT_SCHEMA", rsmd.getColumnName( 2 ), "Wrong column name" );
 
             // Check data
-            final Object[] databaseApp = new Object[]{ "APP", "system", "public" };
+            final Object[] databaseApp = new Object[]{ "APP", "public" };
 
             TestHelper.checkResultSet(
                     connection.getMetaData().getCatalogs(),
@@ -141,17 +140,19 @@ public class CatalogTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
 
-            final Object[] schemaTest = new Object[]{ "schema1", "APP", "pa", "RELATIONAL" };
-            final Object[] schemaPublic = new Object[]{ "public", "APP", "pa", "RELATIONAL" };
-            final Object[] schemaPrivate = new Object[]{ "private", "APP", "pa", "DOCUMENT" };
+            final Object[] schemaTest = new Object[]{ "schema1", null, "RELATIONAL" };
+            final Object[] schemaPublic = new Object[]{ "public", null, "RELATIONAL" };
+            final Object[] schemaPrivate = new Object[]{ "private", null, "DOCUMENT" };
 
             TestHelper.checkResultSet(
                     connection.getMetaData().getSchemas( "APP", null ),
-                    ImmutableList.of( schemaPublic, schemaTest, schemaPrivate ), true );
+                    ImmutableList.of( schemaPublic, schemaTest, schemaPrivate ),
+                    true );
 
             TestHelper.checkResultSet(
                     connection.getMetaData().getSchemas( "APP", "schema1" ),
-                    ImmutableList.of( schemaTest ), true );
+                    ImmutableList.of( schemaTest ),
+                    true );
 
         } catch ( SQLException e ) {
             log.error( "Exception while testing getNamespaces()", e );
@@ -164,8 +165,8 @@ public class CatalogTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
 
-            final Object[] table1 = new Object[]{ "APP", "schema1", "table1", "ENTITY", "", null, null, null, null, null, "pa" };
-            final Object[] table2 = new Object[]{ "APP", "schema1", "table2", "ENTITY", "", null, null, null, null, null, "pa" };
+            final Object[] table1 = new Object[]{ null, "schema1", "table1", "ENTITY", "", null, null, null, null, null };
+            final Object[] table2 = new Object[]{ null, "schema1", "table2", "ENTITY", "", null, null, null, null, null };
 
             TestHelper.checkResultSet(
                     connection.getMetaData().getTables( "APP", "schema1", null, null ),
@@ -183,8 +184,10 @@ public class CatalogTest {
             Connection connection = polyphenyDbConnection.getConnection();
 
             // Check data
-            final Object[] column1 = new Object[]{ "APP", "schema1", "table1", "id", 4, "INTEGER", null, null, null, null, 0, "", null, null, null, null, 1, "NO", null };
-            final Object[] column2 = new Object[]{ "APP", "schema1", "table1", "name", 12, "VARCHAR", 255, null, null, null, 1, "", null, null, null, null, 2, "YES", "CASE_INSENSITIVE" };
+            final Object[] column1 = new Object[]{ null, "schema1", "table1", "id", 4, "INTEGER", null, null, null, null,
+                    0, "", null, null, null, null, 1, "NO", null, null, null, null, "NO", "NO", null };
+            final Object[] column2 = new Object[]{ null, "schema1", "table1", "name", 12, "VARCHAR", 255, null, null, null,
+                    1, "", null, null, null, null, 2, "YES", null, null, null, null, "NO", "NO", "CASE_INSENSITIVE" };
 
             TestHelper.checkResultSet(
                     connection.getMetaData().getColumns( "APP", "schema1", "table1", null ),
@@ -203,7 +206,7 @@ public class CatalogTest {
 
             LogicalAdapter adapter = Catalog.snapshot().getAdapter( "hsqldb" ).orElseThrow();
             // Check data
-            final Object[] index1 = new Object[]{ "APP", "schema1", "table1", false, null, "index1", 0, 1, "id", null, -1, null, null, adapter.id, 1 };
+            final Object[] index1 = new Object[]{ null, "schema1", "table1", false, null, "index1", 0, 1, "id", null, -1, null, null, adapter.id, 1 };
 
             if ( helper.storeSupportsIndex() ) {
                 TestHelper.checkResultSet(
@@ -226,7 +229,8 @@ public class CatalogTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
 
-            final Object[] foreignKeys = new Object[]{ "APP", "schema1", "table1", "id", "APP", "schema1", "table2", "id", 1, 1, 1, "fk_id", null, null };
+            final Object[] foreignKeys = new Object[]{ null, "schema1", "table1", /* TODO was "id" */ null,
+                    null, "schema1", "table2", "id", 1, 1, 1, "fk_id", null, null };
 
             TestHelper.checkResultSet(
                     connection.getMetaData().getExportedKeys( "APP", "schema1", "table1" ),

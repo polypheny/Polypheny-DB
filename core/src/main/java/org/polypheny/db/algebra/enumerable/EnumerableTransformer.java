@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,9 +50,9 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.functions.RefactorFunctions;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.schema.trait.ModelTraitDef;
@@ -74,7 +74,7 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
      * For example, it will transform the {@link org.polypheny.db.algebra.core.lpg.LpgScan}, which can be handled directly by
      * a native adapter, to a combination of {@link RelScan} and {@link org.polypheny.db.algebra.core.Union}.
      */
-    public EnumerableTransformer( AlgOptCluster cluster, List<AlgNode> inputs, List<String> names, AlgTraitSet traitSet, ModelTrait inTraitSet, ModelTrait outTraitSet, AlgDataType rowType, boolean isCrossModel ) {
+    public EnumerableTransformer( AlgCluster cluster, List<AlgNode> inputs, List<String> names, AlgTraitSet traitSet, ModelTrait inTraitSet, ModelTrait outTraitSet, AlgDataType rowType, boolean isCrossModel ) {
         super( cluster, inputs, names, traitSet, inTraitSet, outTraitSet, rowType, isCrossModel );
     }
 
@@ -113,8 +113,7 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
 
 
     private Result implementRelationalOnGraph( EnumerableAlgImplementor implementor, Prefer pref ) {
-        Result impl = implementor.visitChild( this, 0, (EnumerableAlg) getInputs().get( 0 ), pref );
-        return impl;
+        return implementor.visitChild( this, 0, (EnumerableAlg) getInputs().get( 0 ), pref );
     }
 
 
@@ -129,17 +128,17 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
 
         //final Result edges = implementor.visitChild( this, 1, (EnumerableAlg) getInput( 1 ), pref );
 
-        final PhysType physType = PhysTypeImpl.of( typeFactory, getTupleType(), pref.prefer( JavaRowFormat.SCALAR ) );
+        final PhysType physType = PhysTypeImpl.of( typeFactory, getTupleType(), pref.prefer( JavaTupleFormat.SCALAR ) );
 
-        Type inputJavaType = physType.getJavaRowType();
+        Type inputJavaType = physType.getJavaTupleType();
         ParameterExpression inputEnumerator = Expressions.parameter( Types.of( Enumerator.class, inputJavaType ), "inputEnumerator" );
 
-        Type outputJavaType = physType.getJavaRowType();
+        Type outputJavaType = physType.getJavaTupleType();
         final Type enumeratorType = Types.of( Enumerator.class, outputJavaType );
 
         List<Expression> tableAsNodes = new ArrayList<>();
         for ( Entry<String, Result> entry : nodes.entrySet() ) {
-            Expression exp = builder.append( builder.newName( "nodes_" + System.nanoTime() ), entry.getValue().block );
+            Expression exp = builder.append( builder.newName( "nodes_" + System.nanoTime() ), entry.getValue().block() );
             MethodCallExpression transformedTable = Expressions.call( BuiltInMethod.X_MODEL_COLLECTION_TO_NODE.method, exp, PolyString.of( entry.getKey() ).asExpression() );
             tableAsNodes.add( transformedTable );
         }
@@ -196,20 +195,18 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
             nodes.put( names.get( i ), Pair.of( getInput( i ), implementor.visitChild( this, i, (EnumerableAlg) getInput( i ), pref ) ) );
         }
 
-        //final Result edges = implementor.visitChild( this, 1, (EnumerableAlg) getInput( 1 ), pref );
+        final PhysType physType = PhysTypeImpl.of( typeFactory, getTupleType(), pref.prefer( JavaTupleFormat.SCALAR ) );
 
-        final PhysType physType = PhysTypeImpl.of( typeFactory, getTupleType(), pref.prefer( JavaRowFormat.SCALAR ) );
-
-        Type inputJavaType = physType.getJavaRowType();
+        Type inputJavaType = physType.getJavaTupleType();
         ParameterExpression inputEnumerator = Expressions.parameter( Types.of( Enumerator.class, inputJavaType ), "inputEnumerator" );
 
-        Type outputJavaType = physType.getJavaRowType();
+        Type outputJavaType = physType.getJavaTupleType();
         final Type enumeratorType = Types.of( Enumerator.class, outputJavaType );
 
         List<Expression> tableAsNodes = new ArrayList<>();
         int i = 0;
         for ( Entry<String, Pair<AlgNode, Result>> entry : nodes.entrySet() ) {
-            Expression exp = builder.append( builder.newName( "nodes_" + System.nanoTime() ), entry.getValue().right.block );
+            Expression exp = builder.append( builder.newName( "nodes_" + System.nanoTime() ), entry.getValue().right.block() );
             MethodCallExpression transformedTable = Expressions.call(
                     BuiltInMethod.X_MODEL_TABLE_TO_NODE.method,
                     exp,
@@ -270,17 +267,17 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
         final Result nodes = implementor.visitChild( this, 0, (EnumerableAlg) getInput( 0 ), pref );
         final Result edges = implementor.visitChild( this, 1, (EnumerableAlg) getInput( 1 ), pref );
 
-        final PhysType physType = PhysTypeImpl.of( typeFactory, getTupleType(), pref.prefer( JavaRowFormat.SCALAR ) );
+        final PhysType physType = PhysTypeImpl.of( typeFactory, getTupleType(), pref.prefer( JavaTupleFormat.SCALAR ) );
 
         //
-        Type inputJavaType = physType.getJavaRowType();
+        Type inputJavaType = physType.getJavaTupleType();
         ParameterExpression inputEnumerator = Expressions.parameter( Types.of( Enumerator.class, inputJavaType ), "inputEnumerator" );
 
-        Type outputJavaType = physType.getJavaRowType();
+        Type outputJavaType = physType.getJavaTupleType();
         final Type enumeratorType = Types.of( Enumerator.class, outputJavaType );
 
-        Expression nodesExp = builder.append( builder.newName( "nodes_" + System.nanoTime() ), nodes.block );
-        Expression edgeExp = builder.append( builder.newName( "edges_" + System.nanoTime() ), edges.block );
+        Expression nodesExp = builder.append( builder.newName( "nodes_" + System.nanoTime() ), nodes.block() );
+        Expression edgeExp = builder.append( builder.newName( "edges_" + System.nanoTime() ), edges.block() );
 
         MethodCallExpression nodeCall = Expressions.call( BuiltInMethod.TO_NODE.method, nodesExp );
         MethodCallExpression edgeCall = Expressions.call( BuiltInMethod.TO_EDGE.method, edgeExp );
@@ -332,8 +329,8 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
             return impl;
         }
         BlockBuilder builder = new BlockBuilder();
-        final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getTupleType(), pref.prefer( JavaRowFormat.SCALAR ) );
-        Expression old = builder.append( builder.newName( "docs_" + System.nanoTime() ), impl.block );
+        final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getTupleType(), pref.prefer( JavaTupleFormat.SCALAR ) );
+        Expression old = builder.append( builder.newName( "docs_" + System.nanoTime() ), impl.block() );
 
         List<Expression> expressions = new ArrayList<>();
 
@@ -343,7 +340,7 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
 
         Expression res = Expressions.newArrayInit( PolyValue.class, Expressions.call( RefactorFunctions.class, "mergeDocuments", expressions ) );
 
-        Type outputJavaType = physType.getJavaRowType();
+        Type outputJavaType = physType.getJavaTupleType();
         final Type enumeratorType = Types.of( Enumerator.class, outputJavaType );
 
         return toAbstractEnumerable( implementor, builder, physType, old, target, res, enumeratorType );
@@ -352,7 +349,7 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
 
     private static void attachDocOnRelational( Result impl, List<Expression> expressions, ParameterExpression target ) {
         boolean hasData = false;
-        for ( AlgDataTypeField field : impl.physType.getRowType().getFields() ) {
+        for ( AlgDataTypeField field : impl.physType().getTupleType().getFields() ) {
             IndexExpression indexField = Expressions.arrayIndex( target, Expressions.constant( field.getIndex() ) );
             UnaryExpression element = Expressions.convert_( indexField, PolyString.class );
             Expression el = Expressions.call( RefactorFunctions.class, "toDocument", element );
@@ -360,7 +357,7 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
                 // target field
                 expressions.add( 0, el );
                 hasData = true;
-            } else if ( !field.getName().equals( DocumentType.DOCUMENT_ID ) && impl.physType.getRowType().getFieldNames().contains( field.getName() ) ) {
+            } else if ( !field.getName().equals( DocumentType.DOCUMENT_ID ) && impl.physType().getTupleType().getFieldNames().contains( field.getName() ) ) {
                 // crossmodel
                 expressions.add( Expressions.call( BuiltInMethod.PAIR_OF.method, Expressions.constant( field.getName() ), indexField ) );
             } else {
@@ -383,8 +380,8 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
         }
 
         BlockBuilder builder = new BlockBuilder();
-        final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getTupleType(), pref.prefer( JavaRowFormat.SCALAR ) );
-        Expression old = builder.append( builder.newName( "docs_" + System.nanoTime() ), impl.block );
+        final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getTupleType(), pref.prefer( JavaTupleFormat.SCALAR ) );
+        Expression old = builder.append( builder.newName( "docs_" + System.nanoTime() ), impl.block() );
 
         List<String> extract = getTupleType().getFieldNames().stream().filter( n -> !n.equals( DocumentType.DOCUMENT_DATA ) ).toList();
         List<Expression> expressions = new ArrayList<>();
@@ -407,7 +404,7 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
 
         MethodCallExpression res = Expressions.call( RefactorFunctions.class, "toObjectArray", expressions );
 
-        Type outputJavaType = physType.getJavaRowType();
+        Type outputJavaType = physType.getJavaTupleType();
         final Type enumeratorType = Types.of( Enumerator.class, outputJavaType );
 
         return toAbstractEnumerable( implementor, builder, physType, old, target, res, enumeratorType );
@@ -444,14 +441,14 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
 
         Result res = implementor.visitChild( this, 0, (EnumerableAlg) getInput( 0 ), pref );
 
-        final PhysType physType = PhysTypeImpl.of( typeFactory, getTupleType(), pref.prefer( JavaRowFormat.SCALAR ) );
+        final PhysType physType = PhysTypeImpl.of( typeFactory, getTupleType(), pref.prefer( JavaTupleFormat.SCALAR ) );
 
-        Type inputJavaType = physType.getJavaRowType();
+        Type inputJavaType = physType.getJavaTupleType();
         ParameterExpression inputEnumerator = Expressions.parameter( Types.of( Enumerator.class, inputJavaType ), "inputEnumerator" );
 
-        Expression nodesExp = builder.append( builder.newName( "nodes_" + System.nanoTime() ), res.block );
+        Expression nodesExp = builder.append( builder.newName( "nodes_" + System.nanoTime() ), res.block() );
 
-        Type outputJavaType = physType.getJavaRowType();
+        Type outputJavaType = physType.getJavaTupleType();
         final Type enumeratorType = Types.of( Enumerator.class, outputJavaType );
 
         MethodCallExpression call = Expressions.call( BuiltInMethod.X_MODEL_NODE_TO_COLLECTION.method, nodesExp, PolyString.of( names.get( 0 ) ).asExpression() );
@@ -508,7 +505,7 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         return super.computeSelfCost( planner, mq ).multiplyBy( 1.5 );
     }
 

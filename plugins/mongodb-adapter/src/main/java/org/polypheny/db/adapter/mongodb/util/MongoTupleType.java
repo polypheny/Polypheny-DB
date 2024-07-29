@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ package org.polypheny.db.adapter.mongodb.util;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -73,7 +72,7 @@ public class MongoTupleType implements Expressible {
                 MongoTupleType.class,
                 Expressions.constant( name ),
                 Expressions.constant( type ),
-                EnumUtils.expressionList( subs.stream().map( MongoTupleType::asExpression ).collect( Collectors.toList() ) ),
+                EnumUtils.expressionList( subs.stream().map( MongoTupleType::asExpression ).toList() ),
                 Expressions.constant( nullable ) );
     }
 

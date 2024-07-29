@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,22 +35,18 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalField;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.schema.Namespace;
-import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.util.Pair;
 
 @Value
 @NonFinal
 @Slf4j
 @SerializeClass(subclasses = { DocAdapterCatalog.class, RelAdapterCatalog.class, GraphAdapterCatalog.class })
-public abstract class AdapterCatalog implements PolySerializable {
-
-    IdBuilder idBuilder = IdBuilder.getInstance();
+public abstract class AdapterCatalog {
 
     @Serialize
     public long adapterId;
@@ -82,7 +78,8 @@ public abstract class AdapterCatalog implements PolySerializable {
             Map<Long, PhysicalEntity> physicals,
             Map<Long, AllocationEntity> allocations,
             Map<Long, SortedSet<Long>> allocToPhysicals,
-            Map<Pair<Long, Long>, PhysicalField> fields ) {
+            Map<Pair<Long, Long>, PhysicalField> fields
+    ) {
         this.adapterId = adapterId;
         this.namespaces = new ConcurrentHashMap<>( namespaces );
         this.physicals = new ConcurrentHashMap<>( physicals );
@@ -131,7 +128,8 @@ public abstract class AdapterCatalog implements PolySerializable {
     }
 
 
-    public void addPhysical( AllocationEntity allocation, PhysicalEntity... physicalEntities ) {
+    @SafeVarargs
+    public final <E extends AllocationEntity, P extends PhysicalEntity> void addPhysical( E allocation, P... physicalEntities ) {
         SortedSet<Long> physicals = Arrays.stream( physicalEntities ).sorted().map( p -> p.id ).collect( Collectors.toCollection( TreeSet::new ) );
 
         allocToPhysicals.put( allocation.id, physicals );
@@ -140,7 +138,8 @@ public abstract class AdapterCatalog implements PolySerializable {
     }
 
 
-    public void replacePhysical( PhysicalEntity... physicalEntities ) {
+    @SafeVarargs
+    public final <P extends PhysicalEntity> void replacePhysical( P... physicalEntities ) {
         AllocationEntity alloc = getAlloc( physicalEntities[0].allocationId );
         if ( alloc == null ) {
             throw new GenericRuntimeException( "Error on handling store" );

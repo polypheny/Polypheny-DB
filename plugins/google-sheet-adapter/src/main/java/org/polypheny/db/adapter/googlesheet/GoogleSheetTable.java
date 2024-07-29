@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.schema.types.TranslatableEntity;
 import org.polypheny.db.type.entity.PolyValue;
@@ -84,7 +84,7 @@ public class GoogleSheetTable extends PhysicalTable implements TranslatableEntit
 
 
     @Override
-    public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
+    public AlgDataType getTupleType( AlgDataTypeFactory typeFactory ) {
         return typeFactory.createStructType( this.protoRowType.apply( typeFactory ).getFields() );
     }
 
@@ -105,7 +105,7 @@ public class GoogleSheetTable extends PhysicalTable implements TranslatableEntit
 
 
     @Override
-    public AlgNode toAlg( AlgOptCluster cluster, AlgTraitSet traitSet ) {
+    public AlgNode toAlg( AlgCluster cluster, AlgTraitSet traitSet ) {
         // Request all fields.
         return new GoogleSheetTableScanProject( cluster, this, this, fields );
     }

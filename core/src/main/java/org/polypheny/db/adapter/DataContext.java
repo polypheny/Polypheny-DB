@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,10 +26,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicBoolean;
-import lombok.Data;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
@@ -39,7 +39,7 @@ import org.polypheny.db.util.Advisor;
 
 
 /**
- * Runtime context allowing access to the tables in a database.
+ * Runtime context giving access to various data and runtime specific information of the database.
  */
 
 public interface DataContext {
@@ -49,7 +49,7 @@ public interface DataContext {
     ParameterExpression INITIAL_ROOT = Expressions.parameter( Modifier.FINAL, DataContext.class, "initialRoot" );
 
     /**
-     * Returns a sub-schema with a given name, or null.
+     * Returns the current Snapshot associated with the DataContext.
      */
     Snapshot getSnapshot();
 
@@ -65,7 +65,7 @@ public interface DataContext {
 
     /**
      * Returns a context variable.
-     *
+     * <p>
      * Supported variables include: "currentTimestamp", "localTimestamp".
      *
      * @param name Name of variable
@@ -78,7 +78,7 @@ public interface DataContext {
     Statement getStatement();
 
 
-    void addParameterValues( long index, AlgDataType type, List<PolyValue> data );
+    void addParameterValues( long index, @NotNull AlgDataType type, List<PolyValue> data );
 
     AlgDataType getParameterType( long index );
 
@@ -86,18 +86,15 @@ public interface DataContext {
 
     void setParameterValues( List<Map<Long, PolyValue>> values );
 
-    Map<Long, AlgDataType> getParameterTypes();
+    Map<Long, @NotNull AlgDataType> getParameterTypes();
 
-    void setParameterTypes( Map<Long, AlgDataType> types );
+    void setParameterTypes( Map<Long, @NotNull AlgDataType> types );
 
     default void resetParameterValues() {
         throw new UnsupportedOperationException();
     }
 
     default PolyValue getParameterValue( long index ) {
-        if ( getParameterValues().size() != 1 ) {
-            //throw new GenericRuntimeException( "Illegal number of parameter sets" );
-        }
         return getParameterValues().get( 0 ).get( index );
     }
 
@@ -121,11 +118,8 @@ public interface DataContext {
         throw new UnsupportedOperationException();
     }
 
-    @Data
-    class ParameterValue {
-        private final long index;
-        private final AlgDataType type;
-        private final PolyValue value;
+
+    record ParameterValue( long index, AlgDataType type, PolyValue value ) {
 
     }
 
@@ -159,9 +153,9 @@ public interface DataContext {
         TIMEOUT( "timeout", Long.class ),
 
         /**
-         * Advisor that suggests completion hints for SQL statements.
+         * Advisor that suggests completion hints for language statements.
          */
-        SQL_ADVISOR( "sqlAdvisor", Advisor.class ),
+        ADVISOR( "advisor", Advisor.class ),
 
         /**
          * Writer to the standard error (stderr).
@@ -246,7 +240,7 @@ public interface DataContext {
 
 
         @Override
-        public void addParameterValues( long index, AlgDataType type, List<PolyValue> data ) {
+        public void addParameterValues( long index, @NotNull AlgDataType type, List<PolyValue> data ) {
 
         }
 

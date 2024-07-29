@@ -22,10 +22,10 @@ import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.CompatibilityLevel;
 import io.activej.serializer.CorruptedDataException;
-import io.activej.serializer.SimpleSerializerDef;
 import io.activej.serializer.annotations.Deserialize;
 import java.util.List;
 import java.util.Objects;
+import io.activej.serializer.def.SimpleSerializerDef;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -57,6 +57,7 @@ import org.polypheny.db.type.entity.spatial.PolyGeometryType.BufferCapStyle;
  * <p>
  * {@link PolyGeometry} could be created from Well-known Text (WKT), Tiny Well-known Binary (TWKB), as well as GeoJson.
  */
+@Getter
 @Slf4j
 public class PolyGeometry extends PolyValue {
 
@@ -68,13 +69,10 @@ public class PolyGeometry extends PolyValue {
     /**
      * Wrap the JTS {@link Geometry} class.
      */
-    @Getter
     protected Geometry jtsGeometry;
     // Spatial Reference System ID
-    @Getter
     protected Integer SRID;
 
-    @Getter
     protected PolyGeometryType geometryType;
 
 

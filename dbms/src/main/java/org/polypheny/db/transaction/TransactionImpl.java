@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,12 +18,13 @@ package org.polypheny.db.transaction;
 
 
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
@@ -39,6 +40,7 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer.EnforcementInformation;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.LogicalConstraint;
 import org.polypheny.db.catalog.entity.LogicalUser;
 import org.polypheny.db.catalog.entity.logical.LogicalKey.EnforcementTime;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
@@ -57,6 +59,7 @@ import org.polypheny.db.processing.DataMigratorImpl;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.processing.QueryProcessor;
 import org.polypheny.db.type.entity.category.PolyNumber;
+import org.polypheny.db.util.Pair;
 import org.polypheny.db.view.MaterializedViewManager;
 
 
@@ -78,7 +81,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     private final LogicalUser user;
     @Getter
     private final LogicalNamespace defaultNamespace;
-
+    @Getter
     private final TransactionManagerImpl transactionManager;
 
     @Getter
@@ -93,15 +96,16 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
     private final List<Statement> statements = new ArrayList<>();
 
-    private final List<String> changedTables = new ArrayList<>();
 
     @Getter
-    private final Set<LogicalTable> logicalTables = new TreeSet<>();
+    private final Set<LogicalTable> usedTables = new TreeSet<>();
 
     @Getter
-    private final List<Adapter<?>> involvedAdapters = new CopyOnWriteArrayList<>();
+    private final Map<Long, List<LogicalConstraint>> entityConstraints = new HashMap<>();
 
-    private final Set<Lock> lockList = new HashSet<>();
+    @Getter
+    private final Set<Adapter<?>> involvedAdapters = new ConcurrentSkipListSet<>( ( a, b ) -> Math.toIntExact( a.adapterId - b.adapterId ) );
+
     private boolean useCache = true;
 
     private boolean acceptsOutdated = false;
@@ -145,9 +149,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
     @Override
     public void registerInvolvedAdapter( Adapter<?> adapter ) {
-        if ( !involvedAdapters.contains( adapter ) ) {
-            involvedAdapters.add( adapter );
-        }
+        involvedAdapters.add( adapter );
     }
 
 
@@ -157,6 +159,15 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
             log.trace( "This transaction has already been finished!" );
             return;
         }
+
+        Pair<Boolean, String> isValid = Catalog.getInstance().checkIntegrity();
+        if ( !isValid.left ) {
+            throw new TransactionException( isValid.right + "\nThere are violated constraints, the transaction was rolled back!" );
+        }
+
+        // physical changes
+        Catalog.getInstance().executeCommitActions();
+
         // Prepare to commit changes on all involved adapters and the catalog
         boolean okToCommit = true;
         if ( RuntimeConfig.TWO_PC_MODE.getBoolean() ) {
@@ -165,11 +176,11 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
             }
         }
 
-        if ( !logicalTables.isEmpty() ) {
+        if ( !usedTables.isEmpty() ) {
             Statement statement = createStatement();
             QueryProcessor processor = statement.getQueryProcessor();
             List<EnforcementInformation> infos = ConstraintEnforceAttacher
-                    .getConstraintAlg( logicalTables, statement, EnforcementTime.ON_COMMIT );
+                    .getConstraintAlg( usedTables, statement, EnforcementTime.ON_COMMIT );
             List<PolyImplementation> results = infos
                     .stream()
                     .map( s -> processor.prepareQuery( AlgRoot.of( s.control(), Kind.SELECT ), s.control().getCluster().getTypeFactory().builder().build(), false, true, false ) ).toList();
@@ -203,6 +214,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
         }
 
         Catalog.getInstance().commit();
+
         // Free resources hold by statements
         statements.forEach( Statement::close );
 
@@ -214,7 +226,6 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
         // Handover information about commit to Materialized Manager
         MaterializedViewManager.getInstance().updateCommittedXid( xid );
 
-
     }
 
 
@@ -225,6 +236,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
             return;
         }
         try {
+            log.warn( "rolling back transaction" );
             //  Rollback changes to the adapters
             for ( Adapter<?> adapter : involvedAdapters ) {
                 adapter.rollback( xid );
@@ -260,7 +272,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
         // note dl, while caching the processors works in most cases,
         // it can lead to validator bleed when using multiple simultaneous insert for example
         // caching therefore is not possible atm
-        return language.getProcessorSupplier().get();
+        return language.processorSupplier().get();
     }
 
 
@@ -269,17 +281,6 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
         StatementImpl statement = new StatementImpl( this );
         statements.add( statement );
         return statement;
-    }
-
-
-    @Override
-    public void addChangedTable( String qualifiedTableName ) {
-        if ( !this.changedTables.contains( qualifiedTableName ) ) {
-            if ( log.isDebugEnabled() ) {
-                log.debug( "Add changed table: {}", qualifiedTableName );
-            }
-            this.changedTables.add( qualifiedTableName );
-        }
     }
 
 
@@ -318,6 +319,39 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     @Override
     public boolean getUseCache() {
         return this.useCache;
+    }
+
+
+    @Override
+    public void addUsedTable( LogicalTable table ) {
+        this.usedTables.add( table );
+    }
+
+
+    @Override
+    public void removeUsedTable( LogicalTable table ) {
+        this.usedTables.remove( table );
+    }
+
+
+    @Override
+    public void getNewEntityConstraints( long entity ) {
+        this.entityConstraints.getOrDefault( entity, List.of() );
+    }
+
+
+    @Override
+    public void addNewConstraint( long entityId, LogicalConstraint constraint ) {
+        this.entityConstraints.putIfAbsent( entityId, new ArrayList<>() );
+        this.entityConstraints.get( entityId ).add( constraint );
+    }
+
+
+    @Override
+    public void removeNewConstraint( long entityId, LogicalConstraint constraint ) {
+        List<LogicalConstraint> constraints = this.entityConstraints.get( entityId );
+        constraints.remove( constraint );
+        this.entityConstraints.put( entityId, constraints );
     }
 
 
@@ -377,23 +411,10 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
     }
 
-    //
-    // For locking
-    //
 
-
-    Set<Lock> getLocks() {
-        return lockList;
-    }
-
-
-    void addLock( Lock lock ) {
-        lockList.add( lock );
-    }
-
-
-    void removeLock( Lock lock ) {
-        lockList.remove( lock );
+    @Override
+    public List<LogicalConstraint> getUsedConstraints( long id ) {
+        return this.entityConstraints.getOrDefault( id, List.of() );
     }
 
 

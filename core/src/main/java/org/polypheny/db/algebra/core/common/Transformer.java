@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,9 +27,9 @@ import org.polypheny.db.algebra.AlgVisitor;
 import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.core.lpg.LpgScan;
 import org.polypheny.db.algebra.core.relational.RelScan;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.schema.trait.ModelTraitDef;
@@ -53,13 +53,13 @@ public class Transformer extends AbstractAlgNode {
      * For example, it will transform the {@link LpgScan}, which can be handled directly by
      * a native adapter, to a combination of {@link RelScan} and {@link Union}.
      */
-    public Transformer( AlgOptCluster cluster, List<AlgNode> inputs, @Nullable List<String> names, AlgTraitSet traitSet, ModelTrait inModelTrait, ModelTrait outModelTrait, AlgDataType rowType, boolean isCrossModel ) {
+    public Transformer( AlgCluster cluster, List<AlgNode> inputs, @Nullable List<String> names, AlgTraitSet traitSet, ModelTrait inModelTrait, ModelTrait outModelTrait, AlgDataType rowType, boolean isCrossModel ) {
         super( cluster, traitSet.replace( outModelTrait ) );
         if ( isCrossModel && inModelTrait == ModelTrait.DOCUMENT
                 && outModelTrait == ModelTrait.RELATIONAL && inputs.size() == 1
                 && inputs.get( 0 ).getTupleType().getFieldCount() == 2 ) {
             // todo dl: remove after RowType refactor
-            LogicalProject lp = LogicalProject.create(
+            LogicalRelProject lp = LogicalRelProject.create(
                     inputs.get( 0 ),
                     List.of( cluster.getRexBuilder().makeInputRef( inputs.get( 0 ).getTupleType().getFields().get( 0 ).getType(), 1 ) ),
                     List.of( "d" ) );
@@ -96,8 +96,10 @@ public class Transformer extends AbstractAlgNode {
 
     @Override
     public String algCompareString() {
-        return getClass().getSimpleName() + "$" + inModelTrait + "$" + outModelTrait + "$"
-                + inputs.stream().map( AlgNode::algCompareString ).collect( Collectors.joining( "$" ) ) + "$";
+        return getClass().getSimpleName() + "$"
+                + inModelTrait + "$"
+                + outModelTrait + "$"
+                + inputs.stream().map( AlgNode::algCompareString ).collect( Collectors.joining( "$" ) ) + "&";
     }
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -608,7 +608,7 @@ public class RexProgramBuilder {
      * Merges two programs together, and normalizes the result.
      *
      * @param topProgram Top program. Its expressions are in terms of the outputs of the bottom program.
-     * @param bottomProgram Bottom program. Its expressions are in terms of the result fields of the relational expression's input
+     * @param bottomProgram Bottom program. Its expressions are in terms of the result fields of the algebra expression's input
      * @param rexBuilder Rex builder
      * @return Merged program
      * @see #mergePrograms(RexProgram, RexProgram, RexBuilder, boolean)

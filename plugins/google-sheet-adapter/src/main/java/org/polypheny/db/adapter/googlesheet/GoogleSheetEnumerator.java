@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,9 +23,9 @@ import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.commons.lang3.time.FastDateFormat;
+import org.polypheny.db.util.temporal.DateTimeUtils;
 
 
 /**
@@ -132,7 +132,7 @@ public class GoogleSheetEnumerator<E> implements Enumerator<E> {
             }
             switch ( fieldType ) {
                 case BOOLEAN:
-                    if ( string.length() == 0 ) {
+                    if ( string.isEmpty() ) {
                         return null;
                     }
                     return Boolean.parseBoolean( string );

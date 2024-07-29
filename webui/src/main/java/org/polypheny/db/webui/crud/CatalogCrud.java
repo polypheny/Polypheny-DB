@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.Pattern;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.webui.Crud;
 import org.polypheny.db.webui.models.AlgNodeModel;
 import org.polypheny.db.webui.models.AssetsModel;
@@ -58,7 +59,7 @@ public class CatalogCrud {
         List<NamespaceModel> namespaces = Catalog.getInstance()
                 .getSnapshot()
                 .getNamespaces( request.pattern != null ? Pattern.of( request.pattern ) : null )
-                .stream().map( NamespaceModel::from ).collect( Collectors.toList() );
+                .stream().map( NamespaceModel::from ).toList();
         context.json( namespaces );
     }
 
@@ -82,7 +83,7 @@ public class CatalogCrud {
 
         List<LogicalNamespace> namespaces = Catalog.snapshot().getNamespaces( null );
         // remove unwanted namespaces
-        namespaces = namespaces.stream().filter( s -> request.dataModels.contains( s.dataModel ) ).collect( Collectors.toList() );
+        namespaces = namespaces.stream().filter( s -> request.dataModels.contains( s.dataModel ) ).toList();
         for ( LogicalNamespace namespace : namespaces ) {
             SidebarElement schemaTree = new SidebarElement( namespace.name, namespace.name, namespace.dataModel, "", getIconName( namespace.dataModel ) );
 
@@ -192,20 +193,23 @@ public class CatalogCrud {
 
 
     private String getIconName( DataModel dataModel ) {
-        switch ( dataModel ) {
-            case RELATIONAL:
-                return "cui-layers";
-            case DOCUMENT:
-                return "cui-folder";
-            case GRAPH:
-                return "cui-graph";
-        }
-        throw new UnsupportedOperationException( "Namespace type is not supported." );
+        return switch ( dataModel ) {
+            case RELATIONAL -> "cui-layers";
+            case DOCUMENT -> "cui-folder";
+            case GRAPH -> "cui-graph";
+        };
     }
 
 
     public void getSnapshot( Context context ) {
-        context.json( SnapshotModel.from( Catalog.snapshot() ) );
+        Long id = context.bodyAsClass( Long.class );
+
+        Snapshot snapshot = Catalog.snapshot();
+        if ( snapshot.id() > id ) {
+            context.json( SnapshotModel.from( snapshot ) );
+            return;
+        }
+        context.result( "" );
     }
 
 

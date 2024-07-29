@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,12 +23,10 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.ExplainFormat;
 import org.polypheny.db.algebra.constant.ExplainLevel;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
+import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
@@ -48,9 +46,6 @@ import org.polypheny.db.transaction.Statement;
  */
 @Slf4j
 public class UiRoutingPageUtil {
-
-
-    private static Snapshot snapshot;
 
 
     public static void outputSingleResult( Plan plan, InformationManager queryAnalyzer ) {
@@ -95,7 +90,6 @@ public class UiRoutingPageUtil {
 
 
     private static void addSelectedAdapterTable( InformationManager queryAnalyzer, ProposedRoutingPlan proposedRoutingPlan, InformationPage page ) {
-        snapshot = Catalog.getInstance().getSnapshot();
         InformationGroup group = new InformationGroup( page, "Selected Placements" );
         queryAnalyzer.addGroup( group );
         InformationTable table = new InformationTable(
@@ -116,7 +110,9 @@ public class UiRoutingPageUtil {
                     }
 
                 } else if ( entity.unwrap( LogicalCollection.class ).isPresent() ) {
-                    throw new GenericRuntimeException( "Not supported" );
+                    log.warn( "Collection not supported for routing page ui." );
+                } else if ( entity.unwrap( LogicalGraph.class ).isPresent() ) {
+                    log.warn( "Graph not supported for routing page ui." );
                 } else {
                     log.warn( "Error when adding to UI of proposed planner." );
                 }
@@ -137,7 +133,7 @@ public class UiRoutingPageUtil {
 
         InformationGroup overview = new InformationGroup( page, "Overview" ).setOrder( 1 );
         queryAnalyzer.addGroup( overview );
-        //InformationTable overviewTable = new InformationTable( overview, ImmutableList.of( "# of Plans", "Pre Cost Factor", "Post Cost Factor", "Selection Strategy" ) );
+
         InformationTable overviewTable = new InformationTable( overview, ImmutableList.of( "Query Class", selectedPlan.getQueryClass() ) );
         overviewTable.addRow( "# of Proposed Plans", numberOfPlans == 0 ? "-" : numberOfPlans );
         overviewTable.addRow( "Pre Cost Factor", ratioPre );
@@ -190,7 +186,6 @@ public class UiRoutingPageUtil {
                     isIcarus ? Math.round( icarusCosts.get( i ) * 100.0 ) / 100.0 : "-",
                     isIcarus ? Math.round( postCosts.get( i ) * 100.0 ) / 100.0 : "-",
                     Math.round( effectiveCosts.get( i ) * 100.0 ) / 100.0,
-                    //routingPlan.getPhysicalPlacementsOfPartitions(),
                     percentageCosts != null ? Math.round( percentageCosts.get( i ) * 100.0 ) / 100.0 + " %" : "-" );
         }
         queryAnalyzer.registerInformation( proposedPlansTable );

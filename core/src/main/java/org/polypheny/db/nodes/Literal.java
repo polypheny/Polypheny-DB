@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,12 +18,13 @@ package org.polypheny.db.nodes;
 
 import java.math.BigDecimal;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyValue;
 
 public interface Literal extends Visitable, Node {
 
     PolyType getTypeName();
 
-    Object getValue();
+    PolyValue getValue();
 
     <E extends Enum<E>> E symbolValue( Class<E> class_ );
 

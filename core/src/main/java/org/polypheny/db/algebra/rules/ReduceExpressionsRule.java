@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,7 +57,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.nodes.RowOperator;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptPredicateList;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
@@ -200,8 +200,7 @@ public abstract class ReduceExpressionsRule extends AlgOptRule {
                 alwaysTrue = !alwaysTrue;
             }
             RexNode operand = ((RexCall) rexNode).getOperands().get( 0 );
-            if ( operand instanceof RexIndexRef ) {
-                RexIndexRef inputRef = (RexIndexRef) operand;
+            if ( operand instanceof RexIndexRef inputRef ) {
                 if ( !inputRef.getType().isNullable() ) {
                     if ( alwaysTrue ) {
                         call.transformTo( filter.getInput() );
@@ -413,7 +412,7 @@ public abstract class ReduceExpressionsRule extends AlgOptRule {
      * @return whether reduction found something to change, and succeeded
      */
     protected static boolean reduceExpressions( AlgNode alg, List<RexNode> expList, AlgOptPredicateList predicates, boolean unknownAsFalse, boolean matchNullability ) {
-        final AlgOptCluster cluster = alg.getCluster();
+        final AlgCluster cluster = alg.getCluster();
         final RexBuilder rexBuilder = cluster.getRexBuilder();
         final RexExecutor executor = Util.first( cluster.getPlanner().getExecutor(), RexUtil.EXECUTOR );
         final RexSimplify simplify = new RexSimplify( rexBuilder, predicates, executor );

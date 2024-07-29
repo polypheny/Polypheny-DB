@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,7 +42,7 @@ import org.polypheny.db.tools.AlgBuilderFactory;
 
 
 /**
- * Rule to convert a relational expression from {@link JdbcConvention} to {@link EnumerableConvention}.
+ * Rule to convert an algebra expression from {@link JdbcConvention} to {@link EnumerableConvention}.
  */
 public class JdbcToEnumerableConverterRule extends ConverterRule {
 

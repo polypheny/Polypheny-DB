@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,7 +42,7 @@ import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.fun.AggFunction;
-import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.type.PolyTypeUtil;
@@ -270,7 +270,7 @@ public class AggregateCall {
 
 
     /**
-     * Creates a binding of this call in the context of an {@link LogicalAggregate},
+     * Creates a binding of this call in the context of an {@link LogicalRelAggregate},
      * which can then be used to infer the return type.
      */
     public Aggregate.AggCallBinding createBinding( Aggregate aggregateRelBase ) {

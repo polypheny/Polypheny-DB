@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import java.util.List;
 import org.apache.calcite.linq4j.Enumerator;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.file.Condition;
+import org.polypheny.db.adapter.file.FileTranslatableEntity;
 import org.polypheny.db.adapter.file.Value;
 import org.polypheny.db.adapter.file.Value.InputValue;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
@@ -48,7 +49,7 @@ public class QfsEnumerator implements Enumerator<PolyValue[]> {
     private PolyValue[] current;
 
 
-    public QfsEnumerator( final DataContext dataContext, final String path, final Long[] columnIds, final List<Value> projectionMapping, final Condition condition ) {
+    public QfsEnumerator( FileTranslatableEntity entity, final DataContext dataContext, final String path, final Long[] columnIds, final List<Value> projectionMapping, final Condition condition ) {
         this.dataContext = dataContext;
         File root = new File( path );
 
@@ -62,20 +63,22 @@ public class QfsEnumerator implements Enumerator<PolyValue[]> {
         List<AlgDataTypeField> columnTypes = new ArrayList<>();
         this.projectionMapping = projectionMapping;
 
-        /*if ( condition == null && this.projectionMapping != null ) {
-            for ( int projection : this.projectionMapping ) {
-                long colId = columnIds[projection];
-                CatalogColumn col = Catalog.getInstance().getColumn( colId );
-                columns.add( col.name );
-                columnTypes.add( col.type );
+        if ( condition == null && this.projectionMapping != null ) {
+            for ( Value projection : this.projectionMapping ) {
+                long colId = columnIds[projection.getValue( List.of( current ), dataContext, 0 ).asNumber().intValue()];
+                entity.getTupleType().getFields().stream().filter( col -> col.getId() == colId ).findFirst().ifPresent( col -> {
+                    columns.add( col.getName() );
+                    columnTypes.add( col );
+                } );
             }
         } else {
             for ( long colId : columnIds ) {
-                CatalogColumn col = Catalog.getInstance().getColumn( colId );
-                columns.add( col.name );
-                columnTypes.add( col.type );
+                entity.getTupleType().getFields().stream().filter( col -> col.getId() == colId ).findFirst().ifPresent( col -> {
+                    columns.add( col.getName() );
+                    columnTypes.add( col );
+                } );
             }
-        }*/ // todo
+        }
         this.columns = columns;
         this.columnTypes = columnTypes;
         this.condition = condition;

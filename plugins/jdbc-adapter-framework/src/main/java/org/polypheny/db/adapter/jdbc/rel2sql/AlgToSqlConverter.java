@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -105,7 +105,7 @@ import org.polypheny.db.util.Pair;
 
 
 /**
- * Utility to convert relational expressions to SQL abstract syntax tree.
+ * Utility to convert algebra expressions to SQL abstract syntax tree.
  */
 public abstract class AlgToSqlConverter extends SqlImplementor implements AlgProducingVisitor<Result> {
 
@@ -496,7 +496,11 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements AlgPro
      * Converts a list of names expressions to a list of single-part {@link SqlIdentifier}s.
      */
     private SqlNodeList physicalIdentifierList( JdbcTable entity, List<String> columnNames ) {
-        return new SqlNodeList( entity.columns.stream().filter( c -> columnNames.contains( c.logicalName ) ).map( c -> new SqlIdentifier( c.name, ParserPos.ZERO ) ).toList(), POS );
+        List<SqlIdentifier> columns = entity.columns.stream().filter( c -> columnNames.contains( c.logicalName ) ).map( c -> new SqlIdentifier( c.name, ParserPos.ZERO ) ).toList();
+        if ( columns.isEmpty() ) {
+            columns = entity.columns.stream().map( c -> new SqlIdentifier( c.name, ParserPos.ZERO ) ).toList();
+        }
+        return new SqlNodeList( columns, POS );
     }
 
 
@@ -640,7 +644,7 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements AlgPro
     /**
      * Stack frame.
      */
-    private record Frame(int ordinalInParent, AlgNode r) {
+    private record Frame( int ordinalInParent, AlgNode r ) {
 
     }
 

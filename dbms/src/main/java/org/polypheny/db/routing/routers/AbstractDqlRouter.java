@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,7 +38,7 @@ import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
-import org.polypheny.db.algebra.logical.relational.LogicalValues;
+import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.algebra.type.GraphType;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
@@ -211,7 +211,7 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
 
             // Check if table is even horizontal partitioned
 
-            if ( catalog.getSnapshot().alloc().getPartitionsFromLogical( oLogicalTable.get().id ).size() > 1 ) { // todo dl replace vert atm
+            if ( catalog.getSnapshot().alloc().getPartitionsFromLogical( oLogicalTable.get().id ).size() > 1 ) {
                 return handleHorizontalPartitioning( node, oLogicalTable.get(), builders, context );
             } else if ( catalog.getSnapshot().alloc().getPlacementsFromLogical( oLogicalTable.get().id ).size() > 1 ) { // At the moment multiple strategies
                 return handleVerticalPartitioningOrReplication( node, oLogicalTable.get(), builders, context );
@@ -219,8 +219,8 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
 
             return handleNonePartitioning( node, oLogicalTable.get(), builders, context );
 
-        } else if ( node instanceof LogicalValues ) {
-            return Lists.newArrayList( super.handleValues( (LogicalValues) node, builders ) );
+        } else if ( node instanceof LogicalRelValues ) {
+            return Lists.newArrayList( super.handleValues( (LogicalRelValues) node, builders ) );
         } else {
             return Lists.newArrayList( super.handleGeneric( node, builders ) );
         }
@@ -228,7 +228,6 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
 
 
     private List<RoutedAlgBuilder> handleRelationalOnGraphScan( AlgNode node, LogicalEntity logicalTable, List<RoutedAlgBuilder> builders, RoutingContext context ) {
-        // todo dl: remove after RowType refactor
         AlgBuilder algBuilder = AlgBuilder.create( context.getStatement() );
         RexBuilder rexBuilder = algBuilder.getRexBuilder();
 

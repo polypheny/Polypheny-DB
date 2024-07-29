@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -390,8 +390,8 @@ public interface NeoStatements {
         List<ElementStatement> elements = new ArrayList<>();
         for ( GraphObject object : path.getPath() ) {
             elements.add( i % 2 == 0
-                    ? node_( (PolyNode) object, mappingLabel, addId )
-                    : edge_( (PolyEdge) object, addId ) );
+                    ? node_( object.asNode(), mappingLabel, addId )
+                    : edge_( object.asEdge(), addId ) );
             i++;
         }
 

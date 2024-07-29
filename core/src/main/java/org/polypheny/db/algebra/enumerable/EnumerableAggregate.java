@@ -1,9 +1,26 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * This file incorporates code covered by the following terms:
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to you under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -21,7 +38,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import org.apache.calcite.linq4j.Ord;
@@ -42,13 +58,10 @@ import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.enumerable.impl.AggAddContextImpl;
 import org.polypheny.db.algebra.enumerable.impl.AggResultContextImpl;
 import org.polypheny.db.algebra.fun.AggFunction;
-import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl.SyntheticRecordType;
 import org.polypheny.db.rex.RexIndexRef;
@@ -65,7 +78,7 @@ import org.polypheny.db.util.Util;
 public class EnumerableAggregate extends Aggregate implements EnumerableAlg {
 
 
-    public EnumerableAggregate( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode child, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) throws InvalidAlgException {
+    public EnumerableAggregate( AlgCluster cluster, AlgTraitSet traitSet, AlgNode child, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) throws InvalidAlgException {
         super( cluster, traitSet, child, indicator, groupSet, groupSets, aggCalls );
         Preconditions.checkArgument( !indicator, "EnumerableAggregate no longer supports indicator fields" );
         assert getConvention() instanceof EnumerableConvention;
@@ -92,11 +105,6 @@ public class EnumerableAggregate extends Aggregate implements EnumerableAlg {
         }
     }
 
-    @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
-        return super.computeSelfCost( planner, mq ).multiplyBy( EnumerableConvention.COST_MULTIPLIER );
-    }
-
 
     @Override
     public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
@@ -104,7 +112,7 @@ public class EnumerableAggregate extends Aggregate implements EnumerableAlg {
         final BlockBuilder builder = new BlockBuilder();
         final EnumerableAlg child = (EnumerableAlg) getInput();
         final Result result = implementor.visitChild( this, 0, child, pref );
-        Expression childExp = builder.append( "child", result.block );
+        Expression childExp = builder.append( "child", result.block() );
 
         final PhysType physType = PhysTypeImpl.of( typeFactory, getTupleType(), pref.preferCustom() );
 
@@ -167,11 +175,11 @@ public class EnumerableAggregate extends Aggregate implements EnumerableAlg {
         // return child
         //     .distinct(equalityComparer);
 
-        final PhysType inputPhysType = result.physType;
+        final PhysType inputPhysType = result.physType();
 
-        ParameterExpression parameter = Expressions.parameter( inputPhysType.getJavaRowType(), "a0" );
+        ParameterExpression parameter = Expressions.parameter( inputPhysType.getJavaTupleType(), "a0" );
 
-        final PhysType keyPhysType = inputPhysType.project( groupSet.asList(), getGroupType() != Group.SIMPLE, JavaRowFormat.LIST );
+        final PhysType keyPhysType = inputPhysType.project( groupSet.asList(), getGroupType() != Group.SIMPLE, JavaTupleFormat.LIST );
         final int groupCount = getGroupCount();
 
         final List<AggImpState> aggs = new ArrayList<>( aggCalls.size() );
@@ -230,8 +238,8 @@ public class EnumerableAggregate extends Aggregate implements EnumerableAlg {
         //             return acc;
         //         }
         //     };
-        final ParameterExpression inParameter = Expressions.parameter( inputPhysType.getJavaRowType(), "in" );
-        final ParameterExpression acc_ = Expressions.parameter( accPhysType.getJavaRowType(), "acc" );
+        final ParameterExpression inParameter = Expressions.parameter( inputPhysType.getJavaTupleType(), "in" );
+        final ParameterExpression acc_ = Expressions.parameter( accPhysType.getJavaTupleType(), "acc" );
         for ( int i = 0, stateOffset = 0; i < aggs.size(); i++ ) {
             final BlockBuilder builder2 = new BlockBuilder();
             final AggImpState agg = aggs.get( i );
@@ -249,7 +257,7 @@ public class EnumerableAggregate extends Aggregate implements EnumerableAlg {
                     new AggAddContextImpl( builder2, accumulator ) {
                         @Override
                         public List<RexNode> rexArguments() {
-                            List<AlgDataTypeField> inputTypes = inputPhysType.getRowType().getFields();
+                            List<AlgDataTypeField> inputTypes = inputPhysType.getTupleType().getFields();
                             List<RexNode> args = new ArrayList<>();
                             for ( int index : agg.call.getArgList() ) {
                                 args.add( RexIndexRef.of( index, inputTypes ) );
@@ -262,7 +270,7 @@ public class EnumerableAggregate extends Aggregate implements EnumerableAlg {
                         public RexNode rexFilterArgument() {
                             return agg.call.filterArg < 0
                                     ? null
-                                    : RexIndexRef.of( agg.call.filterArg, inputPhysType.getRowType() );
+                                    : RexIndexRef.of( agg.call.filterArg, inputPhysType.getTupleType() );
                         }
 
 
@@ -271,7 +279,7 @@ public class EnumerableAggregate extends Aggregate implements EnumerableAlg {
                             return RexToLixTranslator.forAggregation(
                                     typeFactory,
                                     currentBlock(),
-                                    new RexToLixTranslator.InputGetterImpl( Collections.singletonList( Pair.of( inParameter, inputPhysType ) ) ),
+                                    new RexToLixTranslator.InputGetterImpl( inParameter, inputPhysType ),
                                     implementor.getConformance() ).setNullable( currentNullables() );
                         }
                     };
@@ -296,7 +304,7 @@ public class EnumerableAggregate extends Aggregate implements EnumerableAlg {
         if ( groupCount == 0 ) {
             key_ = null;
         } else {
-            final Type keyType = keyPhysType.getJavaRowType();
+            final Type keyType = keyPhysType.getJavaTupleType();
             key_ = Expressions.parameter( keyType, "key" );
             for ( int j = 0; j < groupCount; j++ ) {
                 final Expression ref = keyPhysType.fieldReference( key_, j );
@@ -380,12 +388,11 @@ public class EnumerableAggregate extends Aggregate implements EnumerableAlg {
 
 
     private void declareParentAccumulator( List<Expression> initExpressions, BlockBuilder initBlock, PhysType accPhysType ) {
-        if ( accPhysType.getJavaRowType() instanceof SyntheticRecordType ) {
+        if ( accPhysType.getJavaTupleType() instanceof SyntheticRecordType synType ) {
             // We have to initialize the SyntheticRecordType instance this way, to avoid using a class constructor with too many parameters.
-            final SyntheticRecordType synType = (SyntheticRecordType) accPhysType.getJavaRowType();
-            final ParameterExpression record0_ = Expressions.parameter( accPhysType.getJavaRowType(), "record0" );
+            final ParameterExpression record0_ = Expressions.parameter( accPhysType.getJavaTupleType(), "record0" );
             initBlock.add( Expressions.declare( 0, record0_, null ) );
-            initBlock.add( Expressions.statement( Expressions.assign( record0_, Expressions.new_( accPhysType.getJavaRowType() ) ) ) );
+            initBlock.add( Expressions.statement( Expressions.assign( record0_, Expressions.new_( accPhysType.getJavaTupleType() ) ) ) );
             List<Types.RecordField> fieldList = synType.getRecordFields();
             for ( int i = 0; i < initExpressions.size(); i++ ) {
                 Expression right = initExpressions.get( i );
@@ -400,7 +407,7 @@ public class EnumerableAggregate extends Aggregate implements EnumerableAlg {
 
     /**
      * Implements the {@link AggregateLambdaFactory}.
-     *
+     * <p>
      * Behavior depends upon ordering:
      * <ul>
      * <li>{@code hasOrderedCall == true} means there is at least one aggregate call including sort spec. We use {@link OrderedAggregateLambdaFactory} implementation to implement sorted aggregates for that.

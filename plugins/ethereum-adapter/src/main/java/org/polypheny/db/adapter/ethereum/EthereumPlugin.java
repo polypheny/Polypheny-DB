@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -104,8 +104,8 @@ public class EthereumPlugin extends PolyPlugin {
         private EthereumNamespace currentNamespace;
 
 
-        public EthereumDataSource( final long storeId, final String uniqueName, final Map<String, String> settings ) {
-            super( storeId, uniqueName, settings, true, new RelAdapterCatalog( storeId ) );
+        public EthereumDataSource( final long storeId, final String uniqueName, final Map<String, String> settings, DeployMode mode ) {
+            super( storeId, uniqueName, settings, mode, true, new RelAdapterCatalog( storeId ) );
             setClientURL( settings.get( "ClientUrl" ) );
             this.blocks = Integer.parseInt( settings.get( "Blocks" ) );
             this.experimentalFiltering = Boolean.parseBoolean( settings.get( "ExperimentalFiltering" ) );
@@ -130,7 +130,7 @@ public class EthereumPlugin extends PolyPlugin {
 
         @Override
         public void updateNamespace( String name, long id ) {
-            currentNamespace = new EthereumNamespace( id, this.clientURL );
+            currentNamespace = new EthereumNamespace( id, adapterId, this.clientURL );
         }
 
 
@@ -278,11 +278,26 @@ public class EthereumPlugin extends PolyPlugin {
             }
         }
 
+
+        protected void updateNativePhysical( long allocId ) {
+            PhysicalTable table = this.adapterCatalog.fromAllocation( allocId );
+            adapterCatalog.replacePhysical( this.currentNamespace.createBlockchainTable( table, this ) );
+        }
+
+
+        @Override
+        public void renameLogicalColumn( long id, String newColumnName ) {
+            adapterCatalog.renameLogicalColumn( id, newColumnName );
+            adapterCatalog.fields.values().stream().filter( c -> c.id == id ).forEach( c -> updateNativePhysical( c.allocId ) );
+        }
+
     }
 
 
     @SuppressWarnings("unused")
     private interface Excludes {
+
+        void renameLogicalColumn( long id, String newColumnName );
 
         void refreshTable( long allocId );
 

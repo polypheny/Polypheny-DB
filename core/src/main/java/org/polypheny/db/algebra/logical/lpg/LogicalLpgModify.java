@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ import org.polypheny.db.algebra.core.lpg.LpgModify;
 import org.polypheny.db.algebra.core.relational.RelationalTransformable;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.snapshot.Snapshot;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
@@ -39,7 +39,7 @@ public class LogicalLpgModify extends LpgModify<Entity> implements RelationalTra
     /**
      * Subclass of {@link LpgModify} not targeted at any particular engine or calling convention.
      */
-    public LogicalLpgModify( AlgOptCluster cluster, AlgTraitSet traits, Entity entity, AlgNode input, Operation operation, List<PolyString> ids, List<? extends RexNode> operations ) {
+    public LogicalLpgModify( AlgCluster cluster, AlgTraitSet traits, Entity entity, AlgNode input, Operation operation, List<PolyString> ids, List<? extends RexNode> operations ) {
         super( cluster, traits, entity, input, operation, ids, operations, AlgOptUtil.createDmlRowType( Kind.INSERT, cluster.getTypeFactory() ) );
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,13 +21,13 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 
 import com.google.common.collect.ImmutableList;
-import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.hamcrest.core.Is;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.nodes.TimeUnitRange;
 import org.polypheny.db.plan.RexImplicationChecker;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexLiteral;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,34 +17,23 @@
 package org.polypheny.db.schema.types;
 
 
-import java.util.List;
-import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.schema.Entity;
-
 
 /**
- * Table whose row type can be extended to include extra fields.
- *
- * In some storage systems, especially those with "late schema", there may exist columns that have values in the table but
- * which are not declared in the table schema. However, a particular query may wish to reference these columns as if they were
- * defined in the schema. Calling the {@link #extend} method creates a temporarily extended table schema.
- *
- * If the table implements extended interfaces such as
+ * Entity whose row type can be extended to include extra fields.
+ * <p>
+ * In some storage systems, especially those with "late namespace", there may exist fields that have values in the entity but
+ * which are not declared in the entity namespace. However, a particular query may wish to reference these fields as if they were
+ * defined in the namespace.
+ * <p>
+ * If the entity implements extended interfaces such as
  * {@link ScannableEntity},
- * {@link FilterableEntity} or
- * {@link ProjectableFilterableEntity}, you may wish
- * to make the table returned from {@link #extend} implement these interfaces as well.
+ * {@link FilterableEntity}
  */
 public interface ExtensibleEntity extends Typed {
 
     /**
-     * Returns a table that has the row type of this table plus the given fields.
-     */
-    Entity extend( List<AlgDataTypeField> fields );
-
-    /**
-     * Returns the starting offset of the first extended column, which may differ from the field count when the table stores
-     * metadata columns that are not counted in the row-type field count.
+     * Returns the starting offset of the first extended field, which may differ from the field count when the entity stores
+     * metadata fields that are not counted in the row-type field count.
      */
     int getExtendedColumnOffset();
 

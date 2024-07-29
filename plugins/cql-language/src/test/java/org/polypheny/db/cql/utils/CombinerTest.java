@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,12 +26,12 @@ import java.util.TreeMap;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.cql.BooleanGroup;
-import org.polypheny.db.cql.BooleanGroup.TableOpsBooleanOperator;
+import org.polypheny.db.cql.BooleanGroup.EntityOpsBooleanOperator;
 import org.polypheny.db.cql.Combiner;
 import org.polypheny.db.cql.Combiner.CombinerType;
 import org.polypheny.db.cql.Comparator;
+import org.polypheny.db.cql.EntityIndex;
 import org.polypheny.db.cql.Modifier;
-import org.polypheny.db.cql.TableIndex;
 import org.polypheny.db.cql.exception.InvalidModifierException;
 import org.polypheny.db.cql.exception.UnknownIndexException;
 import org.polypheny.db.cql.utils.helper.AlgBuildTestHelper;
@@ -39,14 +39,14 @@ import org.polypheny.db.cql.utils.helper.AlgBuildTestHelper;
 
 public class CombinerTest extends AlgBuildTestHelper {
 
-    private final TableIndex employee;
-    private final TableIndex dept;
+    private final EntityIndex employee;
+    private final EntityIndex dept;
 
 
     public CombinerTest() throws UnknownIndexException {
         super( AlgBuildLevel.TABLE_SCAN );
-        employee = TableIndex.createIndex( "test", "employee" );
-        dept = TableIndex.createIndex( "test", "dept" );
+        employee = EntityIndex.createIndex( "test", "employee" );
+        dept = EntityIndex.createIndex( "test", "dept" );
     }
 
 
@@ -152,7 +152,7 @@ public class CombinerTest extends AlgBuildTestHelper {
             modifiers.put( "on", new Modifier( "on", Comparator.EQUALS, onModifierValue ) );
         }
         Combiner combiner = Combiner.createCombiner(
-                new BooleanGroup<>( TableOpsBooleanOperator.AND, modifiers ),
+                new BooleanGroup<>( EntityOpsBooleanOperator.AND, modifiers ),
                 employee,
                 dept
         );
@@ -186,7 +186,7 @@ public class CombinerTest extends AlgBuildTestHelper {
             modifiers.put( "null", new Modifier( "null", Comparator.EQUALS, nullModifierValue ) );
         }
         Combiner combiner = Combiner.createCombiner(
-                new BooleanGroup<>( TableOpsBooleanOperator.OR, modifiers ),
+                new BooleanGroup<>( EntityOpsBooleanOperator.OR, modifiers ),
                 employee,
                 dept
         );

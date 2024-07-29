@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,9 +53,10 @@ import org.polypheny.db.algebra.AlgDistribution;
 import org.polypheny.db.algebra.AlgInput;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.Entity;
-import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptSchema;
+import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.schema.Namespace;
@@ -73,16 +74,14 @@ public class AlgJsonReader {
     private static final TypeReference<LinkedHashMap<String, Object>> TYPE_REF = new TypeReference<>() {
     };
 
-    private final AlgOptCluster cluster;
-    private final AlgOptSchema algOptSchema;
+    private final AlgCluster cluster;
     private final AlgJson algJson = new AlgJson( null );
     private final Map<String, AlgNode> algMap = new LinkedHashMap<>();
     private AlgNode lastAlg;
 
 
-    public AlgJsonReader( AlgOptCluster cluster, AlgOptSchema algOptSchema, Namespace namespace ) {
+    public AlgJsonReader( AlgCluster cluster, Namespace namespace ) {
         this.cluster = cluster;
-        this.algOptSchema = algOptSchema;
         Util.discard( namespace );
     }
 
@@ -115,7 +114,7 @@ public class AlgJsonReader {
         Constructor<?> constructor = algJson.getConstructor( type );
         AlgInput input = new AlgInput() {
             @Override
-            public AlgOptCluster getCluster() {
+            public AlgCluster getCluster() {
                 return cluster;
             }
 
@@ -129,8 +128,7 @@ public class AlgJsonReader {
             @Override
             public Entity getEntity( String entity ) {
                 final List<String> list;
-                if ( jsonAlg.get( entity ) instanceof String ) {
-                    String str = (String) jsonAlg.get( entity );
+                if ( jsonAlg.get( entity ) instanceof String str ) {
                     // MV: This is not a nice solution...
                     if ( str.startsWith( "[" ) && str.endsWith( "]" ) ) {
                         str = str.substring( 1, str.length() - 1 );
@@ -142,7 +140,8 @@ public class AlgJsonReader {
                 } else {
                     list = getStringList( entity );
                 }
-                return null; // todo change
+                LogicalNamespace namespace = Catalog.snapshot().getNamespace( list.get( 0 ) ).orElseThrow();
+                return Catalog.snapshot().getLogicalEntity( namespace.id, list.get( 1 ) ).orElse( null );
             }
 
 
@@ -189,13 +188,6 @@ public class AlgJsonReader {
 
 
             @Override
-            public List<List<Integer>> getIntegerListList( String tag ) {
-                //noinspection unchecked
-                return (List<List<Integer>>) jsonAlg.get( tag );
-            }
-
-
-            @Override
             public Object get( String tag ) {
                 return jsonAlg.get( tag );
             }
@@ -227,7 +219,7 @@ public class AlgJsonReader {
 
 
             @Override
-            public AlgDataType getRowType( String tag ) {
+            public AlgDataType getTupleType( String tag ) {
                 final Object o = jsonAlg.get( tag );
                 return algJson.toType( cluster.getTypeFactory(), o );
             }

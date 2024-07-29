@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,13 +21,12 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import lombok.Value;
 import org.polypheny.db.adapter.AbstractAdapterSetting;
 import org.polypheny.db.adapter.AbstractAdapterSettingList;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
-import org.polypheny.db.adapter.AdapterManager.Function4;
+import org.polypheny.db.adapter.AdapterManager.Function5;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.DeployMode.DeploySetting;
@@ -42,14 +41,14 @@ public class AdapterTemplate {
     public Class<?> clazz;
     public String adapterName;
     public AdapterType adapterType;
-    Function4<Long, String, Map<String, String>, Adapter<?>> deployer;
+    Function5<Long, String, Map<String, String>, DeployMode, Adapter<?>> deployer;
     public List<AbstractAdapterSetting> settings;
     public List<DeployMode> modes;
     public long id;
     public String description;
 
 
-    public AdapterTemplate( long id, Class<?> clazz, String adapterName, List<AbstractAdapterSetting> settings, List<DeployMode> modes, String description, Function4<Long, String, Map<String, String>, Adapter<?>> deployer ) {
+    public AdapterTemplate( long id, Class<?> clazz, String adapterName, List<AbstractAdapterSetting> settings, List<DeployMode> modes, String description, Function5<Long, String, Map<String, String>, DeployMode, Adapter<?>> deployer ) {
         this.id = id;
         this.adapterName = adapterName;
         this.description = description;
@@ -79,7 +78,8 @@ public class AdapterTemplate {
         List<AbstractAdapterSetting> settings = new ArrayList<>( AbstractAdapterSetting.fromAnnotations( clazz.getAnnotations(), properties ) );
         if ( Arrays.stream( properties.usedModes() ).anyMatch( m -> m == DeployMode.DOCKER ) ) {
             String instanceId = DockerManager.getInstance().getDockerInstances().keySet().stream().findFirst().orElse( 0 ).toString();
-            settings.add( new AbstractAdapterSettingList( "instanceId", false, null, true, false, DockerManager.getInstance().getDockerInstances().keySet().stream().map( Object::toString ).collect( Collectors.toList() ), List.of( DeploySetting.DOCKER ), instanceId, 0 ) );
+            List<String> ids = DockerManager.getInstance().getDockerInstances().keySet().stream().map( Object::toString ).toList();
+            settings.add( new AbstractAdapterSettingList( "instanceId", false, null, true, false, ids, List.of( DeploySetting.DOCKER ), instanceId, 0 ) );
         }
         return settings;
     }
@@ -93,6 +93,11 @@ public class AdapterTemplate {
             }
         }
         return map;
+    }
+
+
+    public DeployMode getDefaultMode() {
+        return clazz.getAnnotation( AdapterProperties.class ).defaultMode();
     }
 
 }

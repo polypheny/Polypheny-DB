@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,11 +60,12 @@ import org.polypheny.db.prepare.Context;
         description = "List of tables which should be imported. The names must to be separated by a comma.")
 public class PostgresqlSource extends AbstractJdbcSource {
 
-    public PostgresqlSource( long storeId, String uniqueName, final Map<String, String> settings ) {
+    public PostgresqlSource( final long storeId, final String uniqueName, final Map<String, String> settings, final DeployMode mode ) {
         super(
                 storeId,
                 uniqueName,
                 settings,
+                mode,
                 "org.postgresql.Driver",
                 PostgresqlSqlDialect.DEFAULT,
                 false );

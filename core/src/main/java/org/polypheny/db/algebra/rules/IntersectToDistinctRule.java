@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,8 +38,8 @@ import java.math.BigDecimal;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Intersect;
-import org.polypheny.db.algebra.logical.relational.LogicalIntersect;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.algebra.logical.relational.LogicalRelIntersect;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.rex.RexBuilder;
@@ -82,7 +82,7 @@ import org.polypheny.db.util.Util;
  */
 public class IntersectToDistinctRule extends AlgOptRule {
 
-    public static final IntersectToDistinctRule INSTANCE = new IntersectToDistinctRule( LogicalIntersect.class, AlgFactories.LOGICAL_BUILDER );
+    public static final IntersectToDistinctRule INSTANCE = new IntersectToDistinctRule( LogicalRelIntersect.class, AlgFactories.LOGICAL_BUILDER );
 
 
     /**
@@ -99,7 +99,7 @@ public class IntersectToDistinctRule extends AlgOptRule {
         if ( intersect.all ) {
             return; // nothing we can do
         }
-        final AlgOptCluster cluster = intersect.getCluster();
+        final AlgCluster cluster = intersect.getCluster();
         final RexBuilder rexBuilder = cluster.getRexBuilder();
         final AlgBuilder algBuilder = call.builder();
 
@@ -114,7 +114,7 @@ public class IntersectToDistinctRule extends AlgOptRule {
         algBuilder.union( true, branchCount );
         final AlgNode union = algBuilder.peek();
 
-        // 2nd level GB: create a GB (col0, col1, count(c)) for each branch the index of c is union.getRowType().getFieldList().size() - 1
+        // 2nd level GB: create a GB (col0, col1, count(c)) for each branch the index of c is union.getTupleType().getFieldList().size() - 1
         final int fieldCount = union.getTupleType().getFieldCount();
 
         final ImmutableBitSet groupSet = ImmutableBitSet.range( fieldCount - 1 );

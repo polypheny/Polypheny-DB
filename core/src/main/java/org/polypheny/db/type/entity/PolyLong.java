@@ -19,12 +19,6 @@ package org.polypheny.db.type.entity;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonToken;
-import io.activej.serializer.BinaryInput;
-import io.activej.serializer.BinaryOutput;
-import io.activej.serializer.BinarySerializer;
-import io.activej.serializer.CompatibilityLevel;
-import io.activej.serializer.CorruptedDataException;
-import io.activej.serializer.SimpleSerializerDef;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.math.BigDecimal;
@@ -253,34 +247,5 @@ public class PolyLong extends PolyNumber {
         return value.toString();
     }
 
-
-    public static class PolyLongSerializerDef extends SimpleSerializerDef<PolyLong> {
-
-        @Override
-        protected BinarySerializer<PolyLong> createSerializer( int version, CompatibilityLevel compatibilityLevel ) {
-            return new BinarySerializer<>() {
-                @Override
-                public void encode( BinaryOutput out, PolyLong item ) {
-                    if ( item.value == null ) {
-                        out.writeBoolean( true );
-                    } else {
-                        out.writeBoolean( false );
-                        out.writeLong( item.value );
-                    }
-                }
-
-
-                @Override
-                public PolyLong decode( BinaryInput in ) throws CorruptedDataException {
-                    boolean isNull = in.readBoolean();
-                    if ( isNull ) {
-                        return null;
-                    }
-                    return PolyLong.of( in.readLong() );
-                }
-            };
-        }
-
-    }
 
 }

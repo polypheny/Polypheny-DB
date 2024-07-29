@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ import org.polypheny.db.util.ImmutableNullableList;
 
 /**
  * Parse tree node that represents an {@code ORDER BY} on a query other than a {@code SELECT} (e.g. {@code VALUES} or {@code UNION}).
- *
+ * <p>
  * It is a purely syntactic operator, and is eliminated by {@code org.polypheny.db.sql.validate.SqlValidatorImpl#performUnconditionalRewrites} and replaced with the ORDER_OPERAND of SqlSelect.
  */
 public class SqlOrderBy extends SqlCall {

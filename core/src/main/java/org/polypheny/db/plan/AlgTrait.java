@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ package org.polypheny.db.plan;
 
 
 /**
- * AlgTrait represents the manifestation of a relational expression trait within a trait definition.
+ * AlgTrait represents the manifestation of an algebra expression trait within a trait definition.
  * For example, a {@code CallingConvention.JAVA} is a trait of the {@link ConventionTraitDef} trait definition.
  *
  * <h3><a id="EqualsHashCodeNote">Note about equals() and hashCode()</a></h3>
@@ -90,7 +90,7 @@ public interface AlgTrait<T extends AlgTraitDef<?>> {
      *
      * @param planner Planner
      */
-    void register( AlgOptPlanner planner );
+    void register( AlgPlanner planner );
 
 }
 

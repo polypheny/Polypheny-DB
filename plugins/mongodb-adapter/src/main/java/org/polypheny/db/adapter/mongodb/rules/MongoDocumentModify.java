@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -98,7 +98,7 @@ public class MongoDocumentModify extends DocumentModify<MongoEntity> implements 
 
         implementor.filter = condImplementor.filter;
 
-        final RexToMongoTranslator translator = new RexToMongoTranslator( getCluster().getTypeFactory(), List.of(), implementor, DataModel.DOCUMENT );
+        final RexToMongoTranslator translator = new RexToMongoTranslator( List.of(), implementor, DataModel.DOCUMENT );
         for ( Entry<String, ? extends RexNode> entry : updates.entrySet() ) {
             String key = entry.getKey();
             String value = entry.getValue().accept( translator );
@@ -131,15 +131,15 @@ public class MongoDocumentModify extends DocumentModify<MongoEntity> implements 
         if ( documents.isPrepared() ) {
             implementor.operations = documents.dynamicDocuments
                     .stream()
-                    .map( BsonDynamic::new )
-                    .collect( Collectors.toList() );
+                    .map( rexNode -> (BsonDocument) new BsonDynamic( rexNode ) )
+                    .toList();
             return;
         }
         implementor.operations = documents.documents
                 .stream()
                 .filter( PolyValue::isDocument )
                 .map( d -> BsonDocument.parse( d.toJson() ) )
-                .collect( Collectors.toList() );
+                .toList();
     }
 
 }

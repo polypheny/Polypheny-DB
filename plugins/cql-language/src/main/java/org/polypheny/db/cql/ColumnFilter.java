@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,12 +31,12 @@ import org.polypheny.db.rex.RexNode;
 @Slf4j
 public class ColumnFilter implements Filter {
 
-    private final ColumnIndex left;
+    private final FieldIndex left;
     private final Relation relation;
-    private final ColumnIndex right;
+    private final FieldIndex right;
 
 
-    public ColumnFilter( ColumnIndex left, Relation relation, ColumnIndex right ) {
+    public ColumnFilter( FieldIndex left, Relation relation, FieldIndex right ) {
         this.left = left;
         this.relation = relation;
         this.right = right;

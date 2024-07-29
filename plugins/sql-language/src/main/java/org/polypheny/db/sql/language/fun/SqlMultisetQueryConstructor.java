@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -111,10 +111,10 @@ public class SqlMultisetQueryConstructor extends SqlSpecialOperator {
         SqlSelect subSelect = call.operand( 0 );
         subSelect.validateExpr( (SqlValidator) validator, (SqlValidatorScope) scope );
         SqlValidatorNamespace ns = ((SqlValidator) validator).getSqlNamespace( subSelect );
-        assert null != ns.getRowType();
+        assert null != ns.getTupleType();
         return PolyTypeUtil.createMultisetType(
                 validator.getTypeFactory(),
-                ns.getRowType(),
+                ns.getTupleType(),
                 false );
     }
 

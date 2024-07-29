@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,11 @@ package org.polypheny.db.sql.language;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import java.lang.reflect.Field;
 import java.util.List;
 import java.util.function.Function;
+import lombok.SneakyThrows;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.AlgFieldTrimmer;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
@@ -32,10 +35,12 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.impl.PolyCatalog;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.NodeToAlgConverter.Config;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.Node;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.Context;
 import org.polypheny.db.plan.Contexts;
@@ -48,7 +53,6 @@ import org.polypheny.db.sql.SqlLanguageDependent;
 import org.polypheny.db.sql.language.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.language.validate.SqlValidator;
 import org.polypheny.db.sql.language.validate.SqlValidatorImpl;
-import org.polypheny.db.test.MockAlgOptPlanner;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
@@ -122,7 +126,11 @@ public abstract class SqlToAlgTestBase extends SqlLanguageDependent {
          * @param sql SQL statement
          * @return Relational expression, never null
          */
-        AlgRoot convertSqlToAlg( String sql );
+        AlgRoot convertSqlToAlg( String sql, @Nullable Snapshot snapshot );
+
+        default AlgRoot convertSqlToAlg( String sql ) {
+            return convertSqlToAlg( sql, Catalog.snapshot() );
+        }
 
         /**
          * Returns the SQL dialect to test.
@@ -173,7 +181,7 @@ public abstract class SqlToAlgTestBase extends SqlLanguageDependent {
 
 
     /**
-     * Default implementation of {@link Tester}, using mock classes and {@link MockAlgOptPlanner}.
+     * Default implementation of {@link Tester}.
      */
     public static class TesterImpl implements Tester {
 
@@ -184,7 +192,7 @@ public abstract class SqlToAlgTestBase extends SqlLanguageDependent {
         private final boolean enableTrim;
         private final boolean enableExpand;
         private final Conformance conformance;
-        private final Function<AlgOptCluster, AlgOptCluster> clusterFactory;
+        private final Function<AlgCluster, AlgCluster> clusterFactory;
         private AlgDataTypeFactory typeFactory;
         public final Config config;
         private final Context context;
@@ -205,8 +213,8 @@ public abstract class SqlToAlgTestBase extends SqlLanguageDependent {
                 boolean enableTrim,
                 boolean enableExpand,
                 boolean enableLateDecorrelate,
-                Function<AlgOptCluster,
-                        AlgOptCluster> clusterFactory ) {
+                Function<AlgCluster,
+                        AlgCluster> clusterFactory ) {
             this(
                     diffRepos,
                     enableDecorrelate,
@@ -226,7 +234,7 @@ public abstract class SqlToAlgTestBase extends SqlLanguageDependent {
                 boolean enableTrim,
                 boolean enableExpand,
                 boolean enableLateDecorrelate,
-                Function<AlgOptCluster, AlgOptCluster> clusterFactory,
+                Function<AlgCluster, AlgCluster> clusterFactory,
                 Config config,
                 Conformance conformance,
                 Context context ) {
@@ -244,11 +252,19 @@ public abstract class SqlToAlgTestBase extends SqlLanguageDependent {
         }
 
 
+        @SneakyThrows
         @Override
-        public AlgRoot convertSqlToAlg( String sql ) {
+        public AlgRoot convertSqlToAlg( String sql, @Nullable Snapshot snapshot ) {
+            if ( snapshot != null ) {
+                // ok for testing
+                Field field = PolyCatalog.class.getDeclaredField( "snapshot" );
+                field.setAccessible( true );
+                field.set( Catalog.getInstance(), snapshot );
+            }
+
             QueryLanguage language = QueryLanguage.from( "sql" );
 
-            Processor processor = language.getProcessorSupplier().get();
+            Processor processor = language.processorSupplier().get();
 
             List<? extends Node> nodes = processor.parse( sql );
 
@@ -259,7 +275,6 @@ public abstract class SqlToAlgTestBase extends SqlLanguageDependent {
             AlgRoot root = null;
             for ( Node node : nodes ) {
                 Pair<Node, AlgDataType> validated = processor.validate( transaction, node, true );
-
                 Statement statement = transaction.createStatement();
                 root = processor.translate( statement, ParsedQueryContext.builder()
                         .origin( "Sql Test" )

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package org.polypheny.db.cypher.clause;
 
+import java.util.Optional;
 import lombok.Getter;
 import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.languages.ParserPos;
@@ -52,6 +53,12 @@ public class CypherUseClause extends CypherClause implements ExecutableStatement
     @Override
     public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
 
+    }
+
+
+    @Override
+    public Optional<String> switchesNamespace() {
+        return Optional.ofNullable( expression.getName() );
     }
 
 }

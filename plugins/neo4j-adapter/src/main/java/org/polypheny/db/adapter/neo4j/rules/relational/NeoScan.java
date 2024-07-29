@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,14 +33,14 @@ import org.polypheny.db.adapter.neo4j.rules.NeoRelAlg;
 import org.polypheny.db.adapter.neo4j.util.NeoStatements.NeoStatement;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.relational.RelScan;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.type.entity.PolyString;
 
 public class NeoScan extends RelScan<NeoEntity> implements NeoRelAlg {
 
 
-    public NeoScan( AlgOptCluster cluster, AlgTraitSet traitSet, NeoEntity neoEntity ) {
+    public NeoScan( AlgCluster cluster, AlgTraitSet traitSet, NeoEntity neoEntity ) {
         super( cluster, traitSet, neoEntity );
     }
 
@@ -58,7 +58,7 @@ public class NeoScan extends RelScan<NeoEntity> implements NeoRelAlg {
 
         if ( !implementor.isDml() || !implementor.isPrepared() ) {
             List<NeoStatement> mapping = entity
-                    .getRowType()
+                    .getTupleType()
                     .getFields()
                     .stream().map( f -> (NeoStatement) as_( literal_( PolyString.of( entity.name + "." + f.getPhysicalName() ) ), literal_( PolyString.of( f.getName() ) ) ) )
                     .toList();

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,8 @@ package org.polypheny.db.docker;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.security.SecureRandom;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
@@ -40,6 +42,7 @@ import org.bouncycastle.tls.crypto.impl.bc.BcDefaultTlsCredentialedSigner;
 import org.bouncycastle.tls.crypto.impl.bc.BcTlsCertificate;
 import org.bouncycastle.tls.crypto.impl.bc.BcTlsCrypto;
 import org.bouncycastle.util.Arrays;
+import org.polypheny.db.util.Util;
 
 @Slf4j
 final class PolyphenyTlsClient {
@@ -48,6 +51,7 @@ final class PolyphenyTlsClient {
     private final PolyphenyKeypair kp;
     private final MyTlsClient client;
     private final TlsClientProtocol proto;
+    private Socket socket = null;
 
     // Invariant ( serverCertificate != null && ! insecure ) || ( serverCertificate == null && insecure )
     private final byte[] serverCertificate;
@@ -60,19 +64,35 @@ final class PolyphenyTlsClient {
         this.kp = kp;
         this.client = new MyTlsClient();
         this.proto = new TlsClientProtocol( in, out );
-        proto.connect( client );
+        this.proto.connect( client );
     }
 
 
     // This returns a client where the server certificate is not verified.  For safety reasons this is not exposed directly,
-    //but rather through the insecureClient method, making it obvious that caution is required.
+    // but rather through the insecureClient method, making it obvious that caution is required.
     private PolyphenyTlsClient( PolyphenyKeypair kp, InputStream in, OutputStream out ) throws IOException {
         this.insecure = true;
         this.serverCertificate = null;
         this.kp = kp;
         this.client = new MyTlsClient();
         this.proto = new TlsClientProtocol( in, out );
-        proto.connect( client );
+        this.proto.connect( client );
+    }
+
+
+    static PolyphenyTlsClient connect( String context, String hostname, int port ) throws IOException {
+        PolyphenyKeypair kp = PolyphenyCertificateManager.loadClientKeypair( context, hostname );
+        byte[] serverCertificate = PolyphenyCertificateManager.loadServerCertificate( context, hostname );
+        Socket s = new Socket();
+        s.connect( new InetSocketAddress( hostname, port ), 5000 );
+        try {
+            PolyphenyTlsClient client = new PolyphenyTlsClient( kp, serverCertificate, s.getInputStream(), s.getOutputStream() );
+            client.socket = s;
+            return client;
+        } catch ( IOException e ) {
+            s.close();
+            throw e;
+        }
     }
 
 
@@ -122,6 +142,7 @@ final class PolyphenyTlsClient {
             proto.close();
         } catch ( IOException ignore ) {
         }
+        Util.closeNoThrow( socket );
     }
 
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ package org.polypheny.db.tools;
 
 import com.google.common.collect.ImmutableList;
 import java.util.Iterator;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.plan.AlgOptRule;
 
 
@@ -69,20 +70,7 @@ public class RuleSets {
     /**
      * Rule set that consists of a list of rules.
      */
-    private static class ListRuleSet implements RuleSet {
-
-        private final ImmutableList<AlgOptRule> rules;
-
-
-        ListRuleSet( ImmutableList<AlgOptRule> rules ) {
-            this.rules = rules;
-        }
-
-
-        @Override
-        public int hashCode() {
-            return rules.hashCode();
-        }
+    private record ListRuleSet(ImmutableList<AlgOptRule> rules) implements RuleSet {
 
 
         @Override
@@ -94,7 +82,7 @@ public class RuleSets {
 
 
         @Override
-        public Iterator<AlgOptRule> iterator() {
+        public @NotNull Iterator<AlgOptRule> iterator() {
             return rules.iterator();
         }
 

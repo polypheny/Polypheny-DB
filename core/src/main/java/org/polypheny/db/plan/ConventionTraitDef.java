@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,7 +67,7 @@ public class ConventionTraitDef extends AlgTraitDef<Convention> {
      * Weak-key cache of RelOptPlanner to ConversionData. The idea is that when
      * the planner goes away, so does the cache entry.
      */
-    private final LoadingCache<AlgOptPlanner, ConversionData> conversionCache = CacheBuilder.newBuilder().weakKeys().build( CacheLoader.from( ConversionData::new ) );
+    private final LoadingCache<AlgPlanner, ConversionData> conversionCache = CacheBuilder.newBuilder().weakKeys().build( CacheLoader.from( ConversionData::new ) );
 
     //~ Constructors -----------------------------------------------------------
 
@@ -97,7 +97,7 @@ public class ConventionTraitDef extends AlgTraitDef<Convention> {
 
 
     @Override
-    public void registerConverterRule( AlgOptPlanner planner, ConverterRule converterRule ) {
+    public void registerConverterRule( AlgPlanner planner, ConverterRule converterRule ) {
         if ( converterRule.isGuaranteed() ) {
             ConversionData conversionData = getConversionData( planner );
 
@@ -113,7 +113,7 @@ public class ConventionTraitDef extends AlgTraitDef<Convention> {
 
 
     @Override
-    public void deregisterConverterRule( AlgOptPlanner planner, ConverterRule converterRule ) {
+    public void deregisterConverterRule( AlgPlanner planner, ConverterRule converterRule ) {
         if ( converterRule.isGuaranteed() ) {
             ConversionData conversionData = getConversionData( planner );
 
@@ -129,7 +129,7 @@ public class ConventionTraitDef extends AlgTraitDef<Convention> {
 
     // implement RelTraitDef
     @Override
-    public AlgNode convert( AlgOptPlanner planner, AlgNode alg, Convention toConvention, boolean allowInfiniteCostConverters ) {
+    public AlgNode convert( AlgPlanner planner, AlgNode alg, Convention toConvention, boolean allowInfiniteCostConverters ) {
         final AlgMetadataQuery mq = alg.getCluster().getMetadataQuery();
         final ConversionData conversionData = getConversionData( planner );
 
@@ -183,13 +183,13 @@ public class ConventionTraitDef extends AlgTraitDef<Convention> {
 
 
     @Override
-    public boolean canConvert( AlgOptPlanner planner, Convention fromConvention, Convention toConvention ) {
+    public boolean canConvert( AlgPlanner planner, Convention fromConvention, Convention toConvention ) {
         ConversionData conversionData = getConversionData( planner );
         return fromConvention.canConvertConvention( toConvention ) || conversionData.getShortestPath( fromConvention, toConvention ) != null;
     }
 
 
-    private ConversionData getConversionData( AlgOptPlanner planner ) {
+    private ConversionData getConversionData( AlgPlanner planner ) {
         return conversionCache.getUnchecked( planner );
     }
 

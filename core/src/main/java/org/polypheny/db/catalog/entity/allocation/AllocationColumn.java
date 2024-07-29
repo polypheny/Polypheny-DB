@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -72,11 +72,6 @@ public class AllocationColumn implements PolyObject {
     }
 
 
-    public String getLogicalTableName() {
-        //return Catalog.snapshot().rel().getTable( tableId ).orElseThrow().name;
-        return null;
-    }
-
 
     public String getLogicalColumnName() {
         return Catalog.snapshot().rel().getColumn( columnId ).orElseThrow().name;
@@ -87,7 +82,7 @@ public class AllocationColumn implements PolyObject {
     @Override
     public PolyValue[] getParameterArray() {
         return new PolyValue[]{
-                PolyString.of( getLogicalTableName() ),
+                PolyString.of( "alloc_" + columnId ),
                 PolyString.of( placementType.name() ) };
     }
 

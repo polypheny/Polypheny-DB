@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -130,14 +130,10 @@ public abstract class ReflectiveSqlOperatorTable implements OperatorTable {
 
 
         private static Syntax normalize( Syntax syntax ) {
-            switch ( syntax ) {
-                case BINARY:
-                case PREFIX:
-                case POSTFIX:
-                    return syntax;
-                default:
-                    return Syntax.FUNCTION;
-            }
+            return switch ( syntax ) {
+                case BINARY, PREFIX, POSTFIX -> syntax;
+                default -> Syntax.FUNCTION;
+            };
         }
 
     }

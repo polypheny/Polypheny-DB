@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,7 @@ import org.polypheny.db.plugins.PolyPlugin;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.sql.language.dialect.MysqlSqlDialect;
 
+@SuppressWarnings("unused")
 public class MysqlSourcePlugin extends PolyPlugin {
 
 
@@ -90,8 +91,8 @@ public class MysqlSourcePlugin extends PolyPlugin {
             description = "List of tables which should be imported. The names must to be separated by a comma.")
     public static class MysqlSource extends AbstractJdbcSource {
 
-        public MysqlSource( long storeId, String uniqueName, final Map<String, String> settings ) {
-            super( storeId, uniqueName, settings, "org.mariadb.jdbc.Driver", MysqlSqlDialect.DEFAULT, false );
+        public MysqlSource( final long storeId, final String uniqueName, final Map<String, String> settings, final DeployMode mode ) {
+            super( storeId, uniqueName, settings, mode, "org.mariadb.jdbc.Driver", MysqlSqlDialect.DEFAULT, false );
         }
 
 

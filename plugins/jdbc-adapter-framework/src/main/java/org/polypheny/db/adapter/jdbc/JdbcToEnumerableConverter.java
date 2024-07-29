@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,11 +41,11 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Objects;
 import java.util.TimeZone;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
@@ -56,7 +56,6 @@ import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.calcite.linq4j.tree.Types;
 import org.apache.calcite.linq4j.tree.UnaryExpression;
-import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
 import org.polypheny.db.algebra.AbstractAlgNode;
@@ -64,7 +63,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterImpl;
 import org.polypheny.db.algebra.enumerable.EnumerableAlg;
 import org.polypheny.db.algebra.enumerable.EnumerableAlgImplementor;
-import org.polypheny.db.algebra.enumerable.JavaRowFormat;
+import org.polypheny.db.algebra.enumerable.JavaTupleFormat;
 import org.polypheny.db.algebra.enumerable.PhysType;
 import org.polypheny.db.algebra.enumerable.PhysTypeImpl;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
@@ -73,9 +72,9 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.functions.Functions;
 import org.polypheny.db.functions.TemporalFunctions;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
@@ -90,15 +89,13 @@ import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyDefaults;
 import org.polypheny.db.type.entity.PolyList;
-import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.type.entity.category.PolyBlob;
-import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyFloat;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.type.entity.temporal.PolyDate;
 import org.polypheny.db.type.entity.temporal.PolyTime;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
@@ -106,7 +103,7 @@ import org.polypheny.db.util.BuiltInMethod;
 
 
 /**
- * Relational expression representing a scan of a table in a JDBC data source.
+ * Relational expression representing a relScan of a table in a JDBC data source.
  */
 @Slf4j
 public class JdbcToEnumerableConverter extends ConverterImpl implements EnumerableAlg {
@@ -147,7 +144,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
             DataContext.class );
 
 
-    protected JdbcToEnumerableConverter( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input ) {
+    protected JdbcToEnumerableConverter( AlgCluster cluster, AlgTraitSet traits, AlgNode input ) {
         super( cluster, ConventionTraitDef.INSTANCE, traits, input );
     }
 
@@ -159,7 +156,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         return super.computeSelfCost( planner, mq ).multiplyBy( .1 );
     }
 
@@ -174,7 +171,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                 PhysTypeImpl.of(
                         implementor.getTypeFactory(),
                         getTupleType(),
-                        pref.prefer( JavaRowFormat.CUSTOM ) );
+                        pref.prefer( JavaTupleFormat.CUSTOM ) );
         final JdbcConvention jdbcConvention = (JdbcConvention) child.getConvention();
         SqlString sqlString = generateSql( jdbcConvention.dialect, jdbcConvention.getJdbcSchema() );
         String sql = sqlString.getSql();
@@ -303,14 +300,11 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
             CalendarPolicy calendarPolicy,
             SqlDialect dialect ) {
         final Primitive primitive = Primitive.ofBoxOr( PolyValue.ofPrimitive( physType.fieldClass( i ), rowType.getFields().get( i ).getType().getPolyType() ) );
-        final AlgDataType fieldType = physType.getRowType().getFields().get( i ).getType();
-        final List<Expression> dateTimeArgs = new ArrayList<>();
-        dateTimeArgs.add( Expressions.constant( i + 1 ) );
+        final AlgDataType fieldType = physType.getTupleType().getFields().get( i ).getType();
+
         PolyType polyType = fieldType.getPolyType();
-        boolean offset = false;
         switch ( calendarPolicy ) {
-            case LOCAL:
-                dateTimeArgs.add( calendar_ );
+            case LOCAL, SHIFT:
                 break;
             case NULL:
                 // We don't specify a calendar at all, so we don't add an argument and instead use the version of
@@ -318,12 +312,6 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                 break;
             case DIRECT:
                 polyType = PolyType.ANY;
-                break;
-            case SHIFT:
-                offset = switch ( polyType ) {
-                    case TIMESTAMP, DATE -> true;
-                    default -> offset;
-                };
                 break;
         }
         final Expression source = switch ( polyType ) {
@@ -333,11 +321,6 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
             case DATE -> Expressions.call( resultSet_, "getDate", Expressions.constant( i + 1 ), UTC_EXPRESSION );
             case TIME -> Expressions.call( resultSet_, "getTime", Expressions.constant( i + 1 ), LOCAL_EXPRESSION );
             case TIMESTAMP -> Expressions.call( resultSet_, "getTimestamp", Expressions.constant( i + 1 ), UTC_EXPRESSION );
-            /*case DATE, TIME, TIMESTAMP -> Expressions.call(
-                    getMethod( polyType, fieldType.isNullable(), offset ),
-                    Expressions.<Expression>list()
-                            .append( Expressions.call( resultSet_, getMethod2( polyType ), dateTimeArgs ) )
-                            .appendIf( offset, getTimeZoneExpression( implementor ) ) );*/
             case FILE, AUDIO, IMAGE, VIDEO -> Expressions.call( resultSet_, BuiltInMethod.RESULTSET_GETBYTES.method, Expressions.constant( i + 1 ) );
             default -> Expressions.call( resultSet_, jdbcGetMethod( primitive ), Expressions.constant( i + 1 ) );
         };
@@ -360,7 +343,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
     }
 
 
-    @NotNull
+    @NonNull
     private static Expression getPreprocessArrayExpression( ParameterExpression resultSet_, int i, SqlDialect dialect, AlgDataType fieldType ) {
         if ( (dialect.supportsArrays() && (fieldType.unwrap( ArrayType.class ).orElseThrow().getDimension() == 1 || dialect.supportsNestedArrays())) ) {
             ParameterExpression argument = Expressions.parameter( Object.class );
@@ -389,69 +372,62 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
 
     private static Expression getOfPolyExpression( AlgDataType fieldType, Expression source, ParameterExpression resultSet_, int i, SqlDialect dialect ) {
         final Expression poly;
+        String methodName = fieldType.isNullable() ? "ofNullable" : "of";
         switch ( fieldType.getPolyType() ) {
             case BIGINT:
-                poly = Expressions.call( PolyLong.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, Number.class ) );
+                poly = Expressions.call( PolyLong.class, methodName, Expressions.convert_( source, Number.class ) );
                 break;
             case VARCHAR:
             case CHAR:
-                poly = Expressions.call( PolyString.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, String.class ) );
+                poly = Expressions.call( PolyString.class, methodName, Expressions.convert_( source, String.class ) );
                 break;
             case SMALLINT:
             case TINYINT:
             case INTEGER:
-                poly = Expressions.call( PolyInteger.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, Number.class ) );
+                poly = Expressions.call( PolyInteger.class, methodName, Expressions.convert_( source, Number.class ) );
                 break;
             case BOOLEAN:
-                poly = Expressions.call( PolyBoolean.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, Boolean.class ) );
+                poly = Expressions.call( PolyBoolean.class, methodName, Expressions.convert_( source, Boolean.class ) );
                 break;
             case FLOAT:
             case REAL:
-                poly = Expressions.call( PolyFloat.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, Number.class ) );
+                poly = Expressions.call( PolyFloat.class, methodName, Expressions.convert_( source, Number.class ) );
                 break;
             case DOUBLE:
-                poly = Expressions.call( PolyDouble.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, Number.class ) );
+                poly = Expressions.call( PolyDouble.class, methodName, Expressions.convert_( source, Number.class ) );
                 break;
             case TIME:
-                poly = Expressions.call( PolyTime.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, Time.class ) );
+                poly = Expressions.call( PolyTime.class, methodName, Expressions.convert_( source, Time.class ) );
                 break;
             case TIMESTAMP:
-                poly = Expressions.call( PolyTimestamp.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, Timestamp.class ) );
+                UnaryExpression timestamp = Expressions.convert_( source, Timestamp.class );
+                poly = Expressions.call( PolyTimestamp.class, methodName, timestamp );
                 break;
             case DATE:
-                poly = Expressions.call( PolyDate.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, Date.class ) );
+                Expression date = Expressions.convert_( source, Date.class );
+                poly = Expressions.call( PolyDate.class, methodName, date );
                 break;
             case DECIMAL:
-                poly = Expressions.call( PolyBigDecimal.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, Number.class ), Expressions.constant( fieldType.getPrecision() ), Expressions.constant( fieldType.getScale() ) );
+                poly = Expressions.call( PolyBigDecimal.class, methodName, Expressions.convert_( source, Number.class ), Expressions.constant( fieldType.getPrecision() ), Expressions.constant( fieldType.getScale() ) );
                 break;
             case ARRAY:
-                poly = Expressions.call( PolyList.class, fieldType.isNullable() ? "ofNullable" : "of", source ); // todo might change
+                poly = Expressions.call( PolyList.class, methodName, source );
                 break;
             case VARBINARY:
                 if ( dialect.supportsComplexBinary() ) {
-                    poly = Expressions.call( PolyBinary.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, byte[].class ) );
+                    poly = Expressions.call( PolyBinary.class, methodName, Expressions.convert_( source, byte[].class ) );
                 } else {
-                    poly = Expressions.call( PolyBinary.class, "fromTypedJson", Expressions.convert_( source, String.class ), Expressions.constant( PolyBinary.class ) );
+                    poly = dialect.handleRetrieval( fieldType, source, resultSet_, i + 1 );
                 }
                 break;
             case TEXT:
-                poly = dialect.getExpression( fieldType, source );
+                poly = dialect.handleRetrieval( fieldType, source, resultSet_, i + 1 );
                 break;
             case FILE:
             case AUDIO:
             case IMAGE:
             case VIDEO:
-                poly = Expressions.call( PolyBlob.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, byte[].class ) );
-                break;
-            case GEOMETRY:
-                if ( dialect.supportsPostGIS() ) {
-                    // convert postgis geometry (net.postgres.PGgeometry) that is a wrapper of org.postgresql.util.PGobject (has getValue() method to return string) into a string
-                    poly = Expressions.call( PolyGeometry.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( Expressions.call( Expressions.convert_( source, net.postgis.jdbc.PGgeometry.class), "getValue" ), String.class ) );
-                } else if ( dialect.supportsGeoJson() ) {
-                    poly = Expressions.call( PolyGeometry.class, fieldType.isNullable() ? "fromNullableGeoJson": "fromGeoJson", Expressions.convert_( source, String.class ) );
-                } else {
-                    poly = Expressions.call( PolyGeometry.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, String.class ) );
-                }
+                poly = dialect.handleRetrieval( fieldType, source, resultSet_, i + 1 );
                 break;
             default:
                 log.warn( "potentially unhandled polyValue" );
@@ -464,19 +440,6 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
     private Method getMethod( PolyType polyType, boolean nullable, boolean offset ) {
         return switch ( polyType ) {
             case ARRAY -> BuiltInMethod.JDBC_DEEP_ARRAY_TO_LIST.method;
-            /*case DATE -> (nullable
-                    ? BuiltInMethod.DATE_TO_LONG_OPTIONAL
-                    : BuiltInMethod.DATE_TO_LONG).method;
-            case TIME -> (nullable
-                    ? BuiltInMethod.TIME_TO_LONG_OPTIONAL
-                    : BuiltInMethod.TIME_TO_LONG).method;
-            case TIMESTAMP -> (nullable
-                    ? (offset
-                    ? BuiltInMethod.TIMESTAMP_TO_LONG_OPTIONAL_OFFSET
-                    : BuiltInMethod.DATE_TO_LONG_OPTIONAL)
-                    : (offset
-                            ? BuiltInMethod.TIMESTAMP_TO_LONG_OFFSET
-                            : BuiltInMethod.DATE_TO_LONG)).method;*/
             default -> throw new AssertionError( polyType + ":" + nullable );
         };
     }

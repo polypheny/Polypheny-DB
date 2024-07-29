@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,19 +46,19 @@ import org.polypheny.db.util.Wrapper;
 public interface AlgOptNode extends Wrapper {
 
     /**
-     * Returns the ID of this relational expression, unique among all relational expressions created since the server was started.
+     * Returns the ID of this algebra expression, unique among all algebra expressions created since the server was started.
      *
      * @return Unique ID
      */
     int getId();
 
     /**
-     * Returns a string which concisely describes the definition of this relational expression. Two relational expressions are equivalent if and
+     * Returns a string which concisely describes the definition of this algebra expression. Two algebra expressions are equivalent if and
      * only if their digests are the same.
-     *
-     * The digest does not contain the relational expression's identity -- that would prevent similar relational expressions from ever comparing
+     * <p>
+     * The digest does not contain the algebra expression's identity -- that would prevent similar algebra expressions from ever comparing
      * equal -- but does include the identity of children (on the assumption that children have already been normalized).
-     *
+     * <p>
      * If you want a descriptive string which contains the identity, call {@link Object#toString()}, which always returns "rel#{id}:{digest}".
      *
      * @return Digest of this {@code AlgNode}
@@ -74,30 +74,30 @@ public interface AlgOptNode extends Wrapper {
      */
     AlgTraitSet getTraitSet();
 
-    // TODO: We don't want to require that nodes have very detailed row type. It may not even be known at planning time.
+
     AlgDataType getTupleType();
 
     /**
-     * Returns a string which describes the relational expression and, unlike {@link #getDigest()}, also includes the identity. Typically returns
+     * Returns a string which describes the algebra expression and, unlike {@link #getDigest()}, also includes the identity. Typically returns
      * "rel#{id}:{digest}".
      *
-     * @return String which describes the relational expression and, unlike {@link #getDigest()}, also includes the identity
+     * @return String which describes the algebra expression and, unlike {@link #getDigest()}, also includes the identity
      */
     String getDescription();
 
     /**
-     * Returns an array of this relational expression's inputs. If there are no inputs, returns an empty list, not {@code null}.
+     * Returns an array of this algebra expression's inputs. If there are no inputs, returns an empty list, not {@code null}.
      *
-     * @return Array of this relational expression's inputs
+     * @return this algebra expression's inputs
      */
     List<? extends AlgOptNode> getInputs();
 
     /**
-     * Returns the cluster this relational expression belongs to.
+     * Returns the cluster this algebra expression belongs to.
      *
      * @return cluster
      */
-    AlgOptCluster getCluster();
+    AlgCluster getCluster();
 
 
 }

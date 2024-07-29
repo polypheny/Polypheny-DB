@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,27 +24,16 @@ import java.util.function.Supplier;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.AbstractAdapterSetting;
 import org.polypheny.db.adapter.Adapter;
-import org.polypheny.db.adapter.AdapterManager.Function4;
+import org.polypheny.db.adapter.AdapterManager.Function5;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.java.AdapterTemplate;
 import org.polypheny.db.catalog.MockCatalog;
 import org.polypheny.db.catalog.catalogs.AdapterCatalog;
 import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceTemplate;
+import org.polypheny.db.transaction.Transaction;
 
 
 public class MqlMockCatalog extends MockCatalog {
-
-    /*@Override
-    public LogicalNamespace getNamespace( long id ) {
-        return new LogicalNamespace( 1, "private", 0, 0, "tester", NamespaceType.DOCUMENT, true );
-    }
-
-
-    @Override
-    public CatalogUser getUser( long id ) {
-        return new CatalogUser( 0, "name", "name" );
-    }*/
-
 
     @Override
     public void change() {
@@ -65,7 +54,7 @@ public class MqlMockCatalog extends MockCatalog {
 
 
     @Override
-    public long createAdapterTemplate( Class<? extends Adapter<?>> clazz, String adapterName, String description, List<DeployMode> modes, List<AbstractAdapterSetting> settings, Function4<Long, String, Map<String, String>, Adapter<?>> deployer ) {
+    public long createAdapterTemplate( Class<? extends Adapter<?>> clazz, String adapterName, String description, List<DeployMode> modes, List<AbstractAdapterSetting> settings, Function5<Long, String, Map<String, String>, DeployMode, Adapter<?>> deployer ) {
         return 0;
     }
 
@@ -107,7 +96,7 @@ public class MqlMockCatalog extends MockCatalog {
 
 
     @Override
-    public void restore() {
+    public void restore( Transaction transaction ) {
 
     }
 

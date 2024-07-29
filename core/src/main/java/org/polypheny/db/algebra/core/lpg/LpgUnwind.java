@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
@@ -50,7 +50,7 @@ public abstract class LpgUnwind extends SingleAlg implements LpgAlg {
      * @param traits
      * @param input Input relational expression
      */
-    protected LpgUnwind( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, int index, @Nullable String alias ) {
+    protected LpgUnwind( AlgCluster cluster, AlgTraitSet traits, AlgNode input, int index, @Nullable String alias ) {
         super( cluster, traits, adjustInputIfNecessary( input, index ) );
         assert this.input.getTupleType().getFieldCount() == 1 : "Unwind is for now only able on a single field.";
 
@@ -74,10 +74,10 @@ public abstract class LpgUnwind extends SingleAlg implements LpgAlg {
 
     @Override
     public String algCompareString() {
-        return "$" + getClass().getSimpleName()
-                + "$" + index
-                + (alias != null ? "$As$" + alias : "")
-                + "$" + input.algCompareString();
+        return getClass().getSimpleName() + "$"
+                + index + "$"
+                + (alias != null ? "$As$" + alias : "") + "$"
+                + input.algCompareString() + "&";
     }
 
 

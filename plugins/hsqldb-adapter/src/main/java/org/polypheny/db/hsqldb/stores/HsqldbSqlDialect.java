@@ -19,9 +19,10 @@ package org.polypheny.db.hsqldb.stores;
 
 import com.google.common.io.CharStreams;
 import java.util.Objects;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.hsqldb.jdbc.JDBCClobClient;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.NullCollation;
@@ -30,6 +31,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.nodes.TimeUnitRange;
 import org.polypheny.db.sql.language.SqlBasicCall;
 import org.polypheny.db.sql.language.SqlCall;
 import org.polypheny.db.sql.language.SqlDataTypeSpec;
@@ -41,6 +43,7 @@ import org.polypheny.db.sql.language.SqlNodeList;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.sql.language.fun.SqlCase;
 import org.polypheny.db.sql.language.fun.SqlFloorFunction;
+import org.polypheny.db.type.PolyType;
 
 
 /**
@@ -53,6 +56,7 @@ public class HsqldbSqlDialect extends SqlDialect {
             EMPTY_CONTEXT
                     .withNullCollation( NullCollation.HIGH )
                     .withIdentifierQuoteString( "\"" ) );
+    public static final int SUBSTITUTION_LENGTH = 20000;
 
 
     /**
@@ -90,8 +94,16 @@ public class HsqldbSqlDialect extends SqlDialect {
                 castSpec = "_LONGVARCHAR";
                 break;
             case TEXT:
-                castSpec = "_VARCHAR(20000)";
+                castSpec = "_VARCHAR(" + SUBSTITUTION_LENGTH + ")";
                 break;
+            case VARCHAR:
+            case VARBINARY:
+                if ( type.getPrecision() == -1 ) {
+                    castSpec = "_" + type.getPolyType().getName() + "(" + SUBSTITUTION_LENGTH + ")";
+                    break;
+                } else {
+                    return super.getCastSpec( type );
+                }
             case FILE:
             case IMAGE:
             case VIDEO:
@@ -99,20 +111,8 @@ public class HsqldbSqlDialect extends SqlDialect {
                 // We need to flag the type with an underscore to flag the type (the underscore is removed in the unparse method)
                 castSpec = "_BLOB";
                 break;
-            case INTERVAL_YEAR_MONTH:
-            case INTERVAL_DAY:
-            case INTERVAL_DAY_HOUR:
-            case INTERVAL_DAY_MINUTE:
-            case INTERVAL_DAY_SECOND:
-            case INTERVAL_HOUR_MINUTE:
-            case INTERVAL_HOUR:
-            case INTERVAL_HOUR_SECOND:
-            case INTERVAL_MINUTE:
-            case INTERVAL_MONTH:
-            case INTERVAL_SECOND:
-            case INTERVAL_MINUTE_SECOND:
-            case INTERVAL_YEAR:
-                castSpec = "INTERVAL";
+            case INTERVAL:
+                castSpec = "_INTERVAL";
                 break;
             default:
                 return super.getCastSpec( type );
@@ -143,15 +143,8 @@ public class HsqldbSqlDialect extends SqlDialect {
 
 
     @Override
-    public Expression getExpression( AlgDataType fieldType, Expression child ) {
-        /*return switch ( fieldType.getPolyType() ) {
-            case TEXT -> {
-                UnaryExpression client = Expressions.convert_( child, JDBCClobClient.class );
-                yield super.getExpression( fieldType, Expressions.call( HsqldbSqlDialect.class, "toString", client ) );
-            }
-            default -> super.getExpression( fieldType, child );
-        };*/
-        return super.getExpression( fieldType, child );
+    public Expression handleRetrieval( AlgDataType fieldType, Expression child, ParameterExpression resultSet_, int index ) {
+        return super.handleRetrieval( fieldType, child, resultSet_, index );
     }
 
 
@@ -171,6 +164,15 @@ public class HsqldbSqlDialect extends SqlDialect {
     @Override
     public void unparseOffsetFetch( SqlWriter writer, SqlNode offset, SqlNode fetch ) {
         unparseFetchUsingLimit( writer, offset, fetch );
+    }
+
+
+    @Override
+    public Optional<String> handleMissingLength( PolyType type ) {
+        return switch ( type ) {
+            case VARCHAR, VARBINARY, BINARY -> Optional.of( "(" + SUBSTITUTION_LENGTH + ")" );
+            default -> Optional.empty();
+        };
     }
 
 

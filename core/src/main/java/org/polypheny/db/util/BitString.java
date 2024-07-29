@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,12 +41,12 @@ import lombok.Getter;
 
 /**
  * String of bits.
- *
+ * <p>
  * A bit string logically consists of a set of '0' and '1' values, of a specified length. The length is preserved even if this means that the bit string has leading '0's.
- *
+ * <p>
  * You can create a bit string from a string of 0s and 1s ({@link #BitString(String, int)} or {@link #createFromBitString}), or from a string of hex digits ({@link #createFromHexString}). You can convert it to a
  * byte array ({@link #getAsByteArray}), to a bit string ({@link #toBitString}), or to a hex string ({@link #toHexString}). A utility method {@link #toByteArrayFromBitString} converts a bit string directly to a byte array.
- *
+ * <p>
  * This class is immutable: once created, none of the methods modify the value.
  */
 public class BitString {
@@ -57,7 +57,7 @@ public class BitString {
 
 
     protected BitString( String bits, int bitCount ) {
-        assert bits.replaceAll( "1", "" ).replaceAll( "0", "" ).length() == 0 : "bit string '" + bits + "' contains digits other than {0, 1}";
+        assert bits.replaceAll( "1", "" ).replaceAll( "0", "" ).isEmpty() : "bit string '" + bits + "' contains digits other than {0, 1}";
         this.bits = bits;
         this.bitCount = bitCount;
     }

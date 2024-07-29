@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,6 @@ import lombok.Getter;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
-import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.file.Condition;
@@ -36,12 +35,11 @@ import org.polypheny.db.adapter.file.FileSchema;
 import org.polypheny.db.adapter.file.FileTranslatableEntity;
 import org.polypheny.db.adapter.file.Value;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
-import org.polypheny.db.schema.Namespace.Schema;
-import org.polypheny.db.schema.impl.AbstractNamespace;
+import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.type.entity.PolyValue;
 
 
-public class QfsSchema extends AbstractNamespace implements FileSchema, Schema {
+public class QfsSchema extends Namespace implements FileSchema {
 
     @Getter
     private final String schemaName;
@@ -52,12 +50,11 @@ public class QfsSchema extends AbstractNamespace implements FileSchema, Schema {
     private final FileConvention convention;
 
 
-    public QfsSchema( long id, String schemaName, Qfs source ) {
-        super( id );
+    public QfsSchema( long id, long adapterId, String schemaName, Qfs source ) {
+        super( id, adapterId );
         this.schemaName = schemaName;
         this.source = source;
-        final Expression expression = null;//Schemas.subSchemaExpression( snapshot, schemaName, QfsSchema.class );
-        this.convention = new QfsConvention( schemaName, expression, this );
+        this.convention = new QfsConvention( schemaName, null, this );
     }
 
 
@@ -75,13 +72,7 @@ public class QfsSchema extends AbstractNamespace implements FileSchema, Schema {
 
     public FileTranslatableEntity createFileTable( PhysicalTable table ) {
 
-        List<Long> pkIds;
-       /*if ( table.primaryKey != null ) {
-            CatalogPrimaryKey primaryKey = Catalog.getInstance().getPrimaryKey( logicalTable.primaryKey );
-            pkIds = primaryKey.columnIds;
-        } else {*/
-        pkIds = new ArrayList<>();
-        //}
+        List<Long> pkIds = new ArrayList<>();
         FileTranslatableEntity file = new FileTranslatableEntity(
                 this,
                 table,
@@ -111,7 +102,7 @@ public class QfsSchema extends AbstractNamespace implements FileSchema, Schema {
         return new AbstractEnumerable<>() {
             @Override
             public Enumerator<PolyValue[]> enumerator() {
-                return new QfsEnumerator( dataContext, path, columnIds, projectionMapping, condition );
+                return new QfsEnumerator( entity, dataContext, path, columnIds, projectionMapping, condition );
             }
         };
     }

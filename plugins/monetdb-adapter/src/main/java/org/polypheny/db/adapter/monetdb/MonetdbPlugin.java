@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,12 +23,13 @@ import org.polypheny.db.plugins.PluginContext;
 import org.polypheny.db.plugins.PolyPlugin;
 import org.polypheny.db.sql.language.SqlDialectRegistry;
 
+@SuppressWarnings("unused")
 public class MonetdbPlugin extends PolyPlugin {
 
 
     public static final String ADAPTER_NAME = "MonetDB";
-    private long storeId;
-    private long sourcId;
+    private long storeTemplateId;
+    private long sourceTemplateId;
 
 
     /**
@@ -44,16 +45,16 @@ public class MonetdbPlugin extends PolyPlugin {
     @Override
     public void afterCatalogInit() {
         SqlDialectRegistry.registerDialect( "MonetDB", MonetdbSqlDialect.DEFAULT );
-        this.storeId = AdapterManager.addAdapterTemplate( MonetdbStore.class, ADAPTER_NAME, MonetdbStore::new );
-        this.sourcId = AdapterManager.addAdapterTemplate( MonetdbSource.class, ADAPTER_NAME, MonetdbSource::new );
+        this.storeTemplateId = AdapterManager.addAdapterTemplate( MonetdbStore.class, ADAPTER_NAME, MonetdbStore::new );
+        this.sourceTemplateId = AdapterManager.addAdapterTemplate( MonetdbSource.class, ADAPTER_NAME, MonetdbSource::new );
     }
 
 
     @Override
     public void stop() {
         SqlDialectRegistry.unregisterDialect( "MonetDB" );
-        AdapterManager.removeAdapterTemplate( storeId );
-        AdapterManager.removeAdapterTemplate( sourcId );
+        AdapterManager.removeAdapterTemplate( storeTemplateId );
+        AdapterManager.removeAdapterTemplate( sourceTemplateId );
     }
 
 }

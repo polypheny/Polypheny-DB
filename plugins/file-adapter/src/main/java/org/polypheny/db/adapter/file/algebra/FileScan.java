@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,9 +26,9 @@ import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.Entity;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.schema.trait.ModelTrait;
 
@@ -38,7 +38,7 @@ public class FileScan extends RelScan<FileTranslatableEntity> implements FileAlg
     private final FileTranslatableEntity fileTable;
 
 
-    public FileScan( AlgOptCluster cluster, Entity table, FileTranslatableEntity fileTable ) {
+    public FileScan( AlgCluster cluster, Entity table, FileTranslatableEntity fileTable ) {
         //convention was: EnumerableConvention.INSTANCE
         super( cluster, cluster.traitSetOf( fileTable.getFileSchema().getConvention() ).replace( ModelTrait.RELATIONAL ), fileTable );
         this.fileTable = fileTable;
@@ -53,18 +53,18 @@ public class FileScan extends RelScan<FileTranslatableEntity> implements FileAlg
 
     @Override
     public AlgDataType deriveRowType() {
-        return fileTable.getRowType();
+        return fileTable.getTupleType();
     }
 
 
     @Override
-    public void register( AlgOptPlanner planner ) {
+    public void register( AlgPlanner planner ) {
         getConvention().register( planner );
     }
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         return super.computeSelfCost( planner, mq ).multiplyBy( 0.1 );
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,9 +48,9 @@ import org.polypheny.db.util.Util;
 
 /**
  * Internal operator, by which the parser represents a continued string literal.
- *
+ * <p>
  * The string fragments are {@link SqlLiteral} objects, all of the same type, collected as the operands of an {@link SqlCall} using this operator. After validation, the fragments will be concatenated into a single literal.
- *
+ * <p>
  * For a chain of {@link SqlCharStringLiteral} objects, a {@link SqlCollation} object is attached only to the head of the chain.
  */
 public class SqlLiteralChainOperator extends SqlSpecialOperator {
@@ -149,13 +149,13 @@ public class SqlLiteralChainOperator extends SqlSpecialOperator {
                 // SQL:2003 says there must be a newline between string fragments.
                 writer.newlineAndIndent();
             }
-            if ( rand instanceof SqlCharStringLiteral ) {
-                NlsString nls = ((SqlCharStringLiteral) rand).getNlsString();
+            if ( rand instanceof SqlCharStringLiteral literal ) {
+                NlsString nls = literal.getNlsString();
                 if ( operand.i == 0 ) {
                     collation = nls.getCollation();
 
                     // print with prefix
-                    writer.literal( nls.asSql( true, false ) );
+                    writer.literal( literal.value.asString().toPrefixedString() );
                 } else {
                     // print without prefix
                     writer.literal( nls.asSql( false, false ) );
@@ -173,8 +173,8 @@ public class SqlLiteralChainOperator extends SqlSpecialOperator {
                 }
             }
         }
-        if ( collation != null ) {
-            ((SqlCollation) collation).unparse( writer, 0, 0 );
+        if ( collation instanceof SqlCollation sqlCollation ) {
+            sqlCollation.unparse( writer, 0, 0 );
         }
         writer.endList( frame );
     }
@@ -185,7 +185,7 @@ public class SqlLiteralChainOperator extends SqlSpecialOperator {
      */
     public static SqlLiteral concatenateOperands( SqlCall call ) {
         final List<SqlNode> operandList = call.getSqlOperandList();
-        assert operandList.size() > 0;
+        assert !operandList.isEmpty();
         assert operandList.get( 0 ) instanceof SqlLiteral : operandList.get( 0 ).getClass();
         return SqlUtil.concatenateLiterals( Util.cast( operandList, SqlLiteral.class ) );
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,7 +46,6 @@ import org.polypheny.db.plan.AlgOptRuleOperand;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.schema.types.FilterableEntity;
-import org.polypheny.db.schema.types.ProjectableFilterableEntity;
 import org.polypheny.db.tools.AlgBuilderFactory;
 import org.polypheny.db.util.mapping.Mapping;
 import org.polypheny.db.util.mapping.Mappings;
@@ -57,12 +56,10 @@ import org.polypheny.db.util.mapping.Mappings;
  * a {@link Filter}
  * on a {@link RelScan}
  * of a {@link FilterableEntity}
- * or a {@link ProjectableFilterableEntity}
  * to a {@link BindableScan}.
  *
  * The {@link #INTERPRETER} variant allows an intervening {@link EnumerableInterpreter}.
  *
- * @see ProjectScanRule
  */
 public abstract class FilterScanRule extends AlgOptRule {
 
@@ -71,7 +68,7 @@ public abstract class FilterScanRule extends AlgOptRule {
      */
     public static final FilterScanRule INSTANCE =
             new FilterScanRule(
-                    operand( Filter.class, operandJ( RelScan.class, null, FilterScanRule::test, none() ) ),
+                    operand( Filter.class, operand( RelScan.class, null, FilterScanRule::test, none() ) ),
                     AlgFactories.LOGICAL_BUILDER,
                     "FilterScanRule" ) {
                 @Override
@@ -91,7 +88,7 @@ public abstract class FilterScanRule extends AlgOptRule {
                             Filter.class,
                             operand(
                                     EnumerableInterpreter.class,
-                                    operandJ(
+                                    operand(
                                             RelScan.class,
                                             null, FilterScanRule::test, none() ) ) ),
                     AlgFactories.LOGICAL_BUILDER,
@@ -115,22 +112,21 @@ public abstract class FilterScanRule extends AlgOptRule {
 
     public static boolean test( RelScan<?> scan ) {
         // We can only push filters into a FilterableTable or ProjectableFilterableTable.
-        return scan.entity.unwrap( FilterableEntity.class ).isPresent() || scan.entity.unwrap( ProjectableFilterableEntity.class ).isPresent();
+        return scan.entity.unwrap( FilterableEntity.class ).isPresent();
     }
 
 
     protected void apply( AlgOptRuleCall call, Filter filter, RelScan<?> scan ) {
         final ImmutableList<Integer> projects;
         final ImmutableList.Builder<RexNode> filters = ImmutableList.builder();
-        if ( scan instanceof BindableScan ) {
-            final BindableScan bindableScan = (BindableScan) scan;
+        if ( scan instanceof BindableScan bindableScan ) {
             filters.addAll( bindableScan.filters );
             projects = bindableScan.projects;
         } else {
             projects = scan.identity();
         }
 
-        final Mapping mapping = Mappings.target( projects, scan.getEntity().getRowType().getFieldCount() );
+        final Mapping mapping = Mappings.target( projects, scan.getEntity().getTupleType().getFieldCount() );
         filters.add( RexUtil.apply( mapping, filter.getCondition() ) );
 
         call.transformTo( BindableScan.create( scan.getCluster(), scan.getEntity(), filters.build(), projects ) );

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ import org.bouncycastle.crypto.util.DigestFactory;
 import org.bouncycastle.tls.AlertDescription;
 import org.bouncycastle.tls.TlsFatalAlert;
 import org.bouncycastle.tls.TlsFatalAlertReceived;
+import org.bouncycastle.tls.TlsNoCloseNotifyException;
 import org.bouncycastle.util.Arrays;
 import org.bouncycastle.util.encoders.Base64;
 import org.polypheny.db.config.RuntimeConfig;
@@ -102,7 +103,6 @@ final class PolyphenyHandshakeClient {
         d.update( data, 0, data.length );
         d.doFinal( sum, 0 );
         return sum;
-
     }
 
 
@@ -143,7 +143,6 @@ final class PolyphenyHandshakeClient {
 
 
     void prepareNextTry() {
-        // TOOD: merge into doHandshake somehow
         synchronized ( this ) {
             if ( this.state == State.SUCCESS || this.state == State.RUNNING || this.state == State.FAILED ) {
                 return;
@@ -184,8 +183,7 @@ final class PolyphenyHandshakeClient {
             try {
                 client = PolyphenyTlsClient.insecureClient( kp, con.getInputStream(), con.getOutputStream() );
             } catch ( IOException e ) {
-                if ( e instanceof TlsFatalAlert ) {
-                    TlsFatalAlert tlsAlert = (TlsFatalAlert) e;
+                if ( e instanceof TlsFatalAlert tlsAlert ) {
                     short code = tlsAlert.getAlertDescription();
                     // This is if the container is up, but nothing is listening inside the container
                     if ( code == AlertDescription.handshake_failure ) {
@@ -198,8 +196,7 @@ final class PolyphenyHandshakeClient {
                         log.error( "Server is expecting a different certificate" );
                         break;
                     }
-                } else if ( e instanceof SocketException ) {
-                    SocketException socketException = (SocketException) e;
+                } else if ( e instanceof SocketException socketException ) {
                     lastErrorMessage = socketException.getMessage();
                     if ( !socketException.getMessage().equals( "Connection reset" ) ) {
                         log.error( "SocketException", socketException );
@@ -225,14 +222,16 @@ final class PolyphenyHandshakeClient {
                 throw new IOException( "Short read" );
             }
         } catch ( IOException e ) {
-            if ( e instanceof TlsFatalAlertReceived ) {
-                TlsFatalAlertReceived tlsAlert = (TlsFatalAlertReceived) e;
+            if ( e instanceof TlsFatalAlertReceived tlsAlert ) {
                 short code = tlsAlert.getAlertDescription();
                 if ( code == AlertDescription.bad_certificate ) {
                     // The most likely reason is that the user pasted the wrong string
                     lastErrorMessage = "Client is using the wrong certificate, did you paste the right string?";
                     log.error( "Server is expecting a different certificate" );
                 }
+            } else if ( e instanceof TlsNoCloseNotifyException ) {
+                lastErrorMessage = "Server unexpectedly closed the connection";
+                log.error( "Server unexpectedly closed the connection" );
             } else {
                 lastErrorMessage = "Failed to read response from server";
                 log.error( "Reading authentication value: ", e );
@@ -260,15 +259,23 @@ final class PolyphenyHandshakeClient {
 
             lastErrorMessage = new Date().toString();
 
-            // timeout 0 means cancelled
-            if ( onCompletion != null && timeout.get() != 0 ) {
-                onCompletion.run();
-            }
-
             synchronized ( this ) {
-                state = State.SUCCESS;
+                // timeout 0 means cancelled
+                if ( timeout.get() != 0 ) {
+                    if ( onCompletion != null && timeout.get() != 0 ) {
+                        try {
+                            onCompletion.run();
+                        } catch ( Throwable t ) {
+                            lastErrorMessage = t.getMessage();
+                            state = State.FAILED;
+                            return false;
+                        }
+                    }
+                    state = State.SUCCESS;
+                    return true;
+                }
+                return false; // Prevents a handshake successful message to be printed when cancelled
             }
-            return true;
         } else {
             log.error( "Server " + hostname + " has send an invalid authentication value, aborting handshake" );
             // On purpose not NOT_RUNNING, because it could be an attack attempt.  This forces regeneration

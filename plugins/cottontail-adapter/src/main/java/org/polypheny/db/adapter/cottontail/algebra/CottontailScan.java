@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,9 +24,9 @@ import org.polypheny.db.adapter.cottontail.algebra.CottontailAlg.CottontailImple
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.schema.trait.ModelTrait;
 
@@ -34,7 +34,7 @@ import org.polypheny.db.schema.trait.ModelTrait;
 public class CottontailScan extends RelScan<CottontailEntity> implements CottontailAlg {
 
 
-    public CottontailScan( AlgOptCluster cluster, CottontailEntity cottontailTable, CottontailConvention cottontailConvention ) {
+    public CottontailScan( AlgCluster cluster, CottontailEntity cottontailTable, CottontailConvention cottontailConvention ) {
         super( cluster, cluster.traitSetOf( cottontailConvention ).replace( ModelTrait.RELATIONAL ), cottontailTable );
     }
 
@@ -48,13 +48,13 @@ public class CottontailScan extends RelScan<CottontailEntity> implements Cottont
 
     @Override
     public String algCompareString() {
-        return this.getClass().getSimpleName()
-                + "$" + entity.id
-                + "$" + entity.getLayer();
+        return this.getClass().getSimpleName() + "$"
+                + entity.id + "$"
+                + entity.getLayer() + "&";
     }
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         return super.computeSelfCost( planner, mq ).multiplyBy( 0.1 );
     }
 

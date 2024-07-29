@@ -1,9 +1,26 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * This file incorporates code covered by the following terms:
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to you under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -31,9 +48,9 @@ import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.JoinInfo;
 import org.polypheny.db.algebra.metadata.AlgMdCollation;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.BuiltInMethod;
@@ -48,7 +65,7 @@ public class EnumerableThetaJoin extends Join implements EnumerableAlg {
     /**
      * Creates an EnumerableThetaJoin.
      */
-    protected EnumerableThetaJoin( AlgOptCluster cluster, AlgTraitSet traits, AlgNode left, AlgNode right, RexNode condition, Set<CorrelationId> variablesSet, JoinAlgType joinType ) throws InvalidAlgException {
+    protected EnumerableThetaJoin( AlgCluster cluster, AlgTraitSet traits, AlgNode left, AlgNode right, RexNode condition, Set<CorrelationId> variablesSet, JoinAlgType joinType ) throws InvalidAlgException {
         super( cluster, traits, left, right, condition, variablesSet, joinType );
     }
 
@@ -68,7 +85,7 @@ public class EnumerableThetaJoin extends Join implements EnumerableAlg {
      * Creates an EnumerableThetaJoin.
      */
     public static EnumerableThetaJoin create( AlgNode left, AlgNode right, RexNode condition, Set<CorrelationId> variablesSet, JoinAlgType joinType ) throws InvalidAlgException {
-        final AlgOptCluster cluster = left.getCluster();
+        final AlgCluster cluster = left.getCluster();
         final AlgMetadataQuery mq = cluster.getMetadataQuery();
         final AlgTraitSet traitSet =
                 cluster.traitSetOf( EnumerableConvention.INSTANCE )
@@ -78,8 +95,8 @@ public class EnumerableThetaJoin extends Join implements EnumerableAlg {
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
-        double rowCount = mq.getRowCount( this );
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
+        double rowCount = mq.getTupleCount( this );
 
         // Joins can be flipped, and for many algorithms, both versions are viable and have the same cost. To make the results stable between versions of the planner,
         // make one of the versions slightly more expensive.
@@ -93,8 +110,8 @@ public class EnumerableThetaJoin extends Join implements EnumerableAlg {
                 }
         }
 
-        final double rightRowCount = right.estimateRowCount( mq );
-        final double leftRowCount = left.estimateRowCount( mq );
+        final double rightRowCount = right.estimateTupleCount( mq );
+        final double leftRowCount = left.estimateTupleCount( mq );
         if ( Double.isInfinite( leftRowCount ) ) {
             rowCount = leftRowCount;
         }
@@ -131,12 +148,12 @@ public class EnumerableThetaJoin extends Join implements EnumerableAlg {
     public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
         final BlockBuilder builder = new BlockBuilder();
         final Result leftResult = implementor.visitChild( this, 0, (EnumerableAlg) left, pref );
-        Expression leftExpression = builder.append( "left" + System.nanoTime(), leftResult.block );
+        Expression leftExpression = builder.append( "left" + System.nanoTime(), leftResult.block() );
         final Result rightResult = implementor.visitChild( this, 1, (EnumerableAlg) right, pref );
-        Expression rightExpression = builder.append( "right" + System.nanoTime(), rightResult.block );
+        Expression rightExpression = builder.append( "right" + System.nanoTime(), rightResult.block() );
         final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getTupleType(), pref.preferArray() );
         final JoinInfo info = JoinInfo.of( left, right, condition );
-        final PhysType keyPhysType = leftResult.physType.project( info.leftKeys, JavaRowFormat.LIST );
+        final PhysType keyPhysType = leftResult.physType().project( info.leftKeys, JavaTupleFormat.LIST );
 
         return implementor.result(
                 physType,
@@ -146,13 +163,13 @@ public class EnumerableThetaJoin extends Join implements EnumerableAlg {
                                 BuiltInMethod.JOIN.method,
                                 Expressions.list(
                                         rightExpression,
-                                        leftResult.physType.generateAccessor( info.leftKeys ),
-                                        rightResult.physType.generateAccessor( info.rightKeys ),
-                                        EnumUtils.joinSelector( joinType, physType, ImmutableList.of( leftResult.physType, rightResult.physType ) ),
+                                        leftResult.physType().generateAccessor( info.leftKeys ),
+                                        rightResult.physType().generateAccessor( info.rightKeys ),
+                                        EnumUtils.joinSelector( joinType, physType, ImmutableList.of( leftResult.physType(), rightResult.physType() ) ),
                                         Util.first( keyPhysType.comparer(), Expressions.constant( null ) ),
                                         Expressions.constant( joinType.generatesNullsOnLeft() ),
                                         Expressions.constant( joinType.generatesNullsOnRight() ),
-                                        EnumUtils.generatePredicate( implementor, getCluster().getRexBuilder(), left, right, leftResult.physType, rightResult.physType, condition ) ) )
+                                        EnumUtils.generatePredicate( implementor, getCluster().getRexBuilder(), left, right, leftResult.physType(), rightResult.physType(), condition ) ) )
                 ).toBlock() );
     }
 

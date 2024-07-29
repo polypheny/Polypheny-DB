@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,6 @@ package org.polypheny.db.algebra.core;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -48,10 +47,9 @@ import org.polypheny.db.algebra.metadata.AlgMdUtil;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.rules.JoinAddRedundantSemiJoinRule;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexChecker;
 import org.polypheny.db.rex.RexNode;
@@ -99,7 +97,7 @@ public abstract class Join extends BiAlg {
      * @param joinType Join type
      * @param variablesSet Set variables that are set by the LHS and used by the RHS and are not available to nodes above this Join in the tree
      */
-    protected Join( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode left, AlgNode right, RexNode condition, Set<CorrelationId> variablesSet, JoinAlgType joinType ) {
+    protected Join( AlgCluster cluster, AlgTraitSet traitSet, AlgNode left, AlgNode right, RexNode condition, Set<CorrelationId> variablesSet, JoinAlgType joinType ) {
         super( cluster, traitSet, left, right );
         this.condition = Objects.requireNonNull( condition );
         this.variablesSet = ImmutableSet.copyOf( variablesSet );
@@ -128,19 +126,18 @@ public abstract class Join extends BiAlg {
         if ( !super.isValid( litmus, context ) ) {
             return false;
         }
-        if ( getTupleType().getFieldCount() != getSystemFieldList().size() + left.getTupleType().getFieldCount() + (this instanceof SemiJoin ? 0 : right.getTupleType().getFieldCount()) ) {
+        if ( getTupleType().getFieldCount() != left.getTupleType().getFieldCount() + (this instanceof SemiJoin ? 0 : right.getTupleType().getFieldCount()) ) {
             return litmus.fail( "field count mismatch" );
         }
         if ( condition != null ) {
             if ( condition.getType().getPolyType() != PolyType.BOOLEAN ) {
                 return litmus.fail( "condition must be boolean: {}", condition.getType() );
             }
-            // The input to the condition is a row type consisting of system fields, left fields, and right fields. Very similar to the output row type, except that fields
+            // The input to the condition is a row type consisting of left fields, and right fields. Very similar to the output row type, except that fields
             // have not yet been made due to outer joins.
             RexChecker checker =
                     new RexChecker(
                             getCluster().getTypeFactory().builder()
-                                    .addAll( getSystemFieldList() )
                                     .addAll( getLeft().getTupleType().getFields() )
                                     .addAll( getRight().getTupleType().getFields() )
                                     .build(),
@@ -155,15 +152,15 @@ public abstract class Join extends BiAlg {
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         // REVIEW jvs: Just for now...
-        double rowCount = mq.getRowCount( this );
+        double rowCount = mq.getTupleCount( this );
         return planner.getCostFactory().makeCost( rowCount, 0, 0 );
     }
 
 
     @Override
-    public double estimateRowCount( AlgMetadataQuery mq ) {
+    public double estimateTupleCount( AlgMetadataQuery mq ) {
         return Util.first( AlgMdUtil.getJoinRowCount( mq, this, condition ), 1D );
     }
 
@@ -178,14 +175,13 @@ public abstract class Join extends BiAlg {
     public AlgWriter explainTerms( AlgWriter pw ) {
         return super.explainTerms( pw )
                 .item( "condition", condition )
-                .item( "joinType", joinType.lowerName )
-                .itemIf( "systemFields", getSystemFieldList(), !getSystemFieldList().isEmpty() );
+                .item( "joinType", joinType.lowerName );
     }
 
 
     @Override
     protected AlgDataType deriveRowType() {
-        return ValidatorUtil.deriveJoinRowType( left.getTupleType(), right.getTupleType(), joinType, getCluster().getTypeFactory(), null, getSystemFieldList() );
+        return ValidatorUtil.deriveJoinRowType( left.getTupleType(), right.getTupleType(), joinType, getCluster().getTypeFactory(), null );
     }
 
 
@@ -198,16 +194,6 @@ public abstract class Join extends BiAlg {
      */
     public boolean isSemiJoinDone() {
         return false;
-    }
-
-
-    /**
-     * Returns a list of system fields that will be prefixed to output row type.
-     *
-     * @return list of system fields
-     */
-    public List<AlgDataTypeField> getSystemFieldList() {
-        return Collections.emptyList();
     }
 
 
@@ -257,9 +243,8 @@ public abstract class Join extends BiAlg {
                 left.algCompareString() + "$" +
                 right.algCompareString() + "$" +
                 (condition != null ? condition.hashCode() : "") + "$" +
-                (joinType != null ? joinType.name() : "") + "$";
+                (joinType != null ? joinType.name() : "") + "&";
     }
 
 
 }
-

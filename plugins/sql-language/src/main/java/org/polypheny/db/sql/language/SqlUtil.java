@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,11 +18,8 @@ package org.polypheny.db.sql.language;
 
 
 import com.google.common.base.Predicates;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
-import java.sql.DatabaseMetaData;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -30,15 +27,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Stack;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.function.Functions;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.Modality;
 import org.polypheny.db.algebra.constant.Syntax;
-import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypePrecedenceList;
@@ -46,25 +40,15 @@ import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.snapshot.Snapshot;
-import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.nodes.BasicNodeVisitor;
-import org.polypheny.db.nodes.Call;
-import org.polypheny.db.nodes.DataTypeSpec;
-import org.polypheny.db.nodes.DynamicParam;
 import org.polypheny.db.nodes.Identifier;
-import org.polypheny.db.nodes.IntervalQualifier;
-import org.polypheny.db.nodes.Literal;
 import org.polypheny.db.nodes.Node;
-import org.polypheny.db.nodes.NodeList;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.schema.types.StreamableEntity;
 import org.polypheny.db.type.PolyTypeUtil;
-import org.polypheny.db.util.BarfingInvocationHandler;
 import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.Glossary;
 import org.polypheny.db.util.Pair;
-import org.polypheny.db.util.Util;
 
 
 /**
@@ -73,56 +57,10 @@ import org.polypheny.db.util.Util;
 public abstract class SqlUtil {
 
 
-    static SqlNode andExpressions( SqlNode node1, SqlNode node2 ) {
-        if ( node1 == null ) {
-            return node2;
-        }
-        List<Node> list = new ArrayList<>();
-        if ( node1.getKind() == Kind.AND ) {
-            list.addAll( ((SqlCall) node1).getOperandList() );
-        } else {
-            list.add( node1 );
-        }
-        if ( node2.getKind() == Kind.AND ) {
-            list.addAll( ((SqlCall) node2).getOperandList() );
-        } else {
-            list.add( node2 );
-        }
-        return (SqlNode) OperatorRegistry.get( OperatorName.AND ).createCall( ParserPos.ZERO, list );
-    }
-
-
     static List<SqlNode> flatten( SqlNode node ) {
         List<SqlNode> list = new ArrayList<>();
         flatten( node, list );
         return list;
-    }
-
-
-    /**
-     * Returns the <code>n</code>th (0-based) input to a join expression.
-     */
-    public static SqlNode getFromNode( SqlSelect query, int ordinal ) {
-        List<SqlNode> list = flatten( query.getSqlFrom() );
-        return list.get( ordinal );
-    }
-
-
-    /**
-     * Old method from commons-lang
-     * it only turns single-quotes into doubled single-quotes ("McHale's Navy" => "McHale''s Navy")
-     *
-     * todo rewrite as it was removed
-     * https://stackoverflow.com/questions/32096614/migrating-stringescapeutils-escapesql-from-commons-lang
-     *
-     * @param str input which is adjusted
-     * @return the adjusted input
-     */
-    public static String escapeSql( String str ) {
-        if ( str == null ) {
-            return null;
-        }
-        return str.replace( "'", "''" );
     }
 
 
@@ -168,7 +106,7 @@ public abstract class SqlUtil {
 
     /**
      * Returns whether a node is a literal.
-     *
+     * <p>
      * Examples:
      *
      * <ul>
@@ -188,10 +126,8 @@ public abstract class SqlUtil {
         if ( allowCast ) {
             if ( node.getKind() == Kind.CAST ) {
                 SqlCall call = (SqlCall) node;
-                if ( isLiteral( call.operand( 0 ), false ) ) {
-                    // node is "CAST(literal as type)"
-                    return true;
-                }
+                // node is "CAST(literal as type)"
+                return isLiteral( call.operand( 0 ), false );
             }
         }
         return false;
@@ -200,7 +136,7 @@ public abstract class SqlUtil {
 
     /**
      * Returns whether a node is a literal.
-     *
+     * <p>
      * Many constructs which require literals also accept <code>CAST(NULL AS <i>type</i>)</code>. This method does not accept casts, so you should call {@link CoreUtil#isNullLiteral} first.
      *
      * @param node The node, never null.
@@ -219,8 +155,7 @@ public abstract class SqlUtil {
      */
     public static boolean isLiteralChain( SqlNode node ) {
         assert node != null;
-        if ( node instanceof SqlCall ) {
-            SqlCall call = (SqlCall) node;
+        if ( node instanceof SqlCall call ) {
             return call.getKind() == Kind.LITERAL_CHAIN;
         } else {
             return false;
@@ -236,8 +171,7 @@ public abstract class SqlUtil {
      * @param call List of 0 or more operands
      */
     public static void unparseFunctionSyntax( SqlOperator operator, SqlWriter writer, SqlCall call ) {
-        if ( operator instanceof SqlFunction ) {
-            SqlFunction function = (SqlFunction) operator;
+        if ( operator instanceof SqlFunction function ) {
 
             if ( function.getFunctionCategory().isSpecific() ) {
                 writer.keyword( "SPECIFIC" );
@@ -267,9 +201,8 @@ public abstract class SqlUtil {
             quantifier.unparse( writer, 0, 0 );
         }
         if ( call.operandCount() == 0 ) {
-            switch ( call.getOperator().getSyntax() ) {
-                case FUNCTION_STAR:
-                    writer.sep( "*" );
+            if ( Objects.requireNonNull( call.getOperator().getSyntax() ) == Syntax.FUNCTION_STAR ) {
+                writer.sep( "*" );
             }
         }
         for ( Node operand : call.getOperandList() ) {
@@ -299,7 +232,7 @@ public abstract class SqlUtil {
 
     /**
      * Concatenates string literals.
-     *
+     * <p>
      * This method takes an array of arguments, since pairwise concatenation means too much string copying.
      *
      * @param lits an array of {@link SqlLiteral}, not empty, all of the same class
@@ -578,22 +511,6 @@ public abstract class SqlUtil {
     }
 
 
-    /**
-     * Returns a list of ancestors of {@code predicate} within a given {@code SqlNode} tree.
-     *
-     * The first element of the list is {@code root}, and the last is the node that matched {@code predicate}. Throws if no node matches.
-     */
-    public static ImmutableList<SqlNode> getAncestry( SqlNode root, Predicate<SqlNode> predicate, Predicate<SqlNode> postPredicate ) {
-        try {
-            new Genealogist( predicate, postPredicate ).visitChild( root );
-            throw new AssertionError( "not found: " + predicate + " in " + root );
-        } catch ( Util.FoundOne e ) {
-            //noinspection unchecked
-            return (ImmutableList<SqlNode>) e.getNode();
-        }
-    }
-
-
     public static List<List<Node>> toNodeListList( List<List<SqlNode>> sqlList ) {
         return sqlList.stream().map( CoreUtil::toNodeList ).toList();
     }
@@ -607,7 +524,7 @@ public abstract class SqlUtil {
     public static AlgDataType getNamedType( Identifier node, Snapshot snapshot ) {
         LogicalTable table = snapshot.rel().getTable( node.getNames().get( 0 ), node.getNames().get( 1 ) ).orElse( null );
         if ( table != null ) {
-            return table.getRowType();
+            return table.getTupleType();
         } else {
             return null;
         }
@@ -621,155 +538,6 @@ public abstract class SqlUtil {
         }
         return !(entity instanceof StreamableEntity);
 
-    }
-
-
-    /**
-     * Handles particular {@link DatabaseMetaData} methods; invocations of other methods will fall through to the base class,
-     * {@link org.polypheny.db.util.BarfingInvocationHandler}, which will throw an error.
-     */
-    public static class DatabaseMetaDataInvocationHandler extends BarfingInvocationHandler {
-
-        private final String databaseProductName;
-        private final String identifierQuoteString;
-
-
-        public DatabaseMetaDataInvocationHandler( String databaseProductName, String identifierQuoteString ) {
-            this.databaseProductName = databaseProductName;
-            this.identifierQuoteString = identifierQuoteString;
-        }
-
-
-        public String getDatabaseProductName() throws SQLException {
-            return databaseProductName;
-        }
-
-
-        public String getIdentifierQuoteString() throws SQLException {
-            return identifierQuoteString;
-        }
-
-    }
-
-
-    /**
-     * Walks over a {@link SqlNode} tree and returns the ancestry stack when it finds a given node.
-     */
-    private static class Genealogist extends BasicNodeVisitor<Void> {
-
-        private final List<SqlNode> ancestors = new ArrayList<>();
-        private final Predicate<SqlNode> predicate;
-        private final Predicate<SqlNode> postPredicate;
-
-
-        Genealogist( Predicate<SqlNode> predicate, Predicate<SqlNode> postPredicate ) {
-            this.predicate = predicate;
-            this.postPredicate = postPredicate;
-        }
-
-
-        private Void check( SqlNode node ) {
-            preCheck( node );
-            postCheck( node );
-            return null;
-        }
-
-
-        private Void preCheck( SqlNode node ) {
-            if ( predicate.test( node ) ) {
-                throw new Util.FoundOne( ImmutableList.copyOf( ancestors ) );
-            }
-            return null;
-        }
-
-
-        private Void postCheck( SqlNode node ) {
-            if ( postPredicate.test( node ) ) {
-                throw new Util.FoundOne( ImmutableList.copyOf( ancestors ) );
-            }
-            return null;
-        }
-
-
-        private void visitChild( SqlNode node ) {
-            if ( node == null ) {
-                return;
-            }
-            ancestors.add( node );
-            node.accept( this );
-            ancestors.remove( ancestors.size() - 1 );
-        }
-
-
-        @Override
-        public Void visit( Identifier id ) {
-            return check( (SqlNode) id );
-        }
-
-
-        @Override
-        public Void visit( Call call ) {
-            preCheck( (SqlNode) call );
-            for ( Node node : call.getOperandList() ) {
-                visitChild( (SqlNode) node );
-            }
-            return postCheck( (SqlNode) call );
-        }
-
-
-        @Override
-        public Void visit( IntervalQualifier intervalQualifier ) {
-            return check( (SqlNode) intervalQualifier );
-        }
-
-
-        @Override
-        public Void visit( Literal literal ) {
-            return check( (SqlNode) literal );
-        }
-
-
-        @Override
-        public Void visit( NodeList nodeList ) {
-            preCheck( (SqlNode) nodeList );
-            for ( Node node : nodeList ) {
-                visitChild( (SqlNode) node );
-            }
-            return postCheck( (SqlNode) nodeList );
-        }
-
-
-        @Override
-        public Void visit( DynamicParam param ) {
-            return check( (SqlNode) param );
-        }
-
-
-        @Override
-        public Void visit( DataTypeSpec type ) {
-            return check( (SqlNode) type );
-        }
-
-    }
-
-
-    static public List<List<SqlNode>> toSqlListList( List<List<? extends Node>> nodes ) {
-        return nodes.stream().map( SqlUtil::toSqlList ).toList();
-    }
-
-
-    static public <T extends Node> List<List<? extends Node>> toSqlListList( List<List<? extends Node>> nodes, Class<? extends Node> clazz ) {
-        return nodes.stream().map( e -> toSqlList( e, clazz ) ).collect( Collectors.toList() );
-    }
-
-
-    static public List<SqlNode> toSqlList( List<? extends Node> nodes ) {
-        return toSqlList( nodes, SqlNode.class );
-    }
-
-
-    static public <T extends Node> List<T> toSqlList( List<? extends Node> nodes, Class<T> clazz ) {
-        return nodes.stream().map( clazz::cast ).toList();
     }
 
 

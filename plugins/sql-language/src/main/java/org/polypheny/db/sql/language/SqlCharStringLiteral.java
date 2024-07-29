@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,7 +64,7 @@ public class SqlCharStringLiteral extends SqlAbstractStringLiteral {
     @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
         assert value instanceof PolyString;
-        writer.literal( "'" + value.asString().value + "'" );
+        writer.literal( value.asString().toPrefixedString() );
     }
 
 

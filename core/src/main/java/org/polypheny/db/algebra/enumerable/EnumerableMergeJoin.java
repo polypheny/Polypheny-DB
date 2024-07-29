@@ -1,9 +1,26 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * This file incorporates code covered by the following terms:
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to you under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -42,9 +59,9 @@ import org.polypheny.db.algebra.core.JoinInfo;
 import org.polypheny.db.algebra.metadata.AlgMdCollation;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
@@ -57,7 +74,7 @@ import org.polypheny.db.util.Pair;
  */
 public class EnumerableMergeJoin extends EquiJoin implements EnumerableAlg {
 
-    EnumerableMergeJoin( AlgOptCluster cluster, AlgTraitSet traits, AlgNode left, AlgNode right, RexNode condition, ImmutableList<Integer> leftKeys, ImmutableList<Integer> rightKeys, Set<CorrelationId> variablesSet, JoinAlgType joinType ) throws InvalidAlgException {
+    EnumerableMergeJoin( AlgCluster cluster, AlgTraitSet traits, AlgNode left, AlgNode right, RexNode condition, ImmutableList<Integer> leftKeys, ImmutableList<Integer> rightKeys, Set<CorrelationId> variablesSet, JoinAlgType joinType ) throws InvalidAlgException {
         super( cluster, traits, left, right, condition, leftKeys, rightKeys, variablesSet, joinType );
         final List<AlgCollation> collations = traits.getTraits( AlgCollationTraitDef.INSTANCE );
         assert collations == null || AlgCollations.contains( collations, leftKeys );
@@ -65,7 +82,7 @@ public class EnumerableMergeJoin extends EquiJoin implements EnumerableAlg {
 
 
     public static EnumerableMergeJoin create( AlgNode left, AlgNode right, RexLiteral condition, ImmutableList<Integer> leftKeys, ImmutableList<Integer> rightKeys, JoinAlgType joinType ) throws InvalidAlgException {
-        final AlgOptCluster cluster = right.getCluster();
+        final AlgCluster cluster = right.getCluster();
         AlgTraitSet traitSet = cluster.traitSet();
         if ( traitSet.isEnabled( AlgCollationTraitDef.INSTANCE ) ) {
             final AlgMetadataQuery mq = cluster.getMetadataQuery();
@@ -90,11 +107,11 @@ public class EnumerableMergeJoin extends EquiJoin implements EnumerableAlg {
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         // We assume that the inputs are sorted. The price of sorting them has already been paid. The cost of the join is therefore proportional to the input and output size.
-        final double rightRowCount = right.estimateRowCount( mq );
-        final double leftRowCount = left.estimateRowCount( mq );
-        final double rowCount = mq.getRowCount( this );
+        final double rightRowCount = right.estimateTupleCount( mq );
+        final double leftRowCount = left.estimateTupleCount( mq );
+        final double rowCount = mq.getTupleCount( this );
         final double d = leftRowCount + rightRowCount + rowCount;
         return planner.getCostFactory().makeCost( d, 0, 0 );
     }
@@ -104,11 +121,11 @@ public class EnumerableMergeJoin extends EquiJoin implements EnumerableAlg {
     public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
         BlockBuilder builder = new BlockBuilder();
         final Result leftResult = implementor.visitChild( this, 0, (EnumerableAlg) left, pref );
-        final Expression leftExpression = builder.append( "left" + System.nanoTime(), leftResult.block );
-        final ParameterExpression left_ = Expressions.parameter( leftResult.physType.getJavaRowType(), "left" );
+        final Expression leftExpression = builder.append( "left" + System.nanoTime(), leftResult.block() );
+        final ParameterExpression left_ = Expressions.parameter( leftResult.physType().getJavaTupleType(), "left" );
         final Result rightResult = implementor.visitChild( this, 1, (EnumerableAlg) right, pref );
-        final Expression rightExpression = builder.append( "right" + System.nanoTime(), rightResult.block );
-        final ParameterExpression right_ = Expressions.parameter( rightResult.physType.getJavaRowType(), "right" );
+        final Expression rightExpression = builder.append( "right" + System.nanoTime(), rightResult.block() );
+        final ParameterExpression right_ = Expressions.parameter( rightResult.physType().getJavaTupleType(), "right" );
         final JavaTypeFactory typeFactory = implementor.getTypeFactory();
         final PhysType physType = PhysTypeImpl.of( typeFactory, getTupleType(), pref.preferArray() );
         final List<Expression> leftExpressions = new ArrayList<>();
@@ -116,11 +133,11 @@ public class EnumerableMergeJoin extends EquiJoin implements EnumerableAlg {
         for ( Pair<Integer, Integer> pair : Pair.zip( leftKeys, rightKeys ) ) {
             final AlgDataType keyType = typeFactory.leastRestrictive( ImmutableList.of( left.getTupleType().getFields().get( pair.left ).getType(), right.getTupleType().getFields().get( pair.right ).getType() ) );
             final Type keyClass = typeFactory.getJavaClass( keyType );
-            leftExpressions.add( Types.castIfNecessary( keyClass, leftResult.physType.fieldReference( left_, pair.left ) ) );
-            rightExpressions.add( Types.castIfNecessary( keyClass, rightResult.physType.fieldReference( right_, pair.right ) ) );
+            leftExpressions.add( Types.castIfNecessary( keyClass, leftResult.physType().fieldReference( left_, pair.left ) ) );
+            rightExpressions.add( Types.castIfNecessary( keyClass, rightResult.physType().fieldReference( right_, pair.right ) ) );
         }
-        final PhysType leftKeyPhysType = leftResult.physType.project( leftKeys, JavaRowFormat.LIST );
-        final PhysType rightKeyPhysType = rightResult.physType.project( rightKeys, JavaRowFormat.LIST );
+        final PhysType leftKeyPhysType = leftResult.physType().project( leftKeys, JavaTupleFormat.LIST );
+        final PhysType rightKeyPhysType = rightResult.physType().project( rightKeys, JavaTupleFormat.LIST );
         return implementor.result(
                 physType,
                 builder.append(
@@ -131,7 +148,7 @@ public class EnumerableMergeJoin extends EquiJoin implements EnumerableAlg {
                                         rightExpression,
                                         Expressions.lambda( leftKeyPhysType.record( leftExpressions ), left_ ),
                                         Expressions.lambda( rightKeyPhysType.record( rightExpressions ), right_ ),
-                                        EnumUtils.joinSelector( joinType, physType, ImmutableList.of( leftResult.physType, rightResult.physType ) ),
+                                        EnumUtils.joinSelector( joinType, physType, ImmutableList.of( leftResult.physType(), rightResult.physType() ) ),
                                         Expressions.constant( joinType.generatesNullsOnLeft() ),
                                         Expressions.constant( joinType.generatesNullsOnRight() ) ) ) ).toBlock() );
     }

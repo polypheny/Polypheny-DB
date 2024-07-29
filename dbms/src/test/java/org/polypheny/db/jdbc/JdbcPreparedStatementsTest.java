@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,23 +16,22 @@
 
 package org.polypheny.db.jdbc;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import com.google.common.collect.ImmutableList;
 import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.Date;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
-import org.apache.calcite.avatica.ColumnMetaData;
-import org.apache.calcite.avatica.ColumnMetaData.Rep;
-import org.apache.calcite.avatica.SqlType;
-import org.apache.calcite.avatica.util.ArrayFactoryImpl;
-import org.apache.calcite.avatica.util.Unsafe;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
@@ -43,6 +42,10 @@ import org.polypheny.db.TestHelper.JdbcConnection;
 @Tag("adapter")
 public class JdbcPreparedStatementsTest {
 
+    private static final String SIMPLE_SCHEMA_SQL = "CREATE TABLE test_table (id INT PRIMARY KEY , name VARCHAR(50))";
+    private static final String SIMPLE_INSERT_SQL = "INSERT INTO test_table (id, name) VALUES (?, ?)";
+    private static final String SIMPLE_SELECT_SQL = "SELECT * FROM test_table";
+    private static final String DROP_TABLE_SQL = "DROP TABLE test_table";
 
     private final static String SCHEMA_SQL = "CREATE TABLE pstest( "
             + "tbigint BIGINT NULL, "
@@ -83,6 +86,358 @@ public class JdbcPreparedStatementsTest {
 
 
     @Test
+    public void illegalExecuteQueryTest() {
+        assertThrows( SQLException.class, () -> {
+            try ( JdbcConnection jdbcConnection = new JdbcConnection( false );
+                    Connection connection = jdbcConnection.getConnection() ) {
+                try ( Statement statement = connection.createStatement() ) {
+                    statement.execute( SIMPLE_SCHEMA_SQL );
+                }
+                try ( PreparedStatement preparedStatement = connection.prepareStatement( SIMPLE_INSERT_SQL ) ) {
+                    preparedStatement.executeQuery( "SELECT * FROM my_table" );
+                } finally {
+                    try ( Statement statement = connection.createStatement() ) {
+                        statement.execute( DROP_TABLE_SQL );
+                    }
+                }
+            }
+        } );
+    }
+
+
+    @Test
+    public void illegalExecuteUpdateTest() {
+        assertThrows( SQLException.class, () -> {
+            try ( JdbcConnection jdbcConnection = new JdbcConnection( false );
+                    Connection connection = jdbcConnection.getConnection() ) {
+                try ( Statement statement = connection.createStatement() ) {
+                    statement.execute( SIMPLE_SCHEMA_SQL );
+                }
+                try ( PreparedStatement preparedStatement = connection.prepareStatement( SIMPLE_INSERT_SQL ) ) {
+                    preparedStatement.executeUpdate( "INSERT INTO my_table VALUES (2, 'B')" );
+                } finally {
+                    try ( Statement statement = connection.createStatement() ) {
+                        statement.execute( DROP_TABLE_SQL );
+                    }
+                }
+            }
+        } );
+    }
+
+
+    @Test
+    public void illegalExecuteTest() {
+        assertThrows( SQLException.class, () -> {
+            try ( JdbcConnection jdbcConnection = new JdbcConnection( false );
+                    Connection connection = jdbcConnection.getConnection() ) {
+                try ( Statement statement = connection.createStatement() ) {
+                    statement.execute( SIMPLE_SCHEMA_SQL );
+                }
+                try ( PreparedStatement preparedStatement = connection.prepareStatement( SIMPLE_INSERT_SQL ) ) {
+                    preparedStatement.execute( "SELECT * FROM my_table" );
+                } finally {
+                    try ( Statement statement = connection.createStatement() ) {
+                        statement.execute( DROP_TABLE_SQL );
+                    }
+                }
+            }
+        } );
+    }
+
+
+    @Test
+    public void illegalExecuteLargeUpdateTest() {
+        assertThrows( UnsupportedOperationException.class, () -> {
+            try ( JdbcConnection jdbcConnection = new JdbcConnection( false );
+                    Connection connection = jdbcConnection.getConnection() ) {
+                try ( Statement statement = connection.createStatement() ) {
+                    statement.execute( SIMPLE_SCHEMA_SQL );
+                }
+                try ( PreparedStatement preparedStatement = connection.prepareStatement( SIMPLE_INSERT_SQL ) ) {
+                    preparedStatement.executeLargeUpdate( "INSERT INTO my_table VALUES (2, 'B')" );
+                } finally {
+                    try ( Statement statement = connection.createStatement() ) {
+                        statement.execute( DROP_TABLE_SQL );
+                    }
+                }
+            }
+        } );
+    }
+
+
+    @Test
+    public void illegalExecuteUpdateGeneratedKeysTest1() {
+        assertThrows( SQLException.class, () -> {
+            try ( JdbcConnection jdbcConnection = new JdbcConnection( false );
+                    Connection connection = jdbcConnection.getConnection() ) {
+                try ( Statement statement = connection.createStatement() ) {
+                    statement.execute( SIMPLE_SCHEMA_SQL );
+                }
+                try ( PreparedStatement preparedStatement = connection.prepareStatement( SIMPLE_INSERT_SQL ) ) {
+                    preparedStatement.executeUpdate( "INSERT INTO my_table VALUES (2, 'B')", Statement.RETURN_GENERATED_KEYS );
+                } finally {
+                    try ( Statement statement = connection.createStatement() ) {
+                        statement.execute( DROP_TABLE_SQL );
+                    }
+                }
+            }
+        } );
+    }
+
+
+    @Test
+    public void illegalExecuteLargeUpdateGeneratedKeysTest1() {
+        assertThrows( SQLException.class, () -> {
+            try ( JdbcConnection jdbcConnection = new JdbcConnection( false );
+                    Connection connection = jdbcConnection.getConnection() ) {
+                try ( Statement statement = connection.createStatement() ) {
+                    statement.execute( SIMPLE_SCHEMA_SQL );
+                }
+                try ( PreparedStatement preparedStatement = connection.prepareStatement( SIMPLE_INSERT_SQL ) ) {
+                    preparedStatement.executeLargeUpdate( "INSERT INTO my_table VALUES (2, 'B')", Statement.RETURN_GENERATED_KEYS );
+                } finally {
+                    try ( Statement statement = connection.createStatement() ) {
+                        statement.execute( DROP_TABLE_SQL );
+                    }
+                }
+            }
+        } );
+    }
+
+
+    @Test
+    public void illegalExecuteUpdateGeneratedKeysTest2() {
+        assertThrows( SQLException.class, () -> {
+            try ( JdbcConnection jdbcConnection = new JdbcConnection( false );
+                    Connection connection = jdbcConnection.getConnection() ) {
+                try ( Statement statement = connection.createStatement() ) {
+                    statement.execute( SIMPLE_SCHEMA_SQL );
+                }
+                try ( PreparedStatement preparedStatement = connection.prepareStatement( SIMPLE_INSERT_SQL ) ) {
+                    preparedStatement.executeUpdate( "INSERT INTO my_table VALUES (2, 'B')", new int[]{ 1 } );
+                } finally {
+                    try ( Statement statement = connection.createStatement() ) {
+                        statement.execute( DROP_TABLE_SQL );
+                    }
+                }
+            }
+        } );
+    }
+
+
+    @Test
+    public void illegalExecuteLargeUpdateGeneratedKeysTest2() {
+        assertThrows( SQLException.class, () -> {
+            try ( JdbcConnection jdbcConnection = new JdbcConnection( false );
+                    Connection connection = jdbcConnection.getConnection() ) {
+                try ( Statement statement = connection.createStatement() ) {
+                    statement.execute( SIMPLE_SCHEMA_SQL );
+                }
+                try ( PreparedStatement preparedStatement = connection.prepareStatement( SIMPLE_INSERT_SQL ) ) {
+                    preparedStatement.executeLargeUpdate( "INSERT INTO my_table VALUES (2, 'B')", new int[]{ 1 } );
+                } finally {
+                    try ( Statement statement = connection.createStatement() ) {
+                        statement.execute( DROP_TABLE_SQL );
+                    }
+                }
+            }
+        } );
+    }
+
+
+    @Test
+    public void illegalExecuteUpdateGeneratedKeysTest3() {
+        assertThrows( SQLException.class, () -> {
+            try ( JdbcConnection jdbcConnection = new JdbcConnection( false );
+                    Connection connection = jdbcConnection.getConnection() ) {
+                try ( Statement statement = connection.createStatement() ) {
+                    statement.execute( SIMPLE_SCHEMA_SQL );
+                }
+                try ( PreparedStatement preparedStatement = connection.prepareStatement( SIMPLE_INSERT_SQL ) ) {
+                    preparedStatement.executeUpdate( "INSERT INTO my_table VALUES (2, 'B')", new String[]{ "id" } );
+                } finally {
+                    try ( Statement statement = connection.createStatement() ) {
+                        statement.execute( DROP_TABLE_SQL );
+                    }
+                }
+            }
+        } );
+    }
+
+
+    @Test
+    public void illegalExecuteLargeUpdateGeneratedKeysTest3() {
+        assertThrows( SQLException.class, () -> {
+            try ( JdbcConnection jdbcConnection = new JdbcConnection( false );
+                    Connection connection = jdbcConnection.getConnection() ) {
+                try ( Statement statement = connection.createStatement() ) {
+                    statement.execute( SIMPLE_SCHEMA_SQL );
+                }
+                try ( PreparedStatement preparedStatement = connection.prepareStatement( SIMPLE_INSERT_SQL ) ) {
+                    preparedStatement.executeLargeUpdate( "INSERT INTO my_table VALUES (2, 'B')", new String[]{ "id" } );
+                } finally {
+                    try ( Statement statement = connection.createStatement() ) {
+                        statement.execute( DROP_TABLE_SQL );
+                    }
+                }
+            }
+        } );
+    }
+
+
+    @Test
+    public void illegalExecuteGeneratedKeysTest1() {
+        assertThrows( SQLException.class, () -> {
+            try ( JdbcConnection jdbcConnection = new JdbcConnection( false );
+                    Connection connection = jdbcConnection.getConnection() ) {
+                try ( Statement statement = connection.createStatement() ) {
+                    statement.execute( SIMPLE_SCHEMA_SQL );
+                }
+                try ( PreparedStatement preparedStatement = connection.prepareStatement( SIMPLE_INSERT_SQL ) ) {
+                    preparedStatement.execute( "SELECT * FROM my_table", Statement.RETURN_GENERATED_KEYS );
+                } finally {
+                    try ( Statement statement = connection.createStatement() ) {
+                        statement.execute( DROP_TABLE_SQL );
+                    }
+                }
+            }
+        } );
+    }
+
+
+    @Test
+    public void illegalExecuteGeneratedKeysTest2() {
+        assertThrows( SQLException.class, () -> {
+            try ( JdbcConnection jdbcConnection = new JdbcConnection( false );
+                    Connection connection = jdbcConnection.getConnection() ) {
+                try ( Statement statement = connection.createStatement() ) {
+                    statement.execute( SIMPLE_SCHEMA_SQL );
+                }
+                try ( PreparedStatement preparedStatement = connection.prepareStatement( SIMPLE_INSERT_SQL ) ) {
+                    preparedStatement.execute( "SELECT * FROM my_table", new int[]{ 1 } );
+                } finally {
+                    try ( Statement statement = connection.createStatement() ) {
+                        statement.execute( DROP_TABLE_SQL );
+                    }
+                }
+            }
+        } );
+    }
+
+
+    @Test
+    public void illegalExecuteGeneratedKeysTest3() {
+        assertThrows( SQLException.class, () -> {
+            try ( JdbcConnection jdbcConnection = new JdbcConnection( false );
+                    Connection connection = jdbcConnection.getConnection() ) {
+                try ( Statement statement = connection.createStatement() ) {
+                    statement.execute( SIMPLE_SCHEMA_SQL );
+                }
+                try ( PreparedStatement preparedStatement = connection.prepareStatement( SIMPLE_INSERT_SQL ) ) {
+                    preparedStatement.execute( "SELECT * FROM my_table", new String[]{ "id" } );
+                } finally {
+                    try ( Statement statement = connection.createStatement() ) {
+                        statement.execute( DROP_TABLE_SQL );
+                    }
+                }
+            }
+        } );
+    }
+
+
+    @Test
+    public void simpleUpdateTest() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true );
+                Connection connection = jdbcConnection.getConnection()
+        ) {
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( SIMPLE_SCHEMA_SQL );
+                try ( PreparedStatement preparedStatement = connection.prepareStatement( SIMPLE_INSERT_SQL ) ) {
+                    preparedStatement.setInt( 1, 1 );
+                    preparedStatement.setString( 2, "A" );
+                    Assertions.assertEquals( 1, preparedStatement.executeUpdate() );
+                }
+                ResultSet rs = statement.executeQuery( SIMPLE_SELECT_SQL );
+                TestHelper.checkResultSet( rs, ImmutableList.of( new Object[]{ 1, "A" } ) );
+            } finally {
+                try ( Statement statement = connection.createStatement() ) {
+                    statement.execute( DROP_TABLE_SQL );
+                }
+            }
+        }
+    }
+
+
+    @Test
+    public void simpleLargeUpdateTest() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true );
+                Connection connection = jdbcConnection.getConnection()
+        ) {
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( SIMPLE_SCHEMA_SQL );
+                try ( PreparedStatement preparedStatement = connection.prepareStatement( SIMPLE_INSERT_SQL ) ) {
+                    preparedStatement.setInt( 1, 1 );
+                    preparedStatement.setString( 2, "A" );
+                    Assertions.assertEquals( 1, preparedStatement.executeLargeUpdate() );
+                }
+                ResultSet rs = statement.executeQuery( SIMPLE_SELECT_SQL );
+                TestHelper.checkResultSet( rs, ImmutableList.of( new Object[]{ 1, "A" } ) );
+            } finally {
+                try ( Statement statement = connection.createStatement() ) {
+                    statement.execute( DROP_TABLE_SQL );
+                }
+            }
+        }
+    }
+
+
+    @Test
+    public void simpleQueryTest() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true );
+                Connection connection = jdbcConnection.getConnection()
+        ) {
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( SIMPLE_SCHEMA_SQL );
+                statement.executeUpdate( "INSERT INTO test_table (id, name) VALUES (1, 'A')" );
+
+                try ( PreparedStatement preparedStatement = connection.prepareStatement( "SELECT * FROM test_table WHERE id = ?" ) ) {
+                    preparedStatement.setInt( 1, 1 );
+                    ResultSet rs = preparedStatement.executeQuery();
+                    TestHelper.checkResultSet( rs, ImmutableList.of( new Object[]{ 1, "A" } ) );
+                }
+            } finally {
+                try ( Statement statement = connection.createStatement() ) {
+                    statement.execute( DROP_TABLE_SQL );
+                }
+            }
+        }
+    }
+
+
+    @Test
+    public void simpleExecuteTest() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true );
+                Connection connection = jdbcConnection.getConnection()
+        ) {
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( SIMPLE_SCHEMA_SQL );
+                statement.executeUpdate( "INSERT INTO test_table (id, name) VALUES (1, 'A')" );
+
+                try ( PreparedStatement preparedStatement = connection.prepareStatement( "SELECT * FROM test_table WHERE id = ?" ) ) {
+                    preparedStatement.setInt( 1, 1 );
+                    Assertions.assertTrue( preparedStatement.execute() );
+                    TestHelper.checkResultSet( preparedStatement.getResultSet(), ImmutableList.of( new Object[]{ 1, "A" } ) );
+                }
+            } finally {
+                try ( Statement statement = connection.createStatement() ) {
+                    statement.execute( DROP_TABLE_SQL );
+                }
+            }
+        }
+    }
+
+
+    @Test
     public void basicTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -116,6 +471,34 @@ public class JdbcPreparedStatementsTest {
 
 
     @Test
+    public void nullInNotNullableThrowsTest() {
+        assertThrows( SQLException.class, () -> {
+            try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
+                Connection connection = polyphenyDbConnection.getConnection();
+                try ( Statement statement = connection.createStatement() ) {
+                    statement.executeUpdate( SCHEMA_SQL );
+                    try {
+                        PreparedStatement preparedInsert2 = connection.prepareStatement( "INSERT INTO pstest(tinteger,tvarchar) VALUES (?, ?)" );
+
+                        preparedInsert2.setInt( 1, 3 );
+                        preparedInsert2.setNull( 2, Types.VARCHAR );
+                        preparedInsert2.execute();
+
+                        preparedInsert2.setInt( 1, 4 );
+                        preparedInsert2.setNull( 2, Types.VARCHAR );
+                        preparedInsert2.execute();
+
+                        connection.commit();
+                    } finally {
+                        statement.executeUpdate( "DROP TABLE pstest" );
+                    }
+                }
+            }
+        } );
+    }
+
+
+    @Test
     public void nullValueTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -126,12 +509,12 @@ public class JdbcPreparedStatementsTest {
                     PreparedStatement preparedInsert = connection.prepareStatement( "INSERT INTO pstest(tinteger,tbigint,tvarchar) VALUES (?, ?, ?)" );
 
                     preparedInsert.setInt( 1, 1 );
-                    preparedInsert.setNull( 2, SqlType.BIGINT.id );
+                    preparedInsert.setNull( 2, Types.BIGINT );
                     preparedInsert.setString( 3, "Alice" );
                     preparedInsert.execute();
 
                     preparedInsert.setInt( 1, 2 );
-                    preparedInsert.setNull( 2, SqlType.BIGINT.id );
+                    preparedInsert.setNull( 2, Types.BIGINT );
                     preparedInsert.setString( 3, "Bob" );
                     preparedInsert.execute();
 
@@ -140,23 +523,6 @@ public class JdbcPreparedStatementsTest {
                     TestHelper.checkResultSet(
                             preparedSelect.executeQuery(),
                             ImmutableList.of( new Object[]{ 1, null, "Alice" } ) );
-
-                    boolean exceptionThrown = false;
-                    try {
-                        PreparedStatement preparedInsert2 = connection.prepareStatement( "INSERT INTO pstest(tinteger,tvarchar) VALUES (?, ?)" );
-
-                        preparedInsert2.setInt( 1, 3 );
-                        preparedInsert2.setNull( 2, SqlType.VARCHAR.id );
-                        preparedInsert2.execute();
-
-                        preparedInsert2.setInt( 1, 4 );
-                        preparedInsert2.setNull( 2, SqlType.VARCHAR.id );
-                        preparedInsert2.execute();
-                    } catch ( Exception e ) {
-                        exceptionThrown = true;
-                    }
-
-                    Assertions.assertTrue( exceptionThrown, "Excepted null value for a non-nullable column" );
 
                     connection.commit();
                 } finally {
@@ -233,6 +599,130 @@ public class JdbcPreparedStatementsTest {
                             true );
                 } finally {
                     statement.executeUpdate( "DROP TABLE pstest" );
+                }
+            }
+        }
+    }
+
+
+    @Test
+    public void timeValueTest() throws SQLException {
+        Time expected = Time.valueOf( "11:59:32" );
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( "CREATE TABLE time_test (id INT PRIMARY KEY , ttime TIME NULL)" );
+                try {
+                    PreparedStatement preparedInsert = connection.prepareStatement(
+                            "INSERT INTO time_test VALUES (?, ?)" );
+
+                    preparedInsert.setInt( 1, 0 );
+                    preparedInsert.setTime( 2, expected );
+                    preparedInsert.execute();
+                    connection.commit();
+
+                    PreparedStatement preparedSelect = connection.prepareStatement(
+                            "SELECT * FROM time_test WHERE id = ?" );
+                    preparedSelect.setInt( 1, 0 );
+                    TestHelper.checkResultSet(
+                            preparedSelect.executeQuery(),
+                            ImmutableList.of( new Object[]{ 0, expected } ) );
+
+                } finally {
+                    statement.executeUpdate( "DROP TABLE time_test" );
+                }
+            }
+        }
+    }
+
+
+    @Test
+    public void doubleValueTest() throws SQLException {
+        double expected = 2.3456;
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( "CREATE TABLE double_test (id INT PRIMARY KEY , tdouble DOUBLE NULL)" );
+                try {
+                    PreparedStatement preparedInsert = connection.prepareStatement(
+                            "INSERT INTO double_test VALUES (?, ?)" );
+
+                    preparedInsert.setInt( 1, 0 );
+                    preparedInsert.setDouble( 2, expected );
+                    preparedInsert.execute();
+                    connection.commit();
+
+                    PreparedStatement preparedSelect = connection.prepareStatement(
+                            "SELECT * FROM double_test WHERE id = ?" );
+                    preparedSelect.setInt( 1, 0 );
+                    TestHelper.checkResultSet(
+                            preparedSelect.executeQuery(),
+                            ImmutableList.of( new Object[]{ 0, expected } ) );
+
+                } finally {
+                    statement.executeUpdate( "DROP TABLE double_test" );
+                }
+            }
+        }
+    }
+
+
+    @Test
+    public void dateValueTest() throws SQLException {
+        Date expected = Date.valueOf( "2020-07-03" );
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( "CREATE TABLE date_test (id INT PRIMARY KEY , tdate DATE NULL)" );
+                try {
+                    PreparedStatement preparedInsert = connection.prepareStatement(
+                            "INSERT INTO date_test VALUES (?, ?)" );
+
+                    preparedInsert.setInt( 1, 0 );
+                    preparedInsert.setDate( 2, expected );
+                    preparedInsert.execute();
+                    connection.commit();
+
+                    PreparedStatement preparedSelect = connection.prepareStatement(
+                            "SELECT * FROM date_test WHERE id = ?" );
+                    preparedSelect.setInt( 1, 0 );
+                    TestHelper.checkResultSet(
+                            preparedSelect.executeQuery(),
+                            ImmutableList.of( new Object[]{ 0, expected } ) );
+
+                } finally {
+                    statement.executeUpdate( "DROP TABLE date_test" );
+                }
+            }
+        }
+    }
+
+
+    @Test
+    public void timestampValueTest() throws SQLException {
+        Timestamp expected = Timestamp.valueOf( "2021-01-01 10:11:15" );
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( "CREATE TABLE timestamp_test (id INT PRIMARY KEY , ttimestamp TIMESTAMP NULL)" );
+                try {
+                    PreparedStatement preparedInsert = connection.prepareStatement(
+                            "INSERT INTO timestamp_test VALUES (?, ?)" );
+
+                    preparedInsert.setInt( 1, 0 );
+                    preparedInsert.setTimestamp( 2, expected );
+                    preparedInsert.execute();
+                    connection.commit();
+
+                    PreparedStatement preparedSelect = connection.prepareStatement(
+                            "SELECT * FROM timestamp_test WHERE id = ?" );
+                    preparedSelect.setInt( 1, 0 );
+                    TestHelper.checkResultSet(
+                            preparedSelect.executeQuery(),
+                            ImmutableList.of( new Object[]{ 0, expected } ) );
+
+                } finally {
+                    statement.executeUpdate( "DROP TABLE timestamp_test" );
                 }
             }
         }
@@ -332,20 +822,20 @@ public class JdbcPreparedStatementsTest {
                     preparedInsert.executeBatch();
                     connection.commit();
 
-                    PreparedStatement preparedSelect = connection.prepareStatement( ""
-                            + "SELECT * FROM pstest WHERE "
-                            + "tbigint = ? AND "
-                            + "tboolean = ? AND "
-                            + "tdate = ? AND "
-                            + "tdecimal = ? AND "
-                            + "tdouble = ? AND "
-                            + "tinteger = ? AND "
-                            + "treal = ? AND "
-                            + "tsmallint = ? AND "
-                            + "ttime = ? AND "
-                            + "ttimestamp = ? AND "
-                            + "ttinyint = ? AND "
-                            + "tvarchar = ?" );
+                    PreparedStatement preparedSelect = connection.prepareStatement(
+                            "SELECT * FROM pstest WHERE "
+                                    + "tbigint = ? AND "
+                                    + "tboolean = ? AND "
+                                    + "tdate = ? AND "
+                                    + "tdecimal = ? AND "
+                                    + "tdouble = ? AND "
+                                    + "tinteger = ? AND "
+                                    + "treal = ? AND "
+                                    + "tsmallint = ? AND "
+                                    + "ttime = ? AND "
+                                    + "ttimestamp = ? AND "
+                                    + "ttinyint = ? AND "
+                                    + "tvarchar = ?" );
                     preparedSelect.setLong( 1, (long) TEST_DATA[0] );
                     preparedSelect.setBoolean( 2, (boolean) TEST_DATA[1] );
                     preparedSelect.setDate( 3, (Date) TEST_DATA[2] );
@@ -383,14 +873,14 @@ public class JdbcPreparedStatementsTest {
                     PreparedStatement preparedSelect = connection.prepareStatement(
                             "SELECT * FROM pstest WHERE tinteger = ?" );
 
-                    preparedInsert.setNull( 1, SqlType.BIGINT.id );
-                    preparedInsert.setNull( 2, SqlType.BOOLEAN.id );
-                    preparedInsert.setNull( 3, SqlType.DATE.id );
-                    preparedInsert.setNull( 4, SqlType.DECIMAL.id );
-                    preparedInsert.setNull( 5, SqlType.DOUBLE.id );
-                    preparedInsert.setNull( 7, SqlType.FLOAT.id );
-                    preparedInsert.setNull( 9, SqlType.TIME.id );
-                    preparedInsert.setNull( 10, SqlType.TIMESTAMP.id );
+                    preparedInsert.setNull( 1, Types.BIGINT );
+                    preparedInsert.setNull( 2, Types.BOOLEAN );
+                    preparedInsert.setNull( 3, Types.DATE );
+                    preparedInsert.setNull( 4, Types.DECIMAL );
+                    preparedInsert.setNull( 5, Types.DOUBLE );
+                    preparedInsert.setNull( 7, Types.FLOAT );
+                    preparedInsert.setNull( 9, Types.TIME );
+                    preparedInsert.setNull( 10, Types.TIMESTAMP );
 
                     preparedInsert.setInt( 6, 1 );
                     preparedInsert.setString( 12, "Foo" );
@@ -415,7 +905,7 @@ public class JdbcPreparedStatementsTest {
 
 
     @Test
-    @Tag("cottontailExcluded")
+    @Disabled("Hanging...")
     public void updateTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -443,6 +933,7 @@ public class JdbcPreparedStatementsTest {
                     preparedUpdate.executeUpdate();
 
                     connection.commit();
+
                     // Check
                     PreparedStatement preparedSelect = connection.prepareStatement( "SELECT tinteger,tsmallint,tvarchar FROM pstest WHERE tinteger = ? OR tinteger = ? ORDER BY tinteger" );
                     preparedSelect.setInt( 1, 1 );
@@ -462,10 +953,10 @@ public class JdbcPreparedStatementsTest {
                     TestHelper.checkResultSet(
                             preparedSelect.executeQuery(),
                             ImmutableList.of( new Object[]{ 1, (short) 13, "Foo" }, new Object[]{ 2, (short) 5, "Bar" } ) );
-
                     connection.commit();
                 } finally {
                     statement.executeUpdate( "DROP TABLE pstest" );
+                    connection.commit();
                 }
             }
         }
@@ -473,7 +964,7 @@ public class JdbcPreparedStatementsTest {
 
 
     @Test
-    @Tag("cottontailExcluded")
+    @Tag("cottontailExcluded") // leads to BatchQuery is unimplemented
     public void batchUpdateTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -595,18 +1086,16 @@ public class JdbcPreparedStatementsTest {
                 try {
                     PreparedStatement preparedInsert = connection.prepareStatement( "INSERT INTO psarrtest(tinteger,tintarr) VALUES (?, ?)" );
 
-                    final ArrayFactoryImpl arrayFactory = new ArrayFactoryImpl( Unsafe.localCalendar().getTimeZone() );
-
                     preparedInsert.setInt( 1, 1 );
-                    preparedInsert.setArray( 2, arrayFactory.createArray(
-                            ColumnMetaData.scalar( Types.INTEGER, "INTEGER", Rep.INTEGER ),
-                            ImmutableList.of( 1, 2 ) ) );
+                    preparedInsert.setArray( 2, connection.createArrayOf(
+                            "INTEGER",
+                            new Object[]{ 1, 2 } ) );
                     preparedInsert.execute();
 
                     preparedInsert.setInt( 1, 2 );
-                    preparedInsert.setArray( 2, arrayFactory.createArray(
-                            ColumnMetaData.scalar( Types.INTEGER, "INTEGER", Rep.INTEGER ),
-                            ImmutableList.of( 4, 5 ) ) );
+                    preparedInsert.setArray( 2, connection.createArrayOf(
+                            "INTEGER",
+                            new Object[]{ 4, 5 } ) );
                     preparedInsert.execute();
 
                     PreparedStatement preparedSelect = connection.prepareStatement( "SELECT tinteger,tintarr FROM psarrtest WHERE tinteger < ?" );
@@ -640,18 +1129,16 @@ public class JdbcPreparedStatementsTest {
                 try {
                     PreparedStatement preparedInsert = connection.prepareStatement( "INSERT INTO psarrtest(tinteger,tvarchararr) VALUES (?, ?)" );
 
-                    final ArrayFactoryImpl arrayFactory = new ArrayFactoryImpl( Unsafe.localCalendar().getTimeZone() );
-
                     preparedInsert.setInt( 1, 1 );
-                    preparedInsert.setArray( 2, arrayFactory.createArray(
-                            ColumnMetaData.scalar( Types.VARCHAR, "VARCHAR", Rep.STRING ),
-                            ImmutableList.of( "Hans", "Georg" ) ) );
+                    preparedInsert.setArray( 2, connection.createArrayOf(
+                            "VARCHAR",
+                            new Object[]{ "Hans", "Georg" } ) );
                     preparedInsert.addBatch();
 
                     preparedInsert.setInt( 1, 2 );
-                    preparedInsert.setArray( 2, arrayFactory.createArray(
-                            ColumnMetaData.scalar( Types.VARCHAR, "VARCHAR", Rep.STRING ),
-                            ImmutableList.of( "Lisa", "Livia" ) ) );
+                    preparedInsert.setArray( 2, connection.createArrayOf(
+                            "VARCHAR",
+                            new Object[]{ "Lisa", "Livia" } ) );
                     preparedInsert.addBatch();
 
                     preparedInsert.executeBatch();

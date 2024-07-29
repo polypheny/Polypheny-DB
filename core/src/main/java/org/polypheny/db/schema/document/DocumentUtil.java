@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,7 +54,7 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
@@ -62,12 +62,12 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyList;
-import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.type.entity.temporal.PolyDate;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 import org.polypheny.db.util.Pair;
@@ -237,7 +237,7 @@ public class DocumentUtil {
             Map<String, String> renames,
             AlgDataType rowType,
             AlgNode node ) {
-        AlgOptCluster cluster = node.getCluster();
+        AlgCluster cluster = node.getCluster();
         RexNode updateChain = cluster.getRexBuilder().makeInputRef( rowType, 0 );
 
         // replace
@@ -289,7 +289,7 @@ public class DocumentUtil {
     }
 
 
-    public static RexCall getStringArray( List<String> elements, AlgOptCluster cluster ) {
+    public static RexCall getStringArray( List<String> elements, AlgCluster cluster ) {
         List<RexNode> rexNodes = new ArrayList<>();
         int maxSize = 0;
         for ( String name : elements ) {
@@ -309,7 +309,7 @@ public class DocumentUtil {
     }
 
 
-    public static RexLiteral getArrayLiteral( List<String> elements, AlgOptCluster cluster ) {
+    public static RexLiteral getArrayLiteral( List<String> elements, AlgCluster cluster ) {
         AlgDataType type = cluster.getTypeFactory().createArrayType(
                 cluster.getTypeFactory().createPolyType( PolyType.CHAR, 255 ),
                 elements.size() );
@@ -317,7 +317,7 @@ public class DocumentUtil {
     }
 
 
-    public static AlgDataType getNestedArrayType( AlgOptCluster cluster, int depth, AlgDataType componentType ) {
+    public static AlgDataType getNestedArrayType( AlgCluster cluster, int depth, AlgDataType componentType ) {
         if ( depth == 0 ) {
             return componentType;
         } else {

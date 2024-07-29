@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -104,6 +104,7 @@ public class CypherFunctions {
         values.add( new PolyValue[]{ new PolyGraph( PolyMap.of( ns ), PolyMap.of( es ) ) } );
         return Linq4j.asEnumerable( values );
     }
+
 
 
     /**
@@ -302,6 +303,12 @@ public class CypherFunctions {
 
         if ( obj.isList() ) {
             return obj.asList();
+        } else if ( obj.isString() ) {
+            try {
+                return (PolyList<?>) PolyValue.fromJson( obj.asString().value );
+            } catch ( Exception ignored ) {
+                // ignore
+            }
         }
         return PolyList.of( obj );
     }

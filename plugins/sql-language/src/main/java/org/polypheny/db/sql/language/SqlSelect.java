@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -259,19 +259,8 @@ public class SqlSelect extends SqlCall implements Select {
     }
 
 
-    public boolean hasOrderBy() {
-        return orderBy != null && orderBy.size() != 0;
-    }
-
-
-    public boolean hasWhere() {
-        return where != null;
-    }
-
-
     public boolean isKeywordPresent( SqlSelectKeyword targetKeyWord ) {
         return getModifierNode( targetKeyWord ) != null;
     }
 
 }
-

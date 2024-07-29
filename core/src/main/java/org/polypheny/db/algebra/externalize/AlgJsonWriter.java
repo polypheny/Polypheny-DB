@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -88,10 +88,16 @@ public class AlgJsonWriter implements AlgWriter {
             put( map, value.left, replaceWithFieldNames( alg, value.right ) );
         }
 
-        put( map, "rowcount", mq.getRowCount( alg ) );
-        put( map, "rows cost", mq.getCumulativeCost( alg ).getRows() );
-        put( map, "cpu cost", mq.getCumulativeCost( alg ).getCpu() );
-        put( map, "io cost", mq.getCumulativeCost( alg ).getIo() );
+        put( map, "rowcount", mq.getTupleCount( alg ) );
+        try {
+            put( map, "rows cost", mq.getCumulativeCost( alg ).getRows() );
+            put( map, "cpu cost", mq.getCumulativeCost( alg ).getCpu() );
+            put( map, "io cost", mq.getCumulativeCost( alg ).getIo() );
+        } catch ( Exception e ) {
+            put( map, "rows cost", "unknown" );
+            put( map, "cpu cost", "unknown" );
+            put( map, "io cost", "unknown" );
+        }
 
         final List<Object> list = explainInputs( alg.getInputs() );
         List<Object> l = new LinkedList<>();
@@ -111,7 +117,7 @@ public class AlgJsonWriter implements AlgWriter {
 
 
     private String replaceWithFieldNames( AlgNode alg, Object right ) {
-        String str = right.toString();
+        String str = right == null ? "" : right.toString();
         if ( str.contains( "$" ) ) {
             int offset = 0;
             for ( AlgNode input : alg.getInputs() ) {

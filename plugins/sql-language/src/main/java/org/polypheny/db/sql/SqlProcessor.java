@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,12 +19,9 @@ package org.polypheny.db.sql;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.AvaticaSeverity;
-import org.apache.calcite.avatica.util.Casing;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.algebra.AlgDecorrelator;
 import org.polypheny.db.algebra.AlgNode;
@@ -49,7 +46,7 @@ import org.polypheny.db.languages.Parser.ParserConfig;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.Node;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
@@ -74,27 +71,24 @@ import org.polypheny.db.transaction.Lock.LockMode;
 import org.polypheny.db.transaction.LockManager;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
-import org.polypheny.db.transaction.TransactionImpl;
+import org.polypheny.db.util.Casing;
 import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.DeadlockException;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.SourceStringReader;
 
 
+@Setter
 @Slf4j
 public class SqlProcessor extends Processor {
 
     private static final ParserConfig parserConfig;
 
-    @Setter
     private PolyphenyDbSqlValidator validator;
-
-    private final Snapshot snapshot = Catalog.getInstance().getSnapshot();
 
 
     static {
         SqlParser.ConfigBuilder configConfigBuilder = Parser.configBuilder();
-        configConfigBuilder.setCaseSensitive( RuntimeConfig.RELATIONAL_CASE_SENSITIVE.getBoolean() );
         configConfigBuilder.setUnquotedCasing( Casing.UNCHANGED );
         configConfigBuilder.setQuotedCasing( Casing.UNCHANGED );
         parserConfig = configConfigBuilder.build();
@@ -171,7 +165,7 @@ public class SqlProcessor extends Processor {
         } catch ( Exception e ) {
             log.error( "Exception while validating query", e );
             String message = e.getLocalizedMessage();
-            throw new GenericRuntimeException( message == null ? "null" : message, -1, "", AvaticaSeverity.ERROR );
+            throw new GenericRuntimeException( "Exception while validating query:" + (message == null ? "unrecoverable error" : message) );
         }
         stopWatch.stop();
         if ( log.isTraceEnabled() ) {
@@ -196,7 +190,7 @@ public class SqlProcessor extends Processor {
         Config sqlToAlgConfig = NodeToAlgConverter.configBuilder().build();
         final RexBuilder rexBuilder = new RexBuilder( statement.getTransaction().getTypeFactory() );
 
-        final AlgOptCluster cluster = AlgOptCluster.create( statement.getQueryProcessor().getPlanner(), rexBuilder, null, statement.getDataContext().getSnapshot() );
+        final AlgCluster cluster = AlgCluster.create( statement.getQueryProcessor().getPlanner(), rexBuilder, null, statement.getDataContext().getSnapshot() );
         final Config config =
                 NodeToAlgConverter.configBuilder()
                         .config( sqlToAlgConfig )
@@ -207,7 +201,7 @@ public class SqlProcessor extends Processor {
         AlgRoot logicalRoot = sqlToAlgConverter.convertQuery( context.getQueryNode().orElseThrow(), false, true );
 
         // Decorrelate
-        final AlgBuilder algBuilder = config.getAlgBuilderFactory().create( cluster, null );
+        final AlgBuilder algBuilder = config.algBuilderFactory().create( cluster, null );
         logicalRoot = logicalRoot.withAlg( AlgDecorrelator.decorrelateQuery( logicalRoot.alg, algBuilder ) );
 
         // Trim unused fields.
@@ -229,13 +223,13 @@ public class SqlProcessor extends Processor {
 
     @Override
     public void unlock( Statement statement ) {
-        LockManager.INSTANCE.unlock( Collections.singletonList( LockManager.GLOBAL_LOCK ), (TransactionImpl) statement.getTransaction() );
+        LockManager.INSTANCE.unlock( statement.getTransaction() );
     }
 
 
     @Override
     public void lock( Statement statement ) throws DeadlockException {
-        LockManager.INSTANCE.lock( Collections.singletonList( Pair.of( LockManager.GLOBAL_LOCK, LockMode.EXCLUSIVE ) ), (TransactionImpl) statement.getTransaction() );
+        LockManager.INSTANCE.lock( LockMode.EXCLUSIVE, statement.getTransaction() );
     }
 
 
@@ -372,6 +366,7 @@ public class SqlProcessor extends Processor {
 
     private LogicalTable getTable( Transaction transaction, SqlIdentifier tableName ) {
         LogicalTable table;
+        Snapshot snapshot = transaction.getSnapshot();
         long namespaceId;
         String tableOldName;
         if ( tableName.names.size() == 3 ) { // DatabaseName.SchemaName.TableName
@@ -392,14 +387,8 @@ public class SqlProcessor extends Processor {
         int i = 0;
         for ( Node node : columnList.getList() ) {
             SqlIdentifier identifier = (SqlIdentifier) node;
-            if ( RuntimeConfig.RELATIONAL_CASE_SENSITIVE.getBoolean() ) {
-                if ( identifier.getSimple().equals( name ) ) {
-                    return i;
-                }
-            } else {
-                if ( identifier.getSimple().equalsIgnoreCase( name ) ) {
-                    return i;
-                }
+            if ( identifier.getSimple().equalsIgnoreCase( name ) ) {
+                return i;
             }
             i++;
         }

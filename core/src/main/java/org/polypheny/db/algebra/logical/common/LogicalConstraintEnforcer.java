@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.common.ConstraintEnforcer;
 import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.exceptions.ConstraintViolationException;
-import org.polypheny.db.algebra.logical.relational.LogicalFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.operators.OperatorName;
@@ -48,7 +48,7 @@ import org.polypheny.db.catalog.logistic.ConstraintType;
 import org.polypheny.db.catalog.snapshot.LogicalRelSnapshot;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexIndexRef;
@@ -70,7 +70,7 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
      * @param modify is the initial dml query, which modifies the entity
      * @param control is the control query, which tests if still all conditions are correct
      */
-    public LogicalConstraintEnforcer( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode modify, AlgNode control, List<Class<? extends Exception>> exceptionClasses, List<String> exceptionMessages ) {
+    public LogicalConstraintEnforcer( AlgCluster cluster, AlgTraitSet traitSet, AlgNode modify, AlgNode control, List<Class<? extends Exception>> exceptionClasses, List<String> exceptionMessages ) {
         super(
                 cluster,
                 traitSet,
@@ -130,14 +130,14 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
         List<String> errorMessages = new ArrayList<>();
         List<Class<? extends Exception>> errorClasses = new ArrayList<>();
         if ( (modify.isInsert() || modify.isMerge() || modify.isUpdate()) && RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT.getBoolean() ) {
-            //builder.scan( table.getNamespaceName(), table.name );
+            //builder.relScan( table.getNamespaceName(), table.name );
             for ( LogicalConstraint constraint : constraints ) {
                 builder.clear();
                 final AlgNode scan = LogicalRelScan.create( modify.getCluster(), modify.getEntity() );
                 builder.push( scan );
                 // Enforce uniqueness between the already existing values and the new values
                 List<RexIndexRef> keys = constraint.key
-                        .getColumnNames()
+                        .getFieldNames()
                         .stream()
                         .map( builder::field )
                         .collect( Collectors.toList() );
@@ -165,21 +165,21 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
             for ( final LogicalForeignKey foreignKey : Stream.concat( foreignKeys.stream(), exportedKeys.stream() ).toList() ) {
                 builder.clear();
                 final LogicalTable scanOptTable = snapshot.getTable( foreignKey.entityId ).orElseThrow();
-                final LogicalTable refOptTable = snapshot.getTable( foreignKey.referencedKeyTableId ).orElseThrow();
+                final LogicalTable refOptTable = snapshot.getTable( foreignKey.referencedKeyEntityId ).orElseThrow();
                 final AlgNode scan = LogicalRelScan.create( modify.getCluster(), scanOptTable );
                 final LogicalRelScan ref = LogicalRelScan.create( modify.getCluster(), refOptTable );
 
                 builder.push( scan );
-                builder.project( foreignKey.getColumnNames().stream().map( builder::field ).collect( Collectors.toList() ) );
+                builder.project( foreignKey.getFieldNames().stream().map( builder::field ).collect( Collectors.toList() ) );
 
                 builder.push( ref );
-                builder.project( foreignKey.getReferencedKeyColumnNames().stream().map( builder::field ).collect( Collectors.toList() ) );
+                builder.project( foreignKey.getReferencedKeyFieldNames().stream().map( builder::field ).collect( Collectors.toList() ) );
 
                 RexNode joinCondition = rexBuilder.makeLiteral( true );
 
-                for ( int i = 0; i < foreignKey.getColumnNames().size(); i++ ) {
-                    final String column = foreignKey.getColumnNames().get( i );
-                    final String referencedColumn = foreignKey.getReferencedKeyColumnNames().get( i );
+                for ( int i = 0; i < foreignKey.getFieldNames().size(); i++ ) {
+                    final String column = foreignKey.getFieldNames().get( i );
+                    final String referencedColumn = foreignKey.getReferencedKeyFieldNames().get( i );
                     RexNode joinComparison = rexBuilder.makeCall(
                             OperatorRegistry.get( OperatorName.EQUALS ),
                             builder.field( 2, 1, referencedColumn ),
@@ -190,8 +190,8 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
 
                 final AlgNode join = builder.join( JoinAlgType.LEFT, joinCondition ).build();
                 //builder.project( builder.fields() );
-                builder.push( LogicalFilter.create( join, rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NULL ), rexBuilder.makeInputRef( join, join.getTupleType().getFieldCount() - 1 ) ) ) );
-                builder.project( builder.field( foreignKey.getColumnNames().get( 0 ) ) );
+                builder.push( LogicalRelFilter.create( join, rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NULL ), rexBuilder.makeInputRef( join, join.getTupleType().getFieldCount() - 1 ) ) ) );
+                builder.project( builder.field( foreignKey.getFieldNames().get( 0 ) ) );
                 builder.rename( Collections.singletonList( "count$" + pos ) );
                 builder.projectPlus( builder.literal( pos ) );
 
@@ -247,6 +247,9 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
             constraints.add( pkc );
         }
 
+        // get new constraints
+        constraints.addAll( statement.getTransaction().getUsedConstraints( table.id ).stream().filter( c -> c.type != ConstraintType.FOREIGN ).toList() );
+
         AlgNode constrainedNode;
 
         //
@@ -257,13 +260,13 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
         List<String> errorMessages = new ArrayList<>();
         List<Class<? extends Exception>> errorClasses = new ArrayList<>();
         if ( RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT.getBoolean() ) {
-            //builder.scan( table.getNamespaceName(), table.name );
+            //builder.relScan( table.getNamespaceName(), table.name );
             for ( LogicalConstraint constraint : constraints ) {
                 builder.clear();
-                builder.scan( table );//LogicalTableScan.create( modify.getCluster(), modify.getTable() );
+                builder.relScan( table );//LogicalTableScan.create( modify.getCluster(), modify.getTable() );
                 // Enforce uniqueness between the already existing values and the new values
                 List<RexIndexRef> keys = constraint.key
-                        .getColumnNames()
+                        .getFieldNames()
                         .stream()
                         .map( builder::field )
                         .collect( Collectors.toList() );
@@ -289,23 +292,21 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
         if ( RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() ) {
             for ( final LogicalForeignKey foreignKey : Stream.concat( foreignKeys.stream(), exportedKeys.stream() ).toList() ) {
                 builder.clear();
-                //final AlgOptSchema algOptSchema = modify.getCatalogReader();
-                //final AlgOptTable scanOptTable = algOptSchema.getTableForMember( Collections.singletonList( foreignKey.getTableName() ) );
-                //final AlgOptTable refOptTable = algOptSchema.getTableForMember( Collections.singletonList( foreignKey.getReferencedKeyTableName() ) );
-                final AlgNode scan = builder.scan( foreignKey.getSchemaName(), foreignKey.getTableName() ).build();//LogicalTableScan.create( modify.getCluster(), scanOptTable );
-                final AlgNode ref = builder.scan( foreignKey.getSchemaName(), foreignKey.getReferencedKeyTableName() ).build();
+
+                final AlgNode scan = builder.relScan( foreignKey.getSchemaName(), foreignKey.getTableName() ).build();
+                final AlgNode ref = builder.relScan( foreignKey.getSchemaName(), foreignKey.getReferencedKeyEntityName() ).build();
 
                 builder.push( scan );
-                builder.project( foreignKey.getColumnNames().stream().map( builder::field ).collect( Collectors.toList() ) );
+                builder.project( foreignKey.getFieldNames().stream().map( builder::field ).collect( Collectors.toList() ) );
 
                 builder.push( ref );
-                builder.project( foreignKey.getReferencedKeyColumnNames().stream().map( builder::field ).collect( Collectors.toList() ) );
+                builder.project( foreignKey.getReferencedKeyFieldNames().stream().map( builder::field ).collect( Collectors.toList() ) );
 
                 RexNode joinCondition = rexBuilder.makeLiteral( true );
 
-                for ( int i = 0; i < foreignKey.getColumnNames().size(); i++ ) {
-                    final String column = foreignKey.getColumnNames().get( i );
-                    final String referencedColumn = foreignKey.getReferencedKeyColumnNames().get( i );
+                for ( int i = 0; i < foreignKey.getFieldNames().size(); i++ ) {
+                    final String column = foreignKey.getFieldNames().get( i );
+                    final String referencedColumn = foreignKey.getReferencedKeyFieldNames().get( i );
                     RexNode joinComparison = rexBuilder.makeCall(
                             OperatorRegistry.get( OperatorName.EQUALS ),
                             builder.field( 2, 1, referencedColumn ),
@@ -316,8 +317,8 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
 
                 final AlgNode join = builder.join( JoinAlgType.LEFT, joinCondition ).build();
                 //builder.project( builder.fields() );
-                builder.push( LogicalFilter.create( join, rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NULL ), rexBuilder.makeInputRef( join, join.getTupleType().getFieldCount() - 1 ) ) ) );
-                builder.project( builder.field( foreignKey.getColumnNames().get( 0 ) ) );
+                builder.push( LogicalRelFilter.create( join, rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NULL ), rexBuilder.makeInputRef( join, join.getTupleType().getFieldCount() - 1 ) ) ) );
+                builder.project( builder.field( foreignKey.getFieldNames().get( 0 ) ) );
                 builder.rename( Collections.singletonList( "count$" + pos ) );
                 builder.projectPlus( builder.literal( pos ) );
 
@@ -399,7 +400,7 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
     }
 
 
-    public record EnforcementInformation(AlgNode control, List<Class<? extends Exception>> errorClasses, List<String> errorMessages) {
+    public record EnforcementInformation( AlgNode control, List<Class<? extends Exception>> errorClasses, List<String> errorMessages ) {
 
         /**
          * {@link EnforcementInformation} holds all needed information regarding a constraint.

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,12 +49,12 @@ import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.core.CorrelationId;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptListener.AlgChosenEvent;
 import org.polypheny.db.plan.AlgOptListener.AlgEquivalenceEvent;
-import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTrait;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.util.Litmus;
@@ -109,7 +109,7 @@ public class AlgSubset extends AbstractAlgNode {
     boolean boosted;
 
 
-    AlgSubset( AlgOptCluster cluster, AlgSet set, AlgTraitSet traits ) {
+    AlgSubset( AlgCluster cluster, AlgSet set, AlgTraitSet traits ) {
         super( cluster, traits );
         this.set = set;
         this.boosted = false;
@@ -129,7 +129,7 @@ public class AlgSubset extends AbstractAlgNode {
      * <li>After creation, {@code best} and {@code bestCost} are maintained incrementally by {@link #propagateCostImprovements0} and {@link AlgSet#mergeWith(VolcanoPlanner, AlgSet)}.</li>
      * </ol>
      */
-    private void computeBestCost( AlgOptPlanner planner ) {
+    private void computeBestCost( AlgPlanner planner ) {
         bestCost = planner.getCostFactory().makeInfiniteCost();
         final AlgMetadataQuery mq = getCluster().getMetadataQuery();
         for ( AlgNode alg : getAlgs() ) {
@@ -151,6 +151,12 @@ public class AlgSubset extends AbstractAlgNode {
     @Override
     public boolean containsScan() {
         return set.alg.containsScan();
+    }
+
+
+    @Override
+    public boolean containsEntity() {
+        return set.alg.containsEntity();
     }
 
 
@@ -180,17 +186,17 @@ public class AlgSubset extends AbstractAlgNode {
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         return planner.getCostFactory().makeZeroCost();
     }
 
 
     @Override
-    public double estimateRowCount( AlgMetadataQuery mq ) {
+    public double estimateTupleCount( AlgMetadataQuery mq ) {
         if ( best != null ) {
-            return mq.getRowCount( best );
+            return mq.getTupleCount( best );
         } else {
-            return mq.getRowCount( set.alg );
+            return mq.getTupleCount( set.alg );
         }
     }
 
@@ -280,7 +286,6 @@ public class AlgSubset extends AbstractAlgNode {
         }
         return list;
     }
-
 
 
     /**
@@ -409,7 +414,9 @@ public class AlgSubset extends AbstractAlgNode {
      * @return all the algs in the subset
      */
     public Iterable<AlgNode> getAlgs() {
-        return set.algs.stream().filter( v1 -> v1.getTraitSet().satisfies( traitSet ) ).toList();
+        return () -> Linq4j.asEnumerable( set.algs )
+                .where( v1 -> v1.getTraitSet().satisfies( traitSet ) )
+                .iterator();
     }
 
 
@@ -454,7 +461,7 @@ public class AlgSubset extends AbstractAlgNode {
                     planner.dump( pw );
                     pw.flush();
                     final String dump = sw.toString();
-                    RuntimeException e = new AlgOptPlanner.CannotPlanException( dump );
+                    RuntimeException e = new AlgPlanner.CannotPlanException( dump );
                     LOGGER.trace( "Caught exception in class={}, method=visit", getClass().getName(), e );
                     throw e;
                 }

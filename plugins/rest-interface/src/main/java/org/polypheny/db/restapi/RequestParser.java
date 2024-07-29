@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,11 +60,11 @@ import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.entity.PolyBoolean;
-import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
+import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.type.entity.temporal.PolyDate;
 import org.polypheny.db.type.entity.temporal.PolyTime;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
@@ -87,6 +87,7 @@ public class RequestParser {
 
     private final static Pattern SORTING_ENTRY_PATTERN = Pattern.compile(
             "^(?<column>[a-zA-Z]\\w*(?:\\.[a-zA-Z]\\w*\\.[a-zA-Z]\\w*)?)(?:@(?<dir>ASC|DESC))?$" );
+    private final Catalog catalog;
 
 
     public RequestParser( final TransactionManager transactionManager, final Authenticator authenticator, final String userName, final String databaseName ) {
@@ -96,6 +97,7 @@ public class RequestParser {
 
     @VisibleForTesting
     RequestParser( Catalog catalog, TransactionManager transactionManager, Authenticator authenticator, String userName, String databaseName ) {
+        this.catalog = catalog;
         this.transactionManager = transactionManager;
         this.authenticator = authenticator;
         this.userName = userName;
@@ -261,7 +263,7 @@ public class RequestParser {
             throw new ParserException( ParserErrorCode.TABLE_LIST_MALFORMED_TABLE, tableName );
         }
 
-        LogicalTable table = Catalog.snapshot().rel().getTable( tableElements[0], tableElements[1] ).orElseThrow();
+        LogicalTable table = catalog.getSnapshot().rel().getTable( tableElements[0], tableElements[1] ).orElseThrow();
         if ( log.isDebugEnabled() ) {
             log.debug( "Finished parsing table \"{}\".", tableName );
         }
@@ -352,7 +354,7 @@ public class RequestParser {
         Set<Long> notYetAdded = new HashSet<>( validColumns );
         notYetAdded.removeAll( projectedColumns );
         for ( long columnId : notYetAdded ) {
-            LogicalColumn column = Catalog.snapshot().getNamespaces( null ).stream().map( n -> Catalog.snapshot().rel().getColumn( columnId ).orElseThrow() ).findFirst().orElseThrow();
+            LogicalColumn column = catalog.getSnapshot().getNamespaces( null ).stream().map( n -> catalog.getSnapshot().rel().getColumn( columnId ).orElseThrow() ).findFirst().orElseThrow();
             int calculatedPosition = tableOffsets.get( column.tableId ) + column.position - 1;
             RequestColumn requestColumn = new RequestColumn( column, calculatedPosition, calculatedPosition, null, null, false );
             columns.add( requestColumn );
@@ -385,20 +387,14 @@ public class RequestParser {
             return null;
         }
 
-        switch ( function ) {
-            case "COUNT":
-                return OperatorRegistry.getAgg( OperatorName.COUNT );
-            case "MAX":
-                return OperatorRegistry.getAgg( OperatorName.MAX );
-            case "MIN":
-                return OperatorRegistry.getAgg( OperatorName.MIN );
-            case "AVG":
-                return OperatorRegistry.getAgg( OperatorName.AVG );
-            case "SUM":
-                return OperatorRegistry.getAgg( OperatorName.SUM );
-            default:
-                return null;
-        }
+        return switch ( function ) {
+            case "COUNT" -> OperatorRegistry.getAgg( OperatorName.COUNT );
+            case "MAX" -> OperatorRegistry.getAgg( OperatorName.MAX );
+            case "MIN" -> OperatorRegistry.getAgg( OperatorName.MIN );
+            case "AVG" -> OperatorRegistry.getAgg( OperatorName.AVG );
+            case "SUM" -> OperatorRegistry.getAgg( OperatorName.SUM );
+            default -> null;
+        };
     }
 
 
@@ -661,7 +657,7 @@ public class RequestParser {
                         break;
                     case TIMESTAMP:
                         Instant instant = LocalDateTime.parse( literal ).toInstant( ZoneOffset.UTC );
-                        long millisecondsSinceEpoch = instant.toEpochMilli();// * 1000L + instant.getNano() / 1000000L;
+                        long millisecondsSinceEpoch = instant.toEpochMilli();
                         parsedLiteral = PolyTimestamp.of( millisecondsSinceEpoch );
                         break;
                     case TIME:
@@ -717,10 +713,6 @@ public class RequestParser {
 
         for ( Object objectColumnName : rowValuesMap.keySet() ) {
             String stringColumnName = (String) objectColumnName;
-            /*if ( possibleValue.startsWith( "_" ) ) {
-                log.debug( "FIX THIS MESSAGE: {}", possibleValue );
-                continue;
-            }*/
 
             // Make sure we actually have a column
             RequestColumn column = nameMapping.get( stringColumnName );
@@ -735,7 +727,7 @@ public class RequestParser {
             result.add( new Pair<>( column, parsedValue ) );
         }
 
-        // TODO js: Do I need logical or table scan indices here?
+        // TODO js: Do I need logical or table relScan indices here?
         result.sort( Comparator.comparingInt( p -> p.left.getLogicalIndex() ) );
 
         return result;
