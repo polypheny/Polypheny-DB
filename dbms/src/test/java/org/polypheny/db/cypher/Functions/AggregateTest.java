@@ -23,6 +23,7 @@ import org.polypheny.db.cypher.CypherTestTemplate;
 import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.webui.models.results.GraphResult;
 import java.util.Arrays;
+import java.util.List;
 
 
 public class AggregateTest extends CypherTestTemplate {
@@ -141,7 +142,7 @@ public class AggregateTest extends CypherTestTemplate {
         execute(SINGLE_NODE_PERSON_1);
 
 
-        GraphResult res = execute("MATCH (n) RETURN count(DISTINCT n.name)");
+        GraphResult res = execute("MATCH (n) RETURN COUNT(DISTINCT n.name)");
        assert containsRows(res, true, false, Row.of(TestLiteral.from(1)));
 
 
@@ -159,9 +160,8 @@ public class AggregateTest extends CypherTestTemplate {
         execute( SINGLE_EDGE_2 );
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
 
-        GraphResult res = execute( "MATCH (n) RETURN avg(n.age)" );
+        GraphResult res = execute( "MATCH (n) RETURN AVG(n.age)" );
         // Printing the data using Arrays.deepToString
-        System.out.print( "Alyaa :" );
         String[][] data = res.getData();
         System.out.println( Arrays.deepToString(data));
         assert containsRows( res, true, false,
@@ -173,7 +173,7 @@ public class AggregateTest extends CypherTestTemplate {
     public void avgNullAggregateTest() {
         execute(SINGLE_NODE_PERSON_1);
         execute(SINGLE_NODE_PERSON_2);
-        GraphResult res = execute("MATCH (p:Person) RETURN avg(p.age)");
+        GraphResult res = execute("MATCH (p:Person) RETURN AVG(p.age)");
 
        assert containsRows(res, true, false, Row.of(TestLiteral.from(null)));
     }
@@ -184,7 +184,7 @@ public class AggregateTest extends CypherTestTemplate {
         execute(SINGLE_NODE_PERSON_COMPLEX_1);
         execute(SINGLE_NODE_PERSON_COMPLEX_2 );
 
-        GraphResult res = execute("MATCH (p:Person) RETURN avg(p.age) AS ages");
+        GraphResult res = execute("MATCH (p:Person) RETURN AVG(p.age) AS ages");
         assert containsRows(res, true, false, Row.of(TestLiteral.from(38)));
     }
     @Test
@@ -196,7 +196,7 @@ public class AggregateTest extends CypherTestTemplate {
         execute(SINGLE_NODE_PERSON_COMPLEX_3 );
 
 
-        GraphResult res = execute("MATCH (p:Person) RETURN  p.depno As depNumber , avg(p.age) As avgAge");
+        GraphResult res = execute("MATCH (p:Person) RETURN  p.depno As depNumber , AVG(p.age) As avgAge");
                 containsRows(res, true, false,
                 Row.of(TestLiteral.from(13) , TestLiteral.from( 38 )),
                 Row.of( TestLiteral.from( 14 ), TestLiteral.from( 32 ) ));
@@ -207,14 +207,18 @@ public class AggregateTest extends CypherTestTemplate {
         execute(SINGLE_NODE_PERSON_COMPLEX_1);
         execute(SINGLE_NODE_PERSON_COMPLEX_2 );
 
-        GraphResult res = execute("MATCH (p:Person) RETURN collect(p.age) ");
+        GraphResult res = execute("MATCH (p:Person) RETURN COLLECT(p.age) ");
+        assert  containsRows( res , true , false , Row.of( TestLiteral.from( List.of(45,31)) ) );
+
     }
     @Test
     public void collectRenameAggregationTest() {
         execute(SINGLE_NODE_PERSON_COMPLEX_1);
         execute(SINGLE_NODE_PERSON_COMPLEX_2 );
 
-        GraphResult res = execute("MATCH (p:Person) RETURN collect(p.age) AS ages");
+        GraphResult res = execute("MATCH (p:Person) RETURN COLLECT(p.age) AS ages");
+        assert  containsRows( res , true , false , Row.of( TestLiteral.from( List.of(45,31)) ) );
+
     }
 
     @Test
@@ -223,13 +227,17 @@ public class AggregateTest extends CypherTestTemplate {
         execute(SINGLE_NODE_PERSON_COMPLEX_2 );
         execute( SINGLE_NODE_PERSON_COMPLEX_3 );
 
-        GraphResult res = execute("MATCH (p:Person) RETURN collect(p.age) AS ages , p.depno AS depNumber");
+        GraphResult res = execute("MATCH (p:Person) RETURN COLLECT(p.age) AS ages , p.depno AS depNumber");
+        assert  containsRows( res , true , false ,
+                Row.of( TestLiteral.from( List.of(45 ,31)),TestLiteral.from( 13 ) ),
+                Row.of( TestLiteral.from( List.of(32)),TestLiteral.from( 14 ) ));
     }
     @Test
     public void collectNullAggregationTest() {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_PERSON_2 );
-        GraphResult res = execute("MATCH (p:Person) RETURN collect(p.age)");
+        GraphResult res = execute("MATCH (p:Person) RETURN COLLECT(p.age)");
+       assert  containsRows( res , true , false , Row.of( TestLiteral.from( List.of(null,null)) ) );
     }
     @Test
     public void singleMinMaxAggregateTest() {
