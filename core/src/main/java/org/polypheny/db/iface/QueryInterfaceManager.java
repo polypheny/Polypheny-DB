@@ -78,7 +78,7 @@ public class QueryInterfaceManager {
 
 
     public static void removeInterfaceType( String interfaceName ) {
-        if ( Catalog.snapshot().getQueryInterfaces().values().stream().anyMatch( i -> i.getInterfaceName().equals( interfaceName ) ) ) {
+        if ( Catalog.snapshot().getQueryInterfaces().values().stream().anyMatch( i -> i.getInterfaceType().equals( interfaceName ) ) ) {
             throw new GenericRuntimeException( "Cannot remove the interface type, there is still a interface active." );
         }
         Catalog.getInstance().dropInterfaceTemplate( interfaceName );
@@ -130,28 +130,28 @@ public class QueryInterfaceManager {
     public void restoreInterfaces( Snapshot snapshot ) {
         Map<Long, LogicalQueryInterface> interfaces = snapshot.getQueryInterfaces();
         interfaces.forEach( ( id, l ) -> {
-                    QueryInterface q = Catalog.snapshot().getInterfaceTemplate( l.interfaceName )
+                    QueryInterface q = Catalog.snapshot().getInterfaceTemplate( l.interfaceType )
                             .map( t -> t.deployer.get( transactionManager, authenticator, l.name, l.settings ) )
                             .orElseThrow();
-                    startInterface( q, l.interfaceName, id );
+                    startInterface( q, l.interfaceType, id );
                 }
         );
     }
 
 
-    public QueryInterface createQueryInterface( String interfaceName, String uniqueName, Map<String, String> settings ) {
+    public QueryInterface createQueryInterface( String interfaceType, String uniqueName, Map<String, String> settings ) {
         uniqueName = uniqueName.toLowerCase();
         if ( interfaceByName.containsKey( uniqueName ) ) {
             throw new GenericRuntimeException( "There is already a query interface with this unique name" );
         }
         QueryInterface instance;
-        QueryInterfaceTemplate template = Catalog.snapshot().getInterfaceTemplate( interfaceName ).orElseThrow();
+        QueryInterfaceTemplate template = Catalog.snapshot().getInterfaceTemplate( interfaceType ).orElseThrow();
         try {
             instance = template.deployer().get( transactionManager, authenticator, uniqueName, settings );
         } catch ( GenericRuntimeException e ) {
             throw new GenericRuntimeException( "Failed to deploy query interface: " + e.getMessage() );
         }
-        startInterface( instance, interfaceName, null );
+        startInterface( instance, interfaceType, null );
 
         return instance;
     }
@@ -183,13 +183,13 @@ public class QueryInterfaceManager {
     public record QueryInterfaceCreateRequest(
             @JsonSerialize String interfaceType,
             @JsonSerialize String uniqueName,
-            @JsonSerialize Map<String, String> currentSettings ) {
+            @JsonSerialize Map<String, String> settings ) {
 
     }
 
 
     public record QueryInterfaceTemplate(
-            @JsonSerialize String interfaceName,
+            @JsonSerialize String interfaceType,
             @JsonSerialize String description,
             Function5<TransactionManager, Authenticator, String, Map<String, String>, QueryInterface> deployer,
             @JsonSerialize List<QueryInterfaceSetting> availableSettings ) {

@@ -39,7 +39,7 @@ public class LogicalQueryInterface implements PolyObject {
     @Serialize
     public String name;
     @Serialize
-    public String interfaceName;
+    public String interfaceType;
     @Serialize
     public ImmutableMap<String, String> settings;
 
@@ -47,11 +47,11 @@ public class LogicalQueryInterface implements PolyObject {
     public LogicalQueryInterface(
             @Deserialize("id") final long id,
             @Deserialize("name") @NonNull final String uniqueName,
-            @Deserialize("interfaceName") @NonNull final String interfaceName,
+            @Deserialize("interfaceType") @NonNull final String interfaceType,
             @Deserialize("settings") @NonNull final Map<String, String> settings ) {
         this.id = id;
         this.name = uniqueName;
-        this.interfaceName = interfaceName;
+        this.interfaceType = interfaceType;
         this.settings = ImmutableMap.copyOf( settings );
     }
 

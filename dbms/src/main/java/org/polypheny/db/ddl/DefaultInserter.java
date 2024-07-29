@@ -103,9 +103,9 @@ public class DefaultInserter {
         if ( !Catalog.getInstance().getInterfaces().isEmpty() ) {
             return;
         }
-        Catalog.getInstance().getInterfaceTemplates().values().forEach( i -> Catalog.getInstance().createQueryInterface( i.interfaceName().toLowerCase(), i.interfaceName(), i.getDefaultSettings() ) );
+        Catalog.getInstance().getInterfaceTemplates().values().forEach( i -> Catalog.getInstance().createQueryInterface( i.interfaceType().toLowerCase(), i.interfaceType(), i.getDefaultSettings() ) );
         // TODO: This is ugly, both because it is racy, and depends on a string (which might be changed)
-        if ( Catalog.getInstance().getInterfaceTemplates().values().stream().anyMatch( t -> t.interfaceName().equals( "Prism Interface (Unix transport)" ) ) ) {
+        if ( Catalog.getInstance().getInterfaceTemplates().values().stream().anyMatch( t -> t.interfaceType().equals( "Prism Interface (Unix transport)" ) ) ) {
             Catalog.getInstance().createQueryInterface(
                     "prism interface (unix transport @ .polypheny)",
                     "Prism Interface (Unix transport)",
