@@ -16,6 +16,7 @@
 
 package org.polypheny.db.catalog.logistic;
 
+import java.util.Arrays;
 import lombok.Getter;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 
@@ -37,12 +38,7 @@ public enum PartitionType {
 
 
     public static PartitionType getByName( final String name ) {
-        for ( PartitionType t : values() ) {
-            if ( t.name().equalsIgnoreCase( name ) ) {
-                return t;
-            }
-        }
-        throw new GenericRuntimeException( "Unknown PartitionType with name: " + name );
+        return Arrays.stream( values() ).filter( t -> t.name().equalsIgnoreCase( name ) ).findAny().orElseThrow( () -> new GenericRuntimeException( "Unknown PartitionType with name: " + name ) );
     }
 
 }
