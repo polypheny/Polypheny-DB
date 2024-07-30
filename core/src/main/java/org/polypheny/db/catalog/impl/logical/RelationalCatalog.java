@@ -26,6 +26,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.Value;
 import lombok.experimental.SuperBuilder;
@@ -95,7 +96,7 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
     @Serialize
     public Map<Long, LogicalConstraint> constraints;
 
-    List<Long> tablesFlaggedForDeletion = new ArrayList<>();
+    Set<Long> tablesFlaggedForDeletion = new HashSet<>();
 
     PropertyChangeSupport listeners = new PropertyChangeSupport( this );
 
@@ -569,9 +570,9 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
 
     @Override
     public void flagTableForDeletion( long tableId, boolean flag ) {
-        if ( flag && !tablesFlaggedForDeletion.contains( tableId ) ) {
+        if (flag) {
             tablesFlaggedForDeletion.add( tableId );
-        } else if ( !flag && tablesFlaggedForDeletion.contains( tableId ) ) {
+        } else {
             tablesFlaggedForDeletion.remove( tableId );
         }
     }
