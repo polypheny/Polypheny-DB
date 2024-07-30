@@ -251,18 +251,11 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
         for ( LogicalView view : this.views.values() ) {
             for ( long entityId : view.underlyingTables.keySet() ) {
-                if ( !map.containsKey( entityId ) ) {
-                    map.put( entityId, new ArrayList<>() );
-                }
-                map.get( entityId ).add( view );
+                map.computeIfAbsent( entityId, k -> new ArrayList<>() ).add( view );
             }
         }
         // add tables which are not connected
-        for ( long id : this.tables.keySet() ) {
-            if ( !map.containsKey( id ) ) {
-                map.put( id, new ArrayList<>() );
-            }
-        }
+        this.tables.keySet().forEach( id -> map.putIfAbsent( id, new ArrayList<>() ) );
 
         return ImmutableMap.copyOf( map );
     }
@@ -550,6 +543,5 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
     public @NonNull Optional<LogicalKey> getKey( long id ) {
         return Optional.ofNullable( keys.get( id ) );
     }
-
 
 }
