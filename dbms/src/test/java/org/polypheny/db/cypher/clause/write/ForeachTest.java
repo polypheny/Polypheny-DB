@@ -119,4 +119,22 @@ public class ForeachTest extends CypherTestTemplate {
                 TestNode.from( List.of( "Person" ), Pair.of( "name", "Hans" ), Pair.of( "status", "active" ) ) );
     }
 
+
+    @Test
+    public void nestedForeachTest() {
+        execute( SINGLE_NODE_PERSON_1 );
+        execute( SINGLE_NODE_PERSON_2 );
+        execute( "MATCH (p:Person)\n"
+                + "WITH collect(p) AS people\n"
+                + "FOREACH (p1 IN people |\n"
+                + "    FOREACH (p2 IN people |\n"
+                + "        CREATE (p1)-[:KNOWS]->(p2)\n"
+                + "    )\n"
+                + ")" );
+        GraphResult res = execute( "MATCH (p1)-[r:KNOWS]->(p2) RETURN r" );
+        assert res.getData().length == 4;
+        res = execute( "MATCH (p1)-[r:KNOWS]-(p2) RETURN r" );
+        assert res.getData().length == 6;
+    }
+
 }
