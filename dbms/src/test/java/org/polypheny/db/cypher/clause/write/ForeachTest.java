@@ -19,8 +19,14 @@ package org.polypheny.db.cypher.clause.write;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.cypher.CypherTestTemplate;
+import org.polypheny.db.cypher.helper.TestLiteral;
+import org.polypheny.db.cypher.helper.TestNode;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.webui.models.results.GraphResult;
+import java.util.List;
 
-public class ForeachTest  extends CypherTestTemplate {
+public class ForeachTest extends CypherTestTemplate {
+
     @BeforeEach
     public void reset() {
         tearDown();
@@ -28,5 +34,89 @@ public class ForeachTest  extends CypherTestTemplate {
     }
 
 
+    @Test
+    public void createWithForeachTest() {
+        execute( "WITH ['Alice', 'Bob', 'Charlie'] AS names\n"
+                + "FOREACH (name IN names |\n"
+                + "    CREATE (p:Person {name: name})\n"
+                + ")" );
+
+        GraphResult res = matchAndReturnAllNodes();
+        assert res.getData().length == 3;
+        assert containsNodes( res, true,
+                TestNode.from( Pair.of( "name", "Alice" ) ),
+                TestNode.from( Pair.of( "name", "Bob" ) ),
+                TestNode.from( Pair.of( "name", "Charlie" ) ) );
+
+
+    }
+
+
+    @Test
+    public void mergeWithForeachTest() {
+        execute( "WITH ['Alice', 'Bob', 'Charlie'] AS names\n"
+                + "FOREACH (name IN names |\n"
+                + "    MERGE (p:Person {name: name})\n"
+                + ")" );
+
+        GraphResult res = matchAndReturnAllNodes();
+        assert res.getData().length == 3;
+        assert containsNodes( res, true,
+                TestNode.from( Pair.of( "name", "Alice" ) ),
+                TestNode.from( Pair.of( "name", "Bob" ) ),
+                TestNode.from( Pair.of( "name", "Charlie" ) ) );
+
+    }
+
+
+    @Test
+    public void deleteWithForeachTest() {
+        execute( SINGLE_NODE_PERSON_1 );
+        execute( SINGLE_NODE_PERSON_2 );
+
+        execute( "MATCH (p:Person)\n"
+                + "WITH collect(p) AS people\n"
+                + "FOREACH (p IN people |\n"
+                + "    DELETE p\n"
+                + ")" );
+        GraphResult res = matchAndReturnAllNodes();
+        assertEmpty( res );
+
+    }
+
+
+    @Test
+    public void removeWithForeachTest() {
+        execute( SINGLE_NODE_PERSON_1 );
+        execute( SINGLE_NODE_PERSON_2 );
+
+        execute( "MATCH (p:Person)\n"
+                + "WITH collect(p) AS people\n"
+                + "FOREACH (p IN people |\n"
+                + "    REMOVE p.name \n"
+                + ")" );
+
+        GraphResult res = matchAndReturnAllNodes();
+        assert containsRows( res, true, false, Row.of( TestLiteral.from( null ) ),
+                Row.of( TestLiteral.from( null ) ) );
+
+    }
+
+
+    @Test
+    public void updateWithForeachTest() {
+        execute( SINGLE_NODE_PERSON_1 );
+        execute( SINGLE_NODE_PERSON_2 );
+        execute( "MATCH (p:Person)\n"
+                + "WITH collect(p) AS people\n"
+                + "FOREACH (p IN people |\n"
+                + "    SET p.status = 'active'\n"
+                + ")" );
+
+        GraphResult res = matchAndReturnAllNodes();
+        assert containsNodes( res, true,
+                TestNode.from( List.of( "Person" ), Pair.of( "name", "Max" ), Pair.of( "status", "active" ) ),
+                TestNode.from( List.of( "Person" ), Pair.of( "name", "Hans" ), Pair.of( "status", "active" ) ) );
+    }
 
 }
