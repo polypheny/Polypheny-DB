@@ -20,7 +20,6 @@ package org.polypheny.db.catalog.entity.logical;
 import com.google.common.collect.ImmutableList;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
-import java.util.ArrayList;
 import java.util.List;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
@@ -90,11 +89,7 @@ public class LogicalForeignKey extends LogicalKey {
 
     public List<String> getReferencedKeyFieldNames() {
         Snapshot snapshot = Catalog.snapshot();
-        List<String> fieldsNames = new ArrayList<>();
-        for ( long fieldId : referencedKeyFieldIds ) {
-            fieldsNames.add( snapshot.rel().getColumn( fieldId ).orElseThrow().name );
-        }
-        return fieldsNames;
+        return referencedKeyFieldIds.stream().map( fieldId -> snapshot.rel().getColumn( fieldId ).orElseThrow().name ).toList();
     }
 
 }

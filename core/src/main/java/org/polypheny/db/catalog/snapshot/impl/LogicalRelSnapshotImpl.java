@@ -238,9 +238,7 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
     private ImmutableMap<Long, List<LogicalKey>> buildTableKeys() {
         Map<Long, List<LogicalKey>> tableKeys = new HashMap<>();
-        for ( LogicalTable table : tables.values() ) {
-            tableKeys.put( table.id, new ArrayList<>() );
-        }
+        tables.values().forEach( table -> tableKeys.put( table.id, new ArrayList<>() ) );
         keys.forEach( ( k, v ) -> tableKeys.get( v.entityId ).add( v ) );
         return ImmutableMap.copyOf( tableKeys );
     }

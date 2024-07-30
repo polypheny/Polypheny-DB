@@ -20,7 +20,6 @@ import com.google.common.collect.ImmutableList;
 import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.annotations.SerializeClass;
 import java.io.Serial;
-import java.util.ArrayList;
 import java.util.List;
 import lombok.Value;
 import lombok.experimental.NonFinal;
@@ -75,11 +74,7 @@ public abstract class LogicalKey implements PolyObject, Comparable<LogicalKey> {
 
     public List<String> getFieldNames() {
         Snapshot snapshot = Catalog.snapshot();
-        List<String> columnNames = new ArrayList<>();
-        for ( long columnId : fieldIds ) {
-            columnNames.add( snapshot.rel().getColumn( columnId ).orElseThrow().name );
-        }
-        return columnNames;
+        return fieldIds.stream().map( columnId -> snapshot.rel().getColumn( columnId ).orElseThrow().name ).toList();
     }
 
 

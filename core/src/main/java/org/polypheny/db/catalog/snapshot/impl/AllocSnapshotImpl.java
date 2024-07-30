@@ -190,12 +190,7 @@ public class AllocSnapshotImpl implements AllocSnapshot {
 
 
     private ImmutableMap<Long, List<AllocationPartition>> buildPartitionsOfGroups() {
-        Map<Long, List<AllocationPartition>> map = new HashMap<>();
-        for ( AllocationPartitionGroup group : groups.values() ) {
-            map.put( group.id, partitions.values().stream().filter( p -> p.groupId == group.id ).toList() );
-        }
-
-        return ImmutableMap.copyOf( map );
+        return ImmutableMap.copyOf( groups.values().stream().collect( Collectors.toMap( group -> group.id, group -> partitions.values().stream().filter( p -> p.groupId == group.id ).toList() ) ) );
     }
 
 
@@ -382,9 +377,7 @@ public class AllocSnapshotImpl implements AllocSnapshot {
     private ImmutableMap<Long, List<AllocationEntity>> buildAllocsOnAdapters( Map<Long, LogicalAdapter> adapters ) {
         Map<Long, List<AllocationEntity>> allocs = new HashMap<>();
 
-        for ( LogicalAdapter adapter : adapters.values() ) {
-            allocs.put( adapter.id, new ArrayList<>() );
-        }
+        adapters.values().forEach( adapter -> allocs.put( adapter.id, new ArrayList<>() ) );
         this.allocs.forEach( ( k, v ) -> allocs.get( v.adapterId ).add( v ) );
         return ImmutableMap.copyOf( allocs );
 
