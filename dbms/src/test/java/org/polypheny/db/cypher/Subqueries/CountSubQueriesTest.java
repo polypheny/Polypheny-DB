@@ -77,7 +77,7 @@ public class CountSubQueriesTest extends CypherTestTemplate {
 
 
     @Test
-    public void UnionWithCountSubQueryTest() {
+    public void unionWithCountSubQueryTest() {
         execute( EDGE_3 );
 
         GraphResult res = execute( "MATCH (person:Person)\n"
@@ -97,7 +97,7 @@ public class CountSubQueriesTest extends CypherTestTemplate {
 
 
     @Test
-    public void WithClauseWithCountSubQueryTest() {
+    public void withClauseWithCountSubQueryTest() {
         execute( EDGE_3 );
         GraphResult res = execute( "MATCH (person:Person)\n"
                 + "WHERE COUNT {\n"
@@ -114,7 +114,7 @@ public class CountSubQueriesTest extends CypherTestTemplate {
 
 
     @Test
-    public void UpdateWithCountSubQueryTest() {
+    public void updateWithCountSubQueryTest() {
         execute( EDGE_3 );
 
         GraphResult res = execute( "MATCH (person:Person) WHERE person.name =\"Max\"\n"
@@ -129,7 +129,7 @@ public class CountSubQueriesTest extends CypherTestTemplate {
 
 
     @Test
-    public void CaseWithCountSubQueryTest() {
+    public void caseWithCountSubQueryTest() {
         execute( EDGE_3 );
         execute( SINGLE_NODE_PERSON_2 );
         GraphResult res = execute( "MATCH (person:Person)\n"
