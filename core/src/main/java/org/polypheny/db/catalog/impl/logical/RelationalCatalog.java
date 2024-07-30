@@ -420,23 +420,14 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
     }
 
 
-    private int getKeyUniqueCount( long keyId ) {
-        int count = 0;
+    private long getKeyUniqueCount( long keyId ) {
+        long count = 0;
         if ( Catalog.snapshot().rel().getPrimaryKey( keyId ).isPresent() ) {
             count++;
         }
 
-        for ( LogicalConstraint constraint : constraints.values().stream().filter( c -> c.keyId == keyId ).toList() ) {
-            if ( constraint.type == ConstraintType.UNIQUE ) {
-                count++;
-            }
-        }
-
-        for ( LogicalIndex index : indexes.values().stream().filter( i -> i.keyId == keyId ).toList() ) {
-            if ( index.unique ) {
-                count++;
-            }
-        }
+        count += constraints.values().stream().filter( c -> c.keyId == keyId && c.type == ConstraintType.UNIQUE ).count();
+        count += indexes.values().stream().filter( i -> i.keyId == keyId && i.unique ).count();
 
         return count;
     }
