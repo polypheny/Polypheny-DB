@@ -22,6 +22,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.prisminterface.streaming.StreamableBinaryWrapper;
+import org.polypheny.db.prisminterface.streaming.StreamableBlobWrapper;
+import org.polypheny.db.prisminterface.streaming.StreamableWrapper;
 import org.polypheny.db.prisminterface.streaming.StreamingIndex;
 import org.polypheny.db.prisminterface.streaming.StreamingStrategy;
 import org.polypheny.db.type.entity.PolyBinary;
@@ -54,6 +56,7 @@ import org.polypheny.prism.ProtoDouble;
 import org.polypheny.prism.ProtoEdge;
 import org.polypheny.prism.ProtoEdge.Direction;
 import org.polypheny.prism.ProtoEntry;
+import org.polypheny.prism.ProtoFile;
 import org.polypheny.prism.ProtoFloat;
 import org.polypheny.prism.ProtoInteger;
 import org.polypheny.prism.ProtoInterval;
@@ -140,11 +143,21 @@ public class PolyValueSerializer {
 
 
     private static ProtoValue serializeAsProtoFile( PolyBlob polyBlob, StreamingIndex streamingIndex, StreamingStrategy streamingStrategy ) {
-        ProtoBinary protoBinary = ProtoBinary.newBuilder()
-                .setBinary( ByteString.copyFrom( polyBlob.getValue() ) )
-                .build();
+        if ( polyBlob.value == null ) {
+            return serializeAsProtoNull();
+        }
+        ProtoFile.Builder fileBuilder = ProtoFile.newBuilder();
+        if (polyBlob.getValue().length > STREAM_LIMIT || streamingStrategy == StreamingStrategy.STREAM_ALL) {
+            long streamId = streamingIndex.register( new StreamableBlobWrapper( polyBlob ) );
+            fileBuilder
+                    .setStreamId(streamId)
+                    .setIsForwardOnly(true);
+        } else {
+            fileBuilder.setBinary( ByteString.copyFrom( polyBlob.getValue() ) );
+        }
+        ProtoFile protoFile = fileBuilder.build();
         return ProtoValue.newBuilder()
-                .setBinary( protoBinary )
+                .setFile(protoFile )
                 .build();
     }
 

@@ -17,19 +17,18 @@
 package org.polypheny.db.prisminterface.streaming;
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.Arrays;
 import org.polypheny.db.prisminterface.utils.PrismUtils;
-import org.polypheny.db.type.entity.PolyBinary;
+import org.polypheny.db.type.entity.category.PolyBlob;
 import org.polypheny.prism.StreamFrame;
 
-public class StreamableBinaryWrapper implements StreamableWrapper {
+public class StreamableBlobWrapper implements StreamableWrapper {
 
-    private PolyBinary binary;
+    private PolyBlob blob;
 
 
-    public StreamableBinaryWrapper( PolyBinary polyBinary ) {
-        this.binary = polyBinary;
+    public StreamableBlobWrapper( PolyBlob polyBinary ) {
+        this.blob = polyBinary;
     }
 
 
@@ -38,8 +37,8 @@ public class StreamableBinaryWrapper implements StreamableWrapper {
             throw new IllegalArgumentException( "Position and length must be non-negative" );
         }
         int end = ((int) position + length);
-        byte[] data = Arrays.copyOfRange( binary.value, (int) position, end );
-        return PrismUtils.buildStreamFrame( data, end >= binary.value.length );
+        byte[] data = Arrays.copyOfRange( blob.value, (int) position, end );
+        return PrismUtils.buildStreamFrame( data, end >= blob.value.length );
     }
 
 }

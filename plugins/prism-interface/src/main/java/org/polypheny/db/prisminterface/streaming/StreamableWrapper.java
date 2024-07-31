@@ -16,27 +16,12 @@
 
 package org.polypheny.db.prisminterface.streaming;
 
-import java.util.HashMap;
-import java.util.concurrent.atomic.AtomicLong;
+import java.io.IOException;
+import org.polypheny.prism.StreamFrame;
 
-public class StreamingIndex {
+public interface StreamableWrapper {
 
-    private final HashMap<Long, StreamableWrapper> index = new HashMap<>();
-    AtomicLong streamIdGenerator = new AtomicLong();
-
-
-    public long register( StreamableWrapper streamableWrapper ) {
-        long streamId = streamIdGenerator.incrementAndGet();
-        index.put( streamId, streamableWrapper );
-        return streamId;
-    }
-
-    public StreamableWrapper get(long streamId) {
-        return index.get( streamId );
-    }
-
-    public void reset() {
-        index.clear();
-    }
+    StreamFrame get( long position, int length ) throws IOException;
 
 }
+

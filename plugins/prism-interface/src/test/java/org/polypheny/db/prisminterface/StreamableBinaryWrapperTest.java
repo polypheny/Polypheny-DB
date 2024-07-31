@@ -26,6 +26,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.prisminterface.streaming.StreamableBinaryWrapper;
+import org.polypheny.db.prisminterface.streaming.StreamableBlobWrapper;
+import org.polypheny.db.prisminterface.streaming.StreamableWrapper;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.prism.StreamFrame;
 
@@ -49,7 +51,7 @@ public class StreamableBinaryWrapperTest {
         };
 
         PolyBinary polyBinary = PolyBinary.of( expected );
-        StreamableBinaryWrapper wrapper = new StreamableBinaryWrapper( polyBinary );
+        StreamableWrapper wrapper = new StreamableBinaryWrapper( polyBinary );
 
         StreamFrame frame = wrapper.get( 0, expected.length );
         byte[] result = frame.getData().toByteArray();
@@ -69,7 +71,7 @@ public class StreamableBinaryWrapperTest {
         };
 
         PolyBinary polyBinary = PolyBinary.of( expected );
-        StreamableBinaryWrapper wrapper = new StreamableBinaryWrapper( polyBinary );
+        StreamableWrapper wrapper = new StreamableBinaryWrapper( polyBinary );
 
         int subsetLength = 10;
         byte[] expectedSubset = Arrays.copyOfRange( expected, 0, subsetLength );
@@ -91,7 +93,7 @@ public class StreamableBinaryWrapperTest {
         };
 
         PolyBinary polyBinary = PolyBinary.of( expected );
-        StreamableBinaryWrapper wrapper = new StreamableBinaryWrapper( polyBinary );
+        StreamableWrapper wrapper = new StreamableBinaryWrapper( polyBinary );
 
         int subsetLength = 10;
         int offset = 20;
@@ -114,7 +116,7 @@ public class StreamableBinaryWrapperTest {
         };
 
         PolyBinary polyBinary = PolyBinary.of( expected );
-        StreamableBinaryWrapper wrapper = new StreamableBinaryWrapper( polyBinary );
+        StreamableWrapper wrapper = new StreamableBinaryWrapper( polyBinary );
 
         int subsetLength = 10;
         int offset = expected.length - subsetLength;
