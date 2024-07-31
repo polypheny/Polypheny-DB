@@ -22,6 +22,7 @@ import java.util.stream.Collectors;
 import org.polypheny.db.prisminterface.statements.PIPreparedStatement;
 import org.polypheny.db.prisminterface.statements.PIStatement;
 import org.polypheny.db.prisminterface.streaming.StreamingIndex;
+import org.polypheny.db.prisminterface.streaming.StreamingStrategy;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.graph.PolyEdge;
@@ -86,30 +87,30 @@ public class PrismUtils {
     }
 
 
-    public static Row serializeToRow( List<PolyValue> row, StreamingIndex streamingIndex ) {
+    public static Row serializeToRow( List<PolyValue> row, StreamingIndex streamingIndex, StreamingStrategy streamingStrategy ) {
         return Row.newBuilder()
-                .addAllValues( PolyValueSerializer.serializeList( row, streamingIndex ) )
+                .addAllValues( PolyValueSerializer.serializeList( row, streamingIndex, streamingStrategy ) )
                 .build();
     }
 
 
-    public static List<Row> serializeToRows( List<List<PolyValue>> rows, StreamingIndex streamingIndex ) {
-        return rows.stream().map(r -> PrismUtils.serializeToRow(r, streamingIndex) ).collect( Collectors.toList() );
+    public static List<Row> serializeToRows( List<List<PolyValue>> rows, StreamingIndex streamingIndex, StreamingStrategy streamingStrategy ) {
+        return rows.stream().map(r -> PrismUtils.serializeToRow(r, streamingIndex, streamingStrategy) ).collect( Collectors.toList() );
     }
 
 
-    public static List<ProtoNode> serializeToNodes( List<List<PolyValue>> data, StreamingIndex streamingIndex ) {
-        return data.stream().map( e -> PolyValueSerializer.buildProtoNode( (PolyNode) (e.get( 0 )), streamingIndex ) ).collect( Collectors.toList() );
+    public static List<ProtoNode> serializeToNodes( List<List<PolyValue>> data, StreamingIndex streamingIndex, StreamingStrategy streamingStrategy ) {
+        return data.stream().map( e -> PolyValueSerializer.buildProtoNode( (PolyNode) (e.get( 0 )), streamingIndex, streamingStrategy ) ).collect( Collectors.toList() );
     }
 
 
-    public static List<ProtoEdge> serializeToEdges( List<List<PolyValue>> data, StreamingIndex streamingIndex ) {
-        return data.stream().map( e -> PolyValueSerializer.buildProtoEdge( (PolyEdge) (e.get( 0 )), streamingIndex ) ).collect( Collectors.toList() );
+    public static List<ProtoEdge> serializeToEdges( List<List<PolyValue>> data, StreamingIndex streamingIndex, StreamingStrategy streamingStrategy ) {
+        return data.stream().map( e -> PolyValueSerializer.buildProtoEdge( (PolyEdge) (e.get( 0 )), streamingIndex, streamingStrategy ) ).collect( Collectors.toList() );
     }
 
 
-    public static List<ProtoPath> serializeToPaths( List<List<PolyValue>> data, StreamingIndex streamingIndex ) {
-        return data.stream().map( e -> PolyValueSerializer.buildProtoPath( (PolyPath) (e.get( 0 )), streamingIndex ) ).collect( Collectors.toList() );
+    public static List<ProtoPath> serializeToPaths( List<List<PolyValue>> data, StreamingIndex streamingIndex, StreamingStrategy streamingStrategy ) {
+        return data.stream().map( e -> PolyValueSerializer.buildProtoPath( (PolyPath) (e.get( 0 )), streamingIndex, streamingStrategy ) ).collect( Collectors.toList() );
     }
 
     public static StreamFrame buildStreamFrame(byte[] data, boolean is_last) {
@@ -120,14 +121,14 @@ public class PrismUtils {
     }
 
 
-    public static Frame buildGraphFrame( boolean isLast, List<List<PolyValue>> data, StreamingIndex streamingIndex ) {
+    public static Frame buildGraphFrame( boolean isLast, List<List<PolyValue>> data, StreamingIndex streamingIndex, StreamingStrategy streamingStrategy ) {
         GraphFrame.Builder graphFrameBuilder = GraphFrame.newBuilder();
         if ( !data.isEmpty() ) {
             PolyType elementType = data.get( 0 ).get( 0 ).getType();
             switch ( elementType ) {
-                case NODE -> graphFrameBuilder.addAllNodes( serializeToNodes( data, streamingIndex ) );
-                case EDGE -> graphFrameBuilder.addAllEdges( serializeToEdges( data, streamingIndex ) );
-                case PATH -> graphFrameBuilder.addAllPaths( serializeToPaths( data, streamingIndex ) );
+                case NODE -> graphFrameBuilder.addAllNodes( serializeToNodes( data, streamingIndex, streamingStrategy ) );
+                case EDGE -> graphFrameBuilder.addAllEdges( serializeToEdges( data, streamingIndex, streamingStrategy ) );
+                case PATH -> graphFrameBuilder.addAllPaths( serializeToPaths( data, streamingIndex, streamingStrategy ) );
                 default -> throw new RuntimeException( "Should never be thrown!" );
             }
         }

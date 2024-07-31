@@ -38,7 +38,9 @@ import org.polypheny.prism.RelationalFrame;
 
 public class StreamingFramework {
 
-    private final int MAX_MESSAGE_SIZE = 1000000000;
+    public static final int MAX_MESSAGE_SIZE = 1000000000;
+    public static final int STREAM_LIMIT = 100000000; // 1 MB
+
     @Getter
     private StreamingIndex index;
     private List<PolyValue> cache;
@@ -46,6 +48,19 @@ public class StreamingFramework {
 
     public StreamingFramework() {
         this.index = new StreamingIndex();
+    }
+
+
+    private static StreamingStrategy determineStrategy( Estimate estimate, long messageSize ) {
+        return messageSize + estimate.getDynamicLength() > MAX_MESSAGE_SIZE ? StreamingStrategy.STREAM_ALL : StreamingStrategy.DYNAMIC;
+    }
+
+
+    private static int getSizeForStrategy( Estimate estimate, StreamingStrategy streamingStrategy ) {
+        return switch ( streamingStrategy ) {
+            case STREAM_ALL -> estimate.getAllStreamedLength();
+            case DYNAMIC -> estimate.getDynamicLength();
+        };
     }
 
 
@@ -80,8 +95,10 @@ public class StreamingFramework {
 
         if ( hasCachedResult() ) {
             List<PolyValue> cachedResult = getCacheAndClear();
-            messageSize += estimator.estimate( cachedResult );
-            results.add( extractor.extract( cachedResult ) );
+            Estimate estimate = estimator.estimate( cachedResult );
+            StreamingStrategy strategy = determineStrategy( estimate, messageSize );
+            messageSize += getSizeForStrategy( estimate, strategy );
+            results.add( extractor.extract( cachedResult, index , strategy ) );
             fetchedCount++;
         }
 
@@ -93,13 +110,14 @@ public class StreamingFramework {
             if ( currentItem == null ) {
                 break;
             }
-            int itemSize = estimator.estimate( currentItem );
-            if ( itemSize > MAX_MESSAGE_SIZE ) {
+            Estimate estimate = estimator.estimate( currentItem );
+            if ( estimate.getAllStreamedLength() > MAX_MESSAGE_SIZE ) {
                 throw new RuntimeException( "Result is too large to be serialized" );
             }
-            if ( messageSize + itemSize < MAX_MESSAGE_SIZE ) {
-                results.add( extractor.extract( currentItem ) );
-                messageSize += itemSize;
+            if ( messageSize + estimate.getAllStreamedLength() < MAX_MESSAGE_SIZE ) {
+                StreamingStrategy strategy = determineStrategy( estimate, messageSize );
+                results.add( extractor.extract( currentItem, index, strategy ) );
+                messageSize += getSizeForStrategy( estimate, strategy );
                 fetchedCount++;
             } else {
                 cache = currentItem;
@@ -139,24 +157,24 @@ public class StreamingFramework {
     }
 
 
-    private Object extractGraphData( List<PolyValue> polyValues ) {
+    private Object extractGraphData( List<PolyValue> polyValues, StreamingIndex index, StreamingStrategy streamingStrategy ) {
         PolyType elementType = polyValues.get( 0 ).getType();
         switch ( elementType ) {
             case NODE -> {
-                return PolyValueSerializer.buildProtoNode( (PolyNode) (polyValues.get( 0 )), index );
+                return PolyValueSerializer.buildProtoNode( (PolyNode) (polyValues.get( 0 )), index, streamingStrategy );
             }
             case EDGE -> {
-                return PolyValueSerializer.buildProtoEdge( (PolyEdge) (polyValues.get( 0 )), index );
+                return PolyValueSerializer.buildProtoEdge( (PolyEdge) (polyValues.get( 0 )), index, streamingStrategy );
             }
             case PATH -> {
-                return PolyValueSerializer.buildProtoPath( (PolyPath) (polyValues.get( 0 )), index );
+                return PolyValueSerializer.buildProtoPath( (PolyPath) (polyValues.get( 0 )), index, streamingStrategy );
             }
             default -> throw new RuntimeException( "Should never be thrown!" );
         }
     }
 
 
-    private int estimateGraphSize( List<PolyValue> polyValues ) {
+    private Estimate estimateGraphSize( List<PolyValue> polyValues ) {
         PolyType elementType = polyValues.get( 0 ).getType();
         switch ( elementType ) {
             case NODE -> {
@@ -181,7 +199,7 @@ public class StreamingFramework {
                 fetchSize,
                 Frame.newBuilder(),
                 SerializationHeuristic::estimateSizeRows,
-                result -> PrismUtils.serializeToRow( result, index ),
+                PrismUtils::serializeToRow,
                 ( frameBuilder, results ) -> frameBuilder.setRelationalFrame(
                         relationalFrameBuilder.addAllRows( results ).build()
                 )
@@ -197,7 +215,7 @@ public class StreamingFramework {
                 fetchSize,
                 Frame.newBuilder(),
                 result -> SerializationHeuristic.estimateSizeDocument( result.get( 0 ).asDocument() ),
-                result -> PolyValueSerializer.buildProtoDocument( result.get( 0 ).asDocument(), index ),
+                (result, index, streamingStrategy) -> PolyValueSerializer.buildProtoDocument( result.get( 0 ).asDocument(), index, streamingStrategy ),
                 ( frameBuilder, results ) -> frameBuilder.setDocumentFrame(
                         documentFrameBuilder.addAllDocuments( results ).build()
                 )
@@ -208,7 +226,7 @@ public class StreamingFramework {
     @FunctionalInterface
     private interface SerializedSizeEstimator {
 
-        int estimate( List<PolyValue> result );
+        Estimate estimate( List<PolyValue> result );
 
     }
 
@@ -216,7 +234,7 @@ public class StreamingFramework {
     @FunctionalInterface
     private interface ResultExtractor<T> {
 
-        T extract( List<PolyValue> result );
+        T extract( List<PolyValue> result, StreamingIndex index, StreamingStrategy streamingStrategy );
 
     }
 
