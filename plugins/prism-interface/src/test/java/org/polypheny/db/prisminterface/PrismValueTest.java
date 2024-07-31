@@ -28,6 +28,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.prisminterface.streaming.StreamingIndex;
+import org.polypheny.db.prisminterface.streaming.StreamingStrategy;
 import org.polypheny.db.prisminterface.utils.PolyValueSerializer;
 import org.polypheny.db.prisminterface.utils.PrismValueDeserializer;
 import org.polypheny.db.type.PolyType;
@@ -62,7 +63,7 @@ public class PrismValueTest {
     public void polyBigDecimalSerializationTest() {
         BigDecimal expectedValue = new BigDecimal( 1691879380700L );
         PolyBigDecimal expected = new PolyBigDecimal( expectedValue );
-        ProtoValue protoValue = PolyValueSerializer.serialize( expected, new StreamingIndex() );
+        ProtoValue protoValue = PolyValueSerializer.serialize( expected, new StreamingIndex(), StreamingStrategy.DYNAMIC );
         int scale = protoValue.getBigDecimal().getScale();
         BigInteger value = new BigInteger( protoValue.getBigDecimal().getUnscaledValue().toByteArray() );
         BigDecimal result = new BigDecimal( value, scale );
@@ -74,7 +75,7 @@ public class PrismValueTest {
     public void polyBinarySerializationTest() {
         byte[] data = new byte[]{ 0x01, 0x02, 0x03 };
         PolyBinary expected = PolyBinary.of( data );
-        ProtoValue protoValue = PolyValueSerializer.serialize( expected, new StreamingIndex() );
+        ProtoValue protoValue = PolyValueSerializer.serialize( expected, new StreamingIndex(), StreamingStrategy.DYNAMIC );
 
         assertArrayEquals( data, protoValue.getBinary().getBinary().toByteArray() );
         assertEquals( ValueCase.BINARY, protoValue.getValueCase() );
@@ -89,7 +90,7 @@ public class PrismValueTest {
     @Test
     public void polyBooleanSerializationTest() {
         PolyBoolean expected = new PolyBoolean( true );
-        ProtoValue protoValue = PolyValueSerializer.serialize( expected, new StreamingIndex() );
+        ProtoValue protoValue = PolyValueSerializer.serialize( expected, new StreamingIndex(), StreamingStrategy.DYNAMIC );
         assertTrue( protoValue.getBoolean().getBoolean() );
     }
 
@@ -98,7 +99,7 @@ public class PrismValueTest {
     public void polyDateSerializationTest() {
         int daysSinceEpoch = 119581;
         PolyDate expected = PolyDate.ofDays( daysSinceEpoch );
-        ProtoValue protoValue = PolyValueSerializer.serialize( expected, new StreamingIndex() );
+        ProtoValue protoValue = PolyValueSerializer.serialize( expected, new StreamingIndex(), StreamingStrategy.DYNAMIC );
         assertEquals( daysSinceEpoch, protoValue.getDate().getDate() );
     }
 
@@ -106,7 +107,7 @@ public class PrismValueTest {
     @Test
     public void polyDoubleSerializationTest() {
         PolyDouble expected = new PolyDouble( 123.456 );
-        ProtoValue protoValue = PolyValueSerializer.serialize( expected, new StreamingIndex() );
+        ProtoValue protoValue = PolyValueSerializer.serialize( expected, new StreamingIndex(), StreamingStrategy.DYNAMIC );
         assertEquals( 123.456, protoValue.getDouble().getDouble(), 1e-9 );
     }
 
@@ -114,7 +115,7 @@ public class PrismValueTest {
     @Test
     public void polyFloatSerializationTest() {
         PolyFloat expected = new PolyFloat( 45.67f );
-        ProtoValue protoValue = PolyValueSerializer.serialize( expected, new StreamingIndex() );
+        ProtoValue protoValue = PolyValueSerializer.serialize( expected, new StreamingIndex(), StreamingStrategy.DYNAMIC );
         assertEquals( 45.67f, protoValue.getFloat().getFloat(), 1e-9 );
     }
 
@@ -122,7 +123,7 @@ public class PrismValueTest {
     @Test
     public void polyIntegerSerializationTest() {
         PolyInteger expected = new PolyInteger( 1234 );
-        ProtoValue protoValue = PolyValueSerializer.serialize( expected, new StreamingIndex() );
+        ProtoValue protoValue = PolyValueSerializer.serialize( expected, new StreamingIndex(), StreamingStrategy.DYNAMIC );
         assertEquals( 1234, protoValue.getInteger().getInteger() );
     }
 
@@ -135,7 +136,7 @@ public class PrismValueTest {
                 new PolyInteger( 3 ),
                 new PolyInteger( 4 )
         );
-        List<ProtoValue> protoValues = PolyValueSerializer.serialize( expected, new StreamingIndex() ).getList().getValuesList();
+        List<ProtoValue> protoValues = PolyValueSerializer.serialize( expected, new StreamingIndex(), StreamingStrategy.DYNAMIC ).getList().getValuesList();
         assertEquals( 1, protoValues.get( 0 ).getInteger().getInteger() );
         assertEquals( 2, protoValues.get( 1 ).getInteger().getInteger() );
         assertEquals( 3, protoValues.get( 2 ).getInteger().getInteger() );
@@ -146,7 +147,7 @@ public class PrismValueTest {
     @Test
     public void polyLongSerializationTest() {
         PolyLong expected = new PolyLong( 1234567890L );
-        ProtoValue protoValue = PolyValueSerializer.serialize( expected, new StreamingIndex() );
+        ProtoValue protoValue = PolyValueSerializer.serialize( expected, new StreamingIndex(), StreamingStrategy.DYNAMIC );
         assertEquals( 1234567890L, protoValue.getLong().getLong() );
     }
 
@@ -154,7 +155,7 @@ public class PrismValueTest {
     @Test
     public void polyStringSerializationTest() {
         PolyString expected = new PolyString( "sample string" );
-        ProtoValue protoValue = PolyValueSerializer.serialize( expected, new StreamingIndex() );
+        ProtoValue protoValue = PolyValueSerializer.serialize( expected, new StreamingIndex(), StreamingStrategy.DYNAMIC );
         assertEquals( "sample string", protoValue.getString().getString() );
     }
 
@@ -163,7 +164,7 @@ public class PrismValueTest {
     public void polyTimeSerializationTest() {
         long time = (3600 * 9 + 60 * 42 + 11) * 1000;
         PolyTime expected = PolyTime.of( time );
-        ProtoValue protoValue = PolyValueSerializer.serialize( expected, new StreamingIndex() );
+        ProtoValue protoValue = PolyValueSerializer.serialize( expected, new StreamingIndex(), StreamingStrategy.DYNAMIC );
         assertEquals( time, protoValue.getTime().getTime() );
     }
 
@@ -171,7 +172,7 @@ public class PrismValueTest {
     @Test
     public void polyTimeStampSerializationTest() {
         PolyTimestamp expected = new PolyTimestamp( 1691879380700L );
-        ProtoValue protoValue = PolyValueSerializer.serialize( expected, new StreamingIndex() );
+        ProtoValue protoValue = PolyValueSerializer.serialize( expected, new StreamingIndex(), StreamingStrategy.DYNAMIC );
         assertEquals( 1691879380700L, protoValue.getTimestamp().getTimestamp() );
     }
 
@@ -182,7 +183,7 @@ public class PrismValueTest {
         document.put( new PolyString( "1st" ), new PolyBoolean( false ) );
         document.put( new PolyString( "2nd" ), PolyBinary.of( new byte[]{ 0, 1, 2, 3, 4 } ) );
         document.put( new PolyString( "3rd" ), new PolyDate( 47952743435L ) );
-        PolyValueSerializer.serialize( document, new StreamingIndex() );
+        PolyValueSerializer.serialize( document, new StreamingIndex(), StreamingStrategy.DYNAMIC );
 
     }
 
@@ -214,7 +215,7 @@ public class PrismValueTest {
     @Test
     public void polyBigDecimalSerializationCorrectTypeTest() {
         PolyBigDecimal expected = new PolyBigDecimal( new BigDecimal( 1691879380700L ) );
-        ProtoValue protoValue = PolyValueSerializer.serialize( expected, new StreamingIndex() );
+        ProtoValue protoValue = PolyValueSerializer.serialize( expected, new StreamingIndex(), StreamingStrategy.DYNAMIC );
         assertEquals( ValueCase.BIG_DECIMAL, protoValue.getValueCase() );
     }
 
@@ -222,7 +223,7 @@ public class PrismValueTest {
     @Test
     public void polyBinarySerializationCorrectTypeTest() {
         PolyBinary expected = PolyBinary.of( new byte[]{ 0x01, 0x02, 0x03 } );
-        ProtoValue protoValue = PolyValueSerializer.serialize( expected, new StreamingIndex() );
+        ProtoValue protoValue = PolyValueSerializer.serialize( expected, new StreamingIndex(), StreamingStrategy.DYNAMIC );
         assertEquals( ValueCase.BINARY, protoValue.getValueCase() );
     }
 
@@ -230,7 +231,7 @@ public class PrismValueTest {
     @Test
     public void polyBooleanSerializationCorrectTypeTest() {
         PolyBoolean expected = new PolyBoolean( true );
-        ProtoValue protoValue = PolyValueSerializer.serialize( expected, new StreamingIndex() );
+        ProtoValue protoValue = PolyValueSerializer.serialize( expected, new StreamingIndex(), StreamingStrategy.DYNAMIC );
         assertEquals( ValueCase.BOOLEAN, protoValue.getValueCase() );
     }
 
@@ -239,7 +240,7 @@ public class PrismValueTest {
     public void polyDateSerializationCorrectTypeTest() {
         long daysSinceEpoch = 119581;
         PolyDate expected = new PolyDate( daysSinceEpoch );
-        ProtoValue protoValue = PolyValueSerializer.serialize( expected, new StreamingIndex() );
+        ProtoValue protoValue = PolyValueSerializer.serialize( expected, new StreamingIndex(), StreamingStrategy.DYNAMIC );
         assertEquals( ValueCase.DATE, protoValue.getValueCase() );
     }
 
@@ -247,7 +248,7 @@ public class PrismValueTest {
     @Test
     public void polyDoubleSerializationCorrectTypeTest() {
         PolyDouble expected = new PolyDouble( 123.456 );
-        ProtoValue protoValue = PolyValueSerializer.serialize( expected, new StreamingIndex() );
+        ProtoValue protoValue = PolyValueSerializer.serialize( expected, new StreamingIndex(), StreamingStrategy.DYNAMIC );
         assertEquals( ValueCase.DOUBLE, protoValue.getValueCase() );
     }
 
@@ -255,7 +256,7 @@ public class PrismValueTest {
     @Test
     public void polyFloatSerializationCorrectTypeTest() {
         PolyFloat expected = new PolyFloat( 45.67f );
-        ProtoValue protoValue = PolyValueSerializer.serialize( expected, new StreamingIndex() );
+        ProtoValue protoValue = PolyValueSerializer.serialize( expected, new StreamingIndex(), StreamingStrategy.DYNAMIC );
         assertEquals( ValueCase.FLOAT, protoValue.getValueCase() );
     }
 
@@ -263,7 +264,7 @@ public class PrismValueTest {
     @Test
     public void polyIntegerSerializationCorrectTypeTest() {
         PolyInteger expected = new PolyInteger( 1234 );
-        ProtoValue protoValue = PolyValueSerializer.serialize( expected, new StreamingIndex() );
+        ProtoValue protoValue = PolyValueSerializer.serialize( expected, new StreamingIndex(), StreamingStrategy.DYNAMIC );
         assertEquals( ValueCase.INTEGER, protoValue.getValueCase() );
     }
 
@@ -276,7 +277,7 @@ public class PrismValueTest {
                 new PolyInteger( 3 ),
                 new PolyInteger( 4 )
         );
-        ProtoValue protoValue = PolyValueSerializer.serialize( expected, new StreamingIndex() );
+        ProtoValue protoValue = PolyValueSerializer.serialize( expected, new StreamingIndex(), StreamingStrategy.DYNAMIC );
         assertEquals( ValueCase.LIST, protoValue.getValueCase() );
     }
 
@@ -284,7 +285,7 @@ public class PrismValueTest {
     @Test
     public void polyLongSerializationCorrectTypeTest() {
         PolyLong expected = new PolyLong( 1234567890L );
-        ProtoValue protoValue = PolyValueSerializer.serialize( expected, new StreamingIndex() );
+        ProtoValue protoValue = PolyValueSerializer.serialize( expected, new StreamingIndex(), StreamingStrategy.DYNAMIC );
         assertEquals( ValueCase.LONG, protoValue.getValueCase() );
     }
 
@@ -292,7 +293,7 @@ public class PrismValueTest {
     @Test
     public void polyNullSerializationCorrectTypeTest() {
         PolyNull expected = new PolyNull();
-        ProtoValue protoValue = PolyValueSerializer.serialize( expected, new StreamingIndex() );
+        ProtoValue protoValue = PolyValueSerializer.serialize( expected, new StreamingIndex(), StreamingStrategy.DYNAMIC );
         assertEquals( ValueCase.NULL, protoValue.getValueCase() );
     }
 
@@ -300,7 +301,7 @@ public class PrismValueTest {
     @Test
     public void polyStringSerializationCorrectTypeTest() {
         PolyString expected = new PolyString( "sample string" );
-        ProtoValue protoValue = PolyValueSerializer.serialize( expected, new StreamingIndex() );
+        ProtoValue protoValue = PolyValueSerializer.serialize( expected, new StreamingIndex(), StreamingStrategy.DYNAMIC );
         assertEquals( ValueCase.STRING, protoValue.getValueCase() );
     }
 
@@ -308,7 +309,7 @@ public class PrismValueTest {
     @Test
     public void polyTimeSerializationCorrectTypeTest() {
         PolyTime expected = PolyTime.of( new Time( 1691879380700L ) );
-        ProtoValue protoValue = PolyValueSerializer.serialize( expected, new StreamingIndex() );
+        ProtoValue protoValue = PolyValueSerializer.serialize( expected, new StreamingIndex(), StreamingStrategy.DYNAMIC );
         assertEquals( ValueCase.TIME, protoValue.getValueCase() );
     }
 
@@ -316,7 +317,7 @@ public class PrismValueTest {
     @Test
     public void polyTimeStampSerializationCorrectTypeTest() {
         PolyTimestamp expected = new PolyTimestamp( 1691879380700L );
-        ProtoValue protoValue = PolyValueSerializer.serialize( expected, new StreamingIndex() );
+        ProtoValue protoValue = PolyValueSerializer.serialize( expected, new StreamingIndex(), StreamingStrategy.DYNAMIC );
         assertEquals( ValueCase.TIMESTAMP, protoValue.getValueCase() );
     }
 

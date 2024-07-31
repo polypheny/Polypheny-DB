@@ -30,15 +30,13 @@ import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 public class SerializationHeuristic {
 
 
-
-
     public static Estimate estimateSizeRows( List<PolyValue> rows ) {
         return estimateSizeList( rows );
     }
 
 
     public static Estimate estimateSizeDocument( PolyDocument document ) {
-        return estimateSizeProtoEntryList( document.asMap() );
+        return estimateSizeProtoEntryList( document.asMap() ).addToAll( 2 + 1 ); // wrapper + tag + data
     }
 
 
@@ -75,7 +73,7 @@ public class SerializationHeuristic {
 
 
     public static Estimate estimateSizeList( List<PolyValue> valuesList ) {
-        return valuesList.stream().map( SerializationHeuristic::estimateSize ).reduce( new Estimate(), Estimate::add );
+        return valuesList.stream().map( SerializationHeuristic::estimateSize ).reduce( new Estimate(), Estimate::add ).addToAll( 20 ); // elements + (length inner + tag inner + length wrapper + tag wrapper)
     }
 
 
@@ -126,137 +124,107 @@ public class SerializationHeuristic {
 
 
     private static Estimate estimateSizeProtoFile( PolyBlob polyBlob ) {
-        // TODO: stream blobs as well
-        return new Estimate( 1 + 4 + polyBlob.getValue().length ); // tag + length prefix + data size
+        Estimate estimate = new Estimate();
+        estimate.setAllStreamedLength( 2 + 1 + 9 ); // wrapper + tag + streamId (64bit int)
+        if ( polyBlob.getValue().length > STREAM_LIMIT ) {
+            estimate.setDynamicLength( estimate.getAllStreamedLength() );
+            return estimate;
+        }
+        estimate.setDynamicLength( 2 + 1 + 4 + polyBlob.getValue().length ); // wrapper + tag + length prefix + data size
+        return estimate;
     }
 
 
     private static Estimate estimateSizeProtoInterval( PolyInterval polyInterval ) {
-        return new Estimate( 1 + 4 + 8 ); // tag + length prefix + data size
+        return new Estimate( 2 + 1 + 4 + 8 ); // wrapper + tag + length prefix + data size
     }
 
 
     public static Estimate estimateSizeProtoBoolean( PolyBoolean polyBoolean ) {
-        return new Estimate( 1 + 1 ); // tag + boolean value
+        return new Estimate( 2 + 1 + 1 ); // wrapper + tag + boolean value
     }
 
 
     public static Estimate estimateSizeProtoInteger( PolyInteger polyInteger ) {
-        return new Estimate( 1 ).add( computeInt32Size( polyInteger.getValue() ) ); // tag + int32 value size
+        return new Estimate( 2 + 1 ).add( estimateInt32Size() ); // wrapper + tag + int32 value size
     }
 
 
     public static Estimate estimateSizeProtoLong( PolyLong polyLong ) {
-        return new Estimate( 1 ).add( computeInt64Size( polyLong.getValue() ) ); // tag + int64 value size
+        return new Estimate( 2 + 1 ).add( estimateInt64Size() ); // wrapper + tag + int64 value size
     }
 
 
     public static Estimate estimateSizeProtoBinary( PolyBinary polyBinary ) {
         Estimate estimate = new Estimate();
-        estimate.setAllStreamedLength( 1 + 10 ); // tag + streamId (64bit int)
+        estimate.setAllStreamedLength( 2 + 1 + 9 ); // wrapper + tag + streamId (64bit int)
         if ( polyBinary.getValue().length > STREAM_LIMIT ) {
             estimate.setDynamicLength( estimate.getAllStreamedLength() );
             return estimate;
         }
-        estimate.setDynamicLength( 1 + 4 + polyBinary.getValue().length ); // tag + length prefix + data size
+        estimate.setDynamicLength( 2 + 1 + 4 + polyBinary.getValue().length ); // wrapper + tag + length prefix + data size
         return estimate;
     }
 
 
     public static Estimate estimateSizeProtoDate( PolyDate polyDate ) {
-        return new Estimate( 1 ).add( computeInt64Size( polyDate.getDaysSinceEpoch() ) ); // tag + int32 value size
+        return new Estimate( 2 + 1 ).add( estimateInt64Size() ); // wrapper + tag + int32 value size
     }
 
 
     public static Estimate estimateSizeProtoDouble( PolyDouble polyDouble ) {
-        return new Estimate( 1 + 8 ); // tag + 64bit double value
+        return new Estimate( 2 + 1 + 8 ); // wrapper + tag + 64bit double value
     }
 
 
     public static Estimate estimateSizeProtoFloat( PolyFloat polyFloat ) {
-        return new Estimate( 1 + 4 ); // tag + 32 bit float value
+        return new Estimate( 2 + 1 + 4 ); // wrapper + tag + 32 bit float value
     }
 
 
     public static Estimate estimateSizeProtoString( PolyString polyString ) {
-        return new Estimate( 1 ).add( computeStringSize( polyString.getValue() ) ); // tag + string value size
+        return new Estimate( 1 + 1 ).add( estimateInt32Size() ).add( computeStringSize( polyString.getValue() ) ); // wrapper + tag + wrapper size + string value size
     }
 
 
     public static Estimate estimateSizeProtoTime( PolyTime polyTime ) {
-        return new Estimate( 1 ).add( computeInt32Size( polyTime.getOfDay() ) ); // tag + int32 value size
+        if ( polyTime.ofDay == null ) {
+            return estimateSizeProtoNull();
+        }
+        return new Estimate( 2 + 1 ).add( estimateInt32Size() ); // wrapper + tag + int32 value size
     }
 
 
     public static Estimate estimateSizeProtoTimestamp( PolyTimestamp polyTimestamp ) {
-        return new Estimate( 1 ).add( computeInt64Size( polyTimestamp.getMillisSinceEpoch() ) ); // tag + int64 value size
+        return new Estimate( 2 + 1 ).add( estimateInt64Size() ); // wrapper + tag + int64 value
     }
 
 
     public static Estimate estimateSizeProtoNull() {
-        return new Estimate( 1 ); // tag
+        return new Estimate( 2 );
     }
 
 
     public static Estimate estimateSizeProtoBigDecimal( PolyBigDecimal polyBigDecimal ) {
         BigDecimal value = polyBigDecimal.getValue();
         int unscaledSize = value.unscaledValue().toByteArray().length;
-        return new Estimate( 1 ).add( computeInt32Size( unscaledSize ) ).addToAll( unscaledSize ).add( computeInt32Size( value.scale() ) ); // tag + length + data size + scale
+        return new Estimate( 2 + 1 ).add( estimateInt32Size() ).addToAll( unscaledSize ).add( estimateInt32Size() ); // wrapper + tag + length + data size + scale
     }
 
 
-    private static Estimate computeInt32Size( int value ) {
-        if ( (value & (0xffffffff << 7)) == 0 ) {
-            return new Estimate( 1 );
-        }
-        if ( (value & (0xffffffff << 14)) == 0 ) {
-            return new Estimate( 2 );
-        }
-        if ( (value & (0xffffffff << 21)) == 0 ) {
-            return new Estimate( 3 );
-        }
-        if ( (value & (0xffffffff << 28)) == 0 ) {
-            return new Estimate( 4 );
-        }
+    private static Estimate estimateInt32Size() {
         return new Estimate( 5 );
     }
 
 
-    private static Estimate computeInt64Size( long value ) {
-        if ( (value & (0xffffffffffffffffL << 7)) == 0 ) {
-            return new Estimate( 1 );
-        }
-        if ( (value & (0xffffffffffffffffL << 14)) == 0 ) {
-            return new Estimate( 2 );
-        }
-        if ( (value & (0xffffffffffffffffL << 21)) == 0 ) {
-            return new Estimate( 3 );
-        }
-        if ( (value & (0xffffffffffffffffL << 28)) == 0 ) {
-            return new Estimate( 4 );
-        }
-        if ( (value & (0xffffffffffffffffL << 35)) == 0 ) {
-            return new Estimate( 5 );
-        }
-        if ( (value & (0xffffffffffffffffL << 42)) == 0 ) {
-            return new Estimate( 6 );
-        }
-        if ( (value & (0xffffffffffffffffL << 49)) == 0 ) {
-            return new Estimate( 7 );
-        }
-        if ( (value & (0xffffffffffffffffL << 56)) == 0 ) {
-            return new Estimate( 8 );
-        }
-        if ( (value & (0xffffffffffffffffL << 63)) == 0 ) {
-            return new Estimate( 9 );
-        }
-        return new Estimate( 10 );
+    private static Estimate estimateInt64Size() {
+        return new Estimate( 9 );
     }
 
 
     private static Estimate computeStringSize( String value ) {
         int length = value.getBytes().length;
-        return computeInt32Size( length ).addToAll( length );
+        return estimateInt32Size().addToAll( length );
     }
 
 }
