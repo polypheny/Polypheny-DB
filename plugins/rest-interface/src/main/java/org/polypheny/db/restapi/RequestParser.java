@@ -35,6 +35,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.servlet.http.HttpServletRequest;
 import lombok.AllArgsConstructor;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.NotImplementedException;
@@ -334,13 +335,13 @@ public class RequestParser {
                 LogicalColumn logicalColumn = this.getCatalogColumnFromString( columnName );
                 log.debug( "Fetched catalog column for projection key: {}.", columnName );
 
-                if ( !validColumns.contains( logicalColumn.id ) ) {
+                if ( !validColumns.contains( logicalColumn.getId() ) ) {
                     log.warn( "Column isn't valid. Column: {}.", columnName );
                     throw new ParserException( ParserErrorCode.PROJECTION_INVALID_COLUMN, columnName );
                 }
 
-                projectedColumns.add( logicalColumn.id );
-                int calculatedPosition = tableOffsets.get( logicalColumn.tableId ) + logicalColumn.position - 1;
+                projectedColumns.add( logicalColumn.getId() );
+                int calculatedPosition = tableOffsets.get( logicalColumn.getTableId() ) + logicalColumn.getPosition() - 1;
                 RequestColumn requestColumn = new RequestColumn( logicalColumn, calculatedPosition, internalPosition, matcher.group( "alias" ), this.decodeAggregateFunction( matcher.group( "agg" ) ) );
                 internalPosition++;
 
@@ -550,7 +551,7 @@ public class RequestParser {
 
             for ( String filterString : filterMap.get( possibleFilterKey ) ) {
                 Pair<Operator, String> rightHandSide = this.parseFilterOperation( filterString );
-                PolyValue literal = this.parseLiteralValue( catalogColumn.getColumn().type, rightHandSide.right );
+                PolyValue literal = this.parseLiteralValue( catalogColumn.getColumn().getType(), rightHandSide.right );
                 // TODO: add column filters here
                 literalFilterOperators.add( new Pair<>( rightHandSide.left, literal ) );
             }
@@ -747,6 +748,7 @@ public class RequestParser {
 
 
     @AllArgsConstructor
+    @Getter
     public static class Filters {
 
         public final Map<RequestColumn, List<Pair<Operator, PolyValue>>> literalFilters;
