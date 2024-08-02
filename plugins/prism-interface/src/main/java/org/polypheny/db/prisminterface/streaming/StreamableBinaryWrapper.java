@@ -17,7 +17,6 @@
 package org.polypheny.db.prisminterface.streaming;
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.Arrays;
 import org.polypheny.db.prisminterface.utils.PrismUtils;
 import org.polypheny.db.type.entity.PolyBinary;
@@ -39,7 +38,7 @@ public class StreamableBinaryWrapper implements StreamableWrapper {
         }
         int end = ((int) position + length);
         byte[] data = Arrays.copyOfRange( binary.value, (int) position, end );
-        return PrismUtils.buildStreamFrame( data, end >= binary.value.length );
+        return PrismUtils.buildBinaryStreamFrame( data, end >= binary.value.length );
     }
 
 }

@@ -26,7 +26,6 @@ import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.prisminterface.statementProcessing.NamedValueProcessor;
 import org.polypheny.db.prisminterface.PIClient;
 import org.polypheny.db.prisminterface.statementProcessing.StatementProcessor;
-import org.polypheny.db.prisminterface.streaming.StreamingIndex;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyValue;

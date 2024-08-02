@@ -104,8 +104,10 @@ import org.polypheny.prism.SqlTimeDateFunctionsRequest;
 import org.polypheny.prism.StatementBatchResponse;
 import org.polypheny.prism.StatementResponse;
 import org.polypheny.prism.StatementResult;
+import org.polypheny.prism.StreamAcknowledgement;
 import org.polypheny.prism.StreamFetchRequest;
 import org.polypheny.prism.StreamFrame;
+import org.polypheny.prism.StreamSendRequest;
 import org.polypheny.prism.TableTypesRequest;
 import org.polypheny.prism.TableTypesResponse;
 import org.polypheny.prism.TypesRequest;
@@ -302,6 +304,7 @@ class PIService {
             case PREPARE_NAMED_STATEMENT_REQUEST -> prepareNamedStatement( req.getPrepareNamedStatementRequest(), new ResponseMaker<>( req, "prepared_statement_signature" ) );
             case EXECUTE_NAMED_STATEMENT_REQUEST -> executeNamedStatement( req.getExecuteNamedStatementRequest(), new ResponseMaker<>( req, "statement_result" ) );
             case STREAM_FETCH_REQUEST -> fetchStream( req.getStreamFetchRequest(), new ResponseMaker<>( req, "stream_frame" ) );
+            case STREAM_SEND_REQUEST -> receiveStream( req.getStreamSendRequest(), new ResponseMaker<>( req, "stream_acknowledgement" ) );
             case FETCH_REQUEST -> fetchResult( req.getFetchRequest(), new ResponseMaker<>( req, "frame" ) );
             case CLOSE_STATEMENT_REQUEST -> closeStatement( req.getCloseStatementRequest(), new ResponseMaker<>( req, "close_statement_response" ) );
             case COMMIT_REQUEST -> commitTransaction( req.getCommitRequest(), new ResponseMaker<>( req, "commit_response" ) );
@@ -497,14 +500,20 @@ class PIService {
         }
     }
 
+
     private Response fetchStream( StreamFetchRequest request, ResponseMaker<StreamFrame> responseObserver ) {
         PIClient client = getClient();
         PIStatement statement = client.getStatementManager().getStatement( request.getStatementId() );
         try {
-            return responseObserver.makeResponse(statement.getStreamingFramework().getIndex().get( request.getStreamId() ).get( request.getPosition(), request.getLength()));
+            return responseObserver.makeResponse( statement.getStreamingFramework().getIndex().get( request.getStreamId() ).get( request.getPosition(), request.getLength() ) );
         } catch ( IOException e ) {
             throw new GenericRuntimeException( e );
         }
+    }
+
+    private Response receiveStream( StreamSendRequest request, ResponseMaker<StreamAcknowledgement> responseObserver ) {
+        PIClient client = getClient();
+        return responseObserver.makeResponse(client.getStreamReceiver().appendOrCreateNew(request));
     }
 
 

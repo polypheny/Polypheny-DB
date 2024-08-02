@@ -24,9 +24,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.prisminterface.streaming.StreamableBinaryWrapper;
-import org.polypheny.db.prisminterface.streaming.StreamableBlobWrapper;
 import org.polypheny.db.prisminterface.streaming.StreamableWrapper;
-import org.polypheny.db.prisminterface.streaming.StreamingIndex;
+import org.polypheny.db.prisminterface.streaming.StreamIndex;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.prism.StreamFrame;
 
@@ -58,7 +57,7 @@ public class StreamingIndexTest {
         StreamableWrapper wrapper2 = new StreamableBinaryWrapper(polyBinary2);
 
         // add to index
-        StreamingIndex index = new StreamingIndex();
+        StreamIndex index = new StreamIndex();
         long streamId1 = index.register(wrapper1);
         long streamId2 = index.register(wrapper2);
 
@@ -69,7 +68,7 @@ public class StreamingIndexTest {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        byte[] result1 = frame1.getData().toByteArray();
+        byte[] result1 = frame1.getBinary().toByteArray();
         Assertions.assertArrayEquals(expected1, result1);
         assertTrue(frame1.getIsLast());
 
@@ -80,7 +79,7 @@ public class StreamingIndexTest {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        byte[] result2 = frame2.getData().toByteArray();
+        byte[] result2 = frame2.getBinary().toByteArray();
         Assertions.assertArrayEquals(expected2, result2);
         assertTrue(frame2.getIsLast());
     }

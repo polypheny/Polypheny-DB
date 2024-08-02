@@ -38,7 +38,7 @@ public class StreamableBlobWrapper implements StreamableWrapper {
         }
         int end = ((int) position + length);
         byte[] data = Arrays.copyOfRange( blob.value, (int) position, end );
-        return PrismUtils.buildStreamFrame( data, end >= blob.value.length );
+        return PrismUtils.buildBinaryStreamFrame( data, end >= blob.value.length );
     }
 
 }

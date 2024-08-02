@@ -23,6 +23,8 @@ import org.polypheny.db.catalog.entity.LogicalUser;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.prisminterface.metaRetrieval.PIClientInfoProperties;
 import org.polypheny.db.prisminterface.statements.StatementManager;
+import org.polypheny.db.prisminterface.streaming.StreamIndex;
+import org.polypheny.db.prisminterface.streaming.StreamReceiver;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
@@ -47,7 +49,8 @@ public class PIClient {
     private LogicalNamespace namespace;
     @Getter
     private final MonitoringPage monitoringPage;
-
+    @Getter
+    private final StreamReceiver streamReceiver;
 
     PIClient(
             String clientUUID,
@@ -64,6 +67,7 @@ public class PIClient {
         this.transactionManager = transactionManager;
         this.isAutoCommit = isAutoCommit;
         this.monitoringPage = monitoringPage;
+        this.streamReceiver = new StreamReceiver();
         monitoringPage.addStatementManager( statementManager );
     }
 

@@ -19,7 +19,7 @@ package org.polypheny.db.prisminterface.streaming;
 import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
-public class StreamingIndex {
+public class StreamIndex {
 
     private final HashMap<Long, StreamableWrapper> index = new HashMap<>();
     AtomicLong streamIdGenerator = new AtomicLong();
@@ -31,9 +31,11 @@ public class StreamingIndex {
         return streamId;
     }
 
-    public StreamableWrapper get(long streamId) {
+
+    public StreamableWrapper get( long streamId ) {
         return index.get( streamId );
     }
+
 
     public void reset() {
         index.clear();

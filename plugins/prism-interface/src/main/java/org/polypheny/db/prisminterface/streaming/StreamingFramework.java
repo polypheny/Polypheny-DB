@@ -43,13 +43,13 @@ public class StreamingFramework {
     public static final int STREAM_LIMIT = 100000000; // 1 MB
 
     @Getter
-    private StreamingIndex index;
+    private StreamIndex index;
     private PIStatement statement;
     private List<PolyValue> cache;
 
 
     public StreamingFramework( PIStatement statement ) {
-        this.index = new StreamingIndex();
+        this.index = new StreamIndex();
         this.statement = statement;
     }
 
@@ -160,7 +160,7 @@ public class StreamingFramework {
     }
 
 
-    private Object extractGraphData( List<PolyValue> polyValues, StreamingIndex index, StreamingStrategy streamingStrategy, int statementId ) {
+    private Object extractGraphData( List<PolyValue> polyValues, StreamIndex index, StreamingStrategy streamingStrategy, int statementId ) {
         PolyType elementType = polyValues.get( 0 ).getType();
         switch ( elementType ) {
             case NODE -> {
@@ -237,7 +237,7 @@ public class StreamingFramework {
     @FunctionalInterface
     private interface ResultExtractor<T> {
 
-        T extract( List<PolyValue> result, StreamingIndex index, StreamingStrategy streamingStrategy, int statementId );
+        T extract( List<PolyValue> result, StreamIndex index, StreamingStrategy streamingStrategy, int statementId );
 
     }
 

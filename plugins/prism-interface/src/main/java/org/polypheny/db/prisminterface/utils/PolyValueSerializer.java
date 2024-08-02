@@ -23,8 +23,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.prisminterface.streaming.StreamableBinaryWrapper;
 import org.polypheny.db.prisminterface.streaming.StreamableBlobWrapper;
-import org.polypheny.db.prisminterface.streaming.StreamableWrapper;
-import org.polypheny.db.prisminterface.streaming.StreamingIndex;
+import org.polypheny.db.prisminterface.streaming.StreamIndex;
 import org.polypheny.db.prisminterface.streaming.StreamingStrategy;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
@@ -75,25 +74,25 @@ public class PolyValueSerializer {
     // TODO: sync this with the limit in the streaming framework. Currently this value is no accessible due to it being in a different module...
     public static final int STREAM_LIMIT = 100000000; // 1 MB
 
-    public static List<ProtoValue> serializeList( List<PolyValue> valuesList, StreamingIndex streamingIndex, StreamingStrategy streamingStrategy, int statementId ) {
-        return valuesList.stream().map( v -> PolyValueSerializer.serialize(v, streamingIndex, streamingStrategy, statementId  ) ).collect( Collectors.toList() );
+    public static List<ProtoValue> serializeList( List<PolyValue> valuesList, StreamIndex streamIndex, StreamingStrategy streamingStrategy, int statementId ) {
+        return valuesList.stream().map( v -> PolyValueSerializer.serialize(v, streamIndex, streamingStrategy, statementId  ) ).collect( Collectors.toList() );
     }
 
 
-    public static List<ProtoEntry> serializeToProtoEntryList( PolyMap<PolyValue, PolyValue> polyMap, StreamingIndex streamingIndex , StreamingStrategy streamingStrategy, int statementId) {
-        return polyMap.entrySet().stream().map(e -> PolyValueSerializer.serializeToProtoEntry(e, streamingIndex, streamingStrategy, statementId) ).collect( Collectors.toList() );
+    public static List<ProtoEntry> serializeToProtoEntryList( PolyMap<PolyValue, PolyValue> polyMap, StreamIndex streamIndex, StreamingStrategy streamingStrategy, int statementId) {
+        return polyMap.entrySet().stream().map(e -> PolyValueSerializer.serializeToProtoEntry(e, streamIndex, streamingStrategy, statementId) ).collect( Collectors.toList() );
     }
 
 
-    public static ProtoEntry serializeToProtoEntry( Map.Entry<PolyValue, PolyValue> polyMapEntry, StreamingIndex streamingIndex, StreamingStrategy streamingStrategy, int statementId ) {
+    public static ProtoEntry serializeToProtoEntry( Map.Entry<PolyValue, PolyValue> polyMapEntry, StreamIndex streamIndex, StreamingStrategy streamingStrategy, int statementId ) {
         return ProtoEntry.newBuilder()
-                .setKey( serialize( polyMapEntry.getKey(), streamingIndex, streamingStrategy, statementId ) )
-                .setValue( serialize( polyMapEntry.getValue(), streamingIndex, streamingStrategy, statementId ) )
+                .setKey( serialize( polyMapEntry.getKey(), streamIndex, streamingStrategy, statementId ) )
+                .setValue( serialize( polyMapEntry.getValue(), streamIndex, streamingStrategy, statementId ) )
                 .build();
     }
 
 
-    public static ProtoValue serialize( PolyValue polyValue, StreamingIndex streamingIndex, StreamingStrategy streamingStrategy, int statementId ) {
+    public static ProtoValue serialize( PolyValue polyValue, StreamIndex streamIndex, StreamingStrategy streamingStrategy, int statementId ) {
         if ( polyValue == null || polyValue.isNull() ) {
             return serializeAsProtoNull();
         }
@@ -109,46 +108,46 @@ public class PolyValueSerializer {
             case TIMESTAMP -> serializeAsProtoTimestamp( polyValue.asTimestamp() );
             case INTERVAL -> serializeAsProtoInterval( polyValue.asInterval() );
             case CHAR, VARCHAR -> serializeAsProtoString( polyValue.asString() );
-            case BINARY, VARBINARY -> serializeAsProtoBinary( polyValue.asBinary(), streamingIndex, streamingStrategy, statementId );
+            case BINARY, VARBINARY -> serializeAsProtoBinary( polyValue.asBinary(), streamIndex, streamingStrategy, statementId );
             case NULL -> serializeAsProtoNull();
-            case ARRAY -> serializeAsProtoList( polyValue.asList(), streamingIndex, streamingStrategy, statementId );
-            case DOCUMENT -> serializeAsProtoDocument( polyValue.asDocument(), streamingIndex, streamingStrategy, statementId );
-            case IMAGE, VIDEO, AUDIO, FILE -> serializeAsProtoFile( polyValue.asBlob(), streamingIndex, streamingStrategy, statementId ); // used
+            case ARRAY -> serializeAsProtoList( polyValue.asList(), streamIndex, streamingStrategy, statementId );
+            case DOCUMENT -> serializeAsProtoDocument( polyValue.asDocument(), streamIndex, streamingStrategy, statementId );
+            case IMAGE, VIDEO, AUDIO, FILE -> serializeAsProtoFile( polyValue.asBlob(), streamIndex, streamingStrategy, statementId ); // used
             case MAP, GRAPH, NODE, EDGE, PATH, DISTINCT, STRUCTURED, ROW, OTHER, CURSOR, COLUMN_LIST, DYNAMIC_STAR, GEOMETRY, SYMBOL, JSON, MULTISET, USER_DEFINED_TYPE, ANY -> throw new NotImplementedException( "Serialization of " + polyValue.getType() + " to proto not implemented" );
             default -> throw new NotImplementedException();
         };
     }
 
 
-    private static ProtoValue serializeAsProtoDocument( PolyDocument polyDocument, StreamingIndex streamingIndex, StreamingStrategy streamingStrategy, int statementId ) {
+    private static ProtoValue serializeAsProtoDocument( PolyDocument polyDocument, StreamIndex streamIndex, StreamingStrategy streamingStrategy, int statementId ) {
         return ProtoValue.newBuilder()
-                .setDocument( buildProtoDocument( polyDocument, streamingIndex, streamingStrategy, statementId ) )
+                .setDocument( buildProtoDocument( polyDocument, streamIndex, streamingStrategy, statementId ) )
                 .build();
     }
 
 
-    private static ProtoValue serializeAsProtoList( PolyList<PolyValue> polyList, StreamingIndex streamingIndex, StreamingStrategy streamingStrategy, int statementId ) {
+    private static ProtoValue serializeAsProtoList( PolyList<PolyValue> polyList, StreamIndex streamIndex, StreamingStrategy streamingStrategy, int statementId ) {
         return ProtoValue.newBuilder()
-                .setList( serializeToProtoList( polyList, streamingIndex, streamingStrategy, statementId ) )
+                .setList( serializeToProtoList( polyList, streamIndex, streamingStrategy, statementId ) )
                 .build();
 
     }
 
 
-    private static ProtoList serializeToProtoList( PolyList<PolyValue> polyList, StreamingIndex streamingIndex, StreamingStrategy streamingStrategy, int statementId ) {
+    private static ProtoList serializeToProtoList( PolyList<PolyValue> polyList, StreamIndex streamIndex, StreamingStrategy streamingStrategy, int statementId ) {
         return ProtoList.newBuilder()
-                .addAllValues( serializeList( polyList.getValue(), streamingIndex, streamingStrategy, statementId ) )
+                .addAllValues( serializeList( polyList.getValue(), streamIndex, streamingStrategy, statementId ) )
                 .build();
     }
 
 
-    private static ProtoValue serializeAsProtoFile( PolyBlob polyBlob, StreamingIndex streamingIndex, StreamingStrategy streamingStrategy, int statementId ) {
+    private static ProtoValue serializeAsProtoFile( PolyBlob polyBlob, StreamIndex streamIndex, StreamingStrategy streamingStrategy, int statementId ) {
         if ( polyBlob.value == null ) {
             return serializeAsProtoNull();
         }
         ProtoFile.Builder fileBuilder = ProtoFile.newBuilder();
         if (polyBlob.getValue().length > STREAM_LIMIT || streamingStrategy == StreamingStrategy.STREAM_ALL) {
-            long streamId = streamingIndex.register( new StreamableBlobWrapper( polyBlob ) );
+            long streamId = streamIndex.register( new StreamableBlobWrapper( polyBlob ) );
             fileBuilder
                     .setStreamId(streamId)
                     .setIsForwardOnly(true)
@@ -209,13 +208,13 @@ public class PolyValueSerializer {
     }
 
 
-    public static ProtoValue serializeAsProtoBinary( PolyBinary polyBinary, StreamingIndex streamingIndex, StreamingStrategy streamingStrategy, int statementId ) {
+    public static ProtoValue serializeAsProtoBinary( PolyBinary polyBinary, StreamIndex streamIndex, StreamingStrategy streamingStrategy, int statementId ) {
         if ( polyBinary.value == null ) {
             return serializeAsProtoNull();
         }
         ProtoBinary.Builder binaryBuilder = ProtoBinary.newBuilder();
         if (polyBinary.getValue().length > STREAM_LIMIT || streamingStrategy == StreamingStrategy.STREAM_ALL) {
-            long streamId = streamingIndex.register( new StreamableBinaryWrapper( polyBinary ) );
+            long streamId = streamIndex.register( new StreamableBinaryWrapper( polyBinary ) );
             binaryBuilder
                     .setStreamId(streamId)
                     .setIsForwardOnly(true)
@@ -329,18 +328,18 @@ public class PolyValueSerializer {
     }
 
 
-    public static ProtoDocument buildProtoDocument( PolyDocument polyDocument, StreamingIndex streamingIndex, StreamingStrategy streamingStrategy, int statmentId ) {
+    public static ProtoDocument buildProtoDocument( PolyDocument polyDocument, StreamIndex streamIndex, StreamingStrategy streamingStrategy, int statmentId ) {
         return ProtoDocument.newBuilder()
-                .addAllEntries( serializeToProtoEntryList( polyDocument.asMap(), streamingIndex, streamingStrategy, statmentId ) )
+                .addAllEntries( serializeToProtoEntryList( polyDocument.asMap(), streamIndex, streamingStrategy, statmentId ) )
                 .build();
     }
 
 
-    public static ProtoNode buildProtoNode( PolyNode polyNode, StreamingIndex streamingIndex, StreamingStrategy streamingStrategy, int statementId) {
+    public static ProtoNode buildProtoNode( PolyNode polyNode, StreamIndex streamIndex, StreamingStrategy streamingStrategy, int statementId) {
         ProtoNode.Builder node = ProtoNode.newBuilder()
                 .setId( polyNode.getId().getValue() )
                 .addAllLabels( polyNode.getLabels().stream().map( l -> l.getValue() ).collect( Collectors.toList() ) )
-                .addAllProperties( serializeToProtoEntryList( polyNode.properties.asMap(), streamingIndex, streamingStrategy, statementId ) );
+                .addAllProperties( serializeToProtoEntryList( polyNode.properties.asMap(), streamIndex, streamingStrategy, statementId ) );
         if ( !(polyNode.variableName == null) ) {
             node.setName( polyNode.variableName.getValue() );
         }
@@ -348,11 +347,11 @@ public class PolyValueSerializer {
     }
 
 
-    public static ProtoEdge buildProtoEdge( PolyEdge polyEdge, StreamingIndex streamingIndex, StreamingStrategy streamingStrategy, int statementId) {
+    public static ProtoEdge buildProtoEdge( PolyEdge polyEdge, StreamIndex streamIndex, StreamingStrategy streamingStrategy, int statementId) {
         ProtoEdge.Builder edge = ProtoEdge.newBuilder()
                 .setId( polyEdge.getId().getValue() )
                 .addAllLabels( polyEdge.getLabels().stream().map( l -> l.getValue() ).collect( Collectors.toList() ) )
-                .addAllProperties( serializeToProtoEntryList( polyEdge.properties.asMap(), streamingIndex, streamingStrategy, statementId ) )
+                .addAllProperties( serializeToProtoEntryList( polyEdge.properties.asMap(), streamIndex, streamingStrategy, statementId ) )
                 .setSource( polyEdge.getSource().getValue() )
                 .setTarget( polyEdge.getTarget().getValue() )
                 .setDirection( buildProtoEdgeDirection( polyEdge.getDirection() ) );
@@ -379,7 +378,7 @@ public class PolyValueSerializer {
     }
 
 
-    public static ProtoPath buildProtoPath( PolyPath polyPath, StreamingIndex streamingIndex, StreamingStrategy streamingStrategy, int statmentId ) {
+    public static ProtoPath buildProtoPath( PolyPath polyPath, StreamIndex streamIndex, StreamingStrategy streamingStrategy, int statmentId ) {
         /*
             TODO:   implement paths for graph results
                     1) implement the proto value ProtoPath
