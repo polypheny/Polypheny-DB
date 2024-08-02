@@ -48,7 +48,7 @@ public class StreamingFramework {
     private List<PolyValue> cache;
 
 
-    public StreamingFramework(PIStatement statement) {
+    public StreamingFramework( PIStatement statement ) {
         this.index = new StreamingIndex();
         this.statement = statement;
     }
@@ -101,7 +101,7 @@ public class StreamingFramework {
             Estimate estimate = estimator.estimate( cachedResult );
             StreamingStrategy strategy = determineStrategy( estimate, messageSize );
             messageSize += getSizeForStrategy( estimate, strategy );
-            results.add( extractor.extract( cachedResult, index, strategy ) );
+            results.add( extractor.extract( cachedResult, index, strategy, statement.getId() ) );
             fetchedCount++;
         }
 
@@ -119,7 +119,7 @@ public class StreamingFramework {
             }
             if ( messageSize + estimate.getAllStreamedLength() < MAX_MESSAGE_SIZE ) {
                 StreamingStrategy strategy = determineStrategy( estimate, messageSize );
-                results.add( extractor.extract( currentItem, index, strategy ) );
+                results.add( extractor.extract( currentItem, index, strategy, statement.getId() ) );
                 messageSize += getSizeForStrategy( estimate, strategy );
                 fetchedCount++;
             } else {
@@ -137,7 +137,7 @@ public class StreamingFramework {
     }
 
 
-    public Frame processGraphResult( ResultIterator iterator, int fetchSize) {
+    public Frame processGraphResult( ResultIterator iterator, int fetchSize ) {
         return processResult(
                 iterator,
                 fetchSize,
@@ -160,17 +160,17 @@ public class StreamingFramework {
     }
 
 
-    private Object extractGraphData( List<PolyValue> polyValues, StreamingIndex index, StreamingStrategy streamingStrategy ) {
+    private Object extractGraphData( List<PolyValue> polyValues, StreamingIndex index, StreamingStrategy streamingStrategy, int statementId ) {
         PolyType elementType = polyValues.get( 0 ).getType();
         switch ( elementType ) {
             case NODE -> {
-                return PolyValueSerializer.buildProtoNode( (PolyNode) (polyValues.get( 0 )), index, streamingStrategy );
+                return PolyValueSerializer.buildProtoNode( (PolyNode) (polyValues.get( 0 )), index, streamingStrategy, statementId );
             }
             case EDGE -> {
-                return PolyValueSerializer.buildProtoEdge( (PolyEdge) (polyValues.get( 0 )), index, streamingStrategy );
+                return PolyValueSerializer.buildProtoEdge( (PolyEdge) (polyValues.get( 0 )), index, streamingStrategy, statementId );
             }
             case PATH -> {
-                return PolyValueSerializer.buildProtoPath( (PolyPath) (polyValues.get( 0 )), index, streamingStrategy );
+                return PolyValueSerializer.buildProtoPath( (PolyPath) (polyValues.get( 0 )), index, streamingStrategy, statementId );
             }
             default -> throw new RuntimeException( "Should never be thrown!" );
         }
@@ -194,7 +194,7 @@ public class StreamingFramework {
     }
 
 
-    public Frame processRelationalResult( List<ColumnMeta> columnMetas, ResultIterator iterator, int fetchSize) {
+    public Frame processRelationalResult( List<ColumnMeta> columnMetas, ResultIterator iterator, int fetchSize ) {
         RelationalFrame.Builder relationalFrameBuilder = RelationalFrame.newBuilder().addAllColumnMeta( columnMetas );
 
         return processResult(
@@ -210,7 +210,7 @@ public class StreamingFramework {
     }
 
 
-    public Frame processDocumentResult( ResultIterator iterator, int fetchSize) {
+    public Frame processDocumentResult( ResultIterator iterator, int fetchSize ) {
         DocumentFrame.Builder documentFrameBuilder = DocumentFrame.newBuilder();
 
         return processResult(
@@ -218,7 +218,7 @@ public class StreamingFramework {
                 fetchSize,
                 Frame.newBuilder(),
                 result -> SerializationHeuristic.estimateSizeDocument( result.get( 0 ).asDocument() ),
-                ( result, index, streamingStrategy ) -> PolyValueSerializer.buildProtoDocument( result.get( 0 ).asDocument(), index, streamingStrategy ),
+                ( result, index, streamingStrategy, statementId ) -> PolyValueSerializer.buildProtoDocument( result.get( 0 ).asDocument(), index, streamingStrategy, statementId ),
                 ( frameBuilder, results ) -> frameBuilder.setDocumentFrame(
                         documentFrameBuilder.addAllDocuments( results ).build()
                 )
@@ -237,7 +237,7 @@ public class StreamingFramework {
     @FunctionalInterface
     private interface ResultExtractor<T> {
 
-        T extract( List<PolyValue> result, StreamingIndex index, StreamingStrategy streamingStrategy );
+        T extract( List<PolyValue> result, StreamingIndex index, StreamingStrategy streamingStrategy, int statementId );
 
     }
 
