@@ -54,7 +54,7 @@ public abstract class PIStatement {
         this.language = language;
         this.executionStopWatch = new StopWatch();
         this.namespace = namespace;
-        this.streamingFramework = new StreamingFramework();
+        this.streamingFramework = new StreamingFramework(this);
     }
 
 

@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.ResultIterator;
+import org.polypheny.db.prisminterface.statements.PIStatement;
 import org.polypheny.db.prisminterface.utils.PolyValueSerializer;
 import org.polypheny.db.prisminterface.utils.PrismUtils;
 import org.polypheny.db.type.PolyType;
@@ -43,11 +44,13 @@ public class StreamingFramework {
 
     @Getter
     private StreamingIndex index;
+    private PIStatement statement;
     private List<PolyValue> cache;
 
 
-    public StreamingFramework() {
+    public StreamingFramework(PIStatement statement) {
         this.index = new StreamingIndex();
+        this.statement = statement;
     }
 
 
@@ -98,7 +101,7 @@ public class StreamingFramework {
             Estimate estimate = estimator.estimate( cachedResult );
             StreamingStrategy strategy = determineStrategy( estimate, messageSize );
             messageSize += getSizeForStrategy( estimate, strategy );
-            results.add( extractor.extract( cachedResult, index , strategy ) );
+            results.add( extractor.extract( cachedResult, index, strategy ) );
             fetchedCount++;
         }
 
@@ -134,7 +137,7 @@ public class StreamingFramework {
     }
 
 
-    public Frame processGraphResult( ResultIterator iterator, int fetchSize ) {
+    public Frame processGraphResult( ResultIterator iterator, int fetchSize) {
         return processResult(
                 iterator,
                 fetchSize,
@@ -191,7 +194,7 @@ public class StreamingFramework {
     }
 
 
-    public Frame processRelationalResult( List<ColumnMeta> columnMetas, ResultIterator iterator, int fetchSize ) {
+    public Frame processRelationalResult( List<ColumnMeta> columnMetas, ResultIterator iterator, int fetchSize) {
         RelationalFrame.Builder relationalFrameBuilder = RelationalFrame.newBuilder().addAllColumnMeta( columnMetas );
 
         return processResult(
@@ -207,7 +210,7 @@ public class StreamingFramework {
     }
 
 
-    public Frame processDocumentResult( ResultIterator iterator, int fetchSize ) {
+    public Frame processDocumentResult( ResultIterator iterator, int fetchSize) {
         DocumentFrame.Builder documentFrameBuilder = DocumentFrame.newBuilder();
 
         return processResult(
@@ -215,7 +218,7 @@ public class StreamingFramework {
                 fetchSize,
                 Frame.newBuilder(),
                 result -> SerializationHeuristic.estimateSizeDocument( result.get( 0 ).asDocument() ),
-                (result, index, streamingStrategy) -> PolyValueSerializer.buildProtoDocument( result.get( 0 ).asDocument(), index, streamingStrategy ),
+                ( result, index, streamingStrategy ) -> PolyValueSerializer.buildProtoDocument( result.get( 0 ).asDocument(), index, streamingStrategy ),
                 ( frameBuilder, results ) -> frameBuilder.setDocumentFrame(
                         documentFrameBuilder.addAllDocuments( results ).build()
                 )
