@@ -120,14 +120,11 @@ public class SqlStGeomFromText extends SqlFunction {
 
     @Override
     public String getSignatureTemplate( int operandsCount ) {
-        switch ( operandsCount ) {
-            case 1:
-                return "{0}({1})";
-            case 2:
-                return "{0}({1}, {2})";
-            default:
-                throw new AssertionError();
-        }
+        return switch ( operandsCount ) {
+            case 1 -> "{0}({1})";
+            case 2 -> "{0}({1}, {2})";
+            default -> throw new AssertionError();
+        };
     }
 
 }

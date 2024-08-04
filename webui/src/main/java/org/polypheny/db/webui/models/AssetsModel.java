@@ -14,38 +14,20 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.plugins;
-
-import org.pf4j.RuntimeMode;
-
-public class PluginContext {
-
-    private final RuntimeMode runtimeMode;
+package org.polypheny.db.webui.models;
 
 /**
  * Graphical icon classes for frontend.
  */
 public class AssetsModel {
 
-<<<<<<<< HEAD:core/src/main/java/org/polypheny/db/plugins/PluginContext.java
-    public PluginContext( RuntimeMode runtimeMode ) {
-        this.runtimeMode = runtimeMode;
-    }
-========
     public final String RELATIONAL_ICON = "cil-layers";
->>>>>>>> refs/heads/master:webui/src/main/java/org/polypheny/db/webui/models/AssetsModel.java
 
     public final String DOCUMENT_ICON = "cil-folder";
 
-<<<<<<<< HEAD:core/src/main/java/org/polypheny/db/plugins/PluginContext.java
-    public RuntimeMode getRuntimeMode() {
-        return runtimeMode;
-    }
-========
     public final String GRAPH_ICON = "cil-graph";
 
     public final String TABLE_ICON = "fa fa-table";
->>>>>>>> refs/heads/master:webui/src/main/java/org/polypheny/db/webui/models/AssetsModel.java
 
     public final String COLLECTION_ICON = "cil-description";
 

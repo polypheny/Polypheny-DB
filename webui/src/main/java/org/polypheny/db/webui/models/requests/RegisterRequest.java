@@ -16,14 +16,6 @@
 
 package org.polypheny.db.webui.models.requests;
 
-<<<<<<<< HEAD:webui/src/main/java/org/polypheny/db/webui/models/requests/QueryExplorationRequest.java
-import lombok.experimental.SuperBuilder;
-import lombok.extern.jackson.Jacksonized;
-
-@SuperBuilder
-@Jacksonized
-public class QueryExplorationRequest extends UIRequest {
-========
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
@@ -31,7 +23,6 @@ import lombok.Value;
 @EqualsAndHashCode(callSuper = true)
 @Value
 public class RegisterRequest extends RequestModel {
->>>>>>>> refs/heads/master:webui/src/main/java/org/polypheny/db/webui/models/requests/RegisterRequest.java
 
 
     public RegisterRequest( @JsonProperty("source") String source ) {
