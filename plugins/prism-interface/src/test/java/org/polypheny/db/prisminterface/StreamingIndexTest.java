@@ -23,8 +23,8 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
-import org.polypheny.db.prisminterface.streaming.StreamableBinaryWrapper;
-import org.polypheny.db.prisminterface.streaming.StreamableWrapper;
+import org.polypheny.db.prisminterface.streaming.BinaryPIOutputStream;
+import org.polypheny.db.prisminterface.streaming.PIOutputStream;
 import org.polypheny.db.prisminterface.streaming.StreamIndex;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.prism.StreamFrame;
@@ -46,7 +46,7 @@ public class StreamingIndexTest {
         };
 
         PolyBinary polyBinary1 = PolyBinary.of(expected1);
-        StreamableWrapper wrapper1 = new StreamableBinaryWrapper(polyBinary1);
+        PIOutputStream wrapper1 = new BinaryPIOutputStream(polyBinary1);
 
         // second value
         byte[] expected2 = new byte[]{
@@ -54,7 +54,7 @@ public class StreamingIndexTest {
         };
 
         PolyBinary polyBinary2 = PolyBinary.of(expected2);
-        StreamableWrapper wrapper2 = new StreamableBinaryWrapper(polyBinary2);
+        PIOutputStream wrapper2 = new BinaryPIOutputStream(polyBinary2);
 
         // add to index
         StreamIndex index = new StreamIndex();

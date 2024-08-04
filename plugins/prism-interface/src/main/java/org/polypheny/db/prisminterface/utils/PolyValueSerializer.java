@@ -21,8 +21,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.NotImplementedException;
-import org.polypheny.db.prisminterface.streaming.StreamableBinaryWrapper;
-import org.polypheny.db.prisminterface.streaming.StreamableBlobWrapper;
+import org.polypheny.db.prisminterface.streaming.BinaryPIOutputStream;
+import org.polypheny.db.prisminterface.streaming.BlobPIOutputStream;
 import org.polypheny.db.prisminterface.streaming.StreamIndex;
 import org.polypheny.db.prisminterface.streaming.StreamingStrategy;
 import org.polypheny.db.type.entity.PolyBinary;
@@ -74,13 +74,14 @@ public class PolyValueSerializer {
     // TODO: sync this with the limit in the streaming framework. Currently this value is no accessible due to it being in a different module...
     public static final int STREAM_LIMIT = 100000000; // 1 MB
 
+
     public static List<ProtoValue> serializeList( List<PolyValue> valuesList, StreamIndex streamIndex, StreamingStrategy streamingStrategy, int statementId ) {
-        return valuesList.stream().map( v -> PolyValueSerializer.serialize(v, streamIndex, streamingStrategy, statementId  ) ).collect( Collectors.toList() );
+        return valuesList.stream().map( v -> PolyValueSerializer.serialize( v, streamIndex, streamingStrategy, statementId ) ).collect( Collectors.toList() );
     }
 
 
-    public static List<ProtoEntry> serializeToProtoEntryList( PolyMap<PolyValue, PolyValue> polyMap, StreamIndex streamIndex, StreamingStrategy streamingStrategy, int statementId) {
-        return polyMap.entrySet().stream().map(e -> PolyValueSerializer.serializeToProtoEntry(e, streamIndex, streamingStrategy, statementId) ).collect( Collectors.toList() );
+    public static List<ProtoEntry> serializeToProtoEntryList( PolyMap<PolyValue, PolyValue> polyMap, StreamIndex streamIndex, StreamingStrategy streamingStrategy, int statementId ) {
+        return polyMap.entrySet().stream().map( e -> PolyValueSerializer.serializeToProtoEntry( e, streamIndex, streamingStrategy, statementId ) ).collect( Collectors.toList() );
     }
 
 
@@ -146,18 +147,18 @@ public class PolyValueSerializer {
             return serializeAsProtoNull();
         }
         ProtoFile.Builder fileBuilder = ProtoFile.newBuilder();
-        if (polyBlob.getValue().length > STREAM_LIMIT || streamingStrategy == StreamingStrategy.STREAM_ALL) {
-            long streamId = streamIndex.register( new StreamableBlobWrapper( polyBlob ) );
+        if ( polyBlob.getValue().length > STREAM_LIMIT || streamingStrategy == StreamingStrategy.STREAM_ALL ) {
+            long streamId = streamIndex.register( new BlobPIOutputStream( polyBlob ) );
             fileBuilder
-                    .setStreamId(streamId)
-                    .setIsForwardOnly(true)
-                    .setStatementId(statementId);
+                    .setStreamId( streamId )
+                    .setIsForwardOnly( true )
+                    .setStatementId( statementId );
         } else {
             fileBuilder.setBinary( ByteString.copyFrom( polyBlob.getValue() ) );
         }
         ProtoFile protoFile = fileBuilder.build();
         return ProtoValue.newBuilder()
-                .setFile(protoFile )
+                .setFile( protoFile )
                 .build();
     }
 
@@ -213,12 +214,12 @@ public class PolyValueSerializer {
             return serializeAsProtoNull();
         }
         ProtoBinary.Builder binaryBuilder = ProtoBinary.newBuilder();
-        if (polyBinary.getValue().length > STREAM_LIMIT || streamingStrategy == StreamingStrategy.STREAM_ALL) {
-            long streamId = streamIndex.register( new StreamableBinaryWrapper( polyBinary ) );
+        if ( polyBinary.getValue().length > STREAM_LIMIT || streamingStrategy == StreamingStrategy.STREAM_ALL ) {
+            long streamId = streamIndex.register( new BinaryPIOutputStream( polyBinary ) );
             binaryBuilder
-                    .setStreamId(streamId)
-                    .setIsForwardOnly(true)
-                    .setStatementId(statementId);
+                    .setStreamId( streamId )
+                    .setIsForwardOnly( true )
+                    .setStatementId( statementId );
         } else {
             binaryBuilder.setBinary( ByteString.copyFrom( polyBinary.getValue() ) );
         }
@@ -335,7 +336,7 @@ public class PolyValueSerializer {
     }
 
 
-    public static ProtoNode buildProtoNode( PolyNode polyNode, StreamIndex streamIndex, StreamingStrategy streamingStrategy, int statementId) {
+    public static ProtoNode buildProtoNode( PolyNode polyNode, StreamIndex streamIndex, StreamingStrategy streamingStrategy, int statementId ) {
         ProtoNode.Builder node = ProtoNode.newBuilder()
                 .setId( polyNode.getId().getValue() )
                 .addAllLabels( polyNode.getLabels().stream().map( l -> l.getValue() ).collect( Collectors.toList() ) )
@@ -347,7 +348,7 @@ public class PolyValueSerializer {
     }
 
 
-    public static ProtoEdge buildProtoEdge( PolyEdge polyEdge, StreamIndex streamIndex, StreamingStrategy streamingStrategy, int statementId) {
+    public static ProtoEdge buildProtoEdge( PolyEdge polyEdge, StreamIndex streamIndex, StreamingStrategy streamingStrategy, int statementId ) {
         ProtoEdge.Builder edge = ProtoEdge.newBuilder()
                 .setId( polyEdge.getId().getValue() )
                 .addAllLabels( polyEdge.getLabels().stream().map( l -> l.getValue() ).collect( Collectors.toList() ) )
@@ -385,7 +386,7 @@ public class PolyValueSerializer {
                     2) implement serialization here
                     3) add fields to dummy class in drivers
         */
-        throw new NotImplementedException("Paths can not yet be serialized.");
+        throw new NotImplementedException( "Paths can not yet be serialized." );
     }
 
 

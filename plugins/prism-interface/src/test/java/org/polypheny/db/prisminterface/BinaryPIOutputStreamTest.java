@@ -25,13 +25,12 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
-import org.polypheny.db.prisminterface.streaming.StreamableBinaryWrapper;
-import org.polypheny.db.prisminterface.streaming.StreamableBlobWrapper;
-import org.polypheny.db.prisminterface.streaming.StreamableWrapper;
+import org.polypheny.db.prisminterface.streaming.BinaryPIOutputStream;
+import org.polypheny.db.prisminterface.streaming.PIOutputStream;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.prism.StreamFrame;
 
-public class StreamableBinaryWrapperTest {
+public class BinaryPIOutputStreamTest {
 
     @BeforeAll
     public static void init() {
@@ -51,10 +50,10 @@ public class StreamableBinaryWrapperTest {
         };
 
         PolyBinary polyBinary = PolyBinary.of( expected );
-        StreamableWrapper wrapper = new StreamableBinaryWrapper( polyBinary );
+        PIOutputStream wrapper = new BinaryPIOutputStream( polyBinary );
 
         StreamFrame frame = wrapper.get( 0, expected.length );
-        byte[] result = frame.getData().toByteArray();
+        byte[] result = frame.getBinary().toByteArray();
         Assertions.assertArrayEquals( expected, result );
         assertTrue( frame.getIsLast() );
     }
@@ -71,12 +70,12 @@ public class StreamableBinaryWrapperTest {
         };
 
         PolyBinary polyBinary = PolyBinary.of( expected );
-        StreamableWrapper wrapper = new StreamableBinaryWrapper( polyBinary );
+        PIOutputStream wrapper = new BinaryPIOutputStream( polyBinary );
 
         int subsetLength = 10;
         byte[] expectedSubset = Arrays.copyOfRange( expected, 0, subsetLength );
         StreamFrame frame = wrapper.get( 0, subsetLength );
-        byte[] result = frame.getData().toByteArray();
+        byte[] result = frame.getBinary().toByteArray();
         Assertions.assertArrayEquals( expectedSubset, result );
         assertFalse( frame.getIsLast() );
     }
@@ -93,13 +92,13 @@ public class StreamableBinaryWrapperTest {
         };
 
         PolyBinary polyBinary = PolyBinary.of( expected );
-        StreamableWrapper wrapper = new StreamableBinaryWrapper( polyBinary );
+        PIOutputStream wrapper = new BinaryPIOutputStream( polyBinary );
 
         int subsetLength = 10;
         int offset = 20;
         byte[] expectedMiddleSubset = Arrays.copyOfRange( expected, offset, offset + subsetLength );
         StreamFrame frame = wrapper.get( offset, subsetLength );
-        byte[] result = frame.getData().toByteArray();
+        byte[] result = frame.getBinary().toByteArray();
         Assertions.assertArrayEquals( expectedMiddleSubset, result );
         assertFalse( frame.getIsLast() );
     }
@@ -116,13 +115,13 @@ public class StreamableBinaryWrapperTest {
         };
 
         PolyBinary polyBinary = PolyBinary.of( expected );
-        StreamableWrapper wrapper = new StreamableBinaryWrapper( polyBinary );
+        PIOutputStream wrapper = new BinaryPIOutputStream( polyBinary );
 
         int subsetLength = 10;
         int offset = expected.length - subsetLength;
         byte[] expectedEndSubset = Arrays.copyOfRange( expected, offset, expected.length );
         StreamFrame frame = wrapper.get( offset, subsetLength );
-        byte[] result = frame.getData().toByteArray();
+        byte[] result = frame.getBinary().toByteArray();
         Assertions.assertArrayEquals( expectedEndSubset, result );
         assertTrue( frame.getIsLast() );
     }

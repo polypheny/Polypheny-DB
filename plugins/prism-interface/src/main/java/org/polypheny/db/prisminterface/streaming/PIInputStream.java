@@ -16,12 +16,17 @@
 
 package org.polypheny.db.prisminterface.streaming;
 
-import java.io.IOException;
+import org.polypheny.prism.StreamAcknowledgement;
 import org.polypheny.prism.StreamFrame;
 
-public interface StreamableWrapper {
+public interface PIInputStream {
 
-    StreamFrame get( long position, int length ) throws IOException;
+    void close();
+
+    void appendFrame( StreamFrame frame );
+
+    boolean isClosed();
+
+    StreamAcknowledgement requestStreamAcknowledgement();
 
 }
-

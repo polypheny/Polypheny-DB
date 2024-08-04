@@ -27,6 +27,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.prisminterface.PIClient;
+import org.polypheny.db.prisminterface.streaming.PIInputStreamManager;
 import org.polypheny.db.prisminterface.streaming.StreamingFramework;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
@@ -40,6 +41,7 @@ public abstract class PIStatement {
     protected final StopWatch executionStopWatch;
     protected final QueryLanguage language;
     protected StreamingFramework streamingFramework;
+    protected PIInputStreamManager inputStreamManager;
     @Setter
     private ResultIterator iterator;
     protected LogicalNamespace namespace;
@@ -55,6 +57,7 @@ public abstract class PIStatement {
         this.executionStopWatch = new StopWatch();
         this.namespace = namespace;
         this.streamingFramework = new StreamingFramework(this);
+        this.inputStreamManager = new PIInputStreamManager();
     }
 
 
@@ -66,6 +69,7 @@ public abstract class PIStatement {
             iterator.close();
             iterator = null;
             streamingFramework.reset();
+            inputStreamManager.removeAndCloseAll();
         } catch ( Exception e ) {
             throw new GenericRuntimeException( "Closing of open result iterator failed" );
         }

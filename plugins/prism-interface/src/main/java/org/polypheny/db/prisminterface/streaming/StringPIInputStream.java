@@ -16,29 +16,32 @@
 
 package org.polypheny.db.prisminterface.streaming;
 
-import java.util.HashMap;
-import java.util.concurrent.atomic.AtomicLong;
+import org.polypheny.prism.StreamAcknowledgement;
+import org.polypheny.prism.StreamFrame;
 
-public class StreamIndex {
+public class StringPIInputStream implements PIInputStream {
 
-    private final HashMap<Long, PIOutputStream> index = new HashMap<>();
-    private final AtomicLong streamIdGenerator = new AtomicLong();
+    @Override
+    public void close() {
 
-
-    public long register( PIOutputStream streamableWrapper ) {
-        long streamId = streamIdGenerator.getAndIncrement();
-        index.put( streamId, streamableWrapper );
-        return streamId;
     }
 
 
-    public PIOutputStream get( long streamId ) {
-        return index.get( streamId );
+    @Override
+    public void appendFrame( StreamFrame frame ) {
+
     }
 
 
-    public void reset() {
-        index.clear();
+    @Override
+    public boolean isClosed() {
+        return false;
+    }
+
+
+    @Override
+    public StreamAcknowledgement requestStreamAcknowledgement() {
+        return null;
     }
 
 }

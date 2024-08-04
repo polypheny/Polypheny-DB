@@ -16,6 +16,7 @@
 
 package org.polypheny.db.prisminterface.streaming;
 
+import java.io.IOException;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.io.StringWriter;
@@ -32,9 +33,9 @@ public class StreamWrapper {
     private final StringWriter stringStream;
 
 
-    public StreamWrapper( PipedOutputStream pipedOutputStream ) {
+    public StreamWrapper( PipedOutputStream pipedOutputStream ) throws IOException {
         this.streamType = DataCase.BINARY;
-        this.binaryInputStream = new PipedInputStream();
+        this.binaryInputStream = new PipedInputStream(pipedOutputStream);
         this.binaryOutputStream = pipedOutputStream;
         this.stringStream = null;
     }

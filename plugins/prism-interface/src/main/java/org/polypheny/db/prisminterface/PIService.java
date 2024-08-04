@@ -40,6 +40,7 @@ import org.polypheny.db.prisminterface.statements.PIPreparedNamedStatement;
 import org.polypheny.db.prisminterface.statements.PIStatement;
 import org.polypheny.db.prisminterface.statements.PIUnparameterizedStatement;
 import org.polypheny.db.prisminterface.statements.PIUnparameterizedStatementBatch;
+import org.polypheny.db.prisminterface.streaming.PIInputStreamManager;
 import org.polypheny.db.prisminterface.transport.Transport;
 import org.polypheny.db.prisminterface.utils.PrismUtils;
 import org.polypheny.db.prisminterface.utils.PrismValueDeserializer;
@@ -467,14 +468,14 @@ class PIService {
         int fetchSize = request.hasFetchSize()
                 ? request.getFetchSize()
                 : PropertyUtils.DEFAULT_FETCH_SIZE;
-        return responseObserver.makeResponse( statement.execute( PrismValueDeserializer.deserializeParameterList( request.getParameters().getParametersList() ), statement.getParameterMetas(), fetchSize ) );
+        return responseObserver.makeResponse( statement.execute( PrismValueDeserializer.deserializeParameterList( request.getParameters().getParametersList(), statement.getInputStreamManager() ), statement.getParameterMetas(), fetchSize ) );
     }
 
 
     private Response executeIndexedStatementBatch( ExecuteIndexedStatementBatchRequest request, ResponseMaker<StatementBatchResponse> resultObserver ) {
         PIClient client = getClient();
         PIPreparedIndexedStatement statement = client.getStatementManager().getIndexedPreparedStatement( request.getStatementId() );
-        List<List<PolyValue>> valuesList = PrismValueDeserializer.deserializeParameterLists( request.getParametersList() );
+        List<List<PolyValue>> valuesList = PrismValueDeserializer.deserializeParameterLists( request.getParametersList(), statement.getInputStreamManager() );
         List<Long> updateCounts = statement.executeBatch( valuesList );
         return resultObserver.makeResponse( PrismUtils.createStatementBatchStatus( statement.getId(), updateCounts ) );
     }
@@ -494,7 +495,7 @@ class PIService {
                 ? request.getFetchSize()
                 : PropertyUtils.DEFAULT_FETCH_SIZE;
         try {
-            return responseObserver.makeResponse( statement.execute( PrismValueDeserializer.deserilaizeParameterMap( request.getParameters().getParametersMap() ), fetchSize ) );
+            return responseObserver.makeResponse( statement.execute( PrismValueDeserializer.deserilaizeParameterMap( request.getParameters().getParametersMap(), statement.getInputStreamManager() ), fetchSize ) );
         } catch ( Exception e ) {
             throw new GenericRuntimeException( e );
         }
@@ -511,9 +512,15 @@ class PIService {
         }
     }
 
+
     private Response receiveStream( StreamSendRequest request, ResponseMaker<StreamAcknowledgement> responseObserver ) {
         PIClient client = getClient();
-        return responseObserver.makeResponse(client.getStreamReceiver().appendOrCreateNew(request));
+        PIStatement statement = client.getStatementManager().getStatement( request.getStatementId() );
+        try {
+            return responseObserver.makeResponse( statement.getInputStreamManager().appendOrRegister( request ) );
+        } catch ( IOException e ) {
+            throw new GenericRuntimeException( e );
+        }
     }
 
 
