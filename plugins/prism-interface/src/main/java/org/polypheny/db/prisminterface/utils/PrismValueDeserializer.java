@@ -16,6 +16,7 @@
 
 package org.polypheny.db.prisminterface.utils;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -23,7 +24,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.prisminterface.streaming.StreamSink;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyList;
@@ -42,14 +45,16 @@ import org.polypheny.db.type.entity.temporal.PolyTime;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 import org.polypheny.prism.IndexedParameters;
 import org.polypheny.prism.ProtoBigDecimal;
+import org.polypheny.prism.ProtoBinary;
+import org.polypheny.prism.ProtoFile;
 import org.polypheny.prism.ProtoValue;
 import org.polypheny.prism.ProtoValue.ValueCase;
 
 public class PrismValueDeserializer {
 
-    public static List<List<PolyValue>> deserializeParameterLists( List<IndexedParameters> parameterListsList ) {
+    public static List<List<PolyValue>> deserializeParameterLists( List<IndexedParameters> parameterListsList, StreamSink streamSink ) {
         return transpose( parameterListsList.stream()
-                .map( parameterList -> deserializeParameterList( parameterList.getParametersList() ) )
+                .map( parameterList -> deserializeParameterList( parameterList.getParametersList(), streamSink ) )
                 .collect( Collectors.toList() ) );
     }
 
@@ -68,19 +73,19 @@ public class PrismValueDeserializer {
     }
 
 
-    public static List<PolyValue> deserializeParameterList( List<ProtoValue> valuesList ) {
-        return valuesList.stream().map( PrismValueDeserializer::deserializeProtoValue ).collect( Collectors.toList() );
+    public static List<PolyValue> deserializeParameterList( List<ProtoValue> valuesList, StreamSink streamSink ) {
+        return valuesList.stream().map( l -> PrismValueDeserializer.deserializeProtoValue(l, streamSink) ).collect( Collectors.toList() );
     }
 
 
-    public static Map<String, PolyValue> deserilaizeParameterMap( Map<String, ProtoValue> valueMap ) {
+    public static Map<String, PolyValue> deserilaizeParameterMap( Map<String, ProtoValue> valueMap, StreamSink streamSink ) {
         Map<String, PolyValue> deserializedValues = new HashMap<>();
-        valueMap.forEach( ( name, value ) -> deserializedValues.put( name, deserializeProtoValue( value ) ) );
+        valueMap.forEach( ( name, value ) -> deserializedValues.put( name, deserializeProtoValue( value, streamSink ) ) );
         return deserializedValues;
     }
 
 
-    public static PolyValue deserializeProtoValue( ProtoValue protoValue ) {
+    public static PolyValue deserializeProtoValue( ProtoValue protoValue, StreamSink streamSink ) {
         return switch ( protoValue.getValueCase() ) {
             case BOOLEAN -> deserializeToPolyBoolean( protoValue );
             case INTEGER -> deserializeToPolyInteger( protoValue );
@@ -92,37 +97,42 @@ public class PrismValueDeserializer {
             case TIME -> deserializeToPolyTime( protoValue );
             case TIMESTAMP -> deserializeToPolyTimestamp( protoValue );
             case STRING -> deserializeToPolyString( protoValue );
-            case BINARY -> deserializeToPolyBinary( protoValue );
+            case BINARY -> deserializeToPolyBinary( protoValue, streamSink );
             case NULL -> deserializeToPolyNull();
-            case LIST -> deserializeToPolyList( protoValue );
-            case FILE -> deserializeToPolyBlob( protoValue );
-            case DOCUMENT -> deserializeToPolyDocument( protoValue );
+            case LIST -> deserializeToPolyList( protoValue, streamSink );
+            case FILE -> deserializeToPolyBlob( protoValue, streamSink );
+            case DOCUMENT -> deserializeToPolyDocument( protoValue, streamSink );
             case VALUE_NOT_SET -> throw new GenericRuntimeException( "Invalid ProtoValue: no value is set" );
             default -> throw new GenericRuntimeException( "Deserialization of type " + protoValue.getValueCase() + " is not supported" );
         };
     }
 
 
-    private static PolyValue deserializeToPolyDocument( ProtoValue protoValue ) {
+    private static PolyValue deserializeToPolyDocument( ProtoValue protoValue, StreamSink streamSink ) {
         PolyDocument document = new PolyDocument();
         protoValue.getDocument().getEntriesList().stream()
                 .filter( e -> e.getKey().getValueCase() == ValueCase.STRING )
                 .forEach( e -> document.put(
                         new PolyString( e.getKey().getString().getString() ),
-                        deserializeProtoValue( e.getValue() )
+                        deserializeProtoValue( e.getValue(), streamSink )
                 ) );
         return document;
     }
 
 
-    private static PolyValue deserializeToPolyBlob( ProtoValue protoValue ) {
-        return PolyBlob.of( protoValue.getFile().getBinary().toByteArray() );
+    private static PolyValue deserializeToPolyBlob( ProtoValue protoValue, StreamSink streamSink ) {
+        ProtoFile protoFile = protoValue.getFile();
+        if (protoFile.hasBinary()) {
+            return PolyBlob.of( protoValue.getFile().getBinary().toByteArray() );
+        }
+        return new PolyBlob(null, streamSink.getStream( protoFile.getStreamId() ).getBinaryInputStream());
+
     }
 
 
-    private static PolyValue deserializeToPolyList( ProtoValue protoValue ) {
+    private static PolyValue deserializeToPolyList( ProtoValue protoValue, StreamSink streamSink ) {
         List<PolyValue> values = protoValue.getList().getValuesList().stream()
-                .map( PrismValueDeserializer::deserializeProtoValue )
+                .map( v -> PrismValueDeserializer.deserializeProtoValue(v, streamSink) )
                 .collect( Collectors.toList() );
         return new PolyList<>( values );
     }
@@ -143,9 +153,19 @@ public class PrismValueDeserializer {
     }
 
 
-    private static PolyBinary deserializeToPolyBinary( ProtoValue protoValue ) {
-        //As poly binary's constructor uses avatica's byte string, we can't call it directly.
-        return PolyBinary.of( protoValue.getBinary().getBinary().toByteArray() );
+    private static PolyBinary deserializeToPolyBinary( ProtoValue protoValue, StreamSink streamSink ) {
+        ProtoBinary protoBinary = protoValue.getBinary();
+        if (protoBinary.hasBinary()) {
+            // As poly binary's constructor uses avatica's byte string, we can't call it directly.
+            return PolyBinary.of( protoBinary.getBinary().toByteArray() );
+        }
+        try {
+            // As a poly binary stores it's value as a byte array we know that the stream will fit into one as well.
+            byte[] data = streamSink.getStream( protoBinary.getStreamId() ).getBinaryInputStream().readAllBytes();
+            return PolyBinary.of( data );
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to read binary from prism stream", e);
+        }
     }
 
 

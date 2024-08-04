@@ -16,7 +16,8 @@
 
 package org.polypheny.db.prisminterface.streaming;
 
-import java.io.ByteArrayOutputStream;
+import java.io.PipedInputStream;
+import java.io.PipedOutputStream;
 import java.io.StringWriter;
 import lombok.Getter;
 import org.polypheny.prism.StreamFrame.DataCase;
@@ -26,13 +27,15 @@ public class StreamWrapper {
 
 
     private final DataCase streamType;
-    private final ByteArrayOutputStream binaryStream;
+    private final PipedInputStream binaryInputStream;
+    private final PipedOutputStream binaryOutputStream;
     private final StringWriter stringStream;
 
 
-    public StreamWrapper( ByteArrayOutputStream byteArrayOutputStream ) {
+    public StreamWrapper( PipedOutputStream pipedOutputStream ) {
         this.streamType = DataCase.BINARY;
-        this.binaryStream = byteArrayOutputStream;
+        this.binaryInputStream = new PipedInputStream();
+        this.binaryOutputStream = pipedOutputStream;
         this.stringStream = null;
     }
 
@@ -40,7 +43,8 @@ public class StreamWrapper {
     public StreamWrapper( StringWriter stringWriter ) {
         this.streamType = DataCase.STRING;
         this.stringStream = stringWriter;
-        this.binaryStream = null;
+        this.binaryInputStream = null;
+        this.binaryOutputStream = null;
     }
 
 }

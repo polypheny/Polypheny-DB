@@ -17,6 +17,8 @@
 package org.polypheny.db.prisminterface.streaming;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.PipedOutputStream;
 import java.io.StringWriter;
 import java.util.HashMap;
 import java.util.Map;
@@ -25,20 +27,20 @@ import org.polypheny.db.prisminterface.PIServiceException;
 import org.polypheny.prism.StreamAcknowledgement;
 import org.polypheny.prism.StreamSendRequest;
 
-public class StreamReceiver {
+public class StreamSink {
 
     private final Map<Long, StreamWrapper> streams = new HashMap<>();
     private final AtomicLong streamIdGenerator = new AtomicLong();
 
 
-    public StreamAcknowledgement appendOrCreateNew( StreamSendRequest request ) {
+    public StreamAcknowledgement appendOrCreateNew( StreamSendRequest request ) throws IOException {
         StreamWrapper piStream;
         long streamId;
         if ( !request.hasStreamId() ) {
             switch ( request.getFrame().getDataCase() ) {
                 case BINARY -> {
-                    ByteArrayOutputStream stream = new ByteArrayOutputStream();
-                    stream.writeBytes( request.getFrame().getBinary().toByteArray() );
+                    PipedOutputStream stream = new PipedOutputStream();
+                    stream.write( request.getFrame().getBinary().toByteArray() );
                     piStream = new StreamWrapper( stream );
                 }
                 case STRING -> {
@@ -61,11 +63,15 @@ public class StreamReceiver {
             throw new PIServiceException( "Stream " + streamId + " has incompatible data type" );
         }
         switch ( request.getFrame().getDataCase() ) {
-            case BINARY -> piStream.getBinaryStream().writeBytes( request.getFrame().getBinary().toByteArray() );
+            case BINARY -> piStream.getBinaryOutputStream().write( request.getFrame().getBinary().toByteArray() );
             case STRING -> piStream.getStringStream().write( request.getFrame().getString() );
             default -> throw new PIServiceException( "Should never be thrown" );
         }
         return StreamAcknowledgement.newBuilder().setStreamId( streamId ).build();
+    }
+
+    public StreamWrapper getStream( long streamId ) {
+        return streams.get( streamId );
     }
 
 
