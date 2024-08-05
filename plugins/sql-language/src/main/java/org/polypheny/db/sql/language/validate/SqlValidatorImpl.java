@@ -42,7 +42,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
@@ -148,7 +147,6 @@ import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.inference.PolyOperandTypeInference;
 import org.polypheny.db.type.inference.ReturnTypes;
 import org.polypheny.db.util.AccessType;
-import org.polypheny.db.util.Bug;
 import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.ImmutableNullableList;
@@ -516,7 +514,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                 }
             }
             // If NATURAL JOIN or USING is present, move key fields to the front of the list, per standard SQL. Disabled if there are dynamic fields.
-            if ( !hasDynamicStruct || Bug.CALCITE_2400_FIXED ) {
+            if ( !hasDynamicStruct ) {
                 new Permute( scope.getNode().getSqlFrom(), 0 ).permute( selectItems, fields );
             }
             return true;
@@ -4944,9 +4942,9 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                     }
                 } );
         return typeFactory.createStructType(
-                types.stream().map( t -> (Long) null ).collect( Collectors.toList() ),
+                types.stream().map( t -> (Long) null ).toList(),
                 types,
-                IntStream.range( 0, types.size() ).mapToObj( i -> "?" + i ).collect( Collectors.toList() ) );
+                IntStream.range( 0, types.size() ).mapToObj( i -> "?" + i ).toList() );
     }
 
 
@@ -5908,7 +5906,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                         final AlgDataTypeField f2 = right.field( name );
                         final ImmutableList<Integer> source2 = right.sources.get( f2.getIndex() );
                         sourceSet.add( source2 );
-                        sources.add( ImmutableList.copyOf( Stream.concat( source.stream(), source2.stream() ).collect( Collectors.toList() ) ) );
+                        sources.add( ImmutableList.copyOf( Stream.concat( source.stream(), source2.stream() ).toList() ) );
                         final boolean nullable =
                                 (f.getType().isNullable()
                                         || join.getJoinType().generatesNullsOnLeft())

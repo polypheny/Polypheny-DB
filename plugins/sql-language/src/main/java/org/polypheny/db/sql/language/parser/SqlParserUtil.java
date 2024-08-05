@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.function.Predicate;
-import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
@@ -58,6 +57,7 @@ import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.PrecedenceClimbingParser;
 import org.polypheny.db.util.Util;
+import org.polypheny.db.util.temporal.DateTimeUtils;
 import org.polypheny.db.util.trace.PolyphenyDbTrace;
 import org.slf4j.Logger;
 

@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.prisminterface.streaming.PIInputStreamManager;
 import org.polypheny.db.type.entity.PolyBinary;
@@ -47,7 +46,6 @@ import org.polypheny.prism.ProtoBigDecimal;
 import org.polypheny.prism.ProtoBinary;
 import org.polypheny.prism.ProtoFile;
 import org.polypheny.prism.ProtoValue;
-import org.polypheny.prism.ProtoValue.ValueCase;
 import org.polypheny.prism.StreamFrame.DataCase;
 
 public class PrismValueDeserializer {
@@ -55,7 +53,7 @@ public class PrismValueDeserializer {
     public static List<List<PolyValue>> deserializeParameterLists( List<IndexedParameters> parameterListsList, PIInputStreamManager PIInputStreamManager ) {
         return transpose( parameterListsList.stream()
                 .map( parameterList -> deserializeParameterList( parameterList.getParametersList(), PIInputStreamManager ) )
-                .collect( Collectors.toList() ) );
+                .toList() );
     }
 
 
@@ -74,7 +72,7 @@ public class PrismValueDeserializer {
 
 
     public static List<PolyValue> deserializeParameterList( List<ProtoValue> valuesList, PIInputStreamManager PIInputStreamManager ) {
-        return valuesList.stream().map( l -> PrismValueDeserializer.deserializeProtoValue( l, PIInputStreamManager ) ).collect( Collectors.toList() );
+        return valuesList.stream().map( l -> PrismValueDeserializer.deserializeProtoValue( l, PIInputStreamManager ) ).toList();
     }
 
 
@@ -131,7 +129,7 @@ public class PrismValueDeserializer {
     private static PolyValue deserializeToPolyList( ProtoValue protoValue, PIInputStreamManager PIInputStreamManager ) {
         List<PolyValue> values = protoValue.getList().getValuesList().stream()
                 .map( v -> PrismValueDeserializer.deserializeProtoValue( v, PIInputStreamManager ) )
-                .collect( Collectors.toList() );
+                .toList();
         return new PolyList<>( values );
     }
 

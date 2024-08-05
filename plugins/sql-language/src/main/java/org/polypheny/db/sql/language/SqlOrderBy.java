@@ -28,7 +28,7 @@ import org.polypheny.db.util.ImmutableNullableList;
 
 /**
  * Parse tree node that represents an {@code ORDER BY} on a query other than a {@code SELECT} (e.g. {@code VALUES} or {@code UNION}).
- *
+ * <p>
  * It is a purely syntactic operator, and is eliminated by {@code org.polypheny.db.sql.validate.SqlValidatorImpl#performUnconditionalRewrites} and replaced with the ORDER_OPERAND of SqlSelect.
  */
 public class SqlOrderBy extends SqlCall {

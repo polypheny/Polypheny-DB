@@ -18,12 +18,12 @@ package org.polypheny.db.languages;
 
 import java.util.List;
 import java.util.Objects;
-import org.apache.calcite.avatica.util.Casing;
-import org.apache.calcite.avatica.util.Quoting;
 import org.polypheny.db.algebra.constant.ConformanceEnum;
 import org.polypheny.db.algebra.constant.Lex;
 import org.polypheny.db.nodes.Node;
+import org.polypheny.db.util.Casing;
 import org.polypheny.db.util.Conformance;
+import org.polypheny.db.util.Quoting;
 
 public interface Parser {
 

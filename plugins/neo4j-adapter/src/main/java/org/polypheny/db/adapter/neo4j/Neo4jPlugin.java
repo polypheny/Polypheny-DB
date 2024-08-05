@@ -49,6 +49,7 @@ import org.polypheny.db.adapter.neo4j.types.NestedSingleType;
 import org.polypheny.db.adapter.neo4j.util.NeoUtil;
 import org.polypheny.db.catalog.catalogs.GraphAdapterCatalog;
 import org.polypheny.db.catalog.entity.LogicalDefaultValue;
+import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
 import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
@@ -158,8 +159,8 @@ public class Neo4jPlugin extends PolyPlugin {
         private String host;
 
 
-        public Neo4jStore( final long adapterId, final String uniqueName, final Map<String, String> adapterSettings ) {
-            super( adapterId, uniqueName, adapterSettings, true, new GraphAdapterCatalog( adapterId ) );
+        public Neo4jStore( final long adapterId, final String uniqueName, final Map<String, String> adapterSettings, DeployMode mode ) {
+            super( adapterId, uniqueName, adapterSettings, mode, true, new GraphAdapterCatalog( adapterId ) );
 
             this.user = "neo4j";
             if ( !settings.containsKey( "password" ) ) {
@@ -414,6 +415,30 @@ public class Neo4jPlugin extends PolyPlugin {
 
 
         @Override
+        public void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities, Context context ) {
+            for ( PhysicalEntity entity : entities ) {
+                updateNamespace( entity.namespaceName, entity.namespaceId );
+                adapterCatalog.addPhysical( alloc, currentNamespace.createEntity( entity, entity.unwrap( PhysicalTable.class ).orElseThrow().columns, currentNamespace ) );
+            }
+        }
+
+
+        @Override
+        public void restoreGraph( AllocationGraph alloc, List<PhysicalEntity> entities, Context context ) {
+            for ( PhysicalEntity entity : entities ) {
+                updateNamespace( entity.namespaceName, entity.namespaceId );
+                adapterCatalog.addPhysical( alloc, currentNamespace.createEntity( entity, List.of(), currentNamespace ) );
+            }
+        }
+
+
+        @Override
+        public void restoreCollection( AllocationCollection alloc, List<PhysicalEntity> entities, Context context ) {
+            adapterCatalog.addPhysical( alloc, entities.toArray( new PhysicalEntity[]{} ) );
+        }
+
+
+        @Override
         public void dropIndex( Context context, LogicalIndex index, long allocId ) {
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
 
@@ -588,6 +613,12 @@ public class Neo4jPlugin extends PolyPlugin {
         void dropIndex( Context context, LogicalIndex index, long allocId );
 
         void renameLogicalColumn( long id, String newColumnName );
+
+        void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities, Context context );
+
+        void restoreGraph( AllocationGraph alloc, List<PhysicalEntity> entities, Context context );
+
+        void restoreCollection( AllocationCollection alloc, List<PhysicalEntity> entities, Context context );
 
     }
 

@@ -27,10 +27,6 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyNode;
-import org.polypheny.db.type.entity.graph.PolyPath;
-import org.polypheny.prism.Frame;
-import org.polypheny.prism.GraphElement;
-import org.polypheny.prism.GraphFrame;
 import org.polypheny.prism.PreparedStatementSignature;
 import org.polypheny.prism.ProtoEdge;
 import org.polypheny.prism.ProtoNode;
@@ -103,6 +99,7 @@ public class PrismUtils {
         return data.stream().map( e -> PolyValueSerializer.buildProtoEdge( (PolyEdge) (e.get( 0 )), streamIndex, streamingStrategy, statementId ) ).collect( Collectors.toList() );
     }
 
+
     public static StreamFrame buildBinaryStreamFrame( byte[] data, boolean is_last ) {
         return StreamFrame.newBuilder()
                 .setBinary( ByteString.copyFrom( data ) )
@@ -119,10 +116,8 @@ public class PrismUtils {
     }
 
 
-
     public static ProtoPolyType getProtoFromPolyType( PolyType polyType ) {
         return ProtoPolyType.valueOf( polyType.getName() );
     }
-
 
 }

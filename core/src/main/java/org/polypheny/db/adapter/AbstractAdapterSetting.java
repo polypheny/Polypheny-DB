@@ -109,16 +109,6 @@ public abstract class AbstractAdapterSetting {
                 Arrays.stream( ((AdapterSettingDirectory.List) annotation).value() ).forEach( el -> settings.add( AbstractAdapterSettingDirectory.fromAnnotation( el ) ) );
             }
         }
-        settings.add( new AbstractAdapterSettingList(
-                "mode",
-                false,
-                null,
-                true,
-                false,
-                Arrays.stream( properties.usedModes() ).map( DeployMode::getName ).toList(),
-                List.of( DeploySetting.ALL ),
-                properties.defaultMode().getName(),
-                0 ) );
 
         return settings;
     }

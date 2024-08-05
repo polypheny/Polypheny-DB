@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,9 +17,8 @@
 package org.polypheny.db.algebra.constant;
 
 
-import org.apache.calcite.avatica.util.Casing;
-import org.apache.calcite.avatica.util.Quoting;
-
+import org.polypheny.db.util.Casing;
+import org.polypheny.db.util.Quoting;
 
 /**
  * Named, built-in lexical policy. A lexical policy describes how identifiers are quoted, whether they are converted to upper- or lower-case when they are read,

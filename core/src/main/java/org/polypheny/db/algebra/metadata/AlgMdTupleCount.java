@@ -55,7 +55,6 @@ import org.polypheny.db.plan.volcano.AlgSubset;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.util.Bug;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.NumberUtil;
@@ -88,20 +87,7 @@ public class AlgMdTupleCount implements MetadataHandler<TupleCount> {
 
 
     public Double getTupleCount( AlgSubset subset, AlgMetadataQuery mq ) {
-        if ( !Bug.CALCITE_1048_FIXED ) {
-            return mq.getTupleCount( Util.first( subset.getBest(), subset.getOriginal() ) );
-        }
-        Double v = null;
-        for ( AlgNode r : subset.getAlgs() ) {
-            try {
-                v = NumberUtil.min( v, mq.getTupleCount( r ) );
-            } catch ( CyclicMetadataException e ) {
-                // ignore this alg; there will be other, non-cyclic ones
-            } catch ( Throwable e ) {
-                log.error( "Caught exception", e );
-            }
-        }
-        return Util.first( v, 1e6d ); // if set is empty, estimate large
+        return mq.getTupleCount( Util.first( subset.getBest(), subset.getOriginal() ) );
     }
 
 

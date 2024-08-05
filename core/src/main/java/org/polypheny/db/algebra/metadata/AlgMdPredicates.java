@@ -84,7 +84,6 @@ import org.polypheny.db.rex.RexSimplify;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.rex.RexVisitorImpl;
 import org.polypheny.db.util.BitSets;
-import org.polypheny.db.util.Bug;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Util;
@@ -95,10 +94,10 @@ import org.polypheny.db.util.mapping.Mappings;
 
 /**
  * Utility to infer Predicates that are applicable above a AlgNode.
- *
+ * <p>
  * This is currently used by {@link org.polypheny.db.algebra.rules.JoinPushTransitivePredicatesRule} to infer <em>Predicates</em> that can be inferred from one side of a Join
  * to the other.
- *
+ * <p>
  * The PullUp Strategy is sound but not complete. Here are some of the limitations:
  *
  * <ol>
@@ -218,9 +217,9 @@ public class AlgMdPredicates implements MetadataHandler<BuiltInMetadata.Predicat
 
     /**
      * Converts a predicate on a particular set of columns into a predicate on a subset of those columns, weakening if necessary.
-     *
+     * <p>
      * If not possible to simplify, returns {@code true}, which is the weakest possible predicate.
-     *
+     * <p>
      * Examples:
      * <ol>
      * <li>The predicate {@code $7 = $9} on columns [7] becomes {@code $7 is not null}</li>
@@ -262,6 +261,7 @@ public class AlgMdPredicates implements MetadataHandler<BuiltInMetadata.Predicat
     /**
      * Add the Filter condition to the pulledPredicates list from the input.
      */
+    @SuppressWarnings("unused")
     public AlgOptPredicateList getPredicates( Filter filter, AlgMetadataQuery mq ) {
         final AlgNode input = filter.getInput();
         final RexBuilder rexBuilder = filter.getCluster().getRexBuilder();
@@ -279,6 +279,7 @@ public class AlgMdPredicates implements MetadataHandler<BuiltInMetadata.Predicat
     /**
      * Infers predicates for a {@link org.polypheny.db.algebra.core.Join} (including {@link org.polypheny.db.algebra.core.SemiJoin}).
      */
+    @SuppressWarnings("unused")
     public AlgOptPredicateList getPredicates( Join join, AlgMetadataQuery mq ) {
         AlgCluster cluster = join.getCluster();
         RexBuilder rexBuilder = cluster.getRexBuilder();
@@ -302,7 +303,7 @@ public class AlgMdPredicates implements MetadataHandler<BuiltInMetadata.Predicat
 
     /**
      * Infers predicates for an Aggregate.
-     *
+     * <p>
      * Pulls up predicates that only contains references to columns in the GroupSet. For e.g.
      *
      * <blockquote><pre>
@@ -311,6 +312,7 @@ public class AlgMdPredicates implements MetadataHandler<BuiltInMetadata.Predicat
      * pulledUpExprs    : { a &gt; 7}
      * </pre></blockquote>
      */
+    @SuppressWarnings("unused")
     public AlgOptPredicateList getPredicates( Aggregate agg, AlgMetadataQuery mq ) {
         final AlgNode input = agg.getInput();
         final RexBuilder rexBuilder = agg.getCluster().getRexBuilder();
@@ -344,6 +346,7 @@ public class AlgMdPredicates implements MetadataHandler<BuiltInMetadata.Predicat
     /**
      * Infers predicates for a Union.
      */
+    @SuppressWarnings("unused")
     public AlgOptPredicateList getPredicates( Union union, AlgMetadataQuery mq ) {
         final RexBuilder rexBuilder = union.getCluster().getRexBuilder();
 
@@ -396,6 +399,7 @@ public class AlgMdPredicates implements MetadataHandler<BuiltInMetadata.Predicat
     /**
      * Infers predicates for a Sort.
      */
+    @SuppressWarnings("unused")
     public AlgOptPredicateList getPredicates( Sort sort, AlgMetadataQuery mq ) {
         AlgNode input = sort.getInput();
         return mq.getPulledUpPredicates( input );
@@ -405,6 +409,7 @@ public class AlgMdPredicates implements MetadataHandler<BuiltInMetadata.Predicat
     /**
      * Infers predicates for an Exchange.
      */
+    @SuppressWarnings("unused")
     public AlgOptPredicateList getPredicates( Exchange exchange, AlgMetadataQuery mq ) {
         AlgNode input = exchange.getInput();
         return mq.getPulledUpPredicates( input );
@@ -414,25 +419,15 @@ public class AlgMdPredicates implements MetadataHandler<BuiltInMetadata.Predicat
     /**
      * @see AlgMetadataQuery#getPulledUpPredicates(AlgNode)
      */
+    @SuppressWarnings("unused")
     public AlgOptPredicateList getPredicates( AlgSubset r, AlgMetadataQuery mq ) {
-        if ( !Bug.CALCITE_1048_FIXED ) {
-            return AlgOptPredicateList.EMPTY;
-        }
-        final RexBuilder rexBuilder = r.getCluster().getRexBuilder();
-        AlgOptPredicateList list = null;
-        for ( AlgNode r2 : r.getAlgs() ) {
-            AlgOptPredicateList list2 = mq.getPulledUpPredicates( r2 );
-            if ( list2 != null ) {
-                list = list == null ? list2 : list.union( rexBuilder, list2 );
-            }
-        }
-        return Util.first( list, AlgOptPredicateList.EMPTY );
+        return AlgOptPredicateList.EMPTY;
     }
 
 
     /**
      * Utility to infer predicates from one side of the join that apply on the other side.
-     *
+     * <p>
      * Contract is:
      *
      * <ul>
@@ -696,7 +691,7 @@ public class AlgMdPredicates implements MetadataHandler<BuiltInMetadata.Predicat
 
         /**
          * Given an expression returns all the possible substitutions.
-         *
+         * <p>
          * For example, for an expression 'a + b + c' and the following equivalences:
          * <pre>
          * a : {a, b}

@@ -25,8 +25,8 @@ import java.io.InputStream;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.NonFinal;
-import org.apache.calcite.avatica.util.Base64;
 import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.commons.codec.binary.Base64;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -158,7 +158,7 @@ public class PolyBlob extends PolyValue {
 
 
     public String as64String() {
-        return Base64.encodeBytes( asByteArray() );
+        return Base64.encodeBase64String( asByteArray() );
     }
 
 

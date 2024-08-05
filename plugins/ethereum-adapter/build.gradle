@@ -7,7 +7,6 @@ dependencies {
     // Apache 2.0
     implementation(group: "org.web3j", name: "core", version: web3j_version) {
         exclude(group: "org.slf4j")
-        exclude(group: "com.fasterxml.jackson.core")
     }
 
 

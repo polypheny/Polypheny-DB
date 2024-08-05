@@ -138,7 +138,7 @@ public class LanguageCrud {
 
 
     public static long getNamespaceIdOrDefault( String namespace ) {
-        return namespace == null ? Catalog.defaultNamespaceId : Catalog.snapshot().getNamespace( namespace ).orElseThrow().id;
+        return namespace == null ? Catalog.defaultNamespaceId : Catalog.snapshot().getNamespace( namespace ).map( n -> n.id ).orElse( Catalog.defaultNamespaceId );
     }
 
 
@@ -169,7 +169,6 @@ public class LanguageCrud {
 
 
     public static void commitAndFinish( List<ExecutedContext> executedContexts, InformationManager queryAnalyzer, List<Result<?, ?>> results, long executionTime ) {
-        executionTime = System.nanoTime() - executionTime;
         String commitStatus = "Error on starting committing";
         for ( Transaction transaction : executedContexts.stream().flatMap( c -> c.getQuery().getTransactions().stream() ).toList() ) {
             // this has a lot of unnecessary no-op commits atm
@@ -373,7 +372,7 @@ public class LanguageCrud {
         ResultIterator iterator = context.getIterator();
         List<PolyValue[]> data;
         try {
-            data = iterator.getArrayRows();
+            data = iterator.getTupleRows();
 
             iterator.close();
 

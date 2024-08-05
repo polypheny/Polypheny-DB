@@ -20,10 +20,8 @@ import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.beans.PropertyChangeSupport;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import lombok.Getter;
 import lombok.Value;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.IdBuilder;
@@ -41,29 +39,27 @@ import org.polypheny.db.type.PolySerializable;
 @Value
 public class PolyAllocGraphCatalog implements PolySerializable, AllocationGraphCatalog {
 
-    IdBuilder idBuilder = IdBuilder.getInstance();
-
-    @Getter
-    @Serialize
-    public LogicalNamespace namespace;
-    @Getter
     public BinarySerializer<PolyAllocGraphCatalog> serializer = PolySerializable.buildSerializer( PolyAllocGraphCatalog.class );
 
-    @Getter
+    IdBuilder idBuilder = IdBuilder.getInstance();
+
+    @Serialize
+    public LogicalNamespace namespace;
+
     @Serialize
     public ConcurrentHashMap<Long, AllocationGraph> graphs;
 
-    @Getter
     @Serialize
     public ConcurrentHashMap<Long, AllocationPlacement> placements;
 
-    @Getter
     @Serialize
     public ConcurrentHashMap<Long, AllocationPartition> partitions;
 
+    PropertyChangeSupport listeners = new PropertyChangeSupport( this );
+
 
     public PolyAllocGraphCatalog( LogicalNamespace namespace ) {
-        this( namespace, new HashMap<>(), new HashMap<>(), new HashMap<>() );
+        this( namespace, Map.of(), Map.of(), Map.of() );
     }
 
 
@@ -78,9 +74,6 @@ public class PolyAllocGraphCatalog implements PolySerializable, AllocationGraphC
         this.partitions = new ConcurrentHashMap<>( partitions );
         listeners.addPropertyChangeListener( Catalog.getInstance().getChangeListener() );
     }
-
-
-    PropertyChangeSupport listeners = new PropertyChangeSupport( this );
 
 
     public void change() {

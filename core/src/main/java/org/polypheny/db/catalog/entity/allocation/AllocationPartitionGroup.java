@@ -19,15 +19,11 @@ package org.polypheny.db.catalog.entity.allocation;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.annotations.SerializeNullable;
-import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.catalog.entity.PolyObject;
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.type.entity.PolyValue;
 
 
-@EqualsAndHashCode
 @Value
 public class AllocationPartitionGroup implements PolyObject {
 
@@ -61,12 +57,6 @@ public class AllocationPartitionGroup implements PolyObject {
         this.namespaceId = namespaceId;
         this.partitionKey = partitionKey;
         this.isUnbound = isUnbound;
-    }
-
-
-    @Override
-    public PolyValue[] getParameterArray() {
-        throw new GenericRuntimeException( "Not implemented" );
     }
 
 }

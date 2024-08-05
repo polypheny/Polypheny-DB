@@ -21,7 +21,6 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
@@ -126,7 +125,7 @@ public class SqlAlterTableAddIndex extends SqlAlterTable {
                 DdlManager.getInstance().createPolyphenyIndex(
                         logicalTable,
                         indexMethodName,
-                        columnList.getList().stream().map( Node::toString ).collect( Collectors.toList() ),
+                        columnList.getList().stream().map( Node::toString ).toList(),
                         indexName.getSimple(),
                         unique,
                         statement );
@@ -155,4 +154,3 @@ public class SqlAlterTableAddIndex extends SqlAlterTable {
     }
 
 }
-

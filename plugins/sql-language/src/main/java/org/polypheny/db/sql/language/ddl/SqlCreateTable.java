@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
@@ -57,7 +56,6 @@ import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.util.ImmutableNullableList;
 import org.polypheny.db.util.Pair;
 
 
@@ -132,13 +130,13 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
 
     @Override
     public List<Node> getOperandList() {
-        return ImmutableNullableList.of( name, columns, query );
+        return ImmutableList.of( name, columns, query );
     }
 
 
     @Override
     public List<SqlNode> getSqlOperandList() {
-        return ImmutableNullableList.of( name, columns, query );
+        return ImmutableList.of( name, columns, query );
     }
 
 
@@ -258,7 +256,7 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
                                 getTableFailOnEmpty( context, new SqlIdentifier( tableName, ParserPos.ZERO ) ),
                                 partitionType.getSimple(),
                                 partitionColumn.getSimple(),
-                                partitionGroupNamesList.stream().map( n -> (Identifier) n ).collect( Collectors.toList() ),
+                                partitionGroupNamesList.stream().map( n -> (Identifier) n ).toList(),
                                 numPartitionGroups,
                                 numPartitions,
                                 partitionQualifierList.stream().map( l -> l.stream().map( e -> (Node) e ).toList() ).toList(),
@@ -314,13 +312,13 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
                     constraint.getConstraintType(),
                     constraint.getFields().getSqlList().stream()
                             .map( SqlNode::toString )
-                            .collect( Collectors.toList() ) );
+                            .toList() );
             case FOREIGN -> new ConstraintInformation(
                     constraintName,
                     constraint.getConstraintType(),
                     constraint.getFields().getSqlList().stream()
                             .map( SqlNode::toString )
-                            .collect( Collectors.toList() ),
+                            .toList(),
                     ((SqlForeignKeyConstraint) constraint).getReferencedEntity().toString(),
                     ((SqlForeignKeyConstraint) constraint).getReferencedField().toString() );
         };

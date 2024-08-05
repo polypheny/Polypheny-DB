@@ -153,7 +153,7 @@ public class ImmutableBitSet implements Iterable<Integer>, Serializable, Compara
 
     /**
      * Creates an ImmutableBitSet with given bits set.
-     *
+     * <p>
      * For example, <code>of(ImmutableIntList.of(0, 3))</code> returns a bit set with bits {0, 3} set.
      *
      * @param bits Collection of bits to set
@@ -166,13 +166,13 @@ public class ImmutableBitSet implements Iterable<Integer>, Serializable, Compara
 
     /**
      * Returns a new immutable bit set containing all the bits in the given long array.
-     *
+     * <p>
      * More precisely,
      *
      * <blockquote>{@code ImmutableBitSet.valueOf(longs).get(n) == ((longs[n/64] & (1L<<(n%64))) != 0)}</blockquote>
      *
      * for all {@code n < 64 * longs.length}.
-     *
+     * <p>
      * This method is equivalent to {@code ImmutableBitSet.valueOf(LongBuffer.wrap(longs))}.
      *
      * @param longs a long array containing a little-endian representation of a sequence of bits to be used as the initial bits of the new bit set
@@ -218,7 +218,7 @@ public class ImmutableBitSet implements Iterable<Integer>, Serializable, Compara
 
     /**
      * Creates an ImmutableBitSet with bits from {@code fromIndex} (inclusive) to specified {@code toIndex} (exclusive) set to {@code true}.
-     *
+     * <p>
      * For example, {@code range(0, 3)} returns a bit set with bits {0, 1, 2} set.
      *
      * @param fromIndex Index of the first bit to be set.
@@ -339,7 +339,7 @@ public class ImmutableBitSet implements Iterable<Integer>, Serializable, Compara
      * Returns a string representation of this bit set. For every index for which this {@code BitSet} contains a bit in the set state, the decimal representation of that index is included in
      * the result. Such indices are listed in order from lowest to highest, separated by ",&nbsp;" (a comma and a space) and surrounded by braces, resulting in the usual mathematical
      * notation for a set of integers.
-     *
+     * <p>
      * Example:
      * <pre>BitSet drPepper = new BitSet();</pre>
      * Now {@code drPepper.toString()} returns "{@code {}}".
@@ -412,7 +412,7 @@ public class ImmutableBitSet implements Iterable<Integer>, Serializable, Compara
 
     /**
      * Returns the hash code value for this bit set. The hash code depends only on which bits are set within this {@code ImmutableBitSet}.
-     *
+     * <p>
      * The hash code is defined using the same calculation as {@link java.util.BitSet#hashCode()}.
      *
      * @return the hash code value for this bit set
@@ -451,17 +451,16 @@ public class ImmutableBitSet implements Iterable<Integer>, Serializable, Compara
         if ( this == obj ) {
             return true;
         }
-        if ( !(obj instanceof ImmutableBitSet) ) {
+        if ( !(obj instanceof ImmutableBitSet set) ) {
             return false;
         }
-        ImmutableBitSet set = (ImmutableBitSet) obj;
         return Arrays.equals( words, set.words );
     }
 
 
     /**
      * Compares this ImmutableBitSet with another, using a lexicographic ordering.
-     *
+     * <p>
      * Bit sets {@code (), (0), (0, 1), (0, 1, 3), (1), (2, 3)} are in sorted order.
      */
     @Override
@@ -482,7 +481,7 @@ public class ImmutableBitSet implements Iterable<Integer>, Serializable, Compara
     /**
      * Returns the index of the first bit that is set to {@code true} that occurs on or after the specified starting index. If no such
      * bit exists then {@code -1} is returned.
-     *
+     * <p>
      * Based upon {#@link BitSet#nextSetBit}.
      *
      * @param fromIndex the index to start checking from (inclusive)
@@ -616,7 +615,7 @@ public class ImmutableBitSet implements Iterable<Integer>, Serializable, Compara
 
     /**
      * Creates a view onto this bit set as a list of integers.
-     *
+     * <p>
      * The {@code cardinality} and {@code get} methods are both O(n), but the iterator is efficient. The list is memory efficient, and the CPU cost
      * breaks even (versus {@link #toList}) if you intend to relScan it only once.
      */
@@ -645,7 +644,7 @@ public class ImmutableBitSet implements Iterable<Integer>, Serializable, Compara
 
     /**
      * Creates a view onto this bit set as a set of integers.
-     *
+     * <p>
      * The {@code size} and {@code contains} methods are both O(n), but the iterator is efficient.
      */
     public Set<Integer> asSet() {
@@ -673,7 +672,7 @@ public class ImmutableBitSet implements Iterable<Integer>, Serializable, Compara
 
     /**
      * Converts this bit set to an array.
-     *
+     * <p>
      * Each entry of the array is the ordinal of a set bit. The array is sorted.
      *
      * @return Array of set bits
@@ -785,9 +784,9 @@ public class ImmutableBitSet implements Iterable<Integer>, Serializable, Compara
 
     /**
      * Computes the closure of a map from integers to bits.
-     *
+     * <p>
      * The input must have an entry for each position.
-     *
+     * <p>
      * Does not modify the input map or its bit sets.
      */
     public static SortedMap<Integer, ImmutableBitSet> closure( SortedMap<Integer, ImmutableBitSet> equivalence ) {
@@ -1022,7 +1021,7 @@ public class ImmutableBitSet implements Iterable<Integer>, Serializable, Compara
 
         /**
          * Builds an ImmutableBitSet from the contents of this Builder.
-         *
+         * <p>
          * After calling this method, the Builder cannot be used again.
          */
         public ImmutableBitSet build() {
@@ -1037,7 +1036,7 @@ public class ImmutableBitSet implements Iterable<Integer>, Serializable, Compara
 
         /**
          * Builds an ImmutableBitSet from the contents of this Builder, using an existing ImmutableBitSet if it happens to have the same contents.
-         *
+         * <p>
          * Supplying the existing bit set if useful for set operations, where there is a significant chance that the original bit set is
          * unchanged. We save memory because we use the same copy. For example:
          *

@@ -91,6 +91,7 @@ import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.util.Pair;
+import org.polypheny.db.webui.models.catalog.FieldDefinition;
 
 
 @Slf4j
@@ -323,7 +324,7 @@ public class DataMigratorImpl implements DataMigrator {
             for ( AllocationColumn column : selectedColumns ) {
                 int i = 0;
                 for ( AlgDataTypeField metaData : implementation.getTupleType().getFields() ) {
-                    if ( metaData.getName().equalsIgnoreCase( column.getLogicalColumnName() ) ) {
+                    if ( FieldDefinition.normalizeViewColumnName( metaData.getName() ).equalsIgnoreCase( column.getLogicalColumnName() ) ) {
                         resultColMapping.put( column.getColumnId(), i );
                     }
                     i++;
@@ -421,7 +422,6 @@ public class DataMigratorImpl implements DataMigrator {
             builder.project( values, columnNames );
         }
 
-
         AlgNode node = LogicalRelModify.create( allocation, builder.build(), Modify.Operation.DELETE, null, null, false );
 
         return AlgRoot.of( node, Kind.DELETE );
@@ -440,8 +440,8 @@ public class DataMigratorImpl implements DataMigrator {
         // this often leads to errors, and can be prevented by sorting
         List<AllocationColumn> placements = to.stream().sorted( Comparator.comparingLong( p -> p.columnId ) ).toList();
 
-        List<String> columnNames = new LinkedList<>();
-        List<RexNode> values = new LinkedList<>();
+        List<String> columnNames = new ArrayList<>();
+        List<RexNode> values = new ArrayList<>();
         for ( AllocationColumn ccp : placements ) {
             LogicalColumn logicalColumn = Catalog.getInstance().getSnapshot().rel().getColumn( ccp.columnId ).orElseThrow();
             columnNames.add( ccp.getLogicalColumnName() );
@@ -658,7 +658,7 @@ public class DataMigratorImpl implements DataMigrator {
     }
 
 
-    private record Source(Statement sourceStatement, AlgRoot sourceAlg) {
+    private record Source( Statement sourceStatement, AlgRoot sourceAlg ) {
 
     }
 

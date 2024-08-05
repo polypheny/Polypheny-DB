@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,11 +48,11 @@ import org.polypheny.db.algebra.metadata.UnboundMetadata;
 /**
  * VolcanoRelMetadataProvider implements the {@link AlgMetadataProvider} interface by combining metadata from the rels making up an equivalence class.
  */
-public class VolcanoRelMetadataProvider implements AlgMetadataProvider {
+public class VolcanoAlgMetadataProvider implements AlgMetadataProvider {
 
     @Override
     public boolean equals( Object obj ) {
-        return obj instanceof VolcanoRelMetadataProvider;
+        return obj instanceof VolcanoAlgMetadataProvider;
     }
 
 
@@ -124,4 +124,3 @@ public class VolcanoRelMetadataProvider implements AlgMetadataProvider {
     }
 
 }
-

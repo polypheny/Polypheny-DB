@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
@@ -64,7 +63,7 @@ public class RelationalMetaRetriever {
     public static List<ParameterMeta> retrieveParameterMetas( AlgDataType parameterRowType ) {
         return parameterRowType.getFields().stream()
                 .map( p -> retrieveParameterMeta( p, null ) )
-                .collect( Collectors.toList() );
+                .toList();
     }
 
 
@@ -146,7 +145,7 @@ public class RelationalMetaRetriever {
                         .getFields()
                         .stream()
                         .map( f -> retrieveFieldMeta( f.getIndex(), f.getName(), f.getType() ) )
-                        .collect( Collectors.toList() );
+                        .toList();
                 return TypeMeta.newBuilder()
                         .setStructMeta( StructMeta.newBuilder().addAllFieldMetas( fieldMetas ).build() )
                         //.setProtoValueType( ProtoValueType.PROTO_VALUE_TYPE_STRUCTURED )

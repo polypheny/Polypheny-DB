@@ -68,9 +68,7 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.AlgBuilderFactory;
-import org.polypheny.db.util.Bug;
 import org.polypheny.db.util.ImmutableBitSet;
-import org.polypheny.db.util.Util;
 import org.polypheny.db.util.mapping.Mapping;
 import org.polypheny.db.util.mapping.Mappings;
 
@@ -179,7 +177,6 @@ public class AggregateJoinTransposeRule extends AlgOptRule {
                 //
                 // So we choose to imagine the input is already unique, which is untrue but harmless.
                 //
-                Util.discard( Bug.CALCITE_1048_FIXED );
                 unique = true;
             } else {
                 final Boolean unique0 = mq.areColumnsUnique( joinInput, belowAggregateKey );

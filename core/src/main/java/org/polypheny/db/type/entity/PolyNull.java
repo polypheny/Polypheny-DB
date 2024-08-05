@@ -27,7 +27,6 @@ import io.activej.serializer.def.SimpleSerializerDef;
 import java.math.BigDecimal;
 import java.util.Map;
 import lombok.NonNull;
-import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.jetbrains.annotations.NotNull;
@@ -52,6 +51,7 @@ import org.polypheny.db.type.entity.relational.PolyMap.MapType;
 import org.polypheny.db.type.entity.temporal.PolyDate;
 import org.polypheny.db.type.entity.temporal.PolyTime;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
+import org.polypheny.db.util.ByteString;
 
 public class PolyNull extends PolyValue {
 

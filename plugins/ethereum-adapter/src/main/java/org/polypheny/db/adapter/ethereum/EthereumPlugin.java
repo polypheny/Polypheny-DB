@@ -104,8 +104,8 @@ public class EthereumPlugin extends PolyPlugin {
         private EthereumNamespace currentNamespace;
 
 
-        public EthereumDataSource( final long storeId, final String uniqueName, final Map<String, String> settings ) {
-            super( storeId, uniqueName, settings, true, new RelAdapterCatalog( storeId ) );
+        public EthereumDataSource( final long storeId, final String uniqueName, final Map<String, String> settings, DeployMode mode ) {
+            super( storeId, uniqueName, settings, mode, true, new RelAdapterCatalog( storeId ) );
             setClientURL( settings.get( "ClientUrl" ) );
             this.blocks = Integer.parseInt( settings.get( "Blocks" ) );
             this.experimentalFiltering = Boolean.parseBoolean( settings.get( "ExperimentalFiltering" ) );

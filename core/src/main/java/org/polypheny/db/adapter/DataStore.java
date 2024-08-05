@@ -39,8 +39,8 @@ public abstract class DataStore<S extends AdapterCatalog> extends Adapter<S> imp
     protected final transient Catalog catalog = Catalog.getInstance();
 
 
-    public DataStore( final long adapterId, final String uniqueName, final Map<String, String> settings, final boolean persistent, S storeCatalog ) {
-        super( adapterId, uniqueName, settings, storeCatalog );
+    public DataStore( final long adapterId, final String uniqueName, final Map<String, String> settings, final DeployMode mode, final boolean persistent, S storeCatalog ) {
+        super( adapterId, uniqueName, settings, mode, storeCatalog );
         this.persistent = persistent;
 
         informationPage.setLabel( "Stores" );
@@ -54,12 +54,12 @@ public abstract class DataStore<S extends AdapterCatalog> extends Adapter<S> imp
     public abstract List<FunctionalIndexInfo> getFunctionalIndexes( LogicalTable catalogTable );
 
 
-    public record IndexMethodModel(String name, String displayName) {
+    public record IndexMethodModel( String name, String displayName ) {
 
     }
 
 
-    public record FunctionalIndexInfo(List<Long> columnIds, String methodDisplayName) {
+    public record FunctionalIndexInfo( List<Long> columnIds, String methodDisplayName ) {
 
         public List<String> getColumnNames() {
             List<String> columnNames = new ArrayList<>( columnIds.size() );
@@ -78,7 +78,7 @@ public abstract class DataStore<S extends AdapterCatalog> extends Adapter<S> imp
             JsonObject jsonStore = new JsonObject();
             jsonStore.addProperty( "adapterId", src.getAdapterId() );
             jsonStore.add( "adapterSettings", context.serialize( AbstractAdapterSetting.serializeSettings( src.getAvailableSettings( src.getClass() ), src.getCurrentSettings() ) ) );
-            jsonStore.add( "currentSettings", context.serialize( src.getCurrentSettings() ) );
+            jsonStore.add( "settings", context.serialize( src.getCurrentSettings() ) );
             jsonStore.addProperty( "adapterName", src.getAdapterName() );
             jsonStore.addProperty( "uniqueName", src.getUniqueName() );
             jsonStore.addProperty( "type", src.getAdapterType().name() );

@@ -41,4 +41,5 @@ public class NameGenerator {
     public static String generateConstraintName() {
         return RuntimeConfig.GENERATED_NAME_PREFIX.getString() + "_c_" + constraintCounter.getAndIncrement();
     }
+
 }

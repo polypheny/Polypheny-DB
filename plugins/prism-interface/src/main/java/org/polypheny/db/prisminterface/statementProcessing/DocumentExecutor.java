@@ -16,8 +16,6 @@
 
 package org.polypheny.db.prisminterface.statementProcessing;
 
-import java.util.List;
-import java.util.stream.Collectors;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.ResultIterator;
@@ -27,9 +25,7 @@ import org.polypheny.db.monitoring.events.MonitoringType;
 import org.polypheny.db.prisminterface.PIClient;
 import org.polypheny.db.prisminterface.PIServiceException;
 import org.polypheny.db.prisminterface.statements.PIStatement;
-import org.polypheny.db.prisminterface.utils.PrismUtils;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.prism.Frame;
 import org.polypheny.prism.StatementResult;
 
@@ -71,8 +67,8 @@ public class DocumentExecutor extends Executor {
             return resultBuilder.build();
         }
         if ( Kind.DML.contains( implementation.getKind() ) ) {
-            try (ResultIterator iterator = implementation.execute( statement, -1 )) {
-                resultBuilder.setScalar( PolyImplementation.getRowsChanged( statement, iterator.getIterator(), MonitoringType.from(implementation.getKind()) ) );
+            try ( ResultIterator iterator = implementation.execute( statement, -1 ) ) {
+                resultBuilder.setScalar( PolyImplementation.getRowsChanged( statement, iterator.getIterator(), MonitoringType.from( implementation.getKind() ) ) );
             }
             client.commitCurrentTransactionIfAuto();
             return resultBuilder.build();
@@ -93,7 +89,7 @@ public class DocumentExecutor extends Executor {
         StopWatch executionStopWatch = piStatement.getExecutionStopWatch();
         ResultIterator iterator = piStatement.getIterator();
         startOrResumeStopwatch( executionStopWatch );
-        return piStatement.getStreamingFramework().processDocumentResult(iterator, fetchSize);
+        return piStatement.getStreamingFramework().processDocumentResult( iterator, fetchSize );
     }
 
 }

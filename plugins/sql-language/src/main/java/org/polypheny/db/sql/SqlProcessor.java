@@ -22,8 +22,6 @@ import java.util.Arrays;
 import java.util.List;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.AvaticaSeverity;
-import org.apache.calcite.avatica.util.Casing;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.algebra.AlgDecorrelator;
 import org.polypheny.db.algebra.AlgNode;
@@ -73,22 +71,20 @@ import org.polypheny.db.transaction.Lock.LockMode;
 import org.polypheny.db.transaction.LockManager;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
-import org.polypheny.db.transaction.TransactionImpl;
+import org.polypheny.db.util.Casing;
 import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.DeadlockException;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.SourceStringReader;
 
 
+@Setter
 @Slf4j
 public class SqlProcessor extends Processor {
 
     private static final ParserConfig parserConfig;
 
-    @Setter
     private PolyphenyDbSqlValidator validator;
-
-    private final Snapshot snapshot = Catalog.getInstance().getSnapshot();
 
 
     static {
@@ -169,7 +165,7 @@ public class SqlProcessor extends Processor {
         } catch ( Exception e ) {
             log.error( "Exception while validating query", e );
             String message = e.getLocalizedMessage();
-            throw new GenericRuntimeException( message == null ? "null" : message, -1, "", AvaticaSeverity.ERROR );
+            throw new GenericRuntimeException( "Exception while validating query:" + (message == null ? "unrecoverable error" : message) );
         }
         stopWatch.stop();
         if ( log.isTraceEnabled() ) {
@@ -227,13 +223,13 @@ public class SqlProcessor extends Processor {
 
     @Override
     public void unlock( Statement statement ) {
-        LockManager.INSTANCE.unlock( List.of( LockManager.GLOBAL_LOCK ), (TransactionImpl) statement.getTransaction() );
+        LockManager.INSTANCE.unlock( statement.getTransaction() );
     }
 
 
     @Override
     public void lock( Statement statement ) throws DeadlockException {
-        LockManager.INSTANCE.lock( List.of( Pair.of( LockManager.GLOBAL_LOCK, LockMode.EXCLUSIVE ) ), (TransactionImpl) statement.getTransaction() );
+        LockManager.INSTANCE.lock( LockMode.EXCLUSIVE, statement.getTransaction() );
     }
 
 
@@ -370,6 +366,7 @@ public class SqlProcessor extends Processor {
 
     private LogicalTable getTable( Transaction transaction, SqlIdentifier tableName ) {
         LogicalTable table;
+        Snapshot snapshot = transaction.getSnapshot();
         long namespaceId;
         String tableOldName;
         if ( tableName.names.size() == 3 ) { // DatabaseName.SchemaName.TableName

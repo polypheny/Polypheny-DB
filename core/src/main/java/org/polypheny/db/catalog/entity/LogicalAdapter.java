@@ -22,16 +22,12 @@ import io.activej.serializer.annotations.Serialize;
 import java.io.Serial;
 import java.util.HashMap;
 import java.util.Map;
-import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.Value;
 import lombok.experimental.SuperBuilder;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.DeployMode;
-import org.polypheny.db.type.entity.PolyString;
-import org.polypheny.db.type.entity.PolyValue;
 
-@EqualsAndHashCode
 @Value
 @SuperBuilder(toBuilder = true)
 public class LogicalAdapter implements PolyObject {
@@ -72,13 +68,6 @@ public class LogicalAdapter implements PolyObject {
         this.settings = new HashMap<>( settings );
         this.adapterTypeName = getAdapterName();
         this.mode = mode;
-    }
-
-
-    // Used for creating ResultSets
-    @Override
-    public PolyValue[] getParameterArray() {
-        return new PolyValue[]{ PolyString.of( uniqueName ) };
     }
 
 }

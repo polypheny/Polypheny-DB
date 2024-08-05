@@ -33,8 +33,8 @@ public abstract class DataSource<S extends AdapterCatalog> extends Adapter<S> im
     private final boolean dataReadOnly;
 
 
-    protected DataSource( final long adapterId, final String uniqueName, final Map<String, String> settings, boolean dataReadOnly, S catalog ) {
-        super( adapterId, uniqueName, settings, catalog );
+    protected DataSource( final long adapterId, final String uniqueName, final Map<String, String> settings, final DeployMode mode, boolean dataReadOnly, S catalog ) {
+        super( adapterId, uniqueName, settings, mode, catalog );
         this.dataReadOnly = dataReadOnly;
 
         informationPage.setLabel( "Sources" );
@@ -92,7 +92,7 @@ public abstract class DataSource<S extends AdapterCatalog> extends Adapter<S> im
             jsonSource.addProperty( "uniqueName", src.getUniqueName() );
             jsonSource.addProperty( "adapterName", src.getAdapterName() );
             jsonSource.add( "adapterSettings", context.serialize( AbstractAdapterSetting.serializeSettings( src.getAvailableSettings( src.getClass() ), src.getCurrentSettings() ) ) );
-            jsonSource.add( "currentSettings", context.serialize( src.getCurrentSettings() ) );
+            jsonSource.add( "settings", context.serialize( src.getCurrentSettings() ) );
             jsonSource.add( "dataReadOnly", context.serialize( src.isDataReadOnly() ) );
             jsonSource.addProperty( "type", src.getAdapterType().name() );
             return jsonSource;

@@ -22,15 +22,11 @@ import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.io.Serial;
 import java.util.Map;
-import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.Value;
 import lombok.experimental.SuperBuilder;
-import org.polypheny.db.type.entity.PolyString;
-import org.polypheny.db.type.entity.PolyValue;
 
 
-@EqualsAndHashCode
 @Value
 @SuperBuilder(toBuilder = true)
 public class LogicalQueryInterface implements PolyObject {
@@ -43,7 +39,7 @@ public class LogicalQueryInterface implements PolyObject {
     @Serialize
     public String name;
     @Serialize
-    public String interfaceName;
+    public String interfaceType;
     @Serialize
     public ImmutableMap<String, String> settings;
 
@@ -51,20 +47,12 @@ public class LogicalQueryInterface implements PolyObject {
     public LogicalQueryInterface(
             @Deserialize("id") final long id,
             @Deserialize("name") @NonNull final String uniqueName,
-            @Deserialize("interfaceName") @NonNull final String interfaceName,
+            @Deserialize("interfaceType") @NonNull final String interfaceType,
             @Deserialize("settings") @NonNull final Map<String, String> settings ) {
         this.id = id;
         this.name = uniqueName;
-        this.interfaceName = interfaceName;
+        this.interfaceType = interfaceType;
         this.settings = ImmutableMap.copyOf( settings );
     }
-
-
-    // Used for creating ResultSets
-    @Override
-    public PolyValue[] getParameterArray() {
-        return new PolyValue[]{ PolyString.of( name ) };
-    }
-
 
 }

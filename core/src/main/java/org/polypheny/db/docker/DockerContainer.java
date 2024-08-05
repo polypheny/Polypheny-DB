@@ -116,7 +116,7 @@ public final class DockerContainer {
     public static String getPhysicalUniqueName( String uniqueName ) {
         // while not all Docker containers belong to an adapter we annotate it anyway
         String name = "polypheny_" + RuntimeConfig.INSTANCE_UUID.getString() + "_" + uniqueName;
-        if ( Catalog.mode != RunMode.TEST ) {
+        if ( Catalog.mode == RunMode.TEST ) {
             name += "_test";
         }
         return name;
