@@ -49,6 +49,28 @@ public class LimitTest extends CypherTestTemplate {
 
 
     @Test
+    public void InsertNodeLimitTest() {
+        GraphResult res = execute( "CREATE (n:person)\n"
+                + "RETURN n\n"
+                + "LIMIT 0" );
+
+        assert res.getData().length == 0;
+        res = matchAndReturnAllNodes();
+        assert res.getData().length == 1;
+    }
+
+
+    @Test
+    public void updateNodeLimitTest() {
+        execute( SINGLE_NODE_PERSON_COMPLEX_1 );
+        GraphResult res = execute( "MATCH (n {name: 'MAX'})\n"
+                + "SET n.age = 60\n"
+                + "RETURN n\n"
+                + "LIMIT 0" );
+    }
+
+
+    @Test
     public void orderByLimitTest() {
         execute( SINGLE_NODE_ANIMAL );
         execute( SINGLE_NODE_ANIMAL );
@@ -91,11 +113,25 @@ public class LimitTest extends CypherTestTemplate {
         assert res.getData().length == 1;
 
         assert containsNodes( res, true,
-                TestNode.from( Pair.of( "name" , "Ann" ) ,
-                        Pair.of( "age" , 45 ) ,
-                        Pair.of( "depno" , 13 )) );
+                TestNode.from( Pair.of( "name", "Ann" ),
+                        Pair.of( "age", 45 ),
+                        Pair.of( "depno", 13 ) ) );
 
 
+    }
+
+
+    @Test
+    public void numberOfUpdatesLimitTest() {
+        execute( SINGLE_NODE_PERSON_1 );
+        execute( SINGLE_NODE_PERSON_2 );
+
+        GraphResult res = execute( "MATCH (n)\n"
+                + "WITH n ORDER BY n.name LIMIT 1\n"
+                + "SET n.locked = true\n"
+                + "RETURN n.name" );
+
+        assert containsRows( res, true, false, Row.of( TestLiteral.from( "Max" ) ) );
     }
 
 
