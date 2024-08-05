@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.polypheny.db.adapter.DocumentDataSource.ExportedDocument;
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.util.Source;
 import org.polypheny.db.util.Sources;
@@ -39,7 +38,7 @@ public class JsonMetaRetriever {
     public static List<ExportedDocument> getDocuments( URL jsonFiles ) throws IOException {
         List<ExportedDocument> exportedDocuments = new LinkedList<>();
         Set<String> fileNames = getFileNames( jsonFiles );
-        for (String fileName : fileNames) {
+        for ( String fileName : fileNames ) {
             URL jsonFile = new URL( jsonFiles, fileName );
             ObjectMapper objectMapper = new ObjectMapper();
             JsonNode rootNode = objectMapper.readTree( jsonFile );
@@ -52,13 +51,14 @@ public class JsonMetaRetriever {
         return exportedDocuments;
     }
 
-    public static URL findDocumentUrl(URL jsonFiles, String name) throws MalformedURLException, NoSuchFileException {
+
+    public static URL findDocumentUrl( URL jsonFiles, String name ) throws MalformedURLException, NoSuchFileException {
         String[] extensions = { ".json", ".json.gz" };
         String path = jsonFiles.getPath();
 
         // handle single file
         for ( String ext : extensions ) {
-            if ( path.endsWith( name + ext) ) {
+            if ( path.endsWith( name + ext ) ) {
                 return jsonFiles;
             }
         }
@@ -77,23 +77,27 @@ public class JsonMetaRetriever {
     }
 
 
-    private static Set<String> getFileNames( URL jsonFiles ) {
-        Set<String> fileNames;
-        if ( Sources.of( jsonFiles ).file().isFile() ) {
-            fileNames = Set.of( jsonFiles.getPath() );
-            return fileNames;
+    private static Set<String> getFileNames( URL jsonFiles ) throws NoSuchFileException {
+        Source source = Sources.of( jsonFiles );
+        if ( source.isFile() ) {
+            File file = source.file();
+            if ( file.isFile() ) {
+                // url is file
+                return Set.of( file.getName() );
+            }
+
+            // url is directory
+            File[] files = file.listFiles( ( d, name ) -> name.endsWith( ".json" ) );
+            if ( files == null || files.length == 0 ) {
+                throw new NoSuchFileException( "No .json files were found." );
+            }
+            return Arrays.stream( files )
+                    .map( File::getName )
+                    .collect( Collectors.toSet() );
         }
-        File[] files = Sources.of( jsonFiles )
-                .file()
-                .listFiles( ( d, name ) -> name.endsWith( ".json" ));
-        if ( files == null ) {
-            throw new GenericRuntimeException( "No .json files where found." );
-        }
-        fileNames = Arrays.stream( files )
-                .sequential()
-                .map( File::getName )
-                .collect( Collectors.toSet() );
-        return fileNames;
+        // url is web source
+        String filePath = jsonFiles.getPath();
+        return Set.of(filePath.substring(filePath.lastIndexOf('/') + 1));
     }
 
 

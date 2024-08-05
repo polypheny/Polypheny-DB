@@ -339,7 +339,7 @@ public class DdlManagerImpl extends DdlManager {
                 }
 
                 if ( allocation.unwrap( AllocationCollection.class ).isPresent() ) {
-                    dropNamespace( catalog.getSnapshot().doc().getCollection( allocation.logicalId ).orElseThrow().getNamespaceName(), true, statement);
+                    dropNamespace( catalog.getSnapshot().doc().getCollection( allocation.logicalId ).orElseThrow().getNamespaceName(), true, statement );
                     continue;
                 }
                 if ( allocation.unwrap( AllocationTable.class ).isPresent() ) {

@@ -61,9 +61,10 @@ import org.slf4j.LoggerFactory;
         description = "An adapter for querying JSON files. A single JSON file or a directory containing multiple JSON files can be specified by path. Currently, this adapter only supports read operations.",
         usedModes = DeployMode.EMBEDDED,
         defaultMode = DeployMode.EMBEDDED)
-@AdapterSettingList(name = "method", options = { "upload", "link" }, defaultValue = "upload", description = "If the supplied file(s) should be uploaded or a link to the local filesystem is used (sufficient permissions are required).", position = 1)
+@AdapterSettingList(name = "method", options = { "upload", "link", "url" }, defaultValue = "upload", description = "If the supplied file(s) should be uploaded or a link to the local filesystem is used (sufficient permissions are required).", position = 1)
 @AdapterSettingDirectory(subOf = "method_upload", name = "directory", defaultValue = "classpath://articles.json", description = "Path to the JSON file(s) to be integrated as this source.", position = 2)
 @AdapterSettingString(subOf = "method_link", defaultValue = "classpath://articles.json", name = "directoryName", description = "Path to the JSON file(s) to be integrated as this source.", position = 2)
+@AdapterSettingString(subOf = "method_url", defaultValue = "http://localhost/articles.json", name = "url", description = "URL to the JSON file(s) to be integrated as this source.", position = 2)
 
 public class JsonSource extends DataSource<DocAdapterCatalog> implements DocumentDataSource, Scannable {
 
@@ -94,18 +95,38 @@ public class JsonSource extends DataSource<DocAdapterCatalog> implements Documen
 
 
     private URL getJsonFilesUrl( final Map<String, String> settings ) {
-        String files = settings.get( "directory" );
-        if ( connectionMethod == ConnectionMethod.LINK ) {
-            files = settings.get( "directoryName" );
-        }
-
-        if ( files.startsWith( "classpath://" ) ) {
-            return this.getClass().getClassLoader().getResource( files.replace( "classpath://", "" ) + "/" );
-        }
-        try {
-            return new File( files ).toURI().toURL();
-        } catch ( MalformedURLException e ) {
-            throw new GenericRuntimeException( e );
+        switch(connectionMethod) {
+            case LINK -> {
+                String files = settings.get( "directoryName" );
+                if ( files.startsWith( "classpath://" ) ) {
+                    return this.getClass().getClassLoader().getResource( files.replace( "classpath://", "" ) + "/" );
+                }
+                try {
+                    return new File( files ).toURI().toURL();
+                } catch ( MalformedURLException e ) {
+                    throw new RuntimeException( e );
+                }
+            }
+            case UPLOAD -> {
+                String files = settings.get( "directory" );
+                if ( files.startsWith( "classpath://" ) ) {
+                    return this.getClass().getClassLoader().getResource( files.replace( "classpath://", "" ) + "/" );
+                }
+                try {
+                    return new File( files ).toURI().toURL();
+                } catch ( MalformedURLException e ) {
+                    throw new RuntimeException( e );
+                }
+            }
+            case URL -> {
+                String files = settings.get( "url" );
+                try {
+                    return new URL( files );
+                } catch ( MalformedURLException e ) {
+                    throw new RuntimeException( e );
+                }
+            }
+            default -> throw new RuntimeException("Unknown connection method " + connectionMethod );
         }
     }
 
