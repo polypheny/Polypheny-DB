@@ -32,6 +32,7 @@ import javax.xml.parsers.ParserConfigurationException;
 import org.polypheny.db.adapter.DocumentDataSource.ExportedDocument;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.EntityType;
+import org.polypheny.db.util.Source;
 import org.polypheny.db.util.Sources;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
@@ -83,23 +84,27 @@ public class XmlMetaRetriever {
     }
 
 
-    private static Set<String> getFileNames( URL xmlFiles ) {
-        Set<String> fileNames;
-        if ( Sources.of( xmlFiles ).file().isFile() ) {
-            fileNames = Set.of( xmlFiles.getPath() );
-            return fileNames;
+    private static Set<String> getFileNames( URL xmlFiles ) throws NoSuchFileException {
+        Source source = Sources.of( xmlFiles );
+        if ( source.isFile() ) {
+            File file = source.file();
+            if ( file.isFile() ) {
+                // url is file
+                return Set.of( file.getName() );
+            }
+
+            // url is directory
+            File[] files = file.listFiles( ( d, name ) -> name.endsWith( ".xml" ) );
+            if ( files == null || files.length == 0 ) {
+                throw new NoSuchFileException( "No .xml files were found." );
+            }
+            return Arrays.stream( files )
+                    .map( File::getName )
+                    .collect( Collectors.toSet() );
         }
-        File[] files = Sources.of( xmlFiles )
-                .file()
-                .listFiles( ( d, name ) -> name.endsWith( ".xml" ) );
-        if ( files == null ) {
-            throw new GenericRuntimeException( "No .xml files where found." );
-        }
-        fileNames = Arrays.stream( files )
-                .sequential()
-                .map( File::getName )
-                .collect( Collectors.toSet() );
-        return fileNames;
+        // url is web source
+        String filePath = xmlFiles.getPath();
+        return Set.of(filePath.substring(filePath.lastIndexOf('/') + 1));
     }
 
 
