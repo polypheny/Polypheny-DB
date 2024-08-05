@@ -538,7 +538,15 @@ public interface NeoStatements {
     }
 
     static LiteralStatement string_( PolyValue value ) {
-        return new LiteralStatement( value == null || value.isNull() ? null : "'" + value + "'" );
+        // TODO: do we need to implement more sophisticated way to escape strings?
+        if ( value == null || value.isNull()) {
+            return new LiteralStatement( null );
+        }
+        String quote = "'";
+        if ( value.toString().contains( "'" ) ) {
+            return new LiteralStatement( "\"" + value + "\"" );
+        }
+        return new LiteralStatement( quote + value + quote );
     }
 
     static LiteralStatement literal_( RexLiteral literal ) {
