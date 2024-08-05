@@ -99,7 +99,7 @@ public class JsonSource extends DataSource<DocAdapterCatalog> implements Documen
             case LINK -> {
                 String files = settings.get( "directoryName" );
                 if ( files.startsWith( "classpath://" ) ) {
-                    return this.getClass().getClassLoader().getResource( files.replace( "classpath://", "" ) + "/" );
+                    return this.getClass().getClassLoader().getResource( files.replace( "classpath://", "" ) );
                 }
                 try {
                     return new File( files ).toURI().toURL();

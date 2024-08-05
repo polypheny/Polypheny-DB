@@ -16,10 +16,14 @@
 
 package org.polypheny.db.adapter.json;
 
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.NoSuchFileException;
@@ -35,18 +39,24 @@ import org.polypheny.db.util.Sources;
 
 public class JsonMetaRetriever {
 
-    public static List<ExportedDocument> getDocuments( URL jsonFiles ) throws IOException {
+    public static List<ExportedDocument> getDocuments(URL jsonFiles) throws IOException {
         List<ExportedDocument> exportedDocuments = new LinkedList<>();
-        Set<String> fileNames = getFileNames( jsonFiles );
-        for ( String fileName : fileNames ) {
-            URL jsonFile = new URL( jsonFiles, fileName );
-            ObjectMapper objectMapper = new ObjectMapper();
-            JsonNode rootNode = objectMapper.readTree( jsonFile );
-            String entityName = deriveEntityName( jsonFile.getFile() );
-            if ( !(rootNode.isArray() || rootNode.isObject()) ) {
-                throw new RuntimeException( "JSON file does not contain a valid top-level structure (neither an object nor an array)" );
+        Set<String> fileNames = getFileNames(jsonFiles);
+        ObjectMapper objectMapper = new ObjectMapper();
+        JsonFactory jsonFactory = new JsonFactory(objectMapper);
+
+        for (String fileName : fileNames) {
+            URL jsonFile = new URL(jsonFiles, fileName);
+            try ( InputStream inputStream = jsonFile.openStream();
+                    JsonParser jsonParser = jsonFactory.createParser(inputStream)) {
+                String entityName = deriveEntityName(jsonFile.getFile());
+                JsonToken token = jsonParser.nextToken();
+                if (token == JsonToken.START_ARRAY || token == JsonToken.START_OBJECT) {
+                    exportedDocuments.add(new ExportedDocument(entityName, false, EntityType.SOURCE));
+                } else {
+                    throw new RuntimeException("JSON file does not contain a valid top-level structure (neither an object nor an array)");
+                }
             }
-            exportedDocuments.add( new ExportedDocument( entityName, false, EntityType.SOURCE ) );
         }
         return exportedDocuments;
     }
