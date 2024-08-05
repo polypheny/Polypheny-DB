@@ -61,11 +61,7 @@ public class XmlCollection extends PhysicalCollection implements ScannableEntity
         return new AbstractEnumerable<>() {
             @Override
             public Enumerator<PolyValue[]> enumerator() {
-                try {
-                    return new XmlEnumerator( url );
-                } catch ( ParserConfigurationException e ) {
-                    throw new RuntimeException( e );
-                }
+                return new XmlEnumerator( url );
             }
         };
     }
@@ -79,11 +75,7 @@ public class XmlCollection extends PhysicalCollection implements ScannableEntity
         return new AbstractEnumerable<>() {
             @Override
             public Enumerator<PolyValue[]> enumerator() {
-                try {
-                    return new XmlEnumerator( url );
-                } catch ( ParserConfigurationException e ) {
-                    throw new RuntimeException( e );
-                }
+                return new XmlEnumerator( url );
             }
         };
     }

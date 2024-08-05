@@ -1,55 +1,55 @@
 package org.polypheny.db.adapter.xml;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.stream.XMLInputFactory;
+import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.XMLStreamReader;
 import org.apache.calcite.linq4j.Enumerator;
 import org.polypheny.db.type.entity.PolyValue;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-import org.xml.sax.SAXException;
 
 public class XmlEnumerator implements Enumerator<PolyValue[]> {
 
-    private URL url;
-    private DocumentBuilderFactory factory;
-    private DocumentBuilder builder;
-    private XmlToPolyConverter converter;
+    private final URL url;
+    private XMLStreamReader reader;
+    private final XmlToPolyConverter converter;
     private PolyValue[] current;
-    private NodeList nodes;
-    private int currentIndex;
+    private boolean inTopLevelElement = false;
 
-    public XmlEnumerator(URL url) throws ParserConfigurationException {
+    public XmlEnumerator(URL url) {
         this.url = url;
-        this.factory = DocumentBuilderFactory.newInstance();
-        this.builder = factory.newDocumentBuilder();
         this.converter = new XmlToPolyConverter();
-        this.currentIndex = 0;
+        this.current = null;
+        initializeReader();
     }
 
-    private void initializeParser() throws SAXException, IOException {
-        Document document = builder.parse(url.openStream());
-        Element rootElement = document.getDocumentElement();
-        // Assume the root element contains a collection of child elements
-        this.nodes = rootElement.getChildNodes();
-        this.currentIndex = 0;
-    }
-
-    private Node getNextNode() {
-        if (nodes == null || currentIndex >= nodes.getLength()) {
-            return null;
+    private void initializeReader() {
+        try {
+            XMLInputFactory factory = XMLInputFactory.newInstance();
+            InputStream inputStream = url.openStream();
+            reader = factory.createXMLStreamReader(inputStream);
+        } catch (XMLStreamException | IOException e) {
+            throw new RuntimeException("Error initializing XML reader: " + e.getMessage(), e);
         }
-        while (currentIndex < nodes.getLength()) {
-            Node node = nodes.item(currentIndex++);
-            if (node.getNodeType() == Node.ELEMENT_NODE) {
-                return node;
+    }
+
+    private PolyValue[] parseNext() throws XMLStreamException {
+        while (reader.hasNext()) {
+            int event = reader.next();
+            if (event == XMLStreamReader.START_ELEMENT) {
+                if (inTopLevelElement) {
+                    // Process each child element of the top-level collection as a document
+                    return new PolyValue[]{converter.nodeToPolyDocument(reader)};
+                } else {
+                    // Mark that we are inside the top-level collection element
+                    inTopLevelElement = true;
+                }
+            } else if (event == XMLStreamReader.END_ELEMENT && inTopLevelElement) {
+                inTopLevelElement = false; // End of top-level collection element
             }
         }
-        return null;
+        return null; // No more elements
     }
 
     @Override
@@ -60,26 +60,29 @@ public class XmlEnumerator implements Enumerator<PolyValue[]> {
     @Override
     public boolean moveNext() {
         try {
-            if (nodes == null) {
-                initializeParser();
-            }
-            Node node = getNextNode();
-            current = node == null ? null : new PolyValue[]{converter.nodeToPolyDocument(node)};
-            return node != null;
-        } catch (IOException | SAXException e) {
+            current = parseNext();
+            return current != null;
+        } catch (XMLStreamException e) {
             throw new RuntimeException("Error reading XML: " + e.getMessage(), e);
         }
     }
 
     @Override
     public void reset() {
-        this.nodes = null;
-        this.current = null;
-        this.currentIndex = 0;
+        close();
+        initializeReader();
     }
 
     @Override
     public void close() {
-        // Nothing to close in this implementation
+        if (reader != null) {
+            try {
+                reader.close();
+            } catch (XMLStreamException e) {
+                throw new RuntimeException("Error closing XML reader: " + e.getMessage(), e);
+            }
+        }
+        reader = null;
+        current = null;
     }
 }
