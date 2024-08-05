@@ -350,8 +350,8 @@ public class PolyValueSerializer {
                 .setId( polyEdge.getId().getValue() )
                 .addAllLabels( polyEdge.getLabels().stream().map( l -> l.getValue() ).collect( Collectors.toList() ) )
                 .putAllProperties( serializeStringKeyedProtoMap( polyEdge.properties.asMap(), streamIndex, streamingStrategy, statementId ) )
-                .setSource( polyEdge.getSource().getValue() )
-                .setTarget( polyEdge.getTarget().getValue() )
+                .setLeft( polyEdge.getSource().getValue() )
+                .setRight( polyEdge.getTarget().getValue() )
                 .setDirection( buildProtoEdgeDirection( polyEdge.getDirection() ) );
         if ( !(polyEdge.variableName == null) ) {
             edge.setName( polyEdge.getVariableName().getValue() );
