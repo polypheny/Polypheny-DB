@@ -66,7 +66,7 @@ import org.xml.sax.SAXException;
 @AdapterSettingList(name = "method", options = { "upload", "link", "url" }, defaultValue = "upload", description = "If the supplied file(s) should be uploaded or a link to the local filesystem is used (sufficient permissions are required).", position = 1)
 @AdapterSettingDirectory(subOf = "method_upload", name = "directory", defaultValue = "classpath://articles.json", description = "Path to the XML file(s) to be integrated as this source.", position = 2)
 @AdapterSettingString(subOf = "method_link", defaultValue = "classpath://articles.json", name = "directoryName", description = "Path to the XML file(s) to be integrated as this source.", position = 2)
-@AdapterSettingString(subOf = "method_url", defaultValue = "http://localhost/", name = "url", description = "URL to the XML file(s) to be integrated as this source.", position = 2)
+@AdapterSettingString(subOf = "method_url", defaultValue = "http://localhost/cars.xml", name = "url", description = "URL to the XML file(s) to be integrated as this source.", position = 2)
 
 public class XmlSource extends DataSource<DocAdapterCatalog> implements DocumentDataSource, Scannable {
     private static final Logger log = LoggerFactory.getLogger( XmlSource.class );
