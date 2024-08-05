@@ -94,21 +94,38 @@ public class XmlSource extends DataSource<DocAdapterCatalog> implements Document
 
 
     private URL getXmlFilesUrl( final Map<String, String> settings ) {
-        String files = settings.get( "directory" );
-        if ( connectionMethod == ConnectionMethod.LINK ) {
-            files = settings.get( "directoryName" );
-        }
-        if (connectionMethod == ConnectionMethod.URL) {
-            files = settings.get( "url" );
-        }
-
-        if ( files.startsWith( "classpath://" ) ) {
-            return this.getClass().getClassLoader().getResource( files.replace( "classpath://", "" ) + "/" );
-        }
-        try {
-            return new File( files ).toURI().toURL();
-        } catch ( MalformedURLException e ) {
-            throw new GenericRuntimeException( e );
+        switch(connectionMethod) {
+            case LINK -> {
+                String files = settings.get( "directoryName" );
+                if ( files.startsWith( "classpath://" ) ) {
+                    return this.getClass().getClassLoader().getResource( files.replace( "classpath://", "" ) + "/" );
+                }
+                try {
+                    return new File( files ).toURI().toURL();
+                } catch ( MalformedURLException e ) {
+                    throw new RuntimeException( e );
+                }
+            }
+            case UPLOAD -> {
+                String files = settings.get( "directory" );
+                if ( files.startsWith( "classpath://" ) ) {
+                    return this.getClass().getClassLoader().getResource( files.replace( "classpath://", "" ) + "/" );
+                }
+                try {
+                    return new File( files ).toURI().toURL();
+                } catch ( MalformedURLException e ) {
+                    throw new RuntimeException( e );
+                }
+            }
+            case URL -> {
+                String files = settings.get( "url" );
+                try {
+                    return new URL( files );
+                } catch ( MalformedURLException e ) {
+                    throw new RuntimeException( e );
+                }
+            }
+            default -> throw new RuntimeException("Unknown connection method " + connectionMethod );
         }
     }
 
