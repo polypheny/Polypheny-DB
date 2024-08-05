@@ -74,7 +74,7 @@ public class StringFunTest extends CypherTestTemplate {
 
 
     @Test
-    public void NullLowerFunTest() {
+    public void nullLowerFunTest() {
         GraphResult res = execute( "RETURN LOWER(null)" );
         assert containsRows( res, true, true, Row.of( TestLiteral.from( null ) ) );
     }
@@ -114,14 +114,14 @@ public class StringFunTest extends CypherTestTemplate {
 
 
     @Test
-    public void EmptyTrimFunTest() {
+    public void emptyTrimFunTest() {
         GraphResult res = execute( "RETURN TRIM('')" );
         assert containsRows( res, true, true, Row.of( TestLiteral.from( "" ) ) );
     }
 
 
     @Test
-    public void NormalReplaceFunTest() {
+    public void normalReplaceFunTest() {
         GraphResult res = execute( "RETURN REPLACE('Hello, world!', 'world', 'Cypher') " );
         assert containsRows( res, true, true, Row.of( TestLiteral.from( "Hello, Cypher!" ) ) );
 
@@ -147,16 +147,14 @@ public class StringFunTest extends CypherTestTemplate {
         GraphResult res = execute( "RETURN REPLACE('Hello, world!', 'world', '')" );
         assert containsRows( res, true, true, Row.of( TestLiteral.from( "Hello, !" ) ) );
     }
-//    @Test
-//    public void concatenateFunTest() {
-//        GraphResult res = execute("RETURN 'Hello' + ' ' + 'world!'");
-//        assert containsRows(res, true, true, Row.of(TestLiteral.from("Hello world!")));
-//    }
-//    @Test
-//    public void LengthFunTest() {
-//        GraphResult res = execute("RETURN LENGTH('Hello, world!')");
-//        assert containsRows(res, true, true, Row.of(TestLiteral.from(13)));
-//    }
+
+
+
+    @Test
+    public void stringLengthFunTest() {
+        GraphResult res = execute("RETURN LENGTH('Hello, world!')");
+        assert containsRows(res, true, true, Row.of(TestLiteral.from(13)));
+    }
 
 
 }
