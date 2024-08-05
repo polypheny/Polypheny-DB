@@ -5,7 +5,6 @@ import java.net.URL;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.stream.XMLStreamException;
 import org.apache.calcite.linq4j.Enumerator;
 import org.polypheny.db.type.entity.PolyValue;
 import org.w3c.dom.Document;

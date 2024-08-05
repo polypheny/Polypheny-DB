@@ -18,6 +18,7 @@ package org.polypheny.db.adapter.xml;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.NoSuchFileException;
@@ -26,36 +27,25 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
 import org.polypheny.db.adapter.DocumentDataSource.ExportedDocument;
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.util.Source;
 import org.polypheny.db.util.Sources;
-import org.w3c.dom.Document;
-import org.w3c.dom.Node;
-import org.xml.sax.SAXException;
 
 public class XmlMetaRetriever {
 
-    public static List<ExportedDocument> getDocuments( URL xmlFiles ) throws IOException, ParserConfigurationException, SAXException {
+    public static List<ExportedDocument> getDocuments( URL xmlFiles ) throws IOException {
         List<ExportedDocument> exportedDocuments = new LinkedList<>();
         Set<String> fileNames = getFileNames( xmlFiles );
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        DocumentBuilder builder = factory.newDocumentBuilder();
+
         for ( String fileName : fileNames ) {
             URL xmlFile = new URL( xmlFiles, fileName );
-            // TODO: adapt to handle more diverse document structures
-            Document document = builder.parse( xmlFile.openStream() );
-            document.getDocumentElement().normalize();
             String entityName = deriveEntityName( xmlFile.getFile() );
-            Node rootNode = document.getDocumentElement();
-            if ( rootNode.getNodeType() != Node.ELEMENT_NODE ) {
-                throw new RuntimeException( "XML file does not contain a valid top-level element node" );
+            try ( InputStream inputStream = xmlFile.openStream() ) {
+                if ( inputStream != null ) {
+                    exportedDocuments.add( new ExportedDocument( entityName, false, EntityType.SOURCE ) );
+                }
             }
-            exportedDocuments.add( new ExportedDocument( entityName, false, EntityType.SOURCE ) );
         }
         return exportedDocuments;
     }
@@ -66,7 +56,7 @@ public class XmlMetaRetriever {
         String path = xmlFiles.getPath();
 
         for ( String ext : extensions ) {
-            if ( path.endsWith( name + ext) ) {
+            if ( path.endsWith( name + ext ) ) {
                 return xmlFiles;
             }
         }
@@ -104,7 +94,7 @@ public class XmlMetaRetriever {
         }
         // url is web source
         String filePath = xmlFiles.getPath();
-        return Set.of(filePath.substring(filePath.lastIndexOf('/') + 1));
+        return Set.of( filePath.substring( filePath.lastIndexOf( '/' ) + 1 ) );
     }
 
 

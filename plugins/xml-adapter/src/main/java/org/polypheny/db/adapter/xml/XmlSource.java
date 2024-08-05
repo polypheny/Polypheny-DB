@@ -156,8 +156,6 @@ public class XmlSource extends DataSource<DocAdapterCatalog> implements Document
             return XmlMetaRetriever.getDocuments( xmlFiles );
         } catch ( IOException e ) {
             throw new RuntimeException( "Failed to retrieve documents from XML file." );
-        } catch ( ParserConfigurationException | SAXException e ) {
-            throw new RuntimeException( e );
         }
     }
 
