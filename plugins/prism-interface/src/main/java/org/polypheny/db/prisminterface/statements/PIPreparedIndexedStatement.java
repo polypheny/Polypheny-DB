@@ -164,7 +164,9 @@ public class PIPreparedIndexedStatement extends PIPreparedStatement {
 
     @Override
     public void close() {
-        statement.close();
+        if ( statement != null ) {
+            statement.close();
+        }
         closeResults();
     }
 

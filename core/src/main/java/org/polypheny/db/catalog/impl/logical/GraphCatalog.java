@@ -22,7 +22,6 @@ import io.activej.serializer.annotations.Serialize;
 import java.beans.PropertyChangeSupport;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import lombok.Getter;
 import lombok.Value;
 import lombok.experimental.SuperBuilder;
 import org.polypheny.db.catalog.Catalog;
@@ -38,20 +37,22 @@ import org.polypheny.db.type.PolySerializable;
 @SuperBuilder(toBuilder = true)
 public class GraphCatalog implements PolySerializable, LogicalGraphCatalog {
 
-    @Getter
     public BinarySerializer<GraphCatalog> serializer = PolySerializable.buildSerializer( GraphCatalog.class );
-    @Getter
+
+    IdBuilder idBuilder = IdBuilder.getInstance();
+
     @Serialize
     public LogicalNamespace logicalNamespace;
-    public IdBuilder idBuilder = IdBuilder.getInstance();
 
-    @Getter
     @Serialize
     public ConcurrentHashMap<Long, LogicalGraph> graphs;
 
 
+    PropertyChangeSupport listeners = new PropertyChangeSupport( this );
+
+
     public GraphCatalog( LogicalNamespace logicalNamespace ) {
-        this( logicalNamespace, new ConcurrentHashMap<>() );
+        this( logicalNamespace, Map.of() );
     }
 
 
@@ -65,9 +66,6 @@ public class GraphCatalog implements PolySerializable, LogicalGraphCatalog {
         addGraph( logicalNamespace.id, logicalNamespace.name, true );
         listeners.addPropertyChangeListener( Catalog.getInstance().getChangeListener() );
     }
-
-
-    PropertyChangeSupport listeners = new PropertyChangeSupport( this );
 
 
     public void change( CatalogEvent event, Object oldValue, Object newValue ) {

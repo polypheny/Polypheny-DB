@@ -140,7 +140,7 @@ import org.polypheny.db.docker.models.InstancesAndAutoDocker;
 import org.polypheny.db.docker.models.UpdateDockerRequest;
 import org.polypheny.db.iface.QueryInterface;
 import org.polypheny.db.iface.QueryInterfaceManager;
-import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceInformationRequest;
+import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceCreateRequest;
 import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceTemplate;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
@@ -2224,10 +2224,10 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     }
 
 
-    void addQueryInterface( final Context ctx ) {
-        QueryInterfaceInformationRequest request = ctx.bodyAsClass( QueryInterfaceInformationRequest.class );
+    void createQueryInterface( final Context ctx ) {
+        QueryInterfaceCreateRequest request = ctx.bodyAsClass( QueryInterfaceCreateRequest.class );
         try {
-            QueryInterfaceManager.getInstance().createQueryInterface( request.interfaceName(), request.uniqueName(), request.currentSettings() );
+            QueryInterfaceManager.getInstance().createQueryInterface( request.interfaceType(), request.uniqueName(), request.settings() );
             ctx.status( 200 );
         } catch ( RuntimeException e ) {
             log.error( "Exception while deploying query interface", e );
@@ -2645,7 +2645,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
      * Get all supported data types of the DBMS.
      */
     public void getTypeInfo( final Context ctx ) {
-        ctx.json( PolyType.allowedFieldTypes().stream().map( PolyTypeModel::from ).collect( Collectors.toList() ) );
+        ctx.json( PolyType.allowedFieldTypes().stream().map( PolyTypeModel::from ).toList() );
     }
 
 

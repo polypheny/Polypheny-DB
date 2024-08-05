@@ -286,11 +286,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         }
 
         if ( isAnalyze ) {
-            statement.getProcessingDuration().start( "Expand Views" );
-        }
-
-        if ( isAnalyze ) {
-            statement.getProcessingDuration().stop( "Expand Views" );
             statement.getProcessingDuration().start( "Parameter Validation" );
         }
 

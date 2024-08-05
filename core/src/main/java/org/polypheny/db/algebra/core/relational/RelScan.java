@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import lombok.NonNull;
 import org.polypheny.db.algebra.AlgInput;
@@ -92,7 +91,7 @@ public abstract class RelScan<E extends Entity> extends Scan<E> implements RelAl
      * Returns an identity projection for the given table.
      */
     public static ImmutableList<Integer> identity( Entity entity ) {
-        return ImmutableList.copyOf( IntStream.range( 0, entity.getTupleType().getFieldCount() ).boxed().collect( Collectors.toList() ) );
+        return ImmutableList.copyOf( IntStream.range( 0, entity.getTupleType().getFieldCount() ).boxed().toList() );
     }
 
 

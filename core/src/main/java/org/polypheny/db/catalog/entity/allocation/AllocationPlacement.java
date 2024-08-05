@@ -20,7 +20,6 @@ import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import lombok.Value;
 import org.polypheny.db.catalog.entity.PolyObject;
-import org.polypheny.db.type.entity.PolyValue;
 
 @Value
 public class AllocationPlacement implements PolyObject {
@@ -44,12 +43,6 @@ public class AllocationPlacement implements PolyObject {
         this.namespaceId = namespaceId;
         this.logicalEntityId = logicalEntityId;
         this.id = id;
-    }
-
-
-    @Override
-    public PolyValue[] getParameterArray() {
-        return new PolyValue[0];
     }
 
 }

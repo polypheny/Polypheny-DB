@@ -19,7 +19,6 @@ package org.polypheny.db.sql.language;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 import lombok.Getter;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.ddl.DdlManager;
@@ -141,7 +140,7 @@ public class SqlSetOption extends SqlAlter {
 
     @Override
     public List<SqlNode> getSqlOperandList() {
-        return getOperandList().stream().map( e -> (SqlNode) e ).collect( Collectors.toList() );
+        return getOperandList().stream().map( e -> (SqlNode) e ).toList();
     }
 
 
@@ -218,4 +217,3 @@ public class SqlSetOption extends SqlAlter {
     }
 
 }
-

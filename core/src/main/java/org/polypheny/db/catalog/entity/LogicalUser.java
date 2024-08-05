@@ -20,13 +20,9 @@ package org.polypheny.db.catalog.entity;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.io.Serial;
-import lombok.EqualsAndHashCode;
 import lombok.Value;
-import org.polypheny.db.type.entity.PolyString;
-import org.polypheny.db.type.entity.PolyValue;
 
 
-@EqualsAndHashCode
 @Value
 public class LogicalUser implements PolyObject, Comparable<LogicalUser> {
 
@@ -48,17 +44,10 @@ public class LogicalUser implements PolyObject, Comparable<LogicalUser> {
     }
 
 
-    // Used for creating ResultSets
-    @Override
-    public PolyValue[] getParameterArray() {
-        return new PolyValue[]{ PolyString.of( name ) };
-    }
-
-
     @Override
     public int compareTo( LogicalUser o ) {
         if ( o != null ) {
-            return Math.toIntExact( this.id - o.id );
+            return Long.compare( this.id, o.id );
         }
         return -1;
     }

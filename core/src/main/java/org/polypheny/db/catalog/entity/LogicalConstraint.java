@@ -20,7 +20,6 @@ package org.polypheny.db.catalog.entity;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.io.Serializable;
-import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.Value;
 import org.jetbrains.annotations.NotNull;
@@ -28,7 +27,6 @@ import org.polypheny.db.catalog.entity.logical.LogicalKey;
 import org.polypheny.db.catalog.logistic.ConstraintType;
 
 
-@EqualsAndHashCode
 @Value
 public class LogicalConstraint implements Serializable, Comparable<LogicalConstraint> {
 
