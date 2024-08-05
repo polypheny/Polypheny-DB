@@ -41,6 +41,7 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.util.Pair;
 
 @Getter
@@ -86,11 +87,23 @@ public class CypherLiteral extends CypherExpression {
 
     public CypherLiteral( ParserPos pos, Literal literalType, String image, boolean negated ) {
         super( pos );
-        this.literalType = literalType;
+        Literal inferred;
         if ( literalType == Literal.DECIMAL ) {
-            this.value = Integer.parseInt( image ) * (negated ? -1 : 1);
+            try {
+                this.value = Integer.parseInt( image ) * (negated ? -1 : 1 );
+                inferred = Literal.DECIMAL;
+            } catch ( NumberFormatException e ) {
+                try {
+                    this.value = Long.parseLong( image ) * (negated ? -1 : 1 );
+                    inferred = Literal.LONG;
+                } catch ( NumberFormatException anotherE ) {
+                    throw new GenericRuntimeException( "Could not use provided format to creat cypher literal." );
+                }
+            }
+            this.literalType = inferred;
         } else if ( (literalType == Literal.DOUBLE) ) {
             this.value = Double.parseDouble( image ) * (negated ? -1 : 1);
+            this.literalType = Literal.DOUBLE;
         } else {
             throw new GenericRuntimeException( "Could not use provided format to creat cypher literal." );
         }
@@ -98,7 +111,7 @@ public class CypherLiteral extends CypherExpression {
 
 
     public enum Literal {
-        TRUE, FALSE, NULL, LIST, MAP, STRING, DOUBLE, DECIMAL, HEX, OCTAL, STAR
+        TRUE, FALSE, NULL, LIST, MAP, STRING, DOUBLE, DECIMAL, HEX, OCTAL, STAR, LONG
     }
 
 
@@ -120,6 +133,7 @@ public class CypherLiteral extends CypherExpression {
             case STRING, HEX, OCTAL -> PolyString.of( (String) value );
             case DOUBLE -> PolyDouble.of( (Double) value );
             case DECIMAL -> PolyInteger.of( (Integer) value );
+            case LONG -> PolyLong.of( (Long) value );
             case STAR -> throw new UnsupportedOperationException();
         };
     }
@@ -159,6 +173,9 @@ public class CypherLiteral extends CypherExpression {
                 break;
             case DECIMAL:
                 node = context.rexBuilder.makeExactLiteral( BigDecimal.valueOf( (Integer) value ) );
+                break;
+            case LONG:
+                node = context.rexBuilder.makeExactLiteral( BigDecimal.valueOf( (Long) value ) );
                 break;
             default:
                 throw new IllegalStateException( "Unexpected value: " + literalType );
