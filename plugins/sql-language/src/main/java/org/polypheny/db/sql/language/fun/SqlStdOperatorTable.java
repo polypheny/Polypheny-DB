@@ -63,25 +63,18 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
      * Returns the group function for which a given kind is an auxiliary function, or null if it is not an auxiliary function.
      */
     public static SqlGroupedWindowFunction auxiliaryToGroup( Kind kind ) {
-        switch ( kind ) {
-            case TUMBLE_START:
-            case TUMBLE_END:
-                return OperatorRegistry.get( OperatorName.TUMBLE, SqlGroupedWindowFunction.class );
-            case HOP_START:
-            case HOP_END:
-                return OperatorRegistry.get( OperatorName.HOP, SqlGroupedWindowFunction.class );
-            case SESSION_START:
-            case SESSION_END:
-                return OperatorRegistry.get( OperatorName.SESSION, SqlGroupedWindowFunction.class );
-            default:
-                return null;
-        }
+        return switch ( kind ) {
+            case TUMBLE_START, TUMBLE_END -> OperatorRegistry.get( OperatorName.TUMBLE, SqlGroupedWindowFunction.class );
+            case HOP_START, HOP_END -> OperatorRegistry.get( OperatorName.HOP, SqlGroupedWindowFunction.class );
+            case SESSION_START, SESSION_END -> OperatorRegistry.get( OperatorName.SESSION, SqlGroupedWindowFunction.class );
+            default -> null;
+        };
     }
 
 
     /**
      * Converts a call to a grouped auxiliary function to a call to the grouped window function. For other calls returns null.
-     *
+     * <p>
      * For example, converts {@code TUMBLE_START(rowtime, INTERVAL '1' HOUR))} to {@code TUMBLE(rowtime, INTERVAL '1' HOUR))}.
      */
     public static SqlCall convertAuxiliaryToGroupCall( SqlCall call ) {
@@ -95,7 +88,7 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
 
     /**
      * Converts a call to a grouped window function to a call to its auxiliary window function(s). For other calls returns null.
-     *
+     * <p>
      * For example, converts {@code TUMBLE_START(rowtime, INTERVAL '1' HOUR))} to {@code TUMBLE(rowtime, INTERVAL '1' HOUR))}.
      */
     public static List<Pair<SqlNode, AuxiliaryConverter>> convertGroupToAuxiliaryCalls( SqlCall call ) {
@@ -124,22 +117,15 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
      * Returns the operator for {@code SOME comparisonKind}.
      */
     public static SqlQuantifyOperator some( Kind comparisonKind ) {
-        switch ( comparisonKind ) {
-            case EQUALS:
-                return OperatorRegistry.get( OperatorName.SOME_EQ, SqlQuantifyOperator.class );
-            case NOT_EQUALS:
-                return OperatorRegistry.get( OperatorName.SOME_NE, SqlQuantifyOperator.class );
-            case LESS_THAN:
-                return OperatorRegistry.get( OperatorName.SOME_LT, SqlQuantifyOperator.class );
-            case LESS_THAN_OR_EQUAL:
-                return OperatorRegistry.get( OperatorName.SOME_LE, SqlQuantifyOperator.class );
-            case GREATER_THAN:
-                return OperatorRegistry.get( OperatorName.SOME_GT, SqlQuantifyOperator.class );
-            case GREATER_THAN_OR_EQUAL:
-                return OperatorRegistry.get( OperatorName.SOME_GE, SqlQuantifyOperator.class );
-            default:
-                throw new AssertionError( comparisonKind );
-        }
+        return switch ( comparisonKind ) {
+            case EQUALS -> OperatorRegistry.get( OperatorName.SOME_EQ, SqlQuantifyOperator.class );
+            case NOT_EQUALS -> OperatorRegistry.get( OperatorName.SOME_NE, SqlQuantifyOperator.class );
+            case LESS_THAN -> OperatorRegistry.get( OperatorName.SOME_LT, SqlQuantifyOperator.class );
+            case LESS_THAN_OR_EQUAL -> OperatorRegistry.get( OperatorName.SOME_LE, SqlQuantifyOperator.class );
+            case GREATER_THAN -> OperatorRegistry.get( OperatorName.SOME_GT, SqlQuantifyOperator.class );
+            case GREATER_THAN_OR_EQUAL -> OperatorRegistry.get( OperatorName.SOME_GE, SqlQuantifyOperator.class );
+            default -> throw new AssertionError( comparisonKind );
+        };
     }
 
 
@@ -147,22 +133,15 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
      * Returns the operator for {@code ALL comparisonKind}.
      */
     public static SqlQuantifyOperator all( Kind comparisonKind ) {
-        switch ( comparisonKind ) {
-            case EQUALS:
-                return OperatorRegistry.get( OperatorName.ALL_EQ, SqlQuantifyOperator.class );
-            case NOT_EQUALS:
-                return OperatorRegistry.get( OperatorName.ALL_NE, SqlQuantifyOperator.class );
-            case LESS_THAN:
-                return OperatorRegistry.get( OperatorName.ALL_LT, SqlQuantifyOperator.class );
-            case LESS_THAN_OR_EQUAL:
-                return OperatorRegistry.get( OperatorName.ALL_LE, SqlQuantifyOperator.class );
-            case GREATER_THAN:
-                return OperatorRegistry.get( OperatorName.ALL_GT, SqlQuantifyOperator.class );
-            case GREATER_THAN_OR_EQUAL:
-                return OperatorRegistry.get( OperatorName.ALL_GE, SqlQuantifyOperator.class );
-            default:
-                throw new AssertionError( comparisonKind );
-        }
+        return switch ( comparisonKind ) {
+            case EQUALS -> OperatorRegistry.get( OperatorName.ALL_EQ, SqlQuantifyOperator.class );
+            case NOT_EQUALS -> OperatorRegistry.get( OperatorName.ALL_NE, SqlQuantifyOperator.class );
+            case LESS_THAN -> OperatorRegistry.get( OperatorName.ALL_LT, SqlQuantifyOperator.class );
+            case LESS_THAN_OR_EQUAL -> OperatorRegistry.get( OperatorName.ALL_LE, SqlQuantifyOperator.class );
+            case GREATER_THAN -> OperatorRegistry.get( OperatorName.ALL_GT, SqlQuantifyOperator.class );
+            case GREATER_THAN_OR_EQUAL -> OperatorRegistry.get( OperatorName.ALL_GE, SqlQuantifyOperator.class );
+            default -> throw new AssertionError( comparisonKind );
+        };
     }
 
 }
