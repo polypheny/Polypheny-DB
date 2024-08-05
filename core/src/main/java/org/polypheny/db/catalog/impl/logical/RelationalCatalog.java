@@ -21,7 +21,6 @@ import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.beans.PropertyChangeSupport;
 import java.sql.Timestamp;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -570,7 +569,7 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
 
     @Override
     public void flagTableForDeletion( long tableId, boolean flag ) {
-        if (flag) {
+        if ( flag ) {
             tablesFlaggedForDeletion.add( tableId );
         } else {
             tablesFlaggedForDeletion.remove( tableId );

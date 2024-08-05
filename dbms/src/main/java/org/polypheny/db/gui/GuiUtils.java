@@ -16,7 +16,7 @@
 
 package org.polypheny.db.gui;
 
-import java.awt.Desktop;
+import java.awt.*;
 import java.io.IOException;
 import java.net.JarURLConnection;
 import java.net.URI;
