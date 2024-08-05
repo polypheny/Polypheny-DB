@@ -47,4 +47,29 @@ public class SpatialFunTest extends CypherTestTemplate {
                         TestLiteral.from( "cartesian" ), TestLiteral.from( 7203 ) ) );
     }
 
+
+    @Test
+    public void WGS_843DPointFunTest() {
+        GraphResult res = execute( "WITH point({latitude: 3, longitude: 4, height: 4321}) AS p\n"
+                + "RETURN\n"
+                + "  p.latitude AS latitude,\n"
+                + "  p.longitude AS longitude,\n"
+                + "  p.height AS height,\n"
+                + "  p.x AS x,\n"
+                + "  p.y AS y,\n"
+                + "  p.z AS z,\n"
+                + "  p.crs AS crs,\n"
+                + "  p.srid AS srid" );
+
+        assert containsRows( res, true, false,
+                Row.of( TestLiteral.from( 3.0 ),
+                        TestLiteral.from( 4.0 ),
+                        TestLiteral.from( 4321.0 ),
+                        TestLiteral.from( 4.0 ),
+                        TestLiteral.from( 3.0 ),
+                        TestLiteral.from( 4321.0 ),
+                        TestLiteral.from( "wgs-84-3d" ),
+                        TestLiteral.from( 4979 ) ));
+    }
+
 }
