@@ -27,14 +27,12 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyNode;
-import org.polypheny.db.type.entity.graph.PolyPath;
 import org.polypheny.prism.ColumnMeta;
 import org.polypheny.prism.DocumentFrame;
 import org.polypheny.prism.Frame;
 import org.polypheny.prism.GraphFrame;
 import org.polypheny.prism.ProtoEdge;
 import org.polypheny.prism.ProtoNode;
-import org.polypheny.prism.ProtoPath;
 import org.polypheny.prism.RelationalFrame;
 
 public class StreamingFramework {
@@ -151,8 +149,6 @@ public class StreamingFramework {
                         graphFrameBuilder.addAllNodes( (List<ProtoNode>) (Object) results );
                     } else if ( ProtoEdge.class.isAssignableFrom( elementType ) ) {
                         graphFrameBuilder.addAllEdges( (List<ProtoEdge>) (Object) results );
-                    } else if ( ProtoPath.class.isAssignableFrom( elementType ) ) {
-                        graphFrameBuilder.addAllPaths( (List<ProtoPath>) (Object) results );
                     }
                     frameBuilder.setGraphFrame( graphFrameBuilder.build() );
                 }
@@ -169,9 +165,6 @@ public class StreamingFramework {
             case EDGE -> {
                 return PolyValueSerializer.buildProtoEdge( (PolyEdge) (polyValues.get( 0 )), index, streamingStrategy, statementId );
             }
-            case PATH -> {
-                return PolyValueSerializer.buildProtoPath( (PolyPath) (polyValues.get( 0 )), index, streamingStrategy, statementId );
-            }
             default -> throw new RuntimeException( "Should never be thrown!" );
         }
     }
@@ -185,9 +178,6 @@ public class StreamingFramework {
             }
             case EDGE -> {
                 return SerializationHeuristic.estimateSizeProtoEdge( (PolyEdge) (polyValues.get( 0 )) );
-            }
-            case PATH -> {
-                return SerializationHeuristic.estimateSizeProtoPath( (PolyPath) (polyValues.get( 0 )) );
             }
             default -> throw new RuntimeException( "Should never be thrown!" );
         }

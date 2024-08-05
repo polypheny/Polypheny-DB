@@ -54,7 +54,6 @@ import org.polypheny.prism.ProtoDocument;
 import org.polypheny.prism.ProtoDouble;
 import org.polypheny.prism.ProtoEdge;
 import org.polypheny.prism.ProtoEdge.Direction;
-import org.polypheny.prism.ProtoEntry;
 import org.polypheny.prism.ProtoFile;
 import org.polypheny.prism.ProtoFloat;
 import org.polypheny.prism.ProtoInteger;
@@ -63,7 +62,6 @@ import org.polypheny.prism.ProtoList;
 import org.polypheny.prism.ProtoLong;
 import org.polypheny.prism.ProtoNode;
 import org.polypheny.prism.ProtoNull;
-import org.polypheny.prism.ProtoPath;
 import org.polypheny.prism.ProtoString;
 import org.polypheny.prism.ProtoTime;
 import org.polypheny.prism.ProtoTimestamp;
@@ -80,17 +78,6 @@ public class PolyValueSerializer {
     }
 
 
-    public static List<ProtoEntry> serializeToProtoEntryList( PolyMap<PolyValue, PolyValue> polyMap, StreamIndex streamIndex, StreamingStrategy streamingStrategy, int statementId ) {
-        return polyMap.entrySet().stream().map( e -> PolyValueSerializer.serializeToProtoEntry( e, streamIndex, streamingStrategy, statementId ) ).collect( Collectors.toList() );
-    }
-
-
-    public static ProtoEntry serializeToProtoEntry( Map.Entry<PolyValue, PolyValue> polyMapEntry, StreamIndex streamIndex, StreamingStrategy streamingStrategy, int statementId ) {
-        return ProtoEntry.newBuilder()
-                .setKey( serialize( polyMapEntry.getKey(), streamIndex, streamingStrategy, statementId ) )
-                .setValue( serialize( polyMapEntry.getValue(), streamIndex, streamingStrategy, statementId ) )
-                .build();
-    }
 
 
     public static ProtoValue serialize( PolyValue polyValue, StreamIndex streamIndex, StreamingStrategy streamingStrategy, int statementId ) {
@@ -331,8 +318,16 @@ public class PolyValueSerializer {
 
     public static ProtoDocument buildProtoDocument( PolyDocument polyDocument, StreamIndex streamIndex, StreamingStrategy streamingStrategy, int statmentId ) {
         return ProtoDocument.newBuilder()
-                .addAllEntries( serializeToProtoEntryList( polyDocument.asMap(), streamIndex, streamingStrategy, statmentId ) )
+                .putAllEntries( serializeStringKeyedProtoMap( polyDocument.asMap(), streamIndex, streamingStrategy, statmentId ) )
                 .build();
+    }
+
+    public static Map<String, ProtoValue> serializeStringKeyedProtoMap(PolyMap<PolyValue, PolyValue> polyMap, StreamIndex streamIndex, StreamingStrategy streamingStrategy, int statementId) {
+        return polyMap.entrySet().stream()
+                .collect(Collectors.toMap(
+                        e -> e.getKey().asString().getValue(), // keys are always strings
+                        e -> serialize(e.getValue(), streamIndex, streamingStrategy, statementId)
+                ));
     }
 
 
@@ -340,7 +335,7 @@ public class PolyValueSerializer {
         ProtoNode.Builder node = ProtoNode.newBuilder()
                 .setId( polyNode.getId().getValue() )
                 .addAllLabels( polyNode.getLabels().stream().map( l -> l.getValue() ).collect( Collectors.toList() ) )
-                .addAllProperties( serializeToProtoEntryList( polyNode.properties.asMap(), streamIndex, streamingStrategy, statementId ) );
+                .putAllProperties( serializeStringKeyedProtoMap( polyNode.properties.asMap(), streamIndex, streamingStrategy, statementId ) );
         if ( !(polyNode.variableName == null) ) {
             node.setName( polyNode.variableName.getValue() );
         }
@@ -352,7 +347,7 @@ public class PolyValueSerializer {
         ProtoEdge.Builder edge = ProtoEdge.newBuilder()
                 .setId( polyEdge.getId().getValue() )
                 .addAllLabels( polyEdge.getLabels().stream().map( l -> l.getValue() ).collect( Collectors.toList() ) )
-                .addAllProperties( serializeToProtoEntryList( polyEdge.properties.asMap(), streamIndex, streamingStrategy, statementId ) )
+                .putAllProperties( serializeStringKeyedProtoMap( polyEdge.properties.asMap(), streamIndex, streamingStrategy, statementId ) )
                 .setSource( polyEdge.getSource().getValue() )
                 .setTarget( polyEdge.getTarget().getValue() )
                 .setDirection( buildProtoEdgeDirection( polyEdge.getDirection() ) );
@@ -377,17 +372,5 @@ public class PolyValueSerializer {
         }
         return Direction.UNSPECIFIED;
     }
-
-
-    public static ProtoPath buildProtoPath( PolyPath polyPath, StreamIndex streamIndex, StreamingStrategy streamingStrategy, int statmentId ) {
-        /*
-            TODO:   implement paths for graph results
-                    1) implement the proto value ProtoPath
-                    2) implement serialization here
-                    3) add fields to dummy class in drivers
-        */
-        throw new NotImplementedException( "Paths can not yet be serialized." );
-    }
-
 
 }

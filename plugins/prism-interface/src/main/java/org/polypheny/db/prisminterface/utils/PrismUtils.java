@@ -33,7 +33,6 @@ import org.polypheny.prism.GraphFrame;
 import org.polypheny.prism.PreparedStatementSignature;
 import org.polypheny.prism.ProtoEdge;
 import org.polypheny.prism.ProtoNode;
-import org.polypheny.prism.ProtoPath;
 import org.polypheny.prism.ProtoPolyType;
 import org.polypheny.prism.Row;
 import org.polypheny.prism.StatementBatchResponse;
@@ -103,12 +102,6 @@ public class PrismUtils {
         return data.stream().map( e -> PolyValueSerializer.buildProtoEdge( (PolyEdge) (e.get( 0 )), streamIndex, streamingStrategy, statementId ) ).collect( Collectors.toList() );
     }
 
-
-    public static List<ProtoPath> serializeToPaths( List<List<PolyValue>> data, StreamIndex streamIndex, StreamingStrategy streamingStrategy, int statementId ) {
-        return data.stream().map( e -> PolyValueSerializer.buildProtoPath( (PolyPath) (e.get( 0 )), streamIndex, streamingStrategy, statementId ) ).collect( Collectors.toList() );
-    }
-
-
     public static StreamFrame buildBinaryStreamFrame( byte[] data, boolean is_last ) {
         return StreamFrame.newBuilder()
                 .setBinary( ByteString.copyFrom( data ) )
@@ -132,7 +125,6 @@ public class PrismUtils {
             switch ( elementType ) {
                 case NODE -> graphFrameBuilder.addAllNodes( serializeToNodes( data, streamIndex, streamingStrategy, statementId ) );
                 case EDGE -> graphFrameBuilder.addAllEdges( serializeToEdges( data, streamIndex, streamingStrategy, statementId ) );
-                case PATH -> graphFrameBuilder.addAllPaths( serializeToPaths( data, streamIndex, streamingStrategy, statementId ) );
                 default -> throw new RuntimeException( "Should never be thrown!" );
             }
         }

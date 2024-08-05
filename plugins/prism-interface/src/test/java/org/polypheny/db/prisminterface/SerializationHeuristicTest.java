@@ -27,8 +27,8 @@ import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.prisminterface.streaming.Estimate;
 import org.polypheny.db.prisminterface.streaming.SerializationHeuristic;
-import org.polypheny.db.prisminterface.streaming.StreamingFramework;
 import org.polypheny.db.prisminterface.streaming.StreamIndex;
+import org.polypheny.db.prisminterface.streaming.StreamingFramework;
 import org.polypheny.db.prisminterface.streaming.StreamingStrategy;
 import org.polypheny.db.prisminterface.utils.PolyValueSerializer;
 import org.polypheny.db.type.entity.PolyBinary;
@@ -59,7 +59,7 @@ public class SerializationHeuristicTest {
     @Test
     public void polyBinaryHeuristicTestShort() {
         PolyBinary value = PolyBinary.of( new byte[]{ 0b01111111, 0b01111111, 0b01111111 } );
-        ProtoValue protoValue = PolyValueSerializer.serialize( value, new StreamIndex(), StreamingStrategy.DYNAMIC );
+        ProtoValue protoValue = PolyValueSerializer.serialize( value, new StreamIndex(), StreamingStrategy.DYNAMIC, 0 );
         int actualSize = protoValue.toByteArray().length;
         Estimate estimatedSize = SerializationHeuristic.estimateSize( value );
         assertTrue( estimatedSize.getDynamicLength() >= actualSize );
@@ -74,7 +74,7 @@ public class SerializationHeuristicTest {
             data[i] = 0b01111111;
         }
         PolyBinary value = PolyBinary.of( data );
-        ProtoValue protoValue = PolyValueSerializer.serialize( value, new StreamIndex(), StreamingStrategy.DYNAMIC );
+        ProtoValue protoValue = PolyValueSerializer.serialize( value, new StreamIndex(), StreamingStrategy.DYNAMIC, 0 );
         int actualSize = protoValue.toByteArray().length;
         Estimate estimatedSize = SerializationHeuristic.estimateSize( value );
         assertTrue( estimatedSize.getDynamicLength() >= actualSize );
@@ -89,7 +89,7 @@ public class SerializationHeuristicTest {
             data[i] = 0b01111111;
         }
         PolyBinary value = PolyBinary.of( data );
-        ProtoValue protoValue = PolyValueSerializer.serialize( value, new StreamIndex(), StreamingStrategy.DYNAMIC );
+        ProtoValue protoValue = PolyValueSerializer.serialize( value, new StreamIndex(), StreamingStrategy.DYNAMIC, 0 );
         int actualSize = protoValue.toByteArray().length;
         Estimate estimatedSize = SerializationHeuristic.estimateSize( value );
         assertTrue( estimatedSize.getDynamicLength() >= actualSize );
@@ -107,7 +107,7 @@ public class SerializationHeuristicTest {
     @Test
     public void polyBooleanHeuristicTestTrue() {
         PolyBoolean value = new PolyBoolean( true );
-        ProtoValue protoValue = PolyValueSerializer.serialize( value, new StreamIndex(), StreamingStrategy.DYNAMIC );
+        ProtoValue protoValue = PolyValueSerializer.serialize( value, new StreamIndex(), StreamingStrategy.DYNAMIC, 0 );
         int actualSize = protoValue.toByteArray().length;
         Estimate estimatedSize = SerializationHeuristic.estimateSize( value );
         assertTrue( estimatedSize.getDynamicLength() >= actualSize );
@@ -118,7 +118,7 @@ public class SerializationHeuristicTest {
     @Test
     public void polyIntegerHeuristicTestSmallValue() {
         PolyInteger value = new PolyInteger( 8 );
-        ProtoValue protoValue = PolyValueSerializer.serialize( value, new StreamIndex(), StreamingStrategy.DYNAMIC );
+        ProtoValue protoValue = PolyValueSerializer.serialize( value, new StreamIndex(), StreamingStrategy.DYNAMIC, 0 );
         int actualSize = protoValue.toByteArray().length;
         Estimate estimatedSize = SerializationHeuristic.estimateSize( value );
         assertTrue( estimatedSize.getDynamicLength() >= actualSize );
@@ -130,7 +130,7 @@ public class SerializationHeuristicTest {
     @Test
     public void polyIntegerHeuristicTestLargeValue() {
         PolyInteger value = new PolyInteger( Integer.MAX_VALUE );
-        ProtoValue protoValue = PolyValueSerializer.serialize( value, new StreamIndex(), StreamingStrategy.DYNAMIC );
+        ProtoValue protoValue = PolyValueSerializer.serialize( value, new StreamIndex(), StreamingStrategy.DYNAMIC, 0 );
         int actualSize = protoValue.toByteArray().length;
         Estimate estimatedSize = SerializationHeuristic.estimateSize( value );
         assertTrue( estimatedSize.getDynamicLength() >= actualSize );
@@ -142,7 +142,7 @@ public class SerializationHeuristicTest {
     @Test
     public void polyLongHeuristicTestSmallValue() {
         PolyLong value = new PolyLong( 4L );
-        ProtoValue protoValue = PolyValueSerializer.serialize( value, new StreamIndex(), StreamingStrategy.DYNAMIC );
+        ProtoValue protoValue = PolyValueSerializer.serialize( value, new StreamIndex(), StreamingStrategy.DYNAMIC, 0 );
         int actualSize = protoValue.toByteArray().length;
         Estimate estimatedSize = SerializationHeuristic.estimateSize( value );
         assertTrue( estimatedSize.getDynamicLength() >= actualSize );
@@ -154,7 +154,7 @@ public class SerializationHeuristicTest {
     @Test
     public void polyLongHeuristicTestLargeValue() {
         PolyLong value = new PolyLong( Long.MAX_VALUE );
-        ProtoValue protoValue = PolyValueSerializer.serialize( value, new StreamIndex(), StreamingStrategy.DYNAMIC );
+        ProtoValue protoValue = PolyValueSerializer.serialize( value, new StreamIndex(), StreamingStrategy.DYNAMIC, 0 );
         int actualSize = protoValue.toByteArray().length;
         Estimate estimatedSize = SerializationHeuristic.estimateSize( value );
         assertTrue( estimatedSize.getDynamicLength() >= actualSize );
@@ -166,7 +166,7 @@ public class SerializationHeuristicTest {
     @Test
     public void polyFloatHeuristicTestLargeValue() {
         PolyFloat value = new PolyFloat( Float.MAX_VALUE );
-        ProtoValue protoValue = PolyValueSerializer.serialize( value, new StreamIndex(), StreamingStrategy.DYNAMIC );
+        ProtoValue protoValue = PolyValueSerializer.serialize( value, new StreamIndex(), StreamingStrategy.DYNAMIC, 0 );
         int actualSize = protoValue.toByteArray().length;
         Estimate estimatedSize = SerializationHeuristic.estimateSize( value );
         assertTrue( estimatedSize.getDynamicLength() >= actualSize );
@@ -178,7 +178,7 @@ public class SerializationHeuristicTest {
     @Test
     public void polyDoubleHeuristicTest() {
         PolyDouble value = new PolyDouble( Double.MAX_VALUE );
-        ProtoValue protoValue = PolyValueSerializer.serialize( value, new StreamIndex(), StreamingStrategy.DYNAMIC );
+        ProtoValue protoValue = PolyValueSerializer.serialize( value, new StreamIndex(), StreamingStrategy.DYNAMIC, 0 );
         int actualSize = protoValue.toByteArray().length;
         Estimate estimatedSize = SerializationHeuristic.estimateSize( value );
         assertTrue( estimatedSize.getDynamicLength() >= actualSize );
@@ -190,7 +190,7 @@ public class SerializationHeuristicTest {
     @Test
     public void polyStringHeuristicTestShort() {
         PolyString value = new PolyString( "sample" );
-        ProtoValue protoValue = PolyValueSerializer.serialize( value, new StreamIndex(), StreamingStrategy.DYNAMIC );
+        ProtoValue protoValue = PolyValueSerializer.serialize( value, new StreamIndex(), StreamingStrategy.DYNAMIC, 0 );
         int actualSize = protoValue.toByteArray().length;
         Estimate estimatedSize = SerializationHeuristic.estimateSize( value );
         assertTrue( estimatedSize.getDynamicLength() >= actualSize );
@@ -201,7 +201,7 @@ public class SerializationHeuristicTest {
     @Test
     public void polyStringHeuristicTestLong() {
         PolyString value = new PolyString( "a".repeat( 500000000 ) );
-        ProtoValue protoValue = PolyValueSerializer.serialize( value, new StreamIndex(), StreamingStrategy.DYNAMIC );
+        ProtoValue protoValue = PolyValueSerializer.serialize( value, new StreamIndex(), StreamingStrategy.DYNAMIC, 0 );
         int actualSize = protoValue.toByteArray().length;
         Estimate estimatedSize = SerializationHeuristic.estimateSize( value );
         assertTrue( estimatedSize.getDynamicLength() >= actualSize );
@@ -212,7 +212,7 @@ public class SerializationHeuristicTest {
     @Test
     public void polyBigDecimalHeuristicTestSmallValue() {
         PolyBigDecimal value = new PolyBigDecimal( new BigDecimal( 1L ) );
-        ProtoValue protoValue = PolyValueSerializer.serialize( value, new StreamIndex(), StreamingStrategy.DYNAMIC );
+        ProtoValue protoValue = PolyValueSerializer.serialize( value, new StreamIndex(), StreamingStrategy.DYNAMIC, 0 );
         int actualSize = protoValue.toByteArray().length;
         Estimate estimatedSize = SerializationHeuristic.estimateSize( value );
         assertTrue( estimatedSize.getDynamicLength() >= actualSize );
@@ -229,7 +229,7 @@ public class SerializationHeuristicTest {
         BigDecimal bigDecimal = new BigDecimal( unscaledValue, scale );
         PolyBigDecimal value = new PolyBigDecimal( bigDecimal );
 
-        ProtoValue protoValue = PolyValueSerializer.serialize( value, new StreamIndex(), StreamingStrategy.DYNAMIC );
+        ProtoValue protoValue = PolyValueSerializer.serialize( value, new StreamIndex(), StreamingStrategy.DYNAMIC, 0 );
         int actualSize = protoValue.toByteArray().length;
         Estimate estimatedSize = SerializationHeuristic.estimateSize( value );
         assertTrue( estimatedSize.getDynamicLength() >= actualSize );
@@ -240,7 +240,7 @@ public class SerializationHeuristicTest {
     @Test
     public void polyTimestampHeuristicTestLargeValue() {
         PolyTimestamp value = new PolyTimestamp( Long.MAX_VALUE );
-        ProtoValue protoValue = PolyValueSerializer.serialize( value, new StreamIndex(), StreamingStrategy.DYNAMIC );
+        ProtoValue protoValue = PolyValueSerializer.serialize( value, new StreamIndex(), StreamingStrategy.DYNAMIC, 0 );
         int actualSize = protoValue.toByteArray().length;
         Estimate estimatedSize = SerializationHeuristic.estimateSize( value );
         assertTrue( estimatedSize.getDynamicLength() >= actualSize );
@@ -252,7 +252,7 @@ public class SerializationHeuristicTest {
     @Test
     public void polyimestampHeuristicHeuristicTestSmallValue() {
         PolyLong value = new PolyLong( 4L );
-        ProtoValue protoValue = PolyValueSerializer.serialize( value, new StreamIndex(), StreamingStrategy.DYNAMIC );
+        ProtoValue protoValue = PolyValueSerializer.serialize( value, new StreamIndex(), StreamingStrategy.DYNAMIC, 0 );
         int actualSize = protoValue.toByteArray().length;
         Estimate estimatedSize = SerializationHeuristic.estimateSize( value );
         assertTrue( estimatedSize.getDynamicLength() >= actualSize );
@@ -264,7 +264,7 @@ public class SerializationHeuristicTest {
     @Test
     public void polyDateHeuristicTestSmallValue() {
         PolyDate value = PolyDate.ofDays( 1 );
-        ProtoValue protoValue = PolyValueSerializer.serialize( value, new StreamIndex(), StreamingStrategy.DYNAMIC );
+        ProtoValue protoValue = PolyValueSerializer.serialize( value, new StreamIndex(), StreamingStrategy.DYNAMIC, 0 );
         int actualSize = protoValue.toByteArray().length;
         Estimate estimatedSize = SerializationHeuristic.estimateSize( value );
         assertTrue( estimatedSize.getDynamicLength() >= actualSize );
@@ -276,7 +276,7 @@ public class SerializationHeuristicTest {
     @Test
     public void polyDateHeuristicTestLargeValue() {
         PolyDate value = PolyDate.ofDays( Integer.MAX_VALUE );
-        ProtoValue protoValue = PolyValueSerializer.serialize( value, new StreamIndex(), StreamingStrategy.DYNAMIC );
+        ProtoValue protoValue = PolyValueSerializer.serialize( value, new StreamIndex(), StreamingStrategy.DYNAMIC, 0 );
         int actualSize = protoValue.toByteArray().length;
         Estimate estimatedSize = SerializationHeuristic.estimateSize( value );
         assertTrue( estimatedSize.getDynamicLength() >= actualSize );
@@ -288,7 +288,7 @@ public class SerializationHeuristicTest {
     @Test
     public void polyTimeHeuristicTestSmallValue() {
         PolyTime value = PolyTime.of( 1 );
-        ProtoValue protoValue = PolyValueSerializer.serialize( value, new StreamIndex(), StreamingStrategy.DYNAMIC );
+        ProtoValue protoValue = PolyValueSerializer.serialize( value, new StreamIndex(), StreamingStrategy.DYNAMIC, 0 );
         int actualSize = protoValue.toByteArray().length;
         Estimate estimatedSize = SerializationHeuristic.estimateSize( value );
         assertTrue( estimatedSize.getDynamicLength() >= actualSize );
@@ -300,7 +300,7 @@ public class SerializationHeuristicTest {
     @Test
     public void polyTimeHeuristicTestLargeValue() {
         PolyTime value = PolyTime.of( Integer.MAX_VALUE );
-        ProtoValue protoValue = PolyValueSerializer.serialize( value, new StreamIndex(), StreamingStrategy.DYNAMIC );
+        ProtoValue protoValue = PolyValueSerializer.serialize( value, new StreamIndex(), StreamingStrategy.DYNAMIC, 0 );
         int actualSize = protoValue.toByteArray().length;
         Estimate estimatedSize = SerializationHeuristic.estimateSize( value );
         assertTrue( estimatedSize.getDynamicLength() >= actualSize );
@@ -312,7 +312,7 @@ public class SerializationHeuristicTest {
     @Test
     public void polyNullHeuristicTestNull() {
         PolyNull value = new PolyNull();
-        ProtoValue protoValue = PolyValueSerializer.serialize( value, new StreamIndex(), StreamingStrategy.DYNAMIC );
+        ProtoValue protoValue = PolyValueSerializer.serialize( value, new StreamIndex(), StreamingStrategy.DYNAMIC, 0 );
         int actualSize = protoValue.toByteArray().length;
         Estimate estimatedSize = SerializationHeuristic.estimateSize( value );
         assertTrue( estimatedSize.getDynamicLength() >= actualSize );
@@ -329,7 +329,7 @@ public class SerializationHeuristicTest {
                 new PolyNull(),
                 new PolyNull()
         );
-        ProtoValue protoValue = PolyValueSerializer.serialize( value, new StreamIndex(), StreamingStrategy.DYNAMIC );
+        ProtoValue protoValue = PolyValueSerializer.serialize( value, new StreamIndex(), StreamingStrategy.DYNAMIC, 0 );
         int actualSize = protoValue.toByteArray().length;
         Estimate estimatedSize = SerializationHeuristic.estimateSize( value );
         System.out.println( estimatedSize.getDynamicLength() );
@@ -348,7 +348,7 @@ public class SerializationHeuristicTest {
                 new PolyInteger( Integer.MAX_VALUE ),
                 new PolyInteger( Integer.MAX_VALUE )
         );
-        ProtoValue protoValue = PolyValueSerializer.serialize( value, new StreamIndex(), StreamingStrategy.DYNAMIC );
+        ProtoValue protoValue = PolyValueSerializer.serialize( value, new StreamIndex(), StreamingStrategy.DYNAMIC, 0 );
         int actualSize = protoValue.toByteArray().length;
         Estimate estimatedSize = SerializationHeuristic.estimateSize( value );
         assertTrue( estimatedSize.getDynamicLength() >= actualSize );
@@ -367,7 +367,7 @@ public class SerializationHeuristicTest {
         document.put( new PolyString( "6th" ), new PolyInteger( Integer.MAX_VALUE ) );
         document.put( new PolyString( "7th" ), new PolyInteger( Integer.MAX_VALUE ) );
         document.put( new PolyString( "8th" ), new PolyInteger( Integer.MAX_VALUE ) );
-        ProtoValue protoValue = PolyValueSerializer.serialize( document, new StreamIndex(), StreamingStrategy.DYNAMIC );
+        ProtoValue protoValue = PolyValueSerializer.serialize( document, new StreamIndex(), StreamingStrategy.DYNAMIC, 0 );
         int actualSize = protoValue.toByteArray().length;
         Estimate estimatedSize = SerializationHeuristic.estimateSize( document );
         System.out.println( estimatedSize.getDynamicLength() );

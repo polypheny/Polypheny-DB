@@ -36,6 +36,8 @@ dependencies {
     testImplementation project(path: ':dbms', configuration: 'test')
     testImplementation project(path: ':core', configuration: 'tests')
     testImplementation project(path: ':core')
+    // https://mvnrepository.com/artifact/org.mockito/mockito-core
+    testImplementation group: 'org.mockito', name: 'mockito-core', version: '2.1.0'
     testRuntimeOnly project(path: ':dbms')
     //testImplementation project(path: ':plugins:mql-language')
 

@@ -110,12 +110,10 @@ public class PrismValueDeserializer {
 
     private static PolyValue deserializeToPolyDocument( ProtoValue protoValue, PIInputStreamManager PIInputStreamManager ) {
         PolyDocument document = new PolyDocument();
-        protoValue.getDocument().getEntriesList().stream()
-                .filter( e -> e.getKey().getValueCase() == ValueCase.STRING )
-                .forEach( e -> document.put(
-                        new PolyString( e.getKey().getString().getString() ),
-                        deserializeProtoValue( e.getValue(), PIInputStreamManager )
-                ) );
+        protoValue.getDocument().getEntriesMap().forEach( ( key, value ) -> document.put(
+                new PolyString( key ),
+                deserializeProtoValue( value, PIInputStreamManager )
+        ) );
         return document;
     }
 

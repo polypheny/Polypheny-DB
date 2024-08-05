@@ -16,16 +16,28 @@
 
 package org.polypheny.db.cypher;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.Iterator;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.cypher.helper.TestEdge;
 import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.cypher.helper.TestNode;
 import org.polypheny.db.cypher.helper.TestPath;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.models.results.GraphResult;
+import org.polypheny.jdbc.PolyConnection;
+import org.polypheny.jdbc.multimodel.PolyStatement;
+import org.polypheny.jdbc.types.PolyGraphElement;
+import org.polypheny.jdbc.types.PolyPath;
 
 @Slf4j
 public class MatchTest extends CypherTestTemplate {
@@ -35,6 +47,25 @@ public class MatchTest extends CypherTestTemplate {
     public void reset() {
         tearDown();
         createGraph();
+    }
+
+    @Test
+    public void cypherSelectPathsTest() throws SQLException {
+        execute( SINGLE_EDGE_1 );
+        try ( Connection connection = new JdbcConnection( true ).getConnection() ) {
+            if ( !connection.isWrapperFor( PolyConnection.class ) ) {
+                fail( "Driver must support unwrapping to PolyConnection" );
+            }
+            PolyStatement polyStatement = connection.unwrap( PolyConnection.class ).createPolyStatement();
+            org.polypheny.jdbc.multimodel.GraphResult result = polyStatement.execute( "cyphertest", "cypher", "MATCH (m {name:'Max'}), (k {name:'Kira'}), p = (m)-[]-(k)\n"
+                    + "       RETURN p" ).unwrap( org.polypheny.jdbc.multimodel.GraphResult.class );
+            Iterator<PolyGraphElement> elements = result.iterator();
+
+            assertTrue( elements.hasNext() );
+            PolyGraphElement element = elements.next();
+            PolyPath path = element.unwrap( PolyPath.class );
+            assertFalse( elements.hasNext() );
+        }
     }
 
 
