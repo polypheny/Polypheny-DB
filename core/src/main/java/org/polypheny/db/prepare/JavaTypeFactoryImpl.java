@@ -58,7 +58,6 @@ import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.algebra.type.GraphType;
-import org.polypheny.db.functions.GeoFunctions;
 import org.polypheny.db.runtime.Unit;
 import org.polypheny.db.type.AbstractPolyType;
 import org.polypheny.db.type.JavaToPolyTypeConversionRules;
@@ -79,6 +78,7 @@ import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.type.entity.graph.PolyNode;
 import org.polypheny.db.type.entity.graph.PolyPath;
 import org.polypheny.db.type.entity.relational.PolyMap;
+import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.type.entity.temporal.PolyDate;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 import org.polypheny.db.util.Pair;
@@ -236,7 +236,7 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
                 case VARBINARY:
                     return PolyBinary.class;
                 case GEOMETRY:
-                    return GeoFunctions.Geom.class;
+                    return PolyGeometry.class;
                 case SYMBOL:
                     return PolySymbol.class;
                 case GRAPH:
