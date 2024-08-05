@@ -118,6 +118,11 @@ public enum Kind {
     DISTANCE,
 
     /**
+     * GEO functions.
+     */
+    GEO,
+
+    /**
      * POSITION Function
      */
     POSITION,

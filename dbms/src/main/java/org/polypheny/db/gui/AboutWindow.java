@@ -86,7 +86,7 @@ public class AboutWindow {
 
             JButton ossButton = new JButton();
             final URI ossUri = new URI( "https://polypheny.org/community/acknowledgements/acknowledgements.txt" );
-            ossButton.setText( "open-source software" );
+            ossButton.setText( "execute-source software" );
             ossButton.setBorderPainted( false );
             ossButton.setOpaque( false );
             ossButton.setFont( new Font( "Verdana", Font.PLAIN, 14 ) );

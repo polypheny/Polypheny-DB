@@ -29,7 +29,7 @@ import org.polypheny.db.util.Pair;
  * OperatorRegistry is used to provide access to all available functions/operators, which Polypheny is able to handle.
  * NOTE: While at the moment a lot of functions are categorized as general are initially SQL functions,
  * the idea is to transition to more general functions registered under <code>null</code>
- *
+ * <p>
  * The functions are registered via the {@link OperatorName} enum to have a central place of adding new operators,
  * which should make it more performant and intuitive
  */

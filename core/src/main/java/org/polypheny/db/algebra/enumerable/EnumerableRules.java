@@ -124,8 +124,6 @@ public class EnumerableRules {
 
     public static final EnumerableScanRule ENUMERABLE_TABLE_SCAN_RULE = new EnumerableScanRule( AlgFactories.LOGICAL_BUILDER );
 
-    public static final EnumerableTableFunctionScanRule ENUMERABLE_TABLE_FUNCTION_SCAN_RULE = new EnumerableTableFunctionScanRule( AlgFactories.LOGICAL_BUILDER );
-
     public static final EnumerableTransformerRule ENUMERABLE_TRANSFORMER_RULE = new EnumerableTransformerRule();
 
     public static final EnumerableLpgMatchRule ENUMERABLE_GRAPH_MATCH_RULE = new EnumerableLpgMatchRule( AlgFactories.LOGICAL_BUILDER );

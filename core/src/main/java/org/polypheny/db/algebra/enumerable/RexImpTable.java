@@ -331,6 +331,8 @@ public class RexImpTable {
             defineCypherMethods();
         }
 
+        defineGeoFunctions();
+
         // Cross Model Sql
         defineMethod( OperatorRegistry.get( OperatorName.CROSS_MODEL_ITEM ), BuiltInMethod.X_MODEL_ITEM.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( OperatorName.TO_JSON ), BuiltInMethod.TO_JSON.method, NullPolicy.NONE );
@@ -381,6 +383,70 @@ public class RexImpTable {
         winAggMap.put( OperatorRegistry.getAgg( OperatorName.NTILE ), constructorSupplier( NtileImplementor.class ) );
         winAggMap.put( OperatorRegistry.getAgg( OperatorName.COUNT ), constructorSupplier( CountWinImplementor.class ) );
         winAggMap.put( OperatorRegistry.getAgg( OperatorName.REGR_COUNT ), constructorSupplier( CountWinImplementor.class ) );
+    }
+
+
+    private void defineGeoFunctions() {
+        // geo functions
+        defineMethod( OperatorRegistry.get( OperatorName.ST_GEOMFROMTEXT ), BuiltInMethod.ST_GEOMFROMTEXT.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_GEOMFROMTWKB ), BuiltInMethod.ST_GEOMFROMTWKB.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_GEOMFROMGEOJSON ), BuiltInMethod.ST_GEOMFROMGEOJSON.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_ASTEXT ), BuiltInMethod.ST_ASTEXT.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_ASTWKB ), BuiltInMethod.ST_ASTWKB.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_ASGEOJSON ), BuiltInMethod.ST_ASGEOJSON.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_TRANSFORM ), BuiltInMethod.ST_TRANSFORM.method, NullPolicy.STRICT );
+        // Common properties
+        defineMethod( OperatorRegistry.get( OperatorName.ST_ISSIMPLE ), BuiltInMethod.ST_ISSIMPLE.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_ISEMPTY ), BuiltInMethod.ST_ISEMPTY.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_NUMPOINTS ), BuiltInMethod.ST_NUMPOINTS.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_DIMENSION ), BuiltInMethod.ST_DIMENSION.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_LENGTH ), BuiltInMethod.ST_LENGTH.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_AREA ), BuiltInMethod.ST_AREA.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_ENVELOPE ), BuiltInMethod.ST_ENVELOPE.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_BOUNDARY ), BuiltInMethod.ST_BOUNDARY.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_BOUNDARYDIMENSION ), BuiltInMethod.ST_BOUNDARYDIMENSION.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_CONVEXHULL ), BuiltInMethod.ST_CONVEXHULL.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_CENTROID ), BuiltInMethod.ST_CENTROID.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_REVERSE ), BuiltInMethod.ST_REVERSE.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_BUFFER ), BuiltInMethod.ST_BUFFER.method, NullPolicy.STRICT );
+        // Spatial relationships
+        defineMethod( OperatorRegistry.get( OperatorName.ST_EQUALS ), BuiltInMethod.ST_EQUALS.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_DWITHIN ), BuiltInMethod.ST_DWITHIN.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_DISJOINT ), BuiltInMethod.ST_DISJOINT.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_TOUCHES ), BuiltInMethod.ST_TOUCHES.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_INTERSECTS ), BuiltInMethod.ST_INTERSECTS.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_CROSSES ), BuiltInMethod.ST_CROSSES.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_WITHIN ), BuiltInMethod.ST_WITHIN.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_CONTAINS ), BuiltInMethod.ST_CONTAINS.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_OVERLAPS ), BuiltInMethod.ST_OVERLAPS.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_COVERS ), BuiltInMethod.ST_COVERS.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_COVEREDBY ), BuiltInMethod.ST_COVEREDBY.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_RELATE ), BuiltInMethod.ST_RELATE.method, NullPolicy.STRICT );
+        // Yield metric values
+        defineMethod( OperatorRegistry.get( OperatorName.ST_DISTANCE ), BuiltInMethod.ST_DISTANCE.method, NullPolicy.STRICT );
+        // Set operations
+        defineMethod( OperatorRegistry.get( OperatorName.ST_INTERSECTION ), BuiltInMethod.ST_INTERSECTION.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_UNION ), BuiltInMethod.ST_UNION.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_DIFFERENCE ), BuiltInMethod.ST_DIFFERENCE.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_SYMDIFFERENCE ), BuiltInMethod.ST_SYMDIFFERENCE.method, NullPolicy.STRICT );
+        // on Points
+        defineMethod( OperatorRegistry.get( OperatorName.ST_X ), BuiltInMethod.ST_X.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_Y ), BuiltInMethod.ST_Y.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_Z ), BuiltInMethod.ST_Z.method, NullPolicy.STRICT );
+        // on LineStrings
+        defineMethod( OperatorRegistry.get( OperatorName.ST_ISCLOSED ), BuiltInMethod.ST_ISCLOSED.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_ISRING ), BuiltInMethod.ST_ISRING.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_ISCOORDINATE ), BuiltInMethod.ST_ISCOORDINATE.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_STARTPOINT ), BuiltInMethod.ST_STARTPOINT.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_ENDPOINT ), BuiltInMethod.ST_ENDPOINT.method, NullPolicy.STRICT );
+        // on Polygons
+        defineMethod( OperatorRegistry.get( OperatorName.ST_ISRECTANGLE ), BuiltInMethod.ST_ISRECTANGLE.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_EXTERIORRING ), BuiltInMethod.ST_EXTERIORRING.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_NUMINTERIORRING ), BuiltInMethod.ST_NUMINTERIORRING.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_INTERIORRINGN ), BuiltInMethod.ST_INTERIORRINGN.method, NullPolicy.STRICT );
+        // on GeometryCollection
+        defineMethod( OperatorRegistry.get( OperatorName.ST_NUMGEOMETRIES ), BuiltInMethod.ST_NUMGEOMETRIES.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_GEOMETRYN ), BuiltInMethod.ST_GEOMETRYN.method, NullPolicy.STRICT );
     }
 
 

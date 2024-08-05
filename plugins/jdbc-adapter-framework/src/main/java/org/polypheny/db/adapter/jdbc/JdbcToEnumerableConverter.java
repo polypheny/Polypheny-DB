@@ -96,6 +96,7 @@ import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyFloat;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.type.entity.numerical.PolyLong;
+import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.type.entity.temporal.PolyDate;
 import org.polypheny.db.type.entity.temporal.PolyTime;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
@@ -103,7 +104,7 @@ import org.polypheny.db.util.BuiltInMethod;
 
 
 /**
- * Relational expression representing a relScan of a table in a JDBC data source.
+ * Relational expression representing a scan of a table in a JDBC data source.
  */
 @Slf4j
 public class JdbcToEnumerableConverter extends ConverterImpl implements EnumerableAlg {
@@ -428,6 +429,16 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
             case IMAGE:
             case VIDEO:
                 poly = dialect.handleRetrieval( fieldType, source, resultSet_, i + 1 );
+                break;
+            case GEOMETRY:
+                if ( dialect.supportsPostGIS() ) {
+                    // convert postgis geometry (net.postgres.PGgeometry) that is a wrapper of org.postgresql.util.PGobject (has getValue() method to return string) into a string
+                    poly = Expressions.call( PolyGeometry.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( Expressions.call( Expressions.convert_( source, net.postgis.jdbc.PGgeometry.class ), "getValue" ), String.class ) );
+                } else if ( dialect.supportsGeoJson() ) {
+                    poly = Expressions.call( PolyGeometry.class, fieldType.isNullable() ? "fromNullableGeoJson" : "fromGeoJson", Expressions.convert_( source, String.class ) );
+                } else {
+                    poly = Expressions.call( PolyGeometry.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, String.class ) );
+                }
                 break;
             default:
                 log.warn( "potentially unhandled polyValue" );
