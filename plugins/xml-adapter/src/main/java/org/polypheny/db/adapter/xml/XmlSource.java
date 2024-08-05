@@ -48,7 +48,6 @@ import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
 import org.polypheny.db.catalog.entity.physical.PhysicalCollection;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.schema.Namespace;
@@ -64,11 +63,12 @@ import org.xml.sax.SAXException;
         usedModes = DeployMode.EMBEDDED,
         defaultMode = DeployMode.EMBEDDED)
 @AdapterSettingList(name = "method", options = { "upload", "link", "url" }, defaultValue = "upload", description = "If the supplied file(s) should be uploaded or a link to the local filesystem is used (sufficient permissions are required).", position = 1)
-@AdapterSettingDirectory(subOf = "method_upload", name = "directory", defaultValue = "classpath://articles.json", description = "Path to the XML file(s) to be integrated as this source.", position = 2)
-@AdapterSettingString(subOf = "method_link", defaultValue = "classpath://articles.json", name = "directoryName", description = "Path to the XML file(s) to be integrated as this source.", position = 2)
+@AdapterSettingDirectory(subOf = "method_upload", name = "directory", defaultValue = "classpath://products.xml", description = "Path to the XML file(s) to be integrated as this source.", position = 2)
+@AdapterSettingString(subOf = "method_link", defaultValue = "classpath://products.xml", name = "directoryName", description = "Path to the XML file(s) to be integrated as this source.", position = 2)
 @AdapterSettingString(subOf = "method_url", defaultValue = "http://localhost/cars.xml", name = "url", description = "URL to the XML file(s) to be integrated as this source.", position = 2)
 
 public class XmlSource extends DataSource<DocAdapterCatalog> implements DocumentDataSource, Scannable {
+
     private static final Logger log = LoggerFactory.getLogger( XmlSource.class );
     @Delegate(excludes = Excludes.class)
     private final DocumentScanDelegate delegate;
@@ -76,14 +76,16 @@ public class XmlSource extends DataSource<DocAdapterCatalog> implements Document
     private final ConnectionMethod connectionMethod;
     private URL xmlFiles;
 
+
     public XmlSource( final long storeId, final String uniqueName, final Map<String, String> settings, DeployMode mode ) {
         super( storeId, uniqueName, settings, mode, true, new DocAdapterCatalog( storeId ), List.of( DataModel.DOCUMENT ) );
         this.connectionMethod = settings.containsKey( "method" ) ? ConnectionMethod.from( settings.get( "method" ).toUpperCase() ) : ConnectionMethod.UPLOAD;
-        this.xmlFiles = getXmlFilesUrl( settings);
+        this.xmlFiles = getXmlFilesUrl( settings );
         this.delegate = new DocumentScanDelegate( this, getAdapterCatalog() );
         long namespaceId = Catalog.getInstance().createNamespace( uniqueName, DataModel.DOCUMENT, true );
         this.namespace = new XmlNamespace( uniqueName, namespaceId, getAdapterId() );
     }
+
 
     @Override
     protected void reloadSettings( List<String> updatedSettings ) {
@@ -94,11 +96,11 @@ public class XmlSource extends DataSource<DocAdapterCatalog> implements Document
 
 
     private URL getXmlFilesUrl( final Map<String, String> settings ) {
-        switch(connectionMethod) {
+        switch ( connectionMethod ) {
             case LINK -> {
                 String files = settings.get( "directoryName" );
                 if ( files.startsWith( "classpath://" ) ) {
-                    return this.getClass().getClassLoader().getResource( files.replace( "classpath://", "" ) + "/" );
+                    return this.getClass().getClassLoader().getResource( files.replace( "classpath://", "" ) );
                 }
                 try {
                     return new File( files ).toURI().toURL();
@@ -125,9 +127,10 @@ public class XmlSource extends DataSource<DocAdapterCatalog> implements Document
                     throw new RuntimeException( e );
                 }
             }
-            default -> throw new RuntimeException("Unknown connection method " + connectionMethod );
+            default -> throw new RuntimeException( "Unknown connection method " + connectionMethod );
         }
     }
+
 
     @Override
     public void updateNamespace( String name, long id ) {
@@ -158,6 +161,7 @@ public class XmlSource extends DataSource<DocAdapterCatalog> implements Document
         }
     }
 
+
     @Override
     public AdapterCatalog getCatalog() {
         return adapterCatalog;
@@ -170,7 +174,7 @@ public class XmlSource extends DataSource<DocAdapterCatalog> implements Document
         updateNamespace( collection.getNamespaceName(), collection.getNamespaceId() );
         try {
             PhysicalCollection physicalCollection = new XmlCollection.Builder()
-                    .url( XmlMetaRetriever.findDocumentUrl( xmlFiles, collection.getName() ))
+                    .url( XmlMetaRetriever.findDocumentUrl( xmlFiles, collection.getName() ) )
                     .collectionId( collection.getId() )
                     .allocationId( allocation.getId() )
                     .logicalId( collection.getLogicalId() )
@@ -181,9 +185,10 @@ public class XmlSource extends DataSource<DocAdapterCatalog> implements Document
                     .build();
             adapterCatalog.addPhysical( allocation, physicalCollection );
         } catch ( MalformedURLException | NoSuchFileException e ) {
-            throw new RuntimeException( e);
+            throw new RuntimeException( e );
         }
     }
+
 
     @Override
     public List<PhysicalEntity> createCollection( Context context, LogicalCollection logical, AllocationCollection allocation ) {
@@ -195,7 +200,7 @@ public class XmlSource extends DataSource<DocAdapterCatalog> implements Document
         );
         try {
             PhysicalCollection physicalCollection = new XmlCollection.Builder()
-                    .url( XmlMetaRetriever.findDocumentUrl( xmlFiles, collection.getName() ))
+                    .url( XmlMetaRetriever.findDocumentUrl( xmlFiles, collection.getName() ) )
                     .collectionId( collection.getId() )
                     .allocationId( allocation.getId() )
                     .logicalId( collection.getLogicalId() )
@@ -207,9 +212,10 @@ public class XmlSource extends DataSource<DocAdapterCatalog> implements Document
             adapterCatalog.replacePhysical( physicalCollection );
             return List.of( physicalCollection );
         } catch ( MalformedURLException | NoSuchFileException e ) {
-            throw new RuntimeException( e);
+            throw new RuntimeException( e );
         }
     }
+
 
     @Override
     public void dropCollection( Context context, AllocationCollection allocation ) {
@@ -286,10 +292,12 @@ public class XmlSource extends DataSource<DocAdapterCatalog> implements Document
         log.debug( "NOT SUPPORTED: XML source does not support method restoreGraph()." );
     }
 
+
     @Override
     public DocumentDataSource asDocumentDataSource() {
         return this;
     }
+
 
     private interface Excludes {
 
@@ -300,4 +308,5 @@ public class XmlSource extends DataSource<DocAdapterCatalog> implements Document
         void restoreCollection( AllocationTable alloc, List<PhysicalEntity> entities );
 
     }
+
 }
