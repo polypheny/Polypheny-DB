@@ -63,9 +63,10 @@ import org.xml.sax.SAXException;
         description = "An adapter for querying XML files. An XML file or a directory containing multiple XML files can be specified by path. Currently, this adapter only supports read operations.",
         usedModes = DeployMode.EMBEDDED,
         defaultMode = DeployMode.EMBEDDED)
-@AdapterSettingList(name = "method", options = { "upload", "link" }, defaultValue = "upload", description = "If the supplied file(s) should be uploaded or a link to the local filesystem is used (sufficient permissions are required).", position = 1)
+@AdapterSettingList(name = "method", options = { "upload", "link", "url" }, defaultValue = "upload", description = "If the supplied file(s) should be uploaded or a link to the local filesystem is used (sufficient permissions are required).", position = 1)
 @AdapterSettingDirectory(subOf = "method_upload", name = "directory", defaultValue = "classpath://articles.json", description = "Path to the XML file(s) to be integrated as this source.", position = 2)
 @AdapterSettingString(subOf = "method_link", defaultValue = "classpath://articles.json", name = "directoryName", description = "Path to the XML file(s) to be integrated as this source.", position = 2)
+@AdapterSettingString(subOf = "method_url", defaultValue = "http://localhost/", name = "url", description = "URL to the XML file(s) to be integrated as this source.", position = 2)
 
 public class XmlSource extends DataSource<DocAdapterCatalog> implements DocumentDataSource, Scannable {
     private static final Logger log = LoggerFactory.getLogger( XmlSource.class );
@@ -96,6 +97,9 @@ public class XmlSource extends DataSource<DocAdapterCatalog> implements Document
         String files = settings.get( "directory" );
         if ( connectionMethod == ConnectionMethod.LINK ) {
             files = settings.get( "directoryName" );
+        }
+        if (connectionMethod == ConnectionMethod.URL) {
+            files = settings.get( "url" );
         }
 
         if ( files.startsWith( "classpath://" ) ) {
