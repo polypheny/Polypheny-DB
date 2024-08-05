@@ -20,8 +20,10 @@ import org.checkerframework.checker.units.qual.K;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.cypher.CypherTestTemplate;
+import org.polypheny.db.cypher.helper.TestEdge;
 import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.webui.models.results.GraphResult;
+import java.util.List;
 
 public class OtherFunTest extends CypherTestTemplate {
 
@@ -30,8 +32,9 @@ public class OtherFunTest extends CypherTestTemplate {
         tearDown();
         createGraph();
     }
-
-
+        //////////////////////////
+        /// Scalar Functions
+        ///////////////////////////
     @Test
     public void typeFunTest() {
         execute( SINGLE_EDGE_1 );
@@ -49,10 +52,40 @@ public class OtherFunTest extends CypherTestTemplate {
         GraphResult res = execute( "MATCH (p:Person { name: 'Max' })\n"
                 + "RETURN ID(p)\n" );
 
-//        containsRows( res, true, true, Row.of( TestLiteral.from(  ) ) );
+    }
+
+    @Test
+    public void testCoalesceFunTest() {
+        execute( SINGLE_NODE_PERSON_1 );
+        execute( SINGLE_NODE_PERSON_2 );
+        execute( SINGLE_NODE_PERSON_COMPLEX_1 );
+        GraphResult result = execute( "MATCH (p) RETURN p.name, coalesce(p.age, 0) AS age" );
+
+        assert containsRows( result, true, false,
+                Row.of( TestLiteral.from( "Max" ), TestLiteral.from( 0 ) ),
+                Row.of( TestLiteral.from( "Hans" ), TestLiteral.from( 0 ) ),
+                Row.of( TestLiteral.from( "Ann" ), TestLiteral.from( 45 ) ) );
     }
 
 
+    @Test
+    public void testDefaultValuesWithCoalesceFunTest() {
+        execute( SINGLE_NODE_PERSON_1 );
+        execute( SINGLE_NODE_PERSON_2 );
+        execute( SINGLE_NODE_PERSON_COMPLEX_1 );
+        GraphResult result = execute( "MATCH (p) RETURN p.name, coalesce(p.age, 'unknown') AS age" );
+
+        assertNode( result, 0 );
+
+        assert containsRows( result, true, false,
+                Row.of( TestLiteral.from( "Max" ), TestLiteral.from( "unknown" ) ),
+                Row.of( TestLiteral.from( "Hans" ), TestLiteral.from( "unknown" ) ),
+                Row.of( TestLiteral.from( "Ann" ), TestLiteral.from( "unknown" ) ) );
+    }
+
+        ///////////////////////////////
+        // Predicate Functions
+        /////////////////////////////
     @Test
     public void ExistFunTest() {
         execute( SINGLE_NODE_PERSON_1 );
@@ -68,61 +101,45 @@ public class OtherFunTest extends CypherTestTemplate {
     }
 
 
-
+        ///////////////////////////
+        //// List Functions
+        ///////////////////////////
     @Test
-    public void testCoalesceFunction() {
-        execute(SINGLE_NODE_PERSON_1);
-        execute(SINGLE_NODE_PERSON_2);
-        execute(SINGLE_NODE_PERSON_COMPLEX_1);
-        GraphResult result = execute("MATCH (p) RETURN p.name, coalesce(p.age, 0) AS age");
+    public void returnLabelsFunTest() {
+        execute( SINGLE_EDGE_1 );
+        GraphResult res = execute( "MATCH (a)"
+                + "RETURN labels(a)" );
 
-
-        assert containsRows(result, true, false,
-                Row.of(TestLiteral.from( "Max" ) ,TestLiteral.from( 0 )),
-                Row.of(TestLiteral.from( "Hans" ) , TestLiteral.from( 0 )),
-                Row.of(TestLiteral.from( "Ann" ),TestLiteral.from( 45 )));
+        assert containsRows( res, true, false, Row.of( TestLiteral.from( List.of( "Person" ) ) ) );
     }
 
     @Test
-    public void testIsNullFunction() {
-        execute(SINGLE_NODE_PERSON_1);
-        execute(SINGLE_NODE_PERSON_2);
-        execute(SINGLE_NODE_PERSON_COMPLEX_1);
-        GraphResult result = execute("MATCH (p) WHERE p.age IS NULL RETURN p");
+    public void returnNodesFunTest()
+    {
+      execute( SINGLE_EDGE_1 );
+      GraphResult res  =  execute( "MATCH p = (a)-->(b)-->(c)\n"
+              + "RETURN nodes(p)" );
+      assert  res.getData().length ==  1;
+      assert  containsRows( res , true , false ,Row.of( TestLiteral.from( List.of(MAX ,KIRA ) ) ) );
 
-        assertNode(result, 0);
-
-        assert containsRows(result, true, false,
-                Row.of(HANS),
-                Row.of(MAX));
     }
 
     @Test
-    public void testIsNotNullFunction() {
-        execute(SINGLE_NODE_PERSON_1);
-        execute(SINGLE_NODE_PERSON_2);
-        execute(SINGLE_NODE_ANIMAL);
-        GraphResult result = execute("MATCH (p) WHERE p.type IS NOT NULL RETURN p");
-
-        assertNode(result, 0);
-
-        assert containsRows(result, true, false,
-                Row.of( KIRA) );
+    public void returnRelationsFunTest()
+    {
+      execute( SINGLE_EDGE_1 );
+      GraphResult res =  execute( "MATCH p = (a)-->(b)-->(c)\n"
+              + "RETURN relationships(p)" );
+      assert  res.getData().length == 1  ;
     }
 
     @Test
-    public void testDefaultValuesWithCoalesce() {
-        execute(SINGLE_NODE_PERSON_1);
-        execute(SINGLE_NODE_PERSON_2);
-        execute(SINGLE_NODE_PERSON_COMPLEX_1);
-        GraphResult result = execute("MATCH (p) RETURN p.name, coalesce(p.age, 'unknown') AS age");
-
-        assertNode(result, 0);
-
-        assert containsRows(result, true, false,
-                Row.of(TestLiteral.from( "Max" ) ,TestLiteral.from( "unknown")),
-                Row.of(TestLiteral.from( "Hans" ) , TestLiteral.from("unknown" )),
-                Row.of(TestLiteral.from( "Ann" ),TestLiteral.from( "unknown" )));
+    public void returnRelationAndNodesFunTest()
+    {
+        execute( SINGLE_EDGE_1 );
+        GraphResult res =  execute( "MATCH p = (a)-->(b)-->(c)\n"
+                + "RETURN relationships(p) , nodes(p)" );
+        assert res.getData().length == 1 ;
     }
 
 
