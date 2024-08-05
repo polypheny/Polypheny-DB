@@ -29,6 +29,7 @@ import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyNode;
 import org.polypheny.db.type.entity.graph.PolyPath;
 import org.polypheny.prism.Frame;
+import org.polypheny.prism.GraphElement;
 import org.polypheny.prism.GraphFrame;
 import org.polypheny.prism.PreparedStatementSignature;
 import org.polypheny.prism.ProtoEdge;
@@ -118,26 +119,10 @@ public class PrismUtils {
     }
 
 
-    public static Frame buildGraphFrame( boolean isLast, List<List<PolyValue>> data, StreamIndex streamIndex, StreamingStrategy streamingStrategy, int statementId ) {
-        GraphFrame.Builder graphFrameBuilder = GraphFrame.newBuilder();
-        if ( !data.isEmpty() ) {
-            PolyType elementType = data.get( 0 ).get( 0 ).getType();
-            switch ( elementType ) {
-                case NODE -> graphFrameBuilder.addAllNodes( serializeToNodes( data, streamIndex, streamingStrategy, statementId ) );
-                case EDGE -> graphFrameBuilder.addAllEdges( serializeToEdges( data, streamIndex, streamingStrategy, statementId ) );
-                default -> throw new RuntimeException( "Should never be thrown!" );
-            }
-        }
-
-        return Frame.newBuilder()
-                .setIsLast( isLast )
-                .setGraphFrame( graphFrameBuilder.build() )
-                .build();
-    }
-
 
     public static ProtoPolyType getProtoFromPolyType( PolyType polyType ) {
         return ProtoPolyType.valueOf( polyType.getName() );
     }
+
 
 }

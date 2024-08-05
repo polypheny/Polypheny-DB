@@ -49,26 +49,6 @@ public class MatchTest extends CypherTestTemplate {
         createGraph();
     }
 
-    @Test
-    public void cypherSelectPathsTest() throws SQLException {
-        execute( SINGLE_EDGE_1 );
-        try ( Connection connection = new JdbcConnection( true ).getConnection() ) {
-            if ( !connection.isWrapperFor( PolyConnection.class ) ) {
-                fail( "Driver must support unwrapping to PolyConnection" );
-            }
-            PolyStatement polyStatement = connection.unwrap( PolyConnection.class ).createPolyStatement();
-            org.polypheny.jdbc.multimodel.GraphResult result = polyStatement.execute( "cyphertest", "cypher", "MATCH (m {name:'Max'}), (k {name:'Kira'}), p = (m)-[]-(k)\n"
-                    + "       RETURN p" ).unwrap( org.polypheny.jdbc.multimodel.GraphResult.class );
-            Iterator<PolyGraphElement> elements = result.iterator();
-
-            assertTrue( elements.hasNext() );
-            PolyGraphElement element = elements.next();
-            PolyPath path = element.unwrap( PolyPath.class );
-            assertFalse( elements.hasNext() );
-        }
-    }
-
-
     ///////////////////////////////////////////////
     ///////// MATCH
     ///////////////////////////////////////////////

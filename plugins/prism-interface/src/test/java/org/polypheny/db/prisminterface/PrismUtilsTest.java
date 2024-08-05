@@ -85,7 +85,7 @@ public class PrismUtilsTest {
         assertTrue( prismRows.isEmpty() );
     }
 
-
+/*
     @Test
     public void buildGraphFrameWithNodesTest() {
         HashMap<PolyString, PolyValue> map1 = new HashMap<>();
@@ -149,5 +149,7 @@ public class PrismUtilsTest {
         assertEquals( "edge1", result.getGraphFrame().getEdges( 0 ).getName() );
         assertEquals( "edge2", result.getGraphFrame().getEdges( 1 ).getName() );
     }
+    */
+
 
 }

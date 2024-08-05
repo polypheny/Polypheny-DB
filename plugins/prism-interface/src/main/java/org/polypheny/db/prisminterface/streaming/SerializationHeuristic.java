@@ -227,4 +227,25 @@ public class SerializationHeuristic {
         return estimateInt32Size().addToAll( length );
     }
 
+
+    public static Estimate estimateSizeGraph( PolyValue value ) {
+        switch ( value.getType() ) {
+            case NODE -> {
+                return estimateSizeProtoNode( value.asNode() ).addToAll( 2 );
+            }
+            case EDGE -> {
+                return estimateSizeProtoEdge( value.asEdge() ).addToAll( 2 );
+            }
+            case PATH -> {
+                Estimate estimate = new Estimate();
+                PolyPath path = value.asPath();
+                estimate.add( path.getNodes().stream().map( SerializationHeuristic::estimateSizeProtoNode ).reduce( new Estimate(), Estimate::add ) );
+                estimate.add( path.getEdges().stream().map( SerializationHeuristic::estimateSizeProtoEdge ).reduce( new Estimate(), Estimate::add ) );
+                estimate.addToAll( 2 * (path.getNodes().size() + path.getEdges().size()) );
+                return estimate;
+            }
+            default -> throw new RuntimeException( "Should not be thrown." );
+        }
+    }
+
 }

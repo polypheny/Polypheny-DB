@@ -17,6 +17,7 @@
 package org.polypheny.db.prisminterface.utils;
 
 import com.google.protobuf.ByteString;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -46,6 +47,7 @@ import org.polypheny.db.type.entity.relational.PolyMap;
 import org.polypheny.db.type.entity.temporal.PolyDate;
 import org.polypheny.db.type.entity.temporal.PolyTime;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
+import org.polypheny.prism.GraphElement;
 import org.polypheny.prism.ProtoBigDecimal;
 import org.polypheny.prism.ProtoBinary;
 import org.polypheny.prism.ProtoBoolean;
@@ -371,6 +373,22 @@ public class PolyValueSerializer {
             }
         }
         return Direction.UNSPECIFIED;
+    }
+
+
+    public static List<GraphElement> buildProtoGraph( PolyValue polyValue, StreamIndex streamIndex, StreamingStrategy streamingStrategy, int statementId ) {
+        switch (polyValue.getType()) {
+            case NODE -> {return List.of(GraphElement.newBuilder().setNode( buildProtoNode( polyValue.asNode(), streamIndex, streamingStrategy, statementId ) ).build());}
+            case EDGE -> {return List.of( GraphElement.newBuilder().setEdge( buildProtoEdge( polyValue.asEdge(), streamIndex, streamingStrategy, statementId ) ).build());}
+            case PATH -> {
+                List<GraphElement> elements = new LinkedList<>();
+                PolyPath path = polyValue.asPath();
+                path.getNodes().forEach( n -> elements.add(GraphElement.newBuilder().setNode(buildProtoNode( n, streamIndex, streamingStrategy, statementId ) ).build()));
+                path.getEdges().forEach( n -> elements.add(GraphElement.newBuilder().setEdge( buildProtoEdge( n, streamIndex, streamingStrategy, statementId ) ).build() ) );
+                return elements;
+            }
+            default -> throw new RuntimeException("Should never be thrown");
+        }
     }
 
 }

@@ -118,7 +118,7 @@ public class CypherTest {
                 fail( "Driver must support unwrapping to PolyConnection" );
             }
             PolyStatement polyStatement = connection.unwrap( PolyConnection.class ).createPolyStatement();
-            GraphResult result = polyStatement.execute( "test", "cypher", "MATCH p=(:Person {name: 'Alice'})-[:KNOWS]->(:Person {name: 'Charlie'}) RETURN p" ).unwrap( GraphResult.class );
+            GraphResult result = polyStatement.execute( "cyphertest", "cypher", "MATCH (a:Person), (b:Person), p=(a)-[:KNOWS]->(a) RETURN p" ).unwrap( GraphResult.class );
             Iterator<PolyGraphElement> elements = result.iterator();
 
             assertTrue( elements.hasNext() );
@@ -127,7 +127,6 @@ public class CypherTest {
             assertFalse( elements.hasNext() );
         }
     }
-
 
     @Test
     public void cypherRelationalTest() throws SQLException {

@@ -23,16 +23,11 @@ import org.polypheny.db.ResultIterator;
 import org.polypheny.db.prisminterface.statements.PIStatement;
 import org.polypheny.db.prisminterface.utils.PolyValueSerializer;
 import org.polypheny.db.prisminterface.utils.PrismUtils;
-import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.type.entity.graph.PolyEdge;
-import org.polypheny.db.type.entity.graph.PolyNode;
 import org.polypheny.prism.ColumnMeta;
 import org.polypheny.prism.DocumentFrame;
 import org.polypheny.prism.Frame;
 import org.polypheny.prism.GraphFrame;
-import org.polypheny.prism.ProtoEdge;
-import org.polypheny.prism.ProtoNode;
 import org.polypheny.prism.RelationalFrame;
 
 public class StreamingFramework {
@@ -135,55 +130,6 @@ public class StreamingFramework {
     }
 
 
-    public Frame processGraphResult( ResultIterator iterator, int fetchSize ) {
-        return processResult(
-                iterator,
-                fetchSize,
-                Frame.newBuilder(),
-                this::estimateGraphSize,
-                this::extractGraphData,
-                ( frameBuilder, results ) -> {
-                    GraphFrame.Builder graphFrameBuilder = GraphFrame.newBuilder();
-                    Class<?> elementType = results.get( 0 ).getClass();
-                    if ( ProtoNode.class.isAssignableFrom( elementType ) ) {
-                        graphFrameBuilder.addAllNodes( (List<ProtoNode>) (Object) results );
-                    } else if ( ProtoEdge.class.isAssignableFrom( elementType ) ) {
-                        graphFrameBuilder.addAllEdges( (List<ProtoEdge>) (Object) results );
-                    }
-                    frameBuilder.setGraphFrame( graphFrameBuilder.build() );
-                }
-        );
-    }
-
-
-    private Object extractGraphData( List<PolyValue> polyValues, StreamIndex index, StreamingStrategy streamingStrategy, int statementId ) {
-        PolyType elementType = polyValues.get( 0 ).getType();
-        switch ( elementType ) {
-            case NODE -> {
-                return PolyValueSerializer.buildProtoNode( (PolyNode) (polyValues.get( 0 )), index, streamingStrategy, statementId );
-            }
-            case EDGE -> {
-                return PolyValueSerializer.buildProtoEdge( (PolyEdge) (polyValues.get( 0 )), index, streamingStrategy, statementId );
-            }
-            default -> throw new RuntimeException( "Should never be thrown!" );
-        }
-    }
-
-
-    private Estimate estimateGraphSize( List<PolyValue> polyValues ) {
-        PolyType elementType = polyValues.get( 0 ).getType();
-        switch ( elementType ) {
-            case NODE -> {
-                return SerializationHeuristic.estimateSizeProtoNode( (PolyNode) (polyValues.get( 0 )) );
-            }
-            case EDGE -> {
-                return SerializationHeuristic.estimateSizeProtoEdge( (PolyEdge) (polyValues.get( 0 )) );
-            }
-            default -> throw new RuntimeException( "Should never be thrown!" );
-        }
-    }
-
-
     public Frame processRelationalResult( List<ColumnMeta> columnMetas, ResultIterator iterator, int fetchSize ) {
         RelationalFrame.Builder relationalFrameBuilder = RelationalFrame.newBuilder().addAllColumnMeta( columnMetas );
 
@@ -212,6 +158,25 @@ public class StreamingFramework {
                 ( frameBuilder, results ) -> frameBuilder.setDocumentFrame(
                         documentFrameBuilder.addAllDocuments( results ).build()
                 )
+        );
+    }
+
+
+    public Frame processGraphResult( ResultIterator iterator, int fetchSize ) {
+        GraphFrame.Builder graphFrameBuilder = GraphFrame.newBuilder();
+
+        return processResult(
+                iterator,
+                fetchSize,
+                Frame.newBuilder(),
+                result -> SerializationHeuristic.estimateSizeGraph( result.get( 0 ) ),
+                ( result, index, streamingStrategy, statementId ) -> PolyValueSerializer.buildProtoGraph( result.get( 0 ), index, streamingStrategy, statementId ),
+                ( frameBuilder, results ) -> {
+                    results.forEach( graphFrameBuilder::addAllElement );
+                    frameBuilder.setGraphFrame(
+                            graphFrameBuilder.build()
+                    );
+                }
         );
     }
 
