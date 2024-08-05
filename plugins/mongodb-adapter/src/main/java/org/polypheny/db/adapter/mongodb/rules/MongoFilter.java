@@ -117,7 +117,6 @@ public class MongoFilter extends Filter implements MongoAlg {
         private final BsonDocument preProjections = new BsonDocument();
         private final Implementor implementor;
         private Map<String, List<BsonValue>> map = new HashMap<>();
-        private boolean inExpr;
         private RexNode tempElem = null;
 
         private String modifier = null;
@@ -268,27 +267,6 @@ public class MongoFilter extends Filter implements MongoAlg {
         }
 
 
-        /**
-         * Returns whether {@code v0} is a stronger value for operator {@code key} than {@code v1}.
-         * <p>
-         * For example, {@code stronger("$lt", 100, 200)} returns true, because "&lt; 100" is a more powerful condition than "&lt; 200".
-         */
-        private boolean stronger( String key, Object v0, Object v1 ) {
-            if ( key.equals( "$lt" ) || key.equals( "$lte" ) ) {
-                if ( v0 instanceof Number && v1 instanceof Number ) {
-                    return ((Number) v0).doubleValue() < ((Number) v1).doubleValue();
-                }
-                if ( v0 instanceof String && v1 instanceof String ) {
-                    return v0.toString().compareTo( v1.toString() ) < 0;
-                }
-            }
-            if ( key.equals( "$gt" ) || key.equals( "$gte" ) ) {
-                return stronger( "$lt", v1, v0 );
-            }
-            return false;
-        }
-
-
         private void translateMatch2( RexNode node ) {
             switch ( node.getKind() ) {
                 case EQUALS:
@@ -403,13 +381,6 @@ public class MongoFilter extends Filter implements MongoAlg {
 
             this.modifier = null;
 
-            /*shallowCopy.put( "$not", new BsonArray(
-                    List.of( new BsonDocument(
-                            this.map.entrySet().stream().map( e -> new BsonElement( e.getKey(), new BsonArray( e.getValue() ) ) )
-                                    .toList() ) ) ) );*/
-            //mergeMaps( this.map, shallowCopy, "$not" );
-            //this.map = shallowCopy;
-
         }
 
 
@@ -440,21 +411,20 @@ public class MongoFilter extends Filter implements MongoAlg {
                 List<BsonValue> ors = new ArrayList<>();
 
                 for ( Entry<String, List<BsonValue>> entry : newValueMap.entrySet() ) {
-                    if ( entry.getKey().equals( "$or" ) ) {
-                        ors.addAll( entry.getValue() );
-                    } else if ( entry.getKey().equals( "$and" ) ) {
-                        ors.add( new BsonDocument( "$and", new BsonArray( entry.getValue() ) ) );
-                    } else if ( entry.getKey().equals( "$not" ) ) {
-                        ors.add( new BsonDocument( entry.getKey(), new BsonArray( entry.getValue() ) ) );
-                    } else {
-                        List<BsonValue> ands = new ArrayList<>();
-                        for ( BsonValue value : entry.getValue() ) {
-                            ands.add( new BsonDocument( entry.getKey(), value ) );
-                        }
-                        if ( ands.size() == 1 ) {
-                            ors.add( ands.get( 0 ) );
-                        } else {
-                            ors.add( new BsonDocument( "$and", new BsonArray( ands ) ) );
+                    switch ( entry.getKey() ) {
+                        case "$or" -> ors.addAll( entry.getValue() );
+                        case "$and" -> ors.add( new BsonDocument( "$and", new BsonArray( entry.getValue() ) ) );
+                        case "$not" -> ors.add( new BsonDocument( entry.getKey(), new BsonArray( entry.getValue() ) ) );
+                        default -> {
+                            List<BsonValue> ands = new ArrayList<>();
+                            for ( BsonValue value : entry.getValue() ) {
+                                ands.add( new BsonDocument( entry.getKey(), value ) );
+                            }
+                            if ( ands.size() == 1 ) {
+                                ors.add( ands.get( 0 ) );
+                            } else {
+                                ors.add( new BsonDocument( "$and", new BsonArray( ands ) ) );
+                            }
                         }
                     }
                 }
@@ -855,9 +825,7 @@ public class MongoFilter extends Filter implements MongoAlg {
                 return false;
             }
 
-            this.inExpr = true;
             attachCondition( null, "$expr", new BsonDocument( Objects.requireNonNullElse( op, "$eq" ), new BsonArray( Arrays.asList( l, r ) ) ) );
-            this.inExpr = false;
             return true;
 
         }
@@ -1008,20 +976,14 @@ public class MongoFilter extends Filter implements MongoAlg {
          * @return The operation translated
          */
         private String getOp( Operator op ) {
-            switch ( op.getKind() ) {
-                case PLUS:
-                    return "$add";
-                case MINUS:
-                    return "$substr";
-                case TIMES:
-                    return "$multiply";
-                case DIVIDE:
-                    return "$divide";
-                case ARRAY_VALUE_CONSTRUCTOR:
-                    return "$eq";
-                default:
-                    throw new GenericRuntimeException( "Sql operation is not supported" );
-            }
+            return switch ( op.getKind() ) {
+                case PLUS -> "$add";
+                case MINUS -> "$substr";
+                case TIMES -> "$multiply";
+                case DIVIDE -> "$divide";
+                case ARRAY_VALUE_CONSTRUCTOR -> "$eq";
+                default -> throw new GenericRuntimeException( "Sql operation is not supported" );
+            };
         }
 
 
@@ -1164,59 +1126,9 @@ public class MongoFilter extends Filter implements MongoAlg {
             if ( item == null ) {
                 return false;
             }
-            /*if ( !left.getOperands().get( 0 ).isA( Kind.INPUT_REF ) || left.operands.size() != 2 ) {
-                return false;
-            }*/
-            /*if ( left.operands.get( 1 ) instanceof RexDynamicParam || left.operands.get( 1 ) instanceof RexCall ) {
-                if ( left.operands.get( 1 ) instanceof RexCall && left.operands.get( 1 ).isA( Kind.ARRAY_VALUE_CONSTRUCTOR ) &&
-                        ((RexCall) left.operands.get( 1 )).operands.size() == 0 && this.tempElem != null ) {
-                    String mergedName = handleElemMatch( left );
 
-                    attachCondition( op, mergedName, item );
-                    return true;
-                }
-
-                attachCondition( op, MongoRules.translateDocValueAsKey( rowType, left ), item );
-                return true;
-            }*/
             attachCondition( op, MongoRules.translateDocValueAsKey( rowType, left ), item );
             return true;
-            /*if ( !(left.operands.get( 1 ) instanceof RexCall) || !left.getOperands().get( 1 ).isA( Kind.ARRAY_VALUE_CONSTRUCTOR ) ) {
-                return false;
-            }
-
-            RexInputRef parent = (RexInputRef) left.getOperands().get( 0 );
-            RexCall names = (RexCall) left.operands.get( 1 );
-            if ( names.isA( Kind.ARRAY_VALUE_CONSTRUCTOR ) && names.operands.size() == 0 && this.tempElem != null ) {
-                names = (RexCall) ((RexCall) this.tempElem).operands.get( 1 );
-            }
-
-            String mergedName = rowType.getFieldNames().get( parent.getIndex() );
-
-            if ( names.operands.size() > 0 ) {
-                mergedName += "." + names.operands
-                        .stream()
-                        .map( name -> ((RexLiteral) name).getValue( String.class ) )
-                        .collect( Collectors.joining( "." ) );
-            }
-
-            attachCondition( op, mergedName, item );
-            return true;*/
-        }
-
-
-        private String handleElemMatch( RexNameRef left ) {
-            RexCall names = (RexCall) ((RexCall) this.tempElem).operands.get( 1 );
-            //RexIndexRef parent = (RexIndexRef) left.getOperands().get( 0 );
-            String mergedName = left.name;
-
-            if ( !names.operands.isEmpty() ) {
-                mergedName += "." + names.operands
-                        .stream()
-                        .map( name -> ((RexLiteral) name).value.asString().value )
-                        .collect( Collectors.joining( "." ) );
-            }
-            return mergedName;
         }
 
 
