@@ -18,6 +18,7 @@ package org.polypheny.db.type.entity.graph;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map.Entry;
 import lombok.Getter;
@@ -62,7 +63,7 @@ public abstract class GraphPropertyHolder extends GraphObject {
 
 
     public boolean matchesLabels( PolyList<PolyString> labels ) {
-        return this.labels.equals( labels );
+        return new HashSet<>( this.labels ).containsAll( labels );
     }
 
 
