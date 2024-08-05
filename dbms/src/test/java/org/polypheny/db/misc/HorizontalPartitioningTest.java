@@ -47,7 +47,6 @@ import org.polypheny.db.cypher.CypherTestTemplate;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
-import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.partition.properties.TemperaturePartitionProperty;
 import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
 import org.polypheny.jdbc.PrismInterfaceServiceException;
@@ -696,13 +695,13 @@ public class HorizontalPartitioningTest {
                 try {
                     LogicalTable table = Catalog.snapshot().rel().getTables( null, new Pattern( "temperaturetest" ) ).get( 0 );
 
-                    PartitionProperty partitionProperty = Catalog.snapshot().alloc().getPartitionProperty( table.id ).orElseThrow();
+                    TemperaturePartitionProperty partitionProperty = (TemperaturePartitionProperty) Catalog.snapshot().alloc().getPartitionProperty( table.id ).orElseThrow();
 
                     // Check if partition properties are correctly set and parsed
-                    assertEquals( 600, ((TemperaturePartitionProperty) partitionProperty).getFrequencyInterval() );
-                    assertEquals( 12, ((TemperaturePartitionProperty) partitionProperty).getHotAccessPercentageIn() );
-                    assertEquals( 14, ((TemperaturePartitionProperty) partitionProperty).getHotAccessPercentageOut() );
-                    assertEquals( PartitionType.HASH, ((TemperaturePartitionProperty) partitionProperty).getInternalPartitionFunction() );
+                    assertEquals( 600, partitionProperty.getFrequencyInterval() );
+                    assertEquals( 12, partitionProperty.getHotAccessPercentageIn() );
+                    assertEquals( 14, partitionProperty.getHotAccessPercentageOut() );
+                    assertEquals( PartitionType.HASH, partitionProperty.getInternalPartitionFunction() );
 
                     assertEquals( 2, partitionProperty.getPartitionGroupIds().size() );
                     assertEquals( 20, partitionProperty.getPartitionIds().size() );
@@ -712,9 +711,9 @@ public class HorizontalPartitioningTest {
 
                     // Retrieve partition distribution
                     // Get percentage of tables which can remain in HOT
-                    long numberOfPartitionsInHot = ((long) partitionProperty.partitionIds.size() * ((TemperaturePartitionProperty) partitionProperty).getHotAccessPercentageIn()) / 100;
+                    long numberOfPartitionsInHot = ((long) partitionProperty.partitionIds.size() * partitionProperty.getHotAccessPercentageIn()) / 100;
                     //These are the tables than can remain in HOT
-                    long allowedTablesInHot = ((long) partitionProperty.partitionIds.size() * ((TemperaturePartitionProperty) partitionProperty).getHotAccessPercentageOut()) / 100;
+                    long allowedTablesInHot = ((long) partitionProperty.partitionIds.size() * partitionProperty.getHotAccessPercentageOut()) / 100;
                     if ( numberOfPartitionsInHot == 0 ) {
                         numberOfPartitionsInHot = 1;
                     }
@@ -723,8 +722,8 @@ public class HorizontalPartitioningTest {
                     }
                     long numberOfPartitionsInCold = partitionProperty.partitionIds.size() - numberOfPartitionsInHot;
 
-                    List<AllocationPartition> hotPartitions = Catalog.snapshot().alloc().getPartitionsFromGroup( ((TemperaturePartitionProperty) partitionProperty).getHotPartitionGroupId() );
-                    List<AllocationPartition> coldPartitions = Catalog.snapshot().alloc().getPartitionsFromGroup( ((TemperaturePartitionProperty) partitionProperty).getColdPartitionGroupId() );
+                    List<AllocationPartition> hotPartitions = Catalog.snapshot().alloc().getPartitionsFromGroup( partitionProperty.getHotPartitionGroupId() );
+                    List<AllocationPartition> coldPartitions = Catalog.snapshot().alloc().getPartitionsFromGroup( partitionProperty.getColdPartitionGroupId() );
 
                     assertTrue( (numberOfPartitionsInHot == hotPartitions.size()) || (numberOfPartitionsInHot == allowedTablesInHot) );
 
@@ -754,14 +753,14 @@ public class HorizontalPartitioningTest {
                     // Verify that the partition is now in HOT and was not before
                     LogicalTable updatedTable = Catalog.snapshot().rel().getTables( null, new Pattern( "temperaturetest" ) ).get( 0 );
 
-                    PartitionProperty updatedProperty = Catalog.snapshot().alloc().getPartitionProperty( updatedTable.id ).orElseThrow();
+                    TemperaturePartitionProperty updatedProperty = (TemperaturePartitionProperty) Catalog.snapshot().alloc().getPartitionProperty( updatedTable.id ).orElseThrow();
 
                     // Manually get the target partitionID of query
                     PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
                     PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( partitionProperty.partitionType );
                     long targetId = partitionManager.getTargetPartitionId( table, partitionProperty, partitionValue );
 
-                    List<AllocationPartition> hotPartitionsAfterChange = Catalog.snapshot().alloc().getPartitionsFromGroup( ((TemperaturePartitionProperty) updatedProperty).getHotPartitionGroupId() );
+                    List<AllocationPartition> hotPartitionsAfterChange = Catalog.snapshot().alloc().getPartitionsFromGroup( updatedProperty.getHotPartitionGroupId() );
                     assertTrue( hotPartitionsAfterChange.stream().map( p -> p.id ).toList().contains( targetId ) );
 
                     //Todo @Hennlo check number of access

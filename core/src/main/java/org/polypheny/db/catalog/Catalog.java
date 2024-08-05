@@ -132,7 +132,7 @@ public abstract class Catalog implements ExtensionPoint {
 
     public abstract AllocationGraphCatalog getAllocGraph( long namespaceId );
 
-    public abstract <S extends AdapterCatalog> Optional<S> getAdapterCatalog( long id );
+    public abstract Optional<AdapterCatalog> getAdapterCatalog( long id );
 
     public abstract void addStoreSnapshot( AdapterCatalog snapshot );
 

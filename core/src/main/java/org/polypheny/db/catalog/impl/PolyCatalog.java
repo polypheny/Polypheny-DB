@@ -147,7 +147,6 @@ public class PolyCatalog extends Catalog implements PolySerializable {
                 Map.of(),
                 Map.of(),
                 IdBuilder.getInstance() );
-
     }
 
 
@@ -342,8 +341,8 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
 
     @Override
-    public <S extends AdapterCatalog> Optional<S> getAdapterCatalog( long id ) {
-        return Optional.ofNullable( (S) adapterCatalogs.get( id ) );
+    public Optional<AdapterCatalog> getAdapterCatalog( long id ) {
+        return Optional.ofNullable( adapterCatalogs.get( id ) );
     }
 
 
@@ -426,6 +425,8 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
     @Override
     public void dropAdapter( long id ) {
+        adapterCatalogs.remove( id );
+        adapterRestore.remove( id );
         adapters.remove( id );
         change();
     }

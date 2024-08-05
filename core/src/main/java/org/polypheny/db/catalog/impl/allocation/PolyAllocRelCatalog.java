@@ -20,12 +20,10 @@ import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.beans.PropertyChangeSupport;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nullable;
-import lombok.Getter;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
@@ -48,50 +46,36 @@ import org.polypheny.db.util.Pair;
 @Value
 public class PolyAllocRelCatalog implements AllocationRelationalCatalog, PolySerializable {
 
+    public BinarySerializer<PolyAllocRelCatalog> serializer = PolySerializable.buildSerializer( PolyAllocRelCatalog.class );
 
     IdBuilder idBuilder = IdBuilder.getInstance();
 
-    @Getter
     @Serialize
     public LogicalNamespace namespace;
 
-    @Getter
-    public BinarySerializer<PolyAllocRelCatalog> serializer = PolySerializable.buildSerializer( PolyAllocRelCatalog.class );
-
     @Serialize
-    @Getter
     public ConcurrentHashMap<Long, AllocationTable> tables;
 
     @Serialize
-    @Getter
     public ConcurrentHashMap<Pair<Long, Long>, AllocationColumn> columns; //placementId, columnId
 
     @Serialize
-    @Getter
     public ConcurrentHashMap<Long, PartitionProperty> properties;
 
     @Serialize
-    @Getter
     public ConcurrentHashMap<Long, AllocationPartitionGroup> partitionGroups;
 
     @Serialize
-    @Getter
     public ConcurrentHashMap<Long, AllocationPartition> partitions;
 
     @Serialize
-    @Getter
     public ConcurrentHashMap<Long, AllocationPlacement> placements;
+
+    PropertyChangeSupport listeners = new PropertyChangeSupport( this );
 
 
     public PolyAllocRelCatalog( LogicalNamespace namespace ) {
-        this(
-                namespace,
-                new HashMap<>(),
-                new HashMap<>(),
-                new HashMap<>(),
-                new HashMap<>(),
-                new HashMap<>(),
-                new HashMap<>() );
+        this( namespace, Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of() );
     }
 
 
@@ -112,9 +96,6 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, PolySer
         this.placements = new ConcurrentHashMap<>( placements );
         listeners.addPropertyChangeListener( Catalog.getInstance().getChangeListener() );
     }
-
-
-    PropertyChangeSupport listeners = new PropertyChangeSupport( this );
 
 
     public void change() {
@@ -225,7 +206,6 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, PolySer
     }
 
 
-
     @Override
     public void updatePartition( long partitionId, Long partitionGroupId ) {
 
@@ -247,6 +227,7 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, PolySer
         tables.remove( allocId );
         change();
     }
+
 
     @Override
     public AllocationPlacement addPlacement( long logicalEntityId, long namespaceId, long adapterId ) {

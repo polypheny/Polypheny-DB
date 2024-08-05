@@ -17,7 +17,6 @@
 package org.polypheny.db.prisminterface.utils;
 
 import java.util.List;
-import java.util.stream.Collectors;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.prisminterface.statements.PIPreparedStatement;
 import org.polypheny.db.prisminterface.statements.PIStatement;
@@ -82,7 +81,7 @@ public class PrismUtils {
 
 
     public static List<Row> serializeToRows( List<List<PolyValue>> rows ) {
-        return rows.stream().map( PrismUtils::serializeToRow ).collect( Collectors.toList() );
+        return rows.stream().map( PrismUtils::serializeToRow ).toList();
     }
 
 

@@ -19,7 +19,6 @@ package org.polypheny.db.prisminterface.utils;
 import com.google.protobuf.ByteString;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
@@ -60,12 +59,12 @@ public class PolyValueSerializer {
 
 
     public static List<ProtoValue> serializeList( List<PolyValue> valuesList ) {
-        return valuesList.stream().map( PolyValueSerializer::serialize ).collect( Collectors.toList() );
+        return valuesList.stream().map( PolyValueSerializer::serialize ).toList();
     }
 
 
     public static List<ProtoEntry> serializeToProtoEntryList( PolyMap<PolyValue, PolyValue> polyMap ) {
-        return polyMap.entrySet().stream().map( PolyValueSerializer::serializeToProtoEntry ).collect( Collectors.toList() );
+        return polyMap.entrySet().stream().map( PolyValueSerializer::serializeToProtoEntry ).toList();
     }
 
 

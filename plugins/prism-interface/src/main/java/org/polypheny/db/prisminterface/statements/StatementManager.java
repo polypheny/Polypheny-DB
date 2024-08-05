@@ -87,7 +87,7 @@ public class StatementManager {
     public PIUnparameterizedStatementBatch createUnparameterizedStatementBatch( List<ExecuteUnparameterizedStatementRequest> statements ) {
         List<PIUnparameterizedStatement> PIUnparameterizedStatements = statements.stream()
                 .map( this::createUnparameterizedStatement )
-                .collect( Collectors.toList() );
+                .toList();
         final int batchId = statementIdGenerator.getAndIncrement();
         final PIUnparameterizedStatementBatch batch = new PIUnparameterizedStatementBatch( batchId, client, PIUnparameterizedStatements );
         openUnparameterizedBatches.put( batchId, batch );

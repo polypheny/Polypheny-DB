@@ -60,7 +60,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import javax.annotation.Nonnull;
 import lombok.Getter;
@@ -1264,7 +1263,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                                         pair.left,
                                         ensureSqlType(
                                                 pair.left.getType(),
-                                                bb.convertExpression( pair.right ) ) ) ).collect( Collectors.toList() ) );
+                                                bb.convertExpression( pair.right ) ) ) ).toList() );
             }
             comparisons.add( rexComparison );
         }
@@ -4472,7 +4471,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                                                 lookupOrCreateGroupExpr( fieldCollation.left ),
                                                 fieldCollation.getDirection(),
                                                 fieldCollation.getNullDirection() ) )
-                                .collect( Collectors.toList() ) );
+                                .toList() );
             }
 
             final AggregateCall aggCall =

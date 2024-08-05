@@ -20,7 +20,6 @@ import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.annotations.SerializeNullable;
 import java.io.Serial;
-import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.Value;
 import lombok.experimental.NonFinal;
@@ -33,12 +32,8 @@ import org.polypheny.db.catalog.entity.PolyObject;
 import org.polypheny.db.catalog.logistic.Collation;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.entity.PolyString;
-import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.type.entity.numerical.PolyInteger;
 
 
-@EqualsAndHashCode()
 @Value
 @SuperBuilder(toBuilder = true)
 @NonFinal
@@ -162,37 +157,12 @@ public class LogicalColumn implements PolyObject, Comparable<LogicalColumn> {
 
 
     @Override
-    public PolyValue[] getParameterArray() {
-        return new PolyValue[]{
-                PolyString.of( Catalog.DATABASE_NAME ),
-                PolyString.of( getNamespaceName() ),
-                PolyString.of( getTableName() ),
-                PolyString.of( name ),
-                PolyInteger.of( type.getJdbcOrdinal() ),
-                PolyString.of( type.name() ),
-                PolyInteger.of( length ),
-                null,
-                PolyInteger.of( scale ),
-                null,
-                PolyInteger.of( nullable ? 1 : 0 ),
-                PolyString.of( "" ),
-                PolyString.of( defaultValue == null ? null : defaultValue.value.toJson() ),
-                null,
-                null,
-                null,
-                PolyInteger.of( position ),
-                PolyString.of( nullable ? "YES" : "NO" ),
-                PolyString.of( PolyObject.getEnumNameOrNull( collation ) ) };
-    }
-
-
-    @Override
     public int compareTo( LogicalColumn o ) {
-        int comp = (int) (this.namespaceId - o.namespaceId);
+        int comp = Long.compare( this.namespaceId, o.namespaceId );
         if ( comp == 0 ) {
-            comp = (int) (this.tableId - o.tableId);
+            comp = Long.compare( this.tableId, o.tableId );
             if ( comp == 0 ) {
-                return (int) (this.id - o.id);
+                return Long.compare( this.id, o.id );
             } else {
                 return comp;
             }
@@ -214,7 +184,7 @@ public class LogicalColumn implements PolyObject, Comparable<LogicalColumn> {
      * @param ordinalPosition position
      */
 
-    public record PrimitiveCatalogColumn(String tableCat, String tableSchem, String tableName, String columnName, int dataType, String typeName, Integer columnSize, Integer bufferLength, Integer decimalDigits, Integer numPrecRadix, int nullable, String remarks, String columnDef, Integer sqlDataType, Integer sqlDatetimeSub, Integer charOctetLength, int ordinalPosition, String isNullable, String collation) {
+    public record PrimitiveCatalogColumn( String tableCat, String tableSchem, String tableName, String columnName, int dataType, String typeName, Integer columnSize, Integer bufferLength, Integer decimalDigits, Integer numPrecRadix, int nullable, String remarks, String columnDef, Integer sqlDataType, Integer sqlDatetimeSub, Integer charOctetLength, int ordinalPosition, String isNullable, String collation ) {
 
     }
 

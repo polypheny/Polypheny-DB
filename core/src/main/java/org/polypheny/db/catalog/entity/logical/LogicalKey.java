@@ -20,23 +20,17 @@ import com.google.common.collect.ImmutableList;
 import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.annotations.SerializeClass;
 import java.io.Serial;
-import java.util.ArrayList;
 import java.util.List;
-import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.PolyObject;
 import org.polypheny.db.catalog.snapshot.Snapshot;
-import org.polypheny.db.type.entity.PolyString;
-import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.type.entity.numerical.PolyLong;
 
 
 @Value
 @NonFinal
-@EqualsAndHashCode
 @SerializeClass(subclasses = { LogicalGenericKey.class, LogicalPrimaryKey.class, LogicalForeignKey.class })
 public abstract class LogicalKey implements PolyObject, Comparable<LogicalKey> {
 
@@ -80,23 +74,13 @@ public abstract class LogicalKey implements PolyObject, Comparable<LogicalKey> {
 
     public List<String> getFieldNames() {
         Snapshot snapshot = Catalog.snapshot();
-        List<String> columnNames = new ArrayList<>();
-        for ( long columnId : fieldIds ) {
-            columnNames.add( snapshot.rel().getColumn( columnId ).orElseThrow().name );
-        }
-        return columnNames;
-    }
-
-
-    @Override
-    public PolyValue[] getParameterArray() {
-        return new PolyValue[]{ PolyLong.of( id ), PolyLong.of( entityId ), PolyString.of( getTableName() ), PolyLong.of( namespaceId ), PolyString.of( getSchemaName() ), null, null };
+        return fieldIds.stream().map( columnId -> snapshot.rel().getColumn( columnId ).orElseThrow().name ).toList();
     }
 
 
     @Override
     public int compareTo( @NotNull LogicalKey o ) {
-        return (int) (this.id - o.id);
+        return Long.compare( this.id, o.id );
     }
 
 

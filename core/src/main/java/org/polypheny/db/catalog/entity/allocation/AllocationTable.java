@@ -33,8 +33,6 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.logistic.DataModel;
-import org.polypheny.db.type.entity.PolyString;
-import org.polypheny.db.type.entity.PolyValue;
 
 @EqualsAndHashCode(callSuper = true)
 @Value
@@ -68,12 +66,6 @@ public class AllocationTable extends AllocationEntity {
 
 
     @Override
-    public PolyValue[] getParameterArray() {
-        return new PolyString[0];
-    }
-
-
-    @Override
     public Expression asExpression() {
         return Expressions.call( Catalog.CATALOG_EXPRESSION, "getAllocTable", Expressions.constant( id ) );
     }
@@ -85,7 +77,7 @@ public class AllocationTable extends AllocationEntity {
 
 
     public List<AllocationColumn> getColumns() {
-        return Catalog.snapshot().alloc().getColumns( placementId ).stream().sorted( Comparator.comparingLong( a -> a.position ) ).collect( Collectors.toList() );
+        return Catalog.snapshot().alloc().getColumns( placementId ).stream().sorted( Comparator.comparingLong( a -> a.position ) ).toList();
     }
 
 
@@ -95,7 +87,7 @@ public class AllocationTable extends AllocationEntity {
 
 
     public List<Long> getColumnIds() {
-        return getColumns().stream().map( c -> c.columnId ).collect( Collectors.toList() );
+        return getColumns().stream().map( c -> c.columnId ).toList();
     }
 
 

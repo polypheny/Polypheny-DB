@@ -28,9 +28,6 @@ public class IdBuilder {
     public AtomicLong snapshotId;
 
     @Serialize
-    public AtomicLong namespaceId;
-
-    @Serialize
     public AtomicLong entityId;
 
     @Serialize
@@ -99,14 +96,12 @@ public class IdBuilder {
                 new AtomicLong( 0 ),
                 new AtomicLong( 0 ),
                 new AtomicLong( 0 ),
-                new AtomicLong( 0 ),
                 new AtomicLong( 0 ) );
     }
 
 
     public IdBuilder(
             @Deserialize("snapshotId") AtomicLong snapshotId,
-            @Deserialize("namespaceId") AtomicLong namespaceId,
             @Deserialize("entityId") AtomicLong entityId,
             @Deserialize("fieldId") AtomicLong fieldId,
             @Deserialize("userId") AtomicLong userId,
@@ -122,7 +117,6 @@ public class IdBuilder {
             @Deserialize("partitionId") AtomicLong partitionId,
             @Deserialize("placementId") AtomicLong placementId ) {
         this.snapshotId = snapshotId;
-        this.namespaceId = namespaceId;
         this.entityId = entityId;
         this.fieldId = fieldId;
 
@@ -154,11 +148,6 @@ public class IdBuilder {
 
     public long getNewFieldId() {
         return fieldId.getAndIncrement();
-    }
-
-
-    public long getNewNamespaceId() {
-        return namespaceId.getAndIncrement();
     }
 
 
@@ -224,7 +213,6 @@ public class IdBuilder {
 
     public synchronized void restore( IdBuilder idBuilder ) {
         this.snapshotId.set( idBuilder.snapshotId.longValue() );
-        this.namespaceId.set( idBuilder.namespaceId.longValue() );
         this.entityId.set( idBuilder.entityId.longValue() );
         this.fieldId.set( idBuilder.fieldId.longValue() );
 

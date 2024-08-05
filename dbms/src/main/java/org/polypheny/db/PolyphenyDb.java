@@ -57,7 +57,6 @@ import org.polypheny.db.ddl.DdlManagerImpl;
 import org.polypheny.db.ddl.DefaultInserter;
 import org.polypheny.db.docker.AutoDocker;
 import org.polypheny.db.docker.DockerManager;
-import org.polypheny.db.gui.GuiUtils;
 import org.polypheny.db.gui.SplashHelper;
 import org.polypheny.db.gui.TrayGui;
 import org.polypheny.db.iface.Authenticator;
@@ -173,11 +172,9 @@ public class PolyphenyDb {
             }
 
             polyphenyDb.runPolyphenyDb();
-        } catch (
-                ParseException e ) {
-            log.error( "Error parsing command line parameters: " + e.getMessage() );
-        } catch (
-                Throwable uncaught ) {
+        } catch ( ParseException e ) {
+            log.error( "Error parsing command line parameters: {}", e.getMessage() );
+        } catch ( Throwable uncaught ) {
             if ( log.isErrorEnabled() ) {
                 log.error( "Uncaught Throwable.", uncaught );
                 StatusNotificationService.printError(
@@ -200,11 +197,9 @@ public class PolyphenyDb {
         // Select behavior depending on arguments
         boolean showSplashScreen;
         boolean trayMenu;
-        boolean openUiInBrowser;
         if ( daemonMode ) {
             showSplashScreen = false;
             trayMenu = false;
-            openUiInBrowser = false;
         } else if ( desktopMode ) {
             showSplashScreen = true;
             try {
@@ -212,11 +207,9 @@ public class PolyphenyDb {
             } catch ( Exception e ) {
                 trayMenu = false;
             }
-            openUiInBrowser = true;
         } else {
             showSplashScreen = false;
             trayMenu = false;
-            openUiInBrowser = false;
         }
 
         // Open splash screen
@@ -229,15 +222,6 @@ public class PolyphenyDb {
 
         initializeStatusNotificationService();
 
-        // Check if Polypheny is already running
-        if ( GuiUtils.checkPolyphenyAlreadyRunning() ) {
-            if ( openUiInBrowser ) {
-                GuiUtils.openUiInBrowser();
-            }
-            System.err.println( "There is already an instance of Polypheny running on this system." );
-            System.exit( 0 );
-        }
-
         // Restore content of Polypheny folder
         restoreHomeFolderIfNecessary( dirManager );
 
@@ -245,9 +229,11 @@ public class PolyphenyDb {
         if ( resetCatalog ) {
             if ( !PolyphenyHomeDirManager.getInstance().recursiveDeleteFolder( "data" ) ) {
                 log.error( "Unable to delete the data folder." );
+                System.exit( 1 );
             }
             if ( !PolyphenyHomeDirManager.getInstance().recursiveDeleteFolder( "monitoring" ) ) {
                 log.error( "Unable to delete the monitoring folder." );
+                System.exit( 1 );
             }
             ConfigManager.getInstance().resetDefaultConfiguration();
         }
@@ -283,56 +269,8 @@ public class PolyphenyDb {
             uuid += "-polypheny-test";
         }
 
-        log.info( "Polypheny UUID: " + uuid );
+        log.info( "Polypheny UUID: {}", uuid );
         RuntimeConfig.INSTANCE_UUID.setString( uuid );
-
-        class ShutdownHelper implements Runnable {
-
-            private final Serializable[] joinOnNotStartedLock = new Serializable[0];
-            private volatile boolean alreadyRunning = false;
-            private volatile boolean hasFinished = false;
-            private volatile Thread executor = null;
-
-
-            @Override
-            public void run() {
-                synchronized ( this ) {
-                    if ( alreadyRunning ) {
-                        return;
-                    } else {
-                        alreadyRunning = true;
-                        executor = Thread.currentThread();
-                    }
-                }
-                synchronized ( joinOnNotStartedLock ) {
-                    joinOnNotStartedLock.notifyAll();
-                }
-
-                synchronized ( this ) {
-                    hasFinished = true;
-                }
-            }
-
-
-            public boolean hasFinished() {
-                synchronized ( this ) {
-                    return hasFinished;
-                }
-            }
-
-
-            public void join( final long millis ) throws InterruptedException {
-                synchronized ( joinOnNotStartedLock ) {
-                    while ( !alreadyRunning ) {
-                        joinOnNotStartedLock.wait( 0 );
-                    }
-                }
-                if ( executor != null ) {
-                    executor.join( millis );
-                }
-            }
-
-        }
 
         final ShutdownHelper sh = new ShutdownHelper();
         // shutdownHookId = addShutdownHook( "Component Terminator", sh );
@@ -481,7 +419,7 @@ public class PolyphenyDb {
             } catch ( GenericRuntimeException e ) {
                 // AutoDocker does not work in Windows containers
                 if ( mode == RunMode.TEST && !System.getenv( "RUNNER_OS" ).equals( "Windows" ) ) {
-                    log.error( "Failed to connect to Docker instance: " + e.getMessage() );
+                    log.error( "Failed to connect to Docker instance: {}", e.getMessage() );
                     throw e;
                 }
             }
@@ -545,7 +483,7 @@ public class PolyphenyDb {
     }
 
 
-    private String generateOrLoadPolyphenyUUID() {
+    private static String generateOrLoadPolyphenyUUID() {
         Optional<File> uuidFile = PolyphenyHomeDirManager.getInstance().getGlobalFile( "uuid" );
         if ( uuidFile.isEmpty() ) {
             UUID id = UUID.randomUUID();
@@ -658,5 +596,53 @@ public class PolyphenyDb {
         DefaultInserter.restoreInterfacesIfNecessary();
     }
 
+
+    private static class ShutdownHelper implements Runnable {
+
+        private final Serializable[] joinOnNotStartedLock = new Serializable[0];
+        private volatile boolean alreadyRunning = false;
+        private volatile boolean hasFinished = false;
+        private volatile Thread executor = null;
+
+
+        @Override
+        public void run() {
+            synchronized ( this ) {
+                if ( alreadyRunning ) {
+                    return;
+                } else {
+                    alreadyRunning = true;
+                    executor = Thread.currentThread();
+                }
+            }
+            synchronized ( joinOnNotStartedLock ) {
+                joinOnNotStartedLock.notifyAll();
+            }
+
+            synchronized ( this ) {
+                hasFinished = true;
+            }
+        }
+
+
+        public boolean hasFinished() {
+            synchronized ( this ) {
+                return hasFinished;
+            }
+        }
+
+
+        public void join( final long millis ) throws InterruptedException {
+            synchronized ( joinOnNotStartedLock ) {
+                while ( !alreadyRunning ) {
+                    joinOnNotStartedLock.wait( 0 );
+                }
+            }
+            if ( executor != null ) {
+                executor.join( millis );
+            }
+        }
+
+    }
 
 }

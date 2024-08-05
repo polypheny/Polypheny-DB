@@ -26,7 +26,6 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.PolyObject;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
-import org.polypheny.db.type.entity.PolyValue;
 
 @EqualsAndHashCode(callSuper = true)
 @Value
@@ -43,12 +42,6 @@ public class LogicalCollection extends LogicalEntity implements PolyObject {
             @Deserialize("entityType") EntityType entityType,
             @Deserialize("modifiable") boolean modifiable ) {
         super( id, name, namespaceId, entityType, DataModel.DOCUMENT, modifiable );
-    }
-
-
-    @Override
-    public PolyValue[] getParameterArray() {
-        return new PolyValue[0];
     }
 
 

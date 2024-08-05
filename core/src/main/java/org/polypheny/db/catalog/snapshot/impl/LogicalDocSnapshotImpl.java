@@ -66,7 +66,7 @@ public class LogicalDocSnapshotImpl implements LogicalDocSnapshot {
 
         return collections.stream().filter( c -> namespaces.get( c.namespaceId ).caseSensitive
                 ? c.name.matches( namePattern.toRegex() )
-                : c.name.toLowerCase().matches( namePattern.toLowerCase().toRegex() ) ).collect( Collectors.toList() );
+                : c.name.toLowerCase().matches( namePattern.toLowerCase().toRegex() ) ).toList();
     }
 
 
@@ -80,7 +80,7 @@ public class LogicalDocSnapshotImpl implements LogicalDocSnapshot {
                     : n.name.toLowerCase().matches( namespacePattern.toLowerCase().toRegex() ) ).toList();
         }
 
-        return namespaces.stream().flatMap( n -> getCollections( n.id, namePattern ).stream() ).collect( Collectors.toList() );
+        return namespaces.stream().flatMap( n -> getCollections( n.id, namePattern ).stream() ).toList();
     }
 
 
@@ -92,7 +92,6 @@ public class LogicalDocSnapshotImpl implements LogicalDocSnapshot {
                 ? c.name.equals( name )
                 : c.name.equalsIgnoreCase( name ) ).findFirst();
     }
-
 
 
 }
