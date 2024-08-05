@@ -28,20 +28,14 @@ public class StringPIInputStream implements PIInputStream {
 
 
     @Override
-    public void appendFrame( StreamFrame frame ) {
-
+    public StreamAcknowledgement appendFrame( StreamFrame frame ) {
+        return StreamAcknowledgement.newBuilder().setCloseStream( false ).build();
     }
 
 
     @Override
     public boolean isClosed() {
         return false;
-    }
-
-
-    @Override
-    public StreamAcknowledgement requestStreamAcknowledgement() {
-        return null;
     }
 
 }

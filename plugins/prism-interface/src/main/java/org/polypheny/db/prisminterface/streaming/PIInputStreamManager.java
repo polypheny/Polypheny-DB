@@ -22,6 +22,7 @@ import java.util.Map;
 import org.polypheny.db.prisminterface.PIServiceException;
 import org.polypheny.prism.StreamAcknowledgement;
 import org.polypheny.prism.StreamFrame;
+import org.polypheny.prism.StreamFrame.DataCase;
 import org.polypheny.prism.StreamSendRequest;
 
 public class PIInputStreamManager {
@@ -29,31 +30,38 @@ public class PIInputStreamManager {
     private final Map<Long, PIInputStream> streams = new HashMap<>();
 
 
-    public StreamAcknowledgement appendOrRegister( StreamSendRequest request ) throws IOException {
+    public StreamAcknowledgement appendOrRegister( StreamSendRequest request ) throws IOException, InterruptedException {
+        System.out.print( "AoR" + request.getStreamId() );
         StreamFrame frame = request.getFrame();
-        PIInputStream stream = streams.get( request.getStreamId() );
+        PIInputStream stream = getOrCreateStream( request.getStreamId(), request.getFrame().getDataCase() );
+        return stream.appendFrame( frame );
+    }
+
+
+    public PIInputStream getOrCreateStream( long streamId, DataCase streamType ) {
+        PIInputStream stream = streams.get( streamId );
         if ( stream == null ) {
-            switch ( frame.getDataCase() ) {
+            switch ( streamType ) {
                 case STRING -> {
                     StringPIInputStream stringPIInputStream = new StringPIInputStream();
-                    streams.put( request.getStreamId(), stringPIInputStream );
+                    streams.put( streamId, stringPIInputStream );
                     stream = stringPIInputStream;
                 }
                 case BINARY -> {
                     BinaryPIInputStream binaryPIInputStream = new BinaryPIInputStream();
-                    streams.put( request.getStreamId(), binaryPIInputStream );
+                    streams.put( streamId, binaryPIInputStream );
                     stream = binaryPIInputStream;
                 }
-                default -> throw new PIServiceException( "Unknown stream frame type: " + frame.getDataCase() );
+                default -> throw new PIServiceException( "Unknown stream frame type: " + streamType );
             }
         }
-        stream.appendFrame( frame );
-        return stream.requestStreamAcknowledgement();
+        return stream;
     }
 
 
-    public BinaryPIInputStream getBinaryStream( long streamId ) {
-        PIInputStream stream = streams.get( streamId );
+    public BinaryPIInputStream getBinaryStreamOrRegister( long streamId, DataCase streamType ) {
+        System.out.print( "BoR" + streamId );
+        PIInputStream stream = getOrCreateStream( streamId, streamType );
         if ( !(stream instanceof BinaryPIInputStream) ) {
             throw new PIServiceException( "Stream " + streamId + " is not a binary stream" );
         }
@@ -61,7 +69,7 @@ public class PIInputStreamManager {
     }
 
 
-    public void removeAndCloseAll() {
+    public void removeAllAndClose() {
         streams.keySet().forEach( streams::remove );
     }
 

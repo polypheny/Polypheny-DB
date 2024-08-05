@@ -40,7 +40,6 @@ import org.polypheny.db.prisminterface.statements.PIPreparedNamedStatement;
 import org.polypheny.db.prisminterface.statements.PIStatement;
 import org.polypheny.db.prisminterface.statements.PIUnparameterizedStatement;
 import org.polypheny.db.prisminterface.statements.PIUnparameterizedStatementBatch;
-import org.polypheny.db.prisminterface.streaming.PIInputStreamManager;
 import org.polypheny.db.prisminterface.transport.Transport;
 import org.polypheny.db.prisminterface.utils.PrismUtils;
 import org.polypheny.db.prisminterface.utils.PrismValueDeserializer;
@@ -518,7 +517,7 @@ class PIService {
         PIStatement statement = client.getStatementManager().getStatement( request.getStatementId() );
         try {
             return responseObserver.makeResponse( statement.getInputStreamManager().appendOrRegister( request ) );
-        } catch ( IOException e ) {
+        } catch ( IOException | InterruptedException e ) {
             throw new GenericRuntimeException( e );
         }
     }

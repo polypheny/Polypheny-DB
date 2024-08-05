@@ -48,6 +48,7 @@ import org.polypheny.prism.ProtoBinary;
 import org.polypheny.prism.ProtoFile;
 import org.polypheny.prism.ProtoValue;
 import org.polypheny.prism.ProtoValue.ValueCase;
+import org.polypheny.prism.StreamFrame.DataCase;
 
 public class PrismValueDeserializer {
 
@@ -124,7 +125,7 @@ public class PrismValueDeserializer {
         if ( protoFile.hasBinary() ) {
             return PolyBlob.of( protoValue.getFile().getBinary().toByteArray() );
         }
-        return new PolyBlob( null, PIInputStreamManager.getBinaryStream( protoFile.getStreamId() ) );
+        return new PolyBlob( null, PIInputStreamManager.getBinaryStreamOrRegister( protoFile.getStreamId(), DataCase.BINARY ) );
 
     }
 
@@ -158,13 +159,14 @@ public class PrismValueDeserializer {
             // As poly binary's constructor uses avatica's byte string, we can't call it directly.
             return PolyBinary.of( protoBinary.getBinary().toByteArray() );
         }
+        // As a poly binary stores it's value as a byte array we know that the stream will fit into one as well.
+        byte[] data = null;
         try {
-            // As a poly binary stores it's value as a byte array we know that the stream will fit into one as well.
-            byte[] data = PIInputStreamManager.getBinaryStream( protoBinary.getStreamId() ).readAllBytes();
-            return PolyBinary.of( data );
+            data = PIInputStreamManager.getBinaryStreamOrRegister( protoBinary.getStreamId(), DataCase.BINARY ).readAllBytes();
         } catch ( IOException e ) {
-            throw new RuntimeException( "Failed to read binary from prism stream", e );
+            throw new RuntimeException( e );
         }
+        return PolyBinary.of( data );
     }
 
 

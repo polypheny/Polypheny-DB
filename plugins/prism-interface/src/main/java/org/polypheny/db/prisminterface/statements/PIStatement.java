@@ -69,7 +69,7 @@ public abstract class PIStatement {
             iterator.close();
             iterator = null;
             streamingFramework.reset();
-            inputStreamManager.removeAndCloseAll();
+            inputStreamManager.removeAllAndClose();
         } catch ( Exception e ) {
             throw new GenericRuntimeException( "Closing of open result iterator failed" );
         }

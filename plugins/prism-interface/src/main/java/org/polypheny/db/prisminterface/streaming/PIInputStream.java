@@ -23,10 +23,8 @@ public interface PIInputStream {
 
     void close();
 
-    void appendFrame( StreamFrame frame );
+    StreamAcknowledgement appendFrame( StreamFrame frame ) throws InterruptedException;
 
     boolean isClosed();
-
-    StreamAcknowledgement requestStreamAcknowledgement();
 
 }

@@ -1,106 +1,84 @@
-/*
- * Copyright 2019-2024 The Polypheny Project
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package org.polypheny.db.prisminterface.streaming;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+import lombok.SneakyThrows;
 import org.polypheny.prism.StreamAcknowledgement;
 import org.polypheny.prism.StreamFrame;
 
 public class BinaryPIInputStream extends InputStream implements PIInputStream {
 
-    private byte[] buffer = null;
+    private final Lock lock = new ReentrantLock();
+    private final Condition hasData = lock.newCondition();
+    private final Condition bufferEmpty = lock.newCondition();
+    private volatile byte[] buffer;
     private int currentBufferIndex = 0;
-    private boolean isClosed = false;
-    private final Object lock = new Object();
+    private volatile boolean isClosed = false;
+    private volatile boolean isLast = false;
 
-
+    @SneakyThrows
     @Override
     public int read() throws IOException {
-        synchronized ( lock ) {
-            while ( buffer == null && !isClosed ) {
-                try {
-                    lock.wait();
-                } catch ( InterruptedException e ) {
-                    Thread.currentThread().interrupt();
-                    throw new IOException( "Stream interrupted", e );
+        lock.lock();
+        try {
+            while (buffer == null) {
+                if (isLast) {
+                    System.out.println("EOS");
+                    return -1;
                 }
-            }
-            if ( buffer == null && isClosed ) {
-                return -1;
+                System.out.println("Wait on more data");
+                hasData.await();
             }
             int data = buffer[currentBufferIndex++] & 0xFF;
-            if ( currentBufferIndex >= buffer.length ) {
+            if (currentBufferIndex == buffer.length) {
                 buffer = null;
                 currentBufferIndex = 0;
-                lock.notifyAll();
+                bufferEmpty.signalAll();
+                System.out.println("Notify fetch");
             }
+            System.out.println("Read from binary PI stream");
             return data;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IOException("Thread interrupted during read", e);
+        } finally {
+            lock.unlock();
         }
     }
 
-
-    public void appendFrame( StreamFrame frame ) {
-        synchronized ( lock ) {
-            while ( buffer != null && !isClosed ) {
-                try {
-                    lock.wait();
-                } catch ( InterruptedException e ) {
-                    Thread.currentThread().interrupt();
-                }
+    public StreamAcknowledgement appendFrame(StreamFrame frame) throws InterruptedException {
+        lock.lock();
+        try {
+            while (buffer != null) {
+                bufferEmpty.await();
             }
-            if ( isClosed ) {
-                return;
-            }
-            buffer = frame.getBinary().toByteArray();
-            lock.notifyAll();
+            this.buffer = frame.getBinary().toByteArray();
+            this.isLast = frame.getIsLast();
+            System.out.println("Append binary PI stream");
+            hasData.signalAll();
+            System.out.println("Ack binary PI stream");
+            return StreamAcknowledgement.newBuilder().setCloseStream(isClosed).build();
+        } finally {
+            lock.unlock();
         }
     }
-
 
     @Override
     public boolean isClosed() {
         return isClosed;
     }
 
-
-    public StreamAcknowledgement requestStreamAcknowledgement() {
-        synchronized ( lock ) {
-            while ( buffer != null && !isClosed ) {
-                try {
-                    lock.wait();
-                } catch ( InterruptedException e ) {
-                    Thread.currentThread().interrupt();
-                }
-            }
-            lock.notifyAll();
-            return StreamAcknowledgement.newBuilder().setCloseStream( isClosed ).build();
-
-        }
-    }
-
-
     @Override
     public void close() {
-        synchronized ( lock ) {
-            isClosed = true;
-            buffer = null;
-            lock.notifyAll();
+        isClosed = true;
+        lock.lock();
+        try {
+            hasData.signalAll(); // Notify any waiting threads that the stream is closed
+        } finally {
+            lock.unlock();
         }
     }
-
 }
