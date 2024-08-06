@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.net.URL;
 import org.apache.calcite.linq4j.Enumerator;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.entity.PolyValue;
 
 public class JsonEnumerator implements Enumerator<PolyValue[]> {
@@ -78,7 +79,7 @@ public class JsonEnumerator implements Enumerator<PolyValue[]> {
             current = node == null ? null : new PolyValue[]{ converter.nodeToPolyDocument( node ) };
             return node != null;
         } catch ( IOException e ) {
-            throw new RuntimeException( "Error reading JSON: " + e.getMessage(), e );
+            throw new GenericRuntimeException( "Error reading JSON: " + e.getMessage(), e );
         }
     }
 
@@ -98,7 +99,7 @@ public class JsonEnumerator implements Enumerator<PolyValue[]> {
                 parser.close();
             }
         } catch ( IOException e ) {
-            throw new RuntimeException( "Failed to close JSON parser: " + e.getMessage(), e );
+            throw new GenericRuntimeException( "Failed to close JSON parser: " + e.getMessage(), e );
         }
     }
 

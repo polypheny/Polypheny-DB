@@ -47,6 +47,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
 import org.polypheny.db.catalog.entity.physical.PhysicalCollection;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.schema.Namespace;
@@ -103,7 +104,7 @@ public class JsonSource extends DataSource<DocAdapterCatalog> implements Documen
                 try {
                     return new File( files ).toURI().toURL();
                 } catch ( MalformedURLException e ) {
-                    throw new RuntimeException( e );
+                    throw new GenericRuntimeException( e );
                 }
             }
             case UPLOAD -> {
@@ -114,7 +115,7 @@ public class JsonSource extends DataSource<DocAdapterCatalog> implements Documen
                 try {
                     return new File( files ).toURI().toURL();
                 } catch ( MalformedURLException e ) {
-                    throw new RuntimeException( e );
+                    throw new GenericRuntimeException( e );
                 }
             }
             case URL -> {
@@ -122,10 +123,10 @@ public class JsonSource extends DataSource<DocAdapterCatalog> implements Documen
                 try {
                     return new URL( files );
                 } catch ( MalformedURLException e ) {
-                    throw new RuntimeException( e );
+                    throw new GenericRuntimeException( e );
                 }
             }
-            default -> throw new RuntimeException( "Unknown connection method " + connectionMethod );
+            default -> throw new GenericRuntimeException( "Unknown connection method " + connectionMethod );
         }
     }
 
@@ -153,7 +154,7 @@ public class JsonSource extends DataSource<DocAdapterCatalog> implements Documen
         try {
             return JsonMetaRetriever.getDocuments( jsonFiles );
         } catch ( IOException e ) {
-            throw new RuntimeException( "Failed to retrieve documents from json file." );
+            throw new GenericRuntimeException( "Failed to retrieve documents from json file." );
         }
     }
 
@@ -181,7 +182,7 @@ public class JsonSource extends DataSource<DocAdapterCatalog> implements Documen
                     .build();
             adapterCatalog.addPhysical( allocation, physicalCollection );
         } catch ( MalformedURLException | NoSuchFileException e ) {
-            throw new RuntimeException( e );
+            throw new GenericRuntimeException( e );
         }
     }
 
@@ -208,7 +209,7 @@ public class JsonSource extends DataSource<DocAdapterCatalog> implements Documen
             adapterCatalog.replacePhysical( physicalCollection );
             return List.of( physicalCollection );
         } catch ( MalformedURLException | NoSuchFileException e ) {
-            throw new RuntimeException( e );
+            throw new GenericRuntimeException( e );
         }
     }
 
