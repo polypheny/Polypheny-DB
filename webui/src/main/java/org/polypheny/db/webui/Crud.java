@@ -2176,8 +2176,8 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
 
     private static String handleUploadFiles( Map<String, InputStream> inputStreams, List<String> fileNames, AbstractAdapterSettingDirectory setting, AdapterModel a ) {
-        if (fileNames.isEmpty()) {
-            throw new RuntimeException("No file or directory specified for upload!");
+        if ( fileNames.isEmpty() ) {
+            throw new RuntimeException( "No file or directory specified for upload!" );
         }
         for ( String fileName : fileNames ) {
             setting.inputStreams.put( fileName, inputStreams.get( fileName ) );

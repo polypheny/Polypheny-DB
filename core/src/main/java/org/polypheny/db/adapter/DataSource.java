@@ -34,10 +34,11 @@ public abstract class DataSource<S extends AdapterCatalog> extends Adapter<S> im
     private final Set<DataModel> supportedDataModels;
     private final boolean dataReadOnly;
 
+
     protected DataSource( final long adapterId, final String uniqueName, final Map<String, String> settings, final DeployMode mode, boolean dataReadOnly, S catalog, List<DataModel> supportedModels ) {
         super( adapterId, uniqueName, settings, mode, catalog );
         this.dataReadOnly = dataReadOnly;
-        this.supportedDataModels = new HashSet<>(supportedModels);
+        this.supportedDataModels = new HashSet<>( supportedModels );
         informationPage.setLabel( "Sources" );
 
     }
@@ -63,26 +64,37 @@ public abstract class DataSource<S extends AdapterCatalog> extends Adapter<S> im
         return AdapterType.SOURCE;
     }
 
+
     public boolean supportsRelational() {
         return supportedDataModels.contains( DataModel.RELATIONAL );
     }
+
+
     public boolean supportsDocument() {
         return supportedDataModels.contains( DataModel.DOCUMENT );
     }
+
+
     public boolean supportsGraph() {
         return supportedDataModels.contains( DataModel.GRAPH );
     }
 
+
     public RelationalDataSource asRelationalDataSource() {
         // should be overridden by subclasses accordingly
-        throw new IllegalStateException("This source does not support the relational data model.");
+        throw new IllegalStateException( "This source does not support the relational data model." );
     }
+
+
     public DocumentDataSource asDocumentDataSource() {
         // should be overridden by subclasses accordingly
-        throw new IllegalStateException("This source does not support the document data model.");
+        throw new IllegalStateException( "This source does not support the document data model." );
     }
+
+
     public DocumentDataSource asGraphDataSource() {
         // should be overridden by subclasses accordingly
-        throw new IllegalStateException("This source does not support the graph data model.");
+        throw new IllegalStateException( "This source does not support the graph data model." );
     }
+
 }

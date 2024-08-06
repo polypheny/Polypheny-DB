@@ -47,7 +47,6 @@ import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
 import org.polypheny.db.catalog.entity.physical.PhysicalCollection;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.schema.Namespace;
@@ -95,7 +94,7 @@ public class JsonSource extends DataSource<DocAdapterCatalog> implements Documen
 
 
     private URL getJsonFilesUrl( final Map<String, String> settings ) {
-        switch(connectionMethod) {
+        switch ( connectionMethod ) {
             case LINK -> {
                 String files = settings.get( "directoryName" );
                 if ( files.startsWith( "classpath://" ) ) {
@@ -126,7 +125,7 @@ public class JsonSource extends DataSource<DocAdapterCatalog> implements Documen
                     throw new RuntimeException( e );
                 }
             }
-            default -> throw new RuntimeException("Unknown connection method " + connectionMethod );
+            default -> throw new RuntimeException( "Unknown connection method " + connectionMethod );
         }
     }
 
@@ -171,7 +170,7 @@ public class JsonSource extends DataSource<DocAdapterCatalog> implements Documen
         updateNamespace( collection.getNamespaceName(), collection.getNamespaceId() );
         try {
             PhysicalCollection physicalCollection = new JsonCollection.Builder()
-                    .url( JsonMetaRetriever.findDocumentUrl( jsonFiles, collection.getName() ))
+                    .url( JsonMetaRetriever.findDocumentUrl( jsonFiles, collection.getName() ) )
                     .collectionId( collection.getId() )
                     .allocationId( allocation.getId() )
                     .logicalId( collection.getLogicalId() )
@@ -197,7 +196,7 @@ public class JsonSource extends DataSource<DocAdapterCatalog> implements Documen
         );
         try {
             PhysicalCollection physicalCollection = new JsonCollection.Builder()
-                    .url( JsonMetaRetriever.findDocumentUrl( jsonFiles, collection.getName() ))
+                    .url( JsonMetaRetriever.findDocumentUrl( jsonFiles, collection.getName() ) )
                     .collectionId( collection.getId() )
                     .allocationId( allocation.getId() )
                     .logicalId( collection.getLogicalId() )
@@ -209,7 +208,7 @@ public class JsonSource extends DataSource<DocAdapterCatalog> implements Documen
             adapterCatalog.replacePhysical( physicalCollection );
             return List.of( physicalCollection );
         } catch ( MalformedURLException | NoSuchFileException e ) {
-            throw new RuntimeException( e);
+            throw new RuntimeException( e );
         }
     }
 

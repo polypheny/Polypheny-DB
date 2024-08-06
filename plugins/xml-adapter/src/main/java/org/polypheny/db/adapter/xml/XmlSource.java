@@ -23,7 +23,6 @@ import java.net.URL;
 import java.nio.file.NoSuchFileException;
 import java.util.List;
 import java.util.Map;
-import javax.xml.parsers.ParserConfigurationException;
 import lombok.experimental.Delegate;
 import org.pf4j.Extension;
 import org.polypheny.db.adapter.ConnectionMethod;
@@ -54,7 +53,6 @@ import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.transaction.PolyXid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.xml.sax.SAXException;
 
 @Extension
 @AdapterProperties(

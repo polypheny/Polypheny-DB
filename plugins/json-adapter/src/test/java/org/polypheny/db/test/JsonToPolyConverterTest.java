@@ -66,13 +66,12 @@ public class JsonToPolyConverterTest {
 
     @Test
     public void testLong() throws JsonProcessingException {
-        JsonNode node = getNodesFromJson("{\"integer\": 492943}");
-        PolyValue value = builder.nodeToPolyValue(node);
-        assertTrue(value.isMap());
+        JsonNode node = getNodesFromJson( "{\"integer\": 492943}" );
+        PolyValue value = builder.nodeToPolyValue( node );
+        assertTrue( value.isMap() );
         PolyMap<PolyValue, PolyValue> map = value.asMap();
-        assertEquals(492943, map.get (new PolyString("integer")).asLong().value);
+        assertEquals( 492943, map.get( new PolyString( "integer" ) ).asLong().value );
     }
-
 
 
     @Test
@@ -81,7 +80,7 @@ public class JsonToPolyConverterTest {
         PolyValue value = builder.nodeToPolyValue( node );
         assertTrue( value.isMap() );
         PolyMap<PolyValue, PolyValue> map = value.asMap();
-        assertEquals( -650825.13, map.get(new PolyString( "double" )).asDouble().value );
+        assertEquals( -650825.13, map.get( new PolyString( "double" ) ).asDouble().value );
     }
 
 
@@ -91,8 +90,9 @@ public class JsonToPolyConverterTest {
         PolyValue value = builder.nodeToPolyValue( node );
         assertTrue( value.isMap() );
         PolyMap<PolyValue, PolyValue> map = value.asMap();
-        assertEquals( true, map.get(new PolyString( "boolean" )).asBoolean().value );
+        assertEquals( true, map.get( new PolyString( "boolean" ) ).asBoolean().value );
     }
+
 
     @Test
     public void testBooleanFalse() throws JsonProcessingException {
@@ -100,8 +100,9 @@ public class JsonToPolyConverterTest {
         PolyValue value = builder.nodeToPolyValue( node );
         assertTrue( value.isMap() );
         PolyMap<PolyValue, PolyValue> map = value.asMap();
-        assertEquals( false, map.get(new PolyString( "boolean" )).asBoolean().value );
+        assertEquals( false, map.get( new PolyString( "boolean" ) ).asBoolean().value );
     }
+
 
     @Test
     public void testArray() throws JsonProcessingException {
@@ -109,13 +110,14 @@ public class JsonToPolyConverterTest {
         PolyValue value = builder.nodeToPolyValue( node );
         assertTrue( value.isMap() );
         PolyMap<PolyValue, PolyValue> map = value.asMap();
-        assertTrue(map.get(new PolyString( "integers" )).isList());
-        PolyList<PolyValue> list = map.get(new PolyString( "integers" )).asList();
-        assertEquals( 0, list.get(0).asLong().value );
-        assertEquals( 1, list.get(1).asLong().value );
-        assertEquals( 2, list.get(2).asLong().value );
-        assertEquals( 3, list.get(3).asLong().value );
+        assertTrue( map.get( new PolyString( "integers" ) ).isList() );
+        PolyList<PolyValue> list = map.get( new PolyString( "integers" ) ).asList();
+        assertEquals( 0, list.get( 0 ).asLong().value );
+        assertEquals( 1, list.get( 1 ).asLong().value );
+        assertEquals( 2, list.get( 2 ).asLong().value );
+        assertEquals( 3, list.get( 3 ).asLong().value );
     }
+
 
     @Test
     public void testNull() throws JsonProcessingException {
@@ -123,8 +125,9 @@ public class JsonToPolyConverterTest {
         PolyValue value = builder.nodeToPolyValue( node );
         assertTrue( value.isMap() );
         PolyMap<PolyValue, PolyValue> map = value.asMap();
-        assertTrue(map.get(new PolyString( "null" )).isNull());
+        assertTrue( map.get( new PolyString( "null" ) ).isNull() );
     }
+
 
     @Test
     public void testDocument() throws IOException {
@@ -146,8 +149,8 @@ public class JsonToPolyConverterTest {
                 + "}";
 
         JsonNode node = getNodesFromJson( json );
-        PolyValue value = builder.nodeToPolyDocument( node  );
-        assertTrue( value.isDocument());
+        PolyValue value = builder.nodeToPolyDocument( node );
+        assertTrue( value.isDocument() );
         PolyDocument doc = value.asDocument();
         assertEquals( "Hello, JSON!", doc.get( new PolyString( "string" ) ).asString().getValue() );
         assertEquals( 12345.678, doc.get( new PolyString( "number" ) ).asDouble().getValue() );
@@ -157,23 +160,22 @@ public class JsonToPolyConverterTest {
         // check nested object
         assertTrue( doc.get( new PolyString( "object" ) ).isMap() );
         PolyMap<PolyValue, PolyValue> nestedObject = doc.get( new PolyString( "object" ) ).asMap();
-        assertEquals( "Inside JSON", nestedObject.get(new PolyString( "nestedString" )).asString().getValue() );
-        assertEquals( 9876, nestedObject.get(new PolyString( "nestedNumber" )).asLong().getValue() );
+        assertEquals( "Inside JSON", nestedObject.get( new PolyString( "nestedString" ) ).asString().getValue() );
+        assertEquals( 9876, nestedObject.get( new PolyString( "nestedNumber" ) ).asLong().getValue() );
 
         // check array
         assertTrue( doc.get( new PolyString( "array" ) ).isList() );
         PolyList<PolyValue> list = doc.get( new PolyString( "array" ) ).asList();
-        assertTrue(list.get(0).isString());
-        assertTrue(list.get(1).isLong());
-        assertTrue(list.get(2).isBoolean());
-        assertTrue(list.get(3).isNull());
+        assertTrue( list.get( 0 ).isString() );
+        assertTrue( list.get( 1 ).isLong() );
+        assertTrue( list.get( 2 ).isBoolean() );
+        assertTrue( list.get( 3 ).isNull() );
 
-        assertEquals( "item1", list.get(0).asString().getValue() );
-        assertEquals( 234, list.get(1).asLong().getValue() );
-        assertEquals( false, list.get(2).asBoolean().getValue() );
-        assertEquals( new PolyNull(), list.get(3).asNull() );
+        assertEquals( "item1", list.get( 0 ).asString().getValue() );
+        assertEquals( 234, list.get( 1 ).asLong().getValue() );
+        assertEquals( false, list.get( 2 ).asBoolean().getValue() );
+        assertEquals( new PolyNull(), list.get( 3 ).asNull() );
     }
-
 
 
 }

@@ -40,6 +40,7 @@ import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 
 public class XmlScan extends DocumentScan<XmlCollection> implements EnumerableAlg {
+
     @Getter
     private final XmlCollection collection;
     private final int[] fields;
@@ -52,6 +53,7 @@ public class XmlScan extends DocumentScan<XmlCollection> implements EnumerableAl
 
         assert collection != null;
     }
+
 
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
@@ -81,6 +83,7 @@ public class XmlScan extends DocumentScan<XmlCollection> implements EnumerableAl
     public void register( @NotNull AlgPlanner planner ) {
         planner.addRule( XmlProjectScanRule.INSTANCE );
     }
+
 
     public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         // copied over from the csv project scan rule
