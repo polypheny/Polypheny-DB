@@ -39,9 +39,7 @@ import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DeployMode;
-import org.polypheny.db.adapter.DocumentDataSource;
 import org.polypheny.db.adapter.RelationalDataSource;
-import org.polypheny.db.adapter.RelationalDataSource.ExportedColumn;
 import org.polypheny.db.adapter.RelationalScanDelegate;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.annotations.AdapterSettingString;
@@ -86,7 +84,7 @@ public class Qfs extends DataSource<RelAdapterCatalog> implements RelationalData
 
 
     public Qfs( long adapterId, String uniqueName, Map<String, String> settings, DeployMode mode ) {
-        super( adapterId, uniqueName, settings, mode, true, new RelAdapterCatalog( adapterId ), List.of( DataModel.RELATIONAL) );
+        super( adapterId, uniqueName, settings, mode, true, new RelAdapterCatalog( adapterId ), List.of( DataModel.RELATIONAL ) );
         init( settings );
         registerInformationPage( uniqueName );
         this.delegate = new RelationalScanDelegate( this, adapterCatalog );
@@ -342,6 +340,7 @@ public class Qfs extends DataSource<RelAdapterCatalog> implements RelationalData
         }
         return table;
     }
+
 
     @Override
     public RelationalDataSource asRelationalDataSource() {

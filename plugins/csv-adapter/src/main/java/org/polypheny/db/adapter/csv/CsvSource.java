@@ -35,9 +35,7 @@ import org.pf4j.Extension;
 import org.polypheny.db.adapter.ConnectionMethod;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DeployMode;
-import org.polypheny.db.adapter.DocumentDataSource;
 import org.polypheny.db.adapter.RelationalDataSource;
-import org.polypheny.db.adapter.RelationalDataSource.ExportedColumn;
 import org.polypheny.db.adapter.RelationalScanDelegate;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.annotations.AdapterSettingDirectory;
@@ -375,10 +373,12 @@ public class CsvSource extends DataSource<RelAdapterCatalog> implements Relation
         adapterCatalog.fields.values().stream().filter( c -> c.id == id ).forEach( c -> updateNativePhysical( c.allocId ) );
     }
 
+
     @Override
     public RelationalDataSource asRelationalDataSource() {
         return this;
     }
+
 
     @SuppressWarnings("unused")
     private interface Excludes {

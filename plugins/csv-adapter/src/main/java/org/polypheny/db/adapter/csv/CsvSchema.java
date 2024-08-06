@@ -90,15 +90,15 @@ public class CsvSchema extends Namespace {
         List<Integer> fieldIds = new ArrayList<>();
 
         List<ExportedColumn> columns = csvSource.getExportedColumns().get( table.name );
-        if (columns == null) {
+        if ( columns == null ) {
             /*
             TODO:   The source determines table names by file name. The DdlManager enumerates duplicates like name0, name1 and so forth.
                     This remains unnoticed by the source. 'getExportedColumns' thus returns the columns under a wrong name. A way must be found to sync the of the logical in the
                     DdlManager with the name in the source. Currently we just fail the creation of sources with duplicate file names.
              */
 
-            String unenumeratedEntityName = table.name.replaceAll("\\d+$", "");
-            throw new RuntimeException("A logical relational entity with name '" + unenumeratedEntityName + "' already exists.");
+            String unenumeratedEntityName = table.name.replaceAll( "\\d+$", "" );
+            throw new RuntimeException( "A logical relational entity with name '" + unenumeratedEntityName + "' already exists." );
         }
         for ( PhysicalColumn column : table.getColumns() ) {
             AlgDataType sqlType = sqlType( typeFactory, column.type, column.length, column.scale, null );
@@ -122,13 +122,13 @@ public class CsvSchema extends Namespace {
 
     /**
      * Creates different subtype of table based on thString tableName = entry.getKey();
-            if ( catalog.getSnapshot().rel().getTable( namespace, tableName ).isPresent() ) {
-                int i = 0;
-                while ( catalog.getSnapshot().rel().getTable( namespace, tableName + i ).isPresent() ) {
-                    i++;
-                }
-                tableName += i;
-            }e "flavor" attribute.
+     * if ( catalog.getSnapshot().rel().getTable( namespace, tableName ).isPresent() ) {
+     * int i = 0;
+     * while ( catalog.getSnapshot().rel().getTable( namespace, tableName + i ).isPresent() ) {
+     * i++;
+     * }
+     * tableName += i;
+     * }e "flavor" attribute.
      */
     private CsvTable createTable( long id, Source source, PhysicalTable table, List<CsvFieldType> fieldTypes, int[] fields, CsvSource csvSource ) {
         return switch ( flavor ) {

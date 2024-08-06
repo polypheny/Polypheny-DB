@@ -134,13 +134,15 @@ public class AdapterManager {
         return getAdapter( id ).filter( a -> a instanceof DataStore<?> ).map( a -> (DataStore<?>) a );
     }
 
-    public boolean isStore(long id) {
+
+    public boolean isStore( long id ) {
         Optional<Adapter<?>> adapter = getAdapter( id );
-        if (adapter.isEmpty()) {
-            throw new NoSuchElementException("No adapter registered under id: " + id);
+        if ( adapter.isEmpty() ) {
+            throw new NoSuchElementException( "No adapter registered under id: " + id );
         }
         return adapter.get() instanceof DataStore<?>;
     }
+
 
     public ImmutableMap<String, DataStore<?>> getStores() {
         Map<String, DataStore<?>> map = new HashMap<>();

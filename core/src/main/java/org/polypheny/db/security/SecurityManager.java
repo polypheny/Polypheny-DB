@@ -16,9 +16,7 @@
 
 package org.polypheny.db.security;
 
-import java.net.URL;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
@@ -77,11 +75,11 @@ public class SecurityManager {
             dir = dir.getParent();
         }
         AuthStatus status = this.status.get( dir );
-        if (dir.startsWith("classpath:")) {
+        if ( dir.startsWith( "classpath:" ) ) {
             status.setStep( AuthStep.SUCCESSFUL );
             return true;
         }
-        if (status == null) {
+        if ( status == null ) {
             log.debug( "No auth status available for directory {}", dir );
             return false;
         }
@@ -93,13 +91,14 @@ public class SecurityManager {
                 // TODO: if more fine-grained access control is required, add as content of file
                 return false;
             }
-        } catch (Exception e) {
+        } catch ( Exception e ) {
             log.debug( "Filed to check for polypheny.access as the specified path is not a directory {}", dir );
             return false;
         }
         status.setStep( AuthStep.SUCCESSFUL );
         return true;
     }
+
 
     private enum AuthStep {
         INITIAL,

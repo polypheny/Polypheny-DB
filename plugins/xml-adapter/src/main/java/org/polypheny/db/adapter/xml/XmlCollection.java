@@ -18,7 +18,6 @@ package org.polypheny.db.adapter.xml;
 
 import java.net.URL;
 import java.util.concurrent.atomic.AtomicBoolean;
-import javax.xml.parsers.ParserConfigurationException;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
@@ -48,11 +47,13 @@ public class XmlCollection extends PhysicalCollection implements ScannableEntity
         this.adapter = builder.adapter;
     }
 
+
     @Override
     public Expression asExpression() {
         Expression argExp = Expressions.constant( this.id );
         return Expressions.convert_( Expressions.call( Expressions.call( this.adapter.asExpression(), "getAdapterCatalog" ), "getPhysical", argExp ), XmlCollection.class );
     }
+
 
     @Override
     public Enumerable<PolyValue[]> scan( DataContext dataContext ) {
@@ -66,9 +67,11 @@ public class XmlCollection extends PhysicalCollection implements ScannableEntity
         };
     }
 
+
     public AlgNode toAlg( AlgCluster cluster, AlgTraitSet traitSet ) {
         return new XmlScan( cluster, this, new int[]{ 0 } );
     }
+
 
     public Enumerable<PolyValue[]> project( final DataContext dataContext, final int[] fields ) {
         dataContext.getStatement().getTransaction().registerInvolvedAdapter( adapter );
@@ -79,6 +82,7 @@ public class XmlCollection extends PhysicalCollection implements ScannableEntity
             }
         };
     }
+
 
     public static class Builder {
 

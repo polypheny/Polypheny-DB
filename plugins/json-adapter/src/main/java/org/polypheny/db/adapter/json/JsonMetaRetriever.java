@@ -19,7 +19,6 @@ package org.polypheny.db.adapter.json;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.File;
 import java.io.IOException;
@@ -39,22 +38,22 @@ import org.polypheny.db.util.Sources;
 
 public class JsonMetaRetriever {
 
-    public static List<ExportedDocument> getDocuments(URL jsonFiles) throws IOException {
+    public static List<ExportedDocument> getDocuments( URL jsonFiles ) throws IOException {
         List<ExportedDocument> exportedDocuments = new LinkedList<>();
-        Set<String> fileNames = getFileNames(jsonFiles);
+        Set<String> fileNames = getFileNames( jsonFiles );
         ObjectMapper objectMapper = new ObjectMapper();
-        JsonFactory jsonFactory = new JsonFactory(objectMapper);
+        JsonFactory jsonFactory = new JsonFactory( objectMapper );
 
-        for (String fileName : fileNames) {
-            URL jsonFile = new URL(jsonFiles, fileName);
+        for ( String fileName : fileNames ) {
+            URL jsonFile = new URL( jsonFiles, fileName );
             try ( InputStream inputStream = jsonFile.openStream();
-                    JsonParser jsonParser = jsonFactory.createParser(inputStream)) {
-                String entityName = deriveEntityName(jsonFile.getFile());
+                    JsonParser jsonParser = jsonFactory.createParser( inputStream ) ) {
+                String entityName = deriveEntityName( jsonFile.getFile() );
                 JsonToken token = jsonParser.nextToken();
-                if (token == JsonToken.START_ARRAY || token == JsonToken.START_OBJECT) {
-                    exportedDocuments.add(new ExportedDocument(entityName, false, EntityType.SOURCE));
+                if ( token == JsonToken.START_ARRAY || token == JsonToken.START_OBJECT ) {
+                    exportedDocuments.add( new ExportedDocument( entityName, false, EntityType.SOURCE ) );
                 } else {
-                    throw new RuntimeException("JSON file does not contain a valid top-level structure (neither an object nor an array)");
+                    throw new RuntimeException( "JSON file does not contain a valid top-level structure (neither an object nor an array)" );
                 }
             }
         }
@@ -107,7 +106,7 @@ public class JsonMetaRetriever {
         }
         // url is web source
         String filePath = jsonFiles.getPath();
-        return Set.of(filePath.substring(filePath.lastIndexOf('/') + 1));
+        return Set.of( filePath.substring( filePath.lastIndexOf( '/' ) + 1 ) );
     }
 
 

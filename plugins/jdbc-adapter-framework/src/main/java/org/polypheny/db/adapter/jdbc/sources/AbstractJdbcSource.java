@@ -74,7 +74,7 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
             final String diverClass,
             final SqlDialect dialect,
             final boolean readOnly ) {
-        super( storeId, uniqueName, settings, mode, readOnly, new RelAdapterCatalog( storeId ), List.of( DataModel.RELATIONAL) );
+        super( storeId, uniqueName, settings, mode, readOnly, new RelAdapterCatalog( storeId ), List.of( DataModel.RELATIONAL ) );
         this.connectionFactory = createConnectionFactory( settings, dialect, diverClass );
         this.dialect = dialect;
         // Register the JDBC Pool Size as information in the information manager and enable it

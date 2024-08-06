@@ -27,13 +27,10 @@ import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.DataContext.Variable;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.enumerable.EnumerableConvention;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.catalogs.DocAdapterCatalog;
 import org.polypheny.db.catalog.entity.physical.PhysicalCollection;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.plan.Convention;
 import org.polypheny.db.schema.types.ScannableEntity;
 import org.polypheny.db.schema.types.TranslatableEntity;
 import org.polypheny.db.type.entity.PolyValue;
@@ -70,10 +67,11 @@ public class JsonCollection extends PhysicalCollection implements ScannableEntit
         };
     }
 
-    
+
     public AlgNode toAlg( AlgCluster cluster, AlgTraitSet traitSet ) {
         return new JsonScan( cluster, this, new int[]{ 0 } );
     }
+
 
     public Enumerable<PolyValue[]> project( final DataContext dataContext, final int[] fields ) {
         dataContext.getStatement().getTransaction().registerInvolvedAdapter( adapter );
