@@ -17,6 +17,8 @@
 package org.polypheny.db.prisminterface.utils;
 
 import java.io.IOException;
+import java.io.Reader;
+import java.io.StringReader;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -45,6 +47,7 @@ import org.polypheny.prism.IndexedParameters;
 import org.polypheny.prism.ProtoBigDecimal;
 import org.polypheny.prism.ProtoBinary;
 import org.polypheny.prism.ProtoFile;
+import org.polypheny.prism.ProtoString;
 import org.polypheny.prism.ProtoValue;
 import org.polypheny.prism.StreamFrame.DataCase;
 
@@ -94,7 +97,7 @@ public class PrismValueDeserializer {
             case DATE -> deserializeToPolyDate( protoValue );
             case TIME -> deserializeToPolyTime( protoValue );
             case TIMESTAMP -> deserializeToPolyTimestamp( protoValue );
-            case STRING -> deserializeToPolyString( protoValue );
+            case STRING -> deserializeToPolyString( protoValue, PIInputStreamManager );
             case BINARY -> deserializeToPolyBinary( protoValue, PIInputStreamManager );
             case NULL -> deserializeToPolyNull();
             case LIST -> deserializeToPolyList( protoValue, PIInputStreamManager );
@@ -121,8 +124,7 @@ public class PrismValueDeserializer {
         if ( protoFile.hasBinary() ) {
             return PolyBlob.of( protoValue.getFile().getBinary().toByteArray() );
         }
-        return new PolyBlob( null, PIInputStreamManager.getBinaryStreamOrRegister( protoFile.getStreamId(), DataCase.BINARY ) );
-
+        return new PolyBlob( null, PIInputStreamManager.getBinaryStreamOrRegister( protoFile.getStreamId()) );
     }
 
 
@@ -156,9 +158,9 @@ public class PrismValueDeserializer {
             return PolyBinary.of( protoBinary.getBinary().toByteArray() );
         }
         // As a poly binary stores it's value as a byte array we know that the stream will fit into one as well.
-        byte[] data = null;
+        byte[] data;
         try {
-            data = PIInputStreamManager.getBinaryStreamOrRegister( protoBinary.getStreamId(), DataCase.BINARY ).readAllBytes();
+            data = PIInputStreamManager.getBinaryStreamOrRegister( protoBinary.getStreamId()).readAllBytes();
         } catch ( IOException e ) {
             throw new RuntimeException( e );
         }
@@ -181,8 +183,25 @@ public class PrismValueDeserializer {
     }
 
 
-    private static PolyString deserializeToPolyString( ProtoValue protoValue ) {
-        return new PolyString( protoValue.getString().getString() );
+    private static PolyString deserializeToPolyString( ProtoValue protoValue, PIInputStreamManager piInputStreamManager ) {
+        ProtoString protoString = protoValue.getString();
+        if (protoString.hasString()) {
+            return new PolyString( protoValue.getString().getString() );
+        }
+        Reader reader = piInputStreamManager.getStringStreamOrRegister( protoString.getStreamId() );
+        StringBuilder stringBuilder = new StringBuilder();
+        char[] buffer = new char[1024];
+        int numCharsRead;
+        while ( true ) {
+            try {
+                if ( (numCharsRead = reader.read( buffer )) == -1 )
+                    break;
+            } catch ( IOException e ) {
+                throw new RuntimeException( e );
+            }
+            stringBuilder.append(buffer, 0, numCharsRead);
+        }
+        return new PolyString(stringBuilder.toString());
     }
 
 

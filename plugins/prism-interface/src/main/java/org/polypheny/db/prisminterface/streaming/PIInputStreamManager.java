@@ -62,12 +62,20 @@ public class PIInputStreamManager {
     }
 
 
-    public BinaryPIInputStream getBinaryStreamOrRegister( long streamId, DataCase streamType ) {
-        PIInputStream stream = getOrCreateStream( streamId, streamType );
+    public BinaryPIInputStream getBinaryStreamOrRegister( long streamId) {
+        PIInputStream stream = getOrCreateStream( streamId, DataCase.BINARY );
         if ( !(stream instanceof BinaryPIInputStream) ) {
             throw new PIServiceException( "Stream " + streamId + " is not a binary stream" );
         }
         return (BinaryPIInputStream) stream;
+    }
+
+    public StringPIInputStream getStringStreamOrRegister(long streamId) {
+        PIInputStream stream = getOrCreateStream( streamId, DataCase.STRING );
+        if (!(stream instanceof StringPIInputStream)) {
+            throw new PIServiceException( "Stream " + streamId + " is not a string stream" );
+        }
+        return (StringPIInputStream) stream;
     }
 
 

@@ -26,6 +26,7 @@ import org.polypheny.db.prisminterface.streaming.BinaryPIOutputStream;
 import org.polypheny.db.prisminterface.streaming.BlobPIOutputStream;
 import org.polypheny.db.prisminterface.streaming.StreamIndex;
 import org.polypheny.db.prisminterface.streaming.StreamingStrategy;
+import org.polypheny.db.prisminterface.streaming.StringPIOutputStream;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyInterval;
@@ -80,8 +81,6 @@ public class PolyValueSerializer {
     }
 
 
-
-
     public static ProtoValue serialize( PolyValue polyValue, StreamIndex streamIndex, StreamingStrategy streamingStrategy, int statementId ) {
         if ( polyValue == null || polyValue.isNull() ) {
             return serializeAsProtoNull();
@@ -97,7 +96,7 @@ public class PolyValueSerializer {
             case TIME -> serializeAsProtoTime( polyValue.asTime() );
             case TIMESTAMP -> serializeAsProtoTimestamp( polyValue.asTimestamp() );
             case INTERVAL -> serializeAsProtoInterval( polyValue.asInterval() );
-            case CHAR, VARCHAR -> serializeAsProtoString( polyValue.asString() );
+            case CHAR, VARCHAR -> serializeAsProtoString( polyValue.asString(), streamIndex, streamingStrategy, statementId );
             case BINARY, VARBINARY -> serializeAsProtoBinary( polyValue.asBinary(), streamIndex, streamingStrategy, statementId );
             case NULL -> serializeAsProtoNull();
             case ARRAY -> serializeAsProtoList( polyValue.asList(), streamIndex, streamingStrategy, statementId );
@@ -258,13 +257,22 @@ public class PolyValueSerializer {
     }
 
 
-    public static ProtoValue serializeAsProtoString( PolyString polyString ) {
+    public static ProtoValue serializeAsProtoString( PolyString polyString, StreamIndex streamIndex, StreamingStrategy streamingStrategy, int statementId ) {
         if ( polyString.value == null ) {
             return serializeAsProtoNull();
         }
-        ProtoString protoString = ProtoString.newBuilder()
-                .setString( polyString.getValue() )
-                .build();
+
+        ProtoString.Builder stringBuilder = ProtoString.newBuilder();
+        if ( polyString.getValue().length() * 2 > STREAM_LIMIT || streamingStrategy == StreamingStrategy.STREAM_ALL ) {
+            long streamId = streamIndex.register( new StringPIOutputStream( polyString ) );
+            stringBuilder
+                    .setStreamId( streamId )
+                    .setIsForwardOnly( false )
+                    .setStatementId( statementId );
+        } else {
+            stringBuilder.setString( polyString.getValue() );
+        }
+        ProtoString protoString = stringBuilder.build();
         return ProtoValue.newBuilder()
                 .setString( protoString )
                 .build();
@@ -324,12 +332,13 @@ public class PolyValueSerializer {
                 .build();
     }
 
-    public static Map<String, ProtoValue> serializeStringKeyedProtoMap(PolyMap<PolyValue, PolyValue> polyMap, StreamIndex streamIndex, StreamingStrategy streamingStrategy, int statementId) {
+
+    public static Map<String, ProtoValue> serializeStringKeyedProtoMap( PolyMap<PolyValue, PolyValue> polyMap, StreamIndex streamIndex, StreamingStrategy streamingStrategy, int statementId ) {
         return polyMap.entrySet().stream()
-                .collect(Collectors.toMap(
+                .collect( Collectors.toMap(
                         e -> e.getKey().asString().getValue(), // keys are always strings
-                        e -> serialize(e.getValue(), streamIndex, streamingStrategy, statementId)
-                ));
+                        e -> serialize( e.getValue(), streamIndex, streamingStrategy, statementId )
+                ) );
     }
 
 
@@ -377,17 +386,21 @@ public class PolyValueSerializer {
 
 
     public static List<GraphElement> buildProtoGraph( PolyValue polyValue, StreamIndex streamIndex, StreamingStrategy streamingStrategy, int statementId ) {
-        switch (polyValue.getType()) {
-            case NODE -> {return List.of(GraphElement.newBuilder().setNode( buildProtoNode( polyValue.asNode(), streamIndex, streamingStrategy, statementId ) ).build());}
-            case EDGE -> {return List.of( GraphElement.newBuilder().setEdge( buildProtoEdge( polyValue.asEdge(), streamIndex, streamingStrategy, statementId ) ).build());}
+        switch ( polyValue.getType() ) {
+            case NODE -> {
+                return List.of( GraphElement.newBuilder().setNode( buildProtoNode( polyValue.asNode(), streamIndex, streamingStrategy, statementId ) ).build() );
+            }
+            case EDGE -> {
+                return List.of( GraphElement.newBuilder().setEdge( buildProtoEdge( polyValue.asEdge(), streamIndex, streamingStrategy, statementId ) ).build() );
+            }
             case PATH -> {
                 List<GraphElement> elements = new LinkedList<>();
                 PolyPath path = polyValue.asPath();
-                path.getNodes().forEach( n -> elements.add(GraphElement.newBuilder().setNode(buildProtoNode( n, streamIndex, streamingStrategy, statementId ) ).build()));
-                path.getEdges().forEach( n -> elements.add(GraphElement.newBuilder().setEdge( buildProtoEdge( n, streamIndex, streamingStrategy, statementId ) ).build() ) );
+                path.getNodes().forEach( n -> elements.add( GraphElement.newBuilder().setNode( buildProtoNode( n, streamIndex, streamingStrategy, statementId ) ).build() ) );
+                path.getEdges().forEach( n -> elements.add( GraphElement.newBuilder().setEdge( buildProtoEdge( n, streamIndex, streamingStrategy, statementId ) ).build() ) );
                 return elements;
             }
-            default -> throw new RuntimeException("Should never be thrown");
+            default -> throw new RuntimeException( "Should never be thrown" );
         }
     }
 
