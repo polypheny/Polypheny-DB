@@ -19,6 +19,7 @@ package org.polypheny.db.prisminterface.streaming;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import org.polypheny.db.prisminterface.PIServiceException;
 import org.polypheny.prism.StreamAcknowledgement;
 import org.polypheny.prism.StreamFrame;
@@ -27,11 +28,13 @@ import org.polypheny.prism.StreamSendRequest;
 
 public class PIInputStreamManager {
 
-    private final Map<Long, PIInputStream> streams = new HashMap<>();
+    private final ConcurrentHashMap<Long, PIInputStream> streams = new ConcurrentHashMap<>();
 
+    public int getSize() {
+        return streams.size();
+    }
 
     public StreamAcknowledgement appendOrRegister( StreamSendRequest request ) throws IOException, InterruptedException {
-        System.out.print( "AoR" + request.getStreamId() );
         StreamFrame frame = request.getFrame();
         PIInputStream stream = getOrCreateStream( request.getStreamId(), request.getFrame().getDataCase() );
         return stream.appendFrame( frame );
@@ -60,7 +63,6 @@ public class PIInputStreamManager {
 
 
     public BinaryPIInputStream getBinaryStreamOrRegister( long streamId, DataCase streamType ) {
-        System.out.print( "BoR" + streamId );
         PIInputStream stream = getOrCreateStream( streamId, streamType );
         if ( !(stream instanceof BinaryPIInputStream) ) {
             throw new PIServiceException( "Stream " + streamId + " is not a binary stream" );

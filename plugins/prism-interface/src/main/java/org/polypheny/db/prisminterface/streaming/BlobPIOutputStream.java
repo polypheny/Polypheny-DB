@@ -32,13 +32,16 @@ public class BlobPIOutputStream implements PIOutputStream {
     }
 
 
-    public StreamFrame get( long position, int length ) throws IOException {
-        if ( position < 0 || length < 0 ) {
-            throw new IllegalArgumentException( "Position and length must be non-negative" );
+    public StreamFrame get(long position, int length) throws IOException {
+        if (position < 0 || length < 0) {
+            throw new IllegalArgumentException("Position and length must be non-negative");
         }
-        int end = ((int) position + length);
-        byte[] data = Arrays.copyOfRange( blob.value, (int) position, end );
-        return PrismUtils.buildBinaryStreamFrame( data, end >= blob.value.length );
+
+        int end = Math.min((int) position + length, blob.value.length);
+
+        byte[] data = Arrays.copyOfRange(blob.value, (int) position, end);
+        return PrismUtils.buildBinaryStreamFrame(data, end >= blob.value.length);
     }
+
 
 }

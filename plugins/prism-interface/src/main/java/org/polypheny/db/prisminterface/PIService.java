@@ -22,6 +22,10 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.constant.FunctionCategory;
@@ -113,12 +117,15 @@ import org.polypheny.prism.TypesResponse;
 
 @Slf4j
 class PIService {
+    private static final int THREAD_POOL_SIZE = 10;
 
     private final long connectionId;
     private final ClientManager clientManager;
     private final Transport con;
     private final PIRequestReader reader;
     private String uuid = null;
+
+    private final ExecutorService executorService = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
 
 
     private PIService( Transport con, long connectionId, ClientManager clientManager, PIRequestReader reader ) {
@@ -182,27 +189,47 @@ class PIService {
 
 
     private void handleMessages() throws IOException {
-        BlockingQueue<Optional<byte[]>> waiting = reader.addConnection( con, connectionId );
-
-        if ( !handleFirstMessage( waiting ) ) {
+        BlockingQueue<Optional<byte[]>> waiting = reader.addConnection(con, connectionId);
+        final AtomicBoolean closed = new AtomicBoolean( false );
+        if (!handleFirstMessage(waiting)) {
             return;
         }
 
         try {
-            while ( true ) {
-                Request req = readOneMessage( waiting );
-                Response r = handleRequest( req );
-                if ( r.getTypeCase() == Response.TypeCase.DISCONNECT_RESPONSE ) {
-                    break;
-                }
+            while (!closed.get()) {
+                Request req = readOneMessage(waiting);
+                executorService.submit(() -> {
+                    if (closed.get()) {
+                        return;
+                    }
+                    try {
+                        Response r = handleRequest(req);
+                        if (r.getTypeCase() == Response.TypeCase.DISCONNECT_RESPONSE) {
+                            closed.set(true);
+                            executorService.shutdownNow();
+                        }
+                    } catch (Throwable t) {
+                        if (t.getCause() instanceof PIServiceException p && p.getCause() instanceof EOFException eof) {
+                            throw new RuntimeException(eof);
+                        }
+                        throw t;
+                    }
+                });
             }
-        } catch ( EOFException e ) {
+        } catch (EOFException e) {
             throw e;
-        } catch ( Throwable t ) {
-            if ( t.getCause() instanceof PIServiceException p && p.getCause() instanceof EOFException eof ) {
+        } catch (Throwable t) {
+            if (t.getCause() instanceof PIServiceException p && p.getCause() instanceof EOFException eof) {
                 throw eof;
             }
             throw t;
+        } finally {
+            executorService.shutdown();
+            try {
+                executorService.awaitTermination(5, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
         }
     }
 
@@ -470,7 +497,8 @@ class PIService {
         PIStatement statement = client.getStatementManager().getStatement( request.getStatementId() );
         try {
             return responseObserver.makeResponse( statement.getStreamingFramework().getIndex().get( request.getStreamId() ).get( request.getPosition(), request.getLength() ) );
-        } catch ( IOException e ) {
+        } catch ( Exception e ) {
+            e.printStackTrace();
             throw new GenericRuntimeException( e );
         }
     }

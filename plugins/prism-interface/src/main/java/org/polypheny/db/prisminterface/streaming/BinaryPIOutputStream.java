@@ -36,7 +36,7 @@ public class BinaryPIOutputStream implements PIOutputStream {
         if ( position < 0 || length < 0 ) {
             throw new IllegalArgumentException( "Position and length must be non-negative" );
         }
-        int end = ((int) position + length);
+        int end = Math.min((int) position + length, binary.value.length);
         byte[] data = Arrays.copyOfRange( binary.value, (int) position, end );
         return PrismUtils.buildBinaryStreamFrame( data, end >= binary.value.length );
     }
