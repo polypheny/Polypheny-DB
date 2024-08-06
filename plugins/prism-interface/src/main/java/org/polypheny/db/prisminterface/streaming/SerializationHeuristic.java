@@ -223,8 +223,14 @@ public class SerializationHeuristic {
 
 
     private static Estimate computeStringSize( String value ) {
+        Estimate estimate = new Estimate();
+        estimate.setAllStreamedLength( 2 + 1 + 9 ); // wrapper + tag + streamId (64bit int)
         int length = value.getBytes().length;
-        return estimateInt32Size().addToAll( length );
+        if (length > STREAM_LIMIT) {
+            estimate.setDynamicLength( estimate.getAllStreamedLength()  );
+        }
+        estimate.setDynamicLength( estimateInt32Size().getDynamicLength() + length );
+        return estimate;
     }
 
 
