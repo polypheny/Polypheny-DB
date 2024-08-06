@@ -7,6 +7,7 @@ import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 import org.apache.calcite.linq4j.Enumerator;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.entity.PolyValue;
 
 public class XmlEnumerator implements Enumerator<PolyValue[]> {
@@ -32,7 +33,7 @@ public class XmlEnumerator implements Enumerator<PolyValue[]> {
             InputStream inputStream = url.openStream();
             reader = factory.createXMLStreamReader( inputStream );
         } catch ( XMLStreamException | IOException e ) {
-            throw new RuntimeException( "Error initializing XML reader: " + e.getMessage(), e );
+            throw new GenericRuntimeException( "Error initializing XML reader: " + e.getMessage(), e );
         }
     }
 
@@ -68,7 +69,7 @@ public class XmlEnumerator implements Enumerator<PolyValue[]> {
             current = parseNext();
             return current != null;
         } catch ( XMLStreamException e ) {
-            throw new RuntimeException( "Error reading XML: " + e.getMessage(), e );
+            throw new GenericRuntimeException( "Error reading XML: " + e.getMessage(), e );
         }
     }
 
@@ -86,7 +87,7 @@ public class XmlEnumerator implements Enumerator<PolyValue[]> {
             try {
                 reader.close();
             } catch ( XMLStreamException e ) {
-                throw new RuntimeException( "Error closing XML reader: " + e.getMessage(), e );
+                throw new GenericRuntimeException( "Error closing XML reader: " + e.getMessage(), e );
             }
         }
         reader = null;

@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.polypheny.db.adapter.DocumentDataSource.ExportedDocument;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.util.Source;
 import org.polypheny.db.util.Sources;
@@ -53,7 +54,7 @@ public class JsonMetaRetriever {
                 if ( token == JsonToken.START_ARRAY || token == JsonToken.START_OBJECT ) {
                     exportedDocuments.add( new ExportedDocument( entityName, false, EntityType.SOURCE ) );
                 } else {
-                    throw new RuntimeException( "JSON file does not contain a valid top-level structure (neither an object nor an array)" );
+                    throw new GenericRuntimeException( "JSON file does not contain a valid top-level structure (neither an object nor an array)" );
                 }
             }
         }
