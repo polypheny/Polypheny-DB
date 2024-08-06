@@ -32,7 +32,7 @@ import org.polypheny.db.prepare.Context;
 public record AdapterRestore(
         long adapterId,
         Map<Long, List<PhysicalEntity>> physicals,
-        Map<Long, AllocationEntity> allocations ) {
+        Map<Long, AllocationEntity> allocations) {
 
     public AdapterRestore(
             long adapterId,

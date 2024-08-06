@@ -84,7 +84,6 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
 
     public Map<Long, AlgNode> nodes;
 
-
     @Serialize
     public Map<Long, LogicalIndex> indexes;
 

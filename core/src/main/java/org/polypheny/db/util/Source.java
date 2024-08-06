@@ -52,6 +52,8 @@ public interface Source {
 
     String path();
 
+    boolean isFile();
+
     Reader reader() throws IOException;
 
     InputStream openStream() throws IOException;

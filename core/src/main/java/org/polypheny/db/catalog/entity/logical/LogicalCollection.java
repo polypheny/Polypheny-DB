@@ -50,4 +50,9 @@ public class LogicalCollection extends LogicalEntity implements PolyObject {
         return Expressions.call( Catalog.CATALOG_EXPRESSION, "getCollection", Expressions.constant( id ) );
     }
 
+    @Override
+    public String getNamespaceName() {
+        return Catalog.getInstance().getSnapshot().getNamespace( namespaceId ).orElseThrow().name;
+    }
+
 }

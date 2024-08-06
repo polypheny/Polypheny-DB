@@ -1,0 +1,66 @@
+[
+    {
+        "id": 1,
+        "title": "Unlocking the Secrets of Deep Space",
+        "author": "Samantha Ray",
+        "published_date": "2024-04-24",
+        "is_featured": true,
+        "rating": 4.7
+    },
+    {
+        "id": 2,
+        "title": "Revolutionizing Agriculture with AI",
+        "author": "Marcus O'Neill",
+        "published_date": "2024-04-10",
+        "is_featured": false,
+        "rating": 4.2
+    },
+    {
+        "id": 3,
+        "title": "The Future of Urban Transportation",
+        "author": "Elena Gomez",
+        "published_date": "2024-03-29",
+        "is_featured": true,
+        "rating": 4.9
+    },
+    {
+        "id": 4,
+        "title": "Ancient Civilizations: Mysteries Unveiled",
+        "author": "Thomas Crane",
+        "published_date": "2024-01-15",
+        "is_featured": false,
+        "rating": 3.8
+    },
+    {
+        "id": 5,
+        "title": "The Psychology of Pandemic Fatigue",
+        "author": "Laura McPherson",
+        "published_date": "2024-02-27",
+        "is_featured": true,
+        "rating": 4.6
+    },
+    {
+        "id": 6,
+        "title": "Exploring the Depths of the Amazon Rainforest",
+        "author": "David Liu",
+        "published_date": "2024-03-13",
+        "is_featured": false,
+        "rating": 4.3
+    },
+    {
+        "id": 7,
+        "title": "New Horizons in Genetic Engineering",
+        "author": "Nadia Singh",
+        "published_date": "2024-04-02",
+        "is_featured": true,
+        "rating": 4.8
+    },
+    {
+        "id": 8,
+        "title": "Artificial Intelligence and Ethics",
+        "author": "James Lewis",
+        "published_date": "2024-04-18",
+        "is_featured": false,
+        "rating": 4.4
+    }
+]
