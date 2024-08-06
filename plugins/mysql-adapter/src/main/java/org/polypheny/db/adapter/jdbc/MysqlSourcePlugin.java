@@ -24,6 +24,8 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DeployMode;
+import org.polypheny.db.adapter.DocumentDataSource;
+import org.polypheny.db.adapter.RelationalDataSource;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.annotations.AdapterSettingInteger;
 import org.polypheny.db.adapter.annotations.AdapterSettingList;
@@ -89,7 +91,7 @@ public class MysqlSourcePlugin extends PolyPlugin {
             description = "Which level of transaction isolation should be used.")
     @AdapterSettingString(name = "tables", defaultValue = "foo,bar",
             description = "List of tables which should be imported. The names must to be separated by a comma.")
-    public static class MysqlSource extends AbstractJdbcSource {
+    public static class MysqlSource extends AbstractJdbcSource implements RelationalDataSource {
 
         public MysqlSource( final long storeId, final String uniqueName, final Map<String, String> settings, final DeployMode mode ) {
             super( storeId, uniqueName, settings, mode, "org.mariadb.jdbc.Driver", MysqlSqlDialect.DEFAULT, false );
@@ -140,6 +142,35 @@ public class MysqlSourcePlugin extends PolyPlugin {
         @Override
         protected boolean requiresSchema() {
             return false;
+        }
+
+        @Override
+        public boolean supportsRelational() {
+            return true;
+        }
+
+
+        @Override
+        public boolean supportsDocument() {
+            return false;
+        }
+
+
+        @Override
+        public boolean supportsGraph() {
+            return false;
+        }
+
+
+        @Override
+        public RelationalDataSource asRelationalDataSource() {
+            return this;
+        }
+
+
+        @Override
+        public DocumentDataSource asDocumentDataSource() {
+            throw new IllegalStateException("This source does not support the relational model.");
         }
 
     }

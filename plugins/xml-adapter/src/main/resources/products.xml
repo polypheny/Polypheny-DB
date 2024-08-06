@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Products>
+    <Product>
+        <ProductID>001</ProductID>
+        <Name>Eco-Friendly Water Bottle</Name>
+        <Category>Home and Kitchen</Category>
+        <Description>A reusable, BPA-free water bottle made from sustainable materials.</Description>
+        <Price>19.99</Price>
+        <Stock>150</Stock>
+    </Product>
+    <Product>
+        <ProductID>002</ProductID>
+        <Name>Wireless Noise-Canceling Headphones</Name>
+        <Category>Electronics</Category>
+        <Description>High-quality headphones with active noise cancellation and long battery life.</Description>
+        <Price>129.99</Price>
+        <Stock>75</Stock>
+    </Product>
+    <Product>
+        <ProductID>003</ProductID>
+        <Name>Smart LED Bulb</Name>
+        <Category>Smart Home</Category>
+        <Description>Color-changing smart LED bulb controllable via mobile app or voice assistant.</Description>
+        <Price>24.99</Price>
+        <Stock>200</Stock>
+    </Product>
+    <Product>
+        <ProductID>004</ProductID>
+        <Name>Portable Bluetooth Speaker</Name>
+        <Category>Audio</Category>
+        <Description>Compact, waterproof Bluetooth speaker with rich sound and deep bass.</Description>
+        <Price>59.99</Price>
+        <Stock>120</Stock>
+    </Product>
+    <Product>
+        <ProductID>005</ProductID>
+        <Name>Stainless Steel Cookware Set</Name>
+        <Category>Home and Kitchen</Category>
+        <Description>Durable and stylish stainless steel cookware set with non-stick coating.</Description>
+        <Price>249.99</Price>
+        <Stock>50</Stock>
+    </Product>
+    <Product>
+        <ProductID>006</ProductID>
+        <Name>4K Ultra HD Smart TV</Name>
+        <Category>Electronics</Category>
+        <Description>55-inch 4K Ultra HD Smart TV with built-in streaming services and HDR support.</Description>
+        <Price>499.99</Price>
+        <Stock>30</Stock>
+    </Product>
+    <Product>
+        <ProductID>007</ProductID>
+        <Name>Ergonomic Office Chair</Name>
+        <Category>Office</Category>
+        <Description>Comfortable office chair with lumbar support and adjustable height settings.</Description>
+        <Price>179.99</Price>
+        <Stock>40</Stock>
+    </Product>
+    <Product>
+        <ProductID>008</ProductID>
+        <Name>Fitness Tracker</Name>
+        <Category>Health and Wellness</Category>
+        <Description>Wearable fitness tracker with heart rate monitor, GPS, and sleep tracking.</Description>
+        <Price>99.99</Price>
+        <Stock>100</Stock>
+    </Product>
+</Products>
+

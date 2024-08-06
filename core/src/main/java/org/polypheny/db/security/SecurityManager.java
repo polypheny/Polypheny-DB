@@ -16,7 +16,9 @@
 
 package org.polypheny.db.security;
 
+import java.net.URL;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
@@ -25,8 +27,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nullable;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
-
+@Slf4j
 public class SecurityManager {
 
     private static SecurityManager INSTANCE = null;
@@ -74,19 +77,29 @@ public class SecurityManager {
             dir = dir.getParent();
         }
         AuthStatus status = this.status.get( dir );
-
+        if (dir.startsWith("classpath:")) {
+            status.setStep( AuthStep.SUCCESSFUL );
+            return true;
+        }
+        if (status == null) {
+            log.debug( "No auth status available for directory {}", dir );
+            return false;
+        }
         if ( status.step == AuthStep.SUCCESSFUL ) {
             return true;
         }
-        if ( Arrays.stream( Objects.requireNonNull( status.path.toFile().listFiles() ) ).noneMatch( f -> f.getName().equals( "polypheny.access" ) && f.isFile() ) ) {
-            // TODO: if more fine-grained access control is required, add as content of file
+        try {
+            if ( Arrays.stream( Objects.requireNonNull( status.path.toFile().listFiles() ) ).noneMatch( f -> f.getName().equals( "polypheny.access" ) && f.isFile() ) ) {
+                // TODO: if more fine-grained access control is required, add as content of file
+                return false;
+            }
+        } catch (Exception e) {
+            log.debug( "Filed to check for polypheny.access as the specified path is not a directory {}", dir );
             return false;
         }
-
         status.setStep( AuthStep.SUCCESSFUL );
         return true;
     }
-
 
     private enum AuthStep {
         INITIAL,

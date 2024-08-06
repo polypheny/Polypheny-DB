@@ -35,6 +35,9 @@ import org.pf4j.Extension;
 import org.polypheny.db.adapter.ConnectionMethod;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DeployMode;
+import org.polypheny.db.adapter.DocumentDataSource;
+import org.polypheny.db.adapter.RelationalDataSource;
+import org.polypheny.db.adapter.RelationalDataSource.ExportedColumn;
 import org.polypheny.db.adapter.RelationalScanDelegate;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.annotations.AdapterSettingDirectory;
@@ -51,6 +54,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.prepare.Context;
@@ -72,7 +76,7 @@ import org.slf4j.LoggerFactory;
 @AdapterSettingString(subOf = "method_link", defaultValue = "classpath://hr", name = "directoryName", description = "You can select a path to a folder or specific .csv or .csv.gz files.", position = 2)
 @AdapterSettingInteger(name = "maxStringLength", defaultValue = 255, position = 3,
         description = "Which length (number of characters including whitespace) should be used for the varchar columns. Make sure this is equal or larger than the longest string in any of the columns.")
-public class CsvSource extends DataSource<RelAdapterCatalog> {
+public class CsvSource extends DataSource<RelAdapterCatalog> implements RelationalDataSource {
 
     private static final Logger log = LoggerFactory.getLogger( CsvSource.class );
     @Delegate(excludes = Excludes.class)
@@ -87,7 +91,7 @@ public class CsvSource extends DataSource<RelAdapterCatalog> {
 
 
     public CsvSource( final long storeId, final String uniqueName, final Map<String, String> settings, final DeployMode mode ) {
-        super( storeId, uniqueName, settings, mode, true, new RelAdapterCatalog( storeId ) );
+        super( storeId, uniqueName, settings, mode, true, new RelAdapterCatalog( storeId ), List.of( DataModel.RELATIONAL ) );
 
         this.connectionMethod = settings.containsKey( "method" ) ? ConnectionMethod.from( settings.get( "method" ).toUpperCase() ) : ConnectionMethod.UPLOAD;
 
@@ -371,6 +375,10 @@ public class CsvSource extends DataSource<RelAdapterCatalog> {
         adapterCatalog.fields.values().stream().filter( c -> c.id == id ).forEach( c -> updateNativePhysical( c.allocId ) );
     }
 
+    @Override
+    public RelationalDataSource asRelationalDataSource() {
+        return this;
+    }
 
     @SuppressWarnings("unused")
     private interface Excludes {
