@@ -23,7 +23,6 @@ import java.net.URL;
 import java.nio.file.NoSuchFileException;
 import java.util.List;
 import java.util.Map;
-import javax.xml.parsers.ParserConfigurationException;
 import lombok.experimental.Delegate;
 import org.pf4j.Extension;
 import org.polypheny.db.adapter.ConnectionMethod;
@@ -54,7 +53,6 @@ import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.transaction.PolyXid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.xml.sax.SAXException;
 
 @Extension
 @AdapterProperties(
@@ -62,8 +60,8 @@ import org.xml.sax.SAXException;
         description = "An adapter for querying XML files. An XML file or a directory containing multiple XML files can be specified by path. Currently, this adapter only supports read operations.",
         usedModes = DeployMode.EMBEDDED,
         defaultMode = DeployMode.EMBEDDED)
-@AdapterSettingList(name = "method", options = { "upload", "link", "url" }, defaultValue = "upload", description = "If the supplied file(s) should be uploaded or a link to the local filesystem is used (sufficient permissions are required).", position = 1)
-@AdapterSettingDirectory(subOf = "method_upload", name = "directory", defaultValue = "classpath://products.xml", description = "Path to the XML file(s) to be integrated as this source.", position = 2)
+@AdapterSettingList(name = "method", options = { "link", "url" }, defaultValue = "upload", description = "If the supplied file(s) should be uploaded or a link to the local filesystem is used (sufficient permissions are required).", position = 1)
+//@AdapterSettingDirectory(subOf = "method_upload", name = "directory", defaultValue = "classpath://products.xml", description = "Path to the XML file(s) to be integrated as this source.", position = 2)
 @AdapterSettingString(subOf = "method_link", defaultValue = "classpath://products.xml", name = "directoryName", description = "Path to the XML file(s) to be integrated as this source.", position = 2)
 @AdapterSettingString(subOf = "method_url", defaultValue = "http://localhost/cars.xml", name = "url", description = "URL to the XML file(s) to be integrated as this source.", position = 2)
 
