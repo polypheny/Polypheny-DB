@@ -17,6 +17,7 @@
 package org.polypheny.db.catalog;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.util.ArrayList;
@@ -68,7 +69,9 @@ public abstract class Catalog implements ExtensionPoint {
 
     protected static List<Runnable> afterInit = new ArrayList<>();
 
+    @JsonIgnore
     protected final PropertyChangeSupport listeners = new PropertyChangeSupport( this );
+    @JsonIgnore
     public boolean isPersistent = false;
     private static Catalog INSTANCE = null;
     public static boolean resetCatalog;

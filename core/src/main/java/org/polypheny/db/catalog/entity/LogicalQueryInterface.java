@@ -17,7 +17,6 @@
 package org.polypheny.db.catalog.entity;
 
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
@@ -36,16 +35,12 @@ public class LogicalQueryInterface implements PolyObject {
     private static final long serialVersionUID = 7212289724539530050L;
 
     @Serialize
-    @JsonProperty
     public long id;
     @Serialize
-    @JsonProperty
     public String name;
     @Serialize
-    @JsonProperty
     public String interfaceType;
     @Serialize
-    @JsonProperty
     public ImmutableMap<String, String> settings;
 
 

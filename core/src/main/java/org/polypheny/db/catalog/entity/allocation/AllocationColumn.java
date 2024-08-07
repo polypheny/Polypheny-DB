@@ -16,7 +16,6 @@
 
 package org.polypheny.db.catalog.entity.allocation;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import lombok.NonNull;
@@ -36,25 +35,18 @@ public class AllocationColumn implements PolyObject {
     private static final long serialVersionUID = -1909757888176291095L;
 
     @Serialize
-    @JsonProperty
     public long namespaceId;
     @Serialize
-    @JsonProperty
     public long placementId;
     @Serialize
-    @JsonProperty
     public long logicalTableId;
     @Serialize
-    @JsonProperty
     public long columnId;
     @Serialize
-    @JsonProperty
     public PlacementType placementType;
     @Serialize
-    @JsonProperty
     public int position;
     @Serialize
-    @JsonProperty
     public long adapterId;
 
 

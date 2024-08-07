@@ -17,7 +17,6 @@
 package org.polypheny.db.catalog.entity.allocation;
 
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
@@ -43,32 +42,25 @@ public class AllocationPartition implements PolyObject {
     private static final long serialVersionUID = 8835793248417591036L;
 
     @Serialize
-    @JsonProperty
     public long namespaceId;
 
     @Serialize
-    @JsonProperty
     public long logicalEntityId;
 
     @Serialize
-    @JsonProperty
     public long groupId;
 
     @Serialize
-    @JsonProperty
     @SerializeNullable
     public String name;
 
     @Serialize
-    @JsonProperty
     public long id;
 
     @Serialize
-    @JsonProperty
     public PlacementType placementType;
 
     @Serialize
-    @JsonProperty
     public PartitionType partitionType;
 
     // Related to multi-tier replication. A physical partition placement is considered to be primary (uptodate) if it needs to receive every update eagerly.
@@ -84,13 +76,10 @@ public class AllocationPartition implements PolyObject {
     // A DataPlacement can directly forbid that any Placements within this DataPlacement container can get outdated.
     // Therefore, the role at the DataPlacement specifies if underlying placements can even be outdated.s
     @Serialize
-    @JsonProperty
     public DataPlacementRole role;
     @Serialize
-    @JsonProperty
     public boolean isUnbound;
     @Serialize
-    @JsonProperty
     @NotNull
     public List<String> qualifiers;
 

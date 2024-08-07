@@ -47,27 +47,21 @@ import org.polypheny.db.util.Wrapper;
 public abstract class Entity implements PolyObject, Wrapper, Serializable, CatalogType, Expressible, Typed, Comparable<Entity> {
 
     @Serialize
-    @JsonProperty
     public long id;
 
     @Serialize
-    @JsonProperty
     public EntityType entityType;
 
     @Serialize
-    @JsonProperty
     public DataModel dataModel;
 
     @Serialize
-    @JsonProperty
     public String name;
 
     @Serialize
-    @JsonProperty
     public long namespaceId;
 
     @Serialize
-    @JsonProperty
     public boolean modifiable;
 
 

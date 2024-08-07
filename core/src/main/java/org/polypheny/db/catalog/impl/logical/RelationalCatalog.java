@@ -16,7 +16,7 @@
 
 package org.polypheny.db.catalog.impl.logical;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
@@ -70,40 +70,38 @@ import org.polypheny.db.type.entity.PolyValue;
 @SuperBuilder(toBuilder = true)
 public class RelationalCatalog implements PolySerializable, LogicalRelationalCatalog {
 
+    @JsonIgnore
     public BinarySerializer<RelationalCatalog> serializer = PolySerializable.buildSerializer( RelationalCatalog.class );
 
+    @JsonIgnore
     IdBuilder idBuilder = IdBuilder.getInstance();
 
     @Serialize
-    @JsonProperty
     public LogicalNamespace logicalNamespace;
 
     @Serialize
-    @JsonProperty
     public Map<Long, LogicalTable> tables;
 
     @Serialize
-    @JsonProperty
     public Map<Long, LogicalColumn> columns;
 
+    @JsonIgnore
     public Map<Long, AlgNode> nodes;
 
-
     @Serialize
-    @JsonProperty
     public Map<Long, LogicalIndex> indexes;
 
     // while keys "belong" to a specific table, they can reference other namespaces, atm they are place here, might change later
     @Serialize
-    @JsonProperty
     public Map<Long, LogicalKey> keys;
 
     @Serialize
-    @JsonProperty
     public Map<Long, LogicalConstraint> constraints;
 
+    @JsonIgnore
     Set<Long> tablesFlaggedForDeletion = new HashSet<>();
 
+    @JsonIgnore
     PropertyChangeSupport listeners = new PropertyChangeSupport( this );
 
 

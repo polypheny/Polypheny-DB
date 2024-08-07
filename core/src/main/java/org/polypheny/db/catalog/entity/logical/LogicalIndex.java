@@ -17,7 +17,6 @@
 package org.polypheny.db.catalog.entity.logical;
 
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.annotations.SerializeNullable;
@@ -37,35 +36,25 @@ public class LogicalIndex implements Serializable {
     private static final long serialVersionUID = -318228681682792406L;
 
     @Serialize
-    @JsonProperty
     public long id;
     @Serialize
-    @JsonProperty
     public String name;
     @Serialize
-    @JsonProperty
     @SerializeNullable
     public String physicalName;
     @Serialize
-    @JsonProperty
     public boolean unique;
     @Serialize
-    @JsonProperty
     public IndexType type;
     @Serialize
-    @JsonProperty
     public long location; // -1 is Polypheny
     @Serialize
-    @JsonProperty
     public String method;
     @Serialize
-    @JsonProperty
     public String methodDisplayName;
     @Serialize
-    @JsonProperty
     public LogicalKey key;
     @Serialize
-    @JsonProperty
     public long keyId;
 
 

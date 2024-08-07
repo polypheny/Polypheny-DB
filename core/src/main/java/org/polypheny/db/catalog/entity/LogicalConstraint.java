@@ -17,7 +17,6 @@
 package org.polypheny.db.catalog.entity;
 
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.io.Serializable;
@@ -32,19 +31,14 @@ import org.polypheny.db.catalog.logistic.ConstraintType;
 public class LogicalConstraint implements Serializable, Comparable<LogicalConstraint> {
 
     @Serialize
-    @JsonProperty
     public long id;
     @Serialize
-    @JsonProperty
     public long keyId;
     @Serialize
-    @JsonProperty
     public ConstraintType type;
     @Serialize
-    @JsonProperty
     public String name;
     @Serialize
-    @JsonProperty
     public LogicalKey key;
 
 

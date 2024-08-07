@@ -17,7 +17,6 @@
 package org.polypheny.db.catalog.entity;
 
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.io.Serial;
@@ -37,25 +36,18 @@ public class LogicalAdapter implements PolyObject {
     private static final long serialVersionUID = -6140489767408917639L;
 
     @Serialize
-    @JsonProperty
     public long id;
     @Serialize
-    @JsonProperty
     public String uniqueName;
     @Serialize
-    @JsonProperty
     public String adapterName;
     @Serialize
-    @JsonProperty
     public AdapterType type;
     @Serialize
-    @JsonProperty
     public Map<String, String> settings;
     @Serialize
-    @JsonProperty
     public String adapterTypeName;
     @Serialize
-    @JsonProperty
     public DeployMode mode;
 
 

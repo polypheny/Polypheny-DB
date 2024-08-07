@@ -16,7 +16,6 @@
 
 package org.polypheny.db.catalog.entity.physical;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 import io.activej.serializer.annotations.Serialize;
@@ -39,23 +38,18 @@ import org.polypheny.db.catalog.logistic.EntityType;
 public abstract class PhysicalEntity extends Entity {
 
     @Serialize
-    @JsonProperty
     public String namespaceName;
 
     @Serialize
-    @JsonProperty
     public long adapterId;
 
     @Serialize
-    @JsonProperty
     public long allocationId;
 
     @Serialize
-    @JsonProperty
     public long logicalId;
 
     @Serialize
-    @JsonProperty
     public List<Long> uniqueFieldIds;
 
 
