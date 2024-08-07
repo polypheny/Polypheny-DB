@@ -19,6 +19,7 @@ package org.polypheny.db.prisminterface;
 import java.io.EOFException;
 import java.io.IOException;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
 import lombok.extern.slf4j.Slf4j;
@@ -163,7 +164,7 @@ class PIService {
         try {
             r = handleMessage( req );
         } catch ( Throwable t ) {
-            r = createErrorResponse( req.getId(), t.getMessage() );
+            r = createErrorResponse( req.getId(), Objects.requireNonNullElse( t.getMessage(), t.getClass().getSimpleName() ) );
         }
         try {
             sendOneMessage( r );
@@ -189,6 +190,8 @@ class PIService {
                     break;
                 }
             }
+        } catch ( EOFException e ) {
+            throw e;
         } catch ( Throwable t ) {
             if ( t.getCause() instanceof PIServiceException p && p.getCause() instanceof EOFException eof ) {
                 throw eof;

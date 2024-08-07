@@ -64,7 +64,7 @@ public class Contexts {
 
     /**
      * Returns a context that wraps an object.
-     *
+     * <p>
      * A call to {@code unwrap(C)} will return {@code target} if it is an instance of {@code C}.
      */
     public static Context of( Object o ) {
@@ -88,9 +88,9 @@ public class Contexts {
 
     /**
      * Returns a context that wraps a list of contexts.
-     *
+     * <p>
      * A call to {@code unwrap(C)} will return the first object that is an instance of {@code C}.
-     *
+     * <p>
      * If any of the contexts is a {@link Context}, recursively looks in that object. Thus this method can be used to chain contexts.
      */
     public static Context chain( Context... contexts ) {
@@ -104,14 +104,11 @@ public class Contexts {
         for ( Context context : contexts ) {
             build( list, context );
         }
-        switch ( list.size() ) {
-            case 0:
-                return empty();
-            case 1:
-                return list.get( 0 );
-            default:
-                return new ChainContext( ImmutableList.copyOf( list ) );
-        }
+        return switch ( list.size() ) {
+            case 0 -> empty();
+            case 1 -> list.get( 0 );
+            default -> new ChainContext( ImmutableList.copyOf( list ) );
+        };
     }
 
 
@@ -122,8 +119,7 @@ public class Contexts {
         if ( context == EMPTY_CONTEXT || list.contains( context ) ) {
             return;
         }
-        if ( context instanceof ChainContext ) {
-            ChainContext chainContext = (ChainContext) context;
+        if ( context instanceof ChainContext chainContext ) {
             for ( Context child : chainContext.contexts ) {
                 build( list, child );
             }
@@ -157,6 +153,7 @@ public class Contexts {
         public @NotNull <T> Optional<T> unwrap( Class<T> clazz ) {
             return Optional.empty();
         }
+
     }
 
 
@@ -176,4 +173,5 @@ public class Contexts {
         }
 
     }
+
 }

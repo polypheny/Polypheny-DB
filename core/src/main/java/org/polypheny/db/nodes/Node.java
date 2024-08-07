@@ -17,6 +17,7 @@
 package org.polypheny.db.nodes;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.constant.Kind;
@@ -58,6 +59,14 @@ public interface Node extends Cloneable, Visitable {
             }
         }
         return litmus.succeed();
+    }
+
+    default Optional<String> switchesNamespace() {
+        return getInputs().stream().map( Node::switchesNamespace ).findAny().orElse( Optional.empty() );
+    }
+
+    default List<? extends Node> getInputs() {
+        return List.of();
     }
 
     /**
@@ -107,6 +116,7 @@ public interface Node extends Cloneable, Visitable {
      */
     boolean equalsDeep( Node node, Litmus litmus );
 
-    @Nullable String getEntity();
+    @Nullable
+    String getEntity();
 
 }

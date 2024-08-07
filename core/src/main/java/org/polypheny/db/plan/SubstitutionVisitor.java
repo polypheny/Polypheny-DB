@@ -74,7 +74,6 @@ import org.polypheny.db.algebra.mutable.MutableFilter;
 import org.polypheny.db.algebra.mutable.MutableProject;
 import org.polypheny.db.algebra.mutable.MutableScan;
 import org.polypheny.db.algebra.operators.OperatorName;
-import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.languages.OperatorRegistry;
@@ -90,7 +89,6 @@ import org.polypheny.db.rex.RexSimplify;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.AlgBuilderFactory;
-import org.polypheny.db.util.Bug;
 import org.polypheny.db.util.ControlFlowException;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Litmus;
@@ -104,9 +102,9 @@ import org.slf4j.Logger;
 
 /**
  * Substitutes part of a tree of relational expressions with another tree.
- *
+ * <p>
  * The call {@code new SubstitutionVisitor(target, query).go(replacement))} will return {@code query} with every occurrence of {@code target} replaced by {@code replacement}.
- *
+ * <p>
  * The following example shows how {@code SubstitutionVisitor} can be used for materialized view recognition.
  *
  * <ul>
@@ -117,9 +115,9 @@ import org.slf4j.Logger;
  * </ul>
  *
  * Note that {@code result} uses the materialized view table {@code mv} and a simplified condition {@code b = 4}.
- *
+ * <p>
  * Uses a bottom-up matching algorithm. Nodes do not need to be identical. At each level, returns the residue.
- *
+ * <p>
  * The inputs must only include the core relational operators:
  * {@link LogicalRelScan},
  * {@link LogicalRelFilter},
@@ -140,8 +138,6 @@ public class SubstitutionVisitor {
                     ScanToProjectUnifyRule.INSTANCE,
                     ProjectToProjectUnifyRule.INSTANCE,
                     FilterToProjectUnifyRule.INSTANCE,
-//          ProjectToFilterUnifyRule.INSTANCE,
-//          FilterToFilterUnifyRule.INSTANCE,
                     AggregateToAggregateUnifyRule.INSTANCE,
                     AggregateOnProjectToAggregateUnifyRule.INSTANCE );
 
@@ -237,10 +233,10 @@ public class SubstitutionVisitor {
 
     /**
      * Maps a condition onto a target.
-     *
+     * <p>
      * If condition is stronger than target, returns the residue.
      * If it is equal to target, returns the expression that evaluates to the constant {@code true}. If it is weaker than target, returns {@code null}.
-     *
+     * <p>
      * The terms satisfy the relation
      *
      * <blockquote>
@@ -248,7 +244,7 @@ public class SubstitutionVisitor {
      * </blockquote>
      *
      * and {@code residue} must be as weak as possible.
-     *
+     * <p>
      * Example #1: condition stronger than target
      * <ul>
      * <li>condition: x = 1 AND y = 2</li>
@@ -257,7 +253,7 @@ public class SubstitutionVisitor {
      * </ul>
      *
      * Note that residue {@code x &gt; 0 AND y = 2} would also satisfy the relation {@code condition = target AND residue} but is stronger than necessary, so we prefer {@code y = 2}.
-     *
+     * <p>
      * Example #2: target weaker than condition (valid, but not currently implemented)
      * <ul>
      * <li>condition: x = 1</li>
@@ -386,7 +382,7 @@ public class SubstitutionVisitor {
 
     /**
      * Returns whether a boolean expression ever returns true.
-     *
+     * <p>
      * This method may give false positives. For instance, it will say that {@code x = 5 AND x > 10} is satisfiable, because at present it cannot prove that it is not.
      */
     public static boolean mayBeSatisfiable( RexNode e ) {
@@ -461,7 +457,7 @@ public class SubstitutionVisitor {
 
     /**
      * Returns a list of all possible rels that result from substituting the matched {@link AlgNode} with the replacement {@link AlgNode} within the query.
-     *
+     * <p>
      * For example, the substitution result of A join B, while A and B are both a qualified match for replacement R, is R join B, R join R, A join R.
      */
     public List<AlgNode> go( AlgNode replacement_ ) {
@@ -578,23 +574,14 @@ public class SubstitutionVisitor {
     /**
      * Represents a replacement action: before &rarr; after.
      */
-    static class Replacement {
-
-        final MutableAlg before;
-        final MutableAlg after;
-
-
-        Replacement( MutableAlg before, MutableAlg after ) {
-            this.before = before;
-            this.after = after;
-        }
+    public record Replacement( MutableAlg before, MutableAlg after ) {
 
     }
 
 
     /**
      * Within a relational expression {@code query}, replaces occurrences of {@code find} with {@code replace}.
-     *
+     * <p>
      * Assumes relational expressions (and their descendants) are not null. Does not handle cycles.
      */
     public static Replacement replace( MutableAlg query, MutableAlg find, MutableAlg replace ) {
@@ -759,7 +746,7 @@ public class SubstitutionVisitor {
 
     /**
      * Rule that attempts to match a query relational expression against a target relational expression.
-     *
+     * <p>
      * The rule declares the query and target types; this allows the engine to fire only a few rules in a given context.
      */
     protected abstract static class UnifyRule {
@@ -779,7 +766,7 @@ public class SubstitutionVisitor {
         /**
          * Applies this rule to a particular node in a query. The goal is to convert {@code query} into {@code target}. Before the rule is invoked, Polypheny-DB has made sure that query's
          * children are equivalent to target's children.
-         *
+         * <p>
          * There are 3 possible outcomes:
          *
          * <ul>
@@ -807,14 +794,11 @@ public class SubstitutionVisitor {
 
         protected <E> ImmutableList<E> copy( E[] slots, int slotCount ) {
             // Optimize if there are 0 or 1 slots.
-            switch ( slotCount ) {
-                case 0:
-                    return ImmutableList.of();
-                case 1:
-                    return ImmutableList.of( slots[0] );
-                default:
-                    return ImmutableList.copyOf( slots ).subList( 0, slotCount );
-            }
+            return switch ( slotCount ) {
+                case 0 -> ImmutableList.of();
+                case 1 -> ImmutableList.of( slots[0] );
+                default -> ImmutableList.copyOf( slots ).subList( 0, slotCount );
+            };
         }
 
     }
@@ -955,7 +939,7 @@ public class SubstitutionVisitor {
 
     /**
      * Implementation of {@link UnifyRule} that matches if the query is already equal to the target.
-     *
+     * <p>
      * Matches scans to the same table, because these will be {@link MutableScan}s with the same {@link LogicalRelScan} instance.
      */
     private static class TrivialRule extends AbstractUnifyRule {
@@ -1180,38 +1164,6 @@ public class SubstitutionVisitor {
 
 
     /**
-     * Implementation of {@link UnifyRule} that matches a {@link MutableProject} to a {@link MutableFilter}.
-     */
-    private static class ProjectToFilterUnifyRule extends AbstractUnifyRule {
-
-        public static final ProjectToFilterUnifyRule INSTANCE = new ProjectToFilterUnifyRule();
-
-
-        private ProjectToFilterUnifyRule() {
-            super( operand( MutableProject.class, query( 0 ) ),
-                    operand( MutableFilter.class, target( 0 ) ), 1 );
-        }
-
-
-        @Override
-        public UnifyResult apply( UnifyRuleCall call ) {
-            if ( call.query.getParent() instanceof MutableFilter ) {
-                final UnifyRuleCall in2 = call.create( call.query.getParent() );
-                final MutableFilter query = (MutableFilter) in2.query;
-                final MutableFilter target = (MutableFilter) in2.target;
-                final MutableFilter newFilter = FilterToFilterUnifyRule.INSTANCE.createFilter( call, query, target );
-                if ( newFilter == null ) {
-                    return null;
-                }
-                return in2.result( query.replaceInParent( newFilter ) );
-            }
-            return null;
-        }
-
-    }
-
-
-    /**
      * Implementation of {@link UnifyRule} that matches a {@link LogicalRelAggregate} to a {@link LogicalRelAggregate},
      * provided that they have the same child.
      */
@@ -1262,7 +1214,7 @@ public class SubstitutionVisitor {
 
     public static MutableAlg unifyAggregates( MutableAggregate query, MutableAggregate target ) {
         if ( query.getGroupType() != Aggregate.Group.SIMPLE || target.getGroupType() != Aggregate.Group.SIMPLE ) {
-            throw new AssertionError( Bug.CALCITE_461_FIXED );
+            throw new AssertionError( "Non-simple group encountered" );
         }
         MutableAlg result;
         if ( query.groupSet.equals( target.groupSet ) ) {
@@ -1319,7 +1271,7 @@ public class SubstitutionVisitor {
 
     /**
      * Implementation of {@link UnifyRule} that matches a {@link MutableAggregate} on a {@link MutableProject} query to an {@link MutableAggregate} target.
-     *
+     * <p>
      * The rule is necessary when we unify query=Aggregate(x) with target=Aggregate(x, y). Query will tend to have an extra Project(x) on its input, which this rule knows is safe to ignore.
      */
     private static class AggregateOnProjectToAggregateUnifyRule extends AbstractUnifyRule {
@@ -1537,7 +1489,7 @@ public class SubstitutionVisitor {
 
     /**
      * Operand that assigns a particular relational expression to a variable.
-     *
+     * <p>
      * It is applied to a descendant of the query, writes the operand into the slots array, and always matches.
      * There is a corresponding operand of type {@link TargetOperand} that checks whether its relational expression, a descendant of the target, is equivalent to this {@code QueryOperand}'s relational expression.
      */
@@ -1618,59 +1570,6 @@ public class SubstitutionVisitor {
 
     }
 
-
-    /**
-     * Rule that converts a {@link LogicalRelFilter} on top of a {@link LogicalRelProject}
-     * into a trivial filter (on a boolean column).
-     */
-    public static class FilterOnProjectRule extends AlgOptRule {
-
-        public static final FilterOnProjectRule INSTANCE = new FilterOnProjectRule( AlgFactories.LOGICAL_BUILDER );
-
-
-        /**
-         * Creates a FilterOnProjectRule.
-         *
-         * @param algBuilderFactory Builder for relational expressions
-         */
-        public FilterOnProjectRule( AlgBuilderFactory algBuilderFactory ) {
-            super(
-                    operand(
-                            LogicalRelFilter.class,
-                            null,
-                            filter -> filter.getCondition() instanceof RexIndexRef,
-                            some( operand( LogicalRelProject.class, any() ) ) ),
-                    algBuilderFactory, null );
-        }
-
-
-        @Override
-        public void onMatch( AlgOptRuleCall call ) {
-            final LogicalRelFilter filter = call.alg( 0 );
-            final LogicalRelProject project = call.alg( 1 );
-
-            final List<RexNode> newProjects = new ArrayList<>( project.getProjects() );
-            newProjects.add( filter.getCondition() );
-
-            final AlgCluster cluster = filter.getCluster();
-            AlgDataType newRowType =
-                    cluster.getTypeFactory().builder()
-                            .addAll( project.getTupleType().getFields() )
-                            .add( null, "condition", null, Util.last( newProjects ).getType() )
-                            .build();
-            final AlgNode newProject =
-                    project.copy(
-                            project.getTraitSet(),
-                            project.getInput(),
-                            newProjects,
-                            newRowType );
-
-            final RexIndexRef newCondition = cluster.getRexBuilder().makeInputRef( newProject, newProjects.size() - 1 );
-
-            call.transformTo( LogicalRelFilter.create( newProject, newCondition ) );
-        }
-
-    }
 
 }
 

@@ -14,25 +14,25 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.webui.models.requests;
+package org.polypheny.db.prepare;
 
-import lombok.experimental.SuperBuilder;
-import lombok.extern.jackson.Jacksonized;
+import java.util.List;
+import org.apache.calcite.linq4j.tree.BlockStatement;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.ParameterExpression;
+import org.polypheny.db.rex.RexNode;
 
-@SuperBuilder
-@Jacksonized
-public class QueryExplorationRequest extends UIRequest {
+/**
+ * Translator from Java AST to {@link RexNode}.
+ */
+interface ScalarTranslator {
 
-    /**
-     * A query from the SQL console
-     */
-    public String query;
+    RexNode toRex( BlockStatement statement );
 
-    /**
-     * TRUE if information about the query execution should be added to the Query Analyzer (InformationManager)
-     */
-    public boolean analyze;
+    List<RexNode> toRexList( BlockStatement statement );
 
-    public int cPage;
+    RexNode toRex( Expression expression );
+
+    ScalarTranslator bind( List<ParameterExpression> parameterList, List<RexNode> values );
 
 }

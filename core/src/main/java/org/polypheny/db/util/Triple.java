@@ -23,7 +23,7 @@ import lombok.experimental.NonFinal;
 @Value(staticConstructor = "of")
 @EqualsAndHashCode
 @NonFinal
-public class Triple<A, B, C> implements Comparable<Triple<A, B, C>> {
+public class Triple<A, B, C> {
 
     public A left;
     public B middle;
@@ -35,33 +35,5 @@ public class Triple<A, B, C> implements Comparable<Triple<A, B, C>> {
         this.middle = middle;
         this.right = right;
     }
-
-
-    @Override
-    public int compareTo( Triple<A, B, C> o ) {
-        //noinspection unchecked
-        int c = compare( (Comparable) this.left, (Comparable) o.left );
-        if ( c == 0 ) {
-            //noinspection unchecked
-            c = compare( (Comparable) this.right, (Comparable) o.right );
-        }
-        return c;
-    }
-
-
-    private static <C extends Comparable<C>> int compare( C c1, C c2 ) {
-        if ( c1 == null ) {
-            if ( c2 == null ) {
-                return 0;
-            } else {
-                return -1;
-            }
-        } else if ( c2 == null ) {
-            return 1;
-        } else {
-            return c1.compareTo( c2 );
-        }
-    }
-
 
 }

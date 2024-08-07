@@ -37,7 +37,6 @@ package org.polypheny.db.algebra.enumerable;
 import com.google.common.collect.ImmutableList;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
-import java.util.Collections;
 import java.util.List;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
@@ -70,7 +69,6 @@ import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.schema.trait.ModelTraitDef;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Conformance;
-import org.polypheny.db.util.Pair;
 
 
 /**
@@ -156,7 +154,7 @@ public class EnumerableCalc extends Calc implements EnumerableAlg {
                             program,
                             typeFactory,
                             builder2,
-                            new RexToLixTranslator.InputGetterImpl( Collections.singletonList( Pair.of( input, result.physType() ) ) ),
+                            new RexToLixTranslator.InputGetterImpl( input, result.physType() ),
                             implementor.allCorrelateVariables,
                             implementor.getConformance() );
             builder2.add(
@@ -179,7 +177,7 @@ public class EnumerableCalc extends Calc implements EnumerableAlg {
                         builder3,
                         physType,
                         DataContext.ROOT,
-                        new RexToLixTranslator.InputGetterImpl( Collections.singletonList( Pair.of( input, result.physType() ) ) ),
+                        new RexToLixTranslator.InputGetterImpl( input, result.physType() ),
                         implementor.allCorrelateVariables );
         builder3.add( Expressions.return_( null, physType.record( expressions ) ) );
         BlockStatement currentBody = builder3.toBlock();

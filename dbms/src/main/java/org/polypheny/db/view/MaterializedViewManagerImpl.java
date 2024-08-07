@@ -61,19 +61,14 @@ import org.polypheny.db.plan.Convention;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.tools.AlgBuilder;
-import org.polypheny.db.transaction.EntityAccessMap;
-import org.polypheny.db.transaction.EntityAccessMap.EntityIdentifier;
-import org.polypheny.db.transaction.EntityAccessMap.EntityIdentifier.NamespaceLevel;
 import org.polypheny.db.transaction.Lock.LockMode;
 import org.polypheny.db.transaction.LockManager;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
-import org.polypheny.db.transaction.TransactionImpl;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.util.DeadlockException;
-import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.background.BackgroundTask.TaskPriority;
 import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
 import org.polypheny.db.util.background.BackgroundTaskManager;
@@ -296,15 +291,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
                 return;
             }
 
-            // Get locks for individual tables
-            EntityAccessMap access = new EntityAccessMap( optionalEntity.get().getDefinition(), new HashMap<>() );
-            Collection<Entry<EntityIdentifier, LockMode>> idAccesses = new ArrayList<>( access.getAccessedEntityPair() );
-            // if we don't lock exclusively for the target here we can produce deadlocks on underlying stores,
-            // as we could end up with two concurrent shared locks waiting for an exclusive lock on the same entity or each other's entities
-            catalog.getSnapshot().alloc().getFromLogical( materializedId )
-                    .forEach( allocation -> idAccesses.add( Pair.of( new EntityIdentifier( entity.id, allocation.id, NamespaceLevel.ENTITY_LEVEL ), LockMode.EXCLUSIVE ) ) );
-
-            LockManager.INSTANCE.lock( idAccesses, (TransactionImpl) statement.getTransaction() );
+            LockManager.INSTANCE.lock( LockMode.EXCLUSIVE, statement.getTransaction() );
         } catch ( DeadlockException e ) {
             throw new GenericRuntimeException( "DeadLock while locking for materialized view update", e );
         }
@@ -411,7 +398,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
             }
         } finally {
             // Release lock
-            LockManager.INSTANCE.unlock( Collections.singletonList( LockManager.GLOBAL_LOCK ), (TransactionImpl) transaction );
+            LockManager.INSTANCE.unlock( transaction );
         }
     }
 

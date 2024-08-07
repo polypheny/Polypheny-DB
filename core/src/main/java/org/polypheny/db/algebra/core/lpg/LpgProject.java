@@ -18,7 +18,6 @@ package org.polypheny.db.algebra.core.lpg;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.SingleAlg;
@@ -89,7 +88,7 @@ public abstract class LpgProject extends SingleAlg implements LpgAlg {
 
     @Override
     public AlgNode accept( RexShuttle shuttle ) {
-        List<RexNode> exp = this.projects.stream().map( p -> (RexNode) p ).collect( Collectors.toList() );
+        List<RexNode> exp = this.projects.stream().map( p -> (RexNode) p ).toList();
         List<RexNode> exps = shuttle.apply( exp );
         if ( exp == exps ) {
             return this;

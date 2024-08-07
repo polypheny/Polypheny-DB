@@ -30,7 +30,7 @@ import org.polypheny.db.util.PolyphenyHomeDirManager;
 
 public class FilePersister implements Persister {
 
-    ExecutorService service = Executors.newSingleThreadExecutor();
+    private final ExecutorService service = Executors.newSingleThreadExecutor();
 
 
     private final File backup;

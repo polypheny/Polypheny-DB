@@ -130,7 +130,7 @@ public class DateTimeUtils {
 
 
     static {
-        ZERO_CALENDAR = Calendar.getInstance( org.apache.calcite.avatica.util.DateTimeUtils.UTC_ZONE, Locale.ROOT );
+        ZERO_CALENDAR = Calendar.getInstance( DateTimeUtils.UTC_ZONE, Locale.ROOT );
         ZERO_CALENDAR.setTimeInMillis( 0 );
         OffsetDateTimeHandler h;
         try {
@@ -212,7 +212,7 @@ public class DateTimeUtils {
 
 
     @Deprecated // to be removed before 2.0
-    public static org.apache.calcite.avatica.util.DateTimeUtils.PrecisionTime parsePrecisionDateTimeLiteral(
+    public static DateTimeUtils.PrecisionTime parsePrecisionDateTimeLiteral(
             String s,
             String pattern,
             TimeZone tz ) {
@@ -233,11 +233,11 @@ public class DateTimeUtils {
      * @param dateFormat Date format
      * @param tz time zone in which to interpret string. Defaults to the
      * local time zone
-     * @return a {@link org.apache.calcite.avatica.util.DateTimeUtils.PrecisionTime PrecisionTime} initialized
+     * @return a {@link DateTimeUtils.PrecisionTime PrecisionTime} initialized
      * with the parsed value, or null if parsing failed. The PrecisionTime
      * contains a GMT Calendar and a precision.
      */
-    public static org.apache.calcite.avatica.util.DateTimeUtils.PrecisionTime parsePrecisionDateTimeLiteral(
+    public static DateTimeUtils.PrecisionTime parsePrecisionDateTimeLiteral(
             String s,
             DateFormat dateFormat, TimeZone tz, int maxPrecision ) {
         final ParsePosition pp = new ParsePosition( 0 );
@@ -297,7 +297,7 @@ public class DateTimeUtils {
         }
 
         assert pp.getIndex() == s.length();
-        return new org.apache.calcite.avatica.util.DateTimeUtils.PrecisionTime( cal, secFraction, p );
+        return new DateTimeUtils.PrecisionTime( cal, secFraction, p );
     }
 
 
@@ -1100,8 +1100,7 @@ public class DateTimeUtils {
      * of milliseconds since the epoch.
      */
     public static long addMonths( long timestamp, int m ) {
-        final long millis =
-                org.apache.calcite.avatica.util.DateTimeUtils.floorMod( timestamp, org.apache.calcite.avatica.util.DateTimeUtils.MILLIS_PER_DAY );
+        final long millis = DateTimeUtils.floorMod( timestamp, DateTimeUtils.MILLIS_PER_DAY );
         timestamp -= millis;
         final long x =
                 addMonths( (int) (timestamp / MILLIS_PER_DAY), m );
@@ -1128,25 +1127,19 @@ public class DateTimeUtils {
                 ++y0;
             }
         }
-        return org.apache.calcite.avatica.util.DateTimeUtils.ymdToUnixDate( y0, m0, d0 );
+        return DateTimeUtils.ymdToUnixDate( y0, m0, d0 );
     }
 
 
     private static int lastDay( int y, int m ) {
-        switch ( m ) {
-            case 2:
-                return y % 4 == 0
-                        && (y % 100 != 0
-                        || y % 400 == 0)
-                        ? 29 : 28;
-            case 4:
-            case 6:
-            case 9:
-            case 11:
-                return 30;
-            default:
-                return 31;
-        }
+        return switch ( m ) {
+            case 2 -> y % 4 == 0
+                    && (y % 100 != 0
+                    || y % 400 == 0)
+                    ? 29 : 28;
+            case 4, 6, 9, 11 -> 30;
+            default -> 31;
+        };
     }
 
 
@@ -1177,13 +1170,13 @@ public class DateTimeUtils {
 
     public static int subtractMonths( long t0, long t1 ) {
         final long millis0 =
-                org.apache.calcite.avatica.util.DateTimeUtils.floorMod( t0, org.apache.calcite.avatica.util.DateTimeUtils.MILLIS_PER_DAY );
-        final int d0 = (int) org.apache.calcite.avatica.util.DateTimeUtils.floorDiv( t0 - millis0,
-                org.apache.calcite.avatica.util.DateTimeUtils.MILLIS_PER_DAY );
+                DateTimeUtils.floorMod( t0, DateTimeUtils.MILLIS_PER_DAY );
+        final int d0 = (int) DateTimeUtils.floorDiv( t0 - millis0,
+                DateTimeUtils.MILLIS_PER_DAY );
         final long millis1 =
-                org.apache.calcite.avatica.util.DateTimeUtils.floorMod( t1, org.apache.calcite.avatica.util.DateTimeUtils.MILLIS_PER_DAY );
-        final int d1 = (int) org.apache.calcite.avatica.util.DateTimeUtils.floorDiv( t1 - millis1,
-                org.apache.calcite.avatica.util.DateTimeUtils.MILLIS_PER_DAY );
+                DateTimeUtils.floorMod( t1, DateTimeUtils.MILLIS_PER_DAY );
+        final int d1 = (int) DateTimeUtils.floorDiv( t1 - millis1,
+                DateTimeUtils.MILLIS_PER_DAY );
         int x = subtractMonths( d0, d1 );
         final long d2 = addMonths( d1, x );
         if ( d2 == d0 && millis0 < millis1 ) {
@@ -1242,7 +1235,7 @@ public class DateTimeUtils {
 
 
     /**
-     * Helper class for {@link org.apache.calcite.avatica.util.DateTimeUtils#parsePrecisionDateTimeLiteral}
+     * Helper class for {@link DateTimeUtils#parsePrecisionDateTimeLiteral}
      */
     public static class PrecisionTime {
 

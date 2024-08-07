@@ -16,6 +16,11 @@
 
 package org.polypheny.db.catalog.logistic;
 
+import java.util.Arrays;
+import lombok.Getter;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+
+@Getter
 public enum DataPlacementRole {
     UP_TO_DATE( 0 ),
     REFRESHABLE( 1 );
@@ -28,28 +33,13 @@ public enum DataPlacementRole {
     }
 
 
-    public int getId() {
-        return id;
-    }
-
-
     public static DataPlacementRole from( final int id ) {
-        for ( DataPlacementRole t : values() ) {
-            if ( t.id == id ) {
-                return t;
-            }
-        }
-        throw new RuntimeException( "Unknown DataPlacementRole with id: " + id );
+        return Arrays.stream( values() ).filter( t -> t.id == id ).findAny().orElseThrow( () -> new GenericRuntimeException( "Unknown DataPlacementRole with id: " + id ) );
     }
 
 
     public static DataPlacementRole from( final String name ) {
-        for ( DataPlacementRole t : values() ) {
-            if ( t.name().equalsIgnoreCase( name ) ) {
-                return t;
-            }
-        }
-        throw new RuntimeException( "Unknown PartitionType with name: " + name );
+        return Arrays.stream( values() ).filter( t -> t.name().equalsIgnoreCase( name ) ).findAny().orElseThrow( () -> new GenericRuntimeException( "Unknown PartitionType with name: " + name ) );
     }
 
 }

@@ -34,6 +34,7 @@
 package org.polypheny.db.sql.sql2alg;
 
 
+import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
@@ -59,14 +60,12 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import javax.annotation.Nonnull;
-import kotlin.text.Charsets;
 import lombok.Getter;
 import lombok.Setter;
-import org.apache.calcite.avatica.util.Spaces;
 import org.apache.calcite.linq4j.Ord;
+import org.apache.commons.lang3.StringUtils;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
 import org.polypheny.db.algebra.AlgCollations;
@@ -257,8 +256,6 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
 
     public static final Logger SQL2REL_LOGGER = PolyphenyDbTrace.getSqlToRelTracer();
 
-    private static final BigDecimal TWO = BigDecimal.valueOf( 2L );
-
     protected final SqlValidator validator;
 
     @Getter
@@ -273,7 +270,6 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
     private final OperatorTable opTab;
     protected final AlgDataTypeFactory typeFactory;
     private final SqlNodeToRexConverter exprConverter;
-    private int explainParamCount;
     public final Config config;
     private final AlgBuilder algBuilder;
 
@@ -308,19 +304,8 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         this.typeFactory = rexBuilder.getTypeFactory();
         this.cluster = Objects.requireNonNull( cluster );
         this.exprConverter = new SqlNodeToRexConverterImpl( convertletTable );
-        this.explainParamCount = 0;
         this.config = new ConfigBuilder().config( config ).build();
         this.algBuilder = config.algBuilderFactory().create( cluster, null );
-    }
-
-
-    /**
-     * Returns the number of dynamic parameters encountered during translation; this must only be called after {@link #convertQuery}.
-     *
-     * @return number of dynamic parameters
-     */
-    public int getDynamicParamCount() {
-        return dynamicParamSqlNodes.size();
     }
 
 
@@ -336,31 +321,6 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
             throw Util.needToImplement( "dynamic param type inference" );
         }
         return validator.getValidatedNodeType( sqlNode );
-    }
-
-
-    /**
-     * Returns the current count of the number of dynamic parameters in an EXPLAIN PLAN statement.
-     *
-     * @param increment if true, increment the count
-     * @return the current count before the optional increment
-     */
-    public int getDynamicParamCountInExplain( boolean increment ) {
-        int retVal = explainParamCount;
-        if ( increment ) {
-            ++explainParamCount;
-        }
-        return retVal;
-    }
-
-
-    /**
-     * Adds to the current map of non-correlated converted sub-queries the elements from another map that contains non-correlated sub-queries that have been converted by another SqlToAlgConverter.
-     *
-     * @param alreadyConvertedNonCorrSubqs the other map
-     */
-    public void addConvertedNonCorrSubqs( Map<SqlNode, RexNode> alreadyConvertedNonCorrSubqs ) {
-        mapConvertedNonCorrSubqs.putAll( alreadyConvertedNonCorrSubqs );
     }
 
 
@@ -721,22 +681,6 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                     LogicalRelProject.create( bb.root, exprs, rowType.getFieldNames().subList( 0, fieldCount ) ),
                     false );
         }
-    }
-
-
-    private boolean expressionsDifferent( List<SqlNode> list, List<SqlNode> others ) {
-        for ( SqlNode node : list ) {
-            if ( !others.contains( node ) ) {
-                return true;
-            }
-        }
-
-        for ( SqlNode node : others ) {
-            if ( !list.contains( node ) ) {
-                return true;
-            }
-        }
-        return false;
     }
 
 
@@ -1319,7 +1263,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                                         pair.left,
                                         ensureSqlType(
                                                 pair.left.getType(),
-                                                bb.convertExpression( pair.right ) ) ) ).collect( Collectors.toList() ) );
+                                                bb.convertExpression( pair.right ) ) ) ).toList() );
             }
             comparisons.add( rexComparison );
         }
@@ -1493,7 +1437,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
             PolyString unpadded = value.asString();
             return rexBuilder.makeCharLiteral(
                     new NlsString(
-                            Spaces.padRight( unpadded.value, type.getPrecision() ),
+                            StringUtils.rightPad( unpadded.value, type.getPrecision() ),
                             String.valueOf( Charsets.UTF_8 ),
                             Collation.COERCIBLE ) );
         }
@@ -1581,7 +1525,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                     case TRUE_FALSE_UNKNOWN:
                         if ( validator.getValidatedNodeType( node ).isNullable() ) {
                             break;
-                        } else if ( true ) {
+                        } else {
                             break;
                         }
                         // fall through
@@ -1604,24 +1548,6 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         Map<String, AlgDataType> nameToTypeMap = Collections.emptyMap();
         final ParameterScope scope = new ParameterScope( (SqlValidatorImpl) validator, nameToTypeMap );
         final Blackboard bb = createBlackboard( scope, null, false );
-        return bb.convertExpression( node );
-    }
-
-
-    /**
-     * Converts an expression from {@link SqlNode} to {@link RexNode} format, mapping identifier references to predefined expressions.
-     *
-     * @param node Expression to translate
-     * @param nameToNodeMap map from String to {@link RexNode}; when an {@link SqlIdentifier} is encountered, it is used as a key and translated to the corresponding value from this map
-     * @return Converted expression
-     */
-    public RexNode convertExpression( SqlNode node, Map<String, RexNode> nameToNodeMap ) {
-        final Map<String, AlgDataType> nameToTypeMap = new HashMap<>();
-        for ( Map.Entry<String, RexNode> entry : nameToNodeMap.entrySet() ) {
-            nameToTypeMap.put( entry.getKey(), entry.getValue().getType() );
-        }
-        final ParameterScope scope = new ParameterScope( (SqlValidatorImpl) validator, nameToTypeMap );
-        final Blackboard bb = createBlackboard( scope, nameToNodeMap, false );
         return bb.convertExpression( node );
     }
 
@@ -3211,7 +3137,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
 
 
     /**
-     * Adjusts the type of a reference to an input field to account for nulls introduced by outer joins; and adjusts the offset to match the physical implementation.
+     * Adjusts the type of the reference to an input field to account for nulls introduced by outer joins; and adjusts the offset to match the physical implementation.
      *
      * @param bb Blackboard
      * @param inputRef Input ref
@@ -3734,7 +3660,6 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                 }
                 return Pair.of( node, null );
             }
-            final NameMatcher nameMatcher = NameMatchers.withCaseSensitive( false );
             final SqlValidatorScope.ResolvedImpl resolved = new SqlValidatorScope.ResolvedImpl();
             scope.resolve( qualified.prefix(), false, resolved );
             if ( !(resolved.count() == 1) ) {
@@ -3911,14 +3836,10 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                         if ( !(query instanceof SqlNodeList) ) {
                             root = convertQueryRecursive( query, false, null );
                             final SqlNode operand = call.operand( 0 );
-                            List<SqlNode> nodes;
-                            switch ( operand.getKind() ) {
-                                case ROW:
-                                    nodes = ((SqlCall) operand).getSqlOperandList();
-                                    break;
-                                default:
-                                    nodes = ImmutableList.of( operand );
-                            }
+                            List<SqlNode> nodes = switch ( operand.getKind() ) {
+                                case ROW -> ((SqlCall) operand).getSqlOperandList();
+                                default -> ImmutableList.of( operand );
+                            };
                             final ImmutableList.Builder<RexNode> builder = ImmutableList.builder();
                             for ( SqlNode node : nodes ) {
                                 builder.add( convertExpression( node ) );
@@ -4550,7 +4471,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                                                 lookupOrCreateGroupExpr( fieldCollation.left ),
                                                 fieldCollation.getDirection(),
                                                 fieldCollation.getNullDirection() ) )
-                                .collect( Collectors.toList() ) );
+                                .toList() );
             }
 
             final AggregateCall aggCall =
@@ -4924,7 +4845,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
      *
      * @param r The relational expression that uses the variable.
      */
-    private record CorrelationUse(CorrelationId id, ImmutableBitSet requiredColumns, AlgNode r) {
+    private record CorrelationUse( CorrelationId id, ImmutableBitSet requiredColumns, AlgNode r ) {
 
     }
 

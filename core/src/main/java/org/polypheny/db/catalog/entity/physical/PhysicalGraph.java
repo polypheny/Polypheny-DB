@@ -25,7 +25,6 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.logistic.DataModel;
-import org.polypheny.db.type.entity.PolyValue;
 
 @EqualsAndHashCode(callSuper = true)
 @Value
@@ -39,12 +38,6 @@ public class PhysicalGraph extends PhysicalEntity {
             @Deserialize("name") String name,
             @Deserialize("adapterId") long adapterId ) {
         super( id, allocationId, logicalId, name, id, name, List.of(), DataModel.GRAPH, adapterId ); // for graph both name and namespaceName are the same
-    }
-
-
-    @Override
-    public PolyValue[] getParameterArray() {
-        return new PolyValue[0];
     }
 
 

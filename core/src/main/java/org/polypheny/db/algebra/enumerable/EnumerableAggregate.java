@@ -38,7 +38,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import org.apache.calcite.linq4j.Ord;
@@ -280,7 +279,7 @@ public class EnumerableAggregate extends Aggregate implements EnumerableAlg {
                             return RexToLixTranslator.forAggregation(
                                     typeFactory,
                                     currentBlock(),
-                                    new RexToLixTranslator.InputGetterImpl( Collections.singletonList( Pair.of( inParameter, inputPhysType ) ) ),
+                                    new RexToLixTranslator.InputGetterImpl( inParameter, inputPhysType ),
                                     implementor.getConformance() ).setNullable( currentNullables() );
                         }
                     };

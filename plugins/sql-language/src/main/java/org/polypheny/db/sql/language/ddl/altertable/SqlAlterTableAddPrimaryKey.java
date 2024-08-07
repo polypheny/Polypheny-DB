@@ -19,7 +19,6 @@ package org.polypheny.db.sql.language.ddl.altertable;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.EntityType;
@@ -87,10 +86,9 @@ public class SqlAlterTableAddPrimaryKey extends SqlAlterTable {
 
         DdlManager.getInstance().createPrimaryKey(
                 logicalTable,
-                columnList.getList().stream().map( Node::toString ).collect( Collectors.toList() ),
+                columnList.getList().stream().map( Node::toString ).toList(),
                 statement );
 
     }
 
 }
-

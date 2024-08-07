@@ -144,6 +144,7 @@ public class MysqlSourcePlugin extends PolyPlugin {
             return false;
         }
 
+
         @Override
         public boolean supportsRelational() {
             return true;
@@ -170,7 +171,7 @@ public class MysqlSourcePlugin extends PolyPlugin {
 
         @Override
         public DocumentDataSource asDocumentDataSource() {
-            throw new IllegalStateException("This source does not support the relational model.");
+            throw new IllegalStateException( "This source does not support the relational model." );
         }
 
     }

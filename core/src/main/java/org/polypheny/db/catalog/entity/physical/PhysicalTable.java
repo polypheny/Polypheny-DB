@@ -21,7 +21,6 @@ import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.NonFinal;
@@ -35,7 +34,6 @@ import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.catalogs.AdapterCatalog;
 import org.polypheny.db.catalog.logistic.DataModel;
-import org.polypheny.db.type.entity.PolyValue;
 
 @EqualsAndHashCode(callSuper = true)
 @Value
@@ -59,7 +57,7 @@ public class PhysicalTable extends PhysicalEntity {
             @Deserialize("uniqueFieldIds") List<Long> uniqueFieldIds,
             @Deserialize("adapterId") long adapterId ) {
         super( id, allocationId, logicalId, name, namespaceId, namespaceName, uniqueFieldIds, DataModel.RELATIONAL, adapterId );
-        this.columns = ImmutableList.copyOf( columns.stream().sorted( Comparator.comparingInt( a -> a.position ) ).collect( Collectors.toList() ) );
+        this.columns = ImmutableList.copyOf( columns.stream().sorted( Comparator.comparingInt( a -> a.position ) ).toList() );
     }
 
 
@@ -82,24 +80,18 @@ public class PhysicalTable extends PhysicalEntity {
 
 
     @Override
-    public PolyValue[] getParameterArray() {
-        return new PolyValue[0];
-    }
-
-
-    @Override
     public Expression asExpression() {
         return Expressions.call( Expressions.convert_( Expressions.call( Catalog.PHYSICAL_EXPRESSION.apply( adapterId ), "get" ), AdapterCatalog.class ), "getPhysical", Expressions.constant( id ) );
     }
 
 
     public List<String> getColumnNames() {
-        return columns.stream().map( c -> c.name ).collect( Collectors.toList() );
+        return columns.stream().map( c -> c.name ).toList();
     }
 
 
     public List<Long> getColumnIds() {
-        return columns.stream().map( c -> c.id ).collect( Collectors.toList() );
+        return columns.stream().map( c -> c.id ).toList();
     }
 
 

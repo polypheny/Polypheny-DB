@@ -97,13 +97,11 @@ class QueryableAlgBuilder<T> implements QueryableFactory<T> {
 
 
     AlgNode toAlg( Queryable<T> queryable ) {
-        if ( queryable instanceof QueryableDefaults.Replayable ) {
-            //noinspection unchecked
-            ((QueryableDefaults.Replayable) queryable).replay( this );
+        if ( queryable instanceof QueryableDefaults.Replayable<T> query ) {
+            query.replay( this );
             return alg;
         }
-        if ( queryable instanceof AbstractEntityQueryable ) {
-            final AbstractEntityQueryable tableQueryable = (AbstractEntityQueryable) queryable;
+        if ( queryable instanceof AbstractEntityQueryable<T, ?> tableQueryable ) {
             final QueryableEntity table = tableQueryable.entity.unwrap( QueryableEntity.class ).orElseThrow();
 
             if ( table instanceof TranslatableEntity ) {

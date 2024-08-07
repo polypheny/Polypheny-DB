@@ -29,6 +29,7 @@ import org.polypheny.db.catalog.catalogs.LogicalCatalog;
 import org.polypheny.db.catalog.catalogs.LogicalDocumentCatalog;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.catalog.snapshot.LogicalDocSnapshot;
 
@@ -45,15 +46,15 @@ public class LogicalDocSnapshotImpl implements LogicalDocSnapshot {
     public LogicalDocSnapshotImpl( Map<Long, LogicalDocumentCatalog> catalogs ) {
         this.namespaces = ImmutableMap.copyOf( catalogs.values().stream().collect( Collectors.toMap( n -> n.getLogicalNamespace().id, LogicalCatalog::getLogicalNamespace ) ) );
         this.collections = ImmutableMap.copyOf( catalogs.values().stream().flatMap( c -> c.getCollections().values().stream() ).collect( Collectors.toMap( c -> c.id, c -> c ) ) );
-        this.collectionNames = ImmutableMap.copyOf(this.collections.values().stream().collect(
+        this.collectionNames = ImmutableMap.copyOf( this.collections.values().stream().collect(
                 Collectors.toMap(
                         c -> c.name,
                         c -> c,
-                        (existing, replacement) -> {
-                            throw new RuntimeException("A collection of documents called '" + existing.name + "' already exists.");
+                        ( existing, replacement ) -> {
+                            throw new GenericRuntimeException( "A collection of documents called '" + existing.name + "' already exists." );
                         }
                 )
-        ));
+        ) );
         this.namespaceCollections = ImmutableMap.copyOf( catalogs.values().stream().collect( Collectors.toMap( c -> c.getLogicalNamespace().id, c -> List.copyOf( c.getCollections().values() ) ) ) );
     }
 
@@ -74,7 +75,7 @@ public class LogicalDocSnapshotImpl implements LogicalDocSnapshot {
 
         return collections.stream().filter( c -> namespaces.get( c.namespaceId ).caseSensitive
                 ? c.name.matches( namePattern.toRegex() )
-                : c.name.toLowerCase().matches( namePattern.toLowerCase().toRegex() ) ).collect( Collectors.toList() );
+                : c.name.toLowerCase().matches( namePattern.toLowerCase().toRegex() ) ).toList();
     }
 
 
@@ -88,7 +89,7 @@ public class LogicalDocSnapshotImpl implements LogicalDocSnapshot {
                     : n.name.toLowerCase().matches( namespacePattern.toLowerCase().toRegex() ) ).toList();
         }
 
-        return namespaces.stream().flatMap( n -> getCollections( n.id, namePattern ).stream() ).collect( Collectors.toList() );
+        return namespaces.stream().flatMap( n -> getCollections( n.id, namePattern ).stream() ).toList();
     }
 
 
@@ -100,7 +101,6 @@ public class LogicalDocSnapshotImpl implements LogicalDocSnapshot {
                 ? c.name.equals( name )
                 : c.name.equalsIgnoreCase( name ) ).findFirst();
     }
-
 
 
 }

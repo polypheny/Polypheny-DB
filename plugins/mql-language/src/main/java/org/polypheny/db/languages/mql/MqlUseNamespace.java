@@ -16,6 +16,7 @@
 
 package org.polypheny.db.languages.mql;
 
+import java.util.Optional;
 import lombok.Getter;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.ddl.DdlManager;
@@ -52,6 +53,12 @@ public class MqlUseNamespace extends MqlNode implements ExecutableStatement {
     @Override
     public Type getMqlKind() {
         return Type.USE_DATABASE;
+    }
+
+
+    @Override
+    public Optional<String> switchesNamespace() {
+        return Optional.ofNullable( namespace );
     }
 
 }

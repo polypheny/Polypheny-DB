@@ -36,13 +36,13 @@ package org.polypheny.db.type;
 
 import com.google.common.collect.ImmutableMap;
 import java.math.BigDecimal;
+import java.sql.Array;
 import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.List;
 import java.util.Map;
-import org.apache.calcite.avatica.util.ArrayImpl;
 import org.polypheny.db.functions.GeoFunctions.Geom;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
@@ -114,7 +114,7 @@ public class JavaToPolyTypeConversionRules {
 
                     .put( ResultSet.class, PolyType.CURSOR )
                     .put( ColumnList.class, PolyType.COLUMN_LIST )
-                    .put( ArrayImpl.class, PolyType.ARRAY )
+                    .put( Array.class, PolyType.ARRAY )
                     .put( List.class, PolyType.ARRAY )
                     .put( PolyList.class, PolyType.ARRAY )
                     .put( PolyMap.class, PolyType.MAP )

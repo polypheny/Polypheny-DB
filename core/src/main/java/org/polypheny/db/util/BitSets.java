@@ -90,14 +90,14 @@ public final class BitSets {
 
     /**
      * Returns an iterable over the bits in a bitmap that are set to '1'.
-     *
+     * <p>
      * This allows you to iterate over a bit set using a 'foreach' construct.
      * For instance:
-     *
+     * <p>
      * <code>
      * BitSet bitSet;
      * for (int i : Util.toIter(bitSet)) {
-     *   print(i);
+     * print(i);
      * }
      * </code>
      *
@@ -138,7 +138,7 @@ public final class BitSets {
 
     /**
      * Converts a bitset to a list.
-     *
+     * <p>
      * The list is mutable, and future changes to the list do not affect the contents of the bit set.
      *
      * @param bitSet Bit set
@@ -171,7 +171,7 @@ public final class BitSets {
 
     /**
      * Creates a bitset with given bits set.
-     *
+     * <p>
      * For example, {@code of(0, 3)} returns a bit set with bits {0, 3} set.
      *
      * @param bits Array of bits to set
@@ -188,7 +188,7 @@ public final class BitSets {
 
     /**
      * Creates a BitSet with given bits set.
-     *
+     * <p>
      * For example, {@code of(new Integer[] {0, 3})} returns a bit set with bits {0, 3} set.
      *
      * @param bits Array of bits to set
@@ -205,7 +205,7 @@ public final class BitSets {
 
     /**
      * Creates a BitSet with given bits set.
-     *
+     * <p>
      * For example, {@code of(Arrays.asList(0, 3)) } returns a bit set with bits {0, 3} set.
      *
      * @param bits Collection of bits to set
@@ -222,7 +222,7 @@ public final class BitSets {
 
     /**
      * Creates a BitSet with given bits set.
-     *
+     * <p>
      * For example, {@code of(ImmutableIntList.of(0, 3))} returns a bit set with bits {0, 3} set.
      *
      * @param bits Collection of bits to set
@@ -239,7 +239,7 @@ public final class BitSets {
 
     /**
      * Creates a bitset with bits from {@code fromIndex} (inclusive) to specified {@code toIndex} (exclusive) set to {@code true}.
-     *
+     * <p>
      * For example, {@code range(0, 3)} returns a bit set with bits {0, 1, 2} set.
      *
      * @param fromIndex Index of the first bit to be set.
@@ -266,16 +266,6 @@ public final class BitSets {
 
 
     /**
-     * Sets all bits in a given BitSet corresponding to integers from a list.
-     */
-    public static void setAll( BitSet bitSet, Iterable<? extends Number> list ) {
-        for ( Number number : list ) {
-            bitSet.set( number.intValue() );
-        }
-    }
-
-
-    /**
      * Returns a BitSet that is the union of the given BitSets. Does not modify any of the inputs.
      */
     public static BitSet union( BitSet set0, BitSet... sets ) {
@@ -289,7 +279,7 @@ public final class BitSets {
 
     /**
      * Returns the previous clear bit.
-     *
+     * <p>
      * Has same behavior as {@link BitSet#previousClearBit}, but that method does not exist before 1.7.
      */
     public static int previousClearBit( BitSet bitSet, int fromIndex ) {
@@ -308,9 +298,9 @@ public final class BitSets {
 
     /**
      * Computes the closure of a map from integers to bits.
-     *
+     * <p>
      * The input must have an entry for each position.
-     *
+     * <p>
      * Does not modify the input map or its bit sets.
      */
     public static SortedMap<Integer, BitSet> closure( SortedMap<Integer, BitSet> equivalence ) {
@@ -362,7 +352,7 @@ public final class BitSets {
      */
     private static class Closure {
 
-        private SortedMap<Integer, BitSet> equivalence;
+        private final SortedMap<Integer, BitSet> equivalence;
         private final SortedMap<Integer, BitSet> closure = new TreeMap<>();
 
 
@@ -393,6 +383,7 @@ public final class BitSets {
             }
             return o;
         }
-    }
-}
 
+    }
+
+}

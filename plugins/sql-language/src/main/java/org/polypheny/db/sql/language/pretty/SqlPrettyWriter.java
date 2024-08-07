@@ -34,13 +34,13 @@ import java.util.Properties;
 import java.util.Set;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.util.Spaces;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.sql.language.dialect.AnsiSqlDialect;
 import org.polypheny.db.sql.language.util.SqlString;
+import org.polypheny.db.util.Spaces;
 import org.polypheny.db.util.Unsafe;
 import org.polypheny.db.util.Util;
 

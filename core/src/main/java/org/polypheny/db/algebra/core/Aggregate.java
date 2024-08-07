@@ -68,7 +68,6 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.runtime.Resources;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.util.Bug;
 import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Litmus;
@@ -92,9 +91,6 @@ import org.polypheny.db.util.Util;
  */
 public abstract class Aggregate extends SingleAlg {
 
-    /**
-     * @see Bug#CALCITE_461_FIXED
-     */
     public static boolean isSimple( Aggregate aggregate ) {
         return aggregate.getGroupType() == Group.SIMPLE;
     }

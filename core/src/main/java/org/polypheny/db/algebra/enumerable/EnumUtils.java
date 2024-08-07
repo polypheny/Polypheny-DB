@@ -43,6 +43,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.function.Function2;
@@ -79,7 +80,6 @@ import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.util.BuiltInMethod;
-import org.polypheny.db.util.Pair;
 
 
 /**
@@ -347,7 +347,7 @@ public class EnumUtils {
 
     @SafeVarargs
     @SuppressWarnings("unused")
-    public static Map<Object, Object> ofEntries( Pair<Object, Object>... pairs ) {
+    public static Map<Object, Object> ofEntries( Entry<Object, Object>... pairs ) {
         return new HashMap<>( Map.ofEntries( pairs ) );
     }
 
@@ -453,7 +453,7 @@ public class EnumUtils {
                         Expressions.convert_( Expressions.field( RexToLixTranslator.translateCondition( program.getProgram(),
                                         implementor.getTypeFactory(),
                                         builder,
-                                        new RexToLixTranslator.InputGetterImpl( ImmutableList.of( Pair.of( left_, leftPhysType ), Pair.of( right_, rightPhysType ) ) ),
+                                        new RexToLixTranslator.JoinInputGetterImpl( left_, leftPhysType, right_, rightPhysType ),
                                         implementor.allCorrelateVariables,
                                         implementor.getConformance() ), "value" ),
                                 boolean.class ) ) );

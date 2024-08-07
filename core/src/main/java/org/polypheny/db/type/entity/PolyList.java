@@ -205,7 +205,7 @@ public class PolyList<E extends PolyValue> extends PolyValue implements List<E> 
         }
 
         if ( value.size() != o.asList().value.size() ) {
-            return value.size() - o.asList().value.size();
+            return Long.compare( value.size(), o.asList().value.size() );
         }
 
         for ( Pair<E, ?> pair : Pair.zip( value, o.asList().value ) ) {

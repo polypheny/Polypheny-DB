@@ -31,7 +31,6 @@ import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.prisminterface.PIPlugin.PrismInterface;
 import org.polypheny.db.prisminterface.transport.Transport;
 import org.polypheny.db.prisminterface.utils.PropertyUtils;
-import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.prism.ConnectionRequest;
@@ -94,8 +93,6 @@ class ClientManager {
             log.trace( "User {} tries to establish connection via prism interface.", uuid );
         }
         final LogicalUser user = getUser( connectionRequest, t );
-        Transaction transaction = transactionManager.startTransaction( user.id, false, "prism-interface" );
-        transaction.commit();
         LogicalNamespace namespace = getNamespaceOrDefault( connectionRequest );
         boolean isAutocommit = getAutocommitOrDefault( connectionRequest );
         PIClient client = new PIClient(

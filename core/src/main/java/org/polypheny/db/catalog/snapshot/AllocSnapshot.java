@@ -30,7 +30,8 @@ import org.polypheny.db.partition.properties.PartitionProperty;
 
 public interface AllocSnapshot {
 
-    @NotNull List<AllocationColumn> getColumns();
+    @NotNull
+    List<AllocationColumn> getColumns();
 
     @NotNull
     Optional<List<AllocationEntity>> getEntitiesOnAdapter( long id );

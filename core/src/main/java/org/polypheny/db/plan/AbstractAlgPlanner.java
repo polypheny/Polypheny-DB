@@ -83,7 +83,7 @@ public abstract class AbstractAlgPlanner implements AlgPlanner {
 
     private final Set<Class<? extends AlgNode>> classes = new HashSet<>();
 
-    private final Set<AlgTrait> traits = new HashSet<>();
+    private final Set<AlgTrait<?>> traits = new HashSet<>();
 
     /**
      * External context. Never null.

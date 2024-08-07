@@ -89,7 +89,6 @@ import org.polypheny.db.rex.RexPermuteInputsShuttle;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.rex.RexVisitor;
 import org.polypheny.db.tools.AlgBuilder;
-import org.polypheny.db.util.Bug;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
@@ -266,9 +265,8 @@ public class AlgFieldTrimmer implements AlgProducingVisitor3<TrimResult, Immutab
         final int fieldCount = alg.getTupleType().getFieldCount();
         assert mapping.getSourceCount() == fieldCount : "source: " + mapping.getSourceCount() + " != " + fieldCount;
         final int newFieldCount = newRel.getTupleType().getFieldCount();
-        assert mapping.getTargetCount() + extraFields.size() == newFieldCount || Bug.TODO_FIXED
+        assert mapping.getTargetCount() + extraFields.size() == newFieldCount
                 : "target: " + mapping.getTargetCount() + " + " + extraFields.size() + " != " + newFieldCount;
-        assert !Bug.TODO_FIXED || newFieldCount > 0 : "alg has no fields after trim: " + alg;
         if ( newRel.equals( alg ) ) {
             return result( alg, mapping );
         }

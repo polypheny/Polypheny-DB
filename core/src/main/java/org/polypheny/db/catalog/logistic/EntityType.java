@@ -18,7 +18,6 @@ package org.polypheny.db.catalog.logistic;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 
@@ -35,26 +34,6 @@ public enum EntityType {
 
     EntityType( int id ) {
         this.id = id;
-    }
-
-
-    public static EntityType getById( final int id ) {
-        for ( EntityType t : values() ) {
-            if ( t.id == id ) {
-                return t;
-            }
-        }
-        throw new GenericRuntimeException( "Unknown EntityType with id: " + id );
-    }
-
-
-    public static EntityType getByName( final String name ) {
-        for ( EntityType t : values() ) {
-            if ( t.name().equalsIgnoreCase( name ) ) {
-                return t;
-            }
-        }
-        throw new GenericRuntimeException( "Unknown EntityType with name: " + name );
     }
 
 

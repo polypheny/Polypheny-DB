@@ -55,7 +55,7 @@ import org.polypheny.db.sql.language.SqlDialect;
 @AdapterSettingString(name = "password", defaultValue = "polypheny", description = "Username to be used for authenticating at the remote instance.", position = 5)
 @AdapterSettingInteger(name = "maxConnections", defaultValue = 25, description = "Password to be used for authenticating at the remote instance.")
 @AdapterSettingString(name = "table", defaultValue = "public.foo,public.bar", description = "Maximum number of concurrent JDBC connections.")
-public class MonetdbSource extends AbstractJdbcSource implements RelationalDataSource{
+public class MonetdbSource extends AbstractJdbcSource implements RelationalDataSource {
 
     public MonetdbSource( final long storeId, final String uniqueName, final Map<String, String> settings, final DeployMode mode ) {
         super( storeId, uniqueName, settings, mode, "nl.cwi.monetdb.jdbc.MonetDriver", MonetdbSqlDialect.DEFAULT, false );
@@ -130,6 +130,7 @@ public class MonetdbSource extends AbstractJdbcSource implements RelationalDataS
         return List.of( physical );
     }
 
+
     @Override
     public boolean supportsRelational() {
         return true;
@@ -156,7 +157,7 @@ public class MonetdbSource extends AbstractJdbcSource implements RelationalDataS
 
     @Override
     public DocumentDataSource asDocumentDataSource() {
-        throw new IllegalStateException("This source does not support the relational model.");
+        throw new IllegalStateException( "This source does not support the relational model." );
     }
 
 }

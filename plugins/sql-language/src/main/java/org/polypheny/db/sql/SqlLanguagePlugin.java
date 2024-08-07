@@ -22,12 +22,12 @@ import com.google.common.collect.ImmutableList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.algebra.constant.ConformanceEnum;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.Modality;
@@ -38,7 +38,6 @@ import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
-import org.polypheny.db.config.PolyphenyDbConnectionProperty;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
@@ -251,13 +250,13 @@ public class SqlLanguagePlugin extends PolyPlugin {
         final OperatorTable opTab0 = fun( OperatorTable.class, SqlStdOperatorTable.instance() );
         final OperatorTable opTab = ChainedOperatorTable.of( opTab0, snapshot );
         final JavaTypeFactory typeFactory = context.getTypeFactory();
-        final Conformance conformance = context.config().conformance();
+        final Conformance conformance = ConformanceEnum.DEFAULT;
         return new PolyphenyDbSqlValidator( opTab, snapshot, typeFactory, conformance );
     }
 
 
     public static <T> T fun( Class<T> operatorTableClass, T defaultOperatorTable ) {
-        final String fun = PolyphenyDbConnectionProperty.FUN.wrap( new Properties() ).getString();
+        final String fun = "default";
         if ( fun == null || fun.isEmpty() || fun.equals( "standard" ) ) {
             return defaultOperatorTable;
         }

@@ -19,7 +19,6 @@ package org.polypheny.db.sql.language.ddl.altertable;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
@@ -150,7 +149,7 @@ public class SqlAlterTableAddPartitions extends SqlAlterTable {
                                 table,
                                 partitionType.getSimple(),
                                 partitionColumn.getSimple(),
-                                partitionGroupNamesList.stream().map( n -> (Identifier) n ).collect( Collectors.toList() ),
+                                partitionGroupNamesList.stream().map( n -> (Identifier) n ).toList(),
                                 numPartitionGroups,
                                 numPartitions,
                                 partitionQualifierList.stream().map( l -> l.stream().map( e -> (Node) e ).toList() ).toList(),

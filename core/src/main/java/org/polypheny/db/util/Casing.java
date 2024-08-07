@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,21 @@
  * limitations under the License.
  */
 
-/**
- * Query provider based on a JDBC data source.
- */
+package org.polypheny.db.util;
 
-package org.polypheny.db.adapter.jdbc;
+public enum Casing {
+    /**
+     * The case of identifiers is not changed.
+     */
+    UNCHANGED,
 
+    /**
+     * Identifiers are converted to upper-case.
+     */
+    TO_UPPER,
+
+    /**
+     * Identifiers are converted to lower-case.
+     */
+    TO_LOWER
+}

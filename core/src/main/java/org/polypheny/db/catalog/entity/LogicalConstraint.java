@@ -21,16 +21,15 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.io.Serializable;
-import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.Value;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.catalog.entity.logical.LogicalKey;
 import org.polypheny.db.catalog.logistic.ConstraintType;
 
 
-@EqualsAndHashCode
 @Value
-public class LogicalConstraint implements Serializable {
+public class LogicalConstraint implements Serializable, Comparable<LogicalConstraint> {
 
     @Serialize
     @JsonProperty
@@ -62,5 +61,13 @@ public class LogicalConstraint implements Serializable {
         this.key = key;
     }
 
+
+    @Override
+    public int compareTo( @NotNull LogicalConstraint o ) {
+        if ( this == o ) {
+            return 0;
+        }
+        return Long.compare( id, o.id );
+    }
 
 }

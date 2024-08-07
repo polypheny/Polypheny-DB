@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,7 +62,7 @@ public class MetadataDef<M extends Metadata> {
 
         // Handler must have the same methods as Metadata, each method having additional "subclass-of-AlgNode, RelMetadataQuery" parameters.
         assert handlerMethods.length == methods.length;
-        for ( Pair<Method, Method> pair : Pair.zip( methods, handlerMethods ) ) {
+        for ( Pair<Method, Method> pair : Pair.zip( List.of( methods ), List.of( handlerMethods ) ) ) {
             final List<Class<?>> leftTypes = Arrays.asList( pair.left.getParameterTypes() );
             final List<Class<?>> rightTypes = Arrays.asList( pair.right.getParameterTypes() );
             assert leftTypes.size() + 2 == rightTypes.size();
@@ -81,4 +81,3 @@ public class MetadataDef<M extends Metadata> {
     }
 
 }
-

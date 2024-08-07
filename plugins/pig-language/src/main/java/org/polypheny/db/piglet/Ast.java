@@ -40,7 +40,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import lombok.Getter;
-import org.apache.calcite.avatica.util.Spacer;
 import org.apache.calcite.linq4j.Ord;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.constant.Kind;
@@ -51,12 +50,13 @@ import org.polypheny.db.nodes.NodeVisitor;
 import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.Spacer;
 import org.polypheny.db.util.Util;
 
 
 /**
  * Abstract syntax tree.
- *
+ * <p>
  * Contains inner classes for various kinds of parse tree node.
  */
 public class Ast {
@@ -268,7 +268,7 @@ public class Ast {
 
     /**
      * Parse tree node for VALUES statement.
-     *
+     * <p>
      * VALUES is an extension to Pig, inspired by SQL's VALUES clause.
      */
     public static class ValuesStmt extends Assignment {
@@ -304,7 +304,7 @@ public class Ast {
 
     /**
      * Parse tree node for FOREACH statement (non-nested).
-     *
+     * <p>
      * Syntax:
      * <code>
      * alias = FOREACH alias GENERATE expression [, expression]... [ AS schema ];
@@ -328,9 +328,9 @@ public class Ast {
 
     /**
      * Parse tree node for FOREACH statement (nested).
-     *
+     * <p>
      * Syntax:
-     *
+     * <p>
      * <code>
      * alias = FOREACH nested_alias {
      * alias = nested_op; [alias = nested_op; ]...
@@ -360,7 +360,7 @@ public class Ast {
 
     /**
      * Parse tree node for FILTER statement.
-     *
+     * <p>
      * Syntax: <pre>alias = FILTER alias BY expression;</pre>
      */
     public static class FilterStmt extends Assignment1 {
@@ -378,7 +378,7 @@ public class Ast {
 
     /**
      * Parse tree node for DISTINCT statement.
-     *
+     * <p>
      * Syntax: <pre>alias = DISTINCT alias;</pre>
      */
     public static class DistinctStmt extends Assignment1 {
@@ -392,7 +392,7 @@ public class Ast {
 
     /**
      * Parse tree node for LIMIT statement.
-     *
+     * <p>
      * Syntax: <pre>alias = LIMIT alias n;</pre>
      */
     public static class LimitStmt extends Assignment1 {
@@ -412,7 +412,7 @@ public class Ast {
 
     /**
      * Parse tree node for ORDER statement.
-     *
+     * <p>
      * Syntax: <code>alias = ORDER alias BY (* | field) [ASC | DESC] [, field [ASC | DESC] ]...;</code>
      */
     public static class OrderStmt extends Assignment1 {
@@ -430,7 +430,7 @@ public class Ast {
 
     /**
      * Parse tree node for GROUP statement.
-     *
+     * <p>
      * Syntax: <code>alias = GROUP alias ( ALL | BY ( exp | '(' exp [, exp]... ')' ) )</code>
      */
     public static class GroupStmt extends Assignment1 {
@@ -631,7 +631,7 @@ public class Ast {
 
     /**
      * Parse tree for field schema.
-     *
+     * <p>
      * Syntax: <pre>identifier:type</pre>
      */
     public static class FieldSchema extends PigNode {
@@ -651,7 +651,7 @@ public class Ast {
 
     /**
      * Parse tree for schema.
-     *
+     * <p>
      * Syntax: <pre>AS ( identifier:type [, identifier:type]... )</pre>
      */
     public static class Schema extends PigNode {
@@ -749,7 +749,7 @@ public class Ast {
     /**
      * Contains output and indentation level while a tree of nodes is being converted to text.
      */
-    static class UnParser {
+    public static class UnParser {
 
         final StringBuilder buf = new StringBuilder();
         final Spacer spacer = new Spacer( 0 );

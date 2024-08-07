@@ -52,6 +52,8 @@ delombok {
     dependsOn(":dbms:processResources")
 }
 
+test.dependsOn(":dbms:shadowJar")
+
 /**
  * JARs
  */
@@ -68,5 +70,6 @@ java {
 }
 
 licensee {
+    allow('MIT')
     allow('Apache-2.0')
 }

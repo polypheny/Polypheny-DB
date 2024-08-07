@@ -83,8 +83,11 @@ public class CypherCreateNamespace extends CypherAdminCommand implements Executa
             dataStore = List.of( manager.getStore( store ).get() );
         }
 
-        if ( Catalog.snapshot().getNamespace( namespaceName ).isPresent() && !ifNotExists ) {
-            throw new GenericRuntimeException( "Namespace does already exist" );
+        if ( Catalog.snapshot().getNamespace( namespaceName ).isPresent() ) {
+            if ( !ifNotExists ) {
+                throw new GenericRuntimeException( "Namespace does already exist" );
+            }
+            return;
         }
 
         DdlManager.getInstance().createGraph(

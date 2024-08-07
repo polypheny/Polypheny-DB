@@ -53,13 +53,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TimeZone;
 import java.util.function.Predicate;
 import javax.annotation.Nonnull;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.operators.OperatorName;
-import org.polypheny.db.config.PolyphenyDbConnectionConfig;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.nodes.TimeUnitRange;
@@ -74,7 +74,6 @@ import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.rex.RexVisitorImpl;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.AlgBuilderFactory;
-import org.polypheny.db.util.Bug;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.TimestampString;
 import org.polypheny.db.util.Util;
@@ -192,7 +191,7 @@ public abstract class DateRangeRules {
         public void onMatch( AlgOptRuleCall call ) {
             final Filter filter = call.alg( 0 );
             final RexBuilder rexBuilder = filter.getCluster().getRexBuilder();
-            final String timeZone = filter.getCluster().getPlanner().getContext().unwrap( PolyphenyDbConnectionConfig.class ).orElseThrow().timeZone();
+            final String timeZone = TimeZone.getDefault().getID();
             final RexNode condition = replaceTimeUnits( rexBuilder, filter.getCondition(), timeZone );
             if ( condition.equals( filter.getCondition() ) ) {
                 return;
@@ -208,7 +207,7 @@ public abstract class DateRangeRules {
     /**
      * Visitor that searches for calls to {@code EXTRACT}, {@code FLOOR} or {@code CEIL}, building a list of distinct time units.
      */
-    private static class ExtractFinder extends RexVisitorImpl implements AutoCloseable {
+    private static class ExtractFinder extends RexVisitorImpl<Object> implements AutoCloseable {
 
         private final Set<TimeUnitRange> timeUnits = EnumSet.noneOf( TimeUnitRange.class );
         private final Set<Kind> opKinds = EnumSet.noneOf( Kind.class );
@@ -267,7 +266,6 @@ public abstract class DateRangeRules {
         ExtractShuttle( RexBuilder rexBuilder, TimeUnitRange timeUnit, Map<RexNode, RangeSet<Calendar>> operandRanges, ImmutableSortedSet<TimeUnitRange> timeUnitRanges, String timeZone ) {
             this.rexBuilder = Objects.requireNonNull( rexBuilder );
             this.timeUnit = Objects.requireNonNull( timeUnit );
-            Bug.upgrade( "Change type to Map<RexNode, RangeSet<Calendar>> when [POLYPHENYDB-1367] is fixed" );
             this.operandRanges = Objects.requireNonNull( operandRanges );
             this.timeUnitRanges = Objects.requireNonNull( timeUnitRanges );
             this.timeZone = timeZone;

@@ -21,12 +21,12 @@ import java.math.MathContext;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import lombok.experimental.NonFinal;
-import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyLong;
+import org.polypheny.db.util.temporal.DateTimeUtils;
 
 @NonFinal
 public abstract class PolyTemporal extends PolyNumber {

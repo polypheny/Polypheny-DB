@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,13 +40,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import lombok.Getter;
 
 
 /**
  * String template.
- *
+ * <p>
  * It is extended from {@link java.text.MessageFormat} to allow parameters to be substituted by name as well as by position.
- *
+ * <p>
  * The following example, using MessageFormat, yields "Happy 64th birthday, Ringo!":
  *
  * <blockquote>
@@ -82,9 +83,11 @@ import java.util.Map;
  * System.out.println(f.format(args);
  * </blockquote>
  */
+@Getter
 public class Template extends MessageFormat {
 
     private final List<String> parameterNames;
+
 
     /**
      * Creates a Template for the default locale and the specified pattern.
@@ -119,7 +122,7 @@ public class Template extends MessageFormat {
 
     /**
      * Parses the pattern, populates the parameter names, and returns the pattern with parameter names converted to parameter ordinals.
-     *
+     * <p>
      * To ensure that the same parsing rules apply, this code is copied from {@link java.text.MessageFormat#applyPattern(String)} but with different
      * actions when a parameter is recognized.
      *
@@ -207,11 +210,11 @@ public class Template extends MessageFormat {
         segments[0].append( "{" );
         segments[0].append( parameterOrdinal );
         final String two = segments[2].toString();
-        if ( two.length() > 0 ) {
+        if ( !two.isEmpty() ) {
             segments[0].append( "," ).append( two );
         }
         final String three = segments[3].toString();
-        if ( three.length() > 0 ) {
+        if ( !three.isEmpty() ) {
             segments[0].append( "," ).append( three );
         }
         segments[0].append( "}" );
@@ -223,7 +226,7 @@ public class Template extends MessageFormat {
 
     /**
      * Formats a set of arguments to produce a string.
-     *
+     * <p>
      * Arguments may appear in the map using named keys (of type String), or positional keys (0-based ordinals represented either as type String or Integer).
      *
      * @param argMap A map containing the arguments as (key, value) pairs
@@ -274,13 +277,4 @@ public class Template extends MessageFormat {
     }
 
 
-    /**
-     * Returns the names of the parameters, in the order that they appeared in the template string.
-     *
-     * @return List of parameter names
-     */
-    public List<String> getParameterNames() {
-        return parameterNames;
-    }
 }
-

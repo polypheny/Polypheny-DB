@@ -37,6 +37,8 @@ package org.polypheny.db.algebra;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.core.Correlate;
 import org.polypheny.db.algebra.core.CorrelationId;
@@ -390,6 +392,13 @@ public interface AlgNode extends AlgOptNode, Cloneable {
             return true;
         }
         return getInputs().stream().anyMatch( AlgNode::containsEntity );
+    }
+
+    default Set<Entity> getEntities() {
+        if ( getEntity() != null ) {
+            return Set.of( getEntity() );
+        }
+        return getInputs().stream().map( AlgNode::getEntities ).reduce( ( a, b ) -> Stream.concat( a.stream(), b.stream() ).collect( Collectors.toSet() ) ).orElse( Set.of() );
     }
 
     /**

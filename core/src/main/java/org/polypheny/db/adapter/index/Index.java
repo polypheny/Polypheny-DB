@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import lombok.Getter;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.ResultIterator;
@@ -97,7 +96,7 @@ public abstract class Index {
         }
         final AlgNode scan = builder
                 .relScan( table )
-                .project( cols.stream().map( builder::field ).collect( Collectors.toList() ) )
+                .project( cols.stream().map( builder::field ).toList() )
                 .build();
         final QueryProcessor processor = statement.getQueryProcessor();
         final PolyImplementation implementation = processor.prepareQuery( AlgRoot.of( scan, Kind.SELECT ), false );

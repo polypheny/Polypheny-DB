@@ -4,27 +4,21 @@ group "org.polypheny"
 dependencies {
     api project(":config")
 
-    api group: "org.slf4j", name: "slf4j-api", version: slf4j_api_version  // MIT
-    implementation group: "org.apache.logging.log4j", name: "log4j-slf4j2-impl", version: log4j_slf4j_impl_version // Apache 2.0
-
     implementation(group: "io.javalin", name: "javalin", version: javalin_version) {
         exclude(group: "org.slf4j")
-        exclude group: "org.eclipse.jetty", module: "jetty-server"
     } // Apache 2.0
 
     implementation group: "com.google.code.gson", name: "gson", version: gson_version  // Apache 2.0
-    implementation group: "org.apache.commons", name: "commons-text", version: commons_text_version  // Apache 2.0
     implementation group: "org.apache.commons", name: "commons-collections4", version: commons_collections_version  // Apache 2.0
     implementation group: "com.google.guava", name: "guava", version: guava_version // Apache 2.0
     implementation group: "com.fasterxml.jackson.core", name: "jackson-core", version: jackson_core_version // Apache 2.0
     implementation group: "com.fasterxml.jackson.core", name: "jackson-annotations", version: jackson_annotations_version // Apache 2.0
     implementation group: "com.fasterxml.jackson.core", name: "jackson-databind", version: jackson_databind_version
+    api group: "org.apache.commons", name: "commons-lang3", version: commons_lang3_version  // Apache 2.0
 
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
-
-    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter', version: junit_jupiter_version
     testImplementation group: "com.github.oshi", name: "oshi-core", version: oshi_core_version  // MIT
 }
 

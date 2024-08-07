@@ -18,6 +18,8 @@ package org.polypheny.db.sql.language;
 
 
 import java.util.List;
+import lombok.Getter;
+import lombok.Setter;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.languages.ParserPos;
@@ -36,12 +38,24 @@ public class SqlMerge extends SqlCall {
 
     public static final SqlSpecialOperator OPERATOR = new SqlSpecialOperator( "MERGE", Kind.MERGE );
 
+    @Getter
     SqlNode targetTable;
+
+    @Getter
     SqlNode condition;
     SqlNode source;
+
+    @Getter
     SqlUpdate updateCall;
+
+    @Getter
     SqlInsert insertCall;
+
+    @Setter
+    @Getter
     SqlSelect sourceSelect;
+
+    @Getter
     SqlIdentifier alias;
 
 
@@ -119,22 +133,6 @@ public class SqlMerge extends SqlCall {
 
 
     /**
-     * @return the identifier for the target table of the merge
-     */
-    public SqlNode getTargetTable() {
-        return targetTable;
-    }
-
-
-    /**
-     * @return the alias for the target table of the merge
-     */
-    public SqlIdentifier getAlias() {
-        return alias;
-    }
-
-
-    /**
      * @return the source for the merge
      */
     public SqlNode getSourceTableRef() {
@@ -144,46 +142,6 @@ public class SqlMerge extends SqlCall {
 
     public void setSourceTableRef( SqlNode tableRef ) {
         this.source = tableRef;
-    }
-
-
-    /**
-     * @return the update statement for the merge
-     */
-    public SqlUpdate getUpdateCall() {
-        return updateCall;
-    }
-
-
-    /**
-     * @return the insert statement for the merge
-     */
-    public SqlInsert getInsertCall() {
-        return insertCall;
-    }
-
-
-    /**
-     * @return the condition expression to determine whether to update or insert
-     */
-    public SqlNode getCondition() {
-        return condition;
-    }
-
-
-    /**
-     * Gets the source SELECT expression for the data to be updated/inserted.
-     * Returns null before the statement has been expanded by {@code SqlValidatorImpl#performUnconditionalRewrites(SqlNode, boolean)}.
-     *
-     * @return the source SELECT for the data to be updated
-     */
-    public SqlSelect getSourceSelect() {
-        return sourceSelect;
-    }
-
-
-    public void setSourceSelect( SqlSelect sourceSelect ) {
-        this.sourceSelect = sourceSelect;
     }
 
 

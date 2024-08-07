@@ -25,14 +25,12 @@ import io.activej.serializer.annotations.SerializeNullable;
 import java.io.Serial;
 import java.util.List;
 import javax.annotation.Nullable;
-import lombok.Getter;
 import lombok.Value;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.catalog.entity.PolyObject;
 import org.polypheny.db.catalog.logistic.DataPlacementRole;
 import org.polypheny.db.catalog.logistic.PartitionType;
 import org.polypheny.db.catalog.logistic.PlacementType;
-import org.polypheny.db.type.entity.PolyValue;
 
 
 /**
@@ -56,7 +54,6 @@ public class AllocationPartition implements PolyObject {
     @JsonProperty
     public long groupId;
 
-    @Getter
     @Serialize
     @JsonProperty
     @SerializeNullable
@@ -119,12 +116,6 @@ public class AllocationPartition implements PolyObject {
         this.isUnbound = isUnbound;
         this.name = name;
         this.qualifiers = qualifiers == null ? List.of() : ImmutableList.copyOf( qualifiers );
-    }
-
-
-    @Override
-    public PolyValue[] getParameterArray() {
-        return new PolyValue[0];
     }
 
 }

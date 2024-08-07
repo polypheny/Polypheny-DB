@@ -16,6 +16,7 @@
 
 package org.polypheny.db.catalog.logistic;
 
+import java.util.Arrays;
 import lombok.Getter;
 import lombok.NonNull;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -35,12 +36,7 @@ public enum Collation {
 
 
     public static Collation getById( int id ) {
-        for ( Collation c : values() ) {
-            if ( c.id == id ) {
-                return c;
-            }
-        }
-        throw new GenericRuntimeException( "Unknown Collation with id: " + id );
+        return Arrays.stream( values() ).filter( c -> c.id == id ).findAny().orElseThrow( () -> new GenericRuntimeException( "Unknown Collation with id: " + id ) );
     }
 
 

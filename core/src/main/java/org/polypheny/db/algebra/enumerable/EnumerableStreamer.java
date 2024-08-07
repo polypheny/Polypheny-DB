@@ -19,7 +19,6 @@ package org.polypheny.db.algebra.enumerable;
 
 import java.lang.reflect.Modifier;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.function.Function;
 import org.apache.calcite.linq4j.function.Function0;
@@ -91,7 +90,7 @@ public class EnumerableStreamer extends Streamer implements EnumerableAlg {
                 Expressions.constant( DataContext.ROOT ),
                 builder.append( builder.newName( "query" + System.nanoTime() ), query.block() ),
                 exp,
-                Expressions.constant( getLeft().getTupleType().getFields().stream().map( f -> f.getType().getPolyType() ).collect( Collectors.toList() ) ) );
+                Expressions.constant( getLeft().getTupleType().getFields().stream().map( f -> f.getType().getPolyType() ).toList() ) );
 
         builder.add( Expressions.return_( null, builder.append( "test", transformContext ) ) );
 

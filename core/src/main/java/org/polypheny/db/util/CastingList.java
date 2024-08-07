@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,9 +40,9 @@ import java.util.List;
 
 /**
  * Converts a list whose members are automatically down-cast to a given type.
- *
+ * <p>
  * If a member of the backing list is not an instanceof <code>E</code>, the accessing method (such as {@link List#get}) will throw a {@link ClassCastException}.
- *
+ * <p>
  * All modifications are automatically written to the backing list. Not synchronized.
  *
  * @param <E> Element type
@@ -89,5 +89,5 @@ public class CastingList<E> extends AbstractList<E> implements List<E> {
     public void add( int pos, E o ) {
         list.add( pos, o );
     }
-}
 
+}

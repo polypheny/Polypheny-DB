@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,18 +39,27 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.nio.charset.Charset;
+import lombok.Getter;
 
 
 /**
  * Serializable wrapper around a {@link Charset}.
- *
+ * <p>
  * It serializes itself by writing out the name of the character set, for example "ISO-8859-1". On the other side, it deserializes itself
  * by looking for a charset with the same name.
- *
+ * <p>
  * A SerializableCharset is immutable.
  */
 public class SerializableCharset implements Serializable {
 
+    /**
+     * -- GETTER --
+     * Returns the wrapped
+     * .
+     *
+     * @return the wrapped Charset
+     */
+    @Getter
     private Charset charset;
     private String charsetName;
 
@@ -85,16 +94,6 @@ public class SerializableCharset implements Serializable {
 
 
     /**
-     * Returns the wrapped {@link Charset}.
-     *
-     * @return the wrapped Charset
-     */
-    public Charset getCharset() {
-        return charset;
-    }
-
-
-    /**
      * Returns a SerializableCharset wrapping the given Charset, or null if the {@code charset} is null.
      *
      * @param charset Character set to wrap, or null
@@ -106,5 +105,5 @@ public class SerializableCharset implements Serializable {
         }
         return new SerializableCharset( charset );
     }
-}
 
+}

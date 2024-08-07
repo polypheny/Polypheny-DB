@@ -38,19 +38,20 @@ import com.google.common.base.Equivalence;
 import com.google.common.collect.Lists;
 import java.util.List;
 import java.util.Objects;
-import org.apache.calcite.avatica.util.Spaces;
+import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgCluster;
+import org.polypheny.db.util.Spaces;
 
 
 /**
  * Mutable equivalent of {@link AlgNode}.
  *
- * Each node has mutable state, and keeps track of its parent and position within parent. It doesn't make sense to canonize {@code MutableRels},
+ * Each node has mutable state, and keeps track of its parent and position within parent. It doesn't make sense to canonize {@link MutableAlg}s,
  * otherwise one node could end up with multiple parents. It follows that {@code #hashCode} and {@code #equals} are less efficient
- * than their {@code AlgNode} counterparts. But, you don't need to copy a {@code MutableRel} in order to change it.
- * For this reason, you should use {@code MutableRel} for short-lived operations, and transcribe back to {@code AlgNode} when you are done.
+ * than their {@code AlgNode} counterparts. But, you don't need to copy a {@link MutableAlg} in order to change it.
+ * For this reason, you should use {@link MutableAlg} for short-lived operations, and transcribe back to {@code AlgNode} when you are done.
  */
 public abstract class MutableAlg {
 
@@ -81,6 +82,7 @@ public abstract class MutableAlg {
     public final AlgDataType rowType;
     protected final MutableAlgType type;
 
+    @Getter
     protected MutableAlg parent;
     protected int ordinalInParent;
 
@@ -89,11 +91,6 @@ public abstract class MutableAlg {
         this.cluster = Objects.requireNonNull( cluster );
         this.rowType = Objects.requireNonNull( rowType );
         this.type = Objects.requireNonNull( type );
-    }
-
-
-    public MutableAlg getParent() {
-        return parent;
     }
 
 
@@ -108,9 +105,9 @@ public abstract class MutableAlg {
 
 
     /**
-     * Replaces this {@code MutableRel} in its parent with another node at the same position.
-     *
-     * Before the method, {@code child} must be an orphan (have null parent) and after this method, this {@code MutableRel} is an orphan.
+     * Replaces this {@link MutableAlg} in its parent with another node at the same position.
+     * <p>
+     * Before the method, {@code child} must be an orphan (have null parent) and after this method, this {@link MutableAlg} is an orphan.
      *
      * @return The parent
      */
@@ -131,7 +128,7 @@ public abstract class MutableAlg {
 
 
     public final String deep() {
-        return new MutableRelDumper().apply( this );
+        return new MutableAlgDumper().apply( this );
     }
 
 
@@ -142,9 +139,9 @@ public abstract class MutableAlg {
 
 
     /**
-     * Implementation of MutableVisitor that dumps the details of a MutableRel tree.
+     * Implementation of MutableVisitor that dumps the details of a {@link MutableAlg} tree.
      */
-    private class MutableRelDumper extends MutableAlgVisitor {
+    private static class MutableAlgDumper extends MutableAlgVisitor {
 
         private final StringBuilder buf = new StringBuilder();
         private int level;

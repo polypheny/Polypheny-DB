@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,7 +60,7 @@ public class TryThreadLocal<T> extends ThreadLocal<T> {
 
 
     // It is important that this method is final.
-    // This ensures that the sub-class does not choose a different initial value. Then the close logic can detect whether the previous value was equal to the initial value.
+    // This ensures that the subclass does not choose a different initial value. Then the close logic can detect whether the previous value was equal to the initial value.
     @Override
     protected final T initialValue() {
         return initialValue;
@@ -94,6 +94,7 @@ public class TryThreadLocal<T> extends ThreadLocal<T> {
          */
         @Override
         void close();
-    }
-}
 
+    }
+
+}

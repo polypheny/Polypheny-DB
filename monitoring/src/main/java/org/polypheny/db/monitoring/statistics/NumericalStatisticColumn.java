@@ -19,7 +19,8 @@ package org.polypheny.db.monitoring.statistics;
 
 import com.google.gson.annotations.Expose;
 import java.util.List;
-import java.util.TreeSet;
+import java.util.SortedSet;
+import java.util.concurrent.ConcurrentSkipListSet;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -44,8 +45,8 @@ public class NumericalStatisticColumn extends StatisticColumn {
     @Setter
     private PolyNumber max;
 
-    private final TreeSet<PolyNumber> minCache = new TreeSet<>();
-    private final TreeSet<PolyNumber> maxCache = new TreeSet<>();
+    private final SortedSet<PolyNumber> minCache = new ConcurrentSkipListSet<>();
+    private final SortedSet<PolyNumber> maxCache = new ConcurrentSkipListSet<>();
 
 
     public NumericalStatisticColumn( QueryResult column ) {
@@ -55,7 +56,7 @@ public class NumericalStatisticColumn extends StatisticColumn {
 
     @Override
     public void insert( List<PolyValue> values ) {
-        if ( values != null && !(values.get( 0 ) instanceof List) ) {
+        if ( values != null && !(values.get( 0 ).isList()) ) {
             for ( PolyValue val : values ) {
                 if ( val != null ) {
                     insert( val );
@@ -72,6 +73,7 @@ public class NumericalStatisticColumn extends StatisticColumn {
                 if ( !uniqueValues.isEmpty() ) {
                     uniqueValues.add( val );
                 }
+
                 minCache.add( val.asNumber() );
                 maxCache.add( val.asNumber() );
             }

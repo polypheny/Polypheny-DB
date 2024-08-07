@@ -168,7 +168,7 @@ public class VolcanoQueryProcessor extends AbstractQueryProcessor {
 
     public VolcanoQueryProcessor( Statement statement ) {
         super( statement );
-        planner = new VolcanoPlanner( VolcanoCost.FACTORY, Contexts.of( statement.getPrepareContext().config() ) );
+        planner = new VolcanoPlanner( VolcanoCost.FACTORY, Contexts.empty() );
         planner.addAlgTraitDef( ConventionTraitDef.INSTANCE );
         if ( ENABLE_COLLATION_TRAIT ) {
             planner.addAlgTraitDef( AlgCollationTraitDef.INSTANCE );

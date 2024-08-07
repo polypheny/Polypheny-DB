@@ -42,10 +42,10 @@ import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.entity.PolyValue;
 
 
+@Getter
 @Slf4j
 public class StatisticQueryProcessor {
 
-    @Getter
     private final TransactionManager transactionManager;
 
 

@@ -27,6 +27,7 @@ import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.nodes.ExecutableStatement;
@@ -126,10 +127,15 @@ public class LanguageManager {
         List<ImplementationContext> implementationContexts = new ArrayList<>();
         boolean previousDdl = false;
         int i = 0;
+        String changedNamespace = null;
         for ( ParsedQueryContext parsed : parsedQueries ) {
             if ( i != 0 ) {
                 statement = transaction.createStatement();
             }
+            if ( changedNamespace != null ) {
+                parsed = parsed.toBuilder().namespaceId( Catalog.snapshot().getNamespace( changedNamespace ).map( n -> n.id ).orElse( parsed.getNamespaceId() ) ).build();
+            }
+
             try {
                 // test if parsing was successful
                 if ( parsed.getQueryNode().isEmpty() ) {
@@ -166,7 +172,7 @@ public class LanguageManager {
                         parsed.addTransaction( transaction );
                     }
                     previousDdl = false;
-                    if ( context.getLanguage().validatorSupplier() != null ) {
+                    if ( parsed.getLanguage().validatorSupplier() != null ) {
                         if ( transaction.isAnalyze() ) {
                             statement.getOverviewDuration().start( "Validation" );
                         }
@@ -174,7 +180,7 @@ public class LanguageManager {
                                 transaction,
                                 parsed.getQueryNode().get(),
                                 RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() );
-                        parsed = ParsedQueryContext.fromQuery( parsed.getQuery(), validated.left, context );
+                        parsed = ParsedQueryContext.fromQuery( parsed.getQuery(), validated.left, parsed );
                         if ( transaction.isAnalyze() ) {
                             statement.getOverviewDuration().stop( "Validation" );
                         }
@@ -191,6 +197,9 @@ public class LanguageManager {
                     }
                     implementation = statement.getQueryProcessor().prepareQuery( root, true );
                 }
+                // queries are able to switch the context of the following queries
+                changedNamespace = parsed.getQueryNode().orElseThrow().switchesNamespace().orElse( changedNamespace );
+
                 implementationContexts.add( new ImplementationContext( implementation, parsed, statement, null ) );
 
             } catch ( Throwable e ) {
@@ -232,7 +241,6 @@ public class LanguageManager {
 
     public List<ExecutedContext> anyQuery( QueryContext context ) {
         List<ImplementationContext> prepared = anyPrepareQuery( context, context.getTransactions().get( context.getTransactions().size() - 1 ) );
-
         List<ExecutedContext> executedContexts = new ArrayList<>();
 
         for ( ImplementationContext implementation : prepared ) {

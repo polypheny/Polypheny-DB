@@ -274,7 +274,7 @@ public class HttpServer implements Runnable {
 
         webuiServer.get( "/getAvailableQueryInterfaces", crud::getAvailableQueryInterfaces );
 
-        webuiServer.post( "/createQueryInterface", crud::addQueryInterface );
+        webuiServer.post( "/createQueryInterface", crud::createQueryInterface );
 
         webuiServer.post( "/updateQueryInterfaceSettings", crud::updateQueryInterfaceSettings );
 

@@ -38,6 +38,7 @@ import com.google.common.collect.ImmutableMap;
 import java.sql.Types;
 import java.util.Collection;
 import java.util.Map;
+import java.util.stream.Stream;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFamily;
 
@@ -148,6 +149,7 @@ public enum PolyTypeFamily implements AlgDataTypeFamily {
             case INTERVAL_YEAR_MONTH -> PolyType.INTERVAL_TYPES;
             case INTERVAL_TIME -> PolyType.INTERVAL_TYPES;
             case STRING -> PolyType.STRING_TYPES;
+            case DOCUMENT -> Stream.concat( PolyType.STRING_TYPES.stream(), Stream.of( PolyType.DOCUMENT ) ).toList();
             case APPROXIMATE_NUMERIC -> PolyType.APPROX_TYPES;
             case EXACT_NUMERIC -> PolyType.EXACT_TYPES;
             case INTEGER -> PolyType.INT_TYPES;

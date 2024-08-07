@@ -23,8 +23,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedMap;
 import java.util.Map;
 import java.util.Objects;
-import org.apache.calcite.avatica.util.Casing;
-import org.apache.calcite.avatica.util.Quoting;
 import org.polypheny.db.algebra.constant.ConformanceEnum;
 import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
@@ -39,7 +37,9 @@ import org.polypheny.db.sql.language.parser.SqlAbstractParserImpl;
 import org.polypheny.db.sql.language.parser.SqlParser;
 import org.polypheny.db.sql.language.validate.SqlValidator;
 import org.polypheny.db.sql.language.validate.SqlValidatorUtil;
+import org.polypheny.db.util.Casing;
 import org.polypheny.db.util.Conformance;
+import org.polypheny.db.util.Quoting;
 import org.polypheny.db.util.SourceStringReader;
 
 
@@ -91,7 +91,6 @@ public class SqlTestFactory {
     }
 
 
-
     public Parser createParser( String sql ) {
         ParserConfig config = parserConfig.get();
         SqlAbstractParserImpl parser = (SqlAbstractParserImpl) config.parserFactory().getParser( new SourceStringReader( sql ) );
@@ -130,7 +129,6 @@ public class SqlTestFactory {
         builder.put( name, value );
         return new SqlTestFactory( builder.build(), validatorFactory );
     }
-
 
 
     public final Object get( String name ) {

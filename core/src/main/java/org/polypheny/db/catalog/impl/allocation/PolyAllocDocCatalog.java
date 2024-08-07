@@ -20,10 +20,8 @@ import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.beans.PropertyChangeSupport;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import lombok.Getter;
 import lombok.Value;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.IdBuilder;
@@ -41,27 +39,27 @@ import org.polypheny.db.type.PolySerializable;
 @Value
 public class PolyAllocDocCatalog implements PolySerializable, AllocationDocumentCatalog {
 
+    public BinarySerializer<PolyAllocDocCatalog> serializer = PolySerializable.buildSerializer( PolyAllocDocCatalog.class );
+
     IdBuilder idBuilder = IdBuilder.getInstance();
 
-    @Getter
     @Serialize
     public LogicalNamespace namespace;
 
-    @Getter
     @Serialize
     public ConcurrentHashMap<Long, AllocationCollection> collections;
 
-    @Getter
     @Serialize
     public ConcurrentHashMap<Long, AllocationPlacement> placements;
 
-    @Getter
     @Serialize
     public ConcurrentHashMap<Long, AllocationPartition> partitions;
 
+    PropertyChangeSupport listeners = new PropertyChangeSupport( this );
+
 
     public PolyAllocDocCatalog( LogicalNamespace namespace ) {
-        this( namespace, new HashMap<>(), new HashMap<>(), new HashMap<>() );
+        this( namespace, Map.of(), Map.of(), Map.of() );
     }
 
 
@@ -78,16 +76,9 @@ public class PolyAllocDocCatalog implements PolySerializable, AllocationDocument
     }
 
 
-    PropertyChangeSupport listeners = new PropertyChangeSupport( this );
-
-
     public void change() {
         listeners.firePropertyChange( "change", null, null );
     }
-
-
-    @Getter
-    public BinarySerializer<PolyAllocDocCatalog> serializer = PolySerializable.buildSerializer( PolyAllocDocCatalog.class );
 
 
     @Override

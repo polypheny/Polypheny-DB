@@ -17,7 +17,6 @@
 package org.polypheny.db.sql.language;
 
 
-import static org.apache.calcite.avatica.util.DateTimeUtils.ymdToUnixDate;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -38,13 +37,12 @@ import static org.polypheny.db.functions.Functions.trim;
 import static org.polypheny.db.functions.Functions.upper;
 import static org.polypheny.db.functions.TemporalFunctions.addMonths;
 import static org.polypheny.db.functions.TemporalFunctions.subtractMonths;
+import static org.polypheny.db.util.temporal.DateTimeUtils.ymdToUnixDate;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import org.apache.calcite.avatica.util.ByteString;
-import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
@@ -58,6 +56,8 @@ import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.type.entity.temporal.PolyDate;
+import org.polypheny.db.util.ByteString;
+import org.polypheny.db.util.temporal.DateTimeUtils;
 
 
 /**

@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -85,7 +84,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
     public Set<String> hashBasis = new HashSet<>();
 
-    public Map<Long, String> availableColumns = new LinkedHashMap<>(); // column id -> schemaName.tableName.ColumnName
+    public Map<Long, String> availableColumns = new HashMap<>(); // column id -> schemaName.tableName.ColumnName
 
     public Map<Long, Long> availableColumnsWithTable = new HashMap<>(); // columnId -> tableId
 

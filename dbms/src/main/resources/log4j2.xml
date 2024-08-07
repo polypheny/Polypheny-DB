@@ -9,6 +9,8 @@
         </Console>
     </Appenders>
     <Loggers>
+        <logger name="org.pf4j" level="OFF" additivity="false"/>
+
         <!--  <logger name="io" level="ERROR">
             <AppenderRef ref="ConsoleAppender"/>
         </logger>

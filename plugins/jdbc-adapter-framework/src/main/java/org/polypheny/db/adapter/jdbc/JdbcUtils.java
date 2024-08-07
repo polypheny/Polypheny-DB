@@ -51,8 +51,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 import javax.sql.DataSource;
-import org.apache.calcite.avatica.ColumnMetaData;
-import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.linq4j.function.Function0;
 import org.apache.calcite.linq4j.function.Function1;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
@@ -67,6 +65,7 @@ import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.sql.language.SqlDialectFactory;
 import org.polypheny.db.sql.language.SqlDialectRegistry;
+import org.polypheny.db.sql.language.util.SqlTypeRepresentation;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
@@ -78,6 +77,7 @@ import org.polypheny.db.type.entity.temporal.PolyDate;
 import org.polypheny.db.type.entity.temporal.PolyTime;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.temporal.DateTimeUtils;
 
 
 /**
@@ -154,11 +154,11 @@ public final class JdbcUtils {
 
         private final ResultSet resultSet;
         private final int columnCount;
-        private final ColumnMetaData.Rep[] reps;
+        private final SqlTypeRepresentation[] reps;
         private final int[] types;
 
 
-        ObjectArrayRowBuilder( ResultSet resultSet, ColumnMetaData.Rep[] reps, int[] types ) throws SQLException {
+        ObjectArrayRowBuilder( ResultSet resultSet, SqlTypeRepresentation[] reps, int[] types ) throws SQLException {
             this.resultSet = resultSet;
             this.reps = reps;
             this.types = types;
@@ -166,12 +166,12 @@ public final class JdbcUtils {
         }
 
 
-        public static Function1<ResultSet, Function0<PolyValue[]>> factory( final List<Pair<ColumnMetaData.Rep, Integer>> list ) {
+        public static Function1<ResultSet, Function0<PolyValue[]>> factory( final List<Pair<SqlTypeRepresentation, Integer>> list ) {
             return resultSet -> {
                 try {
                     return new ObjectArrayRowBuilder(
                             resultSet,
-                            Pair.left( list ).toArray( new ColumnMetaData.Rep[list.size()] ),
+                            Pair.left( list ).toArray( new SqlTypeRepresentation[list.size()] ),
                             Ints.toArray( Pair.right( list ) ) );
                 } catch ( SQLException e ) {
                     throw new GenericRuntimeException( e );

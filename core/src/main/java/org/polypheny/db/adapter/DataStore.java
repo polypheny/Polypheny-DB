@@ -78,7 +78,7 @@ public abstract class DataStore<S extends AdapterCatalog> extends Adapter<S> imp
             JsonObject jsonStore = new JsonObject();
             jsonStore.addProperty( "adapterId", src.getAdapterId() );
             jsonStore.add( "adapterSettings", context.serialize( AbstractAdapterSetting.serializeSettings( src.getAvailableSettings( src.getClass() ), src.getCurrentSettings() ) ) );
-            jsonStore.add( "currentSettings", context.serialize( src.getCurrentSettings() ) );
+            jsonStore.add( "settings", context.serialize( src.getCurrentSettings() ) );
             jsonStore.addProperty( "adapterName", src.getAdapterName() );
             jsonStore.addProperty( "uniqueName", src.getUniqueName() );
             jsonStore.addProperty( "type", src.getAdapterType().name() );

@@ -55,10 +55,10 @@ public class Collation implements Serializable {
     public Collation( String collation, Coercibility coercibility ) {
         this.coercibility = coercibility;
         CoreUtil.ParsedCollation parseValues = CoreUtil.parseCollation( collation );
-        Charset charset = parseValues.getCharset();
+        Charset charset = parseValues.charset();
         this.wrappedCharset = SerializableCharset.forCharset( charset );
-        locale = parseValues.getLocale();
-        strength = parseValues.getStrength();
+        locale = parseValues.locale();
+        strength = parseValues.strength();
         String c = charset.name().toUpperCase( Locale.ROOT ) + "$" + locale.toString();
         if ( (strength != null) && (!strength.isEmpty()) ) {
             c += "$" + strength;

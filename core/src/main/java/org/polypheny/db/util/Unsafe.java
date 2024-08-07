@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,28 +40,12 @@ import java.io.StringWriter;
 /**
  * Contains methods that call JDK methods that the <a href="https://github.com/policeman-tools/forbidden-apis">forbidden APIs checker</a>
  * does not approve of.
- *
+ * <p>
  * This class is excluded from the check, so methods called via this class will not fail the build.
  */
 public class Unsafe {
 
     private Unsafe() {
-    }
-
-
-    /**
-     * Calls {@link System#exit}.
-     */
-    public static void systemExit( int status ) {
-        System.exit( status );
-    }
-
-
-    /**
-     * Calls {@link Object#notifyAll()}.
-     */
-    public static void notifyAll( Object o ) {
-        o.notifyAll();
     }
 
 
@@ -89,5 +73,5 @@ public class Unsafe {
         // Included in this class because StringBuffer is banned.
         sw.getBuffer().append( charSequence, start, end );
     }
-}
 
+}

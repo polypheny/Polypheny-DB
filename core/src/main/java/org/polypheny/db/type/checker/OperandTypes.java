@@ -319,6 +319,8 @@ public abstract class OperandTypes {
 
     public static final PolySingleOperandTypeChecker STRING = family( PolyTypeFamily.STRING );
 
+    public static final PolySingleOperandTypeChecker JSON = or( family( PolyTypeFamily.DOCUMENT ), family( PolyTypeFamily.STRING ) );
+
     public static final FamilyOperandTypeChecker STRING_STRING = family( PolyTypeFamily.STRING, PolyTypeFamily.STRING );
 
     public static final FamilyOperandTypeChecker STRING_STRING_STRING = family( PolyTypeFamily.STRING, PolyTypeFamily.STRING, PolyTypeFamily.STRING );

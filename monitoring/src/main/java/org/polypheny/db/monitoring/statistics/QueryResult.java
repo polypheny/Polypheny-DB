@@ -28,7 +28,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalColumn;
  */
 @Getter
 @Data
-class QueryResult {
+public class QueryResult {
 
     private final Entity entity;
     private final LogicalColumn column;

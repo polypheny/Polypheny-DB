@@ -246,7 +246,6 @@ public class TestHelper {
             field.setAccessible( true );
             field.set( catalog, new IdBuilder(
                     new AtomicLong( catalog.idBuilder.getSnapshotId().longValue() + offset.get() ),
-                    new AtomicLong( catalog.idBuilder.getNamespaceId().longValue() + offset.get() ),
                     new AtomicLong( catalog.idBuilder.getEntityId().longValue() + offset.get() ),
                     new AtomicLong( catalog.idBuilder.getFieldId().longValue() + offset.get() ),
                     new AtomicLong( catalog.idBuilder.getUserId().longValue() + offset.get() ),

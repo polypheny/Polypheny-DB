@@ -16,17 +16,9 @@
 
 package org.polypheny.db.catalog.entity;
 
-
 import java.io.Serializable;
-import org.polypheny.db.type.entity.PolyValue;
 
-
-/**
- *
- */
 public interface PolyObject extends Serializable {
-
-    PolyValue[] getParameterArray();
 
     default Visibility getVisibility() {
         return Visibility.EXTERNAL;

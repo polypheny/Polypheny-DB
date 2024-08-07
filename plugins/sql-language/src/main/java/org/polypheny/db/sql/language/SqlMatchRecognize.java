@@ -21,6 +21,7 @@ import com.google.common.base.Preconditions;
 import java.util.List;
 import java.util.Objects;
 import javax.annotation.Nonnull;
+import lombok.Getter;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.BasicNodeVisitor.ArgHandler;
@@ -73,16 +74,25 @@ public class SqlMatchRecognize extends SqlCall {
 
 
     private SqlNode tableRef;
+    @Getter
     private SqlNode pattern;
+    @Getter
     private SqlLiteral strictStart;
+    @Getter
     private SqlLiteral strictEnd;
     private SqlNodeList patternDefList;
     private SqlNodeList measureList;
+    @Getter
     private SqlNode after;
+    @Getter
     private SqlNodeList subsetList;
+    @Getter
     private SqlLiteral rowsPerMatch;
+    @Getter
     private SqlNodeList partitionList;
+    @Getter
     private SqlNodeList orderList;
+    @Getter
     private SqlLiteral interval;
 
 
@@ -210,21 +220,6 @@ public class SqlMatchRecognize extends SqlCall {
     }
 
 
-    public SqlNode getPattern() {
-        return pattern;
-    }
-
-
-    public SqlLiteral getStrictStart() {
-        return strictStart;
-    }
-
-
-    public SqlLiteral getStrictEnd() {
-        return strictEnd;
-    }
-
-
     @Nonnull
     public SqlNodeList getPatternDefList() {
         return patternDefList;
@@ -234,36 +229,6 @@ public class SqlMatchRecognize extends SqlCall {
     @Nonnull
     public SqlNodeList getMeasureList() {
         return measureList;
-    }
-
-
-    public SqlNode getAfter() {
-        return after;
-    }
-
-
-    public SqlNodeList getSubsetList() {
-        return subsetList;
-    }
-
-
-    public SqlLiteral getRowsPerMatch() {
-        return rowsPerMatch;
-    }
-
-
-    public SqlNodeList getPartitionList() {
-        return partitionList;
-    }
-
-
-    public SqlNodeList getOrderList() {
-        return orderList;
-    }
-
-
-    public SqlLiteral getInterval() {
-        return interval;
     }
 
 

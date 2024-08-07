@@ -120,12 +120,6 @@ public class NeoEntity extends PhysicalEntity implements TranslatableEntity, Mod
 
 
     @Override
-    public PolyValue[] getParameterArray() {
-        return new PolyValue[0];
-    }
-
-
-    @Override
     public Expression asExpression() {
         return Expressions.call(
                 Expressions.convert_(

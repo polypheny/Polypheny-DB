@@ -14,15 +14,28 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.avatica;
+package org.polypheny.db.util;
 
-import lombok.RequiredArgsConstructor;
+public enum Quoting {
+    /**
+     * Quote identifiers in double-quotes. For example, {@code "my id"}.
+     */
+    DOUBLE_QUOTE( "\"" ),
 
-@RequiredArgsConstructor
-public class PrimitiveDatabase {
+    /**
+     * Quote identifiers in back-quotes. For example, {@code `my id`}.
+     */
+    BACK_TICK( "`" ),
 
-    public final String tableCat;
-    public final String owner;
-    public final String defaultSchema;
+    /**
+     * Quote identifiers in brackets. For example, {@code [my id]}.
+     */
+    BRACKET( "[" );
 
+    public final String string;
+
+
+    Quoting( String string ) {
+        this.string = string;
+    }
 }

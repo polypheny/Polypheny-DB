@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.polypheny.db.sql.language;
 
 
 import java.util.List;
+import lombok.Getter;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Call;
@@ -30,6 +31,7 @@ import org.polypheny.db.util.ImmutableNullableList;
 /**
  * A <code>SqlDescribeTable</code> is a node of a parse tree that represents a {@code DESCRIBE TABLE} statement.
  */
+@Getter
 public class SqlDescribeTable extends SqlCall {
 
     public static final SqlSpecialOperator OPERATOR =
@@ -98,14 +100,4 @@ public class SqlDescribeTable extends SqlCall {
     }
 
 
-    public SqlIdentifier getTable() {
-        return table;
-    }
-
-
-    public SqlIdentifier getColumn() {
-        return column;
-    }
-
 }
-

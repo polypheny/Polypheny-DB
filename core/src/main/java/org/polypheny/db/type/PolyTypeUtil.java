@@ -61,9 +61,6 @@ import org.polypheny.db.nodes.validate.ValidatorScope;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Collation;
-import org.polypheny.db.util.NumberUtil;
-import org.polypheny.db.util.Pair;
-import org.polypheny.db.util.Util;
 import org.polypheny.db.util.ValidatorUtil;
 import org.polypheny.db.util.mapping.Mappings;
 
@@ -93,30 +90,28 @@ public abstract class PolyTypeUtil {
         assert argTypes.size() >= 2;
 
         // Filter out ANY elements.
-        List<AlgDataType> argTypes2 = new ArrayList<>();
-        for ( AlgDataType t : argTypes ) {
-            if ( !isAny( t ) ) {
-                argTypes2.add( t );
-            }
+        List<AlgDataType> argTypes2 = argTypes.stream().filter( t -> !isAny( t ) ).toList();
+
+        if ( argTypes2.isEmpty() ) {
+            return true;
         }
 
-        for ( Pair<AlgDataType, AlgDataType> pair : Pair.adjacents( argTypes2 ) ) {
-            AlgDataType t0 = pair.left;
-            AlgDataType t1 = pair.right;
+        AlgDataType first = argTypes2.get( 0 );
 
-            if ( !inCharFamily( t0 ) || !inCharFamily( t1 ) ) {
+        for ( AlgDataType t0 : argTypes2 ) {
+            if ( !inCharFamily( t0 ) || !inCharFamily( first ) ) {
                 return false;
             }
 
             if ( t0.getCharset() == null ) {
                 throw new AssertionError( "RelDataType object should have been assigned a (default) charset when calling deriveType" );
-            } else if ( !t0.getCharset().equals( t1.getCharset() ) ) {
+            } else if ( !t0.getCharset().equals( first.getCharset() ) ) {
                 return false;
             }
 
             if ( t0.getCollation() == null ) {
                 throw new AssertionError( "RelDataType object should have been assigned a (default) collation when calling deriveType" );
-            } else if ( !t0.getCollation().getCharset().equals( t1.getCollation().getCharset() ) ) {
+            } else if ( !t0.getCollation().getCharset().equals( first.getCollation().getCharset() ) ) {
                 return false;
             }
         }
@@ -316,16 +311,6 @@ public abstract class PolyTypeUtil {
 
 
     /**
-     * @return true if two types are in same type family, or one or the other is of type {@link PolyType#NULL}.
-     */
-    public static boolean inSameFamilyOrNull( AlgDataType t1, AlgDataType t2 ) {
-        return (t1.getPolyType() == PolyType.NULL)
-                || (t2.getPolyType() == PolyType.NULL)
-                || (t1.getFamily() == t2.getFamily());
-    }
-
-
-    /**
      * @return true if type family is either character or binary
      */
     public static boolean inCharOrBinaryFamilies( AlgDataType type ) {
@@ -387,18 +372,6 @@ public abstract class PolyTypeUtil {
 
 
     /**
-     * @return true if type is bigint
-     */
-    public static boolean isBigint( AlgDataType type ) {
-        PolyType typeName = type.getPolyType();
-        if ( typeName == null ) {
-            return false;
-        }
-        return typeName == PolyType.BIGINT;
-    }
-
-
-    /**
      * @return true if type is numeric with exact precision
      */
     public static boolean isExactNumeric( AlgDataType type ) {
@@ -418,21 +391,6 @@ public abstract class PolyTypeUtil {
      */
     public static boolean hasScale( AlgDataType type ) {
         return type.getScale() != Integer.MIN_VALUE;
-    }
-
-
-    /**
-     * Returns the maximum value of an integral type, as a long value
-     */
-    public static long maxValue( AlgDataType type ) {
-        assert PolyTypeUtil.isIntType( type );
-        return switch ( type.getPolyType() ) {
-            case TINYINT -> Byte.MAX_VALUE;
-            case SMALLINT -> Short.MAX_VALUE;
-            case INTEGER -> Integer.MAX_VALUE;
-            case BIGINT -> Long.MAX_VALUE;
-            default -> throw Util.unexpected( type.getPolyType() );
-        };
     }
 
 
@@ -494,68 +452,6 @@ public abstract class PolyTypeUtil {
             }
         }
         return t1.getPolyType() == t2.getPolyType();
-    }
-
-
-    /**
-     * Computes the maximum number of bytes required to represent a value of a type having user-defined precision.
-     * This computation assumes no overhead such as length indicators and NUL-terminators. Complex types for which
-     * multiple representations are possible (e.g. DECIMAL or TIMESTAMP) return 0.
-     *
-     * @param type type for which to compute storage
-     * @return maximum bytes, or 0 for a fixed-width type or type with unknown maximum
-     */
-    public static int getMaxByteSize( AlgDataType type ) {
-        PolyType typeName = type.getPolyType();
-
-        if ( typeName == null ) {
-            return 0;
-        }
-
-        return switch ( typeName ) {
-            case CHAR, VARCHAR -> (int) Math.ceil( ((double) type.getPrecision()) * type.getCharset().newEncoder().maxBytesPerChar() );
-            case BINARY, VARBINARY -> type.getPrecision();
-            case MULTISET ->
-
-                // TODO: Need a better way to tell fennel this number. This a very generic place and implementation details
-                //  like this doesnt belong here. Waiting to change this once we have blob support
-                    4096;
-            default -> 0;
-        };
-    }
-
-
-    /**
-     * Determines the minimum unscaled value of a numeric type
-     *
-     * @param type a numeric type
-     */
-    public static long getMinValue( AlgDataType type ) {
-        PolyType typeName = type.getPolyType();
-        return switch ( typeName ) {
-            case TINYINT -> Byte.MIN_VALUE;
-            case SMALLINT -> Short.MIN_VALUE;
-            case INTEGER -> Integer.MIN_VALUE;
-            case BIGINT, DECIMAL -> NumberUtil.getMinUnscaled( type.getPrecision() ).longValue();
-            default -> throw new AssertionError( "getMinValue(" + typeName + ")" );
-        };
-    }
-
-
-    /**
-     * Determines the maximum unscaled value of a numeric type
-     *
-     * @param type a numeric type
-     */
-    public static long getMaxValue( AlgDataType type ) {
-        PolyType typeName = type.getPolyType();
-        return switch ( typeName ) {
-            case TINYINT -> Byte.MAX_VALUE;
-            case SMALLINT -> Short.MAX_VALUE;
-            case INTEGER -> Integer.MAX_VALUE;
-            case BIGINT, DECIMAL -> NumberUtil.getMaxUnscaled( type.getPrecision() ).longValue();
-            default -> throw new AssertionError( "getMaxValue(" + typeName + ")" );
-        };
     }
 
 
@@ -918,17 +814,6 @@ public abstract class PolyTypeUtil {
 
 
     /**
-     * Records a struct type with no fields.
-     *
-     * @param typeFactory Type factory
-     * @return Struct type with no fields
-     */
-    public static AlgDataType createEmptyStructType( AlgDataTypeFactory typeFactory ) {
-        return typeFactory.createStructType( null, ImmutableList.of(), ImmutableList.of() );
-    }
-
-
-    /**
      * Returns whether a type is flat. It is not flat if it is a record type that has one or more fields that are
      * themselves record types.
      */
@@ -962,11 +847,12 @@ public abstract class PolyTypeUtil {
             if ( n != type2.getFieldCount() ) {
                 return false;
             }
-            for ( Pair<AlgDataTypeField, AlgDataTypeField> pair : Pair.zip( type1.getFields(), type2.getFields() ) ) {
-                if ( !isComparable( pair.left.getType(), pair.right.getType() ) ) {
+            for ( int i = 0; i < type1.getFields().size(); i++ ) {
+                if ( !isComparable( type1.getFields().get( i ).getType(), type2.getFields().get( i ).getType() ) ) {
                     return false;
                 }
             }
+
             return true;
         }
 
@@ -1059,12 +945,12 @@ public abstract class PolyTypeUtil {
         if ( Sets.newHashSet( RexUtil.families( typeList ) ).size() < 2 ) {
             return true;
         }
-        for ( Pair<AlgDataType, AlgDataType> adjacent : Pair.adjacents( typeList ) ) {
-            if ( !isSameFamily( adjacent.left, adjacent.right ) ) {
-                return false;
-            }
+
+        if ( typeList.isEmpty() ) {
+            return true;
         }
-        return true;
+        AlgDataType first = typeList.get( 0 );
+        return typeList.stream().allMatch( e -> isSameFamily( e, first ) );
     }
 
 
@@ -1086,11 +972,13 @@ public abstract class PolyTypeUtil {
             if ( n != type2.getFieldCount() ) {
                 return false;
             }
-            for ( Pair<AlgDataTypeField, AlgDataTypeField> pair : Pair.zip( type1.getFields(), type2.getFields() ) ) {
-                if ( !isSameFamily( pair.left.getType(), pair.right.getType() ) ) {
+
+            for ( int i = 0; i < type1.getFields().size(); i++ ) {
+                if ( !isSameFamily( type1.getFields().get( i ).getType(), type2.getFields().get( i ).getType() ) ) {
                     return false;
                 }
             }
+
             return true;
         }
 

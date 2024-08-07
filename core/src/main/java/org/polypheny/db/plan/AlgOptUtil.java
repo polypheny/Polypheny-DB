@@ -52,7 +52,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import javax.annotation.Nonnull;
-import org.apache.calcite.avatica.AvaticaConnection;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgHomogeneousShuttle;
@@ -1212,14 +1211,14 @@ public abstract class AlgOptUtil {
 
     @Deprecated // to be removed before 2.0
     public static void projectJoinInputs( AlgNode[] inputAlgs, List<RexNode> leftJoinKeys, List<RexNode> rightJoinKeys, int systemColCount, List<Integer> leftKeys, List<Integer> rightKeys, List<Integer> outputProj ) {
-        AlgNode leftRel = inputAlgs[0];
-        AlgNode rightRel = inputAlgs[1];
-        final AlgCluster cluster = leftRel.getCluster();
+        AlgNode leftAlg = inputAlgs[0];
+        AlgNode rightAlg = inputAlgs[1];
+        final AlgCluster cluster = leftAlg.getCluster();
         final RexBuilder rexBuilder = cluster.getRexBuilder();
         final AlgDataTypeSystem typeSystem = cluster.getTypeFactory().getTypeSystem();
 
-        int origLeftInputSize = leftRel.getTupleType().getFieldCount();
-        int origRightInputSize = rightRel.getTupleType().getFieldCount();
+        int origLeftInputSize = leftAlg.getTupleType().getFieldCount();
+        int origRightInputSize = rightAlg.getTupleType().getFieldCount();
 
         final List<RexNode> newLeftFields = new ArrayList<>();
         final List<String> newLeftFieldNames = new ArrayList<>();
@@ -1235,7 +1234,7 @@ public abstract class AlgOptUtil {
         }
 
         for ( i = 0; i < origLeftInputSize; i++ ) {
-            final AlgDataTypeField field = leftRel.getTupleType().getFields().get( i );
+            final AlgDataTypeField field = leftAlg.getTupleType().getFields().get( i );
             newLeftFields.add( rexBuilder.makeInputRef( field.getType(), i ) );
             newLeftFieldNames.add( field.getName() );
             outputProj.add( systemColCount + i );
@@ -1258,7 +1257,7 @@ public abstract class AlgOptUtil {
 
         int leftFieldCount = origLeftInputSize + newLeftKeyCount;
         for ( i = 0; i < origRightInputSize; i++ ) {
-            final AlgDataTypeField field = rightRel.getTupleType().getFields().get( i );
+            final AlgDataTypeField field = rightAlg.getTupleType().getFields().get( i );
             newRightFields.add( rexBuilder.makeInputRef( field.getType(), i ) );
             newRightFieldNames.add( field.getName() );
             outputProj.add( systemColCount + leftFieldCount + i );
@@ -1283,19 +1282,19 @@ public abstract class AlgOptUtil {
 
         // added project if need to produce new keys than the original input fields
         if ( newLeftKeyCount > 0 ) {
-            leftRel = algBuilder.push( leftRel )
+            leftAlg = algBuilder.push( leftAlg )
                     .project( newLeftFields, newLeftFieldNames, true )
                     .build();
         }
 
         if ( newRightKeyCount > 0 ) {
-            rightRel = algBuilder.push( rightRel )
+            rightAlg = algBuilder.push( rightAlg )
                     .project( newRightFields, newRightFieldNames )
                     .build();
         }
 
-        inputAlgs[0] = leftRel;
-        inputAlgs[1] = rightRel;
+        inputAlgs[0] = leftAlg;
+        inputAlgs[1] = rightAlg;
     }
 
 
@@ -1363,7 +1362,7 @@ public abstract class AlgOptUtil {
     public static String dumpPlan( String header, AlgNode alg, ExplainFormat format, ExplainLevel detailLevel ) {
         StringWriter sw = new StringWriter();
         PrintWriter pw = new PrintWriter( sw );
-        if ( !header.equals( "" ) ) {
+        if ( !header.isEmpty() ) {
             pw.println( header );
         }
         AlgWriter planWriter;
@@ -1398,22 +1397,17 @@ public abstract class AlgOptUtil {
      * @return created type
      */
     public static AlgDataType createDmlRowType( Kind kind, AlgDataTypeFactory typeFactory ) {
-        switch ( kind ) {
-            case INSERT:
-            case DELETE:
-            case UPDATE:
-                return typeFactory.createStructType(
-                        ImmutableList.of(
-                                new AlgDataTypeFieldImpl( -1L, AvaticaConnection.ROWCOUNT_COLUMN_NAME, 0,
-                                        typeFactory.createPolyType( PolyType.BIGINT ) ) ) );
-            case EXPLAIN:
-                return typeFactory.createStructType(
-                        ImmutableList.of(
-                                new AlgDataTypeFieldImpl( -1L, AvaticaConnection.PLAN_COLUMN_NAME, 0,
-                                        typeFactory.createPolyType( PolyType.VARCHAR, AlgDataType.PRECISION_NOT_SPECIFIED ) ) ) );
-            default:
-                throw Util.unexpected( kind );
-        }
+        return switch ( kind ) {
+            case INSERT, DELETE, UPDATE -> typeFactory.createStructType(
+                    ImmutableList.of(
+                            new AlgDataTypeFieldImpl( -1L, "ROWCOUNT", 0,
+                                    typeFactory.createPolyType( PolyType.BIGINT ) ) ) );
+            case EXPLAIN -> typeFactory.createStructType(
+                    ImmutableList.of(
+                            new AlgDataTypeFieldImpl( -1L, "EXPLAIN", 0,
+                                    typeFactory.createPolyType( PolyType.VARCHAR, AlgDataType.PRECISION_NOT_SPECIFIED ) ) ) );
+            default -> throw Util.unexpected( kind );
+        };
     }
 
 

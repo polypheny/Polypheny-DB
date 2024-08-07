@@ -31,7 +31,8 @@ public interface LogicalGraphSnapshot {
      * @param id The id of the graph to return
      * @return The graph entity with the provided id
      */
-    @NonNull Optional<LogicalGraph> getGraph( long id );
+    @NonNull
+    Optional<LogicalGraph> getGraph( long id );
 
 
     /**
@@ -40,7 +41,8 @@ public interface LogicalGraphSnapshot {
      * @param graphName The pattern to which the name has to match, null if every name is matched
      * @return A collection of all graphs matching
      */
-    @NonNull List<LogicalGraph> getGraphs( @Nullable Pattern graphName );
+    @NonNull
+    List<LogicalGraph> getGraphs( @Nullable Pattern graphName );
 
 
 }
