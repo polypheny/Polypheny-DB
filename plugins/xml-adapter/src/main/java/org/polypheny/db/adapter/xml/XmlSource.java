@@ -61,8 +61,8 @@ import org.slf4j.LoggerFactory;
         description = "An adapter for querying XML files. An XML file or a directory containing multiple XML files can be specified by path. Currently, this adapter only supports read operations.",
         usedModes = DeployMode.EMBEDDED,
         defaultMode = DeployMode.EMBEDDED)
-@AdapterSettingList(name = "method", options = { "upload", "link", "url" }, defaultValue = "upload", description = "If the supplied file(s) should be uploaded or a link to the local filesystem is used (sufficient permissions are required).", position = 1)
-@AdapterSettingDirectory(subOf = "method_upload", name = "directory", defaultValue = "classpath://products.xml", description = "Path to the XML file(s) to be integrated as this source.", position = 2)
+@AdapterSettingList(name = "method", options = { "link", "url" }, defaultValue = "upload", description = "If the supplied file(s) should be uploaded or a link to the local filesystem is used (sufficient permissions are required).", position = 1)
+//@AdapterSettingDirectory(subOf = "method_upload", name = "directory", defaultValue = "classpath://products.xml", description = "Path to the XML file(s) to be integrated as this source.", position = 2)
 @AdapterSettingString(subOf = "method_link", defaultValue = "classpath://products.xml", name = "directoryName", description = "Path to the XML file(s) to be integrated as this source.", position = 2)
 @AdapterSettingString(subOf = "method_url", defaultValue = "http://localhost/cars.xml", name = "url", description = "URL to the XML file(s) to be integrated as this source.", position = 2)
 
