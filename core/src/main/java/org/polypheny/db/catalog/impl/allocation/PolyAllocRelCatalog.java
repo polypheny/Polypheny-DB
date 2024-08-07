@@ -16,6 +16,7 @@
 
 package org.polypheny.db.catalog.impl.allocation;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
@@ -46,8 +47,10 @@ import org.polypheny.db.util.Pair;
 @Value
 public class PolyAllocRelCatalog implements AllocationRelationalCatalog, PolySerializable {
 
+    @JsonIgnore
     public BinarySerializer<PolyAllocRelCatalog> serializer = PolySerializable.buildSerializer( PolyAllocRelCatalog.class );
 
+    @JsonIgnore
     IdBuilder idBuilder = IdBuilder.getInstance();
 
     @Serialize
@@ -71,6 +74,7 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, PolySer
     @Serialize
     public ConcurrentHashMap<Long, AllocationPlacement> placements;
 
+    @JsonIgnore
     PropertyChangeSupport listeners = new PropertyChangeSupport( this );
 
 

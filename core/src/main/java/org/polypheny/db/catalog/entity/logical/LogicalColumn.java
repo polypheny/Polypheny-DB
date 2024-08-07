@@ -16,6 +16,7 @@
 
 package org.polypheny.db.catalog.entity.logical;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.annotations.SerializeNullable;
@@ -85,6 +86,7 @@ public class LogicalColumn implements PolyObject, Comparable<LogicalColumn> {
     @SerializeNullable
     public LogicalDefaultValue defaultValue;
 
+    @JsonIgnore
     public DataModel dataModel = DataModel.RELATIONAL;
 
 

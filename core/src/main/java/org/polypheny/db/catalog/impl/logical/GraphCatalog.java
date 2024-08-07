@@ -16,6 +16,7 @@
 
 package org.polypheny.db.catalog.impl.logical;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
@@ -37,8 +38,10 @@ import org.polypheny.db.type.PolySerializable;
 @SuperBuilder(toBuilder = true)
 public class GraphCatalog implements PolySerializable, LogicalGraphCatalog {
 
+    @JsonIgnore
     public BinarySerializer<GraphCatalog> serializer = PolySerializable.buildSerializer( GraphCatalog.class );
 
+    @JsonIgnore
     IdBuilder idBuilder = IdBuilder.getInstance();
 
     @Serialize
@@ -47,7 +50,7 @@ public class GraphCatalog implements PolySerializable, LogicalGraphCatalog {
     @Serialize
     public ConcurrentHashMap<Long, LogicalGraph> graphs;
 
-
+    @JsonIgnore
     PropertyChangeSupport listeners = new PropertyChangeSupport( this );
 
 

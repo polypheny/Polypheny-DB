@@ -16,6 +16,7 @@
 
 package org.polypheny.db.catalog.entity;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.activej.serializer.annotations.Serialize;
 import java.io.Serializable;
 import java.util.List;

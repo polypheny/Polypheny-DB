@@ -16,6 +16,14 @@
 
 package org.polypheny.db.catalog.impl;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.PropertyAccessor;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.collect.ImmutableMap;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.annotations.Deserialize;
@@ -83,13 +91,25 @@ import org.polypheny.db.util.Pair;
 @Slf4j
 public class PolyCatalog extends Catalog implements PolySerializable {
 
+    private final static JsonMapper MAPPER = JsonMapper.builder()
+            .configure( MapperFeature.AUTO_DETECT_CREATORS, false )
+            //.configure( MapperFeature.AUTO_DETECT_FIELDS, false )
+            .configure( MapperFeature.AUTO_DETECT_GETTERS, false )
+            .configure( MapperFeature.AUTO_DETECT_IS_GETTERS, false )
+            .configure( MapperFeature.AUTO_DETECT_SETTERS, false )
+            .configure( SerializationFeature.FAIL_ON_EMPTY_BEANS, false )
+            .build();
+
     @Getter
+    @JsonIgnore
     private final BinarySerializer<PolyCatalog> serializer = PolySerializable.buildSerializer( PolyCatalog.class );
 
     /**
      * Constraints which have to be met before a commit can be executed.
      */
+    @JsonIgnore
     private final Collection<ConstraintCondition> commitConstraints = new ConcurrentLinkedDeque<>();
+    @JsonIgnore
     private final Collection<Runnable> commitActions = new ConcurrentLinkedDeque<>();
 
 
@@ -112,12 +132,15 @@ public class PolyCatalog extends Catalog implements PolySerializable {
     public final Map<Long, LogicalQueryInterface> interfaces;
 
     @Getter
+    @JsonIgnore
     public final Map<Long, AdapterTemplate> adapterTemplates;
 
     @Getter
+    @JsonIgnore
     public final Map<String, QueryInterfaceTemplate> interfaceTemplates;
 
     @Getter
+    @JsonIgnore
     public final Map<Long, AdapterCatalog> adapterCatalogs;
 
     @Serialize
@@ -126,15 +149,21 @@ public class PolyCatalog extends Catalog implements PolySerializable {
     @Serialize
     public final IdBuilder idBuilder;
 
+    @JsonIgnore
     private final Persister persister;
 
     @Getter
+    @JsonIgnore
     private Snapshot snapshot;
+
+    @JsonIgnore
     private String backup;
 
+    @JsonIgnore
     private final AtomicBoolean dirty = new AtomicBoolean( false );
 
     @Getter
+    @JsonIgnore
     PropertyChangeListener changeListener = evt -> dirty.set( true );
 
 
@@ -198,6 +227,16 @@ public class PolyCatalog extends Catalog implements PolySerializable {
         // empty for now
         this.dirty.set( true );
         updateSnapshot();
+    }
+
+
+    @Override
+    public String getJson() {
+        try {
+            return MAPPER.setVisibility( PropertyAccessor.FIELD, Visibility.ANY ).writeValueAsString( this );
+        } catch ( JsonProcessingException e ) {
+            throw new GenericRuntimeException( e );
+        }
     }
 
 
