@@ -104,13 +104,94 @@ public class DmlInsertTest extends CypherTestTemplate {
 
 
     @Test
-    public void insertNodeWithManyLabelsAndPropertyTest() {
+    public void insertNodeWithManyLabelsAndAsPropertyTest() {
         execute( "CREATE (n:Person:Employee {name :'Max'})" );
 
        GraphResult res = matchAndReturnAllNodes();
      assert containsNodes( res, true, TestNode.from( List.of( "Person", "Employee" ), Pair.of( "name", "Max" ) ) );
 
     }
+    @Test
+    public void insertBigIntegerExceeded32BitAsPropertyValeTest()
+    {
+        execute( "CREATE (n : node { id  : 4294967296 })" );
+        GraphResult res  = matchAndReturnAllNodes() ;
+        assert  res.getData().length ==  1;
+        assert  containsNodes( res , true , TestNode.from( List.of("node") ,Pair.of( "id" , 4294967296L)) );
+    }
+
+    @Test
+    public void insertMaxLongAsPropertyValueTest()
+    {
+        execute( "CREATE (n : node { id  : 9223372036854775807})" );
+        GraphResult res  = matchAndReturnAllNodes() ;
+        assert  res.getData().length ==  1;
+        assert  containsNodes( res , true , TestNode.from( List.of("node") ,Pair.of( "id" , 9223372036854775807L)) );
+
+    }
+    @Test
+    public void insertResultOfMathematicalOperationsTest()
+    {
+        execute( "CREATE (n : node { id  : 1*2+6/3 })" );
+        GraphResult res  = matchAndReturnAllNodes() ;
+        assert  res.getData().length ==  1;
+        assert  containsNodes( res , true , TestNode.from( List.of("node") ,Pair.of( "id" ,9223372036854775807L )) );
+
+    }
+
+    @Test
+    public void insertENotationAsPropertyValueTest()
+    {
+        execute( "CREATE (n : node { id  : 1e2})" );
+        GraphResult res  = matchAndReturnAllNodes();
+        assert  res.getData().length ==  1;
+        assert  containsNodes( res , true , TestNode.from( List.of("node") ,Pair.of( "id" , 100)) );
+
+
+    }
+
+    @Test
+    public void insertMaxLongAsResultOfMathematicalOperationsTest()
+    {
+
+        execute( "CREATE (n : node { id  : 2^63-1})" );
+        GraphResult res  = matchAndReturnAllNodes() ;
+        assert  res.getData().length ==  1;
+        assert  containsNodes( res , true , TestNode.from( List.of("node") ,Pair.of( "id" , 4)) );
+
+    }
+
+    @Test
+    public void insertMinLongAsPropertyValueTest()
+    {
+
+        execute( "CREATE (n : node { id  : -9223372036854775808L})" );
+        GraphResult res  = matchAndReturnAllNodes() ;
+        assert  res.getData().length ==  1;
+        assert  containsNodes( res , true , TestNode.from( List.of("node") ,Pair.of( "id" , - 9223372036854775808L )) );
+    }
+
+
+    @Test
+    public void insertMaxDoubleAsPropertyValueTest()
+    {
+        execute( "CREATE (n : node { id  : 1.7976931348623157e+308})" );
+        GraphResult res  = matchAndReturnAllNodes() ;
+        assert  res.getData().length ==  1;
+        assert  containsNodes( res , true , TestNode.from( List.of("node") ,Pair.of( "id" , 1.7976931348623157e+308 )) );
+
+    }
+
+    @Test
+    public void insertMinDoubleAsPropertyValueTest()
+    {
+
+        execute( "CREATE (n : node { id  : 4.9e-324 })" );
+        GraphResult res  = matchAndReturnAllNodes() ;
+        assert  res.getData().length ==  1;
+        assert  containsNodes( res , true , TestNode.from( List.of("node") ,Pair.of( "id" , 4.9e-324 )) );
+    }
+
 
 
     @Test
@@ -120,6 +201,7 @@ public class DmlInsertTest extends CypherTestTemplate {
         assert res.getData().length == 1;
 
     }
+
 
 
     @Test
