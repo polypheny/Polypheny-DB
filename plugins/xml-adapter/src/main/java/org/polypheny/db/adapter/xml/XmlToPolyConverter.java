@@ -38,7 +38,7 @@ public class XmlToPolyConverter {
 
     public PolyMap<PolyString, PolyValue> nodeToPolyMap( XMLStreamReader reader ) throws XMLStreamException {
         Map<PolyString, PolyValue> map = new HashMap<>();
-        String currentElement = reader.getLocalName(); // Root element of the current document
+        String currentElement = reader.getLocalName();
         while ( reader.hasNext() ) {
             int event = reader.next();
             if ( event == XMLStreamConstants.START_ELEMENT ) {
@@ -46,7 +46,7 @@ public class XmlToPolyConverter {
                 PolyValue value = nodeToPolyValue( reader );
                 map.put( key, value );
             } else if ( event == XMLStreamConstants.END_ELEMENT && reader.getLocalName().equals( currentElement ) ) {
-                break; // Stop processing at the end of the current document element
+                break;
             }
         }
         return PolyMap.of( map );
@@ -58,7 +58,7 @@ public class XmlToPolyConverter {
             String type = reader.getAttributeValue( null, "type" );
             return convertByType( reader, type != null ? type : "string" );
         }
-        return new PolyNull(); // Default case for unsupported nodes
+        return new PolyNull();
     }
 
 
@@ -66,18 +66,27 @@ public class XmlToPolyConverter {
         StringBuilder value = new StringBuilder();
         while ( reader.hasNext() ) {
             int event = reader.next();
-            if ( event == XMLStreamConstants.CHARACTERS ) {
+            if (event == XMLStreamConstants.START_ELEMENT) {
+                if (!type.equals( "list" )) {
+                    return nodeToPolyMap( reader );
+                }
+                break;
+            } else if ( event == XMLStreamConstants.CHARACTERS ) {
                 value.append( reader.getText().trim() );
             } else if ( event == XMLStreamConstants.END_ELEMENT ) {
                 break;
             }
         }
 
-        if ( value.length() == 0 ) {
+        if ( value.length() == 0 && !type.equals("list" )) {
             return new PolyNull();
         }
 
         String valueStr = value.toString();
+        if (valueStr.equals( "null" )) {
+            return new PolyNull();
+        }
+
         return switch ( type ) {
             case "boolean" -> new PolyBoolean( Boolean.parseBoolean( valueStr ) );
             case "integer" -> new PolyLong( Long.parseLong( valueStr ) );
@@ -105,20 +114,34 @@ public class XmlToPolyConverter {
                     byte[] hexBinaryData = Hex.decodeHex( valueStr.toCharArray() );
                     yield new PolyBinary( hexBinaryData, hexBinaryData.length );
                 } catch ( Exception e ) {
-                    yield new PolyString( valueStr ); // Fallback in case of error
+                    yield new PolyString( valueStr );
                 }
             }
             case "list" -> nodeToPolyList( reader );
-            default -> new PolyString( valueStr ); // Default to string if no type is specified
+            default -> new PolyString( valueStr );
         };
     }
 
 
-    public PolyValue nodeToPolyList( XMLStreamReader reader ) {
-        // Collect all attributes or child elements as list items
-        return IntStream.range( 0, reader.getAttributeCount() )
-                .mapToObj( i -> new PolyString( reader.getAttributeValue( i ) ) )
-                .collect( Collectors.toCollection( PolyList::new ) );
+    public PolyValue nodeToPolyList(XMLStreamReader reader) throws XMLStreamException {
+        PolyList<PolyValue> list = new PolyList<>();
+        String currentElement = reader.getLocalName();
+
+        while (reader.hasNext()) {
+            int event = reader.getEventType();
+            if (event == XMLStreamConstants.START_ELEMENT && reader.getLocalName().equals("item")) {
+                list.add(nodeToPolyValue(reader));
+            } else if (event == XMLStreamConstants.END_ELEMENT && reader.getLocalName().equals(currentElement)) {
+                break;
+            }
+            reader.next();
+        }
+        return list;
     }
+
+
+
+
+
 
 }

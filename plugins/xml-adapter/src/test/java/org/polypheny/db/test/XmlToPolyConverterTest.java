@@ -18,13 +18,7 @@ package org.polypheny.db.test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.io.StringReader;
-import java.nio.charset.StandardCharsets;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
@@ -33,13 +27,10 @@ import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.adapter.xml.XmlToPolyConverter;
 import org.polypheny.db.type.entity.PolyList;
-import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.relational.PolyMap;
-import org.w3c.dom.Document;
-import org.xml.sax.SAXException;
 
 public class XmlToPolyConverterTest {
 
@@ -53,22 +44,15 @@ public class XmlToPolyConverterTest {
     }
 
 
-    private Document getDocumentFromXml( String xml ) throws ParserConfigurationException, IOException, SAXException {
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        DocumentBuilder builder = factory.newDocumentBuilder();
-        return builder.parse( new ByteArrayInputStream( xml.getBytes( StandardCharsets.UTF_8 ) ) );
-    }
-
-
     @Test
     public void testString() throws XMLStreamException {
         String xml = "<root><name>Maxine</name></root>";
-
         XMLStreamReader reader = XMLInputFactory.newDefaultFactory().createXMLStreamReader( new StringReader( xml ) );
+        reader.next();
         PolyValue value = converter.nodeToPolyDocument( reader );
         assertTrue( value.isDocument() );
         PolyDocument polyDoc = value.asDocument();
-        assertEquals( "Maxine", polyDoc.get( new PolyString( "name" ) ).toString() );
+        assertEquals( "Maxine", polyDoc.get( new PolyString( "name" ) ).asString().getValue() );
     }
 
 
@@ -76,10 +60,11 @@ public class XmlToPolyConverterTest {
     public void testLong() throws XMLStreamException {
         String xml = "<root><integer type=\"integer\">492943</integer></root>";
         XMLStreamReader reader = XMLInputFactory.newDefaultFactory().createXMLStreamReader( new StringReader( xml ) );
+        reader.next();
         PolyValue value = converter.nodeToPolyDocument( reader );
         assertTrue( value.isDocument() );
         PolyDocument polyDoc = value.asDocument();
-        assertEquals( 492943, polyDoc.get( new PolyString( "integer" ) ).asLong().value );
+        assertEquals( 492943, polyDoc.get( new PolyString( "integer" ) ).asLong().getValue() );
     }
 
 
@@ -87,10 +72,11 @@ public class XmlToPolyConverterTest {
     public void testDouble() throws XMLStreamException {
         String xml = "<root><double type=\"double\">-650825.13</double></root>";
         XMLStreamReader reader = XMLInputFactory.newDefaultFactory().createXMLStreamReader( new StringReader( xml ) );
+        reader.next();
         PolyValue value = converter.nodeToPolyDocument( reader );
         assertTrue( value.isDocument() );
         PolyDocument polyDoc = value.asDocument();
-        assertEquals( -650825.13, polyDoc.get( new PolyString( "double" ) ).asDouble().value );
+        assertEquals( -650825.13, polyDoc.get( new PolyString( "double" ) ).asDouble().getValue() );
     }
 
 
@@ -98,10 +84,11 @@ public class XmlToPolyConverterTest {
     public void testBooleanTrue() throws XMLStreamException {
         String xml = "<root><boolean type=\"boolean\">true</boolean></root>";
         XMLStreamReader reader = XMLInputFactory.newDefaultFactory().createXMLStreamReader( new StringReader( xml ) );
+        reader.next();
         PolyValue value = converter.nodeToPolyDocument( reader );
         assertTrue( value.isDocument() );
         PolyDocument polyDoc = value.asDocument();
-        assertEquals( true, polyDoc.get( new PolyString( "boolean" ) ).asBoolean().value );
+        assertEquals( true, polyDoc.get( new PolyString( "boolean" ) ).asBoolean().getValue() );
     }
 
 
@@ -109,26 +96,28 @@ public class XmlToPolyConverterTest {
     public void testBooleanFalse() throws XMLStreamException {
         String xml = "<root><boolean type=\"boolean\">false</boolean></root>";
         XMLStreamReader reader = XMLInputFactory.newDefaultFactory().createXMLStreamReader( new StringReader( xml ) );
+        reader.next();
         PolyValue value = converter.nodeToPolyDocument( reader );
         assertTrue( value.isDocument() );
         PolyDocument polyDoc = value.asDocument();
-        assertEquals( false, polyDoc.get( new PolyString( "boolean" ) ).asBoolean().value );
+        assertEquals( false, polyDoc.get( new PolyString( "boolean" ) ).asBoolean().getValue() );
     }
 
 
     @Test
     public void testArray() throws XMLStreamException {
-        String xml = "<root><integers type=\"list\"><item type=\"integer\">0</item><item type=\"integer\">1</item><item type=\"integer\">2</item><item type=\"integer\">3</item></integers></root>";
+        String xml = "<root><integers type=\"list\"><item>0</item><item>1</item><item>2</item><item>3</item></integers></root>";
         XMLStreamReader reader = XMLInputFactory.newDefaultFactory().createXMLStreamReader( new StringReader( xml ) );
+        reader.next();
         PolyValue value = converter.nodeToPolyDocument( reader );
         assertTrue( value.isDocument() );
         PolyDocument polyDoc = value.asDocument();
         assertTrue( polyDoc.get( new PolyString( "integers" ) ).isList() );
         PolyList<PolyValue> list = polyDoc.get( new PolyString( "integers" ) ).asList();
-        assertEquals( 0, list.get( 0 ).asLong().value );
-        assertEquals( 1, list.get( 1 ).asLong().value );
-        assertEquals( 2, list.get( 2 ).asLong().value );
-        assertEquals( 3, list.get( 3 ).asLong().value );
+        assertEquals( "0", list.get( 0 ).asString().getValue() );
+        assertEquals( "1", list.get( 1 ).asString().getValue() );
+        assertEquals( "2", list.get( 2 ).asString().getValue() );
+        assertEquals( "3", list.get( 3 ).asString().getValue() );
     }
 
 
@@ -136,6 +125,7 @@ public class XmlToPolyConverterTest {
     public void testNull() throws XMLStreamException {
         String xml = "<root><null></null></root>";
         XMLStreamReader reader = XMLInputFactory.newDefaultFactory().createXMLStreamReader( new StringReader( xml ) );
+        reader.next();
         PolyValue value = converter.nodeToPolyDocument( reader );
         assertTrue( value.isDocument() );
         PolyDocument polyDoc = value.asDocument();
@@ -154,7 +144,7 @@ public class XmlToPolyConverterTest {
                 + "    <nestedString>Inside XML</nestedString>"
                 + "    <nestedNumber type=\"integer\">9876</nestedNumber>"
                 + "</object>"
-                + "<array type=\"array\">"
+                + "<array type=\"list\">"
                 + "    <item>item1</item>"
                 + "    <item type=\"integer\">234</item>"
                 + "    <item type=\"boolean\">false</item>"
@@ -163,6 +153,7 @@ public class XmlToPolyConverterTest {
                 + "</root>";
 
         XMLStreamReader reader = XMLInputFactory.newDefaultFactory().createXMLStreamReader( new StringReader( xml ) );
+        reader.next();
         PolyValue value = converter.nodeToPolyDocument( reader );
         assertTrue( value.isDocument() );
         PolyDocument polyDoc = value.asDocument();
@@ -170,7 +161,7 @@ public class XmlToPolyConverterTest {
         assertEquals( "Hello, XML!", polyDoc.get( new PolyString( "string" ) ).asString().getValue() );
         assertEquals( 12345.678, polyDoc.get( new PolyString( "number" ) ).asDouble().getValue() );
         assertEquals( true, polyDoc.get( new PolyString( "boolean" ) ).asBoolean().getValue() );
-        assertEquals( new PolyNull(), polyDoc.get( new PolyString( "null" ) ).asNull() );
+        assertTrue( polyDoc.get( new PolyString( "null" ) ).isNull() );
 
         // Check nested object
         assertTrue( polyDoc.get( new PolyString( "object" ) ).isMap() );
@@ -189,7 +180,67 @@ public class XmlToPolyConverterTest {
         assertEquals( "item1", list.get( 0 ).asString().getValue() );
         assertEquals( 234, list.get( 1 ).asLong().getValue() );
         assertEquals( false, list.get( 2 ).asBoolean().getValue() );
-        assertEquals( new PolyNull(), list.get( 3 ).asNull() );
+        assertTrue( list.get( 3 ).isNull() );
+    }
+
+
+    @Test
+    public void testDate() throws XMLStreamException {
+        String xml = "<root><date type=\"date\">2024-08-07</date></root>";
+        XMLStreamReader reader = XMLInputFactory.newDefaultFactory().createXMLStreamReader( new StringReader( xml ) );
+        reader.next();
+        PolyValue value = converter.nodeToPolyDocument( reader );
+        assertTrue( value.isDocument() );
+        PolyDocument polyDoc = value.asDocument();
+        assertEquals( 1722988800000L, polyDoc.get( new PolyString( "date" ) ).asDate().millisSinceEpoch );
+    }
+
+
+    @Test
+    public void testTime() throws XMLStreamException {
+        String xml = "<root><time type=\"time\">13:45:30</time></root>";
+        XMLStreamReader reader = XMLInputFactory.newDefaultFactory().createXMLStreamReader( new StringReader( xml ) );
+        reader.next();
+        PolyValue value = converter.nodeToPolyDocument( reader );
+        assertTrue( value.isDocument() );
+        PolyDocument polyDoc = value.asDocument();
+        assertEquals( 49530000, polyDoc.get( new PolyString( "time" ) ).asTime().ofDay );
+    }
+
+
+    @Test
+    public void testDateTime() throws XMLStreamException {
+        String xml = "<root><dateTime type=\"dateTime\">2024-08-07T13:45:30</dateTime></root>";
+        XMLStreamReader reader = XMLInputFactory.newDefaultFactory().createXMLStreamReader( new StringReader( xml ) );
+        reader.next();
+        PolyValue value = converter.nodeToPolyDocument( reader );
+        assertTrue( value.isDocument() );
+        PolyDocument polyDoc = value.asDocument();
+        assertEquals( 1723038330000L, polyDoc.get( new PolyString( "dateTime" ) ).asTimestamp().millisSinceEpoch );
+    }
+
+
+    @Test
+    public void testBase64Binary() throws XMLStreamException {
+        String xml = "<root><binary type=\"base64Binary\">SGVsbG8sIFdvcmxkIQ==</binary></root>";
+        XMLStreamReader reader = XMLInputFactory.newDefaultFactory().createXMLStreamReader( new StringReader( xml ) );
+        reader.next();
+        PolyValue value = converter.nodeToPolyDocument( reader );
+        assertTrue( value.isDocument() );
+        PolyDocument polyDoc = value.asDocument();
+        assertEquals( "Hello, World!", new String( polyDoc.get( new PolyString( "binary" ) ).asBinary().getValue() ) );
+    }
+
+
+    @Test
+    public void testHexBinary() throws XMLStreamException {
+        String xml = "<root><binary type=\"hexBinary\">48656c6c6f2c20576f726c6421</binary></root>";
+        XMLStreamReader reader = XMLInputFactory.newDefaultFactory().createXMLStreamReader( new StringReader( xml ) );
+        reader.next();
+        PolyValue value = converter.nodeToPolyDocument( reader );
+        assertTrue( value.isDocument() );
+        PolyDocument polyDoc = value.asDocument();
+        assertEquals( "Hello, World!", new String( polyDoc.get( new PolyString( "binary" ) ).asBinary().getValue() ) );
     }
 
 }

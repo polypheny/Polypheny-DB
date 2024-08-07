@@ -43,17 +43,15 @@ public class XmlEnumerator implements Enumerator<PolyValue[]> {
             int event = reader.next();
             if ( event == XMLStreamReader.START_ELEMENT ) {
                 if ( inTopLevelElement ) {
-                    // Process each child element of the top-level collection as a document
                     return new PolyValue[]{ converter.nodeToPolyDocument( reader ) };
                 } else {
-                    // Mark that we are inside the top-level collection element
                     inTopLevelElement = true;
                 }
             } else if ( event == XMLStreamReader.END_ELEMENT && inTopLevelElement ) {
-                inTopLevelElement = false; // End of top-level collection element
+                inTopLevelElement = false;
             }
         }
-        return null; // No more elements
+        return null;
     }
 
 
