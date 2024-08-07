@@ -68,6 +68,15 @@ public class DmlInsertTest extends CypherTestTemplate {
 
 
     @Test
+    public void insertNodeTestWithSemicolon() {
+        execute( "CREATE (p:Person {name: 'Max;Muster'})" );
+        GraphResult res = matchAndReturnAllNodes();
+        assertNode( res, 0 );
+        assert containsNodes( res, true, TestNode.from( Pair.of( "name", "Max;Muster" ) ) );
+    }
+
+
+    @Test
     public void insertTwoNodeTest() {
         execute( CREATE_PERSON_MAX );
         execute( CREATE_PERSON_MAX );
