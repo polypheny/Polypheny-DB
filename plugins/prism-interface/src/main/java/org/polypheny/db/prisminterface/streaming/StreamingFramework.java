@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.ResultIterator;
+import org.polypheny.db.prisminterface.ClientConfiguration;
 import org.polypheny.db.prisminterface.statements.PIStatement;
 import org.polypheny.db.prisminterface.utils.PolyValueSerializer;
 import org.polypheny.db.prisminterface.utils.PrismUtils;
@@ -27,6 +28,7 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.prism.ColumnMeta;
 import org.polypheny.prism.DocumentFrame;
 import org.polypheny.prism.Frame;
+import org.polypheny.prism.Frame.Builder;
 import org.polypheny.prism.GraphFrame;
 import org.polypheny.prism.RelationalFrame;
 
@@ -39,15 +41,21 @@ public class StreamingFramework {
     private StreamIndex index;
     private PIStatement statement;
     private List<PolyValue> cache;
+    boolean streamingSupported;
 
 
     public StreamingFramework( PIStatement statement ) {
         this.index = new StreamIndex();
         this.statement = statement;
+        ClientConfiguration config = statement.getClient().getClientConfig();
+        this.streamingSupported = config.isSupported( ClientConfiguration.SERVER_STREAMING );
     }
 
 
-    private static StreamingStrategy determineStrategy( Estimate estimate, long messageSize ) {
+    private StreamingStrategy determineStrategy( Estimate estimate, long messageSize ) {
+        if (!streamingSupported) {
+            return StreamingStrategy.STREAM_NONE;
+        }
         return messageSize + estimate.getDynamicLength() > MAX_MESSAGE_SIZE ? StreamingStrategy.STREAM_ALL : StreamingStrategy.DYNAMIC;
     }
 
@@ -56,6 +64,7 @@ public class StreamingFramework {
         return switch ( streamingStrategy ) {
             case STREAM_ALL -> estimate.getAllStreamedLength();
             case DYNAMIC -> estimate.getDynamicLength();
+            case STREAM_NONE -> estimate.getNoneStreamedLength();
         };
     }
 
@@ -80,7 +89,7 @@ public class StreamingFramework {
     private <T> Frame processResult(
             ResultIterator iterator,
             int fetchSize,
-            Frame.Builder frameBuilder,
+            Builder frameBuilder,
             SerializedSizeEstimator estimator,
             ResultExtractor<T> extractor,
             FrameAssembler<T> frameModifier
@@ -200,7 +209,7 @@ public class StreamingFramework {
     @FunctionalInterface
     private interface FrameAssembler<T> {
 
-        void modifyFrame( Frame.Builder frameBuilder, List<T> results );
+        void modifyFrame( Builder frameBuilder, List<T> results );
 
     }
 

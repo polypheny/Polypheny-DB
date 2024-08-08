@@ -19,6 +19,7 @@ package org.polypheny.db.prisminterface;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.glassfish.jersey.client.ClientConfig;
 import org.polypheny.db.catalog.entity.LogicalUser;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.prisminterface.metaRetrieval.PIClientInfoProperties;
@@ -41,6 +42,8 @@ public class PIClient {
     @Getter
     private final org.polypheny.db.prisminterface.metaRetrieval.PIClientInfoProperties PIClientInfoProperties;
     @Getter
+    private final ClientConfiguration clientConfig;
+    @Getter
     @Setter
     private boolean isAutoCommit;
     @Getter
@@ -58,6 +61,7 @@ public class PIClient {
             boolean isAutoCommit ) {
         this.statementManager = new StatementManager( this );
         this.PIClientInfoProperties = new PIClientInfoProperties();
+        this.clientConfig = new ClientConfiguration();
         this.namespace = namespace;
         this.clientUUID = clientUUID;
         this.catalogUser = catalogUser;

@@ -45,7 +45,6 @@ import org.polypheny.db.prisminterface.statements.PIUnparameterizedStatementBatc
 import org.polypheny.db.prisminterface.transport.Transport;
 import org.polypheny.db.prisminterface.utils.PrismUtils;
 import org.polypheny.db.prisminterface.utils.PrismValueDeserializer;
-import org.polypheny.db.prisminterface.utils.ClientConfiguration;
 import org.polypheny.db.prisminterface.utils.VersionUtils;
 import org.polypheny.db.sql.language.SqlJdbcFunctionCall;
 import org.polypheny.db.transaction.TransactionException;

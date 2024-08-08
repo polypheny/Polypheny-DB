@@ -135,15 +135,20 @@ public class PolyValueSerializer {
             return serializeAsProtoNull();
         }
         ProtoFile.Builder fileBuilder = ProtoFile.newBuilder();
-        if ( polyBlob.getValue().length > STREAM_LIMIT || streamingStrategy == StreamingStrategy.STREAM_ALL ) {
-            long streamId = streamIndex.register( new BlobPIOutputStream( polyBlob ) );
-            fileBuilder
-                    .setStreamId( streamId )
-                    .setIsForwardOnly( true )
-                    .setStatementId( statementId );
-        } else {
-            fileBuilder.setBinary( ByteString.copyFrom( polyBlob.getValue() ) );
+        if ( streamingStrategy != StreamingStrategy.STREAM_NONE ) {
+            if ( polyBlob.getValue().length > STREAM_LIMIT || streamingStrategy == StreamingStrategy.STREAM_ALL ) {
+                long streamId = streamIndex.register( new BlobPIOutputStream( polyBlob ) );
+                fileBuilder
+                        .setStreamId( streamId )
+                        .setIsForwardOnly( true )
+                        .setStatementId( statementId );
+                ProtoFile protoFile = fileBuilder.build();
+                return ProtoValue.newBuilder()
+                        .setFile( protoFile )
+                        .build();
+            }
         }
+        fileBuilder.setBinary( ByteString.copyFrom( polyBlob.getValue() ) );
         ProtoFile protoFile = fileBuilder.build();
         return ProtoValue.newBuilder()
                 .setFile( protoFile )
@@ -202,15 +207,20 @@ public class PolyValueSerializer {
             return serializeAsProtoNull();
         }
         ProtoBinary.Builder binaryBuilder = ProtoBinary.newBuilder();
-        if ( polyBinary.getValue().length > STREAM_LIMIT || streamingStrategy == StreamingStrategy.STREAM_ALL ) {
-            long streamId = streamIndex.register( new BinaryPIOutputStream( polyBinary ) );
-            binaryBuilder
-                    .setStreamId( streamId )
-                    .setIsForwardOnly( true )
-                    .setStatementId( statementId );
-        } else {
-            binaryBuilder.setBinary( ByteString.copyFrom( polyBinary.getValue() ) );
+        if ( streamingStrategy != StreamingStrategy.STREAM_NONE ) {
+            if ( polyBinary.getValue().length > STREAM_LIMIT || streamingStrategy == StreamingStrategy.STREAM_ALL ) {
+                long streamId = streamIndex.register( new BinaryPIOutputStream( polyBinary ) );
+                binaryBuilder
+                        .setStreamId( streamId )
+                        .setIsForwardOnly( true )
+                        .setStatementId( statementId );
+            }
+            ProtoBinary protoBinary = binaryBuilder.build();
+            return ProtoValue.newBuilder()
+                    .setBinary( protoBinary )
+                    .build();
         }
+        binaryBuilder.setBinary( ByteString.copyFrom( polyBinary.getValue() ) );
         ProtoBinary protoBinary = binaryBuilder.build();
         return ProtoValue.newBuilder()
                 .setBinary( protoBinary )
@@ -263,15 +273,20 @@ public class PolyValueSerializer {
         }
 
         ProtoString.Builder stringBuilder = ProtoString.newBuilder();
-        if ( polyString.getValue().length() * 2 > STREAM_LIMIT || streamingStrategy == StreamingStrategy.STREAM_ALL ) {
-            long streamId = streamIndex.register( new StringPIOutputStream( polyString ) );
-            stringBuilder
-                    .setStreamId( streamId )
-                    .setIsForwardOnly( false )
-                    .setStatementId( statementId );
-        } else {
-            stringBuilder.setString( polyString.getValue() );
+        if ( streamingStrategy != StreamingStrategy.STREAM_NONE ) {
+            if ( polyString.getValue().length() * 2 > STREAM_LIMIT || streamingStrategy == StreamingStrategy.STREAM_ALL ) {
+                long streamId = streamIndex.register( new StringPIOutputStream( polyString ) );
+                stringBuilder
+                        .setStreamId( streamId )
+                        .setIsForwardOnly( false )
+                        .setStatementId( statementId );
+                ProtoString protoString = stringBuilder.build();
+                return ProtoValue.newBuilder()
+                        .setString( protoString )
+                        .build();
+            }
         }
+        stringBuilder.setString( polyString.getValue() );
         ProtoString protoString = stringBuilder.build();
         return ProtoValue.newBuilder()
                 .setString( protoString )

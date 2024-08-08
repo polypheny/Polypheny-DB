@@ -18,6 +18,7 @@ package org.polypheny.db.prisminterface.streaming;
 
 public enum StreamingStrategy {
     DYNAMIC,
-    STREAM_ALL;
+    STREAM_ALL,
+    STREAM_NONE
 }
 

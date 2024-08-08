@@ -23,23 +23,27 @@ public class Estimate {
 
     private int dynamicLength;
     private int allStreamedLength;
+    private int noneStreamedLength;
 
 
     public Estimate() {
         this.dynamicLength = 0;
         this.allStreamedLength = 0;
+        this.noneStreamedLength = 0;
     }
 
 
     public Estimate( int length ) {
         this.dynamicLength = length;
         this.allStreamedLength = length;
+        this.noneStreamedLength = length;
     }
 
 
     public Estimate addToAll( int length ) {
         this.dynamicLength += length;
         this.allStreamedLength += length;
+        this.noneStreamedLength += length;
         return this;
     }
 
@@ -53,10 +57,15 @@ public class Estimate {
         this.allStreamedLength = allStreamedLength;
     }
 
+    public void setNoneStreamedLength( int noneStreamedLength ) {
+        this.noneStreamedLength = noneStreamedLength;
+    }
+
 
     public Estimate add( Estimate other ) {
         this.dynamicLength += other.dynamicLength;
         this.allStreamedLength += other.allStreamedLength;
+        this.noneStreamedLength += other.noneStreamedLength;
         return this;
     }
 

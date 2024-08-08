@@ -126,11 +126,12 @@ public class SerializationHeuristic {
     private static Estimate estimateSizeProtoFile( PolyBlob polyBlob ) {
         Estimate estimate = new Estimate();
         estimate.setAllStreamedLength( 2 + 1 + 9 ); // wrapper + tag + streamId (64bit int)
+        estimate.setNoneStreamedLength(  2 + 1 + 4 + polyBlob.getValue().length ); // wrapper + tag + length prefix + data size
         if ( polyBlob.getValue().length > STREAM_LIMIT ) {
             estimate.setDynamicLength( estimate.getAllStreamedLength() );
             return estimate;
         }
-        estimate.setDynamicLength( 2 + 1 + 4 + polyBlob.getValue().length ); // wrapper + tag + length prefix + data size
+        estimate.setDynamicLength( estimate.getNoneStreamedLength() );
         return estimate;
     }
 
@@ -158,11 +159,12 @@ public class SerializationHeuristic {
     public static Estimate estimateSizeProtoBinary( PolyBinary polyBinary ) {
         Estimate estimate = new Estimate();
         estimate.setAllStreamedLength( 2 + 1 + 9 ); // wrapper + tag + streamId (64bit int)
+        estimate.setNoneStreamedLength( 2 + 1 + 4 + polyBinary.getValue().length  );
         if ( polyBinary.getValue().length > STREAM_LIMIT ) {
             estimate.setDynamicLength( estimate.getAllStreamedLength() );
             return estimate;
         }
-        estimate.setDynamicLength( 2 + 1 + 4 + polyBinary.getValue().length ); // wrapper + tag + length prefix + data size
+        estimate.setDynamicLength( estimate.getNoneStreamedLength() ); // wrapper + tag + length prefix + data size
         return estimate;
     }
 
@@ -224,12 +226,13 @@ public class SerializationHeuristic {
 
     private static Estimate computeStringSize( String value ) {
         Estimate estimate = new Estimate();
-        estimate.setAllStreamedLength( 2 + 1 + 9 ); // wrapper + tag + streamId (64bit int)
         int length = value.getBytes().length;
+        estimate.setAllStreamedLength( 2 + 1 + 9 ); // wrapper + tag + streamId (64bit int)
+        estimate.setNoneStreamedLength( estimateInt32Size().getDynamicLength() + length );
         if (length > STREAM_LIMIT) {
             estimate.setDynamicLength( estimate.getAllStreamedLength()  );
         }
-        estimate.setDynamicLength( estimateInt32Size().getDynamicLength() + length );
+        estimate.setDynamicLength( estimate.getNoneStreamedLength() );
         return estimate;
     }
 

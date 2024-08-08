@@ -16,6 +16,45 @@
 
 package org.polypheny.db.prisminterface;
 
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+import org.polypheny.db.catalog.Catalog;
+
 public class ClientConfiguration {
+
+    public static final boolean DEFAULT_AUTOCOMMIT = true;
+    public static final String DEFAULT_NAMESPACE_NAME = Catalog.DEFAULT_NAMESPACE_NAME;
+    public static final int DEFAULT_FETCH_SIZE = 100;
+
+    public static final String SERVER_STREAMING = "server_streaming";
+    public static final String CLIENT_STREAMING = "client_streaming";
+
+    private static final Set<String> availableFeatures = new HashSet<>( List.of(
+            SERVER_STREAMING,
+            CLIENT_STREAMING
+    ) );
+
+    private final Set<String> supportedFeatures;
+
+
+    public ClientConfiguration() {
+        this.supportedFeatures = new HashSet<>();
+    }
+
+
+    public Set<String> addFeatures( List<String> clientFeatures ) {
+        Map<Boolean, List<String>> partitionedFeatures = clientFeatures.stream()
+                .collect( Collectors.partitioningBy( availableFeatures::contains ) );
+        supportedFeatures.addAll( partitionedFeatures.get( true ) );
+        return new HashSet<>( partitionedFeatures.get( false ) );
+    }
+
+
+    public boolean isSupported( String featureName ) {
+        return supportedFeatures.contains( featureName );
+    }
 
 }

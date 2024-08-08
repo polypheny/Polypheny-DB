@@ -20,7 +20,7 @@ import java.util.LinkedList;
 import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.prisminterface.PIClient;
-import org.polypheny.db.prisminterface.utils.ClientConfiguration;
+import org.polypheny.db.prisminterface.ClientConfiguration;
 
 @Getter
 public class PIUnparameterizedStatementBatch {
