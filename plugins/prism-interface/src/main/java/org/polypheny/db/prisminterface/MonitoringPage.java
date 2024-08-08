@@ -18,6 +18,7 @@ package org.polypheny.db.prisminterface;
 
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -65,7 +66,7 @@ class MonitoringPage {
         connectionsGroup = new InformationGroup( informationPage, "Connections" );
         informationManager.addGroup( connectionsGroup );
         connectionListTable = new InformationTable( connectionsGroup,
-                Arrays.asList( "UUID", "TX", "Auto Commit", "Default Namespace" ) );
+                Arrays.asList( "UUID", "TX", "Auto Commit", "Default Namespace", "Features" ) );
         connectionListTable.setOrder( 3 );
         informationManager.registerInformation( connectionListTable );
 
@@ -98,9 +99,23 @@ class MonitoringPage {
                 uuid,
                 txId,
                 client.isAutoCommit(),
-                client.getNamespace()
+                client.getNamespace(),
+                getFeatures( client )
         );
     }
+
+    private String getFeatures(PIClient client) {
+        StringBuilder stringBuilder = new StringBuilder();
+        List<String> features = client.getClientConfig().getSupportedFeatures().stream().toList();
+        for (int i = 0; i < features.size(); i++) {
+            stringBuilder.append(features.get(i));
+            if (i < features.size() - 1) {
+                stringBuilder.append(", ");
+            }
+        }
+        return stringBuilder.toString();
+    }
+
 
 
     void addStatementManager( StatementManager statementManager ) {
@@ -111,7 +126,6 @@ class MonitoringPage {
     void removeStatementManager( StatementManager statementManager ) {
         statementManagers.remove( statementManager );
     }
-
 
     public void remove() {
         InformationManager im = InformationManager.getInstance();

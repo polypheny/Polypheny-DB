@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.Getter;
 import org.polypheny.db.catalog.Catalog;
 
 public class ClientConfiguration {
@@ -37,6 +38,7 @@ public class ClientConfiguration {
             CLIENT_STREAMING
     ) );
 
+    @Getter
     private final Set<String> supportedFeatures;
 
 
