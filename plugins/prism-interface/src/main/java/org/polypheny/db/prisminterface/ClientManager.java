@@ -30,7 +30,7 @@ import org.polypheny.db.iface.AuthenticationException;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.prisminterface.PIPlugin.PrismInterface;
 import org.polypheny.db.prisminterface.transport.Transport;
-import org.polypheny.db.prisminterface.utils.PropertyUtils;
+import org.polypheny.db.prisminterface.utils.ClientConfiguration;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.prism.ConnectionRequest;
@@ -122,7 +122,7 @@ class ClientManager {
 
 
     private LogicalNamespace getNamespaceOrDefault( ConnectionRequest connectionRequest ) {
-        String namespaceName = PropertyUtils.DEFAULT_NAMESPACE_NAME;
+        String namespaceName = ClientConfiguration.DEFAULT_NAMESPACE_NAME;
         if ( connectionRequest.hasConnectionProperties() && connectionRequest.getConnectionProperties().hasNamespaceName() ) {
             namespaceName = connectionRequest.getConnectionProperties().getNamespaceName();
         }
@@ -139,7 +139,7 @@ class ClientManager {
         if ( connectionRequest.hasConnectionProperties() && connectionRequest.getConnectionProperties().hasIsAutoCommit() ) {
             return connectionRequest.getConnectionProperties().getIsAutoCommit();
         }
-        return PropertyUtils.AUTOCOMMIT_DEFAULT;
+        return ClientConfiguration.DEFAULT_AUTOCOMMIT;
     }
 
 

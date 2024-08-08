@@ -20,7 +20,7 @@ import java.util.LinkedList;
 import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.prisminterface.PIClient;
-import org.polypheny.db.prisminterface.utils.PropertyUtils;
+import org.polypheny.db.prisminterface.utils.ClientConfiguration;
 
 @Getter
 public class PIUnparameterizedStatementBatch {
@@ -38,7 +38,7 @@ public class PIUnparameterizedStatementBatch {
 
 
     public List<Long> executeBatch() {
-        int fetchSize = PropertyUtils.DEFAULT_FETCH_SIZE;
+        int fetchSize = ClientConfiguration.DEFAULT_FETCH_SIZE;
         List<Long> updateCounts = new LinkedList<>();
         for ( PIUnparameterizedStatement statement : statements ) {
             updateCounts.add( statement.execute( fetchSize ).getScalar() );

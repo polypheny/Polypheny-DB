@@ -45,7 +45,7 @@ import org.polypheny.db.prisminterface.statements.PIUnparameterizedStatementBatc
 import org.polypheny.db.prisminterface.transport.Transport;
 import org.polypheny.db.prisminterface.utils.PrismUtils;
 import org.polypheny.db.prisminterface.utils.PrismValueDeserializer;
-import org.polypheny.db.prisminterface.utils.PropertyUtils;
+import org.polypheny.db.prisminterface.utils.ClientConfiguration;
 import org.polypheny.db.prisminterface.utils.VersionUtils;
 import org.polypheny.db.sql.language.SqlJdbcFunctionCall;
 import org.polypheny.db.transaction.TransactionException;
@@ -429,7 +429,7 @@ class PIService {
         StatementResult result = statement.execute(
                 request.hasFetchSize()
                         ? request.getFetchSize()
-                        : PropertyUtils.DEFAULT_FETCH_SIZE
+                        : ClientConfiguration.DEFAULT_FETCH_SIZE
         );
         return responseObserver.makeResponse( PrismUtils.createResult( statement, result ) );
     }
@@ -457,7 +457,7 @@ class PIService {
         PIPreparedIndexedStatement statement = client.getStatementManager().getIndexedPreparedStatement( request.getStatementId() );
         int fetchSize = request.hasFetchSize()
                 ? request.getFetchSize()
-                : PropertyUtils.DEFAULT_FETCH_SIZE;
+                : ClientConfiguration.DEFAULT_FETCH_SIZE;
         return responseObserver.makeResponse( statement.execute( PrismValueDeserializer.deserializeParameterList( request.getParameters().getParametersList(), statement.getInputStreamManager() ), statement.getParameterMetas(), fetchSize ) );
     }
 
@@ -483,7 +483,7 @@ class PIService {
         PIPreparedNamedStatement statement = client.getStatementManager().getNamedPreparedStatement( request.getStatementId() );
         int fetchSize = request.hasFetchSize()
                 ? request.getFetchSize()
-                : PropertyUtils.DEFAULT_FETCH_SIZE;
+                : ClientConfiguration.DEFAULT_FETCH_SIZE;
         try {
             return responseObserver.makeResponse( statement.execute( PrismValueDeserializer.deserilaizeParameterMap( request.getParameters().getParametersMap(), statement.getInputStreamManager() ), fetchSize ) );
         } catch ( Exception e ) {
@@ -520,7 +520,7 @@ class PIService {
         PIStatement statement = client.getStatementManager().getStatement( request.getStatementId() );
         int fetchSize = request.hasFetchSize()
                 ? request.getFetchSize()
-                : PropertyUtils.DEFAULT_FETCH_SIZE;
+                : ClientConfiguration.DEFAULT_FETCH_SIZE;
         Frame frame = StatementProcessor.fetch( statement, fetchSize );
         return responseObserver.makeResponse( frame );
     }
