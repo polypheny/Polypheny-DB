@@ -83,7 +83,7 @@ class ClientManager {
     }
 
 
-    String registerConnection( ConnectionRequest connectionRequest, Transport t ) throws AuthenticationException, TransactionException, PIServiceException {
+    PIClient registerConnection( ConnectionRequest connectionRequest, Transport t ) throws AuthenticationException, TransactionException, PIServiceException {
         byte[] raw = new byte[32];
         new SecureRandom().nextBytes( raw );
         String uuid = Base64.getUrlEncoder().encodeToString( raw );
@@ -94,19 +94,21 @@ class ClientManager {
         final LogicalUser user = getUser( connectionRequest, t );
         LogicalNamespace namespace = getNamespaceOrDefault( connectionRequest );
         boolean isAutocommit = getAutocommitOrDefault( connectionRequest );
+        ClientConfiguration clientConfiguration = new ClientConfiguration();
         PIClient client = new PIClient(
                 uuid,
                 user,
                 transactionManager,
                 namespace,
                 monitoringPage,
+                clientConfiguration,
                 isAutocommit
         );
         clients.put( uuid, client );
         if ( log.isTraceEnabled() ) {
             log.trace( "prism-interface established connection to user {}.", uuid );
         }
-        return uuid;
+        return client;
     }
 
 

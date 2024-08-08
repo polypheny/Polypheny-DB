@@ -19,12 +19,10 @@ package org.polypheny.db.prisminterface;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.glassfish.jersey.client.ClientConfig;
 import org.polypheny.db.catalog.entity.LogicalUser;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.prisminterface.metaRetrieval.PIClientInfoProperties;
 import org.polypheny.db.prisminterface.statements.StatementManager;
-import org.polypheny.db.prisminterface.streaming.PIInputStreamManager;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
@@ -52,16 +50,18 @@ public class PIClient {
     @Getter
     private final MonitoringPage monitoringPage;
 
+
     PIClient(
             String clientUUID,
             LogicalUser catalogUser,
             TransactionManager transactionManager,
             LogicalNamespace namespace,
             MonitoringPage monitoringPage,
+            ClientConfiguration clientConfig,
             boolean isAutoCommit ) {
         this.statementManager = new StatementManager( this );
         this.PIClientInfoProperties = new PIClientInfoProperties();
-        this.clientConfig = new ClientConfiguration();
+        this.clientConfig = clientConfig;
         this.namespace = namespace;
         this.clientUUID = clientUUID;
         this.catalogUser = catalogUser;

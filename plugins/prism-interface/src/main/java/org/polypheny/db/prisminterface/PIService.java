@@ -316,15 +316,15 @@ class PIService {
                 .setMinorApiVersion( VersionUtils.getMINOR_API_VERSION() );
         boolean isCompatible = checkApiVersion( request );
         responseBuilder.setIsCompatible( isCompatible );
-        ConnectionResponse ConnectionResponse = responseBuilder.build();
         // reject incompatible client
         if ( !isCompatible ) {
             log.info( "Incompatible client and server version" );
-            return responseObserver.makeResponse( ConnectionResponse );
+            return responseObserver.makeResponse( responseBuilder.build());
         }
-
-        uuid = clientManager.registerConnection( request, con );
-        return responseObserver.makeResponse( ConnectionResponse );
+        PIClient client = clientManager.registerConnection( request, con );
+        responseBuilder.addAllUnknownFeatures( client.getClientConfig().addFeatures( request.getFeaturesList() ) );
+        uuid = client.getClientUUID();
+        return responseObserver.makeResponse( responseBuilder.build() );
     }
 
 
