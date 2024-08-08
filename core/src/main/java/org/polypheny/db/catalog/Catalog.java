@@ -109,6 +109,8 @@ public abstract class Catalog implements ExtensionPoint {
 
     public abstract void change();
 
+    public abstract String getJson();
+
     public abstract void executeCommitActions();
 
     public abstract void clearCommitActions();

@@ -47,6 +47,7 @@ import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DeployMode;
+import org.polypheny.db.adapter.RelationalDataSource;
 import org.polypheny.db.adapter.RelationalScanDelegate;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.annotations.AdapterSettingBoolean;
@@ -59,6 +60,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationTable;
@@ -84,7 +86,7 @@ import org.polypheny.db.util.PolyphenyHomeDirManager;
 @AdapterSettingString(name = "oAuth-Client-ID", description = "Authentication credentials used for GoogleSheets API. Not the account credentials.", defaultValue = "", position = 5)
 @AdapterSettingString(name = "oAuth-Client-Key", description = "Authentication credentials used for GoogleSheets API. Not the account credentials.", defaultValue = "")
 @AdapterSettingString(name = "sheetName", description = "Name of sheet to use.", defaultValue = "")
-public class GoogleSheetSource extends DataSource<RelAdapterCatalog> {
+public class GoogleSheetSource extends DataSource<RelAdapterCatalog> implements RelationalDataSource {
 
     @Delegate(excludes = Excludes.class)
     private final RelationalScanDelegate delegate;
@@ -110,7 +112,7 @@ public class GoogleSheetSource extends DataSource<RelAdapterCatalog> {
 
 
     public GoogleSheetSource( final long storeId, final String uniqueName, final Map<String, String> settings, DeployMode mode ) {
-        super( storeId, uniqueName, settings, mode, true, new RelAdapterCatalog( storeId ) );
+        super( storeId, uniqueName, settings, mode, true, new RelAdapterCatalog( storeId ), List.of( DataModel.RELATIONAL ) );
 
         this.clientId = getSettingOrFail( "oAuth-Client-ID", settings );
         this.clientKey = getSettingOrFail( "oAuth-Client-Key", settings );
@@ -378,6 +380,12 @@ public class GoogleSheetSource extends DataSource<RelAdapterCatalog> {
     @Override
     public void rollback( PolyXid xid ) {
         log.debug( "Google Sheet adapter does not support rollback()." );
+    }
+
+
+    @Override
+    public RelationalDataSource asRelationalDataSource() {
+        return this;
     }
 
 

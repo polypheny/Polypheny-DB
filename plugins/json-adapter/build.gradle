@@ -1,0 +1,74 @@
+group "org.polypheny"
+
+
+dependencies {
+    compileOnly project(":core")
+    compileOnly project(":dbms")
+    // https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-core
+    implementation group: 'com.fasterxml.jackson.core', name: 'jackson-core', version: jackson_core_version
+    implementation group: "commons-io", name: "commons-io", version: commons_io_version  // Apache 2.0
+
+
+    // --- Test Compile ---
+    testImplementation project(path: ":dbms", configuration: "test")
+    testImplementation project(path: ":dbms")
+    testImplementation project(path: ":core", configuration: "tests")
+    testImplementation project(path: ":core")
+    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter', version: junit_jupiter_version
+}
+
+
+sourceSets {
+    main {
+        java {
+            srcDirs = ["src/main/java"]
+        }
+        resources {
+            srcDirs = ["src/main/resources"]
+        }
+        output.resourcesDir = file(project.buildDir.absolutePath + "/classes")
+    }
+    test {
+        java {
+            srcDirs = ["src/test/java"]
+            destinationDirectory.set(file(project.buildDir.absolutePath + "/test-classes"))
+        }
+        resources {
+            srcDirs = ["src/test/resources"]
+        }
+        output.resourcesDir = file(project.buildDir.absolutePath + "/test-classes")
+    }
+}
+
+compileJava {
+    dependsOn(":dbms:processResources")
+    dependsOn(":config:processResources")
+    dependsOn(":core:processResources")
+    dependsOn(":information:processResources")
+}
+
+delombok {
+    dependsOn(":dbms:processResources")
+}
+
+test.dependsOn(":dbms:shadowJar")
+
+/**
+ * JARs
+ */
+jar {
+    manifest {
+        attributes "Manifest-Version": "1.0"
+        attributes "Copyright": "The Polypheny Project (polypheny.org)"
+        attributes "Version": "$project.version"
+    }
+}
+java {
+    withJavadocJar()
+    withSourcesJar()
+}
+
+licensee {
+    allow('MIT')
+    allow('Apache-2.0')
+}

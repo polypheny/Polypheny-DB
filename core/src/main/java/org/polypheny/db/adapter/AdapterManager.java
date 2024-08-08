@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -131,6 +132,15 @@ public class AdapterManager {
     @NotNull
     public Optional<DataStore<?>> getStore( long id ) {
         return getAdapter( id ).filter( a -> a instanceof DataStore<?> ).map( a -> (DataStore<?>) a );
+    }
+
+
+    public boolean isStore( long id ) {
+        Optional<Adapter<?>> adapter = getAdapter( id );
+        if ( adapter.isEmpty() ) {
+            throw new NoSuchElementException( "No adapter registered under id: " + id );
+        }
+        return adapter.get() instanceof DataStore<?>;
     }
 
 

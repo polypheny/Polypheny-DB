@@ -31,6 +31,7 @@ import org.pf4j.Extension;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DeployMode;
+import org.polypheny.db.adapter.RelationalDataSource;
 import org.polypheny.db.adapter.RelationalScanDelegate;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.annotations.AdapterSettingBoolean;
@@ -42,6 +43,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.plugins.PluginContext;
@@ -91,7 +93,7 @@ public class EthereumPlugin extends PolyPlugin {
     @AdapterSettingString(name = "ClientUrl", description = "The URL of the ethereum JSON RPC client", defaultValue = "https://mainnet.infura.io/v3/4d06589e97064040b5da99cf4051ef04", position = 1)
     @AdapterSettingInteger(name = "Blocks", description = "The number of Blocks to fetch when processing a query", defaultValue = 10, position = 2, modifiable = true)
     @AdapterSettingBoolean(name = "ExperimentalFiltering", description = "Experimentally filter Past Block", defaultValue = false, position = 3, modifiable = true)
-    public static class EthereumDataSource extends DataSource<RelAdapterCatalog> {
+    public static class EthereumDataSource extends DataSource<RelAdapterCatalog> implements RelationalDataSource {
 
         @Delegate(excludes = Excludes.class)
         private final RelationalScanDelegate delegate;
@@ -105,7 +107,7 @@ public class EthereumPlugin extends PolyPlugin {
 
 
         public EthereumDataSource( final long storeId, final String uniqueName, final Map<String, String> settings, DeployMode mode ) {
-            super( storeId, uniqueName, settings, mode, true, new RelAdapterCatalog( storeId ) );
+            super( storeId, uniqueName, settings, mode, true, new RelAdapterCatalog( storeId ), List.of( DataModel.RELATIONAL ) );
             setClientURL( settings.get( "ClientUrl" ) );
             this.blocks = Integer.parseInt( settings.get( "Blocks" ) );
             this.experimentalFiltering = Boolean.parseBoolean( settings.get( "ExperimentalFiltering" ) );
@@ -289,6 +291,12 @@ public class EthereumPlugin extends PolyPlugin {
         public void renameLogicalColumn( long id, String newColumnName ) {
             adapterCatalog.renameLogicalColumn( id, newColumnName );
             adapterCatalog.fields.values().stream().filter( c -> c.id == id ).forEach( c -> updateNativePhysical( c.allocId ) );
+        }
+
+
+        @Override
+        public RelationalDataSource asRelationalDataSource() {
+            return this;
         }
 
     }

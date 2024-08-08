@@ -16,6 +16,7 @@
 
 package org.polypheny.db.catalog;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.util.concurrent.atomic.AtomicLong;
@@ -25,48 +26,63 @@ import lombok.Value;
 public class IdBuilder {
 
     @Serialize
+    @JsonProperty
     public AtomicLong snapshotId;
 
     @Serialize
+    @JsonProperty
     public AtomicLong entityId;
 
     @Serialize
+    @JsonProperty
     public AtomicLong physicalId;
 
     @Serialize
+    @JsonProperty
     public AtomicLong allocId;
 
     @Serialize
+    @JsonProperty
     public AtomicLong fieldId;
 
     @Serialize
+    @JsonProperty
     public AtomicLong userId;
 
     @Serialize
+    @JsonProperty
     public AtomicLong indexId;
 
     @Serialize
+    @JsonProperty
     public AtomicLong keyId;
 
     @Serialize
+    @JsonProperty
     public AtomicLong adapterId;
 
     @Serialize
+    @JsonProperty
     public AtomicLong adapterTemplateId;
 
     @Serialize
+    @JsonProperty
     public AtomicLong interfaceId;
 
     @Serialize
+    @JsonProperty
     public AtomicLong constraintId;
 
     @Serialize
+    @JsonProperty
     public AtomicLong groupId;
 
     @Serialize
+    @JsonProperty
     public AtomicLong partitionId;
 
     @Serialize
+    @JsonProperty
     public AtomicLong placementId;
 
     private static IdBuilder INSTANCE;
