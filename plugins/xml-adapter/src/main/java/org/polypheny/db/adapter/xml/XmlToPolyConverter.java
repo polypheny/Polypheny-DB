@@ -4,14 +4,15 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
+import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
@@ -31,21 +32,27 @@ import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 
 public class XmlToPolyConverter {
 
-    public PolyDocument nodeToPolyDocument( XMLStreamReader reader ) throws XMLStreamException {
-        return new PolyDocument( nodeToPolyMap( reader ) );
+    public PolyDocument toPolyDocument( XMLStreamReader reader, String elementOuterName ) throws XMLStreamException {
+        return new PolyDocument( toPolyMap( reader, elementOuterName ) );
     }
 
 
-    public PolyMap<PolyString, PolyValue> nodeToPolyMap( XMLStreamReader reader ) throws XMLStreamException {
+    private PolyMap<PolyString, PolyValue> toPolyMap( XMLStreamReader reader, String elementOuterName ) throws XMLStreamException {
         Map<PolyString, PolyValue> map = new HashMap<>();
-        String currentElement = reader.getLocalName();
+        int event;
         while ( reader.hasNext() ) {
-            int event = reader.next();
+            if ( reader.getEventType() != XMLStreamConstants.START_ELEMENT ) {
+                event = reader.next();
+            } else {
+                event = reader.getEventType();
+            }
             if ( event == XMLStreamConstants.START_ELEMENT ) {
                 PolyString key = new PolyString( reader.getLocalName() );
-                PolyValue value = nodeToPolyValue( reader );
+                PolyValue value = toPolyValue( reader );
                 map.put( key, value );
-            } else if ( event == XMLStreamConstants.END_ELEMENT && reader.getLocalName().equals( currentElement ) ) {
+                continue;
+            }
+            if ( event == XMLStreamConstants.END_ELEMENT && reader.getLocalName().equals( elementOuterName ) ) {
                 break;
             }
         }
@@ -53,14 +60,83 @@ public class XmlToPolyConverter {
     }
 
 
-    public PolyValue nodeToPolyValue( XMLStreamReader reader ) throws XMLStreamException {
-        if ( reader.getEventType() == XMLStreamConstants.START_ELEMENT ) {
-            String type = reader.getAttributeValue( null, "type" );
-            return convertByType( reader, type != null ? type : "string" );
+    public PolyValue toPolyValue( XMLStreamReader reader ) throws XMLStreamException {
+        String currentElementName = reader.getLocalName();
+        String typeName = reader.getAttributeValue( null, "type" );
+        if ( typeName == null ) {
+            typeName = "string";
         }
-        return new PolyNull();
+
+        if ( !reader.hasNext() ) {
+            throw new XMLStreamException( "Unexpected end of stream." );
+        }
+        reader.next();
+        if (reader.getEventType() == XMLStreamConstants.END_ELEMENT) {
+            return new PolyNull();
+        }
+        String value = reader.getText().trim();
+        if ( value.isEmpty() ) {
+            if ( typeName.equals( "list" ) ) {
+                reader.next(); // skip empty value between list body and first element
+                return toPolyList(reader, currentElementName);
+            }
+            if ( typeName.equals( "string" ) ) { // This is "string" as nested documents or null values don't have a type specified and are auto typed as string ;)
+                reader.next(); // skip empty value between list body and first element
+                return toPolyMap( reader, currentElementName );
+            }
+        }
+
+        return switch ( typeName ) {
+            case "boolean" -> new PolyBoolean( Boolean.parseBoolean( value ) );
+            case "integer" -> new PolyLong( Long.parseLong( value ) );
+            case "decimal" -> new PolyBigDecimal( new java.math.BigDecimal( value ) );
+            case "float" -> new PolyFloat( Float.parseFloat( value ) );
+            case "double" -> new PolyDouble( Double.parseDouble( value ) );
+            case "date" -> {
+                LocalDate date = LocalDate.parse( value, DateTimeFormatter.ISO_DATE );
+                yield new PolyDate( date.atStartOfDay().toInstant( java.time.ZoneOffset.UTC ).toEpochMilli() );
+            }
+            case "time" -> {
+                LocalTime time = LocalTime.parse( value, DateTimeFormatter.ISO_TIME );
+                yield new PolyTime( (int) (time.toNanoOfDay() / 1000000) );
+            }
+            case "dateTime" -> {
+                LocalDateTime dateTime = LocalDateTime.parse( value, DateTimeFormatter.ISO_DATE_TIME );
+                yield new PolyTimestamp( dateTime.toInstant( java.time.ZoneOffset.UTC ).toEpochMilli() );
+            }
+            case "base64Binary" -> {
+                byte[] binaryData = Base64.getDecoder().decode( value );
+                yield new PolyBinary( binaryData, binaryData.length );
+            }
+            case "hexBinary" -> {
+                try {
+                    byte[] hexBinaryData = Hex.decodeHex( value.toCharArray() );
+                    yield new PolyBinary( hexBinaryData, hexBinaryData.length );
+                } catch ( DecoderException e ) {
+                    throw new RuntimeException( "Failed to parse hexadecimal data.", e );
+                }
+            }
+            case "string" -> new PolyString( value );
+            default -> throw new RuntimeException( "Illegal type encountered: " + typeName );
+        };
     }
 
+
+    private PolyValue toPolyList( XMLStreamReader reader, String listOuterName ) throws XMLStreamException {
+        List<PolyValue> values = new ArrayList<>();
+        while(!reader.getLocalName().equals( listOuterName) ) {
+            values.add( toPolyValue( reader ) );
+            if (!reader.hasNext()) {
+                throw new XMLStreamException( "Unexpected end of stream." );
+            }
+            reader.next(); // skip empty characters element
+            reader.next(); // get to next start element
+            reader.next(); // skip empty characters element
+        }
+        return new PolyList<>( values );
+    }
+
+    /*
 
     private PolyValue convertByType( XMLStreamReader reader, String type ) throws XMLStreamException {
         StringBuilder value = new StringBuilder();
@@ -68,7 +144,7 @@ public class XmlToPolyConverter {
             int event = reader.next();
             if (event == XMLStreamConstants.START_ELEMENT) {
                 if (!type.equals( "list" )) {
-                    return nodeToPolyMap( reader );
+                    return toPolyMap( reader );
                 }
                 break;
             } else if ( event == XMLStreamConstants.CHARACTERS ) {
@@ -141,7 +217,6 @@ public class XmlToPolyConverter {
 
 
 
-
-
+*/
 
 }
