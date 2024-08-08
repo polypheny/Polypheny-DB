@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import javax.xml.stream.XMLInputFactory;
+import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 import org.apache.calcite.linq4j.Enumerator;
@@ -14,7 +15,8 @@ public class XmlEnumerator implements Enumerator<PolyValue[]> {
 
     private final URL url;
     private XMLStreamReader reader;
-    private final XmlToPolyConverter converter;
+    private XmlToPolyConverter converter;
+    private String rootElementName;
     private PolyValue[] current;
     private boolean inTopLevelElement = false;
 
@@ -23,6 +25,7 @@ public class XmlEnumerator implements Enumerator<PolyValue[]> {
         this.url = url;
         this.converter = new XmlToPolyConverter();
         this.current = null;
+        this.rootElementName = null;
         initializeReader();
     }
 
@@ -32,26 +35,21 @@ public class XmlEnumerator implements Enumerator<PolyValue[]> {
             XMLInputFactory factory = XMLInputFactory.newInstance();
             InputStream inputStream = url.openStream();
             reader = factory.createXMLStreamReader( inputStream );
+
+            while (reader.hasNext() && reader.next() != XMLStreamConstants.START_ELEMENT);
+            rootElementName = reader.getLocalName();
+            if(!reader.hasNext()) {
+                throw new GenericRuntimeException( "Unexpected end of stream" );
+            }
+            do {
+                if (!reader.hasNext()) {
+                    return;
+                }
+                reader.next();
+            } while (reader.getEventType() != XMLStreamConstants.START_ELEMENT );
         } catch ( XMLStreamException | IOException e ) {
             throw new GenericRuntimeException( "Error initializing XML reader: " + e.getMessage(), e );
         }
-    }
-
-
-    private PolyValue[] parseNext() throws XMLStreamException {
-        while ( reader.hasNext() ) {
-            int event = reader.next();
-            if ( event == XMLStreamReader.START_ELEMENT ) {
-                if ( inTopLevelElement ) {
-                    return new PolyValue[]{ converter.nodeToPolyDocument( reader ) };
-                } else {
-                    inTopLevelElement = true;
-                }
-            } else if ( event == XMLStreamReader.END_ELEMENT && inTopLevelElement ) {
-                inTopLevelElement = false;
-            }
-        }
-        return null;
     }
 
 
@@ -64,11 +62,26 @@ public class XmlEnumerator implements Enumerator<PolyValue[]> {
     @Override
     public boolean moveNext() {
         try {
-            current = parseNext();
-            return current != null;
+            String documentOuterName = reader.getLocalName();
+            reader.next();
+            current = new PolyValue[]{ converter.toPolyDocument( reader, documentOuterName ) };
+            if (!reader.hasNext() ) {
+                return false;
+            }
+            if (reader.next() == XMLStreamConstants.END_ELEMENT && rootElementName.equals( reader.getLocalName())) {
+                return false;
+            }
+            while (reader.getEventType() != XMLStreamConstants.START_ELEMENT ) {
+                if (!reader.hasNext()) {
+                    return false;
+                }
+                reader.next();
+            }
+            return true;
         } catch ( XMLStreamException e ) {
-            throw new GenericRuntimeException( "Error reading XML: " + e.getMessage(), e );
+            throw new RuntimeException( "Could nod find start of XML content.", e );
         }
+
     }
 
 
