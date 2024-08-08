@@ -18,6 +18,7 @@ package org.polypheny.db.cypher.clause.write;
 
 import java.util.Arrays;
 import java.util.List;
+import org.apache.logging.log4j.core.pattern.NotANumber;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -76,9 +77,10 @@ public class DmlInsertTest extends CypherTestTemplate {
         assertNode( res, 0 );
         assert containsNodes( res, true, TestNode.from( List.of() ) );
     }
+
+
     @Test
-    public void  insertEmptyNodeTest()
-    {
+    public void insertEmptyNodeTest() {
         execute( "CREATE (p:Person)" );
         GraphResult res = matchAndReturnAllNodes();
         assertNode( res, 0 );
@@ -107,91 +109,179 @@ public class DmlInsertTest extends CypherTestTemplate {
     public void insertNodeWithManyLabelsAndAsPropertyTest() {
         execute( "CREATE (n:Person:Employee {name :'Max'})" );
 
-       GraphResult res = matchAndReturnAllNodes();
-     assert containsNodes( res, true, TestNode.from( List.of( "Person", "Employee" ), Pair.of( "name", "Max" ) ) );
+        GraphResult res = matchAndReturnAllNodes();
+        assert containsNodes( res, true, TestNode.from( List.of( "Person", "Employee" ), Pair.of( "name", "Max" ) ) );
 
     }
+
+
     @Test
-    public void insertBigIntegerExceeded32BitAsPropertyValeTest()
-    {
+    public void insertBigIntegerExceeded32BitAsPropertyValeTest() {
         execute( "CREATE (n : node { id  : 4294967296 })" );
-        GraphResult res  = matchAndReturnAllNodes() ;
-        assert  res.getData().length ==  1;
-        assert  containsNodes( res , true , TestNode.from( List.of("node") ,Pair.of( "id" , 4294967296L)) );
+        GraphResult res = matchAndReturnAllNodes();
+        assert res.getData().length == 1;
+        assert containsNodes( res, true, TestNode.from( List.of( "node" ), Pair.of( "id", 4294967296L ) ) );
     }
 
+
     @Test
-    public void insertMaxLongAsPropertyValueTest()
-    {
+    public void insertMaxLongAsPropertyValueTest() {
         execute( "CREATE (n : node { id  : 9223372036854775807})" );
-        GraphResult res  = matchAndReturnAllNodes() ;
-        assert  res.getData().length ==  1;
-        assert  containsNodes( res , true , TestNode.from( List.of("node") ,Pair.of( "id" , 9223372036854775807L)) );
+        GraphResult res = matchAndReturnAllNodes();
+        assert res.getData().length == 1;
+        assert containsNodes( res, true, TestNode.from( List.of( "node" ), Pair.of( "id", 9223372036854775807L ) ) );
 
     }
+
+
     @Test
-    public void insertResultOfMathematicalOperationsTest()
-    {
+    public void insertResultOfMathematicalOperationsTest() {
         execute( "CREATE (n : node { id  : 1*2+6/3 })" );
-        GraphResult res  = matchAndReturnAllNodes() ;
-        assert  res.getData().length ==  1;
-        assert  containsNodes( res , true , TestNode.from( List.of("node") ,Pair.of( "id" ,9223372036854775807L )) );
+        GraphResult res = matchAndReturnAllNodes();
+        assert res.getData().length == 1;
+        assert containsNodes( res, true, TestNode.from( List.of( "node" ), Pair.of( "id", 9223372036854775807L ) ) );
 
     }
 
+
     @Test
-    public void insertENotationAsPropertyValueTest()
-    {
+    public void insertENotationAsPropertyValueTest() {
         execute( "CREATE (n : node { id  : 1e2})" );
-        GraphResult res  = matchAndReturnAllNodes();
-        assert  res.getData().length ==  1;
-        assert  containsNodes( res , true , TestNode.from( List.of("node") ,Pair.of( "id" , 100)) );
+        GraphResult res = matchAndReturnAllNodes();
+        assert res.getData().length == 1;
+        assert containsNodes( res, true, TestNode.from( List.of( "node" ), Pair.of( "id", 100 ) ) );
 
 
     }
 
+
     @Test
-    public void insertMaxLongAsResultOfMathematicalOperationsTest()
-    {
+    public void insertMaxLongAsResultOfMathematicalOperationsTest() {
 
         execute( "CREATE (n : node { id  : 2^63-1})" );
-        GraphResult res  = matchAndReturnAllNodes() ;
-        assert  res.getData().length ==  1;
-        assert  containsNodes( res , true , TestNode.from( List.of("node") ,Pair.of( "id" , 4)) );
+        GraphResult res = matchAndReturnAllNodes();
+        assert res.getData().length == 1;
+        assert containsNodes( res, true, TestNode.from( List.of( "node" ), Pair.of( "id", 4 ) ) );
 
     }
 
+
     @Test
-    public void insertMinLongAsPropertyValueTest()
-    {
+    public void insertMinLongAsPropertyValueTest() {
 
         execute( "CREATE (n : node { id  : -9223372036854775808L})" );
-        GraphResult res  = matchAndReturnAllNodes() ;
-        assert  res.getData().length ==  1;
-        assert  containsNodes( res , true , TestNode.from( List.of("node") ,Pair.of( "id" , - 9223372036854775808L )) );
+        GraphResult res = matchAndReturnAllNodes();
+        assert res.getData().length == 1;
+        assert containsNodes( res, true, TestNode.from( List.of( "node" ), Pair.of( "id", -9223372036854775808L ) ) );
     }
 
 
     @Test
-    public void insertMaxDoubleAsPropertyValueTest()
-    {
+    public void insertMaxDoubleAsPropertyValueTest() {
         execute( "CREATE (n : node { id  : 1.7976931348623157e+308})" );
-        GraphResult res  = matchAndReturnAllNodes() ;
-        assert  res.getData().length ==  1;
-        assert  containsNodes( res , true , TestNode.from( List.of("node") ,Pair.of( "id" , 1.7976931348623157e+308 )) );
+        GraphResult res = matchAndReturnAllNodes();
+        assert res.getData().length == 1;
+        assert containsNodes( res, true, TestNode.from( List.of( "node" ), Pair.of( "id", 1.7976931348623157e+308 ) ) );
 
     }
 
+
     @Test
-    public void insertMinDoubleAsPropertyValueTest()
-    {
+    public void insertMinDoubleAsPropertyValueTest() {
 
         execute( "CREATE (n : node { id  : 4.9e-324 })" );
-        GraphResult res  = matchAndReturnAllNodes() ;
-        assert  res.getData().length ==  1;
-        assert  containsNodes( res , true , TestNode.from( List.of("node") ,Pair.of( "id" , 4.9e-324 )) );
+        GraphResult res = matchAndReturnAllNodes();
+        assert res.getData().length == 1;
+        assert containsNodes( res, true, TestNode.from( List.of( "node" ), Pair.of( "id", 4.9e-324 ) ) );
     }
 
+
+    @Test
+    public void insertHexadecimalIntegerAsPropertyValueTest() {
+        execute( "CREATE (n : node { id  : 0x13af})" );
+        execute( "CREATE (n : node { id  : -0x66eff})" );
+        GraphResult res = matchAndReturnAllNodes();
+        assert res.getData().length == 1;
+        assert containsNodes( res, true,
+                TestNode.from( List.of( "node" ), Pair.of( "id", 5039 ) ),
+                TestNode.from( List.of( "node" ), Pair.of( "id", -421631 ) ) );
+
+
+    }
+
+
+    @Test
+    public void insertOctalIntegerAsPropertyValueTest() {
+
+        execute( "CREATE (n : node { id  : 0o1372})" );
+        execute( "CREATE (n : node { id  :-0o5671 })" );
+        GraphResult res = matchAndReturnAllNodes();
+        assert res.getData().length == 1;
+        assert containsNodes( res, true,
+                TestNode.from( List.of( "node" ), Pair.of( "id", 762 ) ),
+                TestNode.from( List.of( "node" ), Pair.of( "id", -3001 ) ) );
+    }
+
+
+    @Test
+    public void insertTabCharWithPropertyValueTest() {
+        execute( "CREATE (n : node { title : \"Hello\\tWorld\" })" );
+        GraphResult res = matchAndReturnAllNodes();
+        assert res.getData().length == 1;
+        assert containsNodes( res, true,
+                TestNode.from( List.of( "node" ), Pair.of( "title", "Hello\tWorld" ) ) );
+    }
+
+
+    @Test
+    public void insertBackspaceCharWithPropertyValueTest() {
+        execute( "CREATE (n : node { title : \"Hello\\bWorld\" })" );
+        GraphResult res = matchAndReturnAllNodes();
+        assert res.getData().length == 1;
+        assert containsNodes( res, true,
+                TestNode.from( List.of( "node" ), Pair.of( "title", "Hello\bWorld" ) ) );
+    }
+
+
+    @Test
+    public void insertNewlineWithPropertyValueTest() {
+        execute( "CREATE (n : node { title : \"Hello\\nWorld\" })" );
+        GraphResult res = matchAndReturnAllNodes();
+        assert res.getData().length == 1;
+        assert containsNodes( res, true,
+                TestNode.from( List.of( "node" ), Pair.of( "title", "Hello\nWorld" ) ) );
+    }
+
+
+    @Test
+    public void insertSingleQuoteCharWithPropertyValueTest() {
+        execute( "CREATE (n : node { title : 'Hello\\'World' })" );
+        GraphResult res = matchAndReturnAllNodes();
+        assert res.getData().length == 1;
+        assert containsNodes( res, true,
+                TestNode.from( List.of( "node" ), Pair.of( "title", "Hello'World" ) ) );
+    }
+
+
+    @Test
+    public void insertMultiplePropertiesWithSingleQuoteValuesTest() {
+        execute( " CREATE (n:node { name: \"Xi'an\", url: \"http://dbpedia.org/resource/Xi'an\"})" );
+        GraphResult res = matchAndReturnAllNodes();
+        assert res.getData().length == 1;
+        assert containsNodes( res, true,
+                TestNode.from( List.of( "node" ), Pair.of( "name", "Xi'an" ),
+                        Pair.of( "url", "http://dbpedia.org/resource/Xi'an" ) ) );
+    }
+
+
+    @Test
+    public void insertDoubleQuoteCharWithPropertyValueTest() {
+        execute( "CREATE (n : node { title : \"Hello\\\"World\" })" );
+        GraphResult res = matchAndReturnAllNodes();
+        assert res.getData().length == 1;
+        assert containsNodes( res, true,
+                TestNode.from( List.of( "node" ), Pair.of( "title", "Hello\"World" ) ) );
+    }
 
 
     @Test
@@ -201,7 +291,6 @@ public class DmlInsertTest extends CypherTestTemplate {
         assert res.getData().length == 1;
 
     }
-
 
 
     @Test
@@ -250,10 +339,10 @@ public class DmlInsertTest extends CypherTestTemplate {
         assert containsNodes( res, true, TestNode.from( List.of() ) );
     }
 
+
     @Test
-    public void insertSingleHopPathNoVariableTest()
-    {
-       execute( "CREATE (p:Person {name :'Max'}) -[ : OWNER_OF] ->(a: Animal {name :'Kira' , age: 3 , type :'dog'})" );
+    public void insertSingleHopPathNoVariableTest() {
+        execute( "CREATE (p:Person {name :'Max'}) -[ : OWNER_OF] ->(a: Animal {name :'Kira' , age: 3 , type :'dog'})" );
         GraphResult res = matchAndReturnAllNodes();
         // only select all nodes
         assert containsNodes( res, true,
@@ -265,10 +354,12 @@ public class DmlInsertTest extends CypherTestTemplate {
                         Pair.of( "type", "dog" ) ) );
 
         // only select all edges
-         res = execute( "MATCH ()-[r]->() RETURN r" );
+        res = execute( "MATCH ()-[r]->() RETURN r" );
         assert containsEdges( res, true, TestEdge.from( List.of( "OWNER_OF" ) ) );
 
     }
+
+
     @Test
     public void insertSingleHopPathTest() {
         execute( "CREATE (p:Person {name: 'Max'})-[rel:OWNER_OF]->(a:Animal {name:'Kira', age:3, type:'dog'})" );
@@ -291,9 +382,9 @@ public class DmlInsertTest extends CypherTestTemplate {
         assert containsEdges( res, true, TestEdge.from( List.of( "OWNER_OF" ) ) );
     }
 
+
     @Test
-    public void insertSingleHopPathWithMultiplePropertiesTest()
-    {
+    public void insertSingleHopPathWithMultiplePropertiesTest() {
         execute( "CREATE (p:Person {name: 'Max'})-[rel:KNOWS {since: 1994 , relation : 'friend'}]->(a:Person {name:'Hans', age:31})" );
 
         // only select all nodes
@@ -303,21 +394,23 @@ public class DmlInsertTest extends CypherTestTemplate {
                 TestNode.from(
                         List.of( "Person" ),
                         Pair.of( "name", "Hans" ),
-                        Pair.of( "age", 31)));
+                        Pair.of( "age", 31 ) ) );
 
         // only select all edges
-       res = execute( "MATCH ()-[r]->() RETURN r" );
-        assert containsEdges( res, true, TestEdge.from( List.of( "KNOWS" ) ,
-                Pair.of( "since" , 1994 ) , Pair.of( "relation" ,"friend" )) );
+        res = execute( "MATCH ()-[r]->() RETURN r" );
+        assert containsEdges( res, true, TestEdge.from( List.of( "KNOWS" ),
+                Pair.of( "since", 1994 ), Pair.of( "relation", "friend" ) ) );
 
     }
+
+
     @Test
     public void insertSingleHopPathWithListPropertyTest() {
         execute( "Create (p:Person:Employee {name: 'Max'})-[role:ACTED_IN {roles:['Neo', 42, 'Thomas Anderson']}]->(matrix:Movie {title: 'The Matrix'})" );
         // only select all nodes
         GraphResult res = matchAndReturnAllNodes();
         assert containsNodes( res, true,
-                TestNode.from( List.of( "Person"  , "Employee"), Pair.of( "name", "Max" ) ),
+                TestNode.from( List.of( "Person", "Employee" ), Pair.of( "name", "Max" ) ),
                 TestNode.from(
                         List.of( "Movie" ),
                         Pair.of( "title", "The Matrix" ) ) );
@@ -327,6 +420,7 @@ public class DmlInsertTest extends CypherTestTemplate {
         assert containsEdges( res, true, TestEdge.from( List.of( "ACTED_IN" ),
                 Pair.of( "roles", List.of( "Neo", 42, "Thomas Anderson" ) ) ) );
     }
+
 
     @Test
     public void insertMultipleHopPathTest() {
