@@ -325,7 +325,7 @@ class PIService {
         PIClient client = clientManager.registerConnection( request, con );
         responseBuilder.addAllUnknownProperties( client.getClientConfig().setProperties( request.getPropertiesMap() ) );
 
-        String namespace = client.getClientConfig().getProperty( ClientConfiguration.DEFAULT_NAMESPACE_PROPERTY_KEY );
+        String namespace = client.getClientConfig().getProperty( ClientConfiguration.NAMESPACE_PROPERTY_KEY );
         Optional<LogicalNamespace> optionalNamespace = Catalog.getInstance().getSnapshot().getNamespace( namespace );
         if ( optionalNamespace.isEmpty() ) {
             throw new PIServiceException( "Getting namespace " + namespace + " failed." );
@@ -566,8 +566,8 @@ class PIService {
     private Response updateConnectionProperties( ConnectionPropertiesUpdateRequest request, ResponseMaker<ConnectionPropertiesUpdateResponse> responseObserver ) {
         PIClient client = getClient();
         Set<String> unknownProperties = client.getClientConfig().setProperties( request.getPropertiesMap() );
-        if ( unknownProperties.contains( ClientConfiguration.DEFAULT_NAMESPACE_PROPERTY_KEY ) ) {
-            String namespace = client.getClientConfig().getProperty( ClientConfiguration.DEFAULT_NAMESPACE_PROPERTY_KEY );
+        if ( unknownProperties.contains( ClientConfiguration.NAMESPACE_PROPERTY_KEY ) ) {
+            String namespace = client.getClientConfig().getProperty( ClientConfiguration.NAMESPACE_PROPERTY_KEY );
             Optional<LogicalNamespace> optionalNamespace = Catalog.getInstance().getSnapshot().getNamespace( namespace );
             if ( optionalNamespace.isEmpty() ) {
                 throw new PIServiceException( "Getting namespace " + namespace + " failed." );

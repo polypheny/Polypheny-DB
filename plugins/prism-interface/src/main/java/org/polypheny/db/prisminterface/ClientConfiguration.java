@@ -38,7 +38,7 @@ public class ClientConfiguration {
 
     public static final String AUTOCOMMIT_PROPERTY_KEY = "autocommit";
     public static final String STREAM_ALL_PROPERTY_KEY = "stream_all";
-    public static final String DEFAULT_NAMESPACE_PROPERTY_KEY = "namespace";
+    public static final String NAMESPACE_PROPERTY_KEY = "namespace";
     public static final String PREFERRED_MESSAGE_SIZE_PROPERTY_KEY = "preferred_message_size";
     public static final String FETCH_SIZE_PROPERTY_KEY = "fetch_size";
 
@@ -75,7 +75,7 @@ public class ClientConfiguration {
 
     public void setDefaultProperties() {
         properties.put( AUTOCOMMIT_PROPERTY_KEY, String.valueOf(DEFAULT_AUTOCOMMIT) );
-        properties.put( DEFAULT_NAMESPACE_PROPERTY_KEY, DEFAULT_NAMESPACE_NAME );
+        properties.put( NAMESPACE_PROPERTY_KEY, DEFAULT_NAMESPACE_NAME );
         properties.put( FETCH_SIZE_PROPERTY_KEY, String.valueOf(DEFAULT_FETCH_SIZE));
         properties.put( PREFERRED_MESSAGE_SIZE_PROPERTY_KEY, String.valueOf(DEFAULT_MESSAGE_SIZE));
         properties.put( STREAM_ALL_PROPERTY_KEY, String.valueOf(DEFAULT_STREAM_ALL));

@@ -81,7 +81,7 @@ public class PIClient {
     }
 
     public LogicalNamespace getNamespace() {
-        Optional<LogicalNamespace> namespace = Catalog.getInstance().getSnapshot().getNamespace( clientConfig.getProperty( ClientConfiguration.DEFAULT_NAMESPACE_PROPERTY_KEY ) );
+        Optional<LogicalNamespace> namespace = Catalog.getInstance().getSnapshot().getNamespace( clientConfig.getProperty( ClientConfiguration.NAMESPACE_PROPERTY_KEY ) );
         if ( namespace.isEmpty() ) {
             throw new PIServiceException( "Could not resolve default namespace." );
         }
