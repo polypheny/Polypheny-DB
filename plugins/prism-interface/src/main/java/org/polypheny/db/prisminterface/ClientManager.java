@@ -92,17 +92,13 @@ class ClientManager {
             log.trace( "User {} tries to establish connection via prism interface.", uuid );
         }
         final LogicalUser user = getUser( connectionRequest, t );
-        LogicalNamespace namespace = getNamespaceOrDefault( connectionRequest );
-        boolean isAutocommit = getAutocommitOrDefault( connectionRequest );
         ClientConfiguration clientConfiguration = new ClientConfiguration();
         PIClient client = new PIClient(
                 uuid,
                 user,
                 transactionManager,
-                namespace,
                 monitoringPage,
-                clientConfiguration,
-                isAutocommit
+                clientConfiguration
         );
         clients.put( uuid, client );
         if ( log.isTraceEnabled() ) {
@@ -119,28 +115,6 @@ class ClientManager {
 
     int getClientCount() {
         return clients.size();
-    }
-
-
-    private LogicalNamespace getNamespaceOrDefault( ConnectionRequest connectionRequest ) {
-        String namespaceName = ClientConfiguration.DEFAULT_NAMESPACE_NAME;
-        if ( connectionRequest.hasConnectionProperties() && connectionRequest.getConnectionProperties().hasNamespaceName() ) {
-            namespaceName = connectionRequest.getConnectionProperties().getNamespaceName();
-        }
-        Optional<LogicalNamespace> optionalNamespace = Catalog.getInstance().getSnapshot().getNamespace( namespaceName );
-        if ( optionalNamespace.isEmpty() ) {
-            throw new PIServiceException( "Getting namespace " + namespaceName + " failed." );
-        }
-
-        return optionalNamespace.get();
-    }
-
-
-    private boolean getAutocommitOrDefault( ConnectionRequest connectionRequest ) {
-        if ( connectionRequest.hasConnectionProperties() && connectionRequest.getConnectionProperties().hasIsAutoCommit() ) {
-            return connectionRequest.getConnectionProperties().getIsAutoCommit();
-        }
-        return ClientConfiguration.DEFAULT_AUTOCOMMIT;
     }
 
 

@@ -64,14 +64,11 @@ public class PIClient {
 
 
     public Transaction getOrCreateNewTransaction() {
-        Optional<LogicalNamespace> namespace = Catalog.getInstance().getSnapshot().getNamespace( clientConfig.getProperty( ClientConfiguration.DEFAULT_NAMESPACE_PROPERTY_KEY ) );
-        if ( namespace.isEmpty() ) {
-            throw new PIServiceException( "Could not resolve default namespace." );
-        }
+        LogicalNamespace namespace = getNamespace();
         if ( hasNoTransaction() ) {
             currentTransaction = transactionManager.startTransaction(
                     catalogUser.id,
-                    namespace.get().id,
+                    namespace.id,
                     false,
                     "PrismInterface" );
         }
@@ -79,8 +76,21 @@ public class PIClient {
     }
 
 
+    public boolean isAutoCommit() {
+        return Boolean.getBoolean( clientConfig.getProperty( ClientConfiguration.AUTOCOMMIT_PROPERTY_KEY ) );
+    }
+
+    public LogicalNamespace getNamespace() {
+        Optional<LogicalNamespace> namespace = Catalog.getInstance().getSnapshot().getNamespace( clientConfig.getProperty( ClientConfiguration.DEFAULT_NAMESPACE_PROPERTY_KEY ) );
+        if ( namespace.isEmpty() ) {
+            throw new PIServiceException( "Could not resolve default namespace." );
+        }
+        return namespace.get();
+    }
+
+
     public void commitCurrentTransactionIfAuto() {
-        if ( !clientConfig.getProperty( ClientConfiguration.DEFAULT_NAMESPACE_PROPERTY_KEY ).equals( "true" ) ) {
+        if ( !isAutoCommit() ) {
             return;
         }
         commitCurrentTransactionUnsynchronized();
