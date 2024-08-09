@@ -95,14 +95,11 @@ public enum RexUnknownAs {
 
 
     public boolean toBoolean() {
-        switch ( this ) {
-            case FALSE:
-                return false;
-            case TRUE:
-                return true;
-            default:
-                throw new IllegalArgumentException( "unknown" );
-        }
+        return switch ( this ) {
+            case FALSE -> false;
+            case TRUE -> true;
+            case UNKNOWN -> throw new IllegalArgumentException( "unknown" );
+        };
     }
 }
 
