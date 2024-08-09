@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -61,7 +62,6 @@ import org.polypheny.prism.CommitRequest;
 import org.polypheny.prism.CommitResponse;
 import org.polypheny.prism.ConnectionCheckRequest;
 import org.polypheny.prism.ConnectionCheckResponse;
-import org.polypheny.prism.ConnectionProperties;
 import org.polypheny.prism.ConnectionPropertiesUpdateRequest;
 import org.polypheny.prism.ConnectionPropertiesUpdateResponse;
 import org.polypheny.prism.ConnectionRequest;
@@ -116,6 +116,7 @@ import org.polypheny.prism.TypesResponse;
 
 @Slf4j
 class PIService {
+
     private static final int THREAD_POOL_SIZE = 10;
 
     private final long connectionId;
@@ -124,7 +125,7 @@ class PIService {
     private final PIRequestReader reader;
     private String uuid = null;
 
-    private final ExecutorService executorService = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
+    private final ExecutorService executorService = Executors.newFixedThreadPool( THREAD_POOL_SIZE );
 
 
     private PIService( Transport con, long connectionId, ClientManager clientManager, PIRequestReader reader ) {
@@ -188,45 +189,45 @@ class PIService {
 
 
     private void handleMessages() throws IOException {
-        BlockingQueue<Optional<byte[]>> waiting = reader.addConnection(con, connectionId);
+        BlockingQueue<Optional<byte[]>> waiting = reader.addConnection( con, connectionId );
         final AtomicBoolean closed = new AtomicBoolean( false );
-        if (!handleFirstMessage(waiting)) {
+        if ( !handleFirstMessage( waiting ) ) {
             return;
         }
 
         try {
-            while (!closed.get()) {
-                Request req = readOneMessage(waiting);
-                executorService.submit(() -> {
-                    if (closed.get()) {
+            while ( !closed.get() ) {
+                Request req = readOneMessage( waiting );
+                executorService.submit( () -> {
+                    if ( closed.get() ) {
                         return;
                     }
                     try {
-                        Response r = handleRequest(req);
-                        if (r.getTypeCase() == Response.TypeCase.DISCONNECT_RESPONSE) {
-                            closed.set(true);
+                        Response r = handleRequest( req );
+                        if ( r.getTypeCase() == Response.TypeCase.DISCONNECT_RESPONSE ) {
+                            closed.set( true );
                             executorService.shutdownNow();
                         }
-                    } catch (Throwable t) {
-                        if (t.getCause() instanceof PIServiceException p && p.getCause() instanceof EOFException eof) {
-                            throw new RuntimeException(eof);
+                    } catch ( Throwable t ) {
+                        if ( t.getCause() instanceof PIServiceException p && p.getCause() instanceof EOFException eof ) {
+                            throw new RuntimeException( eof );
                         }
                         throw t;
                     }
-                });
+                } );
             }
-        } catch (EOFException e) {
+        } catch ( EOFException e ) {
             throw e;
-        } catch (Throwable t) {
-            if (t.getCause() instanceof PIServiceException p && p.getCause() instanceof EOFException eof) {
+        } catch ( Throwable t ) {
+            if ( t.getCause() instanceof PIServiceException p && p.getCause() instanceof EOFException eof ) {
                 throw eof;
             }
             throw t;
         } finally {
             executorService.shutdown();
             try {
-                executorService.awaitTermination(5, TimeUnit.SECONDS);
-            } catch (InterruptedException e) {
+                executorService.awaitTermination( 5, TimeUnit.SECONDS );
+            } catch ( InterruptedException e ) {
                 Thread.currentThread().interrupt();
             }
         }
@@ -319,9 +320,17 @@ class PIService {
         // reject incompatible client
         if ( !isCompatible ) {
             log.info( "Incompatible client and server version" );
-            return responseObserver.makeResponse( responseBuilder.build());
+            return responseObserver.makeResponse( responseBuilder.build() );
         }
         PIClient client = clientManager.registerConnection( request, con );
+        responseBuilder.addAllUnknownProperties( client.getClientConfig().setProperties( request.getPropertiesMap() ) );
+
+        String namespace = client.getClientConfig().getProperty( ClientConfiguration.DEFAULT_NAMESPACE_PROPERTY_KEY );
+        Optional<LogicalNamespace> optionalNamespace = Catalog.getInstance().getSnapshot().getNamespace( namespace );
+        if ( optionalNamespace.isEmpty() ) {
+            throw new PIServiceException( "Getting namespace " + namespace + " failed." );
+        }
+
         responseBuilder.addAllUnknownFeatures( client.getClientConfig().addFeatures( request.getFeaturesList() ) );
         uuid = client.getClientUUID();
         return responseObserver.makeResponse( responseBuilder.build() );
@@ -519,7 +528,7 @@ class PIService {
         PIStatement statement = client.getStatementManager().getStatement( request.getStatementId() );
         int fetchSize = request.hasFetchSize()
                 ? request.getFetchSize()
-                : ClientConfiguration.DEFAULT_FETCH_SIZE;
+                : Integer.parseInt(client.getClientConfig().getProperty( ClientConfiguration.FETCH_SIZE_PROPERTY_KEY ));
         Frame frame = StatementProcessor.fetch( statement, fetchSize );
         return responseObserver.makeResponse( frame );
     }
@@ -556,19 +565,18 @@ class PIService {
 
     private Response updateConnectionProperties( ConnectionPropertiesUpdateRequest request, ResponseMaker<ConnectionPropertiesUpdateResponse> responseObserver ) {
         PIClient client = getClient();
-        ConnectionProperties properties = request.getConnectionProperties();
-        if ( properties.hasIsAutoCommit() ) {
-            client.setAutoCommit( properties.getIsAutoCommit() );
-        }
-        if ( properties.hasNamespaceName() ) {
-            String namespaceName = properties.getNamespaceName();
-            Optional<LogicalNamespace> optionalNamespace = Catalog.getInstance().getSnapshot().getNamespace( namespaceName );
+        Set<String> unknownProperties = client.getClientConfig().setProperties( request.getPropertiesMap() );
+        if ( unknownProperties.contains( ClientConfiguration.DEFAULT_NAMESPACE_PROPERTY_KEY ) ) {
+            String namespace = client.getClientConfig().getProperty( ClientConfiguration.DEFAULT_NAMESPACE_PROPERTY_KEY );
+            Optional<LogicalNamespace> optionalNamespace = Catalog.getInstance().getSnapshot().getNamespace( namespace );
             if ( optionalNamespace.isEmpty() ) {
-                throw new PIServiceException( "Getting namespace " + namespaceName + " failed." );
+                throw new PIServiceException( "Getting namespace " + namespace + " failed." );
             }
-            client.setNamespace( optionalNamespace.get() );
         }
-        return responseObserver.makeResponse( ConnectionPropertiesUpdateResponse.newBuilder().build() );
+        ConnectionPropertiesUpdateResponse response = ConnectionPropertiesUpdateResponse.newBuilder()
+                .addAllUnknownProperties( unknownProperties )
+                .build();
+        return responseObserver.makeResponse( response );
     }
 
 

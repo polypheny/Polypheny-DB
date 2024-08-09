@@ -33,9 +33,7 @@ import org.polypheny.prism.GraphFrame;
 import org.polypheny.prism.RelationalFrame;
 
 public class StreamingFramework {
-
-    public static final int MAX_MESSAGE_SIZE = 1000000000;
-    public static final int STREAM_LIMIT = 100000000; // 1 MB
+    public static final int STREAM_LIMIT = 65000000; // 65MB
 
     @Getter
     private StreamIndex index;
@@ -43,20 +41,25 @@ public class StreamingFramework {
     private List<PolyValue> cache;
     boolean streamingSupported;
 
-
     public StreamingFramework( PIStatement statement ) {
         this.index = new StreamIndex();
         this.statement = statement;
         ClientConfiguration config = statement.getClient().getClientConfig();
-        this.streamingSupported = config.isSupported( ClientConfiguration.SERVER_STREAMING );
+        this.streamingSupported = config.isSupported( ClientConfiguration.SERVER_STREAMING_FEATURE_KEY );
     }
 
+    private int getMaxMessageSize() {
+        return Integer.parseInt( statement.getClient().getClientConfig().getProperty( ClientConfiguration.PREFERRED_MESSAGE_SIZE_PROPERTY_KEY ) );
+    }
 
     private StreamingStrategy determineStrategy( Estimate estimate, long messageSize ) {
         if (!streamingSupported) {
             return StreamingStrategy.STREAM_NONE;
         }
-        return messageSize + estimate.getDynamicLength() > MAX_MESSAGE_SIZE ? StreamingStrategy.STREAM_ALL : StreamingStrategy.DYNAMIC;
+        if (statement.getClient().getClientConfig().getProperty( ClientConfiguration.STREAM_ALL_PROPERTY_KEY ).equals("true")) {
+            return StreamingStrategy.STREAM_ALL;
+        }
+        return messageSize + estimate.getDynamicLength() > getMaxMessageSize() ? StreamingStrategy.STREAM_ALL : StreamingStrategy.DYNAMIC;
     }
 
 
@@ -108,7 +111,7 @@ public class StreamingFramework {
         }
 
         while ( fetchedCount < fetchSize ) {
-            if ( messageSize > MAX_MESSAGE_SIZE ) {
+            if ( messageSize > getMaxMessageSize() ) {
                 break;
             }
             List<PolyValue> currentItem = iterator.getNext();
@@ -116,10 +119,10 @@ public class StreamingFramework {
                 break;
             }
             Estimate estimate = estimator.estimate( currentItem );
-            if ( estimate.getAllStreamedLength() > MAX_MESSAGE_SIZE ) {
+            if ( estimate.getAllStreamedLength() > getMaxMessageSize() ) {
                 throw new RuntimeException( "Result is too large to be serialized" );
             }
-            if ( messageSize + estimate.getAllStreamedLength() < MAX_MESSAGE_SIZE ) {
+            if ( messageSize + estimate.getAllStreamedLength() < getMaxMessageSize() ) {
                 StreamingStrategy strategy = determineStrategy( estimate, messageSize );
                 results.add( extractor.extract( currentItem, index, strategy, statement.getId() ) );
                 messageSize += getSizeForStrategy( estimate, strategy );

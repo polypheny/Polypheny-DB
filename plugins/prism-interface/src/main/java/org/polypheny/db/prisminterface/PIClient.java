@@ -16,9 +16,10 @@
 
 package org.polypheny.db.prisminterface;
 
+import java.util.Optional;
 import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalUser;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.prisminterface.metaRetrieval.PIClientInfoProperties;
@@ -42,12 +43,6 @@ public class PIClient {
     @Getter
     private final ClientConfiguration clientConfig;
     @Getter
-    @Setter
-    private boolean isAutoCommit;
-    @Getter
-    @Setter
-    private LogicalNamespace namespace;
-    @Getter
     private final MonitoringPage monitoringPage;
 
 
@@ -55,33 +50,37 @@ public class PIClient {
             String clientUUID,
             LogicalUser catalogUser,
             TransactionManager transactionManager,
-            LogicalNamespace namespace,
             MonitoringPage monitoringPage,
-            ClientConfiguration clientConfig,
-            boolean isAutoCommit ) {
+            ClientConfiguration clientConfig ) {
         this.statementManager = new StatementManager( this );
         this.PIClientInfoProperties = new PIClientInfoProperties();
         this.clientConfig = clientConfig;
-        this.namespace = namespace;
         this.clientUUID = clientUUID;
         this.catalogUser = catalogUser;
         this.transactionManager = transactionManager;
-        this.isAutoCommit = isAutoCommit;
         this.monitoringPage = monitoringPage;
         monitoringPage.addStatementManager( statementManager );
     }
 
 
     public Transaction getOrCreateNewTransaction() {
+        Optional<LogicalNamespace> namespace = Catalog.getInstance().getSnapshot().getNamespace( clientConfig.getProperty( ClientConfiguration.DEFAULT_NAMESPACE_PROPERTY_KEY ) );
+        if ( namespace.isEmpty() ) {
+            throw new PIServiceException( "Could not resolve default namespace." );
+        }
         if ( hasNoTransaction() ) {
-            currentTransaction = transactionManager.startTransaction( catalogUser.id, namespace.id, false, "PrismInterface" );
+            currentTransaction = transactionManager.startTransaction(
+                    catalogUser.id,
+                    namespace.get().id,
+                    false,
+                    "PrismInterface" );
         }
         return currentTransaction;
     }
 
 
     public void commitCurrentTransactionIfAuto() {
-        if ( !isAutoCommit ) {
+        if ( !clientConfig.getProperty( ClientConfiguration.DEFAULT_NAMESPACE_PROPERTY_KEY ).equals( "true" ) ) {
             return;
         }
         commitCurrentTransactionUnsynchronized();
