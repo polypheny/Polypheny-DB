@@ -164,6 +164,7 @@ class PIService {
         try {
             r = handleMessage( req );
         } catch ( Throwable t ) {
+            log.error( "handleRequest", t );
             r = createErrorResponse( req.getId(), Objects.requireNonNullElse( t.getMessage(), t.getClass().getSimpleName() ) );
         }
         try {
