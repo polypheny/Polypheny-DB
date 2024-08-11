@@ -27,6 +27,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.prisminterface.PIClient;
+import org.polypheny.db.prisminterface.PIServiceException;
 import org.polypheny.db.prisminterface.statementProcessing.StatementProcessor;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
@@ -58,6 +59,9 @@ public class PIPreparedIndexedStatement extends PIPreparedStatement {
 
 
     public List<Long> executeBatch( List<List<PolyValue>> valuesBatch ) {
+        if ( valuesBatch.isEmpty() ) {
+            throw new PIServiceException( "Execution of indexed parameterized batches requires parameters." );
+        }
         List<Long> updateCounts = new ArrayList<>();
         if ( statement == null || client.hasNoTransaction() ) {
             statement = client.getOrCreateNewTransaction().createStatement();
@@ -67,6 +71,9 @@ public class PIPreparedIndexedStatement extends PIPreparedStatement {
         List<AlgDataType> types = IntStream.range( 0, valuesBatch.size() ).mapToObj( i -> deriveType( statement.getTransaction().getTypeFactory(), parameterMetas.get( i ) ) ).toList();
         int i = 0;
         for ( List<PolyValue> column : valuesBatch ) {
+            if ( valuesBatch.isEmpty() ) {
+                throw new PIServiceException( "Parameters must be provided to execute an indexed parameterized statement." );
+            }
             statement.getDataContext().addParameterValues( i, types.get( i++ ), column );
         }
         StatementProcessor.implement( this );
