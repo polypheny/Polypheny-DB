@@ -33,9 +33,11 @@ import org.apache.calcite.linq4j.function.Function1;
 import org.apache.commons.lang3.NotImplementedException;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
+import org.neo4j.driver.internal.value.DateTimeValue;
 import org.neo4j.driver.internal.value.FloatValue;
 import org.neo4j.driver.internal.value.IntegerValue;
 import org.neo4j.driver.internal.value.ListValue;
+import org.neo4j.driver.internal.value.MapValue;
 import org.neo4j.driver.internal.value.StringValue;
 import org.neo4j.driver.types.Node;
 import org.neo4j.driver.types.Path;
@@ -216,6 +218,8 @@ public interface NeoUtil {
             return PolyString.of( String.valueOf( value.asDouble() ) );
         } else if ( value instanceof ListValue ) {
             return new PolyList<>( (value).asList( NeoUtil::getComparableOrString ) );
+        } else if ( value instanceof DateTimeValue ) {
+            return PolyString.of( value.asOffsetDateTime().toString() );
         }
         throw new NotImplementedException( "Type not supported" );
     }
