@@ -2286,15 +2286,10 @@ public class DdlManagerImpl extends DdlManager {
         Snapshot snapshot = catalog.getSnapshot();
 
         AdapterManager manager = AdapterManager.getInstance();
-        boolean isSource = false;
 
         List<AllocationEntity> allocations = snapshot.alloc().getFromLogical( collection.id );
         for ( AllocationEntity allocation : allocations ) {
-            if ( manager.isStore( allocation.adapterId ) ) {
-                manager.getStore( allocation.adapterId ).orElseThrow().dropCollection( statement.getPrepareContext(), allocation.unwrapOrThrow( AllocationCollection.class ) );
-            } else {
-                manager.getSource( allocation.adapterId ).orElseThrow().dropCollection( statement.getPrepareContext(), allocation.unwrapOrThrow( AllocationCollection.class ) );
-            }
+            manager.getAdapter( allocation.adapterId ).orElseThrow().dropCollection( statement.getPrepareContext(), allocation.unwrapOrThrow( AllocationCollection.class ) );
             catalog.getAllocDoc( allocation.namespaceId ).removeAllocation( allocation.id );
             catalog.getAllocDoc( allocation.namespaceId ).removePlacement( allocation.placementId );
         }

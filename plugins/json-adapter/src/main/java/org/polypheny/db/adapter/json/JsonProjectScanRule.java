@@ -42,15 +42,15 @@ public class JsonProjectScanRule extends AlgOptRule {
     @Override
     public void onMatch( AlgOptRuleCall call ) {
         final LogicalDocumentScan scan = call.alg( 0 );
-        call.transformTo( new JsonScan( scan.getCluster(), scan.getEntity().unwrap( JsonCollection.class ).orElseThrow(), new int[]{ 0 } ) );
+        call.transformTo( new JsonScan( scan.getCluster(), scan.getEntity().unwrapOrThrow( JsonCollection.class ), new int[]{ 0 } ) );
 
     }
 
 
     private int[] getProjectFields( List<RexNode> childExpressions ) {
         final int[] fields = new int[childExpressions.size()];
-        for ( int i = 0; i < childExpressions.size(); i++ ) {
-            final RexNode childExpression = childExpressions.get( i );
+        int i = 0;
+        for ( final RexNode childExpression : childExpressions ) {
             if ( childExpression instanceof RexIndexRef ) {
                 fields[i] = ((RexIndexRef) childExpression).getIndex();
             } else {

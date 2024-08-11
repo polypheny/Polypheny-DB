@@ -35,10 +35,10 @@ public abstract class DataSource<S extends AdapterCatalog> extends Adapter<S> im
     private final boolean dataReadOnly;
 
 
-    protected DataSource( final long adapterId, final String uniqueName, final Map<String, String> settings, final DeployMode mode, boolean dataReadOnly, S catalog, List<DataModel> supportedModels ) {
+    protected DataSource( final long adapterId, final String uniqueName, final Map<String, String> settings, final DeployMode mode, boolean dataReadOnly, S catalog, Set<DataModel> supportedModels ) {
         super( adapterId, uniqueName, settings, mode, catalog );
         this.dataReadOnly = dataReadOnly;
-        this.supportedDataModels = new HashSet<>( supportedModels );
+        this.supportedDataModels = Set.copyOf(supportedModels);
         informationPage.setLabel( "Sources" );
 
     }

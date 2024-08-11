@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.dbcp2.BasicDataSource;
@@ -74,7 +75,7 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
             final String diverClass,
             final SqlDialect dialect,
             final boolean readOnly ) {
-        super( storeId, uniqueName, settings, mode, readOnly, new RelAdapterCatalog( storeId ), List.of( DataModel.RELATIONAL ) );
+        super( storeId, uniqueName, settings, mode, readOnly, new RelAdapterCatalog( storeId ), Set.of( DataModel.RELATIONAL ) );
         this.connectionFactory = createConnectionFactory( settings, dialect, diverClass );
         this.dialect = dialect;
         // Register the JDBC Pool Size as information in the information manager and enable it

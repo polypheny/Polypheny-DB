@@ -23,6 +23,7 @@ import java.net.URL;
 import java.nio.file.NoSuchFileException;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import lombok.experimental.Delegate;
 import org.pf4j.Extension;
 import org.polypheny.db.adapter.ConnectionMethod;
@@ -77,7 +78,7 @@ public class JsonSource extends DataSource<DocAdapterCatalog> implements Documen
 
 
     public JsonSource( final long storeId, final String uniqueName, final Map<String, String> settings, DeployMode mode ) {
-        super( storeId, uniqueName, settings, mode, true, new DocAdapterCatalog( storeId ), List.of( DataModel.DOCUMENT ) );
+        super( storeId, uniqueName, settings, mode, true, new DocAdapterCatalog( storeId ), Set.of( DataModel.DOCUMENT ) );
         this.connectionMethod = settings.containsKey( "method" ) ? ConnectionMethod.from( settings.get( "method" ).toUpperCase() ) : ConnectionMethod.UPLOAD;
         this.jsonFiles = getJsonFilesUrl( settings );
         this.delegate = new DocumentScanDelegate( this, getAdapterCatalog() );

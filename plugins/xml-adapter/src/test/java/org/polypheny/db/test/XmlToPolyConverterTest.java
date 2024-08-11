@@ -22,6 +22,7 @@ import java.io.StringReader;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
+import org.apache.commons.codec.DecoderException;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
@@ -44,7 +45,7 @@ public class XmlToPolyConverterTest {
 
 
     @Test
-    public void testString() throws XMLStreamException {
+    public void testString() throws XMLStreamException, DecoderException {
         String xml = "<name>Maxine</name>";
         XMLStreamReader reader = XMLInputFactory.newDefaultFactory().createXMLStreamReader( new StringReader( xml ) );
         reader.next();
@@ -56,7 +57,7 @@ public class XmlToPolyConverterTest {
 
 
     @Test
-    public void testLong() throws XMLStreamException {
+    public void testLong() throws XMLStreamException, DecoderException {
         String xml = "<integer type=\"integer\">492943</integer>";
         XMLStreamReader reader = XMLInputFactory.newDefaultFactory().createXMLStreamReader( new StringReader( xml ) );
         reader.next();
@@ -68,7 +69,7 @@ public class XmlToPolyConverterTest {
 
 
     @Test
-    public void testDouble() throws XMLStreamException {
+    public void testDouble() throws XMLStreamException, DecoderException {
         String xml = "<double type=\"double\">-650825.13</double>";
         XMLStreamReader reader = XMLInputFactory.newDefaultFactory().createXMLStreamReader( new StringReader( xml ) );
         reader.next();
@@ -80,7 +81,7 @@ public class XmlToPolyConverterTest {
 
 
     @Test
-    public void testBooleanTrue() throws XMLStreamException {
+    public void testBooleanTrue() throws XMLStreamException, DecoderException {
         String xml = "<boolean type=\"boolean\">true</boolean>";
         XMLStreamReader reader = XMLInputFactory.newDefaultFactory().createXMLStreamReader( new StringReader( xml ) );
         reader.next();
@@ -92,7 +93,7 @@ public class XmlToPolyConverterTest {
 
 
     @Test
-    public void testBooleanFalse() throws XMLStreamException {
+    public void testBooleanFalse() throws XMLStreamException, DecoderException {
         String xml = "<boolean type=\"boolean\">false</boolean>";
         XMLStreamReader reader = XMLInputFactory.newDefaultFactory().createXMLStreamReader( new StringReader( xml ) );
         reader.next();
@@ -104,7 +105,7 @@ public class XmlToPolyConverterTest {
 
 
     @Test
-    public void testArray() throws XMLStreamException {
+    public void testArray() throws XMLStreamException, DecoderException {
         String xml = "<integers type=\"list\">\n"
                 + "    <item>0</item>\n"
                 + "    <item>1</item>\n"
@@ -126,7 +127,7 @@ public class XmlToPolyConverterTest {
 
 
     @Test
-    public void testNull() throws XMLStreamException {
+    public void testNull() throws XMLStreamException, DecoderException {
         String xml = "<null></null>";
         XMLStreamReader reader = XMLInputFactory.newDefaultFactory().createXMLStreamReader( new StringReader( xml ) );
         reader.next();
@@ -138,7 +139,7 @@ public class XmlToPolyConverterTest {
 
 
     @Test
-    public void testDate() throws XMLStreamException {
+    public void testDate() throws XMLStreamException, DecoderException {
         String xml = "<date type=\"date\">2024-08-07</date>";
         XMLStreamReader reader = XMLInputFactory.newDefaultFactory().createXMLStreamReader( new StringReader( xml ) );
         reader.next();
@@ -150,7 +151,7 @@ public class XmlToPolyConverterTest {
 
 
     @Test
-    public void testTime() throws XMLStreamException {
+    public void testTime() throws XMLStreamException, DecoderException {
         String xml = "<time type=\"time\">13:45:30</time>";
         XMLStreamReader reader = XMLInputFactory.newDefaultFactory().createXMLStreamReader( new StringReader( xml ) );
         reader.next();
@@ -162,7 +163,7 @@ public class XmlToPolyConverterTest {
 
 
     @Test
-    public void testDateTime() throws XMLStreamException {
+    public void testDateTime() throws XMLStreamException, DecoderException {
         String xml = "<dateTime type=\"dateTime\">2024-08-07T13:45:30</dateTime>";
         XMLStreamReader reader = XMLInputFactory.newDefaultFactory().createXMLStreamReader( new StringReader( xml ) );
         reader.next();
@@ -174,7 +175,7 @@ public class XmlToPolyConverterTest {
 
 
     @Test
-    public void testBase64Binary() throws XMLStreamException {
+    public void testBase64Binary() throws XMLStreamException, DecoderException {
         String xml = "<binary type=\"base64Binary\">SGVsbG8sIFdvcmxkIQ==</binary>";
         XMLStreamReader reader = XMLInputFactory.newDefaultFactory().createXMLStreamReader( new StringReader( xml ) );
         reader.next();
@@ -186,7 +187,7 @@ public class XmlToPolyConverterTest {
 
 
     @Test
-    public void testHexBinary() throws XMLStreamException {
+    public void testHexBinary() throws XMLStreamException, DecoderException {
         String xml = "<binary type=\"hexBinary\">48656c6c6f2c20576f726c6421</binary>";
         XMLStreamReader reader = XMLInputFactory.newDefaultFactory().createXMLStreamReader( new StringReader( xml ) );
         reader.next();

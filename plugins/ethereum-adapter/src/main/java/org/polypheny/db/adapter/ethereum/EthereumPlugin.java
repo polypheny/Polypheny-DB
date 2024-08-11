@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.experimental.Delegate;
@@ -107,7 +108,7 @@ public class EthereumPlugin extends PolyPlugin {
 
 
         public EthereumDataSource( final long storeId, final String uniqueName, final Map<String, String> settings, DeployMode mode ) {
-            super( storeId, uniqueName, settings, mode, true, new RelAdapterCatalog( storeId ), List.of( DataModel.RELATIONAL ) );
+            super( storeId, uniqueName, settings, mode, true, new RelAdapterCatalog( storeId ), Set.of( DataModel.RELATIONAL ) );
             setClientURL( settings.get( "ClientUrl" ) );
             this.blocks = Integer.parseInt( settings.get( "Blocks" ) );
             this.experimentalFiltering = Boolean.parseBoolean( settings.get( "ExperimentalFiltering" ) );

@@ -40,6 +40,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Setter;
@@ -112,7 +113,7 @@ public class GoogleSheetSource extends DataSource<RelAdapterCatalog> implements 
 
 
     public GoogleSheetSource( final long storeId, final String uniqueName, final Map<String, String> settings, DeployMode mode ) {
-        super( storeId, uniqueName, settings, mode, true, new RelAdapterCatalog( storeId ), List.of( DataModel.RELATIONAL ) );
+        super( storeId, uniqueName, settings, mode, true, new RelAdapterCatalog( storeId ), Set.of( DataModel.RELATIONAL ) );
 
         this.clientId = getSettingOrFail( "oAuth-Client-ID", settings );
         this.clientKey = getSettingOrFail( "oAuth-Client-Key", settings );

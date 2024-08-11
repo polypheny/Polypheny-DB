@@ -8,6 +8,7 @@ import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 import org.apache.calcite.linq4j.Enumerator;
+import org.apache.commons.codec.DecoderException;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.entity.PolyValue;
 
@@ -78,8 +79,8 @@ public class XmlEnumerator implements Enumerator<PolyValue[]> {
                 reader.next();
             }
             return true;
-        } catch ( XMLStreamException e ) {
-            throw new RuntimeException( "Could nod find start of XML content.", e );
+        } catch ( XMLStreamException | DecoderException e ) {
+            throw new RuntimeException( "Filed to get next document.", e );
         }
 
     }

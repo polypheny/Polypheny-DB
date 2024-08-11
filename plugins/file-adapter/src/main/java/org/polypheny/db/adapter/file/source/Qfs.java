@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
 import lombok.Getter;
@@ -84,7 +85,7 @@ public class Qfs extends DataSource<RelAdapterCatalog> implements RelationalData
 
 
     public Qfs( long adapterId, String uniqueName, Map<String, String> settings, DeployMode mode ) {
-        super( adapterId, uniqueName, settings, mode, true, new RelAdapterCatalog( adapterId ), List.of( DataModel.RELATIONAL ) );
+        super( adapterId, uniqueName, settings, mode, true, new RelAdapterCatalog( adapterId ), Set.of( DataModel.RELATIONAL ) );
         init( settings );
         registerInformationPage( uniqueName );
         this.delegate = new RelationalScanDelegate( this, adapterCatalog );

@@ -120,16 +120,6 @@ public class CsvSchema extends Namespace {
     }
 
 
-    /**
-     * Creates different subtype of table based on thString tableName = entry.getKey();
-     * if ( catalog.getSnapshot().rel().getTable( namespace, tableName ).isPresent() ) {
-     * int i = 0;
-     * while ( catalog.getSnapshot().rel().getTable( namespace, tableName + i ).isPresent() ) {
-     * i++;
-     * }
-     * tableName += i;
-     * }e "flavor" attribute.
-     */
     private CsvTable createTable( long id, Source source, PhysicalTable table, List<CsvFieldType> fieldTypes, int[] fields, CsvSource csvSource ) {
         return switch ( flavor ) {
             case TRANSLATABLE -> new CsvTranslatableTable( id, source, table, fieldTypes, fields, csvSource );
