@@ -18,8 +18,6 @@ package org.polypheny.db.adapter;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSerializer;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import lombok.Getter;
@@ -38,7 +36,7 @@ public abstract class DataSource<S extends AdapterCatalog> extends Adapter<S> im
     protected DataSource( final long adapterId, final String uniqueName, final Map<String, String> settings, final DeployMode mode, boolean dataReadOnly, S catalog, Set<DataModel> supportedModels ) {
         super( adapterId, uniqueName, settings, mode, catalog );
         this.dataReadOnly = dataReadOnly;
-        this.supportedDataModels = Set.copyOf(supportedModels);
+        this.supportedDataModels = Set.copyOf( supportedModels );
         informationPage.setLabel( "Sources" );
 
     }
