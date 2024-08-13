@@ -73,6 +73,7 @@ import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyFloat;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.type.entity.temporal.PolyDate;
 import org.polypheny.db.type.entity.temporal.PolyTime;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
@@ -236,6 +237,11 @@ public final class JdbcUtils {
                             return PolyFloat.ofNullable( (Number) o );
                         case Types.DECIMAL:
                             return PolyBigDecimal.ofNullable( (BigDecimal) o );
+                        case Types.JAVA_OBJECT:
+                            if ( o instanceof net.postgis.jdbc.PGgeometry pGgeometry ) {
+                                return PolyGeometry.ofNullable( (pGgeometry).getValue() );
+                            }
+                            // fallback
                     }
                 default:
                     throw new GenericRuntimeException( "not implemented " + reps[i] + " " + types[i] );

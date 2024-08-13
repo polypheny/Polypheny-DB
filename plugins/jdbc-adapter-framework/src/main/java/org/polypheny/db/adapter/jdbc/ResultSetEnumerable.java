@@ -329,6 +329,13 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
                     }
                 }
                 break;
+            case GEOMETRY:
+                if ( connectionHandler.getDialect().supportsGeoJson() ) {
+                    preparedStatement.setString( i, value.asGeometry().toJson() );
+                } else {
+                    preparedStatement.setString( i, value.asGeometry().toString() );
+                }
+                break;
             case TEXT:
                 preparedStatement.setString( i, value.asString().value );
                 break;

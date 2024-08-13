@@ -17,11 +17,14 @@
 package org.polypheny.db.adapter.postgres;
 
 
+import com.google.common.collect.ImmutableList;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.NullCollation;
+import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.algebra.type.AlgDataTypeSystemImpl;
@@ -99,6 +102,34 @@ public class PostgresqlSqlDialect extends SqlDialect {
 
 
     @Override
+    public List<OperatorName> supportedGeoFunctions() {
+        return ImmutableList.of( OperatorName.ST_GEOMFROMTEXT, OperatorName.ST_TRANSFORM, OperatorName.ST_EQUALS,
+                OperatorName.ST_ISSIMPLE, OperatorName.ST_ISCLOSED, OperatorName.ST_ISEMPTY, OperatorName.ST_ISRING,
+                OperatorName.ST_NUMPOINTS, OperatorName.ST_DIMENSION, OperatorName.ST_LENGTH, OperatorName.ST_AREA,
+                OperatorName.ST_ENVELOPE, OperatorName.ST_BOUNDARY, OperatorName.ST_CONVEXHULL, OperatorName.ST_CENTROID,
+                OperatorName.ST_CENTROID, OperatorName.ST_DISJOINT, OperatorName.ST_TOUCHES, OperatorName.ST_INTERSECTS,
+                OperatorName.ST_CROSSES, OperatorName.ST_WITHIN, OperatorName.ST_CONTAINS, OperatorName.ST_OVERLAPS,
+                OperatorName.ST_COVERS, OperatorName.ST_COVEREDBY, OperatorName.ST_RELATE,
+                OperatorName.ST_INTERSECTION, OperatorName.ST_UNION, OperatorName.ST_DIFFERENCE, OperatorName.ST_SYMDIFFERENCE,
+                OperatorName.ST_X, OperatorName.ST_Y, OperatorName.ST_Z, OperatorName.ST_STARTPOINT, OperatorName.ST_ENDPOINT,
+                OperatorName.ST_EXTERIORRING, OperatorName.ST_NUMINTERIORRING, OperatorName.ST_INTERIORRINGN,
+                OperatorName.ST_NUMGEOMETRIES, OperatorName.ST_GEOMETRYN );
+    }
+
+
+    @Override
+    public boolean supportsGeoJson() {
+        return true;
+    }
+
+
+    @Override
+    public boolean supportsPostGIS() {
+        return true;
+    }
+
+
+    @Override
     public Optional<String> handleMissingLength( PolyType type ) {
         return switch ( type ) {
             case VARBINARY, VARCHAR, BINARY -> Optional.of( "VARYING" );
@@ -118,6 +149,9 @@ public class PostgresqlSqlDialect extends SqlDialect {
             case DOUBLE:
                 // Postgres has a double type but it is named differently
                 castSpec = "_double precision";
+                break;
+            case GEOMETRY:
+                castSpec = "_GEOMETRY";
                 break;
             case VARBINARY:
             case FILE:

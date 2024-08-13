@@ -34,6 +34,7 @@ import org.polypheny.db.type.entity.numerical.PolyFloat;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.type.entity.relational.PolyMap;
+import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.type.entity.temporal.PolyDate;
 import org.polypheny.db.type.entity.temporal.PolyTime;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
@@ -96,10 +97,17 @@ public class PolyValueSerializer {
             case NULL -> serializeAsProtoNull();
             case ARRAY -> serializeAsProtoList( polyValue.asList() );
             case DOCUMENT -> serializeAsProtoDocument( polyValue.asDocument() );
+            case GEOMETRY -> serializeGeometry( polyValue.asGeometry() );
             case IMAGE, VIDEO, AUDIO, FILE -> serializeAsProtoFile( polyValue.asBlob() ); // used
-            case MAP, GRAPH, NODE, EDGE, PATH, DISTINCT, STRUCTURED, ROW, OTHER, CURSOR, COLUMN_LIST, DYNAMIC_STAR, GEOMETRY, SYMBOL, JSON, MULTISET, USER_DEFINED_TYPE, ANY -> throw new NotImplementedException( "Serialization of " + polyValue.getType() + " to proto not implemented" );
+            case MAP, GRAPH, NODE, EDGE, PATH, DISTINCT, STRUCTURED, ROW, OTHER, CURSOR, COLUMN_LIST, DYNAMIC_STAR, SYMBOL, JSON, MULTISET, USER_DEFINED_TYPE, ANY -> throw new NotImplementedException( "Serialization of " + polyValue.getType() + " to proto not implemented" );
             default -> throw new NotImplementedException();
         };
+    }
+
+
+    private static ProtoValue serializeGeometry( PolyGeometry geometry ) {
+        ProtoString asString = ProtoString.newBuilder().setString( geometry.toString() ).build(); // todo add own value, taken from @danylokravchenko
+        return ProtoValue.newBuilder().setString( asString ).build();
     }
 
 
