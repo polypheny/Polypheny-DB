@@ -63,6 +63,7 @@ public class ClientConfiguration {
     public ClientConfiguration() {
         this.supportedFeatures = new HashSet<>();
         this.properties = new HashMap<>();
+        setDefaultProperties();
     }
 
 
