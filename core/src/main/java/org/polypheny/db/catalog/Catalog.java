@@ -260,11 +260,6 @@ public abstract class Catalog implements ExtensionPoint {
     public abstract Snapshot getSnapshot();
 
 
-    public Snapshot getSnapshot( long id ) {
-        return snapshot();
-    }
-
-
     public static Snapshot snapshot() {
         return INSTANCE.getSnapshot();
     }
