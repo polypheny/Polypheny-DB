@@ -75,6 +75,30 @@ public class DmlInsertTest extends CypherTestTemplate {
         assert containsNodes( res, true, TestNode.from( Pair.of( "name", "Max;Muster" ) ) );
     }
 
+    @Test
+    public void insertStringWithSingleQuotes() {
+        execute( "CREATE (n:Message {message: \"Hello 'World!'\"})" );
+        GraphResult res = matchAndReturnAllNodes();
+        assertNode( res, 0 );
+        assert containsNodes( res, true, TestNode.from( Pair.of( "message", "Hello 'World!'" ) ) );
+    }
+
+    @Test
+    public void insertStringWithDoubleQuotes() {
+        execute( "CREATE (n:Message {message: 'Hello \"World!\"'})" );
+        GraphResult res = matchAndReturnAllNodes();
+        assertNode( res, 0 );
+        assert containsNodes( res, true, TestNode.from( Pair.of( "message", "Hello \"World!\"" ) ) );
+    }
+
+    @Test
+    public void insertStringWithSingleQuoteAndDoubleQuotes() {
+        execute( "CREATE (n:Message {message: \"I'd like some \\\"tea\\\"\"})" );
+        GraphResult res = matchAndReturnAllNodes();
+        assertNode( res, 0 );
+        assert containsNodes( res, true, TestNode.from( Pair.of( "message", "I'd like some \"tea\"" ) ) );
+    }
+
 
     @Test
     public void insertTwoNodeTest() {

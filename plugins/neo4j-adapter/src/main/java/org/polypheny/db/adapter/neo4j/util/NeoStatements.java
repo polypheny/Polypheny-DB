@@ -544,7 +544,7 @@ public interface NeoStatements {
         }
         String quote = "'";
         if ( value.toString().contains( "'" ) ) {
-            return new LiteralStatement( "\"" + value + "\"" );
+            return new LiteralStatement( "\"" + value.toString().replace( "\"", "\\\"" ) + "\"" );
         }
         return new LiteralStatement( quote + value + quote );
     }
