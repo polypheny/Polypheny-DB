@@ -29,6 +29,7 @@ import java.beans.PropertyChangeListener;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -255,7 +256,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
         this.adapterRestore.clear();
         adapterCatalogs.forEach( ( id, catalog ) -> {
-            Map<Long, List<PhysicalEntity>> restore = catalog.allocToPhysicals.entrySet().stream().map( a -> Pair.of( a, a.getValue().stream().map( key -> catalog.physicals.get( key ).normalize() ).toList() ) ).collect( Collectors.toMap( a -> a.getKey().getKey(), Pair::getValue ) );
+            Map<Long, List<PhysicalEntity>> restore = catalog.allocToPhysicals.entrySet().stream().collect( Collectors.toMap( Entry::getKey, a -> a.getValue().stream().map( key -> catalog.physicals.get( key ).normalize() ).toList() ) );
             this.adapterRestore.put( id, new AdapterRestore( id, restore, catalog.allocations ) );
         } );
 
