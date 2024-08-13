@@ -66,8 +66,6 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyBinary.ByteStringDeserializer;
 import org.polypheny.db.type.entity.PolyBinary.ByteStringSerializer;
 import org.polypheny.db.type.entity.PolyBoolean.PolyBooleanSerializerDef;
-import org.polypheny.db.type.entity.spatial.PolyGeometry;
-import org.polypheny.db.type.entity.spatial.PolyGeometry.PolyGeometrySerializerDef;
 import org.polypheny.db.type.entity.PolyList.PolyListSerializerDef;
 import org.polypheny.db.type.entity.PolyNull.PolyNullSerializerDef;
 import org.polypheny.db.type.entity.PolyString.PolyStringSerializerDef;
@@ -97,6 +95,8 @@ import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.type.entity.numerical.PolyLong.PolyLongSerializerDef;
 import org.polypheny.db.type.entity.relational.PolyMap;
 import org.polypheny.db.type.entity.relational.PolyMap.PolyMapSerializerDef;
+import org.polypheny.db.type.entity.spatial.PolyGeometry;
+import org.polypheny.db.type.entity.spatial.PolyGeometry.PolyGeometrySerializerDef;
 import org.polypheny.db.type.entity.temporal.PolyDate;
 import org.polypheny.db.type.entity.temporal.PolyTime;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
@@ -130,7 +130,7 @@ import org.polypheny.db.util.ByteString;
         PolyPath.class,
         PolyGeometry.class
 }) // add on Constructor already exists exception
-@JsonTypeInfo(use = Id.CLASS) // to allow typed json serialization
+@JsonTypeInfo(use = Id.NAME) // to allow typed json serialization
 @JsonSubTypes({
         @JsonSubTypes.Type(value = PolyList.class, name = "LIST"),
         @JsonSubTypes.Type(value = PolyBigDecimal.class, name = "DECIMAL"),

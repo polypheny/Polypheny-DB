@@ -17,16 +17,16 @@
 package org.polypheny.db.type.spatial;
 
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.spatial.InvalidGeometryException;
@@ -104,8 +104,8 @@ public class GeometryTest {
             assertEquals( 36.754, point.getZ(), GeometryConstants.DELTA );
         } );
 
-        assertThrows( InvalidGeometryException.class, () -> PolyGeometry.of( "POINT (13.4050)" ) );
-        assertThrows( InvalidGeometryException.class, () -> PolyGeometry.of( "POINT (13.4050 13.4050 13.4050 13.4050 13.4050)" ) );
+        assertThrows( InvalidGeometryException.class, () -> new PolyGeometry( "POINT (13.4050)" ) );
+        assertThrows( InvalidGeometryException.class, () -> new PolyGeometry( "POINT (13.4050 13.4050 13.4050 13.4050 13.4050)" ) );
     }
 
 
@@ -123,7 +123,7 @@ public class GeometryTest {
             assertFalse( line.isClosed() );
         } );
 
-        assertThrows( InvalidGeometryException.class, () -> PolyGeometry.of( "LINESTRING (0 0)" ) );
+        assertThrows( InvalidGeometryException.class, () -> new PolyGeometry( "LINESTRING (0 0)" ) );
     }
 
 
@@ -138,7 +138,7 @@ public class GeometryTest {
             assertEquals( 5, ring.getNumPoints() );
         } );
 
-        assertThrows( InvalidGeometryException.class, () -> PolyGeometry.of( "LINEARRING (0 0, 0 10, 10 10, 10 5, 5 5)" ) );
+        assertThrows( InvalidGeometryException.class, () -> new PolyGeometry( "LINEARRING (0 0, 0 10, 10 10, 10 5, 5 5)" ) );
     }
 
 
@@ -156,7 +156,7 @@ public class GeometryTest {
             assertEquals( 4, poly.getNumPoints() );
         } );
 
-        assertThrows( InvalidGeometryException.class, () -> PolyGeometry.of( "POLYGON ((-1 -1, 2 2, -1 1, -1 2, 2 2, -1 -1))" ) );
+        assertThrows( InvalidGeometryException.class, () -> new PolyGeometry( "POLYGON ((-1 -1, 2 2, -1 1, -1 2, 2 2, -1 -1))" ) );
     }
 
 
@@ -171,8 +171,8 @@ public class GeometryTest {
             assertEquals( 3, collection.getNumPoints() );
         } );
         // GEOMETRYCOLLECTION do not have any extra validity rules, geometries may overlap
-        assertDoesNotThrow( () -> PolyGeometry.of( "GEOMETRYCOLLECTION ( POINT (2 3), POINT (2 3) )" ) );
-        assertDoesNotThrow( () -> PolyGeometry.of( "GEOMETRYCOLLECTION ( POLYGON ((-1 -1, 2 2, -1 2, -1 -1 )), POLYGON ((-1 -1, 2 2, -1 2, -1 -1 )) )" ) );
+        assertDoesNotThrow( () -> new PolyGeometry( "GEOMETRYCOLLECTION ( POINT (2 3), POINT (2 3) )" ) );
+        assertDoesNotThrow( () -> new PolyGeometry( "GEOMETRYCOLLECTION ( POLYGON ((-1 -1, 2 2, -1 2, -1 -1 )), POLYGON ((-1 -1, 2 2, -1 2, -1 -1 )) )" ) );
     }
 
 
@@ -187,7 +187,7 @@ public class GeometryTest {
         } );
         // points may overlap
         assertDoesNotThrow( () -> PolyGeometry.of( "MULTIPOINT ( (2 3), (2 3) )" ) );
-        assertThrows( InvalidGeometryException.class, () -> PolyGeometry.of( "MULTIPOINT( (2 3), LINEARRING (-1 -1, 2 2, -1 2, -1 -1) )" ) );
+        assertThrows( InvalidGeometryException.class, () -> new PolyGeometry( "MULTIPOINT( (2 3), LINEARRING (-1 -1, 2 2, -1 2, -1 -1) )" ) );
     }
 
 
@@ -202,7 +202,7 @@ public class GeometryTest {
         } );
         // line strings may overlap
         assertDoesNotThrow( () -> PolyGeometry.of( "MULTILINESTRING ( (0 0, 1 1, 1 2), (0 0, 1 1, 1 2) )" ) );
-        assertThrows( InvalidGeometryException.class, () -> PolyGeometry.of( "MULTILINESTRING ( (2 3), (2 3) )" ) );
+        assertThrows( InvalidGeometryException.class, () -> new PolyGeometry( "MULTILINESTRING ( (2 3), (2 3) )" ) );
     }
 
 
@@ -216,7 +216,7 @@ public class GeometryTest {
             assertEquals( 9, multi.getNumPoints() );
         } );
         // Polygons are not allowed to overlap
-        assertThrows( InvalidGeometryException.class, () -> PolyGeometry.of( "MULTIPOLYGON (( (1 5, 5 5, 5 1, 1 1, 1 5) ), (-1 -1, 2 2, -1 2, -1 -1 ))" ) );
+        assertThrows( InvalidGeometryException.class, () -> new PolyGeometry( "MULTIPOLYGON (( (1 5, 5 5, 5 1, 1 1, 1 5) ), (-1 -1, 2 2, -1 2, -1 -1 ))" ) );
     }
 
 
