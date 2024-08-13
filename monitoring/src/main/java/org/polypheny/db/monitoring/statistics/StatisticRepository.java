@@ -17,7 +17,6 @@
 package org.polypheny.db.monitoring.statistics;
 
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.StatisticsManager;
@@ -86,7 +85,7 @@ public class StatisticRepository implements MonitoringRepository {
 
     private void updateQueryStatistics( QueryDataPointImpl dataPoint, StatisticsManager statisticsManager ) {
         if ( !dataPoint.getAvailableColumnsWithTable().isEmpty() ) {
-            Set<Long> values = new HashSet<>( dataPoint.getAvailableColumnsWithTable().values() );
+            Set<Long> values = Set.copyOf( dataPoint.getAvailableColumnsWithTable().values() );
             boolean isOneTable = values.size() == 1;
             Snapshot snapshot = Catalog.snapshot();
 
@@ -120,7 +119,7 @@ public class StatisticRepository implements MonitoringRepository {
             return;
         }
 
-        Set<Long> values = new HashSet<>( dataPoint.getAvailableColumnsWithTable().values() );
+        Set<Long> values = Set.copyOf( dataPoint.getAvailableColumnsWithTable().values() );
         boolean isOneTable = values.size() == 1;
 
         Snapshot snapshot = Catalog.snapshot();
