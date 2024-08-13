@@ -115,6 +115,8 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     @Getter
     private final JavaTypeFactory typeFactory = new JavaTypeFactoryImpl();
 
+    private final Catalog catalog = Catalog.getInstance();
+
 
     TransactionImpl(
             PolyXid xid,
@@ -137,7 +139,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
     @Override
     public Snapshot getSnapshot() {
-        return Catalog.snapshot();
+        return catalog.getSnapshot();
     }
 
 
@@ -160,13 +162,13 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
             return;
         }
 
-        Pair<Boolean, String> isValid = Catalog.getInstance().checkIntegrity();
+        Pair<Boolean, String> isValid = catalog.checkIntegrity();
         if ( !isValid.left ) {
             throw new TransactionException( isValid.right + "\nThere are violated constraints, the transaction was rolled back!" );
         }
 
         // physical changes
-        Catalog.getInstance().executeCommitActions();
+        catalog.executeCommitActions();
 
         // Prepare to commit changes on all involved adapters and the catalog
         boolean okToCommit = true;
@@ -213,7 +215,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
             throw new TransactionException( "Unable to prepare all involved entities for commit. Changes have been rolled back." );
         }
 
-        Catalog.getInstance().commit();
+        catalog.commit();
 
         // Free resources hold by statements
         statements.forEach( Statement::close );
@@ -242,7 +244,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
                 adapter.rollback( xid );
             }
             IndexManager.getInstance().rollback( this.xid );
-            Catalog.getInstance().rollback();
+            catalog.rollback();
             // Free resources hold by statements
             statements.forEach( statement -> {
                 if ( statement.getMonitoringEvent() != null ) {

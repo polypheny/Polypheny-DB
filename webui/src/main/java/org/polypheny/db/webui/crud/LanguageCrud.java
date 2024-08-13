@@ -478,7 +478,7 @@ public class LanguageCrud {
 
     private PlacementModel getPlacements( final IndexModel index ) {
         Catalog catalog = Catalog.getInstance();
-        LogicalGraph graph = Catalog.snapshot().graph().getGraph( index.namespaceId ).orElseThrow();
+        LogicalGraph graph = catalog.getSnapshot().graph().getGraph( index.namespaceId ).orElseThrow();
         PlacementModel p = new PlacementModel( false, List.of(), EntityType.ENTITY );
         List<AllocationPlacement> placements = catalog.getSnapshot().alloc().getPlacementsFromLogical( graph.id );
         for ( AllocationPlacement placement : placements ) {
@@ -495,7 +495,6 @@ public class LanguageCrud {
 
 
     public void getFixedFields( Context context ) {
-        Catalog catalog = Catalog.getInstance();
         UIRequest request = context.bodyAsClass( UIRequest.class );
         RelationalResult result;
         List<UiColumnDefinition> cols = new ArrayList<>();
