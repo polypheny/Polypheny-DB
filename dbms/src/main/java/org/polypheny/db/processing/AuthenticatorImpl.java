@@ -32,7 +32,7 @@ public class AuthenticatorImpl implements Authenticator {
 
     @Override
     public LogicalUser authenticate( final String username, final String password ) throws AuthenticationException {
-        LogicalUser logicalUser = Catalog.getInstance().getSnapshot().getUser( username ).orElseThrow( () -> new AuthenticationException( "Wrong username or password" ) );
+        LogicalUser logicalUser = Catalog.snapshot().getUser( username ).orElseThrow( () -> new AuthenticationException( "Wrong username or password" ) );
         if ( Arrays.constantTimeAreEqual( logicalUser.password.getBytes( StandardCharsets.UTF_8 ), password.getBytes( StandardCharsets.UTF_8 ) ) ) {
             return logicalUser;
         } else {

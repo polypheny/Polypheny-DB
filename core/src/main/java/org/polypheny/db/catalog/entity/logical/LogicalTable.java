@@ -76,7 +76,7 @@ public class LogicalTable extends LogicalEntity {
     public AlgDataType getTupleType() {
         final AlgDataTypeFactory.Builder fieldInfo = AlgDataTypeFactory.DEFAULT.builder();
 
-        for ( LogicalColumn column : Catalog.getInstance().getSnapshot().rel().getColumns( id ).stream().sorted( Comparator.comparingInt( a -> a.position ) ).toList() ) {
+        for ( LogicalColumn column : Catalog.snapshot().rel().getColumns( id ).stream().sorted( Comparator.comparingInt( a -> a.position ) ).toList() ) {
             AlgDataType sqlType = column.getAlgDataType( AlgDataTypeFactory.DEFAULT );
             fieldInfo.add( column.id, column.name, null, sqlType ).nullable( column.nullable );
         }
@@ -97,7 +97,7 @@ public class LogicalTable extends LogicalEntity {
 
 
     public List<LogicalColumn> getColumns() {
-        return Catalog.getInstance().getSnapshot().rel().getColumns( id );
+        return Catalog.snapshot().rel().getColumns( id );
     }
 
 
@@ -113,7 +113,7 @@ public class LogicalTable extends LogicalEntity {
 
     @Override
     public String getNamespaceName() {
-        return Catalog.getInstance().getSnapshot().getNamespace( namespaceId ).orElseThrow().name;
+        return Catalog.snapshot().getNamespace( namespaceId ).orElseThrow().name;
     }
 
 

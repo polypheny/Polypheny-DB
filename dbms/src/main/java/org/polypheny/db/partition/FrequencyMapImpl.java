@@ -219,7 +219,7 @@ public class FrequencyMapImpl extends FrequencyMap {
 
             // Which of those are currently in cold --> action needed
 
-            List<AllocationPartition> currentHotPartitions = Catalog.getInstance().getSnapshot().alloc().getPartitions( ((TemperaturePartitionProperty) property).getHotPartitionGroupId() );
+            List<AllocationPartition> currentHotPartitions = Catalog.snapshot().alloc().getPartitions( ((TemperaturePartitionProperty) property).getHotPartitionGroupId() );
             for ( AllocationPartition logicalPartition : currentHotPartitions ) {
 
                 // Remove partitions from List if they are already in HOT (not necessary to send to DataMigrator)
@@ -334,7 +334,7 @@ public class FrequencyMapImpl extends FrequencyMap {
 
             // If this storeId contains both Groups HOT {@literal &}  COLD do nothing
             if ( !hotPartitionsToCreate.isEmpty() ) {
-                Catalog.getInstance().getSnapshot().alloc().getPartitionsOnDataPlacement( store.getAdapterId(), table.id );
+                Catalog.snapshot().alloc().getPartitionsOnDataPlacement( store.getAdapterId(), table.id );
 
 
                 store.createTable( statement.getPrepareContext(), LogicalTableWrapper.of( null, null, null ), AllocationTableWrapper.of( null, null ) );
@@ -382,7 +382,7 @@ public class FrequencyMapImpl extends FrequencyMap {
      */
     private List<Long> filterList( long namespaceId, long adapterId, long tableId, List<Long> partitionsToFilter ) {
         // Remove partition from list if it's already contained on the storeId
-        for ( long partitionId : Catalog.getInstance().getSnapshot().alloc().getPartitionsOnDataPlacement( adapterId, tableId ) ) {
+        for ( long partitionId : Catalog.snapshot().alloc().getPartitionsOnDataPlacement( adapterId, tableId ) ) {
             partitionsToFilter.remove( partitionId );
         }
         return partitionsToFilter;

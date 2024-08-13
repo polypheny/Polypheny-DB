@@ -456,7 +456,7 @@ public class LanguageCrud {
      * as a query result
      */
     public void getDocumentDatabases( final Context ctx ) {
-        Map<String, String> names = Catalog.getInstance().getSnapshot()
+        Map<String, String> names = Catalog.snapshot()
                 .getNamespaces( null )
                 .stream()
                 .collect( Collectors.toMap( LogicalNamespace::getName, s -> s.dataModel.name() ) );

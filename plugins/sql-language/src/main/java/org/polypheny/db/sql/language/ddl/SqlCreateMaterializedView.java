@@ -72,7 +72,7 @@ public class SqlCreateMaterializedView extends SqlCreate implements ExecutableSt
     SqlIdentifier freshnessId;
 
     private static final SqlOperator OPERATOR = new SqlSpecialOperator( "CREATE MATERIALIZED VIEW", Kind.CREATE_MATERIALIZED_VIEW );
-    Snapshot snapshot = Catalog.getInstance().getSnapshot();
+    Snapshot snapshot = Catalog.snapshot();
 
 
     /**

@@ -148,7 +148,7 @@ public class Cql2AlgConverter {
                     if ( treeNode.isLeaf() ) {
                         LogicalTable table = treeNode.getExternalNode().catalogTable;
                         algBuilderAtomicReference.set(
-                                algBuilderAtomicReference.get().relScan( Catalog.getInstance().getSnapshot().getNamespace( table.namespaceId ).orElseThrow().name, table.name )
+						      algBuilderAtomicReference.get().relScan( Catalog.snapshot().getNamespace( table.namespaceId ).orElseThrow().name, table.name )
                         );
                     } else {
                         Combiner combiner = treeNode.getInternalNode();

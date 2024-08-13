@@ -137,7 +137,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
     @Override
     public Snapshot getSnapshot() {
-        return Catalog.getInstance().getSnapshot();
+        return Catalog.snapshot();
     }
 
 

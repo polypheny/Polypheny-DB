@@ -69,12 +69,12 @@ class ClientManager {
             return authenticator.authenticate( username, password );
         } else if ( t.getPeer().isPresent() ) {
             String username = t.getPeer().get();
-            Optional<LogicalUser> catalogUser = Catalog.getInstance().getSnapshot().getUser( username );
+            Optional<LogicalUser> catalogUser = Catalog.snapshot().getUser( username );
             if ( catalogUser.isPresent() ) {
                 return catalogUser.get();
             } else {
                 if ( username.equals( System.getProperty( "user.name" ) ) ) {
-                    return Catalog.getInstance().getSnapshot().getUser( Catalog.USER_NAME ).orElseThrow();
+                    return Catalog.snapshot().getUser( Catalog.USER_NAME ).orElseThrow();
                 } else {
                     throw new AuthenticationException( "Peer authentication failed: No user with that name" );
                 }
@@ -126,7 +126,7 @@ class ClientManager {
         if ( connectionRequest.hasConnectionProperties() && connectionRequest.getConnectionProperties().hasNamespaceName() ) {
             namespaceName = connectionRequest.getConnectionProperties().getNamespaceName();
         }
-        Optional<LogicalNamespace> optionalNamespace = Catalog.getInstance().getSnapshot().getNamespace( namespaceName );
+        Optional<LogicalNamespace> optionalNamespace = Catalog.snapshot().getNamespace( namespaceName );
         if ( optionalNamespace.isEmpty() ) {
             throw new PIServiceException( "Getting namespace " + namespaceName + " failed." );
         }

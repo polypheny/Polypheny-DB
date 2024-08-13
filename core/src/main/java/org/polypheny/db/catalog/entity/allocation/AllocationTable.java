@@ -82,7 +82,7 @@ public class AllocationTable extends AllocationEntity {
 
 
     public String getNamespaceName() {
-        return Catalog.getInstance().getSnapshot().getNamespace( namespaceId ).orElseThrow().name;
+        return Catalog.snapshot().getNamespace( namespaceId ).orElseThrow().name;
     }
 
 

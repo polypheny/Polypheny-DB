@@ -1704,7 +1704,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
 
     private PlacementModel getPlacements( final IndexModel index ) {
-        Snapshot snapshot = Catalog.getInstance().getSnapshot();
+        Snapshot snapshot = Catalog.snapshot();
 
         LogicalTable table = Catalog.snapshot().rel().getTable( index.entityId ).orElseThrow();
         PlacementModel p = new PlacementModel( snapshot.alloc().getFromLogical( table.id ).size() > 1, snapshot.alloc().getPartitionGroupNames( table.id ), table.entityType );
@@ -1831,9 +1831,9 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         // Check whether the selected partition function supports the selected partition column
         LogicalColumn partitionColumn;
 
-        LogicalNamespace namespace = Catalog.getInstance().getSnapshot().getNamespace( request.schemaName ).orElseThrow();
+        LogicalNamespace namespace = Catalog.snapshot().getNamespace( request.schemaName ).orElseThrow();
 
-        partitionColumn = Catalog.getInstance().getSnapshot().rel().getColumn( namespace.id, request.tableName, request.column ).orElseThrow();
+        partitionColumn = Catalog.snapshot().rel().getColumn( namespace.id, request.tableName, request.column ).orElseThrow();
 
         if ( !partitionManager.supportsColumnOfType( partitionColumn.type ) ) {
             ctx.json( new PartitionFunctionModel( "The partition function " + request.method + " does not support columns of type " + partitionColumn.type ) );

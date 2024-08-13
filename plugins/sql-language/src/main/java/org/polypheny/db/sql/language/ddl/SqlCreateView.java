@@ -64,7 +64,7 @@ public class SqlCreateView extends SqlCreate implements ExecutableStatement {
     private static final SqlOperator OPERATOR = new SqlSpecialOperator( "CREATE VIEW", Kind.CREATE_VIEW );
 
 
-    private final Snapshot snapshot = Catalog.getInstance().getSnapshot();
+    private final Snapshot snapshot = Catalog.snapshot();
 
 
     /**

@@ -160,7 +160,7 @@ public class WebSocket implements Consumer<WsConfig> {
                 } else {//TableRequest, is equal to UIRequest
                     UIRequest uiRequest = ctx.messageAsClass( UIRequest.class );
                     try {
-                        LogicalNamespace namespace = Catalog.getInstance().getSnapshot().getNamespace( uiRequest.namespace ).orElse( null );
+                        LogicalNamespace namespace = Catalog.snapshot().getNamespace( uiRequest.namespace ).orElse( null );
                         result = switch ( namespace == null ? DataModel.RELATIONAL : namespace.dataModel ) {
                             case RELATIONAL -> crud.getTable( uiRequest );
                             case DOCUMENT -> {
