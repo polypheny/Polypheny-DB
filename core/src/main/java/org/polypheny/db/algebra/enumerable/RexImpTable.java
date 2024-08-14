@@ -424,6 +424,7 @@ public class RexImpTable {
         defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_LTE ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_LTE.method ), false );
         defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_SIZE_MATCH ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_SIZE_MATCH.method ), false );
         defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_REGEX_MATCH ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_REGEX_MATCH.method ), false );
+        defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_WILDCARD_MATCH ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_WILDCARD_MATCH.method ), false );
         defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_JSON_MATCH ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_JSON_MATCH.method ), false );
         defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_TYPE_MATCH ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_TYPE_MATCH.method ), false );
         defineMethod( OperatorRegistry.get( mongo, OperatorName.MQL_SLICE ), BuiltInMethod.MQL_SLICE.method, NullPolicy.STRICT );

@@ -150,6 +150,8 @@ public class MongoLanguagePlugin extends PolyPlugin {
 
         register( OperatorName.MQL_REGEX_MATCH, new LangFunctionOperator( "MQL_REGEX_MATCH", Kind.MQL_REGEX_MATCH ) );
 
+        register( OperatorName.MQL_WILDCARD_MATCH, new LangFunctionOperator( "MQL_WILDCARD_MATCH", Kind.MQL_WILDCARD_MATCH ) );
+
         register( OperatorName.MQL_TYPE_MATCH, new LangFunctionOperator( "MQL_TYPE_MATCH", Kind.MQL_TYPE_MATCH ) );
 
         register( OperatorName.MQL_QUERY_VALUE, new LangFunctionOperator( "MQL_QUERY_VALUE", Kind.MQL_QUERY_VALUE ) );

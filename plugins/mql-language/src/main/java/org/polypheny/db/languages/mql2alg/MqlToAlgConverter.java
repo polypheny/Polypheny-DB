@@ -1515,9 +1515,16 @@ public class MqlToAlgConverter {
         List<RexNode> operands = new ArrayList<>();
 
         for ( Entry<String, BsonValue> entry : bsonDocument.entrySet() ) {
+            // Handle Regex
             if ( entry.getKey().equals( "$regex" ) ) {
                 operands.add( convertRegex( bsonDocument, parentKey, rowType ) );
-            } else if ( !entry.getKey().equals( "$options" ) ) {
+            }
+            // Handle Wildcard
+            else if ( entry.getKey().equals( "$wildcard" ) ) {
+                operands.add( convertWildcard( bsonDocument, parentKey, rowType ) );
+            }
+            // Handle all other operands, except $options (already covered by $regex)
+            else if ( !entry.getKey().equals( "$options" ) ) {
                 // normal handling
                 operands.add( convertEntry( entry.getKey(), parentKey, entry.getValue(), rowType ) );
             }
@@ -1586,6 +1593,22 @@ public class MqlToAlgConverter {
         }
 
         return getRegex( stringRegex, options, parentKey, rowType );
+    }
+
+    private RexNode convertWildcard( BsonValue bson, String parentKey, AlgDataType rowType ) {
+        if (!bson.isDocument()){
+            throw new GenericRuntimeException( "$wildcard either needs to be a string." );
+        }
+        BsonDocument bsonDocument = bson.asDocument();
+        String wildcardString = bsonDocument.get( "$wildcard" ).asString().getValue();
+
+        return new RexCall(
+                cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ),
+                OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_WILDCARD_MATCH ),
+                Arrays.asList(
+                        getIdentifier( parentKey, rowType ),
+                        convertLiteral( new BsonString(wildcardString) ) )
+                );
     }
 
 

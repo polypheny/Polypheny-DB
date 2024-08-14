@@ -350,6 +350,13 @@ public class MqlFunctions {
 
 
     @SuppressWarnings("UnusedDeclaration")
+    public static PolyBoolean docWildcardMatch( PolyValue input, PolyValue wildcard ) {
+        System.out.println( "docWildcardMatch" );
+        return PolyBoolean.TRUE;
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
     public static PolyBoolean docJsonMatch( PolyValue input, String json ) {
         // TODO use schema validator library
         throw new GenericRuntimeException( "NOT IMPLEMENTED" );

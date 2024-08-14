@@ -1264,6 +1264,9 @@ public enum Kind {
      */
     MQL_REGEX_MATCH,
 
+
+    MQL_WILDCARD_MATCH,
+
     /**
      * Document model {@code $type} operator
      */

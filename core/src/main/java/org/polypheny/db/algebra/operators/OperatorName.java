@@ -1315,6 +1315,8 @@ public enum OperatorName {
 
     MQL_REGEX_MATCH( LangFunctionOperator.class ),
 
+    MQL_WILDCARD_MATCH( LangFunctionOperator.class ),
+
     MQL_TYPE_MATCH( LangFunctionOperator.class ),
 
     MQL_QUERY_VALUE( LangFunctionOperator.class ),
