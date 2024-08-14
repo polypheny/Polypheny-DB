@@ -51,6 +51,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
 import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
 import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
+import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.logistic.DataModel;
@@ -462,6 +463,7 @@ public class MongoRules {
         public Void visitCall( RexCall call ) {
             Operator operator = call.getOperator();
             if ( operator.getOperatorName() == OperatorName.COALESCE
+                    || operator.getKind() == Kind.GEO
                     || operator.getOperatorName() == OperatorName.EXTRACT
                     || operator.getOperatorName() == OperatorName.ABS
                     || operator.getOperatorName() == OperatorName.PI
@@ -587,6 +589,23 @@ public class MongoRules {
             public AlgNode visit( LogicalRelScan scan ) {
                 supported = false;
                 return super.visit( scan );
+            }
+
+
+            @Override
+            public AlgNode visit( LogicalRelProject project ) {
+                if ( project.getProjects().stream().anyMatch( p -> p instanceof RexCall call && call.op.getKind() == Kind.GEO ) ) {
+                    supported = false;
+                }
+                return super.visit( project );
+            }
+
+            @Override
+            public AlgNode visit( LogicalRelFilter filter ) {
+                if ( filter.getCondition() instanceof RexCall call && call.op.getKind() == Kind.GEO ) {
+                    supported = false;
+                }
+                return super.visit( filter );
             }
 
 
