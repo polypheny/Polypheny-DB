@@ -16,6 +16,7 @@
 
 package org.polypheny.db.catalog.entity.logical;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 import com.google.common.collect.ImmutableList;
@@ -41,18 +42,23 @@ public abstract class LogicalKey implements PolyObject, Comparable<LogicalKey> {
     private static final long serialVersionUID = -5803762884192662540L;
 
     @Serialize
+    @JsonProperty
     public long id;
 
     @Serialize
+    @JsonProperty
     public long entityId;
 
     @Serialize
+    @JsonProperty
     public long namespaceId;
 
     @Serialize
+    @JsonProperty
     public ImmutableList<Long> fieldIds;
 
     @Serialize
+    @JsonProperty
     public EnforcementTime enforcementTime;
 
 

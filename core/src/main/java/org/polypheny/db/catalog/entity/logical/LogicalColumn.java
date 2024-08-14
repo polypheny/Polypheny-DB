@@ -16,7 +16,7 @@
 
 package org.polypheny.db.catalog.entity.logical;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.annotations.SerializeNullable;
@@ -44,49 +44,62 @@ public class LogicalColumn implements PolyObject, Comparable<LogicalColumn> {
     private static final long serialVersionUID = -4792846455300897399L;
 
     @Serialize
+    @JsonProperty
     public long id;
 
     @Serialize
+    @JsonProperty
     public String name;
 
     @Serialize
+    @JsonProperty
     public long tableId;
 
     @Serialize
+    @JsonProperty
     public long namespaceId;
 
     @Serialize
+    @JsonProperty
     public int position;
 
     @Serialize
+    @JsonProperty
     public PolyType type;
 
     @Serialize
+    @JsonProperty
     public @SerializeNullable PolyType collectionsType;
 
     @Serialize
+    @JsonProperty
     public @SerializeNullable Integer length; // JDBC length or precision depending on type
 
     @Serialize
+    @JsonProperty
     public @SerializeNullable Integer scale; // decimal digits
 
     @Serialize
+    @JsonProperty
     public @SerializeNullable Integer dimension;
 
     @Serialize
+    @JsonProperty
     public @SerializeNullable Integer cardinality;
 
     @Serialize
+    @JsonProperty
     public boolean nullable;
 
     @Serialize
+    @JsonProperty
     public @SerializeNullable Collation collation;
 
     @Serialize
+    @JsonProperty
     @SerializeNullable
     public LogicalDefaultValue defaultValue;
 
-    @JsonIgnore
     public DataModel dataModel = DataModel.RELATIONAL;
 
 
