@@ -37,6 +37,7 @@ import org.bson.BsonNull;
 import org.bson.BsonRegularExpression;
 import org.bson.BsonString;
 import org.bson.BsonValue;
+import org.bson.conversions.Bson;
 import org.bson.json.JsonMode;
 import org.bson.json.JsonWriterSettings;
 import org.polypheny.db.adapter.mongodb.MongoAlg;
@@ -301,6 +302,9 @@ public class MongoFilter extends Filter implements MongoAlg {
                     return;
                 case MQL_REGEX_MATCH:
                     translateRegex( (RexCall) node );
+                    return;
+                case MQL_WILDCARD_MATCH:
+                    translateWildcard( (RexCall) node );
                     return;
                 case MQL_TYPE_MATCH:
                     translateTypeMatch( (RexCall) node );
@@ -640,6 +644,20 @@ public class MongoFilter extends Filter implements MongoAlg {
 
             attachCondition( null, left, new BsonRegularExpression( value, options ) );
 
+        }
+
+        private void translateWildcard( RexCall node ) {
+            String left = getParamAsKey( node.operands.get( 0 ) );
+            if ( node.isA( Kind.DYNAMIC_PARAM ) ) {
+                throw new RuntimeException( "translation of " + node + " is not possible with MongoFilter" );
+            }
+
+            // I am not sure what I should be doing here...
+            // Operand 1 is a RexDynamicParam and not a RexLiteral?
+            // When debugging translateRegex it is a RexLiteral. Maybe because of the stuff in MongoDynamic?
+            String wildcard = node.operands.get( 1 ).toString();
+            BsonDocument innerDocument = new BsonDocument("$wildcard", new BsonString( wildcard ));
+            attachCondition( null, left, innerDocument);
         }
 
 
