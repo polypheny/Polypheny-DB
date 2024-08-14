@@ -140,7 +140,7 @@ public class NameMatchers {
 
         @Override
         public String bestString() {
-            return Util.sepList( toStar( bestMatch() ), "." );
+            return String.join( ".", toStar( bestMatch() ) );
         }
 
 

@@ -142,7 +142,7 @@ public class PrecedenceClimbingParser {
 
     @Override
     public String toString() {
-        return Util.commaList( all() );
+        return String.join( ", ", all().stream().map( Object::toString ).toList() );
     }
 
 

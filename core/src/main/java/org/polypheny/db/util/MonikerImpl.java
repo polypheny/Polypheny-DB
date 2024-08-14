@@ -77,7 +77,7 @@ public class MonikerImpl implements Moniker {
 
 
     public String toString() {
-        return Util.sepList( names, "." );
+        return String.join( ".", names );
     }
 
 
