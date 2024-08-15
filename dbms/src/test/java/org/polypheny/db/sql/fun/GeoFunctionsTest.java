@@ -189,7 +189,7 @@ public class GeoFunctionsTest {
                         ImmutableList.of(
                                 new Object[]{ "SRID=4326;POINT (7.852923 47.998949)" },
                                 new Object[]{ "SRID=4326;POINT (9.289382 48.741588)" }
-                        ) );
+                        ), true );
                 // get the centroid of the geometry
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT ST_Centroid(ST_GeomFromText('POLYGON ( (-1 -1, 2 2, -1 2, -1 -1 ) )'))" ),
@@ -204,7 +204,7 @@ public class GeoFunctionsTest {
     @Test
     @Disabled
     // todo This is inaccurate with less than 1cm, which is okey.
-    // So we exclude it until we have a new resultObject
+    // We exclude it until we have a new resultObject
     public void transformFunctions() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
