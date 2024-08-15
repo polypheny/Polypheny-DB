@@ -96,6 +96,8 @@ import org.polypheny.db.type.entity.numerical.PolyLong.PolyLongSerializerDef;
 import org.polypheny.db.type.entity.relational.PolyMap;
 import org.polypheny.db.type.entity.relational.PolyMap.PolyMapSerializerDef;
 import org.polypheny.db.type.entity.spatial.PolyGeometry;
+import org.polypheny.db.type.entity.spatial.PolyGeometry.PolyGeometryDeserializer;
+import org.polypheny.db.type.entity.spatial.PolyGeometry.PolyGeometrySerializer;
 import org.polypheny.db.type.entity.spatial.PolyGeometry.PolyGeometrySerializerDef;
 import org.polypheny.db.type.entity.temporal.PolyDate;
 import org.polypheny.db.type.entity.temporal.PolyTime;
@@ -187,7 +189,10 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             .configure( MapperFeature.USE_STATIC_TYPING, true )
             .addModule( new SimpleModule()
                     .addSerializer( ByteString.class, new ByteStringSerializer() )
-                    .addDeserializer( ByteString.class, new ByteStringDeserializer() ) )
+                    .addDeserializer( ByteString.class, new ByteStringDeserializer() )
+                    .addSerializer( PolyGeometry.class, new PolyGeometrySerializer() )
+                    .addDeserializer( PolyGeometry.class, new PolyGeometryDeserializer() )
+            )
             .build();
 
 

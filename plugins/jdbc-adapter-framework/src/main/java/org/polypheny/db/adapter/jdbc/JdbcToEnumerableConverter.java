@@ -437,7 +437,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                 } else if ( dialect.supportsGeoJson() ) {
                     poly = Expressions.call( PolyGeometry.class, fieldType.isNullable() ? "fromNullableGeoJson" : "fromGeoJson", Expressions.convert_( source, String.class ) );
                 } else {
-                    poly = Expressions.call( PolyGeometry.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, String.class ) );
+                    poly = Expressions.call( PolyGeometry.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( dialect.handleRetrieval( fieldType, source, resultSet_, i + 1 ), String.class ) );
                 }
                 break;
             default:
@@ -445,24 +445,6 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                 poly = source;
         }
         return poly;
-    }
-
-
-    private Method getMethod( PolyType polyType, boolean nullable, boolean offset ) {
-        return switch ( polyType ) {
-            case ARRAY -> BuiltInMethod.JDBC_DEEP_ARRAY_TO_LIST.method;
-            default -> throw new AssertionError( polyType + ":" + nullable );
-        };
-    }
-
-
-    private Method getMethod2( PolyType polyType ) {
-        return switch ( polyType ) {
-            case DATE -> BuiltInMethod.RESULT_SET_GET_DATE2.method;
-            case TIME -> BuiltInMethod.RESULT_SET_GET_TIME2.method;
-            case TIMESTAMP -> BuiltInMethod.RESULT_SET_GET_TIMESTAMP2.method;
-            default -> throw new AssertionError( polyType );
-        };
     }
 
 

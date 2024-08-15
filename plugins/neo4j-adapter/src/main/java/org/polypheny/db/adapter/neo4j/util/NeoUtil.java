@@ -71,6 +71,7 @@ import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyFloat;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.type.entity.temporal.PolyDate;
 import org.polypheny.db.type.entity.temporal.PolyTime;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
@@ -152,6 +153,8 @@ public interface NeoUtil {
                 return o -> asPolyEdge( o.asRelationship() );
             case PATH:
                 return o -> asPolyPath( o.asPath() );
+            case GEOMETRY:
+                return o -> PolyGeometry.of( o.asString() );
         }
 
         throw new GenericRuntimeException( String.format( "Object of type %s was not transformable.", type ) );
@@ -582,6 +585,7 @@ public interface NeoUtil {
             case BINARY, VARBINARY, FILE, IMAGE, VIDEO, AUDIO -> value.asBinary().value;
             case FLOAT, REAL, DOUBLE -> value.asNumber().doubleValue();
             case DECIMAL -> value.asNumber().bigDecimalValue();
+            case GEOMETRY -> value.asGeometry().toWKT();
             case ARRAY -> value.asList().value.stream().map( e -> {
                 if ( isNested ) {
                     return e.toTypedJson();

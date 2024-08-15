@@ -16,16 +16,28 @@
 
 package org.polypheny.db.type.entity.spatial;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JacksonException;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonToken;
+import com.fasterxml.jackson.core.type.WritableTypeId;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import com.fasterxml.jackson.databind.jsontype.TypeDeserializer;
+import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
+import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import io.activej.serializer.BinaryInput;
 import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.CompatibilityLevel;
 import io.activej.serializer.CorruptedDataException;
-import io.activej.serializer.annotations.Deserialize;
+import io.activej.serializer.annotations.Serialize;
+import io.activej.serializer.annotations.SerializeNullable;
+import io.activej.serializer.def.SimpleSerializerDef;
+import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
-import io.activej.serializer.def.SimpleSerializerDef;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -46,6 +58,7 @@ import org.locationtech.jts.io.twkb.TWKBWriter;
 import org.polypheny.db.functions.spatial.GeoDistanceFunctions;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.spatial.PolyGeometryType.BufferCapStyle;
 
@@ -69,10 +82,16 @@ public class PolyGeometry extends PolyValue {
     /**
      * Wrap the JTS {@link Geometry} class.
      */
+    @Serialize
+    @SerializeNullable
     protected Geometry jtsGeometry;
     // Spatial Reference System ID
+    @Serialize
+    @SerializeNullable
     protected Integer SRID;
 
+    @Serialize
+    @SerializeNullable
     protected PolyGeometryType geometryType;
 
 
@@ -86,7 +105,7 @@ public class PolyGeometry extends PolyValue {
      * @param wkt Well Know Text representation of the geometry
      * @throws InvalidGeometryException if {@link PolyGeometry} is invalid or provided WKT is invalid.
      */
-    public PolyGeometry( @JsonProperty("wkt") @Deserialize("wkt") String wkt ) throws InvalidGeometryException {
+    public PolyGeometry( String wkt ) throws InvalidGeometryException {
         this( PolyType.GEOMETRY );
         int srid = NO_SRID;
         try {
@@ -112,7 +131,7 @@ public class PolyGeometry extends PolyValue {
      * @param srid Spatial reference system of the geometry
      * @throws InvalidGeometryException if {@link PolyGeometry} is invalid or provided WKT is invalid.
      */
-    public PolyGeometry( @JsonProperty("wkt") @Deserialize("wkt") String wkt, int srid ) throws InvalidGeometryException {
+    public PolyGeometry( String wkt, int srid ) throws InvalidGeometryException {
         this( PolyType.GEOMETRY );
         initFromWKT( wkt, srid );
     }
@@ -126,7 +145,7 @@ public class PolyGeometry extends PolyValue {
      * @param inputFormat describes the representation format of the geometry
      * @throws InvalidGeometryException if {@link PolyGeometry} is invalid or provided input is invalid.
      */
-    private PolyGeometry( @JsonProperty("geo") @Deserialize("geo") String input, int srid, GeometryInputFormat inputFormat ) throws InvalidGeometryException {
+    private PolyGeometry( String input, int srid, GeometryInputFormat inputFormat ) throws InvalidGeometryException {
         this( PolyType.GEOMETRY );
         switch ( inputFormat ) {
             case WKT:
@@ -175,6 +194,11 @@ public class PolyGeometry extends PolyValue {
 
     public static PolyGeometry ofNullable( String wkt ) {
         return wkt == null ? null : of( wkt );
+    }
+
+
+    public static PolyGeometry ofNullable( @Nullable PolyString wkt ) {
+        return wkt == null ? null : of( wkt.value );
     }
 
 
@@ -889,6 +913,11 @@ public class PolyGeometry extends PolyValue {
      */
     @Override
     public String toString() {
+        return toWKT();
+    }
+
+
+    public @NotNull String toWKT() {
         return String.format( "SRID=%d;%s", SRID, jtsGeometry.toString() );
     }
 
@@ -920,7 +949,6 @@ public class PolyGeometry extends PolyValue {
      * Describe the input format of Geometry
      */
     enum GeometryInputFormat {
-
 
         WKT( "wkt" ), // Well-known Text
         TWKB( "twkb" ), // Tiny Well-known Binary
@@ -966,6 +994,63 @@ public class PolyGeometry extends PolyValue {
                     }
                 }
             };
+        }
+
+    }
+
+
+    public static class PolyGeometrySerializer extends StdSerializer<PolyGeometry> {
+
+
+        public PolyGeometrySerializer() {
+            super( PolyGeometry.class );
+        }
+
+
+        @Override
+        public void serializeWithType( PolyGeometry value, JsonGenerator gen, SerializerProvider serializers, TypeSerializer typeSer ) throws IOException {
+            WritableTypeId typeIdDef = typeSer.writeTypePrefix( gen,
+                    typeSer.typeId( value, JsonToken.START_OBJECT ) );
+            gen.writeFieldName( "wkt" );
+            serialize( value, gen, serializers );
+            typeSer.writeTypeSuffix( gen, typeIdDef );
+
+        }
+
+
+        @Override
+        public void serialize( PolyGeometry value, JsonGenerator gen, SerializerProvider serializers ) throws IOException {
+            if ( value == null ) {
+                gen.writeNull();
+            } else {
+                gen.writeString( value.toWKT() );
+            }
+        }
+
+
+    }
+
+
+    public static class PolyGeometryDeserializer extends StdDeserializer<PolyGeometry> {
+
+        public PolyGeometryDeserializer() {
+            super( PolyGeometry.class );
+        }
+
+
+        @Override
+        public Object deserializeWithType( JsonParser p, DeserializationContext ctxt, TypeDeserializer typeDeserializer ) throws IOException {
+            typeDeserializer.deserializeTypedFromObject( p, ctxt );
+            p.nextToken();
+            return deserialize( p, ctxt );
+        }
+
+
+        @Override
+        public PolyGeometry deserialize( JsonParser p, DeserializationContext ctxt ) throws IOException, JacksonException {
+            p.nextToken();
+            String wkt = p.getValueAsString();
+            return PolyGeometry.of( wkt );
         }
 
     }
