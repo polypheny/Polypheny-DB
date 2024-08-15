@@ -72,6 +72,7 @@ public enum FunctionCategory {
         return properties.contains( MULTIMEDIA_FUNCTION );
     }
 
+
     public boolean isGeo() {
         return properties.contains( GEO_FUNCTION );
     }

@@ -32,4 +32,5 @@ public class GeometryConstants {
     static final double DELTA = 1e-5;
     static final int NO_SRID = 0;
     static final int WSG_84 = 4326;
+
 }

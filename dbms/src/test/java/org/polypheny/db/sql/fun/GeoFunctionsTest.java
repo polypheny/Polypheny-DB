@@ -42,6 +42,7 @@ public class GeoFunctionsTest {
         addTestData();
     }
 
+
     private static void addTestData() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
             Connection connection = jdbcConnection.getConnection();
@@ -68,6 +69,7 @@ public class GeoFunctionsTest {
 
     // ------------------- Test that GEOMETRY type was persisted correctly ---------------------------
 
+
     @Test
     public void readGeo() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
@@ -80,13 +82,13 @@ public class GeoFunctionsTest {
                                 new Object[]{ "SRID=4326;POINT (7.852923 47.998949)" },
                                 new Object[]{ "SRID=4326;POINT (9.289382 48.741588)" }
                         ),
-                        true);
+                        true );
             }
         }
     }
 
-
     // --------------- Test spatial functions without the actual persisted data ----------------------
+
 
     @Test
     public void geomFromText() throws SQLException {
@@ -126,6 +128,7 @@ public class GeoFunctionsTest {
             }
         }
     }
+
 
     @Test
     public void commonPropertiesFunctions() throws SQLException {
@@ -196,6 +199,7 @@ public class GeoFunctionsTest {
             }
         }
     }
+
 
     @Test
     @Disabled
@@ -322,6 +326,7 @@ public class GeoFunctionsTest {
         }
     }
 
+
     @Test
     public void distanceFunctions() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
@@ -360,6 +365,7 @@ public class GeoFunctionsTest {
         }
     }
 
+
     @Test
     public void setOperationsFunctions() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
@@ -393,6 +399,7 @@ public class GeoFunctionsTest {
         }
     }
 
+
     @Test
     public void pointFunctions() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
@@ -407,6 +414,7 @@ public class GeoFunctionsTest {
             }
         }
     }
+
 
     @Test
     public void lineStringsFunctions() throws SQLException {
@@ -480,6 +488,7 @@ public class GeoFunctionsTest {
             }
         }
     }
+
 
     @Test
     public void geometryCollectionFunctions() throws SQLException {

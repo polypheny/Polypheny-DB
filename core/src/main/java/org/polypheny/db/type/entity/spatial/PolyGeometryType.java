@@ -25,7 +25,7 @@ public enum PolyGeometryType {
     LINESTRING( 2 ),
     // not actually a full type
     LINEARRING( 2 ),
-    POLYGON(3),
+    POLYGON( 3 ),
     MULTIPOINT( 4 ),
     MULTILINESTRING( 5 ),
     MULTIPOLYGON( 6 ),

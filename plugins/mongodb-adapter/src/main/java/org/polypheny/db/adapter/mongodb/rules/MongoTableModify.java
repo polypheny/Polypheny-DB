@@ -22,9 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
@@ -40,12 +38,9 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.catalog.entity.physical.PhysicalCollection;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalField;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.nodes.DynamicParam;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgPlanner;
@@ -414,7 +409,7 @@ class MongoTableModify extends RelModify<MongoEntity> implements MongoAlg {
                             .getPolyType();
 
                     doc.append( physicalName, getBsonArray( call, compType, bucket ) );
-                }else {
+                } else {
                     throw new GenericRuntimeException( "Not supported yet" );
                 }
 
@@ -433,8 +428,8 @@ class MongoTableModify extends RelModify<MongoEntity> implements MongoAlg {
 
     private static void addPreparedInsert( Implementor implementor, RexDynamicParam rexNode, BsonDocument doc, String physicalName, int pos ) {
         doc.append( physicalName == null
-                        ? implementor.getEntity().fields.stream().sorted( Comparator.comparingInt( ( PhysicalField a ) -> a.unwrap( PhysicalColumn.class ).orElseThrow().position ) ).toList().get( pos ).name
-                        : physicalName, new BsonDynamic( rexNode ) );
+                ? implementor.getEntity().fields.stream().sorted( Comparator.comparingInt( ( PhysicalField a ) -> a.unwrap( PhysicalColumn.class ).orElseThrow().position ) ).toList().get( pos ).name
+                : physicalName, new BsonDynamic( rexNode ) );
     }
 
 

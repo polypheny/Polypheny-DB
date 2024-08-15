@@ -844,6 +844,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
         throw cannotParse( this, PolyBlob.class );
     }
 
+
     public boolean isGeometry() {
         return type == PolyType.GEOMETRY;
     }

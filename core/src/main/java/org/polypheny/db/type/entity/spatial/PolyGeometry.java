@@ -222,7 +222,7 @@ public class PolyGeometry extends PolyValue {
     }
 
 
-    @SuppressWarnings( "unused" )
+    @SuppressWarnings("unused")
     public static PolyGeometry fromWKT( String wkt, int srid ) throws InvalidGeometryException {
         return new PolyGeometry( wkt, srid );
     }
@@ -238,7 +238,7 @@ public class PolyGeometry extends PolyValue {
     }
 
 
-    @SuppressWarnings( "unused" )
+    @SuppressWarnings("unused")
     public static PolyGeometry fromNullableGeoJson( String geoJson ) {
         try {
             return geoJson == null ? null : fromGeoJson( geoJson );

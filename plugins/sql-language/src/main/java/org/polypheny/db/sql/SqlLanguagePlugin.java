@@ -3015,7 +3015,6 @@ public class SqlLanguagePlugin extends PolyPlugin {
                         OperandTypes.GEOMETRY_INTEGER,
                         FunctionCategory.GEOMETRY ) );
 
-
         isInit = true;
     }
 

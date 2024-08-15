@@ -1238,7 +1238,6 @@ public enum Kind {
 
     /**
      * DDL statement not handled above.
-     *
      */
     OTHER_DDL,
 

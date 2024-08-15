@@ -190,6 +190,7 @@ public class ReflectiveAlgMetadataProvider implements AlgMetadataProvider {
         return new ReflectiveAlgMetadataProvider( methodsMap, space.metadataClass0, space.providers );
     }
 
+
     @Override
     public <M extends Metadata> Multimap<Method, MetadataHandler<M>> handlers( MetadataDef<M> def ) {
         final ImmutableMultimap.Builder<Method, MetadataHandler<M>> builder = ImmutableMultimap.builder();
@@ -227,7 +228,6 @@ public class ReflectiveAlgMetadataProvider implements AlgMetadataProvider {
             return null;
         }
     }
-
 
 
     @SuppressWarnings({ "unchecked" })
