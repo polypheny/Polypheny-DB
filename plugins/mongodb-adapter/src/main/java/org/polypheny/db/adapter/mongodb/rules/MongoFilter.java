@@ -655,7 +655,7 @@ public class MongoFilter extends Filter implements MongoAlg {
             // I am not sure what I should be doing here...
             // Operand 1 is a RexDynamicParam and not a RexLiteral?
             // When debugging translateRegex it is a RexLiteral. Maybe because of the stuff in MongoDynamic?
-            String wildcard = node.operands.get( 1 ).toString();
+            String wildcard = getLiteralAs( node, 1, p -> p.asString().value );
             BsonDocument innerDocument = new BsonDocument("$wildcard", new BsonString( wildcard ));
             attachCondition( null, left, innerDocument);
         }
