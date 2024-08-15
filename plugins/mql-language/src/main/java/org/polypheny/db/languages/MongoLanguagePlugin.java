@@ -206,6 +206,18 @@ public class MongoLanguagePlugin extends PolyPlugin {
 
         register( OperatorName.MINUS, new LangFunctionOperator( OperatorName.MINUS.name(), Kind.MINUS ) );
 
+        // Geospatial Functions
+
+        register( OperatorName.MQL_GEO_INTERSECTS, new LangFunctionOperator( "MQL_GEO_INTERSECTS", Kind.MQL_GEO_INTERSECTS ) );
+
+        register( OperatorName.MQL_GEO_WITHIN, new LangFunctionOperator( "MQL_GEO_WITHIN", Kind.MQL_GEO_WITHIN ) );
+
+        register( OperatorName.MQL_NEAR, new LangFunctionOperator( "MQL_NEAR", Kind.MQL_NEAR ) );
+
+        register( OperatorName.MQL_NEAR_SPHERE, new LangFunctionOperator( "MQL_NEAR_SPHERE", Kind.MQL_NEAR_SPHERE ) );
+
+        register( OperatorName.MQL_GEO_NEAR, new LangFunctionOperator( "MQL_GEO_NEAR", Kind.MQL_GEO_NEAR ) );
+
         isInit = true;
     }
 

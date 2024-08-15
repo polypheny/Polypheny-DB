@@ -1635,6 +1635,16 @@ public enum OperatorName {
 
     MQL_NOT_UNSET( LangFunctionOperator.class ),
 
+    MQL_GEO_INTERSECTS( LangFunctionOperator.class ),
+
+    MQL_GEO_WITHIN( LangFunctionOperator.class ),
+
+    MQL_NEAR( LangFunctionOperator.class ),
+
+    MQL_NEAR_SPHERE( LangFunctionOperator.class ),
+
+    MQL_GEO_NEAR( LangFunctionOperator.class ),
+
     //-------------------------------------------------------------
     //                   OPENCYPHER OPERATORS
     //-------------------------------------------------------------

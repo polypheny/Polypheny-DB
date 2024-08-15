@@ -1322,6 +1322,17 @@ public enum Kind {
      * Document model {@code $exists} operator
      */
     MQL_EXISTS,
+
+    MQL_GEO_INTERSECTS,
+
+    MQL_GEO_WITHIN,
+
+    MQL_NEAR,
+
+    MQL_NEAR_SPHERE,
+
+    MQL_GEO_NEAR,
+
     /*
      * Deserialize operator
      */
