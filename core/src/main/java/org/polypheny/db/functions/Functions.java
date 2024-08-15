@@ -2846,8 +2846,8 @@ public class Functions {
 
 
     static RuntimeException toUnchecked( Exception e ) {
-        if ( e instanceof RuntimeException ) {
-            return (RuntimeException) e;
+        if ( e instanceof RuntimeException runtime ) {
+            return runtime;
         }
         return new GenericRuntimeException( e );
     }

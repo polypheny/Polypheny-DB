@@ -43,11 +43,7 @@ import org.polypheny.db.util.Pair;
 
 /**
  * Extension to {@link Entity} that specifies a custom way to resolve column names.
-<<<<<<<< HEAD:core/src/main/java/org/polypheny/db/schema/CustomColumnResolvingEntity.java
- *
-========
  * <p>
->>>>>>>> refs/heads/master:core/src/main/java/org/polypheny/db/schema/CustomFieldResolvingEntity.java
  * It is optional for a Table to implement this interface. If Table does not implement this interface, column resolving will
  * be performed in the default way.
  * <p>

@@ -625,7 +625,7 @@ public class MongoFilter extends Filter implements MongoAlg {
             }
             String left = getParamAsKey( node.operands.get( 0 ) );
             if ( node.isA( Kind.DYNAMIC_PARAM ) ) {
-                throw new RuntimeException( "translation of " + node + " is not possible with MongoFilter" );
+                throw new GenericRuntimeException( "translation of " + node + " is not possible with MongoFilter" );
             }
             String value = getLiteralAs( node, 1, p -> p.asString().value );
             boolean isInsensitive = getLiteralAs( node, 2, p -> p.asBoolean().value );

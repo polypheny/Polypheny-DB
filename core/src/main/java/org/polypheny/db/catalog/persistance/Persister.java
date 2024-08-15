@@ -1,10 +1,6 @@
 
 /*
-<<<<<<<< HEAD:core/src/main/java/org/polypheny/db/algebra/enumerable/impl/package-info.java
- * Copyright 2019-2023 The Polypheny Project
-========
  * Copyright 2019-2024 The Polypheny Project
->>>>>>>> refs/heads/master:core/src/main/java/org/polypheny/db/catalog/persistance/Persister.java
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.

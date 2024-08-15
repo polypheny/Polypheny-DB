@@ -128,6 +128,9 @@ licensee {
     allowDependency('org.ow2.asm', 'asm-tree', '9.4') { because 'BSD 3-Clause' }
     allowDependency('org.ow2.asm', 'asm-commons', '9.4') { because 'BSD 3-Clause' }
 
+    // GIS
+    allowDependency('org.locationtech.jts', 'jts-core', '1.19.0') { because 'Eclipse Public License v. 2.0' }
+    allowDependency('org.locationtech.jts.io', 'jts-io-common', '1.19.0') { because 'Eclipse Public License v. 2.0' }
 
     // Glassfish
     allowDependency('org.glassfish.hk2.external', 'jakarta.inject', '2.6.1') { because 'Eclipse Public License v. 2.0' }
