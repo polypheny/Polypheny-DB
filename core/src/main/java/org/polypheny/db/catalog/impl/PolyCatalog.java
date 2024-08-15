@@ -16,6 +16,13 @@
 
 package org.polypheny.db.catalog.impl;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.PropertyAccessor;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.collect.ImmutableMap;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.annotations.Deserialize;
@@ -83,6 +90,15 @@ import org.polypheny.db.util.Pair;
 @Slf4j
 public class PolyCatalog extends Catalog implements PolySerializable {
 
+    private final static JsonMapper MAPPER = JsonMapper.builder()
+            .configure( MapperFeature.AUTO_DETECT_CREATORS, false )
+            .configure( MapperFeature.AUTO_DETECT_FIELDS, false )
+            .configure( MapperFeature.AUTO_DETECT_GETTERS, false )
+            .configure( MapperFeature.AUTO_DETECT_IS_GETTERS, false )
+            .configure( MapperFeature.AUTO_DETECT_SETTERS, false )
+            .configure( SerializationFeature.FAIL_ON_EMPTY_BEANS, false )
+            .build();
+
     @Getter
     private final BinarySerializer<PolyCatalog> serializer = PolySerializable.buildSerializer( PolyCatalog.class );
 
@@ -94,20 +110,25 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
 
     @Serialize
+    @JsonProperty
     public final Map<Long, LogicalCatalog> logicalCatalogs;
 
     @Serialize
+    @JsonProperty
     public final Map<Long, AllocationCatalog> allocationCatalogs;
 
     @Serialize
+    @JsonProperty
     @Getter
     public final Map<Long, LogicalUser> users;
 
     @Serialize
+    @JsonProperty
     @Getter
     public final Map<Long, LogicalAdapter> adapters;
 
     @Serialize
+    @JsonProperty
     @Getter
     public final Map<Long, LogicalQueryInterface> interfaces;
 
@@ -121,9 +142,11 @@ public class PolyCatalog extends Catalog implements PolySerializable {
     public final Map<Long, AdapterCatalog> adapterCatalogs;
 
     @Serialize
+    @JsonProperty
     public final Map<Long, AdapterRestore> adapterRestore;
 
     @Serialize
+    @JsonProperty
     public final IdBuilder idBuilder;
 
     private final Persister persister;
@@ -198,6 +221,16 @@ public class PolyCatalog extends Catalog implements PolySerializable {
         // empty for now
         this.dirty.set( true );
         updateSnapshot();
+    }
+
+
+    @Override
+    public String getJson() {
+        try {
+            return MAPPER.writeValueAsString( this );
+        } catch ( JsonProcessingException e ) {
+            throw new GenericRuntimeException( e );
+        }
     }
 
 

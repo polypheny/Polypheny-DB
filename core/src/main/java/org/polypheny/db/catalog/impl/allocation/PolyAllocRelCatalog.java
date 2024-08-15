@@ -16,6 +16,7 @@
 
 package org.polypheny.db.catalog.impl.allocation;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
@@ -51,24 +52,31 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, PolySer
     IdBuilder idBuilder = IdBuilder.getInstance();
 
     @Serialize
+    @JsonProperty
     public LogicalNamespace namespace;
 
     @Serialize
+    @JsonProperty
     public ConcurrentHashMap<Long, AllocationTable> tables;
 
     @Serialize
+    @JsonProperty
     public ConcurrentHashMap<Pair<Long, Long>, AllocationColumn> columns; //placementId, columnId
 
     @Serialize
+    @JsonProperty
     public ConcurrentHashMap<Long, PartitionProperty> properties;
 
     @Serialize
+    @JsonProperty
     public ConcurrentHashMap<Long, AllocationPartitionGroup> partitionGroups;
 
     @Serialize
+    @JsonProperty
     public ConcurrentHashMap<Long, AllocationPartition> partitions;
 
     @Serialize
+    @JsonProperty
     public ConcurrentHashMap<Long, AllocationPlacement> placements;
 
     PropertyChangeSupport listeners = new PropertyChangeSupport( this );
