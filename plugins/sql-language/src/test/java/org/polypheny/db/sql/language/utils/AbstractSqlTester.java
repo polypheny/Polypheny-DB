@@ -530,7 +530,7 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
         if ( values.isEmpty() ) {
             values.add( Pair.of( "1", "p0" ) );
         }
-        return "select " + sql2.substring( "values (".length(), sql2.length() - 1 ) + " from (values (" + Util.commaList( Pair.left( values ) ) + ")) as t(" + Util.commaList( Pair.right( values ) ) + ")";
+        return "select " + sql2.substring( "values (".length(), sql2.length() - 1 ) + " from (values (" + String.join( ", ", Pair.left( values ) ) + ")) as t(" + String.join( ", ", Pair.right( values ) ) + ")";
     }
 
 

@@ -575,39 +575,10 @@ public class Util {
 
 
     /**
-     * Converts a list of a string, with commas between elements.
-     * <p>
-     * For example,
-     * <code>commaList(Arrays.asList({"a", "b"}))</code>
-     * returns "a, b".
-     *
-     * @param list List
-     * @return String representation of string
-     */
-    public static <T> String commaList( List<T> list ) {
-        return sepList( list, ", " );
-    }
-
-
-    /**
      * Converts a list of a string, with a given separator between elements.
      */
-    public static <T> String sepList( List<T> list, String sep ) {
-        final int max = list.size() - 1;
-        switch ( max ) {
-            case -1:
-                return "";
-            case 0:
-                return list.get( 0 ).toString();
-        }
-        final StringBuilder buf = new StringBuilder();
-        for ( int i = 0; ; i++ ) {
-            buf.append( list.get( i ) );
-            if ( i == max ) {
-                return buf.toString();
-            }
-            buf.append( sep );
-        }
+    public static <T> String sepList( List<T> list, CharSequence sep ) {
+        return String.join( sep, list.stream().map( Object::toString ).toList() );
     }
 
 

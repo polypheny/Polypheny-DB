@@ -470,15 +470,6 @@ public class RexBuilder {
                 if ( Objects.requireNonNull( typeName ) == PolyType.INTERVAL ) {
                     assert value.isInterval();
                     typeName = type.getPolyType();
-                    switch ( typeName ) {
-                        case BIGINT:
-                        case INTEGER:
-                        case SMALLINT:
-                        case TINYINT:
-                        case FLOAT:
-                        case REAL:
-                        case DECIMAL:
-                    }
 
                     // Not all types are allowed for literals
                     if ( typeName == PolyType.INTEGER ) {

@@ -104,18 +104,11 @@ class DbMetaRetriever {
     static EntitiesResponse searchEntities( String namespaceName, String entityPattern ) {
         EntitiesResponse.Builder responseBuilder = EntitiesResponse.newBuilder();
         LogicalNamespace namespace = Catalog.getInstance().getSnapshot().getNamespace( namespaceName ).orElseThrow();
-        switch ( namespace.getDataModel() ) {
-            case RELATIONAL:
-                responseBuilder.addAllEntities( getRelationalEntities( namespace.getId(), entityPattern ) );
-                break;
-            case GRAPH:
-                responseBuilder.addAllEntities( getGraphEntities( namespace.getId(), entityPattern ) );
-                break;
-            case DOCUMENT:
-                responseBuilder.addAllEntities( getDocumentEntities( namespace.getId(), entityPattern ) );
-                break;
-        }
-        return responseBuilder.build();
+        return switch ( namespace.getDataModel() ) {
+            case RELATIONAL -> responseBuilder.addAllEntities( getRelationalEntities( namespace.getId(), entityPattern ) ).build();
+            case GRAPH -> responseBuilder.addAllEntities( getGraphEntities( namespace.getId(), entityPattern ) ).build();
+            case DOCUMENT -> responseBuilder.addAllEntities( getDocumentEntities( namespace.getId(), entityPattern ) ).build();
+        };
     }
 
 

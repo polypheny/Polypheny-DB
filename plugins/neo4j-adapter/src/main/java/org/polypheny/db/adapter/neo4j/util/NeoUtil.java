@@ -92,72 +92,40 @@ public interface NeoUtil {
 
     static Function1<Value, PolyValue> getUnnullableTypeFunction( NestedPolyType type, boolean isNested ) {
 
-        switch ( type.getType() ) {
-            case NULL:
-                return o -> PolyNull.NULL;
-            case BOOLEAN:
-                return value -> PolyBoolean.of( value.asBoolean() );
-            case TINYINT:
-            case SMALLINT:
-            case INTEGER:
-                return v -> PolyInteger.of( v.asNumber() );
-            case DATE:
-                return v -> PolyDate.of( v.asNumber() );
-            case TIME:
-                return v -> PolyTime.of( v.asNumber() );
-            case TIMESTAMP:
-                return v -> PolyTimestamp.of( v.asNumber() );
-            case BIGINT:
-                return v -> PolyBigDecimal.of( v.asLong() );
-            case DECIMAL:
-                return v -> v instanceof StringValue ? PolyBigDecimal.of( v.asString() ) : PolyBigDecimal.of( v.asDouble() );
-            case FLOAT:
-            case REAL:
-                return v -> v instanceof StringValue ? PolyFloat.of( Float.valueOf( v.asString() ) ) : PolyFloat.of( v.asNumber() );
-            case DOUBLE:
-                return v -> v instanceof StringValue ? PolyDouble.of( Double.valueOf( v.asString() ) ) : PolyDouble.of( v.asNumber() );
-            case INTERVAL:
-                break;
-            case ANY:
-                return v -> PolyString.of( v.asObject().toString() );
-            case CHAR:
-            case VARCHAR:
-            case TEXT:
-                return v -> PolyString.of( v.asString() );
-            case BINARY:
-            case VARBINARY:
-                return v -> PolyBinary.of( v.asByteArray() );
-            case FILE:
-            case IMAGE:
-            case VIDEO:
-            case AUDIO:
-                return v -> PolyBlob.of( v.asByteArray() );
-            case SYMBOL:
-                return v -> PolySymbol.of( v.asObject() );
-            case ARRAY:
+        return switch ( type.getType() ) {
+            case NULL -> o -> PolyNull.NULL;
+            case BOOLEAN -> value -> PolyBoolean.of( value.asBoolean() );
+            case TINYINT, SMALLINT, INTEGER -> v -> PolyInteger.of( v.asNumber() );
+            case DATE -> v -> PolyDate.of( v.asNumber() );
+            case TIME -> v -> PolyTime.of( v.asNumber() );
+            case TIMESTAMP -> v -> PolyTimestamp.of( v.asNumber() );
+            case BIGINT -> v -> PolyBigDecimal.of( v.asLong() );
+            case DECIMAL -> v -> v instanceof StringValue ? PolyBigDecimal.of( v.asString() ) : PolyBigDecimal.of( v.asDouble() );
+            case FLOAT, REAL -> v -> v instanceof StringValue ? PolyFloat.of( Float.valueOf( v.asString() ) ) : PolyFloat.of( v.asNumber() );
+            case DOUBLE -> v -> v instanceof StringValue ? PolyDouble.of( Double.valueOf( v.asString() ) ) : PolyDouble.of( v.asNumber() );
+            case ANY -> v -> PolyString.of( v.asObject().toString() );
+            case CHAR, VARCHAR, TEXT -> v -> PolyString.of( v.asString() );
+            case BINARY, VARBINARY -> v -> PolyBinary.of( v.asByteArray() );
+            case FILE, IMAGE, VIDEO, AUDIO -> v -> PolyBlob.of( v.asByteArray() );
+            case SYMBOL -> v -> PolySymbol.of( v.asObject() );
+            case ARRAY -> {
                 if ( isNested ) {
-                    return v -> PolyValue.fromTypedJson( v.asString(), PolyList.class );
+                    yield v -> PolyValue.fromTypedJson( v.asString(), PolyList.class );
                 }
                 Function1<Value, PolyValue> componentFunc = getTypeFunction( type.asList().types.get( 0 ), true );
-                return el -> PolyList.of( el.asList( componentFunc::apply ) );
-            case MAP:
-                return value -> PolyString.of( value.asString() );
-            case DOCUMENT:
-            case JSON:
-                return value -> PolyDocument.deserialize( value.asString() );
-            case GRAPH:
-                return o -> (PolyValue) o;
-            case NODE:
-                return o -> asPolyNode( o.asNode() );
-            case EDGE:
-                return o -> asPolyEdge( o.asRelationship() );
-            case PATH:
-                return o -> asPolyPath( o.asPath() );
-            case GEOMETRY:
-                return o -> PolyGeometry.of( o.asString() );
-        }
+                yield el -> PolyList.of( el.asList( componentFunc::apply ) );
+            }
+            case MAP -> value -> PolyString.of( value.asString() );
+            case DOCUMENT, JSON -> value -> PolyDocument.deserialize( value.asString() );
+            case GRAPH -> o -> (PolyValue) o;
+            case NODE -> o -> asPolyNode( o.asNode() );
+            case EDGE -> o -> asPolyEdge( o.asRelationship() );
+            case PATH -> o -> asPolyPath( o.asPath() );
+            case GEOMETRY -> o -> PolyGeometry.of( o.asString() );
+            default -> throw new GenericRuntimeException( String.format( "Object of type %s was not transformable.", type ) );
+        };
 
-        throw new GenericRuntimeException( String.format( "Object of type %s was not transformable.", type ) );
+
     }
 
     static PolyPath asPolyPath( Path path ) {
@@ -203,8 +171,8 @@ public interface NeoUtil {
             return null;
         }
         Object obj = e.asObject();
-        if ( obj instanceof PolyValue ) {
-            return (PolyValue) obj;
+        if ( obj instanceof PolyValue value ) {
+            return value;
         }
 
         return asPolyValue( e );
@@ -218,7 +186,7 @@ public interface NeoUtil {
         } else if ( value instanceof FloatValue ) {
             return PolyString.of( String.valueOf( value.asDouble() ) );
         } else if ( value instanceof ListValue ) {
-            return new PolyList<>( (value).asList( NeoUtil::getComparableOrString ) );
+            return new PolyList<>( value.asList( NeoUtil::getComparableOrString ) );
         }
         throw new NotImplementedException( "Type not supported" );
     }
@@ -261,226 +229,122 @@ public interface NeoUtil {
     }
 
 
-    static PolyType getComponentTypeOrParent( AlgDataType type ) {
-        if ( type.getPolyType() == PolyType.ARRAY ) {
-            return type.getComponentType().getPolyType();
-        }
-        return type.getPolyType();
-    }
-
     static String rexAsString( RexLiteral literal, String mappingLabel, boolean isLiteral ) {
         Object ob = literal.getValue();
         if ( ob == null ) {
             return null;
         }
-        switch ( literal.getPolyType() ) {
-            case BOOLEAN:
-                return literal.value.asBoolean().toString();
-            case TINYINT:
-            case SMALLINT:
-            case INTEGER:
-            case DATE:
-            case TIME:
-                return literal.value.asNumber().toString();
-            case BIGINT:
-            case INTERVAL:
-                return literal.getValue().toString();
-            case TIMESTAMP:
-                return literal.value.asTemporal().getMillisSinceEpoch().toString();
-            case DECIMAL:
-            case FLOAT:
-            case REAL:
-            case DOUBLE:
-                return literal.getValue().toString();
-            case CHAR:
-            case VARCHAR:
+        return switch ( literal.getPolyType() ) {
+            case BOOLEAN -> literal.value.asBoolean().toString();
+            case TINYINT, SMALLINT, INTEGER, DATE, TIME -> literal.value.asNumber().toString();
+            case BIGINT, INTERVAL, SYMBOL -> literal.getValue().toString();
+            case TIMESTAMP -> literal.value.asTemporal().getMillisSinceEpoch().toString();
+            case DECIMAL, FLOAT, REAL, DOUBLE -> literal.getValue().toString();
+            case CHAR, VARCHAR -> {
                 if ( isLiteral ) {
-                    return "'" + literal.value.asString() + "'";
+                    yield "'" + literal.value.asString() + "'";
                 }
-                return literal.value.asString().value;
-            case MAP:
-            case DOCUMENT:
-            case ARRAY:
-                return literal.value.asList().toString();
-            case BINARY:
-            case VARBINARY:
-                return literal.value.asBinary().as64String();
-            case FILE:
-            case IMAGE:
-            case VIDEO:
-            case AUDIO:
-                return Arrays.toString( literal.value.asBlob().asByteArray() );
-            case NULL:
-                return null;
-            case GRAPH:
-            case PATH:
-            case DISTINCT:
-            case STRUCTURED:
-            case ROW:
-            case OTHER:
-            case CURSOR:
-            case COLUMN_LIST:
-            case DYNAMIC_STAR:
-            case GEOMETRY:
-            case JSON:
-                break;
-            case NODE:
+                yield literal.value.asString().value;
+
+            }
+            case MAP, DOCUMENT, ARRAY -> literal.value.asList().toString();
+            case BINARY, VARBINARY -> literal.value.asBinary().as64String();
+            case FILE, IMAGE, VIDEO, AUDIO -> Arrays.toString( literal.value.asBlob().asByteArray() );
+            case NULL -> null;
+            case NODE -> {
                 PolyNode node = literal.value.asNode();
                 if ( node.isVariable() ) {
-                    return node_( node, null, false ).build();
+                    yield node_( node, null, false ).build();
                 }
-                return node_( node, PolyString.of( mappingLabel ), isLiteral ).build();
-            case EDGE:
-                return edge_( literal.value.asEdge(), isLiteral ).build();
-            case SYMBOL:
-                return literal.getValue().toString();
-        }
-        throw new UnsupportedOperationException( "Type is not supported by the Neo4j adapter." );
+                yield node_( node, PolyString.of( mappingLabel ), isLiteral ).build();
+            }
+            case EDGE -> edge_( literal.value.asEdge(), isLiteral ).build();
+            default -> throw new UnsupportedOperationException( "Type is not supported by the Neo4j adapter." );
+        };
+
     }
 
     static Function1<List<String>, String> getOpAsNeo( OperatorName operatorName, List<RexNode> operands, AlgDataType returnType ) {
-        switch ( operatorName ) {
-            case AND:
-                return o -> o.stream().map( e -> String.format( "(%s)", e ) ).collect( Collectors.joining( " AND " ) );
-            case DIVIDE:
-                return handleDivide( operatorName, operands, returnType );
-            case DIVIDE_INTEGER:
-                return o -> String.format( "%s / %s", o.get( 0 ), o.get( 1 ) );
-            case EQUALS:
-            case IS_DISTINCT_FROM:
-                return o -> String.format( "%s = %s", o.get( 0 ), o.get( 1 ) );
-            case GREATER_THAN:
-                return o -> String.format( "%s > %s", o.get( 0 ), o.get( 1 ) );
-            case GREATER_THAN_OR_EQUAL:
-                return o -> String.format( "%s >= %s", o.get( 0 ), o.get( 1 ) );
-            case LESS_THAN:
-                return o -> String.format( "%s < %s", o.get( 0 ), o.get( 1 ) );
-            case LESS_THAN_OR_EQUAL:
-                return o -> String.format( "%s <= %s", o.get( 0 ), o.get( 1 ) );
-            case MINUS:
-                return o -> String.format( "%s - %s", o.get( 0 ), o.get( 1 ) );
-            case MULTIPLY:
-                return o -> String.format( "%s * %s", o.get( 0 ), o.get( 1 ) );
-            case NOT_EQUALS:
-            case IS_NOT_DISTINCT_FROM:
-                return o -> String.format( "%s <> %s", o.get( 0 ), o.get( 1 ) );
-            case OR:
-                return o -> o.stream().map( e -> String.format( "(%s)", e ) ).collect( Collectors.joining( " OR " ) );
-            case PLUS:
-                return o -> String.format( "%s + %s", o.get( 0 ), o.get( 1 ) );
-            case IS_NOT_NULL:
-                return o -> String.format( "%s IS NOT NULL ", o.get( 0 ) );
-            case IS_NULL:
-                return o -> String.format( "%s IS NULL", o.get( 0 ) );
-            case IS_NOT_TRUE:
-            case IS_FALSE:
-                return o -> String.format( "NOT %s", o.get( 0 ) );
-            case IS_TRUE:
-            case IS_NOT_FALSE:
-                return o -> String.format( "%s", o.get( 0 ) );
-            case IS_EMPTY:
-                return o -> String.format( "%s = []", o.get( 0 ) );
-            case IS_NOT_EMPTY:
-                return o -> String.format( "%s <> []", o.get( 0 ) );
-            case EXISTS:
-                return o -> String.format( "exists(%s)", o.get( 0 ) );
-            case NOT:
-                return o -> String.format( "NOT %s", o.get( 0 ) );
-            case UNARY_MINUS:
-                return o -> String.format( "-%s", o.get( 0 ) );
-            case UNARY_PLUS:
-                return o -> o.get( 0 );
-            case COALESCE:
-                return o -> "coalesce(" + String.join( ", ", o ) + ")";
-            case NOT_LIKE:
-                return handleLike( operands, true );
-            case CYPHER_LIKE:
-                return o -> String.format( "%s =~ '%s'", o.get( 0 ), maybeUnquote( getAsRegex( o.get( 1 ) ) ) );
-            case LIKE:
-                return handleLike( operands, false );
-            case POWER:
-                return o -> String.format( "%s^%s", o.get( 0 ), o.get( 1 ) );
-            case SQRT:
-                return o -> String.format( "sqrt(%s)", o.get( 0 ) );
-            case MOD:
-                return o -> o.get( 0 ) + " % " + o.get( 1 );
-            case LOG10:
-                return o -> String.format( "log10(toFloat(%s))", o.get( 0 ) );
-            case ABS:
-                return o -> String.format( "abs(toFloat(%s))", o.get( 0 ) );
-            case ACOS:
-                return o -> String.format( "acos(toFloat(%s))", o.get( 0 ) );
-            case ASIN:
-                return o -> String.format( "asin(toFloat(%s))", o.get( 0 ) );
-            case ATAN:
-                return o -> String.format( "atan(toFloat(%s))", o.get( 0 ) );
-            case ATAN2:
-                return o -> String.format( "atan2(toFloat(%s), toFloat(%s))", o.get( 0 ), o.get( 1 ) );
-            case COS:
-                return o -> String.format( "cos(toFloat(%s))", o.get( 0 ) );
-            case COT:
-                return o -> String.format( "cot(toFloat(%s))", o.get( 0 ) );
-            case RADIANS:
-                return o -> String.format( "radians(toFloat(%s))", o.get( 0 ) );
-            case ROUND:
+        return switch ( operatorName ) {
+            case AND -> o -> o.stream().map( e -> String.format( "(%s)", e ) ).collect( Collectors.joining( " AND " ) );
+            case DIVIDE -> handleDivide( operatorName, operands, returnType );
+            case DIVIDE_INTEGER -> o -> String.format( "%s / %s", o.get( 0 ), o.get( 1 ) );
+            case EQUALS, IS_DISTINCT_FROM -> o -> String.format( "%s = %s", o.get( 0 ), o.get( 1 ) );
+            case GREATER_THAN -> o -> String.format( "%s > %s", o.get( 0 ), o.get( 1 ) );
+            case GREATER_THAN_OR_EQUAL -> o -> String.format( "%s >= %s", o.get( 0 ), o.get( 1 ) );
+            case LESS_THAN -> o -> String.format( "%s < %s", o.get( 0 ), o.get( 1 ) );
+            case LESS_THAN_OR_EQUAL -> o -> String.format( "%s <= %s", o.get( 0 ), o.get( 1 ) );
+            case MINUS -> o -> String.format( "%s - %s", o.get( 0 ), o.get( 1 ) );
+            case MULTIPLY -> o -> String.format( "%s * %s", o.get( 0 ), o.get( 1 ) );
+            case NOT_EQUALS, IS_NOT_DISTINCT_FROM -> o -> String.format( "%s <> %s", o.get( 0 ), o.get( 1 ) );
+            case OR -> o -> o.stream().map( e -> String.format( "(%s)", e ) ).collect( Collectors.joining( " OR " ) );
+            case PLUS -> o -> String.format( "%s + %s", o.get( 0 ), o.get( 1 ) );
+            case IS_NOT_NULL -> o -> String.format( "%s IS NOT NULL ", o.get( 0 ) );
+            case IS_NULL -> o -> String.format( "%s IS NULL", o.get( 0 ) );
+            case IS_NOT_TRUE, IS_FALSE -> o -> String.format( "NOT %s", o.get( 0 ) );
+            case IS_TRUE, IS_NOT_FALSE -> o -> String.format( "%s", o.get( 0 ) );
+            case IS_EMPTY -> o -> String.format( "%s = []", o.get( 0 ) );
+            case IS_NOT_EMPTY -> o -> String.format( "%s <> []", o.get( 0 ) );
+            case EXISTS -> o -> String.format( "exists(%s)", o.get( 0 ) );
+            case NOT -> o -> String.format( "NOT %s", o.get( 0 ) );
+            case UNARY_MINUS -> o -> String.format( "-%s", o.get( 0 ) );
+            case UNARY_PLUS -> o -> o.get( 0 );
+            case COALESCE -> o -> "coalesce(" + String.join( ", ", o ) + ")";
+            case NOT_LIKE -> handleLike( operands, true );
+            case CYPHER_LIKE -> o -> String.format( "%s =~ '%s'", o.get( 0 ), maybeUnquote( getAsRegex( o.get( 1 ) ) ) );
+            case LIKE -> handleLike( operands, false );
+            case POWER -> o -> String.format( "%s^%s", o.get( 0 ), o.get( 1 ) );
+            case SQRT -> o -> String.format( "sqrt(%s)", o.get( 0 ) );
+            case MOD -> o -> o.get( 0 ) + " % " + o.get( 1 );
+            case LOG10 -> o -> String.format( "log10(toFloat(%s))", o.get( 0 ) );
+            case ABS -> o -> String.format( "abs(toFloat(%s))", o.get( 0 ) );
+            case ACOS -> o -> String.format( "acos(toFloat(%s))", o.get( 0 ) );
+            case ASIN -> o -> String.format( "asin(toFloat(%s))", o.get( 0 ) );
+            case ATAN -> o -> String.format( "atan(toFloat(%s))", o.get( 0 ) );
+            case ATAN2 -> o -> String.format( "atan2(toFloat(%s), toFloat(%s))", o.get( 0 ), o.get( 1 ) );
+            case COS -> o -> String.format( "cos(toFloat(%s))", o.get( 0 ) );
+            case COT -> o -> String.format( "cot(toFloat(%s))", o.get( 0 ) );
+            case RADIANS -> o -> String.format( "radians(toFloat(%s))", o.get( 0 ) );
+            case ROUND -> {
                 if ( operands.size() == 1 ) {
-                    return o -> String.format( "round(toFloat(%s))", o.get( 0 ) );
+                    yield o -> String.format( "round(toFloat(%s))", o.get( 0 ) );
                 } else {
-                    return o -> String.format( "round(toFloat(%s), toInteger(%s))", o.get( 0 ), o.get( 1 ) );
+                    yield o -> String.format( "round(toFloat(%s), toInteger(%s))", o.get( 0 ), o.get( 1 ) );
                 }
-            case SIGN:
-                return o -> String.format( "sign(toFloat(%s))", o.get( 0 ) );
-            case SIN:
-                return o -> String.format( "sin(toFloat(%s))", o.get( 0 ) );
-            case TAN:
-                return o -> String.format( "tan(toFloat(%s))", o.get( 0 ) );
-            case CAST:
-                return handleCast( operands );
-            case ITEM:
-                return o -> String.format( "%s[toInteger(%s - 1)]", o.get( 0 ), o.get( 1 ) );
-            case ARRAY_VALUE_CONSTRUCTOR:
-                return o -> "[" + String.join( ", ", o ) + "]";
-            case CYPHER_EXTRACT_FROM_PATH:
-                return o -> o.get( 0 );
-            case CYPHER_ADJUST_EDGE:
-                return o -> String.format( "%s%s%s", o.get( 1 ), o.get( 0 ), o.get( 2 ) );
-            case CYPHER_REMOVE_LABELS:
-                return Object::toString;
-            case CYPHER_SET_LABELS:
-                return o -> {
-                    String name = o.get( 0 );
-                    for ( int i = 1; i < o.size(); i++ ) {
-                        name += ":" + o.get( i );
-                    }
-                    return name;
-                };
-            case CYPHER_SET_PROPERTIES:
-                throw new GenericRuntimeException( "No values should land here" );
-            case CYPHER_SET_PROPERTY:
-                return o -> String.format( "%s.%s = %s", o.get( 0 ), maybeUnquote( o.get( 1 ) ), o.get( 2 ) );
-            case CYPHER_EXTRACT_PROPERTY:
-                return o -> {
-                    String name = o.get( 0 );
-                    if ( name.contains( "." ) ) {
-                        name = name.split( "\\." )[0];
-                    }
-                    return String.format( "%s.%s", name, NeoUtil.maybeUnquote( o.get( 1 ) ) );
-                };
-            case CYPHER_EXTRACT_ID:
-                return o -> String.format( " %s.id ", o.get( 0 ) );
-            case CYPHER_HAS_PROPERTY:
-                return o -> String.format( " EXISTS(%s.%s) ", o.get( 0 ), NeoUtil.maybeUnquote( o.get( 1 ) ) );
-            case COUNT:
-                return o -> String.format( "count(%s)", String.join( ",", o ) );
-            case AVG:
-                return o -> String.format( "avg(%s)", o.get( 0 ) );
-            case MIN:
-                return o -> String.format( "min(%s)", o.get( 0 ) );
-            case MAX:
-                return o -> String.format( "max(%s)", o.get( 0 ) );
-            default:
-                return null;
-        }
+            }
+            case SIGN -> o -> String.format( "sign(toFloat(%s))", o.get( 0 ) );
+            case SIN -> o -> String.format( "sin(toFloat(%s))", o.get( 0 ) );
+            case TAN -> o -> String.format( "tan(toFloat(%s))", o.get( 0 ) );
+            case CAST -> handleCast( operands );
+            case ITEM -> o -> String.format( "%s[toInteger(%s - 1)]", o.get( 0 ), o.get( 1 ) );
+            case ARRAY_VALUE_CONSTRUCTOR -> o -> "[" + String.join( ", ", o ) + "]";
+            case CYPHER_EXTRACT_FROM_PATH -> o -> o.get( 0 );
+            case CYPHER_ADJUST_EDGE -> o -> String.format( "%s%s%s", o.get( 1 ), o.get( 0 ), o.get( 2 ) );
+            case CYPHER_REMOVE_LABELS -> Object::toString;
+            case CYPHER_SET_LABELS -> o -> {
+                String name = o.get( 0 );
+                for ( int i = 1; i < o.size(); i++ ) {
+                    name += ":" + o.get( i );
+                }
+                return name;
+            };
+            case CYPHER_SET_PROPERTIES -> throw new GenericRuntimeException( "No values should land here" );
+            case CYPHER_SET_PROPERTY -> o -> String.format( "%s.%s = %s", o.get( 0 ), maybeUnquote( o.get( 1 ) ), o.get( 2 ) );
+            case CYPHER_EXTRACT_PROPERTY -> o -> {
+                String name = o.get( 0 );
+                if ( name.contains( "." ) ) {
+                    name = name.split( "\\." )[0];
+                }
+                return String.format( "%s.%s", name, NeoUtil.maybeUnquote( o.get( 1 ) ) );
+            };
+            case CYPHER_EXTRACT_ID -> o -> String.format( " %s.id ", o.get( 0 ) );
+            case CYPHER_HAS_PROPERTY -> o -> String.format( " EXISTS(%s.%s) ", o.get( 0 ), NeoUtil.maybeUnquote( o.get( 1 ) ) );
+            case COUNT -> o -> String.format( "count(%s)", String.join( ",", o ) );
+            case AVG -> o -> String.format( "avg(%s)", o.get( 0 ) );
+            case MIN -> o -> String.format( "min(%s)", o.get( 0 ) );
+            case MAX -> o -> String.format( "max(%s)", o.get( 0 ) );
+            default -> null;
+        };
 
     }
 
@@ -549,9 +413,7 @@ public interface NeoUtil {
         }
 
         NeoSupportVisitor visitor = new NeoSupportVisitor();
-        for ( RexNode project : p.getProjects() ) {
-            project.accept( visitor );
-        }
+        p.getProjects().forEach( project -> project.accept( visitor ) );
         return visitor.supports && !UnsupportedRexCallVisitor.containsModelItem( p.getProjects() );
     }
 

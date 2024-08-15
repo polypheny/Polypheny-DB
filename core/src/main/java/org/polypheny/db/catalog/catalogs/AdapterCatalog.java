@@ -17,6 +17,8 @@
 package org.polypheny.db.catalog.catalogs;
 
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.annotations.SerializeClass;
 import java.util.Arrays;
@@ -45,6 +47,7 @@ import org.polypheny.db.util.Pair;
 @NonFinal
 @Slf4j
 @SerializeClass(subclasses = { DocAdapterCatalog.class, RelAdapterCatalog.class, GraphAdapterCatalog.class })
+@JsonTypeInfo(use = Id.CLASS)
 public abstract class AdapterCatalog {
 
     @Serialize

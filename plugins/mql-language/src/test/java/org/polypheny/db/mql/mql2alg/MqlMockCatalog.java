@@ -47,6 +47,11 @@ public class MqlMockCatalog extends MockCatalog {
     }
 
 
+    public String getJson() {
+        return null;
+    }
+
+
     @Override
     public void addStoreSnapshot( AdapterCatalog snapshot ) {
 

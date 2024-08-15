@@ -17,7 +17,6 @@
 package org.polypheny.db.catalog.logistic;
 
 import lombok.Getter;
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.schema.trait.ModelTrait;
 
 @Getter
@@ -42,13 +41,10 @@ public enum DataModel {
 
 
     public ModelTrait getModelTrait() {
-        if ( this == DataModel.RELATIONAL ) {
-            return ModelTrait.RELATIONAL;
-        } else if ( this == DataModel.DOCUMENT ) {
-            return ModelTrait.DOCUMENT;
-        } else if ( this == DataModel.GRAPH ) {
-            return ModelTrait.GRAPH;
-        }
-        throw new GenericRuntimeException( "Not found a suitable NamespaceType." );
+        return switch ( this ) {
+            case RELATIONAL -> ModelTrait.RELATIONAL;
+            case DOCUMENT -> ModelTrait.DOCUMENT;
+            case GRAPH -> ModelTrait.GRAPH;
+        };
     }
 }

@@ -17,6 +17,7 @@
 package org.polypheny.db.catalog.entity.logical;
 
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.annotations.SerializeNullable;
@@ -51,6 +52,7 @@ public class LogicalTable extends LogicalEntity {
 
     @Serialize
     @SerializeNullable
+    @JsonProperty
     public Long primaryKey;
 
 
