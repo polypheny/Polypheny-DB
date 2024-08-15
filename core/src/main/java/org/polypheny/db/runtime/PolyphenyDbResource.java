@@ -257,7 +257,7 @@ public interface PolyphenyDbResource {
     @BaseMessage("Expected a multimedia type")
     ExInst<ValidatorException> expectedMultimedia();
 
-    @BaseMessage("Expected a geo type")
+    @BaseMessage("Expected a geometry type")
     ExInst<ValidatorException> expectedGeometry();
 
     @BaseMessage("ELSE clause or at least one THEN clause must be non-NULL")
