@@ -432,7 +432,7 @@ public enum BuiltInMethod {
     MQL_SIZE_MATCH( MqlFunctions.class, "docSizeMatch", PolyValue.class, PolyValue.class ),
     MQL_JSON_MATCH( MqlFunctions.class, "docJsonMatch", PolyValue.class, String.class ),
     MQL_REGEX_MATCH( MqlFunctions.class, "docRegexMatch", PolyValue.class, PolyString.class, PolyBoolean.class, PolyBoolean.class, PolyBoolean.class, PolyBoolean.class ),
-    MQL_WILDCARD_MATCH( MqlFunctions.class, "docWildcardMatch", PolyValue.class, PolyString.class),
+    MQL_WILDCARD_MATCH( MqlFunctions.class, "docWildcardMatch", PolyValue.class, PolyValue.class),
     MQL_TYPE_MATCH( MqlFunctions.class, "docTypeMatch", PolyValue.class, List.class ),
     MQL_SLICE( MqlFunctions.class, "docSlice", PolyValue.class, PolyNumber.class, PolyNumber.class ),
     MQL_QUERY_VALUE( MqlFunctions.class, "docQueryValue", PolyValue.class, List.class ),

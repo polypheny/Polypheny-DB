@@ -350,7 +350,7 @@ public class MqlFunctions {
 
 
     @SuppressWarnings("UnusedDeclaration")
-    public static PolyBoolean docWildcardMatch( PolyValue input, PolyString wildcard ) {
+    public static PolyBoolean docWildcardMatch( PolyValue input, PolyValue wildcard ) {
         System.out.println( "docWildcardMatch" );
         return PolyBoolean.TRUE;
     }
