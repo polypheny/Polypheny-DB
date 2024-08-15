@@ -186,7 +186,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
 
     private void resetAllIsFull() {
         this.statisticFields.values().forEach( c -> {
-		assignUnique( c, this.prepareNode( QueryResult.fromCatalogColumn( Catalog.snapshot().rel().getColumn( c.columnId ).orElseThrow() ), NodeType.UNIQUE_VALUE ) );
+            assignUnique( c, this.prepareNode( QueryResult.fromCatalogColumn( Catalog.snapshot().rel().getColumn( c.columnId ).orElseThrow() ), NodeType.UNIQUE_VALUE ) );
         } );
     }
 
@@ -235,7 +235,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
         log.debug( "Reevaluate Row Count." );
 
         statisticQueryInterface.getAllRelEntites().forEach( table -> {
-		PolyInteger rowCount = getNumberColumnCount( this.prepareNode( new QueryResult( Catalog.snapshot().getLogicalEntity( table.id ).orElseThrow(), null ), NodeType.ROW_COUNT_TABLE ) );
+            PolyInteger rowCount = getNumberColumnCount( this.prepareNode( new QueryResult( Catalog.snapshot().getLogicalEntity( table.id ).orElseThrow(), null ), NodeType.ROW_COUNT_TABLE ) );
             updateRowCountPerEntity( table.id, rowCount.value, MonitoringType.SET_ROW_COUNT );
         } );
     }

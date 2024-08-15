@@ -336,7 +336,6 @@ public class FrequencyMapImpl extends FrequencyMap {
             if ( !hotPartitionsToCreate.isEmpty() ) {
                 catalog.getSnapshot().alloc().getPartitionsOnDataPlacement( store.getAdapterId(), table.id );
 
-
                 store.createTable( statement.getPrepareContext(), LogicalTableWrapper.of( null, null, null ), AllocationTableWrapper.of( null, null ) );
 
                 List<LogicalColumn> logicalColumns = new ArrayList<>();

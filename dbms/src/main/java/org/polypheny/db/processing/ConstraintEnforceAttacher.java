@@ -643,7 +643,7 @@ public class ConstraintEnforceAttacher {
                             .getSnapshot()
                             .getNamespaces( null )
                             .stream()
-			.flatMap( n -> Catalog.snapshot().rel().getTables( n.id, null ).stream() )
+                            .flatMap( n -> Catalog.snapshot().rel().getTables( n.id, null ).stream() )
                             .filter( t -> t.entityType == EntityType.ENTITY && t.getDataModel() == DataModel.RELATIONAL )
                             .toList();
                     Transaction transaction = this.manager.startTransaction( Catalog.defaultUserId, false, "ConstraintEnforcement" );

@@ -66,8 +66,10 @@ public class SqlCreateMaterializedView extends SqlCreate implements ExecutableSt
     SqlNodeList columns;
     @Getter
     SqlNode query;
-    @Nullable List<SqlIdentifier> store;
-    @Nullable String freshnessType;
+    @Nullable
+    List<SqlIdentifier> store;
+    @Nullable
+    String freshnessType;
     Integer freshnessTime;
     SqlIdentifier freshnessId;
 
