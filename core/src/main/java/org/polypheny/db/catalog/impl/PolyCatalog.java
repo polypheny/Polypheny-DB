@@ -16,9 +16,7 @@
 
 package org.polypheny.db.catalog.impl;
 
-import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -398,20 +396,15 @@ public class PolyCatalog extends Catalog implements PolySerializable {
         long id = idBuilder.getNewLogicalId();
         LogicalNamespace namespace = new LogicalNamespace( id, name, dataModel, caseSensitive );
 
-        switch ( dataModel ) {
-            case RELATIONAL:
-                logicalCatalogs.put( id, new RelationalCatalog( namespace ) );
-                allocationCatalogs.put( id, new PolyAllocRelCatalog( namespace ) );
-                break;
-            case DOCUMENT:
-                logicalCatalogs.put( id, new DocumentCatalog( namespace ) );
-                allocationCatalogs.put( id, new PolyAllocDocCatalog( namespace ) );
-                break;
-            case GRAPH:
-                logicalCatalogs.put( id, new GraphCatalog( namespace ) );
-                allocationCatalogs.put( id, new PolyAllocGraphCatalog( namespace ) );
-                break;
-        }
+        Pair<LogicalCatalog, AllocationCatalog> catalogs = switch ( dataModel ) {
+            case RELATIONAL -> Pair.of( new RelationalCatalog( namespace ), new PolyAllocRelCatalog( namespace ) );
+            case DOCUMENT -> Pair.of( new DocumentCatalog( namespace ), new PolyAllocDocCatalog( namespace ) );
+            case GRAPH -> Pair.of( new GraphCatalog( namespace ), new PolyAllocGraphCatalog( namespace ) );
+        };
+
+        logicalCatalogs.put( id, catalogs.left );
+        allocationCatalogs.put( id, catalogs.right );
+
         change();
         return id;
     }

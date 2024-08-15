@@ -150,16 +150,15 @@ public class IdentifierNamespace extends AbstractNamespace {
 
             LogicalNamespace namespace = optionalNamespace.orElseThrow();
 
-            Entity entity = null;
-            if ( namespace.dataModel == DataModel.RELATIONAL ) {
-                entity = validator.snapshot.rel().getTable( namespace.id, entityName ).orElse( null );
-            } else if ( namespace.dataModel == DataModel.DOCUMENT ) {
-                entity = validator.snapshot.doc().getCollection( namespace.id, entityName ).orElse( null );
-            } else if ( namespace.dataModel == DataModel.GRAPH ) {
-                // we use a subgraph to define label which is used as table
-                final String finalEntityName = entityName;
-                entity = validator.snapshot.graph().getGraph( namespace.id ).map( g -> new SubstitutionGraph( g.id, ns.get( 1 ), false, g.caseSensitive, List.of( PolyString.of( finalEntityName ) ) ) ).orElse( null );
-            }
+            Entity entity = switch ( namespace.dataModel ) {
+                case RELATIONAL -> validator.snapshot.rel().getTable( namespace.id, entityName ).orElse( null );
+                case DOCUMENT -> validator.snapshot.doc().getCollection( namespace.id, entityName ).orElse( null );
+                case GRAPH -> {
+                    // we use a subgraph to define label which is used as table
+                    final String finalEntityName = entityName;
+                    yield validator.snapshot.graph().getGraph( namespace.id ).map( g -> new SubstitutionGraph( g.id, ns.get( 1 ), false, g.caseSensitive, List.of( PolyString.of( finalEntityName ) ) ) ).orElse( null );
+                }
+            };
 
             return new EntityNamespace( validator, entity );
         }

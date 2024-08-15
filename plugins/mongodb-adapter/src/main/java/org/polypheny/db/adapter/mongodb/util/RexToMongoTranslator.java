@@ -44,7 +44,6 @@ import org.polypheny.db.rex.RexNameRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexVisitorImpl;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.util.Util;
 
 /**
  * Translator from {@link RexNode} to strings in MongoDB's expression language.
@@ -161,7 +160,7 @@ public class RexToMongoTranslator extends RexVisitorImpl<String> {
                     strings.add( " { \"$strLenCP\":" + strings.get( 0 ) + "}" );
                 }
             }
-            return "{" + stdOperator + ": [" + Util.commaList( strings ) + "]}";
+            return "{" + stdOperator + ": [" + String.join( ", ", strings ) + "]}";
         }
         if ( call.getOperator().getOperatorName() == OperatorName.ITEM ) {
             final RexNode op1 = call.operands.get( 1 );

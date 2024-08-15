@@ -89,15 +89,9 @@ public class CatalogCrud {
 
             if ( request.depth > 1 ) {
                 switch ( namespace.dataModel ) {
-                    case RELATIONAL:
-                        attachTreeElements( namespace, request, schemaTree );
-                        break;
-                    case DOCUMENT:
-                        attachDocumentTreeElements( namespace, request, schemaTree );
-                        break;
-                    case GRAPH:
-                        schemaTree.setRouterLink( request.routerLinkRoot + "/" + namespace.name );
-                        break;
+                    case RELATIONAL -> attachTreeElements( namespace, request, schemaTree );
+                    case DOCUMENT -> attachDocumentTreeElements( namespace, request, schemaTree );
+                    case GRAPH -> schemaTree.setRouterLink( request.routerLinkRoot + "/" + namespace.name );
                 }
             }
 

@@ -165,18 +165,15 @@ public class RelationalMetaRetriever {
 
 
     private static AlgDataType retrieveAlgDataType( PolyImplementation polyImplementation ) {
-        switch ( polyImplementation.getKind() ) {
-            case INSERT:
-            case DELETE:
-            case UPDATE:
-            case EXPLAIN:
+        return switch ( polyImplementation.getKind() ) {
+            case INSERT, DELETE, UPDATE, EXPLAIN -> {
                 // FIXME: getValidatedNodeType is wrong for DML
                 Kind kind = polyImplementation.getKind();
                 JavaTypeFactory typeFactory = polyImplementation.getStatement().getTransaction().getTypeFactory();
-                return AlgOptUtil.createDmlRowType( kind, typeFactory );
-            default:
-                return polyImplementation.tupleType;
-        }
+                yield AlgOptUtil.createDmlRowType( kind, typeFactory );
+            }
+            default -> polyImplementation.tupleType;
+        };
     }
 
 }
