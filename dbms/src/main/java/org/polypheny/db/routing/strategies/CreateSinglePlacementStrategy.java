@@ -32,7 +32,7 @@ public class CreateSinglePlacementStrategy implements CreatePlacementStrategy {
 
     @Override
     public List<DataStore<?>> getDataStoresForNewRelField( LogicalColumn addedField ) {
-        Snapshot snapshot = Catalog.getInstance().getSnapshot();
+        Snapshot snapshot = Catalog.snapshot();
         List<AllocationEntity> allocations = snapshot.alloc().getFromLogical( addedField.tableId );
         return ImmutableList.of( AdapterManager.getInstance().getStore( allocations.get( 0 ).adapterId ).orElseThrow() );
     }
