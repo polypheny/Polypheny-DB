@@ -22,6 +22,7 @@ import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.Point;
 import org.polypheny.db.type.PolyType;
 
+
 /**
  * Represent a single point in the space.
  * <p>

@@ -23,6 +23,7 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.sql.language.SqlFunction;
 import org.polypheny.db.type.inference.ReturnTypes;
 
+
 /**
  * Definition of the "ST_GeomFromTWKB" spatial function.
  * The function has a required parameter - TWKB binary representation
@@ -40,14 +41,11 @@ public class SqlStGeomFromTWKB extends SqlFunction {
 
     @Override
     public String getSignatureTemplate( int operandsCount ) {
-        switch ( operandsCount ) {
-            case 1:
-                return "{0}({1})";
-            case 2:
-                return "{0}({1}, {2})";
-            default:
-                throw new AssertionError();
-        }
+        return switch ( operandsCount ) {
+            case 1 -> "{0}({1})";
+            case 2 -> "{0}({1}, {2})";
+            default -> throw new AssertionError();
+        };
     }
 
 }

@@ -30,6 +30,7 @@ import org.polypheny.db.type.checker.PolyOperandTypeChecker;
 import org.polypheny.db.type.inference.ReturnTypes;
 import org.polypheny.db.util.CoreUtil;
 
+
 /**
  * Definition of the "ST_GeomFromText" spatial function.
  * The function has a required parameter - WKT string representation
@@ -81,7 +82,6 @@ public class SqlStGeomFromText extends SqlFunction {
             }
 
             return true;
-
         }
 
 

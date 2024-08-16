@@ -41,6 +41,7 @@ import org.polypheny.db.type.entity.spatial.PolyMultiPolygon;
 import org.polypheny.db.type.entity.spatial.PolyPoint;
 import org.polypheny.db.type.entity.spatial.PolyPolygon;
 
+
 public class GeometryTest {
 
     private static PolyGeometry point2d;

@@ -23,6 +23,7 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.sql.language.SqlFunction;
 import org.polypheny.db.type.inference.ReturnTypes;
 
+
 /**
  * Definition of the "ST_GeomFromGeoJson" spatial function.
  * The function has a required parameter - TWKB binary representation

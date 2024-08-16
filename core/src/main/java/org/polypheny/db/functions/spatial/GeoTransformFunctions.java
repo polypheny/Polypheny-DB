@@ -34,6 +34,7 @@ import org.polypheny.db.type.entity.spatial.InvalidGeometryException;
 import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.type.entity.spatial.PolyGeometryCollection;
 
+
 /**
  * Geo functions to:
  * Transform coordinates to various SRID
@@ -155,19 +156,13 @@ public class GeoTransformFunctions {
             // X and Y are converted, Z is original
             coordinates[i] = new Coordinate( projCoords[i].x, projCoords[i].y, originalCoordinates[i].getZ() );
         }
-        switch ( geometry.getGeometryType() ) {
-            case Geometry.TYPENAME_POINT:
-                return geometryFactory.createPoint( coordinates[0] );
-            case Geometry.TYPENAME_LINESTRING:
-                return geometryFactory.createLineString( coordinates );
-            case Geometry.TYPENAME_LINEARRING:
-                return geometryFactory.createLinearRing( coordinates );
-            case Geometry.TYPENAME_POLYGON:
-                return geometryFactory.createPolygon( coordinates );
-            default:
-                throw new InvalidGeometryException( "Cannot convert back to Geometry" );
-        }
-
+        return switch ( geometry.getGeometryType() ) {
+            case Geometry.TYPENAME_POINT -> geometryFactory.createPoint( coordinates[0] );
+            case Geometry.TYPENAME_LINESTRING -> geometryFactory.createLineString( coordinates );
+            case Geometry.TYPENAME_LINEARRING -> geometryFactory.createLinearRing( coordinates );
+            case Geometry.TYPENAME_POLYGON -> geometryFactory.createPolygon( coordinates );
+            default -> throw new InvalidGeometryException( "Cannot convert back to Geometry" );
+        };
     }
 
 

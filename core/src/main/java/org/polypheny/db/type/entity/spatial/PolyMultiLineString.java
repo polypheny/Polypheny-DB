@@ -22,6 +22,7 @@ import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.MultiLineString;
 import org.polypheny.db.type.PolyType;
 
+
 /**
  * {@link PolyMultiLineString} is a collection of any valid {@link PolyLineString}.
  * {@link PolyLineString}s may overlap.

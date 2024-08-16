@@ -22,6 +22,7 @@ import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.MultiPoint;
 import org.polypheny.db.type.PolyType;
 
+
 /**
  * A collection of valid {@link PolyPoint}.
  * {@link PolyMultiPoint} does not introduce any validity rules for the collection of {@link PolyPoint}:

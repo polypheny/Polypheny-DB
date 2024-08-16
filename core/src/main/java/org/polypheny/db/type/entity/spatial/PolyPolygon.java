@@ -22,6 +22,7 @@ import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.Polygon;
 import org.polypheny.db.type.PolyType;
 
+
 /**
  * Represent a polygon with linear edges, may contain holes.
  * The outer boundary (shell) and inner boundaries (holes) are represented by {@link PolyLinearRing}.

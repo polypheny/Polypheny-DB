@@ -30,11 +30,12 @@ import org.polypheny.db.type.checker.PolyOperandTypeChecker;
 import org.polypheny.db.type.inference.ReturnTypes;
 import org.polypheny.db.util.CoreUtil;
 
+
 /**
  * Definition of the "ST_Buffer" spatial function.
  * The function has 2 required parameters:
  * geometry {@link org.polypheny.db.type.entity.spatial.PolyGeometry}
- * distance {@link org.polypheny.db.type.entity.PolyFloat}.
+ * distance {@link org.polypheny.db.type.entity.numerical.PolyFloat}.
  * and 2 optional:
  * quadrantSegments {@link org.polypheny.db.type.entity.category.PolyNumber}
  * endCapStyle      {@link org.polypheny.db.type.entity.PolyString}
@@ -162,16 +163,12 @@ public class SqlStBuffer extends SqlFunction {
 
     @Override
     public String getSignatureTemplate( int operandsCount ) {
-        switch ( operandsCount ) {
-            case 2:
-                return "{0}({1}, {2})";
-            case 3:
-                return "{0}({1}, {2}, {3})";
-            case 4:
-                return "{0}({1}, {2}, {3}, {4})";
-            default:
-                throw new AssertionError();
-        }
+        return switch ( operandsCount ) {
+            case 2 -> "{0}({1}, {2})";
+            case 3 -> "{0}({1}, {2}, {3})";
+            case 4 -> "{0}({1}, {2}, {3}, {4})";
+            default -> throw new AssertionError();
+        };
     }
 
 }

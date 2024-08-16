@@ -22,6 +22,7 @@ import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.LinearRing;
 import org.polypheny.db.type.PolyType;
 
+
 /**
  * {@link PolyLinearRing} is {@link PolyLineString} that is simple and closed.
  * The {@link PolyLinearRing} is valid if it has

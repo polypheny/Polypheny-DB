@@ -16,6 +16,7 @@
 
 package org.polypheny.db.type.entity.spatial;
 
+
 /**
  * Geometry types, with the names and codes assigned by OGC.
  */
@@ -69,4 +70,5 @@ public enum PolyGeometryType {
             }
         }
     }
+
 }

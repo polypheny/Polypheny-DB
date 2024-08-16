@@ -21,6 +21,7 @@ import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.operation.distance.DistanceOp;
 import org.polypheny.db.type.entity.spatial.PolyGeometry;
 
+
 /**
  * Calculate the spherical distances between various geometries on the <strong>PERFECT SPHERE</strong>
  */

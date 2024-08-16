@@ -22,6 +22,7 @@ import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.LineString;
 import org.polypheny.db.type.PolyType;
 
+
 /**
  * Represent a connected sequence of points (line segments) in the space.
  * The line segments may intersect other segments.

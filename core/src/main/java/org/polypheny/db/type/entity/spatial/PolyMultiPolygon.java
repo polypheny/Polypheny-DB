@@ -22,6 +22,7 @@ import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.MultiPolygon;
 import org.polypheny.db.type.PolyType;
 
+
 /**
  * {@link PolyMultiPolygon} is a collection of valid {@link PolyPolygon}s: non-overlapping and non-adjacent.
  * {@link PolyPolygon}s in the {@link PolyMultiPolygon} may touch only at a finite number of points.

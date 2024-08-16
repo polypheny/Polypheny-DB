@@ -23,6 +23,7 @@ import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.GeometryCollection;
 import org.polypheny.db.type.PolyType;
 
+
 /**
  * {@link PolyGeometryCollection} is collection that holds {@link PolyGeometry}
  * and it is a base class for all <strong>Multi</strong> spatial data types.
