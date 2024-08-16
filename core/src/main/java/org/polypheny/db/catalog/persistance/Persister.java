@@ -1,4 +1,3 @@
-
 /*
  * Copyright 2019-2024 The Polypheny Project
  *

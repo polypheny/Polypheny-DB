@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,7 +48,7 @@ import org.polypheny.db.util.CoreUtil;
 
 
 /**
- * SqlCastFunction. Note that the std functions are really singleton objects, because they always get fetched via the StdOperatorTable. So you can't storeId any local info in the class
+ * SqlCastFunction. Note that the std functions are really singleton objects, because they always get fetched via the StdOperatorTable. So you can't store any local info in the class
  * and hence the return type data is maintained in operand[1] through the validation phase.
  */
 public class SqlCastFunction extends SqlFunction {
@@ -188,4 +188,3 @@ public class SqlCastFunction extends SqlFunction {
     }
 
 }
-

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -111,7 +111,7 @@ public class OracleSqlOperatorTable extends ReflectiveSqlOperatorTable {
 
     /**
      * Oracle's "SUBSTR(string, position [, substringLength ])" function.
-     * <p>
+     *
      * It has similar semantics to standard SQL's {@code OperatorRegistry.get( OperatorName.SUBSTRING )} function but different syntax.
      */
     public static final SqlFunction SUBSTR =
@@ -150,7 +150,7 @@ public class OracleSqlOperatorTable extends ReflectiveSqlOperatorTable {
     /**
      * The <code>TRANSLATE(<i>string_expr</i>, <i>search_chars</i>, <i>replacement_chars</i>)</code> function returns <i>string_expr</i> with all occurrences of each character in
      * <i>search_chars</i> replaced by its corresponding character in <i>replacement_chars</i>.
-     * <p>
+     *
      * It is not defined in the SQL standard, but occurs in Oracle and PostgreSQL.
      */
     public static final SqlFunction TRANSLATE3 = new SqlTranslate3Function();
@@ -170,4 +170,3 @@ public class OracleSqlOperatorTable extends ReflectiveSqlOperatorTable {
     }
 
 }
-

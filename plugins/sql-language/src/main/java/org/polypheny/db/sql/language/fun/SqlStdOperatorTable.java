@@ -74,7 +74,7 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
 
     /**
      * Converts a call to a grouped auxiliary function to a call to the grouped window function. For other calls returns null.
-     * <p>
+     *
      * For example, converts {@code TUMBLE_START(rowtime, INTERVAL '1' HOUR))} to {@code TUMBLE(rowtime, INTERVAL '1' HOUR))}.
      */
     public static SqlCall convertAuxiliaryToGroupCall( SqlCall call ) {
@@ -88,7 +88,7 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
 
     /**
      * Converts a call to a grouped window function to a call to its auxiliary window function(s). For other calls returns null.
-     * <p>
+     *
      * For example, converts {@code TUMBLE_START(rowtime, INTERVAL '1' HOUR))} to {@code TUMBLE(rowtime, INTERVAL '1' HOUR))}.
      */
     public static List<Pair<SqlNode, AuxiliaryConverter>> convertGroupToAuxiliaryCalls( SqlCall call ) {

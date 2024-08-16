@@ -26,4 +26,5 @@ public class AllocationTableWrapper {
 
     public List<AllocationColumn> columns;
 
+
 }

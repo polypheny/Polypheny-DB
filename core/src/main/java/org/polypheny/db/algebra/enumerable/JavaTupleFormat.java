@@ -12,7 +12,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * *
+ *
  * This file incorporates code covered by the following terms:
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -109,7 +109,6 @@ public enum JavaTupleFormat {
         public Expression record( Type javaTupleClass, List<Expression> expressions ) {
             assert expressions.size() == 1;
             return Expressions.newArrayInit( PolyValue.class, expressions );
-
         }
 
 
@@ -275,4 +274,3 @@ public enum JavaTupleFormat {
      */
     public abstract Expression field( Expression expression, int field, Type fromType, Type fieldType );
 }
-

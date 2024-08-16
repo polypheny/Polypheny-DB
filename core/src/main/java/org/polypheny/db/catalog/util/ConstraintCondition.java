@@ -20,4 +20,5 @@ import java.util.function.Supplier;
 
 public record ConstraintCondition( Supplier<Boolean> condition, String errorMessage ) {
 
+
 }
