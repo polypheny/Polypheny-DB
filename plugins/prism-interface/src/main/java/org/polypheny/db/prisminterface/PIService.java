@@ -514,7 +514,7 @@ class PIService {
         }
         if ( properties.hasNamespaceName() ) {
             String namespaceName = properties.getNamespaceName();
-            Optional<LogicalNamespace> optionalNamespace = Catalog.getInstance().getSnapshot().getNamespace( namespaceName );
+            Optional<LogicalNamespace> optionalNamespace = Catalog.snapshot().getNamespace( namespaceName );
             if ( optionalNamespace.isEmpty() ) {
                 throw new PIServiceException( "Getting namespace " + namespaceName + " failed." );
             }

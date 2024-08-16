@@ -49,7 +49,7 @@ public class StatementManager {
 
 
     private LogicalNamespace getNamespace( String namespaceName ) {
-        Optional<LogicalNamespace> optionalNamespace = Catalog.getInstance().getSnapshot().getNamespace( namespaceName );
+        Optional<LogicalNamespace> optionalNamespace = Catalog.snapshot().getNamespace( namespaceName );
 
         if ( optionalNamespace.isEmpty() ) {
             throw new PIServiceException( "Getting namespace " + namespaceName + " failed." );

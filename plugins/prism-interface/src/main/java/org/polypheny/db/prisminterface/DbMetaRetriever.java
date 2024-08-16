@@ -73,7 +73,7 @@ class DbMetaRetriever {
 
     private static List<LogicalNamespace> getLogicalNamespaces( String namespacePattern, String namespaceType ) {
         Pattern catalogNamespacePattern = getPatternOrNull( namespacePattern );
-        List<LogicalNamespace> logicalNamespaces = Catalog.getInstance().getSnapshot().getNamespaces( catalogNamespacePattern );
+        List<LogicalNamespace> logicalNamespaces = Catalog.snapshot().getNamespaces( catalogNamespacePattern );
         if ( namespaceType == null ) {
             return logicalNamespaces;
         }
@@ -96,14 +96,14 @@ class DbMetaRetriever {
 
 
     public static Namespace getNamespace( String namespaceName ) {
-        return getNamespaceMeta( Catalog.getInstance().getSnapshot().getNamespace( namespaceName ).orElseThrow() );
+        return getNamespaceMeta( Catalog.snapshot().getNamespace( namespaceName ).orElseThrow() );
     }
 
 
     // Entity search by namespace
     static EntitiesResponse searchEntities( String namespaceName, String entityPattern ) {
         EntitiesResponse.Builder responseBuilder = EntitiesResponse.newBuilder();
-        LogicalNamespace namespace = Catalog.getInstance().getSnapshot().getNamespace( namespaceName ).orElseThrow();
+        LogicalNamespace namespace = Catalog.snapshot().getNamespace( namespaceName ).orElseThrow();
         return switch ( namespace.getDataModel() ) {
             case RELATIONAL -> responseBuilder.addAllEntities( getRelationalEntities( namespace.getId(), entityPattern ) ).build();
             case GRAPH -> responseBuilder.addAllEntities( getGraphEntities( namespace.getId(), entityPattern ) ).build();
@@ -115,7 +115,7 @@ class DbMetaRetriever {
     // Relational entities
     private static List<Entity> getRelationalEntities( long namespaceId, String entityPattern ) {
         Pattern catalogEntityPattern = getPatternOrNull( entityPattern );
-        final List<LogicalTable> tables = Catalog.getInstance().getSnapshot().rel().getTables( namespaceId, catalogEntityPattern );
+        final List<LogicalTable> tables = Catalog.snapshot().rel().getTables( namespaceId, catalogEntityPattern );
         return tables.stream().map( logicalTable -> buildEntityFromTable( getTableMeta( logicalTable ) ) ).toList();
     }
 
@@ -152,12 +152,12 @@ class DbMetaRetriever {
         if ( logicalTable.primaryKey == null ) {
             return false;
         }
-        return Catalog.getInstance().getSnapshot().rel().getPrimaryKey( logicalTable.primaryKey ).isPresent();
+        return Catalog.snapshot().rel().getPrimaryKey( logicalTable.primaryKey ).isPresent();
     }
 
 
     private static PrimaryKey getPrimaryKeyMeta( LogicalTable logicalTable ) {
-        LogicalPrimaryKey logicalPrimaryKey = Catalog.getInstance().getSnapshot().rel().getPrimaryKey( logicalTable.primaryKey ).orElseThrow();
+        LogicalPrimaryKey logicalPrimaryKey = Catalog.snapshot().rel().getPrimaryKey( logicalTable.primaryKey ).orElseThrow();
         return PrimaryKey.newBuilder()
                 .setDatabaseName( logicalPrimaryKey.getSchemaName() )
                 .setNamespaceName( logicalPrimaryKey.getSchemaName() )
@@ -191,7 +191,7 @@ class DbMetaRetriever {
 
 
     private static List<ForeignKey> getForeignKeys( LogicalTable logicalTable ) {
-        return Catalog.getInstance().getSnapshot().rel().getForeignKeys( logicalTable.getId() )
+        return Catalog.snapshot().rel().getForeignKeys( logicalTable.getId() )
                 .stream().map( DbMetaRetriever::getForeignKeyMeta ).toList();
     }
 
@@ -215,13 +215,13 @@ class DbMetaRetriever {
 
 
     private static List<ForeignKey> getExportedKeys( LogicalTable logicalTable ) {
-        return Catalog.getInstance().getSnapshot().rel().getExportedKeys( logicalTable.getId() )
+        return Catalog.snapshot().rel().getExportedKeys( logicalTable.getId() )
                 .stream().map( DbMetaRetriever::getForeignKeyMeta ).toList();
     }
 
 
     private static List<Index> getIndexes( LogicalTable logicalTable, boolean unique ) {
-        return Catalog.getInstance().getSnapshot().rel().getIndexes( logicalTable.getId(), unique )
+        return Catalog.snapshot().rel().getIndexes( logicalTable.getId(), unique )
                 .stream().map( DbMetaRetriever::getIndexMeta ).toList();
     }
 

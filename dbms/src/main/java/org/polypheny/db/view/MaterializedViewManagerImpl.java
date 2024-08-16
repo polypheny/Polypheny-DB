@@ -106,7 +106,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
     public synchronized Map<Long, MaterializedCriteria> updateMaterializedViewInfo() {
         List<Long> toRemove = new ArrayList<>();
         for ( long id : materializedInfo.keySet() ) {
-            if ( Catalog.getInstance().getSnapshot().getLogicalEntity( id ).isEmpty() ) {
+            if ( Catalog.snapshot().getLogicalEntity( id ).isEmpty() ) {
                 toRemove.add( id );
             }
         }
@@ -213,7 +213,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
      * @param potentialInteresting id of underlying entity that was updated
      */
     public void materializedUpdate( long potentialInteresting ) {
-        Snapshot snapshot = Catalog.getInstance().getSnapshot();
+        Snapshot snapshot = Catalog.snapshot();
         List<LogicalView> connectedViews = snapshot.rel().getConnectedViews( potentialInteresting );
 
         for ( LogicalView view : connectedViews ) {

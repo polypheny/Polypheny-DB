@@ -92,7 +92,7 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
     List<List<SqlNode>> partitionQualifierList;
 
     private static final SqlOperator OPERATOR = new SqlSpecialOperator( "CREATE TABLE", Kind.CREATE_TABLE );
-    Snapshot snapshot = Catalog.getInstance().getSnapshot();
+    Snapshot snapshot = Catalog.snapshot();
 
 
     /**

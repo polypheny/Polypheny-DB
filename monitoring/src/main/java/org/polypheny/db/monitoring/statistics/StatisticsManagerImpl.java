@@ -186,7 +186,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
 
     private void resetAllIsFull() {
         this.statisticFields.values().forEach( c -> {
-            assignUnique( c, this.prepareNode( QueryResult.fromCatalogColumn( Catalog.getInstance().getSnapshot().rel().getColumn( c.columnId ).orElseThrow() ), NodeType.UNIQUE_VALUE ) );
+            assignUnique( c, this.prepareNode( QueryResult.fromCatalogColumn( Catalog.snapshot().rel().getColumn( c.columnId ).orElseThrow() ), NodeType.UNIQUE_VALUE ) );
         } );
     }
 
@@ -235,7 +235,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
         log.debug( "Reevaluate Row Count." );
 
         statisticQueryInterface.getAllRelEntites().forEach( table -> {
-            PolyInteger rowCount = getNumberColumnCount( this.prepareNode( new QueryResult( Catalog.getInstance().getSnapshot().getLogicalEntity( table.id ).orElseThrow(), null ), NodeType.ROW_COUNT_TABLE ) );
+            PolyInteger rowCount = getNumberColumnCount( this.prepareNode( new QueryResult( Catalog.snapshot().getLogicalEntity( table.id ).orElseThrow(), null ), NodeType.ROW_COUNT_TABLE ) );
             updateRowCountPerEntity( table.id, rowCount.value, MonitoringType.SET_ROW_COUNT );
         } );
     }
@@ -436,7 +436,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
 
     private StatisticQueryResult prepareNode( QueryResult queryResult, NodeType nodeType ) {
         StatisticQueryResult statisticQueryColumn = null;
-        if ( Catalog.getInstance().getSnapshot().getLogicalEntity( queryResult.getEntity().id ).isPresent() ) {
+        if ( Catalog.snapshot().getLogicalEntity( queryResult.getEntity().id ).isPresent() ) {
             AlgNode queryNode = getQueryNode( queryResult, nodeType );
             statisticQueryColumn = statisticQueryInterface.selectOneColumnStat( queryNode, transaction, statement, queryResult );
         }
@@ -747,7 +747,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
     private void workQueue() {
         while ( !this.tablesToUpdate.isEmpty() ) {
             long tableId = this.tablesToUpdate.poll();
-            if ( Catalog.getInstance().getSnapshot().getLogicalEntity( tableId ).isPresent() ) {
+            if ( Catalog.snapshot().getLogicalEntity( tableId ).isPresent() ) {
                 reevaluateEntity( tableId );
                 return;
             }
@@ -1098,7 +1098,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
             } else if ( v.type.getFamily() == PolyTypeFamily.CHARACTER ) {
                 alphabeticInfo.add( (AlphabeticStatisticColumn) v );
                 statisticTable.setAlphabeticColumn( alphabeticInfo );
-            } else if ( PolyType.DATETIME_TYPES.contains( Catalog.getInstance().getSnapshot().rel().getColumn( k ).orElseThrow().type ) ) {
+            } else if ( PolyType.DATETIME_TYPES.contains( Catalog.snapshot().rel().getColumn( k ).orElseThrow().type ) ) {
                 temporalInfo.add( (TemporalStatisticColumn) v );
                 statisticTable.setTemporalColumn( temporalInfo );
             }

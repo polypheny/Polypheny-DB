@@ -447,7 +447,7 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
         }
 
         LogicalTable table = tables.get( tableId );
-        Snapshot snapshot = Catalog.getInstance().getSnapshot();
+        Snapshot snapshot = Catalog.snapshot();
         List<LogicalKey> childKeys = snapshot.rel().getTableKeys( referencesTableId );
 
         for ( LogicalKey refKey : childKeys ) {
