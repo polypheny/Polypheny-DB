@@ -124,7 +124,6 @@ public class SqlStBuffer extends SqlFunction {
             }
 
             return true;
-
         }
 
 
