@@ -32,9 +32,11 @@ public class OtherFunTest extends CypherTestTemplate {
         tearDown();
         createGraph();
     }
-        //////////////////////////
-        /// Scalar Functions
-        ///////////////////////////
+
+
+    //////////////////////////
+    /// Scalar Functions
+    ///////////////////////////
     @Test
     public void typeFunTest() {
         execute( SINGLE_EDGE_1 );
@@ -53,6 +55,7 @@ public class OtherFunTest extends CypherTestTemplate {
                 + "RETURN ID(p)\n" );
 
     }
+
 
     @Test
     public void testCoalesceFunTest() {
@@ -83,9 +86,10 @@ public class OtherFunTest extends CypherTestTemplate {
                 Row.of( TestLiteral.from( "Ann" ), TestLiteral.from( "unknown" ) ) );
     }
 
-        ///////////////////////////////
-        // Predicate Functions
-        /////////////////////////////
+
+    ///////////////////////////////
+    // Predicate Functions
+    /////////////////////////////
     @Test
     public void ExistFunTest() {
         execute( SINGLE_NODE_PERSON_1 );
@@ -98,48 +102,6 @@ public class OtherFunTest extends CypherTestTemplate {
         execute( "MATCH (p:Person { name: 'Ann' })\n"
                 + "RETURN EXISTS(p.age)\n" );
         assert containsRows( res, true, true, Row.of( TestLiteral.from( true ) ) );
-    }
-
-
-        ///////////////////////////
-        //// List Functions
-        ///////////////////////////
-    @Test
-    public void returnLabelsFunTest() {
-        execute( SINGLE_EDGE_1 );
-        GraphResult res = execute( "MATCH (a)"
-                + "RETURN labels(a)" );
-
-        assert containsRows( res, true, false, Row.of( TestLiteral.from( List.of( "Person" ) ) ) );
-    }
-
-    @Test
-    public void returnNodesFunTest()
-    {
-      execute( SINGLE_EDGE_1 );
-      GraphResult res  =  execute( "MATCH p = (a)-->(b)-->(c)\n"
-              + "RETURN nodes(p)" );
-      assert  res.getData().length ==  1;
-      assert  containsRows( res , true , false ,Row.of( TestLiteral.from( List.of(MAX ,KIRA ) ) ) );
-
-    }
-
-    @Test
-    public void returnRelationsFunTest()
-    {
-      execute( SINGLE_EDGE_1 );
-      GraphResult res =  execute( "MATCH p = (a)-->(b)-->(c)\n"
-              + "RETURN relationships(p)" );
-      assert  res.getData().length == 1  ;
-    }
-
-    @Test
-    public void returnRelationAndNodesFunTest()
-    {
-        execute( SINGLE_EDGE_1 );
-        GraphResult res =  execute( "MATCH p = (a)-->(b)-->(c)\n"
-                + "RETURN relationships(p) , nodes(p)" );
-        assert res.getData().length == 1 ;
     }
 
 

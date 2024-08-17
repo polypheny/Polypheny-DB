@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Test;
 import org.polypheny.db.cypher.CypherTestTemplate;
 import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.webui.models.results.GraphResult;
+import java.util.List;
 
 public class ListFunTest extends CypherTestTemplate {
 
@@ -80,5 +81,45 @@ public class ListFunTest extends CypherTestTemplate {
         assert containsRows( res, true, true,
                 Row.of( TestLiteral.from( 1 ), TestLiteral.from( 2 ), TestLiteral.from( 3 ) ) );
     }
+
+
+    @Test
+    public void returnLabelsFunTest() {
+        execute( SINGLE_EDGE_1 );
+        GraphResult res = execute( "MATCH (a)"
+                + "RETURN labels(a)" );
+
+        assert containsRows( res, true, false, Row.of( TestLiteral.from( List.of( "Person" ) ) ) );
+    }
+
+
+    @Test
+    public void returnNodesFunTest() {
+        execute( SINGLE_EDGE_1 );
+        GraphResult res = execute( "MATCH p = (a)-->(b)-->(c)\n"
+                + "RETURN nodes(p)" );
+        assert res.getData().length == 1;
+        assert containsRows( res, true, false, Row.of( TestLiteral.from( List.of( MAX, KIRA ) ) ) );
+
+    }
+
+
+    @Test
+    public void returnRelationsFunTest() {
+        execute( SINGLE_EDGE_1 );
+        GraphResult res = execute( "MATCH p = (a)-->(b)-->(c)\n"
+                + "RETURN relationships(p)" );
+        assert res.getData().length == 1;
+    }
+
+
+    @Test
+    public void returnRelationAndNodesFunTest() {
+        execute( SINGLE_EDGE_1 );
+        GraphResult res = execute( "MATCH p = (a)-->(b)-->(c)\n"
+                + "RETURN relationships(p) , nodes(p)" );
+        assert res.getData().length == 1;
+    }
+
 
 }

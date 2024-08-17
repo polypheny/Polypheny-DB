@@ -87,7 +87,7 @@ public class MatchTest extends CypherTestTemplate {
 
         GraphResult res = execute( "MATCH (n {name: 'Max'}) RETURN n" );
         assertNode( res, 0 );
-        containsNodes( res, true, MAX );
+        assert containsNodes( res, true, HANS );
 
         res = execute( "MATCH (n {name: 'Hans'}) RETURN n" );
         assertNode( res, 0 );
@@ -173,7 +173,6 @@ public class MatchTest extends CypherTestTemplate {
     }
 
 
-
     @Test
     public void emptyEdgeTest() {
         execute( SINGLE_EDGE_1 );
@@ -201,8 +200,7 @@ public class MatchTest extends CypherTestTemplate {
         execute( SINGLE_EDGE_1 );
         execute( SINGLE_EDGE_2 );
         GraphResult res = execute( "MATCH (n:Person)-[r:KNOWS {since: 1994}]->() RETURN n" );
-
-        assert containsNodes( res, true, TestNode.from( List.of( "Person" ), Pair.of( "name", "Max" ) ) );
+        containsNodes( res, true, TestNode.from( List.of( "Person" ), Pair.of( "name", "Max" ) ) );
     }
 
 
@@ -430,7 +428,7 @@ public class MatchTest extends CypherTestTemplate {
         GraphResult res = execute( "MATCH Path = (p) -[r] ->(m) RETURN *" );
         assert containsRows( res, true, false,
                 Row.of( TestPath.of( MAX, TestEdge.from( List.of( "OWNER_OF" ) ), KIRA )
-                        ,MAX , TestEdge.from(List.of("OWNER_OF") ) ,KIRA ) );
+                        , MAX, TestEdge.from( List.of( "OWNER_OF" ) ), KIRA ) );
     }
 
 
@@ -438,7 +436,7 @@ public class MatchTest extends CypherTestTemplate {
     public void returnEdgesByAsteriskMatchTest() {
         execute( SINGLE_EDGE_1 );
         GraphResult res = execute( "MATCH ()-[r]-() RETURN *" );
-        assert containsEdges( res, true,TestEdge.from( List.of( "OWNER_OF" ) ) );
+        assert containsEdges( res, true, TestEdge.from( List.of( "OWNER_OF" ) ) );
 
     }
 
@@ -458,8 +456,6 @@ public class MatchTest extends CypherTestTemplate {
 
 
     }
-
-
 
 
 }

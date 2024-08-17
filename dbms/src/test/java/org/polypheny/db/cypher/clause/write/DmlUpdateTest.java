@@ -121,4 +121,15 @@ public class DmlUpdateTest extends CypherTestTemplate {
                 + "SET rel.status = 'fresh'" );
     }
 
+
+    @Test
+    public void updateCaseWhenTest() {
+        execute( SINGLE_NODE_PERSON_COMPLEX_1 );
+        execute( "MATCH (n {name: 'Ann'})\n"
+                + "SET (CASE WHEN n.age = 45 THEN n END).worksIn = 'Malmo'\n"
+                + "RETURN n.name, n.worksIn" );
+
+
+    }
+
 }

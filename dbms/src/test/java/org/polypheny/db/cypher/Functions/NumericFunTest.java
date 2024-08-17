@@ -40,19 +40,18 @@ public class NumericFunTest extends CypherTestTemplate {
         res = execute( "RETURN ABS(5)" );
         assert containsRows( res, true, true, Row.of( TestLiteral.from( 5 ) ) );
 
-
-        res = execute("RETURN ABS(0)");
-        assert containsRows(res, true, true, Row.of(TestLiteral.from(0)));
+        res = execute( "RETURN ABS(0)" );
+        assert containsRows( res, true, true, Row.of( TestLiteral.from( 0 ) ) );
     }
 
 
     @Test
     public void roundFunTest() {
-        GraphResult res = execute("RETURN ROUND(3)");
-        assert containsRows(res, true, true, Row.of(TestLiteral.from(3)));
+        GraphResult res = execute( "RETURN ROUND(3)" );
+        assert containsRows( res, true, true, Row.of( TestLiteral.from( 3 ) ) );
 
-        res = execute("RETURN ROUND(-3)");
-        assert containsRows(res, true, true, Row.of(TestLiteral.from(-3)));
+        res = execute( "RETURN ROUND(-3)" );
+        assert containsRows( res, true, true, Row.of( TestLiteral.from( -3 ) ) );
 
         res = execute( "RETURN ROUND(3.4)" );
         assert containsRows( res, true, true, Row.of( TestLiteral.from( 3 ) ) );
@@ -60,9 +59,8 @@ public class NumericFunTest extends CypherTestTemplate {
         res = execute( "RETURN ROUND(3.5)" );
         assert containsRows( res, true, true, Row.of( TestLiteral.from( 4 ) ) );
 
-         res = execute("RETURN ROUND(-3.5)");
-        assert containsRows(res, true, true, Row.of(TestLiteral.from(-4)));
-
+        res = execute( "RETURN ROUND(-3.5)" );
+        assert containsRows( res, true, true, Row.of( TestLiteral.from( -4 ) ) );
 
 
     }
@@ -74,17 +72,17 @@ public class NumericFunTest extends CypherTestTemplate {
         GraphResult res = execute( "RETURN FLOOR(3)" );
         assert containsRows( res, true, true, Row.of( TestLiteral.from( 3 ) ) );
 
-         res = execute( "RETURN FLOOR(-3)" );
+        res = execute( "RETURN FLOOR(-3)" );
         assert containsRows( res, true, true, Row.of( TestLiteral.from( -3 ) ) );
 
-         res = execute( "RETURN FLOOR(3.16)" );
+        res = execute( "RETURN FLOOR(3.16)" );
         assert containsRows( res, true, true, Row.of( TestLiteral.from( 3 ) ) );
 
         res = execute( "RETURN FLOOR(3.9)" );
         assert containsRows( res, true, true, Row.of( TestLiteral.from( 3 ) ) );
 
-        res = execute("RETURN FLOOR(-3.16)");
-        assert containsRows(res, true, true, Row.of(TestLiteral.from(-4)));
+        res = execute( "RETURN FLOOR(-3.16)" );
+        assert containsRows( res, true, true, Row.of( TestLiteral.from( -4 ) ) );
     }
 
 
@@ -93,7 +91,7 @@ public class NumericFunTest extends CypherTestTemplate {
         GraphResult res = execute( "RETURN CEIL(3)" );
         assert containsRows( res, true, true, Row.of( TestLiteral.from( 4 ) ) );
 
-         res = execute( "RETURN CEIL(-3)" );
+        res = execute( "RETURN CEIL(-3)" );
         assert containsRows( res, true, true, Row.of( TestLiteral.from( 4 ) ) );
 
         res = execute( "RETURN CEIL(3.16)" );
@@ -110,21 +108,24 @@ public class NumericFunTest extends CypherTestTemplate {
         GraphResult res = execute( "RETURN SQRT(9)" );
         assert containsRows( res, true, true, Row.of( TestLiteral.from( 3 ) ) );
 
-        res = execute("RETURN SQRT(0)");
-        assert containsRows(res, true, true, Row.of(TestLiteral.from(0)));
+        res = execute( "RETURN SQRT(0)" );
+        assert containsRows( res, true, true, Row.of( TestLiteral.from( 0 ) ) );
     }
+
 
     @Test
     public void nonPerfectSquareSqrtFunTest() {
-        GraphResult res = execute("RETURN SQRT(8)");
-        assert containsRows(res, true, true, Row.of(TestLiteral.from(Math.sqrt(8))));
+        GraphResult res = execute( "RETURN SQRT(8)" );
+        assert containsRows( res, true, true, Row.of( TestLiteral.from( Math.sqrt( 8 ) ) ) );
     }
+
 
     @Test
     public void sqrtFunTestNegative() {
-        GraphResult res = execute("RETURN SQRT(-9)");
-       // assert containsRows(res, true, true, Row.of(TestLiteral.from(null)));
+        GraphResult res = execute( "RETURN SQRT(-9)" );
+        // assert containsRows(res, true, true, Row.of(TestLiteral.from(null)));
     }
+
 }
 
 

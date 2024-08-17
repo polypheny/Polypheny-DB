@@ -31,6 +31,8 @@ public class UnionTest extends CypherTestTemplate {
         tearDown();
         createGraph();
     }
+
+
     protected static final String SINGLE_NODE_MOVIE = "CREATE (wallStreet:Movie {title: 'Wall Street' , released : 2002})";
 
 
@@ -56,7 +58,7 @@ public class UnionTest extends CypherTestTemplate {
     public void DifferentStructureUnionTest() {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_PERSON_1 );
-        execute( SINGLE_NODE_MOVIE);
+        execute( SINGLE_NODE_MOVIE );
 
         GraphResult res = execute( "MATCH (p:Person)\n"
                 + "RETURN p.name AS name\n"
@@ -66,25 +68,25 @@ public class UnionTest extends CypherTestTemplate {
 
         assert containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Max" ) ),
-                Row.of( TestLiteral.from( "Wall Street"  )) );
+                Row.of( TestLiteral.from( "Wall Street" ) ) );
     }
 
+
     @Test
-    public void NullPropertiesUnionTest()
-    {
-        execute( SINGLE_NODE_PERSON_COMPLEX_1);
-        execute( SINGLE_NODE_PERSON_COMPLEX_1);
-        execute( SINGLE_NODE_MOVIE);
+    public void NullPropertiesUnionTest() {
+        execute( SINGLE_NODE_PERSON_COMPLEX_1 );
+        execute( SINGLE_NODE_PERSON_COMPLEX_1 );
+        execute( SINGLE_NODE_MOVIE );
 
         GraphResult res = execute( "MATCH (p:Person)\n"
                 + "RETURN p.name AS name, p.age AS age, NULL AS title, NULL AS released\n"
                 + "UNION\n"
                 + "MATCH (m:Movie)\n"
-                + "RETURN NULL AS name, NULL AS age, m.title AS title, m.released AS released\n");
+                + "RETURN NULL AS name, NULL AS age, m.title AS title, m.released AS released\n" );
 
         assert containsRows( res, true, false,
-                Row.of( TestLiteral.from( "Ann" ) , TestLiteral.from( 45 ) , TestLiteral.from( null ),TestLiteral.from( null )),
-                Row.of( TestLiteral.from( null   ),TestLiteral.from( null  ),TestLiteral.from( "Wall Street" ), TestLiteral.from( 2002 )) );
+                Row.of( TestLiteral.from( "Ann" ), TestLiteral.from( 45 ), TestLiteral.from( null ), TestLiteral.from( null ) ),
+                Row.of( TestLiteral.from( null ), TestLiteral.from( null ), TestLiteral.from( "Wall Street" ), TestLiteral.from( 2002 ) ) );
     }
 
 
@@ -92,7 +94,7 @@ public class UnionTest extends CypherTestTemplate {
     public void allUnionTest() {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_PERSON_2 );
-        execute( SINGLE_NODE_PERSON_1);
+        execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_PERSON_2 );
 
         GraphResult res = execute( "MATCH (n:Person)\n"
@@ -103,17 +105,18 @@ public class UnionTest extends CypherTestTemplate {
 
         containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Max" ) ),
-                Row.of( TestLiteral.from( "Hans" ) ) ,
-                Row.of(TestLiteral.from( "Max" )),
-                Row.of(TestLiteral.from( "Hans" )));
+                Row.of( TestLiteral.from( "Hans" ) ),
+                Row.of( TestLiteral.from( "Max" ) ),
+                Row.of( TestLiteral.from( "Hans" ) ) );
 
 
     }
 
+
     @Test
     public void DifferentStructureAllUnionTest() {
         execute( SINGLE_NODE_PERSON_1 );
-        execute( SINGLE_NODE_MOVIE);
+        execute( SINGLE_NODE_MOVIE );
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_MOVIE );
 
@@ -125,39 +128,38 @@ public class UnionTest extends CypherTestTemplate {
 
         assert containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Max" ) ),
-                Row.of( TestLiteral.from( "Wall Street"  )),
-                Row.of( TestLiteral.from( "Max"  )),
-                Row.of( TestLiteral.from( "Wall Street"  )));
+                Row.of( TestLiteral.from( "Wall Street" ) ),
+                Row.of( TestLiteral.from( "Max" ) ),
+                Row.of( TestLiteral.from( "Wall Street" ) ) );
     }
 
+
     @Test
-    public void NullPropertiesAllUnionTest()
-    {
-        execute( SINGLE_NODE_PERSON_COMPLEX_1);
+    public void NullPropertiesAllUnionTest() {
+        execute( SINGLE_NODE_PERSON_COMPLEX_1 );
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
         execute( SINGLE_NODE_MOVIE );
-        execute( SINGLE_NODE_MOVIE);
+        execute( SINGLE_NODE_MOVIE );
 
         GraphResult res = execute( "MATCH (p:Person)\n"
                 + "RETURN p.name AS name, p.age AS age, NULL AS title, NULL AS released\n"
                 + "UNION ALL\n"
                 + "MATCH (m:Movie)\n"
-                + "RETURN NULL AS name, NULL AS age, m.title AS title, m.released AS released\n");
+                + "RETURN NULL AS name, NULL AS age, m.title AS title, m.released AS released\n" );
 
         assert containsRows( res, true, false,
-                Row.of( TestLiteral.from( "Ann" ) , TestLiteral.from( 45 ) , TestLiteral.from( null ),TestLiteral.from( null )),
-                Row.of( TestLiteral.from( "Ann" ) , TestLiteral.from( 45 ) , TestLiteral.from( null ),TestLiteral.from( null )),
-                Row.of( TestLiteral.from( null   ),TestLiteral.from( null  ),TestLiteral.from( "Wall Street" ), TestLiteral.from( 2002 )),
-                Row.of( TestLiteral.from( null   ),TestLiteral.from( null  ),TestLiteral.from( "Wall Street" ), TestLiteral.from( 2002 )) );
+                Row.of( TestLiteral.from( "Ann" ), TestLiteral.from( 45 ), TestLiteral.from( null ), TestLiteral.from( null ) ),
+                Row.of( TestLiteral.from( "Ann" ), TestLiteral.from( 45 ), TestLiteral.from( null ), TestLiteral.from( null ) ),
+                Row.of( TestLiteral.from( null ), TestLiteral.from( null ), TestLiteral.from( "Wall Street" ), TestLiteral.from( 2002 ) ),
+                Row.of( TestLiteral.from( null ), TestLiteral.from( null ), TestLiteral.from( "Wall Street" ), TestLiteral.from( 2002 ) ) );
     }
-
 
 
     @Test
     public void distinctUnionTest() {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_PERSON_2 );
-        execute( SINGLE_NODE_PERSON_1);
+        execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_PERSON_2 );
 
         GraphResult res = execute( "MATCH (n:Person)\n"
@@ -176,7 +178,7 @@ public class UnionTest extends CypherTestTemplate {
     public void DifferentStructureDistinctUnionTest() {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_PERSON_1 );
-        execute( SINGLE_NODE_MOVIE);
+        execute( SINGLE_NODE_MOVIE );
 
         GraphResult res = execute( "MATCH (p:Person)\n"
                 + "RETURN p.name AS name\n"
@@ -186,25 +188,25 @@ public class UnionTest extends CypherTestTemplate {
 
         assert containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Max" ) ),
-                Row.of( TestLiteral.from( "Wall Street"  )) );
+                Row.of( TestLiteral.from( "Wall Street" ) ) );
     }
 
+
     @Test
-    public void NullPropertiesDistinctUnionTest()
-    {
-        execute( SINGLE_NODE_PERSON_COMPLEX_1);
-        execute( SINGLE_NODE_PERSON_COMPLEX_1);
-        execute( SINGLE_NODE_MOVIE);
+    public void NullPropertiesDistinctUnionTest() {
+        execute( SINGLE_NODE_PERSON_COMPLEX_1 );
+        execute( SINGLE_NODE_PERSON_COMPLEX_1 );
+        execute( SINGLE_NODE_MOVIE );
 
         GraphResult res = execute( "MATCH (p:Person)\n"
                 + "RETURN p.name AS name, p.age AS age, NULL AS title, NULL AS released\n"
                 + "UNION DISTINCT \n"
                 + "MATCH (m:Movie)\n"
-                + "RETURN NULL AS name, NULL AS age, m.title AS title, m.released AS released\n");
+                + "RETURN NULL AS name, NULL AS age, m.title AS title, m.released AS released\n" );
 
         assert containsRows( res, true, false,
-                Row.of( TestLiteral.from( "Ann" ) , TestLiteral.from( 45 ) , TestLiteral.from( null ),TestLiteral.from( null )),
-                Row.of( TestLiteral.from( null   ),TestLiteral.from( null  ),TestLiteral.from( "Wall Street" ), TestLiteral.from( 2002 )) );
+                Row.of( TestLiteral.from( "Ann" ), TestLiteral.from( 45 ), TestLiteral.from( null ), TestLiteral.from( null ) ),
+                Row.of( TestLiteral.from( null ), TestLiteral.from( null ), TestLiteral.from( "Wall Street" ), TestLiteral.from( 2002 ) ) );
     }
 
 }

@@ -70,7 +70,7 @@ public class DmlDeleteTest extends CypherTestTemplate {
     public void twoNodeDeleteTest() {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_PERSON_2 );
-       GraphResult res =   execute( "MATCH (p:Person {name: 'Max'}), (h:Person {name: 'Hans'})\n"
+        GraphResult res = execute( "MATCH (p:Person {name: 'Max'}), (h:Person {name: 'Hans'})\n"
                 + "DELETE p, h" );
         assertEmpty( res );
     }
@@ -112,9 +112,7 @@ public class DmlDeleteTest extends CypherTestTemplate {
                 Row.of( TestNode.from(
                         List.of( "Person" ),
                         Pair.of( "name", "Hans" ),
-                        Pair.of( "age", 31 ))));
-
-
+                        Pair.of( "age", 31 ) ) ) );
 
 
     }

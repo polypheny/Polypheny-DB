@@ -148,10 +148,9 @@ public class CollectSubQueriesTest extends CypherTestTemplate {
                 + "SET person.dogNames = COLLECT { MATCH (person)-[:OWNER_OF]->(d:Dog) RETURN d.name }\n"
                 + "RETURN person.dogNames as dogNames" );
 
-        assert containsRows( res , true , false ,
-        Row.of( TestLiteral.from( List.of("Andy") ) )       );
+        assert containsRows( res, true, false,
+                Row.of( TestLiteral.from( List.of( "Andy" ) ) ) );
     }
-
 
 
 }

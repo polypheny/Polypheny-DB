@@ -25,13 +25,14 @@ import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.models.results.GraphResult;
 import java.util.Arrays;
 
-public class SkipTest  extends CypherTestTemplate {
+public class SkipTest extends CypherTestTemplate {
 
     @BeforeEach
     public void reset() {
         tearDown();
         createGraph();
     }
+
 
     @Test
     public void simpleSkipTest() {
@@ -45,6 +46,7 @@ public class SkipTest  extends CypherTestTemplate {
 
         assert res.getData().length == 2;
     }
+
 
     @Test
     public void orderBySkipTest() {
@@ -61,10 +63,10 @@ public class SkipTest  extends CypherTestTemplate {
                 Row.of( TestLiteral.from( "Kira" ) ) );
     }
 
+
     @Test
-    public void withAndSkipTest()
-    {
-        execute( SINGLE_NODE_PERSON_COMPLEX_1 ) ;
+    public void withAndSkipTest() {
+        execute( SINGLE_NODE_PERSON_COMPLEX_1 );
         execute( SINGLE_NODE_PERSON_COMPLEX_2 );
         execute( SINGLE_NODE_PERSON_COMPLEX_3 );
 
@@ -74,9 +76,9 @@ public class SkipTest  extends CypherTestTemplate {
 
     }
 
+
     @Test
-    public void returnSubsetSkipTest()
-    {
+    public void returnSubsetSkipTest() {
         execute( SINGLE_NODE_ANIMAL );
         execute( SINGLE_NODE_ANIMAL );
         execute( SINGLE_NODE_ANIMAL );
@@ -88,8 +90,8 @@ public class SkipTest  extends CypherTestTemplate {
         assert res.getData().length == 1;
 
 
-
     }
+
 
     @Test
     public void withAndOrderBySkipTest() {
@@ -103,9 +105,9 @@ public class SkipTest  extends CypherTestTemplate {
         assert res.getData().length == 1;
 
         assert containsNodes( res, true,
-                TestNode.from( Pair.of( "name" , "Bob" ) ,
-                        Pair.of( "age" , 31 ) ,
-                        Pair.of( "depno" , 13 )) );
+                TestNode.from( Pair.of( "name", "Bob" ),
+                        Pair.of( "age", 31 ),
+                        Pair.of( "depno", 13 ) ) );
 
 
     }

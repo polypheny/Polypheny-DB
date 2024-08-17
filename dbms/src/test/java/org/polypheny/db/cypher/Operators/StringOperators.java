@@ -22,7 +22,7 @@ import org.polypheny.db.cypher.CypherTestTemplate;
 import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.webui.models.results.GraphResult;
 
-public class StringOperators  extends CypherTestTemplate {
+public class StringOperators extends CypherTestTemplate {
 
 
     @BeforeEach
@@ -31,12 +31,12 @@ public class StringOperators  extends CypherTestTemplate {
         createGraph();
     }
 
+
     @Test
     public void concatenateWithPlusOperatorTest() {
-        GraphResult res = execute("RETURN 'neo' + '4j' AS result");
-        assert containsRows(res, true, true, Row.of( TestLiteral.from("neo4j")));
+        GraphResult res = execute( "RETURN 'neo' + '4j' AS result" );
+        assert containsRows( res, true, true, Row.of( TestLiteral.from( "neo4j" ) ) );
     }
-
 
 
 }

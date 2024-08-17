@@ -23,32 +23,33 @@ import org.polypheny.db.cypher.CypherTestTemplate;
 import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.webui.models.results.GraphResult;
 
-public class ListOperators  extends CypherTestTemplate  {
+public class ListOperators extends CypherTestTemplate {
+
     @BeforeEach
     public void setUp() {
         tearDown();
         createGraph();
     }
 
-    @Test
-    public void  checkIfNumberInListOperatorTest()
-    {
-         GraphResult res =   execute( "RETURN 1 IN [ 1 ,2 ]" );
-         assert containsRows( res , true , false ,Row.of( TestLiteral.from( true  ) ) );
 
-         res =  execute( "RETURN 3 IN [ 1 ,2 ]" );
-         assert  containsRows( res , true , false ,Row.of( TestLiteral.from( false ) ) );
-    }
     @Test
-    public void checkIfListInListOperatorTest()
-    {
-       GraphResult res  = execute( "RETURN [2, 1] IN [1, [2, 1], 3] " );
-       assert  containsRows( res , true , false ,Row.of( TestLiteral.from( true  ) ) );
+    public void checkIfNumberInListOperatorTest() {
+        GraphResult res = execute( "RETURN 1 IN [ 1 ,2 ]" );
+        assert containsRows( res, true, false, Row.of( TestLiteral.from( true ) ) );
 
-       res  = execute( "RETURN [1, 2] IN [1, 2] " );
-       assert  containsRows( res , true , false ,Row.of( TestLiteral.from( false ) ) );
+        res = execute( "RETURN 3 IN [ 1 ,2 ]" );
+        assert containsRows( res, true, false, Row.of( TestLiteral.from( false ) ) );
     }
 
+
+    @Test
+    public void checkIfListInListOperatorTest() {
+        GraphResult res = execute( "RETURN [2, 1] IN [1, [2, 1], 3] " );
+        assert containsRows( res, true, false, Row.of( TestLiteral.from( true ) ) );
+
+        res = execute( "RETURN [1, 2] IN [1, 2] " );
+        assert containsRows( res, true, false, Row.of( TestLiteral.from( false ) ) );
+    }
 
 
 }

@@ -112,7 +112,7 @@ public class CaseTest extends CypherTestTemplate {
         execute( PERSON_NODE_BOB );
         execute( PERSON_NODE_CHARLIE );
 
-       GraphResult res  =   execute( "MATCH (n:Person)\n"
+        GraphResult res = execute( "MATCH (n:Person)\n"
                 + "WITH n,\n"
                 + "CASE n.eyes\n"
                 + "  WHEN 'blue'  THEN 1\n"
@@ -125,7 +125,7 @@ public class CaseTest extends CypherTestTemplate {
         assert containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Alice" ), TestLiteral.from( 2 ) ),
                 Row.of( TestLiteral.from( "Bob" ), TestLiteral.from( 1 ) ),
-                Row.of( TestLiteral.from( "Charlie" ), TestLiteral.from( 3 ) ));
+                Row.of( TestLiteral.from( "Charlie" ), TestLiteral.from( 3 ) ) );
 
     }
 

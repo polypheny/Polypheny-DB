@@ -77,7 +77,6 @@ public class UnwindTest extends CypherTestTemplate {
     }
 
 
-
     @Test
     public void minMaxAggregateListOfListUnwind() {
         GraphResult res = execute( "UNWIND ['d', [1, 2], ['a', 'c', 23]] AS val RETURN  min(val)" );
@@ -125,65 +124,53 @@ public class UnwindTest extends CypherTestTemplate {
 
 
     @Test
-    public void CollectAggregateUnWind ()
-    {
+    public void CollectAggregateUnWind() {
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
-        execute(SINGLE_NODE_PERSON_COMPLEX_2);
-        GraphResult  res =  execute( "MATCH (n) UNWIND n.age AS age RETURN Collect(age)" );
+        execute( SINGLE_NODE_PERSON_COMPLEX_2 );
+        GraphResult res = execute( "MATCH (n) UNWIND n.age AS age RETURN Collect(age)" );
 
     }
-
-
-
 
 
     @Test
     public void countUnWind() {
         GraphResult res = execute( "UNWIND [2, 1 , 1] AS i  RETURN count( i)" );
 
-
         assert containsRows( res, true, false,
-                Row.of( TestLiteral.from( 3)));
+                Row.of( TestLiteral.from( 3 ) ) );
 
     }
+
 
     @Test
     public void distinctUnWind() {
         GraphResult res = execute( "UNWIND [3, 3 ,2 ,1 ] AS i  RETURN DISTINCT i" );
         assert res.getData().length == 3;
-        assert containsRows( res , true , false  ,
-                Row.of(TestLiteral.from(3)) ,
-                Row.of( TestLiteral.from( 2 )) ,Row.of( TestLiteral.from( 1) ));
+        assert containsRows( res, true, false,
+                Row.of( TestLiteral.from( 3 ) ),
+                Row.of( TestLiteral.from( 2 ) ), Row.of( TestLiteral.from( 1 ) ) );
 
 
     }
-
-
 
 
     @Test
-    public void ConditionalLogicUnWind()
-    {
-        GraphResult res =  execute( "UNWIND [1, 2, 3] AS number RETURN number, CASE WHEN number % 2 = 0 THEN 'even' ELSE 'odd' END AS type" );
-        assert containsRows( res , true , true ,
-                Row.of( TestLiteral.from( 1 ) ,TestLiteral.from("odd"  ) ),
-                Row.of( TestLiteral.from( 2 ) ,TestLiteral.from( "even" )),
-                Row.of( TestLiteral.from( 3 ) ,TestLiteral.from(  "odd")));
+    public void ConditionalLogicUnWind() {
+        GraphResult res = execute( "UNWIND [1, 2, 3] AS number RETURN number, CASE WHEN number % 2 = 0 THEN 'even' ELSE 'odd' END AS type" );
+        assert containsRows( res, true, true,
+                Row.of( TestLiteral.from( 1 ), TestLiteral.from( "odd" ) ),
+                Row.of( TestLiteral.from( 2 ), TestLiteral.from( "even" ) ),
+                Row.of( TestLiteral.from( 3 ), TestLiteral.from( "odd" ) ) );
 
     }
-
-
 
 
     @Test
-    public void mapStructureUnWind()
-    {
-        GraphResult res =  execute( "UNWIND [{name: 'Alice', age: 30}] AS person  RETURN person.name  , person.age" );
-        assert  containsRows( res , true , false , Row.of( TestLiteral.from( "Alice" ) ),Row.of( TestLiteral.from( 30 ) ) );
+    public void mapStructureUnWind() {
+        GraphResult res = execute( "UNWIND [{name: 'Alice', age: 30}] AS person  RETURN person.name  , person.age" );
+        assert containsRows( res, true, false, Row.of( TestLiteral.from( "Alice" ) ), Row.of( TestLiteral.from( 30 ) ) );
 
     }
-
-
 
 
 }

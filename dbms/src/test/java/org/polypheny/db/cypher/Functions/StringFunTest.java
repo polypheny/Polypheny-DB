@@ -149,11 +149,10 @@ public class StringFunTest extends CypherTestTemplate {
     }
 
 
-
     @Test
     public void stringLengthFunTest() {
-        GraphResult res = execute("RETURN LENGTH('Hello, world!')");
-        assert containsRows(res, true, true, Row.of(TestLiteral.from(13)));
+        GraphResult res = execute( "RETURN LENGTH('Hello, world!')" );
+        assert containsRows( res, true, true, Row.of( TestLiteral.from( 13 ) ) );
     }
 
 

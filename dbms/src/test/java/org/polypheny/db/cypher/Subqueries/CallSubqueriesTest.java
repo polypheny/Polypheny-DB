@@ -176,7 +176,7 @@ public class CallSubqueriesTest extends CypherTestTemplate {
                 + "WITH p\n"
                 + " CREATE (:Person {name: p.name}) \n"
                 + "} RETURN count(*)" );
-     //the number of rows present after the subquery is the same as was going into the subquery
+        //the number of rows present after the subquery is the same as was going into the subquery
         assert containsRows( res, true, false, Row.of( TestLiteral.from( 2 ) ) );
     }
 

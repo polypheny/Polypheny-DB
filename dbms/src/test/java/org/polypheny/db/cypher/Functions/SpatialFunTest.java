@@ -69,7 +69,7 @@ public class SpatialFunTest extends CypherTestTemplate {
                         TestLiteral.from( 3.0 ),
                         TestLiteral.from( 4321.0 ),
                         TestLiteral.from( "wgs-84-3d" ),
-                        TestLiteral.from( 4979 ) ));
+                        TestLiteral.from( 4979 ) ) );
     }
 
 }

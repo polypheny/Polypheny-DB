@@ -24,52 +24,53 @@ import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.webui.models.results.GraphResult;
 
 public class BooleanOperators extends CypherTestTemplate {
+
     @BeforeEach
     public void setUp() {
         tearDown();
         createGraph();
     }
 
+
     @Test
-    public void conjunctionOperatorTest()
-    {
-        GraphResult res =  execute( "WITH true as a , false as b RETURN a AND  b " );
-        assert  containsRows( res , true , false , Row.of( TestLiteral.from( false ) ) );
+    public void conjunctionOperatorTest() {
+        GraphResult res = execute( "WITH true as a , false as b RETURN a AND  b " );
+        assert containsRows( res, true, false, Row.of( TestLiteral.from( false ) ) );
         res = execute( "WITH true as a , true  as b RETURN a AND  b " );
-        assert  containsRows( res , true , false , Row.of( TestLiteral.from(true  ) ) );
+        assert containsRows( res, true, false, Row.of( TestLiteral.from( true ) ) );
 
     }
 
+
     @Test
-    public void disjunctionOperatorTest()
-    {
-        GraphResult res =  execute( "WITH true as a , false as b RETURN a OR  b " );
-        assert  containsRows( res , true , false , Row.of( TestLiteral.from( true  ) ) );
+    public void disjunctionOperatorTest() {
+        GraphResult res = execute( "WITH true as a , false as b RETURN a OR  b " );
+        assert containsRows( res, true, false, Row.of( TestLiteral.from( true ) ) );
         res = execute( "WITH false as a , false  as b RETURN a OR b " );
-        assert  containsRows( res , true , false , Row.of( TestLiteral.from(false   ) ) );
+        assert containsRows( res, true, false, Row.of( TestLiteral.from( false ) ) );
 
     }
 
+
     @Test
-    public void  exclusiveDisjunctionOperatorTest()
-    {
-        GraphResult res =  execute( "WITH true as a , false as b RETURN a XOR b " );
-        assert  containsRows( res , true , false , Row.of( TestLiteral.from( true  ) ) );
+    public void exclusiveDisjunctionOperatorTest() {
+        GraphResult res = execute( "WITH true as a , false as b RETURN a XOR b " );
+        assert containsRows( res, true, false, Row.of( TestLiteral.from( true ) ) );
         res = execute( "WITH true as a , true  as b RETURN a XOR b " );
-        assert  containsRows( res , true , false , Row.of( TestLiteral.from(false  ) ) );
+        assert containsRows( res, true, false, Row.of( TestLiteral.from( false ) ) );
         res = execute( "WITH false as a , false  as b RETURN a XOR b " );
-        assert  containsRows( res , true , false , Row.of( TestLiteral.from(true  ) ) );
+        assert containsRows( res, true, false, Row.of( TestLiteral.from( true ) ) );
 
     }
 
+
     @Test
-    public void negationOperatorTest()
-    {
+    public void negationOperatorTest() {
         GraphResult res = execute( "WITH true as a RETURN  NOT a  " );
-        assert  containsRows( res , true , false , Row.of( TestLiteral.from(false  ) ) );
+        assert containsRows( res, true, false, Row.of( TestLiteral.from( false ) ) );
 
         res = execute( "WITH false as a RETURN  NOT a  " );
-        assert  containsRows( res , true , false , Row.of( TestLiteral.from(true   ) ) );
+        assert containsRows( res, true, false, Row.of( TestLiteral.from( true ) ) );
 
     }
 

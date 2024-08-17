@@ -24,65 +24,61 @@ import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.webui.models.results.GraphResult;
 import java.util.Arrays;
 
-public class MathematicalOperators  extends CypherTestTemplate {
+public class MathematicalOperators extends CypherTestTemplate {
+
     @BeforeEach
     public void reset() {
         tearDown();
         createGraph();
     }
-    @Test
-    public void additionOperator ()
-    {
-      GraphResult res  =  execute( "RETURN 2 + 3" );
-      assert  containsRows( res , true , false ,Row.of( TestLiteral.from( 5 ) ) );
-    }
+
 
     @Test
-    public void minisOperatorTest()
-    {
+    public void additionOperator() {
+        GraphResult res = execute( "RETURN 2 + 3" );
+        assert containsRows( res, true, false, Row.of( TestLiteral.from( 5 ) ) );
+    }
+
+
+    @Test
+    public void minisOperatorTest() {
         GraphResult res = execute( "RETURN 3 - 2" );
 
-        assert  containsRows( res , true , false , Row.of( TestLiteral.from( 1) ) );
+        assert containsRows( res, true, false, Row.of( TestLiteral.from( 1 ) ) );
 
-    }
-
-
-
-
-    @Test
-    public void multiplicationOperatorTest()
-    {
-      GraphResult  res  = execute( "RETURN  2 * 3" );
-
-      assert  containsRows( res , true , false ,Row.of( TestLiteral.from( 6 ) ) );
-    }
-
-    @Test
-    public void divisionOperatorTest()
-    {
-       GraphResult res  = execute( "RETURN 6 / 3 "  );
-
-       assert  containsRows( res , true , false ,Row.of( TestLiteral.from( 2 ) ) );
     }
 
 
     @Test
-    public void moduleOperatorTest()
-    {
-       GraphResult res  =  execute( "RETURN 3 % 2 " );
-       assert containsRows( res , true ,false ,Row.of( TestLiteral.from( 1 ) ) );
+    public void multiplicationOperatorTest() {
+        GraphResult res = execute( "RETURN  2 * 3" );
 
+        assert containsRows( res, true, false, Row.of( TestLiteral.from( 6 ) ) );
     }
+
 
     @Test
-    public void exponentiationOperator()
-    {
-        GraphResult res =  execute( "RETURN 2 ^ 3" );
+    public void divisionOperatorTest() {
+        GraphResult res = execute( "RETURN 6 / 3 " );
 
-        assert  containsRows( res , true ,false , Row.of( TestLiteral.from( 8.0) ) );
+        assert containsRows( res, true, false, Row.of( TestLiteral.from( 2 ) ) );
     }
 
 
+    @Test
+    public void moduleOperatorTest() {
+        GraphResult res = execute( "RETURN 3 % 2 " );
+        assert containsRows( res, true, false, Row.of( TestLiteral.from( 1 ) ) );
+
+    }
+
+
+    @Test
+    public void exponentiationOperator() {
+        GraphResult res = execute( "RETURN 2 ^ 3" );
+
+        assert containsRows( res, true, false, Row.of( TestLiteral.from( 8.0 ) ) );
+    }
 
 
 }

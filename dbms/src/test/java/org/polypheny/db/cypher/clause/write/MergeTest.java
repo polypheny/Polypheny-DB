@@ -378,16 +378,13 @@ public class MergeTest extends CypherTestTemplate {
         res = execute( "MATCH ()-[HAS_CHAUFFEUR]->() RETURN HAS_CHAUFFEUR" );
         assert res.getData().length == 3;
         assert containsEdges( res, true, TestEdge.from( List.of( "HAS_CHAUFFEUR" ) ) );
-            execute( "MATCH (person:Person)\n"
+        execute( "MATCH (person:Person)\n"
                 + "MERGE (person)-[r:HAS_CHAUFFEUR]->(chauffeur:Chauffeur {name: person.chauffeurName})\n" );
-        GraphResult edges  = execute( "MATCH ()-[HAS_CHAUFFEUR]->() RETURN HAS_CHAUFFEUR" );
-        GraphResult nodes =  execute( "MATCH (n:Chauffeur) RETURN Chauffeur" );
-        assert edges.getData().length == 3 && nodes.getData().length == 3  ;
+        GraphResult edges = execute( "MATCH ()-[HAS_CHAUFFEUR]->() RETURN HAS_CHAUFFEUR" );
+        GraphResult nodes = execute( "MATCH (n:Chauffeur) RETURN Chauffeur" );
+        assert edges.getData().length == 3 && nodes.getData().length == 3;
 
     }
-
-
-
 
 
 }

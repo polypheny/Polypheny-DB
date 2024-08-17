@@ -70,12 +70,12 @@ public class RemoveTest extends CypherTestTemplate {
     public void multipleLabelsRemoveTest() {
         execute( SINGLE_NODE_PERSON_EMPLOYEE );
 
-        GraphResult res = matchAndReturnAllNodes() ;
-        assert containsNodes( res, true, TestNode.from(List.of("Person" , "Employee") ));
+        GraphResult res = matchAndReturnAllNodes();
+        assert containsNodes( res, true, TestNode.from( List.of( "Person", "Employee" ) ) );
 
-         execute( "MATCH (n) REMOVE n:Person:Employee " );
-         res = execute( "MATCH (n :Person:Employee) RETURN n" );
-         assert res.getData().length == 0 ;
+        execute( "MATCH (n) REMOVE n:Person:Employee " );
+        res = execute( "MATCH (n :Person:Employee) RETURN n" );
+        assert res.getData().length == 0;
 
 
     }
@@ -95,8 +95,8 @@ public class RemoveTest extends CypherTestTemplate {
     @Test
     public void multiplePropertiesRemoveTest() {
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
-       execute( "MATCH (n:Person {name: 'Ann'})\n"
-              + "REMOVE n.age, n.depno\n" );
+        execute( "MATCH (n:Person {name: 'Ann'})\n"
+                + "REMOVE n.age, n.depno\n" );
 
         GraphResult res = execute( "MATCH (n : Person) RETURN n.age  , n.depno , n.name " );
         assert containsRows( res, true, true, Row.of( TestLiteral.from( null ), TestLiteral.from( null ), TestLiteral.from( "Ann" ) ) );

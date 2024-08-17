@@ -35,6 +35,7 @@ public class WithTest extends CypherTestTemplate {
         createGraph();
     }
 
+
     @Test
     public void singleVariableWithTest() {
         execute( SINGLE_NODE_PERSON_1 );
@@ -45,14 +46,15 @@ public class WithTest extends CypherTestTemplate {
 
     }
 
+
     @Test
-    public void multipleRenameVariablesWithTest()
-    {
+    public void multipleRenameVariablesWithTest() {
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
         execute( SINGLE_NODE_PERSON_COMPLEX_2 );
 
         GraphResult res = execute( "MATCH (p:Person) WITH p.name AS person_name ,  p.age AS person_age , p RETURN person_name, person_age , p.depno;" );
     }
+
 
     @Test
     public void renameWithTest() {
@@ -62,9 +64,10 @@ public class WithTest extends CypherTestTemplate {
         GraphResult res = execute( "MATCH (n:Person) WITH n.name AS name, n RETURN name, n" );
         assert containsRows( res, true, true,
                 Row.of( TestLiteral.from( "Max" ), MAX ),
-                Row.of( TestLiteral.from( "Hans" ),HANS ));
+                Row.of( TestLiteral.from( "Hans" ), HANS ) );
 
     }
+
 
     @Test
     public void startWithTest() {
@@ -73,11 +76,11 @@ public class WithTest extends CypherTestTemplate {
 
         GraphResult res = execute( "MATCH (n:Person) WITH n.name, n WHERE n.name STARTS WITH 'H' RETURN n" );
 
-
         assert containsRows( res, true, true,
                 Row.of( HANS ) );
 
     }
+
 
     @Test
     public void startRenameWithTest() {
@@ -92,6 +95,7 @@ public class WithTest extends CypherTestTemplate {
 
     }
 
+
     @Test
     public void endWithTest() {
         execute( SINGLE_NODE_PERSON_1 );
@@ -103,6 +107,7 @@ public class WithTest extends CypherTestTemplate {
         assert containsRows( res, true, true, Row.of( TestLiteral.from( "Max" ), MAX ) );
 
     }
+
 
     @Test
     public void endRenameWithTest() {
@@ -131,107 +136,116 @@ public class WithTest extends CypherTestTemplate {
 
     }
 
+
     // aggregate
     @Test
-    public void  avgAggregationRenameWithTest()
-    {
+    public void avgAggregationRenameWithTest() {
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
         execute( SINGLE_NODE_PERSON_COMPLEX_2 );
         GraphResult res = execute( "MATCH (p:Person) WITH avg(p.age) as ageAvg RETURN  ageAvg " );
 
-        assert containsRows( res, true, true, Row.of( TestLiteral.from(38 )) );
+        assert containsRows( res, true, true, Row.of( TestLiteral.from( 38 ) ) );
 
     }
 
+
     @Test
-    public void  maxMinAggregationRenameWithTest()
-    {
+    public void maxMinAggregationRenameWithTest() {
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
         execute( SINGLE_NODE_PERSON_COMPLEX_2 );
         GraphResult res = execute( "MATCH (p:Person) WITH MAX(p.age) as ageMax RETURN  ageMax " );
 
-        assert containsRows( res, true, true, Row.of( TestLiteral.from(45 )) );
-         res = execute( "MATCH (p:Person) WITH MIN(p.age) as ageMin RETURN  ageMin " );
+        assert containsRows( res, true, true, Row.of( TestLiteral.from( 45 ) ) );
+        res = execute( "MATCH (p:Person) WITH MIN(p.age) as ageMin RETURN  ageMin " );
 
-        assert containsRows( res, true, true, Row.of( TestLiteral.from(31 )) );
+        assert containsRows( res, true, true, Row.of( TestLiteral.from( 31 ) ) );
     }
+
+
     @Test
-    public void  countAggregationWithTest()
-    {
+    public void countAggregationWithTest() {
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
         execute( SINGLE_NODE_PERSON_COMPLEX_2 );
         GraphResult res = execute( "MATCH (p:Person) WITH COUNT(*) as count RETURN  count " );
 
-        assert containsRows( res, true, true, Row.of( TestLiteral.from(2 )) );
+        assert containsRows( res, true, true, Row.of( TestLiteral.from( 2 ) ) );
 
     }
+
+
     @Test
-    public void  stDevAggregationWithTest()
-    {
+    public void stDevAggregationWithTest() {
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
         execute( SINGLE_NODE_PERSON_COMPLEX_2 );
         GraphResult res = execute( "MATCH (p:Person) WITH STDEV(p.age) as ageStdev RETURN  ageStdev " );
 
-        assert containsRows( res, true, true, Row.of( TestLiteral.from(9.8994949)) );
+        assert containsRows( res, true, true, Row.of( TestLiteral.from( 9.8994949 ) ) );
 
     }
 
+
     @Test
-    public void  collectAggregationWithTest()
-    {
+    public void collectAggregationWithTest() {
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
         execute( SINGLE_NODE_PERSON_COMPLEX_2 );
         GraphResult res = execute( "MATCH (p:Person) WITH COLLECT(p.age) as ageList RETURN  ageList " );
 
-        assert containsRows( res, true, true, Row.of( TestLiteral.from(45) ,TestLiteral.from( 31 ) ) );
+        assert containsRows( res, true, true, Row.of( TestLiteral.from( 45 ), TestLiteral.from( 31 ) ) );
 
     }
 
+
     @Test
-    public void mapStructureRenameWithTest()
-    {
+    public void mapStructureRenameWithTest() {
         GraphResult res = execute( "WITH {person: {name: 'Anne', age: 25}} AS p RETURN p" );
     }
 
+
     @Test
-    public void filterWithTest()
-    {   execute( SINGLE_NODE_PERSON_COMPLEX_1 ) ;
+    public void filterWithTest() {
+        execute( SINGLE_NODE_PERSON_COMPLEX_1 );
         execute( SINGLE_NODE_PERSON_COMPLEX_2 );
         execute( SINGLE_NODE_PERSON_COMPLEX_3 );
-        GraphResult res =  execute( "MATCH (p:Person) WITH p WHERE p.age > 31 RETURN p.name, p.age" );
+        GraphResult res = execute( "MATCH (p:Person) WITH p WHERE p.age > 31 RETURN p.name, p.age" );
 
     }
+
+
     @Test
-    public void calculationWithTest()
-    {   execute( SINGLE_NODE_PERSON_COMPLEX_1 ) ;
+    public void calculationWithTest() {
+        execute( SINGLE_NODE_PERSON_COMPLEX_1 );
         execute( SINGLE_NODE_PERSON_COMPLEX_2 );
         execute( SINGLE_NODE_PERSON_COMPLEX_3 );
 
-         GraphResult res = execute( "MATCH (p:Person) WITH p, p.age * 2 AS double_age RETURN p.name, double_age;" );
+        GraphResult res = execute( "MATCH (p:Person) WITH p, p.age * 2 AS double_age RETURN p.name, double_age;" );
     }
 
+
     @Test
-    public void listWithTest()
-    {
-       GraphResult res  = execute( "WITH [1, 2, 3, 4, 5] AS numbers RETURN numbers" );
+    public void listWithTest() {
+        GraphResult res = execute( "WITH [1, 2, 3, 4, 5] AS numbers RETURN numbers" );
 
     }
+
+
     @Test
-    public void  unWindListWithTest()
-    {
-         GraphResult res =  execute( "WITH [1, 2, 3, 4, 5] AS numbers UNWIND numbers AS number RETURN number;" );
+    public void unWindListWithTest() {
+        GraphResult res = execute( "WITH [1, 2, 3, 4, 5] AS numbers UNWIND numbers AS number RETURN number;" );
     }
+
+
     @Test
-    public void unWindAndFilterListWithTest()
-    {
-        GraphResult res =  execute( "WITH [1, 2, 3, 4, 5] AS numbers UNWIND numbers AS number WITH number WHERE number > 3 RETURN number" );
+    public void unWindAndFilterListWithTest() {
+        GraphResult res = execute( "WITH [1, 2, 3, 4, 5] AS numbers UNWIND numbers AS number WITH number WHERE number > 3 RETURN number" );
     }
+
+
     @Test
-    public void  unWindAndStartListWithTest()
-    {
-        GraphResult res =  execute( "WITH ['John', 'Mark', 'Jonathan', 'Bill'] AS somenames UNWIND somenames AS names WITH names AS candidate WHERE candidate STARTS WITH 'Jo' RETURN candidate" );
-        assert  containsRows( res , true , false , Row.of( TestLiteral.from( "John" ) ),Row.of( TestLiteral.from( "Jonathan" ) ) );
+    public void unWindAndStartListWithTest() {
+        GraphResult res = execute( "WITH ['John', 'Mark', 'Jonathan', 'Bill'] AS somenames UNWIND somenames AS names WITH names AS candidate WHERE candidate STARTS WITH 'Jo' RETURN candidate" );
+        assert containsRows( res, true, false, Row.of( TestLiteral.from( "John" ) ), Row.of( TestLiteral.from( "Jonathan" ) ) );
     }
+
 
     @Test
     public void unWindAndLogicalOperatorsListWithTest() {
@@ -242,74 +256,72 @@ public class WithTest extends CypherTestTemplate {
                 Row.of( TestLiteral.from( 9 ) ) );
     }
 
-    @Test
-    public void unWindAndWhereInListWithTest()
-    {
-        GraphResult res =  execute( "WITH [2, 3, 4, 5] AS numberlist UNWIND numberlist AS number WITH number WHERE number IN [2, 3, 8] RETURN number" )   ;
-        assert  containsRows( res , true , false  , Row.of( TestLiteral.from( 2 ) ) , Row.of( TestLiteral.from( 3 ) ));
-
-    }
 
     @Test
-    public void createNodeWithTest()
-    {
-       execute( "WITH [1, 1.0] AS list CREATE ({l: list})" );
-      GraphResult res =  matchAndReturnAllNodes();
-      assert  res.getData().length ==  1 ;
-
-    }
-
-    @Test
-    public void distinctWithTest()
-    {
-       execute( SINGLE_NODE_PERSON_1 );
-       execute( SINGLE_NODE_PERSON_2 );
-       execute( SINGLE_NODE_PERSON_1);
-
-       GraphResult res =  execute( "MATCH (p:Person) WITH Distinct(p)  Return p " );
-       assert res.getData().length == 2 ;
-
-
-    }
-    @Test
-    public void existsWithTest()
-    {
-        execute( SINGLE_NODE_PERSON_COMPLEX_1 ) ;
-        execute( SINGLE_NODE_PERSON_1 );
-
-        GraphResult  res =  execute( "MATCH (n) WITH n as person WHERE EXISTS(person.age) RETURN person.name, person.age;" );
-        assert containsRows( res , true , true , Row.of( TestLiteral.from(  "Ann" ),TestLiteral.from( 45 ) ));
-
+    public void unWindAndWhereInListWithTest() {
+        GraphResult res = execute( "WITH [2, 3, 4, 5] AS numberlist UNWIND numberlist AS number WITH number WHERE number IN [2, 3, 8] RETURN number" );
+        assert containsRows( res, true, false, Row.of( TestLiteral.from( 2 ) ), Row.of( TestLiteral.from( 3 ) ) );
 
     }
 
 
-
-
     @Test
-    public void conditionalLogicWithTest()
-    {
-        execute( SINGLE_NODE_PERSON_COMPLEX_1 ) ;
-        execute( SINGLE_NODE_PERSON_COMPLEX_2 );
-        execute( SINGLE_NODE_PERSON_COMPLEX_3 );
-        GraphResult  res  = execute( "MATCH (p:Person) WITH p, CASE WHEN p.age < 30 THEN 'Young' THEN p.age >= 30 AND p.age < 60 THEN 'Middle-aged' ELSE 'Elderly  END AS ageGroup RETURN p.name, ageGroup;" ) ;
-        assert  containsRows( res , true , true ,
-                Row.of( TestLiteral.from( "Ana" ) , TestLiteral.from( "Middle-aged" ) ) ,
-                Row.of( TestLiteral.from( "Bob" ) , TestLiteral.from( "Middle-aged" ) ),
-                Row.of( TestLiteral.from( "Alex" ) , TestLiteral.from( "Middle-aged" ) ));
+    public void createNodeWithTest() {
+        execute( "WITH [1, 1.0] AS list CREATE ({l: list})" );
+        GraphResult res = matchAndReturnAllNodes();
+        assert res.getData().length == 1;
 
     }
 
+
     @Test
-    public void orderByWithTest()
-    {
+    public void distinctWithTest() {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_PERSON_2 );
-        GraphResult res =  execute( "MATCH (p:Person) WITH p ORDER BY p.name ASC RETURN p.name" );
+        execute( SINGLE_NODE_PERSON_1 );
 
-         assert  containsRows( res , true ,true ,
-                 Row.of( TestLiteral.from( "Hans" )) ,
-                 Row.of( TestLiteral.from( "Max" )) );
+        GraphResult res = execute( "MATCH (p:Person) WITH Distinct(p)  Return p " );
+        assert res.getData().length == 2;
+
+
+    }
+
+
+    @Test
+    public void existsWithTest() {
+        execute( SINGLE_NODE_PERSON_COMPLEX_1 );
+        execute( SINGLE_NODE_PERSON_1 );
+
+        GraphResult res = execute( "MATCH (n) WITH n as person WHERE EXISTS(person.age) RETURN person.name, person.age;" );
+        assert containsRows( res, true, true, Row.of( TestLiteral.from( "Ann" ), TestLiteral.from( 45 ) ) );
+
+
+    }
+
+
+    @Test
+    public void conditionalLogicWithTest() {
+        execute( SINGLE_NODE_PERSON_COMPLEX_1 );
+        execute( SINGLE_NODE_PERSON_COMPLEX_2 );
+        execute( SINGLE_NODE_PERSON_COMPLEX_3 );
+        GraphResult res = execute( "MATCH (p:Person) WITH p, CASE WHEN p.age < 30 THEN 'Young' THEN p.age >= 30 AND p.age < 60 THEN 'Middle-aged' ELSE 'Elderly  END AS ageGroup RETURN p.name, ageGroup;" );
+        assert containsRows( res, true, true,
+                Row.of( TestLiteral.from( "Ana" ), TestLiteral.from( "Middle-aged" ) ),
+                Row.of( TestLiteral.from( "Bob" ), TestLiteral.from( "Middle-aged" ) ),
+                Row.of( TestLiteral.from( "Alex" ), TestLiteral.from( "Middle-aged" ) ) );
+
+    }
+
+
+    @Test
+    public void orderByWithTest() {
+        execute( SINGLE_NODE_PERSON_1 );
+        execute( SINGLE_NODE_PERSON_2 );
+        GraphResult res = execute( "MATCH (p:Person) WITH p ORDER BY p.name ASC RETURN p.name" );
+
+        assert containsRows( res, true, true,
+                Row.of( TestLiteral.from( "Hans" ) ),
+                Row.of( TestLiteral.from( "Max" ) ) );
 
     }
 

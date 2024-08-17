@@ -223,9 +223,8 @@ public class TemporalFunTest extends CypherTestTemplate {
     @Test
     public void durationBetweenFunTest() {
         GraphResult res = execute( "RETURN duration.between(date('1984-10-11'), date('2015-06-24')) AS theDuration" );
-        assert  containsRows( res , true , false ,Row.of( TestLiteral.from( "P30Y8M13D" ) ) );
+        assert containsRows( res, true, false, Row.of( TestLiteral.from( "P30Y8M13D" ) ) );
     }
-
 
 
 }

@@ -91,14 +91,14 @@ public class FilterTest extends CypherTestTemplate {
 
     }
 
+
     @Test
-    public void  relationshipPatternFilterTest()
-    {
+    public void relationshipPatternFilterTest() {
         execute( SINGLE_EDGE_2 );
 
-        GraphResult res =  execute( "MATCH (a:Person)-[r:KNOWS WHERE r.since < 2000 ]->(b:Person)\n"
+        GraphResult res = execute( "MATCH (a:Person)-[r:KNOWS WHERE r.since < 2000 ]->(b:Person)\n"
                 + "RETURN r.since" );
-        assert  containsRows( res , true , false , Row.of( TestLiteral.from(1994  ) ) );
+        assert containsRows( res, true, false, Row.of( TestLiteral.from( 1994 ) ) );
     }
 
 
@@ -114,19 +114,19 @@ public class FilterTest extends CypherTestTemplate {
         assert containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Ann" ), TestLiteral.from( 45 ) ) );
     }
+
+
     @Test
-    public void propertyNonExistenceCheckFilterTest()
-    {
-       execute( SINGLE_NODE_PERSON_1 );
-       execute( SINGLE_NODE_PERSON_COMPLEX_1 );
-       GraphResult  res = execute( "MATCH (n:Person)\n"
-            + "WHERE n.age IS NULL\n"
-            + "RETURN n.name" );
+    public void propertyNonExistenceCheckFilterTest() {
+        execute( SINGLE_NODE_PERSON_1 );
+        execute( SINGLE_NODE_PERSON_COMPLEX_1 );
+        GraphResult res = execute( "MATCH (n:Person)\n"
+                + "WHERE n.age IS NULL\n"
+                + "RETURN n.name" );
 
         assert containsRows( res, true, false,
-                Row.of( TestLiteral.from( "Max" )) );
+                Row.of( TestLiteral.from( "Max" ) ) );
     }
-
 
 
     @Test
@@ -325,8 +325,6 @@ public class FilterTest extends CypherTestTemplate {
                 Row.of( TestLiteral.from( "Ann" ), TestLiteral.from( 45 ) ) );
 
     }
-
-
 
 
 }
