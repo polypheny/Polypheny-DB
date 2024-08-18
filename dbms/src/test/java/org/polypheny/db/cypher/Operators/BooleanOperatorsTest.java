@@ -23,7 +23,7 @@ import org.polypheny.db.cypher.CypherTestTemplate;
 import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.webui.models.results.GraphResult;
 
-public class BooleanOperators extends CypherTestTemplate {
+public class BooleanOperatorsTest extends CypherTestTemplate {
 
     @BeforeEach
     public void setUp() {

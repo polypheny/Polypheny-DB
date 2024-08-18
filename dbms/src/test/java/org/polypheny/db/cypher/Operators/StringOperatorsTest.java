@@ -16,14 +16,14 @@
 
 package org.polypheny.db.cypher.Operators;
 
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.cypher.CypherTestTemplate;
 import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.webui.models.results.GraphResult;
 
-public class ListOperators extends CypherTestTemplate {
+public class StringOperatorsTest extends CypherTestTemplate {
+
 
     @BeforeEach
     public void setUp() {
@@ -33,22 +33,9 @@ public class ListOperators extends CypherTestTemplate {
 
 
     @Test
-    public void checkIfNumberInListOperatorTest() {
-        GraphResult res = execute( "RETURN 1 IN [ 1 ,2 ]" );
-        containsRows( res, true, false, Row.of( TestLiteral.from( true ) ) );
-
-        res = execute( "RETURN 3 IN [ 1 ,2 ]" );
-        containsRows( res, true, false, Row.of( TestLiteral.from( false ) ) );
-    }
-
-
-    @Test
-    public void checkIfListInListOperatorTest() {
-        GraphResult res = execute( "RETURN [2, 1] IN [1, [2, 1], 3] " );
-        containsRows( res, true, false, Row.of( TestLiteral.from( true ) ) );
-
-        res = execute( "RETURN [1, 2] IN [1, 2] " );
-        containsRows( res, true, false, Row.of( TestLiteral.from( false ) ) );
+    public void concatenateWithPlusOperatorTest() {
+        GraphResult res = execute( "RETURN 'neo' + '4j' AS result" );
+        containsRows( res, true, true, Row.of( TestLiteral.from( "neo4j" ) ) );
     }
 
 

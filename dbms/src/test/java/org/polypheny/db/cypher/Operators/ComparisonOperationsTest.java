@@ -22,7 +22,7 @@ import org.polypheny.db.cypher.CypherTestTemplate;
 import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.webui.models.results.GraphResult;
 
-public class ComparisonOperations extends CypherTestTemplate {
+public class ComparisonOperationsTest extends CypherTestTemplate {
 
     @BeforeEach
     public void setUp() {
