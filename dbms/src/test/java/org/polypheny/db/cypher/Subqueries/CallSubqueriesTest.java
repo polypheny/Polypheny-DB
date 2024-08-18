@@ -27,6 +27,8 @@ import org.polypheny.db.webui.models.results.GraphResult;
 import java.util.List;
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 public class CallSubqueriesTest extends CypherTestTemplate {
 
 
@@ -43,7 +45,7 @@ public class CallSubqueriesTest extends CypherTestTemplate {
         GraphResult res = execute( " CALL { RETURN 'hello' AS innerReturn} \n"
                 + "RETURN innerReturn" );
 
-        assert containsRows( res, true, false,
+        containsRows( res, true, false,
                 Row.of( TestLiteral.from( "hello" ) ) );
     }
 
@@ -54,7 +56,7 @@ public class CallSubqueriesTest extends CypherTestTemplate {
                 + "CALL { RETURN 'hello' AS innerReturn }\n"
                 + "RETURN innerReturn" );
 
-        assert containsRows( res, true, false,
+        containsRows( res, true, false,
                 Row.of( TestLiteral.from( "hello" ) ),
                 Row.of( TestLiteral.from( "hello" ) ),
                 Row.of( TestLiteral.from( "hello" ) ) );
@@ -67,7 +69,7 @@ public class CallSubqueriesTest extends CypherTestTemplate {
                 + "CALL { WITH x RETURN x * 10 AS y }\n"
                 + "RETURN x, y" );
 
-        assert containsRows( res, true, true,
+        containsRows( res, true, true,
                 Row.of( TestLiteral.from( 0 ), TestLiteral.from( 0 ) ),
                 Row.of( TestLiteral.from( 1 ), TestLiteral.from( 10 ) ),
                 Row.of( TestLiteral.from( 2 ), TestLiteral.from( 20 ) ) );
@@ -78,7 +80,7 @@ public class CallSubqueriesTest extends CypherTestTemplate {
     public void returnMatchNodesCallTest() {
         execute( SINGLE_NODE_PERSON_1 );
         GraphResult res = execute( "CALL { MATCH (p:Person) RETURN p} RETURN p " );
-        assert containsRows( res, true, true, Row.of( MAX ) );
+        containsRows( res, true, true, Row.of( MAX ) );
 
     }
 
@@ -93,7 +95,7 @@ public class CallSubqueriesTest extends CypherTestTemplate {
                 + "    RETURN count(p) AS totalPeople}\n"
                 + "RETURN totalPeople\n" );
 
-        assert containsRows( res, true, false, Row.of( TestLiteral.from( 2 ) ) );
+        containsRows( res, true, false, Row.of( TestLiteral.from( 2 ) ) );
 
     }
 
@@ -106,7 +108,7 @@ public class CallSubqueriesTest extends CypherTestTemplate {
                 + "    MATCH ()-[r]->()\n"
                 + "    RETURN count(r) AS totalRelationships }\n"
                 + "RETURN totalRelationships\n" );
-        assert containsRows( res, true, false, Row.of( TestLiteral.from( 2 ) ) );
+        containsRows( res, true, false, Row.of( TestLiteral.from( 2 ) ) );
 
     }
 
@@ -123,7 +125,7 @@ public class CallSubqueriesTest extends CypherTestTemplate {
                 + "}\n"
                 + "RETURN p.name, friend" );
 
-        assert containsRows( res, true, false,
+        containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Max" ), TestLiteral.from( "Hans" ) ) );
     }
 
@@ -140,8 +142,8 @@ public class CallSubqueriesTest extends CypherTestTemplate {
                 + "WHERE p.age > age\n"
                 + "RETURN p\n" );
 
-        assert res.getData().length == 2;
-        assert containsNodes( res, true,
+        assertEquals( 2, res.getData().length );
+        containsNodes( res, true,
                 TestNode.from( List.of( "Person" ), Pair.of( "name", "Ann" ) ),
                 TestNode.from( List.of( "Person" ), Pair.of( "name", "Alex" ) ) );
 
@@ -161,7 +163,7 @@ public class CallSubqueriesTest extends CypherTestTemplate {
                 + "}\n"
                 + "RETURN p.name, p.age" );
 
-        assert containsRows( res, true, false,
+        containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Ann" ), TestLiteral.from( 45 ) ),
                 Row.of( TestLiteral.from( "Bob" ), TestLiteral.from( 31 ) ) );
     }
@@ -177,7 +179,7 @@ public class CallSubqueriesTest extends CypherTestTemplate {
                 + " CREATE (:Person {name: p.name}) \n"
                 + "} RETURN count(*)" );
         //the number of rows present after the subquery is the same as was going into the subquery
-        assert containsRows( res, true, false, Row.of( TestLiteral.from( 2 ) ) );
+        containsRows( res, true, false, Row.of( TestLiteral.from( 2 ) ) );
     }
 
 

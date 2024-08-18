@@ -18,12 +18,13 @@ package org.polypheny.db.cypher.clause.general;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.polypheny.db.adapter.annotations.AdapterSettingList.List;
 import org.polypheny.db.cypher.CypherTestTemplate;
 import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.cypher.helper.TestNode;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.models.results.GraphResult;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class LimitTest extends CypherTestTemplate {
 
@@ -44,7 +45,7 @@ public class LimitTest extends CypherTestTemplate {
 
         GraphResult res = execute( "MATCH (n) RETURN n.name, n.age LIMIT 3" );
 
-        assert res.getData().length == 3;
+        assertEquals( 3, res.getData().length );
     }
 
 
@@ -54,9 +55,9 @@ public class LimitTest extends CypherTestTemplate {
                 + "RETURN n\n"
                 + "LIMIT 0" );
 
-        assert res.getData().length == 0;
+        assertEquals( 0, res.getData().length );
         res = matchAndReturnAllNodes();
-        assert res.getData().length == 1;
+        assertEquals( 1, res.getData().length );
     }
 
 
@@ -67,6 +68,8 @@ public class LimitTest extends CypherTestTemplate {
                 + "SET n.age = 60\n"
                 + "RETURN n\n"
                 + "LIMIT 0" );
+
+
     }
 
 
@@ -80,9 +83,9 @@ public class LimitTest extends CypherTestTemplate {
 
         GraphResult res = execute( "MATCH (n) RETURN n.name ORDER BY n.name DESC LIMIT 3" );
 
-        assert res.getData().length == 3;
+        assertEquals( 3, res.getData().length );
 
-        assert containsRows( res, true, true,
+        containsRows( res, true, true,
                 Row.of( TestLiteral.from( "Max" ) ),
                 Row.of( TestLiteral.from( "Max" ) ),
                 Row.of( TestLiteral.from( "Kira" ) ) );
@@ -97,7 +100,7 @@ public class LimitTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_COMPLEX_3 );
 
         GraphResult res = execute( "MATCH (n) WITH n LIMIT 2 RETURN n.name, n.age;" );
-        assert res.getData().length == 2;
+        assertEquals( 2, res.getData().length );
     }
 
 
@@ -110,12 +113,11 @@ public class LimitTest extends CypherTestTemplate {
                 + "WITH n ORDER BY n.name LIMIT 1\n"
                 + "RETURN n" );
 
-        assert res.getData().length == 1;
+        assertEquals( 1, res.getData().length );
 
-        assert containsNodes( res, true,
-                TestNode.from( Pair.of( "name", "Ann" ),
-                        Pair.of( "age", 45 ),
-                        Pair.of( "depno", 13 ) ) );
+        containsNodes( res, true, TestNode.from( Pair.of( "name", "Ann" ),
+                Pair.of( "age", 45 ),
+                Pair.of( "depno", 13 ) ) );
 
 
     }
@@ -131,7 +133,7 @@ public class LimitTest extends CypherTestTemplate {
                 + "SET n.locked = true\n"
                 + "RETURN n.name" );
 
-        assert containsRows( res, true, false, Row.of( TestLiteral.from( "Max" ) ) );
+        containsRows( res, true, false, Row.of( TestLiteral.from( "Max" ) ) );
     }
 
 

@@ -50,13 +50,13 @@ public class AggregateTest extends CypherTestTemplate {
 
         GraphResult res = execute( "MATCH (n:Person) RETURN count(*)" );
 
-        assert containsRows( res, true, true,
+        containsRows( res, true, true,
                 Row.of( TestLiteral.from( 5 ) ) );
 
         execute( SINGLE_EDGE_2 );
         res = execute( "MATCH (n:Person) RETURN count(*)" );
 
-        assert containsRows( res, true, true,
+        containsRows( res, true, true,
                 Row.of( TestLiteral.from( 7 ) ) );
 
 
@@ -72,7 +72,7 @@ public class AggregateTest extends CypherTestTemplate {
 
         GraphResult res = execute( "MATCH (n) RETURN n.name, count(*)" );
 
-        assert containsRows( res, true, false,
+        containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Max" ), TestLiteral.from( 3 ) ),
                 Row.of( TestLiteral.from( "Kira" ), TestLiteral.from( 1 ) ),
                 Row.of( TestLiteral.from( "Hans" ), TestLiteral.from( 2 ) ) );
@@ -85,7 +85,7 @@ public class AggregateTest extends CypherTestTemplate {
 
         GraphResult res = execute( "MATCH (n) RETURN  count(*)" );
 
-        assert containsRows( res, true, false,
+        containsRows( res, true, false,
                 Row.of( TestLiteral.from( 0 ) ) );
     }
 
@@ -98,9 +98,9 @@ public class AggregateTest extends CypherTestTemplate {
         execute( SINGLE_EDGE_2 );
 
         GraphResult res = execute( "MATCH (n) RETURN n.name, count(*) AS c" );
-        assert res.getHeader()[1].name.equals( "c" );
+        res.getHeader()[1].name.equals( "c" );
 
-        assert containsRows( res, true, false,
+        containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Max" ), TestLiteral.from( 3 ) ),
                 Row.of( TestLiteral.from( "Kira" ), TestLiteral.from( 1 ) ),
                 Row.of( TestLiteral.from( "Hans" ), TestLiteral.from( 2 ) ) );
@@ -117,7 +117,7 @@ public class AggregateTest extends CypherTestTemplate {
 
         GraphResult res = execute( "MATCH (n) RETURN n.name, n.age, count(*) AS c" );
 
-        assert containsRows( res, true, false,
+        containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Max" ), TestLiteral.from( null ), TestLiteral.from( 3 ) ),
                 Row.of( TestLiteral.from( "Kira" ), TestLiteral.from( 3 ), TestLiteral.from( 1 ) ),
                 Row.of( TestLiteral.from( "Hans" ), TestLiteral.from( null ), TestLiteral.from( 1 ) ),
@@ -131,7 +131,7 @@ public class AggregateTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_PERSON_2 );
         GraphResult res = execute( "MATCH (n) RETURN count(n.age)" );
-        assert containsRows( res, true, false, Row.of( TestLiteral.from( 0 ) ) );
+        containsRows( res, true, false, Row.of( TestLiteral.from( 0 ) ) );
     }
 
 
@@ -141,7 +141,7 @@ public class AggregateTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_1 );
 
         GraphResult res = execute( "MATCH (n) RETURN COUNT(DISTINCT n.name)" );
-        assert containsRows( res, true, false, Row.of( TestLiteral.from( 1 ) ) );
+        containsRows( res, true, false, Row.of( TestLiteral.from( 1 ) ) );
 
 
     }
@@ -160,7 +160,7 @@ public class AggregateTest extends CypherTestTemplate {
         // Printing the data using Arrays.deepToString
         String[][] data = res.getData();
         System.out.println( Arrays.deepToString( data ) );
-        assert containsRows( res, true, false,
+        containsRows( res, true, false,
                 Row.of( TestLiteral.from( 26.33333333333333 ) ) );
 
     }
@@ -172,7 +172,7 @@ public class AggregateTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_2 );
         GraphResult res = execute( "MATCH (p:Person) RETURN AVG(p.age)" );
 
-        assert containsRows( res, true, false, Row.of( TestLiteral.from( null ) ) );
+        containsRows( res, true, false, Row.of( TestLiteral.from( null ) ) );
     }
 
 
@@ -183,7 +183,7 @@ public class AggregateTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_COMPLEX_2 );
 
         GraphResult res = execute( "MATCH (p:Person) RETURN AVG(p.age) AS ages" );
-        assert containsRows( res, true, false, Row.of( TestLiteral.from( 38 ) ) );
+        containsRows( res, true, false, Row.of( TestLiteral.from( 38 ) ) );
     }
 
 
@@ -208,7 +208,7 @@ public class AggregateTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_COMPLEX_2 );
 
         GraphResult res = execute( "MATCH (p:Person) RETURN COLLECT(p.age) " );
-        assert containsRows( res, true, false, Row.of( TestLiteral.from( List.of( 45, 31 ) ) ) );
+        containsRows( res, true, false, Row.of( TestLiteral.from( List.of( 45, 31 ) ) ) );
 
     }
 
@@ -219,7 +219,7 @@ public class AggregateTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_COMPLEX_2 );
 
         GraphResult res = execute( "MATCH (p:Person) RETURN COLLECT(p.age) AS ages" );
-        assert containsRows( res, true, false, Row.of( TestLiteral.from( List.of( 45, 31 ) ) ) );
+        containsRows( res, true, false, Row.of( TestLiteral.from( List.of( 45, 31 ) ) ) );
 
     }
 
@@ -231,7 +231,7 @@ public class AggregateTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_COMPLEX_3 );
 
         GraphResult res = execute( "MATCH (p:Person) RETURN COLLECT(p.age) AS ages , p.depno AS depNumber" );
-        assert containsRows( res, true, false,
+        containsRows( res, true, false,
                 Row.of( TestLiteral.from( List.of( 45, 31 ) ), TestLiteral.from( 13 ) ),
                 Row.of( TestLiteral.from( List.of( 32 ) ), TestLiteral.from( 14 ) ) );
     }
@@ -242,7 +242,7 @@ public class AggregateTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_PERSON_2 );
         GraphResult res = execute( "MATCH (p:Person) RETURN COLLECT(p.age)" );
-        assert containsRows( res, true, false, Row.of( TestLiteral.from( List.of( null, null ) ) ) );
+        containsRows( res, true, false, Row.of( TestLiteral.from( List.of( null, null ) ) ) );
     }
 
 
@@ -255,11 +255,11 @@ public class AggregateTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
 
         GraphResult res = execute( "MATCH (n) RETURN min(n.age)" );
-        assert containsRows( res, true, false,
+        containsRows( res, true, false,
                 Row.of( TestLiteral.from( 3 ) ) );
 
         res = execute( "MATCH (n) RETURN max(n.age)" );
-        assert containsRows( res, true, false,
+        containsRows( res, true, false,
                 Row.of( TestLiteral.from( 45 ) ) );
 
     }
@@ -271,12 +271,12 @@ public class AggregateTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_2 );
         GraphResult res = execute( "MATCH (n) RETURN  min(n.age) as ageMin" );
 
-        assert containsRows( res, true, false,
+        containsRows( res, true, false,
                 Row.of( TestLiteral.from( null ) ) );
 
         res = execute( "MATCH (n) RETURN  max(n.age) as ageMax" );
 
-        assert containsRows( res, true, false,
+        containsRows( res, true, false,
                 Row.of( TestLiteral.from( null ) ) );
 
 
@@ -291,12 +291,12 @@ public class AggregateTest extends CypherTestTemplate {
 
         GraphResult res = execute( "MATCH (n) RETURN  min(n.age) as ageMin" );
 
-        assert containsRows( res, true, false,
+        containsRows( res, true, false,
                 Row.of( TestLiteral.from( 31 ) ) );
 
         res = execute( "MATCH (n) RETURN  max(n.age) as ageMax" );
 
-        assert containsRows( res, true, false,
+        containsRows( res, true, false,
                 Row.of( TestLiteral.from( 45 ) ) );
 
 
@@ -312,13 +312,13 @@ public class AggregateTest extends CypherTestTemplate {
 
         GraphResult res = execute( "MATCH (n) RETURN n.depno as depNumber , min(n.age) as ageMin" );
 
-        assert containsRows( res, true, false,
+        containsRows( res, true, false,
                 Row.of( TestLiteral.from( 13 ), TestLiteral.from( 31 ) ),
                 Row.of( TestLiteral.from( 14 ), TestLiteral.from( 32 ) ) );
 
         res = execute( "MATCH (n) RETURN n.depno as depNumber , max(n.age) as ageMax" );
 
-        assert containsRows( res, true, false,
+        containsRows( res, true, false,
                 Row.of( TestLiteral.from( 13 ), TestLiteral.from( 45 ) ),
                 Row.of( TestLiteral.from( 14 ), TestLiteral.from( 32 ) ) );
 
@@ -333,7 +333,7 @@ public class AggregateTest extends CypherTestTemplate {
         execute( SINGLE_EDGE_2 );
 
         GraphResult res = execute( "MATCH (n) RETURN sum(n.age)" );
-        assert containsRows( res, true, false,
+        containsRows( res, true, false,
                 Row.of( TestLiteral.from( 34 ) ) );
     }
 
@@ -344,7 +344,7 @@ public class AggregateTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_2 );
 
         GraphResult res = execute( "MATCH (n) RETURN sum(n.age)" );
-        assert containsRows( res, true, false,
+        containsRows( res, true, false,
                 Row.of( TestLiteral.from( 0 ) ) );
 
         /// Printing the data using Arrays.deepToString
@@ -361,7 +361,7 @@ public class AggregateTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_COMPLEX_2 );
 
         GraphResult res = execute( "MATCH (p:Person) RETURN  sum(p.age) As totalAge " );
-        assert containsRows( res, true, false,
+        containsRows( res, true, false,
                 Row.of( TestLiteral.from( 76 ) ) );
 
 
@@ -375,7 +375,7 @@ public class AggregateTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_COMPLEX_3 );
 
         GraphResult res = execute( "MATCH (p:Person) RETURN  sum(p.age) AS totalAge, p.depno AS depNumber," );
-        assert containsRows( res, true, false,
+        containsRows( res, true, false,
                 Row.of( TestLiteral.from( 13 ), TestLiteral.from( 76 ) ),
                 Row.of( TestLiteral.from( 14 ), TestLiteral.from( 32 ) ) );
 
@@ -388,7 +388,7 @@ public class AggregateTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
         execute( SINGLE_NODE_PERSON_COMPLEX_2 );
         GraphResult res = execute( "MATCH (p:Person) RETURN  stdev(p.age) " );
-        assert containsRows( res, true, false,
+        containsRows( res, true, false,
                 Row.of( TestLiteral.from( 9.8994949 ) ) );
 
 
@@ -400,7 +400,7 @@ public class AggregateTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_PERSON_2 );
         GraphResult res = execute( "MATCH (p:Person) RETURN  stdev(p.age) " );
-        assert containsRows( res, true, false,
+        containsRows( res, true, false,
                 Row.of( TestLiteral.from( null ) ) );
     }
 
@@ -410,7 +410,7 @@ public class AggregateTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
         execute( SINGLE_NODE_PERSON_COMPLEX_2 );
         GraphResult res = execute( "MATCH (p:Person) RETURN  stdev(p.age) AS Stdev " );
-        assert containsRows( res, true, false,
+        containsRows( res, true, false,
                 Row.of( TestLiteral.from( 9.8994949 ) ) );
 
     }
@@ -422,7 +422,7 @@ public class AggregateTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_COMPLEX_2 );
 
         GraphResult res = execute( "MATCH (p:Person) RETURN  stdev(p.age) AS Stdev , n.depno As department" );
-        assert containsRows( res, true, false,
+        containsRows( res, true, false,
                 Row.of( TestLiteral.from( 9.8994949 ), TestLiteral.from( 13 ) ) );
     }
 

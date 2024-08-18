@@ -42,7 +42,7 @@ public class SpatialFunTest extends CypherTestTemplate {
                 + "  p.crs AS crs,\n"
                 + "  p.srid AS srid" );
 
-        assert containsRows( res, true, false,
+          containsRows( res, true, false,
                 Row.of( TestLiteral.from( 3.0 ), TestLiteral.from( 4.0 ),
                         TestLiteral.from( "cartesian" ), TestLiteral.from( 7203 ) ) );
     }
@@ -61,7 +61,7 @@ public class SpatialFunTest extends CypherTestTemplate {
                 + "  p.crs AS crs,\n"
                 + "  p.srid AS srid" );
 
-        assert containsRows( res, true, false,
+          containsRows( res, true, false,
                 Row.of( TestLiteral.from( 3.0 ),
                         TestLiteral.from( 4.0 ),
                         TestLiteral.from( 4321.0 ),

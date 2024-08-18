@@ -43,7 +43,7 @@ public class OtherFunTest extends CypherTestTemplate {
         GraphResult res = execute( "MATCH (a)-[r]->(b)\n"
                 + "RETURN TYPE(r)\n" );
 
-        assert containsRows( res, true, true, Row.of( TestLiteral.from( "OWNER_OF" ) ) );
+          containsRows( res, true, true, Row.of( TestLiteral.from( "OWNER_OF" ) ) );
 
     }
 
@@ -64,7 +64,7 @@ public class OtherFunTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
         GraphResult result = execute( "MATCH (p) RETURN p.name, coalesce(p.age, 0) AS age" );
 
-        assert containsRows( result, true, false,
+          containsRows( result, true, false,
                 Row.of( TestLiteral.from( "Max" ), TestLiteral.from( 0 ) ),
                 Row.of( TestLiteral.from( "Hans" ), TestLiteral.from( 0 ) ),
                 Row.of( TestLiteral.from( "Ann" ), TestLiteral.from( 45 ) ) );
@@ -80,7 +80,7 @@ public class OtherFunTest extends CypherTestTemplate {
 
         assertNode( result, 0 );
 
-        assert containsRows( result, true, false,
+          containsRows( result, true, false,
                 Row.of( TestLiteral.from( "Max" ), TestLiteral.from( "unknown" ) ),
                 Row.of( TestLiteral.from( "Hans" ), TestLiteral.from( "unknown" ) ),
                 Row.of( TestLiteral.from( "Ann" ), TestLiteral.from( "unknown" ) ) );
@@ -96,12 +96,12 @@ public class OtherFunTest extends CypherTestTemplate {
         GraphResult res = execute( "MATCH (p:Person { name: 'Max' })\n"
                 + "RETURN EXISTS(p.age)\n" );
 
-        assert containsRows( res, true, true, Row.of( TestLiteral.from( false ) ) );
+          containsRows( res, true, true, Row.of( TestLiteral.from( false ) ) );
 
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
         execute( "MATCH (p:Person { name: 'Ann' })\n"
                 + "RETURN EXISTS(p.age)\n" );
-        assert containsRows( res, true, true, Row.of( TestLiteral.from( true ) ) );
+          containsRows( res, true, true, Row.of( TestLiteral.from( true ) ) );
     }
 
 

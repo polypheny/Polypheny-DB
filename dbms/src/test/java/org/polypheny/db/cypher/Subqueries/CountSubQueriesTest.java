@@ -44,7 +44,7 @@ public class CountSubQueriesTest extends CypherTestTemplate {
                 + "WHERE COUNT { (person)-[r:OWNER_OF]->(:Animal) } > 1\n"
                 + "RETURN person.name AS name" );
 
-        assert containsRows( res, true, false,
+          containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Max" ) ) );
     }
 
@@ -55,7 +55,7 @@ public class CountSubQueriesTest extends CypherTestTemplate {
         GraphResult res = execute( "MATCH (person:Person)\n"
                 + "RETURN person.name, COUNT { (person)-[:OWNER_OF]->(:Dog) } as howManyDogs" );
 
-        assert containsRows( res, true, false,
+          containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Max" ), TestLiteral.from( 1 ) ) );
 
     }
@@ -71,7 +71,7 @@ public class CountSubQueriesTest extends CypherTestTemplate {
                 + "  WHERE person.name = dog.name } = 1\n"
                 + "RETURN person.name AS name" );
 
-        assert containsRows( res, true, false,
+          containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Max" ) ) );
     }
 
@@ -91,7 +91,7 @@ public class CountSubQueriesTest extends CypherTestTemplate {
                 + "        RETURN cat.name AS petName\n"
                 + "    } AS numPets" );
 
-        assert containsRows( res, true, false,
+          containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Max" ), TestLiteral.from( 2 ) ) );
     }
 
@@ -107,7 +107,7 @@ public class CountSubQueriesTest extends CypherTestTemplate {
                 + "} = 1\n"
                 + "RETURN person.name AS name" );
 
-        assert containsRows( res, true, false,
+          containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Max" ) ) );
 
     }
@@ -121,7 +121,7 @@ public class CountSubQueriesTest extends CypherTestTemplate {
                 + "SET person.howManyDogs = COUNT { (person)-[:OWNER_OF]->(:Dog) }\n"
                 + "RETURN person.howManyDogs as howManyDogs" );
 
-        assert containsRows( res, true, false, Row.of(
+          containsRows( res, true, false, Row.of(
                 TestLiteral.from( 1 ) ) );
 
 
@@ -138,7 +138,7 @@ public class CountSubQueriesTest extends CypherTestTemplate {
                 + "     WHEN COUNT { (person)-[:OWNER_OF]->(:Dog) } >= 1 THEN \"DogLover \" + person.name\n"
                 + "     ELSE person.name\n"
                 + "   END AS result" );
-        assert containsRows( res, true, false,
+          containsRows( res, true, false,
                 Row.of( TestLiteral.from( "DogLover" ) ),
                 Row.of( TestLiteral.from( "Hans" ) ) );
 

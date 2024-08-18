@@ -28,6 +28,9 @@ import org.polypheny.db.webui.models.results.GraphResult;
 import java.util.Arrays;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 @Slf4j
 public class MergeTest extends CypherTestTemplate {
 
@@ -51,7 +54,7 @@ public class MergeTest extends CypherTestTemplate {
         execute( "MERGE (P)" );
         GraphResult res = matchAndReturnAllNodes();
         assertNode( res, 0 );
-        assert containsNodes( res, true, TestNode.from( List.of() ) );
+        containsNodes( res, true, TestNode.from( List.of() ) );
     }
 
 
@@ -59,7 +62,7 @@ public class MergeTest extends CypherTestTemplate {
     public void returnSingleNodeMergeTest() {
         GraphResult res = execute( "MERGE (P) Return P " );
         assertNode( res, 0 );
-        assert containsNodes( res, true, TestNode.from( List.of() ) );
+        containsNodes( res, true, TestNode.from( List.of() ) );
 
 
     }
@@ -71,7 +74,7 @@ public class MergeTest extends CypherTestTemplate {
         execute( "MERGE (p:Person)" );
         GraphResult res = matchAndReturnAllNodes();
         assertNode( res, 0 );
-        assert containsNodes( res, true, TestNode.from( List.of( "Person" ) ) );
+        containsNodes( res, true, TestNode.from( List.of( "Person" ) ) );
         // System.out.print( res.getData().length );  return zero
 
         // exist node
@@ -79,7 +82,7 @@ public class MergeTest extends CypherTestTemplate {
         res = matchAndReturnAllNodes();
 
         // num of nodes should be one
-        assert res.getData().length == 1;
+        assertEquals( 1, res.getData().length );
     }
 
 
@@ -90,12 +93,12 @@ public class MergeTest extends CypherTestTemplate {
         execute( "MERGE (robert:Critic:Viewer)" );
         GraphResult res = matchAndReturnAllNodes();
         assertNode( res, 0 );
-        assert containsNodes( res, true, TestNode.from( List.of( "Critic", "Viewer" ) ) );
+        containsNodes( res, true, TestNode.from( List.of( "Critic", "Viewer" ) ) );
 
         // exist node
         execute( "MERGE (robert:Critic:Viewer)" );
         GraphResult allNodes = matchAndReturnAllNodes();
-        assert allNodes.getData().length == 1;
+        assertEquals( 1, res.getData().length );
 
     }
 
@@ -107,12 +110,12 @@ public class MergeTest extends CypherTestTemplate {
         GraphResult res = matchAndReturnAllNodes();
 
         assertNode( res, 0 );
-        assert containsNodes( res, true, TestNode.from( List.of(),
+        containsNodes( res, true, TestNode.from( List.of(),
                 Pair.of( "name", "Charlie Sheen" ) ) );
 
         execute( "MERGE (charlie {name: 'Charlie Sheen'})" );
         res = matchAndReturnAllNodes();
-        assert res.getData().length == 1;
+        assertEquals( 1, res.getData().length );
 
     }
 
@@ -123,14 +126,14 @@ public class MergeTest extends CypherTestTemplate {
         execute( "MERGE (charlie {name: 'Charlie Sheen', age: 10})" );
         GraphResult res = matchAndReturnAllNodes();
         assertNode( res, 0 );
-        assert containsNodes( res, true, TestNode.from( List.of(),
+        containsNodes( res, true, TestNode.from( List.of(),
                 Pair.of( "name", "Charlie Sheen" ),
                 Pair.of( "age", 10 ) ) );
 
         execute( "MERGE (charlie {name: 'Charlie Sheen', age: 10})" );
         res = matchAndReturnAllNodes();
 
-        assert res.getData().length == 1;
+        assertEquals( 1, res.getData().length );
     }
 
 
@@ -140,14 +143,14 @@ public class MergeTest extends CypherTestTemplate {
         execute( "MERGE (michael:Person {name: 'Michael Douglas' , age : 10})" );
         GraphResult res = matchAndReturnAllNodes();
         assertNode( res, 0 );
-        assert containsNodes( res, true, TestNode.from( List.of( "Person" ),
+        containsNodes( res, true, TestNode.from( List.of( "Person" ),
                 Pair.of( "name", "Michael Douglas" ),
                 Pair.of( "age", 10 ) ) );
 
         execute( "MERGE (michael:Person {name: 'Michael Douglas' , age : 10})" );
         res = matchAndReturnAllNodes();
 
-        assert res.getData().length == 1;
+        assertEquals( 1, res.getData().length );
     }
 
 
@@ -171,7 +174,7 @@ public class MergeTest extends CypherTestTemplate {
 
         res = execute( "MATCH (location:Location) RETURN location" );
 
-        assert res.getData().length == 1;
+        assertEquals( 1, res.getData().length );
     }
 
 
@@ -190,7 +193,7 @@ public class MergeTest extends CypherTestTemplate {
                 + "ON CREATE SET keanu.age = 20"
         );
         res = matchAndReturnAllNodes();
-        assert res.getData().length == 1;
+        assertEquals( 1, res.getData().length );
 
     }
 
@@ -214,7 +217,7 @@ public class MergeTest extends CypherTestTemplate {
                 List.of( "Person" ),
                 Pair.of( "found", true ) ) );
 
-        assert res.getData().length == 1;
+        assertEquals( 1, res.getData().length );
 
 
     }
@@ -239,7 +242,7 @@ public class MergeTest extends CypherTestTemplate {
                 Pair.of( "age", 35 ),
                 Pair.of( "name", "Alice" ) ) );
 
-        assert res.getData().length == 1;
+        assertEquals( 1, res.getData().length );
     }
 
 
@@ -254,19 +257,19 @@ public class MergeTest extends CypherTestTemplate {
                 + "MERGE (charlie)-[r:ACTED_IN]->(wallStreet)\n" );
 
         GraphResult res = matchAndReturnAllNodes();
-        assert containsNodes( res, true,
+        containsNodes( res, true,
                 TestNode.from( List.of( "Person" ), Pair.of( "name", "Charlie Sheen" ) ),
                 TestNode.from( List.of( "Person" ), Pair.of( "name", "Wall Street" ) ) );
 
         res = execute( "MATCH ()-[r]->() RETURN r" );
-        assert containsEdges( res, true, TestEdge.from( List.of( "ACTED_IN" ) ) );
+        containsEdges( res, true, TestEdge.from( List.of( "ACTED_IN" ) ) );
         execute( "MATCH\n"
                 + "  (charlie:Person {name: 'Charlie Sheen'}),\n"
                 + "  (wallStreet:Movie {title: 'Wall Street'})\n"
                 + "MERGE (charlie)-[r:ACTED_IN]->(wallStreet)\n" );
 
         res = execute( "MATCH ()-[r]->() RETURN r" );
-        assert res.getData().length == 1;
+        assertEquals( 1, res.getData().length );
 
 
     }
@@ -285,7 +288,7 @@ public class MergeTest extends CypherTestTemplate {
         GraphResult res = execute( "MATCH (p1:Person)-[:DIRECTED]->(movie:Movie)<-[:DIRECTED]-(p2:Person)\n"
                 + "RETURN p1, p2, movie\n" );
 
-        assert containsNodes( res, true,
+        containsNodes( res, true,
                 TestNode.from( Pair.of( "name", "Charlie Sheen" ) ),
                 TestNode.from( Pair.of( "name", "Martin Sheen" ) ),
                 TestNode.from( List.of( "Movie" ) ) );
@@ -296,7 +299,7 @@ public class MergeTest extends CypherTestTemplate {
                 + "MERGE (oliver)-[:DIRECTED]->(movie:Movie)<-[:DIRECTED]-(reiner)\n" );
 
         res = matchAndReturnAllNodes();
-        assert res.getData().length == 1;
+        assertEquals( 1, res.getData().length );
 
     }
 
@@ -314,7 +317,7 @@ public class MergeTest extends CypherTestTemplate {
         GraphResult res = execute( "MATCH (p1:Person)-[r:KNOWS]-(p2:Person)\n"
                 + "RETURN KNOWS" );
 
-        assert containsEdges( res, true, TestEdge.from( List.of( "KNOWS" ) ) );
+        containsEdges( res, true, TestEdge.from( List.of( "KNOWS" ) ) );
 
         execute( "MATCH\n"
                 + "  (charlie:Person {name: 'Charlie Sheen'}),\n"
@@ -324,7 +327,7 @@ public class MergeTest extends CypherTestTemplate {
         res = execute( "MATCH (p1:Person)-[r:KNOWS]-(p2:Person)\n"
                 + "RETURN KNOWS" );
 
-        assert res.getData().length == 1;
+        assertEquals( 1, res.getData().length );
     }
 
 
@@ -345,8 +348,8 @@ public class MergeTest extends CypherTestTemplate {
                 Row.of( TestLiteral.from( "New Jersey" ) ) );
 
         res = execute( "MATCH ()-[BORN_IN]->() RETURN BORN_IN" );
-        assert res.getData().length == 3;
-        assert containsEdges( res, true, TestEdge.from( List.of( "BORN_IN" ) ) );
+        assertEquals( 3, res.getData().length );
+        containsEdges( res, true, TestEdge.from( List.of( "BORN_IN" ) ) );
 
         execute( "MATCH (person:Person)\n"
                 + "MERGE (location:Location {name: person.bornIn})\n"
@@ -355,7 +358,7 @@ public class MergeTest extends CypherTestTemplate {
         GraphResult edges = execute( "MATCH ()-[BORN_IN]->() RETURN BORN_IN" );
         GraphResult nodes = execute( "MATCH (location:Location) RETURN Location  " );
 
-        assert edges.getData().length == 3 && nodes.getData().length == 3;
+        assertTrue( edges.getData().length == 3 && nodes.getData().length == 3 );
 
     }
 
@@ -370,19 +373,19 @@ public class MergeTest extends CypherTestTemplate {
                 + "MERGE (person)-[r:HAS_CHAUFFEUR]->(chauffeur:Chauffeur {name: person.chauffeurName})\n" );
 
         GraphResult res = execute( "MATCH ( chauffeur :Chauffeur) Return Chauffeur.name" );
-        assert containsRows( res, true, true,
+        containsRows( res, true, true,
                 Row.of( TestLiteral.from( "John Brown" ) ),
                 Row.of( TestLiteral.from( "Bob Brown" ) ),
                 Row.of( TestLiteral.from( "John Brown" ) ) );
 
         res = execute( "MATCH ()-[HAS_CHAUFFEUR]->() RETURN HAS_CHAUFFEUR" );
-        assert res.getData().length == 3;
-        assert containsEdges( res, true, TestEdge.from( List.of( "HAS_CHAUFFEUR" ) ) );
+        assertEquals( 3, res.getData().length );
+        containsEdges( res, true, TestEdge.from( List.of( "HAS_CHAUFFEUR" ) ) );
         execute( "MATCH (person:Person)\n"
                 + "MERGE (person)-[r:HAS_CHAUFFEUR]->(chauffeur:Chauffeur {name: person.chauffeurName})\n" );
         GraphResult edges = execute( "MATCH ()-[HAS_CHAUFFEUR]->() RETURN HAS_CHAUFFEUR" );
         GraphResult nodes = execute( "MATCH (n:Chauffeur) RETURN Chauffeur" );
-        assert edges.getData().length == 3 && nodes.getData().length == 3;
+        assertTrue( edges.getData().length == 3 && nodes.getData().length == 3 );
 
     }
 

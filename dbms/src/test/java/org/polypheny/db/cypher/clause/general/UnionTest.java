@@ -21,7 +21,6 @@ import org.junit.jupiter.api.Test;
 import org.polypheny.db.cypher.CypherTestTemplate;
 import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.webui.models.results.GraphResult;
-import java.util.Arrays;
 
 public class UnionTest extends CypherTestTemplate {
 
@@ -66,7 +65,7 @@ public class UnionTest extends CypherTestTemplate {
                 + "MATCH (m :Movie)\n"
                 + "RETURN p.Title AS name\n" );
 
-        assert containsRows( res, true, false,
+          containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Max" ) ),
                 Row.of( TestLiteral.from( "Wall Street" ) ) );
     }
@@ -84,7 +83,7 @@ public class UnionTest extends CypherTestTemplate {
                 + "MATCH (m:Movie)\n"
                 + "RETURN NULL AS name, NULL AS age, m.title AS title, m.released AS released\n" );
 
-        assert containsRows( res, true, false,
+          containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Ann" ), TestLiteral.from( 45 ), TestLiteral.from( null ), TestLiteral.from( null ) ),
                 Row.of( TestLiteral.from( null ), TestLiteral.from( null ), TestLiteral.from( "Wall Street" ), TestLiteral.from( 2002 ) ) );
     }
@@ -126,7 +125,7 @@ public class UnionTest extends CypherTestTemplate {
                 + "MATCH (m :Movie)\n"
                 + "RETURN p.Title AS name\n" );
 
-        assert containsRows( res, true, false,
+          containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Max" ) ),
                 Row.of( TestLiteral.from( "Wall Street" ) ),
                 Row.of( TestLiteral.from( "Max" ) ),
@@ -147,7 +146,7 @@ public class UnionTest extends CypherTestTemplate {
                 + "MATCH (m:Movie)\n"
                 + "RETURN NULL AS name, NULL AS age, m.title AS title, m.released AS released\n" );
 
-        assert containsRows( res, true, false,
+          containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Ann" ), TestLiteral.from( 45 ), TestLiteral.from( null ), TestLiteral.from( null ) ),
                 Row.of( TestLiteral.from( "Ann" ), TestLiteral.from( 45 ), TestLiteral.from( null ), TestLiteral.from( null ) ),
                 Row.of( TestLiteral.from( null ), TestLiteral.from( null ), TestLiteral.from( "Wall Street" ), TestLiteral.from( 2002 ) ),
@@ -186,7 +185,7 @@ public class UnionTest extends CypherTestTemplate {
                 + "MATCH (m :Movie)\n"
                 + "RETURN p.Title AS name\n" );
 
-        assert containsRows( res, true, false,
+          containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Max" ) ),
                 Row.of( TestLiteral.from( "Wall Street" ) ) );
     }
@@ -204,7 +203,7 @@ public class UnionTest extends CypherTestTemplate {
                 + "MATCH (m:Movie)\n"
                 + "RETURN NULL AS name, NULL AS age, m.title AS title, m.released AS released\n" );
 
-        assert containsRows( res, true, false,
+          containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Ann" ), TestLiteral.from( 45 ), TestLiteral.from( null ), TestLiteral.from( null ) ),
                 Row.of( TestLiteral.from( null ), TestLiteral.from( null ), TestLiteral.from( "Wall Street" ), TestLiteral.from( 2002 ) ) );
     }

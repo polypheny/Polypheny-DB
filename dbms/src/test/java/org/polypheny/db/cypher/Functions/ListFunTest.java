@@ -23,6 +23,8 @@ import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.webui.models.results.GraphResult;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 public class ListFunTest extends CypherTestTemplate {
 
     @BeforeEach
@@ -35,7 +37,7 @@ public class ListFunTest extends CypherTestTemplate {
     @Test
     public void simpleSizeFunTest() {
         GraphResult res = execute( "RETURN size([1, 2, 3])" );
-        assert containsRows( res, true, true,
+        containsRows( res, true, true,
                 Row.of( TestLiteral.from( 3 ) ) );
     }
 
@@ -43,7 +45,7 @@ public class ListFunTest extends CypherTestTemplate {
     @Test
     public void nullSizeFunTest() {
         GraphResult res = execute( "RETURN size(null)" );
-        assert containsRows( res, true, true,
+        containsRows( res, true, true,
                 Row.of( TestLiteral.from( null ) ) );
     }
 
@@ -56,7 +58,7 @@ public class ListFunTest extends CypherTestTemplate {
                 + "WHERE a.name = 'Max'\n"
                 + "RETURN size((a)-[]->())) AS fof" );
 
-        assert containsRows( res, true, true,
+        containsRows( res, true, true,
                 Row.of( TestLiteral.from( 2 ) ) );
 
     }
@@ -68,7 +70,7 @@ public class ListFunTest extends CypherTestTemplate {
 
         GraphResult res = execute( "MATCH (a)  RETURN size(a.name)" );
 
-        assert containsRows( res, true, true,
+        containsRows( res, true, true,
                 Row.of( TestLiteral.from( 3 ) ) );
     }
 
@@ -78,7 +80,7 @@ public class ListFunTest extends CypherTestTemplate {
 
         GraphResult res = execute( "RETURN RANGE(1, 3)" );
 
-        assert containsRows( res, true, true,
+        containsRows( res, true, true,
                 Row.of( TestLiteral.from( 1 ), TestLiteral.from( 2 ), TestLiteral.from( 3 ) ) );
     }
 
@@ -89,7 +91,7 @@ public class ListFunTest extends CypherTestTemplate {
         GraphResult res = execute( "MATCH (a)"
                 + "RETURN labels(a)" );
 
-        assert containsRows( res, true, false, Row.of( TestLiteral.from( List.of( "Person" ) ) ) );
+        containsRows( res, true, false, Row.of( TestLiteral.from( List.of( "Person" ) ) ) );
     }
 
 
@@ -98,8 +100,8 @@ public class ListFunTest extends CypherTestTemplate {
         execute( SINGLE_EDGE_1 );
         GraphResult res = execute( "MATCH p = (a)-->(b)-->(c)\n"
                 + "RETURN nodes(p)" );
-        assert res.getData().length == 1;
-        assert containsRows( res, true, false, Row.of( TestLiteral.from( List.of( MAX, KIRA ) ) ) );
+        assertEquals( 1, res.getData().length );
+        containsRows( res, true, false, Row.of( TestLiteral.from( List.of( MAX, KIRA ) ) ) );
 
     }
 
@@ -109,7 +111,7 @@ public class ListFunTest extends CypherTestTemplate {
         execute( SINGLE_EDGE_1 );
         GraphResult res = execute( "MATCH p = (a)-->(b)-->(c)\n"
                 + "RETURN relationships(p)" );
-        assert res.getData().length == 1;
+        assertEquals( 1, res.getData().length );
     }
 
 
@@ -118,7 +120,7 @@ public class ListFunTest extends CypherTestTemplate {
         execute( SINGLE_EDGE_1 );
         GraphResult res = execute( "MATCH p = (a)-->(b)-->(c)\n"
                 + "RETURN relationships(p) , nodes(p)" );
-        assert res.getData().length == 1;
+        assertEquals( 1, res.getData().length );
     }
 
 

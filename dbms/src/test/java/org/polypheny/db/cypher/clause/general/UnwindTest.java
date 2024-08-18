@@ -6,6 +6,8 @@ import org.polypheny.db.cypher.CypherTestTemplate;
 import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.webui.models.results.GraphResult;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 public class UnwindTest extends CypherTestTemplate {
 
     @BeforeEach
@@ -19,7 +21,7 @@ public class UnwindTest extends CypherTestTemplate {
     public void simpleUnwindTest() {
         GraphResult res = execute( "UNWIND [1, 3, null] AS x RETURN x, 'val' AS y" );
 
-        assert containsRows( res, true, true,
+        containsRows( res, true, true,
                 Row.of( TestLiteral.from( 1 ), TestLiteral.from( "val" ) ),
                 Row.of( TestLiteral.from( 3 ), TestLiteral.from( "val" ) ),
                 Row.of( TestLiteral.from( null ), TestLiteral.from( "val" ) ) );
@@ -93,10 +95,10 @@ public class UnwindTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_COMPLEX_2 );
 
         GraphResult res = execute( "MATCH (n) UNWIND n.age  AS age  RETURN max(age)" );
-        assert containsRows( res, true, false, Row.of( TestLiteral.from( 45 ) ) );
+        containsRows( res, true, false, Row.of( TestLiteral.from( 45 ) ) );
         res = execute( "MATCH (n) UNWIND n.age  AS age  RETURN min(age)" );
 
-        assert containsRows( res, true, false, Row.of( TestLiteral.from( 31 ) ) );
+        containsRows( res, true, false, Row.of( TestLiteral.from( 31 ) ) );
 
     }
 
@@ -107,7 +109,7 @@ public class UnwindTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_COMPLEX_2 );
 
         GraphResult res = execute( "MATCH (n) UNWIND n.age  AS age  RETURN sum(age)" );
-        assert containsRows( res, true, false, Row.of( TestLiteral.from( 76 ) ) );
+        containsRows( res, true, false, Row.of( TestLiteral.from( 76 ) ) );
 
     }
 
@@ -118,7 +120,7 @@ public class UnwindTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_COMPLEX_2 );
 
         GraphResult res = execute( "MATCH (n) UNWIND n.age  AS age  RETURN avg(age)" );
-        assert containsRows( res, true, false, Row.of( TestLiteral.from( 38 ) ) );
+        containsRows( res, true, false, Row.of( TestLiteral.from( 38 ) ) );
 
     }
 
@@ -136,7 +138,7 @@ public class UnwindTest extends CypherTestTemplate {
     public void countUnWind() {
         GraphResult res = execute( "UNWIND [2, 1 , 1] AS i  RETURN count( i)" );
 
-        assert containsRows( res, true, false,
+        containsRows( res, true, false,
                 Row.of( TestLiteral.from( 3 ) ) );
 
     }
@@ -145,8 +147,8 @@ public class UnwindTest extends CypherTestTemplate {
     @Test
     public void distinctUnWind() {
         GraphResult res = execute( "UNWIND [3, 3 ,2 ,1 ] AS i  RETURN DISTINCT i" );
-        assert res.getData().length == 3;
-        assert containsRows( res, true, false,
+        assertEquals( 3, res.getData().length );
+        containsRows( res, true, false,
                 Row.of( TestLiteral.from( 3 ) ),
                 Row.of( TestLiteral.from( 2 ) ), Row.of( TestLiteral.from( 1 ) ) );
 
@@ -157,7 +159,7 @@ public class UnwindTest extends CypherTestTemplate {
     @Test
     public void ConditionalLogicUnWind() {
         GraphResult res = execute( "UNWIND [1, 2, 3] AS number RETURN number, CASE WHEN number % 2 = 0 THEN 'even' ELSE 'odd' END AS type" );
-        assert containsRows( res, true, true,
+        containsRows( res, true, true,
                 Row.of( TestLiteral.from( 1 ), TestLiteral.from( "odd" ) ),
                 Row.of( TestLiteral.from( 2 ), TestLiteral.from( "even" ) ),
                 Row.of( TestLiteral.from( 3 ), TestLiteral.from( "odd" ) ) );
@@ -168,7 +170,7 @@ public class UnwindTest extends CypherTestTemplate {
     @Test
     public void mapStructureUnWind() {
         GraphResult res = execute( "UNWIND [{name: 'Alice', age: 30}] AS person  RETURN person.name  , person.age" );
-        assert containsRows( res, true, false, Row.of( TestLiteral.from( "Alice" ) ), Row.of( TestLiteral.from( 30 ) ) );
+        containsRows( res, true, false, Row.of( TestLiteral.from( "Alice" ) ), Row.of( TestLiteral.from( 30 ) ) );
 
     }
 

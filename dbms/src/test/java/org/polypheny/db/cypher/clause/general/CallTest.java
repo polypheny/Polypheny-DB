@@ -21,7 +21,6 @@ import org.junit.jupiter.api.Test;
 import org.polypheny.db.cypher.CypherTestTemplate;
 import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.webui.models.results.GraphResult;
-import java.util.Arrays;
 
 public class CallTest extends CypherTestTemplate {
 
@@ -41,7 +40,7 @@ public class CallTest extends CypherTestTemplate {
         execute( SINGLE_NODE_ANIMAL );
          res = execute( "CALL db.labels()" );
 
-        assert containsRows( res, true, false,
+         containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Person" ) ),
                 Row.of( TestLiteral.from( "Animal" ) ) );
 
@@ -50,7 +49,7 @@ public class CallTest extends CypherTestTemplate {
         execute( SINGLE_NODE_ANIMAL );
 
         res = execute( "CALL db.labels()" );
-        assert containsRows( res, true, false,
+         containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Person" ) ),
                 Row.of( TestLiteral.from( "Person" ) ),
                 Row.of( TestLiteral.from( "Animal" ) ),
@@ -65,7 +64,7 @@ public class CallTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_ANIMAL );
         GraphResult res =  execute( "CALL db.labels() YIELD label" );
-        assert containsRows( res, true, false,
+         containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Person" ) ),
                 Row.of( TestLiteral.from( "Animal" ) ) );
     }
@@ -75,7 +74,7 @@ public class CallTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_ANIMAL );
         GraphResult res =  execute( "CALL db.labels() YIELD label As Label" );
-        assert containsRows( res, true, false,
+         containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Person" ) ),
                 Row.of( TestLiteral.from( "Animal" ) ) );
     }
@@ -86,7 +85,7 @@ public class CallTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_ANIMAL );
         GraphResult res =  execute( "CALL db.labels() YIELD *" );
-        assert containsRows( res, true, false,
+         containsRows( res, true, false,
                 Row.of( TestLiteral.from( 2 ) ));
     }
 
@@ -96,7 +95,7 @@ public class CallTest extends CypherTestTemplate {
         execute( SINGLE_NODE_ANIMAL );
         GraphResult res =  execute( "CALL db.labels() YIELD label\n"
                 + "RETURN label" );
-        assert containsRows( res, true, false,
+         containsRows( res, true, false,
                 Row.of( TestLiteral.from( 2 ) ) );
     }
 
@@ -106,7 +105,7 @@ public class CallTest extends CypherTestTemplate {
         execute(SINGLE_NODE_ANIMAL);
         GraphResult res = execute("CALL db.labels() YIELD label WHERE label = 'Person' RETURN count(label) AS numLabels");
 
-        assert containsRows(res, true, false,
+         containsRows(res, true, false,
                 Row.of(TestLiteral.from(1)));
     }
 
@@ -117,7 +116,7 @@ public class CallTest extends CypherTestTemplate {
         execute(SINGLE_NODE_ANIMAL);
         GraphResult res = execute("CALL db.labels() YIELD label RETURN label ORDER BY label");
 
-        assert containsRows(res, true, false,
+          containsRows(res, true, false,
                 Row.of(TestLiteral.from("Animal")),
                 Row.of(TestLiteral.from("Person")),
                 Row.of(TestLiteral.from("Person")));
@@ -130,7 +129,7 @@ public class CallTest extends CypherTestTemplate {
         execute(SINGLE_NODE_PERSON_2);
         GraphResult res = execute("CALL db.labels() YIELD label RETURN label, count(*) AS labelCount");
 
-        assert containsRows(res, true, false,
+          containsRows(res, true, false,
                 Row.of(TestLiteral.from("Person"), TestLiteral.from(2)),
                 Row.of(TestLiteral.from("Animal"), TestLiteral.from(1)));
     }
@@ -141,7 +140,7 @@ public class CallTest extends CypherTestTemplate {
         execute(SINGLE_NODE_ANIMAL);
         execute(SINGLE_NODE_PERSON_2);
         GraphResult res = execute("CALL db.propertyKeys() YIELD propertyKey ");
-        assert containsRows(res, true, false,
+          containsRows(res, true, false,
                 Row.of(TestLiteral.from("name")),
                 Row.of(TestLiteral.from("age")),
                 Row.of(TestLiteral.from("type")));
@@ -153,7 +152,7 @@ public class CallTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_ANIMAL );
         GraphResult res =  execute( "CALL db.propertyKeys() YIELD propertyKey AS prop" );
-        assert containsRows( res, true, false,
+          containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Person" ) ),
                 Row.of( TestLiteral.from( "Animal" ) ) );
     }
@@ -170,7 +169,7 @@ public class CallTest extends CypherTestTemplate {
                  + "RETURN prop, count(n) AS numNodes" );
 
 
-        assert containsRows(res, true, false,
+          containsRows(res, true, false,
                 Row.of(TestLiteral.from("name") , TestLiteral.from( 3 )),
                 Row.of(TestLiteral.from("age") ,TestLiteral.from( 1)),
                 Row.of(TestLiteral.from("type") ,TestLiteral.from( 1 )));

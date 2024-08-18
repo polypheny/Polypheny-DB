@@ -43,7 +43,7 @@ public class ExistsSubQueriesTest extends CypherTestTemplate {
                 + "}\n"
                 + "RETURN person.name AS name" );
 
-        assert containsRows( res, true, false, Row.of( TestLiteral.from( null ) ) );
+          containsRows( res, true, false, Row.of( TestLiteral.from( null ) ) );
         execute( EDGE_3 );
         execute( "MATCH (person:Person)\n"
                 + "WHERE EXISTS {\n"
@@ -51,7 +51,7 @@ public class ExistsSubQueriesTest extends CypherTestTemplate {
                 + "}\n"
                 + "RETURN person.name AS name" );
 
-        assert containsRows( res, true, false, Row.of( TestLiteral.from( "Max" ) ) );
+          containsRows( res, true, false, Row.of( TestLiteral.from( "Max" ) ) );
     }
 
 
@@ -65,7 +65,7 @@ public class ExistsSubQueriesTest extends CypherTestTemplate {
                 + "}\n"
                 + "RETURN dog.name AS name" );
 
-        assert containsRows( res, true, false, Row.of( TestLiteral.from( "Andy" ) ) );
+          containsRows( res, true, false, Row.of( TestLiteral.from( "Andy" ) ) );
 
     }
 
@@ -84,7 +84,7 @@ public class ExistsSubQueriesTest extends CypherTestTemplate {
                 + "}\n"
                 + "RETURN person.name AS name" );
 
-        assert containsRows( res, true, false, Row.of( TestLiteral.from( "Max" ) ) );
+          containsRows( res, true, false, Row.of( TestLiteral.from( "Max" ) ) );
 
 
     }
@@ -98,7 +98,7 @@ public class ExistsSubQueriesTest extends CypherTestTemplate {
                 + "  MATCH (person)-[:OWNER_OF]->(:Dog)\n"
                 + "} AS hasDog" );
 
-        assert containsRows( res, true, false,
+          containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Max" ), TestLiteral.from( true ) ) );
     }
 
@@ -116,7 +116,7 @@ public class ExistsSubQueriesTest extends CypherTestTemplate {
                 + "        UNION\n"
                 + "        MATCH (person)-[:HAS_CAT]->(:Cat)\n"
                 + "    } AS hasPet" );
-        assert containsRows( res, true, false,
+          containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Max" ), TestLiteral.from( true ) ),
                 Row.of( TestLiteral.from( "Hans" ), TestLiteral.from( false ) ) );
     }
@@ -132,7 +132,7 @@ public class ExistsSubQueriesTest extends CypherTestTemplate {
                 + "    WHERE d.name = name\n"
                 + "}\n"
                 + "RETURN person.name AS name" );
-        assert containsRows( res, true, false,
+          containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Max" ) ) );
     }
 

@@ -17,6 +17,8 @@
 package org.polypheny.db.cypher;
 
 import static java.lang.String.format;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.ArrayList;
@@ -190,13 +192,13 @@ public class CypherTestTemplate {
                 i++;
             }
 
-            assert !exclusive || actual.getData().length >= rows.length;
+            // Use assert to validate exclusive condition
+            assertTrue(!exclusive || actual.getData().length >= rows.length, "Exclusive condition failed: actual data has fewer rows than expected.");
 
-            if ( ordered ) {
-                return matchesExactRows( parsed, rows );
-            } else {
-                return matchesUnorderedRows( parsed, rows );
-            }
+
+            // Use the appropriate matching method based on the 'ordered' flag
+            return ordered ? matchesExactRows(parsed, rows) : matchesUnorderedRows(parsed, rows);
+
         } catch ( Throwable t ) {
             fail( "Error while evaluating result: " + t.getMessage() );
             throw new RuntimeException();
@@ -204,60 +206,54 @@ public class CypherTestTemplate {
     }
 
 
-    private static boolean matchesUnorderedRows( List<List<PolyValue>> parsed, Row[] rows ) {
-
+    private static boolean matchesUnorderedRows(List<List<PolyValue>> parsed, Row[] rows) {
         List<Integer> used = new ArrayList<>();
-        for ( Row row : rows ) {
 
-            int i = 0;
+        for (Row row : rows) {
             boolean matches = false;
-            for ( List<PolyValue> objects : parsed ) {
 
-                if ( !matches && !used.contains( i ) ) {
-                    if ( row.matches( objects ) ) {
-                        used.add( i );
-                        matches = true;
-                    }
+            for (int i = 0; i < parsed.size(); i++) {
+                if (!matches && !used.contains(i) && row.matches(parsed.get(i))) {
+                    used.add(i);
+                    matches = true;
+                    break;
                 }
+            }
 
-                i++;
-            }
-            if ( !matches ) {
-                return false;
-            }
+            // Use assert to validate that each row finds a match
+            assertTrue(matches, "Row " + row + " could not be matched in the parsed data.");
         }
         return true;
-
     }
 
 
-    private static boolean matchesExactRows( List<List<PolyValue>> parsed, Row[] rows ) {
-        boolean matches = true;
-        int j = 0;
-        for ( Row row : rows ) {
-            matches &= row.matches( parsed.get( j ) );
-            j++;
+
+    private static boolean matchesExactRows(List<List<PolyValue>> parsed, Row[] rows) {
+        for (int j = 0; j < rows.length; j++) {
+            // Use assert to ensure each row matches
+            assertTrue(rows[j].matches(parsed.get(j)), "Row " + j + " does not match the expected value.");
         }
-        return matches;
+        return true;
     }
 
 
     @SneakyThrows
-    private <T extends GraphPropertyHolder> boolean contains( String[][] actual, boolean exclusive, int index, Class<T> clazz, TestObject[] expected ) {
+    private <T extends GraphPropertyHolder> boolean contains(String[][] actual, boolean exclusive, int index, Class<T> clazz, TestObject[] expected) {
         List<T> parsed = new ArrayList<>();
 
-        for ( String[] entry : actual ) {
-            parsed.add( PolyValue.JSON_WRAPPER.readValue( entry[index], clazz ) );
+        for (String[] entry : actual) {
+            parsed.add(PolyValue.JSON_WRAPPER.readValue(entry[index], clazz));
         }
 
-        assert !exclusive || parsed.size() == expected.length;
+        // Assert that if exclusive is true, the number of parsed items equals the number of expected items
+        assertEquals(exclusive ? expected.length : parsed.size(), parsed.size(), "Exclusive condition failed: parsed size does not match expected length.");
 
-        boolean contains = true;
-        for ( TestObject node : expected ) {
-            contains &= parsed.stream().anyMatch( n -> node.matches( n, exclusive ) );
+        for (TestObject node : expected) {
+            // Assert that each expected node matches at least one parsed element
+            assertTrue(parsed.stream().anyMatch(n -> node.matches(n, exclusive)), "Expected node does not match any parsed element.");
         }
 
-        return contains;
+        return true;
     }
 
 

@@ -29,6 +29,8 @@ import org.polypheny.db.webui.models.results.GraphResult;
 import java.util.Arrays;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 @Slf4j
 public class RemoveTest extends CypherTestTemplate {
 
@@ -48,7 +50,7 @@ public class RemoveTest extends CypherTestTemplate {
         execute( "MATCH (n:Person {name: 'Max'})\n"
                 + "REMOVE n:Person " );
         GraphResult res = execute( "MATCH (n :Person) RETURN n" );
-        assert res.getData().length == 0;
+        assertEquals( 0, res.getData().length );
 
 
     }
@@ -60,7 +62,7 @@ public class RemoveTest extends CypherTestTemplate {
         GraphResult res = execute( "MATCH (n:Person {name: 'Max'})\n"
                 + "REMOVE n:Person RETURN n  " );
 
-        assert res.getData().length == 1;
+        assertEquals( 1, res.getData().length );
 
 
     }
@@ -71,11 +73,11 @@ public class RemoveTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_EMPLOYEE );
 
         GraphResult res = matchAndReturnAllNodes();
-        assert containsNodes( res, true, TestNode.from( List.of( "Person", "Employee" ) ) );
+        containsNodes( res, true, TestNode.from( List.of( "Person", "Employee" ) ) );
 
         execute( "MATCH (n) REMOVE n:Person:Employee " );
         res = execute( "MATCH (n :Person:Employee) RETURN n" );
-        assert res.getData().length == 0;
+        assertEquals( 0, res.getData().length );
 
 
     }
@@ -86,7 +88,7 @@ public class RemoveTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
         execute( "MATCH (n : Person {name: 'Ann'}) REMOVE a.age " );
         GraphResult res = execute( "MATCH (n : Person) RETURN n.age  , n.name" );
-        assert containsRows( res, true, true, Row.of( TestLiteral.from( null ), TestLiteral.from( "Ann" ) ) );
+        containsRows( res, true, true, Row.of( TestLiteral.from( null ), TestLiteral.from( "Ann" ) ) );
 
 
     }
@@ -99,7 +101,7 @@ public class RemoveTest extends CypherTestTemplate {
                 + "REMOVE n.age, n.depno\n" );
 
         GraphResult res = execute( "MATCH (n : Person) RETURN n.age  , n.depno , n.name " );
-        assert containsRows( res, true, true, Row.of( TestLiteral.from( null ), TestLiteral.from( null ), TestLiteral.from( "Ann" ) ) );
+        containsRows( res, true, true, Row.of( TestLiteral.from( null ), TestLiteral.from( null ), TestLiteral.from( "Ann" ) ) );
 
     }
 
@@ -109,7 +111,7 @@ public class RemoveTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_1 );
         execute( "MATCH (n:Person) SET n = {}" );
         GraphResult res = matchAndReturnAllNodes();
-        assert res.getData().length == 0;
+        assertEquals( 0, res.getData().length );
 
     }
 
@@ -120,7 +122,7 @@ public class RemoveTest extends CypherTestTemplate {
         execute( "MATCH(p1:Person)-[rel:KNOWS]->(p2:Person)\n"
                 + "REMOVE rel.since" );
         GraphResult res = execute( "MATCH ()-[r:KNOWS]->() RETURN r.since" );
-        assert containsRows( res, true, true, Row.of( TestLiteral.from( null ) ) );
+        containsRows( res, true, true, Row.of( TestLiteral.from( null ) ) );
 
 
     }
@@ -132,7 +134,7 @@ public class RemoveTest extends CypherTestTemplate {
         execute( "MATCH(p1:Person)-[rel:KNOWS]->(p2:Person)\n"
                 + "REMOVE rel.since , rel.relation" );
         GraphResult res = execute( "MATCH ()-[r:KNOWS]->() RETURN r.since , r.relation" );
-        assert containsRows( res, true, true,
+        containsRows( res, true, true,
                 Row.of( TestLiteral.from( null ) ),
                 Row.of( TestLiteral.from( null ) ) );
     }
@@ -143,7 +145,7 @@ public class RemoveTest extends CypherTestTemplate {
         execute( SINGLE_EDGE_2 );
         execute( "MATCH ()-[r:KNOWS]->() RETURN SET r = {}" );
         GraphResult res = execute( "MATCH ()-[r:KNOWS]->() RETURN r.since" );
-        assert containsRows( res, true, true, Row.of( TestLiteral.from( null ) ) );
+        containsRows( res, true, true, Row.of( TestLiteral.from( null ) ) );
     }
 
 

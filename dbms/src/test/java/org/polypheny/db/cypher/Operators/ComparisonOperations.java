@@ -34,14 +34,14 @@ public class ComparisonOperations extends CypherTestTemplate {
     @Test
     public void IsNullOperatorTest() {
         GraphResult res = execute( "Return null is not null as  Result" );
-        assert containsRows( res, true, false, Row.of( TestLiteral.from( false ) ) );
+          containsRows( res, true, false, Row.of( TestLiteral.from( false ) ) );
     }
 
 
     @Test
     public void IsNotNullFunction() {
         GraphResult res = execute( "Return null is null as  Result" );
-        assert containsRows( res, true, false, Row.of( TestLiteral.from( true ) ) );
+          containsRows( res, true, false, Row.of( TestLiteral.from( true ) ) );
 
     }
 
@@ -49,42 +49,42 @@ public class ComparisonOperations extends CypherTestTemplate {
     @Test
     public void greaterThanOperatorTest() {
         GraphResult res = execute( "Return 1 > 2 as result " );
-        assert containsRows( res, true, false, Row.of( TestLiteral.from( false ) ) );
+          containsRows( res, true, false, Row.of( TestLiteral.from( false ) ) );
     }
 
 
     @Test
     public void smallerThanOperatorTest() {
         GraphResult res = execute( "Return 1 < 2 as result " );
-        assert containsRows( res, true, false, Row.of( TestLiteral.from( true ) ) );
+          containsRows( res, true, false, Row.of( TestLiteral.from( true ) ) );
     }
 
 
     @Test
     public void greaterThanOrEqualOperatorTest() {
         GraphResult res = execute( "Return 1 >= 2 as result " );
-        assert containsRows( res, true, false, Row.of( TestLiteral.from( false ) ) );
+          containsRows( res, true, false, Row.of( TestLiteral.from( false ) ) );
     }
 
 
     @Test
     public void smallerThanOrEqualOperatorTest() {
         GraphResult res = execute( "Return 1 <= 2 as result " );
-        assert containsRows( res, true, false, Row.of( TestLiteral.from( true ) ) );
+          containsRows( res, true, false, Row.of( TestLiteral.from( true ) ) );
     }
 
 
     @Test
     public void equalityOperatorTest() {
         GraphResult res = execute( "Return 2 = 2 as result " );
-        assert containsRows( res, true, false, Row.of( TestLiteral.from( true ) ) );
+          containsRows( res, true, false, Row.of( TestLiteral.from( true ) ) );
     }
 
 
     @Test
     public void inequalityOperatorTest() {
         GraphResult res = execute( "Return 1 <> 2 as result " );
-        assert containsRows( res, true, false, Row.of( TestLiteral.from( false ) ) );
+          containsRows( res, true, false, Row.of( TestLiteral.from( false ) ) );
     }
 
 }

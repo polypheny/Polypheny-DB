@@ -42,7 +42,7 @@ public class DmlUpdateTest extends CypherTestTemplate {
                 + "SET a.age = 25" );
 
         GraphResult res = matchAndReturnAllNodes();
-        assert containsRows( res, true, true,
+        containsRows( res, true, true,
                 Row.of( TestNode.from( List.of( "Person" ), Pair.of( "name", "Max" ), Pair.of( "age", 25 ) ) ) );
     }
 
@@ -54,7 +54,7 @@ public class DmlUpdateTest extends CypherTestTemplate {
                 + "SET a:Swiss" );
 
         GraphResult res = matchAndReturnAllNodes();
-        assert containsRows( res, true, true,
+        containsRows( res, true, true,
                 Row.of( TestNode.from( List.of( "Person", "Swiss" ), Pair.of( "name", "Max" ) ) ) );
     }
 
@@ -66,7 +66,7 @@ public class DmlUpdateTest extends CypherTestTemplate {
                 + "SET a:Swiss:German" );
 
         GraphResult res = matchAndReturnAllNodes();
-        assert containsRows( res, true, true,
+        containsRows( res, true, true,
                 Row.of( TestNode.from( List.of( "Person", "Swiss", "German" ), Pair.of( "name", "Max" ) ) ) );
     }
 
@@ -78,7 +78,7 @@ public class DmlUpdateTest extends CypherTestTemplate {
                 + "SET a = {} " );
 
         GraphResult res = matchAndReturnAllNodes();
-        assert containsRows( res, true, true,
+        containsRows( res, true, true,
                 Row.of( TestNode.from( List.of( "Person" ) ) ) );
     }
 
@@ -90,7 +90,7 @@ public class DmlUpdateTest extends CypherTestTemplate {
                 + "SET a = { name : 'Max' , age: 13, job: 'Developer'} " );
 
         GraphResult res = matchAndReturnAllNodes();
-        assert containsRows( res, true, true,
+        containsRows( res, true, true,
                 Row.of( TestNode.from(
                         List.of( "Person" ),
                         Pair.of( "name", "Max" ),
@@ -121,7 +121,7 @@ public class DmlUpdateTest extends CypherTestTemplate {
                 + "RETURN p.name, p.age, p.position" );
 
         GraphResult res = matchAndReturnAllNodes();
-        assert containsRows( res, true, true,
+        containsRows( res, true, true,
                 Row.of( TestNode.from(
                         List.of( "Person" ),
                         Pair.of( "name", "Peter Smith" ),

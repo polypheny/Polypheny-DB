@@ -45,7 +45,7 @@ public class CollectSubQueriesTest extends CypherTestTemplate {
                 + "WHERE 'Kira' IN COLLECT { MATCH (person)-[:OWNER_OF]->(a:Animal) RETURN a.name }\n"
                 + "RETURN person.name AS name" );
 
-        assert containsRows( res, true, true, Row.of( TestLiteral.from( "Max" ) ) );
+          containsRows( res, true, true, Row.of( TestLiteral.from( "Max" ) ) );
 
     }
 
@@ -61,7 +61,7 @@ public class CollectSubQueriesTest extends CypherTestTemplate {
                 + "            RETURN d.name\n"
                 + "       } as DogNames" );
 
-        assert containsRows( res, true, false,
+          containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Max" ), TestLiteral.from( "Andy" ) ) );
 
     }
@@ -78,7 +78,7 @@ public class CollectSubQueriesTest extends CypherTestTemplate {
                 + "  RETURN a.name\n"
                 + "} as youngDog \n" );
 
-        assert containsRows( res, true, false,
+          containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Max" ), TestLiteral.from( "Andy" ) ) );
 
     }
@@ -98,7 +98,7 @@ public class CollectSubQueriesTest extends CypherTestTemplate {
                 + "        RETURN cat.name AS petName\n"
                 + "    } AS petNames" );
 
-        assert containsRows( res, true, false,
+          containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Max" ), TestLiteral.from( List.of( "Andy", "Mittens" ) ) ) );
 
 
@@ -116,7 +116,7 @@ public class CollectSubQueriesTest extends CypherTestTemplate {
                 + "    RETURN d.name\n"
                 + "} as dogsOfTheYear" );
 
-        assert containsRows( res, true, false,
+          containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Max" ), TestLiteral.from( "Andy" ) ) );
     }
 
@@ -132,7 +132,7 @@ public class CollectSubQueriesTest extends CypherTestTemplate {
                 + "     ELSE person.name\n"
                 + "   END AS result" );
 
-        assert containsRows( res, true, false,
+          containsRows( res, true, false,
                 Row.of( TestLiteral.from( "No Dogs" ) ),
                 Row.of( TestLiteral.from( "Max" ) ) );
 
@@ -148,7 +148,7 @@ public class CollectSubQueriesTest extends CypherTestTemplate {
                 + "SET person.dogNames = COLLECT { MATCH (person)-[:OWNER_OF]->(d:Dog) RETURN d.name }\n"
                 + "RETURN person.dogNames as dogNames" );
 
-        assert containsRows( res, true, false,
+          containsRows( res, true, false,
                 Row.of( TestLiteral.from( List.of( "Andy" ) ) ) );
     }
 

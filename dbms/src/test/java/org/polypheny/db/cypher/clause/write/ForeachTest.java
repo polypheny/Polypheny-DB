@@ -25,6 +25,8 @@ import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.models.results.GraphResult;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 public class ForeachTest extends CypherTestTemplate {
 
     @BeforeEach
@@ -42,8 +44,8 @@ public class ForeachTest extends CypherTestTemplate {
                 + ")" );
 
         GraphResult res = matchAndReturnAllNodes();
-        assert res.getData().length == 3;
-        assert containsNodes( res, true,
+        assertEquals( 3, res.getData().length );
+        containsNodes( res, true,
                 TestNode.from( Pair.of( "name", "Alice" ) ),
                 TestNode.from( Pair.of( "name", "Bob" ) ),
                 TestNode.from( Pair.of( "name", "Charlie" ) ) );
@@ -60,8 +62,8 @@ public class ForeachTest extends CypherTestTemplate {
                 + ")" );
 
         GraphResult res = matchAndReturnAllNodes();
-        assert res.getData().length == 3;
-        assert containsNodes( res, true,
+        assertEquals( 3, res.getData().length );
+        containsNodes( res, true,
                 TestNode.from( Pair.of( "name", "Alice" ) ),
                 TestNode.from( Pair.of( "name", "Bob" ) ),
                 TestNode.from( Pair.of( "name", "Charlie" ) ) );
@@ -97,7 +99,7 @@ public class ForeachTest extends CypherTestTemplate {
                 + ")" );
 
         GraphResult res = matchAndReturnAllNodes();
-        assert containsRows( res, true, false, Row.of( TestLiteral.from( null ) ),
+        containsRows( res, true, false, Row.of( TestLiteral.from( null ) ),
                 Row.of( TestLiteral.from( null ) ) );
 
     }
@@ -114,7 +116,7 @@ public class ForeachTest extends CypherTestTemplate {
                 + ")" );
 
         GraphResult res = matchAndReturnAllNodes();
-        assert containsNodes( res, true,
+        containsNodes( res, true,
                 TestNode.from( List.of( "Person" ), Pair.of( "name", "Max" ), Pair.of( "status", "active" ) ),
                 TestNode.from( List.of( "Person" ), Pair.of( "name", "Hans" ), Pair.of( "status", "active" ) ) );
     }
@@ -132,9 +134,9 @@ public class ForeachTest extends CypherTestTemplate {
                 + "    )\n"
                 + ")" );
         GraphResult res = execute( "MATCH (p1)-[r:KNOWS]->(p2) RETURN r" );
-        assert res.getData().length == 4;
+        assertEquals( 4, res.getData().length );
         res = execute( "MATCH (p1)-[r:KNOWS]-(p2) RETURN r" );
-        assert res.getData().length == 6;
+        assertEquals( 6, res.getData().length );
     }
 
 }

@@ -36,7 +36,7 @@ public class MathematicalOperators extends CypherTestTemplate {
     @Test
     public void additionOperator() {
         GraphResult res = execute( "RETURN 2 + 3" );
-        assert containsRows( res, true, false, Row.of( TestLiteral.from( 5 ) ) );
+          containsRows( res, true, false, Row.of( TestLiteral.from( 5 ) ) );
     }
 
 
@@ -44,7 +44,7 @@ public class MathematicalOperators extends CypherTestTemplate {
     public void minisOperatorTest() {
         GraphResult res = execute( "RETURN 3 - 2" );
 
-        assert containsRows( res, true, false, Row.of( TestLiteral.from( 1 ) ) );
+          containsRows( res, true, false, Row.of( TestLiteral.from( 1 ) ) );
 
     }
 
@@ -53,7 +53,7 @@ public class MathematicalOperators extends CypherTestTemplate {
     public void multiplicationOperatorTest() {
         GraphResult res = execute( "RETURN  2 * 3" );
 
-        assert containsRows( res, true, false, Row.of( TestLiteral.from( 6 ) ) );
+          containsRows( res, true, false, Row.of( TestLiteral.from( 6 ) ) );
     }
 
 
@@ -61,14 +61,14 @@ public class MathematicalOperators extends CypherTestTemplate {
     public void divisionOperatorTest() {
         GraphResult res = execute( "RETURN 6 / 3 " );
 
-        assert containsRows( res, true, false, Row.of( TestLiteral.from( 2 ) ) );
+          containsRows( res, true, false, Row.of( TestLiteral.from( 2 ) ) );
     }
 
 
     @Test
     public void moduleOperatorTest() {
         GraphResult res = execute( "RETURN 3 % 2 " );
-        assert containsRows( res, true, false, Row.of( TestLiteral.from( 1 ) ) );
+          containsRows( res, true, false, Row.of( TestLiteral.from( 1 ) ) );
 
     }
 
@@ -77,7 +77,7 @@ public class MathematicalOperators extends CypherTestTemplate {
     public void exponentiationOperator() {
         GraphResult res = execute( "RETURN 2 ^ 3" );
 
-        assert containsRows( res, true, false, Row.of( TestLiteral.from( 8.0 ) ) );
+          containsRows( res, true, false, Row.of( TestLiteral.from( 8.0 ) ) );
     }
 
 

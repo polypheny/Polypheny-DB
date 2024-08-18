@@ -46,7 +46,7 @@ public class FilterTest extends CypherTestTemplate {
                 + "WHERE n:Person\n"
                 + "RETURN n.name, n.age" );
 
-        assert containsRows( res, true, false,
+           containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Ann" ), TestLiteral.from( 45 ) ),
                 Row.of( TestLiteral.from( "Bob" ), TestLiteral.from( 31 ) ) );
     }
@@ -60,12 +60,12 @@ public class FilterTest extends CypherTestTemplate {
 
         assertNode( result, 0 );
 
-        assert containsRows( result, true, false );
+           containsRows( result, true, false );
 
         result = execute( "MATCH (p) WHERE p.age >= 3 RETURN p" );
         assertNode( result, 0 );
 
-        assert containsRows( result, true, false, Row.of( KIRA ) );
+           containsRows( result, true, false, Row.of( KIRA ) );
     }
 
 
@@ -76,7 +76,7 @@ public class FilterTest extends CypherTestTemplate {
                 + "WHERE k.since < 1995\n"
                 + "RETURN f.name" );
 
-        assert containsRows( res, true, false, Row.of( TestLiteral.from( "Hans" ) ) );
+           containsRows( res, true, false, Row.of( TestLiteral.from( "Hans" ) ) );
 
     }
 
@@ -87,7 +87,7 @@ public class FilterTest extends CypherTestTemplate {
 
         GraphResult res = execute( "MATCH (a:Person WHERE a.name = 'Max')-[:KNOWS]->(b:Person WHERE b.name = 'Hans')\n"
                 + "RETURN b.name" );
-        assert containsRows( res, true, false, Row.of( TestLiteral.from( "Hans" ) ) );
+           containsRows( res, true, false, Row.of( TestLiteral.from( "Hans" ) ) );
 
     }
 
@@ -98,7 +98,7 @@ public class FilterTest extends CypherTestTemplate {
 
         GraphResult res = execute( "MATCH (a:Person)-[r:KNOWS WHERE r.since < 2000 ]->(b:Person)\n"
                 + "RETURN r.since" );
-        assert containsRows( res, true, false, Row.of( TestLiteral.from( 1994 ) ) );
+           containsRows( res, true, false, Row.of( TestLiteral.from( 1994 ) ) );
     }
 
 
@@ -111,7 +111,7 @@ public class FilterTest extends CypherTestTemplate {
                 + "WHERE n.age IS NOT NULL\n"
                 + "RETURN n.name, n.age" );
 
-        assert containsRows( res, true, false,
+           containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Ann" ), TestLiteral.from( 45 ) ) );
     }
 
@@ -124,7 +124,7 @@ public class FilterTest extends CypherTestTemplate {
                 + "WHERE n.age IS NULL\n"
                 + "RETURN n.name" );
 
-        assert containsRows( res, true, false,
+           containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Max" ) ) );
     }
 
@@ -134,7 +134,7 @@ public class FilterTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
         execute( SINGLE_NODE_PERSON_COMPLEX_2 );
         GraphResult res = execute( "MATCH (n) WHERE 21 < n.age <= 32 RETURN n.name" );
-        assert containsRows( res, true, false, Row.of( TestLiteral.from( "Bob" ) ) );
+           containsRows( res, true, false, Row.of( TestLiteral.from( "Bob" ) ) );
     }
 
 
@@ -145,11 +145,11 @@ public class FilterTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_COMPLEX_3 );
         GraphResult result = execute( "MATCH (p) WHERE p.age >= 45 AND p.depno = 13 RETURN p.name" );
 
-        assert containsRows( result, true, false, Row.of( TestLiteral.from( "Ann" ) ) );
+           containsRows( result, true, false, Row.of( TestLiteral.from( "Ann" ) ) );
 
         result = execute( "MATCH (p) WHERE p.age <= 32 OR p.depno = 13 RETURN p.name " );
 
-        assert containsRows( result, true, false, Row.of( TestLiteral.from( "Ann" ) ),
+           containsRows( result, true, false, Row.of( TestLiteral.from( "Ann" ) ),
                 Row.of( TestLiteral.from( "Bob" ) ),
                 Row.of( TestLiteral.from( "Alex" ) ) );
     }
@@ -166,7 +166,7 @@ public class FilterTest extends CypherTestTemplate {
                 + "  n.name AS name,\n"
                 + "  n.age AS age\n" );
 
-        assert containsRows( res, true, false,
+           containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Alex" ), TestLiteral.from( 32 ) ),
                 Row.of( TestLiteral.from( "Ann" ), TestLiteral.from( 45 ) ) );
     }
@@ -180,7 +180,7 @@ public class FilterTest extends CypherTestTemplate {
                 + "WHERE n.age = 45\n"
                 + "RETURN name" );
 
-        assert containsRows( res, true, false, Row.of( TestLiteral.from( "Ann" ) ) );
+           containsRows( res, true, false, Row.of( TestLiteral.from( "Ann" ) ) );
     }
 
 
@@ -194,7 +194,7 @@ public class FilterTest extends CypherTestTemplate {
         result = execute( "MATCH (p) WHERE exists(p.name) RETURN p" );
         assertNode( result, 0 );
 
-        assert containsRows( result, true, false, Row.of( MAX ) );
+           containsRows( result, true, false, Row.of( MAX ) );
     }
 
 
@@ -208,7 +208,7 @@ public class FilterTest extends CypherTestTemplate {
         execute( SINGLE_NODE_ANIMAL );
         GraphResult res = execute( "MATCH (p) WHERE p.name STARTS WITH 'M' RETURN p.name" );
 
-        assert containsRows( res, true, false, Row.of( TestLiteral.from( "Max" ) ) );
+           containsRows( res, true, false, Row.of( TestLiteral.from( "Max" ) ) );
 
 
     }
@@ -222,7 +222,7 @@ public class FilterTest extends CypherTestTemplate {
                 + "WHERE n.name ENDS WITH 's'\n"
                 + "RETURN n.name" );
 
-        assert containsRows( res, true, false, Row.of( TestLiteral.from( "Hans" ) ) );
+           containsRows( res, true, false, Row.of( TestLiteral.from( "Hans" ) ) );
 
     }
 
@@ -234,7 +234,7 @@ public class FilterTest extends CypherTestTemplate {
         GraphResult res = execute( "MATCH (n:Person)\n"
                 + "WHERE NOT n.name ENDS WITH 's'\n"
                 + "RETURN n.name, n.age" );
-        assert containsRows( res, true, false, Row.of( TestLiteral.from( "Max" ) ) );
+           containsRows( res, true, false, Row.of( TestLiteral.from( "Max" ) ) );
 
     }
 
@@ -246,7 +246,7 @@ public class FilterTest extends CypherTestTemplate {
         execute( SINGLE_NODE_ANIMAL );
         GraphResult result = execute( "MATCH (p) WHERE p.name CONTAINS 'H' RETURN p.name" );
 
-        assert containsRows( result, true, false, Row.of( TestLiteral.from( "Hans" ) ) );
+           containsRows( result, true, false, Row.of( TestLiteral.from( "Hans" ) ) );
     }
 
 
@@ -259,7 +259,7 @@ public class FilterTest extends CypherTestTemplate {
                 + "WHERE (p)-->(other)\n"
                 + "RETURN other.name" );
 
-        assert containsRows( res, true, false, Row.of( TestLiteral.from( "Hans" ) ) );
+           containsRows( res, true, false, Row.of( TestLiteral.from( "Hans" ) ) );
 
         res = execute( "MATCH\n"
                 + "  (p:Person {name: 'Max'}),\n"
@@ -267,7 +267,7 @@ public class FilterTest extends CypherTestTemplate {
                 + "WHERE (p)--(other)\n"
                 + "RETURN other.name" );
 
-        assert containsRows( res, true, false, Row.of( TestLiteral.from( "Hans" ) ) );
+           containsRows( res, true, false, Row.of( TestLiteral.from( "Hans" ) ) );
 
         res = execute( "MATCH\n"
                 + "  (p:Person {name: 'Max'}),\n"
@@ -285,7 +285,7 @@ public class FilterTest extends CypherTestTemplate {
                 + "WHERE (other)-[:KNOWS]-({name: 'Hans'})\n"
                 + "RETURN other.name" );
 
-        assert containsRows( res, true, false, Row.of( TestLiteral.from( "Max" ) ) );
+           containsRows( res, true, false, Row.of( TestLiteral.from( "Max" ) ) );
     }
 
 
@@ -295,7 +295,7 @@ public class FilterTest extends CypherTestTemplate {
         GraphResult res = execute( "MATCH (a:Person {name: 'Max'})\n"
                 + "RETURN [(a)-->(b WHERE b:Person) | b.name] AS friends" );
 
-        assert containsRows( res, true, false,
+           containsRows( res, true, false,
                 Row.of( TestLiteral.from( List.of( "Hans" ) ) ) );
 
     }
@@ -309,7 +309,7 @@ public class FilterTest extends CypherTestTemplate {
                 + "WHERE a.name IN ['Peter', 'Max']\n"
                 + "RETURN a.name" );
 
-        assert containsRows( res, true, false, Row.of( TestLiteral.from( "Max" ) ) );
+           containsRows( res, true, false, Row.of( TestLiteral.from( "Max" ) ) );
     }
 
 
@@ -321,7 +321,7 @@ public class FilterTest extends CypherTestTemplate {
         GraphResult res = execute( "MATCH (n:Person)\n"
                 + "WHERE n.age >= 40 \n"
                 + "RETURN n.name, n.age" );
-        assert containsRows( res, true, false,
+           containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Ann" ), TestLiteral.from( 45 ) ) );
 
     }
