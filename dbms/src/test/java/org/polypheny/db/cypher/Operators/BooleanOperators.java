@@ -16,7 +16,7 @@
 
 package org.polypheny.db.cypher.Operators;
 
-import net.bytebuddy.description.type.TypeList.Generic;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.cypher.CypherTestTemplate;
@@ -35,9 +35,9 @@ public class BooleanOperators extends CypherTestTemplate {
     @Test
     public void conjunctionOperatorTest() {
         GraphResult res = execute( "WITH true as a , false as b RETURN a AND  b " );
-          containsRows( res, true, false, Row.of( TestLiteral.from( false ) ) );
+        containsRows( res, true, false, Row.of( TestLiteral.from( false ) ) );
         res = execute( "WITH true as a , true  as b RETURN a AND  b " );
-          containsRows( res, true, false, Row.of( TestLiteral.from( true ) ) );
+        containsRows( res, true, false, Row.of( TestLiteral.from( true ) ) );
 
     }
 
@@ -45,9 +45,9 @@ public class BooleanOperators extends CypherTestTemplate {
     @Test
     public void disjunctionOperatorTest() {
         GraphResult res = execute( "WITH true as a , false as b RETURN a OR  b " );
-          containsRows( res, true, false, Row.of( TestLiteral.from( true ) ) );
+        containsRows( res, true, false, Row.of( TestLiteral.from( true ) ) );
         res = execute( "WITH false as a , false  as b RETURN a OR b " );
-          containsRows( res, true, false, Row.of( TestLiteral.from( false ) ) );
+        containsRows( res, true, false, Row.of( TestLiteral.from( false ) ) );
 
     }
 
@@ -55,11 +55,11 @@ public class BooleanOperators extends CypherTestTemplate {
     @Test
     public void exclusiveDisjunctionOperatorTest() {
         GraphResult res = execute( "WITH true as a , false as b RETURN a XOR b " );
-          containsRows( res, true, false, Row.of( TestLiteral.from( true ) ) );
+        containsRows( res, true, false, Row.of( TestLiteral.from( true ) ) );
         res = execute( "WITH true as a , true  as b RETURN a XOR b " );
-          containsRows( res, true, false, Row.of( TestLiteral.from( false ) ) );
+        containsRows( res, true, false, Row.of( TestLiteral.from( false ) ) );
         res = execute( "WITH false as a , false  as b RETURN a XOR b " );
-          containsRows( res, true, false, Row.of( TestLiteral.from( true ) ) );
+        containsRows( res, true, false, Row.of( TestLiteral.from( true ) ) );
 
     }
 
@@ -67,10 +67,10 @@ public class BooleanOperators extends CypherTestTemplate {
     @Test
     public void negationOperatorTest() {
         GraphResult res = execute( "WITH true as a RETURN  NOT a  " );
-          containsRows( res, true, false, Row.of( TestLiteral.from( false ) ) );
+        containsRows( res, true, false, Row.of( TestLiteral.from( false ) ) );
 
         res = execute( "WITH false as a RETURN  NOT a  " );
-          containsRows( res, true, false, Row.of( TestLiteral.from( true ) ) );
+        containsRows( res, true, false, Row.of( TestLiteral.from( true ) ) );
 
     }
 

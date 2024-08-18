@@ -37,35 +37,38 @@ public class ExistsSubQueriesTest extends CypherTestTemplate {
     @Test
     public void simpleExistsSubQueryTest() {
         execute( SINGLE_NODE_PERSON_2 );
-        GraphResult res = execute( "MATCH (person:Person)\n"
-                + "WHERE EXISTS {\n"
-                + "    (person)-[:OWNER_OF]->(:Dog)\n"
-                + "}\n"
-                + "RETURN person.name AS name" );
+        GraphResult res = execute( """
+                MATCH (person:Person)
+                WHERE EXISTS {
+                    (person)-[:OWNER_OF]->(:Dog)
+                }
+                RETURN person.name AS name""" );
 
-          containsRows( res, true, false, Row.of( TestLiteral.from( null ) ) );
+        containsRows( res, true, false, Row.of( TestLiteral.from( null ) ) );
         execute( EDGE_3 );
-        execute( "MATCH (person:Person)\n"
-                + "WHERE EXISTS {\n"
-                + "    (person)-[:OWNER_OF]->(:Dog)\n"
-                + "}\n"
-                + "RETURN person.name AS name" );
+        execute( """
+                MATCH (person:Person)
+                WHERE EXISTS {
+                    (person)-[:OWNER_OF]->(:Dog)
+                }
+                RETURN person.name AS name""" );
 
-          containsRows( res, true, false, Row.of( TestLiteral.from( "Max" ) ) );
+        containsRows( res, true, false, Row.of( TestLiteral.from( "Max" ) ) );
     }
 
 
     @Test
     public void whereWithExistsSubQueryTest() {
         execute( SINGLE_NODE_PERSON_2 );
-        GraphResult res = execute( "MATCH (person:Person)\n"
-                + "WHERE EXISTS {\n"
-                + "  MATCH (person)-[:OWNER_OF]->(dog:Dog)\n"
-                + "  WHERE person.name = \"Max\" \n"
-                + "}\n"
-                + "RETURN dog.name AS name" );
+        GraphResult res = execute( """
+                MATCH (person:Person)
+                WHERE EXISTS {
+                  MATCH (person)-[:OWNER_OF]->(dog:Dog)
+                  WHERE person.name = "Max"\s
+                }
+                RETURN dog.name AS name""" );
 
-          containsRows( res, true, false, Row.of( TestLiteral.from( "Andy" ) ) );
+        containsRows( res, true, false, Row.of( TestLiteral.from( "Andy" ) ) );
 
     }
 
@@ -74,17 +77,18 @@ public class ExistsSubQueriesTest extends CypherTestTemplate {
     public void nestedExistsSubQueryTest() {
 
         execute( EDGE_3 );
-        GraphResult res = execute( "MATCH (person:Person)\n"
-                + "WHERE EXISTS {\n"
-                + "  MATCH (person)-[:OWNER_OF]->(dog:Dog)\n"
-                + "  WHERE EXISTS {\n"
-                + "    MATCH (dog)-[:HAS_TOY]->(toy:Toy)\n"
-                + "    WHERE toy.name = 'Banana'\n"
-                + "  }\n"
-                + "}\n"
-                + "RETURN person.name AS name" );
+        GraphResult res = execute( """
+                MATCH (person:Person)
+                WHERE EXISTS {
+                  MATCH (person)-[:OWNER_OF]->(dog:Dog)
+                  WHERE EXISTS {
+                    MATCH (dog)-[:HAS_TOY]->(toy:Toy)
+                    WHERE toy.name = 'Banana'
+                  }
+                }
+                RETURN person.name AS name""" );
 
-          containsRows( res, true, false, Row.of( TestLiteral.from( "Max" ) ) );
+        containsRows( res, true, false, Row.of( TestLiteral.from( "Max" ) ) );
 
 
     }
@@ -93,12 +97,13 @@ public class ExistsSubQueriesTest extends CypherTestTemplate {
     @Test
     public void returnExistsSubQueryTest() {
         execute( EDGE_3 );
-        GraphResult res = execute( "MATCH (person:Person)\n"
-                + "RETURN person.name AS name, EXISTS {\n"
-                + "  MATCH (person)-[:OWNER_OF]->(:Dog)\n"
-                + "} AS hasDog" );
+        GraphResult res = execute( """
+                MATCH (person:Person)
+                RETURN person.name AS name, EXISTS {
+                  MATCH (person)-[:OWNER_OF]->(:Dog)
+                } AS hasDog""" );
 
-          containsRows( res, true, false,
+        containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Max" ), TestLiteral.from( true ) ) );
     }
 
@@ -108,15 +113,16 @@ public class ExistsSubQueriesTest extends CypherTestTemplate {
         execute( EDGE_3 );
         execute( SINGLE_NODE_PERSON_2 );
 
-        GraphResult res = execute( "MATCH (person:Person)\n"
-                + "RETURN\n"
-                + "    person.name AS name,\n"
-                + "    EXISTS {\n"
-                + "        MATCH (person)-[:HAS_DOG]->(:Dog)\n"
-                + "        UNION\n"
-                + "        MATCH (person)-[:HAS_CAT]->(:Cat)\n"
-                + "    } AS hasPet" );
-          containsRows( res, true, false,
+        GraphResult res = execute( """
+                MATCH (person:Person)
+                RETURN
+                    person.name AS name,
+                    EXISTS {
+                        MATCH (person)-[:HAS_DOG]->(:Dog)
+                        UNION
+                        MATCH (person)-[:HAS_CAT]->(:Cat)
+                    } AS hasPet""" );
+        containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Max" ), TestLiteral.from( true ) ),
                 Row.of( TestLiteral.from( "Hans" ), TestLiteral.from( false ) ) );
     }
@@ -125,14 +131,15 @@ public class ExistsSubQueriesTest extends CypherTestTemplate {
     @Test
     public void withClauseWithExistsSubQueryTest() {
         execute( EDGE_3 );
-        GraphResult res = execute( "MATCH (person:Person {name: name})\n"
-                + "WHERE EXISTS {\n"
-                + "    WITH \"Andy\" AS name\n"
-                + "    MATCH (person)-[:OWNER_OF]->(d:Dog)\n"
-                + "    WHERE d.name = name\n"
-                + "}\n"
-                + "RETURN person.name AS name" );
-          containsRows( res, true, false,
+        GraphResult res = execute( """
+                MATCH (person:Person {name: name})
+                WHERE EXISTS {
+                    WITH "Andy" AS name
+                    MATCH (person)-[:OWNER_OF]->(d:Dog)
+                    WHERE d.name = name
+                }
+                RETURN person.name AS name""" );
+        containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Max" ) ) );
     }
 

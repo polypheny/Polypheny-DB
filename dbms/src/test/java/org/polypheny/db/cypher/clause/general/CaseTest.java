@@ -42,14 +42,14 @@ public class CaseTest extends CypherTestTemplate {
         execute( PERSON_NODE_ALICE );
         execute( PERSON_NODE_BOB );
         execute( PERSON_NODE_CHARLIE );
-        GraphResult res = execute("""
+        GraphResult res = execute( """
                 MATCH (n:Person)
                 RETURN
                 CASE n.eyes
                   WHEN 'blue'  THEN 1
                   WHEN 'brown' THEN 2
                   ELSE 3
-                END AS result, n.eyes""");
+                END AS result, n.eyes""" );
 
         containsRows( res, true, false, Row.of( TestLiteral.from( "Alice" ), TestLiteral.from( 2 ) ), Row.of( TestLiteral.from( "Bob" ), TestLiteral.from( 1 ) ), Row.of( TestLiteral.from( "Charlie" ), TestLiteral.from( 3 ) ) );
 
@@ -63,7 +63,14 @@ public class CaseTest extends CypherTestTemplate {
         execute( PERSON_NODE_BOB );
         execute( PERSON_NODE_CHARLIE );
 
-        GraphResult res = execute( "MATCH (n:Person)\n" + "RETURN\n" + "CASE\n" + "  WHEN n.eyes = 'blue' THEN 1\n" + "  WHEN n.age < 40      THEN 2\n" + "  ELSE 3\n" + "END AS result, n.eyes, n.age" );
+        GraphResult res = execute( """
+                MATCH (n:Person)
+                RETURN
+                CASE
+                  WHEN n.eyes = 'blue' THEN 1
+                  WHEN n.age < 40      THEN 2
+                  ELSE 3
+                END AS result, n.eyes, n.age""" );
 
         containsRows( res, true, false, Row.of( TestLiteral.from( "Alice" ), TestLiteral.from( 2 ) ), Row.of( TestLiteral.from( "Bob" ), TestLiteral.from( 1 ) ), Row.of( TestLiteral.from( "Charlie" ), TestLiteral.from( 3 ) ) );
 
@@ -78,7 +85,13 @@ public class CaseTest extends CypherTestTemplate {
         execute( PERSON_NODE_CHARLIE );
         execute( SINGLE_NODE_PERSON_1 );
 
-        GraphResult res = execute( "MATCH (n:Person)\n" + "RETURN n.name,\n" + "CASE n.age\n" + "  WHEN null THEN -1\n" + "  ELSE n.age - 10\n" + "END AS age_10_years_ago" );
+        GraphResult res = execute( """
+                MATCH (n:Person)
+                RETURN n.name,
+                CASE n.age
+                  WHEN null THEN -1
+                  ELSE n.age - 10
+                END AS age_10_years_ago""" );
 
         containsRows( res, true, false, Row.of( TestLiteral.from( "Alice" ), TestLiteral.from( 28 ) ), Row.of( TestLiteral.from( "Bob" ), TestLiteral.from( 15 ) ), Row.of( TestLiteral.from( "Charlie" ), TestLiteral.from( 43 ) ), Row.of( TestLiteral.from( "MAX" ), TestLiteral.from( null ) ) );
 
@@ -92,7 +105,16 @@ public class CaseTest extends CypherTestTemplate {
         execute( PERSON_NODE_BOB );
         execute( PERSON_NODE_CHARLIE );
 
-        GraphResult res = execute( "MATCH (n:Person)\n" + "WITH n,\n" + "CASE n.eyes\n" + "  WHEN 'blue'  THEN 1\n" + "  WHEN 'brown' THEN 2\n" + "  ELSE 3\n" + "END AS colorCode\n" + "SET n.colorCode = colorCode\n" + "RETURN n.name, n.colorCode" );
+        GraphResult res = execute( """
+                MATCH (n:Person)
+                WITH n,
+                CASE n.eyes
+                  WHEN 'blue'  THEN 1
+                  WHEN 'brown' THEN 2
+                  ELSE 3
+                END AS colorCode
+                SET n.colorCode = colorCode
+                RETURN n.name, n.colorCode""" );
 
         containsRows( res, true, false, Row.of( TestLiteral.from( "Alice" ), TestLiteral.from( 2 ) ), Row.of( TestLiteral.from( "Bob" ), TestLiteral.from( 1 ) ), Row.of( TestLiteral.from( "Charlie" ), TestLiteral.from( 3 ) ) );
 

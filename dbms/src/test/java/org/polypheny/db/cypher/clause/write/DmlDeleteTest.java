@@ -124,8 +124,10 @@ public class DmlDeleteTest extends CypherTestTemplate {
 
         execute( SINGLE_EDGE_1 );
 
-        execute( "MATCH p =  (person:Person {name: 'Max'})-[rel:OWNER_OF]->( animal :Animal {name: 'Kira'})\n"
-                + "DELETE p\n" );
+        execute( """
+                MATCH p =  (person:Person {name: 'Max'})-[rel:OWNER_OF]->( animal :Animal {name: 'Kira'})
+                DELETE p
+                """ );
 
         GraphResult res = matchAndReturnAllNodes();
         GraphResult relations = execute( "MATCH (p:Person) -[rel:OWNER_OF]->(A:Animal) RETURN rel " );

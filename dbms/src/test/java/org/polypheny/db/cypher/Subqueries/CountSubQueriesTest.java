@@ -16,7 +16,7 @@
 
 package org.polypheny.db.cypher.Subqueries;
 
-import org.bouncycastle.crypto.modes.G3413CBCBlockCipher;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.cypher.CypherTestTemplate;
@@ -40,11 +40,12 @@ public class CountSubQueriesTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_2 );
         execute( EDGE_3 );
 
-        GraphResult res = execute( "MATCH (person:Person)\n"
-                + "WHERE COUNT { (person)-[r:OWNER_OF]->(:Animal) } > 1\n"
-                + "RETURN person.name AS name" );
+        GraphResult res = execute( """
+                MATCH (person:Person)
+                WHERE COUNT { (person)-[r:OWNER_OF]->(:Animal) } > 1
+                RETURN person.name AS name""" );
 
-          containsRows( res, true, false,
+        containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Max" ) ) );
     }
 
@@ -55,7 +56,7 @@ public class CountSubQueriesTest extends CypherTestTemplate {
         GraphResult res = execute( "MATCH (person:Person)\n"
                 + "RETURN person.name, COUNT { (person)-[:OWNER_OF]->(:Dog) } as howManyDogs" );
 
-          containsRows( res, true, false,
+        containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Max" ), TestLiteral.from( 1 ) ) );
 
     }
@@ -65,13 +66,14 @@ public class CountSubQueriesTest extends CypherTestTemplate {
     public void whereWithCountSubQueryTest() {
         execute( SINGLE_NODE_PERSON_2 );
         execute( EDGE_3 );
-        GraphResult res = execute( "MATCH (person:Person)\n"
-                + "WHERE COUNT {\n"
-                + "  (person)-[r:OWNER_OF]->(dog:Dog)\n"
-                + "  WHERE person.name = dog.name } = 1\n"
-                + "RETURN person.name AS name" );
+        GraphResult res = execute( """
+                MATCH (person:Person)
+                WHERE COUNT {
+                  (person)-[r:OWNER_OF]->(dog:Dog)
+                  WHERE person.name = dog.name } = 1
+                RETURN person.name AS name""" );
 
-          containsRows( res, true, false,
+        containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Max" ) ) );
     }
 
@@ -80,18 +82,19 @@ public class CountSubQueriesTest extends CypherTestTemplate {
     public void unionWithCountSubQueryTest() {
         execute( EDGE_3 );
 
-        GraphResult res = execute( "MATCH (person:Person)\n"
-                + "RETURN\n"
-                + "    person.name AS name,\n"
-                + "    COUNT {\n"
-                + "        MATCH (person)-[:OWNER_OF]->(dog:Dog)\n"
-                + "        RETURN dog.name AS petName\n"
-                + "        UNION\n"
-                + "        MATCH (person)-[:OWNER_OF]->(cat:Cat)\n"
-                + "        RETURN cat.name AS petName\n"
-                + "    } AS numPets" );
+        GraphResult res = execute( """
+                MATCH (person:Person)
+                RETURN
+                    person.name AS name,
+                    COUNT {
+                        MATCH (person)-[:OWNER_OF]->(dog:Dog)
+                        RETURN dog.name AS petName
+                        UNION
+                        MATCH (person)-[:OWNER_OF]->(cat:Cat)
+                        RETURN cat.name AS petName
+                    } AS numPets""" );
 
-          containsRows( res, true, false,
+        containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Max" ), TestLiteral.from( 2 ) ) );
     }
 
@@ -99,15 +102,16 @@ public class CountSubQueriesTest extends CypherTestTemplate {
     @Test
     public void withClauseWithCountSubQueryTest() {
         execute( EDGE_3 );
-        GraphResult res = execute( "MATCH (person:Person)\n"
-                + "WHERE COUNT {\n"
-                + "    WITH \"Andy\" AS dogName\n"
-                + "    MATCH (person)-[:OWNER_OF]->(d:Dog)\n"
-                + "    WHERE d.name = dogName\n"
-                + "} = 1\n"
-                + "RETURN person.name AS name" );
+        GraphResult res = execute( """
+                MATCH (person:Person)
+                WHERE COUNT {
+                    WITH "Andy" AS dogName
+                    MATCH (person)-[:OWNER_OF]->(d:Dog)
+                    WHERE d.name = dogName
+                } = 1
+                RETURN person.name AS name""" );
 
-          containsRows( res, true, false,
+        containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Max" ) ) );
 
     }
@@ -117,11 +121,12 @@ public class CountSubQueriesTest extends CypherTestTemplate {
     public void updateWithCountSubQueryTest() {
         execute( EDGE_3 );
 
-        GraphResult res = execute( "MATCH (person:Person) WHERE person.name =\"Max\"\n"
-                + "SET person.howManyDogs = COUNT { (person)-[:OWNER_OF]->(:Dog) }\n"
-                + "RETURN person.howManyDogs as howManyDogs" );
+        GraphResult res = execute( """
+                MATCH (person:Person) WHERE person.name ="Max"
+                SET person.howManyDogs = COUNT { (person)-[:OWNER_OF]->(:Dog) }
+                RETURN person.howManyDogs as howManyDogs""" );
 
-          containsRows( res, true, false, Row.of(
+        containsRows( res, true, false, Row.of(
                 TestLiteral.from( 1 ) ) );
 
 
@@ -132,13 +137,14 @@ public class CountSubQueriesTest extends CypherTestTemplate {
     public void caseWithCountSubQueryTest() {
         execute( EDGE_3 );
         execute( SINGLE_NODE_PERSON_2 );
-        GraphResult res = execute( "MATCH (person:Person)\n"
-                + "RETURN\n"
-                + "   CASE\n"
-                + "     WHEN COUNT { (person)-[:OWNER_OF]->(:Dog) } >= 1 THEN \"DogLover \" + person.name\n"
-                + "     ELSE person.name\n"
-                + "   END AS result" );
-          containsRows( res, true, false,
+        GraphResult res = execute( """
+                MATCH (person:Person)
+                RETURN
+                   CASE
+                     WHEN COUNT { (person)-[:OWNER_OF]->(:Dog) } >= 1 THEN "DogLover " + person.name
+                     ELSE person.name
+                   END AS result""" );
+        containsRows( res, true, false,
                 Row.of( TestLiteral.from( "DogLover" ) ),
                 Row.of( TestLiteral.from( "Hans" ) ) );
 

@@ -38,10 +38,11 @@ public class ForeachTest extends CypherTestTemplate {
 
     @Test
     public void createWithForeachTest() {
-        execute( "WITH ['Alice', 'Bob', 'Charlie'] AS names\n"
-                + "FOREACH (name IN names |\n"
-                + "    CREATE (p:Person {name: name})\n"
-                + ")" );
+        execute( """
+                WITH ['Alice', 'Bob', 'Charlie'] AS names
+                FOREACH (name IN names |
+                    CREATE (p:Person {name: name})
+                )""" );
 
         GraphResult res = matchAndReturnAllNodes();
         assertEquals( 3, res.getData().length );
@@ -56,10 +57,11 @@ public class ForeachTest extends CypherTestTemplate {
 
     @Test
     public void mergeWithForeachTest() {
-        execute( "WITH ['Alice', 'Bob', 'Charlie'] AS names\n"
-                + "FOREACH (name IN names |\n"
-                + "    MERGE (p:Person {name: name})\n"
-                + ")" );
+        execute( """
+                WITH ['Alice', 'Bob', 'Charlie'] AS names
+                FOREACH (name IN names |
+                    MERGE (p:Person {name: name})
+                )""" );
 
         GraphResult res = matchAndReturnAllNodes();
         assertEquals( 3, res.getData().length );
@@ -76,11 +78,12 @@ public class ForeachTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_PERSON_2 );
 
-        execute( "MATCH (p:Person)\n"
-                + "WITH collect(p) AS people\n"
-                + "FOREACH (p IN people |\n"
-                + "    DELETE p\n"
-                + ")" );
+        execute( """
+                MATCH (p:Person)
+                WITH collect(p) AS people
+                FOREACH (p IN people |
+                    DELETE p
+                )""" );
         GraphResult res = matchAndReturnAllNodes();
         assertEmpty( res );
 
@@ -92,11 +95,12 @@ public class ForeachTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_PERSON_2 );
 
-        execute( "MATCH (p:Person)\n"
-                + "WITH collect(p) AS people\n"
-                + "FOREACH (p IN people |\n"
-                + "    REMOVE p.name \n"
-                + ")" );
+        execute( """
+                MATCH (p:Person)
+                WITH collect(p) AS people
+                FOREACH (p IN people |
+                    REMOVE p.name\s
+                )""" );
 
         GraphResult res = matchAndReturnAllNodes();
         containsRows( res, true, false, Row.of( TestLiteral.from( null ) ),
@@ -109,11 +113,12 @@ public class ForeachTest extends CypherTestTemplate {
     public void updateWithForeachTest() {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_PERSON_2 );
-        execute( "MATCH (p:Person)\n"
-                + "WITH collect(p) AS people\n"
-                + "FOREACH (p IN people |\n"
-                + "    SET p.status = 'active'\n"
-                + ")" );
+        execute( """
+                MATCH (p:Person)
+                WITH collect(p) AS people
+                FOREACH (p IN people |
+                    SET p.status = 'active'
+                )""" );
 
         GraphResult res = matchAndReturnAllNodes();
         containsNodes( res, true,
@@ -126,13 +131,14 @@ public class ForeachTest extends CypherTestTemplate {
     public void nestedForeachTest() {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_PERSON_2 );
-        execute( "MATCH (p:Person)\n"
-                + "WITH collect(p) AS people\n"
-                + "FOREACH (p1 IN people |\n"
-                + "    FOREACH (p2 IN people |\n"
-                + "        CREATE (p1)-[:KNOWS]->(p2)\n"
-                + "    )\n"
-                + ")" );
+        execute( """
+                MATCH (p:Person)
+                WITH collect(p) AS people
+                FOREACH (p1 IN people |
+                    FOREACH (p2 IN people |
+                        CREATE (p1)-[:KNOWS]->(p2)
+                    )
+                )""" );
         GraphResult res = execute( "MATCH (p1)-[r:KNOWS]->(p2) RETURN r" );
         assertEquals( 4, res.getData().length );
         res = execute( "MATCH (p1)-[r:KNOWS]-(p2) RETURN r" );

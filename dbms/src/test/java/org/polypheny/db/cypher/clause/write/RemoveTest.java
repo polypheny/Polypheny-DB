@@ -16,17 +16,15 @@
 
 package org.polypheny.db.cypher.clause.write;
 
-import io.activej.codegen.expression.impl.Null;
+
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.cypher.CypherTestTemplate;
-import org.polypheny.db.cypher.helper.TestEdge;
 import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.cypher.helper.TestNode;
-import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.models.results.GraphResult;
-import java.util.Arrays;
+
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -97,8 +95,10 @@ public class RemoveTest extends CypherTestTemplate {
     @Test
     public void multiplePropertiesRemoveTest() {
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
-        execute( "MATCH (n:Person {name: 'Ann'})\n"
-                + "REMOVE n.age, n.depno\n" );
+        execute( """
+                MATCH (n:Person {name: 'Ann'})
+                REMOVE n.age, n.depno
+                """ );
 
         GraphResult res = execute( "MATCH (n : Person) RETURN n.age  , n.depno , n.name " );
         containsRows( res, true, true, Row.of( TestLiteral.from( null ), TestLiteral.from( null ), TestLiteral.from( "Ann" ) ) );

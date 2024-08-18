@@ -41,11 +41,12 @@ public class UnionTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_2 );
         execute( SINGLE_NODE_PERSON_1 );
 
-        GraphResult res = execute( "MATCH (n:Person)\n"
-                + "RETURN n.name \n"
-                + "UNION \n"
-                + "MATCH (n:Person)\n"
-                + "RETURN n.name " );
+        GraphResult res = execute( """
+                MATCH (n:Person)
+                RETURN n.name
+                UNION
+                MATCH (n:Person)
+                RETURN n.name""" );
 
         containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Max" ) ),
@@ -59,13 +60,15 @@ public class UnionTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_MOVIE );
 
-        GraphResult res = execute( "MATCH (p:Person)\n"
-                + "RETURN p.name AS name\n"
-                + "UNION\n"
-                + "MATCH (m :Movie)\n"
-                + "RETURN p.Title AS name\n" );
+        GraphResult res = execute( """
+                MATCH (p:Person)
+                RETURN p.name AS name
+                UNION
+                MATCH (m :Movie)
+                RETURN p.Title AS name
+                """ );
 
-          containsRows( res, true, false,
+        containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Max" ) ),
                 Row.of( TestLiteral.from( "Wall Street" ) ) );
     }
@@ -77,13 +80,15 @@ public class UnionTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
         execute( SINGLE_NODE_MOVIE );
 
-        GraphResult res = execute( "MATCH (p:Person)\n"
-                + "RETURN p.name AS name, p.age AS age, NULL AS title, NULL AS released\n"
-                + "UNION\n"
-                + "MATCH (m:Movie)\n"
-                + "RETURN NULL AS name, NULL AS age, m.title AS title, m.released AS released\n" );
+        GraphResult res = execute( """
+                MATCH (p:Person)
+                RETURN p.name AS name, p.age AS age, NULL AS title, NULL AS released
+                UNION
+                MATCH (m:Movie)
+                RETURN NULL AS name, NULL AS age, m.title AS title, m.released AS released
+                """ );
 
-          containsRows( res, true, false,
+        containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Ann" ), TestLiteral.from( 45 ), TestLiteral.from( null ), TestLiteral.from( null ) ),
                 Row.of( TestLiteral.from( null ), TestLiteral.from( null ), TestLiteral.from( "Wall Street" ), TestLiteral.from( 2002 ) ) );
     }
@@ -96,11 +101,12 @@ public class UnionTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_PERSON_2 );
 
-        GraphResult res = execute( "MATCH (n:Person)\n"
-                + "RETURN n.name \n"
-                + "UNION ALL \n"
-                + "MATCH (n:Person)\n"
-                + "RETURN n.name " );
+        GraphResult res = execute( """
+                MATCH (n:Person)
+                RETURN n.name
+                UNION ALL
+                MATCH (n:Person)
+                RETURN n.name""" );
 
         containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Max" ) ),
@@ -119,13 +125,15 @@ public class UnionTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_MOVIE );
 
-        GraphResult res = execute( "MATCH (p:Person)\n"
-                + "RETURN p.name AS name\n"
-                + "UNION ALL\n"
-                + "MATCH (m :Movie)\n"
-                + "RETURN p.Title AS name\n" );
+        GraphResult res = execute( """
+                MATCH (p:Person)
+                RETURN p.name AS name
+                UNION ALL
+                MATCH (m :Movie)
+                RETURN p.Title AS name
+                """ );
 
-          containsRows( res, true, false,
+        containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Max" ) ),
                 Row.of( TestLiteral.from( "Wall Street" ) ),
                 Row.of( TestLiteral.from( "Max" ) ),
@@ -140,13 +148,15 @@ public class UnionTest extends CypherTestTemplate {
         execute( SINGLE_NODE_MOVIE );
         execute( SINGLE_NODE_MOVIE );
 
-        GraphResult res = execute( "MATCH (p:Person)\n"
-                + "RETURN p.name AS name, p.age AS age, NULL AS title, NULL AS released\n"
-                + "UNION ALL\n"
-                + "MATCH (m:Movie)\n"
-                + "RETURN NULL AS name, NULL AS age, m.title AS title, m.released AS released\n" );
+        GraphResult res = execute( """
+                MATCH (p:Person)
+                RETURN p.name AS name, p.age AS age, NULL AS title, NULL AS released
+                UNION ALL
+                MATCH (m:Movie)
+                RETURN NULL AS name, NULL AS age, m.title AS title, m.released AS released
+                """ );
 
-          containsRows( res, true, false,
+        containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Ann" ), TestLiteral.from( 45 ), TestLiteral.from( null ), TestLiteral.from( null ) ),
                 Row.of( TestLiteral.from( "Ann" ), TestLiteral.from( 45 ), TestLiteral.from( null ), TestLiteral.from( null ) ),
                 Row.of( TestLiteral.from( null ), TestLiteral.from( null ), TestLiteral.from( "Wall Street" ), TestLiteral.from( 2002 ) ),
@@ -161,11 +171,12 @@ public class UnionTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_PERSON_2 );
 
-        GraphResult res = execute( "MATCH (n:Person)\n"
-                + "RETURN n.name \n"
-                + "UNION DISTINCT  \n"
-                + "MATCH (n:Person)\n"
-                + "RETURN n.name " );
+        GraphResult res = execute( """
+                MATCH (n:Person)
+                RETURN n.name
+                UNION DISTINCT
+                MATCH (n:Person)
+                RETURN n.name""" );
 
         containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Max" ) ),
@@ -179,13 +190,15 @@ public class UnionTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_MOVIE );
 
-        GraphResult res = execute( "MATCH (p:Person)\n"
-                + "RETURN p.name AS name\n"
-                + "UNION DISTINCT\n"
-                + "MATCH (m :Movie)\n"
-                + "RETURN p.Title AS name\n" );
+        GraphResult res = execute( """
+                MATCH (p:Person)
+                RETURN p.name AS name
+                UNION DISTINCT
+                MATCH (m :Movie)
+                RETURN p.Title AS name
+                """ );
 
-          containsRows( res, true, false,
+        containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Max" ) ),
                 Row.of( TestLiteral.from( "Wall Street" ) ) );
     }
@@ -197,13 +210,15 @@ public class UnionTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
         execute( SINGLE_NODE_MOVIE );
 
-        GraphResult res = execute( "MATCH (p:Person)\n"
-                + "RETURN p.name AS name, p.age AS age, NULL AS title, NULL AS released\n"
-                + "UNION DISTINCT \n"
-                + "MATCH (m:Movie)\n"
-                + "RETURN NULL AS name, NULL AS age, m.title AS title, m.released AS released\n" );
+        GraphResult res = execute( """
+                MATCH (p:Person)
+                RETURN p.name AS name, p.age AS age, NULL AS title, NULL AS released
+                UNION DISTINCT
+                MATCH (m:Movie)
+                RETURN NULL AS name, NULL AS age, m.title AS title, m.released AS released
+                """ );
 
-          containsRows( res, true, false,
+        containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Ann" ), TestLiteral.from( 45 ), TestLiteral.from( null ), TestLiteral.from( null ) ),
                 Row.of( TestLiteral.from( null ), TestLiteral.from( null ), TestLiteral.from( "Wall Street" ), TestLiteral.from( 2002 ) ) );
     }

@@ -35,7 +35,7 @@ public class StringOperators extends CypherTestTemplate {
     @Test
     public void concatenateWithPlusOperatorTest() {
         GraphResult res = execute( "RETURN 'neo' + '4j' AS result" );
-          containsRows( res, true, true, Row.of( TestLiteral.from( "neo4j" ) ) );
+        containsRows( res, true, true, Row.of( TestLiteral.from( "neo4j" ) ) );
     }
 
 

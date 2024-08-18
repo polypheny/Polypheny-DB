@@ -35,32 +35,32 @@ public class NumericFunTest extends CypherTestTemplate {
     public void absFunTest() {
         GraphResult res = execute( "RETURN ABS(-5) " );
 
-          containsRows( res, true, true, Row.of( TestLiteral.from( 5 ) ) );
+        containsRows( res, true, true, Row.of( TestLiteral.from( 5 ) ) );
 
         res = execute( "RETURN ABS(5)" );
-          containsRows( res, true, true, Row.of( TestLiteral.from( 5 ) ) );
+        containsRows( res, true, true, Row.of( TestLiteral.from( 5 ) ) );
 
         res = execute( "RETURN ABS(0)" );
-          containsRows( res, true, true, Row.of( TestLiteral.from( 0 ) ) );
+        containsRows( res, true, true, Row.of( TestLiteral.from( 0 ) ) );
     }
 
 
     @Test
     public void roundFunTest() {
         GraphResult res = execute( "RETURN ROUND(3)" );
-          containsRows( res, true, true, Row.of( TestLiteral.from( 3 ) ) );
+        containsRows( res, true, true, Row.of( TestLiteral.from( 3 ) ) );
 
         res = execute( "RETURN ROUND(-3)" );
-          containsRows( res, true, true, Row.of( TestLiteral.from( -3 ) ) );
+        containsRows( res, true, true, Row.of( TestLiteral.from( -3 ) ) );
 
         res = execute( "RETURN ROUND(3.4)" );
-          containsRows( res, true, true, Row.of( TestLiteral.from( 3 ) ) );
+        containsRows( res, true, true, Row.of( TestLiteral.from( 3 ) ) );
 
         res = execute( "RETURN ROUND(3.5)" );
-          containsRows( res, true, true, Row.of( TestLiteral.from( 4 ) ) );
+        containsRows( res, true, true, Row.of( TestLiteral.from( 4 ) ) );
 
         res = execute( "RETURN ROUND(-3.5)" );
-          containsRows( res, true, true, Row.of( TestLiteral.from( -4 ) ) );
+        containsRows( res, true, true, Row.of( TestLiteral.from( -4 ) ) );
 
 
     }
@@ -70,35 +70,35 @@ public class NumericFunTest extends CypherTestTemplate {
     public void floorFunTest() {
 
         GraphResult res = execute( "RETURN FLOOR(3)" );
-          containsRows( res, true, true, Row.of( TestLiteral.from( 3 ) ) );
+        containsRows( res, true, true, Row.of( TestLiteral.from( 3 ) ) );
 
         res = execute( "RETURN FLOOR(-3)" );
-          containsRows( res, true, true, Row.of( TestLiteral.from( -3 ) ) );
+        containsRows( res, true, true, Row.of( TestLiteral.from( -3 ) ) );
 
         res = execute( "RETURN FLOOR(3.16)" );
-          containsRows( res, true, true, Row.of( TestLiteral.from( 3 ) ) );
+        containsRows( res, true, true, Row.of( TestLiteral.from( 3 ) ) );
 
         res = execute( "RETURN FLOOR(3.9)" );
-          containsRows( res, true, true, Row.of( TestLiteral.from( 3 ) ) );
+        containsRows( res, true, true, Row.of( TestLiteral.from( 3 ) ) );
 
         res = execute( "RETURN FLOOR(-3.16)" );
-          containsRows( res, true, true, Row.of( TestLiteral.from( -4 ) ) );
+        containsRows( res, true, true, Row.of( TestLiteral.from( -4 ) ) );
     }
 
 
     @Test
     public void ceilFunTest() {
         GraphResult res = execute( "RETURN CEIL(3)" );
-          containsRows( res, true, true, Row.of( TestLiteral.from( 4 ) ) );
+        containsRows( res, true, true, Row.of( TestLiteral.from( 4 ) ) );
 
         res = execute( "RETURN CEIL(-3)" );
-          containsRows( res, true, true, Row.of( TestLiteral.from( 4 ) ) );
+        containsRows( res, true, true, Row.of( TestLiteral.from( 4 ) ) );
 
         res = execute( "RETURN CEIL(3.16)" );
-          containsRows( res, true, true, Row.of( TestLiteral.from( 4 ) ) );
+        containsRows( res, true, true, Row.of( TestLiteral.from( 4 ) ) );
 
         res = execute( "RETURN CEIL(3.5)" );
-          containsRows( res, true, true, Row.of( TestLiteral.from( 4 ) ) );
+        containsRows( res, true, true, Row.of( TestLiteral.from( 4 ) ) );
 
     }
 
@@ -106,17 +106,17 @@ public class NumericFunTest extends CypherTestTemplate {
     @Test
     public void sqrtFunTest() {
         GraphResult res = execute( "RETURN SQRT(9)" );
-          containsRows( res, true, true, Row.of( TestLiteral.from( 3 ) ) );
+        containsRows( res, true, true, Row.of( TestLiteral.from( 3 ) ) );
 
         res = execute( "RETURN SQRT(0)" );
-          containsRows( res, true, true, Row.of( TestLiteral.from( 0 ) ) );
+        containsRows( res, true, true, Row.of( TestLiteral.from( 0 ) ) );
     }
 
 
     @Test
     public void nonPerfectSquareSqrtFunTest() {
         GraphResult res = execute( "RETURN SQRT(8)" );
-          containsRows( res, true, true, Row.of( TestLiteral.from( Math.sqrt( 8 ) ) ) );
+        containsRows( res, true, true, Row.of( TestLiteral.from( Math.sqrt( 8 ) ) ) );
     }
 
 

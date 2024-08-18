@@ -21,7 +21,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.cypher.CypherTestTemplate;
-import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.cypher.helper.TestNode;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.models.results.GraphResult;
@@ -116,9 +115,10 @@ public class DmlUpdateTest extends CypherTestTemplate {
     @Test
     public void updateVariablesIncrementAndDecrementTest() {
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
-        execute( "MATCH (p {name: 'Ann'})\n"
-                + "SET p = {name: 'Peter Smith', position: 'Entrepreneur'}\n"
-                + "RETURN p.name, p.age, p.position" );
+        execute( """
+                MATCH (p {name: 'Ann'})
+                SET p = {name: 'Peter Smith', position: 'Entrepreneur'}
+                RETURN p.name, p.age, p.position""" );
 
         GraphResult res = matchAndReturnAllNodes();
         containsRows( res, true, true,
@@ -134,9 +134,10 @@ public class DmlUpdateTest extends CypherTestTemplate {
     @Test
     @Disabled // Extension of Cypher implementation required
     public void updatePropertyReturnTest() {
-        execute( "MATCH (a:Animal {name: 'Kira'})\n"
-                + "SET a.age = 4\n"
-                + "RETURN a" );
+        execute( """
+                MATCH (a:Animal {name: 'Kira'})
+                SET a.age = 4
+                RETURN a""" );
     }
 
 
@@ -182,8 +183,10 @@ public class DmlUpdateTest extends CypherTestTemplate {
     @Test
     public void updatePropertyWithNullTest() {
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
-        execute( "MATCH (n {name: 'Ann'})\n"
-                + "SET n.name = null\n" );
+        execute( """
+                MATCH (n {name: 'Ann'})
+                SET n.name = null
+                """ );
 
         GraphResult res = matchAndReturnAllNodes();
         containsNodes( res, true,

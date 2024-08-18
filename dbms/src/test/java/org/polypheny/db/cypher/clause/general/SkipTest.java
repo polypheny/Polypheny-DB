@@ -100,9 +100,10 @@ public class SkipTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
         execute( SINGLE_NODE_PERSON_COMPLEX_2 );
 
-        GraphResult res = execute( "MATCH (n)\n"
-                + "WITH n ORDER BY n.name SKIP 1\n"
-                + "RETURN n" );
+        GraphResult res = execute( """
+                MATCH (n)
+                WITH n ORDER BY n.name SKIP 1
+                RETURN n""" );
 
         assertEquals( 1, res.getData().length );
 

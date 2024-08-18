@@ -16,13 +16,12 @@
 
 package org.polypheny.db.cypher.Operators;
 
-import javassist.bytecode.CodeIterator.Gap;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.cypher.CypherTestTemplate;
 import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.webui.models.results.GraphResult;
-import java.util.Arrays;
 
 public class MathematicalOperators extends CypherTestTemplate {
 
@@ -36,7 +35,7 @@ public class MathematicalOperators extends CypherTestTemplate {
     @Test
     public void additionOperator() {
         GraphResult res = execute( "RETURN 2 + 3" );
-          containsRows( res, true, false, Row.of( TestLiteral.from( 5 ) ) );
+        containsRows( res, true, false, Row.of( TestLiteral.from( 5 ) ) );
     }
 
 
@@ -44,7 +43,7 @@ public class MathematicalOperators extends CypherTestTemplate {
     public void minisOperatorTest() {
         GraphResult res = execute( "RETURN 3 - 2" );
 
-          containsRows( res, true, false, Row.of( TestLiteral.from( 1 ) ) );
+        containsRows( res, true, false, Row.of( TestLiteral.from( 1 ) ) );
 
     }
 
@@ -53,7 +52,7 @@ public class MathematicalOperators extends CypherTestTemplate {
     public void multiplicationOperatorTest() {
         GraphResult res = execute( "RETURN  2 * 3" );
 
-          containsRows( res, true, false, Row.of( TestLiteral.from( 6 ) ) );
+        containsRows( res, true, false, Row.of( TestLiteral.from( 6 ) ) );
     }
 
 
@@ -61,14 +60,14 @@ public class MathematicalOperators extends CypherTestTemplate {
     public void divisionOperatorTest() {
         GraphResult res = execute( "RETURN 6 / 3 " );
 
-          containsRows( res, true, false, Row.of( TestLiteral.from( 2 ) ) );
+        containsRows( res, true, false, Row.of( TestLiteral.from( 2 ) ) );
     }
 
 
     @Test
     public void moduleOperatorTest() {
         GraphResult res = execute( "RETURN 3 % 2 " );
-          containsRows( res, true, false, Row.of( TestLiteral.from( 1 ) ) );
+        containsRows( res, true, false, Row.of( TestLiteral.from( 1 ) ) );
 
     }
 
@@ -77,7 +76,7 @@ public class MathematicalOperators extends CypherTestTemplate {
     public void exponentiationOperator() {
         GraphResult res = execute( "RETURN 2 ^ 3" );
 
-          containsRows( res, true, false, Row.of( TestLiteral.from( 8.0 ) ) );
+        containsRows( res, true, false, Row.of( TestLiteral.from( 8.0 ) ) );
     }
 
 

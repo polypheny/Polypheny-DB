@@ -51,9 +51,10 @@ public class LimitTest extends CypherTestTemplate {
 
     @Test
     public void InsertNodeLimitTest() {
-        GraphResult res = execute( "CREATE (n:person)\n"
-                + "RETURN n\n"
-                + "LIMIT 0" );
+        GraphResult res = execute( """
+                CREATE (n:person)
+                RETURN n
+                LIMIT 0""" );
 
         assertEquals( 0, res.getData().length );
         res = matchAndReturnAllNodes();
@@ -64,10 +65,11 @@ public class LimitTest extends CypherTestTemplate {
     @Test
     public void updateNodeLimitTest() {
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
-        GraphResult res = execute( "MATCH (n {name: 'MAX'})\n"
-                + "SET n.age = 60\n"
-                + "RETURN n\n"
-                + "LIMIT 0" );
+        GraphResult res = execute( """
+                MATCH (n {name: 'MAX'})
+                SET n.age = 60
+                RETURN n
+                LIMIT 0""" );
 
 
     }
@@ -109,9 +111,10 @@ public class LimitTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
         execute( SINGLE_NODE_PERSON_COMPLEX_2 );
 
-        GraphResult res = execute( "MATCH (n)\n"
-                + "WITH n ORDER BY n.name LIMIT 1\n"
-                + "RETURN n" );
+        GraphResult res = execute( """
+                MATCH (n)
+                WITH n ORDER BY n.name LIMIT 1
+                RETURN n""" );
 
         assertEquals( 1, res.getData().length );
 
@@ -128,10 +131,11 @@ public class LimitTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_PERSON_2 );
 
-        GraphResult res = execute( "MATCH (n)\n"
-                + "WITH n ORDER BY n.name LIMIT 1\n"
-                + "SET n.locked = true\n"
-                + "RETURN n.name" );
+        GraphResult res = execute( """
+                MATCH (n)
+                WITH n ORDER BY n.name LIMIT 1
+                SET n.locked = true
+                RETURN n.name""" );
 
         containsRows( res, true, false, Row.of( TestLiteral.from( "Max" ) ) );
     }

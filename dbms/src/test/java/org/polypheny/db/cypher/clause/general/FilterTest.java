@@ -21,7 +21,6 @@ import org.junit.jupiter.api.Test;
 import org.polypheny.db.cypher.CypherTestTemplate;
 import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.webui.models.results.GraphResult;
-import java.util.Arrays;
 import java.util.List;
 
 public class FilterTest extends CypherTestTemplate {
@@ -42,11 +41,12 @@ public class FilterTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
         execute( SINGLE_NODE_PERSON_COMPLEX_2 );
         execute( SINGLE_NODE_ANIMAL );
-        GraphResult res = execute( "MATCH (n)\n"
-                + "WHERE n:Person\n"
-                + "RETURN n.name, n.age" );
+        GraphResult res = execute( """
+                MATCH (n)
+                WHERE n:Person
+                RETURN n.name, n.age""" );
 
-           containsRows( res, true, false,
+        containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Ann" ), TestLiteral.from( 45 ) ),
                 Row.of( TestLiteral.from( "Bob" ), TestLiteral.from( 31 ) ) );
     }
@@ -60,23 +60,24 @@ public class FilterTest extends CypherTestTemplate {
 
         assertNode( result, 0 );
 
-           containsRows( result, true, false );
+        containsRows( result, true, false );
 
         result = execute( "MATCH (p) WHERE p.age >= 3 RETURN p" );
         assertNode( result, 0 );
 
-           containsRows( result, true, false, Row.of( KIRA ) );
+        containsRows( result, true, false, Row.of( KIRA ) );
     }
 
 
     @Test
     public void relationPropertyFilterTest() {
         execute( SINGLE_EDGE_2 );
-        GraphResult res = execute( "MATCH (n:Person)-[k:KNOWS]->(f)\n"
-                + "WHERE k.since < 1995\n"
-                + "RETURN f.name" );
+        GraphResult res = execute( """
+                MATCH (n:Person)-[k:KNOWS]->(f)
+                WHERE k.since < 1995
+                RETURN f.name""" );
 
-           containsRows( res, true, false, Row.of( TestLiteral.from( "Hans" ) ) );
+        containsRows( res, true, false, Row.of( TestLiteral.from( "Hans" ) ) );
 
     }
 
@@ -87,7 +88,7 @@ public class FilterTest extends CypherTestTemplate {
 
         GraphResult res = execute( "MATCH (a:Person WHERE a.name = 'Max')-[:KNOWS]->(b:Person WHERE b.name = 'Hans')\n"
                 + "RETURN b.name" );
-           containsRows( res, true, false, Row.of( TestLiteral.from( "Hans" ) ) );
+        containsRows( res, true, false, Row.of( TestLiteral.from( "Hans" ) ) );
 
     }
 
@@ -98,7 +99,7 @@ public class FilterTest extends CypherTestTemplate {
 
         GraphResult res = execute( "MATCH (a:Person)-[r:KNOWS WHERE r.since < 2000 ]->(b:Person)\n"
                 + "RETURN r.since" );
-           containsRows( res, true, false, Row.of( TestLiteral.from( 1994 ) ) );
+        containsRows( res, true, false, Row.of( TestLiteral.from( 1994 ) ) );
     }
 
 
@@ -107,11 +108,12 @@ public class FilterTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_PERSON_2 );
-        GraphResult res = execute( "MATCH (n:Person)\n"
-                + "WHERE n.age IS NOT NULL\n"
-                + "RETURN n.name, n.age" );
+        GraphResult res = execute( """
+                MATCH (n:Person)
+                WHERE n.age IS NOT NULL
+                RETURN n.name, n.age""" );
 
-           containsRows( res, true, false,
+        containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Ann" ), TestLiteral.from( 45 ) ) );
     }
 
@@ -120,11 +122,12 @@ public class FilterTest extends CypherTestTemplate {
     public void propertyNonExistenceCheckFilterTest() {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
-        GraphResult res = execute( "MATCH (n:Person)\n"
-                + "WHERE n.age IS NULL\n"
-                + "RETURN n.name" );
+        GraphResult res = execute( """
+                MATCH (n:Person)
+                WHERE n.age IS NULL
+                RETURN n.name""" );
 
-           containsRows( res, true, false,
+        containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Max" ) ) );
     }
 
@@ -134,7 +137,7 @@ public class FilterTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
         execute( SINGLE_NODE_PERSON_COMPLEX_2 );
         GraphResult res = execute( "MATCH (n) WHERE 21 < n.age <= 32 RETURN n.name" );
-           containsRows( res, true, false, Row.of( TestLiteral.from( "Bob" ) ) );
+        containsRows( res, true, false, Row.of( TestLiteral.from( "Bob" ) ) );
     }
 
 
@@ -145,11 +148,11 @@ public class FilterTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_COMPLEX_3 );
         GraphResult result = execute( "MATCH (p) WHERE p.age >= 45 AND p.depno = 13 RETURN p.name" );
 
-           containsRows( result, true, false, Row.of( TestLiteral.from( "Ann" ) ) );
+        containsRows( result, true, false, Row.of( TestLiteral.from( "Ann" ) ) );
 
         result = execute( "MATCH (p) WHERE p.age <= 32 OR p.depno = 13 RETURN p.name " );
 
-           containsRows( result, true, false, Row.of( TestLiteral.from( "Ann" ) ),
+        containsRows( result, true, false, Row.of( TestLiteral.from( "Ann" ) ),
                 Row.of( TestLiteral.from( "Bob" ) ),
                 Row.of( TestLiteral.from( "Alex" ) ) );
     }
@@ -160,13 +163,15 @@ public class FilterTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
         execute( SINGLE_NODE_PERSON_COMPLEX_2 );
         execute( SINGLE_NODE_PERSON_COMPLEX_3 );
-        GraphResult res = execute( "MATCH (n:Person)\n"
-                + "WHERE (n.name = 'Alex' XOR (n.age < 30 AND n.name = 'Bob')) OR NOT (n.name = 'Bob' OR n.name = 'Alex')\n"
-                + "RETURN\n"
-                + "  n.name AS name,\n"
-                + "  n.age AS age\n" );
+        GraphResult res = execute( """
+                MATCH (n:Person)
+                WHERE (n.name = 'Alex' XOR (n.age < 30 AND n.name = 'Bob')) OR NOT (n.name = 'Bob' OR n.name = 'Alex')
+                RETURN
+                  n.name AS name,
+                  n.age AS age
+                """ );
 
-           containsRows( res, true, false,
+        containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Alex" ), TestLiteral.from( 32 ) ),
                 Row.of( TestLiteral.from( "Ann" ), TestLiteral.from( 45 ) ) );
     }
@@ -175,12 +180,13 @@ public class FilterTest extends CypherTestTemplate {
     @Test
     public void withFilterTest() {
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
-        GraphResult res = execute( "MATCH (n:Person)\n"
-                + "WITH n.name as name\n"
-                + "WHERE n.age = 45\n"
-                + "RETURN name" );
+        GraphResult res = execute( """
+                MATCH (n:Person)
+                WITH n.name as name
+                WHERE n.age = 45
+                RETURN name""" );
 
-           containsRows( res, true, false, Row.of( TestLiteral.from( "Ann" ) ) );
+        containsRows( res, true, false, Row.of( TestLiteral.from( "Ann" ) ) );
     }
 
 
@@ -194,7 +200,7 @@ public class FilterTest extends CypherTestTemplate {
         result = execute( "MATCH (p) WHERE exists(p.name) RETURN p" );
         assertNode( result, 0 );
 
-           containsRows( result, true, false, Row.of( MAX ) );
+        containsRows( result, true, false, Row.of( MAX ) );
     }
 
 
@@ -208,7 +214,7 @@ public class FilterTest extends CypherTestTemplate {
         execute( SINGLE_NODE_ANIMAL );
         GraphResult res = execute( "MATCH (p) WHERE p.name STARTS WITH 'M' RETURN p.name" );
 
-           containsRows( res, true, false, Row.of( TestLiteral.from( "Max" ) ) );
+        containsRows( res, true, false, Row.of( TestLiteral.from( "Max" ) ) );
 
 
     }
@@ -218,11 +224,12 @@ public class FilterTest extends CypherTestTemplate {
     public void endWithFilterTest() {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_PERSON_2 );
-        GraphResult res = execute( "MATCH (n)\n"
-                + "WHERE n.name ENDS WITH 's'\n"
-                + "RETURN n.name" );
+        GraphResult res = execute( """
+                MATCH (n)
+                WHERE n.name ENDS WITH 's'
+                RETURN n.name""" );
 
-           containsRows( res, true, false, Row.of( TestLiteral.from( "Hans" ) ) );
+        containsRows( res, true, false, Row.of( TestLiteral.from( "Hans" ) ) );
 
     }
 
@@ -231,10 +238,11 @@ public class FilterTest extends CypherTestTemplate {
     public void notEndWithFilterTest() {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_PERSON_2 );
-        GraphResult res = execute( "MATCH (n:Person)\n"
-                + "WHERE NOT n.name ENDS WITH 's'\n"
-                + "RETURN n.name, n.age" );
-           containsRows( res, true, false, Row.of( TestLiteral.from( "Max" ) ) );
+        GraphResult res = execute( """
+                MATCH (n:Person)
+                WHERE NOT n.name ENDS WITH 's'
+                RETURN n.name, n.age""" );
+        containsRows( res, true, false, Row.of( TestLiteral.from( "Max" ) ) );
 
     }
 
@@ -246,34 +254,37 @@ public class FilterTest extends CypherTestTemplate {
         execute( SINGLE_NODE_ANIMAL );
         GraphResult result = execute( "MATCH (p) WHERE p.name CONTAINS 'H' RETURN p.name" );
 
-           containsRows( result, true, false, Row.of( TestLiteral.from( "Hans" ) ) );
+        containsRows( result, true, false, Row.of( TestLiteral.from( "Hans" ) ) );
     }
 
 
     @Test
     public void patternFilterTest() {
         execute( SINGLE_EDGE_2 );
-        GraphResult res = execute( "MATCH\n"
-                + "  (p:Person {name: 'Max'}),\n"
-                + "  (other:Person)\n"
-                + "WHERE (p)-->(other)\n"
-                + "RETURN other.name" );
+        GraphResult res = execute( """
+                MATCH
+                  (p:Person {name: 'Max'}),
+                  (other:Person)
+                WHERE (p)-->(other)
+                RETURN other.name""" );
 
-           containsRows( res, true, false, Row.of( TestLiteral.from( "Hans" ) ) );
+        containsRows( res, true, false, Row.of( TestLiteral.from( "Hans" ) ) );
 
-        res = execute( "MATCH\n"
-                + "  (p:Person {name: 'Max'}),\n"
-                + "  (other:Person)\n"
-                + "WHERE (p)--(other)\n"
-                + "RETURN other.name" );
+        res = execute( """
+                MATCH
+                  (p:Person {name: 'Max'}),
+                  (other:Person)
+                WHERE (p)--(other)
+                RETURN other.name""" );
 
-           containsRows( res, true, false, Row.of( TestLiteral.from( "Hans" ) ) );
+        containsRows( res, true, false, Row.of( TestLiteral.from( "Hans" ) ) );
 
-        res = execute( "MATCH\n"
-                + "  (p:Person {name: 'Max'}),\n"
-                + "  (other:Person)\n"
-                + "WHERE (p)<--(other)\n"
-                + "RETURN other.name" );
+        res = execute( """
+                MATCH
+                  (p:Person {name: 'Max'}),
+                  (other:Person)
+                WHERE (p)<--(other)
+                RETURN other.name""" );
         assertEmpty( res );
     }
 
@@ -281,11 +292,12 @@ public class FilterTest extends CypherTestTemplate {
     @Test
     public void patternWithPropertiesFilterTest() {
         execute( SINGLE_EDGE_2 );
-        GraphResult res = execute( "MATCH (other:Person)\n"
-                + "WHERE (other)-[:KNOWS]-({name: 'Hans'})\n"
-                + "RETURN other.name" );
+        GraphResult res = execute( """
+                MATCH (other:Person)
+                WHERE (other)-[:KNOWS]-({name: 'Hans'})
+                RETURN other.name""" );
 
-           containsRows( res, true, false, Row.of( TestLiteral.from( "Max" ) ) );
+        containsRows( res, true, false, Row.of( TestLiteral.from( "Max" ) ) );
     }
 
 
@@ -295,7 +307,7 @@ public class FilterTest extends CypherTestTemplate {
         GraphResult res = execute( "MATCH (a:Person {name: 'Max'})\n"
                 + "RETURN [(a)-->(b WHERE b:Person) | b.name] AS friends" );
 
-           containsRows( res, true, false,
+        containsRows( res, true, false,
                 Row.of( TestLiteral.from( List.of( "Hans" ) ) ) );
 
     }
@@ -305,11 +317,12 @@ public class FilterTest extends CypherTestTemplate {
     public void useInOperatorWithFilterTest() {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_PERSON_2 );
-        GraphResult res = execute( "MATCH (a:Person)\n"
-                + "WHERE a.name IN ['Peter', 'Max']\n"
-                + "RETURN a.name" );
+        GraphResult res = execute( """
+                MATCH (a:Person)
+                WHERE a.name IN ['Peter', 'Max']
+                RETURN a.name""" );
 
-           containsRows( res, true, false, Row.of( TestLiteral.from( "Max" ) ) );
+        containsRows( res, true, false, Row.of( TestLiteral.from( "Max" ) ) );
     }
 
 
@@ -318,10 +331,11 @@ public class FilterTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
         execute( SINGLE_NODE_PERSON_COMPLEX_2 );
-        GraphResult res = execute( "MATCH (n:Person)\n"
-                + "WHERE n.age >= 40 \n"
-                + "RETURN n.name, n.age" );
-           containsRows( res, true, false,
+        GraphResult res = execute( """
+                MATCH (n:Person)
+                WHERE n.age >= 40\s
+                RETURN n.name, n.age""" );
+        containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Ann" ), TestLiteral.from( 45 ) ) );
 
     }

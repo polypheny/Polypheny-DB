@@ -20,7 +20,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.cypher.CypherTestTemplate;
 import org.polypheny.db.cypher.helper.TestLiteral;
-import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.models.results.GraphResult;
 import java.util.List;
 
@@ -41,11 +40,12 @@ public class CollectSubQueriesTest extends CypherTestTemplate {
     public void simpleCollectSubQueryTest() {
         execute( SINGLE_EDGE_1 );
 
-        GraphResult res = execute( "MATCH (person:Person)\n"
-                + "WHERE 'Kira' IN COLLECT { MATCH (person)-[:OWNER_OF]->(a:Animal) RETURN a.name }\n"
-                + "RETURN person.name AS name" );
+        GraphResult res = execute( """
+                MATCH (person:Person)
+                WHERE 'Kira' IN COLLECT { MATCH (person)-[:OWNER_OF]->(a:Animal) RETURN a.name }
+                RETURN person.name AS name""" );
 
-          containsRows( res, true, true, Row.of( TestLiteral.from( "Max" ) ) );
+        containsRows( res, true, true, Row.of( TestLiteral.from( "Max" ) ) );
 
     }
 
@@ -54,14 +54,15 @@ public class CollectSubQueriesTest extends CypherTestTemplate {
     public void useCollectSubQueryInReturnTest() {
         execute( SINGLE_NODE_PERSON_1 );
         execute( EDGE_3 );
-        GraphResult res = execute( "MATCH (person:Person)\n"
-                + "RETURN person.name,\n"
-                + "       COLLECT {\n"
-                + "            MATCH (person)-[:OWNER_OF]->(d:Dog)\n"
-                + "            RETURN d.name\n"
-                + "       } as DogNames" );
+        GraphResult res = execute( """
+                MATCH (person:Person)
+                RETURN person.name,
+                       COLLECT {
+                            MATCH (person)-[:OWNER_OF]->(d:Dog)
+                            RETURN d.name
+                       } as DogNames""" );
 
-          containsRows( res, true, false,
+        containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Max" ), TestLiteral.from( "Andy" ) ) );
 
     }
@@ -70,15 +71,17 @@ public class CollectSubQueriesTest extends CypherTestTemplate {
     @Test
     public void whereWithCollectSubQueryTest() {
         execute( EDGE_3 );
-        GraphResult res = execute( "\n"
-                + "MATCH (person:Person)\n"
-                + "RETURN person.name as name, COLLECT {\n"
-                + "  MATCH (person)-[r:OWNER_OF]->(a:Dog)\n"
-                + "  WHERE a.age <= 3\n"
-                + "  RETURN a.name\n"
-                + "} as youngDog \n" );
+        GraphResult res = execute( """
 
-          containsRows( res, true, false,
+                MATCH (person:Person)
+                RETURN person.name as name, COLLECT {
+                  MATCH (person)-[r:OWNER_OF]->(a:Dog)
+                  WHERE a.age <= 3
+                  RETURN a.name
+                } as youngDog\s
+                """ );
+
+        containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Max" ), TestLiteral.from( "Andy" ) ) );
 
     }
@@ -87,18 +90,19 @@ public class CollectSubQueriesTest extends CypherTestTemplate {
     @Test
     public void unionWithCollectSubQueryTest() {
         execute( EDGE_3 );
-        GraphResult res = execute( "MATCH (person:Person)\n"
-                + "RETURN\n"
-                + "    person.name AS name,\n"
-                + "    COLLECT {\n"
-                + "        MATCH (person)-[:HAS_DOG]->(dog:Dog)\n"
-                + "        RETURN dog.name AS petName\n"
-                + "        UNION\n"
-                + "        MATCH (person)-[:HAS_CAT]->(cat:Cat)\n"
-                + "        RETURN cat.name AS petName\n"
-                + "    } AS petNames" );
+        GraphResult res = execute( """
+                MATCH (person:Person)
+                RETURN
+                    person.name AS name,
+                    COLLECT {
+                        MATCH (person)-[:HAS_DOG]->(dog:Dog)
+                        RETURN dog.name AS petName
+                        UNION
+                        MATCH (person)-[:HAS_CAT]->(cat:Cat)
+                        RETURN cat.name AS petName
+                    } AS petNames""" );
 
-          containsRows( res, true, false,
+        containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Max" ), TestLiteral.from( List.of( "Andy", "Mittens" ) ) ) );
 
 
@@ -108,15 +112,16 @@ public class CollectSubQueriesTest extends CypherTestTemplate {
     @Test
     public void withClauseWithCollectSubQueryTest() {
         execute( EDGE_3 );
-        GraphResult res = execute( "MATCH (person:Person)\n"
-                + "RETURN person.name AS name, COLLECT {\n"
-                + "    WITH 1999 AS yearOfTheDog\n"
-                + "    MATCH (person)-[r:OWNER_OF]->(d:Dog)\n"
-                + "    WHERE r.since = yearOfTheDog\n"
-                + "    RETURN d.name\n"
-                + "} as dogsOfTheYear" );
+        GraphResult res = execute( """
+                MATCH (person:Person)
+                RETURN person.name AS name, COLLECT {
+                    WITH 1999 AS yearOfTheDog
+                    MATCH (person)-[r:OWNER_OF]->(d:Dog)
+                    WHERE r.since = yearOfTheDog
+                    RETURN d.name
+                } as dogsOfTheYear""" );
 
-          containsRows( res, true, false,
+        containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Max" ), TestLiteral.from( "Andy" ) ) );
     }
 
@@ -125,14 +130,15 @@ public class CollectSubQueriesTest extends CypherTestTemplate {
     public void caseWithCollectSubQueryTest() {
         execute( EDGE_3 );
         execute( SINGLE_NODE_PERSON_2 );
-        GraphResult res = execute( "MATCH (person:Person)\n"
-                + "RETURN\n"
-                + "   CASE\n"
-                + "     WHEN COLLECT { MATCH (person)-[:OWNER_OF]->(d:Dog) RETURN d.name } = []  THEN \" No Dogs \" + person.name\n"
-                + "     ELSE person.name\n"
-                + "   END AS result" );
+        GraphResult res = execute( """
+                MATCH (person:Person)
+                RETURN
+                   CASE
+                     WHEN COLLECT { MATCH (person)-[:OWNER_OF]->(d:Dog) RETURN d.name } = []  THEN " No Dogs " + person.name
+                     ELSE person.name
+                   END AS result""" );
 
-          containsRows( res, true, false,
+        containsRows( res, true, false,
                 Row.of( TestLiteral.from( "No Dogs" ) ),
                 Row.of( TestLiteral.from( "Max" ) ) );
 
@@ -143,12 +149,12 @@ public class CollectSubQueriesTest extends CypherTestTemplate {
     public void updateWithCollectSubQueryTest() {
         execute( SINGLE_NODE_PERSON_2 );
         execute( EDGE_3 );
-        GraphResult res = execute( "MATCH (person:Person)"
-                + " WHERE person.name = \"Hans\"\n"
-                + "SET person.dogNames = COLLECT { MATCH (person)-[:OWNER_OF]->(d:Dog) RETURN d.name }\n"
-                + "RETURN person.dogNames as dogNames" );
+        GraphResult res = execute( """
+                MATCH (person:Person) WHERE person.name = "Hans"
+                SET person.dogNames = COLLECT { MATCH (person)-[:OWNER_OF]->(d:Dog) RETURN d.name }
+                RETURN person.dogNames as dogNames""" );
 
-          containsRows( res, true, false,
+        containsRows( res, true, false,
                 Row.of( TestLiteral.from( List.of( "Andy" ) ) ) );
     }
 

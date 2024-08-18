@@ -35,12 +35,13 @@ public class DmlInsertTest extends CypherTestTemplate {
     public static final String CREATE_PERSON_MAX = "CREATE (p:Person {name: 'Max Muster'})";
 
     public static final String CREATE_COMPLEX_GRAPH_1 =
-            "CREATE\n"
-                    + "  (adam:User {name: 'Adam'}),\n"
-                    + "  (pernilla:User {name: 'Pernilla'}),\n"
-                    + "  (david:User {name: 'David'}),\n"
-                    + "  (adam)-[:FRIEND]->(pernilla),\n"
-                    + "  (pernilla)-[:FRIEND]->(david)";
+            """
+                    CREATE
+                      (adam:User {name: 'Adam'}),
+                      (pernilla:User {name: 'Pernilla'}),
+                      (david:User {name: 'David'}),
+                      (adam)-[:FRIEND]->(pernilla),
+                      (pernilla)-[:FRIEND]->(david)""";
 
     public static final String CREATE_COMPLEX_GRAPH_2 =
             "CREATE (adam:User {name: 'Adam'}), (pernilla:User {name: 'Pernilla'}), (david:User {name: 'David'}), (adam)-[:FRIEND]->(pernilla), (pernilla)-[:FRIEND]->(david), (david)-[:FRIEND]->(adam)";

@@ -54,9 +54,10 @@ public class ListFunTest extends CypherTestTemplate {
     public void patternExpressionSizeFunTest() {
         execute( SINGLE_EDGE_1 );
         execute( SINGLE_EDGE_1 );
-        GraphResult res = execute( "MATCH (a)\n"
-                + "WHERE a.name = 'Max'\n"
-                + "RETURN size((a)-[]->())) AS fof" );
+        GraphResult res = execute( """
+                MATCH (a)
+                WHERE a.name = 'Max'
+                RETURN size((a)-[]->())) AS fof""" );
 
         containsRows( res, true, true,
                 Row.of( TestLiteral.from( 2 ) ) );

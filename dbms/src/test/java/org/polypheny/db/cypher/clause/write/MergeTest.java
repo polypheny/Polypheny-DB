@@ -25,7 +25,6 @@ import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.cypher.helper.TestNode;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.models.results.GraphResult;
-import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -160,8 +159,10 @@ public class MergeTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_COMPLEX_5 );
         execute( SINGLE_NODE_PERSON_COMPLEX_6 );
 
-        execute( "MATCH (person:Person)\n"
-                + "MERGE (location:Location {name: person.bornIn})\n" );
+        execute( """
+                MATCH (person:Person)
+                MERGE (location:Location {name: person.bornIn})
+                """ );
 
         GraphResult res = execute( "MATCH (location:Location) RETURN location.name" );
         containsRows( res, true, true,
@@ -169,8 +170,10 @@ public class MergeTest extends CypherTestTemplate {
                 Row.of( TestLiteral.from( "Ohio" ) ),
                 Row.of( TestLiteral.from( "New Jersey" ) ) );
 
-        execute( "MATCH (person:Person)\n"
-                + "MERGE (location:Location {name: person.bornIn})\n" );
+        execute( """
+                MATCH (person:Person)
+                MERGE (location:Location {name: person.bornIn})
+                """ );
 
         res = execute( "MATCH (location:Location) RETURN location" );
 
@@ -200,8 +203,10 @@ public class MergeTest extends CypherTestTemplate {
 
     @Test
     public void matchWithMergeTest() {
-        execute( "MERGE (person:Person{ found : false})\n"
-                + "ON MATCH SET person.found = true\n" );
+        execute( """
+                MERGE (person:Person{ found : false})
+                ON MATCH SET person.found = true
+                """ );
 
         GraphResult res = matchAndReturnAllNodes();
         assertNode( res, 0 );
@@ -209,8 +214,10 @@ public class MergeTest extends CypherTestTemplate {
                 List.of( "Person" ),
                 Pair.of( "found", false ) ) );
 
-        execute( "MERGE (person:Person{ found : false})\n"
-                + "ON MATCH SET person.found = true\n" );
+        execute( """
+                MERGE (person:Person{ found : false})
+                ON MATCH SET person.found = true
+                """ );
 
         res = matchAndReturnAllNodes();
         containsNodes( res, true, TestNode.from(
@@ -251,10 +258,12 @@ public class MergeTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_COMPLEX_4 );
         execute( SINGLE_NODE_MOVIE );
 
-        execute( "MATCH\n"
-                + "  (charlie:Person {name: 'Charlie Sheen'}),\n"
-                + "  (wallStreet:Movie {title: 'Wall Street'})\n"
-                + "MERGE (charlie)-[r:ACTED_IN]->(wallStreet)\n" );
+        execute( """
+                MATCH
+                  (charlie:Person {name: 'Charlie Sheen'}),
+                  (wallStreet:Movie {title: 'Wall Street'})
+                MERGE (charlie)-[r:ACTED_IN]->(wallStreet)
+                """ );
 
         GraphResult res = matchAndReturnAllNodes();
         containsNodes( res, true,
@@ -263,10 +272,12 @@ public class MergeTest extends CypherTestTemplate {
 
         res = execute( "MATCH ()-[r]->() RETURN r" );
         containsEdges( res, true, TestEdge.from( List.of( "ACTED_IN" ) ) );
-        execute( "MATCH\n"
-                + "  (charlie:Person {name: 'Charlie Sheen'}),\n"
-                + "  (wallStreet:Movie {title: 'Wall Street'})\n"
-                + "MERGE (charlie)-[r:ACTED_IN]->(wallStreet)\n" );
+        execute( """
+                MATCH
+                  (charlie:Person {name: 'Charlie Sheen'}),
+                  (wallStreet:Movie {title: 'Wall Street'})
+                MERGE (charlie)-[r:ACTED_IN]->(wallStreet)
+                """ );
 
         res = execute( "MATCH ()-[r]->() RETURN r" );
         assertEquals( 1, res.getData().length );
@@ -280,23 +291,29 @@ public class MergeTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_COMPLEX_4 );
         execute( SINGLE_NODE_PERSON_COMPLEX_5 );
 
-        execute( "MATCH\n"
-                + "  (charlie:Person {name: 'Charlie Sheen'}),\n"
-                + "  (martin:Person {name: 'Martin Sheen'})\n"
-                + "MERGE (oliver)-[:DIRECTED]->(movie:Movie)<-[:DIRECTED]-(reiner)\n" );
+        execute( """
+                MATCH
+                  (charlie:Person {name: 'Charlie Sheen'}),
+                  (martin:Person {name: 'Martin Sheen'})
+                MERGE (oliver)-[:DIRECTED]->(movie:Movie)<-[:DIRECTED]-(reiner)
+                """ );
 
-        GraphResult res = execute( "MATCH (p1:Person)-[:DIRECTED]->(movie:Movie)<-[:DIRECTED]-(p2:Person)\n"
-                + "RETURN p1, p2, movie\n" );
+        GraphResult res = execute( """
+                MATCH (p1:Person)-[:DIRECTED]->(movie:Movie)<-[:DIRECTED]-(p2:Person)
+                RETURN p1, p2, movie
+                """ );
 
         containsNodes( res, true,
                 TestNode.from( Pair.of( "name", "Charlie Sheen" ) ),
                 TestNode.from( Pair.of( "name", "Martin Sheen" ) ),
                 TestNode.from( List.of( "Movie" ) ) );
 
-        execute( "MATCH\n"
-                + "  (charlie:Person {name: 'Charlie Sheen'}),\n"
-                + "  (martin:Person {name: 'Martin Sheen'})\n"
-                + "MERGE (oliver)-[:DIRECTED]->(movie:Movie)<-[:DIRECTED]-(reiner)\n" );
+        execute( """
+                MATCH
+                  (charlie:Person {name: 'Charlie Sheen'}),
+                  (martin:Person {name: 'Martin Sheen'})
+                MERGE (oliver)-[:DIRECTED]->(movie:Movie)<-[:DIRECTED]-(reiner)
+                """ );
 
         res = matchAndReturnAllNodes();
         assertEquals( 1, res.getData().length );
@@ -309,20 +326,24 @@ public class MergeTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_COMPLEX_4 );
         execute( SINGLE_NODE_PERSON_COMPLEX_5 );
 
-        execute( "MATCH\n"
-                + "  (charlie:Person {name: 'Charlie Sheen'}),\n"
-                + "  (martin:Person {name: 'Martin Sheen'})\n"
-                + "MERGE (charlie)-[r:KNOWS]-(oliver)\n" );
+        execute( """
+                MATCH
+                  (charlie:Person {name: 'Charlie Sheen'}),
+                  (martin:Person {name: 'Martin Sheen'})
+                MERGE (charlie)-[r:KNOWS]-(oliver)
+                """ );
 
         GraphResult res = execute( "MATCH (p1:Person)-[r:KNOWS]-(p2:Person)\n"
                 + "RETURN KNOWS" );
 
         containsEdges( res, true, TestEdge.from( List.of( "KNOWS" ) ) );
 
-        execute( "MATCH\n"
-                + "  (charlie:Person {name: 'Charlie Sheen'}),\n"
-                + "  (martin:Person {name: 'Martin Sheen'})\n"
-                + "MERGE (charlie)-[r:KNOWS]-(oliver)\n" );
+        execute( """
+                MATCH
+                  (charlie:Person {name: 'Charlie Sheen'}),
+                  (martin:Person {name: 'Martin Sheen'})
+                MERGE (charlie)-[r:KNOWS]-(oliver)
+                """ );
 
         res = execute( "MATCH (p1:Person)-[r:KNOWS]-(p2:Person)\n"
                 + "RETURN KNOWS" );
@@ -337,9 +358,11 @@ public class MergeTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_COMPLEX_5 );
         execute( SINGLE_NODE_PERSON_COMPLEX_6 );
 
-        execute( "MATCH (person:Person)\n"
-                + "MERGE (location:Location {name: person.bornIn})\n"
-                + "MERGE (person)-[r:BORN_IN]->(location)\n" );
+        execute( """
+                MATCH (person:Person)
+                MERGE (location:Location {name: person.bornIn})
+                MERGE (person)-[r:BORN_IN]->(location)
+                """ );
 
         GraphResult res = execute( "MATCH (location:Location) RETURN location.name" );
         containsRows( res, true, true,
@@ -351,9 +374,11 @@ public class MergeTest extends CypherTestTemplate {
         assertEquals( 3, res.getData().length );
         containsEdges( res, true, TestEdge.from( List.of( "BORN_IN" ) ) );
 
-        execute( "MATCH (person:Person)\n"
-                + "MERGE (location:Location {name: person.bornIn})\n"
-                + "MERGE (person)-[r:BORN_IN]->(location)\n" );
+        execute( """
+                MATCH (person:Person)
+                MERGE (location:Location {name: person.bornIn})
+                MERGE (person)-[r:BORN_IN]->(location)
+                """ );
 
         GraphResult edges = execute( "MATCH ()-[BORN_IN]->() RETURN BORN_IN" );
         GraphResult nodes = execute( "MATCH (location:Location) RETURN Location  " );
@@ -369,8 +394,10 @@ public class MergeTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_COMPLEX_5 );
         execute( SINGLE_NODE_PERSON_COMPLEX_6 );
 
-        execute( "MATCH (person:Person)\n"
-                + "MERGE (person)-[r:HAS_CHAUFFEUR]->(chauffeur:Chauffeur {name: person.chauffeurName})\n" );
+        execute( """
+                MATCH (person:Person)
+                MERGE (person)-[r:HAS_CHAUFFEUR]->(chauffeur:Chauffeur {name: person.chauffeurName})
+                """ );
 
         GraphResult res = execute( "MATCH ( chauffeur :Chauffeur) Return Chauffeur.name" );
         containsRows( res, true, true,
@@ -381,8 +408,10 @@ public class MergeTest extends CypherTestTemplate {
         res = execute( "MATCH ()-[HAS_CHAUFFEUR]->() RETURN HAS_CHAUFFEUR" );
         assertEquals( 3, res.getData().length );
         containsEdges( res, true, TestEdge.from( List.of( "HAS_CHAUFFEUR" ) ) );
-        execute( "MATCH (person:Person)\n"
-                + "MERGE (person)-[r:HAS_CHAUFFEUR]->(chauffeur:Chauffeur {name: person.chauffeurName})\n" );
+        execute( """
+                MATCH (person:Person)
+                MERGE (person)-[r:HAS_CHAUFFEUR]->(chauffeur:Chauffeur {name: person.chauffeurName})
+                """ );
         GraphResult edges = execute( "MATCH ()-[HAS_CHAUFFEUR]->() RETURN HAS_CHAUFFEUR" );
         GraphResult nodes = execute( "MATCH (n:Chauffeur) RETURN Chauffeur" );
         assertTrue( edges.getData().length == 3 && nodes.getData().length == 3 );
