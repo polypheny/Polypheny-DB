@@ -168,7 +168,7 @@ public class AdapterManager {
     }
 
 
-    public Adapter<?> addAdapter( String adapterName, String uniqueName, AdapterType adapterType, DeployMode mode, Map<String, String> settings ) {
+    public Adapter<?> addAdapter( Catalog catalog, String adapterName, String uniqueName, AdapterType adapterType, DeployMode mode, Map<String, String> settings ) {
         uniqueName = uniqueName.toLowerCase();
         if ( getAdapters().containsKey( uniqueName ) ) {
             throw new GenericRuntimeException( "There is already an adapter with this unique name: " + uniqueName );
@@ -182,30 +182,30 @@ public class AdapterManager {
             }
         }
 
-        long adapterId = Catalog.getInstance().createAdapter( uniqueName, adapterName, adapterType, settings, mode );
+        long adapterId = catalog.createAdapter( uniqueName, adapterName, adapterType, settings, mode );
         try {
             Adapter<?> adapter = adapterTemplate.getDeployer().get( adapterId, uniqueName, settings, mode );
             adapterByName.put( adapter.getUniqueName(), adapter );
             adapterById.put( adapter.getAdapterId(), adapter );
             return adapter;
         } catch ( Exception e ) {
-            Catalog.getInstance().dropAdapter( adapterId );
+            catalog.dropAdapter( adapterId );
             throw new GenericRuntimeException( "Something went wrong while adding a new adapter", e );
         }
     }
 
 
-    public void removeAdapter( long adapterId ) {
+    public void removeAdapter( Catalog catalog, long adapterId ) {
         Optional<Adapter<?>> optionalAdapter = getAdapter( adapterId );
         if ( optionalAdapter.isEmpty() ) {
             throw new GenericRuntimeException( "Unknown adapter instance with id: %s", adapterId );
         }
         Adapter<?> adapterInstance = optionalAdapter.get();
 
-        LogicalAdapter logicalAdapter = Catalog.snapshot().getAdapter( adapterId ).orElseThrow();
+        LogicalAdapter logicalAdapter = catalog.getSnapshot().getAdapter( adapterId ).orElseThrow();
 
         // Check if the store has any placements
-        List<AllocationEntity> placements = Catalog.snapshot().alloc().getEntitiesOnAdapter( logicalAdapter.id ).orElseThrow( () -> new GenericRuntimeException( "There is still data placed on this data store" ) );
+        List<AllocationEntity> placements = catalog.getSnapshot().alloc().getEntitiesOnAdapter( logicalAdapter.id ).orElseThrow( () -> new GenericRuntimeException( "There is still data placed on this data store" ) );
         if ( !placements.isEmpty() ) {
             if ( adapterInstance instanceof DataStore<?> ) {
                 throw new GenericRuntimeException( "There is still data placed on this data store" );
@@ -220,7 +220,7 @@ public class AdapterManager {
         adapterByName.remove( adapterInstance.getUniqueName() );
 
         // Delete store from catalog
-        Catalog.getInstance().dropAdapter( logicalAdapter.id );
+        catalog.dropAdapter( logicalAdapter.id );
     }
 
 
