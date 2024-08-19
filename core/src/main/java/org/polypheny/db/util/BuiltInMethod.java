@@ -510,6 +510,13 @@ public enum BuiltInMethod {
     MQL_MERGE( MqlFunctions.class, "mergeDocument", PolyValue.class, PolyList.class, PolyValue[].class ),
     MQL_NOT_UNSET( MqlFunctions.class, "notUnset", PolyValue.class ),
 
+    // GeoFunctions
+    MQL_GEO_INTERSECTS( MqlFunctions.class, "docGeoIntersects", PolyValue.class, PolyValue.class ),
+//    MQL_GEO_WITHIN( MqlFunctions.class, "notUnset", PolyValue.class ),
+//    MQL_NEAR( MqlFunctions.class, "notUnset", PolyValue.class ),
+//    MQL_NEAR_SPHERE( MqlFunctions.class, "notUnset", PolyValue.class ),
+//    MQL_GEO_NEAR( MqlFunctions.class, "notUnset", PolyValue.class ),
+
     MQL_PROJECT_INCLUDES( MqlFunctions.class, "projectIncludes", PolyValue.class, PolyList.class, PolyValue[].class ),
     MQL_REPLACE_ROOT( MqlFunctions.class, "replaceRoot", PolyValue.class ),
     CYPHER_LIKE( CypherFunctions.class, "like", PolyValue.class, PolyValue.class ),

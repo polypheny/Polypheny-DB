@@ -32,6 +32,7 @@ import java.util.stream.Collectors;
 import org.bson.BsonArray;
 import org.bson.BsonBoolean;
 import org.bson.BsonDocument;
+import org.bson.BsonDouble;
 import org.bson.BsonInt32;
 import org.bson.BsonNumber;
 import org.bson.BsonRegularExpression;
@@ -104,6 +105,8 @@ import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.spatial.InvalidGeometryException;
+import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.util.BsonUtil;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.Pair;
@@ -1002,7 +1005,6 @@ public class MqlToAlgConverter {
 
         Map<String, RexNode> nameNodes = new HashMap<>();
 
-
         for ( Entry<String, BsonValue> entry : value.asDocument().entrySet() ) {
             if ( entry.getKey().equals( "_id" ) ) {
                 if ( entry.getValue().isNull() ) {
@@ -1515,11 +1517,17 @@ public class MqlToAlgConverter {
         List<RexNode> operands = new ArrayList<>();
 
         for ( Entry<String, BsonValue> entry : bsonDocument.entrySet() ) {
-            if ( entry.getKey().equals( "$regex" ) ) {
-                operands.add( convertRegex( bsonDocument, parentKey, rowType ) );
-            } else if ( !entry.getKey().equals( "$options" ) ) {
-                // normal handling
-                operands.add( convertEntry( entry.getKey(), parentKey, entry.getValue(), rowType ) );
+            switch ( entry.getKey() ) {
+                case "$regex":
+                    operands.add( convertRegex( bsonDocument, parentKey, rowType ) );
+                case "$options":
+                    // Handled by $regex
+                    break;
+                case "$geoIntersects":
+                    operands.add( convertGeoIntersects( bsonDocument, parentKey, rowType ) );
+                default:
+                    // normal handling
+                    operands.add( convertEntry( entry.getKey(), parentKey, entry.getValue(), rowType ) );
             }
         }
         return getFixedCall( operands, OperatorRegistry.get( OperatorName.AND ), PolyType.BOOLEAN );
@@ -1600,6 +1608,48 @@ public class MqlToAlgConverter {
                         convertLiteral( new BsonBoolean( options.contains( "m" ) ) ),
                         convertLiteral( new BsonBoolean( options.contains( "x" ) ) ),
                         convertLiteral( new BsonBoolean( options.contains( "s" ) ) )
+                ) );
+    }
+
+
+    private RexNode convertGeoIntersects( BsonValue bson, String parentKey, AlgDataType rowType ) {
+//        if ( !bson.isDocument() ) {
+//            // TODO: Is it even possible that bson is not a document?
+//            throw new GenericRuntimeException( "$geoIntersects needs to be wrapped inside a document!" );
+//        }
+//
+//        BsonDocument bsonDocument = bson.asDocument();
+//        if ( !bsonDocument.containsKey( "$geoIntersects" ) ) {
+//            throw new GenericRuntimeException( "Document needs to have the $geoIntersects key!" );
+//        }
+//        if ( bsonDocument.keySet().size() != 1 ) {
+//            throw new GenericRuntimeException( "$geoIntersects does not allow any other keys to be set." );
+//        }
+
+        BsonDocument geometry = bson.asDocument().get( "$geoIntersects" ).asDocument().get( "$geometry" ).asDocument();
+
+        // Validate geometry: This document needs to be PolyGeometry!
+
+        PolyGeometry polyGeometry;
+        try {
+            polyGeometry = PolyGeometry.fromGeoJson( geometry.toJson() );
+        } catch ( InvalidGeometryException e ) {
+            throw new GenericRuntimeException( "$geometry operand of $geoIntersects could not be parsed as GeoJSON.", e );
+        }
+
+//        ArrayList<BsonDouble> legacyCoordinates = new ArrayList<BsonDouble>();
+//        legacyCoordinates.add(new BsonDouble( 0 ) ); // x
+//        legacyCoordinates.add(new BsonDouble( 1 ) ); // y
+//        BsonValue input = new BsonArray(legacyCoordinates);
+
+        // parent Value kann ich hier nicht validieren! Ich habe nur den Key, nicht die Values. Die Values habe ich erst beim Aufruf der funktion.
+
+        return new RexCall(
+                cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ),
+                OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_GEO_INTERSECTS ),
+                Arrays.asList(
+                        getIdentifier( parentKey, rowType ),
+                        convertLiteral( new BsonString( polyGeometry.toString() ) )
                 ) );
     }
 
