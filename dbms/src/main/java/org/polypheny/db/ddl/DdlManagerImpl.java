@@ -239,8 +239,8 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         for ( ExportedDocument exportedDocument : exportedCollections ) {
-            String documentName = getUniqueEntityName( namespace, exportedDocument.getName(), ( ns, en ) -> catalog.getSnapshot().doc().getCollection( ns, en ) );
-            LogicalCollection logicalCollection = catalog.getLogicalDoc( namespace ).addCollection( documentName, exportedDocument.getType(), exportedDocument.isModifiable() );
+            String documentName = getUniqueEntityName( namespace, exportedDocument.name(), ( ns, en ) -> catalog.getSnapshot().doc().getCollection( ns, en ) );
+            LogicalCollection logicalCollection = catalog.getLogicalDoc( namespace ).addCollection( documentName, exportedDocument.type(), exportedDocument.isModifiable() );
             AllocationPartition partition = catalog.getAllocDoc( namespace ).addPartition( logicalCollection, PartitionType.NONE, null );
             AllocationPlacement placement = catalog.getAllocDoc( namespace ).addPlacement( logicalCollection, adapter.getAdapterId() );
             AllocationCollection allocationCollection = catalog.getAllocDoc( namespace ).addAllocation( logicalCollection, placement.getId(), partition.getId(), adapter.getAdapterId() );

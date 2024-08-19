@@ -17,7 +17,6 @@
 package org.polypheny.db.adapter;
 
 import java.util.List;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.polypheny.db.catalog.logistic.EntityType;
 
@@ -25,13 +24,7 @@ public interface DocumentDataSource {
 
     List<ExportedDocument> getExportedCollection();
 
-    @AllArgsConstructor
-    @Getter
-    class ExportedDocument {
-
-        private final String name;
-        private final boolean isModifiable;
-        private final EntityType type;
+    record ExportedDocument( String name, boolean isModifiable, EntityType type ) {
 
     }
 
