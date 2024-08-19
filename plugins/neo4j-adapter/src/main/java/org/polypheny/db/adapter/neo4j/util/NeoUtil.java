@@ -71,6 +71,7 @@ import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyFloat;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.type.entity.temporal.PolyDate;
 import org.polypheny.db.type.entity.temporal.PolyTime;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
@@ -90,9 +91,10 @@ public interface NeoUtil {
     }
 
     static Function1<Value, PolyValue> getUnnullableTypeFunction( NestedPolyType type, boolean isNested ) {
+
         return switch ( type.getType() ) {
             case NULL -> o -> PolyNull.NULL;
-            case BOOLEAN -> v -> PolyBoolean.of( v.asBoolean() );
+            case BOOLEAN -> value -> PolyBoolean.of( value.asBoolean() );
             case TINYINT, SMALLINT, INTEGER -> v -> PolyInteger.of( v.asNumber() );
             case DATE -> v -> PolyDate.of( v.asNumber() );
             case TIME -> v -> PolyTime.of( v.asNumber() );
@@ -113,14 +115,17 @@ public interface NeoUtil {
                 Function1<Value, PolyValue> componentFunc = getTypeFunction( type.asList().types.get( 0 ), true );
                 yield el -> PolyList.of( el.asList( componentFunc::apply ) );
             }
-            case MAP -> v -> PolyString.of( v.asString() );
+            case MAP -> value -> PolyString.of( value.asString() );
             case DOCUMENT, JSON -> value -> PolyDocument.deserialize( value.asString() );
             case GRAPH -> o -> (PolyValue) o;
             case NODE -> o -> asPolyNode( o.asNode() );
             case EDGE -> o -> asPolyEdge( o.asRelationship() );
             case PATH -> o -> asPolyPath( o.asPath() );
-            case INTERVAL, MULTISET, DISTINCT, STRUCTURED, ROW, OTHER, USER_DEFINED_TYPE, CURSOR, COLUMN_LIST, DYNAMIC_STAR, GEOMETRY -> throw new GenericRuntimeException( String.format( "Object of type %s was not transformable.", type ) );
+            case GEOMETRY -> o -> PolyGeometry.of( o.asString() );
+            default -> throw new GenericRuntimeException( String.format( "Object of type %s was not transformable.", type ) );
         };
+
+
     }
 
     static PolyPath asPolyPath( Path path ) {
@@ -224,13 +229,6 @@ public interface NeoUtil {
     }
 
 
-    static PolyType getComponentTypeOrParent( AlgDataType type ) {
-        if ( type.getPolyType() == PolyType.ARRAY ) {
-            return type.getComponentType().getPolyType();
-        }
-        return type.getPolyType();
-    }
-
     static String rexAsString( RexLiteral literal, String mappingLabel, boolean isLiteral ) {
         Object ob = literal.getValue();
         if ( ob == null ) {
@@ -239,7 +237,7 @@ public interface NeoUtil {
         return switch ( literal.getPolyType() ) {
             case BOOLEAN -> literal.value.asBoolean().toString();
             case TINYINT, SMALLINT, INTEGER, DATE, TIME -> literal.value.asNumber().toString();
-            case BIGINT, INTERVAL -> literal.getValue().toString();
+            case BIGINT, INTERVAL, SYMBOL -> literal.getValue().toString();
             case TIMESTAMP -> literal.value.asTemporal().getMillisSinceEpoch().toString();
             case DECIMAL, FLOAT, REAL, DOUBLE -> literal.getValue().toString();
             case CHAR, VARCHAR -> {
@@ -247,6 +245,7 @@ public interface NeoUtil {
                     yield "'" + literal.value.asString() + "'";
                 }
                 yield literal.value.asString().value;
+
             }
             case MAP, DOCUMENT, ARRAY -> literal.value.asList().toString();
             case BINARY, VARBINARY -> literal.value.asBinary().as64String();
@@ -260,9 +259,9 @@ public interface NeoUtil {
                 yield node_( node, PolyString.of( mappingLabel ), isLiteral ).build();
             }
             case EDGE -> edge_( literal.value.asEdge(), isLiteral ).build();
-            case SYMBOL -> literal.getValue().toString();
-            case GRAPH, PATH, DISTINCT, STRUCTURED, ROW, OTHER, CURSOR, COLUMN_LIST, DYNAMIC_STAR, GEOMETRY, JSON, TEXT, ANY, MULTISET, USER_DEFINED_TYPE -> throw new UnsupportedOperationException( "Type is not supported by the Neo4j adapter." );
+            default -> throw new UnsupportedOperationException( "Type is not supported by the Neo4j adapter." );
         };
+
     }
 
     static Function1<List<String>, String> getOpAsNeo( OperatorName operatorName, List<RexNode> operands, AlgDataType returnType ) {
@@ -322,7 +321,13 @@ public interface NeoUtil {
             case CYPHER_EXTRACT_FROM_PATH -> o -> o.get( 0 );
             case CYPHER_ADJUST_EDGE -> o -> String.format( "%s%s%s", o.get( 1 ), o.get( 0 ), o.get( 2 ) );
             case CYPHER_REMOVE_LABELS -> Object::toString;
-            case CYPHER_SET_LABELS -> o -> String.join( ":", o );
+            case CYPHER_SET_LABELS -> o -> {
+                String name = o.get( 0 );
+                for ( int i = 1; i < o.size(); i++ ) {
+                    name += ":" + o.get( i );
+                }
+                return name;
+            };
             case CYPHER_SET_PROPERTIES -> throw new GenericRuntimeException( "No values should land here" );
             case CYPHER_SET_PROPERTY -> o -> String.format( "%s.%s = %s", o.get( 0 ), maybeUnquote( o.get( 1 ) ), o.get( 2 ) );
             case CYPHER_EXTRACT_PROPERTY -> o -> {
@@ -340,6 +345,7 @@ public interface NeoUtil {
             case MAX -> o -> String.format( "max(%s)", o.get( 0 ) );
             default -> null;
         };
+
     }
 
     static String maybeUnquote( String key ) {
@@ -441,6 +447,7 @@ public interface NeoUtil {
             case BINARY, VARBINARY, FILE, IMAGE, VIDEO, AUDIO -> value.asBinary().value;
             case FLOAT, REAL, DOUBLE -> value.asNumber().doubleValue();
             case DECIMAL -> value.asNumber().bigDecimalValue();
+            case GEOMETRY -> value.asGeometry().toWKT();
             case ARRAY -> value.asList().value.stream().map( e -> {
                 if ( isNested ) {
                     return e.toTypedJson();

@@ -159,6 +159,8 @@ public class CottontailTypeUtil {
                 case AUDIO:
                 case VIDEO:
                     return Type.STRING;
+                case GEOMETRY:
+                    return Type.STRING;
             }
         }
 
@@ -311,6 +313,8 @@ public class CottontailTypeUtil {
                     return builder.setStringData( value.asBinary().as64String() ).build();
                 }
                 break;
+            case GEOMETRY:
+                return builder.setStringData( value.asGeometry().toWKT() ).build();
         }
 
         log.error( "Conversion not possible! value: {}, type: {}", value.getClass().getCanonicalName(), actualType );

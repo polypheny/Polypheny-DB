@@ -139,4 +139,3 @@ public abstract class ReflectiveSqlOperatorTable implements OperatorTable {
     }
 
 }
-

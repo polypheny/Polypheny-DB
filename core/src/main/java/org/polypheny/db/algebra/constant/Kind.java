@@ -118,6 +118,11 @@ public enum Kind {
     DISTANCE,
 
     /**
+     * GEO functions.
+     */
+    GEO,
+
+    /**
      * POSITION Function
      */
     POSITION,
@@ -1233,7 +1238,6 @@ public enum Kind {
 
     /**
      * DDL statement not handled above.
-     *
      */
     OTHER_DDL,
 

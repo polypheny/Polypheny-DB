@@ -43,7 +43,7 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.List;
 import java.util.Map;
-import org.polypheny.db.functions.GeoFunctions.Geom;
+import org.locationtech.jts.geom.Geometry;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyList;
@@ -110,7 +110,7 @@ public class JavaToPolyTypeConversionRules {
                     .put( BigDecimal.class, PolyType.DECIMAL )
                     .put( PolyBigDecimal.class, PolyType.DECIMAL )
 
-                    .put( Geom.class, PolyType.GEOMETRY )
+                    .put( Geometry.class, PolyType.GEOMETRY )
 
                     .put( ResultSet.class, PolyType.CURSOR )
                     .put( ColumnList.class, PolyType.COLUMN_LIST )
@@ -138,7 +138,7 @@ public class JavaToPolyTypeConversionRules {
      * @param javaClass the Java class to lookup
      * @return a corresponding PolyType if found, otherwise null is returned
      */
-    public PolyType lookup( Class javaClass ) {
+    public PolyType lookup( Class<?> javaClass ) {
         return rules.get( javaClass );
     }
 
