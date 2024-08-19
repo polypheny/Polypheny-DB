@@ -314,7 +314,7 @@ public class Qfs extends DataSource<RelAdapterCatalog> implements RelationalData
 
         int i = 2;
         for ( Map.Entry<String, List<ExportedColumn>> entry : getExportedColumns().entrySet() ) {
-            InformationGroup group = new InformationGroup( informationPage, entry.getValue().get( 0 ).physicalTableName ).setOrder( i++ );
+            InformationGroup group = new InformationGroup( informationPage, entry.getValue().get( 0 ).physicalTableName() ).setOrder( i++ );
             im.addGroup( group );
             informationGroups.add( group );
 
@@ -332,11 +332,11 @@ public class Qfs extends DataSource<RelAdapterCatalog> implements RelationalData
                 Arrays.asList( "Position", "Column Name", "Type", "Nullable", "Primary" ) );
         for ( ExportedColumn exportedColumn : entry.getValue() ) {
             table.addRow(
-                    exportedColumn.physicalPosition,
-                    exportedColumn.name,
+                    exportedColumn.physicalPosition(),
+                    exportedColumn.name(),
                     exportedColumn.getDisplayType(),
-                    exportedColumn.nullable ? "✔" : "",
-                    exportedColumn.primary ? "✔" : ""
+                    exportedColumn.nullable() ? "✔" : "",
+                    exportedColumn.primary() ? "✔" : ""
             );
         }
         return table;

@@ -1098,15 +1098,15 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                     List<UiColumnDefinition> columnList = new ArrayList<>();
                     for ( ExportedColumn col : entry.getValue() ) {
                         UiColumnDefinition dbCol = UiColumnDefinition.builder()
-                                .name( col.name )
-                                .dataType( col.type.getName() )
-                                .collectionsType( col.collectionsType == null ? "" : col.collectionsType.getName() )
-                                .nullable( col.nullable )
-                                .precision( col.length )
-                                .scale( col.scale )
-                                .dimension( col.dimension )
-                                .cardinality( col.cardinality )
-                                .primary( col.primary )
+                                .name( col.name() )
+                                .dataType( col.type().getName() )
+                                .collectionsType( col.collectionsType() == null ? "" : col.collectionsType().getName() )
+                                .nullable( col.nullable() )
+                                .precision( col.length() )
+                                .scale( col.scale() )
+                                .dimension( col.dimension() )
+                                .cardinality( col.cardinality() )
+                                .primary( col.primary() )
                                 .build();
                         columnList.add( dbCol );
                     }

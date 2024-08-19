@@ -277,16 +277,16 @@ public class DdlManagerImpl extends DdlManager {
 
             for ( ExportedColumn exportedColumn : entry.getValue() ) {
                 LogicalColumn column = catalog.getLogicalRel( namespace ).addColumn(
-                        exportedColumn.name,
+                        exportedColumn.name(),
                         logical.id,
                         colPos++,
-                        exportedColumn.type,
-                        exportedColumn.collectionsType,
-                        exportedColumn.length,
-                        exportedColumn.scale,
-                        exportedColumn.dimension,
-                        exportedColumn.cardinality,
-                        exportedColumn.nullable,
+                        exportedColumn.type(),
+                        exportedColumn.collectionsType(),
+                        exportedColumn.length(),
+                        exportedColumn.scale(),
+                        exportedColumn.dimension(),
+                        exportedColumn.cardinality(),
+                        exportedColumn.nullable(),
                         Collation.getDefaultCollation() );
 
                 AllocationColumn allocationColumn = catalog.getAllocRel( namespace ).addColumn(
@@ -295,7 +295,7 @@ public class DdlManagerImpl extends DdlManager {
                         column.id,
                         adapter.adapterId,
                         PlacementType.STATIC,
-                        exportedColumn.physicalPosition ); // Not a valid partitionGroupID --> placeholder
+                        exportedColumn.physicalPosition() ); // Not a valid partitionGroupID --> placeholder
 
                 columns.add( column );
                 aColumns.add( allocationColumn );
@@ -427,15 +427,10 @@ public class DdlManagerImpl extends DdlManager {
         List<ExportedColumn> exportedColumns = dataSource.asRelationalDataSource().getExportedColumns().get( table.name );
 
         // Check if physicalColumnName is valid
-        ExportedColumn exportedColumn = null;
-        for ( ExportedColumn ec : exportedColumns ) {
-            if ( ec.physicalColumnName.equalsIgnoreCase( columnPhysicalName ) ) {
-                exportedColumn = ec;
-            }
-        }
-        if ( exportedColumn == null ) {
-            throw new GenericRuntimeException( "Invalid physical column name '%s'", columnPhysicalName );
-        }
+        ExportedColumn exportedColumn = exportedColumns.stream()
+                .filter( ec -> ec.physicalColumnName().equalsIgnoreCase( columnPhysicalName ) )
+                .findAny()
+                .orElseThrow( () -> new GenericRuntimeException( "Invalid physical column name '%s'", columnPhysicalName ) );
 
         int position = updateAdjacentPositions( table, beforeColumn, afterColumn );
 
@@ -443,13 +438,13 @@ public class DdlManagerImpl extends DdlManager {
                 columnLogicalName,
                 table.id,
                 position,
-                exportedColumn.type,
-                exportedColumn.collectionsType,
-                exportedColumn.length,
-                exportedColumn.scale,
-                exportedColumn.dimension,
-                exportedColumn.cardinality,
-                exportedColumn.nullable,
+                exportedColumn.type(),
+                exportedColumn.collectionsType(),
+                exportedColumn.length(),
+                exportedColumn.scale(),
+                exportedColumn.dimension(),
+                exportedColumn.cardinality(),
+                exportedColumn.nullable(),
                 Collation.getDefaultCollation()
         );
 

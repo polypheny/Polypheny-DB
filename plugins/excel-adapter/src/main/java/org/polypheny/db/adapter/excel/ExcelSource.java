@@ -349,7 +349,7 @@ public class ExcelSource extends DataSource<RelAdapterCatalog> implements Relati
 
     private void addInformationExportedColumns() {
         for ( Map.Entry<String, List<ExportedColumn>> entry : getExportedColumns().entrySet() ) {
-            InformationGroup group = new InformationGroup( informationPage, entry.getValue().get( 0 ).physicalSchemaName );
+            InformationGroup group = new InformationGroup( informationPage, entry.getValue().get( 0 ).physicalSchemaName() );
             informationGroups.add( group );
 
             InformationTable table = new InformationTable(
@@ -357,12 +357,12 @@ public class ExcelSource extends DataSource<RelAdapterCatalog> implements Relati
                     Arrays.asList( "Position", "Column Name", "Type", "Nullable", "Filename", "Primary" ) );
             for ( ExportedColumn exportedColumn : entry.getValue() ) {
                 table.addRow(
-                        exportedColumn.physicalPosition,
-                        exportedColumn.name,
+                        exportedColumn.physicalPosition(),
+                        exportedColumn.name(),
                         exportedColumn.getDisplayType(),
-                        exportedColumn.nullable ? "✔" : "",
-                        exportedColumn.physicalSchemaName,
-                        exportedColumn.primary ? "✔" : ""
+                        exportedColumn.nullable() ? "✔" : "",
+                        exportedColumn.physicalSchemaName(),
+                        exportedColumn.primary() ? "✔" : ""
                 );
             }
             informationElements.add( table );

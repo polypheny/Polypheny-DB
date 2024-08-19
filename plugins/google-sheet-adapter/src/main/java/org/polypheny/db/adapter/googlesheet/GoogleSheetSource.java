@@ -203,19 +203,19 @@ public class GoogleSheetSource extends DataSource<RelAdapterCatalog> implements 
         for ( Map.Entry<String, List<ExportedColumn>> entry : getExportedColumns().entrySet() ) {
             InformationGroup group = new InformationGroup(
                     informationPage,
-                    entry.getValue().get( 0 ).physicalSchemaName + "." + entry.getValue().get( 0 ).physicalTableName );
+                    entry.getValue().get( 0 ).physicalSchemaName() + "." + entry.getValue().get( 0 ).physicalTableName() );
 
             InformationTable table = new InformationTable(
                     group,
                     Arrays.asList( "Position", "Column Name", "Type", "Nullable", "Filename", "Primary" ) );
             for ( ExportedColumn exportedColumn : entry.getValue() ) {
                 table.addRow(
-                        exportedColumn.physicalPosition,
-                        exportedColumn.name,
+                        exportedColumn.physicalPosition(),
+                        exportedColumn.name(),
                         exportedColumn.getDisplayType(),
-                        exportedColumn.nullable ? "✔" : "",
-                        exportedColumn.physicalSchemaName,
-                        exportedColumn.primary ? "✔" : ""
+                        exportedColumn.nullable() ? "✔" : "",
+                        exportedColumn.physicalSchemaName(),
+                        exportedColumn.primary() ? "✔" : ""
                 );
             }
             informationElements.add( table );

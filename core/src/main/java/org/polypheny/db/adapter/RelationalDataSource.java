@@ -18,30 +18,13 @@ package org.polypheny.db.adapter;
 
 import java.util.List;
 import java.util.Map;
-import lombok.AllArgsConstructor;
 import org.polypheny.db.type.PolyType;
 
 public interface RelationalDataSource {
 
     Map<String, List<ExportedColumn>> getExportedColumns();
 
-    @AllArgsConstructor
-    class ExportedColumn {
-
-        public final String name;
-        public final PolyType type;
-        public final PolyType collectionsType;
-        public final Integer length;
-        public final Integer scale;
-        public final Integer dimension;
-        public final Integer cardinality;
-        public final boolean nullable;
-        public final String physicalSchemaName;
-        public final String physicalTableName;
-        public final String physicalColumnName;
-        public final int physicalPosition;
-        public final boolean primary;
-
+    record ExportedColumn( String name, PolyType type, PolyType collectionsType, Integer length, Integer scale, Integer dimension, Integer cardinality, boolean nullable, String physicalSchemaName, String physicalTableName, String physicalColumnName, int physicalPosition, boolean primary ) {
 
         public String getDisplayType() {
             String typeStr = type.getName();

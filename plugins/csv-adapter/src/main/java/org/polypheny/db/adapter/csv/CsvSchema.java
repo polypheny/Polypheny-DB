@@ -102,12 +102,12 @@ public class CsvSchema extends Namespace {
         }
         for ( PhysicalColumn column : table.getColumns() ) {
             AlgDataType sqlType = sqlType( typeFactory, column.type, column.length, column.scale, null );
-            fieldInfo.add( column.id, column.name, columns.get( column.position ).physicalColumnName, sqlType ).nullable( column.nullable );
+            fieldInfo.add( column.id, column.name, columns.get( column.position ).physicalColumnName(), sqlType ).nullable( column.nullable );
             fieldTypes.add( CsvFieldType.getCsvFieldType( column.type ) );
             fieldIds.add( column.position );
         }
 
-        String csvFileName = columns.get( 0 ).physicalSchemaName;
+        String csvFileName = columns.get( 0 ).physicalSchemaName();
         Source source;
         try {
             source = Sources.of( new URL( directoryUrl, csvFileName ) );
