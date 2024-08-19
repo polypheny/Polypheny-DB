@@ -75,7 +75,7 @@ javadoc {
 licensee {
     allow('MIT')
     allow('Apache-2.0')
-    allowDependency('org.postgresql', 'postgresql', '42.2.19') { because 'BSD 2-Clause' }
+    allowDependency('org.postgresql', 'postgresql', '42.7.3') { because 'BSD 2-Clause' }
 
     // special handling due to lgpl, plugins are extracted before loading, which enables to replace the library during runtime
     allowDependency('net.postgis', 'postgis-geometry', '2024.1.0') { because 'Lesser GPL in plugins' }

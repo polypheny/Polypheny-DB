@@ -28,7 +28,7 @@ import org.polypheny.db.type.entity.spatial.PolyGeometry;
 public class GeoDistanceFunctions {
 
     // Define the radius of the Earth's sphere (in meters)
-    private static final double EARTH_RADIUS_KM = 6371.0 * 1000;
+    private static final double EARTH_RADIUS_M = 6371.0 * 1000;
 
 
     private GeoDistanceFunctions() {
@@ -74,7 +74,7 @@ public class GeoDistanceFunctions {
         double dLon = lon2 - lon1;
         double a = Math.sin( dLat / 2 ) * Math.sin( dLat / 2 ) + Math.cos( lat1 ) * Math.cos( lat2 ) * Math.sin( dLon / 2 ) * Math.sin( dLon / 2 );
         double c = 2 * Math.atan2( Math.sqrt( a ), Math.sqrt( 1 - a ) );
-        double distance = EARTH_RADIUS_KM * c;
+        double distance = EARTH_RADIUS_M * c;
 
         if ( !Double.isNaN( point1.getZ() ) ) {
             double dAlt = point2.getZ() - point1.getZ();
