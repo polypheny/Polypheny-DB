@@ -342,12 +342,15 @@ public class MongoRules {
         private MongoDocumentFilterRule() {
             super(
                     LogicalDocumentFilter.class,
-                    project -> MongoConvention.mapsDocuments || !DocumentRules.containsDocument( project ),
+                    MongoDocumentFilterRule::supports,
                     Convention.NONE,
                     MongoAlg.CONVENTION,
                     MongoDocumentFilterRule.class.getSimpleName() );
         }
 
+        private static boolean supports( LogicalDocumentFilter filter ) {
+            return !DocumentRules.containsWildcardOperator( filter ) && (MongoConvention.mapsDocuments || !DocumentRules.containsDocument( filter ));
+        }
 
         @Override
         public AlgNode convert( AlgNode alg ) {

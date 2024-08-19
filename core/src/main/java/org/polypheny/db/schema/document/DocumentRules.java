@@ -21,6 +21,7 @@ import lombok.Getter;
 import lombok.experimental.Accessors;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentFilter;
 import org.polypheny.db.nodes.Function.FunctionType;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.rex.RexCall;
@@ -54,6 +55,12 @@ public class DocumentRules {
             }
         }
         return false;
+    }
+
+    public static boolean containsWildcardOperator( LogicalDocumentFilter filter ) {
+        WildcardOperatorVisitor visitor = new WildcardOperatorVisitor();
+        filter.condition.accept( visitor );
+        return visitor.containsWildcardOperator;
     }
 
 
@@ -129,6 +136,32 @@ public class DocumentRules {
             Operator operator = call.getOperator();
             if ( Kind.MQL_KIND.contains( operator.getKind() ) ) {
                 containsDocument = true;
+            }
+            return super.visitCall( call );
+        }
+
+    }
+
+    /**
+     * Visitor, which returns false if the $wildcard operator is used anywhere.
+     */
+    @Getter
+    private static class WildcardOperatorVisitor extends RexVisitorImpl<Void> {
+
+        @Accessors(fluent = true)
+        private boolean containsWildcardOperator = false;
+
+
+        protected WildcardOperatorVisitor() {
+            super( true );
+        }
+
+
+        @Override
+        public Void visitCall( RexCall call ) {
+            Operator operator = call.getOperator();
+            if ( operator.getKind() == Kind.MQL_WILDCARD_MATCH ) {
+                containsWildcardOperator = true;
             }
             return super.visitCall( call );
         }
