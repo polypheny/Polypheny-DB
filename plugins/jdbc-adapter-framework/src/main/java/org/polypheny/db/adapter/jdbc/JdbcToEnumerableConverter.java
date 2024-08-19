@@ -431,14 +431,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                 poly = dialect.handleRetrieval( fieldType, source, resultSet_, i + 1 );
                 break;
             case GEOMETRY:
-                if ( dialect.supportsPostGIS() ) {
-                    // convert postgis geometry (net.postgres.PGgeometry) that is a wrapper of org.postgresql.util.PGobject (has getValue() method to return string) into a string
-                    poly = Expressions.call( PolyGeometry.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( Expressions.call( Expressions.convert_( source, net.postgis.jdbc.PGgeometry.class ), "getValue" ), String.class ) );
-                } else if ( dialect.supportsGeoJson() ) {
-                    poly = Expressions.call( PolyGeometry.class, fieldType.isNullable() ? "fromNullableGeoJson" : "fromGeoJson", Expressions.convert_( source, String.class ) );
-                } else {
-                    poly = Expressions.call( PolyGeometry.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( dialect.handleRetrieval( fieldType, source, resultSet_, i + 1 ), String.class ) );
-                }
+                poly = dialect.handleRetrieval( fieldType, source, resultSet_, i + 1 );
                 break;
             default:
                 log.warn( "potentially unhandled polyValue" );
@@ -446,6 +439,9 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
         }
         return poly;
     }
+
+
+
 
 
     /**

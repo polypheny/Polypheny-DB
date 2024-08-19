@@ -69,12 +69,17 @@ import org.polypheny.db.type.entity.temporal.PolyTime;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.temporal.DateTimeUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
  * Utilities for the JDBC provider.
  */
 public final class JdbcUtils {
+
+    private static final Logger log = LoggerFactory.getLogger( JdbcUtils.class );
+
 
     private JdbcUtils() {
         throw new AssertionError( "no instances!" );
@@ -143,8 +148,6 @@ public final class JdbcUtils {
                 case Types.DATE -> PolyDate.of( shift( resultSet.getDate( i + 1 ) ) );
                 default -> getPolyValue( i );
             };
-
-            //return (PolyValue) reps[i].jdbcGet( resultSet, i + 1 );
         }
 
 
@@ -172,9 +175,7 @@ public final class JdbcUtils {
                         case Types.DECIMAL:
                             return PolyBigDecimal.ofNullable( (BigDecimal) o );
                         case Types.JAVA_OBJECT:
-                            if ( o instanceof net.postgis.jdbc.PGgeometry pGgeometry ) {
-                                return PolyGeometry.ofNullable( pGgeometry.getValue() );
-                            }
+                            log.warn( "Unknown Java Object Type: " + o );
                             // fallback
                     }
                 default:

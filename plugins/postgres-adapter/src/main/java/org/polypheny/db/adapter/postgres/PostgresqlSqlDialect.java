@@ -21,6 +21,9 @@ import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
+import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.NullCollation;
@@ -43,6 +46,7 @@ import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.sql.language.fun.SqlFloorFunction;
 import org.polypheny.db.sql.language.validate.SqlType;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.type.inference.ReturnTypes;
 
 
@@ -135,6 +139,20 @@ public class PostgresqlSqlDialect extends SqlDialect {
             case VARBINARY, VARCHAR, BINARY -> Optional.of( "VARYING" );
             default -> Optional.empty();
         };
+    }
+
+
+    @Override
+    public Expression handleRetrieval( AlgDataType fieldType, Expression child, ParameterExpression resultSet_, int index ) {
+        if ( fieldType.getPolyType() == PolyType.GEOMETRY ) {
+            if ( supportsPostGIS() ) {
+                // convert postgis geometry (net.postgres.PGgeometry) that is a wrapper of org.postgresql.util.PGobject (has getValue() method to return string) into a string
+                return Expressions.call( PolyGeometry.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( Expressions.call( Expressions.convert_( child, net.postgis.jdbc.PGgeometry.class ), "getValue" ), String.class ) );
+            } else if ( supportsGeoJson() ) {
+                return Expressions.call( PolyGeometry.class, fieldType.isNullable() ? "fromNullableGeoJson" : "fromGeoJson", Expressions.convert_( child, String.class ) );
+            }
+        }
+        return super.handleRetrieval( fieldType, child, resultSet_, index );
     }
 
 

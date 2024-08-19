@@ -64,6 +64,7 @@ import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.category.PolyBlob;
+import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.util.temporal.DateTimeUtils;
 import org.polypheny.db.util.temporal.TimeUnit;
 
@@ -763,6 +764,7 @@ public class SqlDialect {
             case FILE, AUDIO, VIDEO, IMAGE -> Expressions.call( PolyBlob.class, methodName, Expressions.convert_( child, byte[].class ) );
             case TEXT -> Expressions.call( PolyString.class, methodName, Expressions.convert_( child, String.class ) );
             case VARBINARY -> Expressions.call( PolyBinary.class, "fromTypedJson", Expressions.convert_( child, String.class ), Expressions.constant( PolyBinary.class ) );
+            case GEOMETRY -> Expressions.call( PolyGeometry.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( child, String.class ) );
             default -> child;
         };
 
