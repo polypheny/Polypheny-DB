@@ -91,7 +91,7 @@ public class MysqlSourcePlugin extends PolyPlugin {
             description = "Which level of transaction isolation should be used.")
     @AdapterSettingString(name = "tables", defaultValue = "foo,bar",
             description = "List of tables which should be imported. The names must to be separated by a comma.")
-    public static class MysqlSource extends AbstractJdbcSource implements RelationalDataSource {
+    public static class MysqlSource extends AbstractJdbcSource {
 
         public MysqlSource( final long storeId, final String uniqueName, final Map<String, String> settings, final DeployMode mode ) {
             super( storeId, uniqueName, settings, mode, "org.mariadb.jdbc.Driver", MysqlSqlDialect.DEFAULT, false );

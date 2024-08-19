@@ -60,7 +60,7 @@ import org.polypheny.db.prepare.Context;
         description = "Which level of transaction isolation should be used.")
 @AdapterSettingString(name = "tables", defaultValue = "foo,bar",
         description = "List of tables which should be imported. The names must to be separated by a comma.")
-public class PostgresqlSource extends AbstractJdbcSource implements RelationalDataSource {
+public class PostgresqlSource extends AbstractJdbcSource {
 
     public PostgresqlSource( final long storeId, final String uniqueName, final Map<String, String> settings, final DeployMode mode ) {
         super(

@@ -32,7 +32,7 @@ import org.apache.commons.dbcp2.BasicDataSource;
 import org.pf4j.ExtensionPoint;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DeployMode;
-import org.polypheny.db.adapter.RelationalDataSource.ExportedColumn;
+import org.polypheny.db.adapter.RelationalDataSource;
 import org.polypheny.db.adapter.RelationalScanDelegate;
 import org.polypheny.db.adapter.jdbc.JdbcSchema;
 import org.polypheny.db.adapter.jdbc.JdbcUtils;
@@ -56,7 +56,7 @@ import org.polypheny.db.type.PolyType;
 
 
 @Slf4j
-public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> implements ExtensionPoint {
+public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> implements RelationalDataSource, ExtensionPoint {
 
     @Delegate(excludes = Exclude.class)
     private final RelationalScanDelegate delegate;
