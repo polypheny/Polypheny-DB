@@ -25,6 +25,8 @@ import org.polypheny.db.webui.models.results.GraphResult;
 import java.util.Arrays;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 
 public class AggregateTest extends CypherTestTemplate {
 
@@ -98,7 +100,7 @@ public class AggregateTest extends CypherTestTemplate {
         execute( SINGLE_EDGE_2 );
 
         GraphResult res = execute( "MATCH (n) RETURN n.name, count(*) AS c" );
-        res.getHeader()[1].name.equals( "c" );
+        assertEquals("c", res.getHeader()[1].name);
 
         containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Max" ), TestLiteral.from( 3 ) ),
@@ -242,7 +244,7 @@ public class AggregateTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_PERSON_2 );
         GraphResult res = execute( "MATCH (p:Person) RETURN COLLECT(p.age)" );
-        containsRows( res, true, false, Row.of( TestLiteral.from( List.of( null, null ) ) ) );
+        containsRows( res, true, false, Row.of( TestLiteral.from( List.of(  ) ) ) );
     }
 
 

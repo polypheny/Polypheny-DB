@@ -196,6 +196,7 @@ public class FilterTest extends CypherTestTemplate {
         GraphResult result = execute( "MATCH (p) WHERE exists(p.age) RETURN p" );
 
         assertEmpty( result );
+        execute( SINGLE_NODE_PERSON_COMPLEX_1 );
 
         result = execute( "MATCH (p) WHERE exists(p.name) RETURN p" );
         assertNode( result, 0 );

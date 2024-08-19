@@ -23,7 +23,7 @@ import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.cypher.helper.TestNode;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.models.results.GraphResult;
-import java.util.Arrays;
+
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 

@@ -23,6 +23,8 @@ import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.webui.models.results.GraphResult;
 
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -204,6 +206,8 @@ public class WithTest extends CypherTestTemplate {
     @Test
     public void mapStructureRenameWithTest() {
         GraphResult res = execute( "WITH {person: {name: 'Anne', age: 25}} AS p RETURN p" );
+        assertEquals( 1, res.getData().length );
+
     }
 
 
@@ -213,37 +217,52 @@ public class WithTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_COMPLEX_2 );
         execute( SINGLE_NODE_PERSON_COMPLEX_3 );
         GraphResult res = execute( "MATCH (p:Person) WITH p WHERE p.age > 31 RETURN p.name, p.age" );
-
-
+        containsRows( res, true, false,
+                Row.of( TestLiteral.from( "Ann" ), TestLiteral.from( 45 ) ),
+                Row.of( TestLiteral.from( "Alex" ), TestLiteral.from( 32 ) ) );
     }
 
 
     @Test
-    public void calculationWithTest() {
+    public void mathematicalOperationWithTest() {
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
         execute( SINGLE_NODE_PERSON_COMPLEX_2 );
         execute( SINGLE_NODE_PERSON_COMPLEX_3 );
 
-        GraphResult res = execute( "MATCH (p:Person) WITH p, p.age * 2 AS double_age RETURN p.name, double_age;" );
+        GraphResult res = execute( "MATCH (p:Person) WITH p, p.age * 2 AS double_age RETURN p.name, double_age" );
+        containsRows( res, true, false,
+                Row.of( TestLiteral.from( "Ann" ), TestLiteral.from( 90.0 ) ),
+                Row.of( TestLiteral.from( "Alex" ), TestLiteral.from( 62.0 ) ),
+                Row.of( TestLiteral.from( "Bob" ), TestLiteral.from( 64.0 ) ) );
     }
 
 
     @Test
     public void listWithTest() {
         GraphResult res = execute( "WITH [1, 2, 3, 4, 5] AS numbers RETURN numbers" );
-
+        containsRows( res, true, false, Row.of( TestLiteral.from( List.of( 1, 2, 3, 4, 5 ) ) ) );
     }
 
 
     @Test
     public void unWindListWithTest() {
-        GraphResult res = execute( "WITH [1, 2, 3, 4, 5] AS numbers UNWIND numbers AS number RETURN number;" );
+        GraphResult res = execute( "WITH [1, 2, 3, 4, 5] AS numbers UNWIND numbers AS number RETURN number" );
+        containsRows( res, true, false,
+                Row.of( TestLiteral.from( 1 ) ),
+                Row.of( TestLiteral.from( 2 ) ),
+                Row.of( TestLiteral.from( 3 ) ),
+                Row.of( TestLiteral.from( 4 ) ),
+                Row.of( TestLiteral.from( 5 ) ) );
+
     }
 
 
     @Test
     public void unWindAndFilterListWithTest() {
         GraphResult res = execute( "WITH [1, 2, 3, 4, 5] AS numbers UNWIND numbers AS number WITH number WHERE number > 3 RETURN number" );
+        containsRows( res, true, false,
+                Row.of( TestLiteral.from( 4 ) ),
+                Row.of( TestLiteral.from( 5 ) ) );
     }
 
 

@@ -24,6 +24,8 @@ import org.polypheny.db.cypher.helper.TestNode;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.models.results.GraphResult;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class LimitTest extends CypherTestTemplate {
@@ -64,14 +66,28 @@ public class LimitTest extends CypherTestTemplate {
 
     @Test
     public void updateNodeLimitTest() {
-        execute( SINGLE_NODE_PERSON_COMPLEX_1 );
+        execute( SINGLE_NODE_PERSON_1 );
         GraphResult res = execute( """
-                MATCH (n {name: 'MAX'})
+                MATCH (n {name: 'Max'})
                 SET n.age = 60
                 RETURN n
                 LIMIT 0""" );
+        assertEquals( 0, res.getData().length );
+        res = matchAndReturnAllNodes();
+        containsNodes( res, true,
+                TestNode.from( List.of( "Person" ),
+                        Pair.of( "name", "Max" ) ) );
 
-
+        res = execute( """
+                MATCH (n {name: 'Max'})
+                SET n.age = 60
+                RETURN n
+                LIMIT 1""" );
+        assertEquals( 1, res.getData().length );
+        containsNodes( res, true,
+                TestNode.from( List.of( "Person" ),
+                        Pair.of( "name", "Max" ),
+                        Pair.of( "age", 60 ) ) );
     }
 
 

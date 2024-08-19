@@ -23,6 +23,8 @@ import org.polypheny.db.cypher.CypherTestTemplate;
 import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.webui.models.results.GraphResult;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 public class OtherFunTest extends CypherTestTemplate {
 
     @BeforeEach
@@ -56,6 +58,7 @@ public class OtherFunTest extends CypherTestTemplate {
                 RETURN ID(p)
                 """ );
 
+        assertEquals(1 , res.getData().length);
     }
 
 

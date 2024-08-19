@@ -280,7 +280,7 @@ public class CypherTestTemplate {
 
 
     protected void assertEmpty( GraphResult res ) {
-        assert res.getData().length == 0;
+        assertEquals( 0 ,   res.getData().length );
     }
 
 

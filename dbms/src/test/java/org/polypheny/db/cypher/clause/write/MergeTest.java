@@ -96,7 +96,7 @@ public class MergeTest extends CypherTestTemplate {
 
         // exist node
         execute( "MERGE (robert:Critic:Viewer)" );
-        GraphResult allNodes = matchAndReturnAllNodes();
+        res = matchAndReturnAllNodes();
         assertEquals( 1, res.getData().length );
 
     }

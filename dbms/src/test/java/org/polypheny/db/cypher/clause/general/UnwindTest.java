@@ -6,6 +6,8 @@ import org.polypheny.db.cypher.CypherTestTemplate;
 import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.webui.models.results.GraphResult;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class UnwindTest extends CypherTestTemplate {
@@ -82,9 +84,9 @@ public class UnwindTest extends CypherTestTemplate {
     @Test
     public void minMaxAggregateListOfListUnwind() {
         GraphResult res = execute( "UNWIND ['d', [1, 2], ['a', 'c', 23]] AS val RETURN  min(val)" );
-
+        containsRows( res , true , false , Row.of( TestLiteral.from( List.of('a','c' , 23) ) ) );
         res = execute( "UNWIND ['d', [1, 2], ['a', 'c', 23]] AS val RETURN max(val)" );
-
+        containsRows( res , true , false , Row.of( TestLiteral.from( 'd' ) ) );
 
     }
 
@@ -130,8 +132,9 @@ public class UnwindTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
         execute( SINGLE_NODE_PERSON_COMPLEX_2 );
         GraphResult res = execute( "MATCH (n) UNWIND n.age AS age RETURN Collect(age)" );
-
+        containsRows( res , true , false , Row.of( TestLiteral.from( List.of(45 , 31) ) ) );
     }
+
 
 
     @Test

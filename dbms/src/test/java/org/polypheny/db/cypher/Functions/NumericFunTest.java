@@ -122,7 +122,7 @@ public class NumericFunTest extends CypherTestTemplate {
 
     @Test
     public void sqrtFunTestNegative() {
-        GraphResult res = execute( "RETURN SQRT(-9)" );
+         execute( "RETURN SQRT(-9)" );
         //   containsRows(res, true, true, Row.of(TestLiteral.from(null)));
     }
 
