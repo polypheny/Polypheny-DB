@@ -174,9 +174,6 @@ public final class JdbcUtils {
                             return PolyFloat.ofNullable( (Number) o );
                         case Types.DECIMAL:
                             return PolyBigDecimal.ofNullable( (BigDecimal) o );
-                        case Types.JAVA_OBJECT:
-                            log.warn( "Unknown Java Object Type: " + o );
-                            // fallback
                     }
                 default:
                     throw new GenericRuntimeException( "not implemented " + reps[i] + " " + types[i] );
