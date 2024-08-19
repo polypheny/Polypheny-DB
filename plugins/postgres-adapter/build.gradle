@@ -77,7 +77,8 @@ licensee {
     allow('Apache-2.0')
     allowDependency('org.postgresql', 'postgresql', '42.7.3') { because 'BSD 2-Clause' }
 
-    // special handling due to lgpl, plugins are extracted before loading, which enables to replace the library during runtime
+    // Special handling due to lgpl, plugins are extracted before loading, which enables users to replace the library before
+    // startup and thus satisfies the requirements of LGPL.
     allowDependency('net.postgis', 'postgis-geometry', '2024.1.0') { because 'Lesser GPL in plugins' }
     allowDependency('net.postgis', 'postgis-jdbc', '2024.1.0') { because 'Lesser GPL in plugns' }
 }
