@@ -1527,6 +1527,9 @@ public class MqlToAlgConverter {
                 case "$geoIntersects":
                     operands.add( convertGeoIntersects( bsonDocument, parentKey, rowType ) );
                     break;
+                case "$geoWithin":
+                    operands.add( convertGeoWithin( bsonDocument, parentKey, rowType ) );
+                    break;
                 default:
                     // normal handling
                     operands.add( convertEntry( entry.getKey(), parentKey, entry.getValue(), rowType ) );
@@ -1628,6 +1631,25 @@ public class MqlToAlgConverter {
         return new RexCall(
                 cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ),
                 OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_GEO_INTERSECTS ),
+                Arrays.asList(
+                        getIdentifier( parentKey, rowType ),
+                        convertLiteral( new BsonString( polyGeometry.toString() ) )
+                ) );
+    }
+
+    private RexNode convertGeoWithin( BsonValue bson, String parentKey, AlgDataType rowType ) {
+        // We convert the $geometry object to a PolyGeometry String.
+        BsonDocument geometry = bson.asDocument().get( "$geoWithin" ).asDocument().get( "$geometry" ).asDocument();
+        PolyGeometry polyGeometry;
+        try {
+            polyGeometry = PolyGeometry.fromGeoJson( geometry.toJson() );
+        } catch ( InvalidGeometryException e ) {
+            throw new GenericRuntimeException( "$geometry operand of $geoWithin could not be parsed as GeoJSON.", e );
+        }
+
+        return new RexCall(
+                cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ),
+                OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_GEO_WITHIN ),
                 Arrays.asList(
                         getIdentifier( parentKey, rowType ),
                         convertLiteral( new BsonString( polyGeometry.toString() ) )

@@ -762,6 +762,19 @@ public class MqlFunctions {
         }
     }
 
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyBoolean docGeoWithin( PolyValue input, PolyValue geometry ) {
+        PolyGeometry inputGeometry = convertInputToPolyGeometry( input );
+
+        try {
+            // TODO: This should be cached? The filter will be the same for every iteration.
+            PolyGeometry geometryFilter = new PolyGeometry( geometry.asString().value );
+            return inputGeometry.within( geometryFilter ) ? PolyBoolean.TRUE : PolyBoolean.FALSE;
+        } catch ( InvalidGeometryException e ) {
+            throw new GenericRuntimeException( "$geometry could not be parsed as GeoJSON" );
+        }
+    }
+
 
     /**
      * Converts a PolyValue into a PolyGeometry type. We support the following cases:

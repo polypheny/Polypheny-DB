@@ -510,7 +510,7 @@ public class RexImpTable {
 
         // Geofunctions
         defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_GEO_INTERSECTS ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_GEO_INTERSECTS.method ), false );
-//        defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_GEO_WITHIN ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_GEO_WITHIN.method ), false );
+        defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_GEO_WITHIN ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_GEO_WITHIN.method ), false );
 //        defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_NEAR ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_NEAR.method ), false );
 //        defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_NEAR_SPHERE ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_NEAR_SPHERE.method ), false );
 //        defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_GEO_NEAR ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_GEO_NEAR.method ), false );
