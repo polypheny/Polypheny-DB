@@ -1520,14 +1520,17 @@ public class MqlToAlgConverter {
             switch ( entry.getKey() ) {
                 case "$regex":
                     operands.add( convertRegex( bsonDocument, parentKey, rowType ) );
+                    break;
                 case "$options":
                     // Handled by $regex
                     break;
                 case "$geoIntersects":
                     operands.add( convertGeoIntersects( bsonDocument, parentKey, rowType ) );
+                    break;
                 default:
                     // normal handling
                     operands.add( convertEntry( entry.getKey(), parentKey, entry.getValue(), rowType ) );
+                    break;
             }
         }
         return getFixedCall( operands, OperatorRegistry.get( OperatorName.AND ), PolyType.BOOLEAN );

@@ -756,7 +756,7 @@ public class MqlFunctions {
         try {
             // TODO: This should be cached? The filter will be the same for every iteration.
             PolyGeometry geometryFilter = new PolyGeometry( geometry.asString().value );
-            return new PolyBoolean( inputGeometry.intersects( geometryFilter ) );
+            return inputGeometry.intersects( geometryFilter ) ? PolyBoolean.TRUE : PolyBoolean.FALSE;
         } catch ( InvalidGeometryException e ) {
             throw new GenericRuntimeException( "$geometry could not be parsed as GeoJSON" );
         }
