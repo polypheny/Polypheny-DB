@@ -196,14 +196,15 @@ public class CypherReturnClause extends CypherClause {
 
         AlgCollation collation = AlgCollations.of( collations );
 
-        Integer skip = null;
+        Long skip = null;
         if ( this.skip != null ) {
-            skip = this.skip.getComparable().asInteger().value;
+            skip = this.skip.getComparable().asLong().value;
         }
 
-        Integer limit = null;
+        //Integer limit = null;
+        Long limit = null;
         if ( this.limit != null ) {
-            limit = this.limit.getComparable().asInteger().value;
+            limit = this.limit.getComparable().asLong().value;
         }
 
         AlgTraitSet traitSet = node.getTraitSet().replace( collation );

@@ -36,7 +36,7 @@ public class LogicalLpgSort extends LpgSort {
     /**
      * Subclass of {@link LpgSort} not targeted at any particular engine or calling convention.
      */
-    public LogicalLpgSort( AlgCluster cluster, AlgTraitSet traitSet, AlgCollation collation, AlgNode input, Integer skip, Integer limit ) {
+    public LogicalLpgSort( AlgCluster cluster, AlgTraitSet traitSet, AlgCollation collation, AlgNode input, Long skip, Long limit ) {
         super( cluster, traitSet, input, collation,
                 skip != null ? cluster.getRexBuilder().makeExactLiteral( new BigDecimal( skip ) ) : null,
                 limit != null ? cluster.getRexBuilder().makeExactLiteral( new BigDecimal( limit ) ) : null );
@@ -56,8 +56,8 @@ public class LogicalLpgSort extends LpgSort {
     @Override
     public Sort copy( AlgTraitSet traitSet, AlgNode newInput, AlgCollation newCollation, ImmutableList<RexNode> nodes, RexNode offset, RexNode fetch ) {
         return new LogicalLpgSort( newInput.getCluster(), traitSet, collation, newInput,
-                offset == null ? null : ((RexLiteral) offset).value.asNumber().intValue(),
-                fetch == null ? null : ((RexLiteral) fetch).value.asNumber().intValue() );
+                offset == null ? null : ((RexLiteral) offset).value.asNumber().longValue(),
+                fetch == null ? null : ((RexLiteral) fetch).value.asNumber().longValue() );
     }
 
 
