@@ -23,6 +23,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -30,6 +31,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.NotImplementedException;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.Point;
+import org.locationtech.jts.geom.PrecisionModel;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.schema.document.DocumentUtil;
 import org.polypheny.db.type.entity.PolyBoolean;
@@ -40,6 +45,8 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.spatial.InvalidGeometryException;
+import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.util.Pair;
 
 
@@ -739,6 +746,87 @@ public class MqlFunctions {
             return Functions.minus( a.asNumber(), b.asNumber() );
         }
         throw new NotImplementedException();
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyBoolean docGeoIntersects( PolyValue input, PolyValue geometry ) {
+        PolyGeometry inputGeometry = convertInputToPolyGeometry( input );
+
+        try {
+            // TODO: This should be cached? The filter will be the same for every iteration.
+            PolyGeometry geometryFilter = new PolyGeometry( geometry.asString().value );
+            return new PolyBoolean( inputGeometry.intersects( geometryFilter ) );
+        } catch ( InvalidGeometryException e ) {
+            throw new GenericRuntimeException( "$geometry could not be parsed as GeoJSON" );
+        }
+    }
+
+
+    /**
+     * Converts a PolyValue into a PolyGeometry type. We support the following cases:
+     * 1. Legacy Coordinates:
+     * - Array: The input value is a list of 2 numbers (integer, double), which represent the
+     * x and y values.
+     * - Embedded Document: The input value is a document with two key-value pairs. The first
+     * will be the x and the second will be the y value.
+     * Points are created without an SRID, which means that calculations will be done in the cartesian coordinate system by default.
+     * 2. GeoJSON:
+     * - A document that adheres to the GeoJSON specification.
+     */
+    public static PolyGeometry convertInputToPolyGeometry( PolyValue input ) {
+        GeometryFactory geoFactory = new GeometryFactory();
+
+        // Legacy Coordinates
+        if ( input.isList() ) {
+            PolyList<PolyValue> inputList = input.asList();
+
+            Function<PolyValue, Double> getDouble = ( PolyValue polyValue ) -> {
+                Double result = null;
+                if ( polyValue.isDouble() ) {
+                    result = polyValue.asDouble().value;
+                }
+                if ( polyValue.isInteger() ) {
+                    Integer intValue = polyValue.asInteger().value;
+                    if ( intValue != null ) {
+                        result = (double) intValue;
+                    }
+                }
+                if ( result == null ) {
+                    throw new GenericRuntimeException( "Legacy Coordinates needs to be of type INTEGER or DOUBLE." );
+                }
+                return result;
+            };
+
+            if ( inputList.size() != 2 ) {
+                throw new GenericRuntimeException( "Legacy Coordinate Pairs stored as Array can only be of the form [x,y]" );
+            }
+
+            Double x = getDouble.apply( inputList.get( 0 ) );
+            Double y = getDouble.apply( inputList.get( 1 ) );
+            Coordinate coordinate = new Coordinate( x, y );
+            Point point = geoFactory.createPoint( coordinate );
+            return new PolyGeometry( point );
+        }
+
+        // Embedded Document
+        if ( input.isDocument() ) {
+            // TODO: It is also possible that the x and y values are stored inside a document with two key-value pairs.
+            //       As a PolyDocument stores values inside a Map, the ordering is NOT preserved, which means we cannot
+            //       reliably load the first and second field of a document.
+            //         -> Do not allow this type of storing legacy coordinates
+            //         -> Change PolyDocument from Map to LinkedHashMap.
+            PolyDocument inputDocument = input.asDocument();
+
+            try {
+                // In GeoJSON, WGS84 is assumed by default. This is also the case for MongoDB.
+                return PolyGeometry.fromGeoJson( inputDocument.toJson() );
+            } catch ( InvalidGeometryException e ) {
+                throw new GenericRuntimeException( "$geometry operand of $geoIntersects could not be parsed as GeoJSON.", e );
+            }
+        }
+
+        throw new GenericRuntimeException( "Geometry type could not be determined." );
     }
 
 
