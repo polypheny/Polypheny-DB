@@ -28,6 +28,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.bson.BsonArray;
 import org.bson.BsonBoolean;
@@ -39,6 +40,9 @@ import org.bson.BsonRegularExpression;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.jetbrains.annotations.Nullable;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.Polygon;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgFieldCollation;
@@ -1639,12 +1643,67 @@ public class MqlToAlgConverter {
 
     private RexNode convertGeoWithin( BsonValue bson, String parentKey, AlgDataType rowType ) {
         // We convert the $geometry object to a PolyGeometry String.
-        BsonDocument geometry = bson.asDocument().get( "$geoWithin" ).asDocument().get( "$geometry" ).asDocument();
-        PolyGeometry polyGeometry;
-        try {
-            polyGeometry = PolyGeometry.fromGeoJson( geometry.toJson() );
-        } catch ( InvalidGeometryException e ) {
-            throw new GenericRuntimeException( "$geometry operand of $geoWithin could not be parsed as GeoJSON.", e );
+        BsonDocument geometry = bson.asDocument().get( "$geoWithin" ).asDocument();
+        PolyGeometry polyGeometry = null;
+
+        if(geometry.containsKey( "$geometry" )){
+            try {
+                polyGeometry = PolyGeometry.fromGeoJson( geometry.toJson() );
+            } catch ( InvalidGeometryException e ) {
+                throw new GenericRuntimeException( "$geometry operand of $geoWithin could not be parsed as GeoJSON.", e );
+            }
+        }
+
+        if(geometry.containsKey( "$box" )){
+            BsonArray box = geometry.get( "$box" ).asArray();
+            GeometryFactory geoFactory = new GeometryFactory();
+            Function<BsonValue, Double> getDouble = ( BsonValue bsonValue ) -> {
+                Double result = null;
+                if ( bsonValue.isDouble() ) {
+                    result = bsonValue.asDouble().getValue();
+                }
+                if ( bsonValue.isInt32() ) {
+                    int intValue = bsonValue.asInt32().getValue();
+                    result = (double)intValue;
+                }
+                if ( bsonValue.isInt64() ) {
+                    long intValue = bsonValue.asInt64().getValue();
+                    result = (double)intValue;
+                }
+                if ( result == null ) {
+                    throw new GenericRuntimeException( "Legacy Coordinates needs to be of type INTEGER or DOUBLE." );
+                }
+                return result;
+            };
+
+            // TODO: Add parse_legacy_coordinate helper method.
+            BsonArray bottomLeft = box.get( 0 ).asArray();
+            double x_bottom_left = getDouble.apply(bottomLeft.get(0));
+            double y_bottom_left = getDouble.apply(bottomLeft.get(1));
+            Coordinate bottomLeftCoordinate = new Coordinate( x_bottom_left, y_bottom_left );
+
+            BsonArray topRight = box.get( 1 ).asArray();
+            double x_top_right = getDouble.apply(topRight.get(0));
+            double y_top_right = getDouble.apply(topRight.get(1));
+            Coordinate topRightCoordinate = new Coordinate( x_top_right, y_top_right );
+
+            Coordinate topLeft = new Coordinate(x_bottom_left, y_top_right);
+            Coordinate bottomRight = new Coordinate(x_top_right, y_bottom_left);
+
+            // Form a closed Ring, starting on the bottom left and going clockwise.
+            Coordinate[] coordinates = new Coordinate[]{
+                    bottomLeftCoordinate,
+                    topLeft,
+                    topRightCoordinate,
+                    bottomRight,
+                    bottomLeftCoordinate
+            };
+
+            polyGeometry = new PolyGeometry( geoFactory.createPolygon(coordinates) );
+        }
+
+        if(polyGeometry == null){
+            throw new GenericRuntimeException( "$geoWithin arguments needs to be one of the following: $geometry, $box, $polygon, $center, $centerSphere");
         }
 
         return new RexCall(
