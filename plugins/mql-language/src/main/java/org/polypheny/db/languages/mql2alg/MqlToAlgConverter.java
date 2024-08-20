@@ -1616,36 +1616,14 @@ public class MqlToAlgConverter {
 
 
     private RexNode convertGeoIntersects( BsonValue bson, String parentKey, AlgDataType rowType ) {
-//        if ( !bson.isDocument() ) {
-//            // TODO: Is it even possible that bson is not a document?
-//            throw new GenericRuntimeException( "$geoIntersects needs to be wrapped inside a document!" );
-//        }
-//
-//        BsonDocument bsonDocument = bson.asDocument();
-//        if ( !bsonDocument.containsKey( "$geoIntersects" ) ) {
-//            throw new GenericRuntimeException( "Document needs to have the $geoIntersects key!" );
-//        }
-//        if ( bsonDocument.keySet().size() != 1 ) {
-//            throw new GenericRuntimeException( "$geoIntersects does not allow any other keys to be set." );
-//        }
-
+        // We convert the $geometry object to a PolyGeometry String.
         BsonDocument geometry = bson.asDocument().get( "$geoIntersects" ).asDocument().get( "$geometry" ).asDocument();
-
-        // Validate geometry: This document needs to be PolyGeometry!
-
         PolyGeometry polyGeometry;
         try {
             polyGeometry = PolyGeometry.fromGeoJson( geometry.toJson() );
         } catch ( InvalidGeometryException e ) {
             throw new GenericRuntimeException( "$geometry operand of $geoIntersects could not be parsed as GeoJSON.", e );
         }
-
-//        ArrayList<BsonDouble> legacyCoordinates = new ArrayList<BsonDouble>();
-//        legacyCoordinates.add(new BsonDouble( 0 ) ); // x
-//        legacyCoordinates.add(new BsonDouble( 1 ) ); // y
-//        BsonValue input = new BsonArray(legacyCoordinates);
-
-        // parent Value kann ich hier nicht validieren! Ich habe nur den Key, nicht die Values. Die Values habe ich erst beim Aufruf der funktion.
 
         return new RexCall(
                 cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ),
