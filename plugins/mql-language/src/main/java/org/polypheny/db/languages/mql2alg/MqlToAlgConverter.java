@@ -1654,52 +1654,31 @@ public class MqlToAlgConverter {
             }
         }
 
+        GeometryFactory geoFactory = new GeometryFactory();
         if(geometry.containsKey( "$box" )){
             BsonArray box = geometry.get( "$box" ).asArray();
-            GeometryFactory geoFactory = new GeometryFactory();
-            Function<BsonValue, Double> getDouble = ( BsonValue bsonValue ) -> {
-                Double result = null;
-                if ( bsonValue.isDouble() ) {
-                    result = bsonValue.asDouble().getValue();
-                }
-                if ( bsonValue.isInt32() ) {
-                    int intValue = bsonValue.asInt32().getValue();
-                    result = (double)intValue;
-                }
-                if ( bsonValue.isInt64() ) {
-                    long intValue = bsonValue.asInt64().getValue();
-                    result = (double)intValue;
-                }
-                if ( result == null ) {
-                    throw new GenericRuntimeException( "Legacy Coordinates needs to be of type INTEGER or DOUBLE." );
-                }
-                return result;
-            };
-
-            // TODO: Add parse_legacy_coordinate helper method.
-            BsonArray bottomLeft = box.get( 0 ).asArray();
-            double x_bottom_left = getDouble.apply(bottomLeft.get(0));
-            double y_bottom_left = getDouble.apply(bottomLeft.get(1));
-            Coordinate bottomLeftCoordinate = new Coordinate( x_bottom_left, y_bottom_left );
-
-            BsonArray topRight = box.get( 1 ).asArray();
-            double x_top_right = getDouble.apply(topRight.get(0));
-            double y_top_right = getDouble.apply(topRight.get(1));
-            Coordinate topRightCoordinate = new Coordinate( x_top_right, y_top_right );
-
-            Coordinate topLeft = new Coordinate(x_bottom_left, y_top_right);
-            Coordinate bottomRight = new Coordinate(x_top_right, y_bottom_left);
-
+            Coordinate bottomLeft = parseCoordinate(box.get( 0 ).asArray());
+            Coordinate topRight = parseCoordinate(box.get( 1 ).asArray());
+            Coordinate topLeft = new Coordinate(bottomLeft.x, topRight.y);
+            Coordinate bottomRight = new Coordinate(topRight.x, bottomLeft.y);
             // Form a closed Ring, starting on the bottom left and going clockwise.
-            Coordinate[] coordinates = new Coordinate[]{
-                    bottomLeftCoordinate,
+            Coordinate[] linearRing = new Coordinate[]{
+                    bottomLeft,
                     topLeft,
-                    topRightCoordinate,
+                    topRight,
                     bottomRight,
-                    bottomLeftCoordinate
+                    bottomLeft
             };
+            polyGeometry = new PolyGeometry( geoFactory.createPolygon(linearRing) );
+        }
 
-            polyGeometry = new PolyGeometry( geoFactory.createPolygon(coordinates) );
+        if(geometry.containsKey("$polygon")){
+            BsonArray box = geometry.get( "$polygon" ).asArray();
+            ArrayList<Coordinate> linearRing = new ArrayList<>();
+            for ( BsonValue coordinate : box ){
+                linearRing.add( parseCoordinate( coordinate.asArray() ) );
+            }
+            polyGeometry = new PolyGeometry( geoFactory.createPolygon(linearRing.toArray(new Coordinate[0])) );
         }
 
         if(polyGeometry == null){
@@ -1713,6 +1692,33 @@ public class MqlToAlgConverter {
                         getIdentifier( parentKey, rowType ),
                         convertLiteral( new BsonString( polyGeometry.toString() ) )
                 ) );
+    }
+
+    private static Coordinate parseCoordinate(BsonArray array){
+        if(array.size() != 2){
+            throw new GenericRuntimeException( "Coordinates need to be of the form [x,y]");
+        }
+        Function<BsonValue, Double> getDouble = ( BsonValue bsonValue ) -> {
+            Double result = null;
+            if ( bsonValue.isDouble() ) {
+                result = bsonValue.asDouble().getValue();
+            }
+            if ( bsonValue.isInt32() ) {
+                int intValue = bsonValue.asInt32().getValue();
+                result = (double)intValue;
+            }
+            if ( bsonValue.isInt64() ) {
+                long intValue = bsonValue.asInt64().getValue();
+                result = (double)intValue;
+            }
+            if ( result == null ) {
+                throw new GenericRuntimeException( "Legacy Coordinates needs to be of type INTEGER or DOUBLE." );
+            }
+            return result;
+        };
+        double x = getDouble.apply(array.get(0));
+        double y = getDouble.apply(array.get(1));
+        return new Coordinate(x,y);
     }
 
 
