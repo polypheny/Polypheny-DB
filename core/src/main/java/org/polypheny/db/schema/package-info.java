@@ -1,4 +1,3 @@
-
 /**
  * Schema SPI.
  *
@@ -6,4 +5,3 @@
  */
 
 package org.polypheny.db.schema;
-

@@ -1,4 +1,3 @@
-
 /**
  * Defines logical relational expressions.
  *
@@ -10,4 +9,3 @@
  */
 
 package org.polypheny.db.algebra.logical;
-

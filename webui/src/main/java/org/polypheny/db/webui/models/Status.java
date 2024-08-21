@@ -21,33 +21,39 @@ package org.polypheny.db.webui.models;
  * Status of an import or export operation
  */
 public class Status {
+
     final String context;
     long currentRow;
     float status;
     final int nTables;
 
+
     /**
      * Status constructor
+     *
      * @param context What the status is describing
      * @param nTables How many tables are being exported/imported in total
      */
-    public Status( final String context, final int nTables ){
+    public Status( final String context, final int nTables ) {
         this.context = context;
         this.currentRow = 0;
         this.status = 0f;
         this.nTables = nTables;
     }
 
+
     /**
      * Set the current status
+     *
      * @param currentRow The current row of the table that is currently being processed
      * @param totalRows The total number of rows of the table that is currently being processed
      * @param ithTable Counter to specify which table is currently being processed
      */
     public void setStatus( final long currentRow, final long totalRows, final int ithTable ) {
         this.currentRow = currentRow;
-        this.status = ( (ithTable / (float)nTables) + ( currentRow / (float)totalRows ) * ( 1 / (float)nTables ) );
+        this.status = ((ithTable / (float) nTables) + (currentRow / (float) totalRows) * (1 / (float) nTables));
     }
+
 
     /**
      * Set the status to 100%
@@ -55,4 +61,5 @@ public class Status {
     public void complete() {
         this.status = 1f;
     }
+
 }

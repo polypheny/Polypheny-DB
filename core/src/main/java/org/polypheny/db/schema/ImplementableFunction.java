@@ -57,4 +57,5 @@ public interface ImplementableFunction extends Function {
      * @return implementor that translates the function to linq4j expression.
      */
     CallImplementor getImplementor();
+
 }

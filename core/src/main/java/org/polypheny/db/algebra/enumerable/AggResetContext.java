@@ -35,5 +35,5 @@ public interface AggResetContext extends NestedBlockBuilder {
      * @see AggImplementor#getStateType(AggContext)
      */
     List<Expression> accumulator();
-}
 
+}

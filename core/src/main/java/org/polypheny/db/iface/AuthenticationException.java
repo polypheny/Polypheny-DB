@@ -55,4 +55,5 @@ public class AuthenticationException extends Exception {
     public AuthenticationException( Throwable cause ) {
         super( cause );
     }
+
 }

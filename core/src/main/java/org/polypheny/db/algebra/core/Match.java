@@ -330,7 +330,6 @@ public abstract class Match extends SingleAlg {
         }
 
 
-
         public Set<String> go( List<RexNode> rexNodeList ) {
             for ( RexNode rex : rexNodeList ) {
                 rex.accept( this );
@@ -364,4 +363,3 @@ public abstract class Match extends SingleAlg {
     }
 
 }
-

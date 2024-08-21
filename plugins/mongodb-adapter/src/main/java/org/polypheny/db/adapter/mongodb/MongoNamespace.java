@@ -72,7 +72,6 @@ public class MongoNamespace extends Namespace implements Expressible {
     MongoStore store;
 
 
-
     /**
      * Creates a MongoDB namespace.
      *
@@ -100,4 +99,3 @@ public class MongoNamespace extends Namespace implements Expressible {
 
 
 }
-

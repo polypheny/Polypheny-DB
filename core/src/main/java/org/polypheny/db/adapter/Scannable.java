@@ -250,7 +250,7 @@ public interface Scannable {
     void renameLogicalColumn( long id, String newColumnName );
 
 
-    record ColumnContext(String name, Integer precision, PolyType type, boolean nullable) {
+    record ColumnContext( String name, Integer precision, PolyType type, boolean nullable ) {
 
     }
 

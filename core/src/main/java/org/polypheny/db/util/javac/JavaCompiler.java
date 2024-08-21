@@ -46,5 +46,5 @@ public interface JavaCompiler {
     ClassLoader getClassLoader();
 
     int getTotalByteCodeSize();
-}
 
+}

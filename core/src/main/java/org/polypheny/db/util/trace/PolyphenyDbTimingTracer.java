@@ -84,5 +84,5 @@ public class PolyphenyDbTimingTracer {
         lastNanoTime = newNanoTime;
         logger.debug( "{}:  elapsed nanos={}", event, DECIMAL_FORMAT.format( elapsed ) );
     }
-}
 
+}

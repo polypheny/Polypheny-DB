@@ -75,5 +75,5 @@ javadoc {
 licensee {
     allow('MIT')
     allow('Apache-2.0')
-    allowDependency('org.hsqldb', 'hsqldb', '2.7.2') { because 'BSD 3-Clause' }
+    allowDependency('org.hsqldb', 'hsqldb', '2.7.3') { because 'BSD 3-Clause' }
 }

@@ -169,7 +169,7 @@ public class RexExecutorImpl implements RexExecutor {
      * Implementation of {@link InputGetter} that reads the values of input fields by calling
      * <code>{@link DataContext#get}("inputRecord")</code>.
      */
-    private record DataContextInputGetter(AlgDataType rowType, AlgDataTypeFactory typeFactory) implements InputGetter {
+    private record DataContextInputGetter( AlgDataType rowType, AlgDataTypeFactory typeFactory ) implements InputGetter {
 
 
         @Override
@@ -190,4 +190,3 @@ public class RexExecutorImpl implements RexExecutor {
     }
 
 }
-

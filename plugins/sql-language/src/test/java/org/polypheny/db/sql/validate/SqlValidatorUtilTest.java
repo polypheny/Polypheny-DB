@@ -136,7 +136,6 @@ public class SqlValidatorUtilTest {
     }
 
 
-
     @Test
     public void testNameMatcher() {
         final ImmutableList<String> beatles = ImmutableList.of( "john", "paul", "ringo", "rinGo" );

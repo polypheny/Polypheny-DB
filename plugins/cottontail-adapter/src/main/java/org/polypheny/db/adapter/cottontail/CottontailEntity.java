@@ -97,6 +97,7 @@ public class CottontailEntity extends PhysicalTable implements TranslatableEntit
                 .build();
     }
 
+
     @Override
     public String toString() {
         return "CottontailTable {" + physicalTableName + "}";

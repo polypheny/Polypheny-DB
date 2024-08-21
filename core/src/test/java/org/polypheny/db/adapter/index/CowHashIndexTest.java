@@ -43,6 +43,7 @@ public class CowHashIndexTest {
         }
     }
 
+
     @Test
     public void testCopyOnWriteIsolation() {
         // Set up

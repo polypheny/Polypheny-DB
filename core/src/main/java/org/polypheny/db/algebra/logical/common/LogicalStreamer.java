@@ -58,7 +58,7 @@ public class LogicalStreamer extends Streamer {
 
     /**
      * {@code
-     *      Streamer
+     * Streamer
      * ^               |
      * |               v
      * Provider    Collector
@@ -183,7 +183,6 @@ public class LogicalStreamer extends Streamer {
                 indexes.add( modify.getEntity().getTupleType().getFieldIds().indexOf( fieldId ) );
             }
         }
-
 
         attachFilter( modify.getEntity(), algBuilder, rexBuilder, indexes );
     }

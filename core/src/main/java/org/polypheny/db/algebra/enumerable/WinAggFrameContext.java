@@ -86,5 +86,5 @@ public interface WinAggFrameContext {
      * @return number of rows in the current partition or 0 if the partition is empty
      */
     Expression getPartitionRowCount();
-}
 
+}

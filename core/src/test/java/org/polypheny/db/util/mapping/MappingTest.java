@@ -243,5 +243,5 @@ public class MappingTest {
                     equalTo( "more than one permutation element maps to position 1" ) );
         }
     }
-}
 
+}

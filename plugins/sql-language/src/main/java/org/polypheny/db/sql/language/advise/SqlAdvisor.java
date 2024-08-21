@@ -98,7 +98,6 @@ public class SqlAdvisor implements Advisor {
     }
 
 
-
     /**
      * Wrapper function to parse a SQL query (SELECT or VALUES, but not INSERT, UPDATE, DELETE, CREATE, DROP etc.), throwing a {@link NodeParseException} if the statement is not syntactically valid.
      *
@@ -218,4 +217,3 @@ public class SqlAdvisor implements Advisor {
     }
 
 }
-

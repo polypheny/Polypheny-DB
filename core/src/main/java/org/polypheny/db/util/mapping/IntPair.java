@@ -167,5 +167,5 @@ public class IntPair {
     public static List<Integer> right( final List<IntPair> pairs ) {
         return pairs.stream().map( RIGHT::apply ).collect( Collectors.toList() );
     }
-}
 
+}
