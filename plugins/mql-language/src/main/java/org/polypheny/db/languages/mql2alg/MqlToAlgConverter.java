@@ -28,7 +28,6 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.bson.BsonArray;
 import org.bson.BsonBoolean;
@@ -42,7 +41,6 @@ import org.bson.BsonValue;
 import org.jetbrains.annotations.Nullable;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
-import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.geom.PrecisionModel;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgCollations;
@@ -1660,8 +1658,8 @@ public class MqlToAlgConverter {
 
         if(geometry.containsKey( "$box" )){
             BsonArray box = geometry.get( "$box" ).asArray();
-            Coordinate bottomLeft = parseCoordinate(box.get( 0 ).asArray());
-            Coordinate topRight = parseCoordinate(box.get( 1 ).asArray());
+            Coordinate bottomLeft = convertArrayToCoordinate(box.get( 0 ).asArray());
+            Coordinate topRight = convertArrayToCoordinate(box.get( 1 ).asArray());
             Coordinate topLeft = new Coordinate(bottomLeft.x, topRight.y);
             Coordinate bottomRight = new Coordinate(topRight.x, bottomLeft.y);
             // Form a closed Ring, starting on the bottom left and going clockwise.
@@ -1680,7 +1678,7 @@ public class MqlToAlgConverter {
             BsonArray polygon = geometry.get( "$polygon" ).asArray();
             ArrayList<Coordinate> linearRing = new ArrayList<>();
             for ( BsonValue coordinate : polygon ){
-                linearRing.add( parseCoordinate( coordinate.asArray() ) );
+                linearRing.add( convertArrayToCoordinate( coordinate.asArray() ) );
             }
             GeometryFactory geoFactory = new GeometryFactory();
             polyGeometry = new PolyGeometry( geoFactory.createPolygon(linearRing.toArray(new Coordinate[0])) );
@@ -1688,7 +1686,7 @@ public class MqlToAlgConverter {
 
         if(geometry.containsKey("$center")){
             BsonArray circle = geometry.get( "$center" ).asArray();
-            Coordinate center = parseCoordinate( circle.get(0).asArray() );
+            Coordinate center = convertArrayToCoordinate( circle.get(0).asArray() );
             double radius = convertBsonValueToDouble(circle.get(1));
             distance = new PolyDouble(radius);
 
@@ -1700,7 +1698,7 @@ public class MqlToAlgConverter {
 
         if(geometry.containsKey("$centerSphere")){
             BsonArray circle = geometry.get( "$centerSphere" ).asArray();
-            Coordinate center = parseCoordinate( circle.get(0).asArray() );
+            Coordinate center = convertArrayToCoordinate( circle.get(0).asArray() );
             double radius = convertBsonValueToDouble(circle.get(1));
             distance = new PolyDouble(radius);
 
@@ -1727,7 +1725,7 @@ public class MqlToAlgConverter {
                 ) );
     }
 
-    private static Coordinate parseCoordinate(BsonArray array){
+    private static Coordinate convertArrayToCoordinate(BsonArray array){
         if(array.size() != 2){
             throw new GenericRuntimeException( "Coordinates need to be of the form [x,y]");
         }

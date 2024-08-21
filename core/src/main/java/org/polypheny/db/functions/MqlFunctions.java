@@ -775,7 +775,9 @@ public class MqlFunctions {
             if(distanceValue > 0){
                 return inputGeometry.isWithinDistance( geometryFilter, distanceValue ) ? PolyBoolean.TRUE : PolyBoolean.FALSE;
             }
-            return inputGeometry.within( geometryFilter ) ? PolyBoolean.TRUE : PolyBoolean.FALSE;
+            // coveredBy also works if the input geometry lies along the edges of the filter geometry.
+            // For example: A point [0,0] is inside a box [0,0 to 1,1], because it lies on a corner / edge.
+            return inputGeometry.coveredBy( geometryFilter ) ? PolyBoolean.TRUE : PolyBoolean.FALSE;
         } catch ( InvalidGeometryException | GeometryTopologicalException e ) {
             throw new GenericRuntimeException( "$geometry could not be parsed as GeoJSON" );
         }
