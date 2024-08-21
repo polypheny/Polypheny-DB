@@ -45,6 +45,7 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.spatial.GeometryTopologicalException;
 import org.polypheny.db.type.entity.spatial.InvalidGeometryException;
 import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.util.Pair;
@@ -763,18 +764,22 @@ public class MqlFunctions {
     }
 
     @SuppressWarnings("UnusedDeclaration")
-    public static PolyBoolean docGeoWithin( PolyValue input, PolyValue geometry ) {
+    public static PolyBoolean docGeoWithin( PolyValue input, PolyValue geometry, PolyValue distance ) {
         PolyGeometry inputGeometry = convertInputToPolyGeometry( input );
 
         try {
             // TODO: This should be cached? The filter will be the same for every iteration.
             PolyGeometry geometryFilter = new PolyGeometry( geometry.asString().value );
+
+            double distanceValue = distance.asDouble().doubleValue();
+            if(distanceValue > 0){
+                return inputGeometry.isWithinDistance( geometryFilter, distanceValue ) ? PolyBoolean.TRUE : PolyBoolean.FALSE;
+            }
             return inputGeometry.within( geometryFilter ) ? PolyBoolean.TRUE : PolyBoolean.FALSE;
-        } catch ( InvalidGeometryException e ) {
+        } catch ( InvalidGeometryException | GeometryTopologicalException e ) {
             throw new GenericRuntimeException( "$geometry could not be parsed as GeoJSON" );
         }
     }
-
 
     /**
      * Converts a PolyValue into a PolyGeometry type. We support the following cases:

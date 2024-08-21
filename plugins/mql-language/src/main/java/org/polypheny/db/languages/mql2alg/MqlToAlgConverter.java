@@ -1645,6 +1645,7 @@ public class MqlToAlgConverter {
         // We convert the $geometry object to a PolyGeometry String.
         BsonDocument geometry = bson.asDocument().get( "$geoWithin" ).asDocument();
         PolyGeometry polyGeometry = null;
+        PolyDouble distance = new PolyDouble( -1d );
 
         if(geometry.containsKey( "$geometry" )){
             try {
@@ -1673,12 +1674,23 @@ public class MqlToAlgConverter {
         }
 
         if(geometry.containsKey("$polygon")){
-            BsonArray box = geometry.get( "$polygon" ).asArray();
+            BsonArray polygon = geometry.get( "$polygon" ).asArray();
             ArrayList<Coordinate> linearRing = new ArrayList<>();
-            for ( BsonValue coordinate : box ){
+            for ( BsonValue coordinate : polygon ){
                 linearRing.add( parseCoordinate( coordinate.asArray() ) );
             }
             polyGeometry = new PolyGeometry( geoFactory.createPolygon(linearRing.toArray(new Coordinate[0])) );
+        }
+
+        if(geometry.containsKey("$center")){
+            BsonArray circle = geometry.get( "$center" ).asArray();
+            Coordinate center = parseCoordinate( circle.get(0).asArray() );
+            double radius = convertBsonValueToDouble(circle.get(1));
+            distance = new PolyDouble(radius);
+
+            // As GeoJSON does not define a circle shape, we will create a Point instead. Then we can
+            // check if the distance between the shape and the point is inside the radius.
+            polyGeometry = new PolyGeometry( geoFactory.createPoint(center) );
         }
 
         if(polyGeometry == null){
@@ -1690,7 +1702,9 @@ public class MqlToAlgConverter {
                 OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_GEO_WITHIN ),
                 Arrays.asList(
                         getIdentifier( parentKey, rowType ),
-                        convertLiteral( new BsonString( polyGeometry.toString() ) )
+                        convertLiteral( new BsonString( polyGeometry.toString() ) ),
+                        // TODO: Possible to have null?
+                        convertLiteral( new BsonDouble( distance.doubleValue() ) )
                 ) );
     }
 
@@ -1698,27 +1712,28 @@ public class MqlToAlgConverter {
         if(array.size() != 2){
             throw new GenericRuntimeException( "Coordinates need to be of the form [x,y]");
         }
-        Function<BsonValue, Double> getDouble = ( BsonValue bsonValue ) -> {
-            Double result = null;
-            if ( bsonValue.isDouble() ) {
-                result = bsonValue.asDouble().getValue();
-            }
-            if ( bsonValue.isInt32() ) {
-                int intValue = bsonValue.asInt32().getValue();
-                result = (double)intValue;
-            }
-            if ( bsonValue.isInt64() ) {
-                long intValue = bsonValue.asInt64().getValue();
-                result = (double)intValue;
-            }
-            if ( result == null ) {
-                throw new GenericRuntimeException( "Legacy Coordinates needs to be of type INTEGER or DOUBLE." );
-            }
-            return result;
-        };
-        double x = getDouble.apply(array.get(0));
-        double y = getDouble.apply(array.get(1));
+        double x = convertBsonValueToDouble(array.get(0));
+        double y = convertBsonValueToDouble(array.get(1));
         return new Coordinate(x,y);
+    }
+
+    private static double convertBsonValueToDouble(BsonValue bsonValue){
+        Double result = null;
+        if ( bsonValue.isDouble() ) {
+            result = bsonValue.asDouble().getValue();
+        }
+        if ( bsonValue.isInt32() ) {
+            int intValue = bsonValue.asInt32().getValue();
+            result = (double)intValue;
+        }
+        if ( bsonValue.isInt64() ) {
+            long intValue = bsonValue.asInt64().getValue();
+            result = (double)intValue;
+        }
+        if ( result == null ) {
+            throw new GenericRuntimeException( "Legacy Coordinates needs to be of type INTEGER or DOUBLE." );
+        }
+        return result;
     }
 
 
