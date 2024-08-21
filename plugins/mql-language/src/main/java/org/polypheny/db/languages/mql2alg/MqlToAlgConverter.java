@@ -1642,13 +1642,14 @@ public class MqlToAlgConverter {
                 ) );
     }
 
+
     private RexNode convertGeoWithin( BsonValue bson, String parentKey, AlgDataType rowType ) {
         // We convert the $geometry object to a PolyGeometry String.
         BsonDocument geometry = bson.asDocument().get( "$geoWithin" ).asDocument();
         PolyGeometry polyGeometry = null;
         PolyDouble distance = new PolyDouble( -1d );
 
-        if(geometry.containsKey( "$geometry" )){
+        if ( geometry.containsKey( "$geometry" ) ) {
             try {
                 polyGeometry = PolyGeometry.fromGeoJson( geometry.toJson() );
             } catch ( InvalidGeometryException e ) {
@@ -1656,12 +1657,12 @@ public class MqlToAlgConverter {
             }
         }
 
-        if(geometry.containsKey( "$box" )){
+        if ( geometry.containsKey( "$box" ) ) {
             BsonArray box = geometry.get( "$box" ).asArray();
-            Coordinate bottomLeft = convertArrayToCoordinate(box.get( 0 ).asArray());
-            Coordinate topRight = convertArrayToCoordinate(box.get( 1 ).asArray());
-            Coordinate topLeft = new Coordinate(bottomLeft.x, topRight.y);
-            Coordinate bottomRight = new Coordinate(topRight.x, bottomLeft.y);
+            Coordinate bottomLeft = convertArrayToCoordinate( box.get( 0 ).asArray() );
+            Coordinate topRight = convertArrayToCoordinate( box.get( 1 ).asArray() );
+            Coordinate topLeft = new Coordinate( bottomLeft.x, topRight.y );
+            Coordinate bottomRight = new Coordinate( topRight.x, bottomLeft.y );
             // Form a closed Ring, starting on the bottom left and going clockwise.
             Coordinate[] linearRing = new Coordinate[]{
                     bottomLeft,
@@ -1671,47 +1672,41 @@ public class MqlToAlgConverter {
                     bottomLeft
             };
             GeometryFactory geoFactory = new GeometryFactory();
-            polyGeometry = new PolyGeometry( geoFactory.createPolygon(linearRing) );
-        }
-
-        if(geometry.containsKey("$polygon")){
+            polyGeometry = new PolyGeometry( geoFactory.createPolygon( linearRing ) );
+        } else if ( geometry.containsKey( "$polygon" ) ) {
             BsonArray polygon = geometry.get( "$polygon" ).asArray();
             ArrayList<Coordinate> linearRing = new ArrayList<>();
-            for ( BsonValue coordinate : polygon ){
+            for ( BsonValue coordinate : polygon ) {
                 linearRing.add( convertArrayToCoordinate( coordinate.asArray() ) );
             }
             GeometryFactory geoFactory = new GeometryFactory();
-            polyGeometry = new PolyGeometry( geoFactory.createPolygon(linearRing.toArray(new Coordinate[0])) );
-        }
-
-        if(geometry.containsKey("$center")){
+            polyGeometry = new PolyGeometry( geoFactory.createPolygon( linearRing.toArray( new Coordinate[0] ) ) );
+        } else if ( geometry.containsKey( "$center" ) ) {
             BsonArray circle = geometry.get( "$center" ).asArray();
-            Coordinate center = convertArrayToCoordinate( circle.get(0).asArray() );
-            double radius = convertBsonValueToDouble(circle.get(1));
-            distance = new PolyDouble(radius);
+            Coordinate center = convertArrayToCoordinate( circle.get( 0 ).asArray() );
+            double radius = convertBsonValueToDouble( circle.get( 1 ) );
+            distance = new PolyDouble( radius );
 
             // As GeoJSON does not define a circle shape, we will create a Point instead. Then we can
             // check if the distance between the shape and the point is inside the radius.
             GeometryFactory geoFactory = new GeometryFactory();
-            polyGeometry = new PolyGeometry( geoFactory.createPoint(center) );
-        }
-
-        if(geometry.containsKey("$centerSphere")){
+            polyGeometry = new PolyGeometry( geoFactory.createPoint( center ) );
+        } else if ( geometry.containsKey( "$centerSphere" ) ) {
             BsonArray circle = geometry.get( "$centerSphere" ).asArray();
-            Coordinate center = convertArrayToCoordinate( circle.get(0).asArray() );
-            double radius = convertBsonValueToDouble(circle.get(1));
-            distance = new PolyDouble(radius);
+            Coordinate center = convertArrayToCoordinate( circle.get( 0 ).asArray() );
+            double radius = convertBsonValueToDouble( circle.get( 1 ) );
+            distance = new PolyDouble( radius );
 
             // As $centerSphere works in the spherical instead of the planar coordinate system, we need
             // to use the default WGS84 CRS when creating the shape.
-            GeometryFactory geoFactory = new GeometryFactory(new PrecisionModel(), WGS_84);
+            GeometryFactory geoFactory = new GeometryFactory( new PrecisionModel(), WGS_84 );
             // As GeoJSON does not define a circle shape, we will create a Point instead. Then we can
             // check if the distance between the shape and the point is inside the radius.
-            polyGeometry = new PolyGeometry( geoFactory.createPoint(center) );
+            polyGeometry = new PolyGeometry( geoFactory.createPoint( center ) );
         }
 
-        if(polyGeometry == null){
-            throw new GenericRuntimeException( "$geoWithin arguments needs to be one of the following: $geometry, $box, $polygon, $center, $centerSphere");
+        if ( polyGeometry == null ) {
+            throw new GenericRuntimeException( "$geoWithin arguments needs to be one of the following: $geometry, $box, $polygon, $center, $centerSphere" );
         }
 
         return new RexCall(
@@ -1725,27 +1720,29 @@ public class MqlToAlgConverter {
                 ) );
     }
 
-    private static Coordinate convertArrayToCoordinate(BsonArray array){
-        if(array.size() != 2){
-            throw new GenericRuntimeException( "Coordinates need to be of the form [x,y]");
+
+    private static Coordinate convertArrayToCoordinate( BsonArray array ) {
+        if ( array.size() != 2 ) {
+            throw new GenericRuntimeException( "Coordinates need to be of the form [x,y]" );
         }
-        double x = convertBsonValueToDouble(array.get(0));
-        double y = convertBsonValueToDouble(array.get(1));
-        return new Coordinate(x,y);
+        double x = convertBsonValueToDouble( array.get( 0 ) );
+        double y = convertBsonValueToDouble( array.get( 1 ) );
+        return new Coordinate( x, y );
     }
 
-    private static double convertBsonValueToDouble(BsonValue bsonValue){
+
+    private static double convertBsonValueToDouble( BsonValue bsonValue ) {
         Double result = null;
         if ( bsonValue.isDouble() ) {
             result = bsonValue.asDouble().getValue();
         }
         if ( bsonValue.isInt32() ) {
             int intValue = bsonValue.asInt32().getValue();
-            result = (double)intValue;
+            result = (double) intValue;
         }
         if ( bsonValue.isInt64() ) {
             long intValue = bsonValue.asInt64().getValue();
-            result = (double)intValue;
+            result = (double) intValue;
         }
         if ( result == null ) {
             throw new GenericRuntimeException( "Legacy Coordinates needs to be of type INTEGER or DOUBLE." );

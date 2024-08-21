@@ -31,6 +31,9 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
 
     @Test
     public void docGeoWithinTest() {
+        // TODO: Compare values with MongoDB, instead of with the values that I expect.
+        //       Somehow possible to execute the commands once on mongodb, and once on
+        //       hsqldb?
         String insertDocuments = """
                 db.%s.insertMany([
                     {
@@ -57,8 +60,8 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
                     legacy: {
                        $geoWithin: {
                           $box: [
-                            [ 0, 0 ],
-                            [ 1, 1 ]
+                            [0,0],
+                            [1,1]
                           ]
                        }
                     }
