@@ -43,6 +43,7 @@ import org.jetbrains.annotations.Nullable;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Polygon;
+import org.locationtech.jts.geom.PrecisionModel;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgFieldCollation;
@@ -115,6 +116,8 @@ import org.polypheny.db.util.BsonUtil;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.TimestampString;
+
+import static org.polypheny.db.type.entity.spatial.PolyGeometry.WGS_84;
 
 
 /**
@@ -1655,7 +1658,6 @@ public class MqlToAlgConverter {
             }
         }
 
-        GeometryFactory geoFactory = new GeometryFactory();
         if(geometry.containsKey( "$box" )){
             BsonArray box = geometry.get( "$box" ).asArray();
             Coordinate bottomLeft = parseCoordinate(box.get( 0 ).asArray());
@@ -1670,6 +1672,7 @@ public class MqlToAlgConverter {
                     bottomRight,
                     bottomLeft
             };
+            GeometryFactory geoFactory = new GeometryFactory();
             polyGeometry = new PolyGeometry( geoFactory.createPolygon(linearRing) );
         }
 
@@ -1679,6 +1682,7 @@ public class MqlToAlgConverter {
             for ( BsonValue coordinate : polygon ){
                 linearRing.add( parseCoordinate( coordinate.asArray() ) );
             }
+            GeometryFactory geoFactory = new GeometryFactory();
             polyGeometry = new PolyGeometry( geoFactory.createPolygon(linearRing.toArray(new Coordinate[0])) );
         }
 
@@ -1688,6 +1692,21 @@ public class MqlToAlgConverter {
             double radius = convertBsonValueToDouble(circle.get(1));
             distance = new PolyDouble(radius);
 
+            // As GeoJSON does not define a circle shape, we will create a Point instead. Then we can
+            // check if the distance between the shape and the point is inside the radius.
+            GeometryFactory geoFactory = new GeometryFactory();
+            polyGeometry = new PolyGeometry( geoFactory.createPoint(center) );
+        }
+
+        if(geometry.containsKey("$centerSphere")){
+            BsonArray circle = geometry.get( "$centerSphere" ).asArray();
+            Coordinate center = parseCoordinate( circle.get(0).asArray() );
+            double radius = convertBsonValueToDouble(circle.get(1));
+            distance = new PolyDouble(radius);
+
+            // As $centerSphere works in the spherical instead of the planar coordinate system, we need
+            // to use the default WGS84 CRS when creating the shape.
+            GeometryFactory geoFactory = new GeometryFactory(new PrecisionModel(), WGS_84);
             // As GeoJSON does not define a circle shape, we will create a Point instead. Then we can
             // check if the distance between the shape and the point is inside the radius.
             polyGeometry = new PolyGeometry( geoFactory.createPoint(center) );
