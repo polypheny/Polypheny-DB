@@ -54,5 +54,5 @@ public interface AggAddContext extends AggResultContext {
      * @return {@link RexToLixTranslator} suitable to transform the arguments
      */
     RexToLixTranslator rowTranslator();
-}
 
+}

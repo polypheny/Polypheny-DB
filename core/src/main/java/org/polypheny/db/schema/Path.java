@@ -64,5 +64,5 @@ public interface Path extends List<Pair<String, Namespace>>, RandomAccess {
      * Returns the schemas of this path.
      */
     List<Namespace> schemas();
-}
 
+}

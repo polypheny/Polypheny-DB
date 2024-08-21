@@ -160,5 +160,5 @@ abstract class AbstractImmutableList<E> implements List<E> {
     public boolean remove( Object o ) {
         throw new UnsupportedOperationException();
     }
-}
 
+}

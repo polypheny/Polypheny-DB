@@ -67,5 +67,5 @@ public @interface Map {
      * Whether values may be null.
      */
     boolean valueIsNullable() default true;
-}
 
+}

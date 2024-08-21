@@ -122,7 +122,7 @@ public class OrderedAggregateLambdaFactory<TSource, TKey, TSortKey, TOrigAccumul
         public @NotNull Iterator<TSource> iterator() {
             return list.iterator();
         }
+
     }
 
 }
-

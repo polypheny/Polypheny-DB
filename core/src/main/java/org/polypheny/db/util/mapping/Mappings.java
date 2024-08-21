@@ -757,6 +757,7 @@ public abstract class Mappings {
          * Returns the number of elements in the mapping.
          */
         int size();
+
     }
 
 
@@ -788,6 +789,7 @@ public abstract class Mappings {
         MappingType getMappingType();
 
         int getSourceCount();
+
     }
 
 
@@ -822,6 +824,7 @@ public abstract class Mappings {
         boolean isIdentity();
 
         Mapping inverse();
+
     }
 
 
@@ -856,6 +859,7 @@ public abstract class Mappings {
         void set( int source, int target );
 
         Mapping inverse();
+
     }
 
 
@@ -989,6 +993,7 @@ public abstract class Mappings {
             buf.append( "]]" );
             return buf.toString();
         }
+
     }
 
 
@@ -1013,6 +1018,7 @@ public abstract class Mappings {
             // not very efficient
             return (obj instanceof Mapping) && toString().equals( obj.toString() );
         }
+
     }
 
 
@@ -1047,6 +1053,7 @@ public abstract class Mappings {
         public void remove() {
             throw new UnsupportedOperationException();
         }
+
     }
 
 
@@ -1063,6 +1070,7 @@ public abstract class Mappings {
         public NoElementException( String message ) {
             super( message );
         }
+
     }
 
 
@@ -1335,7 +1343,9 @@ public abstract class Mappings {
             public void remove() {
                 throw new UnsupportedOperationException();
             }
+
         }
+
     }
 
 
@@ -1379,6 +1389,7 @@ public abstract class Mappings {
         public int getSource( int target ) {
             return sources[target];
         }
+
     }
 
 
@@ -1497,6 +1508,7 @@ public abstract class Mappings {
                 }
             };
         }
+
     }
 
 
@@ -1565,6 +1577,7 @@ public abstract class Mappings {
         public Iterator<IntPair> iterator() {
             throw Util.needToImplement( this );
         }
+
     }
 
 
@@ -1642,6 +1655,7 @@ public abstract class Mappings {
         public Iterator<IntPair> iterator() {
             throw Util.needToImplement( this );
         }
+
     }
 
 
@@ -1785,6 +1799,7 @@ public abstract class Mappings {
         public int getTargetOpt( int source ) {
             return targets[source];
         }
+
     }
 
 
@@ -1898,6 +1913,7 @@ public abstract class Mappings {
         public void set( int source, int target ) {
             parent.set( target, source );
         }
-    }
-}
 
+    }
+
+}

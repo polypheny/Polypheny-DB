@@ -140,18 +140,18 @@ public class RexTransformer {
                                     operand,
                                     boolNode );
                     return rexBuilder.makeCall(
-                                    OperatorRegistry.get( OperatorName.AND ),
-                                    notNullNode,
-                                    eqNode );
+                            OperatorRegistry.get( OperatorName.AND ),
+                            notNullNode,
+                            eqNode );
 
                 } else {
                     RexNode boolNode =
                             rexBuilder.makeLiteral(
                                     directlyUnderIs );
                     return rexBuilder.makeCall(
-                                    OperatorRegistry.get( OperatorName.EQUALS ),
-                                    node,
-                                    boolNode );
+                            OperatorRegistry.get( OperatorName.EQUALS ),
+                            node,
+                            boolNode );
                 }
             }
 
@@ -210,9 +210,9 @@ public class RexTransformer {
 
                 if ( null != intoFinalAnd ) {
                     return rexBuilder.makeCall(
-                                    OperatorRegistry.get( OperatorName.AND ),
-                                    intoFinalAnd,
-                                    call.clone( call.getType(), operands ) );
+                            OperatorRegistry.get( OperatorName.AND ),
+                            intoFinalAnd,
+                            call.clone( call.getType(), operands ) );
                 }
 
                 // if come here no need to do anything
@@ -227,4 +227,3 @@ public class RexTransformer {
     }
 
 }
-

@@ -1,4 +1,3 @@
-
 /**
  * Provides an implementation of relational expressions using an interpreter.
  *
@@ -6,4 +5,3 @@
  */
 
 package org.polypheny.db.interpreter;
-

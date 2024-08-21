@@ -66,7 +66,6 @@ public class FileStoreSchema extends Namespace implements FileSchema {
     }
 
 
-
     public FileTranslatableEntity createFileTable( PhysicalTable table, List<Long> primary ) {
         return new FileTranslatableEntity(
                 this,
