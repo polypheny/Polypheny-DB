@@ -878,7 +878,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
         switch ( type ) {
             case INTEGER:
                 return PolyInteger.convert( value );
-            case DOCUMENT:
+            case DOCUMENT, GEOMETRY:
                 // docs accept all
                 return value;
             case BIGINT:

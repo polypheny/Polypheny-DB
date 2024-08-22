@@ -753,14 +753,8 @@ public class MqlFunctions {
     @SuppressWarnings("UnusedDeclaration")
     public static PolyBoolean docGeoIntersects( PolyValue input, PolyValue geometry ) {
         PolyGeometry inputGeometry = convertInputToPolyGeometry( input );
-
-        try {
-            // TODO: This should be cached? The filter will be the same for every iteration.
-            PolyGeometry geometryFilter = new PolyGeometry( geometry.asString().value );
-            return inputGeometry.intersects( geometryFilter ) ? PolyBoolean.TRUE : PolyBoolean.FALSE;
-        } catch ( InvalidGeometryException e ) {
-            throw new GenericRuntimeException( "$geometry could not be parsed as GeoJSON" );
-        }
+        PolyGeometry geometryFilter = geometry.asGeometry();
+        return inputGeometry.intersects( geometryFilter ) ? PolyBoolean.TRUE : PolyBoolean.FALSE;
     }
 
     @SuppressWarnings("UnusedDeclaration")
@@ -768,8 +762,7 @@ public class MqlFunctions {
         PolyGeometry inputGeometry = convertInputToPolyGeometry( input );
 
         try {
-            // TODO: This should be cached? The filter will be the same for every iteration.
-            PolyGeometry geometryFilter = new PolyGeometry( geometry.asString().value );
+            PolyGeometry geometryFilter = geometry.asGeometry();
 
             double distanceValue = distance.asDouble().doubleValue();
             if(distanceValue > 0){
@@ -778,7 +771,7 @@ public class MqlFunctions {
             // coveredBy also works if the input geometry lies along the edges of the filter geometry.
             // For example: A point [0,0] is inside a box [0,0 to 1,1], because it lies on a corner / edge.
             return inputGeometry.coveredBy( geometryFilter ) ? PolyBoolean.TRUE : PolyBoolean.FALSE;
-        } catch ( InvalidGeometryException | GeometryTopologicalException e ) {
+        } catch ( GeometryTopologicalException e ) {
             throw new GenericRuntimeException( "$geometry could not be parsed as GeoJSON" );
         }
     }

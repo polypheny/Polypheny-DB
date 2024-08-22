@@ -1638,7 +1638,7 @@ public class MqlToAlgConverter {
                 OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_GEO_INTERSECTS ),
                 Arrays.asList(
                         getIdentifier( parentKey, rowType ),
-                        convertLiteral( new BsonString( polyGeometry.toString() ) )
+                        convertGeometry( polyGeometry )
                 ) );
     }
 
@@ -1714,7 +1714,7 @@ public class MqlToAlgConverter {
                 OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_GEO_WITHIN ),
                 Arrays.asList(
                         getIdentifier( parentKey, rowType ),
-                        convertLiteral( new BsonString( polyGeometry.toString() ) ),
+                        convertGeometry( polyGeometry ),
                         // TODO: Possible to have null?
                         convertLiteral( new BsonDouble( distance.doubleValue() ) )
                 ) );
@@ -2010,6 +2010,11 @@ public class MqlToAlgConverter {
         Pair<PolyValue, PolyType> valuePair = RexLiteral.convertType( getPolyValue( bsonValue ), new DocumentType() );
         return new RexLiteral( valuePair.left, new DocumentType(), valuePair.right );
 
+    }
+
+    private RexNode convertGeometry( PolyGeometry geometry ) {
+        Pair<PolyValue, PolyType> valuePair = RexLiteral.convertType( geometry, new DocumentType() );
+        return new RexLiteral( valuePair.left, new DocumentType(), valuePair.right );
     }
 
 
