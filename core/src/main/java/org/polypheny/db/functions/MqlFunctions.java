@@ -34,9 +34,9 @@ import org.bson.BsonValue;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Point;
-import org.locationtech.jts.geom.PrecisionModel;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.schema.document.DocumentUtil;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyNull;
@@ -548,6 +548,7 @@ public class MqlFunctions {
         return value;
     }
 
+
     /**
      * Special less than operation, which conforms the MongoQl standard.
      * As it is able to deal with null values and matches values compared to arrays correctly
@@ -757,6 +758,7 @@ public class MqlFunctions {
         return inputGeometry.intersects( geometryFilter ) ? PolyBoolean.TRUE : PolyBoolean.FALSE;
     }
 
+
     @SuppressWarnings("UnusedDeclaration")
     public static PolyBoolean docGeoWithin( PolyValue input, PolyValue geometry, PolyValue distance ) {
         PolyGeometry inputGeometry = convertInputToPolyGeometry( input );
@@ -765,7 +767,7 @@ public class MqlFunctions {
             PolyGeometry geometryFilter = geometry.asGeometry();
 
             double distanceValue = distance.asDouble().doubleValue();
-            if(distanceValue > 0){
+            if ( distanceValue > 0 ) {
                 return inputGeometry.isWithinDistance( geometryFilter, distanceValue ) ? PolyBoolean.TRUE : PolyBoolean.FALSE;
             }
             // coveredBy also works if the input geometry lies along the edges of the filter geometry.
@@ -775,6 +777,7 @@ public class MqlFunctions {
             throw new GenericRuntimeException( "$geometry could not be parsed as GeoJSON" );
         }
     }
+
 
     /**
      * Converts a PolyValue into a PolyGeometry type. We support the following cases:
@@ -824,17 +827,19 @@ public class MqlFunctions {
 
         // Embedded Document
         if ( input.isDocument() ) {
-            // TODO: It is also possible that the x and y values are stored inside a document with two key-value pairs.
-            //       As a PolyDocument stores values inside a Map, the ordering is NOT preserved, which means we cannot
-            //       reliably load the first and second field of a document.
-            //         -> Do not allow this type of storing legacy coordinates
-            //         -> Change PolyDocument from Map to LinkedHashMap.
             PolyDocument inputDocument = input.asDocument();
 
             try {
                 // In GeoJSON, WGS84 is assumed by default. This is also the case for MongoDB.
                 return PolyGeometry.fromGeoJson( inputDocument.toJson() );
             } catch ( InvalidGeometryException e ) {
+
+                // If the documents contain two fields that are of numeric type, then the user wanted to
+                // use legacy coordinates embedded inside a document. This is currently not supported, because
+                // document fields are by definition unordered, and supporting this would require a lot of changes.
+                if ( inputDocument.size() == 2 && inputDocument.values().stream().allMatch( value -> PolyType.NUMERIC_TYPES.contains( value.getType() ) ) ) {
+                    throw new GenericRuntimeException( "Legacy coordinates inside an embedded document is currently not supported, as document fields are not ordered.", e );
+                }
                 throw new GenericRuntimeException( "$geometry operand of $geoIntersects could not be parsed as GeoJSON.", e );
             }
         }
