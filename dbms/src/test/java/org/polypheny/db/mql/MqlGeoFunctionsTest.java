@@ -16,12 +16,14 @@
 
 package org.polypheny.db.mql;
 
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
+import org.polypheny.db.TestHelper.MongoConnection;
 import org.polypheny.db.webui.models.results.DocResult;
 
 import java.sql.Connection;
@@ -32,34 +34,39 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @SuppressWarnings("SqlNoDataSourceInspection")
 @Tag("adapter")
+@Slf4j
 public class MqlGeoFunctionsTest extends MqlTestTemplate {
 
+    final static String namespaceMongo = "test_mongo";
     final static String collectionName = "doc";
     final static String mongoAdapterName = "mongo";
 
-    @BeforeAll
-    public static void start() {
-        // Ensures that Polypheny-DB is running
-        TestHelper.getInstance();
 
+    @BeforeAll
+    public static void init() {
+        createMongoDbAdapter();
+        log.info("Created Mongo adapter successfully.");
+    }
+
+
+    public static void createMongoDbAdapter() {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-//                TestHelper.addHsqldb(mongoAdapterName, statement);
                 TestHelper.addMongodb( mongoAdapterName, statement );
+                initDatabase(namespaceMongo);
             }
         } catch ( SQLException e ) {
             throw new RuntimeException( e );
         }
     }
 
-
     @BeforeEach
     public void beforeEach() {
+        // TODO: I get an error here, if the collection already exists in MongoDB.
         // Clear both DBs before each test
-        String deleteCollection = "db.%s.deleteMany({})".formatted( collectionName );
-        execute(deleteCollection);
-        execute(deleteCollection, mongoAdapterName);
+//        execute("use %s; db.%s.deleteMany({})".formatted( namespace, collectionName ));
+//        execute("use %s; db.%s.deleteMany({})".formatted( namespaceMongo, collectionName ));
     }
 
 
