@@ -40,6 +40,7 @@ import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.json.JsonMode;
 import org.bson.json.JsonWriterSettings;
+import org.locationtech.jts.geom.Coordinate;
 import org.polypheny.db.adapter.mongodb.MongoAlg;
 import org.polypheny.db.adapter.mongodb.bson.BsonDynamic;
 import org.polypheny.db.adapter.mongodb.bson.BsonFunctionHelper;
@@ -68,7 +69,9 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.spatial.PolyGeometry;
+import org.polypheny.db.type.entity.spatial.PolyLinearRing;
 import org.polypheny.db.type.entity.spatial.PolyPoint;
+import org.polypheny.db.type.entity.spatial.PolyPolygon;
 import org.polypheny.db.util.BsonUtil;
 import org.polypheny.db.util.JsonBuilder;
 
@@ -685,18 +688,48 @@ public class MongoFilter extends Filter implements MongoAlg {
                 }
 
             } else {
-                // TODO
+                // $sphere
+                if (distance > 0){
+                    BsonDocument center = new BsonDocument();
+                    BsonArray array = new BsonArray();
+                    PolyPoint point = filterGeometry.asPoint();
+                    BsonArray pointArray = new BsonArray();
+                    pointArray.add( new BsonDouble( point.getX() ));
+                    pointArray.add( new BsonDouble( point.getY() ));
+                    array.add( pointArray );
+                    array.add( new BsonDouble( distance ));
+
+                    center.put("$center", array);
+                    BsonDocument geoWithin = new BsonDocument();
+                    geoWithin.put("$geoWithin", center);
+                    attachCondition( null, left, geoWithin );
+                    return;
+                }
+
+                // $box, $polygon
+                if(filterGeometry.isPolygon()){
+                    PolyLinearRing linearRing = filterGeometry.asPolygon().getExteriorRing();
+                    Coordinate[] coordinates = linearRing.getJtsGeometry().getCoordinates();
+
+                    BsonDocument polygon = new BsonDocument();
+                    BsonArray coordinateArray = new BsonArray();
+                    for(Coordinate coordinate : coordinates){
+                        BsonArray coordinatePair = new BsonArray();
+                        coordinatePair.add( new BsonDouble( coordinate.getX() ));
+                        coordinatePair.add( new BsonDouble( coordinate.getY() ));
+                        coordinateArray.add( coordinatePair );
+                    }
+                    polygon.put("$polygon", coordinateArray);
+
+                    BsonDocument geoWithin = new BsonDocument();
+                    geoWithin.put("$geoWithin", polygon);
+                    attachCondition( null, left, geoWithin );
+                    return;
+                }
             }
 
-            // Need to do the reverse as in converGeoWithin:
-            // Convert RexCall back to a MongoDB command.
-            // If    PolyGeometry.getSRID() is not empty -> Create $geometry
-            // else: Need to use planar geometry, so
-            //   $box and $polygon -> $polygon
-            // If PolyGeometry == Point && radius != null -> $center.
-            // If PolyGeometry == Point && radius != null && getSRID() -> $centerSphere.
-
-            // The case was not handled
+            // Something went wrong. Either we did not handle all cases, or the input is not as expected,
+            // and should never have been parsed correctly in the first place.
             throw new GenericRuntimeException( "Cannot translate $geoWithin to MongoDB query." );
         }
 

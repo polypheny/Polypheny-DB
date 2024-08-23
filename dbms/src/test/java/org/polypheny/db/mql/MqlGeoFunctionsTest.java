@@ -44,8 +44,8 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
 
     @BeforeAll
     public static void init() {
-//        createMongoDbAdapter();
-//        log.info( "Created Mongo adapter successfully." );
+        createMongoDbAdapter();
+        log.info( "Created Mongo adapter successfully." );
     }
 
 
