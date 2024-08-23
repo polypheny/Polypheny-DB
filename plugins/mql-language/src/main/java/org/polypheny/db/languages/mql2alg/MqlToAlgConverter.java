@@ -1650,6 +1650,7 @@ public class MqlToAlgConverter {
         PolyDouble distance = new PolyDouble( -1d );
 
         if ( geometry.containsKey( "$geometry" ) ) {
+            geometry = geometry.get("$geometry").asDocument();
             try {
                 polyGeometry = PolyGeometry.fromGeoJson( geometry.toJson() );
             } catch ( InvalidGeometryException e ) {
