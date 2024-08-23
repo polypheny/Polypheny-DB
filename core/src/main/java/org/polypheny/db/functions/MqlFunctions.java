@@ -50,6 +50,8 @@ import org.polypheny.db.type.entity.spatial.InvalidGeometryException;
 import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.util.Pair;
 
+import static org.polypheny.db.functions.spatial.GeoDistanceFunctions.EARTH_RADIUS_M;
+
 
 /**
  * Repository class, which defines different functions used, when handling the document model
@@ -768,6 +770,10 @@ public class MqlFunctions {
 
             double distanceValue = distance.asDouble().doubleValue();
             if ( distanceValue > 0 ) {
+                if(geometryFilter.getSRID() != 0){
+                    // In the case of $centerSphere, we first have to convert radians to meters.
+                    distanceValue = EARTH_RADIUS_M * distanceValue;
+                }
                 return inputGeometry.isWithinDistance( geometryFilter, distanceValue ) ? PolyBoolean.TRUE : PolyBoolean.FALSE;
             }
             // coveredBy also works if the input geometry lies along the edges of the filter geometry.

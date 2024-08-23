@@ -32,6 +32,7 @@ import javax.annotation.Nullable;
 import org.bson.BsonArray;
 import org.bson.BsonBoolean;
 import org.bson.BsonDocument;
+import org.bson.BsonDouble;
 import org.bson.BsonInt32;
 import org.bson.BsonNull;
 import org.bson.BsonRegularExpression;
@@ -67,6 +68,7 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.spatial.PolyGeometry;
+import org.polypheny.db.type.entity.spatial.PolyPoint;
 import org.polypheny.db.util.BsonUtil;
 import org.polypheny.db.util.JsonBuilder;
 
@@ -657,15 +659,28 @@ public class MongoFilter extends Filter implements MongoAlg {
 
                 // $centerSphere
                 if (distance > 0){
-                    // TODO
+                    BsonDocument centerSphere = new BsonDocument();
+                    BsonArray array = new BsonArray();
+                    PolyPoint point = filterGeometry.asPoint();
+                    BsonArray pointArray = new BsonArray();
+                    pointArray.add( new BsonDouble( point.getX() ));
+                    pointArray.add( new BsonDouble( point.getY() ));
+                    array.add( pointArray );
+                    array.add( new BsonDouble( distance ));
+
+                    centerSphere.put("$centerSphere", array);
+                    BsonDocument geoWithin = new BsonDocument();
+                    geoWithin.put("$geoWithin", centerSphere);
+                    attachCondition( null, left, geoWithin );
+                    return;
                 }
                 // GeoJSON
                 else {
                     BsonDocument geometry = new BsonDocument();
                     geometry.put("$geometry", BsonDocument.parse( filterGeometry.toJson() ));
-                    BsonDocument operandType = new BsonDocument();
-                    operandType.put("$geoWithin", geometry);
-                    attachCondition( null, left, operandType );
+                    BsonDocument geoWithin = new BsonDocument();
+                    geoWithin.put("$geoWithin", geometry);
+                    attachCondition( null, left, geoWithin );
                     return;
                 }
 
