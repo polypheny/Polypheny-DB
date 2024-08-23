@@ -45,7 +45,7 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
     @BeforeAll
     public static void init() {
         createMongoDbAdapter();
-        log.info("Created Mongo adapter successfully.");
+        log.info( "Created Mongo adapter successfully." );
     }
 
 
@@ -54,12 +54,13 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 TestHelper.addMongodb( mongoAdapterName, statement );
-                initDatabase(namespaceMongo);
+                initDatabase( namespaceMongo );
             }
         } catch ( SQLException e ) {
             throw new RuntimeException( e );
         }
     }
+
 
     @BeforeEach
     public void beforeEach() {
@@ -96,7 +97,8 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
                 """.formatted( collectionName );
         execute( insertDocuments );
 
-        String geoWithin = """
+        DocResult result;
+        String geoWithinBox = """
                 db.%s.find({
                     legacy: {
                        $geoWithin: {
@@ -108,7 +110,22 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
                     }
                 })
                 """.formatted( collectionName );
-        DocResult result = execute( geoWithin );
+        result = execute( geoWithinBox );
+        assertEquals( result.data.length, 2 );
+
+        String geoWithinGeometry = """
+                db.%s.find({
+                    legacy: {
+                        $geoWithin: {
+                            $geometry: {
+                                type: "Polygon",
+                                coordinates: [[ [0,0], [0,1], [1,1], [1,0], [0,0] ]]
+                            }
+                        }
+                    }
+                })
+                """.formatted( collectionName );
+        result = execute( geoWithinGeometry );
         assertEquals( result.data.length, 2 );
     }
 
