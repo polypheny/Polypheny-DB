@@ -44,8 +44,8 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
 
     @BeforeAll
     public static void init() {
-        createMongoDbAdapter();
-        log.info( "Created Mongo adapter successfully." );
+//        createMongoDbAdapter();
+//        log.info( "Created Mongo adapter successfully." );
     }
 
 
@@ -73,9 +73,6 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
 
     @Test
     public void docGeoWithinTest() {
-        // TODO: Compare values with MongoDB, instead of with the values that I expect.
-        //       Somehow possible to execute the commands once on mongodb, and once on
-        //       hsqldb?
         String insertDocuments = """
                 db.%s.insertMany([
                     {
@@ -127,6 +124,24 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
                 """.formatted( collectionName );
         result = execute( geoWithinGeometry );
         assertEquals( result.data.length, 2 );
+
+        // TODO: This test does not make any sense, as 1.5 in radians is so big
+        //       that it includes all three points.
+        //       Create another test, with more sensible numbers...
+        String geoWithinCenterSphere = """
+                db.%s.find({
+                    legacy: {
+                        $geoWithin: {
+                             $centerSphere: [
+                                [ 0, 0 ],
+                                1.5
+                             ]
+                        }
+                    }
+                })
+                """.formatted( collectionName );
+        result = execute( geoWithinCenterSphere );
+        assertEquals( 3, result.data.length );
     }
 
 }
