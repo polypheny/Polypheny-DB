@@ -64,6 +64,9 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.language.fun.SqlItemOperator;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.document.PolyDocument;
+import org.polypheny.db.type.entity.numerical.PolyDouble;
+import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.util.BsonUtil;
 import org.polypheny.db.util.JsonBuilder;
 
@@ -307,6 +310,8 @@ public class MongoFilter extends Filter implements MongoAlg {
                     return;
                 case MQL_ELEM_MATCH:
                     translateElemMatch( (RexCall) node );
+                case MQL_GEO_WITHIN:
+                    translateGeoWithin( (RexCall) node );
                     return;
                 case IS_NOT_TRUE:
                     translateIsTrue( (RexCall) node, true );
@@ -640,6 +645,44 @@ public class MongoFilter extends Filter implements MongoAlg {
 
             attachCondition( null, left, new BsonRegularExpression( value, options ) );
 
+        }
+
+        private void translateGeoWithin( RexCall node ) {
+            String left = getParamAsKey( node.operands.get( 0 ) );
+            PolyGeometry filterGeometry = getLiteralAs( node, 1, PolyValue::asGeometry );
+            double distance = getLiteralAs( node, 2, p -> p.asDouble().doubleValue() );
+
+            // If we have an SRID we either have a GeoJSON object or a $centerSphere operand.
+            if(filterGeometry.getSRID() != 0){
+
+                // $centerSphere
+                if (distance > 0){
+                    // TODO
+                }
+                // GeoJSON
+                else {
+                    BsonDocument geometry = new BsonDocument();
+                    geometry.put("$geometry", BsonDocument.parse( filterGeometry.toJson() ));
+                    BsonDocument operandType = new BsonDocument();
+                    operandType.put("$geoWithin", geometry);
+                    attachCondition( null, left, operandType );
+                    return;
+                }
+
+            } else {
+                // TODO
+            }
+
+            // Need to do the reverse as in converGeoWithin:
+            // Convert RexCall back to a MongoDB command.
+            // If    PolyGeometry.getSRID() is not empty -> Create $geometry
+            // else: Need to use planar geometry, so
+            //   $box and $polygon -> $polygon
+            // If PolyGeometry == Point && radius != null -> $center.
+            // If PolyGeometry == Point && radius != null && getSRID() -> $centerSphere.
+
+            // The case was not handled
+            throw new GenericRuntimeException( "Cannot translate $geoWithin to MongoDB query." );
         }
 
 
