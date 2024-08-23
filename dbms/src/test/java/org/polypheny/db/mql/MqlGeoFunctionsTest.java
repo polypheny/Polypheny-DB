@@ -70,6 +70,45 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
 //        execute("use %s; db.%s.deleteMany({})".formatted( namespaceMongo, collectionName ));
     }
 
+    @Test
+    public void docGeoIntersectsTest() {
+        String insertDocuments = """
+                db.%s.insertMany([
+                    {
+                      name: "Legacy [0,0]",
+                      num: 1,
+                      legacy: [0,0]
+                    },
+                    {
+                      name: "Legacy [1,1]",
+                      num: 2,
+                      legacy: [1,1]
+                    },
+                    {
+                      name: "Legacy [2,2]",
+                      num: 3,
+                      legacy: [2,2]
+                    }
+                ])
+                """.formatted( collectionName );
+        execute( insertDocuments );
+
+        DocResult result;
+        String geoIntersects = """
+                db.%s.find({
+                    legacy: {
+                       $geoIntersects: {
+                          $geometry: {
+                              type: "Polygon",
+                              coordinates: [[ [0,0], [0,1], [1,1], [1,0], [0,0] ]]
+                          }
+                       }
+                    }
+                })
+                """.formatted( collectionName );
+        result = execute( geoIntersects );
+        assertEquals( result.data.length, 2 );
+    }
 
     @Test
     public void docGeoWithinTest() {

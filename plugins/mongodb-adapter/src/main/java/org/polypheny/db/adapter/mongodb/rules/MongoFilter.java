@@ -315,6 +315,9 @@ public class MongoFilter extends Filter implements MongoAlg {
                     return;
                 case MQL_ELEM_MATCH:
                     translateElemMatch( (RexCall) node );
+                case MQL_GEO_INTERSECTS:
+                    translateGeoIntersects( (RexCall) node );
+                    return;
                 case MQL_GEO_WITHIN:
                     translateGeoWithin( (RexCall) node );
                     return;
@@ -731,6 +734,16 @@ public class MongoFilter extends Filter implements MongoAlg {
             // Something went wrong. Either we did not handle all cases, or the input is not as expected,
             // and should never have been parsed correctly in the first place.
             throw new GenericRuntimeException( "Cannot translate $geoWithin to MongoDB query." );
+        }
+
+        private void translateGeoIntersects( RexCall node ) {
+            String left = getParamAsKey( node.operands.get( 0 ) );
+            PolyGeometry filterGeometry = getLiteralAs( node, 1, PolyValue::asGeometry );
+            BsonDocument geometry = new BsonDocument();
+            geometry.put("$geometry", BsonDocument.parse( filterGeometry.toJson() ));
+            BsonDocument geoWithin = new BsonDocument();
+            geoWithin.put("$geoIntersects", geometry);
+            attachCondition( null, left, geoWithin );
         }
 
 
