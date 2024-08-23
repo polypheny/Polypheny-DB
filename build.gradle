@@ -21,6 +21,7 @@ plugins {
     id 'nebula.lint' version "$nebula_lint_version"
 }
 
+group "org.polypheny"
 
 test {
     useJUnitPlatform()
