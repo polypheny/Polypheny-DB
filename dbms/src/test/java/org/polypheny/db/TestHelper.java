@@ -206,6 +206,12 @@ public class TestHelper {
     }
 
 
+    public static void addMongodb( String name, Statement statement ) throws SQLException {
+        executeSQL( statement, "ALTER ADAPTERS ADD \"" + name + "\" USING 'mongodb' AS 'Store'"
+                + " WITH '{maxConnections:\"25\",trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
+    }
+
+
     public static void addCsv( String name, Statement statement ) throws SQLException {
         executeSQL( statement, "ALTER ADAPTERS ADD \"" + name + "\" USING 'Csv' AS 'Store'"
                 + " WITH '{}'" );

@@ -16,9 +16,17 @@
 
 package org.polypheny.db.mql;
 
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.polypheny.db.TestHelper;
+import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.webui.models.results.DocResult;
+
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Statement;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -27,6 +35,32 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class MqlGeoFunctionsTest extends MqlTestTemplate {
 
     final static String collectionName = "doc";
+    final static String mongoAdapterName = "mongo";
+
+    @BeforeAll
+    public static void start() {
+        // Ensures that Polypheny-DB is running
+        TestHelper.getInstance();
+
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+//                TestHelper.addHsqldb(mongoAdapterName, statement);
+                TestHelper.addMongodb( mongoAdapterName, statement );
+            }
+        } catch ( SQLException e ) {
+            throw new RuntimeException( e );
+        }
+    }
+
+
+    @BeforeEach
+    public void beforeEach() {
+        // Clear both DBs before each test
+        String deleteCollection = "db.%s.deleteMany({})".formatted( collectionName );
+        execute(deleteCollection);
+        execute(deleteCollection, mongoAdapterName);
+    }
 
 
     @Test
