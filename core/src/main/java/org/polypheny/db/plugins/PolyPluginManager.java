@@ -169,14 +169,22 @@ public class PolyPluginManager extends DefaultPluginManager {
             // no old config there so we just start, except the blocked ones
             for ( PluginWrapper resolvedPlugin : pluginManager.resolvedPlugins ) {
                 if ( !RuntimeConfig.BLOCKED_PLUGINS.getStringList().contains( resolvedPlugin.getPluginId() ) ) {
-                    pluginManager.startPlugin( resolvedPlugin.getPluginId() );
+                    try {
+                        pluginManager.startPlugin( resolvedPlugin.getPluginId() );
+                    } catch ( Throwable t ) {
+                        log.error( "Unable to start plugin '{}' with main class '{}' located at '{}'! {}", resolvedPlugin.getPluginId(), resolvedPlugin.getPluginClassLoader(), resolvedPlugin.getPluginPath(), t.getMessage(), t );
+                    }
                 }
             }
             pluginManager.startPlugins();
         } else {
             for ( ConfigPlugin plugin : RuntimeConfig.AVAILABLE_PLUGINS.getList( ConfigPlugin.class ) ) {
                 if ( plugin.getStatus() == org.polypheny.db.config.PluginStatus.ACTIVE ) {
-                    pluginManager.startPlugin( plugin.getPluginId() );
+                    try {
+                        pluginManager.startPlugin( plugin.getPluginId() );
+                    } catch ( Throwable t ) {
+                        log.error( "Unable to start plugin '{}'! {}", plugin.getPluginId(), t.getMessage(), t );
+                    }
                 }
             }
         }
