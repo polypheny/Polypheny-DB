@@ -59,7 +59,13 @@ class PIServer {
     private PIServer( ServerSocketChannel server, ClientManager clientManager, String name, Function<SocketChannel, Transport> createTransport, @Nullable ServerAndLock fileLock ) throws IOException {
         this.server = server;
         this.fileLock = fileLock;
-        log.info( "Prism Interface started and is listening for {} connections on {}", name.toLowerCase(), server.getLocalAddress() );
+        String location;
+        if ( server.getLocalAddress() instanceof InetSocketAddress ) {
+            location = "port " + ((InetSocketAddress) server.getLocalAddress()).getPort();
+        } else {
+            location = server.getLocalAddress().toString();
+        }
+        log.info( "Prism Interface started and is listening for {} connections on {}", name.toLowerCase(), location );
         this.reader = new PIRequestReader( name );
         Thread acceptor = new Thread( () -> acceptLoop( server, clientManager, name, createTransport ), "PrismInterface" + name + "Server" );
         acceptor.start();
