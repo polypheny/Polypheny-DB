@@ -23,12 +23,12 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
-import org.polypheny.db.TestHelper.MongoConnection;
 import org.polypheny.db.webui.models.results.DocResult;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -40,11 +40,13 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
     final static String namespaceMongo = "test_mongo";
     final static String collectionName = "doc";
     final static String mongoAdapterName = "mongo";
-
+    final static ArrayList<String> namespaces = new ArrayList<>();
 
     @BeforeAll
     public static void init() {
         createMongoDbAdapter();
+        namespaces.add(namespace);
+        namespaces.add(namespaceMongo);
         log.info( "Created Mongo adapter successfully." );
     }
 
@@ -64,15 +66,17 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
 
     @BeforeEach
     public void beforeEach() {
-        // TODO: I get an error here, if the collection already exists in MongoDB.
-        // Clear both DBs before each test
-//        execute("use %s; db.%s.deleteMany({})".formatted( namespace, collectionName ));
-//        execute("use %s; db.%s.deleteMany({})".formatted( namespaceMongo, collectionName ));
+        // Clear both collections before each test
+        for (String ns : namespaces) {
+            execute("db.%s.deleteMany({})".formatted( ns ), ns);
+        }
     }
 
     @Test
     public void docGeoIntersectsTest() {
-        String insertDocuments = """
+        // TODO: compare the results directly, instead of only validating the length.
+        for (String ns : namespaces) {
+            String insertDocuments = """
                 db.%s.insertMany([
                     {
                       name: "Legacy [0,0]",
@@ -90,11 +94,11 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
                       legacy: [2,2]
                     }
                 ])
-                """.formatted( collectionName );
-        execute( insertDocuments );
+                """.formatted( ns );
+            execute( insertDocuments, ns  );
 
-        DocResult result;
-        String geoIntersects = """
+            DocResult result;
+            String geoIntersects = """
                 db.%s.find({
                     legacy: {
                        $geoIntersects: {
@@ -105,9 +109,10 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
                        }
                     }
                 })
-                """.formatted( collectionName );
-        result = execute( geoIntersects );
-        assertEquals( result.data.length, 2 );
+                """.formatted( ns );
+            result = execute( geoIntersects, ns  );
+            assertEquals( result.data.length, 2 );
+        }
     }
 
     @Test
