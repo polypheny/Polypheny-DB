@@ -6,8 +6,8 @@ dependencies {
     compileOnly project(":plugins:sql-language")
     compileOnly project(":plugins:jdbc-adapter-framework")
 
+    implementation group: "net.postgis", name: "postgis-jdbc", version: postgis_version
     implementation group: "org.postgresql", name: "postgresql", version: postgresql_version  // BSD 2-clause
-
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
@@ -74,6 +74,11 @@ javadoc {
 
 licensee {
     allow('MIT')
+    allow('Apache-2.0')
+    allowDependency('org.postgresql', 'postgresql', '42.7.3') { because 'BSD 2-Clause' }
 
-    allowDependency('org.postgresql', 'postgresql', '42.2.19') { because 'BSD 2-Clause' }
+    // Special handling due to lgpl, plugins are extracted before loading, which enables users to replace the library before
+    // startup and thus satisfies the requirements of LGPL.
+    allowDependency('net.postgis', 'postgis-geometry', '2024.1.0') { because 'Lesser GPL in plugins' }
+    allowDependency('net.postgis', 'postgis-jdbc', '2024.1.0') { because 'Lesser GPL in plugns' }
 }

@@ -26,6 +26,7 @@ import com.fasterxml.jackson.core.JsonParser.Feature;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Sets;
 import com.google.gson.Gson;
+import com.google.gson.JsonParseException;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
@@ -68,8 +69,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.util.ByteString;
-import org.apache.calcite.avatica.util.Spaces;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
@@ -83,6 +82,7 @@ import org.apache.calcite.linq4j.function.NonDeterministic;
 import org.apache.calcite.linq4j.function.Predicate2;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.calcite.linq4j.tree.Types;
+import org.apache.commons.lang3.StringUtils;
 import org.bson.BsonDocument;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.adapter.DataContext;
@@ -118,6 +118,7 @@ import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.type.entity.relational.PolyMap;
 import org.polypheny.db.util.BsonUtil;
+import org.polypheny.db.util.ByteString;
 import org.polypheny.db.util.Static;
 
 
@@ -1314,7 +1315,6 @@ public class Functions {
 
 
     public static PolyNumber floor( PolyNumber b0 ) {
-        log.warn( "optimize" );
         return PolyBigDecimal.of( b0.bigDecimalValue().setScale( 0, RoundingMode.FLOOR ) );
     }
 
@@ -1844,7 +1844,7 @@ public class Functions {
             if ( length > maxLength ) {
                 return PolyString.of( s.value.substring( 0, maxLength ) );
             } else {
-                return length < maxLength ? PolyString.of( Spaces.padRight( s.value, maxLength ) ) : s;
+                return length < maxLength ? PolyString.of( StringUtils.rightPad( s.value, maxLength ) ) : s;
             }
         }
     }
@@ -2501,6 +2501,12 @@ public class Functions {
 
 
     @SuppressWarnings("unused")
+    public static Object jsonValueExpression( PolyValue input ) {
+        return jsonValueExpression( PolyString.of( input.toJson() ) );
+    }
+
+
+    @SuppressWarnings("unused")
     public static Object jsonValueExpressionExclude( PolyString input, List<PolyString> excluded ) {
         try {
             PolyList<PolyList<PolyString>> collect = PolyList.copyOf( excluded.stream().map( e -> PolyList.of( Arrays.stream( e.value.split( "\\." ) ).map( PolyString::of ).toList() ) ).toList() );
@@ -2564,7 +2570,6 @@ public class Functions {
 
     public static PathContext jsonApiCommonSyntax( PolyValue input, PolyString pathSpec ) {
         try {
-
             Matcher matcher = JSON_PATH_BASE.matcher( pathSpec.value );
             if ( !matcher.matches() ) {
                 throw Static.RESOURCE.illegalJsonPathSpec( pathSpec.value ).ex();
@@ -2591,7 +2596,15 @@ public class Functions {
             };
             try {
                 Object json = ctx.read( pathWff );
-                return PathContext.withReturned( mode, json == null ? null : PolyValue.fromJson( json.toString() ) );
+                PolyValue val = null;
+                try {
+                    val = json == null ? null : PolyValue.fromJson( json.toString() );
+                } catch ( JsonParseException | GenericRuntimeException e ) {
+                    // if the BsonParser cannot parse it we might try as string
+                    val = PolyValue.fromJson( "\"" + json + "\"" );
+                }
+
+                return PathContext.withReturned( mode, val );
             } catch ( Exception e ) {
                 return PathContext.withStrictException( e );
             }
@@ -2832,9 +2845,9 @@ public class Functions {
     }
 
 
-    private static RuntimeException toUnchecked( Exception e ) {
-        if ( e instanceof RuntimeException ) {
-            return (RuntimeException) e;
+    static RuntimeException toUnchecked( Exception e ) {
+        if ( e instanceof RuntimeException runtime ) {
+            return runtime;
         }
         return new GenericRuntimeException( e );
     }

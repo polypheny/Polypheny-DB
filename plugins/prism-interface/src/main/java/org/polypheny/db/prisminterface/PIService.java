@@ -18,12 +18,10 @@ package org.polypheny.db.prisminterface;
 
 import java.io.EOFException;
 import java.io.IOException;
-import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
-import java.util.Queue;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.BlockingQueue;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.constant.FunctionCategory;
@@ -46,6 +44,7 @@ import org.polypheny.db.prisminterface.utils.VersionUtils;
 import org.polypheny.db.sql.language.SqlJdbcFunctionCall;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.util.RunMode;
 import org.polypheny.db.util.Util;
 import org.polypheny.prism.ClientInfoProperties;
 import org.polypheny.prism.ClientInfoPropertiesRequest;
@@ -113,18 +112,20 @@ class PIService {
     private final long connectionId;
     private final ClientManager clientManager;
     private final Transport con;
+    private final PIRequestReader reader;
     private String uuid = null;
 
 
-    private PIService( Transport con, long connectionId, ClientManager clientManager ) {
+    private PIService( Transport con, long connectionId, ClientManager clientManager, PIRequestReader reader ) {
         this.con = con;
         this.connectionId = connectionId;
         this.clientManager = clientManager;
+        this.reader = reader;
     }
 
 
-    public static void acceptConnection( Transport con, long connectionId, ClientManager clientManager ) {
-        PIService service = new PIService( con, connectionId, clientManager );
+    public static void acceptConnection( Transport con, long connectionId, ClientManager clientManager, PIRequestReader reader ) {
+        PIService service = new PIService( con, connectionId, clientManager, reader );
         service.acceptLoop();
     }
 
@@ -138,11 +139,14 @@ class PIService {
     }
 
 
-    private boolean handleFirstMessage() throws IOException {
+    private boolean handleFirstMessage( BlockingQueue<Optional<byte[]>> waiting ) throws IOException {
         boolean success = false;
-        Request firstReq = readOneMessage();
+        Request firstReq = readOneMessage( waiting );
 
         if ( firstReq.getTypeCase() != TypeCase.CONNECTION_REQUEST ) {
+            if ( Catalog.mode == RunMode.BENCHMARK ) {
+                log.error( "Request failed: First message must be a connection request" );
+            }
             sendOneMessage( createErrorResponse( firstReq.getId(), "First message must be a connection request" ) );
             return false;
         }
@@ -152,6 +156,9 @@ class PIService {
             r = connect( firstReq.getConnectionRequest(), new ResponseMaker<>( firstReq, "connection_response" ) );
             success = true;
         } catch ( TransactionException | AuthenticationException e ) {
+            if ( Catalog.mode == RunMode.BENCHMARK ) {
+                log.error( "Request failed: ", e );
+            }
             r = createErrorResponse( firstReq.getId(), e.getMessage() );
         }
         sendOneMessage( r );
@@ -159,84 +166,47 @@ class PIService {
     }
 
 
-    private CompletableFuture<Request> waitForRequest() {
-        return CompletableFuture.supplyAsync( () -> {
-            try {
-                return readOneMessage();
-            } catch ( IOException e ) {
-                throw new PIServiceException( e );
-            }
-        } );
-    }
-
-
-    private void handleRequest( Request req, CompletableFuture<Response> f ) {
+    private Response handleRequest( Request req ) {
         Response r;
         try {
             r = handleMessage( req );
         } catch ( Throwable t ) {
-            r = createErrorResponse( req.getId(), t.getMessage() );
+            if ( Catalog.mode == RunMode.BENCHMARK ) {
+                log.error( "Request failed: ", t );
+            }
+            r = createErrorResponse( req.getId(), Objects.requireNonNullElse( t.getMessage(), t.getClass().getSimpleName() ) );
         }
         try {
             sendOneMessage( r );
-            f.complete( r );
+            return r;
         } catch ( IOException e ) {
             throw new GenericRuntimeException( e );
         }
     }
 
 
-    private void handleMessages() throws IOException, ExecutionException, InterruptedException {
-        if ( !handleFirstMessage() ) {
+    private void handleMessages() throws IOException {
+        BlockingQueue<Optional<byte[]>> waiting = reader.addConnection( con, connectionId );
+
+        if ( !handleFirstMessage( waiting ) ) {
             return;
         }
 
-        Queue<Request> waiting = new LinkedList<>();
-        CompletableFuture<Request> request = waitForRequest();
-        CompletableFuture<Response> response = null;
-        Thread handle = null;
         try {
             while ( true ) {
-                if ( response == null ) {
-                    Request req = waiting.poll();
-                    if ( req != null ) {
-                        response = new CompletableFuture<>();
-                        CompletableFuture<Response> finalResponse = response;
-                        handle = new Thread( () -> handleRequest( req, finalResponse ), String.format( "PrismConnection%dRequest%dHandler", connectionId, req.getId() ) );
-                        handle.setUncaughtExceptionHandler( ( t, e ) -> finalResponse.completeExceptionally( e ) );
-                        handle.start();
-                    }
-                }
-
-                // Wait for next event
-                if ( response == null ) {
-                    request.get();
-                } else {
-                    CompletableFuture.anyOf( request, response ).get();
-                }
-
-                if ( request.isDone() ) {
-                    waiting.add( request.get() );
-                    request = waitForRequest();
-                } else if ( response != null && response.isDone() ) {
-                    handle.join();
-                    handle = null;
-                    Response r = response.get();
-                    if ( r.getTypeCase() == Response.TypeCase.DISCONNECT_RESPONSE ) {
-                        break;
-                    }
-                    response = null;
+                Request req = readOneMessage( waiting );
+                Response r = handleRequest( req );
+                if ( r.getTypeCase() == Response.TypeCase.DISCONNECT_RESPONSE ) {
+                    break;
                 }
             }
-        } catch ( ExecutionException e ) {
-            if ( e.getCause() instanceof PIServiceException p && p.getCause() instanceof EOFException eof ) {
+        } catch ( EOFException e ) {
+            throw e;
+        } catch ( Throwable t ) {
+            if ( t.getCause() instanceof PIServiceException p && p.getCause() instanceof EOFException eof ) {
                 throw eof;
             }
-            throw e;
-        } finally {
-            if ( handle != null ) {
-                handle.interrupt();
-            }
+            throw t;
         }
     }
 
@@ -262,8 +232,12 @@ class PIService {
     }
 
 
-    private Request readOneMessage() throws IOException {
-        return Request.parseFrom( con.receiveMessage() );
+    private Request readOneMessage( BlockingQueue<Optional<byte[]>> waiting ) throws IOException {
+        try {
+            return Request.parseFrom( waiting.take().orElseThrow( EOFException::new ) );
+        } catch ( InterruptedException e ) {
+            throw new IOException( e );
+        }
     }
 
 
@@ -540,7 +514,7 @@ class PIService {
         }
         if ( properties.hasNamespaceName() ) {
             String namespaceName = properties.getNamespaceName();
-            Optional<LogicalNamespace> optionalNamespace = Catalog.getInstance().getSnapshot().getNamespace( namespaceName );
+            Optional<LogicalNamespace> optionalNamespace = Catalog.snapshot().getNamespace( namespaceName );
             if ( optionalNamespace.isEmpty() ) {
                 throw new PIServiceException( "Getting namespace " + namespaceName + " failed." );
             }

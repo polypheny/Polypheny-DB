@@ -476,7 +476,7 @@ public abstract class DdlManager {
     /**
      * Adds a new constraint to a table
      */
-    public abstract void createConstraint( ConstraintInformation information, long namespaceId, List<Long> columnIds, long tableId );
+    public abstract void createConstraint( ConstraintInformation information, long namespaceId, List<Long> columnIds, long tableId, Statement statement );
 
     /**
      * Drop a NAMESPACE

@@ -95,7 +95,7 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
         AlgBuilder builder = AlgBuilder.create( statement );
         final RexBuilder rexBuilder = modify.getCluster().getRexBuilder();
 
-        LogicalRelSnapshot snapshot = Catalog.getInstance().getSnapshot().rel();
+        LogicalRelSnapshot snapshot = Catalog.snapshot().rel();
 
         EnforcementTime enforcementTime = EnforcementTime.ON_QUERY;
         final List<LogicalConstraint> constraints = new ArrayList<>( snapshot.getConstraints( table.id ) )
@@ -224,7 +224,7 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
 
         AlgBuilder builder = AlgBuilder.create( statement );
         final RexBuilder rexBuilder = builder.getRexBuilder();
-        LogicalRelSnapshot snapshot = Catalog.getInstance().getSnapshot().rel();
+        LogicalRelSnapshot snapshot = Catalog.snapshot().rel();
 
         final List<LogicalConstraint> constraints = snapshot
                 .getConstraints( table.id )
@@ -246,6 +246,9 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
             final LogicalConstraint pkc = new LogicalConstraint( 0L, pk.id, ConstraintType.UNIQUE, "PRIMARY KEY", pk );
             constraints.add( pkc );
         }
+
+        // get new constraints
+        constraints.addAll( statement.getTransaction().getUsedConstraints( table.id ).stream().filter( c -> c.type != ConstraintType.FOREIGN ).toList() );
 
         AlgNode constrainedNode;
 
@@ -397,7 +400,7 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
     }
 
 
-    public record EnforcementInformation(AlgNode control, List<Class<? extends Exception>> errorClasses, List<String> errorMessages) {
+    public record EnforcementInformation( AlgNode control, List<Class<? extends Exception>> errorClasses, List<String> errorMessages ) {
 
         /**
          * {@link EnforcementInformation} holds all needed information regarding a constraint.

@@ -26,7 +26,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
 import org.polypheny.db.adapter.DataStore.IndexMethodModel;
 import org.polypheny.db.adapter.index.Index.IndexFactory;
 import org.polypheny.db.catalog.Catalog;
@@ -145,7 +144,7 @@ public class IndexManager {
 
 
     public void restoreIndexes() throws TransactionException {
-        for ( final LogicalIndex index : Catalog.getInstance().getSnapshot().rel().getIndexes() ) {
+        for ( final LogicalIndex index : Catalog.snapshot().rel().getIndexes() ) {
             if ( index.location < 0 ) {
                 addIndex( index );
             }
@@ -176,7 +175,7 @@ public class IndexManager {
                 method,
                 unique,
                 persistent,
-                Catalog.getInstance().getSnapshot().getNamespace( key.namespaceId ).orElseThrow(),
+                Catalog.snapshot().getNamespace( key.namespaceId ).orElseThrow(),
                 table,
                 key.getFieldNames(),
                 pk.getFieldNames() );
@@ -223,7 +222,7 @@ public class IndexManager {
     public List<Index> getIndices( LogicalNamespace schema, LogicalTable table ) {
         return this.indexById.values().stream()
                 .filter( index -> index.schema.equals( schema ) && index.table.equals( table ) )
-                .collect( Collectors.toList() );
+                .toList();
     }
 
 

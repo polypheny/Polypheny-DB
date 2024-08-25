@@ -62,5 +62,5 @@ public @interface Array {
      * Maximum number of elements in the array. -1 means no maximum.
      */
     long maximumCardinality() default -1L;
-}
 
+}

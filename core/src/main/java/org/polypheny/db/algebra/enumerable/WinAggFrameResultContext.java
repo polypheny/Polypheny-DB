@@ -83,5 +83,5 @@ public interface WinAggFrameResultContext extends WinAggFrameContext {
      * @return result of comparison as as in {@link Comparable#compareTo}
      */
     Expression compareRows( Expression a, Expression b );
-}
 
+}

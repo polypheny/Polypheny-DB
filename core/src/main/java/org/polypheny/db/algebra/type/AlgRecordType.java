@@ -146,7 +146,7 @@ public class AlgRecordType extends AlgDataTypeImpl implements Serializable {
      * Skinny object which has the same information content as a {@link AlgRecordType} but skips redundant stuff like
      * digest and the immutable list.
      */
-    private record SerializableAlgRecordType(List<AlgDataTypeField> fields) implements Serializable {
+    private record SerializableAlgRecordType( List<AlgDataTypeField> fields ) implements Serializable {
 
 
         /**

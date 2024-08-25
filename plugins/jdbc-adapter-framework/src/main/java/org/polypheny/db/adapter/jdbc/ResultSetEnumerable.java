@@ -49,7 +49,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.SqlType;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
@@ -62,6 +61,7 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.sql.language.validate.SqlType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.numerical.PolyLong;
@@ -78,7 +78,7 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
 
 
     // timestamp do factor in the timezones, which means that 10:00 is 9:00 with
-    // an one hour shift, as we lose this timezone information on retrieval
+    // a one hour shift, as we lose this timezone information on retrieval
     // therefore we use the offset if needed
     public final static int OFFSET = Calendar.getInstance().getTimeZone().getRawOffset();
 
@@ -252,7 +252,7 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
      */
     private static void setDynamicParam( PreparedStatement preparedStatement, int i, PolyValue value, AlgDataType type, int sqlType, ConnectionHandler connectionHandler ) throws SQLException {
         if ( value == null || value.isNull() ) {
-            preparedStatement.setNull( i, SqlType.NULL.id );
+            preparedStatement.setNull( i, Types.NULL );
             return;
         }
 
@@ -327,6 +327,13 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
                     } else {
                         handleBinary( preparedStatement, i, value, connectionHandler );
                     }
+                }
+                break;
+            case GEOMETRY:
+                if ( connectionHandler.getDialect().supportsGeoJson() ) {
+                    preparedStatement.setString( i, value.asGeometry().toJson() );
+                } else {
+                    preparedStatement.setString( i, value.asGeometry().toString() );
                 }
                 break;
             case TEXT:

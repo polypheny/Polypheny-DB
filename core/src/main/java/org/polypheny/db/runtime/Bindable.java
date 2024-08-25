@@ -53,5 +53,5 @@ public interface Bindable<T> {
      * @return Enumerable over rows
      */
     Enumerable<T> bind( DataContext dataContext );
-}
 
+}

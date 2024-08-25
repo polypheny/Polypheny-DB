@@ -175,11 +175,37 @@ public class JdbcRules {
         public JdbcJoinRule( JdbcConvention out, AlgBuilderFactory algBuilderFactory ) {
             super(
                     Join.class,
-                    out.dialect::supportsJoin,
+                    join -> (
+                            (!geoFunctionInJoin( join ) || supportsGeoFunctionInJoin( out.dialect, join ))
+                                    && out.dialect.supportsJoin( join )),
                     Convention.NONE,
                     out,
                     algBuilderFactory,
                     "JdbcJoinRule." + out );
+        }
+
+
+        private static boolean geoFunctionInJoin( Join join ) {
+            CheckingGeoFunctionVisitor visitor = new CheckingGeoFunctionVisitor();
+            for ( RexNode node : join.getChildExps() ) {
+                node.accept( visitor );
+                if ( visitor.containsGeoFunction() ) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+
+        private static boolean supportsGeoFunctionInJoin( SqlDialect dialect, Join join ) {
+            CheckingGeoFunctionSupportVisitor visitor = new CheckingGeoFunctionSupportVisitor( dialect );
+            for ( RexNode node : join.getChildExps() ) {
+                node.accept( visitor );
+                if ( visitor.supportsGeoFunction() ) {
+                    return true;
+                }
+            }
+            return false;
         }
 
 
@@ -246,8 +272,7 @@ public class JdbcRules {
         private boolean canJoinOnCondition( RexNode node ) {
             final List<RexNode> operands;
             switch ( node.getKind() ) {
-                case AND:
-                case OR:
+                case AND, OR, GEO:
                     operands = ((RexCall) node).getOperands();
                     for ( RexNode operand : operands ) {
                         if ( !canJoinOnCondition( operand ) ) {
@@ -448,6 +473,7 @@ public class JdbcRules {
                     && !knnFunctionInProject( project )
                     && !multimediaFunctionInProject( project )
                     && !contains( project, List.of( OperatorName.INITCAP ) )
+                    && (!geoFunctionInProject( project ) || supportsGeoFunction( out.dialect, project ))
                     && !DocumentRules.containsJson( project )
                     && !DocumentRules.containsDocument( project )
                     && !UnsupportedRexCallVisitor.containsModelItem( project.getProjects() )
@@ -499,6 +525,30 @@ public class JdbcRules {
             for ( RexNode node : project.getChildExps() ) {
                 node.accept( visitor );
                 if ( visitor.containsMultimediaFunction() ) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+
+        private static boolean supportsGeoFunction( SqlDialect dialect, Project project ) {
+            CheckingGeoFunctionSupportVisitor visitor = new CheckingGeoFunctionSupportVisitor( dialect );
+            for ( RexNode node : project.getChildExps() ) {
+                node.accept( visitor );
+                if ( visitor.supportsGeoFunction() ) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+
+        private static boolean geoFunctionInProject( AlgNode project ) {
+            CheckingGeoFunctionVisitor visitor = new CheckingGeoFunctionVisitor();
+            for ( RexNode node : project.getChildExps() ) {
+                node.accept( visitor );
+                if ( visitor.containsGeoFunction() ) {
                     return true;
                 }
             }
@@ -580,6 +630,7 @@ public class JdbcRules {
                                     && !containUnsupportedArray( filter, out )
                                     && !knnFunctionInFilter( filter )
                                     && !multimediaFunctionInFilter( filter )
+                                    && (!geoFunctionInFilter( filter ) || supportsGeoFunctionInFilter( out.dialect, filter ))
                                     && !DocumentRules.containsJson( filter )
                                     && !DocumentRules.containsDocument( filter )
                                     && out.dialect.supportsFilter( filter )
@@ -622,6 +673,30 @@ public class JdbcRules {
             for ( RexNode node : filter.getChildExps() ) {
                 node.accept( visitor );
                 if ( visitor.containsMultimediaFunction() ) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+
+        private static boolean geoFunctionInFilter( Filter filter ) {
+            CheckingGeoFunctionVisitor visitor = new CheckingGeoFunctionVisitor();
+            for ( RexNode node : filter.getChildExps() ) {
+                node.accept( visitor );
+                if ( visitor.containsGeoFunction() ) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+
+        private static boolean supportsGeoFunctionInFilter( SqlDialect dialect, Filter filter ) {
+            CheckingGeoFunctionSupportVisitor visitor = new CheckingGeoFunctionSupportVisitor( dialect );
+            for ( RexNode node : filter.getChildExps() ) {
+                node.accept( visitor );
+                if ( visitor.supportsGeoFunction() ) {
                     return true;
                 }
             }
@@ -1281,6 +1356,62 @@ public class JdbcRules {
             Operator operator = call.getOperator();
             if ( operator instanceof Function && ((SqlFunction) operator).getFunctionCategory().isMultimedia() ) {
                 containsMultimediaFunction = true;
+            }
+            return super.visitCall( call );
+        }
+
+    }
+
+
+    private static class CheckingGeoFunctionVisitor extends RexVisitorImpl<Void> {
+
+        private boolean containsGeoFunction = false;
+
+
+        CheckingGeoFunctionVisitor() {
+            super( true );
+        }
+
+
+        public boolean containsGeoFunction() {
+            return containsGeoFunction;
+        }
+
+
+        @Override
+        public Void visitCall( RexCall call ) {
+            Operator operator = call.getOperator();
+            if ( operator instanceof Function && ((SqlFunction) operator).getFunctionCategory().isGeo() ) {
+                containsGeoFunction = true;
+            }
+            return super.visitCall( call );
+        }
+
+    }
+
+
+    private static class CheckingGeoFunctionSupportVisitor extends RexVisitorImpl<Void> {
+
+        private boolean supportsGeoFunction = false;
+        private SqlDialect dialect;
+
+
+        CheckingGeoFunctionSupportVisitor( SqlDialect dialect ) {
+            super( true );
+            this.dialect = dialect;
+        }
+
+
+        public boolean supportsGeoFunction() {
+            return supportsGeoFunction;
+        }
+
+
+        @Override
+        public Void visitCall( RexCall call ) {
+            Operator operator = call.getOperator();
+            if ( operator instanceof Function && ((SqlFunction) operator).getFunctionCategory().isGeo() && dialect.supportedGeoFunctions().contains( operator.getOperatorName() ) ) {
+                supportsGeoFunction = true;
             }
             return super.visitCall( call );
         }

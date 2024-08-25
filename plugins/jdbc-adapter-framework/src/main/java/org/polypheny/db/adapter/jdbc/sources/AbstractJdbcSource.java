@@ -25,12 +25,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import lombok.SneakyThrows;
 import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.pf4j.ExtensionPoint;
 import org.polypheny.db.adapter.DataSource;
+import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.RelationalScanDelegate;
 import org.polypheny.db.adapter.jdbc.JdbcSchema;
 import org.polypheny.db.adapter.jdbc.JdbcUtils;
@@ -68,10 +68,11 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
             final long storeId,
             final String uniqueName,
             final Map<String, String> settings,
+            final DeployMode mode,
             final String diverClass,
             final SqlDialect dialect,
             final boolean readOnly ) {
-        super( storeId, uniqueName, settings, readOnly, new RelAdapterCatalog( storeId ) );
+        super( storeId, uniqueName, settings, mode, readOnly, new RelAdapterCatalog( storeId ) );
         this.connectionFactory = createConnectionFactory( settings, dialect, diverClass );
         this.dialect = dialect;
         // Register the JDBC Pool Size as information in the information manager and enable it
@@ -157,11 +158,14 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
     }
 
 
-    @SneakyThrows
     @Override
     public boolean prepare( PolyXid xid ) {
         if ( connectionFactory.hasConnectionHandler( xid ) ) {
-            return connectionFactory.getConnectionHandler( xid ).prepare();
+            try {
+                return connectionFactory.getConnectionHandler( xid ).prepare();
+            } catch ( ConnectionHandlerException e ) {
+                throw new GenericRuntimeException( e );
+            }
         } else {
             log.warn( "There is no connection to prepare (Unique name: {}, XID: {})! Returning true.", getUniqueName(), xid );
             return true;
@@ -169,22 +173,28 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
     }
 
 
-    @SneakyThrows
     @Override
     public void commit( PolyXid xid ) {
         if ( connectionFactory.hasConnectionHandler( xid ) ) {
-            connectionFactory.getConnectionHandler( xid ).commit();
+            try {
+                connectionFactory.getConnectionHandler( xid ).commit();
+            } catch ( ConnectionHandlerException e ) {
+                throw new GenericRuntimeException( e );
+            }
         } else {
             log.warn( "There is no connection to commit (Unique name: {}, XID: {})!", getUniqueName(), xid );
         }
     }
 
 
-    @SneakyThrows
     @Override
     public void rollback( PolyXid xid ) {
         if ( connectionFactory.hasConnectionHandler( xid ) ) {
-            connectionFactory.getConnectionHandler( xid ).rollback();
+            try {
+                connectionFactory.getConnectionHandler( xid ).rollback();
+            } catch ( ConnectionHandlerException e ) {
+                throw new GenericRuntimeException( e );
+            }
         } else {
             log.warn( "There is no connection to rollback (Unique name: {}, XID: {})!", getUniqueName(), xid );
         }

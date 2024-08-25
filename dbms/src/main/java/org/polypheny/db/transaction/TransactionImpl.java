@@ -18,12 +18,13 @@ package org.polypheny.db.transaction;
 
 
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
@@ -39,6 +40,7 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer.EnforcementInformation;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.LogicalConstraint;
 import org.polypheny.db.catalog.entity.LogicalUser;
 import org.polypheny.db.catalog.entity.logical.LogicalKey.EnforcementTime;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
@@ -94,15 +96,16 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
     private final List<Statement> statements = new ArrayList<>();
 
-    private final List<String> changedTables = new ArrayList<>();
 
     @Getter
-    private final Set<LogicalTable> logicalTables = new TreeSet<>();
+    private final Set<LogicalTable> usedTables = new TreeSet<>();
 
     @Getter
-    private final List<Adapter<?>> involvedAdapters = new CopyOnWriteArrayList<>();
+    private final Map<Long, List<LogicalConstraint>> entityConstraints = new HashMap<>();
 
-    private final Set<Lock> lockList = new HashSet<>();
+    @Getter
+    private final Set<Adapter<?>> involvedAdapters = new ConcurrentSkipListSet<>( ( a, b ) -> Math.toIntExact( a.adapterId - b.adapterId ) );
+
     private boolean useCache = true;
 
     private boolean acceptsOutdated = false;
@@ -111,6 +114,8 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
     @Getter
     private final JavaTypeFactory typeFactory = new JavaTypeFactoryImpl();
+
+    private final Catalog catalog = Catalog.getInstance();
 
 
     TransactionImpl(
@@ -134,7 +139,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
     @Override
     public Snapshot getSnapshot() {
-        return Catalog.getInstance().getSnapshot();
+        return catalog.getSnapshot();
     }
 
 
@@ -146,9 +151,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
     @Override
     public void registerInvolvedAdapter( Adapter<?> adapter ) {
-        if ( !involvedAdapters.contains( adapter ) ) {
-            involvedAdapters.add( adapter );
-        }
+        involvedAdapters.add( adapter );
     }
 
 
@@ -159,13 +162,13 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
             return;
         }
 
-        Pair<Boolean, String> isValid = Catalog.getInstance().checkIntegrity();
+        Pair<Boolean, String> isValid = catalog.checkIntegrity();
         if ( !isValid.left ) {
             throw new TransactionException( isValid.right + "\nThere are violated constraints, the transaction was rolled back!" );
         }
 
         // physical changes
-        Catalog.getInstance().executeCommitActions();
+        catalog.executeCommitActions();
 
         // Prepare to commit changes on all involved adapters and the catalog
         boolean okToCommit = true;
@@ -175,11 +178,11 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
             }
         }
 
-        if ( !logicalTables.isEmpty() ) {
+        if ( !usedTables.isEmpty() ) {
             Statement statement = createStatement();
             QueryProcessor processor = statement.getQueryProcessor();
             List<EnforcementInformation> infos = ConstraintEnforceAttacher
-                    .getConstraintAlg( logicalTables, statement, EnforcementTime.ON_COMMIT );
+                    .getConstraintAlg( usedTables, statement, EnforcementTime.ON_COMMIT );
             List<PolyImplementation> results = infos
                     .stream()
                     .map( s -> processor.prepareQuery( AlgRoot.of( s.control(), Kind.SELECT ), s.control().getCluster().getTypeFactory().builder().build(), false, true, false ) ).toList();
@@ -212,7 +215,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
             throw new TransactionException( "Unable to prepare all involved entities for commit. Changes have been rolled back." );
         }
 
-        Catalog.getInstance().commit();
+        catalog.commit();
 
         // Free resources hold by statements
         statements.forEach( Statement::close );
@@ -235,12 +238,13 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
             return;
         }
         try {
+            log.warn( "rolling back transaction" );
             //  Rollback changes to the adapters
             for ( Adapter<?> adapter : involvedAdapters ) {
                 adapter.rollback( xid );
             }
             IndexManager.getInstance().rollback( this.xid );
-            Catalog.getInstance().rollback();
+            catalog.rollback();
             // Free resources hold by statements
             statements.forEach( statement -> {
                 if ( statement.getMonitoringEvent() != null ) {
@@ -283,17 +287,6 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
 
     @Override
-    public void addChangedTable( String qualifiedTableName ) {
-        if ( !this.changedTables.contains( qualifiedTableName ) ) {
-            if ( log.isDebugEnabled() ) {
-                log.debug( "Add changed table: {}", qualifiedTableName );
-            }
-            this.changedTables.add( qualifiedTableName );
-        }
-    }
-
-
-    @Override
     public int compareTo( @NonNull Object o ) {
         Transaction that = (Transaction) o;
         return this.xid.hashCode() - that.getXid().hashCode();
@@ -328,6 +321,39 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     @Override
     public boolean getUseCache() {
         return this.useCache;
+    }
+
+
+    @Override
+    public void addUsedTable( LogicalTable table ) {
+        this.usedTables.add( table );
+    }
+
+
+    @Override
+    public void removeUsedTable( LogicalTable table ) {
+        this.usedTables.remove( table );
+    }
+
+
+    @Override
+    public void getNewEntityConstraints( long entity ) {
+        this.entityConstraints.getOrDefault( entity, List.of() );
+    }
+
+
+    @Override
+    public void addNewConstraint( long entityId, LogicalConstraint constraint ) {
+        this.entityConstraints.putIfAbsent( entityId, new ArrayList<>() );
+        this.entityConstraints.get( entityId ).add( constraint );
+    }
+
+
+    @Override
+    public void removeNewConstraint( long entityId, LogicalConstraint constraint ) {
+        List<LogicalConstraint> constraints = this.entityConstraints.get( entityId );
+        constraints.remove( constraint );
+        this.entityConstraints.put( entityId, constraints );
     }
 
 
@@ -387,23 +413,10 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
     }
 
-    //
-    // For locking
-    //
 
-
-    Set<Lock> getLocks() {
-        return lockList;
-    }
-
-
-    void addLock( Lock lock ) {
-        lockList.add( lock );
-    }
-
-
-    void removeLock( Lock lock ) {
-        lockList.remove( lock );
+    @Override
+    public List<LogicalConstraint> getUsedConstraints( long id ) {
+        return this.entityConstraints.getOrDefault( id, List.of() );
     }
 
 

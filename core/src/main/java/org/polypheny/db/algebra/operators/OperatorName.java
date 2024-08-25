@@ -1304,6 +1304,280 @@ public enum OperatorName {
     PATTERN_EXCLUDE( Operator.class ),
 
     //-------------------------------------------------------------
+    //                   GEO OPERATORS
+    //-------------------------------------------------------------
+
+    /**
+     * The <code>stGeomFromText</code> operator function: create the {@link org.polypheny.db.type.entity.spatial.PolyGeometry} from WKT
+     */
+    ST_GEOMFROMTEXT( Function.class ),
+
+    /**
+     * The <code>stGeomFromTWKB</code> operator function: create the {@link org.polypheny.db.type.entity.spatial.PolyGeometry} from TWKB
+     */
+    ST_GEOMFROMTWKB( Function.class ),
+
+    /**
+     * The <code>stGeomFromGeoJson</code> operator function: create the {@link org.polypheny.db.type.entity.spatial.PolyGeometry} from GeoJson
+     */
+    ST_GEOMFROMGEOJSON( Function.class ),
+
+    /**
+     * The <code>stAsText</code> operator function: output the WKT representation of {@link org.polypheny.db.type.entity.spatial.PolyGeometry}
+     */
+    ST_ASTEXT( Function.class ),
+
+    /**
+     * The <code>stAsTWKB</code> operator function: output the TWKB representation of {@link org.polypheny.db.type.entity.spatial.PolyGeometry}
+     */
+    ST_ASTWKB( Function.class ),
+
+    /**
+     * The <code>stAsGeoJson</code> operator function: output the GeoJson representation of {@link org.polypheny.db.type.entity.spatial.PolyGeometry}
+     */
+    ST_ASGEOJSON( Function.class ),
+
+    /**
+     * The <code>stTransform</code> operator function: transform coordinates of {@link org.polypheny.db.type.entity.spatial.PolyGeometry} to another SRID
+     */
+    ST_TRANSFORM( Function.class ),
+
+    // Common properties
+
+    /**
+     * The <code>stIsSimple</code> operator function: check that {@link org.polypheny.db.type.entity.spatial.PolyGeometry} is simple
+     */
+    ST_ISSIMPLE( Function.class ),
+
+    /**
+     * The <code>stIsEmpty</code> operator function: check that {@link org.polypheny.db.type.entity.spatial.PolyGeometry} is empty
+     */
+    ST_ISEMPTY( Function.class ),
+
+    /**
+     * The <code>stNumPoints</code> operator function: receive the number of points in the {@link org.polypheny.db.type.entity.spatial.PolyGeometry}
+     */
+    ST_NUMPOINTS( Function.class ),
+
+    /**
+     * The <code>stDimension</code> operator function: receive the dimension of the {@link org.polypheny.db.type.entity.spatial.PolyGeometry}
+     */
+    ST_DIMENSION( Function.class ),
+
+    /**
+     * The <code>stLength</code> operator function: receive the length of the {@link org.polypheny.db.type.entity.spatial.PolyGeometry}
+     */
+    ST_LENGTH( Function.class ),
+
+    /**
+     * The <code>stArea</code> operator function: receive the area of the {@link org.polypheny.db.type.entity.spatial.PolyGeometry}
+     */
+    ST_AREA( Function.class ),
+
+    /**
+     * The <code>stEnvelope</code> operator function: receive the minimum bounding box {@link org.polypheny.db.type.entity.spatial.PolyGeometry} that would include the {@link org.polypheny.db.type.entity.spatial.PolyGeometry}
+     */
+    ST_ENVELOPE( Function.class ),
+
+    /**
+     * The <code>stBoundary</code> operator function: receive the boundary of the {@link org.polypheny.db.type.entity.spatial.PolyGeometry}
+     */
+    ST_BOUNDARY( Function.class ),
+
+    /**
+     * The <code>stBoundaryDimension</code> operator function: receive the boundary dimension of the {@link org.polypheny.db.type.entity.spatial.PolyGeometry}
+     */
+    ST_BOUNDARYDIMENSION( Function.class ),
+
+    /**
+     * The <code>stConvexHull</code> operator function: receive the convex full of the {@link org.polypheny.db.type.entity.spatial.PolyGeometry}
+     */
+    ST_CONVEXHULL( Function.class ),
+
+    /**
+     * The <code>stCentroid</code> operator function: receive the centroid of the {@link org.polypheny.db.type.entity.spatial.PolyGeometry}
+     */
+    ST_CENTROID( Function.class ),
+
+    /**
+     * The <code>stReverse</code> operator function: reverse the {@link org.polypheny.db.type.entity.spatial.PolyGeometry}
+     */
+    ST_REVERSE( Function.class ),
+
+    /**
+     * The <code>stBuffer</code> operator function: receive the buffer {@link org.polypheny.db.type.entity.spatial.PolyGeometry} around the {@link org.polypheny.db.type.entity.spatial.PolyGeometry}
+     */
+    ST_BUFFER( Function.class ),
+
+    // Spatial relationships
+
+    /**
+     * The <code>stEquals</code> operator function: check that two {@link org.polypheny.db.type.entity.spatial.PolyGeometry} are equals
+     */
+    ST_EQUALS( Function.class ),
+
+    /**
+     * The <code>stDWithin</code> operator function: check if two {@link org.polypheny.db.type.entity.spatial.PolyGeometry} are withing the given distance
+     */
+    ST_DWITHIN( Function.class ),
+
+    /**
+     * The <code>stDisjoint</code> operator function: check if two {@link org.polypheny.db.type.entity.spatial.PolyGeometry} are disjoint
+     */
+    ST_DISJOINT( Function.class ),
+
+    /**
+     * The <code>stTouches</code> operator function: check if {@link org.polypheny.db.type.entity.spatial.PolyGeometry} touches another
+     */
+    ST_TOUCHES( Function.class ),
+
+    /**
+     * The <code>stIntersects</code> operator function: check if {@link org.polypheny.db.type.entity.spatial.PolyGeometry} intersects another
+     */
+    ST_INTERSECTS( Function.class ),
+
+    /**
+     * The <code>stCrosses</code> operator function: check if {@link org.polypheny.db.type.entity.spatial.PolyGeometry} crosses another
+     */
+    ST_CROSSES( Function.class ),
+
+    /**
+     * The <code>stWithin</code> operator function: check if {@link org.polypheny.db.type.entity.spatial.PolyGeometry} is within another
+     */
+    ST_WITHIN( Function.class ),
+
+    /**
+     * The <code>stContains</code> operator function: check if {@link org.polypheny.db.type.entity.spatial.PolyGeometry} contains another
+     */
+    ST_CONTAINS( Function.class ),
+
+    /**
+     * The <code>stOverlaps</code> operator function: check if {@link org.polypheny.db.type.entity.spatial.PolyGeometry} overlaps another
+     */
+    ST_OVERLAPS( Function.class ),
+
+    /**
+     * The <code>stCovers</code> operator function: check if {@link org.polypheny.db.type.entity.spatial.PolyGeometry} covers another
+     */
+    ST_COVERS( Function.class ),
+
+    /**
+     * The <code>stCoveredBy</code> operator function: check if {@link org.polypheny.db.type.entity.spatial.PolyGeometry} is covered by another
+     */
+    ST_COVEREDBY( Function.class ),
+
+    /**
+     * The <code>stRelate</code> operator function: check if two {@link org.polypheny.db.type.entity.spatial.PolyGeometry} are relate
+     */
+    ST_RELATE( Function.class ),
+
+    // Yield metric values
+
+    /**
+     * The <code>stDistance</code> operator function: compute the distance between two {@link org.polypheny.db.type.entity.spatial.PolyGeometry}
+     */
+    ST_DISTANCE( Function.class ),
+
+    // Set operations
+
+    /**
+     * The <code>stIntersection</code> operator function: compute the intersection of two {@link org.polypheny.db.type.entity.spatial.PolyGeometry}
+     */
+    ST_INTERSECTION( Function.class ),
+
+    /**
+     * The <code>stUnion</code> operator function: compute the union of two {@link org.polypheny.db.type.entity.spatial.PolyGeometry}
+     */
+    ST_UNION( Function.class ),
+
+    /**
+     * The <code>stDifference</code> operator function: compute the difference of two {@link org.polypheny.db.type.entity.spatial.PolyGeometry}
+     */
+    ST_DIFFERENCE( Function.class ),
+
+    /**
+     * The <code>stSymDifference</code> operator function: compute the symmetric difference of two {@link org.polypheny.db.type.entity.spatial.PolyGeometry}
+     */
+    ST_SYMDIFFERENCE( Function.class ),
+
+    // Functions on Points
+
+    /**
+     * The <code>stX</code> operator function: receive the <strong>X</strong> coordinate of the {@link org.polypheny.db.type.entity.spatial.PolyPoint}
+     */
+    ST_X( Function.class ),
+
+    /**
+     * The <code>stY</code> operator function: receive the <strong>Y</strong> coordinate of the {@link org.polypheny.db.type.entity.spatial.PolyPoint}
+     */
+    ST_Y( Function.class ),
+
+    /**
+     * The <code>stZ</code> operator function: receive the <strong>Z</strong> coordinate of the {@link org.polypheny.db.type.entity.spatial.PolyPoint}
+     */
+    ST_Z( Function.class ),
+
+    // Functions on LineStrings
+
+    /**
+     * The <code>stIsClosed</code> operator function: check that {@link org.polypheny.db.type.entity.spatial.PolyLineString} is closed
+     */
+    ST_ISCLOSED( Function.class ),
+
+    /**
+     * The <code>stIsRing</code> operator function: check that {@link org.polypheny.db.type.entity.spatial.PolyLineString} is a ring
+     */
+    ST_ISRING( Function.class ),
+
+    /**
+     * The <code>stIsCoordinate</code> operator function: check that {@link org.polypheny.db.type.entity.spatial.PolyPoint} is coordinate of {@link org.polypheny.db.type.entity.spatial.PolyLineString}
+     */
+    ST_ISCOORDINATE( Function.class ),
+
+    /**
+     * The <code>stStartPoint</code> operator function: return the start {@link org.polypheny.db.type.entity.spatial.PolyPoint} of {@link org.polypheny.db.type.entity.spatial.PolyLineString}
+     */
+    ST_STARTPOINT( Function.class ),
+
+    /**
+     * The <code>stEndPoint</code> operator function: return the end {@link org.polypheny.db.type.entity.spatial.PolyPoint} of {@link org.polypheny.db.type.entity.spatial.PolyLineString}
+     */
+    ST_ENDPOINT( Function.class ),
+
+    // Functions on Polygons
+
+    /**
+     * The <code>stIsRectangle</code> operator function: check that {@link org.polypheny.db.type.entity.spatial.PolyPolygon} is rectangle
+     */
+    ST_ISRECTANGLE( Function.class ),
+
+    /**
+     * The <code>stExteriorRing</code> operator function: return the exterior ring {@link org.polypheny.db.type.entity.spatial.PolyGeometry} of the {@link org.polypheny.db.type.entity.spatial.PolyPolygon}
+     */
+    ST_EXTERIORRING( Function.class ),
+
+    /**
+     * The <code>stNumInteriorRing</code> operator function: return the number of interior rings of the {@link org.polypheny.db.type.entity.spatial.PolyPolygon}
+     */
+    ST_NUMINTERIORRING( Function.class ),
+
+    /**
+     * The <code>stInteriorRingN</code> operator function: return the nth interior ring of the {@link org.polypheny.db.type.entity.spatial.PolyPolygon}
+     */
+    ST_INTERIORRINGN( Function.class ),
+
+    // Functions on GeometryCollection
+    /**
+     * The <code>stNumGeometries</code> operator function: return the number of {@link org.polypheny.db.type.entity.spatial.PolyGeometry} in {@link org.polypheny.db.type.entity.spatial.PolyGeometryCollection}
+     */
+    ST_NUMGEOMETRIES( Function.class ),
+
+    /**
+     * The <code>stGeometryN</code> operator function: return the nth geometry in the {@link org.polypheny.db.type.entity.spatial.PolyGeometryCollection}
+     */
+    ST_GEOMETRYN( Function.class ),
+
+    //-------------------------------------------------------------
     //                   SET OPERATORS
     //-------------------------------------------------------------
 
@@ -1427,6 +1701,14 @@ public enum OperatorName {
 
     CYPHER_GRAPH_ONLY_LABEL( LangFunctionOperator.class ),
 
+    CYPHER_GEO_DISTANCE( LangFunctionOperator.class ),
+
+    CYPHER_GEO_CONTAINS( LangFunctionOperator.class ),
+
+    CYPHER_GEO_INTERSECTS( LangFunctionOperator.class ),
+
+    CYPHER_GEO_WITHIN( LangFunctionOperator.class ),
+
     // CROSS MODEL FUNCTION
 
     CROSS_MODEL_ITEM( LangFunctionOperator.class ),
@@ -1440,7 +1722,6 @@ public enum OperatorName {
     EXTRACT_NAME( LangFunctionOperator.class );
 
 
-    @Getter
     private final Class<? extends Operator> clazz;
 
 

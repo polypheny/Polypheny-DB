@@ -37,6 +37,7 @@ package org.polypheny.db.rex;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Streams;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
@@ -50,10 +51,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.util.ByteString;
-import org.apache.calcite.avatica.util.Spaces;
 import org.apache.commons.lang3.NotImplementedException;
-import org.bson.BsonValue;
+import org.apache.commons.lang3.StringUtils;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.AggregateCall;
@@ -69,7 +68,6 @@ import org.polypheny.db.nodes.Function.FunctionType;
 import org.polypheny.db.nodes.IntervalQualifier;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.nodes.SpecialOperator;
-import org.polypheny.db.runtime.PolyCollections.FlatMap;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.MapPolyType;
 import org.polypheny.db.type.MultisetPolyType;
@@ -89,12 +87,11 @@ import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.temporal.PolyDate;
 import org.polypheny.db.type.entity.temporal.PolyTime;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
-import org.polypheny.db.util.BsonUtil;
+import org.polypheny.db.util.ByteString;
 import org.polypheny.db.util.Collation;
 import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.NlsString;
-import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.TimeString;
 import org.polypheny.db.util.TimestampString;
 import org.polypheny.db.util.Util;
@@ -320,13 +317,7 @@ public class RexBuilder {
 
 
     private static List<Integer> nullableArgs( List<Integer> list0, List<AlgDataType> types ) {
-        final List<Integer> list = new ArrayList<>();
-        for ( Pair<Integer, AlgDataType> pair : Pair.zip( list0, types ) ) {
-            if ( pair.right.isNullable() ) {
-                list.add( pair.left );
-            }
-        }
-        return list;
+        return Streams.zip( list0.stream(), types.stream(), ( left, right ) -> right.isNullable() ? left : null ).filter( Objects::nonNull ).toList();
     }
 
 
@@ -479,15 +470,6 @@ public class RexBuilder {
                 if ( Objects.requireNonNull( typeName ) == PolyType.INTERVAL ) {
                     assert value.isInterval();
                     typeName = type.getPolyType();
-                    switch ( typeName ) {
-                        case BIGINT:
-                        case INTEGER:
-                        case SMALLINT:
-                        case TINYINT:
-                        case FLOAT:
-                        case REAL:
-                        case DECIMAL:
-                    }
 
                     // Not all types are allowed for literals
                     if ( typeName == PolyType.INTEGER ) {
@@ -1125,7 +1107,7 @@ public class RexBuilder {
 
     private static Comparable<?> zeroValue( AlgDataType type ) {
         return switch ( type.getPolyType() ) {
-            case CHAR -> new NlsString( Spaces.of( type.getPrecision() ), null, null );
+            case CHAR -> new NlsString( StringUtils.leftPad( "", type.getPrecision() ), null, null );
             case JSON, VARCHAR -> new NlsString( "", null, null );
             case BINARY -> new ByteString( new byte[type.getPrecision()] );
             case VARBINARY -> ByteString.EMPTY;
@@ -1207,22 +1189,7 @@ public class RexBuilder {
                 }
                 if ( allowCast ) {
                     return makeCall( OperatorRegistry.get( OperatorName.MULTISET_VALUE ), operands );
-                } else {
-                    log.warn( "this will not work anyway" );
-                    return new RexLiteral( (PolyValue) List.of( operands ), type, type.getPolyType() );
                 }
-            case ROW:
-                operands = new ArrayList<>();
-                //noinspection unchecked
-                for ( Pair<AlgDataTypeField, Object> pair : Pair.zip( type.getFields(), (List<Object>) value ) ) {
-                    final RexNode e =
-                            pair.right instanceof RexLiteral
-                                    ? (RexNode) pair.right
-                                    : makeLiteral( pair.right, pair.left.getType(), allowCast );
-                    operands.add( e );
-                }
-                log.warn( "this will not work anyway" );
-                return new RexLiteral( (PolyValue) List.of( operands ), type, type.getPolyType() );
             case NODE:
             case EDGE:
                 return new RexLiteral( (PolyValue) value, type, type.getPolyType() );
@@ -1423,13 +1390,7 @@ public class RexBuilder {
      */
     @SuppressWarnings("unused")
     private static String padRight( String s, int length ) {
-        if ( s.length() >= length ) {
-            return s;
-        }
-        return new StringBuilder()
-                .append( s )
-                .append( Spaces.MAX, s.length(), length )
-                .toString();
+        return StringUtils.rightPad( s, length );
     }
 
 
@@ -1440,21 +1401,6 @@ public class RexBuilder {
 
     public RexLiteral makeMap( AlgDataType type, Map<RexNode, RexNode> operands ) {
         return new RexLiteral( null, type, type.getPolyType() ); // todo fix this
-    }
-
-
-    public RexLiteral makeMapFromBson( AlgDataType type, Map<String, BsonValue> bson ) {
-        @SuppressWarnings("RedundantCast") // seems necessary
-        FlatMap<RexLiteral, RexLiteral> map = FlatMap.of( (Map<RexLiteral, RexLiteral>) bson.entrySet().stream().collect( Collectors.toMap( e -> makeLiteral( e.getKey() ), e -> BsonUtil.getAsLiteral( e.getValue(), this ) ) ) );
-        return new RexLiteral( null, type, PolyType.CHAR );// todo fix this
-    }
-
-
-    public RexCall makeLpgExtract( String key ) {
-        return new RexCall(
-                typeFactory.createPolyType( PolyType.VARCHAR, 255 ),
-                OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_EXTRACT_PROPERTY ),
-                List.of( makeInputRef( typeFactory.createPolyType( PolyType.NODE ), 0 ), makeLiteral( key ) ) );
     }
 
 

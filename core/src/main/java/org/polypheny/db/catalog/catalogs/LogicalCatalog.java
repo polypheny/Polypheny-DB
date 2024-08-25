@@ -16,6 +16,8 @@
 
 package org.polypheny.db.catalog.catalogs;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 import io.activej.serializer.annotations.SerializeClass;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.impl.logical.DocumentCatalog;
@@ -27,6 +29,7 @@ import org.polypheny.db.catalog.impl.logical.RelationalCatalog;
         RelationalCatalog.class,
         DocumentCatalog.class,
         GraphCatalog.class })
+@JsonTypeInfo(use = Id.CLASS)
 public interface LogicalCatalog {
 
 

@@ -319,6 +319,8 @@ public abstract class OperandTypes {
 
     public static final PolySingleOperandTypeChecker STRING = family( PolyTypeFamily.STRING );
 
+    public static final PolySingleOperandTypeChecker JSON = or( family( PolyTypeFamily.DOCUMENT ), family( PolyTypeFamily.STRING ) );
+
     public static final FamilyOperandTypeChecker STRING_STRING = family( PolyTypeFamily.STRING, PolyTypeFamily.STRING );
 
     public static final FamilyOperandTypeChecker STRING_STRING_STRING = family( PolyTypeFamily.STRING, PolyTypeFamily.STRING, PolyTypeFamily.STRING );
@@ -338,6 +340,12 @@ public abstract class OperandTypes {
     public static final PolySingleOperandTypeChecker MULTISET = family( PolyTypeFamily.MULTISET );
 
     public static final PolySingleOperandTypeChecker ARRAY = family( PolyTypeFamily.ARRAY );
+
+    public static final PolySingleOperandTypeChecker GEOMETRY = family( PolyTypeFamily.GEO );
+    public static final PolySingleOperandTypeChecker GEOMETRY_GEOMETRY = family( PolyTypeFamily.GEO, PolyTypeFamily.GEO );
+    public static final PolySingleOperandTypeChecker GEOMETRY_INTEGER = family( PolyTypeFamily.GEO, PolyTypeFamily.INTEGER );
+    public static final PolySingleOperandTypeChecker GEOMETRY_GEOMETRY_STRING = family( PolyTypeFamily.GEO, PolyTypeFamily.GEO, PolyTypeFamily.STRING );
+    public static final PolySingleOperandTypeChecker GEOMETRY_GEOMETRY_NUMERIC = family( PolyTypeFamily.GEO, PolyTypeFamily.GEO, PolyTypeFamily.NUMERIC );
 
     /**
      * Checks that returns whether a value is a multiset or an array. Cf Java, where list and set are collections but a map is not.

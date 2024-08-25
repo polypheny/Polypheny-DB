@@ -33,11 +33,8 @@
 
 package org.polypheny.db.adapter.jdbc;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Ints;
 import java.math.BigDecimal;
-import java.sql.Connection;
-import java.sql.DatabaseMetaData;
 import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -45,14 +42,8 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.IdentityHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.TimeZone;
-import javax.sql.DataSource;
-import org.apache.calcite.avatica.ColumnMetaData;
-import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.linq4j.function.Function0;
 import org.apache.calcite.linq4j.function.Function1;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
@@ -64,9 +55,7 @@ import org.polypheny.db.information.InformationGraph.GraphType;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
-import org.polypheny.db.sql.language.SqlDialect;
-import org.polypheny.db.sql.language.SqlDialectFactory;
-import org.polypheny.db.sql.language.SqlDialectRegistry;
+import org.polypheny.db.sql.language.util.SqlTypeRepresentation;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
@@ -78,6 +67,9 @@ import org.polypheny.db.type.entity.temporal.PolyDate;
 import org.polypheny.db.type.entity.temporal.PolyTime;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.temporal.DateTimeUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -85,64 +77,11 @@ import org.polypheny.db.util.Pair;
  */
 public final class JdbcUtils {
 
+    private static final Logger log = LoggerFactory.getLogger( JdbcUtils.class );
+
+
     private JdbcUtils() {
         throw new AssertionError( "no instances!" );
-    }
-
-
-    /**
-     * Pool of dialects.
-     */
-    static class DialectPool {
-
-        final Map<DataSource, Map<SqlDialectFactory, SqlDialect>> map0 = new IdentityHashMap<>();
-        final Map<List<?>, SqlDialect> map = new HashMap<>();
-
-        public static final DialectPool INSTANCE = new DialectPool();
-
-
-        // TODO: Discuss why we need a pool. If we do, I'd like to improve performance
-        synchronized SqlDialect get( SqlDialectFactory dialectFactory, DataSource dataSource ) {
-            Map<SqlDialectFactory, SqlDialect> dialectMap = map0.get( dataSource );
-            if ( dialectMap != null ) {
-                final SqlDialect sqlDialect = dialectMap.get( dialectFactory );
-                if ( sqlDialect != null ) {
-                    return sqlDialect;
-                }
-            }
-            Connection connection = null;
-            try {
-                connection = dataSource.getConnection();
-                DatabaseMetaData metaData = connection.getMetaData();
-                String productName = metaData.getDatabaseProductName();
-                String productVersion = metaData.getDatabaseProductVersion();
-                List<?> key = ImmutableList.of( productName, productVersion, dialectFactory );
-                SqlDialect dialect = map.get( key );
-                if ( dialect == null ) {
-                    dialect = SqlDialectRegistry.getDialect( productName ).orElseThrow();
-                    map.put( key, dialect );
-                    if ( dialectMap == null ) {
-                        dialectMap = new IdentityHashMap<>();
-                        map0.put( dataSource, dialectMap );
-                    }
-                    dialectMap.put( dialectFactory, dialect );
-                }
-                connection.close();
-                connection = null;
-                return dialect;
-            } catch ( SQLException e ) {
-                throw new GenericRuntimeException( e );
-            } finally {
-                if ( connection != null ) {
-                    try {
-                        connection.close();
-                    } catch ( SQLException e ) {
-                        // ignore
-                    }
-                }
-            }
-        }
-
     }
 
 
@@ -154,11 +93,11 @@ public final class JdbcUtils {
 
         private final ResultSet resultSet;
         private final int columnCount;
-        private final ColumnMetaData.Rep[] reps;
+        private final SqlTypeRepresentation[] reps;
         private final int[] types;
 
 
-        ObjectArrayRowBuilder( ResultSet resultSet, ColumnMetaData.Rep[] reps, int[] types ) throws SQLException {
+        ObjectArrayRowBuilder( ResultSet resultSet, SqlTypeRepresentation[] reps, int[] types ) throws SQLException {
             this.resultSet = resultSet;
             this.reps = reps;
             this.types = types;
@@ -166,12 +105,12 @@ public final class JdbcUtils {
         }
 
 
-        public static Function1<ResultSet, Function0<PolyValue[]>> factory( final List<Pair<ColumnMetaData.Rep, Integer>> list ) {
+        public static Function1<ResultSet, Function0<PolyValue[]>> factory( final List<Pair<SqlTypeRepresentation, Integer>> list ) {
             return resultSet -> {
                 try {
                     return new ObjectArrayRowBuilder(
                             resultSet,
-                            Pair.left( list ).toArray( new ColumnMetaData.Rep[list.size()] ),
+                            Pair.left( list ).toArray( new SqlTypeRepresentation[list.size()] ),
                             Ints.toArray( Pair.right( list ) ) );
                 } catch ( SQLException e ) {
                     throw new GenericRuntimeException( e );
@@ -208,8 +147,6 @@ public final class JdbcUtils {
                 case Types.DATE -> PolyDate.of( shift( resultSet.getDate( i + 1 ) ) );
                 default -> getPolyValue( i );
             };
-
-            //return (PolyValue) reps[i].jdbcGet( resultSet, i + 1 );
         }
 
 
@@ -319,4 +256,3 @@ public final class JdbcUtils {
     }
 
 }
-

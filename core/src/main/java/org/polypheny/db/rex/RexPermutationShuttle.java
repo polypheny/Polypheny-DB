@@ -58,5 +58,5 @@ public class RexPermutationShuttle extends RexShuttle {
         int target = permutation.getTarget( index );
         return new RexLocalRef( target, local.getType() );
     }
-}
 
+}

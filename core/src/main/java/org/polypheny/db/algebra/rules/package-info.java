@@ -1,4 +1,3 @@
-
 /**
  * Provides a core set of planner rules.
  *
@@ -22,4 +21,3 @@
  */
 
 package org.polypheny.db.algebra.rules;
-

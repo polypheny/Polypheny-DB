@@ -28,7 +28,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalColumn;
  */
 @Getter
 @Data
-class QueryResult {
+public class QueryResult {
 
     private final Entity entity;
     private final LogicalColumn column;
@@ -41,7 +41,7 @@ class QueryResult {
 
 
     public static QueryResult fromCatalogColumn( LogicalColumn column ) {
-        return new QueryResult( Catalog.getInstance().getSnapshot().rel().getTable( column.tableId ).orElseThrow(), column );
+        return new QueryResult( Catalog.snapshot().rel().getTable( column.tableId ).orElseThrow(), column );
     }
 
 }

@@ -68,6 +68,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelSort;
 import org.polypheny.db.algebra.logical.relational.LogicalRelTableFunctionScan;
 import org.polypheny.db.algebra.logical.relational.LogicalWindow;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.hep.HepAlgVertex;
 import org.polypheny.db.plan.volcano.AlgSubset;
@@ -328,53 +329,43 @@ public abstract class MutableAlgs {
         if ( alg instanceof Values ) {
             return MutableValues.of( (Values) alg );
         }
-        if ( alg instanceof Project ) {
-            final Project project = (Project) alg;
+        if ( alg instanceof Project project ) {
             final MutableAlg input = toMutable( project.getInput() );
             return MutableProject.of( input, project.getProjects(), project.getTupleType().getFieldNames() );
         }
-        if ( alg instanceof Filter ) {
-            final Filter filter = (Filter) alg;
+        if ( alg instanceof Filter filter ) {
             final MutableAlg input = toMutable( filter.getInput() );
             return MutableFilter.of( input, filter.getCondition() );
         }
-        if ( alg instanceof Aggregate ) {
-            final Aggregate aggregate = (Aggregate) alg;
+        if ( alg instanceof Aggregate aggregate ) {
             final MutableAlg input = toMutable( aggregate.getInput() );
             return MutableAggregate.of( input, aggregate.getGroupSet(), aggregate.getGroupSets(), aggregate.getAggCallList() );
         }
-        if ( alg instanceof Sort ) {
-            final Sort sort = (Sort) alg;
+        if ( alg instanceof Sort sort ) {
             final MutableAlg input = toMutable( sort.getInput() );
             return MutableSort.of( input, sort.getCollation(), sort.offset, sort.fetch );
         }
-        if ( alg instanceof Calc ) {
-            final Calc calc = (Calc) alg;
+        if ( alg instanceof Calc calc ) {
             final MutableAlg input = toMutable( calc.getInput() );
             return MutableCalc.of( input, calc.getProgram() );
         }
-        if ( alg instanceof Exchange ) {
-            final Exchange exchange = (Exchange) alg;
+        if ( alg instanceof Exchange exchange ) {
             final MutableAlg input = toMutable( exchange.getInput() );
             return MutableExchange.of( input, exchange.getDistribution() );
         }
-        if ( alg instanceof Collect ) {
-            final Collect collect = (Collect) alg;
+        if ( alg instanceof Collect collect ) {
             final MutableAlg input = toMutable( collect.getInput() );
             return MutableCollect.of( collect.getTupleType(), input, collect.getFieldName() );
         }
-        if ( alg instanceof Uncollect ) {
-            final Uncollect uncollect = (Uncollect) alg;
+        if ( alg instanceof Uncollect uncollect ) {
             final MutableAlg input = toMutable( uncollect.getInput() );
             return MutableUncollect.of( uncollect.getTupleType(), input, uncollect.withOrdinality );
         }
-        if ( alg instanceof Window ) {
-            final Window window = (Window) alg;
+        if ( alg instanceof Window window ) {
             final MutableAlg input = toMutable( window.getInput() );
             return MutableWindow.of( window.getTupleType(), input, window.groups, window.getConstants() );
         }
-        if ( alg instanceof RelModify ) {
-            final RelModify modify = (RelModify) alg;
+        if ( alg instanceof RelModify modify ) {
             final MutableAlg input = toMutable( modify.getInput() );
             return MutableTableModify.of(
                     modify.getTupleType(),
@@ -385,13 +376,11 @@ public abstract class MutableAlgs {
                     modify.getSourceExpressions(),
                     modify.isFlattened() );
         }
-        if ( alg instanceof Sample ) {
-            final Sample sample = (Sample) alg;
+        if ( alg instanceof Sample sample ) {
             final MutableAlg input = toMutable( sample.getInput() );
             return MutableSample.of( input, sample.getSamplingParameters() );
         }
-        if ( alg instanceof RelTableFunctionScan ) {
-            final RelTableFunctionScan relTableFunctionScan = (RelTableFunctionScan) alg;
+        if ( alg instanceof RelTableFunctionScan relTableFunctionScan ) {
             final List<MutableAlg> inputs = toMutables( relTableFunctionScan.getInputs() );
             return MutableTableFunctionScan.of(
                     relTableFunctionScan.getCluster(),
@@ -402,8 +391,7 @@ public abstract class MutableAlgs {
                     relTableFunctionScan.getColumnMappings() );
         }
         // It is necessary that SemiJoin is placed in front of Join here, since SemiJoin is a sub-class of Join.
-        if ( alg instanceof SemiJoin ) {
-            final SemiJoin semiJoin = (SemiJoin) alg;
+        if ( alg instanceof SemiJoin semiJoin ) {
             final MutableAlg left = toMutable( semiJoin.getLeft() );
             final MutableAlg right = toMutable( semiJoin.getRight() );
             return MutableSemiJoin.of(
@@ -413,8 +401,7 @@ public abstract class MutableAlgs {
                     semiJoin.getLeftKeys(),
                     semiJoin.getRightKeys() );
         }
-        if ( alg instanceof Join ) {
-            final Join join = (Join) alg;
+        if ( alg instanceof Join join ) {
             final MutableAlg left = toMutable( join.getLeft() );
             final MutableAlg right = toMutable( join.getRight() );
             return MutableJoin.of(
@@ -425,8 +412,7 @@ public abstract class MutableAlgs {
                     join.getJoinType(),
                     join.getVariablesSet() );
         }
-        if ( alg instanceof Correlate ) {
-            final Correlate correlate = (Correlate) alg;
+        if ( alg instanceof Correlate correlate ) {
             final MutableAlg left = toMutable( correlate.getLeft() );
             final MutableAlg right = toMutable( correlate.getRight() );
             return MutableCorrelate.of(
@@ -437,22 +423,19 @@ public abstract class MutableAlgs {
                     correlate.getRequiredColumns(),
                     correlate.getJoinType() );
         }
-        if ( alg instanceof Union ) {
-            final Union union = (Union) alg;
+        if ( alg instanceof Union union ) {
             final List<MutableAlg> inputs = toMutables( union.getInputs() );
             return MutableUnion.of( union.getTupleType(), inputs, union.all );
         }
-        if ( alg instanceof Minus ) {
-            final Minus minus = (Minus) alg;
+        if ( alg instanceof Minus minus ) {
             final List<MutableAlg> inputs = toMutables( minus.getInputs() );
             return MutableMinus.of( minus.getTupleType(), inputs, minus.all );
         }
-        if ( alg instanceof Intersect ) {
-            final Intersect intersect = (Intersect) alg;
+        if ( alg instanceof Intersect intersect ) {
             final List<MutableAlg> inputs = toMutables( intersect.getInputs() );
             return MutableIntersect.of( intersect.getTupleType(), inputs, intersect.all );
         }
-        throw new RuntimeException( "cannot translate " + alg + " to MutableRel" );
+        throw new GenericRuntimeException( "cannot translate " + alg + " to MutableAlg" );
     }
 
 

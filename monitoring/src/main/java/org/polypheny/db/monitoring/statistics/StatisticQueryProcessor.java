@@ -42,10 +42,10 @@ import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.entity.PolyValue;
 
 
+@Getter
 @Slf4j
 public class StatisticQueryProcessor {
 
-    @Getter
     private final TransactionManager transactionManager;
 
 
@@ -83,7 +83,7 @@ public class StatisticQueryProcessor {
      * @return all the columns
      */
     public List<QueryResult> getAllColumns() {
-        Snapshot snapshot = Catalog.getInstance().getSnapshot();
+        Snapshot snapshot = Catalog.snapshot();
         return snapshot.getNamespaces( null )
                 .stream()
                 .filter( n -> n.dataModel == DataModel.RELATIONAL )
@@ -99,7 +99,7 @@ public class StatisticQueryProcessor {
      * @return all the tables ids
      */
     public List<LogicalTable> getAllRelEntites() {
-        Snapshot snapshot = Catalog.getInstance().getSnapshot();
+        Snapshot snapshot = Catalog.snapshot();
         return snapshot.getNamespaces( null ).stream().filter( n -> n.dataModel == DataModel.RELATIONAL )
                 .flatMap( n -> snapshot.rel().getTables( Pattern.of( n.name ), null ).stream().filter( t -> t.entityType != EntityType.VIEW ) ).collect( Collectors.toList() );
     }
@@ -111,7 +111,7 @@ public class StatisticQueryProcessor {
      * @return all columns
      */
     public List<QueryResult> getAllColumns( Long tableId ) {
-        Snapshot snapshot = Catalog.getInstance().getSnapshot();
+        Snapshot snapshot = Catalog.snapshot();
         return snapshot.getNamespaces( null ).stream().flatMap( n -> snapshot.rel().getColumns( tableId ).stream() ).map( QueryResult::fromCatalogColumn ).collect( Collectors.toList() );
     }
 

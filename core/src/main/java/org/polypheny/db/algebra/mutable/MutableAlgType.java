@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,9 +35,9 @@ package org.polypheny.db.algebra.mutable;
 
 
 /**
- * Type of {@code MutableRel}.
+ * Type of {@link MutableAlg}.
  */
-enum MutableAlgType {
+public enum MutableAlgType {
     AGGREGATE,
     CALC,
     COLLECT,
@@ -60,4 +60,3 @@ enum MutableAlgType {
     WINDOW,
     HOLDER
 }
-

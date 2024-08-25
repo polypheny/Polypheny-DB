@@ -150,7 +150,6 @@ public class CottontailTableModify extends RelModify<CottontailEntity> implement
         NewExpression valuesMapCreator_ = Expressions.new_( LinkedHashMap.class );
         inner.add( Expressions.declare( Modifier.FINAL, valuesMap_, valuesMapCreator_ ) );
 
-
         for ( int i = 0; i < getSourceExpressions().size(); i++ ) {
             RexNode rexNode = getSourceExpressions().get( i );
             final String logicalName = getUpdateColumns().get( i );

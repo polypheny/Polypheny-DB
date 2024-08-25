@@ -38,10 +38,10 @@ import org.polypheny.prism.StatementResult;
 @Getter
 public class PIPreparedIndexedStatement extends PIPreparedStatement {
 
-    protected String query;
-    protected Statement statement;
+    private final String query;
+    private Statement statement;
     @Setter
-    protected PolyImplementation implementation;
+    private PolyImplementation implementation;
 
 
     public PIPreparedIndexedStatement(
@@ -71,7 +71,7 @@ public class PIPreparedIndexedStatement extends PIPreparedStatement {
         }
         StatementProcessor.implement( this );
         updateCounts.add( StatementProcessor.executeAndGetResult( this ).getScalar() );
-        //}
+
         return updateCounts;
     }
 
@@ -164,7 +164,9 @@ public class PIPreparedIndexedStatement extends PIPreparedStatement {
 
     @Override
     public void close() {
-        statement.close();
+        if ( statement != null ) {
+            statement.close();
+        }
         closeResults();
     }
 

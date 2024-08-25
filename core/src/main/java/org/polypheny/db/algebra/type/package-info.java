@@ -1,4 +1,3 @@
-
 /**
  * Defines a type system for relational expressions.
  */

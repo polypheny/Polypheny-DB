@@ -52,6 +52,4 @@ public class CottontailPlugin extends PolyPlugin {
     }
 
 
-
-
 }

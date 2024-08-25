@@ -1002,7 +1002,6 @@ public class MqlToAlgConverter {
 
         Map<String, RexNode> nameNodes = new HashMap<>();
 
-
         for ( Entry<String, BsonValue> entry : value.asDocument().entrySet() ) {
             if ( entry.getKey().equals( "_id" ) ) {
                 if ( entry.getValue().isNull() ) {

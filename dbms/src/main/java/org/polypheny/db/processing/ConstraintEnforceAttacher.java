@@ -131,7 +131,7 @@ public class ConstraintEnforceAttacher {
             throw new GenericRuntimeException( "The tree did no conform, while generating the constraint enforcement query!" );
         }
 
-        statement.getTransaction().getLogicalTables().add( modify.entity.unwrap( LogicalTable.class ).orElseThrow() );
+        statement.getTransaction().addUsedTable( modify.entity.unwrap( LogicalTable.class ).orElseThrow() );
     }
 
 
@@ -643,7 +643,7 @@ public class ConstraintEnforceAttacher {
                             .getSnapshot()
                             .getNamespaces( null )
                             .stream()
-                            .flatMap( n -> Catalog.getInstance().getSnapshot().rel().getTables( n.id, null ).stream() )
+                            .flatMap( n -> Catalog.snapshot().rel().getTables( n.id, null ).stream() )
                             .filter( t -> t.entityType == EntityType.ENTITY && t.getDataModel() == DataModel.RELATIONAL )
                             .toList();
                     Transaction transaction = this.manager.startTransaction( Catalog.defaultUserId, false, "ConstraintEnforcement" );

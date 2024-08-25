@@ -66,4 +66,5 @@ abstract class SqlDropObject extends SqlDrop implements ExecutableStatement {
         }
         name.unparse( writer, leftPrec, rightPrec );
     }
+
 }

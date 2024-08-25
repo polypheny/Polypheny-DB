@@ -55,7 +55,7 @@ public class Permutation implements Mapping, TargetMapping {
 
     /**
      * Creates a permutation of a given size.
-     *
+     * <p>
      * It is initialized to the identity permutation, such as "[0, 1, 2, 3]".
      *
      * @param size Number of elements in the permutation
@@ -142,7 +142,7 @@ public class Permutation implements Mapping, TargetMapping {
 
     /**
      * Returns a string representation of this permutation.
-     *
+     * <p>
      * For example, the mapping
      *
      * <table>
@@ -187,9 +187,9 @@ public class Permutation implements Mapping, TargetMapping {
 
     /**
      * Maps source position to target position.
-     *
+     * <p>
      * To preserve the 1:1 nature of the permutation, the previous target of source becomes the new target of the previous source.
-     *
+     * <p>
      * For example, given the permutation
      *
      * <pre>[3, 2, 0, 1]</pre>
@@ -219,9 +219,9 @@ public class Permutation implements Mapping, TargetMapping {
 
     /**
      * Maps source position to target position, automatically resizing if source or target is out of bounds.
-     *
+     * <p>
      * To preserve the 1:1 nature of the permutation, the previous target of source becomes the new target of the previous source.
-     *
+     * <p>
      * For example, given the permutation
      *
      * <blockquote><pre>[3, 2, 0, 1]</pre></blockquote>
@@ -275,7 +275,7 @@ public class Permutation implements Mapping, TargetMapping {
 
     /**
      * Inserts into the targets.
-     *
+     * <p>
      * For example, consider the permutation
      *
      * <table border="1">
@@ -342,7 +342,7 @@ public class Permutation implements Mapping, TargetMapping {
 
     /**
      * Inserts into the sources.
-     *
+     * <p>
      * Behavior is analogous to {@link #insertTarget(int)}.
      *
      * @param x Ordinal of position to add to source
@@ -573,7 +573,7 @@ public class Permutation implements Mapping, TargetMapping {
 
     /**
      * Returns the product of this Permutation with a given Permutation. Does not modify this Permutation or <code>permutation</code>.
-     *
+     * <p>
      * For example, perm.product(perm.inverse()) yields the identity.
      */
     public Permutation product( Permutation permutation ) {

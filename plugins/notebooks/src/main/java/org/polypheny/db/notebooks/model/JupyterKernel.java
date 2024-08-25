@@ -16,13 +16,15 @@
 
 package org.polypheny.db.notebooks.model;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.WebSocket;
+import java.net.http.WebSocket.Builder;
 import java.net.http.WebSocket.Listener;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -39,6 +41,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jetty.websocket.api.Session;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.notebooks.model.language.JupyterKernelLanguage;
 import org.polypheny.db.notebooks.model.language.JupyterKernelLanguage.JupyterQueryPart;
@@ -64,11 +67,12 @@ public class JupyterKernel {
     private final WebSocket webSocket;
     private final Set<Session> subscribers = new HashSet<>();
     private final Gson gson = new Gson();
-    private final Gson resultSetGson;
     private final JsonObject statusMsg;
     private boolean isRestarting = false;
     private final Map<String, ActivePolyCell> activePolyCells = new ConcurrentHashMap<>();
     private final JupyterSessionManager jsm = JupyterSessionManager.getInstance();
+
+    private final ObjectMapper mapper = new ObjectMapper();
 
 
     /**
@@ -79,7 +83,7 @@ public class JupyterKernel {
      * @param builder the Websocket.Builder used to open the websocket
      * @param host the address of the Docker container running the jupyter server
      */
-    public JupyterKernel( String kernelId, String name, WebSocket.Builder builder, String host ) {
+    public JupyterKernel( String kernelId, String name, Builder builder, String host ) {
         this.kernelId = kernelId;
         this.name = name;
         this.clientId = UUID.randomUUID().toString();
@@ -97,9 +101,6 @@ public class JupyterKernel {
         content.addProperty( "execution_state", "starting" );
         this.statusMsg.add( "content", content );
         sendInitCode();
-
-        GsonBuilder gsonBuilder = new GsonBuilder();
-        resultSetGson = gsonBuilder.create();
     }
 
 
@@ -215,9 +216,13 @@ public class JupyterKernel {
      * @param expandParams whether to expand variables specified in the form ${varname}
      */
     public void executePolyCell(
-            String query, String uuid, String language, String namespace,
-            String variable, boolean expandParams ) {
-        if ( query.strip().isEmpty() ) {
+            String query,
+            String uuid,
+            String language,
+            String namespace,
+            String variable,
+            boolean expandParams ) {
+        if ( query.isBlank() ) {
             execute( "", uuid ); // properly terminates the request
             return;
         }
@@ -257,7 +262,11 @@ public class JupyterKernel {
                         .origin( "Notebooks" )
                         .transactionManager( jsm.getTransactionManager() )
                         .build(), queryRequest );
-        return resultSetGson.toJson( results );
+        try {
+            return mapper.writeValueAsString( results );
+        } catch ( JsonProcessingException e ) {
+            throw new GenericRuntimeException( e );
+        }
     }
 
 
@@ -384,14 +393,14 @@ public class JupyterKernel {
     }
 
 
-    private class WebSocketClient implements WebSocket.Listener {
+    private class WebSocketClient implements Listener {
 
         private final StringBuilder textBuilder = new StringBuilder();
 
 
         @Override
         public void onOpen( WebSocket webSocket ) {
-            WebSocket.Listener.super.onOpen( webSocket );
+            Listener.super.onOpen( webSocket );
         }
 
 
@@ -402,7 +411,7 @@ public class JupyterKernel {
                 handleText( textBuilder.toString() );
                 textBuilder.setLength( 0 );
             }
-            return WebSocket.Listener.super.onText( webSocket, data, last );
+            return Listener.super.onText( webSocket, data, last );
         }
 
 
@@ -427,16 +436,7 @@ public class JupyterKernel {
     /**
      * Represents a query cell that is currently being executed.
      */
-    private static class ActivePolyCell {
-
-        @Getter
-        private final String language, namespace;
-
-
-        public ActivePolyCell( String language, String namespace ) {
-            this.language = language;
-            this.namespace = namespace;
-        }
+    private record ActivePolyCell( @Getter String language, @Getter String namespace ) {
 
     }
 

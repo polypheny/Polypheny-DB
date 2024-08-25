@@ -91,6 +91,7 @@ import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.util.Pair;
+import org.polypheny.db.webui.models.catalog.FieldDefinition;
 
 
 @Slf4j
@@ -323,7 +324,7 @@ public class DataMigratorImpl implements DataMigrator {
             for ( AllocationColumn column : selectedColumns ) {
                 int i = 0;
                 for ( AlgDataTypeField metaData : implementation.getTupleType().getFields() ) {
-                    if ( metaData.getName().equalsIgnoreCase( column.getLogicalColumnName() ) ) {
+                    if ( FieldDefinition.normalizeViewColumnName( metaData.getName() ).equalsIgnoreCase( column.getLogicalColumnName() ) ) {
                         resultColMapping.put( column.getColumnId(), i );
                     }
                     i++;
@@ -408,7 +409,7 @@ public class DataMigratorImpl implements DataMigrator {
         List<String> columnNames = new LinkedList<>();
         List<RexNode> values = new ArrayList<>();
         for ( AllocationColumn ccp : to ) {
-            LogicalColumn logicalColumn = Catalog.getInstance().getSnapshot().rel().getColumn( ccp.columnId ).orElseThrow();
+            LogicalColumn logicalColumn = Catalog.snapshot().rel().getColumn( ccp.columnId ).orElseThrow();
             columnNames.add( ccp.getLogicalColumnName() );
             values.add( new RexDynamicParam( logicalColumn.getAlgDataType( typeFactory ), (int) logicalColumn.id ) );
         }
@@ -420,7 +421,6 @@ public class DataMigratorImpl implements DataMigrator {
             builder.push( LogicalRelValues.createOneRow( cluster ) );
             builder.project( values, columnNames );
         }
-
 
         AlgNode node = LogicalRelModify.create( allocation, builder.build(), Modify.Operation.DELETE, null, null, false );
 
@@ -440,10 +440,10 @@ public class DataMigratorImpl implements DataMigrator {
         // this often leads to errors, and can be prevented by sorting
         List<AllocationColumn> placements = to.stream().sorted( Comparator.comparingLong( p -> p.columnId ) ).toList();
 
-        List<String> columnNames = new LinkedList<>();
-        List<RexNode> values = new LinkedList<>();
+        List<String> columnNames = new ArrayList<>();
+        List<RexNode> values = new ArrayList<>();
         for ( AllocationColumn ccp : placements ) {
-            LogicalColumn logicalColumn = Catalog.getInstance().getSnapshot().rel().getColumn( ccp.columnId ).orElseThrow();
+            LogicalColumn logicalColumn = Catalog.snapshot().rel().getColumn( ccp.columnId ).orElseThrow();
             columnNames.add( ccp.getLogicalColumnName() );
             values.add( new RexDynamicParam( logicalColumn.getAlgDataType( typeFactory ), (int) logicalColumn.id ) );
         }
@@ -469,11 +469,11 @@ public class DataMigratorImpl implements DataMigrator {
 
         // build condition
         RexNode condition = null;
-        LogicalRelSnapshot snapshot = Catalog.getInstance().getSnapshot().rel();
+        LogicalRelSnapshot snapshot = Catalog.snapshot().rel();
         LogicalTable catalogTable = snapshot.getTable( to.get( 0 ).logicalTableId ).orElseThrow();
         LogicalPrimaryKey primaryKey = snapshot.getPrimaryKey( catalogTable.primaryKey ).orElseThrow();
         for ( long cid : primaryKey.fieldIds ) {
-            AllocationColumn ccp = Catalog.getInstance().getSnapshot().alloc().getColumn( to.get( 0 ).placementId, cid ).orElseThrow();
+            AllocationColumn ccp = Catalog.snapshot().alloc().getColumn( to.get( 0 ).placementId, cid ).orElseThrow();
             LogicalColumn logicalColumn = snapshot.getColumn( cid ).orElseThrow();
             RexNode c = builder.equals(
                     builder.field( ccp.getLogicalColumnName() ),
@@ -535,7 +535,7 @@ public class DataMigratorImpl implements DataMigrator {
         if ( targetTables.stream().anyMatch( t -> t.logicalId != sourceTables.get( 0 ).logicalId ) ) {
             throw new GenericRuntimeException( "Unsupported migration scenario. Table ID mismatch" );
         }
-        Snapshot snapshot = Catalog.getInstance().getSnapshot();
+        Snapshot snapshot = Catalog.snapshot();
 
         // Add partition columns to select column list
         long partitionColumnId = targetProperty.partitionColumnId;
@@ -658,7 +658,7 @@ public class DataMigratorImpl implements DataMigrator {
     }
 
 
-    private record Source(Statement sourceStatement, AlgRoot sourceAlg) {
+    private record Source( Statement sourceStatement, AlgRoot sourceAlg ) {
 
     }
 

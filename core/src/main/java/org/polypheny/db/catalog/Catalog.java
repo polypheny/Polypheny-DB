@@ -32,7 +32,7 @@ import org.jetbrains.annotations.Nullable;
 import org.pf4j.ExtensionPoint;
 import org.polypheny.db.adapter.AbstractAdapterSetting;
 import org.polypheny.db.adapter.Adapter;
-import org.polypheny.db.adapter.AdapterManager.Function4;
+import org.polypheny.db.adapter.AdapterManager.Function5;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.java.AdapterTemplate;
 import org.polypheny.db.catalog.catalogs.AdapterCatalog;
@@ -109,6 +109,8 @@ public abstract class Catalog implements ExtensionPoint {
 
     public abstract void change();
 
+    public abstract String getJson();
+
     public abstract void executeCommitActions();
 
     public abstract void clearCommitActions();
@@ -132,7 +134,7 @@ public abstract class Catalog implements ExtensionPoint {
 
     public abstract AllocationGraphCatalog getAllocGraph( long namespaceId );
 
-    public abstract <S extends AdapterCatalog> Optional<S> getAdapterCatalog( long id );
+    public abstract Optional<AdapterCatalog> getAdapterCatalog( long id );
 
     public abstract void addStoreSnapshot( AdapterCatalog snapshot );
 
@@ -239,7 +241,7 @@ public abstract class Catalog implements ExtensionPoint {
      */
     public abstract void dropQueryInterface( long id );
 
-    public abstract long createAdapterTemplate( Class<? extends Adapter<?>> clazz, String adapterName, String description, List<DeployMode> modes, List<AbstractAdapterSetting> settings, Function4<Long, String, Map<String, String>, Adapter<?>> deployer );
+    public abstract long createAdapterTemplate( Class<? extends Adapter<?>> clazz, String adapterName, String description, List<DeployMode> modes, List<AbstractAdapterSetting> settings, Function5<Long, String, Map<String, String>, DeployMode, Adapter<?>> deployer );
 
 
     public abstract void createInterfaceTemplate( String name, QueryInterfaceTemplate queryInterfaceTemplate );
@@ -256,11 +258,6 @@ public abstract class Catalog implements ExtensionPoint {
 
 
     public abstract Snapshot getSnapshot();
-
-
-    public Snapshot getSnapshot( long id ) {
-        return snapshot();
-    }
 
 
     public static Snapshot snapshot() {

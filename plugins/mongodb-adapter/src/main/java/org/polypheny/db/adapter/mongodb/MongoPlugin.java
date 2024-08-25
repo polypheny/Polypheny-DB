@@ -55,6 +55,7 @@ import org.polypheny.db.algebra.core.document.DocumentModify;
 import org.polypheny.db.catalog.catalogs.DocAdapterCatalog;
 import org.polypheny.db.catalog.entity.LogicalDefaultValue;
 import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
+import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
@@ -139,8 +140,8 @@ public class MongoPlugin extends PolyPlugin {
         private final List<PolyType> unsupportedTypes = ImmutableList.of();
 
 
-        public MongoStore( final long adapterId, final String uniqueName, final Map<String, String> settings ) {
-            super( adapterId, uniqueName, settings, true, new DocAdapterCatalog( adapterId ) );
+        public MongoStore( final long adapterId, final String uniqueName, final Map<String, String> settings, final DeployMode mode ) {
+            super( adapterId, uniqueName, settings, mode, true, new DocAdapterCatalog( adapterId ) );
 
             if ( deployMode == DeployMode.DOCKER ) {
                 if ( settings.getOrDefault( "deploymentId", "" ).isEmpty() ) {
@@ -419,6 +420,28 @@ public class MongoPlugin extends PolyPlugin {
         }
 
 
+        public void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities, Context context ) {
+            for ( PhysicalEntity entity : entities ) {
+                updateNamespace( entity.namespaceName, entity.namespaceId );
+                adapterCatalog.addPhysical( alloc, currentNamespace.createEntity( entity, entity.unwrap( PhysicalTable.class ).orElseThrow().columns ) );
+            }
+        }
+
+
+        public void restoreGraph( AllocationGraph alloc, List<PhysicalEntity> entities, Context context ) {
+            // entities do already exist
+            adapterCatalog.addPhysical( alloc, entities.toArray( new PhysicalEntity[]{} ) );
+        }
+
+
+        public void restoreCollection( AllocationCollection alloc, List<PhysicalEntity> entities, Context context ) {
+            for ( PhysicalEntity entity : entities ) {
+                updateNamespace( entity.namespaceName, entity.namespaceId );
+                adapterCatalog.addPhysical( alloc, currentNamespace.createEntity( entity, List.of() ) );
+            }
+        }
+
+
         @Override
         public String addIndex( Context context, LogicalIndex index, AllocationTable allocation ) {
             commitAll();
@@ -677,7 +700,13 @@ public class MongoPlugin extends PolyPlugin {
 
         void dropIndex( Context context, LogicalIndex index, long allocId );
 
-        public void renameLogicalColumn( long id, String newColumnName );
+        void renameLogicalColumn( long id, String newColumnName );
+
+        void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities, Context context );
+
+        void restoreGraph( AllocationGraph alloc, List<PhysicalEntity> entities, Context context );
+
+        void restoreCollection( AllocationCollection alloc, List<PhysicalEntity> entities, Context context );
 
     }
 

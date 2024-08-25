@@ -29,8 +29,6 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.NoSuchElementException;
-import org.apache.calcite.avatica.util.Casing;
-import org.apache.calcite.avatica.util.Quoting;
 import org.polypheny.db.algebra.constant.ConformanceEnum;
 import org.polypheny.db.algebra.constant.Lex;
 import org.polypheny.db.algebra.constant.Monotonicity;
@@ -58,8 +56,10 @@ import org.polypheny.db.sql.language.utils.SqlValidatorTestCase.Tester;
 import org.polypheny.db.sql.language.validate.SqlValidator;
 import org.polypheny.db.sql.language.validate.SqlValidatorNamespace;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.util.Casing;
 import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.Quoting;
 import org.polypheny.db.util.Util;
 
 
@@ -250,12 +250,9 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
             conformance = ConformanceEnum.DEFAULT;
         }
         final SqlTester tester = with( "conformance", conformance );
-        // TODO MV: Fix
-//        if ( conformance instanceof SqlConformanceEnum ) {
-//            return tester.withConnectionFactory( PolyphenyDbAssert.EMPTY_CONNECTION_FACTORY.with( PolyphenyDbConnectionProperty.CONFORMANCE, conformance ) );
-//        } else {
+
         return tester;
-//        }
+
     }
 
 
@@ -263,13 +260,6 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
     public SqlTester withOperatorTable( OperatorTable operatorTable ) {
         return with( "operatorTable", operatorTable );
     }
-
-
-    /*
-    @Override
-    public SqlTester withConnectionFactory( PolyphenyDbAssert.ConnectionFactory connectionFactory ) {
-        return with( "connectionFactory", connectionFactory );
-    } */
 
 
     protected final SqlTester with( final String name, final Object value ) {
@@ -540,7 +530,7 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
         if ( values.isEmpty() ) {
             values.add( Pair.of( "1", "p0" ) );
         }
-        return "select " + sql2.substring( "values (".length(), sql2.length() - 1 ) + " from (values (" + Util.commaList( Pair.left( values ) ) + ")) as t(" + Util.commaList( Pair.right( values ) ) + ")";
+        return "select " + sql2.substring( "values (".length(), sql2.length() - 1 ) + " from (values (" + String.join( ", ", Pair.left( values ) ) + ")) as t(" + String.join( ", ", Pair.right( values ) ) + ")";
     }
 
 

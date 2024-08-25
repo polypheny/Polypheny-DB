@@ -59,28 +59,5 @@ public class CancelFlag {
     }
 
 
-    /**
-     * @return whether a cancellation has been requested
-     */
-    public boolean isCancelRequested() {
-        return atomicBoolean.get();
-    }
-
-
-    /**
-     * Requests a cancellation.
-     */
-    public void requestCancel() {
-        atomicBoolean.compareAndSet( false, true );
-    }
-
-
-    /**
-     * Clears any pending cancellation request.
-     */
-    public void clearCancel() {
-        atomicBoolean.compareAndSet( true, false );
-    }
-
 }
 

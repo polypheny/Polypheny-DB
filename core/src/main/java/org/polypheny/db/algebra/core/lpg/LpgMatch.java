@@ -18,7 +18,6 @@ package org.polypheny.db.algebra.core.lpg;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.SingleAlg;
@@ -85,12 +84,12 @@ public abstract class LpgMatch extends SingleAlg implements LpgAlg {
 
     @Override
     public AlgNode accept( RexShuttle shuttle ) {
-        List<RexNode> exp = this.matches.stream().map( m -> (RexNode) m ).collect( Collectors.toList() );
+        List<RexNode> exp = this.matches.stream().map( m -> (RexNode) m ).toList();
         List<RexNode> exps = shuttle.apply( exp );
         if ( exp == exps ) {
             return this;
         }
-        return new LogicalLpgMatch( getCluster(), traitSet, input, exps.stream().map( e -> (RexCall) e ).collect( Collectors.toList() ), names );
+        return new LogicalLpgMatch( getCluster(), traitSet, input, exps.stream().map( e -> (RexCall) e ).toList(), names );
     }
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,16 +38,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
-import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.interpreter.BindableConvention;
-import org.polypheny.db.prepare.PolyphenyDbPrepare.Query;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.util.Holder;
 
 
 /**
  * Collection of hooks that can be set by observers and are executed at various parts of the query preparation process.
- *
+ * <p>
  * For testing and debugging rather than for end-users.
  */
 public enum Hook {
@@ -68,41 +65,9 @@ public enum Hook {
     REL_BUILDER_SIMPLIFY,
 
     /**
-     * Returns a boolean value, whether the return convention should be {@link BindableConvention}.
-     * Default false.
-     */
-    ENABLE_BINDABLE,
-
-    /**
-     * Called with the SQL string and parse tree, in an array.
-     */
-    PARSE_TREE,
-
-    /**
-     * Converts a SQL string to a {@link Query} object. This hook is an opportunity to execute a {@link AlgNode} query
-     * plan in the JDBC driver rather than the usual SQL string.
-     */
-    STRING_TO_QUERY,
-
-    /**
      * Called with the generated Java plan, just before it is compiled by Janino.
      */
     JAVA_PLAN,
-
-    /**
-     * Called with the output of sql-to-rel-converter.
-     */
-    CONVERTED,
-
-    /**
-     * Called with the created planner.
-     */
-    PLANNER,
-
-    /**
-     * Called after de-correlation and field trimming, but before optimization.
-     */
-    TRIMMED,
 
     /**
      * Called when a constant expression is being reduced.
@@ -127,7 +92,7 @@ public enum Hook {
 
     /**
      * Adds a handler for this Hook.
-     *
+     * <p>
      * Returns a {@link Hook.Closeable} so that you can use the following try-finally pattern to prevent leaks:
      *
      * <blockquote><pre>
@@ -223,4 +188,3 @@ public enum Hook {
 
     }
 }
-

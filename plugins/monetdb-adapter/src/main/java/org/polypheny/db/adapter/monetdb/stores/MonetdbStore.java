@@ -78,8 +78,8 @@ public class MonetdbStore extends AbstractJdbcStore {
     private DockerContainer container;
 
 
-    public MonetdbStore( final long storeId, final String uniqueName, final Map<String, String> settings ) {
-        super( storeId, uniqueName, settings, MonetdbSqlDialect.DEFAULT, true );
+    public MonetdbStore( final long storeId, final String uniqueName, final Map<String, String> settings, final DeployMode mode ) {
+        super( storeId, uniqueName, settings, mode, MonetdbSqlDialect.DEFAULT, true );
     }
 
 
@@ -313,7 +313,7 @@ public class MonetdbStore extends AbstractJdbcStore {
             case DOUBLE -> "DOUBLE";
             case DECIMAL -> "DECIMAL";
             case VARCHAR -> "VARCHAR";
-            case JSON, ARRAY, TEXT -> "TEXT";
+            case JSON, ARRAY, TEXT, GEOMETRY -> "TEXT";
             case DATE -> "DATE";
             case TIME -> "TIME";
             case TIMESTAMP -> "TIMESTAMP";

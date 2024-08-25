@@ -111,7 +111,6 @@ public class VolcanoQueryProcessor extends AbstractQueryProcessor {
                     EnumerableRules.ENUMERABLE_DOCUMENT_VALUES_RULE,
                     EnumerableRules.ENUMERABLE_WINDOW_RULE,
                     EnumerableRules.ENUMERABLE_TABLE_SCAN_RULE,
-                    EnumerableRules.ENUMERABLE_TABLE_FUNCTION_SCAN_RULE,
                     EnumerableRules.ENUMERABLE_TRANSFORMER_RULE,
                     EnumerableRules.ENUMERABLE_GRAPH_MATCH_RULE,
                     EnumerableRules.ENUMERABLE_UNWIND_RULE,
@@ -168,7 +167,7 @@ public class VolcanoQueryProcessor extends AbstractQueryProcessor {
 
     public VolcanoQueryProcessor( Statement statement ) {
         super( statement );
-        planner = new VolcanoPlanner( VolcanoCost.FACTORY, Contexts.of( statement.getPrepareContext().config() ) );
+        planner = new VolcanoPlanner( VolcanoCost.FACTORY, Contexts.empty() );
         planner.addAlgTraitDef( ConventionTraitDef.INSTANCE );
         if ( ENABLE_COLLATION_TRAIT ) {
             planner.addAlgTraitDef( AlgCollationTraitDef.INSTANCE );
@@ -190,6 +189,11 @@ public class VolcanoQueryProcessor extends AbstractQueryProcessor {
             }
         }
         planner.addRule( Bindables.BINDABLE_TABLE_SCAN_RULE );
+
+        if ( ENABLE_MODEL_TRAIT ) {
+            planner.addAlgTraitDef( ModelTraitDef.INSTANCE );
+            planner.registerModelRules();
+        }
 
         if ( ENABLE_MODEL_TRAIT ) {
             planner.addAlgTraitDef( ModelTraitDef.INSTANCE );

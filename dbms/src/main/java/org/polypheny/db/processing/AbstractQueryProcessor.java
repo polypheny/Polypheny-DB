@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -36,7 +35,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.Meta.CursorFactory;
 import org.apache.commons.lang3.time.StopWatch;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.PolyImplementation;
@@ -52,6 +50,7 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.AlgStructuredTypeFlattener;
+import org.polypheny.db.algebra.constant.ConformanceEnum;
 import org.polypheny.db.algebra.constant.ExplainFormat;
 import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.constant.Kind;
@@ -78,8 +77,10 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.Entity;
+import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.config.RuntimeConfig;
@@ -138,11 +139,9 @@ import org.polypheny.db.tools.Program;
 import org.polypheny.db.tools.Programs;
 import org.polypheny.db.tools.RoutedAlgBuilder;
 import org.polypheny.db.transaction.EntityAccessMap;
-import org.polypheny.db.transaction.EntityAccessMap.EntityIdentifier;
 import org.polypheny.db.transaction.Lock.LockMode;
 import org.polypheny.db.transaction.LockManager;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.transaction.TransactionImpl;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.type.entity.PolyValue;
@@ -287,11 +286,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         }
 
         if ( isAnalyze ) {
-            statement.getProcessingDuration().start( "Expand Views" );
-        }
-
-        if ( isAnalyze ) {
-            statement.getProcessingDuration().stop( "Expand Views" );
             statement.getProcessingDuration().start( "Parameter Validation" );
         }
 
@@ -311,6 +305,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             if ( isAnalyze ) {
                 statement.getProcessingDuration().start( "Locking" );
             }
+
             if ( lock ) {
                 this.acquireLock( isAnalyze, logicalRoot, logicalQueryInformation.getAccessedPartitions() );
             }
@@ -536,6 +531,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         if ( plans == null ) {
             plans = route( indexLookupRoot, statement, logicalQueryInformation ).stream().map( p -> new Plan().proposedRoutingPlan( p ) ).toList();
         }
+
         return plans;
     }
 
@@ -554,24 +550,17 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
 
     private void acquireLock( boolean isAnalyze, AlgRoot logicalRoot, Map<Long, List<Long>> accessedPartitions ) {
-        // TODO @HENNLO Check if this is this is necessary to pass the partitions explicitly.
-        // This currently only works for queries. Since DMLs are evaluated during routing.
-        // This SHOULD be adjusted
-
         if ( accessedPartitions.isEmpty() ) { // TODO: Does this happen for create table?
             // Do not acquire any locks if nothing is accessed
             return;
         }
         // Locking
         try {
-            Collection<Entry<EntityIdentifier, LockMode>> idAccessMap = new ArrayList<>();
             // Get locks for individual entities
             EntityAccessMap accessMap = new EntityAccessMap( logicalRoot.alg, accessedPartitions );
             // Get a shared global schema lock (only DDLs acquire an exclusive global schema lock)
-            idAccessMap.add( Pair.of( LockManager.GLOBAL_LOCK, LockMode.SHARED ) );
 
-            idAccessMap.addAll( accessMap.getAccessedEntityPair() );
-            LockManager.INSTANCE.lock( idAccessMap, (TransactionImpl) statement.getTransaction() );
+            LockManager.INSTANCE.lock( accessMap.getNeededLock(), statement.getTransaction() );
         } catch ( DeadlockException e ) {
             throw new GenericRuntimeException( e );
         }
@@ -1096,7 +1085,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 enumerable = EnumerableCalc.create( enumerable, program );
             }
 
-            final Conformance conformance = statement.getPrepareContext().config().conformance();
+            final Conformance conformance = ConformanceEnum.DEFAULT;
 
             final Map<String, Object> internalParameters = new LinkedHashMap<>();
             internalParameters.put( "_conformance", conformance );
@@ -1131,7 +1120,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
 
             @Override
-            public Bindable<PolyValue[]> getBindable( CursorFactory cursorFactory ) {
+            public Bindable<PolyValue[]> getBindable() {
                 return bindable;
             }
 
@@ -1185,8 +1174,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         logicalRoot.alg.accept( analyzer );
 
         // Get partitions of logical information
-        Map<Long, Set<String>> partitionValueFilterPerScan = analyzer.getPartitionValueFilterPerScan();
-        Map<Long, List<Long>> accessedPartitions = this.getAccessedPartitionsPerScan( logicalRoot.alg, partitionValueFilterPerScan );
+
+        Map<Long, List<Long>> accessedPartitions = extractPartitions( logicalRoot.alg.getEntities() );
 
         // Build queryClass from query-name and partitions.
         String queryHash = analyzer.getQueryName() + accessedPartitions;
@@ -1206,6 +1195,21 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         MaterializedViewManager.getInstance().notifyModifiedEntities( statement.getTransaction(), queryInformation.allModifiedEntities );
 
         return queryInformation;
+    }
+
+
+    private Map<Long, List<Long>> extractPartitions( Set<Entity> entities ) {
+        Map<Long, List<Long>> map = new HashMap<>();
+        for ( Entity entity : entities ) {
+            if ( entity.isLogical() ) {
+                map.computeIfAbsent( entity.getId(), k -> new ArrayList<>() ).addAll( Catalog.snapshot().alloc().getPartitionsFromLogical( entity.getId() ).stream().map( p -> p.id ).toList() );
+            } else if ( entity.isAllocation() ) {
+                map.computeIfAbsent( ((AllocationEntity) entity).getLogicalId(), k -> new ArrayList<>() ).add( ((AllocationEntity) entity).getPartitionId() );
+            } else if ( entity.isPhysical() ) {
+                map.computeIfAbsent( ((PhysicalEntity) entity).getLogicalId(), k -> new ArrayList<>() ).add( ((PhysicalEntity) entity).getAllocationId() );
+            }
+        }
+        return map;
     }
 
 
@@ -1262,7 +1266,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                                 "TableID: {} is partitioned on column: {} - {}",
                                 table.id,
                                 property.partitionColumnId,
-                                Catalog.getInstance().getSnapshot().rel().getColumn( property.partitionColumnId ).orElseThrow().name );
+                                Catalog.snapshot().rel().getColumn( property.partitionColumnId ).orElseThrow().name );
 
                     }
                     List<Long> identifiedPartitions = new ArrayList<>();
@@ -1479,7 +1483,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
     @Override
     public void unlock( Statement statement ) {
-        LockManager.INSTANCE.unlock( List.of( LockManager.GLOBAL_LOCK ), (TransactionImpl) statement.getTransaction() );
+        LockManager.INSTANCE.unlock( statement.getTransaction() );
     }
 
 
@@ -1490,7 +1494,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     @Override
     public void lock( Statement statement ) {
         try {
-            LockManager.INSTANCE.lock( Collections.singletonList( Pair.of( LockManager.GLOBAL_LOCK, LockMode.SHARED ) ), (TransactionImpl) statement.getTransaction() );
+            LockManager.INSTANCE.lock( LockMode.SHARED, statement.getTransaction() );
         } catch ( DeadlockException e ) {
             throw new GenericRuntimeException( "DeadLock while locking to reevaluate statistics", e );
         }

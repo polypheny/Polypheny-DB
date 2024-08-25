@@ -23,6 +23,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.TreeNode;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -221,6 +222,9 @@ public class PolyDocument extends PolyMap<PolyString, PolyValue> {
     static class PolyDocumentDeserializer extends StdDeserializer<PolyDocument> {
 
 
+        public static final String KEY_VALUE_KEY = "_ps";
+
+
         protected PolyDocumentDeserializer() {
             super( PolyMap.class );
         }
@@ -234,20 +238,18 @@ public class PolyDocument extends PolyMap<PolyString, PolyValue> {
 
         @Override
         public PolyDocument deserialize( JsonParser p, DeserializationContext ctxt ) throws IOException {
-            TreeNode n = JSON_WRAPPER.readTree( p );
+            TreeNode n = p.readValueAsTree();
 
-            Map<PolyString, PolyValue> values = new HashMap<>();
-            ((ArrayNode) n.get( "_ps" )).forEach( e -> {
+            Map<PolyString, PolyValue> values = new HashMap<>( n.size() );
+            for ( JsonNode e : ((ArrayNode) n.get( KEY_VALUE_KEY )) ) {
                 PolyString key = PolyString.of( e.get( 0 ).asText() );
-                PolyValue value = JSON_WRAPPER.convertValue( e.get( 1 ), PolyValue.class );
+                PolyValue value = JSON_WRAPPER.readValue( e.get( 1 ).traverse( p.getCodec() ), PolyValue.class );
                 values.put( key, value );
-            } );
+            }
 
             return PolyDocument.ofDocument( values );
         }
 
-
     }
-
 
 }

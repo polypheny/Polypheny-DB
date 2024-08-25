@@ -35,15 +35,16 @@ package org.polypheny.db.plan;
 
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Streams;
 import java.util.AbstractList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Supplier;
 import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.schema.trait.ModelTraitDef;
-import org.polypheny.db.util.Pair;
 
 
 /**
@@ -341,12 +342,7 @@ public final class AlgTraitSet extends AbstractList<AlgTrait<?>> {
      * @see AlgTrait#satisfies(AlgTrait)
      */
     public boolean satisfies( AlgTraitSet that ) {
-        for ( Pair<AlgTrait<?>, AlgTrait<?>> pair : Pair.zip( traits, that.traits ) ) {
-            if ( !pair.left.satisfies( pair.right ) ) {
-                return false;
-            }
-        }
-        return true;
+        return Streams.zip( Arrays.stream( traits ), Arrays.stream( that.traits ), AlgTrait::satisfies ).allMatch( e -> e );
     }
 
 
@@ -516,16 +512,10 @@ public final class AlgTraitSet extends AbstractList<AlgTrait<?>> {
 
 
     /**
-     * Returns a list of traits that are in {@code traitSet} but not in this RelTraitSet.
+     * Returns a list of traits that are in {@code traitSet} but not in this AlgTraitSet.
      */
     public ImmutableList<AlgTrait<?>> difference( AlgTraitSet traitSet ) {
-        final ImmutableList.Builder<AlgTrait<?>> builder = ImmutableList.builder();
-        for ( Pair<AlgTrait<?>, AlgTrait<?>> pair : Pair.zip( traits, traitSet.traits ) ) {
-            if ( pair.left != pair.right ) {
-                builder.add( pair.right );
-            }
-        }
-        return builder.build();
+        return ImmutableList.copyOf( Streams.zip( Arrays.stream( traits ), Arrays.stream( traitSet.traits ), ( left, right ) -> left != right ? right : null ).filter( Objects::nonNull ).toList() );
     }
 
 

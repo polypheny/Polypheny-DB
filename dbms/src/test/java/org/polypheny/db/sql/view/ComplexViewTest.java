@@ -1636,7 +1636,9 @@ public class ComplexViewTest {
                                 )""";
                     TestHelper.checkResultSet(
                             statement.executeQuery( query ),
-                            ImmutableList.of( q17_TEST_DATA )
+                            ImmutableList.of( q17_TEST_DATA ),
+                            true,
+                            true
                     );
 
                     // @formatter:off
@@ -1645,7 +1647,9 @@ public class ComplexViewTest {
                     //@formatter:on
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM q17_VIEW" ),
-                            ImmutableList.of( q17_TEST_DATA )
+                            ImmutableList.of( q17_TEST_DATA ),
+                            true,
+                            true
                     );
 
                     connection.commit();

@@ -136,5 +136,5 @@ public abstract class AbstractSourceMapping extends Mappings.AbstractMapping imp
 
     @Override
     public abstract int getSourceOpt( int source );
-}
 
+}

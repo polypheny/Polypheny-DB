@@ -75,5 +75,4 @@ public class LogicalMaterializedView extends LogicalView {
         this.ordered = ordered;
     }
 
-
 }

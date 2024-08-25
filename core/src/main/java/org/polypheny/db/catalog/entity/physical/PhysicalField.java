@@ -26,7 +26,6 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
-import org.polypheny.db.type.entity.PolyValue;
 
 @EqualsAndHashCode(callSuper = true)
 @Value
@@ -62,12 +61,6 @@ public abstract class PhysicalField extends Entity {
         this.allocId = allocId;
         this.adapterId = adapterId;
         this.logicalName = logicalName;
-    }
-
-
-    @Override
-    public PolyValue[] getParameterArray() {
-        return new PolyValue[0];
     }
 
 

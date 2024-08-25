@@ -133,7 +133,7 @@ public class ChainedAlgMetadataProvider implements AlgMetadataProvider {
     /**
      * Invocation handler that calls a list of {@link Metadata} objects, returning the first non-null value.
      */
-    private record ChainedInvocationHandler(List<Metadata> metadataList) implements InvocationHandler {
+    private record ChainedInvocationHandler( List<Metadata> metadataList ) implements InvocationHandler {
 
         private ChainedInvocationHandler( List<Metadata> metadataList ) {
             this.metadataList = ImmutableList.copyOf( metadataList );
@@ -162,4 +162,3 @@ public class ChainedAlgMetadataProvider implements AlgMetadataProvider {
     }
 
 }
-

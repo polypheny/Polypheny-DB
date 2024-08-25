@@ -17,20 +17,17 @@
 package org.polypheny.db.catalog.entity;
 
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.io.Serial;
 import java.util.Map;
-import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.Value;
 import lombok.experimental.SuperBuilder;
-import org.polypheny.db.type.entity.PolyString;
-import org.polypheny.db.type.entity.PolyValue;
 
 
-@EqualsAndHashCode
 @Value
 @SuperBuilder(toBuilder = true)
 public class LogicalQueryInterface implements PolyObject {
@@ -39,32 +36,28 @@ public class LogicalQueryInterface implements PolyObject {
     private static final long serialVersionUID = 7212289724539530050L;
 
     @Serialize
+    @JsonProperty
     public long id;
     @Serialize
+    @JsonProperty
     public String name;
     @Serialize
-    public String interfaceName;
+    @JsonProperty
+    public String interfaceType;
     @Serialize
+    @JsonProperty
     public ImmutableMap<String, String> settings;
 
 
     public LogicalQueryInterface(
             @Deserialize("id") final long id,
             @Deserialize("name") @NonNull final String uniqueName,
-            @Deserialize("interfaceName") @NonNull final String interfaceName,
+            @Deserialize("interfaceType") @NonNull final String interfaceType,
             @Deserialize("settings") @NonNull final Map<String, String> settings ) {
         this.id = id;
         this.name = uniqueName;
-        this.interfaceName = interfaceName;
+        this.interfaceType = interfaceType;
         this.settings = ImmutableMap.copyOf( settings );
     }
-
-
-    // Used for creating ResultSets
-    @Override
-    public PolyValue[] getParameterArray() {
-        return new PolyValue[]{ PolyString.of( name ) };
-    }
-
 
 }

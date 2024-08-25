@@ -74,6 +74,7 @@ public class DdlTest extends CypherTestTemplate {
 
     }
 
+
     @Test
     public void addPlacementTest() throws SQLException {
         Catalog catalog = Catalog.getInstance();

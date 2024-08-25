@@ -88,8 +88,8 @@ public class PostgresqlStore extends AbstractJdbcStore {
     private DockerContainer container;
 
 
-    public PostgresqlStore( final long storeId, final String uniqueName, final Map<String, String> settings ) {
-        super( storeId, uniqueName, settings, PostgresqlSqlDialect.DEFAULT, true );
+    public PostgresqlStore( final long storeId, final String uniqueName, final Map<String, String> settings, final DeployMode mode ) {
+        super( storeId, uniqueName, settings, mode, PostgresqlSqlDialect.DEFAULT, true );
     }
 
 
@@ -337,6 +337,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
             case DECIMAL -> "DECIMAL";
             case VARCHAR -> "VARCHAR";
             case JSON, TEXT -> "TEXT";
+            case GEOMETRY -> "GEOMETRY";
             case DATE -> "DATE";
             case TIME -> "TIME";
             case TIMESTAMP -> "TIMESTAMP";

@@ -80,7 +80,6 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.NavigableSet;
 import java.util.Objects;
-import java.util.Properties;
 import java.util.Random;
 import java.util.RandomAccess;
 import java.util.Set;
@@ -89,8 +88,6 @@ import java.util.SortedSet;
 import java.util.TimeZone;
 import java.util.TreeSet;
 import java.util.function.Function;
-import org.apache.calcite.avatica.AvaticaUtils;
-import org.apache.calcite.avatica.util.Spaces;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Linq4j;
@@ -489,33 +486,6 @@ public class UtilTest {
     }
 
 
-    @Test
-    public void testIterableProperties() {
-        Properties properties = new Properties();
-        properties.put( "foo", "george" );
-        properties.put( "bar", "ringo" );
-        StringBuilder sb = new StringBuilder();
-        for ( Map.Entry<String, String> entry : Util.toMap( properties ).entrySet() ) {
-            sb.append( entry.getKey() ).append( "=" ).append( entry.getValue() );
-            sb.append( ";" );
-        }
-        assertEquals( "bar=ringo;foo=george;", sb.toString() );
-
-        assertEquals( 2, Util.toMap( properties ).entrySet().size() );
-
-        properties.put( "nonString", 34 );
-        try {
-            for ( Map.Entry<String, String> e : Util.toMap( properties ).entrySet() ) {
-                String s = e.getValue();
-                Util.discard( s );
-            }
-            fail( "expected exception" );
-        } catch ( ClassCastException e ) {
-            // ok
-        }
-    }
-
-
     /**
      * Tests the {@link Util#toPosix(TimeZone, boolean)} method.
      */
@@ -731,47 +701,6 @@ public class UtilTest {
     }
 
 
-    @Test
-    public void testSpaces() {
-        assertEquals( "", Spaces.of( 0 ) );
-        assertEquals( " ", Spaces.of( 1 ) );
-        assertEquals( " ", Spaces.of( 1 ) );
-        assertEquals( "         ", Spaces.of( 9 ) );
-        assertEquals( "     ", Spaces.of( 5 ) );
-        assertEquals( 1000, Spaces.of( 1000 ).length() );
-    }
-
-
-    @Test
-    public void testSpaceString() {
-        assertThat( Spaces.sequence( 0 ).toString(), equalTo( "" ) );
-        assertThat( Spaces.sequence( 1 ).toString(), equalTo( " " ) );
-        assertThat( Spaces.sequence( 9 ).toString(), equalTo( "         " ) );
-        assertThat( Spaces.sequence( 5 ).toString(), equalTo( "     " ) );
-        String s = new StringBuilder().append( "xx" ).append( Spaces.MAX, 0, 100 ).toString();
-        assertThat( s.length(), equalTo( 102 ) );
-
-        // this would blow memory if the string were materialized... check that it is not
-        assertThat( Spaces.sequence( 1000000000 ).length(), equalTo( 1000000000 ) );
-
-        final StringWriter sw = new StringWriter();
-        Spaces.append( sw, 4 );
-        assertThat( sw.toString(), equalTo( "    " ) );
-
-        final StringBuilder buf = new StringBuilder();
-        Spaces.append( buf, 4 );
-        assertThat( buf.toString(), equalTo( "    " ) );
-
-        assertThat( Spaces.padLeft( "xy", 5 ), equalTo( "   xy" ) );
-        assertThat( Spaces.padLeft( "abcde", 5 ), equalTo( "abcde" ) );
-        assertThat( Spaces.padLeft( "abcdef", 5 ), equalTo( "abcdef" ) );
-
-        assertThat( Spaces.padRight( "xy", 5 ), equalTo( "xy   " ) );
-        assertThat( Spaces.padRight( "abcde", 5 ), equalTo( "abcde" ) );
-        assertThat( Spaces.padRight( "abcdef", 5 ), equalTo( "abcdef" ) );
-    }
-
-
     /**
      * Unit test for {@link Pair#zip(java.util.List, java.util.List)}.
      */
@@ -788,52 +717,6 @@ public class UtilTest {
             x += pair.right;
         }
         assertEquals( 5825, x );
-    }
-
-
-    /**
-     * Unit test for {@link Pair#adjacents(Iterable)}.
-     */
-    @Test
-    public void testPairAdjacents() {
-        List<String> strings = Arrays.asList( "a", "b", "c" );
-        List<String> result = new ArrayList<>();
-        for ( Pair<String, String> pair : Pair.adjacents( strings ) ) {
-            result.add( pair.toString() );
-        }
-        assertThat( result.toString(), equalTo( "[<a, b>, <b, c>]" ) );
-
-        // empty source yields empty result
-        assertThat( Pair.adjacents( ImmutableList.of() ).iterator().hasNext(), is( false ) );
-
-        // source with 1 element yields empty result
-        assertThat( Pair.adjacents( ImmutableList.of( "a" ) ).iterator().hasNext(), is( false ) );
-
-        // source with 100 elements yields result with 99 elements; null elements are ok
-        assertThat( Iterables.size( Pair.adjacents( Collections.nCopies( 100, null ) ) ), equalTo( 99 ) );
-    }
-
-
-    /**
-     * Unit test for {@link Pair#firstAnd(Iterable)}.
-     */
-    @Test
-    public void testPairFirstAnd() {
-        List<String> strings = Arrays.asList( "a", "b", "c" );
-        List<String> result = new ArrayList<>();
-        for ( Pair<String, String> pair : Pair.firstAnd( strings ) ) {
-            result.add( pair.toString() );
-        }
-        assertThat( result.toString(), equalTo( "[<a, b>, <a, c>]" ) );
-
-        // empty source yields empty result
-        assertThat( Pair.firstAnd( ImmutableList.of() ).iterator().hasNext(), is( false ) );
-
-        // source with 1 element yields empty result
-        assertThat( Pair.firstAnd( ImmutableList.of( "a" ) ).iterator().hasNext(), is( false ) );
-
-        // source with 100 elements yields result with 99 elements; null elements are ok
-        assertThat( Iterables.size( Pair.firstAnd( Collections.nCopies( 100, null ) ) ), equalTo( 99 ) );
     }
 
 
@@ -981,42 +864,14 @@ public class UtilTest {
 
 
     /**
-     * Unit test for {@link AvaticaUtils#toCamelCase(String)}.
-     */
-    @Test
-    public void testToCamelCase() {
-        assertEquals( "myJdbcDriver", AvaticaUtils.toCamelCase( "MY_JDBC_DRIVER" ) );
-        assertEquals( "myJdbcDriver", AvaticaUtils.toCamelCase( "MY_JDBC__DRIVER" ) );
-        assertEquals( "myJdbcDriver", AvaticaUtils.toCamelCase( "my_jdbc_driver" ) );
-        assertEquals( "abCdefGHij", AvaticaUtils.toCamelCase( "ab_cdEf_g_Hij" ) );
-        assertEquals( "JdbcDriver", AvaticaUtils.toCamelCase( "_JDBC_DRIVER" ) );
-        assertEquals( "", AvaticaUtils.toCamelCase( "_" ) );
-        assertEquals( "", AvaticaUtils.toCamelCase( "" ) );
-    }
-
-
-    /**
-     * Unit test for {@link AvaticaUtils#camelToUpper(String)}.
-     */
-    @Test
-    public void testCamelToUpper() {
-        assertEquals( "MY_JDBC_DRIVER", AvaticaUtils.camelToUpper( "myJdbcDriver" ) );
-        assertEquals( "MY_J_D_B_C_DRIVER", AvaticaUtils.camelToUpper( "myJDBCDriver" ) );
-        assertEquals( "AB_CDEF_G_HIJ", AvaticaUtils.camelToUpper( "abCdefGHij" ) );
-        assertEquals( "_JDBC_DRIVER", AvaticaUtils.camelToUpper( "JdbcDriver" ) );
-        assertEquals( "", AvaticaUtils.camelToUpper( "" ) );
-    }
-
-
-    /**
      * Unit test for {@link Util#isDistinct(java.util.List)}.
      */
     @Test
     public void testDistinct() {
         assertTrue( Util.isDistinct( Collections.emptyList() ) );
-        assertTrue( Util.isDistinct( Arrays.asList( "a" ) ) );
-        assertTrue( Util.isDistinct( Arrays.asList( "a", "b", "c" ) ) );
-        assertFalse( Util.isDistinct( Arrays.asList( "a", "b", "a" ) ) );
+        assertTrue( Util.isDistinct( List.of( "a" ) ) );
+        assertTrue( Util.isDistinct( List.of( "a", "b", "c" ) ) );
+        assertFalse( Util.isDistinct( List.of( "a", "b", "a" ) ) );
         assertTrue( Util.isDistinct( Arrays.asList( "a", "b", null ) ) );
         assertFalse( Util.isDistinct( Arrays.asList( "a", null, "b", null ) ) );
     }
@@ -1028,11 +883,11 @@ public class UtilTest {
      */
     @Test
     public void testIntersects() {
-        final List<String> empty = Collections.emptyList();
-        final List<String> listA = Collections.singletonList( "a" );
-        final List<String> listC = Collections.singletonList( "c" );
-        final List<String> listD = Collections.singletonList( "d" );
-        final List<String> listAbc = Arrays.asList( "a", "b", "c" );
+        final List<String> empty = List.of();
+        final List<String> listA = List.of( "a" );
+        final List<String> listC = List.of( "c" );
+        final List<String> listD = List.of( "d" );
+        final List<String> listAbc = List.of( "a", "b", "c" );
         assertThat( Util.intersects( empty, listA ), is( false ) );
         assertThat( Util.intersects( empty, empty ), is( false ) );
         assertThat( Util.intersects( listA, listAbc ), is( true ) );
@@ -1127,24 +982,6 @@ public class UtilTest {
         assertThat( false, equalTo( map.isEmpty() ) );
         assertThat( map.keySet(), equalTo( (Set<String>) new HashSet<>( Arrays.asList( beatles ) ) ) );
         assertThat( ImmutableMultiset.copyOf( map.values() ), equalTo( ImmutableMultiset.copyOf( Arrays.asList( 4, 4, 6, 5 ) ) ) );
-    }
-
-
-    /**
-     * Tests {@link Util#commaList(java.util.List)}.
-     */
-    @Test
-    public void testCommaList() {
-        try {
-            String s = Util.commaList( null );
-            fail( "expected NPE, got " + s );
-        } catch ( NullPointerException e ) {
-            // ok
-        }
-        assertThat( Util.commaList( ImmutableList.of() ), equalTo( "" ) );
-        assertThat( Util.commaList( ImmutableList.of( 1 ) ), equalTo( "1" ) );
-        assertThat( Util.commaList( ImmutableList.of( 2, 3 ) ), equalTo( "2, 3" ) );
-        assertThat( Util.commaList( Arrays.asList( 2, null, 3 ) ), equalTo( "2, null, 3" ) );
     }
 
 
@@ -1491,24 +1328,6 @@ public class UtilTest {
         assertThat( list301d.get( 0 ), sameInstance( immutableList3 ) );
         assertThat( list301d.get( 1 ), sameInstance( immutableList0 ) );
         assertThat( list301d.get( 2 ), sameInstance( immutableList1 ) );
-    }
-
-
-    @Test
-    public void testAsIndexView() {
-        final List<String> values = Lists.newArrayList( "abCde", "X", "y" );
-        final Map<String, String> map = Util.asIndexMapJ( values, input -> input.toUpperCase( Locale.ROOT ) );
-        assertThat( map.size(), equalTo( values.size() ) );
-        assertThat( map.get( "X" ), equalTo( "X" ) );
-        assertThat( map.get( "Y" ), equalTo( "y" ) );
-        assertThat( map.get( "y" ), is( (String) null ) );
-        assertThat( map.get( "ABCDE" ), equalTo( "abCde" ) );
-
-        // If you change the values collection, the map changes.
-        values.remove( 1 );
-        assertThat( map.size(), equalTo( values.size() ) );
-        assertThat( map.get( "X" ), is( (String) null ) );
-        assertThat( map.get( "Y" ), equalTo( "y" ) );
     }
 
 
@@ -2156,4 +1975,3 @@ public class UtilTest {
     }
 
 }
-

@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -85,7 +84,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
     public Set<String> hashBasis = new HashSet<>();
 
-    public Map<Long, String> availableColumns = new LinkedHashMap<>(); // column id -> schemaName.tableName.ColumnName
+    public Map<Long, String> availableColumns = new HashMap<>(); // column id -> schemaName.tableName.ColumnName
 
     public Map<Long, Long> availableColumnsWithTable = new HashMap<>(); // columnId -> tableId
 
@@ -446,9 +445,9 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
         if ( scan.getEntity().unwrap( LogicalTable.class ).isPresent() ) {
             final LogicalTable table = scan.getEntity().unwrap( LogicalTable.class ).get();
-            final List<LogicalColumn> columns = Catalog.getInstance().getSnapshot().rel().getColumns( table.id );
+            final List<LogicalColumn> columns = Catalog.snapshot().rel().getColumns( table.id );
             final List<String> names = columns.stream().map( c -> c.name ).toList();
-            final String baseName = Catalog.getInstance().getSnapshot().getNamespace( table.namespaceId ) + "." + table.name + ".";
+            final String baseName = Catalog.snapshot().getNamespace( table.namespaceId ) + "." + table.name + ".";
 
             for ( int i = 0; i < columns.size(); i++ ) {
                 this.availableColumns.putIfAbsent( columns.get( i ).id, baseName + names.get( i ) );

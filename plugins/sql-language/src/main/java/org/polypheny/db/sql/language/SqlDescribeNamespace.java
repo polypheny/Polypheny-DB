@@ -18,6 +18,7 @@ package org.polypheny.db.sql.language;
 
 
 import java.util.List;
+import lombok.Getter;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Call;
@@ -30,6 +31,7 @@ import org.polypheny.db.util.ImmutableNullableList;
 /**
  * A <code>SqlDescribeNamespace</code> is a node of a parse tree that represents a {@code DESCRIBE NAMESPACE} statement.
  */
+@Getter
 public class SqlDescribeNamespace extends SqlCall {
 
     public static final SqlSpecialOperator OPERATOR =
@@ -62,12 +64,10 @@ public class SqlDescribeNamespace extends SqlCall {
 
     @Override
     public void setOperand( int i, Node operand ) {
-        switch ( i ) {
-            case 0:
-                namespace = (SqlIdentifier) operand;
-                break;
-            default:
-                throw new AssertionError( i );
+        if ( i == 0 ) {
+            namespace = (SqlIdentifier) operand;
+        } else {
+            throw new AssertionError( i );
         }
     }
 
@@ -89,9 +89,5 @@ public class SqlDescribeNamespace extends SqlCall {
         return ImmutableNullableList.of( namespace );
     }
 
-
-    public SqlIdentifier getNamespace() {
-        return namespace;
-    }
 
 }

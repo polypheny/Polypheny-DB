@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -70,7 +70,7 @@ public interface Source {
 
     /**
      * Returns a source whose path concatenates this with a child.
-     *
+     * <p>
      * For example,
      * <ul>
      * <li>source("/foo").append(source("bar"))
@@ -84,7 +84,7 @@ public interface Source {
 
     /**
      * Returns a relative source, if this source is a child of a given base.
-     *
+     * <p>
      * For example,
      * <ul>
      * <li>source("/foo/bar").relative(source("/foo"))
@@ -94,5 +94,5 @@ public interface Source {
      * </ul>
      */
     Source relative( Source source );
-}
 
+}

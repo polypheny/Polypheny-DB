@@ -22,6 +22,7 @@ import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.StatisticsManager;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.monitoring.events.MonitoringDataPoint;
 import org.polypheny.db.monitoring.events.MonitoringDataPoint.DataPointType;
 import org.polypheny.db.monitoring.events.MonitoringType;
@@ -44,12 +45,16 @@ public class StatisticRepository implements MonitoringRepository {
         StatisticsManager statisticsManager = StatisticsManager.getInstance();
         statisticsManager.updateCommitRollback( dataPoint.isCommitted() );
 
-        if ( dataPoint.getDataPointType() == DataPointType.DML ) {
-            updateDmlStatistics( (DmlDataPoint) dataPoint, statisticsManager );
-        } else if ( dataPoint.getDataPointType() == DataPointType.QueryDataPointImpl ) {
-            updateQueryStatistics( (QueryDataPointImpl) dataPoint, statisticsManager );
-        } else if ( dataPoint.getDataPointType() == DataPointType.DDL ) {
-            updateDdlStatistics( (DdlDataPoint) dataPoint, statisticsManager );
+        try {
+            if ( dataPoint.getDataPointType() == DataPointType.DML ) {
+                updateDmlStatistics( (DmlDataPoint) dataPoint, statisticsManager );
+            } else if ( dataPoint.getDataPointType() == DataPointType.QueryDataPointImpl ) {
+                updateQueryStatistics( (QueryDataPointImpl) dataPoint, statisticsManager );
+            } else if ( dataPoint.getDataPointType() == DataPointType.DDL ) {
+                updateDdlStatistics( (DdlDataPoint) dataPoint, statisticsManager );
+            }
+        } catch ( Exception e ) {
+            log.warn( "An error occurred during statistic updating: ", e );
         }
     }
 
@@ -83,11 +88,11 @@ public class StatisticRepository implements MonitoringRepository {
         if ( !dataPoint.getAvailableColumnsWithTable().isEmpty() ) {
             Set<Long> values = new HashSet<>( dataPoint.getAvailableColumnsWithTable().values() );
             boolean isOneTable = values.size() == 1;
-            Catalog catalog = Catalog.getInstance();
+            Snapshot snapshot = Catalog.snapshot();
 
             if ( isOneTable ) {
                 long tableId = values.stream().findFirst().get();
-                if ( catalog.getSnapshot().getLogicalEntity( tableId ).isPresent() ) {
+                if ( snapshot.getLogicalEntity( tableId ).isPresent() ) {
                     statisticsManager.setEntityCalls( tableId, dataPoint.getMonitoringType() );
 
                     // RowCount from UI is only used if there is no other possibility
@@ -101,7 +106,7 @@ public class StatisticRepository implements MonitoringRepository {
                 }
             } else {
                 for ( long id : values ) {
-                    if ( catalog.getSnapshot().getLogicalEntity( id ).isPresent() ) {
+                    if ( snapshot.getLogicalEntity( id ).isPresent() ) {
                         statisticsManager.setEntityCalls( id, dataPoint.getMonitoringType() );
                     }
                 }
@@ -118,12 +123,12 @@ public class StatisticRepository implements MonitoringRepository {
         Set<Long> values = new HashSet<>( dataPoint.getAvailableColumnsWithTable().values() );
         boolean isOneTable = values.size() == 1;
 
-        Catalog catalog = Catalog.getInstance();
+        Snapshot snapshot = Catalog.snapshot();
         if ( isOneTable ) {
             long tableId = values.stream().findFirst().get();
             statisticsManager.setEntityCalls( tableId, dataPoint.getMonitoringType() );
 
-            if ( catalog.getSnapshot().getLogicalEntity( tableId ).isEmpty() ) {
+            if ( snapshot.getLogicalEntity( tableId ).isEmpty() ) {
                 return;
             }
             if ( dataPoint.getMonitoringType() == MonitoringType.INSERT ) {
@@ -132,7 +137,7 @@ public class StatisticRepository implements MonitoringRepository {
                         tableId,
                         dataPoint.getChangedValues(),
                         dataPoint.getMonitoringType(),
-                        catalog.getSnapshot().getLogicalEntity( tableId ).orElseThrow().namespaceId );
+                        snapshot.getLogicalEntity( tableId ).orElseThrow().namespaceId );
                 statisticsManager.updateRowCountPerEntity( tableId, added, dataPoint.getMonitoringType() );
             } else if ( dataPoint.getMonitoringType() == MonitoringType.DELETE ) {
                 long deleted = dataPoint.getRowCount();
@@ -142,7 +147,7 @@ public class StatisticRepository implements MonitoringRepository {
             }
         } else {
             for ( long id : values ) {
-                if ( catalog.getSnapshot().getLogicalEntity( id ).isPresent() ) {
+                if ( snapshot.getLogicalEntity( id ).isPresent() ) {
                     statisticsManager.setEntityCalls( id, dataPoint.getMonitoringType() );
                 }
 

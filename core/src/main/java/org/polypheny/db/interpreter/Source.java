@@ -48,5 +48,5 @@ public interface Source<T> extends AutoCloseable {
 
     @Override
     void close();
-}
 
+}

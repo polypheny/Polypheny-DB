@@ -26,4 +26,5 @@ import org.polypheny.db.catalog.entity.LogicalUser;
 public interface Authenticator {
 
     LogicalUser authenticate( final String username, final String password ) throws AuthenticationException;
+
 }

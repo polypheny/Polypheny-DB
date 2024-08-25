@@ -42,6 +42,7 @@ import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.PolyTypeUtil;
+import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.inference.InferTypes;
 import org.polypheny.db.util.CoreUtil;
 
@@ -84,7 +85,7 @@ public class SqlCastFunction extends SqlFunction {
                 Kind.CAST,
                 null,
                 InferTypes.FIRST_KNOWN,
-                null,
+                OperandTypes.ANY,
                 FunctionCategory.SYSTEM );
     }
 
@@ -187,4 +188,3 @@ public class SqlCastFunction extends SqlFunction {
     }
 
 }
-

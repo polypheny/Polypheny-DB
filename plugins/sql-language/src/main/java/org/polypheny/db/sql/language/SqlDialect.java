@@ -18,6 +18,7 @@ package org.polypheny.db.sql.language;
 
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import java.sql.ResultSet;
 import java.sql.Timestamp;
@@ -32,7 +33,6 @@ import lombok.Value;
 import lombok.With;
 import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.SqlType;
 import org.apache.calcite.linq4j.function.Experimental;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -57,12 +57,14 @@ import org.polypheny.db.sql.language.dialect.JethroDataSqlDialect;
 import org.polypheny.db.sql.language.dialect.JethroDataSqlDialect.JethroInfo;
 import org.polypheny.db.sql.language.util.SqlBuilder;
 import org.polypheny.db.sql.language.util.SqlTypeUtil;
+import org.polypheny.db.sql.language.validate.SqlType;
 import org.polypheny.db.type.BasicPolyType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.category.PolyBlob;
+import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.util.temporal.DateTimeUtils;
 import org.polypheny.db.util.temporal.TimeUnit;
 
@@ -539,6 +541,11 @@ public class SqlDialect {
                 type = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT ).createPolyType( PolyType.VARCHAR, precision );
             }
 
+            if ( List.of( PolyType.JSON, PolyType.NODE, PolyType.GEOMETRY ).contains( type.getPolyType() ) ) {
+                precision = 2024;
+                type = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT ).createPolyType( PolyType.VARCHAR, precision );
+            }
+
             switch ( type.getPolyType() ) {
                 case JSON:
                 case VARCHAR:
@@ -731,6 +738,21 @@ public class SqlDialect {
     }
 
 
+    public boolean supportsGeoJson() {
+        return false;
+    }
+
+
+    public boolean supportsPostGIS() {
+        return false;
+    }
+
+
+    public List<OperatorName> supportedGeoFunctions() {
+        return ImmutableList.of();
+    }
+
+
     public boolean supportsComplexBinary() {
         return true;
     }
@@ -742,6 +764,7 @@ public class SqlDialect {
             case FILE, AUDIO, VIDEO, IMAGE -> Expressions.call( PolyBlob.class, methodName, Expressions.convert_( child, byte[].class ) );
             case TEXT -> Expressions.call( PolyString.class, methodName, Expressions.convert_( child, String.class ) );
             case VARBINARY -> Expressions.call( PolyBinary.class, "fromTypedJson", Expressions.convert_( child, String.class ), Expressions.constant( PolyBinary.class ) );
+            case GEOMETRY -> Expressions.call( PolyGeometry.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( child, String.class ) );
             default -> child;
         };
 

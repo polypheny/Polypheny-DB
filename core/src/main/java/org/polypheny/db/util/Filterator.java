@@ -100,5 +100,5 @@ public class Filterator<E> implements Iterator<E> {
     public void remove() {
         iterator.remove();
     }
-}
 
+}

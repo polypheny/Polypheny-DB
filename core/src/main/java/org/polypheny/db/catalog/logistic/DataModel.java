@@ -40,34 +40,11 @@ public enum DataModel {
     }
 
 
-    public static DataModel getById( final int id ) {
-        for ( DataModel t : values() ) {
-            if ( t.id == id ) {
-                return t;
-            }
-        }
-        throw new RuntimeException( "Unknown NamespaceType with id: " + id );
-    }
-
-
-    public static DataModel getByName( final String name ) {
-        for ( DataModel t : values() ) {
-            if ( t.name().equalsIgnoreCase( name ) ) {
-                return t;
-            }
-        }
-        throw new RuntimeException( "Unknown NamespaceType with name: " + name );
-    }
-
-
     public ModelTrait getModelTrait() {
-        if ( this == DataModel.RELATIONAL ) {
-            return ModelTrait.RELATIONAL;
-        } else if ( this == DataModel.DOCUMENT ) {
-            return ModelTrait.DOCUMENT;
-        } else if ( this == DataModel.GRAPH ) {
-            return ModelTrait.GRAPH;
-        }
-        throw new RuntimeException( "Not found a suitable NamespaceType." );
+        return switch ( this ) {
+            case RELATIONAL -> ModelTrait.RELATIONAL;
+            case DOCUMENT -> ModelTrait.DOCUMENT;
+            case GRAPH -> ModelTrait.GRAPH;
+        };
     }
 }

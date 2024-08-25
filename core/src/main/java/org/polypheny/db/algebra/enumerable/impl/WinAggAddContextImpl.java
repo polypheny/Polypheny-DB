@@ -48,4 +48,5 @@ public abstract class WinAggAddContextImpl extends WinAggResultContextImpl imple
     public final List<Expression> arguments() {
         return rowTranslator().translateList( rexArguments() );
     }
+
 }

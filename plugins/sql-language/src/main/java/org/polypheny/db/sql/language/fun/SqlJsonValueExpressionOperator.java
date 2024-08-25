@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,7 +52,7 @@ public class SqlJsonValueExpressionOperator extends SqlSpecialOperator {
                         operandTypes[0] = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.ANY ), true );
                     }
                 },
-                structured ? OperandTypes.ANY : OperandTypes.STRING );
+                structured ? OperandTypes.ANY : OperandTypes.JSON );
         this.structured = structured;
     }
 
@@ -66,4 +66,3 @@ public class SqlJsonValueExpressionOperator extends SqlSpecialOperator {
     }
 
 }
-

@@ -47,7 +47,6 @@ import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -96,10 +95,15 @@ import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.type.entity.numerical.PolyLong.PolyLongSerializerDef;
 import org.polypheny.db.type.entity.relational.PolyMap;
 import org.polypheny.db.type.entity.relational.PolyMap.PolyMapSerializerDef;
+import org.polypheny.db.type.entity.spatial.PolyGeometry;
+import org.polypheny.db.type.entity.spatial.PolyGeometry.PolyGeometryDeserializer;
+import org.polypheny.db.type.entity.spatial.PolyGeometry.PolyGeometrySerializer;
+import org.polypheny.db.type.entity.spatial.PolyGeometry.PolyGeometrySerializerDef;
 import org.polypheny.db.type.entity.temporal.PolyDate;
 import org.polypheny.db.type.entity.temporal.PolyTime;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 import org.polypheny.db.util.BsonUtil;
+import org.polypheny.db.util.ByteString;
 
 @Value
 @Slf4j
@@ -125,7 +129,9 @@ import org.polypheny.db.util.BsonUtil;
         PolyBinary.class,
         PolyNode.class,
         PolyEdge.class,
-        PolyPath.class }) // add on Constructor already exists exception
+        PolyPath.class,
+        PolyGeometry.class
+}) // add on Constructor already exists exception
 @JsonTypeInfo(use = Id.NAME) // to allow typed json serialization
 @JsonSubTypes({
         @JsonSubTypes.Type(value = PolyList.class, name = "LIST"),
@@ -148,7 +154,8 @@ import org.polypheny.db.util.BsonUtil;
         @JsonSubTypes.Type(value = PolyEdge.class, name = "EDGE"),
         @JsonSubTypes.Type(value = PolyPath.class, name = "PATH"),
         @JsonSubTypes.Type(value = PolyDictionary.class, name = "DICTIONARY"),
-        @JsonSubTypes.Type(value = PolyUserDefinedValue.class, name = "UDV")
+        @JsonSubTypes.Type(value = PolyUserDefinedValue.class, name = "UDV"),
+        @JsonSubTypes.Type(value = PolyGeometry.class, name = "GEOMETRY")
 })
 public abstract class PolyValue implements Expressible, Comparable<PolyValue>, PolySerializable {
 
@@ -171,9 +178,10 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             .with( PolyBoolean.class, ctx -> new PolyBooleanSerializerDef() )
             .with( PolyGraph.class, ctx -> new PolyGraphSerializerDef() )
             .with( PolyLong.class, ctx -> new PolyLongSerializerDef() )
+            .with( PolyGeometry.class, ctx -> new PolyGeometrySerializerDef() )
             .build().create( CLASS_LOADER, PolyValue.class );
 
-
+    @JsonIgnore
     public static final ObjectMapper JSON_WRAPPER = JsonMapper.builder()
             .configure( MapperFeature.REQUIRE_TYPE_ID_FOR_SUBTYPES, true )
             .configure( DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false )
@@ -181,7 +189,10 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             .configure( MapperFeature.USE_STATIC_TYPING, true )
             .addModule( new SimpleModule()
                     .addSerializer( ByteString.class, new ByteStringSerializer() )
-                    .addDeserializer( ByteString.class, new ByteStringDeserializer() ) )
+                    .addDeserializer( ByteString.class, new ByteStringDeserializer() )
+                    .addSerializer( PolyGeometry.class, new PolyGeometrySerializer() )
+                    .addDeserializer( PolyGeometry.class, new PolyGeometryDeserializer() )
+            )
             .build();
 
 
@@ -831,6 +842,20 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             return (PolyBlob) this;
         }
         throw cannotParse( this, PolyBlob.class );
+    }
+
+
+    public boolean isGeometry() {
+        return type == PolyType.GEOMETRY;
+    }
+
+
+    @NotNull
+    public PolyGeometry asGeometry() {
+        if ( isGeometry() ) {
+            return (PolyGeometry) this;
+        }
+        throw cannotParse( this, PolyGeometry.class );
     }
 
 

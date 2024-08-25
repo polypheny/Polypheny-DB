@@ -20,7 +20,6 @@ import java.sql.DatabaseMetaData;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import org.polypheny.db.PolyphenyDb;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
@@ -74,12 +73,12 @@ class DbMetaRetriever {
 
     private static List<LogicalNamespace> getLogicalNamespaces( String namespacePattern, String namespaceType ) {
         Pattern catalogNamespacePattern = getPatternOrNull( namespacePattern );
-        List<LogicalNamespace> logicalNamespaces = Catalog.getInstance().getSnapshot().getNamespaces( catalogNamespacePattern );
+        List<LogicalNamespace> logicalNamespaces = Catalog.snapshot().getNamespaces( catalogNamespacePattern );
         if ( namespaceType == null ) {
             return logicalNamespaces;
         }
         DataModel catalogNamespaceType = DataModel.valueOf( namespaceType );
-        return logicalNamespaces.stream().filter( n -> n.getDataModel() == catalogNamespaceType ).collect( Collectors.toList() );
+        return logicalNamespaces.stream().filter( n -> n.getDataModel() == catalogNamespaceType ).toList();
     }
 
 
@@ -97,34 +96,27 @@ class DbMetaRetriever {
 
 
     public static Namespace getNamespace( String namespaceName ) {
-        return getNamespaceMeta( Catalog.getInstance().getSnapshot().getNamespace( namespaceName ).orElseThrow() );
+        return getNamespaceMeta( Catalog.snapshot().getNamespace( namespaceName ).orElseThrow() );
     }
 
 
     // Entity search by namespace
     static EntitiesResponse searchEntities( String namespaceName, String entityPattern ) {
         EntitiesResponse.Builder responseBuilder = EntitiesResponse.newBuilder();
-        LogicalNamespace namespace = Catalog.getInstance().getSnapshot().getNamespace( namespaceName ).orElseThrow();
-        switch ( namespace.getDataModel() ) {
-            case RELATIONAL:
-                responseBuilder.addAllEntities( getRelationalEntities( namespace.getId(), entityPattern ) );
-                break;
-            case GRAPH:
-                responseBuilder.addAllEntities( getGraphEntities( namespace.getId(), entityPattern ) );
-                break;
-            case DOCUMENT:
-                responseBuilder.addAllEntities( getDocumentEntities( namespace.getId(), entityPattern ) );
-                break;
-        }
-        return responseBuilder.build();
+        LogicalNamespace namespace = Catalog.snapshot().getNamespace( namespaceName ).orElseThrow();
+        return switch ( namespace.getDataModel() ) {
+            case RELATIONAL -> responseBuilder.addAllEntities( getRelationalEntities( namespace.getId(), entityPattern ) ).build();
+            case GRAPH -> responseBuilder.addAllEntities( getGraphEntities( namespace.getId(), entityPattern ) ).build();
+            case DOCUMENT -> responseBuilder.addAllEntities( getDocumentEntities( namespace.getId(), entityPattern ) ).build();
+        };
     }
 
 
     // Relational entities
     private static List<Entity> getRelationalEntities( long namespaceId, String entityPattern ) {
         Pattern catalogEntityPattern = getPatternOrNull( entityPattern );
-        final List<LogicalTable> tables = Catalog.getInstance().getSnapshot().rel().getTables( namespaceId, catalogEntityPattern );
-        return tables.stream().map( logicalTable -> buildEntityFromTable( getTableMeta( logicalTable ) ) ).collect( Collectors.toList() );
+        final List<LogicalTable> tables = Catalog.snapshot().rel().getTables( namespaceId, catalogEntityPattern );
+        return tables.stream().map( logicalTable -> buildEntityFromTable( getTableMeta( logicalTable ) ) ).toList();
     }
 
 
@@ -152,7 +144,7 @@ class DbMetaRetriever {
 
 
     private static List<Column> getColumns( LogicalTable logicalTable ) {
-        return logicalTable.getColumns().stream().map( DbMetaRetriever::getColumnMeta ).collect( Collectors.toList() );
+        return logicalTable.getColumns().stream().map( DbMetaRetriever::getColumnMeta ).toList();
     }
 
 
@@ -160,12 +152,12 @@ class DbMetaRetriever {
         if ( logicalTable.primaryKey == null ) {
             return false;
         }
-        return Catalog.getInstance().getSnapshot().rel().getPrimaryKey( logicalTable.primaryKey ).isPresent();
+        return Catalog.snapshot().rel().getPrimaryKey( logicalTable.primaryKey ).isPresent();
     }
 
 
     private static PrimaryKey getPrimaryKeyMeta( LogicalTable logicalTable ) {
-        LogicalPrimaryKey logicalPrimaryKey = Catalog.getInstance().getSnapshot().rel().getPrimaryKey( logicalTable.primaryKey ).orElseThrow();
+        LogicalPrimaryKey logicalPrimaryKey = Catalog.snapshot().rel().getPrimaryKey( logicalTable.primaryKey ).orElseThrow();
         return PrimaryKey.newBuilder()
                 .setDatabaseName( logicalPrimaryKey.getSchemaName() )
                 .setNamespaceName( logicalPrimaryKey.getSchemaName() )
@@ -199,8 +191,8 @@ class DbMetaRetriever {
 
 
     private static List<ForeignKey> getForeignKeys( LogicalTable logicalTable ) {
-        return Catalog.getInstance().getSnapshot().rel().getForeignKeys( logicalTable.getId() )
-                .stream().map( DbMetaRetriever::getForeignKeyMeta ).collect( Collectors.toList() );
+        return Catalog.snapshot().rel().getForeignKeys( logicalTable.getId() )
+                .stream().map( DbMetaRetriever::getForeignKeyMeta ).toList();
     }
 
 
@@ -218,19 +210,19 @@ class DbMetaRetriever {
 
 
     private static List<Column> getReferencedColumns( LogicalForeignKey logicalForeignKey ) {
-        return logicalForeignKey.referencedKeyFieldIds.stream().map( id -> Catalog.snapshot().rel().getColumn( id ).orElseThrow() ).map( DbMetaRetriever::getColumnMeta ).collect( Collectors.toList() );
+        return logicalForeignKey.referencedKeyFieldIds.stream().map( id -> Catalog.snapshot().rel().getColumn( id ).orElseThrow() ).map( DbMetaRetriever::getColumnMeta ).toList();
     }
 
 
     private static List<ForeignKey> getExportedKeys( LogicalTable logicalTable ) {
-        return Catalog.getInstance().getSnapshot().rel().getExportedKeys( logicalTable.getId() )
-                .stream().map( DbMetaRetriever::getForeignKeyMeta ).collect( Collectors.toList() );
+        return Catalog.snapshot().rel().getExportedKeys( logicalTable.getId() )
+                .stream().map( DbMetaRetriever::getForeignKeyMeta ).toList();
     }
 
 
     private static List<Index> getIndexes( LogicalTable logicalTable, boolean unique ) {
-        return Catalog.getInstance().getSnapshot().rel().getIndexes( logicalTable.getId(), unique )
-                .stream().map( DbMetaRetriever::getIndexMeta ).collect( Collectors.toList() );
+        return Catalog.snapshot().rel().getIndexes( logicalTable.getId(), unique )
+                .stream().map( DbMetaRetriever::getIndexMeta ).toList();
     }
 
 
@@ -309,7 +301,7 @@ class DbMetaRetriever {
 
     static ClientInfoPropertyMetaResponse getClientInfoProperties() {
         List<ClientInfoPropertyMeta> propertyInfoMetas = PIClientInfoProperties.DEFAULTS.stream()
-                .map( DbMetaRetriever::getClientInfoPropertyMeta ).collect( Collectors.toList() );
+                .map( DbMetaRetriever::getClientInfoPropertyMeta ).toList();
         return ClientInfoPropertyMetaResponse.newBuilder()
                 .addAllClientInfoPropertyMetas( propertyInfoMetas )
                 .build();
@@ -332,7 +324,7 @@ class DbMetaRetriever {
                 .map( org.polypheny.db.nodes.Function.class::cast )
                 .filter( f -> f.getFunctionCategory() == functionCategory || functionCategory == null )
                 .map( DbMetaRetriever::getFunctionMeta )
-                .collect( Collectors.toList() );
+                .toList();
         return FunctionsResponse.newBuilder().addAllFunctions( functions ).build();
     }
 
