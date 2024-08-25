@@ -470,6 +470,14 @@ public class TestHelper {
 
     public static abstract class HttpConnection {
 
+        static {
+            // TODO: remove this (is there a way to only disable the timeout, when I am actually debugging?)
+            Unirest.config()
+                    .socketTimeout(0)
+                    .connectTimeout(0);
+        }
+
+
         public static HttpRequest<?> buildQuery( String route, String query, String database ) {
             JsonObject data = new JsonObject();
             data.addProperty( "query", query );
