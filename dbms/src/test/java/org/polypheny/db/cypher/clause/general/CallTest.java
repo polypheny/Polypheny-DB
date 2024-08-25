@@ -39,8 +39,8 @@ public class CallTest extends CypherTestTemplate {
 
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_ANIMAL );
-        res = execute( "CALL db.labels()" );
 
+        res = execute( "CALL db.labels()" );
         containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Person" ) ),
                 Row.of( TestLiteral.from( "Animal" ) ) );
@@ -105,7 +105,6 @@ public class CallTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_ANIMAL );
         GraphResult res = execute( "CALL db.labels() YIELD label WHERE label = 'Person' RETURN count(label) AS numLabels" );
-
         containsRows( res, true, false,
                 Row.of( TestLiteral.from( 1 ) ) );
     }
@@ -117,7 +116,6 @@ public class CallTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_2 );
         execute( SINGLE_NODE_ANIMAL );
         GraphResult res = execute( "CALL db.labels() YIELD label RETURN label ORDER BY label" );
-
         containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Animal" ) ),
                 Row.of( TestLiteral.from( "Person" ) ),
@@ -131,7 +129,6 @@ public class CallTest extends CypherTestTemplate {
         execute( SINGLE_NODE_ANIMAL );
         execute( SINGLE_NODE_PERSON_2 );
         GraphResult res = execute( "CALL db.labels() YIELD label RETURN label, count(*) AS labelCount" );
-
         containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Person" ), TestLiteral.from( 2 ) ),
                 Row.of( TestLiteral.from( "Animal" ), TestLiteral.from( 1 ) ) );
@@ -164,7 +161,6 @@ public class CallTest extends CypherTestTemplate {
 
     @Test
     public void callPropertyKeysYieldWithMatchTest() {
-
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_ANIMAL );
         execute( SINGLE_NODE_PERSON_2 );

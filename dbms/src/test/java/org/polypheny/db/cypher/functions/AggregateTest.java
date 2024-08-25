@@ -18,7 +18,6 @@ package org.polypheny.db.cypher.functions;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -150,8 +149,8 @@ public class AggregateTest extends CypherTestTemplate {
 
         GraphResult res = execute( "MATCH (n) RETURN AVG(n.age)" );
         // Printing the data using Arrays.deepToString
-        String[][] data = res.getData();
-        System.out.println( Arrays.deepToString( data ) );
+        //String[][] data = res.getData();
+        //System.out.println( Arrays.deepToString( data ) );
         containsRows( res, true, false,
                 Row.of( TestLiteral.from( 26.33333333333333 ) ) );
     }
