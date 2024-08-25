@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.cypher.Subqueries;
+package org.polypheny.db.cypher.subqueries;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.cypher.CypherTestTemplate;
@@ -24,9 +26,7 @@ import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.cypher.helper.TestNode;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.models.results.GraphResult;
-import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class CallSubqueriesTest extends CypherTestTemplate {
 
@@ -40,7 +40,6 @@ public class CallSubqueriesTest extends CypherTestTemplate {
 
     @Test
     public void simpleCallTest() {
-
         GraphResult res = execute( " CALL { RETURN 'hello' AS innerReturn} \n"
                 + "RETURN innerReturn" );
 
@@ -82,7 +81,6 @@ public class CallSubqueriesTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_1 );
         GraphResult res = execute( "CALL { MATCH (p:Person) RETURN p} RETURN p " );
         containsRows( res, true, true, Row.of( MAX ) );
-
     }
 
 
@@ -99,7 +97,6 @@ public class CallSubqueriesTest extends CypherTestTemplate {
                 """ );
 
         containsRows( res, true, false, Row.of( TestLiteral.from( 2 ) ) );
-
     }
 
 
@@ -107,14 +104,15 @@ public class CallSubqueriesTest extends CypherTestTemplate {
     public void countRelationshipsCallTest() {
         execute( SINGLE_EDGE_1 );
         execute( SINGLE_EDGE_2 );
+
         GraphResult res = execute( """
                 CALL {
                     MATCH ()-[r]->()
                     RETURN count(r) AS totalRelationships }
                 RETURN totalRelationships
                 """ );
-        containsRows( res, true, false, Row.of( TestLiteral.from( 2 ) ) );
 
+        containsRows( res, true, false, Row.of( TestLiteral.from( 2 ) ) );
     }
 
 
@@ -141,6 +139,7 @@ public class CallSubqueriesTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
         execute( SINGLE_NODE_PERSON_COMPLEX_2 );
         execute( SINGLE_NODE_PERSON_COMPLEX_3 );
+
         GraphResult res = execute( """
                 CALL {
                   MATCH (p:Person { name: 'Bob' })
@@ -154,7 +153,6 @@ public class CallSubqueriesTest extends CypherTestTemplate {
         containsNodes( res, true,
                 TestNode.from( List.of( "Person" ), Pair.of( "name", "Ann" ) ),
                 TestNode.from( List.of( "Person" ), Pair.of( "name", "Alex" ) ) );
-
     }
 
 
@@ -163,6 +161,7 @@ public class CallSubqueriesTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
         execute( SINGLE_NODE_PERSON_COMPLEX_2 );
+
         GraphResult res = execute( """
                 CALL { MATCH (p:Person)
                   RETURN p
@@ -188,9 +187,9 @@ public class CallSubqueriesTest extends CypherTestTemplate {
                 WITH p
                  CREATE (:Person {name: p.name})\s
                 } RETURN count(*)""" );
+
         //the number of rows present after the subquery is the same as was going into the subquery
         containsRows( res, true, false, Row.of( TestLiteral.from( 2 ) ) );
     }
-
 
 }

@@ -18,6 +18,7 @@ package org.polypheny.db.cypher.helper;
 
 import org.polypheny.db.type.entity.PolyValue;
 
+
 public interface TestObject {
 
     boolean matches( PolyValue other, boolean exclusive );

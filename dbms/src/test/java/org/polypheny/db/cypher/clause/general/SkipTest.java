@@ -16,6 +16,8 @@
 
 package org.polypheny.db.cypher.clause.general;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.cypher.CypherTestTemplate;
@@ -24,8 +26,6 @@ import org.polypheny.db.cypher.helper.TestNode;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.models.results.GraphResult;
 
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class SkipTest extends CypherTestTemplate {
 
@@ -75,7 +75,6 @@ public class SkipTest extends CypherTestTemplate {
         GraphResult res = execute( "MATCH (n) WITH n SKIP 2 RETURN n.name, n.age" );
 
         assertEquals( 1, res.getData().length );
-
     }
 
 
@@ -90,8 +89,6 @@ public class SkipTest extends CypherTestTemplate {
         GraphResult res = execute( "MATCH (n) RETURN n.name SKIP 3 LIMIT 1" );
 
         assertEquals( 1, res.getData().length );
-
-
     }
 
 
@@ -111,9 +108,6 @@ public class SkipTest extends CypherTestTemplate {
                 TestNode.from( Pair.of( "name", "Bob" ),
                         Pair.of( "age", 31 ),
                         Pair.of( "depno", 13 ) ) );
-
-
     }
-
 
 }

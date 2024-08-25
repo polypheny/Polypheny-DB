@@ -16,7 +16,9 @@
 
 package org.polypheny.db.cypher.clause.write;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,9 +27,6 @@ import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.cypher.helper.TestNode;
 import org.polypheny.db.webui.models.results.GraphResult;
 
-import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Slf4j
 public class RemoveTest extends CypherTestTemplate {
@@ -49,8 +48,6 @@ public class RemoveTest extends CypherTestTemplate {
                 + "REMOVE n:Person " );
         GraphResult res = execute( "MATCH (n :Person) RETURN n" );
         assertEquals( 0, res.getData().length );
-
-
     }
 
 
@@ -59,10 +56,7 @@ public class RemoveTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_1 );
         GraphResult res = execute( "MATCH (n:Person {name: 'Max'})\n"
                 + "REMOVE n:Person RETURN n  " );
-
         assertEquals( 1, res.getData().length );
-
-
     }
 
 
@@ -76,8 +70,6 @@ public class RemoveTest extends CypherTestTemplate {
         execute( "MATCH (n) REMOVE n:Person:Employee " );
         res = execute( "MATCH (n :Person:Employee) RETURN n" );
         assertEquals( 0, res.getData().length );
-
-
     }
 
 
@@ -87,8 +79,6 @@ public class RemoveTest extends CypherTestTemplate {
         execute( "MATCH (n : Person {name: 'Ann'}) REMOVE a.age " );
         GraphResult res = execute( "MATCH (n : Person) RETURN n.age  , n.name" );
         containsRows( res, true, true, Row.of( TestLiteral.from( null ), TestLiteral.from( "Ann" ) ) );
-
-
     }
 
 
@@ -99,10 +89,8 @@ public class RemoveTest extends CypherTestTemplate {
                 MATCH (n:Person {name: 'Ann'})
                 REMOVE n.age, n.depno
                 """ );
-
         GraphResult res = execute( "MATCH (n : Person) RETURN n.age  , n.depno , n.name " );
         containsRows( res, true, true, Row.of( TestLiteral.from( null ), TestLiteral.from( null ), TestLiteral.from( "Ann" ) ) );
-
     }
 
 
@@ -112,7 +100,6 @@ public class RemoveTest extends CypherTestTemplate {
         execute( "MATCH (n:Person) SET n = {}" );
         GraphResult res = matchAndReturnAllNodes();
         assertEquals( 0, res.getData().length );
-
     }
 
 
@@ -123,8 +110,6 @@ public class RemoveTest extends CypherTestTemplate {
                 + "REMOVE rel.since" );
         GraphResult res = execute( "MATCH ()-[r:KNOWS]->() RETURN r.since" );
         containsRows( res, true, true, Row.of( TestLiteral.from( null ) ) );
-
-
     }
 
 
@@ -147,6 +132,5 @@ public class RemoveTest extends CypherTestTemplate {
         GraphResult res = execute( "MATCH ()-[r:KNOWS]->() RETURN r.since" );
         containsRows( res, true, true, Row.of( TestLiteral.from( null ) ) );
     }
-
 
 }

@@ -16,6 +16,9 @@
 
 package org.polypheny.db.cypher.clause.write;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.cypher.CypherTestTemplate;
@@ -23,9 +26,6 @@ import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.cypher.helper.TestNode;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.models.results.GraphResult;
-import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ForeachTest extends CypherTestTemplate {
 
@@ -50,8 +50,6 @@ public class ForeachTest extends CypherTestTemplate {
                 TestNode.from( Pair.of( "name", "Alice" ) ),
                 TestNode.from( Pair.of( "name", "Bob" ) ),
                 TestNode.from( Pair.of( "name", "Charlie" ) ) );
-
-
     }
 
 
@@ -69,7 +67,6 @@ public class ForeachTest extends CypherTestTemplate {
                 TestNode.from( Pair.of( "name", "Alice" ) ),
                 TestNode.from( Pair.of( "name", "Bob" ) ),
                 TestNode.from( Pair.of( "name", "Charlie" ) ) );
-
     }
 
 
@@ -86,7 +83,6 @@ public class ForeachTest extends CypherTestTemplate {
                 )""" );
         GraphResult res = matchAndReturnAllNodes();
         assertEmpty( res );
-
     }
 
 
@@ -105,7 +101,6 @@ public class ForeachTest extends CypherTestTemplate {
         GraphResult res = matchAndReturnAllNodes();
         containsRows( res, true, false, Row.of( TestLiteral.from( null ) ),
                 Row.of( TestLiteral.from( null ) ) );
-
     }
 
 

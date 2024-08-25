@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.cypher.Functions;
+package org.polypheny.db.cypher.functions;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,7 +34,6 @@ public class NumericFunTest extends CypherTestTemplate {
     @Test
     public void absFunTest() {
         GraphResult res = execute( "RETURN ABS(-5) " );
-
         containsRows( res, true, true, Row.of( TestLiteral.from( 5 ) ) );
 
         res = execute( "RETURN ABS(5)" );
@@ -61,14 +60,11 @@ public class NumericFunTest extends CypherTestTemplate {
 
         res = execute( "RETURN ROUND(-3.5)" );
         containsRows( res, true, true, Row.of( TestLiteral.from( -4 ) ) );
-
-
     }
 
 
     @Test
     public void floorFunTest() {
-
         GraphResult res = execute( "RETURN FLOOR(3)" );
         containsRows( res, true, true, Row.of( TestLiteral.from( 3 ) ) );
 
@@ -99,7 +95,6 @@ public class NumericFunTest extends CypherTestTemplate {
 
         res = execute( "RETURN CEIL(3.5)" );
         containsRows( res, true, true, Row.of( TestLiteral.from( 4 ) ) );
-
     }
 
 
@@ -120,12 +115,11 @@ public class NumericFunTest extends CypherTestTemplate {
     }
 
 
+    // Todo missing
     @Test
     public void sqrtFunTestNegative() {
-         execute( "RETURN SQRT(-9)" );
+        execute( "RETURN SQRT(-9)" );
         //   containsRows(res, true, true, Row.of(TestLiteral.from(null)));
     }
 
 }
-
-

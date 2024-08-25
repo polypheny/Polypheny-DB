@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.cypher.Functions;
+package org.polypheny.db.cypher.functions;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.cypher.CypherTestTemplate;
 import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.webui.models.results.GraphResult;
+
 
 public class TemporalFunTest extends CypherTestTemplate {
 
@@ -33,7 +34,6 @@ public class TemporalFunTest extends CypherTestTemplate {
 
     @Test
     public void stringIntoDateFunTest() {
-
         GraphResult res = execute( "RETURN date('2015-07-21')\n" );
         containsRows( res, true, false, Row.of( TestLiteral.from( "2015-07-21" ) ) );
 
@@ -54,7 +54,6 @@ public class TemporalFunTest extends CypherTestTemplate {
     @Test
     public void yearMonthDayDateFunTest() {
         GraphResult res = execute( "RETURN date({year: 1984, month: 10, day: 11})" );
-
         containsRows( res, true, false,
                 Row.of( TestLiteral.from( "1984-10-11" ) ) );
 
@@ -83,7 +82,6 @@ public class TemporalFunTest extends CypherTestTemplate {
 
     @Test
     public void yearMonthDayZonedTimeDateFunTest() {
-
         GraphResult res = execute( "RETURN datetime({year: 1984, month: 10, day: 11, hour: 12, minute: 31, second: 14, millisecond: 123, microsecond: 456, nanosecond: 789}) AS theDate" );
         containsRows( res, true, false, Row.of( TestLiteral.from( "1984-10-11T12:31:14.123456789Z" ) ) );
 
@@ -92,8 +90,6 @@ public class TemporalFunTest extends CypherTestTemplate {
 
         res = execute( "RETURN datetime({year: 1984, month: 10, day: 11, hour: 12, minute: 31, second: 14})" );
         containsRows( res, true, false, Row.of( TestLiteral.from( "1984-10-11T12:31:14Z" ) ) );
-
-
     }
 
 
@@ -108,37 +104,30 @@ public class TemporalFunTest extends CypherTestTemplate {
     public void yearQuarterDayTimeDateFunTest() {
         GraphResult res = execute( "RETURN datetime({year: 1984, quarter: 3, dayOfQuarter: 45, hour: 12, minute: 31, second: 14, microsecond: 645876})" );
         containsRows( res, true, false, Row.of( TestLiteral.from( "1984-08-14T12:31:14.645876Z" ) ) );
-
     }
 
 
     @Test
     public void stringIntoTimeDateFunTest() {
         GraphResult res = execute( "RETURN datetime('2015-07-21T21:40:32.142+0100')" );
-
         containsRows( res, true, false, Row.of( TestLiteral.from( "2015-07-21T21:40:32.142+01:00" ) ) );
-        res = execute( "RETURN datetime('2015-W30-2T214032.142Z')" );
 
+        res = execute( "RETURN datetime('2015-W30-2T214032.142Z')" );
         containsRows( res, true, false, Row.of( TestLiteral.from( "2015-07-21T21:40:32.142Z" ) ) );
 
         res = execute( "RETURN datetime('2015T214032-0100')" );
-
         containsRows( res, true, false, Row.of( TestLiteral.from( "2015-01-01T21:40:32-01:00" ) ) );
 
         res = execute( "RETURN datetime('20150721T21:40-01:30')" );
-
         containsRows( res, true, false, Row.of( TestLiteral.from( "2015-07-21T21:40-01:30" ) ) );
 
         res = execute( "RETURN datetime('2015-07-21T21:40:32.142[Europe/London]')" );
-
         containsRows( res, true, false, Row.of( TestLiteral.from( "datetime('2015-07-21T21:40:32.142[Europe/London]')" ) ) );
-
     }
 
 
     @Test
     public void timeFunTest() {
-
         GraphResult res = execute( "RETURN time({hour: 12, minute: 31, second: 14, millisecond: 123, microsecond: 456, nanosecond: 789})" );
         containsRows( res, true, false, Row.of( TestLiteral.from( "12:31:14.123456789Z" ) ) );
 
@@ -153,7 +142,6 @@ public class TemporalFunTest extends CypherTestTemplate {
 
         res = execute( "RETURN time({hour: 12, timezone: '+01:00'})" );
         containsRows( res, true, false, Row.of( TestLiteral.from( "12:00:00+01:00" ) ) );
-
     }
 
 
@@ -171,13 +159,11 @@ public class TemporalFunTest extends CypherTestTemplate {
         res = execute( "RETURN time('214032-0100')" );
         containsRows( res, true, false, Row.of( TestLiteral.from( "21:40:32-01:00" ) ) );
 
-
     }
 
 
     @Test
     public void durationFunTest() {
-
         GraphResult res = execute( "RETURN duration({days: 14, hours:16, minutes: 12})" );
         containsRows( res, true, false, Row.of( TestLiteral.from( "P14DT16H12M" ) ) );
 
@@ -195,8 +181,6 @@ public class TemporalFunTest extends CypherTestTemplate {
 
         res = execute( "RETURN duration({minutes: 1.5, seconds: 1, nanoseconds: 123456789})" );
         containsRows( res, true, false, Row.of( TestLiteral.from( "PT1M31.123456789S" ) ) );
-
-
     }
 
 
@@ -204,6 +188,7 @@ public class TemporalFunTest extends CypherTestTemplate {
     public void stringIntoDurationFunTest() {
         GraphResult res = execute( "RETURN duration(\"P14DT16H12M\") " );
         containsRows( res, true, false, Row.of( TestLiteral.from( "P14DT16H12M" ) ) );
+
         res = execute( "RETURN duration(\"P5M1.5D\")" );
         containsRows( res, true, false, Row.of( TestLiteral.from( "P5M1DT12H" ) ) );
 
@@ -215,8 +200,6 @@ public class TemporalFunTest extends CypherTestTemplate {
 
         res = execute( "RETURN duration(\"P2012-02-02T14:37:21.545\")" );
         containsRows( res, true, false, Row.of( TestLiteral.from( "P2012Y2M2DT14H37M21.545S" ) ) );
-
-
     }
 
 
@@ -225,6 +208,5 @@ public class TemporalFunTest extends CypherTestTemplate {
         GraphResult res = execute( "RETURN duration.between(date('1984-10-11'), date('2015-06-24')) AS theDuration" );
         containsRows( res, true, false, Row.of( TestLiteral.from( "P30Y8M13D" ) ) );
     }
-
 
 }

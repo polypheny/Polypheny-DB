@@ -16,6 +16,8 @@
 
 package org.polypheny.db.cypher.clause.write;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -26,11 +28,8 @@ import org.polypheny.db.cypher.helper.TestNode;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.models.results.GraphResult;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 
 public class DmlInsertTest extends CypherTestTemplate {
-
 
     public static final String CREATE_PERSON_MAX = "CREATE (p:Person {name: 'Max Muster'})";
 
@@ -110,10 +109,8 @@ public class DmlInsertTest extends CypherTestTemplate {
     @Test
     public void insertNodeWithManyLabelsAndAsPropertyTest() {
         execute( "CREATE (n:Person:Employee {name :'Max'})" );
-
         GraphResult res = matchAndReturnAllNodes();
         containsNodes( res, true, TestNode.from( List.of( "Person", "Employee" ), Pair.of( "name", "Max" ) ) );
-
     }
 
 
@@ -132,7 +129,6 @@ public class DmlInsertTest extends CypherTestTemplate {
         GraphResult res = matchAndReturnAllNodes();
         assertEquals( 1, res.getData().length );
         containsNodes( res, true, TestNode.from( List.of( "node" ), Pair.of( "id", 9223372036854775807L ) ) );
-
     }
 
 
@@ -142,7 +138,6 @@ public class DmlInsertTest extends CypherTestTemplate {
         GraphResult res = matchAndReturnAllNodes();
         assertEquals( 1, res.getData().length );
         containsNodes( res, true, TestNode.from( List.of( "node" ), Pair.of( "id", 9223372036854775807L ) ) );
-
     }
 
 
@@ -152,25 +147,20 @@ public class DmlInsertTest extends CypherTestTemplate {
         GraphResult res = matchAndReturnAllNodes();
         assertEquals( 1, res.getData().length );
         containsNodes( res, true, TestNode.from( List.of( "node" ), Pair.of( "id", 100 ) ) );
-
-
     }
 
 
     @Test
     public void insertMaxLongAsResultOfMathematicalOperationsTest() {
-
         execute( "CREATE (n : node { id  : 2^63-1})" );
         GraphResult res = matchAndReturnAllNodes();
         assertEquals( 1, res.getData().length );
         containsNodes( res, true, TestNode.from( List.of( "node" ), Pair.of( "id", 4 ) ) );
-
     }
 
 
     @Test
     public void insertMinLongAsPropertyValueTest() {
-
         execute( "CREATE (n : node { id  : -9223372036854775808L})" );
         GraphResult res = matchAndReturnAllNodes();
         assertEquals( 1, res.getData().length );
@@ -184,13 +174,11 @@ public class DmlInsertTest extends CypherTestTemplate {
         GraphResult res = matchAndReturnAllNodes();
         assertEquals( 1, res.getData().length );
         containsNodes( res, true, TestNode.from( List.of( "node" ), Pair.of( "id", 1.7976931348623157e+308 ) ) );
-
     }
 
 
     @Test
     public void insertMinDoubleAsPropertyValueTest() {
-
         execute( "CREATE (n : node { id  : 4.9e-324 })" );
         GraphResult res = matchAndReturnAllNodes();
         assertEquals( res.getData().length, 1 );
@@ -207,14 +195,11 @@ public class DmlInsertTest extends CypherTestTemplate {
         containsNodes( res, true,
                 TestNode.from( List.of( "node" ), Pair.of( "id", 5039 ) ),
                 TestNode.from( List.of( "node" ), Pair.of( "id", -421631 ) ) );
-
-
     }
 
 
     @Test
     public void insertOctalIntegerAsPropertyValueTest() {
-
         execute( "CREATE (n : node { id  : 0o1372})" );
         execute( "CREATE (n : node { id  :-0o5671 })" );
         GraphResult res = matchAndReturnAllNodes();
@@ -291,7 +276,6 @@ public class DmlInsertTest extends CypherTestTemplate {
         execute( "CREATE ({l: [1 ,2,3]})" );
         GraphResult res = matchAndReturnAllNodes();
         assertEquals( 1, res.getData().length );
-
     }
 
 
@@ -358,7 +342,6 @@ public class DmlInsertTest extends CypherTestTemplate {
         // only select all edges
         res = execute( "MATCH ()-[r]->() RETURN r" );
         containsEdges( res, true, TestEdge.from( List.of( "OWNER_OF" ) ) );
-
     }
 
 
@@ -373,7 +356,6 @@ public class DmlInsertTest extends CypherTestTemplate {
                         Pair.of( "name", "Kira" ),
                         Pair.of( "age", 3 ),
                         Pair.of( "type", "dog" ) ) );
-
     }
 
 
@@ -402,7 +384,6 @@ public class DmlInsertTest extends CypherTestTemplate {
         res = execute( "MATCH ()-[r]->() RETURN r" );
         containsEdges( res, true, TestEdge.from( List.of( "KNOWS" ),
                 Pair.of( "since", 1994 ), Pair.of( "relation", "friend" ) ) );
-
     }
 
 
@@ -446,6 +427,7 @@ public class DmlInsertTest extends CypherTestTemplate {
     @Test
     public void insertAllInOneTest() {
         execute( CREATE_COMPLEX_GRAPH_1 );
+
         GraphResult res = execute( "MATCH (n) RETURN n" );
         assertEquals( 3, res.getData().length );
         assertNode( res, 0 );
@@ -502,7 +484,6 @@ public class DmlInsertTest extends CypherTestTemplate {
 
         containsRows( res, true, true,
                 Row.of( TestEdge.from( List.of( "KNOWS" ) ) ) );
-
     }
 
 
@@ -513,13 +494,10 @@ public class DmlInsertTest extends CypherTestTemplate {
 
         execute( "MATCH (max:Person {name: 'Max'})\n"
                 + "CREATE (max)-[:KNOWS]->(hans:Person {name: 'Hans'})-[:KNOWS]->(peter:Person {name: 'Peter'})" );
-
         GraphResult res = execute( "MATCH ()-[r]->() RETURN r" );
-
         containsRows( res, true, true,
                 Row.of( TestEdge.from( List.of( "KNOWS" ) ) ),
                 Row.of( TestEdge.from( List.of( "KNOWS" ) ) ) );
-
     }
 
 }

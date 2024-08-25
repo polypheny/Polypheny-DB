@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.cypher.Functions;
-
+package org.polypheny.db.cypher.functions;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.cypher.CypherTestTemplate;
 import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.webui.models.results.GraphResult;
+
 
 public class SpatialFunTest extends CypherTestTemplate {
 
@@ -34,7 +34,6 @@ public class SpatialFunTest extends CypherTestTemplate {
 
     @Test
     public void cartesian2DPointFunTest() {
-
         GraphResult res = execute( """
                 WITH point({x: 3, y: 4}) AS p
                 RETURN

@@ -24,6 +24,7 @@ import org.polypheny.db.cypher.CypherTestTemplate;
 import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.webui.models.results.GraphResult;
 
+
 public class OrderByTest extends CypherTestTemplate {
 
     @BeforeEach
@@ -52,7 +53,6 @@ public class OrderByTest extends CypherTestTemplate {
                 Row.of( TestLiteral.from( "Max" ) ),
                 Row.of( TestLiteral.from( "Max" ) ),
                 Row.of( TestLiteral.from( "Hans" ) ) );
-
     }
 
 
@@ -72,7 +72,6 @@ public class OrderByTest extends CypherTestTemplate {
         containsRows( res, true, true,
                 Row.of( TestLiteral.from( 13 ), TestLiteral.from( "Bob" ) ),
                 Row.of( TestLiteral.from( 13 ), TestLiteral.from( "Ann" ) ) );
-
     }
 
 
@@ -92,7 +91,6 @@ public class OrderByTest extends CypherTestTemplate {
         assertTrue( containsRows( res, true, true,
                 Row.of( TestLiteral.from( "Max" ), TestLiteral.from( null ) ),
                 Row.of( TestLiteral.from( "Kira" ), TestLiteral.from( 3 ) ) ) );
-
     }
 
 
@@ -139,7 +137,6 @@ public class OrderByTest extends CypherTestTemplate {
         containsRows( res, true, true,
                 Row.of( TestLiteral.from( 31 ) ),
                 Row.of( TestLiteral.from( 45 ) ) );
-
     }
 
 
@@ -153,8 +150,6 @@ public class OrderByTest extends CypherTestTemplate {
         containsRows( res, true, true,
                 Row.of( TestLiteral.from( 45 ) ),
                 Row.of( TestLiteral.from( 32 ) ) );
-
-
     }
 
 
@@ -170,8 +165,6 @@ public class OrderByTest extends CypherTestTemplate {
                 Row.of( TestLiteral.from( 13 ), TestLiteral.from( "Ann" ) ),
                 Row.of( TestLiteral.from( 13 ), TestLiteral.from( "Bob" ) ),
                 Row.of( TestLiteral.from( 14 ), TestLiteral.from( "Alex" ) ) );
-
-
     }
 
 
@@ -187,8 +180,6 @@ public class OrderByTest extends CypherTestTemplate {
                 Row.of( TestLiteral.from( 13 ), TestLiteral.from( "Ann" ) ),
                 Row.of( TestLiteral.from( 13 ), TestLiteral.from( "Bob" ) ),
                 Row.of( TestLiteral.from( 14 ), TestLiteral.from( "Alex" ) ) );
-
-
     }
 
 
@@ -199,16 +190,12 @@ public class OrderByTest extends CypherTestTemplate {
                 Row.of( TestLiteral.from( true ) ),
                 Row.of( TestLiteral.from( 1 ) ),
                 Row.of( TestLiteral.from( 3.14 ) ) );
-
-
     }
 
 
     @Test
     public void renameWithClauseWithUnwindSortTest() {
-
         GraphResult res = execute( "WITH  [1 ,2 ,3] AS number UNWIND  number AS n RETURN  n ORDER BY n" );
-
         containsRows( res, true, true,
                 Row.of( TestLiteral.from( 1 ) ),
                 Row.of( TestLiteral.from( 2 ) ),
@@ -218,9 +205,7 @@ public class OrderByTest extends CypherTestTemplate {
 
     @Test
     public void renameWithMixedTypesWithUnwindSortTest() {
-
         GraphResult res = execute( "WITH  [1 ,2 ,'4'] AS number UNWIND  number AS n RETURN n ORDER BY n" );
-
         containsRows( res, true, true,
                 Row.of( TestLiteral.from( '4' ) ),
                 Row.of( TestLiteral.from( 1 ) ),
@@ -237,7 +222,6 @@ public class OrderByTest extends CypherTestTemplate {
         containsRows( res, true, true,
                 Row.of( TestLiteral.from( 14 ), TestLiteral.from( 32 ) ),
                 Row.of( TestLiteral.from( 13 ), TestLiteral.from( 38 ) ) );
-
     }
 
 
@@ -247,12 +231,8 @@ public class OrderByTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_COMPLEX_2 );
         execute( SINGLE_NODE_PERSON_COMPLEX_3 );
         GraphResult res = execute( "MATCH (p:Person) WITH  p.age AS age ORDER BY age DESC SKIP 1 Limit 1 RETURN age" );
-
         containsRows( res, true, true,
                 Row.of( TestLiteral.from( 32 ) ) );
-
-
     }
-
 
 }

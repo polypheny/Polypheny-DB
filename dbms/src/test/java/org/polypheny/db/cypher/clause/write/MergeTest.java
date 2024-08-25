@@ -16,6 +16,10 @@
 
 package org.polypheny.db.cypher.clause.write;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,14 +29,9 @@ import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.cypher.helper.TestNode;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.models.results.GraphResult;
-import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Slf4j
 public class MergeTest extends CypherTestTemplate {
-
 
     protected static final String SINGLE_NODE_PERSON_COMPLEX_4 = "CREATE (charlie:Person {name: 'Charlie Sheen', bornIn: 'New York', chauffeurName: 'John Brown'})";
     protected static final String SINGLE_NODE_PERSON_COMPLEX_5 = "CREATE (martin:Person {name: 'Martin Sheen', bornIn: 'Ohio', chauffeurName: 'Bob Brown'})";
@@ -62,8 +61,6 @@ public class MergeTest extends CypherTestTemplate {
         GraphResult res = execute( "MERGE (P) Return P " );
         assertNode( res, 0 );
         containsNodes( res, true, TestNode.from( List.of() ) );
-
-
     }
 
 
@@ -87,7 +84,6 @@ public class MergeTest extends CypherTestTemplate {
 
     @Test
     public void singleNodeWithMultipleLabelsMergeTest() {
-
         // new node
         execute( "MERGE (robert:Critic:Viewer)" );
         GraphResult res = matchAndReturnAllNodes();
@@ -98,16 +94,14 @@ public class MergeTest extends CypherTestTemplate {
         execute( "MERGE (robert:Critic:Viewer)" );
         res = matchAndReturnAllNodes();
         assertEquals( 1, res.getData().length );
-
     }
 
 
     @Test
     public void singleNodeWithSinglePropertyMergeTest() {
-
         execute( "MERGE (charlie {name: 'Charlie Sheen'})" );
-        GraphResult res = matchAndReturnAllNodes();
 
+        GraphResult res = matchAndReturnAllNodes();
         assertNode( res, 0 );
         containsNodes( res, true, TestNode.from( List.of(),
                 Pair.of( "name", "Charlie Sheen" ) ) );
@@ -115,13 +109,11 @@ public class MergeTest extends CypherTestTemplate {
         execute( "MERGE (charlie {name: 'Charlie Sheen'})" );
         res = matchAndReturnAllNodes();
         assertEquals( 1, res.getData().length );
-
     }
 
 
     @Test
     public void singleNodeWithMultiplePropertiesMergeTest() {
-
         execute( "MERGE (charlie {name: 'Charlie Sheen', age: 10})" );
         GraphResult res = matchAndReturnAllNodes();
         assertNode( res, 0 );
@@ -131,14 +123,12 @@ public class MergeTest extends CypherTestTemplate {
 
         execute( "MERGE (charlie {name: 'Charlie Sheen', age: 10})" );
         res = matchAndReturnAllNodes();
-
         assertEquals( 1, res.getData().length );
     }
 
 
     @Test
     public void singleNodeWithPropertiesAndLabelMergeTest() {
-
         execute( "MERGE (michael:Person {name: 'Michael Douglas' , age : 10})" );
         GraphResult res = matchAndReturnAllNodes();
         assertNode( res, 0 );
@@ -148,7 +138,6 @@ public class MergeTest extends CypherTestTemplate {
 
         execute( "MERGE (michael:Person {name: 'Michael Douglas' , age : 10})" );
         res = matchAndReturnAllNodes();
-
         assertEquals( 1, res.getData().length );
     }
 
@@ -158,7 +147,6 @@ public class MergeTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_COMPLEX_4 );
         execute( SINGLE_NODE_PERSON_COMPLEX_5 );
         execute( SINGLE_NODE_PERSON_COMPLEX_6 );
-
         execute( """
                 MATCH (person:Person)
                 MERGE (location:Location {name: person.bornIn})
@@ -176,18 +164,15 @@ public class MergeTest extends CypherTestTemplate {
                 """ );
 
         res = execute( "MATCH (location:Location) RETURN location" );
-
         assertEquals( 1, res.getData().length );
     }
 
 
     @Test
     public void createWithMergeTest() {
-
         execute( "MERGE (keanu:Person {name: 'Keanu Reeves', bornIn: 'Beirut', chauffeurName: 'Eric Brown'})\n"
                 + "ON CREATE SET keanu.age = 20"
         );
-
         GraphResult res = matchAndReturnAllNodes();
         assertNode( res, 0 );
         containsNodes( res, true,
@@ -197,7 +182,6 @@ public class MergeTest extends CypherTestTemplate {
         );
         res = matchAndReturnAllNodes();
         assertEquals( 1, res.getData().length );
-
     }
 
 
@@ -225,8 +209,6 @@ public class MergeTest extends CypherTestTemplate {
                 Pair.of( "found", true ) ) );
 
         assertEquals( 1, res.getData().length );
-
-
     }
 
 
@@ -281,8 +263,6 @@ public class MergeTest extends CypherTestTemplate {
 
         res = execute( "MATCH ()-[r]->() RETURN r" );
         assertEquals( 1, res.getData().length );
-
-
     }
 
 
@@ -317,7 +297,6 @@ public class MergeTest extends CypherTestTemplate {
 
         res = matchAndReturnAllNodes();
         assertEquals( 1, res.getData().length );
-
     }
 
 
@@ -384,7 +363,6 @@ public class MergeTest extends CypherTestTemplate {
         GraphResult nodes = execute( "MATCH (location:Location) RETURN Location  " );
 
         assertTrue( edges.getData().length == 3 && nodes.getData().length == 3 );
-
     }
 
 
@@ -415,8 +393,6 @@ public class MergeTest extends CypherTestTemplate {
         GraphResult edges = execute( "MATCH ()-[HAS_CHAUFFEUR]->() RETURN HAS_CHAUFFEUR" );
         GraphResult nodes = execute( "MATCH (n:Chauffeur) RETURN Chauffeur" );
         assertTrue( edges.getData().length == 3 && nodes.getData().length == 3 );
-
     }
-
 
 }

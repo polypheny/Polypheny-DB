@@ -16,6 +16,9 @@
 
 package org.polypheny.db.cypher.clause.general;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.cypher.CypherTestTemplate;
@@ -24,9 +27,6 @@ import org.polypheny.db.cypher.helper.TestNode;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.models.results.GraphResult;
 
-import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class LimitTest extends CypherTestTemplate {
 
@@ -137,8 +137,6 @@ public class LimitTest extends CypherTestTemplate {
         containsNodes( res, true, TestNode.from( Pair.of( "name", "Ann" ),
                 Pair.of( "age", 45 ),
                 Pair.of( "depno", 13 ) ) );
-
-
     }
 
 
@@ -155,6 +153,5 @@ public class LimitTest extends CypherTestTemplate {
 
         containsRows( res, true, false, Row.of( TestLiteral.from( "Max" ) ) );
     }
-
 
 }

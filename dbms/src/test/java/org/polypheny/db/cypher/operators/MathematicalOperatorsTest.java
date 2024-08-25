@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.cypher.Operators;
-
+package org.polypheny.db.cypher.operators;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.cypher.CypherTestTemplate;
 import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.webui.models.results.GraphResult;
+
 
 public class MathematicalOperatorsTest extends CypherTestTemplate {
 
@@ -42,16 +42,13 @@ public class MathematicalOperatorsTest extends CypherTestTemplate {
     @Test
     public void minisOperatorTest() {
         GraphResult res = execute( "RETURN 3 - 2" );
-
         containsRows( res, true, false, Row.of( TestLiteral.from( 1 ) ) );
-
     }
 
 
     @Test
     public void multiplicationOperatorTest() {
         GraphResult res = execute( "RETURN  2 * 3" );
-
         containsRows( res, true, false, Row.of( TestLiteral.from( 6 ) ) );
     }
 
@@ -59,7 +56,6 @@ public class MathematicalOperatorsTest extends CypherTestTemplate {
     @Test
     public void divisionOperatorTest() {
         GraphResult res = execute( "RETURN 6 / 3 " );
-
         containsRows( res, true, false, Row.of( TestLiteral.from( 2 ) ) );
     }
 
@@ -68,16 +64,13 @@ public class MathematicalOperatorsTest extends CypherTestTemplate {
     public void moduleOperatorTest() {
         GraphResult res = execute( "RETURN 3 % 2 " );
         containsRows( res, true, false, Row.of( TestLiteral.from( 1 ) ) );
-
     }
 
 
     @Test
     public void exponentiationOperator() {
         GraphResult res = execute( "RETURN 2 ^ 3" );
-
         containsRows( res, true, false, Row.of( TestLiteral.from( 8.0 ) ) );
     }
-
 
 }

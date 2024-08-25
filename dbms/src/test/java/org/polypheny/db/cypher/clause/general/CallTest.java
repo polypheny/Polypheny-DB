@@ -22,6 +22,7 @@ import org.polypheny.db.cypher.CypherTestTemplate;
 import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.webui.models.results.GraphResult;
 
+
 public class CallTest extends CypherTestTemplate {
 
     @BeforeEach
@@ -53,7 +54,6 @@ public class CallTest extends CypherTestTemplate {
                 Row.of( TestLiteral.from( "Person" ) ),
                 Row.of( TestLiteral.from( "Animal" ) ),
                 Row.of( TestLiteral.from( "Animal" ) ) );
-
     }
 
 
@@ -148,7 +148,6 @@ public class CallTest extends CypherTestTemplate {
                 Row.of( TestLiteral.from( "name" ) ),
                 Row.of( TestLiteral.from( "age" ) ),
                 Row.of( TestLiteral.from( "type" ) ) );
-
     }
 
 

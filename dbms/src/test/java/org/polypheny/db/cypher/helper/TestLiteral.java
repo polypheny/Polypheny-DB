@@ -19,6 +19,7 @@ package org.polypheny.db.cypher.helper;
 import javax.annotation.Nullable;
 import org.polypheny.db.type.entity.PolyValue;
 
+
 public class TestLiteral implements TestObject {
 
     public final String value;

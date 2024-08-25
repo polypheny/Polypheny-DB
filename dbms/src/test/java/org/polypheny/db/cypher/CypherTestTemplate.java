@@ -50,6 +50,7 @@ import org.polypheny.db.type.entity.graph.PolyPath;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.models.results.GraphResult;
 
+
 @Slf4j
 public class CypherTestTemplate {
 
@@ -57,13 +58,10 @@ public class CypherTestTemplate {
     protected static final String SINGLE_NODE_PERSON_1 = "CREATE (p:Person {name: 'Max'})";
     protected static final String SINGLE_NODE_PERSON_2 = "CREATE (p:Person {name: 'Hans'})";
 
-
     protected static final String SINGLE_NODE_PERSON_COMPLEX_1 = "CREATE (p:Person {name: 'Ann', age: 45, depno: 13})";
     protected static final String SINGLE_NODE_PERSON_COMPLEX_2 = "CREATE (p:Person {name: 'Bob', age: 31, depno: 13})";
 
-
     protected static final String SINGLE_NODE_PERSON_COMPLEX_3 = "CREATE (p:Person {name: 'Alex', age: 32, depno: 14})";
-
 
     protected static final String SINGLE_NODE_ANIMAL = "CREATE (a:Animal {name:'Kira', age:3, type:'dog'})";
     protected static final String SINGLE_NODE_GEOM = "CREATE (c:City {name:'Basel', location:'POINT (7.586052 47.559152)'})";
@@ -179,7 +177,6 @@ public class CypherTestTemplate {
         }
 
         return contains;
-
     }
 
 
@@ -194,11 +191,10 @@ public class CypherTestTemplate {
             }
 
             // Use assert to validate exclusive condition
-            assertTrue(!exclusive || actual.getData().length >= rows.length, "Exclusive condition failed: actual data has fewer rows than expected.");
-
+            assertTrue( !exclusive || actual.getData().length >= rows.length, "Exclusive condition failed: actual data has fewer rows than expected." );
 
             // Use the appropriate matching method based on the 'ordered' flag
-            return ordered ? matchesExactRows(parsed, rows) : matchesUnorderedRows(parsed, rows);
+            return ordered ? matchesExactRows( parsed, rows ) : matchesUnorderedRows( parsed, rows );
 
         } catch ( Throwable t ) {
             fail( "Error while evaluating result: " + t.getMessage() );
@@ -207,51 +203,50 @@ public class CypherTestTemplate {
     }
 
 
-    private static boolean matchesUnorderedRows(List<List<PolyValue>> parsed, Row[] rows) {
+    private static boolean matchesUnorderedRows( List<List<PolyValue>> parsed, Row[] rows ) {
         List<Integer> used = new ArrayList<>();
 
-        for (Row row : rows) {
+        for ( Row row : rows ) {
             boolean matches = false;
 
-            for (int i = 0; i < parsed.size(); i++) {
-                if (!matches && !used.contains(i) && row.matches(parsed.get(i))) {
-                    used.add(i);
+            for ( int i = 0; i < parsed.size(); i++ ) {
+                if ( !matches && !used.contains( i ) && row.matches( parsed.get( i ) ) ) {
+                    used.add( i );
                     matches = true;
                     break;
                 }
             }
 
             // Use assert to validate that each row finds a match
-            assertTrue(matches, "Row " + row + " could not be matched in the parsed data.");
+            assertTrue( matches, "Row " + row + " could not be matched in the parsed data." );
         }
         return true;
     }
 
 
-
-    private static boolean matchesExactRows(List<List<PolyValue>> parsed, Row[] rows) {
-        for (int j = 0; j < rows.length; j++) {
+    private static boolean matchesExactRows( List<List<PolyValue>> parsed, Row[] rows ) {
+        for ( int j = 0; j < rows.length; j++ ) {
             // Use assert to ensure each row matches
-            assertTrue(rows[j].matches(parsed.get(j)), "Row " + j + " does not match the expected value.");
+            assertTrue( rows[j].matches( parsed.get( j ) ), "Row " + j + " does not match the expected value." );
         }
         return true;
     }
 
 
     @SneakyThrows
-    private <T extends GraphPropertyHolder> boolean contains(String[][] actual, boolean exclusive, int index, Class<T> clazz, TestObject[] expected) {
+    private <T extends GraphPropertyHolder> boolean contains( String[][] actual, boolean exclusive, int index, Class<T> clazz, TestObject[] expected ) {
         List<T> parsed = new ArrayList<>();
 
-        for (String[] entry : actual) {
-            parsed.add(PolyValue.JSON_WRAPPER.readValue(entry[index], clazz));
+        for ( String[] entry : actual ) {
+            parsed.add( PolyValue.JSON_WRAPPER.readValue( entry[index], clazz ) );
         }
 
         // Assert that if exclusive is true, the number of parsed items equals the number of expected items
-        assertEquals(exclusive ? expected.length : parsed.size(), parsed.size(), "Exclusive condition failed: parsed size does not match expected length.");
+        assertEquals( exclusive ? expected.length : parsed.size(), parsed.size(), "Exclusive condition failed: parsed size does not match expected length." );
 
-        for (TestObject node : expected) {
+        for ( TestObject node : expected ) {
             // Assert that each expected node matches at least one parsed element
-            assertTrue(parsed.stream().anyMatch(n -> node.matches(n, exclusive)), "Expected node does not match any parsed element.");
+            assertTrue( parsed.stream().anyMatch( n -> node.matches( n, exclusive ) ), "Expected node does not match any parsed element." );
         }
 
         return true;
@@ -281,7 +276,7 @@ public class CypherTestTemplate {
 
 
     protected void assertEmpty( GraphResult res ) {
-        assertEquals( 0 ,   res.getData().length );
+        assertEquals( 0, res.getData().length );
     }
 
 
@@ -361,6 +356,5 @@ public class CypherTestTemplate {
         }
 
     }
-
 
 }

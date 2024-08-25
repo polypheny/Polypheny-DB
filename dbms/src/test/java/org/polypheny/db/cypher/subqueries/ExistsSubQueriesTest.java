@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.cypher.Subqueries;
+package org.polypheny.db.cypher.subqueries;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -22,7 +22,11 @@ import org.polypheny.db.cypher.CypherTestTemplate;
 import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.webui.models.results.GraphResult;
 
+
 public class ExistsSubQueriesTest extends CypherTestTemplate {
+
+    public static final String EDGE_3 = "CREATE  (p:Person {name :'Max'}),(p)-[rel:OWNER_OF{ since : 2002}] -> (c:Cat : Animal {name :'Mittens' , age : 3}), (p)-[rel2:OWNER_OF { since : 1999}] -> (d:Dog :Animal { name : 'Andy' , age :10}),(d)-[:HAS_TOY]->(:Toy{name:'Banana'})";
+
 
     @BeforeEach
     public void reset() {
@@ -31,20 +35,18 @@ public class ExistsSubQueriesTest extends CypherTestTemplate {
     }
 
 
-    public static final String EDGE_3 = "CREATE  (p:Person {name :'Max'}),(p)-[rel:OWNER_OF{ since : 2002}] -> (c:Cat : Animal {name :'Mittens' , age : 3}), (p)-[rel2:OWNER_OF { since : 1999}] -> (d:Dog :Animal { name : 'Andy' , age :10}),(d)-[:HAS_TOY]->(:Toy{name:'Banana'})";
-
-
     @Test
     public void simpleExistsSubQueryTest() {
         execute( SINGLE_NODE_PERSON_2 );
+
         GraphResult res = execute( """
                 MATCH (person:Person)
                 WHERE EXISTS {
                     (person)-[:OWNER_OF]->(:Dog)
                 }
                 RETURN person.name AS name""" );
-
         containsRows( res, true, false, Row.of( TestLiteral.from( null ) ) );
+
         execute( EDGE_3 );
         execute( """
                 MATCH (person:Person)
@@ -52,7 +54,6 @@ public class ExistsSubQueriesTest extends CypherTestTemplate {
                     (person)-[:OWNER_OF]->(:Dog)
                 }
                 RETURN person.name AS name""" );
-
         containsRows( res, true, false, Row.of( TestLiteral.from( "Max" ) ) );
     }
 
@@ -67,15 +68,12 @@ public class ExistsSubQueriesTest extends CypherTestTemplate {
                   WHERE person.name = "Max"\s
                 }
                 RETURN dog.name AS name""" );
-
         containsRows( res, true, false, Row.of( TestLiteral.from( "Andy" ) ) );
-
     }
 
 
     @Test
     public void nestedExistsSubQueryTest() {
-
         execute( EDGE_3 );
         GraphResult res = execute( """
                 MATCH (person:Person)
@@ -89,8 +87,6 @@ public class ExistsSubQueriesTest extends CypherTestTemplate {
                 RETURN person.name AS name""" );
 
         containsRows( res, true, false, Row.of( TestLiteral.from( "Max" ) ) );
-
-
     }
 
 
@@ -102,7 +98,6 @@ public class ExistsSubQueriesTest extends CypherTestTemplate {
                 RETURN person.name AS name, EXISTS {
                   MATCH (person)-[:OWNER_OF]->(:Dog)
                 } AS hasDog""" );
-
         containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Max" ), TestLiteral.from( true ) ) );
     }
@@ -112,7 +107,6 @@ public class ExistsSubQueriesTest extends CypherTestTemplate {
     public void unionWithExistsSubQueryTest() {
         execute( EDGE_3 );
         execute( SINGLE_NODE_PERSON_2 );
-
         GraphResult res = execute( """
                 MATCH (person:Person)
                 RETURN
@@ -142,6 +136,5 @@ public class ExistsSubQueriesTest extends CypherTestTemplate {
         containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Max" ) ) );
     }
-
 
 }

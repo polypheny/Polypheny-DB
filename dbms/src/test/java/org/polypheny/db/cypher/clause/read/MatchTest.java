@@ -16,26 +16,21 @@
 
 package org.polypheny.db.cypher.clause.read;
 
-import java.util.Arrays;
 import java.util.List;
-import io.activej.codegen.expression.impl.Null;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.polypheny.db.adapter.annotations.AdapterSettingList;
 import org.polypheny.db.cypher.CypherTestTemplate;
 import org.polypheny.db.cypher.helper.TestEdge;
 import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.cypher.helper.TestNode;
-import org.polypheny.db.cypher.helper.TestObject;
 import org.polypheny.db.cypher.helper.TestPath;
-import org.polypheny.db.interpreter.Row;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.models.results.GraphResult;
 
+
 @Slf4j
 public class MatchTest extends CypherTestTemplate {
-
 
     @BeforeEach
     public void reset() {
@@ -47,6 +42,8 @@ public class MatchTest extends CypherTestTemplate {
     ///////////////////////////////////////////////
     ///////// MATCH
     ///////////////////////////////////////////////
+
+
     @Test
     public void simpleMatchTest() {
         GraphResult res = execute( "MATCH (n) RETURN n" );
@@ -63,7 +60,6 @@ public class MatchTest extends CypherTestTemplate {
         GraphResult res = execute( "MATCH (n:Villain) RETURN n" );
         assertNode( res, 0 );
         assertEmpty( res );
-
     }
 
 
@@ -75,7 +71,6 @@ public class MatchTest extends CypherTestTemplate {
         GraphResult res = execute( "MATCH (n:Person) RETURN n" );
         assertNode( res, 0 );
         containsNodes( res, true, MAX );
-
     }
 
 
@@ -112,13 +107,11 @@ public class MatchTest extends CypherTestTemplate {
         res = execute( "MATCH (n {name: 'Kira', age: 3}) RETURN n" );
         assertNode( res, 0 );
         containsNodes( res, true, TestNode.from( List.of( "Animal" ), Pair.of( "name", "Kira" ), Pair.of( "age", 3 ), Pair.of( "type", "dog" ) ) );
-
     }
 
     ///////////////////////////////////////////////
     ///////// PROJECT
     ///////////////////////////////////////////////
-
 
     @Test
     public void NoLabelPropertyTest() {
@@ -127,7 +120,6 @@ public class MatchTest extends CypherTestTemplate {
         GraphResult res = execute( "MATCH (n) RETURN n.age" );
         containsRows( res, true, false, Row.of( TestLiteral.from( 45 ) ),
                 Row.of( TestLiteral.from( null ) ) );
-
     }
 
 
@@ -162,7 +154,6 @@ public class MatchTest extends CypherTestTemplate {
     ///////////////////////////////////////////////
     ///////// EDGE
     ///////////////////////////////////////////////
-
 
     @Test
     public void simpleEdgeTest() {
@@ -257,7 +248,6 @@ public class MatchTest extends CypherTestTemplate {
     ///////// MIXED
     ///////////////////////////////////////////////
 
-
     @Test
     public void simpleMixedRelationshipTest() {
         execute( SINGLE_EDGE_1 );
@@ -271,13 +261,11 @@ public class MatchTest extends CypherTestTemplate {
                 Pair.of( "name", "Kira" ),
                 Pair.of( "age", 3 ),
                 Pair.of( "type", "dog" ) ) );
-
     }
 
     ///////////////////////////////////////////////
     ///////// "CROSS PRODUCT" MATCH
     ///////////////////////////////////////////////
-
 
     @Test
     public void simpleCrossProductMatchTest() {
@@ -285,7 +273,6 @@ public class MatchTest extends CypherTestTemplate {
         GraphResult res = execute( "MATCH (p:Person),(n) RETURN p,n" );
         assertNode( res, 0 );
         assertNode( res, 1 );
-
         containsRows( res, true, true, Row.of( MAX, MAX ) );
     }
 
@@ -297,7 +284,6 @@ public class MatchTest extends CypherTestTemplate {
         GraphResult res = execute( "MATCH (p:Person),(n) RETURN p,n" );
         assertNode( res, 0 );
         assertNode( res, 1 );
-
         containsRows( res, true, false,
                 Row.of( MAX, MAX ),
                 Row.of( HANS, MAX ),
@@ -313,9 +299,7 @@ public class MatchTest extends CypherTestTemplate {
         assertNode( res, 0 );
         assertNode( res, 1 );
         assertNode( res, 2 );
-
         containsRows( res, true, true, Row.of( MAX, MAX, MAX ) );
-
     }
 
 
@@ -325,9 +309,9 @@ public class MatchTest extends CypherTestTemplate {
         execute( SINGLE_EDGE_2 );
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
         execute( SINGLE_EDGE_1 );
+
         GraphResult res = execute( "MATCH (p:Person {name:'Max'})-[]-(t) RETURN t" );
         assertNode( res, 0 );
-
         containsRows( res, true, false,
                 Row.of( KIRA ),
                 Row.of( TestNode.from( List.of( "Person" ), Pair.of( "name", "Hans" ), Pair.of( "age", 31 ) ) ) );
@@ -336,8 +320,6 @@ public class MatchTest extends CypherTestTemplate {
         containsRows( res, true, false,
                 Row.of( KIRA ),
                 Row.of( TestNode.from( List.of( "Person" ), Pair.of( "name", "Hans" ), Pair.of( "age", 31 ) ) ) );
-
-
     }
 
 
@@ -365,13 +347,12 @@ public class MatchTest extends CypherTestTemplate {
     ///////// PATH
     ///////////////////////////////////////////////
 
-
     @Test
     public void matchPathTest() {
         execute( SINGLE_EDGE_1 );
+
         GraphResult res = execute( "MATCH (m {name:'Max'}), (k {name:'Kira'}), p = (m)-[]-(k)\n"
                 + "RETURN p" );
-
         containsRows( res, true, true,
                 Row.of( TestPath.of(
                         TestNode.from( List.of( "Person" ), Pair.of( "name", "Max" ) ),
@@ -384,8 +365,6 @@ public class MatchTest extends CypherTestTemplate {
                         TestNode.from( List.of( "Person" ), Pair.of( "name", "Max" ) ),
                         TestEdge.from( List.of( "OWNER_OF" ) ),
                         KIRA ) ) );
-
-
     }
 
 
@@ -393,11 +372,8 @@ public class MatchTest extends CypherTestTemplate {
     public void returnPathsByAsteriskMatchTest() {
         execute( SINGLE_EDGE_1 );
         GraphResult res = execute( "MATCH Path = () -[]->() RETURN *" );
-
         containsRows( res, true, false,
                 Row.of( TestPath.of( MAX, TestEdge.from( List.of( "OWNER_OF" ) ), KIRA ) ) );
-
-
     }
 
 
@@ -405,7 +381,6 @@ public class MatchTest extends CypherTestTemplate {
     public void returnNodesByAsteriskMatchTest() {
         execute( SINGLE_EDGE_1 );
         GraphResult res = execute( "MATCH (p)  RETURN *" );
-
         containsRows( res, true, false,
                 Row.of( MAX ),
                 Row.of( KIRA ) );
@@ -437,7 +412,6 @@ public class MatchTest extends CypherTestTemplate {
         execute( SINGLE_EDGE_1 );
         GraphResult res = execute( "MATCH ()-[r]-() RETURN *" );
         containsEdges( res, true, TestEdge.from( List.of( "OWNER_OF" ) ) );
-
     }
 
 
@@ -447,15 +421,11 @@ public class MatchTest extends CypherTestTemplate {
         GraphResult res = execute( "MATCH (b:Person {name: 'Max'}), (a:Animal {name: 'Kira'})\n"
                 + "MATCH p = shortestPath((b)-[*]-(a))\n"
                 + "RETURN p\n" );
-
         containsRows( res, true, true,
                 Row.of( TestPath.of(
                         TestNode.from( List.of( "Person" ), Pair.of( "name", "Max" ) ),
                         TestEdge.from( List.of( "OWNER_OF" ) ),
                         KIRA ) ) );
-
-
     }
-
 
 }

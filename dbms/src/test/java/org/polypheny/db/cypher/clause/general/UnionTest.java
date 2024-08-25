@@ -24,15 +24,14 @@ import org.polypheny.db.webui.models.results.GraphResult;
 
 public class UnionTest extends CypherTestTemplate {
 
+    protected static final String SINGLE_NODE_MOVIE = "CREATE (wallStreet:Movie {title: 'Wall Street' , released : 2002})";
+
 
     @BeforeEach
     public void reset() {
         tearDown();
         createGraph();
     }
-
-
-    protected static final String SINGLE_NODE_MOVIE = "CREATE (wallStreet:Movie {title: 'Wall Street' , released : 2002})";
 
 
     @Test
@@ -113,8 +112,6 @@ public class UnionTest extends CypherTestTemplate {
                 Row.of( TestLiteral.from( "Hans" ) ),
                 Row.of( TestLiteral.from( "Max" ) ),
                 Row.of( TestLiteral.from( "Hans" ) ) );
-
-
     }
 
 

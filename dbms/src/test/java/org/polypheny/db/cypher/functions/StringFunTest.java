@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.cypher.Functions;
+package org.polypheny.db.cypher.functions;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.cypher.CypherTestTemplate;
 import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.webui.models.results.GraphResult;
+
 
 public class StringFunTest extends CypherTestTemplate {
 
@@ -37,8 +38,6 @@ public class StringFunTest extends CypherTestTemplate {
         containsRows( res, true, true, Row.of( TestLiteral.from( "HELLO" ) ) );
         res = execute( "RETURN UPPER('hElLo')" );
         containsRows( res, true, true, Row.of( TestLiteral.from( "HELLO" ) ) );
-
-
     }
 
 
@@ -124,7 +123,6 @@ public class StringFunTest extends CypherTestTemplate {
     public void normalReplaceFunTest() {
         GraphResult res = execute( "RETURN REPLACE('Hello, world!', 'world', 'Cypher') " );
         containsRows( res, true, true, Row.of( TestLiteral.from( "Hello, Cypher!" ) ) );
-
     }
 
 
@@ -155,6 +153,4 @@ public class StringFunTest extends CypherTestTemplate {
         containsRows( res, true, true, Row.of( TestLiteral.from( 13 ) ) );
     }
 
-
 }
-

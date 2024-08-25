@@ -16,6 +16,8 @@
 
 package org.polypheny.db.cypher.clause.write;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,7 +26,6 @@ import org.polypheny.db.cypher.helper.TestNode;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.models.results.GraphResult;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class DmlDeleteTest extends CypherTestTemplate {
 
@@ -82,6 +83,7 @@ public class DmlDeleteTest extends CypherTestTemplate {
         execute( SINGLE_EDGE_1 );
         execute( "MATCH (:Person {name: 'Max'})-[rel:OWNER_OF]->(:Animal {name: 'Kira'}) \n"
                 + "DELETE rel" );
+
         GraphResult res = execute( "MATCH (n)-[rel:OWNER_OF]->(a) \n"
                 + "RETURN rel" );
         assertEmpty( res );
@@ -94,7 +96,6 @@ public class DmlDeleteTest extends CypherTestTemplate {
                         Pair.of( "name", "Kira" ),
                         Pair.of( "age", 3 ),
                         Pair.of( "type", "dog" ) ) ) );
-
     }
 
 
@@ -114,16 +115,12 @@ public class DmlDeleteTest extends CypherTestTemplate {
                         List.of( "Person" ),
                         Pair.of( "name", "Hans" ),
                         Pair.of( "age", 31 ) ) ) );
-
-
     }
 
 
     @Test
     public void pathDeleteTest() {
-
         execute( SINGLE_EDGE_1 );
-
         execute( """
                 MATCH p =  (person:Person {name: 'Max'})-[rel:OWNER_OF]->( animal :Animal {name: 'Kira'})
                 DELETE p
@@ -132,8 +129,6 @@ public class DmlDeleteTest extends CypherTestTemplate {
         GraphResult res = matchAndReturnAllNodes();
         GraphResult relations = execute( "MATCH (p:Person) -[rel:OWNER_OF]->(A:Animal) RETURN rel " );
         assertTrue( res.getData().length == 0 && relations.getData().length == 0 );
-
-
     }
 
 
@@ -146,7 +141,6 @@ public class DmlDeleteTest extends CypherTestTemplate {
         GraphResult res = matchAndReturnAllNodes();
         GraphResult relations = execute( "MATCH (p:Person) -[rel:OWNER_OF]->(A:Animal) Return rel" );
         assertTrue( res.getData().length == 0 && relations.getData().length == 0 );
-
     }
 
 
@@ -161,8 +155,6 @@ public class DmlDeleteTest extends CypherTestTemplate {
         GraphResult res = matchAndReturnAllNodes();
         GraphResult relations = execute( "MATCH (p:Person) -[rel:OWNER_OF]->(A:Animal) Return  rel" );
         assertTrue( res.getData().length == 0 && relations.getData().length == 0 );
-
     }
-
 
 }

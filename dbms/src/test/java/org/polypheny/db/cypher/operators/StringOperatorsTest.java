@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.cypher.Operators;
+package org.polypheny.db.cypher.operators;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.cypher.CypherTestTemplate;
 import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.webui.models.results.GraphResult;
+
 
 public class StringOperatorsTest extends CypherTestTemplate {
 
@@ -37,6 +38,5 @@ public class StringOperatorsTest extends CypherTestTemplate {
         GraphResult res = execute( "RETURN 'neo' + '4j' AS result" );
         containsRows( res, true, true, Row.of( TestLiteral.from( "neo4j" ) ) );
     }
-
 
 }

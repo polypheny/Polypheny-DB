@@ -16,7 +16,6 @@
 
 package org.polypheny.db.cypher;
 
-
 import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -36,6 +35,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.cypher.clause.write.DmlInsertTest;
 import org.polypheny.db.webui.models.results.GraphResult;
+
 
 @Tag("adapter")
 @Slf4j
@@ -59,7 +59,6 @@ public class DdlTest extends CypherTestTemplate {
         assertTrue( Catalog.snapshot().getNamespace( graphName ).isPresent() );
 
         execute( "DROP DATABASE " + graphName );
-
     }
 
 
@@ -71,7 +70,6 @@ public class DdlTest extends CypherTestTemplate {
         execute( format( "CREATE %s %s", namespaceName, name ) );
 
         execute( format( "DROP %s %s", namespaceName, name ) );
-
     }
 
 
@@ -101,7 +99,6 @@ public class DdlTest extends CypherTestTemplate {
 
             removeStore( "store1" );
         }
-
     }
 
 
@@ -129,7 +126,6 @@ public class DdlTest extends CypherTestTemplate {
         } finally {
             removeStore( "store1" );
         }
-
     }
 
 
@@ -161,13 +157,11 @@ public class DdlTest extends CypherTestTemplate {
         } finally {
             removeStore( "store1" );
         }
-
     }
 
 
     @Test
     public void deletePlacementDataTest() throws SQLException {
-
         execute( "CREATE DATABASE " + graphName + " IF NOT EXISTS" );
 
         execute( DmlInsertTest.CREATE_COMPLEX_GRAPH_2, graphName );
@@ -192,7 +186,6 @@ public class DdlTest extends CypherTestTemplate {
         } finally {
             removeStore( "store1" );
         }
-
     }
 
 

@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.cypher.Subqueries;
-
+package org.polypheny.db.cypher.subqueries;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,16 +22,17 @@ import org.polypheny.db.cypher.CypherTestTemplate;
 import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.webui.models.results.GraphResult;
 
+
 public class CountSubQueriesTest extends CypherTestTemplate {
+
+    public static final String EDGE_3 = "CREATE  (p:Person {name :'Max'}),(p)-[rel:OWNER_OF{ since : 2002}] -> (c:Cat : Animal {name :'Mittens' , age : 3}), (p)-[rel2:OWNER_OF { since : 1999}] -> (d:Dog :Animal { name : 'Andy' , age :10})";
+
 
     @BeforeEach
     public void reset() {
         tearDown();
         createGraph();
     }
-
-
-    public static final String EDGE_3 = "CREATE  (p:Person {name :'Max'}),(p)-[rel:OWNER_OF{ since : 2002}] -> (c:Cat : Animal {name :'Mittens' , age : 3}), (p)-[rel2:OWNER_OF { since : 1999}] -> (d:Dog :Animal { name : 'Andy' , age :10})";
 
 
     @Test
@@ -53,12 +53,12 @@ public class CountSubQueriesTest extends CypherTestTemplate {
     @Test
     public void useCountSubQueryInReturnTest() {
         execute( EDGE_3 );
+
         GraphResult res = execute( "MATCH (person:Person)\n"
                 + "RETURN person.name, COUNT { (person)-[:OWNER_OF]->(:Dog) } as howManyDogs" );
 
         containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Max" ), TestLiteral.from( 1 ) ) );
-
     }
 
 
@@ -66,6 +66,7 @@ public class CountSubQueriesTest extends CypherTestTemplate {
     public void whereWithCountSubQueryTest() {
         execute( SINGLE_NODE_PERSON_2 );
         execute( EDGE_3 );
+
         GraphResult res = execute( """
                 MATCH (person:Person)
                 WHERE COUNT {
@@ -102,6 +103,7 @@ public class CountSubQueriesTest extends CypherTestTemplate {
     @Test
     public void withClauseWithCountSubQueryTest() {
         execute( EDGE_3 );
+
         GraphResult res = execute( """
                 MATCH (person:Person)
                 WHERE COUNT {
@@ -113,7 +115,6 @@ public class CountSubQueriesTest extends CypherTestTemplate {
 
         containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Max" ) ) );
-
     }
 
 
@@ -128,8 +129,6 @@ public class CountSubQueriesTest extends CypherTestTemplate {
 
         containsRows( res, true, false, Row.of(
                 TestLiteral.from( 1 ) ) );
-
-
     }
 
 
@@ -137,6 +136,7 @@ public class CountSubQueriesTest extends CypherTestTemplate {
     public void caseWithCountSubQueryTest() {
         execute( EDGE_3 );
         execute( SINGLE_NODE_PERSON_2 );
+
         GraphResult res = execute( """
                 MATCH (person:Person)
                 RETURN
@@ -144,12 +144,10 @@ public class CountSubQueriesTest extends CypherTestTemplate {
                      WHEN COUNT { (person)-[:OWNER_OF]->(:Dog) } >= 1 THEN "DogLover " + person.name
                      ELSE person.name
                    END AS result""" );
+
         containsRows( res, true, false,
                 Row.of( TestLiteral.from( "DogLover" ) ),
                 Row.of( TestLiteral.from( "Hans" ) ) );
-
-
     }
-
 
 }

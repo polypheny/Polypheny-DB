@@ -25,16 +25,16 @@ import org.polypheny.db.webui.models.results.GraphResult;
 
 public class CaseTest extends CypherTestTemplate {
 
+    protected static final String PERSON_NODE_ALICE = "CREATE (:Person {name:'Alice', age: 38, eyes: 'brown'})";
+    protected static final String PERSON_NODE_BOB = "CREATE (:Person {name: 'Bob', age: 25, eyes: 'blue'})";
+    protected static final String PERSON_NODE_CHARLIE = "CREATE (:Person {name: 'Charlie', age: 53, eyes: 'green'})";
+
+
     @BeforeEach
     public void reset() {
         tearDown();
         createGraph();
     }
-
-
-    protected static final String PERSON_NODE_ALICE = "CREATE (:Person {name:'Alice', age: 38, eyes: 'brown'})";
-    protected static final String PERSON_NODE_BOB = "CREATE (:Person {name: 'Bob', age: 25, eyes: 'blue'})";
-    protected static final String PERSON_NODE_CHARLIE = "CREATE (:Person {name: 'Charlie', age: 53, eyes: 'green'})";
 
 
     @Test
@@ -52,8 +52,6 @@ public class CaseTest extends CypherTestTemplate {
                 END AS result, n.eyes""" );
 
         containsRows( res, true, false, Row.of( TestLiteral.from( "Alice" ), TestLiteral.from( 2 ) ), Row.of( TestLiteral.from( "Bob" ), TestLiteral.from( 1 ) ), Row.of( TestLiteral.from( "Charlie" ), TestLiteral.from( 3 ) ) );
-
-
     }
 
 
@@ -73,7 +71,6 @@ public class CaseTest extends CypherTestTemplate {
                 END AS result, n.eyes, n.age""" );
 
         containsRows( res, true, false, Row.of( TestLiteral.from( "Alice" ), TestLiteral.from( 2 ) ), Row.of( TestLiteral.from( "Bob" ), TestLiteral.from( 1 ) ), Row.of( TestLiteral.from( "Charlie" ), TestLiteral.from( 3 ) ) );
-
     }
 
 
@@ -94,8 +91,6 @@ public class CaseTest extends CypherTestTemplate {
                 END AS age_10_years_ago""" );
 
         containsRows( res, true, false, Row.of( TestLiteral.from( "Alice" ), TestLiteral.from( 28 ) ), Row.of( TestLiteral.from( "Bob" ), TestLiteral.from( 15 ) ), Row.of( TestLiteral.from( "Charlie" ), TestLiteral.from( 43 ) ), Row.of( TestLiteral.from( "MAX" ), TestLiteral.from( null ) ) );
-
-
     }
 
 
@@ -117,8 +112,6 @@ public class CaseTest extends CypherTestTemplate {
                 RETURN n.name, n.colorCode""" );
 
         containsRows( res, true, false, Row.of( TestLiteral.from( "Alice" ), TestLiteral.from( 2 ) ), Row.of( TestLiteral.from( "Bob" ), TestLiteral.from( 1 ) ), Row.of( TestLiteral.from( "Charlie" ), TestLiteral.from( 3 ) ) );
-
     }
-
 
 }

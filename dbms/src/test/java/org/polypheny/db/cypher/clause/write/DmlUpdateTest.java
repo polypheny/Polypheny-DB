@@ -25,6 +25,7 @@ import org.polypheny.db.cypher.helper.TestNode;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.models.results.GraphResult;
 
+
 public class DmlUpdateTest extends CypherTestTemplate {
 
     @BeforeEach
@@ -108,7 +109,6 @@ public class DmlUpdateTest extends CypherTestTemplate {
         containsNodes( res, true,
                 TestNode.from( List.of( "Person" ),
                         Pair.of( "name", "'Ann Smith" ) ) );
-
     }
 
 
@@ -126,8 +126,6 @@ public class DmlUpdateTest extends CypherTestTemplate {
                         List.of( "Person" ),
                         Pair.of( "name", "Peter Smith" ),
                         Pair.of( "position", "Entrepreneur" ) ) ) );
-
-
     }
 
 
@@ -207,6 +205,5 @@ public class DmlUpdateTest extends CypherTestTemplate {
                         Pair.of( "position", "Developer" ),
                         Pair.of( "surname", "Taylor " ) ) );
     }
-
 
 }

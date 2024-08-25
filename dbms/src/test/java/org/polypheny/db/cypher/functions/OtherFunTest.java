@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.cypher.Functions;
+package org.polypheny.db.cypher.functions;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,7 +24,6 @@ import org.polypheny.db.cypher.CypherTestTemplate;
 import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.webui.models.results.GraphResult;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class OtherFunTest extends CypherTestTemplate {
 
@@ -44,9 +44,7 @@ public class OtherFunTest extends CypherTestTemplate {
                 MATCH (a)-[r]->(b)
                 RETURN TYPE(r)
                 """ );
-
         containsRows( res, true, true, Row.of( TestLiteral.from( "OWNER_OF" ) ) );
-
     }
 
 
@@ -57,8 +55,7 @@ public class OtherFunTest extends CypherTestTemplate {
                 MATCH (p:Person { name: 'Max' })
                 RETURN ID(p)
                 """ );
-
-        assertEquals(1 , res.getData().length);
+        assertEquals( 1, res.getData().length );
     }
 
 
@@ -68,7 +65,6 @@ public class OtherFunTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_2 );
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
         GraphResult result = execute( "MATCH (p) RETURN p.name, coalesce(p.age, 0) AS age" );
-
         containsRows( result, true, false,
                 Row.of( TestLiteral.from( "Max" ), TestLiteral.from( 0 ) ),
                 Row.of( TestLiteral.from( "Hans" ), TestLiteral.from( 0 ) ),
@@ -81,10 +77,9 @@ public class OtherFunTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_PERSON_2 );
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
+
         GraphResult result = execute( "MATCH (p) RETURN p.name, coalesce(p.age, 'unknown') AS age" );
-
         assertNode( result, 0 );
-
         containsRows( result, true, false,
                 Row.of( TestLiteral.from( "Max" ), TestLiteral.from( "unknown" ) ),
                 Row.of( TestLiteral.from( "Hans" ), TestLiteral.from( "unknown" ) ),
@@ -95,14 +90,16 @@ public class OtherFunTest extends CypherTestTemplate {
     ///////////////////////////////
     // Predicate Functions
     /////////////////////////////
+
+
     @Test
     public void ExistFunTest() {
         execute( SINGLE_NODE_PERSON_1 );
+
         GraphResult res = execute( """
                 MATCH (p:Person { name: 'Max' })
                 RETURN EXISTS(p.age)
                 """ );
-
         containsRows( res, true, true, Row.of( TestLiteral.from( false ) ) );
 
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
@@ -112,6 +109,5 @@ public class OtherFunTest extends CypherTestTemplate {
                 """ );
         containsRows( res, true, true, Row.of( TestLiteral.from( true ) ) );
     }
-
 
 }

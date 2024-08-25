@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.cypher.Operators;
+package org.polypheny.db.cypher.operators;
+
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -22,7 +23,7 @@ import org.polypheny.db.cypher.CypherTestTemplate;
 import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.webui.models.results.GraphResult;
 
-public class ComparisonOperationsTest extends CypherTestTemplate {
+public class BooleanOperatorsTest extends CypherTestTemplate {
 
     @BeforeEach
     public void setUp() {
@@ -32,59 +33,45 @@ public class ComparisonOperationsTest extends CypherTestTemplate {
 
 
     @Test
-    public void IsNullOperatorTest() {
-        GraphResult res = execute( "Return null is not null as  Result" );
+    public void conjunctionOperatorTest() {
+        GraphResult res = execute( "WITH true as a , false as b RETURN a AND  b " );
         containsRows( res, true, false, Row.of( TestLiteral.from( false ) ) );
-    }
 
-
-    @Test
-    public void IsNotNullFunction() {
-        GraphResult res = execute( "Return null is null as  Result" );
-        containsRows( res, true, false, Row.of( TestLiteral.from( true ) ) );
-
-    }
-
-
-    @Test
-    public void greaterThanOperatorTest() {
-        GraphResult res = execute( "Return 1 > 2 as result " );
-        containsRows( res, true, false, Row.of( TestLiteral.from( false ) ) );
-    }
-
-
-    @Test
-    public void smallerThanOperatorTest() {
-        GraphResult res = execute( "Return 1 < 2 as result " );
+        res = execute( "WITH true as a , true  as b RETURN a AND  b " );
         containsRows( res, true, false, Row.of( TestLiteral.from( true ) ) );
     }
 
 
     @Test
-    public void greaterThanOrEqualOperatorTest() {
-        GraphResult res = execute( "Return 1 >= 2 as result " );
+    public void disjunctionOperatorTest() {
+        GraphResult res = execute( "WITH true as a , false as b RETURN a OR  b " );
+        containsRows( res, true, false, Row.of( TestLiteral.from( true ) ) );
+
+        res = execute( "WITH false as a , false  as b RETURN a OR b " );
         containsRows( res, true, false, Row.of( TestLiteral.from( false ) ) );
     }
 
 
     @Test
-    public void smallerThanOrEqualOperatorTest() {
-        GraphResult res = execute( "Return 1 <= 2 as result " );
+    public void exclusiveDisjunctionOperatorTest() {
+        GraphResult res = execute( "WITH true as a , false as b RETURN a XOR b " );
         containsRows( res, true, false, Row.of( TestLiteral.from( true ) ) );
-    }
 
-
-    @Test
-    public void equalityOperatorTest() {
-        GraphResult res = execute( "Return 2 = 2 as result " );
-        containsRows( res, true, false, Row.of( TestLiteral.from( true ) ) );
-    }
-
-
-    @Test
-    public void inequalityOperatorTest() {
-        GraphResult res = execute( "Return 1 <> 2 as result " );
+        res = execute( "WITH true as a , true  as b RETURN a XOR b " );
         containsRows( res, true, false, Row.of( TestLiteral.from( false ) ) );
+
+        res = execute( "WITH false as a , false  as b RETURN a XOR b " );
+        containsRows( res, true, false, Row.of( TestLiteral.from( true ) ) );
+    }
+
+
+    @Test
+    public void negationOperatorTest() {
+        GraphResult res = execute( "WITH true as a RETURN  NOT a  " );
+        containsRows( res, true, false, Row.of( TestLiteral.from( false ) ) );
+
+        res = execute( "WITH false as a RETURN  NOT a  " );
+        containsRows( res, true, false, Row.of( TestLiteral.from( true ) ) );
     }
 
 }

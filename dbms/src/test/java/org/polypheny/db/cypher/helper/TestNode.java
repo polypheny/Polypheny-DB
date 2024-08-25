@@ -42,5 +42,4 @@ public class TestNode extends TestGraphObject {
         return new TestNode( null, getProps( properties ), getLabels( labels ) );
     }
 
-
 }

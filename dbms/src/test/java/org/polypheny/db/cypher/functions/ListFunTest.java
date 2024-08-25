@@ -14,16 +14,17 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.cypher.Functions;
+package org.polypheny.db.cypher.functions;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.cypher.CypherTestTemplate;
 import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.webui.models.results.GraphResult;
-import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ListFunTest extends CypherTestTemplate {
 
@@ -58,19 +59,15 @@ public class ListFunTest extends CypherTestTemplate {
                 MATCH (a)
                 WHERE a.name = 'Max'
                 RETURN size((a)-[]->())) AS fof""" );
-
         containsRows( res, true, true,
                 Row.of( TestLiteral.from( 2 ) ) );
-
     }
 
 
     @Test
     public void stringSizeFunTest() {
         execute( SINGLE_NODE_PERSON_1 );
-
         GraphResult res = execute( "MATCH (a)  RETURN size(a.name)" );
-
         containsRows( res, true, true,
                 Row.of( TestLiteral.from( 3 ) ) );
     }
@@ -78,9 +75,7 @@ public class ListFunTest extends CypherTestTemplate {
 
     @Test
     public void simpleRangeFunTest() {
-
         GraphResult res = execute( "RETURN RANGE(1, 3)" );
-
         containsRows( res, true, true,
                 Row.of( TestLiteral.from( 1 ), TestLiteral.from( 2 ), TestLiteral.from( 3 ) ) );
     }
@@ -91,7 +86,6 @@ public class ListFunTest extends CypherTestTemplate {
         execute( SINGLE_EDGE_1 );
         GraphResult res = execute( "MATCH (a)"
                 + "RETURN labels(a)" );
-
         containsRows( res, true, false, Row.of( TestLiteral.from( List.of( "Person" ) ) ) );
     }
 
@@ -103,7 +97,6 @@ public class ListFunTest extends CypherTestTemplate {
                 + "RETURN nodes(p)" );
         assertEquals( 1, res.getData().length );
         containsRows( res, true, false, Row.of( TestLiteral.from( List.of( MAX, KIRA ) ) ) );
-
     }
 
 
@@ -123,6 +116,5 @@ public class ListFunTest extends CypherTestTemplate {
                 + "RETURN relationships(p) , nodes(p)" );
         assertEquals( 1, res.getData().length );
     }
-
 
 }
