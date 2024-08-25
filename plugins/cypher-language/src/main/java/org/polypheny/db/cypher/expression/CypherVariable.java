@@ -81,7 +81,7 @@ public class CypherVariable extends CypherExpression {
             }
         }
 
-        throw new GenericRuntimeException( "The used variable is not known." );
+        throw new GenericRuntimeException( "Unknown variable: " + name );
     }
 
 
