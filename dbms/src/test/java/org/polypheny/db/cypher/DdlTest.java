@@ -96,7 +96,6 @@ public class DdlTest extends CypherTestTemplate {
             execute( "DROP DATABASE " + graphName );
 
         } finally {
-
             removeStore( "store1" );
         }
     }
@@ -203,9 +202,7 @@ public class DdlTest extends CypherTestTemplate {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-
                 statement.executeUpdate( String.format( "ALTER ADAPTERS DROP \"%s\"", name ) );
-
             }
         }
     }

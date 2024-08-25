@@ -39,8 +39,7 @@ public class DmlDeleteTest extends CypherTestTemplate {
     @Test
     public void simpleEmptyNodeDeleteTest() {
         execute( SINGLE_NODE_PERSON_1 );
-        execute( "MATCH (p:Person)\n"
-                + "DELETE p" );
+        execute( "MATCH (p:Person) DELETE p" );
         GraphResult res = matchAndReturnAllNodes();
         assertEmpty( res );
     }
@@ -49,8 +48,7 @@ public class DmlDeleteTest extends CypherTestTemplate {
     @Test
     public void simpleNodeDeleteTest() {
         execute( SINGLE_NODE_PERSON_1 );
-        execute( "MATCH (p:Person {name: 'Max'})\n"
-                + "DELETE p" );
+        execute( "MATCH (p:Person {name: 'Max'}) DELETE p" );
         GraphResult res = matchAndReturnAllNodes();
         assertEmpty( res );
     }
@@ -60,8 +58,7 @@ public class DmlDeleteTest extends CypherTestTemplate {
     public void simpleFilteredNodeDeleteTest() {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_PERSON_2 );
-        execute( "MATCH (p:Person {name: 'Max'})\n"
-                + "DELETE p" );
+        execute( "MATCH (p:Person {name: 'Max'}) DELETE p" );
         GraphResult res = matchAndReturnAllNodes();
         containsRows( res, true, false,
                 Row.of( TestNode.from( List.of( "Person" ), Pair.of( "name", "Hans" ) ) ) );
@@ -84,8 +81,7 @@ public class DmlDeleteTest extends CypherTestTemplate {
         execute( "MATCH (:Person {name: 'Max'})-[rel:OWNER_OF]->(:Animal {name: 'Kira'}) \n"
                 + "DELETE rel" );
 
-        GraphResult res = execute( "MATCH (n)-[rel:OWNER_OF]->(a) \n"
-                + "RETURN rel" );
+        GraphResult res = execute( "MATCH (n)-[rel:OWNER_OF]->(a) RETURN rel" );
         assertEmpty( res );
 
         res = matchAndReturnAllNodes();
@@ -102,7 +98,7 @@ public class DmlDeleteTest extends CypherTestTemplate {
     @Test
     public void relationshipWithPropertiesDeleteTest() {
         execute( SINGLE_EDGE_2 );
-        execute( "MATCH (:Person {name: 'Max'})-[rel:KNOWS {since: 1994}]->(:Person {name:'Hans'}) \n"
+        execute( "MATCH (:Person {name: 'Max'})-[rel:KNOWS {since: 1994}]->(:Person {name:'Hans'})\n"
                 + "DELETE rel" );
 
         GraphResult res = execute( "MATCH (p1)-[rel:KNOWS ]->(p2) RETURN rel " );
@@ -121,10 +117,7 @@ public class DmlDeleteTest extends CypherTestTemplate {
     @Test
     public void pathDeleteTest() {
         execute( SINGLE_EDGE_1 );
-        execute( """
-                MATCH p =  (person:Person {name: 'Max'})-[rel:OWNER_OF]->( animal :Animal {name: 'Kira'})
-                DELETE p
-                """ );
+        execute( "MATCH p = (person:Person {name: 'Max'})-[rel:OWNER_OF]->( animal :Animal {name: 'Kira'}) DELETE p" );
 
         GraphResult res = matchAndReturnAllNodes();
         GraphResult relations = execute( "MATCH (p:Person) -[rel:OWNER_OF]->(A:Animal) RETURN rel " );
@@ -135,8 +128,7 @@ public class DmlDeleteTest extends CypherTestTemplate {
     @Test
     public void nodeWithAllRelationshipsDeleteTest() {
         execute( SINGLE_EDGE_2 );
-        execute( "MATCH (n:Person {name: 'MAX'})\n"
-                + "DETACH DELETE n" );
+        execute( "MATCH (n:Person {name: 'MAX'}) DETACH DELETE n" );
 
         GraphResult res = matchAndReturnAllNodes();
         GraphResult relations = execute( "MATCH (p:Person) -[rel:OWNER_OF]->(A:Animal) Return rel" );
@@ -149,8 +141,7 @@ public class DmlDeleteTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_PERSON_2 );
         execute( SINGLE_EDGE_1 );
-        execute( "MATCH (n)\n"
-                + "DETACH DELETE n" );
+        execute( "MATCH (n) DETACH DELETE n" );
 
         GraphResult res = matchAndReturnAllNodes();
         GraphResult relations = execute( "MATCH (p:Person) -[rel:OWNER_OF]->(A:Animal) Return  rel" );

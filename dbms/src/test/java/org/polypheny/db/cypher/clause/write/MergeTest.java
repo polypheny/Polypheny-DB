@@ -30,6 +30,7 @@ import org.polypheny.db.cypher.helper.TestNode;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.models.results.GraphResult;
 
+
 @Slf4j
 public class MergeTest extends CypherTestTemplate {
 

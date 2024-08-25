@@ -107,7 +107,6 @@ public class LimitTest extends CypherTestTemplate {
                 Row.of( TestLiteral.from( "Max" ) ),
                 Row.of( TestLiteral.from( "Max" ) ),
                 Row.of( TestLiteral.from( "Kira" ) ) );
-
     }
 
 

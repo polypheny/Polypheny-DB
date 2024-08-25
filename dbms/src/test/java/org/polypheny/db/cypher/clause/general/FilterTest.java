@@ -315,11 +315,10 @@ public class FilterTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_COMPLEX_2 );
         GraphResult res = execute( """
                 MATCH (n:Person)
-                WHERE n.age >= 40\s
+                WHERE n.age >= 40
                 RETURN n.name, n.age""" );
         containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Ann" ), TestLiteral.from( 45 ) ) );
-
     }
 
 }

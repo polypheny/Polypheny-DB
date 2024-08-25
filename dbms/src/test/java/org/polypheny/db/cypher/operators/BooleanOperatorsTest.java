@@ -16,12 +16,12 @@
 
 package org.polypheny.db.cypher.operators;
 
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.cypher.CypherTestTemplate;
 import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.webui.models.results.GraphResult;
+
 
 public class BooleanOperatorsTest extends CypherTestTemplate {
 

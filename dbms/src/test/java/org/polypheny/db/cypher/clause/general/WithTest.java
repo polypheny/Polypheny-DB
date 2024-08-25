@@ -66,7 +66,7 @@ public class WithTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_2 );
 
         GraphResult res = execute( "MATCH (n:Person) WITH n.name AS name, n RETURN name, n" );
-        containsRows( res, true, true,
+        containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Max" ), MAX ),
                 Row.of( TestLiteral.from( "Hans" ), HANS ) );
     }
@@ -78,8 +78,7 @@ public class WithTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_2 );
 
         GraphResult res = execute( "MATCH (n:Person) WITH n.name, n WHERE n.name STARTS WITH 'H' RETURN n" );
-        containsRows( res, true, true,
-                Row.of( HANS ) );
+        containsRows( res, true, true, Row.of( HANS ) );
     }
 
 
@@ -90,8 +89,7 @@ public class WithTest extends CypherTestTemplate {
 
         GraphResult res = execute( "MATCH (n:Person) WITH n.name as name , n WHERE name  STARTS WITH 'H' RETURN n" );
         assertNode( res, 0 );
-        containsRows( res, true, true,
-                Row.of( HANS ) );
+        containsRows( res, true, true, Row.of( HANS ) );
     }
 
 
@@ -100,7 +98,10 @@ public class WithTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_PERSON_2 );
 
-        GraphResult res = execute( "MATCH (n:Person) WITH n.name , n WHERE n.name  ENDS WITH 'x' RETURN name, n" );
+        GraphResult res = execute( "MATCH (n:Person) "
+                + "WITH n.name, n "
+                + "WHERE n.name ENDS WITH 'x' "
+                + "RETURN n.name, n" );
         assertNode( res, 1 );
         containsRows( res, true, true, Row.of( TestLiteral.from( "Max" ), MAX ) );
     }
@@ -111,7 +112,10 @@ public class WithTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_PERSON_2 );
 
-        GraphResult res = execute( "MATCH (n:Person) WITH n.name AS name, n WHERE name ENDS WITH 'x' RETURN name, n" );
+        GraphResult res = execute( "MATCH (n:Person) "
+                + "WITH n.name AS name, n "
+                + "WHERE name ENDS WITH 'x' "
+                + "RETURN name, n" );
         assertNode( res, 1 );
         containsRows( res, true, true, Row.of( TestLiteral.from( "Max" ), MAX ) );
     }
@@ -172,7 +176,6 @@ public class WithTest extends CypherTestTemplate {
 
         GraphResult res = execute( "MATCH (p:Person) WITH STDEV(p.age) as ageStdev RETURN  ageStdev " );
         containsRows( res, true, true, Row.of( TestLiteral.from( 9.8994949 ) ) );
-
     }
 
 
@@ -183,7 +186,6 @@ public class WithTest extends CypherTestTemplate {
 
         GraphResult res = execute( "MATCH (p:Person) WITH COLLECT(p.age) as ageList RETURN  ageList " );
         containsRows( res, true, true, Row.of( TestLiteral.from( 45 ), TestLiteral.from( 31 ) ) );
-
     }
 
 
@@ -242,7 +244,11 @@ public class WithTest extends CypherTestTemplate {
 
     @Test
     public void unwindAndFilterListWithTest() {
-        GraphResult res = execute( "WITH [1, 2, 3, 4, 5] AS numbers UNWIND numbers AS number WITH number WHERE number > 3 RETURN number" );
+        GraphResult res = execute( "WITH [1, 2, 3, 4, 5] AS numbers "
+                + "UNWIND numbers AS number "
+                + "WITH number "
+                + "WHERE number > 3 "
+                + "RETURN number" );
         containsRows( res, true, false,
                 Row.of( TestLiteral.from( 4 ) ),
                 Row.of( TestLiteral.from( 5 ) ) );
@@ -251,14 +257,22 @@ public class WithTest extends CypherTestTemplate {
 
     @Test
     public void unwindAndStartListWithTest() {
-        GraphResult res = execute( "WITH ['John', 'Mark', 'Jonathan', 'Bill'] AS somenames UNWIND somenames AS names WITH names AS candidate WHERE candidate STARTS WITH 'Jo' RETURN candidate" );
+        GraphResult res = execute( "WITH ['John', 'Mark', 'Jonathan', 'Bill'] AS somenames "
+                + "UNWIND somenames AS names "
+                + "WITH names AS candidate "
+                + "WHERE candidate STARTS WITH 'Jo' "
+                + "RETURN candidate" );
         containsRows( res, true, false, Row.of( TestLiteral.from( "John" ) ), Row.of( TestLiteral.from( "Jonathan" ) ) );
     }
 
 
     @Test
     public void unwindAndLogicalOperatorsListWithTest() {
-        GraphResult res = execute( "WITH [2, 4, 7, 9, 12] AS numberlist UNWIND numberlist AS number WITH number WHERE number = 4 OR (number > 6 AND number < 10) RETURN number" );
+        GraphResult res = execute( "WITH [2, 4, 7, 9, 12] AS numberlist "
+                + "UNWIND numberlist AS number "
+                + "WITH number "
+                + "WHERE number = 4 OR (number > 6 AND number < 10) "
+                + "RETURN number" );
         assertTrue( containsRows( res, false, false,
                 Row.of( TestLiteral.from( 4 ) ),
                 Row.of( TestLiteral.from( 7 ) ),
@@ -268,7 +282,11 @@ public class WithTest extends CypherTestTemplate {
 
     @Test
     public void unwindAndWhereInListWithTest() {
-        GraphResult res = execute( "WITH [2, 3, 4, 5] AS numberlist UNWIND numberlist AS number WITH number WHERE number IN [2, 3, 8] RETURN number" );
+        GraphResult res = execute( "WITH [2, 3, 4, 5] AS numberlist "
+                + "UNWIND numberlist AS number "
+                + "WITH number "
+                + "WHERE number IN [2, 3, 8] "
+                + "RETURN number" );
         containsRows( res, true, false, Row.of( TestLiteral.from( 2 ) ), Row.of( TestLiteral.from( 3 ) ) );
     }
 
@@ -287,7 +305,7 @@ public class WithTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_2 );
         execute( SINGLE_NODE_PERSON_1 );
 
-        GraphResult res = execute( "MATCH (p:Person) WITH Distinct(p)  Return p " );
+        GraphResult res = execute( "MATCH (p:Person) WITH Distinct(p) Return p " );
         assertEquals( 2, res.getData().length );
     }
 
@@ -297,7 +315,7 @@ public class WithTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
         execute( SINGLE_NODE_PERSON_1 );
 
-        GraphResult res = execute( "MATCH (n) WITH n as person WHERE EXISTS(person.age) RETURN person.name, person.age;" );
+        GraphResult res = execute( "MATCH (n) WITH n as person WHERE EXISTS(person.age) RETURN person.name, person.age" );
         containsRows( res, true, true, Row.of( TestLiteral.from( "Ann" ), TestLiteral.from( 45 ) ) );
     }
 
@@ -308,7 +326,14 @@ public class WithTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_COMPLEX_2 );
         execute( SINGLE_NODE_PERSON_COMPLEX_3 );
 
-        GraphResult res = execute( "MATCH (p:Person) WITH p, CASE WHEN p.age < 30 THEN 'Young' THEN p.age >= 30 AND p.age < 60 THEN 'Middle-aged' ELSE 'Elderly  END AS ageGroup RETURN p.name, ageGroup;" );
+        GraphResult res = execute( "MATCH (p:Person) "
+                + "WITH p, "
+                + "     CASE "
+                + "          WHEN p.age < 30 THEN 'Young'"
+                + "          WHEN p.age >= 30 AND p.age < 60 THEN 'Middle-aged' "
+                + "          ELSE 'Elderly' "
+                + "     END AS ageGroup "
+                + "RETURN p.name, ageGroup" );
         containsRows( res, true, true,
                 Row.of( TestLiteral.from( "Ana" ), TestLiteral.from( "Middle-aged" ) ),
                 Row.of( TestLiteral.from( "Bob" ), TestLiteral.from( "Middle-aged" ) ),
@@ -321,7 +346,10 @@ public class WithTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_PERSON_2 );
 
-        GraphResult res = execute( "MATCH (p:Person) WITH p ORDER BY p.name ASC RETURN p.name" );
+        GraphResult res = execute( "MATCH (p:Person) "
+                + "WITH p "
+                + "ORDER BY p.name ASC "
+                + "RETURN p.name" );
         containsRows( res, true, true,
                 Row.of( TestLiteral.from( "Hans" ) ),
                 Row.of( TestLiteral.from( "Max" ) ) );

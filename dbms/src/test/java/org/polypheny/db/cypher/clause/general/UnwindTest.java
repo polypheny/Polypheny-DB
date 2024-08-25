@@ -1,3 +1,19 @@
+/*
+ * Copyright 2019-2024 The Polypheny Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.polypheny.db.cypher.clause.general;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -8,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.polypheny.db.cypher.CypherTestTemplate;
 import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.webui.models.results.GraphResult;
+
 
 public class UnwindTest extends CypherTestTemplate {
 
@@ -64,7 +81,7 @@ public class UnwindTest extends CypherTestTemplate {
 
 
     @Test
-    public void minMaxAggregateSimpleUnWind() {
+    public void minMaxAggregateSimpleUnwind() {
         GraphResult res = execute( "UNWIND [1, 'a', NULL, 0.2, 'b', '1', '99'] AS val RETURN min(val)" );
         containsRows( res, true, false, Row.of( TestLiteral.from( '1' ) ) );
 
@@ -84,7 +101,7 @@ public class UnwindTest extends CypherTestTemplate {
 
 
     @Test
-    public void maxMinAggregateNodePropertyUnWind() {
+    public void maxMinAggregateNodePropertyUnwind() {
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
         execute( SINGLE_NODE_PERSON_COMPLEX_2 );
 
@@ -97,7 +114,7 @@ public class UnwindTest extends CypherTestTemplate {
 
 
     @Test
-    public void sumAggregateNodePropertyUnWind() {
+    public void sumAggregateNodePropertyUnwind() {
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
         execute( SINGLE_NODE_PERSON_COMPLEX_2 );
         GraphResult res = execute( "MATCH (n) UNWIND n.age  AS age  RETURN sum(age)" );
@@ -106,7 +123,7 @@ public class UnwindTest extends CypherTestTemplate {
 
 
     @Test
-    public void avgAggregateNodePropertyUnWind() {
+    public void avgAggregateNodePropertyUnwind() {
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
         execute( SINGLE_NODE_PERSON_COMPLEX_2 );
         GraphResult res = execute( "MATCH (n) UNWIND n.age  AS age  RETURN avg(age)" );
@@ -115,7 +132,7 @@ public class UnwindTest extends CypherTestTemplate {
 
 
     @Test
-    public void collectAggregateUnWind() {
+    public void collectAggregateUnwind() {
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
         execute( SINGLE_NODE_PERSON_COMPLEX_2 );
         GraphResult res = execute( "MATCH (n) UNWIND n.age AS age RETURN Collect(age)" );
@@ -124,7 +141,7 @@ public class UnwindTest extends CypherTestTemplate {
 
 
     @Test
-    public void countUnWind() {
+    public void countUnwind() {
         GraphResult res = execute( "UNWIND [2, 1 , 1] AS i  RETURN count( i)" );
         containsRows( res, true, false,
                 Row.of( TestLiteral.from( 3 ) ) );
@@ -132,7 +149,7 @@ public class UnwindTest extends CypherTestTemplate {
 
 
     @Test
-    public void distinctUnWind() {
+    public void distinctUnwind() {
         GraphResult res = execute( "UNWIND [3, 3 ,2 ,1 ] AS i  RETURN DISTINCT i" );
         assertEquals( 3, res.getData().length );
         containsRows( res, true, false,
@@ -142,7 +159,7 @@ public class UnwindTest extends CypherTestTemplate {
 
 
     @Test
-    public void conditionalLogicUnWind() {
+    public void conditionalLogicUnwind() {
         GraphResult res = execute( "UNWIND [1, 2, 3] AS number RETURN number, CASE WHEN number % 2 = 0 THEN 'even' ELSE 'odd' END AS type" );
         containsRows( res, true, true,
                 Row.of( TestLiteral.from( 1 ), TestLiteral.from( "odd" ) ),
@@ -152,7 +169,7 @@ public class UnwindTest extends CypherTestTemplate {
 
 
     @Test
-    public void mapStructureUnWind() {
+    public void mapStructureUnwind() {
         GraphResult res = execute( "UNWIND [{name: 'Alice', age: 30}] AS person  RETURN person.name  , person.age" );
         containsRows( res, true, false, Row.of( TestLiteral.from( "Alice" ) ), Row.of( TestLiteral.from( 30 ) ) );
     }

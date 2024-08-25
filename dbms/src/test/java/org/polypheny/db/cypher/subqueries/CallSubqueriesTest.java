@@ -40,8 +40,7 @@ public class CallSubqueriesTest extends CypherTestTemplate {
 
     @Test
     public void simpleCallTest() {
-        GraphResult res = execute( " CALL { RETURN 'hello' AS innerReturn} \n"
-                + "RETURN innerReturn" );
+        GraphResult res = execute( " CALL { RETURN 'hello' AS innerReturn} RETURN innerReturn" );
 
         containsRows( res, true, false,
                 Row.of( TestLiteral.from( "hello" ) ) );
@@ -183,12 +182,12 @@ public class CallSubqueriesTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_2 );
 
         GraphResult res = execute( """
-                MATCH (p:Person) CALL { \s
-                WITH p
-                 CREATE (:Person {name: p.name})\s
+                MATCH (p:Person) CALL { 
+                  WITH p
+                  CREATE (:Person {name: p.name})
                 } RETURN count(*)""" );
 
-        //the number of rows present after the subquery is the same as was going into the subquery
+        // The number of rows present after the subquery is the same as was going into the subquery
         containsRows( res, true, false, Row.of( TestLiteral.from( 2 ) ) );
     }
 

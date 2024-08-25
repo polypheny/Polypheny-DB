@@ -82,7 +82,7 @@ public class MatchTest extends CypherTestTemplate {
 
         GraphResult res = execute( "MATCH (n {name: 'Max'}) RETURN n" );
         assertNode( res, 0 );
-        assertEmpty( res );
+        containsNodes( res, true, MAX );
 
         res = execute( "MATCH (n {name: 'Hans'}) RETURN n" );
         assertNode( res, 0 );
@@ -402,8 +402,10 @@ public class MatchTest extends CypherTestTemplate {
         execute( SINGLE_EDGE_1 );
         GraphResult res = execute( "MATCH Path = (p) -[r] ->(m) RETURN *" );
         containsRows( res, true, false,
-                Row.of( TestPath.of( MAX, TestEdge.from( List.of( "OWNER_OF" ) ), KIRA )
-                        , MAX, TestEdge.from( List.of( "OWNER_OF" ) ), KIRA ) );
+                Row.of(
+                        TestPath.of( MAX, TestEdge.from( List.of( "OWNER_OF" ) ), KIRA ),
+                        MAX,
+                        TestEdge.from( List.of( "OWNER_OF" ) ), KIRA ) );
     }
 
 
@@ -418,9 +420,9 @@ public class MatchTest extends CypherTestTemplate {
     @Test
     public void shortestPathMatchTest() {
         execute( SINGLE_EDGE_1 );
-        GraphResult res = execute( "MATCH (b:Person {name: 'Max'}), (a:Animal {name: 'Kira'})\n"
-                + "MATCH p = shortestPath((b)-[*]-(a))\n"
-                + "RETURN p\n" );
+        GraphResult res = execute( "MATCH (b:Person {name: 'Max'}), (a:Animal {name: 'Kira'}) "
+                + "MATCH p = shortestPath((b)-[*]-(a)) "
+                + "RETURN p" );
         containsRows( res, true, true,
                 Row.of( TestPath.of(
                         TestNode.from( List.of( "Person" ), Pair.of( "name", "Max" ) ),

@@ -51,7 +51,10 @@ public class CaseTest extends CypherTestTemplate {
                   ELSE 3
                 END AS result, n.eyes""" );
 
-        containsRows( res, true, false, Row.of( TestLiteral.from( "Alice" ), TestLiteral.from( 2 ) ), Row.of( TestLiteral.from( "Bob" ), TestLiteral.from( 1 ) ), Row.of( TestLiteral.from( "Charlie" ), TestLiteral.from( 3 ) ) );
+        containsRows( res, true, false,
+                Row.of( TestLiteral.from( "Alice" ), TestLiteral.from( 2 ) ),
+                Row.of( TestLiteral.from( "Bob" ), TestLiteral.from( 1 ) ),
+                Row.of( TestLiteral.from( "Charlie" ), TestLiteral.from( 3 ) ) );
     }
 
 

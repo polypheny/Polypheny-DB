@@ -54,8 +54,7 @@ public class CountSubQueriesTest extends CypherTestTemplate {
     public void useCountSubQueryInReturnTest() {
         execute( EDGE_3 );
 
-        GraphResult res = execute( "MATCH (person:Person)\n"
-                + "RETURN person.name, COUNT { (person)-[:OWNER_OF]->(:Dog) } as howManyDogs" );
+        GraphResult res = execute( "MATCH (person:Person) RETURN person.name, COUNT { (person)-[:OWNER_OF]->(:Dog) } as howManyDogs" );
 
         containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Max" ), TestLiteral.from( 1 ) ) );

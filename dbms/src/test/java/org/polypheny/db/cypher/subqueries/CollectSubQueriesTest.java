@@ -72,14 +72,12 @@ public class CollectSubQueriesTest extends CypherTestTemplate {
         execute( EDGE_3 );
 
         GraphResult res = execute( """
-                
                 MATCH (person:Person)
                 RETURN person.name as name, COLLECT {
                   MATCH (person)-[r:OWNER_OF]->(a:Dog)
                   WHERE a.age <= 3
                   RETURN a.name
-                } as youngDog\s
-                """ );
+                } as youngDog """ );
 
         containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Max" ), TestLiteral.from( "Andy" ) ) );
