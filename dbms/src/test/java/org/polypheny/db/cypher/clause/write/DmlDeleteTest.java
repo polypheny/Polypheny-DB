@@ -133,7 +133,7 @@ public class DmlDeleteTest extends CypherTestTemplate {
 
 
     @Test
-    public void NodeWithAllRelationshipsDeleteTest() {
+    public void nodeWithAllRelationshipsDeleteTest() {
         execute( SINGLE_EDGE_2 );
         execute( "MATCH (n:Person {name: 'MAX'})\n"
                 + "DETACH DELETE n" );

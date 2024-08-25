@@ -73,7 +73,7 @@ public class OtherFunTest extends CypherTestTemplate {
 
 
     @Test
-    public void testDefaultValuesWithCoalesceFunTest() {
+    public void defaultValuesWithCoalesceFunTest() {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_PERSON_2 );
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
@@ -93,7 +93,7 @@ public class OtherFunTest extends CypherTestTemplate {
 
 
     @Test
-    public void ExistFunTest() {
+    public void existFunTest() {
         execute( SINGLE_NODE_PERSON_1 );
 
         GraphResult res = execute( """

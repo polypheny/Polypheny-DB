@@ -52,7 +52,7 @@ public class LimitTest extends CypherTestTemplate {
 
 
     @Test
-    public void InsertNodeLimitTest() {
+    public void insertNodeLimitTest() {
         GraphResult res = execute( """
                 CREATE (n:person)
                 RETURN n

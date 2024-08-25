@@ -166,7 +166,7 @@ public class WithTest extends CypherTestTemplate {
 
 
     @Test
-    public void stDevAggregationWithTest() {
+    public void stdevAggregationWithTest() {
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
         execute( SINGLE_NODE_PERSON_COMPLEX_2 );
 
@@ -229,7 +229,7 @@ public class WithTest extends CypherTestTemplate {
 
 
     @Test
-    public void unWindListWithTest() {
+    public void unwindListWithTest() {
         GraphResult res = execute( "WITH [1, 2, 3, 4, 5] AS numbers UNWIND numbers AS number RETURN number" );
         containsRows( res, true, false,
                 Row.of( TestLiteral.from( 1 ) ),
@@ -241,7 +241,7 @@ public class WithTest extends CypherTestTemplate {
 
 
     @Test
-    public void unWindAndFilterListWithTest() {
+    public void unwindAndFilterListWithTest() {
         GraphResult res = execute( "WITH [1, 2, 3, 4, 5] AS numbers UNWIND numbers AS number WITH number WHERE number > 3 RETURN number" );
         containsRows( res, true, false,
                 Row.of( TestLiteral.from( 4 ) ),
@@ -250,14 +250,14 @@ public class WithTest extends CypherTestTemplate {
 
 
     @Test
-    public void unWindAndStartListWithTest() {
+    public void unwindAndStartListWithTest() {
         GraphResult res = execute( "WITH ['John', 'Mark', 'Jonathan', 'Bill'] AS somenames UNWIND somenames AS names WITH names AS candidate WHERE candidate STARTS WITH 'Jo' RETURN candidate" );
         containsRows( res, true, false, Row.of( TestLiteral.from( "John" ) ), Row.of( TestLiteral.from( "Jonathan" ) ) );
     }
 
 
     @Test
-    public void unWindAndLogicalOperatorsListWithTest() {
+    public void unwindAndLogicalOperatorsListWithTest() {
         GraphResult res = execute( "WITH [2, 4, 7, 9, 12] AS numberlist UNWIND numberlist AS number WITH number WHERE number = 4 OR (number > 6 AND number < 10) RETURN number" );
         assertTrue( containsRows( res, false, false,
                 Row.of( TestLiteral.from( 4 ) ),
@@ -267,7 +267,7 @@ public class WithTest extends CypherTestTemplate {
 
 
     @Test
-    public void unWindAndWhereInListWithTest() {
+    public void unwindAndWhereInListWithTest() {
         GraphResult res = execute( "WITH [2, 3, 4, 5] AS numberlist UNWIND numberlist AS number WITH number WHERE number IN [2, 3, 8] RETURN number" );
         containsRows( res, true, false, Row.of( TestLiteral.from( 2 ) ), Row.of( TestLiteral.from( 3 ) ) );
     }

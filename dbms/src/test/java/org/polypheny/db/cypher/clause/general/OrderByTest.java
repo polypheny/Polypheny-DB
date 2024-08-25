@@ -184,7 +184,7 @@ public class OrderByTest extends CypherTestTemplate {
 
 
     @Test
-    public void UnwindSortTest() {
+    public void unwindSortTest() {
         GraphResult res = execute( "UNWIND [1, true,3.14] AS i RETURN i ORDER BY i" );
         containsRows( res, true, true,
                 Row.of( TestLiteral.from( true ) ),
@@ -214,7 +214,7 @@ public class OrderByTest extends CypherTestTemplate {
 
 
     @Test
-    public void AvgAggregateFieldSortTest() {
+    public void avgAggregateFieldSortTest() {
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
         execute( SINGLE_NODE_PERSON_COMPLEX_2 );
         execute( SINGLE_NODE_PERSON_COMPLEX_3 );

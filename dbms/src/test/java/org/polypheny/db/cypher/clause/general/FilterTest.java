@@ -80,7 +80,7 @@ public class FilterTest extends CypherTestTemplate {
 
 
     @Test
-    public void NodePatternFilterTest() {
+    public void nodePatternFilterTest() {
         execute( SINGLE_EDGE_2 );
         GraphResult res = execute( "MATCH (a:Person WHERE a.name = 'Max')-[:KNOWS]->(b:Person WHERE b.name = 'Hans')\n"
                 + "RETURN b.name" );

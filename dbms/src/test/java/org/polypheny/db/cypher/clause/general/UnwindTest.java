@@ -106,7 +106,7 @@ public class UnwindTest extends CypherTestTemplate {
 
 
     @Test
-    public void AvgAggregateNodePropertyUnWind() {
+    public void avgAggregateNodePropertyUnWind() {
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
         execute( SINGLE_NODE_PERSON_COMPLEX_2 );
         GraphResult res = execute( "MATCH (n) UNWIND n.age  AS age  RETURN avg(age)" );
@@ -115,7 +115,7 @@ public class UnwindTest extends CypherTestTemplate {
 
 
     @Test
-    public void CollectAggregateUnWind() {
+    public void collectAggregateUnWind() {
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
         execute( SINGLE_NODE_PERSON_COMPLEX_2 );
         GraphResult res = execute( "MATCH (n) UNWIND n.age AS age RETURN Collect(age)" );
@@ -142,7 +142,7 @@ public class UnwindTest extends CypherTestTemplate {
 
 
     @Test
-    public void ConditionalLogicUnWind() {
+    public void conditionalLogicUnWind() {
         GraphResult res = execute( "UNWIND [1, 2, 3] AS number RETURN number, CASE WHEN number % 2 = 0 THEN 'even' ELSE 'odd' END AS type" );
         containsRows( res, true, true,
                 Row.of( TestLiteral.from( 1 ), TestLiteral.from( "odd" ) ),

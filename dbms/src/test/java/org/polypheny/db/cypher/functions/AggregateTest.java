@@ -350,7 +350,7 @@ public class AggregateTest extends CypherTestTemplate {
 
 
     @Test
-    public void singleStDevAggregateTest() {
+    public void singleStdevAggregateTest() {
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
         execute( SINGLE_NODE_PERSON_COMPLEX_2 );
 
@@ -361,7 +361,7 @@ public class AggregateTest extends CypherTestTemplate {
 
 
     @Test
-    public void stDevNullAggregateTest() {
+    public void stdevNullAggregateTest() {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_PERSON_2 );
 
@@ -372,7 +372,7 @@ public class AggregateTest extends CypherTestTemplate {
 
 
     @Test
-    public void stDevRenameAggregateTest() {
+    public void stdevRenameAggregateTest() {
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
         execute( SINGLE_NODE_PERSON_COMPLEX_2 );
 
@@ -383,7 +383,7 @@ public class AggregateTest extends CypherTestTemplate {
 
 
     @Test
-    public void stDevRenameFieldAggregateTest() {
+    public void stdevRenameFieldAggregateTest() {
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
         execute( SINGLE_NODE_PERSON_COMPLEX_2 );
 

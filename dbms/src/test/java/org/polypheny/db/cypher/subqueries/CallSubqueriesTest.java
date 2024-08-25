@@ -135,7 +135,7 @@ public class CallSubqueriesTest extends CypherTestTemplate {
 
 
     @Test
-    public void FilterMatchedNodesByOutputOfCallTest() {
+    public void filterMatchedNodesByOutputOfCallTest() {
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
         execute( SINGLE_NODE_PERSON_COMPLEX_2 );
         execute( SINGLE_NODE_PERSON_COMPLEX_3 );
@@ -157,7 +157,7 @@ public class CallSubqueriesTest extends CypherTestTemplate {
 
 
     @Test
-    public void UnionCallTest() {
+    public void unionCallTest() {
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
         execute( SINGLE_NODE_PERSON_COMPLEX_2 );

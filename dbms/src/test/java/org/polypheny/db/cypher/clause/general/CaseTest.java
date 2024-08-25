@@ -56,7 +56,7 @@ public class CaseTest extends CypherTestTemplate {
 
 
     @Test
-    public void GenericCaseTest() {
+    public void genericCaseTest() {
         execute( PERSON_NODE_ALICE );
         execute( PERSON_NODE_BOB );
         execute( PERSON_NODE_CHARLIE );

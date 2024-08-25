@@ -82,7 +82,7 @@ public class MatchTest extends CypherTestTemplate {
 
         GraphResult res = execute( "MATCH (n {name: 'Max'}) RETURN n" );
         assertNode( res, 0 );
-        containsNodes( res, true, HANS );
+        assertEmpty( res );
 
         res = execute( "MATCH (n {name: 'Hans'}) RETURN n" );
         assertNode( res, 0 );
@@ -114,7 +114,7 @@ public class MatchTest extends CypherTestTemplate {
     ///////////////////////////////////////////////
 
     @Test
-    public void NoLabelPropertyTest() {
+    public void noLabelPropertyTest() {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
         GraphResult res = execute( "MATCH (n) RETURN n.age" );

@@ -42,7 +42,7 @@ public class StringFunTest extends CypherTestTemplate {
 
 
     @Test
-    public void EmptyUpperFunTest() {
+    public void emptyUpperFunTest() {
         GraphResult res = execute( "RETURN UPPER('')" );
         containsRows( res, true, true, Row.of( TestLiteral.from( "" ) ) );
     }
@@ -56,7 +56,7 @@ public class StringFunTest extends CypherTestTemplate {
 
 
     @Test
-    public void LowerFunTest() {
+    public void lowerFunTest() {
         GraphResult res = execute( "RETURN LOWER('WORLD')" );
         containsRows( res, true, true, Row.of( TestLiteral.from( "world" ) ) );
 

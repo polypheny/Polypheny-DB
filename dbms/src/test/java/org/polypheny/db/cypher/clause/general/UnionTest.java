@@ -54,7 +54,7 @@ public class UnionTest extends CypherTestTemplate {
 
 
     @Test
-    public void DifferentStructureUnionTest() {
+    public void differentStructureUnionTest() {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_MOVIE );
@@ -74,7 +74,7 @@ public class UnionTest extends CypherTestTemplate {
 
 
     @Test
-    public void NullPropertiesUnionTest() {
+    public void nullPropertiesUnionTest() {
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
         execute( SINGLE_NODE_MOVIE );
@@ -116,7 +116,7 @@ public class UnionTest extends CypherTestTemplate {
 
 
     @Test
-    public void DifferentStructureAllUnionTest() {
+    public void differentStructureAllUnionTest() {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_MOVIE );
         execute( SINGLE_NODE_PERSON_1 );
@@ -139,7 +139,7 @@ public class UnionTest extends CypherTestTemplate {
 
 
     @Test
-    public void NullPropertiesAllUnionTest() {
+    public void nullPropertiesAllUnionTest() {
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
         execute( SINGLE_NODE_MOVIE );
@@ -182,7 +182,7 @@ public class UnionTest extends CypherTestTemplate {
 
 
     @Test
-    public void DifferentStructureDistinctUnionTest() {
+    public void differentStructureDistinctUnionTest() {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_MOVIE );
@@ -202,7 +202,7 @@ public class UnionTest extends CypherTestTemplate {
 
 
     @Test
-    public void NullPropertiesDistinctUnionTest() {
+    public void nullPropertiesDistinctUnionTest() {
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
         execute( SINGLE_NODE_MOVIE );
