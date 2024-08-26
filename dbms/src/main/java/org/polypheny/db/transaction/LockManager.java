@@ -38,7 +38,7 @@ public class LockManager {
     public static final LockManager INSTANCE = new LockManager();
 
     private boolean isExclusive = false;
-    private final Set<Xid> owners = new HashSet<>();
+    private final Set<Long> owners = new HashSet<>();
     private final ConcurrentLinkedQueue<Thread> waiters = new ConcurrentLinkedQueue<>();
     private final ReentrantLock lock = new ReentrantLock();
     private final Condition condition = lock.newCondition();
@@ -54,7 +54,7 @@ public class LockManager {
             if ( owners.isEmpty() ) {
                 handleLockOrThrow( mode, transaction );
                 return;
-            } else if ( owners.contains( transaction.getXid() ) && (mode == LockMode.SHARED || isExclusive) ) {
+            } else if ( owners.contains( transaction.getId() ) && (mode == LockMode.SHARED || isExclusive) ) {
                 log.debug( "already locked {}", transaction.getXid() );
                 // already have the required lock
                 return;
@@ -69,7 +69,7 @@ public class LockManager {
             lock.lock();
             try {
                 while ( waiters.peek() != thread ) {
-                    log.debug( "wait {} ", transaction.getXid() );
+                    log.debug( "wait {} ", transaction.getId() );
                     boolean successful = condition.await( RuntimeConfig.LOCKING_MAX_TIMEOUT_SECONDS.getInteger(), TimeUnit.SECONDS );
                     if ( !successful ) {
                         cleanup( thread );
@@ -120,7 +120,7 @@ public class LockManager {
     private synchronized boolean handleSimpleLock( @NonNull LockMode mode, Transaction transaction ) {
         if ( mode == LockMode.EXCLUSIVE ) {
             // get w
-            if ( owners.isEmpty() || (owners.size() == 1 && owners.contains( transaction.getXid() )) ) {
+            if ( owners.isEmpty() || (owners.size() == 1 && owners.contains( transaction.getId() )) ) {
                 if ( isExclusive ) {
                     log.debug( "lock already exclusive" );
                     return true;
@@ -128,15 +128,15 @@ public class LockManager {
 
                 log.debug( "x lock {}", transaction.getXid() );
                 isExclusive = true;
-                owners.add( transaction.getXid() );
+                owners.add( transaction.getId() );
                 return true;
             }
 
         } else {
             // get r
-            if ( !isExclusive || owners.contains( transaction.getXid() ) ) {
+            if ( !isExclusive || owners.contains( transaction.getId() ) ) {
                 log.debug( "r lock {}", transaction.getXid() );
-                owners.add( transaction.getXid() );
+                owners.add( transaction.getId() );
                 return true;
             }
 
@@ -158,7 +158,7 @@ public class LockManager {
 
 
     public synchronized void unlock( @NonNull Transaction transaction ) {
-        if ( !owners.contains( transaction.getXid() ) ) {
+        if ( !owners.contains( transaction.getId() ) ) {
             log.debug( "Transaction is no owner" );
             return;
         }
@@ -167,7 +167,7 @@ public class LockManager {
             isExclusive = false;
         }
         log.debug( "release {}", transaction.getXid() );
-        owners.remove( transaction.getXid() );
+        owners.remove( transaction.getId() );
 
         // wake up waiters
         signalAll();

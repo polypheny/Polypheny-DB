@@ -195,6 +195,10 @@ public class LanguageManager {
                     if ( transaction.isAnalyze() ) {
                         statement.getOverviewDuration().stop( "Translation" );
                     }
+
+                    if ( !statement.getTransaction().isActive() ) {
+                        log.warn( "Transaction is not active" );
+                    }
                     implementation = statement.getQueryProcessor().prepareQuery( root, true );
                 }
                 // queries are able to switch the context of the following queries

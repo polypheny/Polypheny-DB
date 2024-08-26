@@ -199,6 +199,9 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
             for ( Adapter<?> adapter : involvedAdapters ) {
                 adapter.commit( xid );
             }
+            if ( involvedAdapters.isEmpty() ) {
+                log.debug( "No adapter used." );
+            }
 
             this.statements.forEach( statement -> {
                 if ( statement.getMonitoringEvent() != null ) {

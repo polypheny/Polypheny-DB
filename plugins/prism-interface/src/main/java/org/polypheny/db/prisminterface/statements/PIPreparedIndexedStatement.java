@@ -39,6 +39,7 @@ import org.polypheny.prism.StatementResult;
 public class PIPreparedIndexedStatement extends PIPreparedStatement {
 
     private final String query;
+    @Setter
     private Statement statement;
     @Setter
     private PolyImplementation implementation;
@@ -173,7 +174,7 @@ public class PIPreparedIndexedStatement extends PIPreparedStatement {
 
     @Override
     public Transaction getTransaction() {
-        return statement.getTransaction();
+        return statement != null ? statement.getTransaction() : null;
     }
 
 }

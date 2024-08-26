@@ -411,7 +411,7 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
                 int updateCount = statement.getUpdateCount();
                 return Linq4j.singletonEnumerator( new PolyValue[]{ PolyLong.of( updateCount ) } );
             }
-        } catch ( SQLException e ) {
+        } catch ( Throwable e ) {
             throw Static.RESOURCE.exceptionWhilePerformingQueryOnJdbcSubSchema( sql ).ex( e );
         } finally {
             closeIfPossible( statement );
@@ -439,7 +439,7 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
                     return Linq4j.singletonEnumerator( new PolyValue[]{ PolyLong.of( updateCount ) } );
                 }
             }
-        } catch ( SQLException e ) {
+        } catch ( Throwable e ) {
             throw Static.RESOURCE.exceptionWhilePerformingQueryOnJdbcSubSchema( sql ).ex( e );
         } finally {
             closeIfPossible( preparedStatement );

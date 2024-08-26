@@ -32,6 +32,8 @@ public class PIClient {
     @Getter
     private final String clientUUID;
     private final LogicalUser catalogUser;
+    @Getter
+    @Setter
     private Transaction currentTransaction;
     private final TransactionManager transactionManager;
     @Getter
@@ -94,7 +96,7 @@ public class PIClient {
         }
         try {
             currentTransaction.commit();
-        } catch ( TransactionException e ) {
+        } catch ( Throwable e ) {
             throw new PIServiceException( "Committing current transaction failed: " + e.getMessage() );
         } finally {
             clearCurrentTransaction();
