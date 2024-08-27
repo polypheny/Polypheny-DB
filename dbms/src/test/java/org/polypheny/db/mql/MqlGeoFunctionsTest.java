@@ -16,6 +16,9 @@
 
 package org.polypheny.db.mql;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,6 +32,8 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Map;
+import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -42,12 +47,12 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
     final static String mongoAdapterName = "mongo";
     final static ArrayList<String> namespaces = new ArrayList<>();
 
+
     @BeforeAll
     public static void init() {
         createMongoDbAdapter();
-        namespaces.add(namespace);
-        namespaces.add(namespaceMongo);
-        log.info( "Created Mongo adapter successfully." );
+        namespaces.add( namespace );
+        namespaces.add( namespaceMongo );
     }
 
 
@@ -67,53 +72,94 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
     @BeforeEach
     public void beforeEach() {
         // Clear both collections before each test
-        for (String ns : namespaces) {
-            execute("db.%s.deleteMany({})".formatted( ns ), ns);
+        for ( String ns : namespaces ) {
+            execute( "db.%s.deleteMany({})".formatted( ns ), ns );
         }
     }
+
 
     @Test
     public void docGeoIntersectsTest() {
-        // TODO: compare the results directly, instead of only validating the length.
-        for (String ns : namespaces) {
+        ArrayList<DocResult> results = new ArrayList<>();
+
+        for ( String ns : namespaces ) {
+            // TODO: We are using MongoDB twice...
+            initDatabase( ns );
             String insertDocuments = """
-                db.%s.insertMany([
-                    {
-                      name: "Legacy [0,0]",
-                      num: 1,
-                      legacy: [0,0]
-                    },
-                    {
-                      name: "Legacy [1,1]",
-                      num: 2,
-                      legacy: [1,1]
-                    },
-                    {
-                      name: "Legacy [2,2]",
-                      num: 3,
-                      legacy: [2,2]
-                    }
-                ])
-                """.formatted( ns );
-            execute( insertDocuments, ns  );
+                    db.%s.insertMany([
+                        {
+                          name: "Legacy [0,0]",
+                          num: 1,
+                          legacy: [0,0]
+                        },
+                        {
+                          name: "Legacy [1,1]",
+                          num: 2,
+                          legacy: [1,1]
+                        },
+                        {
+                          name: "Legacy [2,2]",
+                          num: 3,
+                          legacy: [2,2]
+                        }
+                    ])
+                    """.formatted( ns );
+            execute( insertDocuments, ns );
 
             DocResult result;
             String geoIntersects = """
-                db.%s.find({
-                    legacy: {
-                       $geoIntersects: {
-                          $geometry: {
-                              type: "Polygon",
-                              coordinates: [[ [0,0], [0,1], [1,1], [1,0], [0,0] ]]
-                          }
-                       }
-                    }
-                })
-                """.formatted( ns );
-            result = execute( geoIntersects, ns  );
-            assertEquals( result.data.length, 2 );
+                    db.%s.find({
+                        legacy: {
+                           $geoIntersects: {
+                              $geometry: {
+                                  type: "Polygon",
+                                  coordinates: [[ [0,0], [0,1], [1,1], [1,0], [0,0] ]]
+                              }
+                           }
+                        }
+                    })
+                    """.formatted( ns );
+            result = execute( geoIntersects, ns );
+            results.add( result );
+        }
+
+        compareResults( results.get( 0 ), results.get( 1 ) );
+    }
+
+
+    public static void compareResults( DocResult mongoResult, DocResult result ) {
+        assertEquals( mongoResult.data.length, result.data.length );
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        for ( int i = 0; i < result.data.length; i++ ) {
+            String document = result.data[i];
+            String mongoDocument = mongoResult.data[i];
+
+            Map<String, Object> documentMap;
+            Map<String, Object> mongoDocumentMap;
+            try {
+                documentMap = objectMapper.readValue( document, new TypeReference<Map<String, Object>>() {
+                } );
+                mongoDocumentMap = objectMapper.readValue( mongoDocument, new TypeReference<Map<String, Object>>() {
+                } );
+            } catch ( JsonProcessingException e ) {
+                throw new RuntimeException( e );
+            }
+            assertEquals( mongoDocumentMap.keySet(), documentMap.keySet() );
+
+            for ( Map.Entry<String, Object> entry : documentMap.entrySet() ) {
+                String key = entry.getKey();
+                if ( Objects.equals( key, "_id" ) ) {
+                    // Do not compare the _id, as this will be different.
+                    continue;
+                }
+                Object value = entry.getValue();
+                Object mongoValue = entry.getValue();
+                assertEquals( mongoValue, value );
+            }
         }
     }
+
 
     @Test
     public void docGeoWithinTest() {
