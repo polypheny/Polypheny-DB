@@ -50,13 +50,12 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
 
     @BeforeAll
     public static void init() {
-        createMongoDbAdapter();
         namespaces.add( namespace );
         namespaces.add( namespaceMongo );
     }
 
 
-    public static void createMongoDbAdapter() {
+    public static void addMongoDbAdapter() {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
@@ -69,22 +68,31 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
     }
 
 
-    @BeforeEach
-    public void beforeEach() {
-        // Clear both collections before each test
-        for ( String ns : namespaces ) {
-            execute( "db.%s.deleteMany({})".formatted( ns ), ns );
+    public static void removeMongoDbAdapter() {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                TestHelper.executeSQL( statement, "DROP NAMESPACE \"%s\"".formatted( namespaceMongo ) );
+                TestHelper.dropAdapter( mongoAdapterName, statement );
+            }
+        } catch ( SQLException e ) {
+            throw new RuntimeException( e );
         }
     }
 
+    private void executeOnMongoAndInternally(){
+
+    }
 
     @Test
     public void docGeoIntersectsTest() {
         ArrayList<DocResult> results = new ArrayList<>();
 
         for ( String ns : namespaces ) {
-            // TODO: We are using MongoDB twice...
-            initDatabase( ns );
+            if ( ns.equals( namespaceMongo ) ) {
+                addMongoDbAdapter();
+            }
+
             String insertDocuments = """
                     db.%s.insertMany([
                         {
@@ -121,6 +129,10 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
                     """.formatted( ns );
             result = execute( geoIntersects, ns );
             results.add( result );
+
+            if ( ns.equals( namespaceMongo ) ) {
+                removeMongoDbAdapter();
+            }
         }
 
         compareResults( results.get( 0 ), results.get( 1 ) );
