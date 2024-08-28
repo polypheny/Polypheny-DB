@@ -52,6 +52,7 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
     public static void init() {
         namespaces.add( namespace );
         namespaces.add( namespaceMongo );
+        addMongoDbAdapter();
     }
 
 
@@ -83,7 +84,45 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
 
     @Test
     public void docGeoIntersectsTest() {
-        String geoIntersects = """
+        ArrayList<DocResult> results = new ArrayList<>();
+
+        for ( String ns : namespaces ) {
+            String createCollection = """
+                    db.createCollection(%s)
+                    """.formatted( ns );
+            execute( createCollection, ns );
+
+            if ( ns.equals( namespaceMongo ) ) {
+                execute( String.format( "db.%s.addPlacement(\"%s\")", ns, mongoAdapterName ) );
+                execute( String.format( "db.%s.deletePlacement(\"%s\")", ns, "hsqldb" ) );
+            } else {
+                execute( String.format( "db.%s.addPlacement(\"%s\")", ns, "hsqldb" ) );
+                execute( String.format( "db.%s.deletePlacement(\"%s\")", ns, mongoAdapterName ) );
+            }
+
+            String insertDocuments = """
+                    db.%s.insertMany([
+                        {
+                          name: "Legacy [0,0]",
+                          num: 1,
+                          legacy: [0,0]
+                        },
+                        {
+                          name: "Legacy [1,1]",
+                          num: 2,
+                          legacy: [1,1]
+                        },
+                        {
+                          name: "Legacy [2,2]",
+                          num: 3,
+                          legacy: [2,2]
+                        }
+                    ])
+                    """.formatted( ns );
+            execute( insertDocuments, ns );
+
+            DocResult result;
+            String geoIntersects = """
                     db.%s.find({
                         legacy: {
                            $geoIntersects: {
@@ -94,68 +133,12 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
                            }
                         }
                     })
-                    """.formatted( collectionName );
-        var result = execute( geoIntersects, namespace );
+                    """.formatted( ns );
+            result = execute( geoIntersects, ns );
+            results.add( result );
+        }
 
-
-//        ArrayList<DocResult> results = new ArrayList<>();
-//
-//        for ( String collectionName : namespaces ) {
-//            String createCollection = """
-//                    db.createCollection(%s)
-//                    """.formatted( collectionName );
-//            execute( createCollection, namespace );
-//
-//            if ( collectionName.equals( namespaceMongo ) ) {
-//                addMongoDbAdapter();
-//                // TODO: try to do the reverse, and add the hsqldb placement back in, so I can createMongo only once
-//                execute( String.format( "db.%s.addPlacement(\"%s\")", collectionName, mongoAdapterName ) );
-//                execute( String.format( "db.%s.deletePlacement(\"%s\")", collectionName, "hsqldb" ) );
-//            }
-//
-//            String insertDocuments = """
-//                    db.%s.insertMany([
-//                        {
-//                          name: "Legacy [0,0]",
-//                          num: 1,
-//                          legacy: [0,0]
-//                        },
-//                        {
-//                          name: "Legacy [1,1]",
-//                          num: 2,
-//                          legacy: [1,1]
-//                        },
-//                        {
-//                          name: "Legacy [2,2]",
-//                          num: 3,
-//                          legacy: [2,2]
-//                        }
-//                    ])
-//                    """.formatted( collectionName );
-//            execute( insertDocuments, namespace );
-//
-//            DocResult result;
-//            String geoIntersects = """
-//                    db.%s.find({
-//                        legacy: {
-//                           $geoIntersects: {
-//                              $geometry: {
-//                                  type: "Polygon",
-//                                  coordinates: [[ [0,0], [0,1], [1,1], [1,0], [0,0] ]]
-//                              }
-//                           }
-//                        }
-//                    })
-//                    """.formatted( collectionName );
-//            result = execute( geoIntersects, namespace );
-//            results.add( result );
-//
-////            if ( ns.equals( namespaceMongo ) ) {
-////                removeMongoDbAdapter();
-////            }
-//        }
-//
-//        compareResults( results.get( 0 ), results.get( 1 ) );
+        compareResults( results.get( 0 ), results.get( 1 ) );
     }
 
 

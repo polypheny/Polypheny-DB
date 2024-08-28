@@ -883,7 +883,7 @@ public class PolyGeometry extends PolyValue {
     public Expression asExpression() {
         // this basically calls a constructor with WKT
 
-        var ex = Expressions.call(PolyGeometry.class, "of", Expressions.constant(this.toString()));
+//        var ex = Expressions.call(PolyGeometry.class, "of", Expressions.constant(this.toString()));
         var ex2 = Expressions.new_( PolyGeometry.class, Expressions.constant( this.toString() ) );
 
         // TODO: Why doesn't this work?
