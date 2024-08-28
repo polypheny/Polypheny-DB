@@ -65,7 +65,7 @@ public class PIPreparedIndexedStatement extends PIPreparedStatement {
         } else {
             statement.getDataContext().resetParameterValues();
         }
-        List<AlgDataType> types = IntStream.range( 0, valuesBatch.size() ).mapToObj( i -> deriveType( statement.getTransaction().getTypeFactory(), parameterMetas.get( i ) ) ).toList();
+        List<AlgDataType> types = IntStream.range( 0, valuesBatch.size() ).mapToObj( i -> deriveType( statement.getTransaction().getTypeFactory(), parameterPolyTypes.get( i ) ) ).toList();
         int i = 0;
         for ( List<PolyValue> column : valuesBatch ) {
             statement.getDataContext().addParameterValues( i, types.get( i++ ), column );
@@ -84,11 +84,11 @@ public class PIPreparedIndexedStatement extends PIPreparedStatement {
         } else {
             statement.getDataContext().resetParameterValues();
         }
-        long index = 0;
+        int index = 0;
         for ( PolyValue value : values ) {
             if ( value != null ) {
                 AlgDataType algDataType = parameterMetas.size() > index
-                        ? deriveType( statement.getTransaction().getTypeFactory(), parameterMetas.get( (int) index ) )
+                        ? deriveType( statement.getTransaction().getTypeFactory(), parameterPolyTypes.get( index ) )
                         : statement.getTransaction().getTypeFactory().createPolyType( value.type );
                 statement.getDataContext().addParameterValues( index++, algDataType, List.of( value ) );
             }
@@ -98,9 +98,10 @@ public class PIPreparedIndexedStatement extends PIPreparedStatement {
     }
 
 
-    private AlgDataType deriveType( JavaTypeFactory typeFactory, ParameterMeta parameterMeta ) {
-        return switch ( parameterMeta.getTypeName().toUpperCase() ) {
-            case "DECIMAL" -> {
+    private AlgDataType deriveType( JavaTypeFactory typeFactory, AlgDataType parameterMeta ) {
+        PolyType type = parameterMeta.getPolyType();
+        return switch ( type ) {
+            case DECIMAL -> {
                 if ( parameterMeta.getPrecision() >= 0 && parameterMeta.getScale() >= 0 ) {
                     yield typeFactory.createPolyType( PolyType.DECIMAL, parameterMeta.getPrecision(), parameterMeta.getScale() );
                 } else if ( parameterMeta.getPrecision() >= 0 ) {
@@ -108,57 +109,43 @@ public class PIPreparedIndexedStatement extends PIPreparedStatement {
                 }
                 yield typeFactory.createPolyType( PolyType.DECIMAL );
             }
-            case "DOUBLE" -> typeFactory.createPolyType( PolyType.DOUBLE );
-            case "FLOAT" -> typeFactory.createPolyType( PolyType.FLOAT );
-            case "INT", "INTEGER" -> typeFactory.createPolyType( PolyType.INTEGER );
-            case "VARCHAR" -> {
+            case VARCHAR -> {
                 if ( parameterMeta.getPrecision() > 0 ) {
                     yield typeFactory.createPolyType( PolyType.VARCHAR, parameterMeta.getPrecision() );
                 }
                 yield typeFactory.createPolyType( PolyType.VARCHAR );
             }
-            case "CHAR" -> {
+            case CHAR -> {
                 if ( parameterMeta.getPrecision() > 0 ) {
                     yield typeFactory.createPolyType( PolyType.CHAR, parameterMeta.getPrecision() );
                 }
                 yield typeFactory.createPolyType( PolyType.CHAR );
             }
-            case "TEXT" -> typeFactory.createPolyType( PolyType.TEXT );
-            case "JSON" -> typeFactory.createPolyType( PolyType.JSON );
-            case "BOOLEAN" -> typeFactory.createPolyType( PolyType.BOOLEAN );
-            case "TINYINT" -> typeFactory.createPolyType( PolyType.TINYINT );
-            case "SMALLINT" -> typeFactory.createPolyType( PolyType.SMALLINT );
-            case "BIGINT" -> typeFactory.createPolyType( PolyType.BIGINT );
-            case "DATE" -> typeFactory.createPolyType( PolyType.DATE );
-            case "TIME" -> {
+            case TIME -> {
                 if ( parameterMeta.getPrecision() >= 0 ) {
                     yield typeFactory.createPolyType( PolyType.TIME, parameterMeta.getPrecision() );
                 }
                 yield typeFactory.createPolyType( PolyType.TIME );
             }
-            case "TIMESTAMP" -> {
+            case TIMESTAMP -> {
                 if ( parameterMeta.getPrecision() >= 0 ) {
                     yield typeFactory.createPolyType( PolyType.TIMESTAMP, parameterMeta.getPrecision() );
                 }
                 yield typeFactory.createPolyType( PolyType.TIMESTAMP );
             }
-            case "BINARY" -> {
+            case BINARY -> {
                 if ( parameterMeta.getPrecision() > 0 ) {
                     yield typeFactory.createPolyType( PolyType.BINARY, parameterMeta.getPrecision() );
                 }
                 yield typeFactory.createPolyType( PolyType.BINARY );
             }
-            case "VARBINARY" -> {
+            case VARBINARY -> {
                 if ( parameterMeta.getPrecision() > 0 ) {
                     yield typeFactory.createPolyType( PolyType.VARBINARY, parameterMeta.getPrecision() );
                 }
                 yield typeFactory.createPolyType( PolyType.VARBINARY );
             }
-            case "FILE" -> typeFactory.createPolyType( PolyType.FILE );
-            case "IMAGE" -> typeFactory.createPolyType( PolyType.IMAGE );
-            case "VIDEO" -> typeFactory.createPolyType( PolyType.VIDEO );
-            case "AUDIO" -> typeFactory.createPolyType( PolyType.AUDIO );
-            default -> typeFactory.createPolyType( PolyType.valueOf( parameterMeta.getTypeName() ) );
+            default -> typeFactory.createPolyType( type );
         };
     }
 
