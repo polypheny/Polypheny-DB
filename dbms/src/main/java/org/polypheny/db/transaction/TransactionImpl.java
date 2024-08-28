@@ -292,7 +292,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     @Override
     public int compareTo( @NonNull Object o ) {
         Transaction that = (Transaction) o;
-        return this.xid.hashCode() - that.getXid().hashCode();
+        return Integer.compare( this.xid.hashCode(), that.getXid().hashCode() );
     }
 
 
