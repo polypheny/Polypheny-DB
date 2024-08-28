@@ -799,6 +799,8 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     public PolyNumber asNumber() {
         if ( isNumber() ) {
             return (PolyNumber) this;
+        }else if( isString() ){
+            return PolyFloat.convert( this.asString() );
         }
         throw cannotParse( this, PolyNumber.class );
     }
