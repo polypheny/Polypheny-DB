@@ -74,6 +74,8 @@ public abstract class PIStatement {
 
     public abstract void setImplementation( PolyImplementation implementation );
 
+    public abstract void setStatement( Statement statement );
+
     public abstract Statement getStatement();
 
     public abstract String getQuery();

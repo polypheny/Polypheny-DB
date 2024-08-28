@@ -33,6 +33,7 @@ import org.polypheny.prism.StatementResult;
 public class PIUnparameterizedStatement extends PIStatement {
 
     private final String query;
+    @Setter
     private Statement statement;
     @Setter
     private PolyImplementation implementation;
