@@ -283,6 +283,9 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
     @Override
     public StatementImpl createStatement() {
+        if ( !isActive() ) {
+            throw new IllegalStateException( "Transaction is not active!" );
+        }
         StatementImpl statement = new StatementImpl( this );
         statements.add( statement );
         return statement;
