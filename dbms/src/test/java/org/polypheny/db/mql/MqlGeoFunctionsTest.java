@@ -80,42 +80,10 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
         }
     }
 
-    private void executeOnMongoAndInternally(){
-
-    }
 
     @Test
     public void docGeoIntersectsTest() {
-        ArrayList<DocResult> results = new ArrayList<>();
-
-        for ( String ns : namespaces ) {
-            if ( ns.equals( namespaceMongo ) ) {
-                addMongoDbAdapter();
-            }
-
-            String insertDocuments = """
-                    db.%s.insertMany([
-                        {
-                          name: "Legacy [0,0]",
-                          num: 1,
-                          legacy: [0,0]
-                        },
-                        {
-                          name: "Legacy [1,1]",
-                          num: 2,
-                          legacy: [1,1]
-                        },
-                        {
-                          name: "Legacy [2,2]",
-                          num: 3,
-                          legacy: [2,2]
-                        }
-                    ])
-                    """.formatted( ns );
-            execute( insertDocuments, ns );
-
-            DocResult result;
-            String geoIntersects = """
+        String geoIntersects = """
                     db.%s.find({
                         legacy: {
                            $geoIntersects: {
@@ -126,16 +94,68 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
                            }
                         }
                     })
-                    """.formatted( ns );
-            result = execute( geoIntersects, ns );
-            results.add( result );
+                    """.formatted( collectionName );
+        var result = execute( geoIntersects, namespace );
 
-            if ( ns.equals( namespaceMongo ) ) {
-                removeMongoDbAdapter();
-            }
-        }
 
-        compareResults( results.get( 0 ), results.get( 1 ) );
+//        ArrayList<DocResult> results = new ArrayList<>();
+//
+//        for ( String collectionName : namespaces ) {
+//            String createCollection = """
+//                    db.createCollection(%s)
+//                    """.formatted( collectionName );
+//            execute( createCollection, namespace );
+//
+//            if ( collectionName.equals( namespaceMongo ) ) {
+//                addMongoDbAdapter();
+//                // TODO: try to do the reverse, and add the hsqldb placement back in, so I can createMongo only once
+//                execute( String.format( "db.%s.addPlacement(\"%s\")", collectionName, mongoAdapterName ) );
+//                execute( String.format( "db.%s.deletePlacement(\"%s\")", collectionName, "hsqldb" ) );
+//            }
+//
+//            String insertDocuments = """
+//                    db.%s.insertMany([
+//                        {
+//                          name: "Legacy [0,0]",
+//                          num: 1,
+//                          legacy: [0,0]
+//                        },
+//                        {
+//                          name: "Legacy [1,1]",
+//                          num: 2,
+//                          legacy: [1,1]
+//                        },
+//                        {
+//                          name: "Legacy [2,2]",
+//                          num: 3,
+//                          legacy: [2,2]
+//                        }
+//                    ])
+//                    """.formatted( collectionName );
+//            execute( insertDocuments, namespace );
+//
+//            DocResult result;
+//            String geoIntersects = """
+//                    db.%s.find({
+//                        legacy: {
+//                           $geoIntersects: {
+//                              $geometry: {
+//                                  type: "Polygon",
+//                                  coordinates: [[ [0,0], [0,1], [1,1], [1,0], [0,0] ]]
+//                              }
+//                           }
+//                        }
+//                    })
+//                    """.formatted( collectionName );
+//            result = execute( geoIntersects, namespace );
+//            results.add( result );
+//
+////            if ( ns.equals( namespaceMongo ) ) {
+////                removeMongoDbAdapter();
+////            }
+//        }
+//
+//        compareResults( results.get( 0 ), results.get( 1 ) );
     }
 
 
