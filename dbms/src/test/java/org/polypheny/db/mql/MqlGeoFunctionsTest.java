@@ -16,26 +16,25 @@
 
 package org.polypheny.db.mql;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.webui.models.results.DocResult;
-
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Map;
-import java.util.Objects;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @SuppressWarnings("SqlNoDataSourceInspection")
 @Tag("adapter")
@@ -45,6 +44,9 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
     final static String namespaceMongo = "test_mongo";
     final static String collectionName = "doc";
     final static String mongoAdapterName = "mongo";
+    final static String mongoCollection = "mongo";
+    final static String defaultCollection = "default";
+    final static List<String> collections = List.of( defaultCollection, mongoCollection );
     final static ArrayList<String> namespaces = new ArrayList<>();
 
 
@@ -53,6 +55,13 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
         namespaces.add( namespace );
         namespaces.add( namespaceMongo );
         addMongoDbAdapter();
+
+        for ( String collection : collections ) {
+            String createCollection = """
+                    db.createCollection(%s).store(%s)
+                    """.formatted( collection, collection.equals( "mongo" ) ? mongoAdapterName : "hsqldb" );
+            execute( createCollection, namespace );
+        }
     }
 
 
@@ -86,19 +95,7 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
     public void docGeoIntersectsTest() {
         ArrayList<DocResult> results = new ArrayList<>();
 
-        for ( String ns : namespaces ) {
-            String createCollection = """
-                    db.createCollection(%s)
-                    """.formatted( ns );
-            execute( createCollection, ns );
-
-            if ( ns.equals( namespaceMongo ) ) {
-                execute( String.format( "db.%s.addPlacement(\"%s\")", ns, mongoAdapterName ) );
-                execute( String.format( "db.%s.deletePlacement(\"%s\")", ns, "hsqldb" ) );
-            } else {
-                execute( String.format( "db.%s.addPlacement(\"%s\")", ns, "hsqldb" ) );
-                execute( String.format( "db.%s.deletePlacement(\"%s\")", ns, mongoAdapterName ) );
-            }
+        for ( String collection : collections ) {
 
             String insertDocuments = """
                     db.%s.insertMany([
@@ -118,8 +115,8 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
                           legacy: [2,2]
                         }
                     ])
-                    """.formatted( ns );
-            execute( insertDocuments, ns );
+                    """.formatted( collection );
+            execute( insertDocuments, namespace );
 
             DocResult result;
             String geoIntersects = """
@@ -133,8 +130,8 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
                            }
                         }
                     })
-                    """.formatted( ns );
-            result = execute( geoIntersects, ns );
+                    """.formatted( collection );
+            result = execute( geoIntersects, namespace );
             results.add( result );
         }
 
