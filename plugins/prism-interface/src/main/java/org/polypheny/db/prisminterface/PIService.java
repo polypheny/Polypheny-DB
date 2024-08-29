@@ -429,12 +429,6 @@ class PIService {
     private Response executeIndexedStatement( ExecuteIndexedStatementRequest request, ResponseMaker<StatementResult> responseObserver ) {
         PIClient client = getClient();
         PIPreparedIndexedStatement statement = client.getStatementManager().getIndexedPreparedStatement( request.getStatementId() );
-        if ( statement != null && statement.getTransaction() != null && client.getCurrentTransaction() != null && statement.getTransaction().getId() != client.getCurrentTransaction().getId() ) {
-            if ( !statement.getTransaction().isActive() ){ // todo @gartens @tobiashafner fix
-                log.debug( "This definitely should not happen! {}", statement.getTransaction().getId() );
-                statement.setStatement( client.getCurrentTransaction().createStatement() );
-            }
-        }
         int fetchSize = request.hasFetchSize()
                 ? request.getFetchSize()
                 : PropertyUtils.DEFAULT_FETCH_SIZE;
