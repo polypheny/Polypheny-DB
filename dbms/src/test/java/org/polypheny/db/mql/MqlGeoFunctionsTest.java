@@ -116,12 +116,14 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
                         })
                         """
         );
-        runAndAssertQueriesEqualBothStores( queries );
+        List<DocResult> results = runQueries( queries );
+        compareResults( results );
     }
 
 
     @Test
-    public void docGeoWithinBox() {
+    public void docGeoWithinTest() {
+        List<DocResult> results;
         String insertMany = """
                 db.%s.insertMany([
                     {
@@ -153,7 +155,8 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
                     }
                 })
                 """;
-        runAndAssertQueriesEqualBothStores( Arrays.asList( insertMany, geoWithinBox ) );
+        results = runQueries( Arrays.asList( insertMany, geoWithinBox ) );
+        compareResults( results );
 
         String geoWithinGeometry = """
                 db.%s.find({
@@ -167,16 +170,26 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
                     }
                 })
                 """;
-        runAndAssertQueriesEqualBothStores( Arrays.asList( clearCollection, insertMany, geoWithinGeometry ) );
+        results = runQueries( Arrays.asList( clearCollection, insertMany, geoWithinGeometry ) );
+        compareResults( results );
 
-        // TODO: This test does not make any sense, as 1.5 in radians is so big
-        //       that it includes all three points.
-        //       Create another test, with more sensible numbers...
-        String geoWithinCenterSphere = """
+        String geoWithinPolygon = """
                 db.%s.find({
                     legacy: {
                         $geoWithin: {
-                             $centerSphere: [
+                            $polygon: [ [0,0], [0,1], [1,1], [1,0], [0,0] ]
+                        }
+                    }
+                })
+                """;
+        results = runQueries( Arrays.asList( clearCollection, insertMany, geoWithinPolygon ) );
+        compareResults( results );
+
+        String geoWithinCenter = """
+                db.%s.find({
+                    legacy: {
+                        $geoWithin: {
+                             $center: [
                                 [ 0, 0 ],
                                 1.5
                              ]
@@ -184,8 +197,38 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
                     }
                 })
                 """;
-        runAndAssertQueriesEqualBothStores( Arrays.asList( clearCollection, insertMany, geoWithinCenterSphere ) );
+        results = runQueries( Arrays.asList( clearCollection, insertMany, geoWithinCenter ) );
+        compareResults( results );
+
+        String insertCoordinates = """
+                db.%s.insertMany([
+                    {
+                      name: "Kirchgebäude Mittlere Brücke",
+                      legacy: [7.5898043, 47.5600440]
+                    },
+                    {
+                      name: "Mitte Rhein Johanniterbrücke",
+                      legacy: [7.585512, 47.564843]
+                    },
+                ])
+                """;
+
+        String geoWithinCenterSphere = """
+                db.%s.find({
+                    legacy: {
+                        $geoWithin: {
+                             $centerSphere: [
+                                [7.5872232, 47.5601937],
+                                0.00004
+                             ]
+                        }
+                    }
+                })
+                """;
+        results = runQueries( Arrays.asList( clearCollection, insertCoordinates, geoWithinCenterSphere ) );
+        compareResults( results );
     }
+
 
     private void clearCollections() {
         for ( String collection : collections ) {
@@ -194,7 +237,7 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
     }
 
 
-    private void addMongoDbAdapter() {
+    private static void addMongoDbAdapter() {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
@@ -215,7 +258,7 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
      * @param queries Queries which are run for each system. Make sure
      * the query contains a placeholder %s for the collection.
      */
-    private void runAndAssertQueriesEqualBothStores( List<String> queries ) {
+    private List<DocResult> runQueries( List<String> queries ) {
         ArrayList<DocResult> results = new ArrayList<>();
 
         for ( String collection : collections ) {
@@ -227,6 +270,12 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
             results.add( finalResult );
         }
 
+        assertEquals( 2, results.size() );
+        return results;
+    }
+
+
+    private void compareResults( List<DocResult> results ) {
         compareResults( results.get( 0 ), results.get( 1 ) );
     }
 

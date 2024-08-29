@@ -23,6 +23,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
@@ -34,6 +35,7 @@ import org.bson.BsonValue;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Point;
+import org.locationtech.jts.geom.PrecisionModel;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.schema.document.DocumentUtil;
 import org.polypheny.db.type.PolyType;
@@ -755,18 +757,17 @@ public class MqlFunctions {
 
     @SuppressWarnings("UnusedDeclaration")
     public static PolyBoolean docGeoIntersects( PolyValue input, PolyValue geometry ) {
-        PolyGeometry inputGeometry = convertInputToPolyGeometry( input );
         PolyGeometry geometryFilter = geometry.asGeometry();
+        PolyGeometry inputGeometry = convertInputToPolyGeometry( input, geometryFilter.getSRID() );
         return inputGeometry.intersects( geometryFilter ) ? PolyBoolean.TRUE : PolyBoolean.FALSE;
     }
 
 
     @SuppressWarnings("UnusedDeclaration")
     public static PolyBoolean docGeoWithin( PolyValue input, PolyValue geometry, PolyValue distance ) {
-        PolyGeometry inputGeometry = convertInputToPolyGeometry( input );
-
         try {
             PolyGeometry geometryFilter = geometry.asGeometry();
+            PolyGeometry inputGeometry = convertInputToPolyGeometry( input, geometryFilter.getSRID() );
 
             double distanceValue = distance.asDouble().doubleValue();
             if ( distanceValue > 0 ) {
@@ -796,8 +797,8 @@ public class MqlFunctions {
      * 2. GeoJSON:
      * - A document that adheres to the GeoJSON specification.
      */
-    public static PolyGeometry convertInputToPolyGeometry( PolyValue input ) {
-        GeometryFactory geoFactory = new GeometryFactory();
+    public static PolyGeometry convertInputToPolyGeometry( PolyValue input, Integer srid ) {
+        GeometryFactory geoFactory = new GeometryFactory(new PrecisionModel(), srid );
 
         // Legacy Coordinates
         if ( input.isList() ) {
