@@ -25,11 +25,13 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
@@ -41,105 +43,195 @@ import org.polypheny.db.webui.models.results.DocResult;
 @Slf4j
 public class MqlGeoFunctionsTest extends MqlTestTemplate {
 
-    final static String namespaceMongo = "test_mongo";
-    final static String collectionName = "doc";
     final static String mongoAdapterName = "mongo";
     final static String mongoCollection = "mongo";
     final static String defaultCollection = "default";
     final static List<String> collections = List.of( defaultCollection, mongoCollection );
-    final static ArrayList<String> namespaces = new ArrayList<>();
+    final static Map<String, String> collectionToStore = Map.of(
+            mongoCollection, mongoAdapterName,
+            defaultCollection, "hsqldb"
+    );
+    final static String clearCollection = """
+            db.%s.deleteMany({})
+            """;
 
 
     @BeforeAll
     public static void init() {
-        namespaces.add( namespace );
-        namespaces.add( namespaceMongo );
         addMongoDbAdapter();
 
+        // Create collection and save it to either the internal store or MongoDB.
+        // This way, we can compare if the implementations match.
         for ( String collection : collections ) {
             String createCollection = """
                     db.createCollection(%s).store(%s)
-                    """.formatted( collection, collection.equals( "mongo" ) ? mongoAdapterName : "hsqldb" );
+                    """.formatted( collection, collectionToStore.get( collection ) );
             execute( createCollection, namespace );
         }
     }
 
 
-    public static void addMongoDbAdapter() {
-        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
-            Connection connection = polyphenyDbConnection.getConnection();
-            try ( Statement statement = connection.createStatement() ) {
-                TestHelper.addMongodb( mongoAdapterName, statement );
-                initDatabase( namespaceMongo );
-            }
-        } catch ( SQLException e ) {
-            throw new RuntimeException( e );
-        }
-    }
-
-
-    public static void removeMongoDbAdapter() {
-        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
-            Connection connection = polyphenyDbConnection.getConnection();
-            try ( Statement statement = connection.createStatement() ) {
-                TestHelper.executeSQL( statement, "DROP NAMESPACE \"%s\"".formatted( namespaceMongo ) );
-                TestHelper.dropAdapter( mongoAdapterName, statement );
-            }
-        } catch ( SQLException e ) {
-            throw new RuntimeException( e );
-        }
+    @BeforeEach
+    public void beforeEach() {
+        // Make sure collections are emptied before each test.
+        clearCollections();
     }
 
 
     @Test
     public void docGeoIntersectsTest() {
+        ArrayList<String> queries = new ArrayList<>();
+        queries.add(
+                """
+                        db.%s.insertMany([
+                            {
+                              name: "Legacy [0,0]",
+                              num: 1,
+                              legacy: [0,0]
+                            },
+                            {
+                              name: "Legacy [1,1]",
+                              num: 2,
+                              legacy: [1,1]
+                            },
+                            {
+                              name: "Legacy [2,2]",
+                              num: 3,
+                              legacy: [2,2]
+                            }
+                        ])
+                        """
+        );
+        queries.add(
+                """
+                        db.%s.find({
+                            legacy: {
+                               $geoIntersects: {
+                                  $geometry: {
+                                      type: "Polygon",
+                                      coordinates: [[ [0,0], [0,1], [1,1], [1,0], [0,0] ]]
+                                  }
+                               }
+                            }
+                        })
+                        """
+        );
+        runAndAssertQueriesEqualBothStores( queries );
+    }
+
+
+    @Test
+    public void docGeoWithinBox() {
+        String insertMany = """
+                db.%s.insertMany([
+                    {
+                      name: "Legacy [0,0]",
+                      num: 1,
+                      legacy: [0,0]
+                    },
+                    {
+                      name: "Legacy [1,1]",
+                      num: 2,
+                      legacy: [1,1]
+                    },
+                    {
+                      name: "Legacy [2,2]",
+                      num: 3,
+                      legacy: [2,2]
+                    }
+                ])
+                """;
+        String geoWithinBox = """
+                db.%s.find({
+                    legacy: {
+                       $geoWithin: {
+                          $box: [
+                            [0,0],
+                            [1,1]
+                          ]
+                       }
+                    }
+                })
+                """;
+        runAndAssertQueriesEqualBothStores( Arrays.asList( insertMany, geoWithinBox ) );
+
+        String geoWithinGeometry = """
+                db.%s.find({
+                    legacy: {
+                        $geoWithin: {
+                            $geometry: {
+                                type: "Polygon",
+                                coordinates: [[ [0,0], [0,1], [1,1], [1,0], [0,0] ]]
+                            }
+                        }
+                    }
+                })
+                """;
+        runAndAssertQueriesEqualBothStores( Arrays.asList( clearCollection, insertMany, geoWithinGeometry ) );
+
+        // TODO: This test does not make any sense, as 1.5 in radians is so big
+        //       that it includes all three points.
+        //       Create another test, with more sensible numbers...
+        String geoWithinCenterSphere = """
+                db.%s.find({
+                    legacy: {
+                        $geoWithin: {
+                             $centerSphere: [
+                                [ 0, 0 ],
+                                1.5
+                             ]
+                        }
+                    }
+                })
+                """;
+        runAndAssertQueriesEqualBothStores( Arrays.asList( clearCollection, insertMany, geoWithinCenterSphere ) );
+    }
+
+    private void clearCollections() {
+        for ( String collection : collections ) {
+            execute( clearCollection.formatted( collection ), namespace );
+        }
+    }
+
+
+    private void addMongoDbAdapter() {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                TestHelper.addMongodb( mongoAdapterName, statement );
+                initDatabase( "test_mongo" );
+            }
+        } catch ( SQLException e ) {
+            throw new RuntimeException( e );
+        }
+    }
+
+
+    /**
+     * Runs the queries for each collection, and saves the result of the
+     * final query to a list. Afterward, we assert if the result of
+     * both systems match.
+     *
+     * @param queries Queries which are run for each system. Make sure
+     * the query contains a placeholder %s for the collection.
+     */
+    private void runAndAssertQueriesEqualBothStores( List<String> queries ) {
         ArrayList<DocResult> results = new ArrayList<>();
 
         for ( String collection : collections ) {
-
-            String insertDocuments = """
-                    db.%s.insertMany([
-                        {
-                          name: "Legacy [0,0]",
-                          num: 1,
-                          legacy: [0,0]
-                        },
-                        {
-                          name: "Legacy [1,1]",
-                          num: 2,
-                          legacy: [1,1]
-                        },
-                        {
-                          name: "Legacy [2,2]",
-                          num: 3,
-                          legacy: [2,2]
-                        }
-                    ])
-                    """.formatted( collection );
-            execute( insertDocuments, namespace );
-
-            DocResult result;
-            String geoIntersects = """
-                    db.%s.find({
-                        legacy: {
-                           $geoIntersects: {
-                              $geometry: {
-                                  type: "Polygon",
-                                  coordinates: [[ [0,0], [0,1], [1,1], [1,0], [0,0] ]]
-                              }
-                           }
-                        }
-                    })
-                    """.formatted( collection );
-            result = execute( geoIntersects, namespace );
-            results.add( result );
+            DocResult finalResult = null;
+            for ( String queryWithPlaceholder : queries ) {
+                String query = queryWithPlaceholder.formatted( collection );
+                finalResult = execute( query, namespace );
+            }
+            results.add( finalResult );
         }
 
         compareResults( results.get( 0 ), results.get( 1 ) );
     }
 
 
-    public static void compareResults( DocResult mongoResult, DocResult result ) {
+    private void compareResults( DocResult mongoResult, DocResult result ) {
         assertEquals( mongoResult.data.length, result.data.length );
 
         ObjectMapper objectMapper = new ObjectMapper();
@@ -170,80 +262,6 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
                 assertEquals( mongoValue, value );
             }
         }
-    }
-
-
-    @Test
-    public void docGeoWithinTest() {
-        String insertDocuments = """
-                db.%s.insertMany([
-                    {
-                      name: "Legacy [0,0]",
-                      num: 1,
-                      legacy: [0,0]
-                    },
-                    {
-                      name: "Legacy [1,1]",
-                      num: 2,
-                      legacy: [1,1]
-                    },
-                    {
-                      name: "Legacy [2,2]",
-                      num: 3,
-                      legacy: [2,2]
-                    }
-                ])
-                """.formatted( collectionName );
-        execute( insertDocuments );
-
-        DocResult result;
-        String geoWithinBox = """
-                db.%s.find({
-                    legacy: {
-                       $geoWithin: {
-                          $box: [
-                            [0,0],
-                            [1,1]
-                          ]
-                       }
-                    }
-                })
-                """.formatted( collectionName );
-        result = execute( geoWithinBox );
-        assertEquals( result.data.length, 2 );
-
-        String geoWithinGeometry = """
-                db.%s.find({
-                    legacy: {
-                        $geoWithin: {
-                            $geometry: {
-                                type: "Polygon",
-                                coordinates: [[ [0,0], [0,1], [1,1], [1,0], [0,0] ]]
-                            }
-                        }
-                    }
-                })
-                """.formatted( collectionName );
-        result = execute( geoWithinGeometry );
-        assertEquals( result.data.length, 2 );
-
-        // TODO: This test does not make any sense, as 1.5 in radians is so big
-        //       that it includes all three points.
-        //       Create another test, with more sensible numbers...
-        String geoWithinCenterSphere = """
-                db.%s.find({
-                    legacy: {
-                        $geoWithin: {
-                             $centerSphere: [
-                                [ 0, 0 ],
-                                1.5
-                             ]
-                        }
-                    }
-                })
-                """.formatted( collectionName );
-        result = execute( geoWithinCenterSphere );
-        assertEquals( 3, result.data.length );
     }
 
 }
