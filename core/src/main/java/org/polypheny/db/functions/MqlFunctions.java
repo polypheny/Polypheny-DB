@@ -46,6 +46,7 @@ import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.document.PolyDocument;
+import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.type.entity.spatial.GeometryTopologicalException;
 import org.polypheny.db.type.entity.spatial.InvalidGeometryException;
@@ -783,6 +784,12 @@ public class MqlFunctions {
         } catch ( GeometryTopologicalException e ) {
             throw new GenericRuntimeException( "$geometry could not be parsed as GeoJSON" );
         }
+    }
+
+    public static PolyNumber docGeoDistance( PolyValue input, PolyValue geometry ) {
+        PolyGeometry geometryFilter = geometry.asGeometry();
+        PolyGeometry inputGeometry = convertInputToPolyGeometry( input, geometryFilter.getSRID() );
+        return GeoFunctions.stDistance( inputGeometry, geometryFilter );
     }
 
 

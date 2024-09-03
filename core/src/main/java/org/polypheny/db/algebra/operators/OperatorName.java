@@ -1639,6 +1639,8 @@ public enum OperatorName {
 
     MQL_GEO_WITHIN( LangFunctionOperator.class ),
 
+    MQL_GEO_DISTANCE ( LangFunctionOperator.class ),
+
     MQL_NEAR( LangFunctionOperator.class ),
 
     MQL_NEAR_SPHERE( LangFunctionOperator.class ),

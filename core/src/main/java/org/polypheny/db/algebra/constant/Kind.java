@@ -1327,6 +1327,8 @@ public enum Kind {
 
     MQL_GEO_WITHIN,
 
+    MQL_GEO_DISTANCE,
+
     MQL_NEAR,
 
     MQL_NEAR_SPHERE,

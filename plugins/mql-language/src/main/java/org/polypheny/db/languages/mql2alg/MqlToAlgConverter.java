@@ -1140,8 +1140,73 @@ public class MqlToAlgConverter {
 
 
     private AlgNode combineFilter( BsonDocument filter, AlgNode node, AlgDataType rowType ) {
-        RexNode condition = translateDocument( filter, rowType, null );
 
+        // I am inside the query translation from MqlFind or other methods which can query documents, like MqlDelete.
+        // I need to detect here, if my query is of type $near, and then create multiple SingleAlg nodes and put them
+        // together.
+        // TODO: Add a value with a projection.
+        // 1. First, add a constant value. DONE
+        // 2. Add a dynamic value with RexCall DONE
+        // 3. Add a filter based on dynamic value
+        if ( filter.isDocument() ) {
+            BsonDocument filterDocument = filter.asDocument();
+            if ( filterDocument.entrySet().size() == 1 ) {
+                String parentKey = filterDocument.getFirstKey();
+                BsonValue innerDocument = filterDocument.get( parentKey );
+                if ( innerDocument.isDocument() && innerDocument.asDocument().containsKey( "$near" ) ) {
+                    // Step 1: Projection that adds dynamically computed _distance field.
+                    Map<String, RexNode> includes = new HashMap<>();
+                    List<String> excludes = List.of();
+                    // Add RexCall to includes
+                    BsonDocument near = innerDocument.asDocument().getDocument( "$near" );
+                    BsonDocument geoWithin = new BsonDocument( "$geoWithin", near );
+                    RexNode geoWithinNode = convertGeoWithin( geoWithin, parentKey, rowType );
+                    RexNode geoWithinFixedCall = getFixedCall( List.of( geoWithinNode ), OperatorRegistry.get( OperatorName.AND ), PolyType.ANY );
+                    includes.put( "_distance", geoWithinFixedCall );
+                    // Call translateProjection to fix our includes array to the expected structure.
+                    BsonDocument geometry = near.getDocument( "$geometry" );
+                    BsonDocument distanceProjection = new BsonDocument( "$distance", new BsonArray( List.of(
+                            new BsonString( "$" + parentKey ),
+                            geometry
+                    ) ) );
+                    BsonDocument fieldToProjection = new BsonDocument( "_distance", distanceProjection );
+                    translateProjection( rowType, true, false, includes, excludes, fieldToProjection );
+                    LogicalDocumentProject project = LogicalDocumentProject.create( node, includes, excludes );
+
+
+                    // Step 2: Filter out by using fields $minDistance and $maxDistance
+                    LogicalDocumentFilter logicalDocumentFilter;
+                    BsonDocument filterConditions = new BsonDocument();
+                    if(near.containsKey( "$minDistance" )){
+                        BsonNumber minDistance = near.get("$minDistance").asNumber();
+                        filterConditions.put( "$gte", minDistance );
+                    }
+                    if(near.containsKey( "$maxDistance" )){
+                        BsonNumber maxDistance = near.get("$maxDistance").asNumber();
+                        filterConditions.put( "$lte", maxDistance );
+                    }
+                    if ( !filterConditions.isEmpty() ){
+                        BsonDocument filterDistance = new BsonDocument("_distance", filterConditions);
+                        RexNode distanceCondition = translateDocument( filterDistance, rowType, null );
+                        logicalDocumentFilter = LogicalDocumentFilter.create(project, distanceCondition );
+                        return logicalDocumentFilter;
+                    }
+
+
+                    // Step 3: Sort by _distance ascending
+
+
+
+                    // Step 4: Projection to remove field _distance
+
+                    // Done!
+
+                    return project;
+                }
+            }
+        }
+
+        RexNode condition = translateDocument( filter, rowType, null );
         return LogicalDocumentFilter.create( node, condition );
     }
 
@@ -1339,6 +1404,25 @@ public class MqlToAlgConverter {
         } else {
             throw new GenericRuntimeException( errorMsg );
         }
+    }
+
+
+    private RexNode convertDistance( BsonValue bsonValue, AlgDataType rowType ) {
+        BsonArray bsonArray = bsonValue.asArray();
+        List<RexNode> operands = new ArrayList<>();
+        BsonValue left = bsonArray.get( 0 );
+        BsonValue right = bsonArray.get( 1 );
+
+        operands.add( getIdentifier( left.asString().getValue().substring( 1 ), rowType ) );
+        BsonDocument geometry = right.asDocument();
+        PolyGeometry polyGeometry;
+        try {
+            polyGeometry = PolyGeometry.fromGeoJson( geometry.toJson() );
+        } catch ( InvalidGeometryException e ) {
+            throw new RuntimeException( e );
+        }
+        operands.add( convertGeometry( polyGeometry ) );
+        return getFixedCall( operands, OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_GEO_DISTANCE ), PolyType.ANY );
     }
 
 
@@ -1650,7 +1734,7 @@ public class MqlToAlgConverter {
         PolyDouble distance = new PolyDouble( -1d );
 
         if ( geometry.containsKey( "$geometry" ) ) {
-            geometry = geometry.get("$geometry").asDocument();
+            geometry = geometry.get( "$geometry" ).asDocument();
             try {
                 polyGeometry = PolyGeometry.fromGeoJson( geometry.toJson() );
             } catch ( InvalidGeometryException e ) {
@@ -2013,6 +2097,7 @@ public class MqlToAlgConverter {
 
     }
 
+
     private RexNode convertGeometry( PolyGeometry geometry ) {
         Pair<PolyValue, PolyType> valuePair = RexLiteral.convertType( geometry, new DocumentType() );
         return new RexLiteral( valuePair.left, new DocumentType(), valuePair.right );
@@ -2181,6 +2266,8 @@ public class MqlToAlgConverter {
                     } else {
                         includes.put( entry.getKey(), getIdentifier( entry.getKey(), rowType ) );
                     }
+                } else if ( func.equals( "$distance" ) ) {
+                    includes.put( entry.getKey(), convertDistance( value.asDocument().get( func ), rowType ) );
                 }
             } else if ( isAddFields && !value.isDocument() ) {
                 if ( value.isArray() ) {

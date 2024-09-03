@@ -79,7 +79,7 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
     @Getter
     private final Map<Integer, Map<Integer, List<ParameterValue>>> docs;
 
-    private final List<OperatorName> excluded = List.of( OperatorName.MQL_REGEX_MATCH, OperatorName.MQL_QUERY_VALUE, OperatorName.MQL_GEO_WITHIN, OperatorName.MQL_GEO_INTERSECTS );
+    private final List<OperatorName> excluded = List.of( OperatorName.MQL_REGEX_MATCH, OperatorName.MQL_QUERY_VALUE, OperatorName.MQL_GEO_WITHIN, OperatorName.MQL_GEO_INTERSECTS, OperatorName.MQL_GEO_DISTANCE );
 
     @Getter
     private final List<AlgDataType> types;

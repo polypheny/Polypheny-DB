@@ -46,7 +46,9 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
     final static String mongoAdapterName = "mongo";
     final static String mongoCollection = "mongo";
     final static String defaultCollection = "default";
-    final static List<String> collections = List.of( defaultCollection, mongoCollection );
+    final static List<String> collections = List.of( defaultCollection
+//            , mongoCollection
+    );
     final static Map<String, String> collectionToStore = Map.of(
             mongoCollection, mongoAdapterName,
             defaultCollection, "hsqldb"
@@ -230,6 +232,95 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
     }
 
 
+    @Test
+    public void docGeoNearTest() {
+        ArrayList<String> queries = new ArrayList<>();
+        queries.add(
+                """
+                        db.%s.insertMany([
+                            {
+                              name: "Legacy [2,2]",
+                              num: 3,
+                              legacy: [2,2]
+                            }
+                            {
+                              name: "Legacy [0,0]",
+                              num: 1,
+                              legacy: [0,0]
+                            },
+                            {
+                              name: "Legacy [3,3]",
+                              num: 4,
+                              legacy: [3,3]
+                            }
+                            {
+                              name: "Legacy [1,1]",
+                              num: 2,
+                              legacy: [1,1]
+                            },
+                        ])
+                        """
+        );
+
+        queries.add(
+                """
+                        db.%s.find({
+                            legacy: {
+                               $near: {
+                                  $geometry: {
+                                      type: "Point",
+                                      coordinates: [0,0]
+                                  },
+                                  $minDistance: 1,
+                                  $maxDistance: 100,
+                               }
+                            }
+                        })
+                        """
+        );
+        // Fails somewhere in RexProgramBuilder.mergePrograms
+        DocResult result = execute( """
+                db.%s.find({
+                    legacy: {
+                       $near: {
+                          $geometry: {
+                              type: "Point",
+                              coordinates: [0,0]
+                          },
+                          $minDistance: 1,
+                          $maxDistance: 100,
+                       }
+                    }
+                })
+                """.formatted( defaultCollection ), namespace );
+
+        // Find with a projection with a function and a new field.
+//        queries.add(
+//                """
+//                        db.%s.find({},
+//                        {
+//                            name: 1,
+//                            sum: { $add: [ "$num", "$num" ] }
+//                        })
+//                        """
+//        );
+
+//        queries.add(
+//                """
+//                        db.%s.find({},
+//                        {
+//                            name: 1,
+//                            _distance: { $distance: [ "$legacy", "$legacy.$near.$geometry" ] }
+//                        })
+//                        """
+//        );
+//        DocResult result = execute( queries.get( 1 ).formatted( defaultCollection ), namespace );
+//        System.out.println("Test");
+//        List<DocResult> results = runQueries( queries );
+//        compareResults( results );
+    }
+
+
     private void clearCollections() {
         for ( String collection : collections ) {
             execute( clearCollection.formatted( collection ), namespace );
@@ -245,6 +336,8 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
                 initDatabase( "test_mongo" );
             }
         } catch ( SQLException e ) {
+            // If there is an error while adding the adapter, the most likely reason it does not work
+            // is that docker is not running!
             throw new RuntimeException( e );
         }
     }
