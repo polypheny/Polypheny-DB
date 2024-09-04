@@ -1152,56 +1152,82 @@ public class MqlToAlgConverter {
             BsonDocument filterDocument = filter.asDocument();
             if ( filterDocument.entrySet().size() == 1 ) {
                 String parentKey = filterDocument.getFirstKey();
-                BsonValue innerDocument = filterDocument.get( parentKey );
-                if ( innerDocument.isDocument() && innerDocument.asDocument().containsKey( "$near" ) ) {
-                    // Step 1: Projection that adds dynamically computed _distance field.
+                BsonValue inner = filterDocument.get( parentKey );
+                if ( inner.isDocument() && inner.asDocument().containsKey( "$near" ) ) {
+                    //
+                    // Step 1:
+                    // Projection that adds dynamically computed _distance field.
                     Map<String, RexNode> includes = new HashMap<>();
                     List<String> excludes = List.of();
-                    // Add RexCall to includes
-                    BsonDocument near = innerDocument.asDocument().getDocument( "$near" );
-                    BsonDocument geoWithin = new BsonDocument( "$geoWithin", near );
-                    RexNode geoWithinNode = convertGeoWithin( geoWithin, parentKey, rowType );
-                    RexNode geoWithinFixedCall = getFixedCall( List.of( geoWithinNode ), OperatorRegistry.get( OperatorName.AND ), PolyType.ANY );
-                    includes.put( "_distance", geoWithinFixedCall );
-                    // Call translateProjection to fix our includes array to the expected structure.
-                    BsonDocument geometry = near.getDocument( "$geometry" );
-                    BsonDocument distanceProjection = new BsonDocument( "$distance", new BsonArray( List.of(
-                            new BsonString( "$" + parentKey ),
-                            geometry
-                    ) ) );
+
+                    BsonDocument innerDocument = inner.asDocument();
+                    BsonValue innerNear = innerDocument.get( "$near" );
+                    BsonDocument distanceProjection = new BsonDocument();
+                    BsonNumber minDistance = null;
+                    BsonNumber maxDistance = null;
+
+                    if ( innerNear.isArray() ) {
+                        BsonArray legacyCoordinates = innerNear.asArray();
+                        if ( innerDocument.containsKey( "$maxDistance" ) ) {
+                            maxDistance = innerDocument.getNumber( "$maxDistance" );
+                        }
+                        distanceProjection.put( "$distance", new BsonArray( List.of(
+                                new BsonString( "$" + parentKey ),
+                                legacyCoordinates
+                        ) ) );
+                    } else if ( innerNear.isDocument() ) {
+                        BsonDocument near = innerNear.asDocument();
+                        BsonDocument geometry = near.getDocument( "$geometry" );
+                        distanceProjection.put( "$distance", new BsonArray( List.of(
+                                new BsonString( "$" + parentKey ),
+                                geometry
+                        ) ) );
+                        if ( near.containsKey( "$minDistance" ) ) {
+                            minDistance = near.get( "$minDistance" ).asNumber();
+                        }
+                        if ( near.containsKey( "$maxDistance" ) ) {
+                            maxDistance = near.get( "$maxDistance" ).asNumber();
+                        }
+                    }
+
+                    // TODO: My projected documents only contain the _distance field...
                     BsonDocument fieldToProjection = new BsonDocument( "_distance", distanceProjection );
                     translateProjection( rowType, true, false, includes, excludes, fieldToProjection );
-                    LogicalDocumentProject project = LogicalDocumentProject.create( node, includes, excludes );
+                    node = LogicalDocumentProject.create( node, includes, excludes );
 
-
-                    // Step 2: Filter out by using fields $minDistance and $maxDistance
-                    LogicalDocumentFilter logicalDocumentFilter;
+                    //
+                    // Step 2:
+                    // (Optional) Filter out by using fields $minDistance and $maxDistance
                     BsonDocument filterConditions = new BsonDocument();
-                    if(near.containsKey( "$minDistance" )){
-                        BsonNumber minDistance = near.get("$minDistance").asNumber();
+                    if ( minDistance != null ) {
                         filterConditions.put( "$gte", minDistance );
                     }
-                    if(near.containsKey( "$maxDistance" )){
-                        BsonNumber maxDistance = near.get("$maxDistance").asNumber();
+                    if ( maxDistance != null ) {
                         filterConditions.put( "$lte", maxDistance );
                     }
-                    if ( !filterConditions.isEmpty() ){
-                        BsonDocument filterDistance = new BsonDocument("_distance", filterConditions);
+                    if ( !filterConditions.isEmpty() ) {
+                        BsonDocument filterDistance = new BsonDocument( "_distance", filterConditions );
                         RexNode distanceCondition = translateDocument( filterDistance, rowType, null );
-                        logicalDocumentFilter = LogicalDocumentFilter.create(project, distanceCondition );
-                        return logicalDocumentFilter;
+                        node = LogicalDocumentFilter.create( node, distanceCondition );
                     }
 
+                    //
+                    // Step 3:
+                    // Sort by _distance ascending
+                    // TODO
 
-                    // Step 3: Sort by _distance ascending
 
-
-
-                    // Step 4: Projection to remove field _distance
+                    //
+                    // Step 4:
+                    // Projection to remove field _distance
+//                    BsonDocument removeDistanceProjection = new BsonDocument( "_distance", new BsonInt32( 0 ) );
+//                    Map<String, RexNode> unsetIncludes = Map.of();
+//                    List<String> unsetExcludes = List.of();
+//                    translateProjection( rowType, false, true, unsetIncludes, unsetExcludes, removeDistanceProjection );
+//                    node = LogicalDocumentProject.create( node, unsetIncludes, unsetExcludes );
 
                     // Done!
-
-                    return project;
+                    return node;
                 }
             }
         }
@@ -1413,15 +1439,29 @@ public class MqlToAlgConverter {
         BsonValue left = bsonArray.get( 0 );
         BsonValue right = bsonArray.get( 1 );
 
+        // Reference to field from document
         operands.add( getIdentifier( left.asString().getValue().substring( 1 ), rowType ) );
-        BsonDocument geometry = right.asDocument();
+
         PolyGeometry polyGeometry;
-        try {
-            polyGeometry = PolyGeometry.fromGeoJson( geometry.toJson() );
-        } catch ( InvalidGeometryException e ) {
-            throw new RuntimeException( e );
+        if (right.isDocument()){
+            BsonDocument geometry = right.asDocument();
+            try {
+                polyGeometry = PolyGeometry.fromGeoJson( geometry.toJson() );
+            } catch ( InvalidGeometryException e ) {
+                throw new RuntimeException( e );
+            }
         }
+        else if (right.isArray()){
+            GeometryFactory geoFactory = new GeometryFactory();
+            Coordinate point = convertArrayToCoordinate( right.asArray() );
+            polyGeometry = new PolyGeometry( geoFactory.createPoint( point ) );
+        }
+        else{
+            throw new GenericRuntimeException( "$near supports either a legacy coordinate pair of the form [x, y] or a $geometry object." );
+        }
+        // Geometry from filter
         operands.add( convertGeometry( polyGeometry ) );
+
         return getFixedCall( operands, OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_GEO_DISTANCE ), PolyType.ANY );
     }
 

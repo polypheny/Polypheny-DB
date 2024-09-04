@@ -786,6 +786,7 @@ public class MqlFunctions {
         }
     }
 
+    @SuppressWarnings("UnusedDeclaration")
     public static PolyNumber docGeoDistance( PolyValue input, PolyValue geometry ) {
         PolyGeometry geometryFilter = geometry.asGeometry();
         PolyGeometry inputGeometry = convertInputToPolyGeometry( input, geometryFilter.getSRID() );

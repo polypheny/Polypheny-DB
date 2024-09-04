@@ -76,7 +76,7 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
     @BeforeEach
     public void beforeEach() {
         // Make sure collections are emptied before each test.
-        clearCollections();
+//        clearCollections();
     }
 
 
@@ -262,38 +262,83 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
                         """
         );
 
+//        queries.add(
+//                """
+//                        db.%s.find({
+//                            legacy: {
+//                               $near: {
+//                                  $geometry: {
+//                                      type: "Point",
+//                                      coordinates: [0,0]
+//                                  },
+//                                  $minDistance: 1
+//                               }
+//                            }
+//                        })
+//                        """
+//        );
+
+//        ,
+//        $minDistance: 1,
+//        $maxDistance: 100,
+
         queries.add(
                 """
                         db.%s.find({
                             legacy: {
-                               $near: {
-                                  $geometry: {
-                                      type: "Point",
-                                      coordinates: [0,0]
-                                  },
-                                  $minDistance: 1,
-                                  $maxDistance: 100,
-                               }
+                               $near: [0,0],
+                               $maxDistance: 1
                             }
                         })
                         """
         );
-        // Fails somewhere in RexProgramBuilder.mergePrograms
-        DocResult result = execute( """
-                db.%s.find({
-                    legacy: {
-                       $near: {
-                          $geometry: {
-                              type: "Point",
-                              coordinates: [0,0]
-                          },
-                          $minDistance: 1,
-                          $maxDistance: 100,
-                       }
-                    }
-                })
-                """.formatted( defaultCollection ), namespace );
 
+
+        // only filter.
+//        queries.add(
+//                """
+//                        db.%s.find({ "num": { "$lte" : 2 } })
+//                        """
+//        );
+
+
+        // Fails somewhere in RexProgramBuilder.mergePrograms
+//        DocResult result = execute( """
+//                db.%s.find({
+//                    legacy: {
+//                       $near: {
+//                          $geometry: {
+//                              type: "Point",
+//                              coordinates: [0,0]
+//                          },
+//                          $minDistance: 1,
+//                          $maxDistance: 100,
+//                       }
+//                    }
+//                })
+//                """.formatted( defaultCollection ), namespace );
+
+//        queries.add(
+//                """
+//                        db.%s.find({
+//                          num: {
+//                            $gte: 1,
+//                            $lte: 2
+//                          }
+//                        })
+//                        """
+//        );
+//        execute( """
+//                db.%s.find({
+//                  num: {
+//                    $gte: 1,
+//                    $lte: 2
+//                  }
+//                })
+//                """.formatted( defaultCollection ), namespace );
+        execute( queries.get( 0 ).formatted( defaultCollection ), namespace );
+        DocResult result = execute( queries.get( 1 ).formatted( defaultCollection ), namespace );
+        System.out.println( "Test" );
         // Find with a projection with a function and a new field.
 //        queries.add(
 //                """
@@ -318,6 +363,32 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
 //        System.out.println("Test");
 //        List<DocResult> results = runQueries( queries );
 //        compareResults( results );
+    }
+
+
+    @Test
+    public void PipelineTest() {
+        String pipeline = """
+                db.%s.aggregate([
+                  {
+                    "$addFields": {
+                      "sum": {
+                        "$add": ["$num", "$num"]
+                      }
+                    }
+                  },
+                  {
+                    "$match": {
+                      "sum": {
+                        "$gte": 1,
+                        "$lte": 4
+                      }
+                    }
+                  }
+                ])
+                """.formatted( defaultCollection );
+        DocResult result = execute( pipeline, namespace );
+        System.out.println( "Done" );
     }
 
 
