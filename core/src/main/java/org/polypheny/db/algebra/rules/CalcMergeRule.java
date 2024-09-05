@@ -38,6 +38,7 @@ import java.util.Objects;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Calc;
 import org.polypheny.db.algebra.logical.relational.LogicalCalc;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.rex.RexOver;
@@ -71,6 +72,11 @@ public class CalcMergeRule extends AlgOptRule {
     public void onMatch( AlgOptRuleCall call ) {
         final Calc topCalc = call.alg( 0 );
         final Calc bottomCalc = call.alg( 1 );
+
+        // RB: I had problems with merging programs, because the row type did not match.
+        if (topCalc.getModel() == DataModel.DOCUMENT && bottomCalc.getModel() == DataModel.DOCUMENT) {
+            return;
+        }
 
         // Don't merge a calc which contains windowed aggregates onto a calc. That would effectively be pushing a windowed aggregate down through a filter.
         RexProgram topProgram = topCalc.getProgram();
