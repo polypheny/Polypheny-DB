@@ -293,14 +293,12 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
                         """
         );
 
-
         // only filter.
 //        queries.add(
 //                """
 //                        db.%s.find({ "num": { "$lte" : 2 } })
 //                        """
 //        );
-
 
         // Fails somewhere in RexProgramBuilder.mergePrograms
 //        DocResult result = execute( """
@@ -336,8 +334,38 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
 //                  }
 //                })
 //                """.formatted( defaultCollection ), namespace );
-        execute( queries.get( 0 ).formatted( defaultCollection ), namespace );
-        DocResult result = execute( queries.get( 1 ).formatted( defaultCollection ), namespace );
+        execute( """
+                db.%s.insertMany([
+                    {
+                      name: "Legacy [2,2]",
+                      num: 3,
+                      legacy: [2,2]
+                    }
+                    {
+                      name: "Legacy [0,0]",
+                      num: 1,
+                      legacy: [0,0]
+                    },
+                    {
+                      name: "Legacy [3,3]",
+                      num: 4,
+                      legacy: [3,3]
+                    }
+                    {
+                      name: "Legacy [1,1]",
+                      num: 2,
+                      legacy: [1,1]
+                    },
+                ])
+                """.formatted( defaultCollection ), namespace );
+        DocResult result = execute( """
+                db.%s.find({
+                    legacy: {
+                       $near: [0,0],
+                       $maxDistance: 10
+                    }
+                })
+                """.formatted( defaultCollection ), namespace );
         System.out.println( "Test" );
         // Find with a projection with a function and a new field.
 //        queries.add(
