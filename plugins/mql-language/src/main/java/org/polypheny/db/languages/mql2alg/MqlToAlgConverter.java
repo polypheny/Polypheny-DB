@@ -845,7 +845,8 @@ public class MqlToAlgConverter {
             project = LogicalDocumentProject.create(
                     node,
                     nodes,
-                    List.of()
+                    List.of(),
+                    Map.of()
             );
         }
         return project;
@@ -1157,7 +1158,7 @@ public class MqlToAlgConverter {
                     //
                     // Step 1:
                     // Projection that adds dynamically computed _distance field.
-                    Map<String, RexNode> includes = new HashMap<>();
+                    Map<String, RexNode> adds = new HashMap<>();
                     List<String> excludes = List.of();
 
                     BsonDocument innerDocument = inner.asDocument();
@@ -1192,8 +1193,9 @@ public class MqlToAlgConverter {
 
                     // TODO: My projected documents only contain the _distance field...
                     BsonDocument fieldToProjection = new BsonDocument( "_distance", distanceProjection );
-                    translateProjection( rowType, true, false, includes, excludes, fieldToProjection );
-                    node = LogicalDocumentProject.create( node, includes, excludes );
+                    translateProjection( rowType, true, false, adds, excludes, fieldToProjection );
+                    node = LogicalDocumentProject.create( node, Map.of(), excludes, adds );
+                    node.getTupleType();
 
                     //
                     // Step 2:
@@ -1209,13 +1211,14 @@ public class MqlToAlgConverter {
                         BsonDocument filterDistance = new BsonDocument( "_distance", filterConditions );
                         RexNode distanceCondition = translateDocument( filterDistance, rowType, null );
                         node = LogicalDocumentFilter.create( node, distanceCondition );
+                        node.getTupleType();
                     }
 
                     //
                     // Step 3:
                     // Sort by _distance ascending
                     // TODO
-
+//                    node = combineSort(  )
 
                     //
                     // Step 4:
@@ -2226,7 +2229,7 @@ public class MqlToAlgConverter {
         }
 
         if ( !excludes.isEmpty() ) {
-            return LogicalDocumentProject.create( node, new HashMap<>(), excludes );
+            return LogicalDocumentProject.create( node, new HashMap<>(), excludes, Map.of() );
 
         } else if ( isAddFields ) {
             List<String> names = new ArrayList<>();

@@ -44,8 +44,8 @@ public class MongoDocumentProject extends DocumentProject implements MongoAlg {
      * @param includes
      * @param excludes
      */
-    protected MongoDocumentProject( AlgCluster cluster, AlgTraitSet traits, AlgNode input, @NotNull Map<String, ? extends RexNode> includes, @NotNull List<String> excludes ) {
-        super( cluster, traits, input, includes, excludes );
+    protected MongoDocumentProject( AlgCluster cluster, AlgTraitSet traits, AlgNode input, @NotNull Map<String, ? extends RexNode> includes, @NotNull List<String> excludes, @NotNull Map<String, ? extends RexNode> adds ) {
+        super( cluster, traits, input, includes, excludes, adds );
     }
 
 
@@ -80,7 +80,7 @@ public class MongoDocumentProject extends DocumentProject implements MongoAlg {
 
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        return new MongoDocumentProject( getCluster(), traitSet, sole( inputs ), includes, excludes );
+        return new MongoDocumentProject( getCluster(), traitSet, sole( inputs ), includes, excludes, adds );
     }
 
 }

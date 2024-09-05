@@ -508,6 +508,7 @@ public enum BuiltInMethod {
     MQL_GET_ARRAY( MqlFunctions.class, "docGetArray", PolyValue.class ),
     MQL_EXISTS( MqlFunctions.class, "docExists", PolyValue.class, PolyValue.class, List.class ),
     MQL_MERGE( MqlFunctions.class, "mergeDocument", PolyValue.class, PolyList.class, PolyValue[].class ),
+    MQL_MERGE_ADD( MqlFunctions.class, "mergeDocumentAdd", PolyValue.class, PolyList.class, PolyValue[].class ),
     MQL_NOT_UNSET( MqlFunctions.class, "notUnset", PolyValue.class ),
 
     // GeoFunctions

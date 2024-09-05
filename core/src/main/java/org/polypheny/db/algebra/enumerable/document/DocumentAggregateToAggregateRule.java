@@ -127,7 +127,7 @@ public class DocumentAggregateToAggregateRule extends AlgOptRule {
 
         // RexNode doc = builder.getRexBuilder().makeCall( DocumentType.ofId(), OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_MERGE ), nodes );
 
-        call.transformTo( LogicalDocumentProject.create( enumerableAggregate, docs, List.of() ) );
+        call.transformTo( LogicalDocumentProject.create( enumerableAggregate, docs, List.of(), Map.of() ) );
         // call.transformTo( LogicalAggregate.create( alg.getInput(), alg.groupSet, alg.groupSets, alg.aggCalls ) );*/
     }
 

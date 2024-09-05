@@ -1629,6 +1629,8 @@ public enum OperatorName {
 
     MQL_MERGE( LangFunctionOperator.class ),
 
+    MQL_MERGE_ADD( LangFunctionOperator.class ),
+
     MQL_PROJECT_INCLUDES( LangFunctionOperator.class ),
 
     MQL_REPLACE_ROOT( LangFunctionOperator.class ),
@@ -1639,7 +1641,7 @@ public enum OperatorName {
 
     MQL_GEO_WITHIN( LangFunctionOperator.class ),
 
-    MQL_GEO_DISTANCE ( LangFunctionOperator.class ),
+    MQL_GEO_DISTANCE( LangFunctionOperator.class ),
 
     MQL_NEAR( LangFunctionOperator.class ),
 

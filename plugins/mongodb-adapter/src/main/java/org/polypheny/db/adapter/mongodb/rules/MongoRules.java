@@ -423,7 +423,8 @@ public class MongoRules {
                     traitSet,
                     convert( project.getInput(), out ),
                     project.includes,
-                    project.excludes );
+                    project.excludes,
+                    project.adds);
         }
 
     }

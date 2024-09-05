@@ -192,6 +192,8 @@ public class MongoLanguagePlugin extends PolyPlugin {
 
         register( OperatorName.MQL_MERGE, new LangFunctionOperator( OperatorName.MQL_MERGE.name(), Kind.OTHER ) );
 
+        register( OperatorName.MQL_MERGE_ADD, new LangFunctionOperator( OperatorName.MQL_MERGE_ADD.name(), Kind.OTHER ) );
+
         register( OperatorName.MQL_REPLACE_ROOT, new LangFunctionOperator( OperatorName.MQL_REPLACE_ROOT.name(), Kind.OTHER ) );
 
         register( OperatorName.MQL_PROJECT_INCLUDES, new LangFunctionOperator( OperatorName.MQL_PROJECT_INCLUDES.name(), Kind.OTHER ) );

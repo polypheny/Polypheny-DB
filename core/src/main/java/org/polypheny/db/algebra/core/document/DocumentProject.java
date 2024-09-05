@@ -18,6 +18,7 @@ package org.polypheny.db.algebra.core.document;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -47,17 +48,21 @@ public abstract class DocumentProject extends SingleAlg implements DocumentAlg {
 
     public Map<String, ? extends RexNode> includes;
     public List<String> excludes;
-
+    public Map<String, ? extends RexNode> adds;
 
     /**
      * Creates a {@link DocumentProject}.
      * {@link ModelTrait#DOCUMENT} native node of a project.
      */
-    protected DocumentProject( AlgCluster cluster, AlgTraitSet traits, AlgNode input, @NotNull Map<String, ? extends RexNode> includes, @NotNull List<String> excludes ) {
+    protected DocumentProject( AlgCluster cluster, AlgTraitSet traits, AlgNode input, @NotNull Map<String, ? extends RexNode> includes, @NotNull List<String> excludes, @NotNull Map<String, ? extends RexNode> adds ) {
         super( cluster, traits, input );
         this.includes = includes;
+        this.adds = adds;
         this.excludes = excludes;
-        this.rowType = DocumentType.ofIncludes( includes ).ofExcludes( excludes );
+        var map = new HashMap<String, RexNode>();
+        map.putAll( adds );
+        map.putAll( includes );
+        this.rowType = DocumentType.ofIncludes( map ).ofExcludes( excludes );
     }
 
 
@@ -96,6 +101,20 @@ public abstract class DocumentProject extends SingleAlg implements DocumentAlg {
                                 .toList() ),
                         builder.getTypeFactory().createArrayType( builder.getTypeFactory().createPolyType( PolyType.CHAR, 255 ), -1 ), PolyType.ARRAY ) );
         nodes.addAll( includes.entrySet().stream().filter( o -> Objects.nonNull( o.getKey() ) ).map( Entry::getValue ).toList() );
+
+        if ( !adds.isEmpty() ) {
+            nodes.clear();
+            nodes.add(doc);
+            nodes.add(
+                    builder.makeLiteral(
+                            PolyList.copyOf( adds.keySet().stream().filter( Objects::nonNull ).map( v -> PolyList.copyOf( Arrays.stream( v.split( "\\." ) ).map( PolyString::of ).toList() ) )
+                                    .toList() ),
+                            builder.getTypeFactory().createArrayType( builder.getTypeFactory().createPolyType( PolyType.CHAR, 255 ), -1 ), PolyType.ARRAY ) );
+            nodes.addAll( adds.entrySet().stream().filter( o -> Objects.nonNull( o.getKey() ) ).map( Entry::getValue ).toList() );
+
+            doc = builder.makeCall( getTupleType(), OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_MERGE_ADD ), nodes );
+            return doc;
+        }
 
         if ( !includes.isEmpty() ) {
             doc = builder.makeCall( getTupleType(), OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_MERGE ), nodes );

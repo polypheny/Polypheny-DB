@@ -467,6 +467,29 @@ public class MqlFunctions {
     }
 
 
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyDocument mergeDocumentAdd( PolyValue value, List<PolyList<PolyString>> names, PolyValue... documents ) {
+        assert names.size() == documents.length;
+        Map<PolyString, PolyValue> doc = new HashMap<>();
+
+        Iterator<PolyString> iter;
+        Map<PolyString, PolyValue> temp;
+
+        if(value.isDocument()){
+            doc.putAll( value.asDocument() );
+        }
+
+        for ( int i = 0; i < documents.length; i++ ) {
+            PolyValue document = documents[i];
+            // TODO Handle nested names
+            PolyString name = names.get( i ).get( 0 );
+            doc.put(name, document);
+        }
+
+        return PolyDocument.ofDocument( doc );
+    }
+
+
     /**
      * If the provided object/document is of type array and matches the specified size
      *

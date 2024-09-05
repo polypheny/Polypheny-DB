@@ -184,7 +184,8 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
                 project.getTraitSet(),
                 project.getInput(),
                 Pair.zip( new ArrayList<>( oProject.includes.keySet() ), newProjects ).stream().collect( Collectors.toMap( e -> e.left, e -> e.right ) ),
-                project.excludes
+                project.excludes,
+                project.adds
         );
     }
 
