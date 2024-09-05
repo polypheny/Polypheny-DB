@@ -28,6 +28,7 @@ import org.polypheny.db.algebra.enumerable.common.EnumerableBindable.EnumerableT
 import org.polypheny.db.algebra.enumerable.common.EnumerableModifyToStreamerRule;
 import org.polypheny.db.algebra.enumerable.document.DocumentAggregateToAggregateRule;
 import org.polypheny.db.algebra.enumerable.document.DocumentFilterToCalcRule;
+import org.polypheny.db.algebra.enumerable.document.DocumentNearUnwrap;
 import org.polypheny.db.algebra.enumerable.document.DocumentProjectToCalcRule;
 import org.polypheny.db.algebra.enumerable.document.DocumentSortToSortRule;
 import org.polypheny.db.algebra.rules.AggregateExpandDistinctAggregatesRule;
@@ -89,6 +90,7 @@ public class VolcanoQueryProcessor extends AbstractQueryProcessor {
                     EnumerableRules.ENUMERABLE_PROJECT_TO_CALC_RULE,
                     DocumentProjectToCalcRule.INSTANCE,
                     DocumentFilterToCalcRule.INSTANCE,
+                    DocumentNearUnwrap.INSTANCE,
                     DocumentAggregateToAggregateRule.INSTANCE,
                     DocumentSortToSortRule.INSTANCE,
                     EnumerableRules.ENUMERABLE_PROJECT_RULE,
