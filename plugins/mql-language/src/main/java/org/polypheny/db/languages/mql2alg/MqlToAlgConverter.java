@@ -1191,7 +1191,8 @@ public class MqlToAlgConverter {
                         }
                     }
 
-                    // TODO: My projected documents only contain the _distance field...
+                    // TODO: Make sure that _distance fields is not already contained in the document.
+                    //  Maybe try to create a unique name?
                     BsonDocument fieldToProjection = new BsonDocument( "_distance", distanceProjection );
                     translateProjection( rowType, true, false, adds, excludes, fieldToProjection );
                     node = LogicalDocumentProject.create( node, Map.of(), excludes, adds );
@@ -1217,17 +1218,17 @@ public class MqlToAlgConverter {
                     //
                     // Step 3:
                     // Sort by _distance ascending
-                    // TODO
-//                    node = combineSort(  )
+                    // TODO: Why does this not work?
+                    BsonDocument sortDocument = new BsonDocument("_distance", new BsonInt32( 1 ));
+                    node = combineSort( sortDocument, node, rowType );
 
                     //
                     // Step 4:
                     // Projection to remove field _distance
-//                    BsonDocument removeDistanceProjection = new BsonDocument( "_distance", new BsonInt32( 0 ) );
-//                    Map<String, RexNode> unsetIncludes = Map.of();
-//                    List<String> unsetExcludes = List.of();
-//                    translateProjection( rowType, false, true, unsetIncludes, unsetExcludes, removeDistanceProjection );
-//                    node = LogicalDocumentProject.create( node, unsetIncludes, unsetExcludes );
+                    BsonDocument removeDistanceProjection = new BsonDocument( "_distance", new BsonInt32( 0 ) );
+                    List<String> unsetExcludes = new ArrayList<String>();
+                    translateProjection( rowType, false, true, Map.of(), unsetExcludes, removeDistanceProjection );
+                    node = LogicalDocumentProject.create( node, Map.of(), unsetExcludes, Map.of() );
 
                     // Done!
                     return node;
