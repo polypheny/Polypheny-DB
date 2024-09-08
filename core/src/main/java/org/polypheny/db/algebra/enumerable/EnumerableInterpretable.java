@@ -119,10 +119,6 @@ public class EnumerableInterpretable extends ConverterImpl implements Interpreta
         final ClassDeclaration expr = algImplementor.implementRoot( alg, prefer );
         String s = Expressions.toString( expr.memberDeclarations, "\n", false );
 
-        // TODO RB: Remove this
-        //  (temporary hack, so that code compilation does not fail because exception of constructor is not caught)
-        s = s.replace("new org.polypheny.db.type.entity.spatial.PolyGeometry(", "org.polypheny.db.type.entity.spatial.PolyGeometry.of(");
-
         if ( RuntimeConfig.DEBUG.getBoolean() ) {
             Util.debugCode( System.out, s );
         }

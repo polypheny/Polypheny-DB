@@ -55,6 +55,7 @@ import org.locationtech.jts.io.geojson.GeoJsonReader;
 import org.locationtech.jts.io.geojson.GeoJsonWriter;
 import org.locationtech.jts.io.twkb.TWKBReader;
 import org.locationtech.jts.io.twkb.TWKBWriter;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.functions.spatial.GeoDistanceFunctions;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
@@ -194,6 +195,20 @@ public class PolyGeometry extends PolyValue {
 
     public static PolyGeometry ofNullable( String wkt ) {
         return wkt == null ? null : of( wkt );
+    }
+
+
+    /**
+     * Used for generated code, so that we do not have to add handling for the InvalidGeometryException.
+     */
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyGeometry ofOrThrow( String wkt ) {
+        try {
+            return new PolyGeometry( wkt );
+        } catch ( InvalidGeometryException e ) {
+            // hack to deal that InvalidGeometryException is not caught in code generation
+            throw new GenericRuntimeException( e );
+        }
     }
 
 
@@ -881,15 +896,10 @@ public class PolyGeometry extends PolyValue {
 
     @Override
     public Expression asExpression() {
-        // this basically calls a constructor with WKT
-
-//        var ex = Expressions.call(PolyGeometry.class, "of", Expressions.constant(this.toString()));
-        var ex2 = Expressions.new_( PolyGeometry.class, Expressions.constant( this.toString() ) );
-
-        // TODO: Why doesn't this work?
-        return ex2;
-
-//        return Expressions.new_( PolyGeometry.class, Expressions.constant( this.toString() ) );
+        // During code generation, we cannot throw an InvalidGeometryException nor return null. This is why we use
+        // this method to create the PolyGeometry which throws a GenericRuntimeException if it fails (which should
+        // never be this case).
+        return Expressions.call(PolyGeometry.class, "ofOrThrow", Expressions.constant(this.toString()));
     }
 
 
