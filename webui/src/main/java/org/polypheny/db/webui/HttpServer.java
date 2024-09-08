@@ -89,7 +89,10 @@ public class HttpServer implements Runnable {
     private final Javalin server = Javalin.create( config -> {
         config.jsonMapper( new JavalinJackson( mapper ) );
         config.enableCorsForAllOrigins();
-        config.addStaticFiles( staticFileConfig -> staticFileConfig.directory = "webapp/" );
+        config.addStaticFiles( staticFileConfig -> {
+            staticFileConfig.directory = "webapp";
+            staticFileConfig.hostedPath = "/";
+        } );
     } ).start( RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
     private Crud crud;
 
@@ -107,11 +110,16 @@ public class HttpServer implements Runnable {
         this.webSocketHandler = new WebSocket( crud );
         webSockets( server, this.webSocketHandler );
 
+        // Log all requests
+        server.before( ctx -> {
+            log.debug( "Request: {} {}", ctx.method(), ctx.path() );
+        } );
+
         // Get modified index.html
         server.get( "/", ctx -> {
             ctx.contentType( "text/html" );
 
-            try ( InputStream stream = this.getClass().getClassLoader().getResource( "index/index.html" ).openStream() ) {
+            try ( InputStream stream = this.getClass().getClassLoader().getResource( "webapp/index.html" ).openStream() ) {
                 ctx.result( streamToString( stream ) );
             } catch ( NullPointerException e ) {
                 ctx.result( "Error: Could not find index.html" );
