@@ -16,7 +16,7 @@ dependencies {
     implementation project(":core")
     implementation project(":monitoring")
 
-    uiFiles group: "org.polypheny", name: "polypheny-ui", version: polypheny_ui_version
+    //uiFiles group: "org.polypheny", name: "polypheny-ui", version: polypheny_ui_version
 
     implementation group: "commons-io", name: "commons-io", version: commons_io_version  // Apache 2.0
     implementation group: "io.javalin", name: "javalin", version: javalin_version // Apache 2.0
@@ -60,19 +60,23 @@ compileJava {
 }
 
 processResources {
+    setDuplicatesStrategy(DuplicatesStrategy.WARN)
     dependsOn(":webui:unzipUiFiles")
 }
 
 
 // unzip ui files
 task unzipUiFiles(type: Copy) {
-    from zipTree(configurations.uiFiles.singleFile)
+    setDuplicatesStrategy(DuplicatesStrategy.WARN)
+    from zipTree("src/main/resources/web.zip")
     into "$buildDir/webapp"
-    doLast {
+    from zipTree("src/main/resources/web.zip")
+    into "src/main/resources/webapp"
+    /*doLast {
         file("$buildDir/webapp/index").mkdirs()
-        ant.move file: "$buildDir/webapp/webapp/index.html",
+        ant.move file: "$buildDir/webapp/index.html",
             toDir: "$buildDir/webapp/index/"
-    }
+    }*/
 }
 tasks.register('deleteUiFiles') {
     project.delete(
