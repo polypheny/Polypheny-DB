@@ -233,7 +233,7 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
 
 
     @Test
-    public void docGeoNearTest() {
+    public void docsNearTest() {
         ArrayList<String> queries = new ArrayList<>();
         queries.add(
                 """
@@ -393,6 +393,43 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
 //        compareResults( results );
     }
 
+
+    @Test
+    public void docGeoNearTest(){
+//        DocResult result = execute( """
+//                db.%s.aggregate([
+//                  {
+//                    "$geoNear": {
+//                        near: [0,0],
+//                        spherical: true
+//                        distanceMultiplier: 1,
+//                        minDistance: 0,
+//                        maxDistance: 15,
+//                        includeLocs: "legacy",
+//                        distanceField: "dist.calculated",
+//                        query: { num: { "$gte": 2 } },
+//                    }
+//                  }
+//                ])
+//                """.formatted( defaultCollection ), namespace );
+        DocResult result = execute( """
+                db.%s.aggregate([
+                  {
+                    "$geoNear": {
+                        near: { type: "Point", coordinates: [ -73.99279 , 40.719296 ] },
+                        spherical: true
+                        distanceMultiplier: 1,
+                        minDistance: 0,
+                        maxDistance: 15,
+                        includeLocs: "legacy",
+                        distanceField: "dist.calculated",
+                        query: { num: { "$gte": 2 } },
+                    }
+                  }
+                ])
+                """.formatted( defaultCollection ), namespace );
+        System.out.println( "Test" );
+    }
 
     @Test
     public void PipelineTest() {

@@ -47,6 +47,7 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
+import org.polypheny.db.type.entity.numerical.PolyFloat;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.type.entity.spatial.GeometryTopologicalException;
 import org.polypheny.db.type.entity.spatial.InvalidGeometryException;
@@ -810,12 +811,27 @@ public class MqlFunctions {
     }
 
     @SuppressWarnings("UnusedDeclaration")
-    public static PolyNumber docGeoDistance( PolyValue input, PolyValue geometry ) {
+    public static PolyNumber docGeoDistance( PolyValue input, PolyValue geometry, PolyValue distanceMultiplier ) {
         PolyGeometry geometryFilter = geometry.asGeometry();
         PolyGeometry inputGeometry = convertInputToPolyGeometry( input, geometryFilter.getSRID() );
-        return GeoFunctions.stDistance( inputGeometry, geometryFilter );
-    }
+        PolyNumber distance = GeoFunctions.stDistance( inputGeometry, geometryFilter );
+        float distanceFloat = distance.asFloat().floatValue();
 
+        if (distanceMultiplier.isInteger()){
+            int distanceMultiplierInt = distanceMultiplier.asInteger().intValue();
+            return PolyFloat.of(distance.asFloat().floatValue() * distanceMultiplierInt) ;
+        }
+        else if (distanceMultiplier.isFloat()){
+            float distanceMultiplierFloat = distanceMultiplier.asFloat().floatValue();
+            return PolyFloat.of(distance.asFloat().floatValue() * distanceMultiplierFloat) ;
+        }
+        else if (distanceMultiplier.isDouble()){
+            double distanceMultiplierDouble = distanceMultiplier.asDouble().doubleValue();
+            return PolyFloat.of(distance.asFloat().floatValue() * distanceMultiplierDouble) ;
+        }
+        // TODO: Is this exhaustive? Is there a better way?
+        throw new GenericRuntimeException( "Probably forgot to implement conersion for distanceMultiplier in docGeoDistance." );
+    }
 
     /**
      * Converts a PolyValue into a PolyGeometry type. We support the following cases:
