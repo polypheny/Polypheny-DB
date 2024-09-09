@@ -1154,84 +1154,99 @@ public class MqlToAlgConverter {
             if ( filterDocument.entrySet().size() == 1 ) {
                 String parentKey = filterDocument.getFirstKey();
                 BsonValue inner = filterDocument.get( parentKey );
-                if ( inner.isDocument() && inner.asDocument().containsKey( "$near" ) ) {
-                    //
-                    // Step 1:
-                    // Projection that adds dynamically computed _distance field.
-                    Map<String, RexNode> adds = new HashMap<>();
-                    List<String> excludes = List.of();
 
+                if ( inner.isDocument() ) {
                     BsonDocument innerDocument = inner.asDocument();
-                    BsonValue innerNear = innerDocument.get( "$near" );
-                    BsonDocument distanceProjection = new BsonDocument();
-                    BsonNumber minDistance = null;
-                    BsonNumber maxDistance = null;
 
-                    if ( innerNear.isArray() ) {
-                        BsonArray legacyCoordinates = innerNear.asArray();
-                        if ( innerDocument.containsKey( "$maxDistance" ) ) {
-                            maxDistance = innerDocument.getNumber( "$maxDistance" );
-                        }
-                        distanceProjection.put( "$distance", new BsonArray( List.of(
-                                new BsonString( "$" + parentKey ),
-                                legacyCoordinates
-                        ) ) );
-                    } else if ( innerNear.isDocument() ) {
-                        BsonDocument near = innerNear.asDocument();
-                        BsonDocument geometry = near.getDocument( "$geometry" );
-                        distanceProjection.put( "$distance", new BsonArray( List.of(
-                                new BsonString( "$" + parentKey ),
-                                geometry
-                        ) ) );
-                        if ( near.containsKey( "$minDistance" ) ) {
-                            minDistance = near.get( "$minDistance" ).asNumber();
-                        }
-                        if ( near.containsKey( "$maxDistance" ) ) {
-                            maxDistance = near.get( "$maxDistance" ).asNumber();
-                        }
-                    }
+                    // Step 0:
+                    // Handle $near or $nearSphere
+                    boolean isNear = innerDocument.containsKey( "$near" );
+                    boolean isNearSphere = innerDocument.containsKey( "$nearSphere" );
+                    boolean isSpherical = isNearSphere;
 
-                    // TODO: Make sure that _distance fields is not already contained in the document.
-                    //  Maybe try to create a unique name?
-                    BsonDocument fieldToProjection = new BsonDocument( "_distance", distanceProjection );
-                    translateProjection( rowType, true, false, adds, excludes, fieldToProjection );
-                    node = LogicalDocumentProject.create( node, Map.of(), excludes, adds );
-                    node.getTupleType();
+                    if ( isNear || isNearSphere ) {
+                        String nearKey = isNear ? "$near" : "$nearSphere";
 
-                    //
-                    // Step 2:
-                    // (Optional) Filter out by using fields $minDistance and $maxDistance
-                    BsonDocument filterConditions = new BsonDocument();
-                    if ( minDistance != null ) {
-                        filterConditions.put( "$gte", minDistance );
-                    }
-                    if ( maxDistance != null ) {
-                        filterConditions.put( "$lte", maxDistance );
-                    }
-                    if ( !filterConditions.isEmpty() ) {
-                        BsonDocument filterDistance = new BsonDocument( "_distance", filterConditions );
-                        RexNode distanceCondition = translateDocument( filterDistance, rowType, null );
-                        node = LogicalDocumentFilter.create( node, distanceCondition );
+                        //
+                        // Step 1:
+                        // Projection that adds dynamically computed _distance field.
+                        Map<String, RexNode> adds = new HashMap<>();
+                        List<String> excludes = List.of();
+
+                        BsonValue innerNear = innerDocument.get( nearKey );
+                        BsonDocument distanceProjection = new BsonDocument();
+                        BsonNumber minDistance = null;
+                        BsonNumber maxDistance = null;
+
+                        if ( innerNear.isArray() ) {
+                            BsonArray legacyCoordinates = innerNear.asArray();
+                            if ( innerDocument.containsKey( "$maxDistance" ) ) {
+                                maxDistance = innerDocument.getNumber( "$maxDistance" );
+                            }
+                            distanceProjection.put( "$distance", new BsonArray( List.of(
+                                    new BsonString( "$" + parentKey ),
+                                    legacyCoordinates
+                            ) ) );
+                        } else if ( innerNear.isDocument() ) {
+                            // If the user specifies the geometry using GeoJSON, we use the spherical
+                            // geometry by default, even if we use $near.
+                            isSpherical = true;
+
+                            BsonDocument near = innerNear.asDocument();
+                            BsonDocument geometry = near.getDocument( "$geometry" );
+                            distanceProjection.put( "$distance", new BsonArray( List.of(
+                                    new BsonString( "$" + parentKey ),
+                                    geometry
+                            ) ) );
+                            if ( near.containsKey( "$minDistance" ) ) {
+                                minDistance = near.get( "$minDistance" ).asNumber();
+                            }
+                            if ( near.containsKey( "$maxDistance" ) ) {
+                                maxDistance = near.get( "$maxDistance" ).asNumber();
+                            }
+                        }
+
+                        // TODO: Make sure that _distance fields is not already contained in the document.
+                        //  Maybe try to create a unique name?
+                        adds.put( "_distance", convertDistance( distanceProjection.get( "$distance" ), isSpherical, rowType ) );
+                        node = LogicalDocumentProject.create( node, Map.of(), excludes, adds );
                         node.getTupleType();
+
+                        //
+                        // Step 2:
+                        // (Optional) Filter out by using fields $minDistance and $maxDistance
+                        BsonDocument filterConditions = new BsonDocument();
+                        if ( minDistance != null ) {
+                            filterConditions.put( "$gte", minDistance );
+                        }
+                        if ( maxDistance != null ) {
+                            filterConditions.put( "$lte", maxDistance );
+                        }
+                        if ( !filterConditions.isEmpty() ) {
+                            BsonDocument filterDistance = new BsonDocument( "_distance", filterConditions );
+                            RexNode distanceCondition = translateDocument( filterDistance, rowType, null );
+                            node = LogicalDocumentFilter.create( node, distanceCondition );
+                            node.getTupleType();
+                        }
+
+                        //
+                        // Step 3:
+                        // Sort by _distance ascending
+                        // TODO: Why does this not work?
+                        BsonDocument sortDocument = new BsonDocument( "_distance", new BsonInt32( 1 ) );
+                        node = combineSort( sortDocument, node, rowType );
+
+                        //
+                        // Step 4:
+                        // Projection to remove field _distance
+                        BsonDocument removeDistanceProjection = new BsonDocument( "_distance", new BsonInt32( 0 ) );
+                        List<String> unsetExcludes = new ArrayList<String>();
+                        translateProjection( rowType, false, true, Map.of(), unsetExcludes, removeDistanceProjection );
+                        node = LogicalDocumentProject.create( node, Map.of(), unsetExcludes, Map.of() );
+
+                        // Done!
+                        return node;
                     }
-
-                    //
-                    // Step 3:
-                    // Sort by _distance ascending
-                    // TODO: Why does this not work?
-                    BsonDocument sortDocument = new BsonDocument("_distance", new BsonInt32( 1 ));
-                    node = combineSort( sortDocument, node, rowType );
-
-                    //
-                    // Step 4:
-                    // Projection to remove field _distance
-                    BsonDocument removeDistanceProjection = new BsonDocument( "_distance", new BsonInt32( 0 ) );
-                    List<String> unsetExcludes = new ArrayList<String>();
-                    translateProjection( rowType, false, true, Map.of(), unsetExcludes, removeDistanceProjection );
-                    node = LogicalDocumentProject.create( node, Map.of(), unsetExcludes, Map.of() );
-
-                    // Done!
-                    return node;
                 }
             }
         }
@@ -1437,7 +1452,7 @@ public class MqlToAlgConverter {
     }
 
 
-    private RexNode convertDistance( BsonValue bsonValue, AlgDataType rowType ) {
+    private RexNode convertDistance( BsonValue bsonValue, boolean isSpherical, AlgDataType rowType ) {
         BsonArray bsonArray = bsonValue.asArray();
         List<RexNode> operands = new ArrayList<>();
         BsonValue left = bsonArray.get( 0 );
@@ -1447,20 +1462,20 @@ public class MqlToAlgConverter {
         operands.add( getIdentifier( left.asString().getValue().substring( 1 ), rowType ) );
 
         PolyGeometry polyGeometry;
-        if (right.isDocument()){
+        if ( right.isDocument() ) {
             BsonDocument geometry = right.asDocument();
             try {
                 polyGeometry = PolyGeometry.fromGeoJson( geometry.toJson() );
             } catch ( InvalidGeometryException e ) {
                 throw new RuntimeException( e );
             }
-        }
-        else if (right.isArray()){
-            GeometryFactory geoFactory = new GeometryFactory();
+        } else if ( right.isArray() ) {
+            GeometryFactory geoFactory = isSpherical
+                    ? new GeometryFactory( new PrecisionModel(), WGS_84 )
+                    : new GeometryFactory();
             Coordinate point = convertArrayToCoordinate( right.asArray() );
             polyGeometry = new PolyGeometry( geoFactory.createPoint( point ) );
-        }
-        else{
+        } else {
             throw new GenericRuntimeException( "$near supports either a legacy coordinate pair of the form [x, y] or a $geometry object." );
         }
         // Geometry from filter
@@ -2310,8 +2325,6 @@ public class MqlToAlgConverter {
                     } else {
                         includes.put( entry.getKey(), getIdentifier( entry.getKey(), rowType ) );
                     }
-                } else if ( func.equals( "$distance" ) ) {
-                    includes.put( entry.getKey(), convertDistance( value.asDocument().get( func ), rowType ) );
                 }
             } else if ( isAddFields && !value.isDocument() ) {
                 if ( value.isArray() ) {
