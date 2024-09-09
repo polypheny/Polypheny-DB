@@ -1230,13 +1230,13 @@ public class MqlToAlgConverter {
      * @param nearOrNearSphere Whether we use spherical ($nearSphere) or flat geometry ($near).
      * Attention: We use spherical geometry when the filter geometry is specified as GeoJSON,
      * even when using $near. This is because the default for GeoJSON is SRID=4326.
-     * @param inputDistanceField Which field from the input is used to calculate the distance
+     * @param key Which field from the input is used to calculate the distance
      * @param distanceField (optional) Which field in the output should store the calculated distance
      * @param distanceMultiplier (optional) Factor to multiply the calculated distance. Can be used to convert
      * radians to kilometers in a spherical query, by multiplying by the radius of the
      * Earth.
      */
-    private AlgNode combineNear( BsonDocument options, String nearOrNearSphere, String inputDistanceField, String distanceField, BsonNumber distanceMultiplier, AlgNode node, AlgDataType rowType ) {
+    private AlgNode combineNear( BsonDocument options, String nearOrNearSphere, String key, String distanceField, BsonNumber distanceMultiplier, AlgNode node, AlgDataType rowType ) {
         boolean isSpherical = Objects.equals( nearOrNearSphere, "$nearSphere" );
         boolean keepDistanceField = distanceField != null;
         if ( distanceField == null ) {
@@ -1249,7 +1249,7 @@ public class MqlToAlgConverter {
 
         //
         // Step 1:
-        // Projection that adds dynamically computed _distance field.
+        // Projection that adds dynamically computed distance field.
         Map<String, RexNode> adds = new HashMap<>();
         List<String> excludes = List.of();
 
@@ -1269,7 +1269,7 @@ public class MqlToAlgConverter {
                 minDistance = options.getNumber( "$minDistance" );
             }
             distanceProjection.put( "$distance", new BsonArray( List.of(
-                    new BsonString( "$" + inputDistanceField ),
+                    new BsonString( "$" + key ),
                     legacyCoordinates,
                     distanceMultiplier
             ) ) );
@@ -1281,7 +1281,7 @@ public class MqlToAlgConverter {
             BsonDocument near = innerNear.asDocument();
             BsonDocument geometry = near.getDocument( "$geometry" );
             distanceProjection.put( "$distance", new BsonArray( List.of(
-                    new BsonString( "$" + inputDistanceField ),
+                    new BsonString( "$" + key ),
                     geometry
             ) ) );
             if ( near.containsKey( "$minDistance" ) ) {

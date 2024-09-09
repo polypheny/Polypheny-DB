@@ -412,18 +412,82 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
 //                  }
 //                ])
 //                """.formatted( defaultCollection ), namespace );
+        execute( """
+                db.%s.insertMany([
+                    {
+                      name: "Legacy [2,2]",
+                      num: 3,
+                      legacy: [2,2]
+                    }
+                    {
+                      name: "Legacy [0,0]",
+                      num: 1,
+                      legacy: [0,0]
+                    },
+                    {
+                      name: "Legacy [3,3]",
+                      num: 4,
+                      legacy: [3,3]
+                    }
+                    {
+                      name: "Legacy [1,1]",
+                      num: 2,
+                      legacy: [1,1]
+                    },
+                ])
+                """.formatted( defaultCollection ), namespace );
         DocResult result = execute( """
                 db.%s.aggregate([
                   {
                     "$geoNear": {
-                        near: { type: "Point", coordinates: [ -73.99279 , 40.719296 ] },
-                        spherical: true
-                        distanceMultiplier: 1,
-                        minDistance: 0,
-                        maxDistance: 15,
+                        near: [0,0],
+                        key: "legacy",
+                        spherical: false
                         includeLocs: "legacy",
-                        distanceField: "dist.calculated",
+                        distanceField: "distanced.nested",
                         query: { num: { "$gte": 2 } },
+                    }
+                  }
+                ])
+                """.formatted( defaultCollection ), namespace );
+        System.out.println( "Test" );
+    }
+
+    @Test
+    public void ProjectionTest() {
+        execute( """
+                db.%s.insertMany([
+                    {
+                      name: "Legacy [2,2]",
+                      num: 3,
+                      legacy: [2,2]
+                    }
+                    {
+                      name: "Legacy [0,0]",
+                      num: 1,
+                      legacy: [0,0]
+                    },
+                    {
+                      name: "Legacy [3,3]",
+                      num: 4,
+                      legacy: [3,3]
+                    }
+                    {
+                      name: "Legacy [1,1]",
+                      num: 2,
+                      legacy: [1,1]
+                    },
+                ])
+                """.formatted( defaultCollection ), namespace );
+        // TODO: This should work, but newField was not added.
+        DocResult result = execute( """
+                db.%s.aggregate([
+                  {
+                    $project: {
+                      name: 1,
+                      newField: {
+                        $gte: [ "$num", 2 ]
+                      }
                     }
                   }
                 ])

@@ -439,10 +439,25 @@ public class MqlFunctions {
     public static PolyDocument mergeDocument( PolyValue value, List<PolyList<PolyString>> names, PolyValue... documents ) {
         assert names.size() == documents.length;
         Map<PolyString, PolyValue> doc = new HashMap<>();
+        addFieldsToDoc(doc, names, documents);
+        return PolyDocument.ofDocument( doc );
+    }
 
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyDocument mergeDocumentAdd( PolyValue value, List<PolyList<PolyString>> names, PolyValue... documents ) {
+        assert names.size() == documents.length;
+        Map<PolyString, PolyValue> doc = new HashMap<>();
+        if(value.isDocument()){
+            doc.putAll( value.asDocument() );
+        }
+        addFieldsToDoc(doc, names, documents);
+        return PolyDocument.ofDocument( doc );
+    }
+
+    private static void addFieldsToDoc(Map<PolyString, PolyValue> doc, List<PolyList<PolyString>> names, PolyValue... documents){
         Iterator<PolyString> iter;
         Map<PolyString, PolyValue> temp;
-
         for ( int i = 0; i < documents.length; i++ ) {
             if ( documents[i].isDocument() && documents[i].asDocument().isUnset ) {
                 continue;
@@ -464,30 +479,6 @@ public class MqlFunctions {
             }
 
         }
-        return PolyDocument.ofDocument( doc );
-    }
-
-
-    @SuppressWarnings("UnusedDeclaration")
-    public static PolyDocument mergeDocumentAdd( PolyValue value, List<PolyList<PolyString>> names, PolyValue... documents ) {
-        assert names.size() == documents.length;
-        Map<PolyString, PolyValue> doc = new HashMap<>();
-
-        Iterator<PolyString> iter;
-        Map<PolyString, PolyValue> temp;
-
-        if(value.isDocument()){
-            doc.putAll( value.asDocument() );
-        }
-
-        for ( int i = 0; i < documents.length; i++ ) {
-            PolyValue document = documents[i];
-            // TODO Handle nested names
-            PolyString name = names.get( i ).get( 0 );
-            doc.put(name, document);
-        }
-
-        return PolyDocument.ofDocument( doc );
     }
 
 
