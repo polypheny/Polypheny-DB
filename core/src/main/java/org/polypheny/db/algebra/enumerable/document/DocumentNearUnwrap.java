@@ -138,12 +138,12 @@ public class DocumentNearUnwrap extends ConverterRule {
 //        NameRefReplacer replacer = new NameRefReplacer( filter.getCluster(), false );
 //        programBuilder.addCondition( filter.condition.accept( replacer ) );
 
-        final RexProgramBuilder programBuilder = new RexProgramBuilder( replacementNode.getTupleType(), builder );
-        programBuilder.addIdentity();
-        final RexProgram program = programBuilder.getProgram();
-        return EnumerableCalc.create( convert( replacementNode, replacementNode.getTraitSet().replace( EnumerableConvention.INSTANCE ) ), program );
+//        final RexProgramBuilder programBuilder = new RexProgramBuilder( replacementNode.getTupleType(), builder );
+//        programBuilder.addIdentity();
+//        final RexProgram program = programBuilder.getProgram();
+//        return EnumerableCalc.create( convert( replacementNode, replacementNode.getTraitSet().replace( EnumerableConvention.INSTANCE ) ), program );
 
-//        return replacementNode;
+        return replacementNode;
     }
 
     private RexNode convertDistance( BsonValue bsonValue, boolean isSpherical, AlgDataType rowType ) {

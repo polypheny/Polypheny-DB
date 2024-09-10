@@ -234,30 +234,30 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
 
     @Test
     public void docsNearTest() {
-        execute( """
-                db.%s.insertMany([
-                    {
-                      name: "Legacy [2,2]",
-                      num: 3,
-                      legacy: [2,2]
-                    }
-                    {
-                      name: "Legacy [0,0]",
-                      num: 1,
-                      legacy: [0,0]
-                    },
-                    {
-                      name: "Legacy [3,3]",
-                      num: 4,
-                      legacy: [3,3]
-                    }
-                    {
-                      name: "Legacy [1,1]",
-                      num: 2,
-                      legacy: [1,1]
-                    },
-                ])
-                """.formatted( defaultCollection ), namespace );
+//        execute( """
+//                db.%s.insertMany([
+//                    {
+//                      name: "Legacy [2,2]",
+//                      num: 3,
+//                      legacy: [2,2]
+//                    }
+//                    {
+//                      name: "Legacy [0,0]",
+//                      num: 1,
+//                      legacy: [0,0]
+//                    },
+//                    {
+//                      name: "Legacy [3,3]",
+//                      num: 4,
+//                      legacy: [3,3]
+//                    }
+//                    {
+//                      name: "Legacy [1,1]",
+//                      num: 2,
+//                      legacy: [1,1]
+//                    },
+//                ])
+//                """.formatted( defaultCollection ), namespace );
         DocResult result = execute( """
                 db.%s.find({
                     legacy: {
