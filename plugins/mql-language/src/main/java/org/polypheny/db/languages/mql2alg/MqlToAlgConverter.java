@@ -1200,22 +1200,22 @@ public class MqlToAlgConverter {
 
 
     private AlgNode combineFilter( BsonDocument filter, AlgNode node, AlgDataType rowType ) {
-        if ( filter.isDocument() ) {
-            BsonDocument filterDocument = filter.asDocument();
-            if ( filterDocument.entrySet().size() == 1 ) {
-                String parentKey = filterDocument.getFirstKey();
-                BsonValue inner = filterDocument.get( parentKey );
-                if ( inner.isDocument() ) {
-                    BsonDocument innerDocument = inner.asDocument();
-                    boolean isNear = innerDocument.containsKey( "$near" );
-                    boolean isNearSphere = innerDocument.containsKey( "$nearSphere" );
-                    if ( isNear || isNearSphere ) {
-                        String nearKey = isNear ? "$near" : "$nearSphere";
-                        return combineNear( innerDocument, nearKey, parentKey, null, null, node, rowType );
-                    }
-                }
-            }
-        }
+//        if ( filter.isDocument() ) {
+//            BsonDocument filterDocument = filter.asDocument();
+//            if ( filterDocument.entrySet().size() == 1 ) {
+//                String parentKey = filterDocument.getFirstKey();
+//                BsonValue inner = filterDocument.get( parentKey );
+//                if ( inner.isDocument() ) {
+//                    BsonDocument innerDocument = inner.asDocument();
+//                    boolean isNear = innerDocument.containsKey( "$near" );
+//                    boolean isNearSphere = innerDocument.containsKey( "$nearSphere" );
+//                    if ( isNear || isNearSphere ) {
+//                        String nearKey = isNear ? "$near" : "$nearSphere";
+//                        return combineNear( innerDocument, nearKey, parentKey, null, null, node, rowType );
+//                    }
+//                }
+//            }
+//        }
 
         RexNode condition = translateDocument( filter, rowType, null );
         return LogicalDocumentFilter.create( node, condition );
@@ -1752,13 +1752,22 @@ public class MqlToAlgConverter {
                     operands.add( convertRegex( bsonDocument, parentKey, rowType ) );
                     break;
                 case "$options":
-                    // Handled by $regex
+                    // Already handled by $regex
                     break;
                 case "$geoIntersects":
                     operands.add( convertGeoIntersects( bsonDocument, parentKey, rowType ) );
                     break;
                 case "$geoWithin":
                     operands.add( convertGeoWithin( bsonDocument, parentKey, rowType ) );
+                    break;
+                case "$near":
+                    operands.add( convertNear( bsonDocument, parentKey, false, rowType ) );
+                    break;
+                case "$nearSphere":
+                    operands.add( convertNear( bsonDocument, parentKey, true, rowType ) );
+                    break;
+                case "$minDistance", "$maxDistance":
+                    // Already handled by $near or $nearSphere
                     break;
                 default:
                     // normal handling
@@ -1943,6 +1952,56 @@ public class MqlToAlgConverter {
                         convertGeometry( polyGeometry ),
                         // TODO: Possible to have null?
                         convertLiteral( new BsonDouble( distance.doubleValue() ) )
+                ) );
+    }
+
+
+    private RexNode convertNear( BsonValue bson, String parentKey, boolean isSpherical, AlgDataType rowType ) {
+        String key = isSpherical ? "$nearSphere" : "$near";
+        BsonDocument bsonDocument = bson.asDocument();
+        BsonValue innerNear = bsonDocument.get( key );
+
+        // TODO: nullable?
+        BsonNumber minDistance = new BsonInt32(-1);
+        BsonNumber maxDistance = new BsonInt32(-1);
+        PolyGeometry polyGeometry;
+
+        if ( innerNear.isArray() ) {
+            // When using legacy coordinates, only $minDistance is valid.
+            if ( bsonDocument.containsKey( "$maxDistance" ) ) {
+                maxDistance = bsonDocument.getNumber( "$maxDistance" );
+            }
+            GeometryFactory geoFactory = isSpherical
+                    ? new GeometryFactory( new PrecisionModel(), WGS_84 )
+                    : new GeometryFactory();
+            Coordinate point = convertArrayToCoordinate( innerNear.asArray() );
+            polyGeometry = new PolyGeometry( geoFactory.createPoint( point ) );
+        } else if ( innerNear.isDocument() ) {
+            BsonDocument near = innerNear.asDocument();
+            BsonDocument geometry = near.getDocument( "$geometry" );
+            try {
+                polyGeometry = PolyGeometry.fromGeoJson( geometry.toJson() );
+            } catch ( InvalidGeometryException e ) {
+                throw new RuntimeException( e );
+            }
+            if ( near.containsKey( "$minDistance" ) ) {
+                minDistance = near.get( "$minDistance" ).asNumber();
+            }
+            if ( near.containsKey( "$maxDistance" ) ) {
+                maxDistance = near.get( "$maxDistance" ).asNumber();
+            }
+        } else {
+            throw new GenericRuntimeException( " Value of %s must be either an array or a Document ", key );
+        }
+
+        return new RexCall(
+                cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ),
+                OperatorRegistry.get( QueryLanguage.from( MONGO ), isSpherical ? OperatorName.MQL_NEAR_SPHERE : OperatorName.MQL_NEAR ),
+                Arrays.asList(
+                        getIdentifier( parentKey, rowType ),
+                        convertGeometry( polyGeometry ),
+                        convertLiteral( minDistance ),
+                        convertLiteral( maxDistance )
                 ) );
     }
 
@@ -2235,7 +2294,6 @@ public class MqlToAlgConverter {
     private RexNode convertLiteral( BsonValue bsonValue ) {
         Pair<PolyValue, PolyType> valuePair = RexLiteral.convertType( getPolyValue( bsonValue ), new DocumentType() );
         return new RexLiteral( valuePair.left, new DocumentType(), valuePair.right );
-
     }
 
 

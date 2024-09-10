@@ -824,6 +824,16 @@ public class MqlFunctions {
         throw new GenericRuntimeException( "Probably forgot to implement conersion for distanceMultiplier in docGeoDistance." );
     }
 
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyBoolean docNear( PolyValue input, PolyValue geometry, PolyValue minDistance, PolyValue maxDistance ) {
+        throw new GenericRuntimeException( " Something went wrong in the DocumentNearUnwrap conversion rule. This method should not be called. " );
+    }
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyBoolean docNearSphere( PolyValue input, PolyValue geometry, PolyValue minDistance, PolyValue maxDistance ) {
+        throw new GenericRuntimeException( " Something went wrong in the DocumentNearUnwrap conversion rule. This method should not be called. " );
+    }
+
     /**
      * Converts a PolyValue into a PolyGeometry type. We support the following cases:
      * 1. Legacy Coordinates:
