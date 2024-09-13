@@ -33,6 +33,7 @@ import org.polypheny.db.algebra.core.CorrelationId;
 import org.polypheny.db.algebra.core.document.DocumentFilter;
 import org.polypheny.db.algebra.enumerable.EnumerableCalc;
 import org.polypheny.db.algebra.enumerable.EnumerableConvention;
+import org.polypheny.db.algebra.enumerable.document.DocumentProjectToCalcRule.NearDetector;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentFilter;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
@@ -71,6 +72,21 @@ import java.util.UUID;
 
 import static org.polypheny.db.type.entity.spatial.PolyGeometry.WGS_84;
 
+/**
+ * The $near function cannot be executed as a single function, which is why this conversion
+ * rule will replace the operation by multiple operations:
+ *
+ * 1. Projection: Add computed distance field
+ * 2. Filter:     Filter out documents based on minDistance / maxDistance
+ * 3. Sort:       Sort the resulting documents in ascending order by computed distance.
+ * 4. Projection  Remove the computed distance field again.
+ *
+ * This conversion is done in the planner in instead of in the MqlToAlgConverter, so
+ * that we can only apply it if the operation is executed internally in Polypheny. This way,
+ * it is easier to translate the function when offloading to MongoDB.
+ *
+ * Other rules will be blocked by the {@link NearDetector} to force this plan.
+ */
 public class DocumentNearUnwrap extends ConverterRule {
 
     public static final DocumentNearUnwrap INSTANCE = new DocumentNearUnwrap();

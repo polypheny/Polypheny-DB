@@ -22,6 +22,7 @@ import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.document.DocumentFilter;
 import org.polypheny.db.algebra.enumerable.EnumerableCalc;
 import org.polypheny.db.algebra.enumerable.EnumerableConvention;
+import org.polypheny.db.algebra.enumerable.document.DocumentProjectToCalcRule.NearDetector;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentFilter;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -53,6 +54,13 @@ public class DocumentFilterToCalcRule extends ConverterRule {
     @Override
     public AlgNode convert( AlgNode alg ) {
         final LogicalDocumentFilter filter = (LogicalDocumentFilter) alg;
+
+        NearDetector nearDetector = new NearDetector();
+        filter.accept( nearDetector );
+        if ( nearDetector.containsNear ) {
+            return null;
+        }
+
         final AlgNode input = filter.getInput();
 
         // Create a program containing a filter.
