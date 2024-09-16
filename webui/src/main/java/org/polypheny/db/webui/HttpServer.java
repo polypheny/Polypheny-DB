@@ -33,13 +33,14 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.SocketException;
 import java.nio.charset.Charset;
-import java.util.Optional;
+import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.FileUtils;
 import org.polypheny.db.StatusNotificationService;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
@@ -91,14 +92,23 @@ public class HttpServer implements Runnable {
 
     @Getter
     private final Javalin server = Javalin.create( config -> {
-        File ui = PolyphenyHomeDirManager.getInstance().registerNewGlobalFolder( "ui" );
-        if ( !PolyphenyHomeDirManager.getInstance().isAccessible( ui ) ) {
+        File localUi = PolyphenyHomeDirManager.getInstance().registerNewFolder( "ui" );
+        File globalUi = PolyphenyHomeDirManager.getInstance().registerNewGlobalFile( "ui" );
+        if ( !PolyphenyHomeDirManager.getInstance().isAccessible( localUi ) ) {
             log.warn( "Cannot read ui files!" );
         }
+        if ( Objects.requireNonNull( localUi.list() ).length == 0 && Objects.requireNonNull( globalUi.list() ).length != 0 ) {
+            try {
+                FileUtils.copyDirectory( globalUi, localUi );
+            } catch ( IOException e ) {
+                throw new GenericRuntimeException( e );
+            }
+        }
+
         config.jsonMapper( new JavalinJackson( mapper ) );
         config.enableCorsForAllOrigins();
         config.addStaticFiles( staticFileConfig -> {
-            staticFileConfig.directory = ui.getAbsolutePath();
+            staticFileConfig.directory = localUi.getAbsolutePath();
             staticFileConfig.location = Location.EXTERNAL;
             staticFileConfig.hostedPath = "/";
         } );
