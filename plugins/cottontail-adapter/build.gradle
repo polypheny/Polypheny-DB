@@ -3,9 +3,14 @@ plugins {
     id("de.undercouch.download") version "5.6.0"
 }
 
+configurations {
+    preDependencyConfig
+}
+
 group "org.polypheny"
 
 apply plugin: "kotlin"
+
 
 dependencies {
     compileOnly project(":core")
@@ -24,6 +29,7 @@ dependencies {
     testImplementation project(path: ":core")
 }
 
+
 task downloadCottontail(type: Download) {
     src 'https://artifacts.polypheny.com/cottontaildb-0.13.3.jar'
     dest layout.buildDirectory
@@ -36,6 +42,17 @@ task downloadCottontailProto(type: Download) {
     dest layout.buildDirectory
     overwrite true
     onlyIfModified true
+}
+
+task downloadCottontailFiles {
+    dependsOn downloadCottontail, downloadCottontailProto
+}
+
+compileJava {
+    def dir = layout.buildDirectory.get()
+    if (!dir.file("cottontaildb-0.13.3.jar").asFile.exists()) {
+        dependsOn downloadCottontailFiles
+    }
 }
 
 compileKotlin {
