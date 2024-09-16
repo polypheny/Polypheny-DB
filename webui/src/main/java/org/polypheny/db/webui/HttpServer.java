@@ -93,7 +93,7 @@ public class HttpServer implements Runnable {
     @Getter
     private final Javalin server = Javalin.create( config -> {
         File localUi = PolyphenyHomeDirManager.getInstance().registerNewFolder( "ui" );
-        File globalUi = PolyphenyHomeDirManager.getInstance().registerNewGlobalFile( "ui" );
+        File globalUi = PolyphenyHomeDirManager.getInstance().registerNewGlobalFolder( "ui" );
         if ( !PolyphenyHomeDirManager.getInstance().isAccessible( localUi ) ) {
             log.warn( "Cannot read ui files!" );
         }
