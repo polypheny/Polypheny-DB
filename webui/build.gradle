@@ -1,3 +1,7 @@
+plugins {
+    id("de.undercouch.download") version "5.6.0"
+}
+
 group "org.polypheny"
 
 
@@ -39,7 +43,7 @@ sourceSets {
             srcDirs = ["src/main/java"]
         }
         resources {
-            srcDirs = ["src/main/resources", "$buildDir/webapp"]
+            srcDirs = ["src/main/resources"]
         }
         output.resourcesDir = file(project.buildDir.absolutePath + "/classes")
     }
@@ -59,33 +63,68 @@ compileJava {
     dependsOn(":monitoring:processResources")
 }
 
+
 processResources {
     setDuplicatesStrategy(DuplicatesStrategy.WARN)
-    dependsOn(":webui:unzipUiFiles")
+    dependsOn(":webui:handleUi")
 }
 
-
-// unzip ui files
-task unzipUiFiles(type: Copy) {
+processResources {
     setDuplicatesStrategy(DuplicatesStrategy.WARN)
-    from zipTree("src/main/resources/web.zip")
-    into "$buildDir/webapp"
-    from zipTree("src/main/resources/web.zip")
-    into "src/main/resources/webapp"
-    /*doLast {
-        file("$buildDir/webapp/index").mkdirs()
-        ant.move file: "$buildDir/webapp/index.html",
-            toDir: "$buildDir/webapp/index/"
-    }*/
+    dependsOn(":webui:handleUi")
 }
-tasks.register('deleteUiFiles') {
-    project.delete(
-        fileTree("$buildDir/webapp")
-    )
-}
-unzipUiFiles.dependsOn(deleteUiFiles)
-classes.dependsOn(unzipUiFiles)
 
+
+gradle.taskGraph.whenReady { taskGraph ->
+    if (taskGraph.hasTask(downloadUiZip) && taskGraph.hasTask(unzipUiFiles)) {
+        if (!project.hasProperty('withoutpullingUi')) {
+            println("Pulling UI files")
+            handleUi.dependsOn downloadUiZip
+            handleUi.dependsOn unzipUiFiles
+        }
+    }
+}
+
+task downloadUiZip(type: Download) {
+    Object downloadDir = getOrCreateArtifacts()
+    src 'https://artifacts.polypheny.com/polypheny-ui.zip'
+    dest "${downloadDir}/ui.zip"
+    overwrite true
+    onlyIfModified true
+}
+
+private Object getOrCreateArtifacts() {
+    Object polyphenyDir = getPolyphenyHome()
+    def downloadDir = "${polyphenyDir}/artifacts/ui"
+    println(downloadDir)
+    file(downloadDir).mkdirs()
+    downloadDir
+}
+
+private Object getPolyphenyHome() {
+    def homeDir = System.getProperty('user.home');
+    def polyphenyDir = System.getenv('POLYPHENY_HOME') ?: "${homeDir}/.polypheny"
+    polyphenyDir
+}
+
+task unzipUiFiles(type: Copy) {
+    dependsOn downloadUiZip
+
+    Object polyphenyDir = getPolyphenyHome()
+    def dist = "${polyphenyDir}/ui"
+    file(dist).mkdirs()
+    from zipTree(downloadUiZip.dest)
+    into dist
+    println "Unzipping files from: ${downloadUiZip.dest} to ${dist}"
+}
+
+
+classes.dependsOn(":webui:handleUi")
+
+
+task handleUi(){
+    // empty on purpose, has to be placed after all tasks due to gradle weirdness
+}
 
 /**
  * JARs
@@ -96,7 +135,6 @@ jar {
         attributes "Copyright": "The Polypheny Project (polypheny.org)"
         attributes "Version": "$project.version"
     }
-    from("$buildDir/webapp") // include webapp files
     duplicatesStrategy = 'include'
 }
 java {

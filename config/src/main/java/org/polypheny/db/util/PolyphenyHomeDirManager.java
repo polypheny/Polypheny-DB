@@ -269,8 +269,8 @@ public class PolyphenyHomeDirManager {
     }
 
 
-    public File registerNewGlobalFolder( String testBackup ) {
-        return registerNewFolder( this.root, testBackup );
+    public File registerNewGlobalFolder( String folder ) {
+        return registerNewFolder( this.root, folder );
     }
 
 
@@ -279,8 +279,12 @@ public class PolyphenyHomeDirManager {
     }
 
 
-    public File getRootPath() {
+    public File getHomePath() {
         return home;
+    }
+
+    public File getRootPath() {
+        return root;
     }
 
 }

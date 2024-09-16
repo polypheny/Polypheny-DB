@@ -23,14 +23,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
+import io.javalin.http.staticfiles.Location;
 import io.javalin.plugin.json.JavalinJackson;
 import io.javalin.websocket.WsConfig;
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.SocketException;
 import java.nio.charset.Charset;
+import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -42,6 +45,7 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.transaction.TransactionManager;
+import org.polypheny.db.util.PolyphenyHomeDirManager;
 import org.polypheny.db.webui.ConfigService.Consumer3;
 import org.polypheny.db.webui.ConfigService.HandlerType;
 import org.polypheny.db.webui.crud.LanguageCrud;
@@ -87,10 +91,15 @@ public class HttpServer implements Runnable {
 
     @Getter
     private final Javalin server = Javalin.create( config -> {
+        File ui = PolyphenyHomeDirManager.getInstance().registerNewGlobalFolder( "ui" );
+        if ( !PolyphenyHomeDirManager.getInstance().isAccessible( ui ) ) {
+            log.warn( "Cannot read ui files!" );
+        }
         config.jsonMapper( new JavalinJackson( mapper ) );
         config.enableCorsForAllOrigins();
         config.addStaticFiles( staticFileConfig -> {
-            staticFileConfig.directory = "webapp";
+            staticFileConfig.directory = ui.getAbsolutePath();
+            staticFileConfig.location = Location.EXTERNAL;
             staticFileConfig.hostedPath = "/";
         } );
     } ).start( RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
@@ -113,17 +122,6 @@ public class HttpServer implements Runnable {
         // Log all requests
         server.before( ctx -> {
             log.debug( "Request: {} {}", ctx.method(), ctx.path() );
-        } );
-
-        // Get modified index.html
-        server.get( "/", ctx -> {
-            ctx.contentType( "text/html" );
-
-            try ( InputStream stream = this.getClass().getClassLoader().getResource( "webapp/index.html" ).openStream() ) {
-                ctx.result( streamToString( stream ) );
-            } catch ( NullPointerException e ) {
-                ctx.result( "Error: Could not find index.html" );
-            }
         } );
 
         attachRoutes( server, crud );
