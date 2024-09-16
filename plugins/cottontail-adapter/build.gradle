@@ -66,6 +66,11 @@ compileJava {
 
 delombok {
     dependsOn(":plugins:sql-language:processResources")
+    def dir = layout.buildDirectory.get()
+    if (!dir.file("cottontaildb-0.13.3.jar").asFile.exists()) {
+        dependsOn(downloadCottontail)
+        dependsOn(downloadCottontailProto)
+    }
 }
 
 test.dependsOn(":dbms:shadowJar")
