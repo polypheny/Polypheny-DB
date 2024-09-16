@@ -31,14 +31,14 @@ dependencies {
 
 
 task downloadCottontail(type: Download) {
-    src 'https://artifacts.polypheny.com/cottontaildb-0.13.3.jar'
+    src 'https://artifacts.polypheny.com/cottontaildb/cottontaildb-0.13.3.jar'
     dest layout.buildDirectory
     overwrite true
     onlyIfModified true
 }
 
 task downloadCottontailProto(type: Download) {
-    src 'https://artifacts.polypheny.com/cottontaildb-proto-0.13.0.jar'
+    src 'https://artifacts.polypheny.com/cottontaildb/cottontaildb-proto-0.13.0.jar'
     dest layout.buildDirectory
     overwrite true
     onlyIfModified true

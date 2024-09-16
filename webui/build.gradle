@@ -84,7 +84,7 @@ gradle.taskGraph.whenReady { taskGraph ->
 
 task downloadUiZip(type: Download) {
     Object downloadDir = getOrCreateArtifacts()
-    src 'https://artifacts.polypheny.com/polypheny-ui.zip'
+    src 'https://artifacts.polypheny.com/ui/polypheny-ui.zip'
     dest "${downloadDir}/ui.zip"
     overwrite true
     onlyIfModified true
