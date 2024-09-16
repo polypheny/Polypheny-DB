@@ -76,12 +76,9 @@ processResources {
 
 
 gradle.taskGraph.whenReady { taskGraph ->
-    if (taskGraph.hasTask(downloadUiZip) && taskGraph.hasTask(unzipUiFiles)) {
-        if (!project.hasProperty('withoutpullingUi')) {
-            println("Pulling UI files")
-            handleUi.dependsOn downloadUiZip
-            handleUi.dependsOn unzipUiFiles
-        }
+    if (!project.hasProperty('withoutpullingUi')) {
+        println("Pulling UI files")
+        handleUi.dependsOn downloadUiZip, unzipUiFiles
     }
 }
 
@@ -122,8 +119,13 @@ task unzipUiFiles(type: Copy) {
 classes.dependsOn(":webui:handleUi")
 
 
-task handleUi(){
-    // empty on purpose, has to be placed after all tasks due to gradle weirdness
+task handleUi() {
+    // empty on purpose due to gradle weirdness
+}
+
+if (!project.hasProperty('withoutpullingUi')) {
+    handleUi.finalizedBy downloadUiZip
+    downloadUiZip.finalizedBy unzipUiFiles
 }
 
 /**

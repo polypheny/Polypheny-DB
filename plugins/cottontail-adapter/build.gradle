@@ -1,5 +1,6 @@
 plugins {
     id "org.jetbrains.kotlin.jvm" version "1.7.22"
+    id("de.undercouch.download") version "5.6.0"
 }
 
 group "org.polypheny"
@@ -12,8 +13,8 @@ dependencies {
 
     implementation group: "io.grpc", name: "grpc-all", version: cottontaildb_grpc_version
     // Cottontail DB
-    implementation(group: "org.vitrivr", name: "cottontaildb", version: cottontaildb_version)
-    implementation group: "org.vitrivr", name: "cottontaildb-proto", version: cottontaildb_driver_version
+    implementation files("build/cottontaildb-0.13.3.jar")
+    implementation files("build/cottontaildb-proto-0.13.0.jar")
 
 
     // --- Test Compile ---
@@ -21,6 +22,20 @@ dependencies {
     testImplementation project(path: ":dbms")
     testImplementation project(path: ":core", configuration: "tests")
     testImplementation project(path: ":core")
+}
+
+task downloadCottontail(type: Download) {
+    src 'https://artifacts.polypheny.com/cottontaildb-0.13.3.jar'
+    dest layout.buildDirectory
+    overwrite true
+    onlyIfModified true
+}
+
+task downloadCottontailProto(type: Download) {
+    src 'https://artifacts.polypheny.com/cottontaildb-proto-0.13.0.jar'
+    dest layout.buildDirectory
+    overwrite true
+    onlyIfModified true
 }
 
 compileKotlin {
@@ -35,14 +50,6 @@ compileJava {
 delombok {
     dependsOn(":plugins:sql-language:processResources")
 }
-
-/*inspectClassesForKotlinIC {
-    dependsOn(":plugins:cottontail-adapter:compileTestKotlin")
-}
-
-plugin {
-    dependsOn(":plugins:cottontail-adapter:compileTestKotlin")
-}*/
 
 test.dependsOn(":dbms:shadowJar")
 
@@ -79,16 +86,12 @@ jar {
         attributes "Copyright": "The Polypheny Project (polypheny.org)"
         attributes "Version": "$project.version"
     }
-    //dependsOn(":plugins:cottontail-adapter:compileTestKotlin")
 }
 java {
     withJavadocJar()
     withSourcesJar()
 }
 
-javadoc {
-    //dependsOn(":plugins:cottontail-adapter:compileTestKotlin")
-}
 
 licensee {
     allow('Apache-2.0')
