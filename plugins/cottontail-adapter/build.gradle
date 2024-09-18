@@ -18,8 +18,8 @@ dependencies {
 
     implementation group: "io.grpc", name: "grpc-all", version: cottontaildb_grpc_version
     // Cottontail DB
-    implementation files("build/cottontaildb-0.13.3.jar")
-    implementation files("build/cottontaildb-proto-0.13.0.jar")
+    implementation group: 'org.vitrivr', name: 'cottontaildb', version: cottontaildb_version
+    implementation group: 'org.vitrivr', name: 'cottontaildb-proto', version: cottontaildb_driver_version
 
 
     // --- Test Compile ---
@@ -29,31 +29,6 @@ dependencies {
     testImplementation project(path: ":core")
 }
 
-
-task downloadCottontail(type: Download) {
-    src 'https://artifacts.polypheny.com/cottontaildb/cottontaildb-0.13.3.jar'
-    dest layout.buildDirectory
-    overwrite true
-    onlyIfModified true
-}
-
-task downloadCottontailProto(type: Download) {
-    src 'https://artifacts.polypheny.com/cottontaildb/cottontaildb-proto-0.13.0.jar'
-    dest layout.buildDirectory
-    overwrite true
-    onlyIfModified true
-}
-
-task downloadCottontailFiles {
-    dependsOn downloadCottontail, downloadCottontailProto
-}
-
-compileJava {
-    def dir = layout.buildDirectory.get()
-    if (!dir.file("cottontaildb-0.13.3.jar").asFile.exists()) {
-        dependsOn downloadCottontailFiles
-    }
-}
 
 compileKotlin {
     dependsOn(":plugins:sql-language:processResources")
@@ -66,11 +41,6 @@ compileJava {
 
 delombok {
     dependsOn(":plugins:sql-language:processResources")
-    def dir = layout.buildDirectory.get()
-    if (!dir.file("cottontaildb-0.13.3.jar").asFile.exists()) {
-        dependsOn(downloadCottontail)
-        dependsOn(downloadCottontailProto)
-    }
 }
 
 test.dependsOn(":dbms:shadowJar")
