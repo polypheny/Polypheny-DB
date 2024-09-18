@@ -275,7 +275,8 @@ public class PolyphenyHomeDirManager {
         return registerNewFolder( this.root, folder );
     }
 
-    public void unzipInto( File zip , File target ) {
+
+    public void unzipInto( File zip, File target ) {
         try {
             new ZipFile( zip ).extractAll( target.getAbsolutePath() );
         } catch ( ZipException e ) {
@@ -292,6 +293,7 @@ public class PolyphenyHomeDirManager {
     public File getHomePath() {
         return home;
     }
+
 
     public File getRootPath() {
         return root;

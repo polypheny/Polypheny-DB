@@ -34,10 +34,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.SocketException;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.Charset;
-import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
@@ -45,8 +43,6 @@ import java.util.function.Consumer;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.ClassPathUtils;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.StatusNotificationService;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -113,7 +109,7 @@ public class HttpServer implements Runnable {
 
     private @NotNull File handleUiFiles() {
         File uiPath = PolyphenyHomeDirManager.getInstance().registerNewFolder( "ui" );
-        if( uiPath.delete() ) {
+        if ( uiPath.delete() ) {
             uiPath = PolyphenyHomeDirManager.getInstance().registerNewFolder( "ui" );
         }
 
@@ -171,20 +167,21 @@ public class HttpServer implements Runnable {
         INSTANCE = this;
     }
 
-    private File copyResourceToTempFile(URL resourceUrl, String name, String extension ) {
+
+    private File copyResourceToTempFile( URL resourceUrl, String name, String extension ) {
         try {
-            File tempFile = File.createTempFile(name, extension);
+            File tempFile = File.createTempFile( name, extension );
 
             tempFile.deleteOnExit();
 
-            try (InputStream inputStream = resourceUrl.openStream();
-                    OutputStream outputStream = new FileOutputStream(tempFile)) {
+            try ( InputStream inputStream = resourceUrl.openStream();
+                    OutputStream outputStream = new FileOutputStream( tempFile ) ) {
 
                 byte[] buffer = new byte[1024];
                 int bytesRead;
 
-                while ((bytesRead = inputStream.read(buffer)) != -1) {
-                    outputStream.write(buffer, 0, bytesRead);
+                while ( (bytesRead = inputStream.read( buffer )) != -1 ) {
+                    outputStream.write( buffer, 0, bytesRead );
                 }
             }
 
