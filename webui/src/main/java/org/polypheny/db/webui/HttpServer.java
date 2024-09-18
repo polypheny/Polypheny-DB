@@ -28,11 +28,16 @@ import io.javalin.plugin.json.JavalinJackson;
 import io.javalin.websocket.WsConfig;
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.net.SocketException;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.charset.Charset;
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
@@ -41,6 +46,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.ClassPathUtils;
 import org.polypheny.db.StatusNotificationService;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
@@ -92,23 +98,43 @@ public class HttpServer implements Runnable {
 
     @Getter
     private final Javalin server = Javalin.create( config -> {
-        File localUi = PolyphenyHomeDirManager.getInstance().registerNewFolder( "ui" );
-        File globalUi = PolyphenyHomeDirManager.getInstance().registerNewGlobalFolder( "ui" );
-        if ( !PolyphenyHomeDirManager.getInstance().isAccessible( localUi ) ) {
+        File uiPath = PolyphenyHomeDirManager.getInstance().registerNewFolder( "ui" );
+        if( uiPath.delete() ) {
+            uiPath = PolyphenyHomeDirManager.getInstance().registerNewFolder( "ui" );
+        }
+
+        URL uiResourceUrl = getClass().getClassLoader().getResource("polypheny-ui.zip");
+        if (uiResourceUrl == null) {
+            throw new RuntimeException("Unable to find UI zip resource: polypheny-ui.zip");
+        }
+
+        // Convert the resource into a temporary file if it's inside a JAR
+        File uiZip = copyResourceToTempFile(uiResourceUrl, "polypheny-ui", ".zip");
+
+        // Log the path of the temporary file
+        log.warn(uiZip.getAbsolutePath());
+
+
+        // Log the path of the temporary file
+        log.warn(uiZip.getAbsolutePath());
+        PolyphenyHomeDirManager.getInstance().unzipInto( uiZip, uiPath );
+
+        File globalUiPath = PolyphenyHomeDirManager.getInstance().registerNewGlobalFolder( "ui" );
+
+        if ( Objects.requireNonNull( globalUiPath.list() ).length != 0 ) {
+            log.info( "Using global UI path: {}", globalUiPath.getAbsolutePath() );
+            uiPath = globalUiPath;
+        }
+        if ( !PolyphenyHomeDirManager.getInstance().isAccessible( uiPath ) ) {
             log.warn( "Cannot read ui files!" );
         }
-        if ( Objects.requireNonNull( localUi.list() ).length == 0 && Objects.requireNonNull( globalUi.list() ).length != 0 ) {
-            try {
-                FileUtils.copyDirectory( globalUi, localUi );
-            } catch ( IOException e ) {
-                throw new GenericRuntimeException( e );
-            }
-        }
+
+        File finalUi = uiPath;
 
         config.jsonMapper( new JavalinJackson( mapper ) );
         config.enableCorsForAllOrigins();
         config.addStaticFiles( staticFileConfig -> {
-            staticFileConfig.directory = localUi.getAbsolutePath();
+            staticFileConfig.directory = finalUi.getAbsolutePath();
             staticFileConfig.location = Location.EXTERNAL;
             staticFileConfig.hostedPath = "/";
         } );
@@ -141,6 +167,29 @@ public class HttpServer implements Runnable {
 
         attachExceptions( server );
         INSTANCE = this;
+    }
+
+    private File copyResourceToTempFile(URL resourceUrl, String name, String extension ) {
+        try {
+            File tempFile = File.createTempFile(name, extension);
+
+            tempFile.deleteOnExit();
+
+            try (InputStream inputStream = resourceUrl.openStream();
+                    OutputStream outputStream = new FileOutputStream(tempFile)) {
+
+                byte[] buffer = new byte[1024];
+                int bytesRead;
+
+                while ((bytesRead = inputStream.read(buffer)) != -1) {
+                    outputStream.write(buffer, 0, bytesRead);
+                }
+            }
+
+            return tempFile;
+        } catch ( IOException e ) {
+            throw new RuntimeException( e );
+        }
     }
 
 

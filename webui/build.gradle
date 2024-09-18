@@ -1,3 +1,5 @@
+
+
 plugins {
     id("de.undercouch.download") version "5.6.0"
 }
@@ -43,7 +45,7 @@ sourceSets {
             srcDirs = ["src/main/java"]
         }
         resources {
-            srcDirs = ["src/main/resources"]
+            srcDirs = ["src/main/resources", "build/resources/main"]
         }
         output.resourcesDir = file(project.buildDir.absolutePath + "/classes")
     }
@@ -67,35 +69,26 @@ compileJava {
 processResources {
     setDuplicatesStrategy(DuplicatesStrategy.WARN)
     dependsOn(":webui:handleUi")
+    if (!project.hasProperty('withoutpullingUi')) {
+        dependsOn(":webui:downloadUiZip")
+    }
 }
 
-processResources {
-    setDuplicatesStrategy(DuplicatesStrategy.WARN)
-    dependsOn(":webui:handleUi")
-}
 
 
 gradle.taskGraph.whenReady { taskGraph ->
-    if (!project.hasProperty('withoutpullingUi')) {
+    if (!project.hasProperty('withoutpullingUi')
+        && !layout.buildDirectory.get().file("polypheny-ui.zip").asFile.exists()) {
         println("Pulling UI files")
-        handleUi.dependsOn downloadUiZip, unzipUiFiles
+        handleUi.dependsOn downloadUiZip
     }
 }
 
 task downloadUiZip(type: Download) {
-    Object downloadDir = getOrCreateArtifacts()
     src 'https://artifacts.polypheny.com/ui/polypheny-ui.zip'
-    dest "${downloadDir}/ui.zip"
+    dest "${layout.buildDirectory.asFile.get().absolutePath}/classes/polypheny-ui.zip"
     overwrite true
     onlyIfModified true
-}
-
-private Object getOrCreateArtifacts() {
-    Object polyphenyDir = getPolyphenyHome()
-    def downloadDir = "${polyphenyDir}/artifacts/ui"
-    println(downloadDir)
-    file(downloadDir).mkdirs()
-    downloadDir
 }
 
 private Object getPolyphenyHome() {
@@ -104,16 +97,15 @@ private Object getPolyphenyHome() {
     polyphenyDir
 }
 
-task unzipUiFiles(type: Copy) {
-    dependsOn downloadUiZip
-
-    Object polyphenyDir = getPolyphenyHome()
-    def dist = "${polyphenyDir}/ui"
-    file(dist).mkdirs()
-    from zipTree(downloadUiZip.dest)
-    into dist
-    println "Unzipping files from: ${downloadUiZip.dest} to ${dist}"
+task deleteUiOverwrite() {
+    def home = getPolyphenyHome()
+    def ui = file("${home}/ui")
+    if (ui.exists() && ui.canWrite()) {
+        delete ui
+    }
 }
+
+clean.dependsOn(deleteUiOverwrite)
 
 
 classes.dependsOn(":webui:handleUi")
@@ -125,7 +117,6 @@ task handleUi() {
 
 if (!project.hasProperty('withoutpullingUi')) {
     handleUi.finalizedBy downloadUiZip
-    downloadUiZip.finalizedBy unzipUiFiles
 }
 
 /**
