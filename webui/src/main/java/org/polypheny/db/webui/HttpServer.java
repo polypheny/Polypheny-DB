@@ -47,6 +47,7 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.ClassPathUtils;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.StatusNotificationService;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
@@ -98,25 +99,32 @@ public class HttpServer implements Runnable {
 
     @Getter
     private final Javalin server = Javalin.create( config -> {
+        File finalUi = handleUiFiles();
+
+        config.jsonMapper( new JavalinJackson( mapper ) );
+        config.enableCorsForAllOrigins();
+        config.addStaticFiles( staticFileConfig -> {
+            staticFileConfig.directory = finalUi.getAbsolutePath();
+            staticFileConfig.location = Location.EXTERNAL;
+            staticFileConfig.hostedPath = "/";
+        } );
+    } ).start( RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
+
+
+    private @NotNull File handleUiFiles() {
         File uiPath = PolyphenyHomeDirManager.getInstance().registerNewFolder( "ui" );
         if( uiPath.delete() ) {
             uiPath = PolyphenyHomeDirManager.getInstance().registerNewFolder( "ui" );
         }
 
-        URL uiResourceUrl = getClass().getClassLoader().getResource("polypheny-ui.zip");
-        if (uiResourceUrl == null) {
-            throw new RuntimeException("Unable to find UI zip resource: polypheny-ui.zip");
+        URL uiResourceUrl = getClass().getClassLoader().getResource( "polypheny-ui.zip" );
+        if ( uiResourceUrl == null ) {
+            log.warn( "No UI resources found" );
+            return uiPath;
         }
 
-        // Convert the resource into a temporary file if it's inside a JAR
-        File uiZip = copyResourceToTempFile(uiResourceUrl, "polypheny-ui", ".zip");
+        File uiZip = copyResourceToTempFile( uiResourceUrl, "polypheny-ui", ".zip" );
 
-        // Log the path of the temporary file
-        log.warn(uiZip.getAbsolutePath());
-
-
-        // Log the path of the temporary file
-        log.warn(uiZip.getAbsolutePath());
         PolyphenyHomeDirManager.getInstance().unzipInto( uiZip, uiPath );
 
         File globalUiPath = PolyphenyHomeDirManager.getInstance().registerNewGlobalFolder( "ui" );
@@ -129,16 +137,10 @@ public class HttpServer implements Runnable {
             log.warn( "Cannot read ui files!" );
         }
 
-        File finalUi = uiPath;
+        return uiPath;
+    }
 
-        config.jsonMapper( new JavalinJackson( mapper ) );
-        config.enableCorsForAllOrigins();
-        config.addStaticFiles( staticFileConfig -> {
-            staticFileConfig.directory = finalUi.getAbsolutePath();
-            staticFileConfig.location = Location.EXTERNAL;
-            staticFileConfig.hostedPath = "/";
-        } );
-    } ).start( RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
+
     private Crud crud;
 
 
