@@ -17,10 +17,18 @@ dependencies {
     compileOnly project(":plugins:sql-language")
 
     implementation group: "io.grpc", name: "grpc-all", version: cottontaildb_grpc_version
+
+    // Cottontail DB Dependencies (necessary due to dbisnexus shutdown)
+    implementation group: 'org.jetbrains.kotlin', name: 'kotlin-stdlib', version: cottontaildb_kotlin_version
+    implementation group: 'org.eclipse.collections', name: 'eclipse-collections-api', version: cottontaildb_eclipse_version
+    implementation group: 'org.eclipse.collections', name: 'eclipse-collections', version: cottontaildb_eclipse_version
+    implementation group: 'org.eclipse.collections', name: 'eclipse-collections-forkjoin', version: cottontaildb_eclipse_version
+    implementation group: 'com.google.guava', name: 'guava', version: cottontaildb_guave_version
+    implementation group: 'org.mapdb', name: 'mapdb', version: cottontaildb_mapdb_version
+
     // Cottontail DB
     implementation group: 'org.vitrivr', name: 'cottontaildb', version: cottontaildb_version
     implementation group: 'org.vitrivr', name: 'cottontaildb-proto', version: cottontaildb_driver_version
-
 
     // --- Test Compile ---
     testImplementation project(path: ":dbms", configuration: "test")
@@ -102,4 +110,6 @@ licensee {
     allowDependency('org.vitrivr', 'cottontaildb-proto', '0.13.0') { because 'MIT license' }
 
     allowDependency('javax.annotation', 'javax.annotation-api', '1.3.2') { because 'CDDL license' }
+
+    allowDependency('net.jcip', 'jcip-annotations', '1.0') { because 'transitive, Apache 2. according to github' }
 }
