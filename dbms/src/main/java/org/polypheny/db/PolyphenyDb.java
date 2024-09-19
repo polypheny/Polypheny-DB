@@ -244,7 +244,7 @@ public class PolyphenyDb {
                 throw new GenericRuntimeException( "Unable to backup the Polypheny folder since there is already a backup folder." );
             }
             File backupFolder = dirManager.registerNewFolder( "_test_backup" );
-            for ( File item : dirManager.getRootPath().listFiles() ) {
+            for ( File item : dirManager.getHomePath().listFiles() ) {
                 if ( item.getName().equals( "_test_backup" ) ) {
                     continue;
                 }
@@ -458,7 +458,7 @@ public class PolyphenyDb {
         if ( dirManager.getHomeFile( "_test_backup" ).isPresent() && dirManager.getHomeFile( "_test_backup" ).get().isDirectory() ) {
             File backupFolder = dirManager.getHomeFile( "_test_backup" ).get();
             // Cleanup Polypheny folder
-            for ( File item : dirManager.getRootPath().listFiles() ) {
+            for ( File item : dirManager.getHomePath().listFiles() ) {
                 if ( item.getName().equals( "_test_backup" ) ) {
                     continue;
                 }
@@ -471,7 +471,7 @@ public class PolyphenyDb {
             // Restore contents from backup
             for ( File item : backupFolder.listFiles() ) {
                 if ( dirManager.getHomeFile( "_test_backup/" + item.getName() ).isPresent() ) {
-                    if ( !item.renameTo( new File( dirManager.getRootPath(), item.getName() ) ) ) {
+                    if ( !item.renameTo( new File( dirManager.getHomePath(), item.getName() ) ) ) {
                         throw new GenericRuntimeException( "Unable to restore the Polypheny folder." );
                     }
                 }

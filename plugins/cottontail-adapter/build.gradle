@@ -1,20 +1,34 @@
 plugins {
     id "org.jetbrains.kotlin.jvm" version "1.7.22"
+    id("de.undercouch.download") version "5.6.0"
+}
+
+configurations {
+    preDependencyConfig
 }
 
 group "org.polypheny"
 
 apply plugin: "kotlin"
 
+
 dependencies {
     compileOnly project(":core")
     compileOnly project(":plugins:sql-language")
 
     implementation group: "io.grpc", name: "grpc-all", version: cottontaildb_grpc_version
-    // Cottontail DB
-    implementation(group: "org.vitrivr", name: "cottontaildb", version: cottontaildb_version)
-    implementation group: "org.vitrivr", name: "cottontaildb-proto", version: cottontaildb_driver_version
 
+    // Cottontail DB Dependencies (necessary due to dbisnexus shutdown)
+    implementation group: 'org.jetbrains.kotlin', name: 'kotlin-stdlib', version: cottontaildb_kotlin_version
+    implementation group: 'org.eclipse.collections', name: 'eclipse-collections-api', version: cottontaildb_eclipse_version
+    implementation group: 'org.eclipse.collections', name: 'eclipse-collections', version: cottontaildb_eclipse_version
+    implementation group: 'org.eclipse.collections', name: 'eclipse-collections-forkjoin', version: cottontaildb_eclipse_version
+    implementation group: 'com.google.guava', name: 'guava', version: cottontaildb_guave_version
+    implementation group: 'org.mapdb', name: 'mapdb', version: cottontaildb_mapdb_version
+
+    // Cottontail DB
+    implementation group: 'org.vitrivr', name: 'cottontaildb', version: cottontaildb_version
+    implementation group: 'org.vitrivr', name: 'cottontaildb-proto', version: cottontaildb_driver_version
 
     // --- Test Compile ---
     testImplementation project(path: ":dbms", configuration: "test")
@@ -22,6 +36,7 @@ dependencies {
     testImplementation project(path: ":core", configuration: "tests")
     testImplementation project(path: ":core")
 }
+
 
 compileKotlin {
     dependsOn(":plugins:sql-language:processResources")
@@ -35,14 +50,6 @@ compileJava {
 delombok {
     dependsOn(":plugins:sql-language:processResources")
 }
-
-/*inspectClassesForKotlinIC {
-    dependsOn(":plugins:cottontail-adapter:compileTestKotlin")
-}
-
-plugin {
-    dependsOn(":plugins:cottontail-adapter:compileTestKotlin")
-}*/
 
 test.dependsOn(":dbms:shadowJar")
 
@@ -79,16 +86,12 @@ jar {
         attributes "Copyright": "The Polypheny Project (polypheny.org)"
         attributes "Version": "$project.version"
     }
-    //dependsOn(":plugins:cottontail-adapter:compileTestKotlin")
 }
 java {
     withJavadocJar()
     withSourcesJar()
 }
 
-javadoc {
-    //dependsOn(":plugins:cottontail-adapter:compileTestKotlin")
-}
 
 licensee {
     allow('Apache-2.0')
@@ -107,4 +110,6 @@ licensee {
     allowDependency('org.vitrivr', 'cottontaildb-proto', '0.13.0') { because 'MIT license' }
 
     allowDependency('javax.annotation', 'javax.annotation-api', '1.3.2') { because 'CDDL license' }
+
+    allowDependency('net.jcip', 'jcip-annotations', '1.0') { because 'transitive, Apache 2. according to github' }
 }

@@ -23,25 +23,34 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
+import io.javalin.http.staticfiles.Location;
 import io.javalin.plugin.json.JavalinJackson;
 import io.javalin.websocket.WsConfig;
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.net.SocketException;
+import java.net.URL;
 import java.nio.charset.Charset;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.StatusNotificationService;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.transaction.TransactionManager;
+import org.polypheny.db.util.PolyphenyHomeDirManager;
 import org.polypheny.db.webui.ConfigService.Consumer3;
 import org.polypheny.db.webui.ConfigService.HandlerType;
 import org.polypheny.db.webui.crud.LanguageCrud;
@@ -87,10 +96,48 @@ public class HttpServer implements Runnable {
 
     @Getter
     private final Javalin server = Javalin.create( config -> {
+        File finalUi = handleUiFiles();
+
         config.jsonMapper( new JavalinJackson( mapper ) );
         config.enableCorsForAllOrigins();
-        config.addStaticFiles( staticFileConfig -> staticFileConfig.directory = "webapp/" );
+        config.addStaticFiles( staticFileConfig -> {
+            staticFileConfig.directory = finalUi.getAbsolutePath();
+            staticFileConfig.location = Location.EXTERNAL;
+            staticFileConfig.hostedPath = "/";
+        } );
     } ).start( RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
+
+
+    private @NotNull File handleUiFiles() {
+        File uiPath = PolyphenyHomeDirManager.getInstance().registerNewFolder( "ui" );
+        if ( uiPath.delete() ) {
+            uiPath = PolyphenyHomeDirManager.getInstance().registerNewFolder( "ui" );
+        }
+
+        URL uiResourceUrl = getClass().getClassLoader().getResource( "polypheny-ui.zip" );
+        if ( uiResourceUrl == null ) {
+            log.warn( "No UI resources found" );
+            return uiPath;
+        }
+
+        File uiZip = copyResourceToTempFile( uiResourceUrl, "polypheny-ui", ".zip" );
+
+        PolyphenyHomeDirManager.getInstance().unzipInto( uiZip, uiPath );
+
+        Optional<File> globalUiPath = PolyphenyHomeDirManager.getInstance().getGlobalFile( "ui" );
+
+        if ( globalUiPath.isPresent() && globalUiPath.get().isDirectory() && Objects.requireNonNull( globalUiPath.get().list() ).length != 0 ) {
+            log.info( "Using global UI path: {}", globalUiPath.get().getAbsolutePath() );
+            uiPath = globalUiPath.get();
+        }
+        if ( !PolyphenyHomeDirManager.getInstance().isAccessible( uiPath ) ) {
+            log.warn( "Cannot read ui files!" );
+        }
+
+        return uiPath;
+    }
+
+
     private Crud crud;
 
 
@@ -107,15 +154,9 @@ public class HttpServer implements Runnable {
         this.webSocketHandler = new WebSocket( crud );
         webSockets( server, this.webSocketHandler );
 
-        // Get modified index.html
-        server.get( "/", ctx -> {
-            ctx.contentType( "text/html" );
-
-            try ( InputStream stream = this.getClass().getClassLoader().getResource( "index/index.html" ).openStream() ) {
-                ctx.result( streamToString( stream ) );
-            } catch ( NullPointerException e ) {
-                ctx.result( "Error: Could not find index.html" );
-            }
+        // Log all requests
+        server.before( ctx -> {
+            log.debug( "Request: {} {}", ctx.method(), ctx.path() );
         } );
 
         attachRoutes( server, crud );
@@ -125,6 +166,30 @@ public class HttpServer implements Runnable {
 
         attachExceptions( server );
         INSTANCE = this;
+    }
+
+
+    private File copyResourceToTempFile( URL resourceUrl, String name, String extension ) {
+        try {
+            File tempFile = File.createTempFile( name, extension );
+
+            tempFile.deleteOnExit();
+
+            try ( InputStream inputStream = resourceUrl.openStream();
+                    OutputStream outputStream = new FileOutputStream( tempFile ) ) {
+
+                byte[] buffer = new byte[1024];
+                int bytesRead;
+
+                while ( (bytesRead = inputStream.read( buffer )) != -1 ) {
+                    outputStream.write( buffer, 0, bytesRead );
+                }
+            }
+
+            return tempFile;
+        } catch ( IOException e ) {
+            throw new RuntimeException( e );
+        }
     }
 
 
