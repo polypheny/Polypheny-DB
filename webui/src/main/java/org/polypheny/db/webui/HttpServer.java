@@ -37,6 +37,7 @@ import java.net.SocketException;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -123,11 +124,11 @@ public class HttpServer implements Runnable {
 
         PolyphenyHomeDirManager.getInstance().unzipInto( uiZip, uiPath );
 
-        File globalUiPath = PolyphenyHomeDirManager.getInstance().registerNewGlobalFolder( "ui" );
+        Optional<File> globalUiPath = PolyphenyHomeDirManager.getInstance().getGlobalFile( "ui" );
 
-        if ( Objects.requireNonNull( globalUiPath.list() ).length != 0 ) {
-            log.info( "Using global UI path: {}", globalUiPath.getAbsolutePath() );
-            uiPath = globalUiPath;
+        if ( globalUiPath.isPresent() && globalUiPath.get().isDirectory() && Objects.requireNonNull( globalUiPath.get().list() ).length != 0 ) {
+            log.info( "Using global UI path: {}", globalUiPath.get().getAbsolutePath() );
+            uiPath = globalUiPath.get();
         }
         if ( !PolyphenyHomeDirManager.getInstance().isAccessible( uiPath ) ) {
             log.warn( "Cannot read ui files!" );

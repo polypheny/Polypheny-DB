@@ -66,7 +66,6 @@ compileJava {
 
 processResources {
     setDuplicatesStrategy(DuplicatesStrategy.WARN)
-    dependsOn(":webui:handleUi")
     if (!project.hasProperty('withoutpullingUi')) {
         dependsOn(":webui:downloadUiZip")
     }
@@ -104,8 +103,7 @@ task deleteUiOverwrite() {
 
 clean.dependsOn(deleteUiOverwrite)
 
-
-classes.dependsOn(":webui:handleUi")
+build.dependsOn(":webui:handleUi")
 
 
 task handleUi() {
