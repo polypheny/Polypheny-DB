@@ -23,6 +23,7 @@ import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 
+
 public class TestEdge extends TestGraphObject {
 
     @Nullable

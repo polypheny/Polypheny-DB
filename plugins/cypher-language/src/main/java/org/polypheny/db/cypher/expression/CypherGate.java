@@ -63,7 +63,7 @@ public class CypherGate extends CypherExpression {
                 operatorName = OperatorName.AND;
                 break;
             case XOR:
-                throw new UnsupportedOperationException();
+                throw new UnsupportedOperationException( "Unsupported cypher operator: " + gate );
             case NOT:
                 return handleSingular( context, type, OperatorName.NOT );
         }
