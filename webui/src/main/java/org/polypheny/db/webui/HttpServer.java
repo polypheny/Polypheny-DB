@@ -403,6 +403,8 @@ public class HttpServer implements Runnable {
         webuiServer.post( "/unloadPlugin", crud::unloadPlugin );
 
         webuiServer.get( "/getAvailablePlugins", crud::getAvailablePlugins );
+
+        webuiServer.get( "/getEnabledPlugins", crud::getEnabledPlugins );
     }
 
 

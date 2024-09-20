@@ -74,6 +74,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.eclipse.jetty.websocket.api.Session;
+import org.pf4j.PluginState;
+import org.polypheny.db.PolyImplementation;
+import org.polypheny.db.ResultIterator;
 import org.polypheny.db.adapter.AbstractAdapterSetting;
 import org.polypheny.db.adapter.AbstractAdapterSettingDirectory;
 import org.polypheny.db.adapter.Adapter;
@@ -147,7 +150,6 @@ import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.plugins.PolyPluginManager;
-import org.polypheny.db.plugins.PolyPluginManager.PluginStatus;
 import org.polypheny.db.processing.ImplementationContext;
 import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
 import org.polypheny.db.processing.QueryContext;
@@ -2971,12 +2973,12 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
 
     public void getAvailablePlugins( Context ctx ) {
-        ctx.json( PolyPluginManager
-                .getPLUGINS()
-                .values()
-                .stream()
-                .map( PluginStatus::from )
-                .toList() );
+        ctx.json( PolyPluginManager.getPLUGINS().keySet() );
+    }
+
+
+    public void getEnabledPlugins( Context ctx ) {
+        ctx.json( PolyPluginManager.getPLUGINS().entrySet().stream().filter( e -> e.getValue().getPluginState() == PluginState.STARTED ).map( Entry::getKey ).toList() );
     }
 
 
