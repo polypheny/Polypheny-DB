@@ -76,17 +76,8 @@ allprojects {
             url "https://clojars.org/repo/"
         }
         maven {
-            // DBIS Nexus
-            url "https://dbis-nexus.dmi.unibas.ch/repository/maven2/"
-        }
-        maven {
             url "https://oss.sonatype.org/content/repositories/snapshots/"
         }
-    }
-
-    configurations.configureEach {
-        // check for updates every build
-        resolutionStrategy.cacheChangingModulesFor 0, "seconds"
     }
 
     tasks.withType(Javadoc) {
