@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
 import lombok.Getter;
@@ -39,6 +40,7 @@ import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DeployMode;
+import org.polypheny.db.adapter.RelationalDataSource;
 import org.polypheny.db.adapter.RelationalScanDelegate;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.annotations.AdapterSettingString;
@@ -49,6 +51,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationTable;
@@ -69,7 +72,7 @@ import org.polypheny.db.util.PolyphenyHomeDirManager;
         usedModes = DeployMode.EMBEDDED,
         defaultMode = DeployMode.EMBEDDED)
 @AdapterSettingString(name = "rootDir", defaultValue = "")
-public class Qfs extends DataSource<RelAdapterCatalog> {
+public class Qfs extends DataSource<RelAdapterCatalog> implements RelationalDataSource {
 
     @Delegate(excludes = Exclude.class)
     private final RelationalScanDelegate delegate;
@@ -82,7 +85,7 @@ public class Qfs extends DataSource<RelAdapterCatalog> {
 
 
     public Qfs( long adapterId, String uniqueName, Map<String, String> settings, DeployMode mode ) {
-        super( adapterId, uniqueName, settings, mode, true, new RelAdapterCatalog( adapterId ) );
+        super( adapterId, uniqueName, settings, mode, true, new RelAdapterCatalog( adapterId ), Set.of( DataModel.RELATIONAL ) );
         init( settings );
         registerInformationPage( uniqueName );
         this.delegate = new RelationalScanDelegate( this, adapterCatalog );
@@ -224,7 +227,6 @@ public class Qfs extends DataSource<RelAdapterCatalog> {
     }
 
 
-    @Override
     public Map<String, List<ExportedColumn>> getExportedColumns() {
         //name, extension, path, mime, canExecute, canRead, canWrite, size, lastModified
         String physSchemaName = getUniqueName();
@@ -312,7 +314,7 @@ public class Qfs extends DataSource<RelAdapterCatalog> {
 
         int i = 2;
         for ( Map.Entry<String, List<ExportedColumn>> entry : getExportedColumns().entrySet() ) {
-            InformationGroup group = new InformationGroup( informationPage, entry.getValue().get( 0 ).physicalTableName ).setOrder( i++ );
+            InformationGroup group = new InformationGroup( informationPage, entry.getValue().get( 0 ).physicalTableName() ).setOrder( i++ );
             im.addGroup( group );
             informationGroups.add( group );
 
@@ -330,14 +332,20 @@ public class Qfs extends DataSource<RelAdapterCatalog> {
                 Arrays.asList( "Position", "Column Name", "Type", "Nullable", "Primary" ) );
         for ( ExportedColumn exportedColumn : entry.getValue() ) {
             table.addRow(
-                    exportedColumn.physicalPosition,
-                    exportedColumn.name,
+                    exportedColumn.physicalPosition(),
+                    exportedColumn.name(),
                     exportedColumn.getDisplayType(),
-                    exportedColumn.nullable ? "✔" : "",
-                    exportedColumn.primary ? "✔" : ""
+                    exportedColumn.nullable() ? "✔" : "",
+                    exportedColumn.primary() ? "✔" : ""
             );
         }
         return table;
+    }
+
+
+    @Override
+    public RelationalDataSource asRelationalDataSource() {
+        return this;
     }
 
 

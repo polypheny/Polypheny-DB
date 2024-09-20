@@ -24,6 +24,8 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.polypheny.db.adapter.DeployMode;
+import org.polypheny.db.adapter.DocumentDataSource;
+import org.polypheny.db.adapter.RelationalDataSource;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.annotations.AdapterSettingInteger;
 import org.polypheny.db.adapter.annotations.AdapterSettingString;
@@ -126,6 +128,36 @@ public class MonetdbSource extends AbstractJdbcSource {
         adapterCatalog.replacePhysical( physical );
 
         return List.of( physical );
+    }
+
+
+    @Override
+    public boolean supportsRelational() {
+        return true;
+    }
+
+
+    @Override
+    public boolean supportsDocument() {
+        return false;
+    }
+
+
+    @Override
+    public boolean supportsGraph() {
+        return false;
+    }
+
+
+    @Override
+    public RelationalDataSource asRelationalDataSource() {
+        return this;
+    }
+
+
+    @Override
+    public DocumentDataSource asDocumentDataSource() {
+        throw new IllegalStateException( "This source does not support the relational model." );
     }
 
 }

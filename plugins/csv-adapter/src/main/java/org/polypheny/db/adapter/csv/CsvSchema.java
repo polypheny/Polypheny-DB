@@ -42,7 +42,7 @@ import java.util.List;
 import java.util.Map;
 import lombok.Getter;
 import org.jetbrains.annotations.Nullable;
-import org.polypheny.db.adapter.DataSource.ExportedColumn;
+import org.polypheny.db.adapter.RelationalDataSource.ExportedColumn;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
@@ -90,15 +90,24 @@ public class CsvSchema extends Namespace {
         List<Integer> fieldIds = new ArrayList<>();
 
         List<ExportedColumn> columns = csvSource.getExportedColumns().get( table.name );
+        if ( columns == null ) {
+            /*
+            TODO:   The source determines table names by file name. The DdlManager enumerates duplicates like name0, name1 and so forth.
+                    This remains unnoticed by the source. 'getExportedColumns' thus returns the columns under a wrong name. A way must be found to sync the of the logical in the
+                    DdlManager with the name in the source. Currently we just fail the creation of sources with duplicate file names.
+             */
 
+            String unenumeratedEntityName = table.name.replaceAll( "\\d+$", "" );
+            throw new GenericRuntimeException( "A logical relational entity with name '" + unenumeratedEntityName + "' already exists." );
+        }
         for ( PhysicalColumn column : table.getColumns() ) {
             AlgDataType sqlType = sqlType( typeFactory, column.type, column.length, column.scale, null );
-            fieldInfo.add( column.id, column.name, columns.get( column.position ).physicalColumnName, sqlType ).nullable( column.nullable );
+            fieldInfo.add( column.id, column.name, columns.get( column.position ).physicalColumnName(), sqlType ).nullable( column.nullable );
             fieldTypes.add( CsvFieldType.getCsvFieldType( column.type ) );
             fieldIds.add( column.position );
         }
 
-        String csvFileName = columns.get( 0 ).physicalSchemaName;
+        String csvFileName = columns.get( 0 ).physicalSchemaName();
         Source source;
         try {
             source = Sources.of( new URL( directoryUrl, csvFileName ) );
@@ -111,9 +120,6 @@ public class CsvSchema extends Namespace {
     }
 
 
-    /**
-     * Creates different subtype of table based on the "flavor" attribute.
-     */
     private CsvTable createTable( long id, Source source, PhysicalTable table, List<CsvFieldType> fieldTypes, int[] fields, CsvSource csvSource ) {
         return switch ( flavor ) {
             case TRANSLATABLE -> new CsvTranslatableTable( id, source, table, fieldTypes, fields, csvSource );
