@@ -214,7 +214,11 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
             Connection connection = statement.getConnection();
             DatabaseMetaData dbmd = connection.getMetaData();
 
-            String[] tables = settings.get( "tables" ).split( "," );
+            String tablesString = settings.get("tables");
+            if ("*".equals(tablesString)) {
+                throw new GenericRuntimeException("Wildcard '*' is not allowed for table names.");
+            }
+            String[] tables = tablesString.split(",");
             for ( String str : tables ) {
                 String[] names = str.split( "\\." );
                 if ( names.length == 0 || names.length > 2 || (requiresSchema() && names.length == 1) ) {
