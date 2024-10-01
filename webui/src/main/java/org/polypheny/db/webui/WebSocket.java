@@ -178,7 +178,7 @@ public class WebSocket implements Consumer<WsConfig> {
                             }
                             case GRAPH -> LanguageCrud.anyQueryResult(
                                     QueryContext.builder()
-                                            .query( "MATCH (n) RETURN n" )
+                                            .query( "MATCH (n) RETURN n LIMIT 25" )
                                             .language( QueryLanguage.from( "cypher" ) )
                                             .origin( POLYPHENY_UI )
                                             .batch( uiRequest.noLimit ? -1 : crud.getPageSize() )
