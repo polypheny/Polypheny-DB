@@ -37,7 +37,7 @@ public class NeoGraphTest extends CypherTestTemplate {
     @BeforeAll
     public static void start() {
         try {
-            TestHelper.executeSQL( String.format( "ALTER ADAPTERS ADD \"%s\" USING 'Neo4j' AS 'STORE' WITH '{\"mode\":\"DOCKER\",\"instanceId\":\"3\"}'" , GRAPH_STORE ) );
+            TestHelper.executeSQL( String.format( "ALTER ADAPTERS ADD \"%s\" USING 'Neo4j' AS 'STORE' WITH '{\"mode\":\"DOCKER\",\"instanceId\":\"0\"}'" , GRAPH_STORE ) );
             CypherConnection.executeGetResponse( String.format( "CREATE DATABASE %s ON STORE %s", GRAPH_NAMESPACE, GRAPH_STORE ) );
         } catch ( Exception e ) {
             fail("Error on setting a neo4j docker store " + e.getMessage() );
