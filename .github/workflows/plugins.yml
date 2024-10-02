@@ -28,9 +28,9 @@ jobs:
             -   name: Print Java Version
                 timeout-minutes: 5
                 run: ./gradlew printJavaVersion
-            -   name: Print Docker Version
+            -   name: Docker Pull Test
                 timeout-minutes: 5
-                run: docker --version
+                run: docker pull polypheny/neo
             -   name: Assemble
                 timeout-minutes: 60
                 run: ./gradlew assemble -PwithoutpullingUi=true
