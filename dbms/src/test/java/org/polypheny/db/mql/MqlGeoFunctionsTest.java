@@ -46,13 +46,8 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
     final static String mongoAdapterName = "mongo";
     final static String mongoCollection = "mongo";
     final static String defaultCollection = "default";
-    final static List<String> collections = List.of( defaultCollection
-//            , mongoCollection
-    );
-    final static Map<String, String> collectionToStore = Map.of(
-            mongoCollection, mongoAdapterName,
-            defaultCollection, "hsqldb"
-    );
+    final static List<String> collections = List.of( defaultCollection, mongoCollection );
+    final static Map<String, String> collectionToStore = Map.of( mongoCollection, mongoAdapterName, defaultCollection, "hsqldb" );
     final static String clearCollection = """
             db.%s.deleteMany({})
             """;
@@ -69,6 +64,21 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
                     db.createCollection(%s).store(%s)
                     """.formatted( collection, collectionToStore.get( collection ) );
             execute( createCollection, namespace );
+
+            if ( collection.equals( "mongo" ) ) {
+                // For some geospatial queries like $near and $nearSphere we need to create a
+                // geospatial index.
+                // TODO: Create separate collections for both indexes: 2d and 3d.
+                // TODO: Index creation is currently not supported in Polypheny!
+                //         - Add syntax to MqlParser
+                //         - Throw exception, if executed on Polypheny: Not yet implemented
+                //         - correctly translate call to MongoDB translateCreateIndex
+                //         - TODO: In the future it could be possible to implement the mongo index.
+                String createIndex = """
+                        db.%s.createIndex({ legacy: "2d" })
+                        """.formatted( collection );
+                execute( createIndex, namespace );
+            }
         }
     }
 
@@ -76,48 +86,44 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
     @BeforeEach
     public void beforeEach() {
         // Make sure collections are emptied before each test.
-//        clearCollections();
+        clearCollections();
     }
 
 
     @Test
     public void docGeoIntersectsTest() {
         ArrayList<String> queries = new ArrayList<>();
-        queries.add(
-                """
-                        db.%s.insertMany([
-                            {
-                              name: "Legacy [0,0]",
-                              num: 1,
-                              legacy: [0,0]
-                            },
-                            {
-                              name: "Legacy [1,1]",
-                              num: 2,
-                              legacy: [1,1]
-                            },
-                            {
-                              name: "Legacy [2,2]",
-                              num: 3,
-                              legacy: [2,2]
-                            }
-                        ])
-                        """
-        );
-        queries.add(
-                """
-                        db.%s.find({
-                            legacy: {
-                               $geoIntersects: {
-                                  $geometry: {
-                                      type: "Polygon",
-                                      coordinates: [[ [0,0], [0,1], [1,1], [1,0], [0,0] ]]
-                                  }
-                               }
-                            }
-                        })
-                        """
-        );
+        queries.add( """
+                db.%s.insertMany([
+                    {
+                      name: "Legacy [0,0]",
+                      num: 1,
+                      legacy: [0,0]
+                    },
+                    {
+                      name: "Legacy [1,1]",
+                      num: 2,
+                      legacy: [1,1]
+                    },
+                    {
+                      name: "Legacy [2,2]",
+                      num: 3,
+                      legacy: [2,2]
+                    }
+                ])
+                """ );
+        queries.add( """
+                db.%s.find({
+                    legacy: {
+                       $geoIntersects: {
+                          $geometry: {
+                              type: "Polygon",
+                              coordinates: [[ [0,0], [0,1], [1,1], [1,0], [0,0] ]]
+                          }
+                       }
+                    }
+                })
+                """ );
         List<DocResult> results = runQueries( queries );
         compareResults( results );
     }
@@ -233,31 +239,31 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
 
 
     @Test
-    public void docsNearTest() {
-//        execute( """
-//                db.%s.insertMany([
-//                    {
-//                      name: "Legacy [2,2]",
-//                      num: 3,
-//                      legacy: [2,2]
-//                    }
-//                    {
-//                      name: "Legacy [0,0]",
-//                      num: 1,
-//                      legacy: [0,0]
-//                    },
-//                    {
-//                      name: "Legacy [3,3]",
-//                      num: 4,
-//                      legacy: [3,3]
-//                    }
-//                    {
-//                      name: "Legacy [1,1]",
-//                      num: 2,
-//                      legacy: [1,1]
-//                    },
-//                ])
-//                """.formatted( defaultCollection ), namespace );
+    public void docsNearTestOnlyHsqldb() {
+        execute( """
+                db.%s.insertMany([
+                    {
+                      name: "Legacy [2,2]",
+                      num: 3,
+                      legacy: [2,2]
+                    }
+                    {
+                      name: "Legacy [0,0]",
+                      num: 1,
+                      legacy: [0,0]
+                    },
+                    {
+                      name: "Legacy [3,3]",
+                      num: 4,
+                      legacy: [3,3]
+                    }
+                    {
+                      name: "Legacy [1,1]",
+                      num: 2,
+                      legacy: [1,1]
+                    },
+                ])
+                """.formatted( defaultCollection ), namespace );
         DocResult result = execute( """
                 db.%s.find({
                     legacy: {
@@ -271,7 +277,47 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
 
 
     @Test
-    public void docGeoNearTest(){
+    public void docsNearTest() {
+        ArrayList<String> queries = new ArrayList<>();
+        queries.add( """
+                db.%s.insertMany([
+                    {
+                      name: "Legacy [2,2]",
+                      num: 3,
+                      legacy: [2,2]
+                    }
+                    {
+                      name: "Legacy [0,0]",
+                      num: 1,
+                      legacy: [0,0]
+                    },
+                    {
+                      name: "Legacy [3,3]",
+                      num: 4,
+                      legacy: [3,3]
+                    }
+                    {
+                      name: "Legacy [1,1]",
+                      num: 2,
+                      legacy: [1,1]
+                    },
+                ])
+                """ );
+        queries.add( """
+                db.%s.find({
+                    legacy: {
+                       $near: [0,0],
+                       $maxDistance: 10
+                    }
+                })
+                """ );
+        List<DocResult> results = runQueries( queries );
+        compareResults( results );
+    }
+
+
+    @Test
+    public void docGeoNearTest() {
 //        DocResult result = execute( """
 //                db.%s.aggregate([
 //                  {
@@ -329,6 +375,7 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
         System.out.println( "Test" );
     }
 
+
     @Test
     public void ProjectionTest() {
         execute( """
@@ -370,6 +417,7 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
                 """.formatted( defaultCollection ), namespace );
         System.out.println( "Test" );
     }
+
 
     @Test
     public void PipelineTest() {

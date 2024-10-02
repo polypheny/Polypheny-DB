@@ -66,6 +66,7 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.language.fun.SqlItemOperator;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.spatial.PolyGeometry;
@@ -320,6 +321,9 @@ public class MongoFilter extends Filter implements MongoAlg {
                     return;
                 case MQL_GEO_WITHIN:
                     translateGeoWithin( (RexCall) node );
+                    return;
+                case MQL_NEAR:
+                    translateNear( (RexCall) node );
                     return;
                 case IS_NOT_TRUE:
                     translateIsTrue( (RexCall) node, true );
@@ -734,6 +738,55 @@ public class MongoFilter extends Filter implements MongoAlg {
             // Something went wrong. Either we did not handle all cases, or the input is not as expected,
             // and should never have been parsed correctly in the first place.
             throw new GenericRuntimeException( "Cannot translate $geoWithin to MongoDB query." );
+        }
+
+        private void translateNear( RexCall node ) {
+            assert node.operands.size() == 4;
+            String left = getParamAsKey( node.operands.get( 0 ) );
+            PolyGeometry filterGeometry = getLiteralAs( node, 1, PolyValue::asGeometry );
+            PolyNumber minDistance = getLiteralAs( node, 2, p -> (PolyNumber)p );
+            PolyNumber maxDistance = getLiteralAs( node, 3, p -> (PolyNumber)p );
+
+            if(filterGeometry.getSRID() == 0){
+                // We have no SRID -> Use legacy coordinates like this:
+                // $near: [ 0, 0 ]
+                BsonDocument leftBody = new BsonDocument();
+                BsonArray legacyCoordinates = new BsonArray();
+                legacyCoordinates.add(new BsonDouble(filterGeometry.asPoint().getX()));
+                legacyCoordinates.add(new BsonDouble(filterGeometry.asPoint().getY()));
+                leftBody.put("$near", legacyCoordinates );
+
+                // Only $minDistance is allowed when $near is used with legacy coordinates.
+                if ( !maxDistance.isInteger() || maxDistance.intValue() != -1 ) {
+                    leftBody.put("$maxDistance", BsonUtil.getAsBson( maxDistance, maxDistance.type, bucket  ) );
+                }
+
+                // Executing this query requires the 2d index to be created on the 'left' field.
+                attachCondition( null, left, leftBody );
+                return;
+            } else {
+                // We have an SRID. This could be because of two cases:
+                // We use $nearSphere with legacy coordinates OR We use $near or $nearSphere with a GeoJSON object
+                // In both cases can we convert the object to a GeoJSON object
+                BsonDocument leftBody = new BsonDocument();
+                BsonDocument near = new BsonDocument();
+                leftBody.put("$near", near );
+                near.put("$geometry", BsonDocument.parse( filterGeometry.toJson() ) );
+
+                if ( !minDistance.isInteger() || minDistance.intValue() != -1 ) {
+                    near.put("$minDistance", BsonUtil.getAsBson( minDistance, minDistance.type, bucket  ) );
+                }
+                if ( !maxDistance.isInteger() || maxDistance.intValue() != -1 ) {
+                    near.put("$maxDistance", BsonUtil.getAsBson( maxDistance, maxDistance.type, bucket  ) );
+                }
+
+                // Executing this query requires the 2dsphere index to be created on the 'left' field.
+                attachCondition( null, left, leftBody );
+            }
+
+            // Something went wrong. Either we did not handle all cases, or the input is not as expected,
+            // and should never have been parsed correctly in the first place.
+            throw new GenericRuntimeException( "Cannot translate $near to MongoDB query." );
         }
 
         private void translateGeoIntersects( RexCall node ) {
