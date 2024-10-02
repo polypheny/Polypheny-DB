@@ -27,6 +27,7 @@ jobs:
                     echo "POLYPHENY_HOME=$GITHUB_WORKSPACE" >> $GITHUB_ENV
             -   name: Print Java Version
                 timeout-minutes: 5
+                run: ./gradlew printJavaVersion
             -   name: Print Docker Version
                 timeout-minutes: 5
                 run: docker --version
