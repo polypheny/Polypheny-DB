@@ -42,6 +42,8 @@ public class CypherFunctionInvocation extends CypherExpression {
         this.namespace = namespace;
         if ( operatorNames.contains( image.toUpperCase( Locale.ROOT ) ) ) {
             this.op = OperatorName.valueOf( image.toUpperCase( Locale.ROOT ) );
+        } else if (operatorNames.contains( "CYPHER_" + image.toUpperCase( Locale.ROOT ) )) {
+            this.op = OperatorName.valueOf( "CYPHER_" + image.toUpperCase( Locale.ROOT ) );
         } else {
             throw new GenericRuntimeException( "Used function is not supported!" );
         }

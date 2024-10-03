@@ -1723,6 +1723,8 @@ public enum OperatorName {
 
     CYPHER_GEO_WITHIN( LangFunctionOperator.class ),
 
+    CYPHER_POINT( LangFunctionOperator.class ),
+
     // CROSS MODEL FUNCTION
 
     CROSS_MODEL_ITEM( LangFunctionOperator.class ),

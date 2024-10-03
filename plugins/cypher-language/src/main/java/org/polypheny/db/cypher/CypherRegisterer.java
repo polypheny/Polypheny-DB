@@ -86,6 +86,8 @@ public class CypherRegisterer {
 
         register( OperatorName.CYPHER_GEO_WITHIN, new LangFunctionOperator( "GEO_WITHIN", Kind.CYPHER_FUNCTION ) );
 
+        register( OperatorName.CYPHER_POINT, new LangFunctionOperator( "CYPHER_POINT", Kind.CYPHER_FUNCTION ) );
+
         isInit = true;
     }
 
