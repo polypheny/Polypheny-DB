@@ -307,7 +307,7 @@ public class PolyValueSerializer {
         return switch ( value.getType() ) {
             case NODE -> GraphElement.newBuilder().setNode( buildProtoNode( value.asNode() ) ).build();
             case EDGE -> GraphElement.newBuilder().setEdge( buildProtoEdge( value.asEdge() ) ).build();
-            default -> throw new RuntimeException("Invalid graph element " + value.getType() );
+            default -> throw new RuntimeException( "Invalid graph element " + value.getType() );
         };
     }
 
@@ -340,18 +340,11 @@ public class PolyValueSerializer {
 
 
     private static Direction buildProtoEdgeDirection( EdgeDirection direction ) {
-        switch ( direction ) {
-            case LEFT_TO_RIGHT -> {
-                return Direction.LEFT_TO_RIGHT;
-            }
-            case RIGHT_TO_LEFT -> {
-                return Direction.RIGHT_TO_LEFT;
-            }
-            case NONE -> {
-                return Direction.NONE;
-            }
-        }
-        return Direction.UNSPECIFIED;
+        return switch ( direction ) {
+            case LEFT_TO_RIGHT -> Direction.LEFT_TO_RIGHT;
+            case RIGHT_TO_LEFT -> Direction.RIGHT_TO_LEFT;
+            case NONE -> Direction.NONE;
+        };
     }
 
 }
