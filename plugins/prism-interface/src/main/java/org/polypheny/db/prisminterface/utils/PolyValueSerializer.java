@@ -329,8 +329,8 @@ public class PolyValueSerializer {
                 .setId( polyEdge.getId().getValue() )
                 .addAllLabels( polyEdge.getLabels().stream().map( PolyString::getValue ).toList() )
                 .putAllProperties( serializeToProtoMap( polyEdge.properties.asMap() ) )
-                .setLeft( polyEdge.getSource().getValue() )
-                .setRight( polyEdge.getTarget().getValue() )
+                .setLeft( polyEdge.getLeft().getValue() )
+                .setRight( polyEdge.getRight().getValue() )
                 .setDirection( buildProtoEdgeDirection( polyEdge.getDirection() ) );
         if ( !(polyEdge.variableName == null) ) {
             edge.setName( polyEdge.getVariableName().getValue() );

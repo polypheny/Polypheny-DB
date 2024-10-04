@@ -191,8 +191,8 @@ public class LogicalLpgValues extends LpgValues implements RelationalTransformab
             row.add( getStringLiteral( edge.id.value, ID_TYPE ) );
             row.add( getStringLiteral( edge.labels.get( 0 ).value, LABEL_TYPE ) );
 
-            row.add( getStringLiteral( edge.source.value, ID_TYPE ) );
-            row.add( getStringLiteral( edge.target.value, ID_TYPE ) );
+            row.add( getStringLiteral( edge.left.value, ID_TYPE ) );
+            row.add( getStringLiteral( edge.right.value, ID_TYPE ) );
             rows.add( row.build() );
         }
 
