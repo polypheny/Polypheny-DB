@@ -27,6 +27,8 @@ import org.polypheny.db.transaction.Statement;
 
 public class MqlCreateIndex extends MqlNode implements ExecutableStatement {
 
+    // Key = field on which index should be created
+    // Value = index type 2d or 2dsphere
     private final BsonDocument options;
     private final String collection;
 
@@ -60,7 +62,7 @@ public class MqlCreateIndex extends MqlNode implements ExecutableStatement {
 
     @Override
     public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
-        // Do nothing for now
+        throw new UnsupportedOperationException();
     }
 
 }
