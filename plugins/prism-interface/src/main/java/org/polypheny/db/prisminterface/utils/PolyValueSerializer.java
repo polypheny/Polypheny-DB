@@ -17,6 +17,7 @@
 package org.polypheny.db.prisminterface.utils;
 
 import com.google.protobuf.ByteString;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.lang3.NotImplementedException;
@@ -31,7 +32,6 @@ import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyEdge.EdgeDirection;
 import org.polypheny.db.type.entity.graph.PolyNode;
-import org.polypheny.db.type.entity.graph.PolyPath;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyFloat;
@@ -41,6 +41,7 @@ import org.polypheny.db.type.entity.relational.PolyMap;
 import org.polypheny.db.type.entity.temporal.PolyDate;
 import org.polypheny.db.type.entity.temporal.PolyTime;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
+import org.polypheny.prism.GraphElement;
 import org.polypheny.prism.ProtoBigDecimal;
 import org.polypheny.prism.ProtoBinary;
 import org.polypheny.prism.ProtoBoolean;
@@ -49,7 +50,6 @@ import org.polypheny.prism.ProtoDocument;
 import org.polypheny.prism.ProtoDouble;
 import org.polypheny.prism.ProtoEdge;
 import org.polypheny.prism.ProtoEdge.Direction;
-import org.polypheny.prism.ProtoEntry;
 import org.polypheny.prism.ProtoFloat;
 import org.polypheny.prism.ProtoInteger;
 import org.polypheny.prism.ProtoInterval;
@@ -57,7 +57,6 @@ import org.polypheny.prism.ProtoList;
 import org.polypheny.prism.ProtoLong;
 import org.polypheny.prism.ProtoNode;
 import org.polypheny.prism.ProtoNull;
-import org.polypheny.prism.ProtoPath;
 import org.polypheny.prism.ProtoString;
 import org.polypheny.prism.ProtoTime;
 import org.polypheny.prism.ProtoTimestamp;
@@ -71,16 +70,12 @@ public class PolyValueSerializer {
     }
 
 
-    public static List<ProtoEntry> serializeToProtoEntryList( PolyMap<PolyValue, PolyValue> polyMap ) {
-        return polyMap.entrySet().stream().map( PolyValueSerializer::serializeToProtoEntry ).toList();
-    }
+    public static Map<String, ProtoValue> serializeToProtoMap( PolyMap<PolyValue, PolyValue> polyMap ) {
+        Map<String, ProtoValue> map = new HashMap<>();
 
+        polyMap.forEach( ( k, v ) -> map.put( k.asString().value, PolyValueSerializer.serialize( v ) ) );
 
-    public static ProtoEntry serializeToProtoEntry( Map.Entry<PolyValue, PolyValue> polyMapEntry ) {
-        return ProtoEntry.newBuilder()
-                .setKey( serialize( polyMapEntry.getKey() ) )
-                .setValue( serialize( polyMapEntry.getValue() ) )
-                .build();
+        return map;
     }
 
 
@@ -303,16 +298,25 @@ public class PolyValueSerializer {
 
     public static ProtoDocument buildProtoDocument( PolyDocument polyDocument ) {
         return ProtoDocument.newBuilder()
-                .addAllEntries( serializeToProtoEntryList( polyDocument.asMap() ) )
+                .putAllEntries( serializeToProtoMap( polyDocument.asMap() ) )
                 .build();
+    }
+
+
+    public static GraphElement buildProtoGraphElement( PolyValue value ) {
+        return switch ( value.getType() ) {
+            case NODE -> GraphElement.newBuilder().setNode( buildProtoNode( value.asNode() ) ).build();
+            case EDGE -> GraphElement.newBuilder().setEdge( buildProtoEdge( value.asEdge() ) ).build();
+            default -> throw new RuntimeException("Invalid graph element " + value.getType() );
+        };
     }
 
 
     public static ProtoNode buildProtoNode( PolyNode polyNode ) {
         ProtoNode.Builder node = ProtoNode.newBuilder()
                 .setId( polyNode.getId().getValue() )
-                .addAllLabels( polyNode.getLabels().stream().map( l -> l.getValue() ).collect( Collectors.toList() ) )
-                .addAllProperties( serializeToProtoEntryList( polyNode.properties.asMap() ) );
+                .addAllLabels( polyNode.getLabels().stream().map( PolyString::getValue ).toList() )
+                .putAllProperties( serializeToProtoMap( polyNode.properties.asMap() ) );
         if ( !(polyNode.variableName == null) ) {
             node.setName( polyNode.variableName.getValue() );
         }
@@ -323,10 +327,10 @@ public class PolyValueSerializer {
     public static ProtoEdge buildProtoEdge( PolyEdge polyEdge ) {
         ProtoEdge.Builder edge = ProtoEdge.newBuilder()
                 .setId( polyEdge.getId().getValue() )
-                .addAllLabels( polyEdge.getLabels().stream().map( l -> l.getValue() ).collect( Collectors.toList() ) )
-                .addAllProperties( serializeToProtoEntryList( polyEdge.properties.asMap() ) )
-                .setSource( polyEdge.getSource().getValue() )
-                .setTarget( polyEdge.getTarget().getValue() )
+                .addAllLabels( polyEdge.getLabels().stream().map( PolyString::getValue ).toList() )
+                .putAllProperties( serializeToProtoMap( polyEdge.properties.asMap() ) )
+                .setLeft( polyEdge.getSource().getValue() )
+                .setRight( polyEdge.getTarget().getValue() )
                 .setDirection( buildProtoEdgeDirection( polyEdge.getDirection() ) );
         if ( !(polyEdge.variableName == null) ) {
             edge.setName( polyEdge.getVariableName().getValue() );
@@ -349,17 +353,5 @@ public class PolyValueSerializer {
         }
         return Direction.UNSPECIFIED;
     }
-
-
-    public static ProtoPath buildProtoPath( PolyPath polyPath ) {
-        /*
-            TODO:   implement paths for graph results
-                    1) implement the proto value ProtoPath
-                    2) implement serialization here
-                    3) add fields to dummy class in drivers
-        */
-        throw new NotImplementedException("Paths can not yet be serialized.");
-    }
-
 
 }
