@@ -64,7 +64,7 @@ public class StatementProcessor {
                 .query( piStatement.getQuery() )
                 .language( piStatement.getLanguage() )
                 .namespaceId( piStatement.getNamespace().id )
-                .transactions( List.of(piStatement.getTransaction()) )
+                .transactions( List.of( piStatement.getTransaction() ) )
                 .origin( ORIGIN )
                 .build();
         List<ImplementationContext> implementations = LanguageManager.getINSTANCE().anyPrepareQuery( context, statement );
