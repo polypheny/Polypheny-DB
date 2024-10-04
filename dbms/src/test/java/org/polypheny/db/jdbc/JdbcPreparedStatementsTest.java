@@ -1160,4 +1160,67 @@ public class JdbcPreparedStatementsTest {
         }
     }
 
+
+    @Test
+    public void transactionTest() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( "CREATE TABLE transactions( "
+                        + "id INTEGER PRIMARY KEY, "
+                        + "ttext TEXT NOT NULL) " );
+
+                try {
+                    PreparedStatement preparedInsert = connection.prepareStatement( "INSERT INTO transactions(id, ttext) VALUES (?, ?)" );
+
+                    preparedInsert.setInt( 1, 1 );
+                    preparedInsert.setString( 2, "Row A" );
+                    preparedInsert.addBatch();
+
+                    preparedInsert.setInt( 1, 2 );
+                    preparedInsert.setString( 2, "Row 2" );
+                    preparedInsert.addBatch();
+
+                    preparedInsert.executeBatch();
+
+                    connection.commit();
+                } catch ( Throwable t ) {
+                    statement.executeUpdate( "DROP TABLE transactions" );
+                    throw t;
+                }
+            }
+        }
+
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                try {
+                    PreparedStatement preparedSelect = connection.prepareStatement( "SELECT * FROM transactions WHERE id = ?" );
+                    preparedSelect.setInt( 1, 1 );
+                    preparedSelect.execute();
+                    preparedSelect.getResultSet().close();
+
+                    PreparedStatement preparedUpdate = connection.prepareStatement( "UPDATE transactions SET ttext = ? WHERE id = ?" );
+                    preparedUpdate.setString( 1, "Row 1" );
+                    preparedUpdate.setInt( 2, 1 );
+                    preparedUpdate.execute();
+
+                    connection.commit();
+
+                    PreparedStatement preparedSelect2 = connection.prepareStatement( "SELECT * FROM transactions WHERE id = ?" );
+                    preparedSelect2.setInt( 1, 1 );
+                    preparedSelect2.execute();
+                    preparedSelect2.getResultSet().close();
+
+                    preparedSelect.setInt( 1, 1 );
+                    preparedSelect.execute();
+
+                    connection.commit();
+                } finally {
+                    statement.executeUpdate( "DROP TABLE transactions" );
+                }
+            }
+        }
+    }
+
 }

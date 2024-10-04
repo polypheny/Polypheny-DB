@@ -17,6 +17,7 @@
 package org.polypheny.db.prisminterface.statements;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -28,6 +29,7 @@ import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.prisminterface.PIClient;
 import org.polypheny.db.prisminterface.PIServiceException;
+import org.polypheny.db.transaction.Statement;
 import org.polypheny.prism.ExecuteUnparameterizedStatementRequest;
 import org.polypheny.prism.PrepareStatementRequest;
 
@@ -36,8 +38,8 @@ public class StatementManager {
 
     private final AtomicInteger statementIdGenerator;
     private final PIClient client;
-    private ConcurrentHashMap<Integer, PIStatement> openStatements;
-    private ConcurrentHashMap<Integer, PIUnparameterizedStatementBatch> openUnparameterizedBatches;
+    private final Map<Integer, PIStatement> openStatements;
+    private final Map<Integer, PIUnparameterizedStatementBatch> openUnparameterizedBatches;
 
 
     public StatementManager( PIClient client ) {
@@ -190,25 +192,29 @@ public class StatementManager {
         if ( statement == null ) {
             throw new PIServiceException( "A statement with id " + statementId + " does not exist for that client" );
         }
+        Statement s = statement.getStatement();
+        if ( s != null && s.getTransaction().getId() != client.getOrCreateNewTransaction().getId() ) {
+            statement.setStatement( client.getCurrentTransaction().createStatement() );
+        }
         return statement;
     }
 
 
     public PIPreparedNamedStatement getNamedPreparedStatement( int statementId ) throws PIServiceException {
         PIStatement statement = getStatement( statementId );
-        if ( !(statement instanceof PIPreparedNamedStatement) ) {
+        if ( !(statement instanceof PIPreparedNamedStatement prepared) ) {
             throw new PIServiceException( "A named prepared statement with id " + statementId + " does not exist for that client" );
         }
-        return (PIPreparedNamedStatement) statement;
+        return prepared;
     }
 
 
     public PIPreparedIndexedStatement getIndexedPreparedStatement( int statementId ) throws PIServiceException {
         PIStatement statement = getStatement( statementId );
-        if ( !(statement instanceof PIPreparedIndexedStatement) ) {
+        if ( !(statement instanceof PIPreparedIndexedStatement prepared) ) {
             throw new PIServiceException( "A prepared indexed statement with id " + statementId + " does not exist for that client" );
         }
-        return (PIPreparedIndexedStatement) statement;
+        return prepared;
     }
 
 

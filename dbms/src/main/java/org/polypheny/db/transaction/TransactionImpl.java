@@ -199,6 +199,9 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
             for ( Adapter<?> adapter : involvedAdapters ) {
                 adapter.commit( xid );
             }
+            if ( involvedAdapters.isEmpty() ) {
+                log.debug( "No adapter used." );
+            }
 
             this.statements.forEach( statement -> {
                 if ( statement.getMonitoringEvent() != null ) {
@@ -280,6 +283,9 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
     @Override
     public StatementImpl createStatement() {
+        if ( !isActive() ) {
+            throw new IllegalStateException( "Transaction is not active!" );
+        }
         StatementImpl statement = new StatementImpl( this );
         statements.add( statement );
         return statement;
@@ -289,7 +295,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     @Override
     public int compareTo( @NonNull Object o ) {
         Transaction that = (Transaction) o;
-        return this.xid.hashCode() - that.getXid().hashCode();
+        return Integer.compare( this.xid.hashCode(), that.getXid().hashCode() );
     }
 
 

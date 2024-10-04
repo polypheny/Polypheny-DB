@@ -466,7 +466,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
         if ( connectionFactory.hasConnectionHandler( xid ) ) {
             try {
                 connectionFactory.getConnectionHandler( xid ).commit();
-            } catch ( ConnectionHandlerException e ) {
+            } catch ( Throwable e ) {
                 throw new GenericRuntimeException( e );
             }
         } else {

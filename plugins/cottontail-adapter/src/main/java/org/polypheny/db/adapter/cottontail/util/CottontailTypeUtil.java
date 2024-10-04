@@ -277,6 +277,8 @@ public class CottontailTypeUtil {
             case DECIMAL: {
                 if ( value.isNumber() ) {
                     return builder.setStringData( value.asNumber().BigDecimalValue().toString() ).build();
+                } else if ( value.isString() ) {
+                    return builder.setStringData( value.asString().value ).build();
                 }
                 break;
             }

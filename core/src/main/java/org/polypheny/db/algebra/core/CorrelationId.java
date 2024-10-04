@@ -109,7 +109,7 @@ public class CorrelationId implements Cloneable, Comparable<CorrelationId> {
 
     @Override
     public int compareTo( CorrelationId other ) {
-        return id - other.id;
+        return Integer.compare( id, other.id );
     }
 
 

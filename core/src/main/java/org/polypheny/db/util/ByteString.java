@@ -103,7 +103,7 @@ public class ByteString implements Comparable<ByteString>, Serializable {
                 return c1 - c2;
             }
         }
-        return v1.length - v2.length;
+        return Integer.compare( v1.length, v2.length );
     }
 
 
