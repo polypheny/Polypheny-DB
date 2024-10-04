@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Iterator;
+import java.util.List;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper.JdbcConnection;
@@ -32,8 +33,9 @@ import org.polypheny.jdbc.multimodel.GraphResult;
 import org.polypheny.jdbc.multimodel.PolyRow;
 import org.polypheny.jdbc.multimodel.PolyStatement;
 import org.polypheny.jdbc.multimodel.RelationalResult;
+import org.polypheny.jdbc.types.PolyEdge;
 import org.polypheny.jdbc.types.PolyGraphElement;
-import org.polypheny.jdbc.types.PolyPath;
+import org.polypheny.jdbc.types.PolyNode;
 
 public class CypherTest {
 
@@ -122,8 +124,24 @@ public class CypherTest {
             Iterator<PolyGraphElement> elements = result.iterator();
 
             assertTrue( elements.hasNext() );
-            PolyGraphElement element = elements.next();
-            PolyPath path = element.unwrap( PolyPath.class );
+            PolyNode alice = elements.next().unwrap( PolyNode.class );
+            assertEquals( alice.getLabels(), List.of( "Person" ) );
+            assertEquals( alice.get("name").asString(), "Alice");
+
+            PolyEdge knows = elements.next().unwrap( PolyEdge.class );
+            assertEquals( knows.getLabels(), List.of( "KNOWS" ) );
+
+            PolyNode bob = elements.next().unwrap( PolyNode.class );
+            assertEquals( bob.getLabels(), List.of( "Person" ) );
+            assertEquals( bob.get("name").asString(), "Bob");
+
+            knows = elements.next().unwrap( PolyEdge.class );
+            assertEquals( knows.getLabels(), List.of( "KNOWS" ) );
+
+            PolyNode charlie = elements.next().unwrap( PolyNode.class );
+            assertEquals( charlie.getLabels(), List.of( "Person" ) );
+            assertEquals( charlie.get("name").asString(), "Charlie");
+
             assertFalse( elements.hasNext() );
         }
     }
