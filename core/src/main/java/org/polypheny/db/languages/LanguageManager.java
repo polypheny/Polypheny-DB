@@ -164,7 +164,6 @@ public class LanguageManager {
                     implementation = processor.prepareDdl( statement, (ExecutableStatement) parsed.getQueryNode().get(), parsed );
                     previousDdl = true;
                 } else {
-                    // as long as we directly commit the transaction, we cannot reuse the same transaction
                     previousDdl = false;
                     if ( parsed.getLanguage().validatorSupplier() != null ) {
                         if ( transaction.isAnalyze() ) {
