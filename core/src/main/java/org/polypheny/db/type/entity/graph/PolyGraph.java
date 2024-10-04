@@ -208,24 +208,24 @@ public class PolyGraph extends GraphObject {
             // for one only edges, which have matching nodes are considered,
             // additionally only not used edges can be use, relationship isomorphism prohibits this
             BiPredicate<PolyEdge, TreePart> filter =
-                    segment.direction == EdgeDirection.LEFT_TO_RIGHT ? (( e, p ) -> !p.usedEdgesIds.contains( e.id ) && e.source.equals( p.targetId )) :
-                            segment.direction == EdgeDirection.RIGHT_TO_LEFT ? (( e, p ) -> !p.usedEdgesIds.contains( e.id ) && e.target.equals( p.targetId )) :
-                                    (( e, p ) -> !p.usedEdgesIds.contains( e.id ) && (e.target.equals( p.targetId ) || e.source.equals( p.targetId )));
+                    segment.direction == EdgeDirection.LEFT_TO_RIGHT ? (( e, p ) -> !p.usedEdgesIds.contains( e.id ) && e.left.equals( p.targetId )) :
+                            segment.direction == EdgeDirection.RIGHT_TO_LEFT ? (( e, p ) -> !p.usedEdgesIds.contains( e.id ) && e.right.equals( p.targetId )) :
+                                    (( e, p ) -> !p.usedEdgesIds.contains( e.id ) && (e.right.equals( p.targetId ) || e.left.equals( p.targetId )));
 
             for ( TreePart part : last ) {
                 // only loop matching connections
                 for ( PolyEdge edge : edges.values().stream().filter( e -> filter.test( e, part ) ).toList() ) {
-                    PolyNode left = nodes.get( edge.source );
-                    PolyNode right = nodes.get( edge.target );
+                    PolyNode left = nodes.get( edge.left );
+                    PolyNode right = nodes.get( edge.right );
                     // then check if it matches pattern of segment either ()->() or ()-() depending if direction is specified
                     if ( segment.direction == EdgeDirection.LEFT_TO_RIGHT || segment.direction == EdgeDirection.NONE ) {
-                        if ( segment.matches( left, edge, right ) && !part.usedEdgesIds.contains( edge.id ) && part.targetId.equals( edge.source ) ) {
-                            matches.add( new TreePart( part, edge.id, edge.target, segment.edge.getVariableName(), segment.target.getVariableName() ) );
+                        if ( segment.matches( left, edge, right ) && !part.usedEdgesIds.contains( edge.id ) && part.targetId.equals( edge.left ) ) {
+                            matches.add( new TreePart( part, edge.id, edge.right, segment.edge.getVariableName(), segment.target.getVariableName() ) );
                         }
                     }
                     if ( segment.direction == EdgeDirection.RIGHT_TO_LEFT || segment.direction == EdgeDirection.NONE ) {
-                        if ( segment.matches( right, edge, left ) && !part.usedEdgesIds.contains( edge.id ) && part.targetId.equals( edge.target ) ) {
-                            matches.add( new TreePart( part, edge.id, edge.source, segment.edge.getVariableName(), segment.target.getVariableName() ) );
+                        if ( segment.matches( right, edge, left ) && !part.usedEdgesIds.contains( edge.id ) && part.targetId.equals( edge.right ) ) {
+                            matches.add( new TreePart( part, edge.id, edge.left, segment.edge.getVariableName(), segment.target.getVariableName() ) );
                         }
                     }
 
@@ -248,18 +248,18 @@ public class PolyGraph extends GraphObject {
     private void attachEmptyStubs( PolySegment segment, List<TreePart> root ) {
         Set<Pair<PolyString, PolyString>> usedIds = new HashSet<>();
         for ( PolyEdge edge : edges.values() ) {
-            PolyNode left = nodes.get( edge.source );
-            PolyNode right = nodes.get( edge.target );
+            PolyNode left = nodes.get( edge.left );
+            PolyNode right = nodes.get( edge.right );
             // We attach stubs, which allows ()->() and ()-()
             if ( segment.direction == EdgeDirection.LEFT_TO_RIGHT || segment.direction == EdgeDirection.NONE ) {
                 if ( segment.matches( left, edge, right ) ) {
-                    usedIds.add( Pair.of( edge.source, segment.source.getVariableName() ) );
+                    usedIds.add( Pair.of( edge.left, segment.source.getVariableName() ) );
                 }
             }
             // We attach stubs, which allows ()<-() and ()-() AKA inverted
             if ( segment.direction == EdgeDirection.RIGHT_TO_LEFT || segment.direction == EdgeDirection.NONE ) {
                 if ( segment.matches( right, edge, left ) ) {
-                    usedIds.add( Pair.of( edge.target, segment.source.getVariableName() ) );
+                    usedIds.add( Pair.of( edge.right, segment.source.getVariableName() ) );
                 }
             }
         }
