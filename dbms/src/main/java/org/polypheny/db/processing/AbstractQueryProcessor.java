@@ -169,6 +169,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
     protected AbstractQueryProcessor( Statement statement ) {
         this.statement = statement;
+        if ( !statement.getTransaction().isActive() ) {
+            throw new GenericRuntimeException( "Transaction is not active" );
+        }
     }
 
 

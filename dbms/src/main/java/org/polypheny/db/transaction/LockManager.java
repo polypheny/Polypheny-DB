@@ -19,10 +19,12 @@ package org.polypheny.db.transaction;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
 import javax.transaction.xa.Xid;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -31,6 +33,8 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.transaction.Lock.LockMode;
 import org.polypheny.db.util.DeadlockException;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.Triple;
 
 @Slf4j
 public class LockManager {
@@ -39,7 +43,7 @@ public class LockManager {
 
     private boolean isExclusive = false;
     private final Set<Xid> owners = new HashSet<>();
-    private final ConcurrentLinkedQueue<Thread> waiters = new ConcurrentLinkedQueue<>();
+    private ConcurrentLinkedQueue<Triple<Thread, LockMode, Xid>> waiters = new ConcurrentLinkedQueue<>();
     private final ReentrantLock lock = new ReentrantLock();
     private final Condition condition = lock.newCondition();
 
@@ -62,17 +66,19 @@ public class LockManager {
         }
         Thread thread = Thread.currentThread();
 
-        waiters.add( thread );
+        waiters.add( Triple.of( thread, mode, transaction.getXid() ) );
 
         // wait
         while ( true ) {
             lock.lock();
             try {
-                while ( waiters.peek() != thread ) {
+                while ( waiters.peek() != null && waiters.peek().left != thread ) {
                     log.debug( "wait {} ", transaction.getXid() );
                     boolean successful = condition.await( RuntimeConfig.LOCKING_MAX_TIMEOUT_SECONDS.getInteger(), TimeUnit.SECONDS );
                     if ( !successful ) {
                         cleanup( thread );
+                        log.warn( "open transactions isExclusive: {} in {}", isExclusive, owners );
+                        log.warn( "waiters {}", waiters );
                         throw new DeadlockException( new GenericRuntimeException( "Could not acquire lock, after max timeout was reached" ) );
                     }
                 }
@@ -91,21 +97,33 @@ public class LockManager {
                     signalAll();
 
                     return;
+                }else if ( owners.contains( transaction.getXid() ) && (mode == LockMode.EXCLUSIVE ) && waiters.stream().allMatch( w -> owners.contains( w.right ) && w.middle == LockMode.EXCLUSIVE ) ) {
+                    // we have to interrupt one transaction, both want to upgrade
+                    throw new DeadlockException( new GenericRuntimeException( "Unable to upgrade multiple locks simultaneously!" ) );
                 }
 
                 if ( owners.isEmpty() ) {
-                    waiters.remove( thread );
+                    waiters.remove( Triple.of( thread, mode, transaction.getXid() ) );
                     throw new GenericRuntimeException( "Could not acquire lock" );
                 }
+
+                // we wait until next signal
+                if ( !owners.contains( transaction.getXid() ) && waiters.size() > 1 ) {
+                    // not in owners list queue at the end -> current owner wants to update
+                    waiters.add( waiters.poll() );
+                    // signal
+                    signalAll();
+                }
             }
-            // we wait until next signal
+
         }
 
     }
 
 
-    private void cleanup( Thread thread ) {
-        waiters.remove( thread );
+    private synchronized void cleanup( Thread thread ) {
+        waiters = waiters.stream().filter( w -> w.left != thread ).collect( Collectors.toCollection( ConcurrentLinkedQueue::new ));
+        // waiters.remove( Triple.of(  thread );
         lock.unlock();
     }
 
@@ -168,6 +186,10 @@ public class LockManager {
         }
         log.debug( "release {}", transaction.getXid() );
         owners.remove( transaction.getXid() );
+
+        synchronized ( this ) {
+            waiters = waiters.stream().filter( w -> w.right != transaction.getXid() ).collect( Collectors.toCollection( ConcurrentLinkedQueue::new ));
+        }
 
         // wake up waiters
         signalAll();

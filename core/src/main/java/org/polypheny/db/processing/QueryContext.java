@@ -25,9 +25,11 @@ import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 import lombok.experimental.SuperBuilder;
+import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.Node;
@@ -35,6 +37,7 @@ import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionManager;
 
+@Slf4j
 @Value
 @NonFinal
 @SuperBuilder(toBuilder = true)
@@ -102,6 +105,16 @@ public class QueryContext {
                 namespaceId = Catalog.snapshot().getNamespace( queryNode.getNamespaceName() ).map( n -> n.id ).orElse( queryNode.getNamespaceId() );
             }
 
+            if ( context.transactions.stream().anyMatch( t -> !t.isActive() ) ){
+                throw new GenericRuntimeException( "No active transaction" );
+            }
+
+            if ( context.transactions.size() > 1 ){
+                log.warn( "Multiple active transactions {}", context.transactions.size() );
+            }
+
+            log.warn( "query: {}", query );
+
             return ParsedQueryContext.builder()
                     .query( query )
                     .queryNode( queryNode )
@@ -127,6 +140,11 @@ public class QueryContext {
 
 
     public <T extends QueryContext> T addTransaction( Transaction transaction ) {
+        if ( transaction == null ) {
+            return (T) this;
+        }else if ( !transaction.isActive() ){
+            throw new GenericRuntimeException( "Transaction is not active" );
+        }
         transactions = new ArrayList<>( transactions );
         transactions.add( transaction );
         return (T) this;
