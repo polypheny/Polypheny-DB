@@ -245,6 +245,7 @@ class PIService {
         if ( uuid == null || clientManager.getClient( uuid ) == null ) {
             throw new IllegalStateException( "Clients must be authenticated before sending any messages" );
         }
+
         return switch ( req.getTypeCase() ) {
             case DBMS_VERSION_REQUEST -> getDbmsVersion( req.getDbmsVersionRequest(), new ResponseMaker<>( req, "dbms_version_response" ) );
             case DEFAULT_NAMESPACE_REQUEST -> getDefaultNamespace( req.getDefaultNamespaceRequest(), new ResponseMaker<>( req, "default_namespace_response" ) );

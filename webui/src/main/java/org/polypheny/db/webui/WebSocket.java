@@ -148,7 +148,7 @@ public class WebSocket implements Consumer<WsConfig> {
                 break;
             case "RelAlgRequest":
             case "EntityRequest":
-                Result<?, ?> result = null;
+                Result<?, ?> result;
                 if ( request.type.equals( "RelAlgRequest" ) ) {
                     AlgRequest algRequest = ctx.messageAsClass( AlgRequest.class );
                     try {
