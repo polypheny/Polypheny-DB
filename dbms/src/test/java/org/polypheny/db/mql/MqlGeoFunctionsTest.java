@@ -64,21 +64,6 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
                     db.createCollection(%s).store(%s)
                     """.formatted( collection, collectionToStore.get( collection ) );
             execute( createCollection, namespace );
-
-            if ( collection.equals( "mongo" ) ) {
-                // For some geospatial queries like $near and $nearSphere we need to create a
-                // geospatial index.
-                // TODO: Create separate collections for both indexes: 2d and 3d.
-                // TODO: Index creation is currently not supported in Polypheny!
-                //         - Add syntax to MqlParser
-                //         - Throw exception, if executed on Polypheny: Not yet implemented
-                //         - correctly translate call to MongoDB translateCreateIndex
-                //         - TODO: In the future it could be possible to implement the mongo index.
-                String createIndex = """
-                        db.%s.createIndex({ legacy: "2d" })
-                        """.formatted( collection );
-                execute( createIndex, namespace );
-            }
         }
     }
 
