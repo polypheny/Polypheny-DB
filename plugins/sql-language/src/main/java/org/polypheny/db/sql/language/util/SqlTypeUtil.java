@@ -20,7 +20,6 @@ import java.io.Reader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.TimeZone;
-import java.util.stream.Collectors;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.FunctionCategory;
@@ -503,7 +502,7 @@ public class SqlTypeUtil {
 
 
     private static List<AlgDataType> toSql( final AlgDataTypeFactory typeFactory, List<AlgDataType> types ) {
-        return types.stream().map( type -> toSql( typeFactory, type ) ).collect( Collectors.toList() );
+        return types.stream().map( type -> toSql( typeFactory, type ) ).toList();
     }
 
 

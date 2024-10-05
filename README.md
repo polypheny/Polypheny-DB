@@ -26,14 +26,13 @@ Please note that we have a [code of conduct](https://github.com/polypheny/Admin/
 ## Credits ##
 _Polypheny-DB_ builds upon the great work of several other projects:
 
-* [Apache Avatica](https://calcite.apache.org/avatica/): A framework for building database drivers
 * [Apache Calcite](https://calcite.apache.org/): A framework for building databases
 * [HSQLDB](http://hsqldb.org/): A relational database written in Java
 * [JavaCC](https://javacc.org/): A parser generator
 * [Javalin](https://javalin.io/): A framework for building web services
 * [Project Lombok](https://projectlombok.org/): A library which provides annotations for tedious tasks
 
-Except for the first two, those projects are used "as is" and integrated as a library. _Apache Avatica_ we [forked](https://github.com/polypheny/Avatica) and made some Polypheny-DB specific adjustments. From _Apache Calcite_ we use parts of the code as foundation for Polypheny-DB.
+Except for _Apache Calcite, those projects are used "as is" and are integrated as libraries. From _Apache Calcite_ we used parts of the code as foundation for Polypheny-DB.
 
 ## Acknowledgements
 The Polypheny-DB project is supported by the Swiss National Science Foundation (SNSF) under the contract no. 200021_172763.

@@ -286,11 +286,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         }
 
         if ( isAnalyze ) {
-            statement.getProcessingDuration().start( "Expand Views" );
-        }
-
-        if ( isAnalyze ) {
-            statement.getProcessingDuration().stop( "Expand Views" );
             statement.getProcessingDuration().start( "Parameter Validation" );
         }
 
@@ -1271,7 +1266,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                                 "TableID: {} is partitioned on column: {} - {}",
                                 table.id,
                                 property.partitionColumnId,
-                                Catalog.getInstance().getSnapshot().rel().getColumn( property.partitionColumnId ).orElseThrow().name );
+                                Catalog.snapshot().rel().getColumn( property.partitionColumnId ).orElseThrow().name );
 
                     }
                     List<Long> identifiedPartitions = new ArrayList<>();

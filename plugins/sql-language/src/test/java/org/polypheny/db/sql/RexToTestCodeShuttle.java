@@ -33,7 +33,7 @@ import org.polypheny.db.type.PolyType;
 
 
 /**
- *  For instance, it converts {@code AND(=(?0.bool0, true), =(?0.bool1, true))} to {@code isTrue(and(eq(vBool(0), trueLiteral), eq(vBool(1), trueLiteral)))}.
+ * For instance, it converts {@code AND(=(?0.bool0, true), =(?0.bool1, true))} to {@code isTrue(and(eq(vBool(0), trueLiteral), eq(vBool(1), trueLiteral)))}.
  */
 public class RexToTestCodeShuttle extends RexVisitorImpl<String> {
 
@@ -151,4 +151,3 @@ public class RexToTestCodeShuttle extends RexVisitorImpl<String> {
     }
 
 }
-

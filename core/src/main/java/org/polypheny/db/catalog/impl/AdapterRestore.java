@@ -16,6 +16,7 @@
 
 package org.polypheny.db.catalog.impl;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.activej.serializer.annotations.SerializeRecord;
 import java.util.List;
 import java.util.Map;
@@ -30,9 +31,9 @@ import org.polypheny.db.prepare.Context;
 
 @SerializeRecord
 public record AdapterRestore(
-        long adapterId,
-        Map<Long, List<PhysicalEntity>> physicals,
-        Map<Long, AllocationEntity> allocations) {
+        @JsonProperty long adapterId,
+        @JsonProperty Map<Long, List<PhysicalEntity>> physicals,
+        @JsonProperty Map<Long, AllocationEntity> allocations ) {
 
     public AdapterRestore(
             long adapterId,
@@ -48,9 +49,9 @@ public record AdapterRestore(
         physicals.forEach( ( allocId, physicals ) -> {
             AllocationEntity entity = allocations.get( allocId );
             switch ( entity.dataModel ) {
-                case RELATIONAL -> adapter.restoreTable( entity.unwrap( AllocationTable.class ).orElseThrow(), physicals, context );
-                case DOCUMENT -> adapter.restoreCollection( entity.unwrap( AllocationCollection.class ).orElseThrow(), physicals, context );
-                case GRAPH -> adapter.restoreGraph( entity.unwrap( AllocationGraph.class ).orElseThrow(), physicals, context );
+                case RELATIONAL -> adapter.restoreTable( entity.unwrapOrThrow( AllocationTable.class ), physicals, context );
+                case DOCUMENT -> adapter.restoreCollection( entity.unwrapOrThrow( AllocationCollection.class ), physicals, context );
+                case GRAPH -> adapter.restoreGraph( entity.unwrapOrThrow( AllocationGraph.class ), physicals, context );
             }
 
         } );

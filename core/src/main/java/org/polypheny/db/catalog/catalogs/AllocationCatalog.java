@@ -16,6 +16,8 @@
 
 package org.polypheny.db.catalog.catalogs;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 import io.activej.serializer.annotations.SerializeClass;
 import java.util.concurrent.ConcurrentHashMap;
 import org.polypheny.db.catalog.entity.allocation.AllocationPartition;
@@ -27,6 +29,7 @@ import org.polypheny.db.catalog.impl.allocation.PolyAllocRelCatalog;
 import org.polypheny.db.util.Wrapper;
 
 @SerializeClass(subclasses = { PolyAllocDocCatalog.class, PolyAllocGraphCatalog.class, PolyAllocRelCatalog.class })
+@JsonTypeInfo(use = Id.CLASS)
 public interface AllocationCatalog extends Wrapper {
 
     LogicalNamespace getNamespace();

@@ -59,5 +59,5 @@ public class PolyphenyDbResourceTest {
         Map<String, String> props = Static.RESOURCE.illegalIntervalLiteral( "", "" ).getProperties();
         assertThat( props.get( "SQLSTATE" ), CoreMatchers.equalTo( "42000" ) );
     }
-}
 
+}

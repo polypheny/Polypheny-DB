@@ -17,16 +17,13 @@
 package org.polypheny.db.catalog.entity;
 
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.io.Serial;
-import lombok.EqualsAndHashCode;
 import lombok.Value;
-import org.polypheny.db.type.entity.PolyString;
-import org.polypheny.db.type.entity.PolyValue;
 
 
-@EqualsAndHashCode
 @Value
 public class LogicalUser implements PolyObject, Comparable<LogicalUser> {
 
@@ -34,10 +31,13 @@ public class LogicalUser implements PolyObject, Comparable<LogicalUser> {
     private static final long serialVersionUID = 5022567585804699491L;
 
     @Serialize
+    @JsonProperty
     public long id;
     @Serialize
+    @JsonProperty
     public String name;
     @Serialize
+    @JsonProperty
     public String password;
 
 
@@ -48,17 +48,10 @@ public class LogicalUser implements PolyObject, Comparable<LogicalUser> {
     }
 
 
-    // Used for creating ResultSets
-    @Override
-    public PolyValue[] getParameterArray() {
-        return new PolyValue[]{ PolyString.of( name ) };
-    }
-
-
     @Override
     public int compareTo( LogicalUser o ) {
         if ( o != null ) {
-            return Math.toIntExact( this.id - o.id );
+            return Long.compare( this.id, o.id );
         }
         return -1;
     }

@@ -16,6 +16,7 @@
 
 package org.polypheny.db.catalog;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.util.concurrent.atomic.AtomicLong;
@@ -25,51 +26,63 @@ import lombok.Value;
 public class IdBuilder {
 
     @Serialize
+    @JsonProperty
     public AtomicLong snapshotId;
 
     @Serialize
-    public AtomicLong namespaceId;
-
-    @Serialize
+    @JsonProperty
     public AtomicLong entityId;
 
     @Serialize
+    @JsonProperty
     public AtomicLong physicalId;
 
     @Serialize
+    @JsonProperty
     public AtomicLong allocId;
 
     @Serialize
+    @JsonProperty
     public AtomicLong fieldId;
 
     @Serialize
+    @JsonProperty
     public AtomicLong userId;
 
     @Serialize
+    @JsonProperty
     public AtomicLong indexId;
 
     @Serialize
+    @JsonProperty
     public AtomicLong keyId;
 
     @Serialize
+    @JsonProperty
     public AtomicLong adapterId;
 
     @Serialize
+    @JsonProperty
     public AtomicLong adapterTemplateId;
 
     @Serialize
+    @JsonProperty
     public AtomicLong interfaceId;
 
     @Serialize
+    @JsonProperty
     public AtomicLong constraintId;
 
     @Serialize
+    @JsonProperty
     public AtomicLong groupId;
 
     @Serialize
+    @JsonProperty
     public AtomicLong partitionId;
 
     @Serialize
+    @JsonProperty
     public AtomicLong placementId;
 
     private static IdBuilder INSTANCE;
@@ -99,14 +112,12 @@ public class IdBuilder {
                 new AtomicLong( 0 ),
                 new AtomicLong( 0 ),
                 new AtomicLong( 0 ),
-                new AtomicLong( 0 ),
                 new AtomicLong( 0 ) );
     }
 
 
     public IdBuilder(
             @Deserialize("snapshotId") AtomicLong snapshotId,
-            @Deserialize("namespaceId") AtomicLong namespaceId,
             @Deserialize("entityId") AtomicLong entityId,
             @Deserialize("fieldId") AtomicLong fieldId,
             @Deserialize("userId") AtomicLong userId,
@@ -122,7 +133,6 @@ public class IdBuilder {
             @Deserialize("partitionId") AtomicLong partitionId,
             @Deserialize("placementId") AtomicLong placementId ) {
         this.snapshotId = snapshotId;
-        this.namespaceId = namespaceId;
         this.entityId = entityId;
         this.fieldId = fieldId;
 
@@ -154,11 +164,6 @@ public class IdBuilder {
 
     public long getNewFieldId() {
         return fieldId.getAndIncrement();
-    }
-
-
-    public long getNewNamespaceId() {
-        return namespaceId.getAndIncrement();
     }
 
 
@@ -224,7 +229,6 @@ public class IdBuilder {
 
     public synchronized void restore( IdBuilder idBuilder ) {
         this.snapshotId.set( idBuilder.snapshotId.longValue() );
-        this.namespaceId.set( idBuilder.namespaceId.longValue() );
         this.entityId.set( idBuilder.entityId.longValue() );
         this.fieldId.set( idBuilder.fieldId.longValue() );
 

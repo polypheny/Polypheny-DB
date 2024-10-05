@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.polypheny.db.algebra.constant;
 
 import static org.polypheny.db.algebra.constant.FunctionCategory.Property.DISTANCE_FUNCTION;
 import static org.polypheny.db.algebra.constant.FunctionCategory.Property.FUNCTION;
+import static org.polypheny.db.algebra.constant.FunctionCategory.Property.GEO_FUNCTION;
 import static org.polypheny.db.algebra.constant.FunctionCategory.Property.MULTIMEDIA_FUNCTION;
 import static org.polypheny.db.algebra.constant.FunctionCategory.Property.SPECIFIC;
 import static org.polypheny.db.algebra.constant.FunctionCategory.Property.TABLE_FUNCTION;
@@ -44,7 +45,8 @@ public enum FunctionCategory {
     USER_DEFINED_TABLE_SPECIFIC_FUNCTION( "TABLE_UDF_SPECIFIC", "User-defined table function with SPECIFIC name", USER_DEFINED, TABLE_FUNCTION, SPECIFIC ),
     MATCH_RECOGNIZE( "MATCH_RECOGNIZE", "MATCH_RECOGNIZE function", TABLE_FUNCTION ),
     DISTANCE( "DISTANCE", "distance function", DISTANCE_FUNCTION ),
-    MULTIMEDIA( "MULTIMEDIA", "Multimedia function", MULTIMEDIA_FUNCTION );
+    MULTIMEDIA( "MULTIMEDIA", "Multimedia function", MULTIMEDIA_FUNCTION ),
+    GEOMETRY( "GEOMETRY", "Geo function", GEO_FUNCTION );
 
     private final EnumSet<Property> properties;
 
@@ -68,6 +70,11 @@ public enum FunctionCategory {
 
     public boolean isMultimedia() {
         return properties.contains( MULTIMEDIA_FUNCTION );
+    }
+
+
+    public boolean isGeo() {
+        return properties.contains( GEO_FUNCTION );
     }
 
 
@@ -97,7 +104,7 @@ public enum FunctionCategory {
      * Property of a SqlFunctionCategory.
      */
     enum Property {
-        USER_DEFINED, TABLE_FUNCTION, SPECIFIC, FUNCTION, DISTANCE_FUNCTION, MULTIMEDIA_FUNCTION
+        USER_DEFINED, TABLE_FUNCTION, SPECIFIC, FUNCTION, DISTANCE_FUNCTION, MULTIMEDIA_FUNCTION, GEO_FUNCTION
     }
 }
 

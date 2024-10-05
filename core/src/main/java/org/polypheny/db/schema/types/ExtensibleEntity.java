@@ -17,7 +17,6 @@
 package org.polypheny.db.schema.types;
 
 
-
 /**
  * Entity whose row type can be extended to include extra fields.
  * <p>
@@ -38,4 +37,3 @@ public interface ExtensibleEntity extends Typed {
     int getExtendedColumnOffset();
 
 }
-

@@ -63,7 +63,14 @@ dependencies {
 
     api group: "io.activej", name: "activej-serializer", version: activej_serializer_version
 
+    // GIS
+    api group: "org.locationtech.jts", name: "jts-core", version: jts_version // Eclipse Public License 2.0 && Eclipse Distribution License 1.0 (BSD-3 Clause)
+    api group: "org.locationtech.jts.io", name: "jts-io-common", version: jts_version // Eclipse Public License 2.0 && Eclipse Distribution License 1.0 (BSD-3 Clause)
+    api group: "org.locationtech.proj4j", name: "proj4j", version: proj4j_version // Apache 2.0
+    api group: "org.locationtech.proj4j", name: "proj4j-epsg", version: proj4j_version // Apache 2.0
+
     // --- Test Compile ---
+    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter', version: junit_jupiter_version
     testRuntimeOnly(group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: junit_jupiter_version)
     testImplementation group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version  // BSD 3-clause
 }

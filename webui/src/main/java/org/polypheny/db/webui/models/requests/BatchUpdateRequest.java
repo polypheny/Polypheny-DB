@@ -33,6 +33,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.entity.category.PolyBlob;
@@ -60,11 +61,11 @@ public class BatchUpdateRequest {
             for ( Entry<String, Value> entry : newValues.entrySet() ) {
                 String fileName = entry.getValue().fileName;
                 String value = entry.getValue().value;
-                Catalog catalog = Catalog.getInstance();
                 String[] split = tableId.split( "\\." );
                 LogicalColumn logicalColumn;
-                LogicalTable table = catalog.getSnapshot().rel().getTable( split[0], split[1] ).orElseThrow();
-                logicalColumn = catalog.getSnapshot().rel().getColumn( table.id, entry.getKey() ).orElseThrow();
+                Snapshot snapshot = Catalog.snapshot();
+                LogicalTable table = snapshot.rel().getTable( split[0], split[1] ).orElseThrow();
+                logicalColumn = snapshot.rel().getColumn( table.id, entry.getKey() ).orElseThrow();
                 if ( fileName == null && value == null ) {
                     setClauses.add( String.format( "\"%s\"=NULL", entry.getKey() ) );
                 } else if ( value != null && fileName == null ) {

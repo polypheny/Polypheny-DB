@@ -53,7 +53,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.Getter;
 import org.apache.calcite.linq4j.Enumerable;
@@ -140,7 +139,7 @@ public class EnumerableAlgImplementor extends JavaAlgImplementor {
         if ( contextCounter < 0 ) {
             // If the context was not set by ContextSwitcher we only need the initial one
             Statement assign = Expressions.declare( Modifier.FINAL, DataContext.ROOT, DataContext.INITIAL_ROOT );
-            block = Expressions.block( Stream.concat( Stream.of( assign ), block.statements.stream() ).collect( Collectors.toList() ) );
+            block = Expressions.block( Stream.concat( Stream.of( assign ), block.statements.stream() ).toList() );
         }
 
         // add values
@@ -516,4 +515,3 @@ public class EnumerableAlgImplementor extends JavaAlgImplementor {
     }
 
 }
-

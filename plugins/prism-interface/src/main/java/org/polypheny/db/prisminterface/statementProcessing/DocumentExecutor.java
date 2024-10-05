@@ -17,7 +17,6 @@
 package org.polypheny.db.prisminterface.statementProcessing;
 
 import java.util.List;
-import java.util.stream.Collectors;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.ResultIterator;
@@ -139,7 +138,7 @@ public class DocumentExecutor extends Executor {
             );
         }
         startOrResumeStopwatch( executionStopWatch );
-        List<PolyValue> data = iterator.getNextBatch( fetchSize ).stream().map( p -> p.get( 0 ) ).collect( Collectors.toList() );
+        List<PolyValue> data = iterator.getNextBatch( fetchSize ).stream().map( p -> p.get( 0 ) ).toList();
         executionStopWatch.stop();
         return PrismUtils.buildDocumentFrame( !iterator.hasMoreRows(), data );
     }

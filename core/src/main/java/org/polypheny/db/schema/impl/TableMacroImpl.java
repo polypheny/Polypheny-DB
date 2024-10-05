@@ -110,5 +110,5 @@ public class TableMacroImpl extends ReflectiveFunctionBase implements TableMacro
             throw new GenericRuntimeException( e );
         }
     }
-}
 
+}

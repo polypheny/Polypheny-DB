@@ -62,6 +62,7 @@ public class InformationDuration extends Information {
         return children.values();
     }
 
+
     public Duration start( final String name ) {
         Duration d = new Duration( name );
         this.children.put( name, d );
@@ -177,6 +178,7 @@ public class InformationDuration extends Information {
         public Collection<Duration> getDurationValues() {
             return children.values();
         }
+
 
         private Duration( final String name, final long nanoDuration ) {
             this.sequence = counter++;

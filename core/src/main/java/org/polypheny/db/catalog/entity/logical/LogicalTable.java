@@ -17,13 +17,13 @@
 package org.polypheny.db.catalog.entity.logical;
 
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.annotations.SerializeNullable;
 import java.io.Serial;
 import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -40,8 +40,6 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.schema.ColumnStrategy;
-import org.polypheny.db.type.entity.PolyString;
-import org.polypheny.db.type.entity.PolyValue;
 
 @EqualsAndHashCode(callSuper = false)
 @SuperBuilder(toBuilder = true)
@@ -54,6 +52,7 @@ public class LogicalTable extends LogicalEntity {
 
     @Serialize
     @SerializeNullable
+    @JsonProperty
     public Long primaryKey;
 
 
@@ -73,31 +72,11 @@ public class LogicalTable extends LogicalEntity {
     }
 
 
-    // Used for creating ResultSets
-    @Override
-    public PolyValue[] getParameterArray() {
-        return new PolyValue[]{
-                PolyString.of( Catalog.DATABASE_NAME ),
-                PolyString.of( getNamespaceName() ),
-                PolyString.of( name ),
-                PolyString.of( entityType.name() ),
-                PolyString.of( "" ),
-                null,
-                null,
-                null,
-                null,
-                null,
-                PolyString.of( Catalog.USER_NAME )
-
-        };
-    }
-
-
     @Override
     public AlgDataType getTupleType() {
         final AlgDataTypeFactory.Builder fieldInfo = AlgDataTypeFactory.DEFAULT.builder();
 
-        for ( LogicalColumn column : Catalog.getInstance().getSnapshot().rel().getColumns( id ).stream().sorted( Comparator.comparingInt( a -> a.position ) ).toList() ) {
+        for ( LogicalColumn column : Catalog.snapshot().rel().getColumns( id ).stream().sorted( Comparator.comparingInt( a -> a.position ) ).toList() ) {
             AlgDataType sqlType = column.getAlgDataType( AlgDataTypeFactory.DEFAULT );
             fieldInfo.add( column.id, column.name, null, sqlType ).nullable( column.nullable );
         }
@@ -113,28 +92,28 @@ public class LogicalTable extends LogicalEntity {
 
 
     public List<ColumnStrategy> getColumnStrategies() {
-        return getColumns().stream().map( c -> c.nullable ? ColumnStrategy.NULLABLE : ColumnStrategy.NOT_NULLABLE ).collect( Collectors.toList() );
+        return getColumns().stream().map( c -> c.nullable ? ColumnStrategy.NULLABLE : ColumnStrategy.NOT_NULLABLE ).toList();
     }
 
 
     public List<LogicalColumn> getColumns() {
-        return Catalog.getInstance().getSnapshot().rel().getColumns( id );
+        return Catalog.snapshot().rel().getColumns( id );
     }
 
 
     public List<Long> getColumnIds() {
-        return getColumns().stream().sorted( Comparator.comparingInt( a -> a.position ) ).map( c -> c.id ).collect( Collectors.toList() );
+        return getColumns().stream().sorted( Comparator.comparingInt( a -> a.position ) ).map( c -> c.id ).toList();
     }
 
 
     public List<String> getColumnNames() {
-        return getColumns().stream().map( c -> c.name ).collect( Collectors.toList() );
+        return getColumns().stream().map( c -> c.name ).toList();
     }
 
 
     @Override
     public String getNamespaceName() {
-        return Catalog.getInstance().getSnapshot().getNamespace( namespaceId ).orElseThrow().name;
+        return Catalog.snapshot().getNamespace( namespaceId ).orElseThrow().name;
     }
 
 

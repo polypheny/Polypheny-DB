@@ -323,12 +323,6 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
 
 
     @Override
-    public PolyValue[] getParameterArray() {
-        return new PolyValue[0];
-    }
-
-
-    @Override
     public Expression asExpression() {
         return Expressions.call(
                 Expressions.convert_(

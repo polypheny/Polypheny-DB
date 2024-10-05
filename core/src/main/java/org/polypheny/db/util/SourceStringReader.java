@@ -65,5 +65,5 @@ public class SourceStringReader extends StringReader {
     String getSourceString() {
         return s;
     }
-}
 
+}

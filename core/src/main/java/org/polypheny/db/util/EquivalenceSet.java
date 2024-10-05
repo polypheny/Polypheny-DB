@@ -171,5 +171,5 @@ public class EquivalenceSet<E extends Comparable<E>> {
     public int classCount() {
         return new HashSet<>( parents.values() ).size();
     }
-}
 
+}

@@ -22,9 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
@@ -40,8 +38,6 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.catalog.entity.physical.PhysicalCollection;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalField;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -395,24 +391,30 @@ class MongoTableModify extends RelModify<MongoEntity> implements MongoAlg {
         int pos = 0;
         for ( RexNode rexNode : input.getChildExps() ) {
             String physicalName = entity.getPhysicalName( input.getTupleType().getFields().get( pos ).getName() );
-            if ( rexNode instanceof RexDynamicParam ) {
+            if ( rexNode instanceof RexDynamicParam dynamicParam ) {
                 // preparedInsert
-                doc.append( physicalName == null ? implementor.getEntity().fields.stream().sorted( Comparator.comparingInt( ( PhysicalField a ) -> a.unwrap( PhysicalColumn.class ).orElseThrow().position ) ).toList().get( pos ).name : physicalName, new BsonDynamic( (RexDynamicParam) rexNode ) );
+                addPreparedInsert( implementor, dynamicParam, doc, physicalName, pos );
             } else if ( rexNode instanceof RexLiteral ) {
                 doc.append( physicalName, BsonUtil.getAsBson( (RexLiteral) rexNode, bucket ) );
-            } else if ( rexNode instanceof RexCall ) {
-                PolyType type = this.entity
+            } else if ( rexNode instanceof RexCall call ) {
+                AlgDataType fieldType = this.entity
                         .getTupleType( getCluster().getTypeFactory() )
                         .getFields()
                         .get( pos )
-                        .getType()
-                        .getComponentType()
-                        .getPolyType();
+                        .getType();
 
-                doc.append( physicalName, getBsonArray( (RexCall) rexNode, type, bucket ) );
+                if ( fieldType.getPolyType() == PolyType.ARRAY ) {
+                    PolyType compType = fieldType
+                            .getComponentType()
+                            .getPolyType();
 
-            } else if ( rexNode.getKind() == Kind.INPUT_REF && input.getInput() instanceof MongoValues ) {
-                handleDirectInsert( implementor, (MongoValues) input.getInput() );
+                    doc.append( physicalName, getBsonArray( call, compType, bucket ) );
+                } else {
+                    throw new GenericRuntimeException( "Not supported yet" );
+                }
+
+            } else if ( rexNode.getKind() == Kind.INPUT_REF && input.getInput() instanceof MongoValues values ) {
+                handleDirectInsert( implementor, values );
                 return;
             } else {
                 throw new GenericRuntimeException( "This rexType was not considered" );
@@ -420,14 +422,14 @@ class MongoTableModify extends RelModify<MongoEntity> implements MongoAlg {
 
             pos++;
         }
-        implementor.operations = Collections.singletonList( doc );
+        implementor.operations = List.of( doc );
     }
 
 
-    private Map<Integer, String> getPhysicalMap( List<AlgDataTypeField> fieldList, PhysicalCollection catalogCollection ) {
-        Map<Integer, String> map = new HashMap<>();
-        map.put( 0, "d" );
-        return map;
+    private static void addPreparedInsert( Implementor implementor, RexDynamicParam rexNode, BsonDocument doc, String physicalName, int pos ) {
+        doc.append( physicalName == null
+                ? implementor.getEntity().fields.stream().sorted( Comparator.comparingInt( ( PhysicalField a ) -> a.unwrap( PhysicalColumn.class ).orElseThrow().position ) ).toList().get( pos ).name
+                : physicalName, new BsonDynamic( rexNode ) );
     }
 
 

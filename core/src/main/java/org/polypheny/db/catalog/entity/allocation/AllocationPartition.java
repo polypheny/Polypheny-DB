@@ -17,6 +17,7 @@
 package org.polypheny.db.catalog.entity.allocation;
 
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
@@ -24,14 +25,12 @@ import io.activej.serializer.annotations.SerializeNullable;
 import java.io.Serial;
 import java.util.List;
 import javax.annotation.Nullable;
-import lombok.Getter;
 import lombok.Value;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.catalog.entity.PolyObject;
 import org.polypheny.db.catalog.logistic.DataPlacementRole;
 import org.polypheny.db.catalog.logistic.PartitionType;
 import org.polypheny.db.catalog.logistic.PlacementType;
-import org.polypheny.db.type.entity.PolyValue;
 
 
 /**
@@ -44,26 +43,32 @@ public class AllocationPartition implements PolyObject {
     private static final long serialVersionUID = 8835793248417591036L;
 
     @Serialize
+    @JsonProperty
     public long namespaceId;
 
     @Serialize
+    @JsonProperty
     public long logicalEntityId;
 
     @Serialize
+    @JsonProperty
     public long groupId;
 
-    @Getter
     @Serialize
+    @JsonProperty
     @SerializeNullable
     public String name;
 
     @Serialize
+    @JsonProperty
     public long id;
 
     @Serialize
+    @JsonProperty
     public PlacementType placementType;
 
     @Serialize
+    @JsonProperty
     public PartitionType partitionType;
 
     // Related to multi-tier replication. A physical partition placement is considered to be primary (uptodate) if it needs to receive every update eagerly.
@@ -79,10 +84,13 @@ public class AllocationPartition implements PolyObject {
     // A DataPlacement can directly forbid that any Placements within this DataPlacement container can get outdated.
     // Therefore, the role at the DataPlacement specifies if underlying placements can even be outdated.s
     @Serialize
+    @JsonProperty
     public DataPlacementRole role;
     @Serialize
+    @JsonProperty
     public boolean isUnbound;
     @Serialize
+    @JsonProperty
     @NotNull
     public List<String> qualifiers;
 
@@ -108,12 +116,6 @@ public class AllocationPartition implements PolyObject {
         this.isUnbound = isUnbound;
         this.name = name;
         this.qualifiers = qualifiers == null ? List.of() : ImmutableList.copyOf( qualifiers );
-    }
-
-
-    @Override
-    public PolyValue[] getParameterArray() {
-        return new PolyValue[0];
     }
 
 }

@@ -19,6 +19,7 @@ package org.polypheny.db.prisminterface;
 import java.io.EOFException;
 import java.io.IOException;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
 import lombok.extern.slf4j.Slf4j;
@@ -43,6 +44,7 @@ import org.polypheny.db.prisminterface.utils.VersionUtils;
 import org.polypheny.db.sql.language.SqlJdbcFunctionCall;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.util.RunMode;
 import org.polypheny.db.util.Util;
 import org.polypheny.prism.ClientInfoProperties;
 import org.polypheny.prism.ClientInfoPropertiesRequest;
@@ -142,6 +144,9 @@ class PIService {
         Request firstReq = readOneMessage( waiting );
 
         if ( firstReq.getTypeCase() != TypeCase.CONNECTION_REQUEST ) {
+            if ( Catalog.mode == RunMode.BENCHMARK ) {
+                log.error( "Request failed: First message must be a connection request" );
+            }
             sendOneMessage( createErrorResponse( firstReq.getId(), "First message must be a connection request" ) );
             return false;
         }
@@ -151,6 +156,9 @@ class PIService {
             r = connect( firstReq.getConnectionRequest(), new ResponseMaker<>( firstReq, "connection_response" ) );
             success = true;
         } catch ( TransactionException | AuthenticationException e ) {
+            if ( Catalog.mode == RunMode.BENCHMARK ) {
+                log.error( "Request failed: ", e );
+            }
             r = createErrorResponse( firstReq.getId(), e.getMessage() );
         }
         sendOneMessage( r );
@@ -163,7 +171,10 @@ class PIService {
         try {
             r = handleMessage( req );
         } catch ( Throwable t ) {
-            r = createErrorResponse( req.getId(), t.getMessage() );
+            if ( Catalog.mode == RunMode.BENCHMARK ) {
+                log.error( "Request failed: ", t );
+            }
+            r = createErrorResponse( req.getId(), Objects.requireNonNullElse( t.getMessage(), t.getClass().getSimpleName() ) );
         }
         try {
             sendOneMessage( r );
@@ -189,6 +200,8 @@ class PIService {
                     break;
                 }
             }
+        } catch ( EOFException e ) {
+            throw e;
         } catch ( Throwable t ) {
             if ( t.getCause() instanceof PIServiceException p && p.getCause() instanceof EOFException eof ) {
                 throw eof;
@@ -501,7 +514,7 @@ class PIService {
         }
         if ( properties.hasNamespaceName() ) {
             String namespaceName = properties.getNamespaceName();
-            Optional<LogicalNamespace> optionalNamespace = Catalog.getInstance().getSnapshot().getNamespace( namespaceName );
+            Optional<LogicalNamespace> optionalNamespace = Catalog.snapshot().getNamespace( namespaceName );
             if ( optionalNamespace.isEmpty() ) {
                 throw new PIServiceException( "Getting namespace " + namespaceName + " failed." );
             }

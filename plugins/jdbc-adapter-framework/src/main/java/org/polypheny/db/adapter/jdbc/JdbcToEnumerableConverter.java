@@ -103,7 +103,7 @@ import org.polypheny.db.util.BuiltInMethod;
 
 
 /**
- * Relational expression representing a relScan of a table in a JDBC data source.
+ * Relational expression representing a scan of a table in a JDBC data source.
  */
 @Slf4j
 public class JdbcToEnumerableConverter extends ConverterImpl implements EnumerableAlg {
@@ -429,29 +429,14 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
             case VIDEO:
                 poly = dialect.handleRetrieval( fieldType, source, resultSet_, i + 1 );
                 break;
+            case GEOMETRY:
+                poly = dialect.handleRetrieval( fieldType, source, resultSet_, i + 1 );
+                break;
             default:
                 log.warn( "potentially unhandled polyValue" );
                 poly = source;
         }
         return poly;
-    }
-
-
-    private Method getMethod( PolyType polyType, boolean nullable, boolean offset ) {
-        return switch ( polyType ) {
-            case ARRAY -> BuiltInMethod.JDBC_DEEP_ARRAY_TO_LIST.method;
-            default -> throw new AssertionError( polyType + ":" + nullable );
-        };
-    }
-
-
-    private Method getMethod2( PolyType polyType ) {
-        return switch ( polyType ) {
-            case DATE -> BuiltInMethod.RESULT_SET_GET_DATE2.method;
-            case TIME -> BuiltInMethod.RESULT_SET_GET_TIME2.method;
-            case TIMESTAMP -> BuiltInMethod.RESULT_SET_GET_TIMESTAMP2.method;
-            default -> throw new AssertionError( polyType );
-        };
     }
 
 

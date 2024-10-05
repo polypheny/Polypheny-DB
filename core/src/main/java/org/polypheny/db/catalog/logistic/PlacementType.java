@@ -17,6 +17,7 @@
 package org.polypheny.db.catalog.logistic;
 
 import lombok.NonNull;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 
 public enum PlacementType {
     MANUAL( 1 ),
@@ -36,23 +37,13 @@ public enum PlacementType {
     }
 
 
-    public static PlacementType getById( int id ) {
-        for ( PlacementType e : values() ) {
-            if ( e.id == id ) {
-                return e;
-            }
-        }
-        throw new RuntimeException( "Unknown PlacementType with id: " + id );
-    }
-
-
     public static PlacementType parse( @NonNull String str ) {
         if ( str.equalsIgnoreCase( "MANUAL" ) ) {
             return PlacementType.MANUAL;
         } else if ( str.equalsIgnoreCase( "AUTOMATIC" ) ) {
             return PlacementType.AUTOMATIC;
         }
-        throw new RuntimeException( "Unknown PlacementType with name: " + str );
+        throw new GenericRuntimeException( "Unknown PlacementType with name: " + str );
     }
 
 

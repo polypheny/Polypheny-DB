@@ -17,23 +17,19 @@
 package org.polypheny.db.catalog.entity.logical;
 
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.io.Serial;
 import lombok.EqualsAndHashCode;
-import lombok.Getter;
 import lombok.NonNull;
 import lombok.Value;
 import lombok.With;
 import lombok.experimental.NonFinal;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.PolyObject;
 import org.polypheny.db.catalog.logistic.DataModel;
-import org.polypheny.db.type.entity.PolyString;
-import org.polypheny.db.type.entity.PolyValue;
 
 
-@EqualsAndHashCode(callSuper = false)
 @With
 @Value
 @NonFinal // for testing
@@ -43,15 +39,17 @@ public class LogicalNamespace implements PolyObject, Comparable<LogicalNamespace
     private static final long serialVersionUID = 3090632164988970558L;
 
     @Serialize
+    @JsonProperty
     public long id;
     @Serialize
-    @Getter
+    @JsonProperty
     public String name;
     @Serialize
-    @Getter
+    @JsonProperty
     @EqualsAndHashCode.Exclude
     public DataModel dataModel;
     @Serialize
+    @JsonProperty
     public boolean caseSensitive;
 
 
@@ -67,28 +65,17 @@ public class LogicalNamespace implements PolyObject, Comparable<LogicalNamespace
     }
 
 
-    // Used for creating ResultSets
-    @Override
-    public PolyValue[] getParameterArray() {
-        return new PolyValue[]{
-                PolyString.of( name ),
-                PolyString.of( Catalog.DATABASE_NAME ),
-                PolyString.of( Catalog.USER_NAME ),
-                PolyString.of( PolyObject.getEnumNameOrNull( dataModel ) ) };
-    }
-
-
     @Override
     public int compareTo( LogicalNamespace o ) {
         if ( o != null ) {
-            return (int) (this.id - o.id);
+            return Long.compare( this.id, o.id );
         }
 
         return -1;
     }
 
 
-    public record PrimitiveCatalogSchema(String tableSchem, String tableCatalog, String owner, String schemaType) {
+    public record PrimitiveCatalogSchema( String tableSchem, String tableCatalog, String owner, String schemaType ) {
 
     }
 

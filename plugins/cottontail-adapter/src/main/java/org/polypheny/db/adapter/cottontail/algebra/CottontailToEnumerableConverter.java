@@ -49,6 +49,7 @@ import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.util.BuiltInMethod;
 import org.vitrivr.cottontail.client.iterators.Tuple;
 
@@ -318,8 +319,11 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
                             Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getStringData", Object.class ), getDataFromMap_ )
                     );
                 }
+                break;
             }
-            break;
+            case GEOMETRY:
+                source = Expressions.call( PolyGeometry.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getStringData", Object.class ), getDataFromMap_ ) );
+                break;
             default:
                 throw new AssertionError( "Not yet supported type: " + fieldType.getPolyType() );
 

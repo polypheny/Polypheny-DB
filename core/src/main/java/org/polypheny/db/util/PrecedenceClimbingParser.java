@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -142,7 +142,7 @@ public class PrecedenceClimbingParser {
 
     @Override
     public String toString() {
-        return Util.commaList( all() );
+        return String.join( ", ", all().stream().map( Object::toString ).toList() );
     }
 
 
@@ -282,6 +282,7 @@ public class PrecedenceClimbingParser {
         public Token copy() {
             return new Token( type, o, left, right );
         }
+
     }
 
 
@@ -299,6 +300,7 @@ public class PrecedenceClimbingParser {
         public Token copy() {
             return new Op( type, o, left, right );
         }
+
     }
 
 
@@ -320,6 +322,7 @@ public class PrecedenceClimbingParser {
         public Token copy() {
             return new SpecialOp( o, left, right, special );
         }
+
     }
 
 
@@ -395,6 +398,7 @@ public class PrecedenceClimbingParser {
             }
             return b;
         }
+
     }
 
 
@@ -407,6 +411,7 @@ public class PrecedenceClimbingParser {
          * Given an occurrence of this operator, identifies the range of tokens to be collapsed into a call of this operator, and the arguments to that call.
          */
         Result apply( PrecedenceClimbingParser parser, SpecialOp op );
+
     }
 
 
@@ -425,6 +430,7 @@ public class PrecedenceClimbingParser {
             this.last = last;
             this.replacement = replacement;
         }
+
     }
 
 
@@ -476,6 +482,7 @@ public class PrecedenceClimbingParser {
         public PrecedenceClimbingParser build() {
             return new PrecedenceClimbingParser( tokens );
         }
+
     }
 
 
@@ -539,6 +546,7 @@ public class PrecedenceClimbingParser {
             }
             return t;
         }
-    }
-}
 
+    }
+
+}

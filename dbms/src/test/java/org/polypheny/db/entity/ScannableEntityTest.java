@@ -65,6 +65,7 @@ public class ScannableEntityTest {
         assertFalse( cursor.moveNext() );
     }
 
+
     private static Integer getFilter( boolean cooperative, List<RexNode> filters ) {
         final Iterator<RexNode> filterIter = filters.iterator();
         while ( filterIter.hasNext() ) {
@@ -122,4 +123,3 @@ public class ScannableEntityTest {
 
 
 }
-

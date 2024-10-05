@@ -142,7 +142,7 @@ public class MonetdbSqlDialect extends SqlDialect {
                         Expressions.convert_( Expressions.call( MonetdbSqlDialect.class, "toString", client ), String.class ),
                         Expressions.constant( PolyBinary.class ) );
             }
-            case TEXT, VARBINARY -> {
+            case TEXT, VARBINARY, GEOMETRY -> {
                 UnaryExpression client = Expressions.convert_( child, MonetClob.class );
                 yield super.handleRetrieval( fieldType, Expressions.call( MonetdbSqlDialect.class, "toString", client ), resultSet_, index );
             }

@@ -88,7 +88,7 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
     /**
      * Renames a table
      *
-     * @param tableId The if of the table to rename
+     * @param tableId The id of the table to rename
      * @param name New name of the table
      */
     void renameTable( long tableId, String name );
@@ -127,7 +127,7 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
     /**
      * Renames a column
      *
-     * @param columnId The if of the column to rename
+     * @param columnId The id of the column to rename
      * @param name New name of the column
      */
     void renameColumn( long columnId, String name );
@@ -206,7 +206,7 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
      *
      * @param tableId The id of the table
      * @param columnIds The id of the columns which are part of the foreign key
-     * @param referencesTableId The if of the referenced table
+     * @param referencesTableId The id of the referenced table
      * @param referencesIds The id of columns forming the key referenced by this key
      * @param constraintName The name of the constraint
      * @param onUpdate The option for updates

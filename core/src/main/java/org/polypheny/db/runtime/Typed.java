@@ -46,4 +46,5 @@ public interface Typed {
      * Gets the type of the element(s) that are returned in this collection.
      */
     Type getElementType();
+
 }

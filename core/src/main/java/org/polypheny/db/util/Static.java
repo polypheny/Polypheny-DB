@@ -75,5 +75,5 @@ public abstract class Static {
     public static <E> List<E> cons( E first, List<? extends E> rest ) {
         return ConsList.of( first, rest );
     }
-}
 
+}

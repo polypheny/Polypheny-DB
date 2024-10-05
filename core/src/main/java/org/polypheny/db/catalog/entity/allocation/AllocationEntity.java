@@ -16,6 +16,9 @@
 
 package org.polypheny.db.catalog.entity.allocation;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.annotations.SerializeClass;
 import io.activej.serializer.annotations.SerializeVarLength;
@@ -35,19 +38,24 @@ import org.polypheny.db.catalog.logistic.PartitionType;
 @Slf4j
 @SuperBuilder(toBuilder = true)
 @SerializeClass(subclasses = { AllocationTable.class, AllocationGraph.class, AllocationCollection.class })
+@JsonTypeInfo(use = Id.CLASS)
 public abstract class AllocationEntity extends Entity {
 
     @Serialize
+    @JsonProperty
     public long adapterId;
 
     @Serialize
+    @JsonProperty
     public long logicalId;
 
     @Serialize
+    @JsonProperty
     @SerializeVarLength
     public long partitionId;
 
     @Serialize
+    @JsonProperty
     @SerializeVarLength
     public long placementId;
 

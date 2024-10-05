@@ -1,4 +1,3 @@
-
 /**
  * Provides a language for representing row-expressions.
  *
@@ -38,4 +37,3 @@
  */
 
 package org.polypheny.db.rex;
-

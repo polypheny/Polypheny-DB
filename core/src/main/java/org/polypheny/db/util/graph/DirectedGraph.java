@@ -88,6 +88,7 @@ public interface DirectedGraph<V, E> {
     interface EdgeFactory<V, E> {
 
         E createEdge( V v0, V v1 );
-    }
-}
 
+    }
+
+}

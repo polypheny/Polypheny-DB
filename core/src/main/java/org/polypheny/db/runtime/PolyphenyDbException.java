@@ -82,5 +82,5 @@ public class PolyphenyDbException extends RuntimeException {
             log.error( toString() );
         }
     }
-}
 
+}

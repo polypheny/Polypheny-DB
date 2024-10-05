@@ -105,5 +105,5 @@ public abstract class StrictWinAggImplementor extends StrictAggImplementor imple
     public boolean needCacheWhenFrameIntact() {
         return true;
     }
-}
 
+}

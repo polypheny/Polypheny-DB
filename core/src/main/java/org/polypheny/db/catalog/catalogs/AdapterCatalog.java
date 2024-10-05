@@ -17,6 +17,8 @@
 package org.polypheny.db.catalog.catalogs;
 
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.annotations.SerializeClass;
 import java.util.Arrays;
@@ -33,7 +35,6 @@ import lombok.Value;
 import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.tree.Expression;
-import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
@@ -46,6 +47,7 @@ import org.polypheny.db.util.Pair;
 @NonFinal
 @Slf4j
 @SerializeClass(subclasses = { DocAdapterCatalog.class, RelAdapterCatalog.class, GraphAdapterCatalog.class })
+@JsonTypeInfo(use = Id.CLASS)
 public abstract class AdapterCatalog {
 
     @Serialize
@@ -90,7 +92,7 @@ public abstract class AdapterCatalog {
 
 
     public Expression asExpression() {
-        return Expressions.call( Catalog.CATALOG_EXPRESSION, "getAdapterCatalog", Expressions.constant( adapterId ) );
+        return Catalog.PHYSICAL_EXPRESSION.apply( adapterId );
     }
 
 

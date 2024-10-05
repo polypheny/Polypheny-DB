@@ -30,10 +30,10 @@ jobs:
                 run: ./gradlew printJavaVersion
             -   name: Assemble
                 timeout-minutes: 10
-                run: ./gradlew assemble
+                run: ./gradlew assemble -PwithoutpullingUi=true
             -   name: Build Plugins
                 timeout-minutes: 5
-                run: ./gradlew assemblePlugins
+                run: ./gradlew assemblePlugins -PwithoutpullingUi=true
             -   name: Execute integration tests for ${{ matrix.adapter }}
                 timeout-minutes: 30
-                run: ./gradlew integrationTests -Dstore.default=${{ matrix.adapter }}
+                run: ./gradlew integrationTests -Dstore.default=${{ matrix.adapter }} -PwithoutpullingUi=true
