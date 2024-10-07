@@ -24,7 +24,6 @@ import org.polypheny.db.schemas.HrSnapshot;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.PigAlgBuilder;
 import org.polypheny.db.transaction.Transaction;
-import org.polypheny.db.transaction.TransactionException;
 
 public class PigTestTemplate {
 
@@ -52,11 +51,7 @@ public class PigTestTemplate {
 
     @AfterAll
     public static void cleanUp() {
-        try {
-            transaction.commit();
-        } catch ( TransactionException e ) {
-            throw new RuntimeException( e );
-        }
+        transaction.commit();
     }
 
 }
