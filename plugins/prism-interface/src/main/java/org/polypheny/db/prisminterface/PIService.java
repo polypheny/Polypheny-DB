@@ -212,15 +212,17 @@ class PIService {
 
 
     private void acceptLoop() {
+        String reason = null;
         try {
             handleMessages();
         } catch ( Throwable e ) {
             if ( !(e instanceof EOFException) ) {
                 throw new GenericRuntimeException( e );
             }
+            reason = e.getMessage();
         } finally {
             if ( uuid != null ) {
-                clientManager.unregisterConnection( clientManager.getClient( uuid ) );
+                clientManager.unregisterConnection( clientManager.getClient( uuid ), reason );
             }
             Util.closeNoThrow( con );
         }
@@ -306,7 +308,7 @@ class PIService {
 
     private Response disconnect( DisconnectRequest request, ResponseMaker<DisconnectResponse> responseObserver ) {
         PIClient client = getClient();
-        clientManager.unregisterConnection( client );
+        clientManager.unregisterConnection( client, null );
         uuid = null;
         return responseObserver.makeResponse( DisconnectResponse.newBuilder().build() );
     }
@@ -487,7 +489,7 @@ class PIService {
 
     private Response rollbackTransaction( RollbackRequest request, ResponseMaker<RollbackResponse> responseStreamObserver ) {
         PIClient client = getClient();
-        client.rollbackCurrentTransaction();
+        client.rollbackCurrentTransaction( null );
         return responseStreamObserver.makeResponse( RollbackResponse.newBuilder().build() );
     }
 

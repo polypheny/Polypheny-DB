@@ -17,7 +17,9 @@
 package org.polypheny.db.transaction;
 
 
-public class TransactionException extends Throwable {
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+
+public class TransactionException extends GenericRuntimeException {
 
     public TransactionException( Exception e ) {
         super( e );

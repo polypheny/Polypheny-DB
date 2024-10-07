@@ -39,6 +39,7 @@ import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.PartitionType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.RuntimeConfig;
@@ -314,13 +315,12 @@ public class FrequencyMapImpl extends FrequencyMap {
             transaction.commit();
         } catch ( TransactionException e ) {
             log.error( "Error while reassigning new location for temperature-based partitions", e );
-            if ( transaction != null ) {
-                try {
-                    transaction.rollback();
-                } catch ( TransactionException ex ) {
-                    log.error( "Error while rolling back the transaction", e );
-                }
+            try {
+                transaction.rollback( e.getMessage() );
+            } catch ( TransactionException ex ) {
+                log.error( "Error while rolling back the transaction", e );
             }
+            throw new GenericRuntimeException( e );
         }
     }
 

@@ -558,15 +558,12 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             return;
         }
         // Locking
-        try {
-            // Get locks for individual entities
-            EntityAccessMap accessMap = new EntityAccessMap( logicalRoot.alg, accessedPartitions );
-            // Get a shared global schema lock (only DDLs acquire an exclusive global schema lock)
 
-            LockManager.INSTANCE.lock( accessMap.getNeededLock(), statement.getTransaction() );
-        } catch ( DeadlockException e ) {
-            throw new GenericRuntimeException( e );
-        }
+        // Get locks for individual entities
+        EntityAccessMap accessMap = new EntityAccessMap( logicalRoot.alg, accessedPartitions );
+        // Get a shared global schema lock (only DDLs acquire an exclusive global schema lock)
+
+        LockManager.INSTANCE.lock( accessMap.getNeededLock(), statement.getTransaction() );
     }
 
 

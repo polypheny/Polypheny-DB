@@ -18,8 +18,8 @@ package org.polypheny.db.transaction;
 
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
@@ -29,11 +29,11 @@ import javax.transaction.xa.Xid;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
+import org.polypheny.db.PolyphenyDb;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.transaction.Lock.LockMode;
 import org.polypheny.db.util.DeadlockException;
-import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Triple;
 
 @Slf4j
@@ -43,7 +43,7 @@ public class LockManager {
 
     private boolean isExclusive = false;
     private final Set<Xid> owners = new HashSet<>();
-    private ConcurrentLinkedQueue<Triple<Thread, LockMode, Xid>> waiters = new ConcurrentLinkedQueue<>();
+    private final ConcurrentLinkedQueue<Triple<Thread, LockMode, PolyXid>> waiters = new ConcurrentLinkedQueue<>();
     private final ReentrantLock lock = new ReentrantLock();
     private final Condition condition = lock.newCondition();
 
@@ -53,7 +53,7 @@ public class LockManager {
 
 
     public void lock( LockMode mode, @NonNull Transaction transaction ) throws DeadlockException {
-        // Decide on which locking  approach to focus
+        // Decide on which locking approach to focus
         synchronized ( this ) {
             if ( owners.isEmpty() ) {
                 handleLockOrThrow( mode, transaction );
@@ -66,29 +66,40 @@ public class LockManager {
         }
         Thread thread = Thread.currentThread();
 
-        waiters.add( Triple.of( thread, mode, transaction.getXid() ) );
+        synchronized ( waiters ) {
+            if ( !waiters.add( Triple.of( thread, mode, transaction.getXid() ) ) ){
+                log.debug( "could not add" );
+            }
+        }
+
 
         // wait
         while ( true ) {
             lock.lock();
             try {
-                while ( waiters.peek() != null && waiters.peek().left != thread ) {
+                //noinspection DataFlowIssue // else we have a general problem
+                while ( waiters.peek().left != thread ) {
                     log.debug( "wait {} ", transaction.getXid() );
                     boolean successful = condition.await( RuntimeConfig.LOCKING_MAX_TIMEOUT_SECONDS.getInteger(), TimeUnit.SECONDS );
+
                     if ( !successful ) {
-                        cleanup( thread );
+                        cleanupWaiters( thread );
+                        lock.unlock();
                         log.warn( "open transactions isExclusive: {} in {}", isExclusive, owners );
                         log.warn( "waiters {}", waiters );
-                        throw new DeadlockException( new GenericRuntimeException( "Could not acquire lock, after max timeout was reached" ) );
+                        throw new DeadlockException( "Could not acquire lock, after max timeout was reached" );
                     }
                 }
             } catch ( InterruptedException e ) {
-                cleanup( thread );
+                cleanupWaiters( thread );
+                lock.unlock();
                 throw new GenericRuntimeException( e );
             }
+
             lock.unlock();
 
             synchronized ( this ) {
+
                 // try execute
                 if ( handleSimpleLock( mode, transaction ) ) {
                     // remove successful
@@ -101,8 +112,9 @@ public class LockManager {
                         && owners.size() <= waiters.size()
                         // trx is owner and wants to upgrade, other transaction has the same -> deadlock
                         && waiters.stream().filter( w -> w.right != transaction.getXid() ).anyMatch( w -> owners.contains( w.right ) && w.middle == LockMode.EXCLUSIVE ) ) {
+                    cleanupWaiters( thread );
                     // we have to interrupt one transaction, all want to upgrade
-                    throw new DeadlockException( new GenericRuntimeException( "Unable to upgrade multiple locks simultaneously!" ) );
+                    throw new DeadlockException( "Write-write conflict with multiple transactions." );
                 }
 
                 if ( owners.isEmpty() ) {
@@ -124,10 +136,28 @@ public class LockManager {
     }
 
 
-    private synchronized void cleanup( Thread thread ) {
-        waiters = waiters.stream().filter( w -> w.left != thread ).collect( Collectors.toCollection( ConcurrentLinkedQueue::new ));
-        // waiters.remove( Triple.of(  thread );
-        lock.unlock();
+
+    private void cleanupWaiters( Thread thread ) {
+        synchronized ( waiters ){
+            List<Triple<Thread, LockMode, PolyXid>> remove = waiters.stream().filter( w -> w.left == thread ).toList();
+            if ( remove.isEmpty() ){
+                return;
+            }
+            assert remove.size() == 1;
+            waiters.remove( remove.get( 0 ) );
+        }
+    }
+
+    private void cleanupWaiters( PolyXid xid ) {
+        synchronized ( waiters ){
+            List<Triple<Thread, LockMode, PolyXid>> remove = waiters.stream().filter( w -> w.right == xid ).toList();
+            if ( remove.isEmpty() ){
+                return;
+            }
+            assert remove.size() == 1;
+            assert remove.get( 0 ).left == Thread.currentThread();
+            waiters.remove( remove.get( 0 ) );
+        }
     }
 
 
@@ -190,9 +220,7 @@ public class LockManager {
         log.debug( "release {}", transaction.getXid() );
         owners.remove( transaction.getXid() );
 
-        synchronized ( this ) {
-            waiters = waiters.stream().filter( w -> w.right != transaction.getXid() ).collect( Collectors.toCollection( ConcurrentLinkedQueue::new ));
-        }
+        cleanupWaiters( transaction.getXid() );
 
         // wake up waiters
         signalAll();

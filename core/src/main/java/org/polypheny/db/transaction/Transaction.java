@@ -20,6 +20,7 @@ package org.polypheny.db.transaction;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.catalog.entity.LogicalConstraint;
@@ -45,7 +46,14 @@ public interface Transaction {
 
     void commit() throws TransactionException;
 
-    void rollback() throws TransactionException;
+    /**
+     * Rolls back the transaction
+     * Null for user initiated
+     *
+     * @param reason the reason to cancel the transaction.
+     * @throws TransactionException if the rollback was not successful.
+     */
+    void rollback( @Nullable String reason ) throws TransactionException;
 
     void registerInvolvedAdapter( Adapter<?> adapter );
 

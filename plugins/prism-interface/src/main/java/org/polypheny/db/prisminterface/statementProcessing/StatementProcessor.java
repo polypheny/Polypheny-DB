@@ -71,13 +71,7 @@ public class StatementProcessor {
             // we remove additional transaction which where opened for auto generation todo adjust if interface supports it
             implementations.stream()
                     .filter( i -> !i.getStatement().getTransaction().getXid().equals( piStatement.getStatement().getTransaction().getXid() ) )
-                    .forEach( i -> {
-                        try {
-                            i.getStatement().getTransaction().rollback();
-                        } catch ( TransactionException e ) {
-                            throw new GenericRuntimeException( e );
-                        }
-                    } );
+                    .forEach( i -> i.getStatement().getTransaction().rollback( "Closing auto-generated transactions" ) );
 
             throw new GenericRuntimeException( "This query relies on an auto-generated subquery, which is not supported by this interface. Transaction was rolled backed." );
         }
