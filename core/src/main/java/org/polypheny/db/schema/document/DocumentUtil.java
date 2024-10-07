@@ -88,106 +88,59 @@ public class DocumentUtil {
 
 
     public static Pair<Class<? extends BsonValue>, Class<?>> getBsonClass( int typeNumber ) {
-        switch ( typeNumber ) {
-            case 1:
-                return new Pair<>( BsonDouble.class, PolyDouble.class );
-            case 2:
-                return new Pair<>( BsonString.class, PolyString.class );
-            case 3:
-                return new Pair<>( BsonDocument.class, PolyDocument.class );
-            case 4:
-                return new Pair<>( BsonArray.class, PolyList.class );
-            case 5:
-                return new Pair<>( BsonBinary.class, PolyBinary.class );
-            case 6: // undefined
-                throw new GenericRuntimeException( "DEPRECATED" );
-            case 7:
-                return new Pair<>( BsonObjectId.class, ObjectId.class );
-            case 8:
-                return new Pair<>( BsonBoolean.class, PolyBoolean.class );
-            case 9:
-                return new Pair<>( BsonDateTime.class, PolyDate.class );
-            case 10:
-                return new Pair<>( BsonNull.class, null );
-            case 11:
-                return new Pair<>( BsonRegularExpression.class, PolyString.class );
-            case 12: // dbPointer
-                throw new GenericRuntimeException( "DEPRECATED" );
-            case 13:
-                //return new Pair<>( BsonJavaScript.class, String.class );
-                throw new GenericRuntimeException( "UNSUPPORTED" );
-            case 14: // Symbol
-                throw new GenericRuntimeException( "DEPRECATED" );
-            case 15:
-                //return new Pair<>( BsonJavaScriptWithScope.class, String.class );
-                throw new GenericRuntimeException( "UNSUPPORTED" );
-            case 16:
-                return new Pair<>( BsonInt32.class, PolyInteger.class );
-            case 17:
-                return new Pair<>( BsonTimestamp.class, PolyTimestamp.class );
-            case 18:
-                return new Pair<>( BsonInt64.class, PolyLong.class );
-            case 19:
-                return new Pair<>( BsonDecimal128.class, PolyBigDecimal.class );
-            case -1:
-                return new Pair<>( BsonMinKey.class, BsonMinKey.class );
-            case 127:
-                return new Pair<>( BsonMaxKey.class, BsonMaxKey.class );
-            default:
-                throw new GenericRuntimeException( "This type does not exist." );
-        }
+        return switch ( typeNumber ) {
+            case 1 -> new Pair<>( BsonDouble.class, PolyDouble.class );
+            case 2 -> new Pair<>( BsonString.class, PolyString.class );
+            case 3 -> new Pair<>( BsonDocument.class, PolyDocument.class );
+            case 4 -> new Pair<>( BsonArray.class, PolyList.class );
+            case 5 -> new Pair<>( BsonBinary.class, PolyBinary.class );
+            case 6 -> throw new GenericRuntimeException( "DEPRECATED" );
+            case 7 -> new Pair<>( BsonObjectId.class, ObjectId.class );
+            case 8 -> new Pair<>( BsonBoolean.class, PolyBoolean.class );
+            case 9 -> new Pair<>( BsonDateTime.class, PolyDate.class );
+            case 10 -> new Pair<>( BsonNull.class, null );
+            case 11 -> new Pair<>( BsonRegularExpression.class, PolyString.class );
+            case 12 -> throw new GenericRuntimeException( "DEPRECATED" );
+            case 13 -> throw new GenericRuntimeException( "UNSUPPORTED" );
+            case 14 -> throw new GenericRuntimeException( "DEPRECATED" );
+            case 15 -> throw new GenericRuntimeException( "UNSUPPORTED" );
+            case 16 -> new Pair<>( BsonInt32.class, PolyInteger.class );
+            case 17 -> new Pair<>( BsonTimestamp.class, PolyTimestamp.class );
+            case 18 -> new Pair<>( BsonInt64.class, PolyLong.class );
+            case 19 -> new Pair<>( BsonDecimal128.class, PolyBigDecimal.class );
+            case -1 -> new Pair<>( BsonMinKey.class, BsonMinKey.class );
+            case 127 -> new Pair<>( BsonMaxKey.class, BsonMaxKey.class );
+            default -> throw new GenericRuntimeException( "This type does not exist." );
+        };
     }
 
 
     public static int getTypeNumber( String value ) {
-        switch ( value ) {
-            case "double":
-                return 1;
-            case "string":
-                return 2;
-            case "object":
-                return 3;
-            case "array":
-                return 4;
-            case "binData":
-                return 5;
-            case "undefined":
-                throw new GenericRuntimeException( "DEPRECATED" );
-            case "objectId":
-                return 7;
-            case "bool":
-                return 8;
-            case "date":
-                return 9;
-            case "null":
-                return 10;
-            case "regex":
-                return 11;
-            case "dbPointer":
-                throw new GenericRuntimeException( "DEPRECATED" );
-            case "javascript":
-                throw new GenericRuntimeException( "UNSUPPORTED" );
-            case "symbol":
-                throw new GenericRuntimeException( "DEPRECATED" );
-            case "javascriptWithScope":
-                throw new GenericRuntimeException( "DEPRECATED" );
-            case "int":
-                return 16;
-            case "timestamp":
-                return 17;
-            case "long":
-                return 18;
-            case "decimal":
-                return 19;
-            case "minKey":
-                return -1;
-            case "maxKey":
-                return 127;
-            case "number":
-                return 99; // not official mongodb
-            default:
-                throw new RuntimeException( "This type does not exist." );
-        }
+        return switch ( value ) {
+            case "double" -> 1;
+            case "string" -> 2;
+            case "object" -> 3;
+            case "array" -> 4;
+            case "binData" -> 5;
+            case "undefined" -> throw new GenericRuntimeException( "DEPRECATED" );
+            case "objectId" -> 7;
+            case "bool" -> 8;
+            case "date" -> 9;
+            case "null" -> 10;
+            case "regex" -> 11;
+            case "dbPointer" -> throw new GenericRuntimeException( "DEPRECATED" );
+            case "javascript" -> throw new GenericRuntimeException( "UNSUPPORTED" );
+            case "symbol" -> throw new GenericRuntimeException( "DEPRECATED" );
+            case "javascriptWithScope" -> throw new GenericRuntimeException( "DEPRECATED" );
+            case "int" -> 16;
+            case "timestamp" -> 17;
+            case "long" -> 18;
+            case "decimal" -> 19;
+            case "minKey" -> -1;
+            case "maxKey" -> 127;
+            case "number" -> 99; // not official mongodb
+            default -> throw new RuntimeException( "This type does not exist." );
+        };
     }
 
 
@@ -205,7 +158,7 @@ public class DocumentUtil {
         } else if ( object instanceof List ) {
             return new BsonArray( ((List<?>) object).stream().map( DocumentUtil::getBson ).collect( Collectors.toList() ) );
         } else {
-            throw new RuntimeException( "Type not considered" );
+            throw new GenericRuntimeException( "Type not considered" );
         }
     }
 
