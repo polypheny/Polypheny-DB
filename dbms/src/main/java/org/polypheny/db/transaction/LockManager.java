@@ -81,7 +81,7 @@ public class LockManager {
                         lock.unlock();
                         log.warn( "open transactions isExclusive: {} in {}", isExclusive, owners );
                         log.warn( "waiters {}", waiters );
-                        throw new DeadlockException( "Could not acquire lock, after max timeout was reached" );
+                        throw new DeadlockException( new GenericRuntimeException( "Could not acquire lock, after max timeout was reached" ) );
                     }
                 }
             } catch ( InterruptedException e ) {
