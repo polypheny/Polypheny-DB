@@ -314,12 +314,7 @@ public class FrequencyMapImpl extends FrequencyMap {
 
             transaction.commit();
         } catch ( TransactionException e ) {
-            log.error( "Error while reassigning new location for temperature-based partitions", e );
-            try {
-                transaction.rollback( e.getMessage() );
-            } catch ( TransactionException ex ) {
-                log.error( "Error while rolling back the transaction", e );
-            }
+            transaction.rollback( "Error while reassigning new location for temperature-based partitions. " + e.getMessage() );
             throw new GenericRuntimeException( e );
         }
     }

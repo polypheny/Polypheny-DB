@@ -390,8 +390,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
             // Locks are released within commit
             transaction.commit();
         } catch ( TransactionException e ) {
-            transaction.rollback( "Caught exception while executing a query from the console. " + e.getMessage() );
-
+            transaction.rollback( "Caught exception while executing a query from the console. " + e );
         } finally {
             // Release lock
             LockManager.INSTANCE.unlock( transaction );

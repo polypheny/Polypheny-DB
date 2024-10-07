@@ -39,8 +39,6 @@ import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
-import org.polypheny.db.transaction.TransactionException;
-import org.polypheny.db.type.entity.spatial.GeometryTopologicalException;
 import org.polypheny.db.util.DeadlockException;
 import org.polypheny.db.util.Pair;
 
@@ -117,7 +115,7 @@ public class LanguageManager {
                 transaction.getQueryAnalyzer().attachStacktrace( e );
             }
             cancelTransaction( transaction, String.format( "Error on preparing query: %s", e.getMessage() ) );
-            context.removeTransaction(transaction);
+            context.removeTransaction( transaction );
             return List.of( ImplementationContext.ofError( e, ParsedQueryContext.fromQuery( context.getQuery(), null, context ), statement ) );
         }
 
@@ -202,7 +200,7 @@ public class LanguageManager {
                 implementationContexts.add( new ImplementationContext( implementation, parsed, statement, null ) );
 
             } catch ( Throwable e ) {
-                if ( !(e instanceof DeadlockException) ){
+                if ( !(e instanceof DeadlockException) ) {
                     // we only log unexpected cases with stacktrace
                     log.warn( "Caught exception: ", e );
                 }
