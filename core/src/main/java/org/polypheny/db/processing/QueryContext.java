@@ -118,7 +118,7 @@ public class QueryContext {
                 log.warn( "Multiple active transactions {}", context.transactions.size() );
             }
 
-            log.warn( "query: {}", query );
+            log.debug( "query: {}", query );
 
             return ParsedQueryContext.builder()
                     .query( query )

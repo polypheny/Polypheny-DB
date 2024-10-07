@@ -88,7 +88,7 @@ public class TransactionManagerImpl implements TransactionManager {
         PolyXid xid = generateNewTransactionId( nodeId, userId, connectionId );
         transactions.put( xid, new TransactionImpl( xid, this, user, defaultNamespace, analyze, origin, flavor ) );
         totalTransactions.incrementAndGet();
-        log.warn( "open {}", xid );
+        log.debug( "open {}", xid );
         return transactions.get( xid );
     }
 
@@ -123,7 +123,7 @@ public class TransactionManagerImpl implements TransactionManager {
 
     @Override
     public void removeTransaction( PolyXid xid ) {
-        log.warn( "remove {}", xid );
+        log.debug( "remove {}", xid );
         if ( !transactions.containsKey( xid ) ) {
             log.warn( "Unknown transaction id: {}", xid );
         } else {
