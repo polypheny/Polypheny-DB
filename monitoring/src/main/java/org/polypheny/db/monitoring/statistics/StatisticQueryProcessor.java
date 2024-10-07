@@ -121,12 +121,7 @@ public class StatisticQueryProcessor {
             // Locks are released within commit
             transaction.commit();
         } catch ( TransactionException e ) {
-            log.error( "Caught exception while executing a query from the console", e );
-            try {
-                transaction.rollback();
-            } catch ( TransactionException ex ) {
-                log.error( "Caught exception while rollback", e );
-            }
+            transaction.rollback( "Caught exception while executing a query from the console. " + e );
         } finally {
             // Release lock
             statement.getQueryProcessor().unlock( statement );

@@ -16,10 +16,12 @@
 
 package org.polypheny.db.util;
 
-public class DeadlockException extends Exception {
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 
-    public DeadlockException( Exception e ) {
-        super( e );
+public class DeadlockException extends GenericRuntimeException {
+
+    public DeadlockException( String msg ) {
+        super( msg );
     }
 
 }

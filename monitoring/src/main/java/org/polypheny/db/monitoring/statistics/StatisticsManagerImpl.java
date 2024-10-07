@@ -215,12 +215,8 @@ public class StatisticsManagerImpl extends StatisticsManager {
             log.debug( "Finished resetting StatisticManager." );
             statisticQueryInterface.commitTransaction( transaction, statement );
         } catch ( Exception e ) {
-            try {
-                statement.getQueryProcessor().unlock( statement );
-                statement.getTransaction().rollback();
-            } catch ( TransactionException ex ) {
-                throw new GenericRuntimeException( ex );
-            }
+            statement.getQueryProcessor().unlock( statement );
+            statement.getTransaction().rollback( e.getMessage() );
         }
     }
 

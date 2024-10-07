@@ -574,12 +574,7 @@ public class PolyphenyDb {
         try {
             trx.commit();
         } catch ( TransactionException e ) {
-            try {
-                trx.rollback();
-            } catch ( TransactionException ex ) {
-                log.error( "Error while rolling back the transaction", e );
-            }
-            throw new GenericRuntimeException( "Something went wrong while restoring stores from the catalog.", e );
+            trx.rollback( "Something went wrong while restoring stores from the catalog. " + e.getMessage() );
         }
     }
 

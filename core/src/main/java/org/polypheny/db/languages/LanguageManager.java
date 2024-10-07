@@ -40,6 +40,8 @@ import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
+import org.polypheny.db.type.entity.spatial.GeometryTopologicalException;
+import org.polypheny.db.util.DeadlockException;
 import org.polypheny.db.util.Pair;
 
 @Slf4j
@@ -111,11 +113,10 @@ public class LanguageManager {
 
             parsedQueries = context.getLanguage().parser().apply( context );
         } catch ( Throwable e ) {
-            log.warn( "Error on preparing query: {}", e.getMessage() );
             if ( transaction.isAnalyze() ) {
                 transaction.getQueryAnalyzer().attachStacktrace( e );
             }
-            cancelTransaction( transaction );
+            cancelTransaction( transaction, String.format( "Error on preparing query: %s", e.getMessage() ) );
             context.removeTransaction(transaction);
             return List.of( ImplementationContext.ofError( e, ParsedQueryContext.fromQuery( context.getQuery(), null, context ), statement ) );
         }
@@ -201,11 +202,15 @@ public class LanguageManager {
                 implementationContexts.add( new ImplementationContext( implementation, parsed, statement, null ) );
 
             } catch ( Throwable e ) {
-                log.warn( "Caught exception: ", e ); // TODO: This should not log in all cases, at least not with stacktrace
+                if ( !(e instanceof DeadlockException) ){
+                    // we only log unexpected cases with stacktrace
+                    log.warn( "Caught exception: ", e );
+                }
+
                 if ( transaction.isAnalyze() ) {
                     transaction.getQueryAnalyzer().attachStacktrace( e );
                 }
-                cancelTransaction( transaction );
+                cancelTransaction( transaction, e.getMessage() );
                 implementationContexts.add( ImplementationContext.ofError( e, parsed, statement ) );
                 return implementationContexts;
             }
@@ -225,14 +230,9 @@ public class LanguageManager {
     }
 
 
-    private static void cancelTransaction( @Nullable Transaction transaction ) {
+    private static void cancelTransaction( @Nullable Transaction transaction, @Nullable String reason ) {
         if ( transaction != null && transaction.isActive() ) {
-            try {
-                transaction.rollback();
-            } catch ( TransactionException ex ) {
-                // Ignore
-                log.warn( "Error during rollback: " + ex.getMessage() );
-            }
+            transaction.rollback( reason );
         }
     }
 
@@ -252,7 +252,7 @@ public class LanguageManager {
                 if ( transaction.isAnalyze() && implementation.getException().isEmpty() ) {
                     transaction.getQueryAnalyzer().attachStacktrace( e );
                 }
-                cancelTransaction( transaction );
+                cancelTransaction( transaction, e.getMessage() );
 
                 executedContexts.add( ExecutedContext.ofError( e, implementation, null ) );
                 return executedContexts;

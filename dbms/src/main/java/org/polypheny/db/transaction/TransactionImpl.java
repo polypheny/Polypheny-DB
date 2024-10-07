@@ -32,6 +32,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.index.IndexManager;
@@ -189,8 +190,9 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
             List<List<?>> rows = results.stream().map( r -> r.execute( statement, -1 ).getAllRowsAndClose() ).filter( r -> !r.isEmpty() ).collect( Collectors.toList() );
             if ( !rows.isEmpty() ) {
                 int index = ((List<PolyNumber>) rows.get( 0 ).get( 0 )).get( 1 ).intValue();
-                rollback();
-                throw new TransactionException( infos.get( 0 ).errorMessages().get( index ) + "\nThere are violated constraints, the transaction was rolled back!" );
+                String error = infos.get( 0 ).errorMessages().get( index ) + "\nThere are violated constraints, the transaction was rolled back!";
+                rollback( error );
+                throw new TransactionException( error );
             }
         }
 
@@ -213,8 +215,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
             IndexManager.getInstance().commit( this.xid );
         } else {
-            log.error( "Unable to prepare all involved entities for commit. Rollback changes!" );
-            rollback();
+            rollback( "Unable to prepare all involved entities for commit. Rollback changes!" );
             throw new TransactionException( "Unable to prepare all involved entities for commit. Changes have been rolled back." );
         }
 
@@ -235,13 +236,16 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
 
     @Override
-    public void rollback() throws TransactionException {
+    public void rollback( @Nullable String reason ) throws TransactionException {
         if ( !isActive() ) {
             log.trace( "This transaction has already been finished!" );
             return;
         }
         try {
-            log.warn( "rolling back transaction" );
+            if ( reason != null ) {
+                log.warn( "Rolling back because: \"{}\" transaction {} ", reason, xid );
+            }
+
             //  Rollback changes to the adapters
             for ( Adapter<?> adapter : involvedAdapters ) {
                 adapter.rollback( xid );
@@ -441,5 +445,6 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     public DataMigrator getDataMigrator() {
         return new DataMigratorImpl();
     }
+
 
 }
