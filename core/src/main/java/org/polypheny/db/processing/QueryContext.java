@@ -89,6 +89,11 @@ public class QueryContext {
     List<Transaction> transactions = new ArrayList<>();
 
 
+    public void removeTransaction( Transaction transaction ) {
+        transactions.remove( transaction );
+    }
+
+
     @EqualsAndHashCode(callSuper = true)
     @Value
     @SuperBuilder(toBuilder = true)

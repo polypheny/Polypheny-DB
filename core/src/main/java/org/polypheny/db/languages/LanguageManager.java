@@ -116,6 +116,7 @@ public class LanguageManager {
                 transaction.getQueryAnalyzer().attachStacktrace( e );
             }
             cancelTransaction( transaction );
+            context.removeTransaction(transaction);
             return List.of( ImplementationContext.ofError( e, ParsedQueryContext.fromQuery( context.getQuery(), null, context ), statement ) );
         }
 
