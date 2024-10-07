@@ -97,8 +97,11 @@ public class LockManager {
                     signalAll();
 
                     return;
-                }else if ( owners.contains( transaction.getXid() ) && (mode == LockMode.EXCLUSIVE ) && waiters.stream().allMatch( w -> owners.contains( w.right ) && w.middle == LockMode.EXCLUSIVE ) ) {
-                    // we have to interrupt one transaction, both want to upgrade
+                }else if ( owners.contains( transaction.getXid() ) && (mode == LockMode.EXCLUSIVE )
+                        && owners.size() <= waiters.size()
+                        // trx is owner and wants to upgrade, other transaction has the same -> deadlock
+                        && waiters.stream().filter( w -> w.right != transaction.getXid() ).anyMatch( w -> owners.contains( w.right ) && w.middle == LockMode.EXCLUSIVE ) ) {
+                    // we have to interrupt one transaction, all want to upgrade
                     throw new DeadlockException( new GenericRuntimeException( "Unable to upgrade multiple locks simultaneously!" ) );
                 }
 
@@ -109,7 +112,7 @@ public class LockManager {
 
                 // we wait until next signal
                 if ( !owners.contains( transaction.getXid() ) && waiters.size() > 1 ) {
-                    // not in owners list queue at the end -> current owner wants to update
+                    // not in owners list queue at the end -> current owner has shared or exclusive lock
                     waiters.add( waiters.poll() );
                     // signal
                     signalAll();
