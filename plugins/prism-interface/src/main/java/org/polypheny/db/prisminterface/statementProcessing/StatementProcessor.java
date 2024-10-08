@@ -19,6 +19,7 @@ package org.polypheny.db.prisminterface.statementProcessing;
 import com.google.common.collect.ImmutableMap;
 import java.util.List;
 import java.util.Map;
+import lombok.SneakyThrows;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -51,6 +52,9 @@ public class StatementProcessor {
                     .build();
 
 
+    // @SneakyThrows is needed for rethrowing implementation.get( 0 ).getException() without
+    // having to annotate everything with "throws Throwable" or wrapping it in another Exception
+    @SneakyThrows
     public static void implement( PIStatement piStatement ) {
         Statement statement = piStatement.getStatement();
         if ( statement == null ) {
@@ -77,7 +81,7 @@ public class StatementProcessor {
         }
 
         if ( implementations.get( 0 ).getImplementation() == null ) {
-            throw new GenericRuntimeException( implementations.get( 0 ).getException().orElseThrow() );
+            throw implementations.get( 0 ).getException().orElseThrow();
         }
         piStatement.setImplementation( implementations.get( 0 ).getImplementation() );
     }
