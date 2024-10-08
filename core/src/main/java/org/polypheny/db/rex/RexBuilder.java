@@ -523,7 +523,7 @@ public class RexBuilder {
             final int length = value.asString().getValue().length();
             return switch ( toType.getPolyType() ) {
                 case CHAR -> PolyTypeUtil.comparePrecision( toType.getPrecision(), length ) == 0;
-                case JSON, VARCHAR -> PolyTypeUtil.comparePrecision( toType.getPrecision(), length ) >= 0;
+                case JSON, VARCHAR, TEXT -> PolyTypeUtil.comparePrecision( toType.getPrecision(), length ) >= 0;
                 default -> throw new AssertionError( toType );
             };
         }
@@ -1140,7 +1140,7 @@ public class RexBuilder {
         RexLiteral literal;
         final List<RexNode> operands;
         return switch ( type.getPolyType() ) {
-            case CHAR, VARCHAR -> {
+            case CHAR, VARCHAR, TEXT -> {
                 AlgDataType algType = typeFactory.createPolyType( type.getPolyType(), type.getPrecision() );
                 type = typeFactory.createTypeWithCharsetAndCollation( algType, poly.asString().charset, type.getCollation() );
                 literal = makeLiteral( poly.asString(), type, type.getPolyType() );
