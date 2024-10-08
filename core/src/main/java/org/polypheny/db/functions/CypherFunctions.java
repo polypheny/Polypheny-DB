@@ -26,6 +26,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.function.Deterministic;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.PrecisionModel;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyString;
@@ -40,6 +44,9 @@ import org.polypheny.db.type.entity.graph.PolyNode;
 import org.polypheny.db.type.entity.graph.PolyPath;
 import org.polypheny.db.type.entity.relational.PolyMap;
 import org.polypheny.db.type.entity.spatial.PolyGeometry;
+
+import static org.polypheny.db.type.entity.spatial.PolyGeometry.WGS_84;
+import static org.polypheny.db.type.entity.spatial.PolyGeometry.WGS_84_3D;
 
 
 @Deterministic
@@ -105,7 +112,6 @@ public class CypherFunctions {
         values.add( new PolyValue[]{ new PolyGraph( PolyMap.of( ns ), PolyMap.of( es ) ) } );
         return Linq4j.asEnumerable( values );
     }
-
 
 
     /**
@@ -423,9 +429,60 @@ public class CypherFunctions {
         return PolyBoolean.FALSE;
     }
 
+
     public static PolyGeometry point( PolyValue map ) {
-        // TODO
-        return PolyGeometry.of("SRID=0;POINT(56.7 12.78)");
+        if ( !map.isMap() ) {
+            throw new GenericRuntimeException( "point() expects a map." );
+        }
+
+        PolyMap<PolyValue, PolyValue> polyMap = map.asMap();
+        PolyString x = new PolyString( "x" );
+        PolyString y = new PolyString( "y" );
+        PolyString z = new PolyString( "z" );
+        PolyString longitude = new PolyString( "longitude" );
+        PolyString latitude = new PolyString( "latitude" );
+        PolyString height = new PolyString( "height" );
+        Coordinate coordinate = new Coordinate();
+        int srid = 0;
+
+        if ( polyMap.containsKey( x ) && polyMap.containsKey( y ) ) {
+            coordinate.setX( convertPolyValueToDouble( polyMap.get( x ) ) );
+            coordinate.setY( convertPolyValueToDouble( polyMap.get( y ) ) );
+            if ( polyMap.containsKey( z ) ) {
+                coordinate.setZ( convertPolyValueToDouble( polyMap.get( z ) ) );
+            }
+        } else if ( polyMap.containsKey( longitude ) && polyMap.containsKey( latitude ) ) {
+            coordinate.setX( convertPolyValueToDouble( polyMap.get( longitude ) ) );
+            coordinate.setY( convertPolyValueToDouble( polyMap.get( latitude ) ) );
+            if ( polyMap.containsKey( height ) ) {
+                coordinate.setZ( convertPolyValueToDouble( polyMap.get( height ) ) );
+                srid = WGS_84_3D;
+            } else {
+                srid = WGS_84;
+            }
+        }
+        GeometryFactory geometryFactory = new GeometryFactory( new PrecisionModel(), srid );
+        return PolyGeometry.of( geometryFactory.createPoint( coordinate ) );
+    }
+
+
+    private static double convertPolyValueToDouble( PolyValue value ) {
+        Double result = null;
+        if ( value.isDouble() ) {
+            result = value.asDouble().getValue();
+        }
+        if ( value.isInteger() ) {
+            int intValue = value.asInteger().intValue();
+            result = (double) intValue;
+        }
+        if ( value.isLong() ) {
+            long intValue = value.asLong().longValue();
+            result = (double) intValue;
+        }
+        if ( result == null ) {
+            throw new GenericRuntimeException( "Legacy Coordinates needs to be of type INTEGER or DOUBLE." );
+        }
+        return result;
     }
 
 }

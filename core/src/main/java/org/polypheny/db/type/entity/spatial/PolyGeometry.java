@@ -79,6 +79,8 @@ public class PolyGeometry extends PolyValue {
     public static final int NO_SRID = 0;
     // World Geodetic System 1984; default for GeoJSON
     public static final int WGS_84 = 4326;
+    // WGS84 with 3 dimensions (+height)
+    public static final int WGS_84_3D = 4979;
 
     /**
      * Wrap the JTS {@link Geometry} class.
