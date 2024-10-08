@@ -42,7 +42,9 @@ import org.polypheny.db.type.entity.graph.PolyEdge.EdgeDirection;
 import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.type.entity.graph.PolyNode;
 import org.polypheny.db.type.entity.graph.PolyPath;
+import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.relational.PolyMap;
+import org.polypheny.db.type.entity.spatial.GeometryTopologicalException;
 import org.polypheny.db.type.entity.spatial.PolyGeometry;
 
 import static org.polypheny.db.type.entity.spatial.PolyGeometry.WGS_84;
@@ -463,6 +465,17 @@ public class CypherFunctions {
         }
         GeometryFactory geometryFactory = new GeometryFactory( new PrecisionModel(), srid );
         return PolyGeometry.of( geometryFactory.createPoint( coordinate ) );
+    }
+
+    public static PolyDouble distance(PolyValue p1, PolyValue p2) {
+        PolyGeometry g1 = p1.asGeometry();
+        PolyGeometry g2 = p2.asGeometry();
+
+        try {
+            return new PolyDouble( g1.distance( g2 ) );
+        } catch ( GeometryTopologicalException e ) {
+            throw new GenericRuntimeException( e );
+        }
     }
 
 
