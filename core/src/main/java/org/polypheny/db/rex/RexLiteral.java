@@ -279,7 +279,7 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
             case VARBINARY -> // not allowed -- use Binary
                     value.isBinary();
             case BINARY -> value.isBinary();
-            case VARCHAR, CHAR ->
+            case VARCHAR, CHAR, TEXT ->
                 // A SqlLiteral's charset and collation are optional; not so a RexLiteral.
                     value.isString();
             case SYMBOL -> value.isSymbol();
@@ -410,6 +410,7 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
     private static void printAsJava( PolyValue value, PrintWriter pw, PolyType typeName, boolean java ) {
         switch ( typeName ) {
             case VARCHAR:
+            case TEXT:
             case CHAR:
                 PolyString string = value.asString();
                 if ( java ) {
