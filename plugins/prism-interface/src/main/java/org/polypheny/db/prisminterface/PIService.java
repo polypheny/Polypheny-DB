@@ -44,6 +44,7 @@ import org.polypheny.db.prisminterface.utils.VersionUtils;
 import org.polypheny.db.sql.language.SqlJdbcFunctionCall;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.util.DeadlockException;
 import org.polypheny.db.util.RunMode;
 import org.polypheny.db.util.Util;
 import org.polypheny.prism.ClientInfoProperties;
@@ -171,7 +172,7 @@ class PIService {
         try {
             r = handleMessage( req );
         } catch ( Throwable t ) {
-            if ( Catalog.mode == RunMode.BENCHMARK ) {
+            if ( Catalog.mode == RunMode.BENCHMARK && !(t instanceof DeadlockException) ) {
                 log.error( "Request failed: ", t );
             }
             r = createErrorResponse( req.getId(), Objects.requireNonNullElse( t.getMessage(), t.getClass().getSimpleName() ) );
