@@ -167,7 +167,7 @@ class PIService {
     }
 
 
-    private Response handleRequest( Request req ) {
+    private Response handleRequest( Request req ) throws IOException {
         Response r;
         try {
             r = handleMessage( req );
@@ -177,12 +177,8 @@ class PIService {
             }
             r = createErrorResponse( req.getId(), Objects.requireNonNullElse( t.getMessage(), t.getClass().getSimpleName() ) );
         }
-        try {
-            sendOneMessage( r );
-            return r;
-        } catch ( IOException e ) {
-            throw new GenericRuntimeException( e );
-        }
+        sendOneMessage( r );
+        return r;
     }
 
 
