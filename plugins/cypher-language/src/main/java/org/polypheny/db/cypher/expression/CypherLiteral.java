@@ -41,6 +41,7 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.util.Pair;
 
 @Getter
@@ -98,7 +99,8 @@ public class CypherLiteral extends CypherExpression {
 
 
     public enum Literal {
-        TRUE, FALSE, NULL, LIST, MAP, STRING, DOUBLE, DECIMAL, HEX, OCTAL, STAR
+        TRUE, FALSE, NULL, LIST, MAP, STRING, DOUBLE, DECIMAL, HEX, OCTAL, STAR,
+//        POINT
     }
 
 
@@ -119,6 +121,10 @@ public class CypherLiteral extends CypherExpression {
             case STRING, HEX, OCTAL -> PolyString.of( (String) value );
             case DOUBLE -> PolyDouble.of( (Double) value );
             case DECIMAL -> PolyInteger.of( (Integer) value );
+//            case POINT -> {
+//
+//                yield PolyGeometry.of("");
+//            }
             case STAR -> throw new UnsupportedOperationException();
         };
     }

@@ -39,6 +39,7 @@ import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.type.entity.graph.PolyNode;
 import org.polypheny.db.type.entity.graph.PolyPath;
 import org.polypheny.db.type.entity.relational.PolyMap;
+import org.polypheny.db.type.entity.spatial.PolyGeometry;
 
 
 @Deterministic
@@ -422,5 +423,9 @@ public class CypherFunctions {
         return PolyBoolean.FALSE;
     }
 
+    public static PolyGeometry point( PolyValue map ) {
+        // TODO
+        return PolyGeometry.of("");
+    }
 
 }
