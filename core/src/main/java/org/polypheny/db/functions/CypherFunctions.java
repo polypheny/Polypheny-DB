@@ -444,26 +444,68 @@ public class CypherFunctions {
         PolyString longitude = new PolyString( "longitude" );
         PolyString latitude = new PolyString( "latitude" );
         PolyString height = new PolyString( "height" );
+        PolyString srid = new PolyString( "srid" );
+        PolyString crs = new PolyString( "crs" );
+
+        // In Cypher, it is possible to define the following four SRIDs
+        //  7203: cartesian with 2 coordinates (no relation to ESPG:7203) -> 0
+        //  9157: cartesian with 3 coordinates (no relation to ESPG:9157) -> 0
+        //  4326: spherical with 2 coordinates                            -> 4326
+        //  4979: spherical with 3 coordinates                            -> 4979
+        int SRID = 0;
         Coordinate coordinate = new Coordinate();
-        int srid = 0;
 
         if ( polyMap.containsKey( x ) && polyMap.containsKey( y ) ) {
+            if(polyMap.get( x ).isNull()){
+                return null;
+            }
             coordinate.setX( convertPolyValueToDouble( polyMap.get( x ) ) );
+            if(polyMap.get( y ).isNull()){
+                return null;
+            }
             coordinate.setY( convertPolyValueToDouble( polyMap.get( y ) ) );
             if ( polyMap.containsKey( z ) ) {
+                if(polyMap.get( z ).isNull()){
+                    return null;
+                }
                 coordinate.setZ( convertPolyValueToDouble( polyMap.get( z ) ) );
             }
+
+            if (polyMap.containsKey( srid )){
+                SRID = switch (polyMap.get(srid).asInteger().intValue()){
+                    case WGS_84 -> WGS_84;
+                    case WGS_84_3D -> WGS_84_3D;
+                    default -> 0;
+                };
+            }
+            else if (polyMap.containsKey( crs )){
+                SRID = switch (polyMap.get(crs).asString().value){
+                    case "WGS-84-2D" -> WGS_84;
+                    case "WGS-84-3D" -> WGS_84_3D;
+                    default -> 0;
+                };
+            }
+
         } else if ( polyMap.containsKey( longitude ) && polyMap.containsKey( latitude ) ) {
+            if(polyMap.get( longitude ).isNull()){
+                return null;
+            }
             coordinate.setX( convertPolyValueToDouble( polyMap.get( longitude ) ) );
+            if(polyMap.get( latitude ).isNull()){
+                return null;
+            }
             coordinate.setY( convertPolyValueToDouble( polyMap.get( latitude ) ) );
             if ( polyMap.containsKey( height ) ) {
+                if(polyMap.get( height ).isNull()){
+                    return null;
+                }
                 coordinate.setZ( convertPolyValueToDouble( polyMap.get( height ) ) );
-                srid = WGS_84_3D;
+                SRID = WGS_84_3D;
             } else {
-                srid = WGS_84;
+                SRID = WGS_84;
             }
         }
-        GeometryFactory geometryFactory = new GeometryFactory( new PrecisionModel(), srid );
+        GeometryFactory geometryFactory = new GeometryFactory( new PrecisionModel(), SRID );
         return PolyGeometry.of( geometryFactory.createPoint( coordinate ) );
     }
 
