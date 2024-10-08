@@ -110,7 +110,7 @@ public class DocumentUtil {
             case 19 -> new Pair<>( BsonDecimal128.class, PolyBigDecimal.class );
             case -1 -> new Pair<>( BsonMinKey.class, BsonMinKey.class );
             case 127 -> new Pair<>( BsonMaxKey.class, BsonMaxKey.class );
-            default -> throw new GenericRuntimeException( "This type does not exist." );
+            default -> throw new GenericRuntimeException( String.format( "Type %d does not exist.", typeNumber ) );
         };
     }
 
@@ -139,7 +139,7 @@ public class DocumentUtil {
             case "minKey" -> -1;
             case "maxKey" -> 127;
             case "number" -> 99; // not official mongodb
-            default -> throw new RuntimeException( "This type does not exist." );
+            default -> throw new GenericRuntimeException( String.format( "Type %s does not exist.", value ) );
         };
     }
 
