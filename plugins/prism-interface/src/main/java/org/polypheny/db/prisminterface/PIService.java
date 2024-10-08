@@ -213,7 +213,7 @@ class PIService {
         try {
             handleMessages();
         } catch ( Throwable e ) {
-            if ( !(e instanceof EOFException) ) {
+            if ( !(e instanceof EOFException) && !e.getMessage().equals( "Broken pipe" ) ) {
                 throw new GenericRuntimeException( e );
             }
             reason = e.getMessage();
