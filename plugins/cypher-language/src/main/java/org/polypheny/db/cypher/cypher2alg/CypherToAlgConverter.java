@@ -404,6 +404,7 @@ public class CypherToAlgConverter {
 
         public final AlgDataType graphType;
         public final AlgDataType booleanType;
+        public final AlgDataType geometryType;
         public final AlgDataType nodeType;
         public final AlgDataType edgeType;
         public final AlgDataType pathType;
@@ -430,6 +431,7 @@ public class CypherToAlgConverter {
             this.rexBuilder = rexBuilder;
             this.graphType = cluster.getTypeFactory().createPolyType( PolyType.GRAPH );
             this.booleanType = cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN );
+            this.geometryType = cluster.getTypeFactory().createPolyType( PolyType.GEOMETRY );
             this.nodeType = cluster.getTypeFactory().createPolyType( PolyType.NODE );
             this.edgeType = cluster.getTypeFactory().createPolyType( PolyType.EDGE );
             this.pathType = cluster.getTypeFactory().createPolyType( PolyType.PATH );

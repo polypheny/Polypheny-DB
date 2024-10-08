@@ -425,7 +425,7 @@ public class CypherFunctions {
 
     public static PolyGeometry point( PolyValue map ) {
         // TODO
-        return PolyGeometry.of("");
+        return PolyGeometry.of("SRID=0;POINT(56.7 12.78)");
     }
 
 }

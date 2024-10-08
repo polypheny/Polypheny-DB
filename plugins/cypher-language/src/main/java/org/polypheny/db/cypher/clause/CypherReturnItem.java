@@ -18,16 +18,22 @@ package org.polypheny.db.cypher.clause;
 
 import javax.annotation.Nullable;
 import lombok.Getter;
+import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.cypher.expression.CypherAggregate;
 import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.cypher.expression.CypherExpression.ExpressionType;
 import org.polypheny.db.cypher.expression.CypherVariable;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.languages.QueryLanguage;
+import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.util.Pair;
+import java.util.List;
+import java.util.Objects;
 
 
 @Getter
@@ -67,6 +73,13 @@ public class CypherReturnItem extends CypherReturn {
             // name -> aggregate
             // renaming of the field
             String name = variable.getName();
+            // TODO: There is probably a better way to invoke functions
+            if ( Objects.equals( name, "point" ) ) {
+                return Pair.of( PolyString.of( name ), new RexCall(
+                        context.geometryType,
+                        OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_POINT ),
+                        List.of( context.rexBuilder.makeLiteral( "Test" ) ) ) );
+            }
             if ( expression.getType() == ExpressionType.AGGREGATE ) {
                 return ((CypherAggregate) expression).getAggregate( context, name );
             }

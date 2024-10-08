@@ -99,8 +99,7 @@ public class CypherLiteral extends CypherExpression {
 
 
     public enum Literal {
-        TRUE, FALSE, NULL, LIST, MAP, STRING, DOUBLE, DECIMAL, HEX, OCTAL, STAR,
-//        POINT
+        TRUE, FALSE, NULL, LIST, MAP, STRING, DOUBLE, DECIMAL, HEX, OCTAL, STAR, POINT
     }
 
 
@@ -121,10 +120,9 @@ public class CypherLiteral extends CypherExpression {
             case STRING, HEX, OCTAL -> PolyString.of( (String) value );
             case DOUBLE -> PolyDouble.of( (Double) value );
             case DECIMAL -> PolyInteger.of( (Integer) value );
-//            case POINT -> {
-//
-//                yield PolyGeometry.of("");
-//            }
+            case POINT -> {
+                yield PolyGeometry.of( "SRID=0;POINT(56.7 12.78)" );
+            }
             case STAR -> throw new UnsupportedOperationException();
         };
     }
@@ -149,6 +147,10 @@ public class CypherLiteral extends CypherExpression {
             case STRING -> context.rexBuilder.makeLiteral( (String) value );
             case DOUBLE -> context.rexBuilder.makeApproxLiteral( BigDecimal.valueOf( (Double) value ) );
             case DECIMAL -> context.rexBuilder.makeExactLiteral( BigDecimal.valueOf( (Integer) value ) );
+            case POINT -> {
+                AlgDataType dataType = context.typeFactory.createPolyType( PolyType.GEOMETRY );
+                yield context.rexBuilder.makeLiteral( PolyGeometry.of( "SRID=0;POINT(56.7 12.78)" ), dataType, false );
+            }
         };
         return Pair.of( null, node );
     }
