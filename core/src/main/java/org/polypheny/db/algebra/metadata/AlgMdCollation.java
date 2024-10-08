@@ -439,22 +439,19 @@ public class AlgMdCollation implements MetadataHandler<BuiltInMetadata.Collation
         // (i) join type is INNER or LEFT;
         // (ii) RelCollation always orders nulls last.
         final ImmutableList<AlgCollation> leftCollations = mq.collations( left );
-        switch ( joinType ) {
-            case INNER:
-            case LEFT:
-                return leftCollations;
-            case RIGHT:
-            case FULL:
+        return switch ( joinType ) {
+            case INNER, LEFT -> leftCollations;
+            case RIGHT, FULL -> {
                 for ( AlgCollation collation : leftCollations ) {
                     for ( AlgFieldCollation field : collation.getFieldCollations() ) {
                         if ( !(AlgFieldCollation.NullDirection.LAST == field.nullDirection) ) {
-                            return ImmutableList.of();
+                            yield ImmutableList.of();
                         }
                     }
                 }
-                return leftCollations;
-        }
-        return ImmutableList.of();
+                yield leftCollations;
+            }
+        };
     }
 
 }
