@@ -520,6 +520,11 @@ public class CypherFunctions {
         }
     }
 
+    public static PolyBoolean withinBBox(PolyValue point, PolyValue bbox) {
+        PolyGeometry g = point.asGeometry();
+        PolyGeometry gBBox = bbox.asGeometry();
+        return new PolyBoolean( g.within( gBBox ) );
+    }
 
     private static double convertPolyValueToDouble( PolyValue value ) {
         Double result = null;

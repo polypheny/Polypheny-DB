@@ -479,6 +479,7 @@ public class RexImpTable {
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_GRAPH_ONLY_LABEL ), BuiltInMethod.X_MODEL_GRAPH_ONLY_LABEL.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_POINT ), BuiltInMethod.CYPHER_POINT.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_DISTANCE ), BuiltInMethod.CYPHER_DISTANCE.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_WITHIN_BBOX ), BuiltInMethod.CYPHER_WITHIN_BBOX.method, NullPolicy.NONE );
     }
 
 
