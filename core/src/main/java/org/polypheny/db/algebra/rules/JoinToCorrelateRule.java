@@ -85,16 +85,10 @@ public class JoinToCorrelateRule extends AlgOptRule {
     @Override
     public boolean matches( AlgOptRuleCall call ) {
         LogicalRelJoin join = call.alg( 0 );
-        switch ( join.getJoinType() ) {
-            case INNER:
-            case LEFT:
-                return true;
-            case FULL:
-            case RIGHT:
-                return false;
-            default:
-                throw Util.unexpected( join.getJoinType() );
-        }
+        return switch ( join.getJoinType() ) {
+            case INNER, LEFT -> true;
+            case FULL, RIGHT -> false;
+        };
     }
 
 
