@@ -58,10 +58,7 @@ public class RelationalExecutor extends Executor {
             piStatement.getClient().commitCurrentTransactionIfAuto();
             return resultBuilder.build();
         }
-        throw new PIServiceException( "Can't execute a non DDL or non DML statement using this method..",
-                "I9003",
-                9002
-        );
+        throw new PIServiceException( "Can't execute a non DDL or non DML statement using this method." );
     }
 
 

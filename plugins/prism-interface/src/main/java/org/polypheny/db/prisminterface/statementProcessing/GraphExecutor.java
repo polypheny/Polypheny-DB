@@ -27,7 +27,6 @@ import org.polypheny.db.monitoring.events.MonitoringType;
 import org.polypheny.db.prisminterface.PIClient;
 import org.polypheny.db.prisminterface.PIServiceException;
 import org.polypheny.db.prisminterface.metaRetrieval.GraphMetaRetriever;
-import org.polypheny.db.prisminterface.metaRetrieval.RelationalMetaRetriever;
 import org.polypheny.db.prisminterface.statements.PIStatement;
 import org.polypheny.db.prisminterface.utils.PrismUtils;
 import org.polypheny.db.transaction.Statement;
@@ -55,10 +54,7 @@ public class GraphExecutor extends Executor {
             resultBuilder.setScalar( 1 );
             return resultBuilder.build();
         }
-        throw new PIServiceException( "Can't execute a non DDL or non DML statement using this method..",
-                "I9003",
-                9002
-        );
+        throw new PIServiceException( "Can't execute a non DDL or non DML statement using this method." );
     }
 
 
@@ -74,8 +70,8 @@ public class GraphExecutor extends Executor {
             return resultBuilder.build();
         }
         if ( Kind.DML.contains( implementation.getKind() ) ) {
-            try (ResultIterator iterator = implementation.execute( statement, -1 )) {
-                resultBuilder.setScalar( PolyImplementation.getRowsChanged( statement, iterator.getIterator(), MonitoringType.from(implementation.getKind()) ) );
+            try ( ResultIterator iterator = implementation.execute( statement, -1 ) ) {
+                resultBuilder.setScalar( PolyImplementation.getRowsChanged( statement, iterator.getIterator(), MonitoringType.from( implementation.getKind() ) ) );
             }
             client.commitCurrentTransactionIfAuto();
             return resultBuilder.build();
@@ -102,7 +98,7 @@ public class GraphExecutor extends Executor {
             executionStopWatch.stop();
             piStatement.getImplementation().getExecutionTimeMonitor().setExecutionTime( executionStopWatch.getNanoTime() );
         }
-        if (GraphMetaRetriever.retrievedResultIsRelational(piStatement.getImplementation())) {
+        if ( GraphMetaRetriever.retrievedResultIsRelational( piStatement.getImplementation() ) ) {
             List<ColumnMeta> columnMetas = GraphMetaRetriever.retrieveColumnMetas( piStatement.getImplementation() );
             return PrismUtils.buildRelationalFrame( isLast, data, columnMetas );
         }
