@@ -55,10 +55,7 @@ public class StatementProcessor {
     public static void implement( PIStatement piStatement ) {
         Statement statement = piStatement.getStatement();
         if ( statement == null ) {
-            throw new PIServiceException( "Statement is not linked to a PolyphenyStatement",
-                    "I9003",
-                    9003
-            );
+            throw new PIServiceException( "Statement is not linked to a PolyphenyStatement" );
         }
         QueryContext context = QueryContext.builder()
                 .query( piStatement.getQuery() )
@@ -131,9 +128,7 @@ public class StatementProcessor {
         Executor executor = EXECUTORS.get( piStatement.getLanguage().dataModel() );
         if ( executor == null ) {
             throw new PIServiceException( "No executor registered for namespace type "
-                    + piStatement.getLanguage().dataModel(),
-                    "I9004",
-                    9004
+                    + piStatement.getLanguage().dataModel()
             );
         }
         return executor;

@@ -47,19 +47,16 @@ public abstract class Executor {
                     statementDataModel.name().toLowerCase(),
                     getDataModel().name().toLowerCase()
             );
-            throw new PIServiceException( message, "I9000", 9000 );
+            throw new PIServiceException( message );
         }
 
         if ( piStatement.getStatement() == null ) {
-            throw new PIServiceException( "Statement is not linked to a polypheny statement",
-                    "I9001",
-                    9001
-            );
+            throw new PIServiceException( "Statement is not linked to a polypheny statement" );
         }
 
         PolyImplementation implementation = piStatement.getImplementation();
         if ( implementation == null ) {
-            throw new PIServiceException( "Can't retrieve results form an unexecuted statement.", "I9002", 9002 );
+            throw new PIServiceException( "Can't retrieve results form an unexecuted statement." );
         }
     }
 
