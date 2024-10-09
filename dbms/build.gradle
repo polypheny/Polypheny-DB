@@ -6,7 +6,6 @@ buildscript {
             url "https://plugins.gradle.org/m2/"
         }
         google()
-        mavenLocal()
     }
     dependencies {
         classpath group: "app.cash.licensee", name: "licensee-gradle-plugin", version: licensee_version
@@ -55,7 +54,7 @@ dependencies {
 
     // Workaround so org.polypheny.db.docker gets the right protobuf during testing
     testImplementation group: "com.google.protobuf", name: "protobuf-java", version: protobuf_version // BSD 3-clause
- 
+
     testImplementation(group: "org.polypheny", name: "polypheny-jdbc-driver", version: polypheny_jdbc_driver_version) {
         exclude(group: "com.fasterxml.jackson.core")
         exclude(group: "com.fasterxml.jackson.databind")

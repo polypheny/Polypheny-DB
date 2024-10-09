@@ -40,7 +40,7 @@ public class PIClient {
     @Getter
     private final StatementManager statementManager;
     @Getter
-    private final org.polypheny.db.prisminterface.metaRetrieval.PIClientInfoProperties PIClientInfoProperties;
+    private final PIClientInfoProperties PIClientInfoProperties;
     @Getter
     @Setter
     private boolean isAutoCommit;
