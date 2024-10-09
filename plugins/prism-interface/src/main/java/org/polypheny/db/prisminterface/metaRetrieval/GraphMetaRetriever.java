@@ -32,14 +32,10 @@ public class GraphMetaRetriever {
 
     public static boolean retrievedResultIsRelational( PolyImplementation polyImplementation ) {
         PolyType polyType = polyImplementation.tupleType.getFields().get( 0 ).getType().getPolyType();
-        switch ( polyType ) {
-            case NODE, EDGE, PATH -> {
-                return false;
-            }
-            default -> {
-                return true;
-            }
-        }
+        return switch ( polyType ) {
+            case NODE, EDGE, PATH -> false;
+            default -> true;
+        };
     }
 
 
@@ -47,7 +43,6 @@ public class GraphMetaRetriever {
         List<AlgDataTypeField> columns = polyImplementation.tupleType.getFields();
         AtomicInteger columnIndexGenerator = new AtomicInteger();
         return columns.stream().map( c -> retieveColumnMeta( c, columnIndexGenerator ) ).collect( Collectors.toList() );
-
     }
 
 
