@@ -16,13 +16,10 @@
 
 package org.polypheny.db.prisminterface.statementProcessing;
 
-import com.google.common.collect.ImmutableMap;
 import java.util.List;
-import java.util.Map;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.Node;
@@ -44,12 +41,9 @@ public class StatementProcessor {
 
     private static final String ORIGIN = "prism-interface";
 
-    private static final Map<DataModel, Executor> EXECUTORS =
-            ImmutableMap.<DataModel, Executor>builder()
-                    .put( DataModel.RELATIONAL, new RelationalExecutor() )
-                    .put( DataModel.DOCUMENT, new DocumentExecutor() )
-                    .put( DataModel.GRAPH, new GraphExecutor() )
-                    .build();
+    private static final RelationalExecutor relationalExecutor = new RelationalExecutor();
+    private static final GraphExecutor graphExecutor = new GraphExecutor();
+    private static final DocumentExecutor documentExecutor = new DocumentExecutor();
 
 
     public static void implement( PIStatement piStatement ) {
@@ -88,12 +82,12 @@ public class StatementProcessor {
 
 
     public static StatementResult executeAndGetResult( PIStatement piStatement ) {
-        return getExecutorOrThrow( piStatement ).executeAndGetResult( piStatement );
+        return getExecutor( piStatement ).executeAndGetResult( piStatement );
     }
 
 
     public static StatementResult executeAndGetResult( PIStatement piStatement, int fetchSize ) {
-        Executor executor = getExecutorOrThrow( piStatement );
+        Executor executor = getExecutor( piStatement );
         try {
             return executor.executeAndGetResult( piStatement, fetchSize );
         } catch ( Exception e ) {
@@ -103,7 +97,7 @@ public class StatementProcessor {
 
 
     public static Frame fetch( PIStatement piStatement, int fetchSize ) {
-        Executor executor = getExecutorOrThrow( piStatement );
+        Executor executor = getExecutor( piStatement );
         return executor.fetch( piStatement, fetchSize );
     }
 
@@ -124,14 +118,12 @@ public class StatementProcessor {
     }
 
 
-    private static Executor getExecutorOrThrow( PIStatement piStatement ) {
-        Executor executor = EXECUTORS.get( piStatement.getLanguage().dataModel() );
-        if ( executor == null ) {
-            throw new PIServiceException( "No executor registered for namespace type "
-                    + piStatement.getLanguage().dataModel()
-            );
-        }
-        return executor;
+    private static Executor getExecutor( PIStatement piStatement ) {
+        return switch ( piStatement.getLanguage().dataModel() ) {
+            case RELATIONAL -> relationalExecutor;
+            case GRAPH -> graphExecutor;
+            case DOCUMENT -> documentExecutor;
+        };
     }
 
 }
