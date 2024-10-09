@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
@@ -167,7 +166,7 @@ public class RelationalMetaRetriever {
                 // FIXME: getValidatedNodeType is wrong for DML
                 Kind kind = polyImplementation.getKind();
                 JavaTypeFactory typeFactory = polyImplementation.getStatement().getTransaction().getTypeFactory();
-                yield  AlgOptUtil.createDmlRowType( kind, typeFactory );
+                yield AlgOptUtil.createDmlRowType( kind, typeFactory );
             }
             default -> polyImplementation.tupleType;
         };

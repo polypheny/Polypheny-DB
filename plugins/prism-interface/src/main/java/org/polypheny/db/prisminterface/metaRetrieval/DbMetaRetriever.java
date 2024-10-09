@@ -20,7 +20,6 @@ import java.sql.DatabaseMetaData;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import org.polypheny.db.PolyphenyDb;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
@@ -39,7 +38,6 @@ import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
-import org.polypheny.db.prisminterface.metaRetrieval.PIClientInfoProperties;
 import org.polypheny.db.prisminterface.PIServiceException;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.prism.ClientInfoPropertyMeta;
@@ -106,7 +104,7 @@ public class DbMetaRetriever {
     // Entity search by namespace
     public static EntitiesResponse searchEntities( String namespaceName, String entityPattern ) {
         EntitiesResponse.Builder responseBuilder = EntitiesResponse.newBuilder();
-        LogicalNamespace namespace = Catalog.getInstance().getSnapshot().getNamespace( namespaceName ).orElseThrow();
+        LogicalNamespace namespace = Catalog.snapshot().getNamespace( namespaceName ).orElseThrow();
         return switch ( namespace.getDataModel() ) {
             case RELATIONAL -> responseBuilder.addAllEntities( getRelationalEntities( namespace.getId(), entityPattern ) ).build();
             case GRAPH -> responseBuilder.addAllEntities( getGraphEntities( namespace.getId(), entityPattern ) ).build();
@@ -218,13 +216,13 @@ public class DbMetaRetriever {
 
 
     private static List<ForeignKey> getExportedKeys( LogicalTable logicalTable ) {
-        return Catalog.getInstance().getSnapshot().rel().getExportedKeys( logicalTable.getId() )
+        return Catalog.snapshot().rel().getExportedKeys( logicalTable.getId() )
                 .stream().map( DbMetaRetriever::getForeignKeyMeta ).toList();
     }
 
 
     private static List<Index> getIndexes( LogicalTable logicalTable, boolean unique ) {
-        return Catalog.getInstance().getSnapshot().rel().getIndexes( logicalTable.getId(), unique )
+        return Catalog.snapshot().rel().getIndexes( logicalTable.getId(), unique )
                 .stream().map( DbMetaRetriever::getIndexMeta ).toList();
     }
 
