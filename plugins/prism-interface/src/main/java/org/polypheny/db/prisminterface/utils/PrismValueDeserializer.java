@@ -42,7 +42,6 @@ import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 import org.polypheny.prism.IndexedParameters;
 import org.polypheny.prism.ProtoBigDecimal;
 import org.polypheny.prism.ProtoValue;
-import org.polypheny.prism.ProtoValue.ValueCase;
 
 public class PrismValueDeserializer {
 
@@ -105,7 +104,7 @@ public class PrismValueDeserializer {
     private static PolyValue deserializeToPolyDocument( ProtoValue protoValue ) {
         PolyDocument document = new PolyDocument();
         protoValue.getDocument().getEntriesMap()
-                .forEach( (k, v) -> document.put(
+                .forEach( ( k, v ) -> document.put(
                         new PolyString( k ),
                         deserializeProtoValue( v )
                 ) );
