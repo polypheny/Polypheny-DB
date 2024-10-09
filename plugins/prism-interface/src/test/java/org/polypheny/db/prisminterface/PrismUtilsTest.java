@@ -20,8 +20,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
@@ -86,13 +86,8 @@ public class PrismUtilsTest {
 
     @Test
     public void buildGraphFrameWithNodesTest() {
-        HashMap<PolyString, PolyValue> map1 = new HashMap<>();
-        map1.put( new PolyString( "key1" ), new PolyString( "value1" ) );
-        PolyDictionary properties1 = PolyDictionary.ofDict( map1 );
-
-        HashMap<PolyString, PolyValue> map2 = new HashMap<>();
-        map2.put( new PolyString( "key2" ), new PolyString( "value2" ) );
-        PolyDictionary properties2 = PolyDictionary.ofDict( map2 );
+        PolyDictionary properties1 = PolyDictionary.ofDict( Map.of( new PolyString( "key1" ), new PolyString( "value1" ) ) );
+        PolyDictionary properties2 = PolyDictionary.ofDict( Map.of( new PolyString( "key2" ), new PolyString( "value2" ) ) );
 
         PolyNode node1 = new PolyNode( properties1, List.of( new PolyString( "label1" ) ), new PolyString( "node1" ) );
         PolyNode node2 = new PolyNode( properties2, List.of( new PolyString( "label2" ) ), new PolyString( "node2" ) );
@@ -124,13 +119,8 @@ public class PrismUtilsTest {
 
     @Test
     public void buildGraphFrameWithEdgesTest() {
-        HashMap<PolyString, PolyValue> map1 = new HashMap<>();
-        map1.put( new PolyString( "key1" ), new PolyString( "value1" ) );
-        PolyDictionary properties1 = PolyDictionary.ofDict( map1 );
-
-        HashMap<PolyString, PolyValue> map2 = new HashMap<>();
-        map2.put( new PolyString( "key2" ), new PolyString( "value2" ) );
-        PolyDictionary properties2 = PolyDictionary.ofDict( map2 );
+        PolyDictionary properties1 = PolyDictionary.ofDict( Map.of( new PolyString( "key1" ), new PolyString( "value1" ) ) );
+        PolyDictionary properties2 = PolyDictionary.ofDict( Map.of( new PolyString( "key2" ), new PolyString( "value2" ) ) );
 
         PolyEdge node1 = new PolyEdge( properties1, List.of( new PolyString( "label1" ) ), new PolyString( "node4" ), new PolyString( "node5" ), EdgeDirection.NONE, new PolyString( "edge1" ) );
         PolyEdge node2 = new PolyEdge( properties2, List.of( new PolyString( "label2" ) ), new PolyString( "node4" ), new PolyString( "node5" ), EdgeDirection.NONE, new PolyString( "edge2" ) );
