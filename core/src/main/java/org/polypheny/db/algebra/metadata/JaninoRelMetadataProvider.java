@@ -116,6 +116,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.algebra.logical.relational.LogicalWindow;
 import org.polypheny.db.algebra.stream.LogicalChi;
 import org.polypheny.db.algebra.stream.LogicalDelta;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.interpreter.JaninoRexCompiler;
 import org.polypheny.db.plan.hep.HepAlgVertex;
@@ -458,7 +459,7 @@ public class JaninoRelMetadataProvider implements AlgMetadataProvider {
         try {
             return compile( name, buff.toString(), def, argList );
         } catch ( CompileException | IOException e ) {
-            throw new RuntimeException( "Error compiling:\n" + buff, e );
+            throw new GenericRuntimeException( "Error compiling:\n" + buff, e );
         }
     }
 
@@ -564,7 +565,7 @@ public class JaninoRelMetadataProvider implements AlgMetadataProvider {
             return (H) HANDLERS.get( key );
         } catch ( UncheckedExecutionException | ExecutionException e ) {
             Util.throwIfUnchecked( e.getCause() );
-            throw new RuntimeException( e.getCause() );
+            throw new GenericRuntimeException( e.getCause() );
         }
     }
 
