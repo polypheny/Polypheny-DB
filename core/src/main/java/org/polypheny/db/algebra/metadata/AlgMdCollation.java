@@ -107,7 +107,7 @@ public class AlgMdCollation implements MetadataHandler<BuiltInMetadata.Collation
 
     /**
      * Catch-all implementation for {@link BuiltInMetadata.Collation#collations()}, invoked using reflection, for any relational expression not handled by a more specific method.
-     *
+     * <p>
      * {@link org.polypheny.db.algebra.core.Union},
      * {@link org.polypheny.db.algebra.core.Intersect},
      * {@link Minus},
@@ -254,8 +254,7 @@ public class AlgMdCollation implements MetadataHandler<BuiltInMetadata.Collation
         for ( Ord<RexNode> project : Ord.<RexNode>zip( projects ) ) {
             if ( project.e instanceof RexIndexRef ) {
                 targets.put( ((RexIndexRef) project.e).getIndex(), project.i );
-            } else if ( project.e instanceof RexCall ) {
-                final RexCall call = (RexCall) project.e;
+            } else if ( project.e instanceof RexCall call ) {
                 final RexCallBinding binding = RexCallBinding.create( input.getCluster().getTypeFactory(), call, inputCollations );
                 targetsWithMonotonicity.put( project.i, call.getOperator().getMonotonicity( binding ) );
             }
@@ -301,7 +300,7 @@ public class AlgMdCollation implements MetadataHandler<BuiltInMetadata.Collation
 
     /**
      * Helper method to determine a {@link Window}'s collation.
-     *
+     * <p>
      * A Window projects the fields of its input first, followed by the output from each of its windows. Assuming (quite reasonably) that the implementation does not re-order its input rows,
      * then any collations of its input are preserved.
      */
@@ -312,9 +311,9 @@ public class AlgMdCollation implements MetadataHandler<BuiltInMetadata.Collation
 
     /**
      * Helper method to determine a {@link org.polypheny.db.algebra.core.Values}'s collation.
-     *
+     * <p>
      * We actually under-report the collations. A Values with 0 or 1 rows - an edge case, but legitimate and very common - is ordered by every permutation of every subset of the columns.
-     *
+     * <p>
      * So, our algorithm aims to:
      * <ul>
      * <li>produce at most N collations (where N is the number of columns);</li>
@@ -386,7 +385,7 @@ public class AlgMdCollation implements MetadataHandler<BuiltInMetadata.Collation
 
     /**
      * Helper method to determine a {@link Join}'s collation assuming that it uses a merge-join algorithm.
-     *
+     * <p>
      * If the inputs are sorted on other keys <em>in addition to</em> the join key, the result preserves those collations too.
      */
     public static List<AlgCollation> mergeJoin( AlgMetadataQuery mq, AlgNode left, AlgNode right, ImmutableList<Integer> leftKeys, ImmutableList<Integer> rightKeys ) {
@@ -436,25 +435,22 @@ public class AlgMdCollation implements MetadataHandler<BuiltInMetadata.Collation
 
     private static List<AlgCollation> enumerableJoin0( AlgMetadataQuery mq, AlgNode left, AlgNode right, JoinAlgType joinType ) {
         // The current implementation can preserve the sort order of the left input if one of the following conditions hold:
-        // (i) join type is INNER or LEFT;
-        // (ii) RelCollation always orders nulls last.
         final ImmutableList<AlgCollation> leftCollations = mq.collations( left );
-        switch ( joinType ) {
-            case INNER:
-            case LEFT:
-                return leftCollations;
-            case RIGHT:
-            case FULL:
+        return switch ( joinType ) {
+            // (i) join type is INNER or LEFT;
+            case INNER, LEFT -> leftCollations;
+            // (ii) RelCollation always orders nulls last.
+            case RIGHT, FULL -> {
                 for ( AlgCollation collation : leftCollations ) {
                     for ( AlgFieldCollation field : collation.getFieldCollations() ) {
                         if ( !(AlgFieldCollation.NullDirection.LAST == field.nullDirection) ) {
-                            return ImmutableList.of();
+                            yield ImmutableList.of();
                         }
                     }
                 }
-                return leftCollations;
-        }
-        return ImmutableList.of();
+                yield leftCollations;
+            }
+        };
     }
 
 }
