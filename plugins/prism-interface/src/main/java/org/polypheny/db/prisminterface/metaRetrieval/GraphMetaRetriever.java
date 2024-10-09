@@ -18,7 +18,6 @@ package org.polypheny.db.prisminterface.metaRetrieval;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
@@ -42,7 +41,7 @@ public class GraphMetaRetriever {
     public static List<ColumnMeta> retrieveColumnMetas( PolyImplementation polyImplementation ) {
         List<AlgDataTypeField> columns = polyImplementation.tupleType.getFields();
         AtomicInteger columnIndexGenerator = new AtomicInteger();
-        return columns.stream().map( c -> retieveColumnMeta( c, columnIndexGenerator ) ).collect( Collectors.toList() );
+        return columns.stream().map( c -> retieveColumnMeta( c, columnIndexGenerator ) ).toList();
     }
 
 
