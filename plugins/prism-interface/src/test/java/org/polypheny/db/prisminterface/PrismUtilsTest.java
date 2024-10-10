@@ -100,9 +100,9 @@ public class PrismUtilsTest {
         Frame result = PrismUtils.buildGraphFrame( true, data );
 
         assertTrue( result.getIsLast() );
-        assertEquals( 2, result.getGraphFrame().getNodesCount() );
-        assertEquals( "node1", result.getGraphFrame().getNodes( 0 ).getName() );
-        assertEquals( "node2", result.getGraphFrame().getNodes( 1 ).getName() );
+        assertEquals( 2, result.getGraphFrame().getElementCount() );
+        assertEquals( "node1", result.getGraphFrame().getElement( 0 ).getNode().getName() );
+        assertEquals( "node2", result.getGraphFrame().getElement( 1 ).getNode().getName() );
     }
 
 
@@ -113,7 +113,7 @@ public class PrismUtilsTest {
         Frame result = PrismUtils.buildGraphFrame( true, data );
 
         assertTrue( result.getIsLast() );
-        assertEquals( 0, result.getGraphFrame().getNodesCount() );
+        assertEquals( 0, result.getGraphFrame().getElementCount() );
     }
 
 
@@ -133,9 +133,9 @@ public class PrismUtilsTest {
         Frame result = PrismUtils.buildGraphFrame( false, data );
 
         assertFalse( result.getIsLast() );
-        assertEquals( 2, result.getGraphFrame().getEdgesCount() );
-        assertEquals( "edge1", result.getGraphFrame().getEdges( 0 ).getName() );
-        assertEquals( "edge2", result.getGraphFrame().getEdges( 1 ).getName() );
+        assertEquals( 2, result.getGraphFrame().getElementCount() );
+        assertEquals( "edge1", result.getGraphFrame().getElement( 0 ).getEdge().getName() );
+        assertEquals( "edge2", result.getGraphFrame().getElement( 1 ).getEdge().getName() );
     }
 
 }
