@@ -25,6 +25,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Iterator;
 import java.util.List;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper.JdbcConnection;
@@ -53,6 +54,18 @@ public class CypherTest {
             polyStatement.execute( "cyphertest", "cypher", "CREATE (:Person {id: 3, name: 'Charlie'})" );
             polyStatement.execute( "cyphertest", "cypher", "MATCH (a:Person {name: 'Alice'}), (b:Person {name: 'Bob'}) CREATE (a)-[:KNOWS]->(b)" );
             polyStatement.execute( "cyphertest", "cypher", "MATCH (b:Person {name: 'Bob'}), (c:Person {name: 'Charlie'}) CREATE (b)-[:KNOWS]->(c)" );
+        }
+    }
+
+
+    @AfterAll
+    public static void teardown() throws SQLException {
+        try ( Connection connection = new JdbcConnection( true ).getConnection() ) {
+            if ( !connection.isWrapperFor( PolyConnection.class ) ) {
+                fail( "Driver must support unwrapping to PolyConnection" );
+            }
+            PolyStatement polyStatement = connection.unwrap( PolyConnection.class ).createPolyStatement();
+            polyStatement.execute( "public", "sql", "DROP NAMESPACE IF EXISTS cyphertest" );
         }
     }
 
@@ -126,21 +139,21 @@ public class CypherTest {
             assertTrue( elements.hasNext() );
             PolyNode alice = elements.next().unwrap( PolyNode.class );
             assertEquals( alice.getLabels(), List.of( "Person" ) );
-            assertEquals( alice.get("name").asString(), "Alice");
+            assertEquals( alice.get( "name" ).asString(), "Alice" );
 
             PolyEdge knows = elements.next().unwrap( PolyEdge.class );
             assertEquals( knows.getLabels(), List.of( "KNOWS" ) );
 
             PolyNode bob = elements.next().unwrap( PolyNode.class );
             assertEquals( bob.getLabels(), List.of( "Person" ) );
-            assertEquals( bob.get("name").asString(), "Bob");
+            assertEquals( bob.get( "name" ).asString(), "Bob" );
 
             knows = elements.next().unwrap( PolyEdge.class );
             assertEquals( knows.getLabels(), List.of( "KNOWS" ) );
 
             PolyNode charlie = elements.next().unwrap( PolyNode.class );
             assertEquals( charlie.getLabels(), List.of( "Person" ) );
-            assertEquals( charlie.get("name").asString(), "Charlie");
+            assertEquals( charlie.get( "name" ).asString(), "Charlie" );
 
             assertFalse( elements.hasNext() );
         }
@@ -165,6 +178,5 @@ public class CypherTest {
             assertFalse( rows.hasNext() );
         }
     }
-
 
 }
