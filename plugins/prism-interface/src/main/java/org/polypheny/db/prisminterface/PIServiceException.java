@@ -17,41 +17,18 @@
 package org.polypheny.db.prisminterface;
 
 import java.sql.SQLException;
-import java.util.Optional;
-import lombok.Getter;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.prism.ErrorDetails;
 
 public class PIServiceException extends GenericRuntimeException {
 
-    @Getter
-    private String state;
-    @Getter
-    private int errorCode;
 
-
-    public PIServiceException( String reason, String state, int errorCode ) {
+    public PIServiceException( String reason ) {
         super( reason );
-        this.state = state;
-        this.errorCode = errorCode;
-    }
-
-
-    public PIServiceException( String reason, String state ) {
-        super( reason );
-        this.state = state;
     }
 
 
     public PIServiceException( SQLException sqlException ) {
         super( sqlException.getMessage(), sqlException );
-        this.state = sqlException.getSQLState();
-        this.errorCode = sqlException.getErrorCode();
-    }
-
-
-    public PIServiceException( String reason ) {
-        super( reason );
     }
 
 
@@ -62,35 +39,6 @@ public class PIServiceException extends GenericRuntimeException {
 
     public PIServiceException( String reason, Throwable cause ) {
         super( reason, cause );
-    }
-
-
-    public PIServiceException( String reason, String state, Throwable cause ) {
-        super( reason, cause );
-        this.state = state;
-    }
-
-
-    public PIServiceException( String reason, String state, int errorCode, Throwable cause ) {
-        super( reason, cause );
-        this.state = state;
-        this.errorCode = errorCode;
-    }
-
-
-    public PIServiceException( ErrorDetails errorDetails ) {
-        super( errorDetails.hasMessage() ? errorDetails.getMessage() : null );
-        this.state = errorDetails.hasState() ? errorDetails.getState() : null;
-        this.errorCode = errorDetails.hasErrorCode() ? errorDetails.getErrorCode() : 0;
-    }
-
-
-    public ErrorDetails getPrismErrorDetails() {
-        ErrorDetails.Builder errorDetailsBuilder = ErrorDetails.newBuilder();
-        errorDetailsBuilder.setErrorCode( getErrorCode() );
-        Optional.ofNullable( getState() ).ifPresent( errorDetailsBuilder::setState );
-        Optional.ofNullable( getMessage() ).ifPresent( errorDetailsBuilder::setMessage );
-        return errorDetailsBuilder.build();
     }
 
 }

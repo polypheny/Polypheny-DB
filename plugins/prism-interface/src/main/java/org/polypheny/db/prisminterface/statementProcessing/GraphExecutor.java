@@ -16,6 +16,7 @@
 
 package org.polypheny.db.prisminterface.statementProcessing;
 
+import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.PolyImplementation;
@@ -25,7 +26,7 @@ import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.monitoring.events.MonitoringType;
 import org.polypheny.db.prisminterface.PIClient;
 import org.polypheny.db.prisminterface.PIServiceException;
-import org.polypheny.db.prisminterface.metaRetrieval.RelationalMetaRetriever;
+import org.polypheny.db.prisminterface.metaRetrieval.GraphMetaRetriever;
 import org.polypheny.db.prisminterface.statements.PIStatement;
 import org.polypheny.db.prisminterface.utils.PrismUtils;
 import org.polypheny.db.transaction.Statement;
@@ -34,9 +35,9 @@ import org.polypheny.prism.ColumnMeta;
 import org.polypheny.prism.Frame;
 import org.polypheny.prism.StatementResult;
 
-public class RelationalExecutor extends Executor {
+public class GraphExecutor extends Executor {
 
-    private static final DataModel namespaceType = DataModel.RELATIONAL;
+    private static final DataModel namespaceType = DataModel.GRAPH;
 
 
     @Override
@@ -48,21 +49,17 @@ public class RelationalExecutor extends Executor {
     @Override
     StatementResult executeAndGetResult( PIStatement piStatement ) {
         throwOnIllegalState( piStatement );
-        Statement statement = piStatement.getStatement();
-        PolyImplementation implementation = piStatement.getImplementation();
         StatementResult.Builder resultBuilder = StatementResult.newBuilder();
-        if ( implementation.isDDL() || Kind.DML.contains( implementation.getKind() ) ) {
-            try ( ResultIterator iterator = implementation.execute( statement, -1 ) ) {
-                resultBuilder.setScalar( PolyImplementation.getRowsChanged( statement, iterator.getIterator(), MonitoringType.from( implementation.getKind() ) ) );
-            }
-            piStatement.getClient().commitCurrentTransactionIfAuto();
+        if ( piStatement.getImplementation().isDDL() ) {
+            resultBuilder.setScalar( 1 );
             return resultBuilder.build();
         }
         throw new PIServiceException( "Can't execute a non DDL or non DML statement using this method." );
     }
 
 
-    public StatementResult executeAndGetResult( PIStatement piStatement, int fetchSize ) {
+    @Override
+    StatementResult executeAndGetResult( PIStatement piStatement, int fetchSize ) {
         throwOnIllegalState( piStatement );
         Statement statement = piStatement.getStatement();
         PolyImplementation implementation = piStatement.getImplementation();
@@ -79,11 +76,10 @@ public class RelationalExecutor extends Executor {
             client.commitCurrentTransactionIfAuto();
             return resultBuilder.build();
         }
-        piStatement.setIterator( implementation.execute( implementation.getStatement(), fetchSize ) );
+        piStatement.setIterator( implementation.execute( piStatement.getStatement(), fetchSize ) );
         Frame frame = fetch( piStatement, fetchSize );
         resultBuilder.setFrame( frame );
         if ( frame.getIsLast() ) {
-            //TODO TH: special handling for result set updates. Do we need to wait with committing until all changes have been done?
             client.commitCurrentTransactionIfAuto();
         }
         return resultBuilder.build();
@@ -91,21 +87,22 @@ public class RelationalExecutor extends Executor {
 
 
     @Override
-    public Frame fetch( PIStatement piStatement, int fetchSize ) {
+    Frame fetch( PIStatement piStatement, int fetchSize ) {
         throwOnIllegalState( piStatement );
         StopWatch executionStopWatch = piStatement.getExecutionStopWatch();
-        PolyImplementation implementation = piStatement.getImplementation();
         ResultIterator iterator = piStatement.getIterator();
         startOrResumeStopwatch( executionStopWatch );
-        List<List<PolyValue>> rows = iterator.getNextBatch( fetchSize );
-        executionStopWatch.suspend();
+        List<List<PolyValue>> data = new ArrayList<>( iterator.getNextBatch( fetchSize ) );
         boolean isLast = !iterator.hasMoreRows();
         if ( isLast ) {
             executionStopWatch.stop();
-            implementation.getExecutionTimeMonitor().setExecutionTime( executionStopWatch.getNanoTime() );
+            piStatement.getImplementation().getExecutionTimeMonitor().setExecutionTime( executionStopWatch.getNanoTime() );
         }
-        List<ColumnMeta> columnMetas = RelationalMetaRetriever.retrieveColumnMetas( implementation );
-        return PrismUtils.buildRelationalFrame( isLast, rows, columnMetas );
+        if ( GraphMetaRetriever.retrievedResultIsRelational( piStatement.getImplementation() ) ) {
+            List<ColumnMeta> columnMetas = GraphMetaRetriever.retrieveColumnMetas( piStatement.getImplementation() );
+            return PrismUtils.buildRelationalFrame( isLast, data, columnMetas );
+        }
+        return PrismUtils.buildGraphFrame( isLast, data );
     }
 
 }

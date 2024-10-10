@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.prisminterface;
+package org.polypheny.db.prisminterface.metaRetrieval;
 
 import java.sql.DatabaseMetaData;
 import java.util.Arrays;
@@ -38,6 +38,7 @@ import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
+import org.polypheny.db.prisminterface.PIServiceException;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.prism.ClientInfoPropertyMeta;
 import org.polypheny.prism.ClientInfoPropertyMetaResponse;
@@ -60,10 +61,10 @@ import org.polypheny.prism.TableTypesResponse;
 import org.polypheny.prism.Type;
 import org.polypheny.prism.TypesResponse;
 
-class DbMetaRetriever {
+public class DbMetaRetriever {
 
     // Namespace search by name and type
-    static NamespacesResponse searchNamespaces( String namespacePattern, String namespaceType ) {
+    public static NamespacesResponse searchNamespaces( String namespacePattern, String namespaceType ) {
         List<LogicalNamespace> namespaces = getLogicalNamespaces( namespacePattern, namespaceType );
         NamespacesResponse.Builder responseBuilder = NamespacesResponse.newBuilder();
         namespaces.forEach( namespace -> responseBuilder.addNamespaces( getNamespaceMeta( namespace ) ) );
@@ -101,7 +102,7 @@ class DbMetaRetriever {
 
 
     // Entity search by namespace
-    static EntitiesResponse searchEntities( String namespaceName, String entityPattern ) {
+    public static EntitiesResponse searchEntities( String namespaceName, String entityPattern ) {
         EntitiesResponse.Builder responseBuilder = EntitiesResponse.newBuilder();
         LogicalNamespace namespace = Catalog.snapshot().getNamespace( namespaceName ).orElseThrow();
         return switch ( namespace.getDataModel() ) {
@@ -249,14 +250,14 @@ class DbMetaRetriever {
     }
 
 
-    static synchronized DefaultNamespaceResponse getDefaultNamespace() {
+    public static synchronized DefaultNamespaceResponse getDefaultNamespace() {
         return DefaultNamespaceResponse.newBuilder()
                 .setDefaultNamespace( Catalog.DEFAULT_NAMESPACE_NAME )
                 .build();
     }
 
 
-    static synchronized TableTypesResponse getTableTypes() {
+    public static synchronized TableTypesResponse getTableTypes() {
         List<String> tableTypes = Arrays.stream( EntityType.values() ).map( EntityType::name ).toList();
         TableTypesResponse.Builder responseBuilder = TableTypesResponse.newBuilder();
         tableTypes.forEach( tableType -> responseBuilder.addTableTypes( getTableTypeMeta( tableType ) ) );
@@ -269,7 +270,7 @@ class DbMetaRetriever {
     }
 
 
-    static synchronized TypesResponse getTypes() {
+    public static synchronized TypesResponse getTypes() {
         TypesResponse.Builder responseBuilder = TypesResponse.newBuilder();
         Arrays.stream( PolyType.values() ).forEach( polyType -> responseBuilder.addTypes( getTypeMeta( polyType ) ) );
         return responseBuilder.build();
@@ -293,7 +294,7 @@ class DbMetaRetriever {
     }
 
 
-    static ProceduresResponse getProcedures( String languageName, String procedureNamePattern ) {
+    public static ProceduresResponse getProcedures( String languageName, String procedureNamePattern ) {
         // TODO: get data after functionality is implemented
         return ProceduresResponse.newBuilder().build();
     }
@@ -318,7 +319,7 @@ class DbMetaRetriever {
     }
 
 
-    static FunctionsResponse getFunctions( QueryLanguage language, FunctionCategory functionCategory ) {
+    public static FunctionsResponse getFunctions( QueryLanguage language, FunctionCategory functionCategory ) {
         List<Function> functions = OperatorRegistry.getMatchingOperators( language ).values().stream()
                 .filter( o -> o instanceof org.polypheny.db.nodes.Function )
                 .map( org.polypheny.db.nodes.Function.class::cast )
@@ -339,7 +340,7 @@ class DbMetaRetriever {
     }
 
 
-    static DbmsVersionResponse getDbmsVersion() {
+    public static DbmsVersionResponse getDbmsVersion() {
         try {
             String versionName = PolyphenyDb.class.getPackage().getImplementationVersion();
             if ( versionName == null ) {

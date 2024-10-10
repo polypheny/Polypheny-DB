@@ -67,8 +67,6 @@ public class AlgDataTypeFieldImpl extends Triple<String, Long, AlgDataType> impl
 
     public AlgDataTypeFieldImpl( Long id, String name, String physicalName, int index, AlgDataType type ) {
         super( name, id, type );
-        assert name != null;
-        assert type != null;
         this.id = id;
         this.name = name;
         this.index = index;
