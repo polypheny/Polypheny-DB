@@ -49,7 +49,7 @@ public class CatalogTest {
 
 
     @AfterAll
-    public static void stop() {
+    public static void stop() throws SQLException {
         deleteOldData();
 
         helper.checkAllTrxClosed();
@@ -77,7 +77,7 @@ public class CatalogTest {
     }
 
 
-    private static void deleteOldData() {
+    private static void deleteOldData() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
             Connection connection = jdbcConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
@@ -101,14 +101,12 @@ public class CatalogTest {
                 statement.executeUpdate( "DROP SCHEMA private" );
                 connection.commit();
             }
-        } catch ( SQLException e ) {
-            log.error( "Exception while deleting old data", e );
         }
     }
 
 
     @Test
-    public void testGetCatalogs() {
+    public void testGetCatalogs() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             ResultSet resultSet = connection.getMetaData().getCatalogs();
@@ -128,15 +126,12 @@ public class CatalogTest {
             TestHelper.checkResultSet(
                     connection.getMetaData().getCatalogs(),
                     ImmutableList.of( databaseApp ) );
-
-        } catch ( SQLException e ) {
-            log.error( "Exception while testing getCatalogs()", e );
         }
     }
 
 
     @Test
-    public void testGetSchema() {
+    public void testGetSchema() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
 
@@ -153,15 +148,12 @@ public class CatalogTest {
                     connection.getMetaData().getSchemas( "APP", "schema1" ),
                     ImmutableList.of( schemaTest ),
                     true );
-
-        } catch ( SQLException e ) {
-            log.error( "Exception while testing getNamespaces()", e );
         }
     }
 
 
     @Test
-    public void testGetTable() {
+    public void testGetTable() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
 
@@ -171,15 +163,12 @@ public class CatalogTest {
             TestHelper.checkResultSet(
                     connection.getMetaData().getTables( "APP", "schema1", null, null ),
                     ImmutableList.of( table1, table2 ) );
-
-        } catch ( SQLException e ) {
-            log.error( "Exception while testing getTables()", e );
         }
     }
 
 
     @Test
-    public void testGetColumn() {
+    public void testGetColumn() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
 
@@ -192,15 +181,12 @@ public class CatalogTest {
             TestHelper.checkResultSet(
                     connection.getMetaData().getColumns( "APP", "schema1", "table1", null ),
                     ImmutableList.of( column1, column2 ) );
-
-        } catch ( SQLException e ) {
-            log.error( "Exception while testing getTables()", e );
         }
     }
 
 
     @Test
-    public void testGetIndex() {
+    public void testGetIndex() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
 
@@ -217,15 +203,12 @@ public class CatalogTest {
                         connection.getMetaData().getIndexInfo( "APP", "schema1", "table1", false, false ),
                         ImmutableList.of() );
             }
-
-        } catch ( SQLException e ) {
-            log.error( "Exception while testing getTables()", e );
         }
     }
 
 
     @Test
-    public void testGetForeignKeys() {
+    public void testGetForeignKeys() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
 
@@ -235,9 +218,6 @@ public class CatalogTest {
             TestHelper.checkResultSet(
                     connection.getMetaData().getExportedKeys( "APP", "schema1", "table1" ),
                     ImmutableList.of( foreignKeys ) );
-
-        } catch ( SQLException e ) {
-            log.error( "Exception while testing getTables()", e );
         }
     }
 
