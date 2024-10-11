@@ -107,6 +107,8 @@ public class PolyCatalog extends Catalog implements PolySerializable {
     private final Collection<ConstraintCondition> commitConstraints = new ConcurrentLinkedDeque<>();
     private final Collection<Runnable> commitActions = new ConcurrentLinkedDeque<>();
 
+    // indicates if the state has advanced and the snapshot has to be recreated or can be reused // trx without ddl
+    long lastCommitSnapshotId = 0;
 
     @Serialize
     @JsonProperty
@@ -267,6 +269,8 @@ public class PolyCatalog extends Catalog implements PolySerializable {
         this.dirty.set( false );
         this.commitConstraints.clear();
         this.commitActions.clear();
+
+        this.lastCommitSnapshotId = snapshot.id();
     }
 
 
@@ -295,7 +299,11 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
         log.debug( "rollback" );
 
-        updateSnapshot();
+        if ( lastCommitSnapshotId != snapshot.id() ) {
+            updateSnapshot();
+
+            lastCommitSnapshotId = snapshot.id();
+        }
     }
 
 
@@ -315,6 +323,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
         adapterRestore.clear();
         adapterRestore.putAll( old.adapterRestore );
         idBuilder.restore( old.idBuilder );
+
     }
 
 
