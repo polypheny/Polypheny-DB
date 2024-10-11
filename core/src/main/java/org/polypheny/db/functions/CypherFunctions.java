@@ -21,11 +21,13 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.function.Deterministic;
+import org.apache.commons.lang3.NotImplementedException;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.PrecisionModel;
@@ -527,22 +529,9 @@ public class CypherFunctions {
     }
 
     private static double convertPolyValueToDouble( PolyValue value ) {
-        Double result = null;
-        if ( value.isDouble() ) {
-            result = value.asDouble().getValue();
-        }
-        if ( value.isInteger() ) {
-            int intValue = value.asInteger().intValue();
-            result = (double) intValue;
-        }
-        if ( value.isLong() ) {
-            long intValue = value.asLong().longValue();
-            result = (double) intValue;
-        }
-        if ( result == null ) {
-            throw new GenericRuntimeException( "Legacy Coordinates needs to be of type INTEGER or DOUBLE." );
-        }
-        return result;
+        // This should be sufficient, as all numerical values from Cypher are stored as BigDecimal.
+        assert value.isBigDecimal() : "Extend method to handle other numerical data types.";
+        return Objects.requireNonNull( value.asBigDecimal().getValue() ).doubleValue();
     }
 
 }
