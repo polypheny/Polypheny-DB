@@ -46,6 +46,7 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -1414,8 +1415,12 @@ public class RexBuilder {
 
 
     public RexLiteral makeMap( AlgDataType type, Map<RexNode, RexNode> operands ) {
-        //PolyMap.of(operands)
-        return new RexLiteral( null, type, type.getPolyType() ); // todo fix this
+        Map<PolyValue, PolyValue> map = new HashMap<>();
+        operands.forEach((key, value) -> {
+            map.put(((RexLiteral) key).value, ((RexLiteral) value).value);
+        });
+
+        return new RexLiteral( PolyMap.of(map), type, type.getPolyType() ); // todo fix this
     }
 
 

@@ -79,28 +79,20 @@ public class CypherReturnItem extends CypherReturn {
             // name -> aggregate
             // renaming of the field
             String name = variable.getName();
-            // TODO: There is probably a better way to invoke functions
-            // this.arguments
             if ( Objects.equals( name.toLowerCase(), "point" ) ) {
-
                 List<RexNode> arguments = new ArrayList<>();
-
                 if ( this.expression instanceof CypherFunctionInvocation ) {
                     CypherExpression mapExpression = ((CypherFunctionInvocation) this.expression).getArguments().get( 0 );
-
                     if ( mapExpression instanceof CypherLiteral ) {
-                        // RexBuilder cannot handle CypherLiteral values, so we have to extract them first
-                        Map<String, CypherExpression> mapWithCypherExpressions = ((CypherLiteral) mapExpression).getMapValue();
-                        Map<String, Object> mapWithValues = new HashMap<>();
-                        for (Map.Entry<String, CypherExpression> entry : mapWithCypherExpressions.entrySet()) {
-                            String key = entry.getKey();
-                            CypherExpression value = entry.getValue();
-                            if (value instanceof CypherLiteral){
-                                mapWithValues.put( key, ((CypherLiteral) value).getValue() );
+                        // RexBuilder cannot handle CypherLiteral values, so we have to extract the values first.
+                        Map<String, Object> map = new HashMap<>();
+                        ((CypherLiteral) mapExpression).getMapValue().forEach((key, value) -> {
+                            if (value instanceof CypherLiteral) {
+                                map.put(key, ((CypherLiteral) value).getValue());
                             }
-                        }
+                        });
                         RexNode node = context.rexBuilder.makeLiteral(
-                                mapWithValues,
+                                map,
                                 context.typeFactory.createMapType(
                                         context.typeFactory.createPolyType( PolyType.VARCHAR ),
                                         context.typeFactory.createPolyType( PolyType.ANY ) ),
