@@ -32,6 +32,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
@@ -654,7 +655,11 @@ public class CypherToAlgConverter {
                         List.of(),
                         ImmutableList.of( ImmutableList.copyOf( nameAndValues.stream().map( e -> (RexLiteral) e.getValue() ).toList() ) ),
                         new AlgRecordType( fields ) );
-            } else {
+            }
+            else if (nameAndValues.stream().allMatch( v -> v.right.isA( Kind.CYPHER_FUNCTION ) )){
+                throw new NotImplementedException("RETURN statement with function call without MATCH currently not supported");
+            }
+            else {
                 throw new UnsupportedOperationException();
             }
         }
