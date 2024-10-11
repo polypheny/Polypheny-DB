@@ -96,6 +96,7 @@ public class MongoToEnumerableConverter extends ConverterImpl implements Enumera
 
         Expression enumerable;
         if ( !mongoImplementor.isDML() ) {
+            final Expression ddls = list.append( list.newName( "ddls" ), constantArrayList( mongoImplementor.ddlQueries, String.class ) );
             final Expression logicalCols = list.append(
                     "logical",
                     constantArrayList(
@@ -103,7 +104,7 @@ public class MongoToEnumerableConverter extends ConverterImpl implements Enumera
             final Expression preProjects = list.append( "prePro", constantArrayList( mongoImplementor.getPreProjects(), String.class ) );
             enumerable = list.append(
                     list.newName( "enumerable" ),
-                    Expressions.call( table, MongoMethod.MONGO_QUERYABLE_AGGREGATE.method, tupleTypes, ops, preProjects, logicalCols ) );
+                    Expressions.call( table, MongoMethod.MONGO_QUERYABLE_AGGREGATE.method, tupleTypes, ops, preProjects, logicalCols, ddls ) );
         } else {
             final Expression operations = list.append( list.newName( "operations" ), constantArrayList( mongoImplementor.getOperations(), String.class ) );
             final Expression operation = list.append( list.newName( "operation" ), Expressions.constant( mongoImplementor.getOperation(), Operation.class ) );

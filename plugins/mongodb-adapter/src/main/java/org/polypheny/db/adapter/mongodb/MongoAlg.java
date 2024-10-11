@@ -112,6 +112,9 @@ public interface MongoAlg extends AlgNode {
         private Operation operation;
 
 
+        public final List<String> ddlQueries = new ArrayList<>();
+
+
         public Implementor() {
             isDML = false;
         }

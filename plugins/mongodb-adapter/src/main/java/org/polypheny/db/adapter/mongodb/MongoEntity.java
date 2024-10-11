@@ -394,13 +394,18 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
          * @see MongoMethod#MONGO_QUERYABLE_AGGREGATE
          */
         @SuppressWarnings("UnusedDeclaration")
-        public Enumerable<PolyValue[]> aggregate( MongoTupleType tupleType, List<String> operations, List<String> preProjections, List<String> logicalCols ) {
+        public Enumerable<PolyValue[]> aggregate( MongoTupleType tupleType, List<String> operations, List<String> preProjections, List<String> logicalCols, List<String> ddls ) {
             ClientSession session = getEntity().getTransactionProvider().getSession( dataContext.getStatement().getTransaction().getXid() );
             dataContext.getStatement().getTransaction().registerInvolvedAdapter( AdapterManager.getInstance().getStore( (int) this.getEntity().getStoreId() ).orElseThrow() );
 
             Map<Long, PolyValue> values = new HashMap<>();
             if ( dataContext.getParameterValues().size() == 1 ) {
                 values = dataContext.getParameterValues().get( 0 );
+            }
+
+            if (!ddls.isEmpty()){
+                //getEntity().collection.
+                // TODO: Mongo create index
             }
 
             return getEntity().aggregate(

@@ -157,6 +157,10 @@ public class MongoFilter extends Filter implements MongoAlg {
                 if ( !preProjections.isEmpty() ) {
                     implementor.add( null, MongoAlg.Implementor.toJson( new BsonDocument( "$addFields", preProjections ) ) );
                 }
+
+                // TODO: Mongo create index
+                implementor.ddlQueries.add( "TODO" );
+
                 BsonDocument innerValue = value.getDocument( value.getFirstKey() );
                 final String distanceField = "__temp_%s".formatted( UUID.randomUUID().toString() );
                 BsonDocument geoNearOptions = new BsonDocument();
