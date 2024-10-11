@@ -288,8 +288,6 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
 
     public void rollback() {
-        long id = snapshot.id();
-
         commitActions.clear();
         commitConstraints.clear();
 
@@ -297,10 +295,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
         log.debug( "rollback" );
 
-        if ( id != snapshot.id() ) {
-            updateSnapshot();
-        }
-
+        updateSnapshot();
     }
 
 
