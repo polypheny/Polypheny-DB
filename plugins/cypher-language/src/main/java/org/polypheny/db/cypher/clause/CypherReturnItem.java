@@ -24,15 +24,21 @@ import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.cypher.expression.CypherAggregate;
 import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.cypher.expression.CypherExpression.ExpressionType;
+import org.polypheny.db.cypher.expression.CypherFunctionInvocation;
+import org.polypheny.db.cypher.expression.CypherLiteral;
 import org.polypheny.db.cypher.expression.CypherVariable;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.util.Pair;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 
@@ -74,11 +80,39 @@ public class CypherReturnItem extends CypherReturn {
             // renaming of the field
             String name = variable.getName();
             // TODO: There is probably a better way to invoke functions
-            if ( Objects.equals( name, "point" ) ) {
+            // this.arguments
+            if ( Objects.equals( name.toLowerCase(), "point" ) ) {
+
+                List<RexNode> arguments = new ArrayList<>();
+
+                if ( this.expression instanceof CypherFunctionInvocation ) {
+                    CypherExpression mapExpression = ((CypherFunctionInvocation) this.expression).getArguments().get( 0 );
+
+                    if ( mapExpression instanceof CypherLiteral ) {
+                        // RexBuilder cannot handle CypherLiteral values, so we have to extract them first
+                        Map<String, CypherExpression> mapWithCypherExpressions = ((CypherLiteral) mapExpression).getMapValue();
+                        Map<String, Object> mapWithValues = new HashMap<>();
+                        for (Map.Entry<String, CypherExpression> entry : mapWithCypherExpressions.entrySet()) {
+                            String key = entry.getKey();
+                            CypherExpression value = entry.getValue();
+                            if (value instanceof CypherLiteral){
+                                mapWithValues.put( key, ((CypherLiteral) value).getValue() );
+                            }
+                        }
+                        RexNode node = context.rexBuilder.makeLiteral(
+                                mapWithValues,
+                                context.typeFactory.createMapType(
+                                        context.typeFactory.createPolyType( PolyType.VARCHAR ),
+                                        context.typeFactory.createPolyType( PolyType.ANY ) ),
+                                true );
+                        arguments.add( node );
+                    }
+                }
+
                 return Pair.of( PolyString.of( name ), new RexCall(
                         context.geometryType,
                         OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_POINT ),
-                        List.of( context.rexBuilder.makeLiteral( "Test" ) ) ) );
+                        arguments ) );
             }
             if ( expression.getType() == ExpressionType.AGGREGATE ) {
                 return ((CypherAggregate) expression).getAggregate( context, name );

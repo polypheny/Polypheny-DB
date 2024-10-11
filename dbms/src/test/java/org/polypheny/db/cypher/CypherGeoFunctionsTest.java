@@ -28,10 +28,19 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
         createGraph();
     }
 
+
     @Test
     public void createPointTest() {
-        GraphResult res = execute( "RETURN point({longitude: 56.7, latitude: 12.78}) AS point" );
+        execute( """
+                CREATE
+                (adam:User {name: 'Adam'}),
+                (pernilla:User {name: 'Pernilla'}),
+                (david:User {name: 'David'}),
+                (adam)-[:FRIEND]->(pernilla),
+                (pernilla)-[:FRIEND]->(david)""" );
+        GraphResult res = execute( "MATCH (n) RETURN point({longitude: 56.7, latitude: 12.78}) AS point" );
         assertNode( res, 0 );
         assertEmpty( res );
     }
+
 }

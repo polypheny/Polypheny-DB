@@ -19,6 +19,7 @@ package org.polypheny.db.cypher.expression;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import com.google.common.collect.ImmutableList;
 import lombok.Getter;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -49,6 +50,10 @@ public class CypherFunctionInvocation extends CypherExpression {
         }
         this.distinct = distinct;
         this.arguments = arguments;
+    }
+
+    public ImmutableList<CypherExpression> getArguments() {
+        return ImmutableList.copyOf( arguments );
     }
 
 }

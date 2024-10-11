@@ -121,6 +121,7 @@ public class CypherLiteral extends CypherExpression {
             case DOUBLE -> PolyDouble.of( (Double) value );
             case DECIMAL -> PolyInteger.of( (Integer) value );
             case POINT -> {
+                // TODO
                 yield PolyGeometry.of( "SRID=0;POINT(56.7 12.78)" );
             }
             case STAR -> throw new UnsupportedOperationException();
