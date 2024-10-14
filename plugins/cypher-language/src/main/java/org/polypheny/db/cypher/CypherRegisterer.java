@@ -88,7 +88,7 @@ public class CypherRegisterer {
 
         register( OperatorName.CYPHER_POINT, new LangFunctionOperator( "CYPHER_POINT", Kind.CYPHER_FUNCTION ) );
 
-        register( OperatorName.CYPHER_DISTANCE, new LangFunctionOperator( "CYPHER_DISTANCE", Kind.CYPHER_FUNCTION ) );
+        register( OperatorName.DISTANCE, new LangFunctionOperator( "DISTANCE", Kind.CYPHER_FUNCTION ) );
 
         register( OperatorName.CYPHER_WITHIN_BBOX, new LangFunctionOperator( "CYPHER_WITHIN_BBOX", Kind.CYPHER_FUNCTION ) );
 

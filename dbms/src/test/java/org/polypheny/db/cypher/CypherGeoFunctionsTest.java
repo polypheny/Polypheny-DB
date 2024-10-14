@@ -67,6 +67,22 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
         assert geometry.asPoint().getZ() == 100.0;
     }
 
+    @Test
+    public void distanceTest(){
+//        execute( """
+//                CREATE (basel:City {name: 'Basel', latitude: 47.5595, longitude: 7.5885}),
+//                       (zurich:City {name: 'Zürich', latitude: 47.3770, longitude: 8.5416});
+//                """ );
+        GraphResult res = execute( """
+                MATCH (basel:City {name: 'Basel'}), (zurich:City {name: 'Zürich'})
+                WITH basel, zurich,
+                     point({latitude: basel.latitude, longitude: basel.longitude}) AS point1,
+                     point({latitude: zurich.latitude, longitude: zurich.longitude}) AS point2
+                RETURN basel.name, zurich.name, distance(point1, point2) AS distance;
+                """ );
+        System.out.println(res.toString());
+    }
+
 
     private PolyGeometry convertJsonToPolyGeometry( String json ) {
         try {

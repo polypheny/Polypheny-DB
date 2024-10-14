@@ -1725,8 +1725,6 @@ public enum OperatorName {
 
     CYPHER_POINT( LangFunctionOperator.class ),
 
-    CYPHER_DISTANCE ( LangFunctionOperator.class ),
-
     CYPHER_WITHIN_BBOX ( LangFunctionOperator.class ),
 
     // CROSS MODEL FUNCTION
