@@ -68,6 +68,16 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
     }
 
     @Test
+    public void createPointFromNodeFields(){
+        execute( "CREATE (c:Coordinate { lon: 56.7, lat: 12 })" );
+        GraphResult res = execute( "MATCH (c:Coordinate) RETURN point({longitude: c.lon, latitude: c.lat}) AS point" );
+        PolyGeometry geometry = convertJsonToPolyGeometry( res.data[0][0] );
+        assert geometry.getSRID() == PolyGeometry.WGS_84;
+        assert geometry.asPoint().getX() == 56.7;
+        assert geometry.asPoint().getY() == 12.0;
+    }
+
+    @Test
     public void distanceTest(){
 //        execute( """
 //                CREATE (basel:City {name: 'Basel', latitude: 47.5595, longitude: 7.5885}),

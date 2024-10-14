@@ -27,6 +27,7 @@ import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.cypher.expression.CypherExpression.ExpressionType;
 import org.polypheny.db.cypher.expression.CypherFunctionInvocation;
 import org.polypheny.db.cypher.expression.CypherLiteral;
+import org.polypheny.db.cypher.expression.CypherProperty;
 import org.polypheny.db.cypher.expression.CypherVariable;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
@@ -88,6 +89,9 @@ public class CypherReturnItem extends CypherReturn {
                         mapExpression.getMapValue().forEach( ( key, value ) -> {
                             if ( value instanceof CypherLiteral ) {
                                 map.put( key, ((CypherLiteral) value).getValue() );
+                            }
+                            if (value instanceof CypherProperty ){
+                                throw new NotImplementedException( "TODO" );
                             }
                         } );
                         RexNode node = context.rexBuilder.makeLiteral(
