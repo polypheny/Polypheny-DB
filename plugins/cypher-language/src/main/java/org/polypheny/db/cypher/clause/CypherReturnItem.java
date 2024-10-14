@@ -18,6 +18,7 @@ package org.polypheny.db.cypher.clause;
 
 import javax.annotation.Nullable;
 import lombok.Getter;
+import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
@@ -35,7 +36,6 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.util.Pair;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -76,39 +76,45 @@ public class CypherReturnItem extends CypherReturn {
     @Nullable
     public Pair<PolyString, RexNode> getRex( CypherContext context, RexType type ) {
         if ( variable != null ) {
-            // name -> aggregate
-            // renaming of the field
             String name = variable.getName();
-            if ( Objects.equals( name.toLowerCase(), "point" ) ) {
-                List<RexNode> arguments = new ArrayList<>();
-                if ( this.expression instanceof CypherFunctionInvocation ) {
-                    CypherExpression mapExpression = ((CypherFunctionInvocation) this.expression).getArguments().get( 0 );
-                    if ( mapExpression instanceof CypherLiteral ) {
+            if ( this.expression instanceof CypherFunctionInvocation ) {
+                CypherFunctionInvocation func = (CypherFunctionInvocation) this.expression;
+
+                switch ( func.getOperatorName() ) {
+                    case CYPHER_POINT: {
+                        CypherLiteral mapExpression = (CypherLiteral) func.getArguments().get( 0 );
                         // RexBuilder cannot handle CypherLiteral values, so we have to extract the values first.
                         Map<String, Object> map = new HashMap<>();
-                        ((CypherLiteral) mapExpression).getMapValue().forEach((key, value) -> {
-                            if (value instanceof CypherLiteral) {
-                                map.put(key, ((CypherLiteral) value).getValue());
+                        mapExpression.getMapValue().forEach( ( key, value ) -> {
+                            if ( value instanceof CypherLiteral ) {
+                                map.put( key, ((CypherLiteral) value).getValue() );
                             }
-                        });
+                        } );
                         RexNode node = context.rexBuilder.makeLiteral(
                                 map,
                                 context.typeFactory.createMapType(
                                         context.typeFactory.createPolyType( PolyType.VARCHAR ),
                                         context.typeFactory.createPolyType( PolyType.ANY ) ),
                                 true );
-                        arguments.add( node );
+                        return Pair.of( PolyString.of( name ), new RexCall(
+                                context.geometryType,
+                                OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_POINT ),
+                                List.of( node ) ) );
                     }
+                    case DISTANCE: {
+                        throw new NotImplementedException( "TODO" );
+                    }
+                    default:
+                        throw new NotImplementedException( "Cypher Function to alg conversion missing: " + func.getOperatorName() );
                 }
-
-                return Pair.of( PolyString.of( name ), new RexCall(
-                        context.geometryType,
-                        OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_POINT ),
-                        arguments ) );
             }
+
+            // name -> aggregate
+            // renaming of the field
             if ( expression.getType() == ExpressionType.AGGREGATE ) {
                 return ((CypherAggregate) expression).getAggregate( context, name );
             }
+
             return Pair.of( PolyString.of( name ), expression.getRex( context, type ).right );
         } else {
             if ( expression.getType() == ExpressionType.AGGREGATE ) {

@@ -56,4 +56,8 @@ public class CypherFunctionInvocation extends CypherExpression {
         return ImmutableList.copyOf( arguments );
     }
 
+    public OperatorName getOperatorName() {
+        return op;
+    }
+
 }
