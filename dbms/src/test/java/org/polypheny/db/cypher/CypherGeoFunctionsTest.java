@@ -16,8 +16,12 @@
 
 package org.polypheny.db.cypher;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.webui.models.results.GraphResult;
 
 public class CypherGeoFunctionsTest extends CypherTestTemplate {
@@ -31,16 +35,48 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
 
     @Test
     public void createPointTest() {
-        execute( """
-                CREATE
-                (adam:User {name: 'Adam'}),
-                (pernilla:User {name: 'Pernilla'}),
-                (david:User {name: 'David'}),
-                (adam)-[:FRIEND]->(pernilla),
-                (pernilla)-[:FRIEND]->(david)""" );
+        execute( "CREATE (bob:User)" );
         GraphResult res = execute( "MATCH (n) RETURN point({longitude: 56.7, latitude: 12}) AS point" );
-        assertNode( res, 0 );
-        assertEmpty( res );
+        PolyGeometry geometry = convertJsonToPolyGeometry( res.data[0][0] );
+        assert geometry.getSRID() == PolyGeometry.WGS_84;
+        assert geometry.asPoint().getX() == 56.7;
+        assert geometry.asPoint().getY() == 12.0;
+
+        res = execute( "MATCH (n) RETURN point({x: 15, y: 5}) AS point" );
+        geometry = convertJsonToPolyGeometry( res.data[0][0] );
+        assert geometry.getSRID() == 0;
+        assert geometry.asPoint().getX() == 15.0;
+        assert geometry.asPoint().getY() == 5.0;
+
+        res = execute( "MATCH (n) RETURN point({x: 1, y: 2, z: 3}) AS point" );
+        geometry = convertJsonToPolyGeometry( res.data[0][0] );
+        assert geometry.getSRID() == 0;
+        assert geometry.asPoint().getX() == 1.0;
+        assert geometry.asPoint().getY() == 2.0;
+        // TODO: fix this
+        // JTS Geometry WKT Representation is hardcoded to 2 dimensions
+        // https://github.com/locationtech/jts/blob/6a9af07059671bdc6e62542c9739137ab53fd4d8/modules/core/src/main/java/org/locationtech/jts/io/WKTWriter.java#L139
+        assert geometry.asPoint().getZ() == 3.0;
+
+        res = execute( "MATCH (n) RETURN point({longitude: 55.5, latitude: 12.2, height: 100}) AS point" );
+        geometry = convertJsonToPolyGeometry( res.data[0][0] );
+        assert geometry.getSRID() == PolyGeometry.WGS_84_3D;
+        assert geometry.asPoint().getX() == 55.5;
+        assert geometry.asPoint().getY() == 12.2;
+        // TODO: fix this
+        assert geometry.asPoint().getZ() == 100.0;
+    }
+
+
+    private PolyGeometry convertJsonToPolyGeometry( String json ) {
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            JsonNode jsonNode = objectMapper.readTree( json );
+            String wkt = jsonNode.get( "wkt" ).asText();
+            return PolyGeometry.of( wkt );
+        } catch ( JsonProcessingException e ) {
+            throw new RuntimeException( e );
+        }
     }
 
 }

@@ -45,6 +45,7 @@ import org.polypheny.db.type.entity.graph.GraphPropertyHolder;
 import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyNode;
 import org.polypheny.db.type.entity.graph.PolyPath;
+import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.models.results.GraphResult;
 
@@ -290,7 +291,8 @@ public class CypherTestTemplate {
         EDGE( "edge", TestEdge.class, PolyEdge.class ),
         PATH( "path", TestPath.class, PolyPath.class ),
         ANY( "any", TestNode.class, PolyValue.class ),
-        STRING( "varchar", TestLiteral.class, PolyString.class );
+        STRING( "varchar", TestLiteral.class, PolyString.class ),
+        GEOMETRY( "geometry", TestLiteral.class, PolyGeometry.class );
 
 
         private final String typeName;
