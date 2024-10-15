@@ -64,6 +64,7 @@ import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.bson.BsonDocument;
+import org.bson.BsonString;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.bson.json.JsonMode;
@@ -404,8 +405,14 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
             }
 
             if (!ddls.isEmpty()){
-                //getEntity().collection.
-                // TODO: Mongo create index
+                for (String ddl : ddls){
+                    String[] ddlArray = ddl.split("\n");
+                    String field = ddlArray[0];
+                    String indexType = ddlArray[1];
+                    BsonDocument index = new BsonDocument();
+                    index.put( field, new BsonString( indexType ) );
+                    getEntity().getCollection().createIndex( index );
+                }
             }
 
             return getEntity().aggregate(

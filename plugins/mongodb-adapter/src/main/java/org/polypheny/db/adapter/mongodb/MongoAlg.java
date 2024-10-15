@@ -111,8 +111,16 @@ public interface MongoAlg extends AlgNode {
         @Setter
         private Operation operation;
 
-
-        public final List<String> ddlQueries = new ArrayList<>();
+        /**
+         * This list will be used to create necessary indexes when performing $near,
+         * $nearSphere or a $geoNear query. It contains the index and index type,
+         * separated by a newline character (because that can't be part of a field name).
+         * The index type can be '2d' or '2dsphere' for now.
+         *
+         * List[String] instead of List[Pair[String,String]] because Pair is difficult
+         * to serialize.
+         */
+        public final List<String> indexAndIndexType = new ArrayList<>();
 
 
         public Implementor() {

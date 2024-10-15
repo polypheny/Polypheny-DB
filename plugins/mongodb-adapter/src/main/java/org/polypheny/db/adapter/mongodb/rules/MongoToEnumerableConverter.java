@@ -96,7 +96,7 @@ public class MongoToEnumerableConverter extends ConverterImpl implements Enumera
 
         Expression enumerable;
         if ( !mongoImplementor.isDML() ) {
-            final Expression ddls = list.append( list.newName( "ddls" ), constantArrayList( mongoImplementor.ddlQueries, String.class ) );
+            final Expression ddls = list.append( list.newName( "ddls" ), constantArrayList( mongoImplementor.indexAndIndexType, String.class ) );
             final Expression logicalCols = list.append(
                     "logical",
                     constantArrayList(

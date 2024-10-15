@@ -233,6 +233,19 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
                     }
                 })
                 """.formatted( mongoCollection ), namespace );
+//        DocResult result = execute( """
+//                db.%s.find({
+//                    legacy: {
+//                       $near: {
+//                           $geometry: {
+//                                  type: "Point",
+//                                  coordinates: [0,0]
+//                           },
+//                           $maxDistance: 10
+//                       },
+//                    }
+//                })
+//                """.formatted( mongoCollection ), namespace );
         System.out.println( "Test" );
     }
 

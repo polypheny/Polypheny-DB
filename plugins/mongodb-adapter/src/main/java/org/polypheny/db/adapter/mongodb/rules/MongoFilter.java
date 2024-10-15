@@ -30,6 +30,7 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
+import org.apache.commons.lang3.NotImplementedException;
 import org.bson.BsonArray;
 import org.bson.BsonBoolean;
 import org.bson.BsonDocument;
@@ -68,12 +69,9 @@ import org.polypheny.db.sql.language.fun.SqlItemOperator;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
-import org.polypheny.db.type.entity.document.PolyDocument;
-import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.type.entity.spatial.PolyLinearRing;
 import org.polypheny.db.type.entity.spatial.PolyPoint;
-import org.polypheny.db.type.entity.spatial.PolyPolygon;
 import org.polypheny.db.util.BsonUtil;
 import org.polypheny.db.util.JsonBuilder;
 
@@ -158,14 +156,22 @@ public class MongoFilter extends Filter implements MongoAlg {
                     implementor.add( null, MongoAlg.Implementor.toJson( new BsonDocument( "$addFields", preProjections ) ) );
                 }
 
-                // TODO: Mongo create index
-                implementor.ddlQueries.add( "TODO" );
+                BsonValue near = value.getDocument( value.getFirstKey() ).get( "$near" );
+                String fieldName = value.getFirstKey();
+                if (near.isDocument()){
+                    // Point is specified as GeoJSON -> Create a 2dsphere index
+                    implementor.indexAndIndexType.add( "%s\n2dsphere".formatted(fieldName) );
+                } else if (near.isArray()){
+                    // Point is specified as legacy coordiantes -> Create a 2d index
+                    implementor.indexAndIndexType.add( "%s\n2d".formatted(fieldName) );
+                } else {
+                    throw new NotImplementedException("Unexpected value for $near.");
+                }
 
-                BsonDocument innerValue = value.getDocument( value.getFirstKey() );
                 final String distanceField = "__temp_%s".formatted( UUID.randomUUID().toString() );
                 BsonDocument geoNearOptions = new BsonDocument();
                 geoNearOptions.put( "distanceField", new BsonString( distanceField ) );
-                geoNearOptions.put( "near", innerValue.get( "$near" ) );
+                geoNearOptions.put( "near", near );
                 implementor.add( null, MongoAlg.Implementor.toJson( new BsonDocument( "$geoNear", geoNearOptions ) ) );
                 implementor.add( null, MongoAlg.Implementor.toJson( new BsonDocument( "$unset", new BsonString( distanceField ) ) ) );
             }
