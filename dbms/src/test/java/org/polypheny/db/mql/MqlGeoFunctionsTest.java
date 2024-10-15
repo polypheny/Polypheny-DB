@@ -271,26 +271,26 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
 
     @Test
     public void docsNearTestOnlHsqlDb() {
-//        String insertMany = """
-//                db.%s.insertMany([
-//                    {
-//                      name: "Legacy [0,0]",
-//                      num: 1,
-//                      legacy: [0,0]
-//                    },
-//                    {
-//                      name: "Legacy [1,1]",
-//                      num: 2,
-//                      legacy: [1,1]
-//                    },
-//                    {
-//                      name: "Legacy [2,2]",
-//                      num: 3,
-//                      legacy: [2,2]
-//                    }
-//                ])
-//                """;
-//        execute( insertMany.formatted( mongoCollection ), namespace );
+        String insertMany = """
+                db.%s.insertMany([
+                    {
+                      name: "Legacy [0,0]",
+                      num: 1,
+                      legacy: [0,0]
+                    },
+                    {
+                      name: "Legacy [1,1]",
+                      num: 2,
+                      legacy: [1,1]
+                    },
+                    {
+                      name: "Legacy [2,2]",
+                      num: 3,
+                      legacy: [2,2]
+                    }
+                ])
+                """;
+        execute( insertMany.formatted( defaultCollection ), namespace );
 
 //        DocResult result = execute( """
 //                db.%s.find({
@@ -307,11 +307,12 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
                            $geometry: {
                                   type: "Point",
                                   coordinates: [0,0]
-                           }
+                           },
                        },
                     }
                 })
                 """.formatted( defaultCollection ), namespace );
+        System.out.println();
     }
 
 

@@ -18,6 +18,7 @@ package org.polypheny.db.algebra.enumerable.document;
 
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
+import org.bson.BsonDouble;
 import org.bson.BsonInt32;
 import org.bson.BsonString;
 import org.bson.BsonValue;
@@ -25,6 +26,9 @@ import org.jetbrains.annotations.Nullable;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.PrecisionModel;
+import org.polypheny.db.algebra.AlgCollations;
+import org.polypheny.db.algebra.AlgFieldCollation;
+import org.polypheny.db.algebra.AlgFieldCollation.Direction;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.convert.ConverterRule;
@@ -37,6 +41,7 @@ import org.polypheny.db.algebra.enumerable.document.DocumentProjectToCalcRule.Ne
 import org.polypheny.db.algebra.logical.document.LogicalDocumentFilter;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentSort;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
@@ -69,6 +74,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.BiFunction;
 
 import static org.polypheny.db.type.entity.spatial.PolyGeometry.WGS_84;
 
@@ -98,193 +104,110 @@ public class DocumentNearUnwrap extends ConverterRule {
 
 
     private AlgCluster cluster;
-    private RexBuilder builder;
-    private final Optional<RexNode> subElement = Optional.empty();
-    private Entity entity;
 
-    public static boolean supports(DocumentFilter filter) {
+    public static boolean supports( DocumentFilter filter ) {
         Kind nearKind = filter.getCondition().getKind();
         return nearKind == Kind.MQL_NEAR || nearKind == Kind.MQL_NEAR_SPHERE;
     }
 
+
     @Override
     public AlgNode convert( AlgNode alg ) {
-        if (!(alg instanceof DocumentFilter filter)) {
-            throw new GenericRuntimeException("todo");
+        if ( !(alg instanceof DocumentFilter filter) ) {
+            throw new GenericRuntimeException( "todo" );
         }
-
         cluster = alg.getCluster();
-        builder = cluster.getRexBuilder();
-        entity = alg.getEntity();
-        RexCall nearCall = (RexCall)filter.getCondition();
-
+        RexCall nearCall = (RexCall) filter.getCondition();
+        AlgDataType rowType = alg.getTupleType();
         assert nearCall.operands.size() == 4;
         RexNameRef input = (RexNameRef) nearCall.operands.get( 0 );
         RexLiteral geometry = (RexLiteral) nearCall.operands.get( 1 );
         RexLiteral minDistance = (RexLiteral) nearCall.operands.get( 2 );
         RexLiteral maxDistance = (RexLiteral) nearCall.operands.get( 3 );
 
-        // 1. Add distance field with projection.
+        //
+        // Step 2:
+        // Filter by minDistance, maxDistance
         final String distanceField = "__temp_%s".formatted( UUID.randomUUID().toString() );
-//        final boolean isSpherical = nearKind == Kind.MQL_NEAR_SPHERE;
-//        AlgDataType rowType = alg.getTupleType();
-
 
         Map<String, RexNode> adds = new HashMap<>();
         adds.put( distanceField, getFixedCall( List.of(
                 input,
                 geometry,
-                convertLiteral( new BsonInt32( 1 ) )
+                convertLiteral( new PolyInteger( 1 ) )
         ), OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_GEO_DISTANCE ), PolyType.ANY ) );
         AlgNode replacementNode = LogicalDocumentProject.create( filter.getInput(), Map.of(), List.of(), adds );
         replacementNode.getTupleType();
 
-        // TODO: Convert this code from MqlToAlgConverter (old) to
-        //       DocumentNearUnwrap.
+        //
+        // Step 2:
+        // Filter by minDistance, maxDistance
+        List<RexNode> filterNodes = new ArrayList<>();
+        if ( minDistance.getValue().asNumber().intValue() != -1 ) {
+            filterNodes.add(
+                    getFixedCall(
+                            List.of(
+                                    new RexNameRef( List.of( "_distance" ), null, DocumentType.ofDoc() ),
+                                    convertLiteral( minDistance.getValue() ) ),
+                            OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_GTE ),
+                            PolyType.BOOLEAN ) );
+        }
+        if ( maxDistance.getValue().asNumber().intValue() != -1 ) {
+            filterNodes.add(
+                    getFixedCall(
+                            List.of(
+                                    new RexNameRef( List.of( "_distance" ), null, DocumentType.ofDoc() ),
+                                    convertLiteral( maxDistance.getValue() ) ),
+                            OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_LTE ),
+                            PolyType.BOOLEAN ) );
+        }
+        if ( !filterNodes.isEmpty() ) {
+            RexNode filterCondition = getFixedCall(
+                    filterNodes,
+                    OperatorRegistry.get( OperatorName.AND ),
+                    PolyType.BOOLEAN
+            );
+            replacementNode = LogicalDocumentFilter.create( replacementNode, filterCondition );
+            replacementNode.getTupleType();
+        }
 
-        // 2. Add filter for minDistance, maxDistance
-//        if (minDistance.getValue().asNumber().intValue() != -1){
-//            // TODO
-//        }
+        //
+        // Step 3:
+        // Sort by _distance ascending
+        List<String> names = List.of( "_distance" );
+        replacementNode = LogicalDocumentSort.create(
+                replacementNode,
+                AlgCollations.of( generateCollation( List.of( Direction.ASCENDING ), names, names ) ),
+                List.of( new RexNameRef( List.of( "_distance" ), null, DocumentType.ofDoc() ) ),
+                null,
+                null );
+        replacementNode.getTupleType();
 
-//        BsonDocument filterDistance = new BsonDocument( "_distance", filterConditions );
-//        RexNode distanceCondition = translateDocument( filterDistance, rowType, null );
-//        replacementNode = LogicalDocumentFilter.create( replacementNode, distanceCondition );
-//        replacementNode.getTupleType();
-
-//        //
-//        // Step 3:
-//        // Sort by _distance ascending
-//        // TODO: Why does this not work?
-//        BsonDocument sortDocument = new BsonDocument( "_distance", new BsonInt32( 1 ) );
-//        node = combineSort( sortDocument, node, rowType );
-//
-//        //
-//        // Step 4:
-//        // Projection to remove field _distance
-//        BsonDocument removeDistanceProjection = new BsonDocument( "_distance", new BsonInt32( 0 ) );
-//        List<String> unsetExcludes = new ArrayList<String>();
-//        translateProjection( rowType, false, true, Map.of(), unsetExcludes, removeDistanceProjection );
-//        node = LogicalDocumentProject.create( node, Map.of(), unsetExcludes, Map.of() );
-
-
-
-        // Copied from DocumentFilterToCalcRule
-//        final LogicalDocumentFilter filter = (LogicalDocumentFilter) alg;
-//        final AlgNode input = filter.getInput();
-//        // Create a program containing a filter.
-//        final RexBuilder rexBuilder = filter.getCluster().getRexBuilder();
-//        final AlgDataType inputRowType = input.getTupleType();
-//        NameRefReplacer replacer = new NameRefReplacer( filter.getCluster(), false );
-//        programBuilder.addCondition( filter.condition.accept( replacer ) );
-
-//        final RexProgramBuilder programBuilder = new RexProgramBuilder( replacementNode.getTupleType(), builder );
-//        programBuilder.addIdentity();
-//        final RexProgram program = programBuilder.getProgram();
-//        return EnumerableCalc.create( convert( replacementNode, replacementNode.getTraitSet().replace( EnumerableConvention.INSTANCE ) ), program );
+        //
+        // Step 4:
+        // Projection to remove field _distance
+        replacementNode = LogicalDocumentProject.create( replacementNode, Map.of(), List.of( distanceField ), Map.of() );
+        replacementNode.getTupleType();
 
         return replacementNode;
     }
 
-    private RexNode convertDistance( BsonValue bsonValue, boolean isSpherical, AlgDataType rowType ) {
-        BsonArray bsonArray = bsonValue.asArray();
-        List<RexNode> operands = new ArrayList<>();
-        assert bsonArray.size() == 3;
-        BsonValue distanceField = bsonArray.get( 0 );
-        BsonValue coordinates = bsonArray.get( 1 );
-        BsonValue distanceMultiplier = bsonArray.get( 2 );
 
-        // Reference to field from document
-        operands.add( getIdentifier( distanceField.asString().getValue().substring( 1 ), rowType, false ) );
-
-        PolyGeometry polyGeometry;
-        if ( coordinates.isDocument() ) {
-            BsonDocument geometry = coordinates.asDocument();
-            try {
-                polyGeometry = PolyGeometry.fromGeoJson( geometry.toJson() );
-            } catch ( InvalidGeometryException e ) {
-                throw new RuntimeException( e );
-            }
-        } else if ( coordinates.isArray() ) {
-            GeometryFactory geoFactory = isSpherical
-                    ? new GeometryFactory( new PrecisionModel(), WGS_84 )
-                    : new GeometryFactory();
-            Coordinate point = convertArrayToCoordinate( coordinates.asArray() );
-            polyGeometry = new PolyGeometry( geoFactory.createPoint( point ) );
-        } else {
-            throw new GenericRuntimeException( "$near supports either a legacy coordinate pair of the form [x, y] or a $geometry object." );
+    private List<AlgFieldCollation> generateCollation( List<Direction> dirs, List<String> names, List<String> rowNames ) {
+        List<AlgFieldCollation> collations = new ArrayList<>();
+        int pos = 0;
+        int index;
+        for ( String name : names ) {
+            index = rowNames.indexOf( name );
+            collations.add( new AlgFieldCollation( index, dirs.get( pos ) ) );
+            pos++;
         }
-        // Geometry from filter
-        operands.add( convertGeometry( polyGeometry ) );
-
-        operands.add( convertLiteral( distanceMultiplier ) );
-
-        return getFixedCall( operands, OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_GEO_DISTANCE ), PolyType.ANY );
-    }
-
-    private RexNode getIdentifier( String parentKey, AlgDataType rowType, boolean useAccess ) {
-        if ( useAccess ) {
-            return attachAccess( parentKey, rowType );
-        }
-
-        // we look if we already extracted a part of the document
-
-        return translateDocValue( null, parentKey );
-    }
-
-    public RexNode translateDocValue( @Nullable Integer index, String key ) {
-        //RexCall filter;
-        List<String> names = Arrays.asList( key.split( "\\." ) );
-
-        return subElement.orElseGet( () -> new RexNameRef( names, index, DocumentType.ofDoc() ) );
-    }
-
-    private RexNode attachAccess( String parentKey, AlgDataType rowType ) {
-        AlgDataTypeField field = rowType.getField( parentKey, false, false );
-        return attachAccess( field.getIndex(), rowType );
-    }
-
-    private RexNode attachAccess( int index, AlgDataType rowType ) {
-        CorrelationId correlId = cluster.createCorrel();
-        cluster.getMapCorrelToAlg().put( correlId, LogicalDocumentScan.create( cluster, entity ) );
-        return builder.makeFieldAccess( builder.makeCorrel( rowType, correlId ), index );
-    }
-
-    private PolyValue getPolyValue( BsonValue value ) {
-        switch ( value.getBsonType() ) {
-            case DOUBLE:
-                return PolyDouble.of( value.asDouble().getValue() );
-            case STRING:
-                return PolyString.of( value.asString().getValue() );
-            case DOCUMENT:
-                Map<PolyString, PolyValue> map = new HashMap<>();
-                for ( Entry<String, BsonValue> entry : value.asDocument().entrySet() ) {
-                    map.put( PolyString.of( entry.getKey() ), getPolyValue( entry.getValue() ) );
-                }
-
-                return PolyDocument.ofDocument( map );
-            case ARRAY:
-                List<PolyValue> list = new ArrayList<>();
-                for ( BsonValue bson : value.asArray() ) {
-                    list.add( getPolyValue( bson ) );
-                }
-                return PolyList.of( list );
-            case BOOLEAN:
-                return new PolyBoolean( value.asBoolean().getValue() );
-            case INT32:
-                return new PolyInteger( value.asInt32().getValue() );
-        }
-        throw new GenericRuntimeException( "Not implemented Comparable transform: " + value );
-    }
-
-    private RexNode convertLiteral( BsonValue bsonValue ) {
-        Pair<PolyValue, PolyType> valuePair = RexLiteral.convertType( getPolyValue( bsonValue ), new DocumentType() );
-        return new RexLiteral( valuePair.left, new DocumentType(), valuePair.right );
+        return collations;
     }
 
 
-    private RexNode convertGeometry( PolyGeometry geometry ) {
-        Pair<PolyValue, PolyType> valuePair = RexLiteral.convertType( geometry, new DocumentType() );
+    private RexNode convertLiteral( PolyValue polyValue ) {
+        Pair<PolyValue, PolyType> valuePair = RexLiteral.convertType( polyValue, new DocumentType() );
         return new RexLiteral( valuePair.left, new DocumentType(), valuePair.right );
     }
 
@@ -315,34 +238,5 @@ public class DocumentNearUnwrap extends ConverterRule {
             return new RexCall( cluster.getTypeFactory().createTypeWithNullability( cluster.getTypeFactory().createPolyType( polyType ), true ), op, operands );
         }
     }
-
-    private Coordinate convertArrayToCoordinate( BsonArray array ) {
-        if ( array.size() != 2 ) {
-            throw new GenericRuntimeException( "Coordinates need to be of the form [x,y]" );
-        }
-        double x = convertBsonValueToDouble( array.get( 0 ) );
-        double y = convertBsonValueToDouble( array.get( 1 ) );
-        return new Coordinate( x, y );
-    }
-
-    private double convertBsonValueToDouble( BsonValue bsonValue ) {
-        Double result = null;
-        if ( bsonValue.isDouble() ) {
-            result = bsonValue.asDouble().getValue();
-        }
-        if ( bsonValue.isInt32() ) {
-            int intValue = bsonValue.asInt32().getValue();
-            result = (double) intValue;
-        }
-        if ( bsonValue.isInt64() ) {
-            long intValue = bsonValue.asInt64().getValue();
-            result = (double) intValue;
-        }
-        if ( result == null ) {
-            throw new GenericRuntimeException( "Legacy Coordinates needs to be of type INTEGER or DOUBLE." );
-        }
-        return result;
-    }
-
 
 }
