@@ -812,11 +812,8 @@ public class MongoFilter extends Filter implements MongoAlg {
 
                 // Executing this query requires the 2dsphere index to be created on the 'left' field.
                 attachCondition( null, left, leftBody );
+                return;
             }
-
-            // Something went wrong. Either we did not handle all cases, or the input is not as expected,
-            // and should never have been parsed correctly in the first place.
-            throw new GenericRuntimeException( "Cannot translate $near to MongoDB query." );
         }
 
 
