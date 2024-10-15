@@ -139,10 +139,34 @@ public class DocumentNearUnwrap extends ConverterRule {
         AlgNode replacementNode = LogicalDocumentProject.create( filter.getInput(), Map.of(), List.of(), adds );
         replacementNode.getTupleType();
 
+        // TODO: Convert this code from MqlToAlgConverter (old) to
+        //       DocumentNearUnwrap.
+
         // 2. Add filter for minDistance, maxDistance
 //        if (minDistance.getValue().asNumber().intValue() != -1){
 //            // TODO
 //        }
+
+//        BsonDocument filterDistance = new BsonDocument( "_distance", filterConditions );
+//        RexNode distanceCondition = translateDocument( filterDistance, rowType, null );
+//        replacementNode = LogicalDocumentFilter.create( replacementNode, distanceCondition );
+//        replacementNode.getTupleType();
+
+//        //
+//        // Step 3:
+//        // Sort by _distance ascending
+//        // TODO: Why does this not work?
+//        BsonDocument sortDocument = new BsonDocument( "_distance", new BsonInt32( 1 ) );
+//        node = combineSort( sortDocument, node, rowType );
+//
+//        //
+//        // Step 4:
+//        // Projection to remove field _distance
+//        BsonDocument removeDistanceProjection = new BsonDocument( "_distance", new BsonInt32( 0 ) );
+//        List<String> unsetExcludes = new ArrayList<String>();
+//        translateProjection( rowType, false, true, Map.of(), unsetExcludes, removeDistanceProjection );
+//        node = LogicalDocumentProject.create( node, Map.of(), unsetExcludes, Map.of() );
+
 
 
         // Copied from DocumentFilterToCalcRule
