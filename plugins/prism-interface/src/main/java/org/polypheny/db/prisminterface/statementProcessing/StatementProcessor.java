@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableMap;
 import java.util.List;
 import java.util.Map;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.languages.LanguageManager;
@@ -143,6 +144,7 @@ public class StatementProcessor {
         Pair<Node, AlgDataType> validated = queryProcessor.validate( transaction, parsed, false );
         AlgDataType parameterRowType = queryProcessor.getParameterRowType( validated.left );
         piStatement.setParameterMetas( RelationalMetaRetriever.retrieveParameterMetas( parameterRowType ) );
+        piStatement.setParameterPolyTypes( parameterRowType.getFields().stream().map( AlgDataTypeField::getType ).toList() );
     }
 
 }

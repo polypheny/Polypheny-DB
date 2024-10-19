@@ -19,6 +19,7 @@ package org.polypheny.db.prisminterface.statements;
 import java.util.List;
 import lombok.Setter;
 import org.jetbrains.annotations.NotNull;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.prisminterface.PIClient;
@@ -29,6 +30,7 @@ import org.polypheny.prism.ParameterMeta;
 public abstract class PIPreparedStatement extends PIStatement implements Signaturizable {
 
     protected List<ParameterMeta> parameterMetas;
+    protected List<AlgDataType> parameterPolyTypes;
 
 
     public List<ParameterMeta> getParameterMetas() {

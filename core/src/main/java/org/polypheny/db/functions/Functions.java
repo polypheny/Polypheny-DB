@@ -2137,7 +2137,7 @@ public class Functions {
      * NULL &rarr; NULL, FALSE &rarr; TRUE, TRUE &rarr; FALSE.
      */
     public static PolyBoolean not( PolyBoolean b ) {
-        return PolyBoolean.of( !b.value );
+        return b == null ? PolyBoolean.of( null ) : PolyBoolean.of( !b.value );
     }
 
 

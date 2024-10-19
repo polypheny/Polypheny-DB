@@ -130,6 +130,11 @@ public class LanguageManager {
         String changedNamespace = null;
         for ( ParsedQueryContext parsed : parsedQueries ) {
             if ( i != 0 ) {
+                // as long as we directly commit the transaction, we cannot reuse the same transaction
+                if ( previousDdl && !transaction.isActive() ) {
+                    transaction = parsed.getTransactionManager().startTransaction( transaction.getUser().id, transaction.getDefaultNamespace().id, transaction.isAnalyze(), transaction.getOrigin() );
+                    parsed.addTransaction( transaction );
+                }
                 statement = transaction.createStatement();
             }
             if ( changedNamespace != null ) {
@@ -155,22 +160,10 @@ public class LanguageManager {
                                 new GenericRuntimeException( "DDL statement is not executable" ),
                                 implementationContexts );
                     }
-                    // as long as we directly commit the transaction, we cannot reuse the same transaction
-                    if ( previousDdl && !transaction.isActive() ) {
-                        transaction = parsed.getTransactionManager().startTransaction( transaction.getUser().id, transaction.getDefaultNamespace().id, transaction.isAnalyze(), transaction.getOrigin() );
-                        statement = transaction.createStatement();
-                        parsed.addTransaction( transaction );
-                    }
 
                     implementation = processor.prepareDdl( statement, (ExecutableStatement) parsed.getQueryNode().get(), parsed );
                     previousDdl = true;
                 } else {
-                    // as long as we directly commit the transaction, we cannot reuse the same transaction
-                    if ( previousDdl && !transaction.isActive() ) {
-                        transaction = parsed.getTransactionManager().startTransaction( transaction.getUser().id, transaction.getDefaultNamespace().id, transaction.isAnalyze(), transaction.getOrigin() );
-                        statement = transaction.createStatement();
-                        parsed.addTransaction( transaction );
-                    }
                     previousDdl = false;
                     if ( parsed.getLanguage().validatorSupplier() != null ) {
                         if ( transaction.isAnalyze() ) {
@@ -194,6 +187,10 @@ public class LanguageManager {
 
                     if ( transaction.isAnalyze() ) {
                         statement.getOverviewDuration().stop( "Translation" );
+                    }
+
+                    if ( !statement.getTransaction().isActive() ) {
+                        log.warn( "Transaction is not active" );
                     }
                     implementation = statement.getQueryProcessor().prepareQuery( root, true );
                 }

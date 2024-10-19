@@ -39,6 +39,7 @@ public class PIPreparedNamedStatement extends PIPreparedStatement {
     @Setter
     private PolyImplementation implementation;
     @Getter
+    @Setter
     private Statement statement;
     private final NamedValueProcessor namedValueProcessor;
 

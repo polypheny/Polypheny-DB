@@ -148,7 +148,7 @@ public class DataContextImpl implements DataContext {
 
         switch ( type.getPolyType() ) {
             case DECIMAL -> {
-                if ( value.asNumber().toString().replace( ".", "" ).replace( "-", "" ).length() > type.getPrecision() ) {
+                if ( value.asNumber().toString().replaceFirst( "^0", "" ).replace( ".", "" ).replace( "-", "" ).length() > type.getPrecision() ) {
                     throw new GenericRuntimeException( "Numeric value is too long" );
                 }
             }

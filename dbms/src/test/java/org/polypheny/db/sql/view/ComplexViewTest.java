@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableList;
 import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.Date;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 import lombok.extern.slf4j.Slf4j;
@@ -1491,6 +1492,34 @@ public class ComplexViewTest {
                 } finally {
                     connection.rollback();
                     statement.executeUpdate( "DROP VIEW IF EXISTS q14_VIEW" );
+                    dropTables( statement );
+                }
+            }
+        }
+    }
+
+
+    @Test
+    public void testCast() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                initTables( statement );
+
+                try {
+                    String query = """
+                            SELECT l_extendedprice
+                            FROM
+                                lineitem
+                            WHERE
+                                l_extendedprice >= cast(? as Integer)""";
+
+                    PreparedStatement prepare = connection.prepareStatement( query );
+                    prepare.setString( 1, "3" );
+                    prepare.execute();
+                    connection.commit();
+                } finally {
+                    connection.rollback();
                     dropTables( statement );
                 }
             }
