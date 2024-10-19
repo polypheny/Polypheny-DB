@@ -1498,6 +1498,7 @@ public class ComplexViewTest {
         }
     }
 
+
     @Test
     public void testCast() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {

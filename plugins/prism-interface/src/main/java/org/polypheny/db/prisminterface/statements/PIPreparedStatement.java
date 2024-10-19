@@ -24,7 +24,6 @@ import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.prisminterface.PIClient;
 import org.polypheny.db.prisminterface.statementProcessing.StatementProcessor;
-import org.polypheny.db.type.PolyType;
 import org.polypheny.prism.ParameterMeta;
 
 @Setter
@@ -32,6 +31,7 @@ public abstract class PIPreparedStatement extends PIStatement implements Signatu
 
     protected List<ParameterMeta> parameterMetas;
     protected List<AlgDataType> parameterPolyTypes;
+
 
     public List<ParameterMeta> getParameterMetas() {
         if ( parameterMetas == null ) {
