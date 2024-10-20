@@ -571,6 +571,9 @@ public class CypherFunctions {
         if (value.isString()){
             return Double.parseDouble( value.toString() );
         }
+        if (value.isDouble()){
+            return value.asDouble().doubleValue();
+        }
 
         assert value.isBigDecimal() : "Extend method to handle other numerical data types.";
         return Objects.requireNonNull( value.asBigDecimal().getValue() ).doubleValue();

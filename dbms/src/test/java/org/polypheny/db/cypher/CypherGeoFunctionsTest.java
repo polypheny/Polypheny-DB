@@ -23,7 +23,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.webui.models.results.GraphResult;
 
@@ -84,6 +83,7 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
 
     @Test
     public void distanceTest() {
+        // Compute distance in spherical coordinate system
         execute( """
                 CREATE (basel:City {name: 'Basel', latitude: 47.5595, longitude: 7.5885}),
                        (zurich:City {name: 'Zürich', latitude: 47.3770, longitude: 8.5416});
@@ -93,10 +93,42 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
                 WITH basel, zurich,
                      point({latitude: basel.latitude, longitude: basel.longitude}) AS point1,
                      point({latitude: zurich.latitude, longitude: zurich.longitude}) AS point2
-                RETURN basel.name, zurich.name, distance(point1, point2) AS distance;
+                RETURN basel.name, zurich.name, point.distance(point1, point2) AS distance;
                 """ );
         assert res.data[0].length == 3;
         assert Math.abs( PolyValue.fromJson( res.data[0][2] ).asDocument().get( new PolyString( "value" ) ).asDouble().doubleValue() - 74460.31287583392 ) < 1e-9;
+
+        // Compute distance in euclidean coordinate system
+        execute( """
+                CREATE (a:Dot {x: 1, y: 1}),
+                       (b:Dot {x: 2, y: 2}),
+                       (a)-[:CONNECTED]->(b);
+                """ );
+        res = execute( """
+                MATCH (a:Dot)-[:CONNECTED]->(b:Dot)
+                WITH a, b,
+                     point({x: a.x, y: a.y}) AS d1,
+                     point({x: b.x, y: b.y}) AS d2
+                RETURN point.distance(d1, d2) AS distance;
+                """ );
+        assert res.data[0].length == 1;
+        assert Math.abs( PolyValue.fromJson( res.data[0][0] ).asDocument().get( new PolyString( "value" ) ).asDouble().doubleValue() - Math.sqrt( 2 )) < 1e-9;
+
+        // Compute distance in euclidean coordinate system with 3 coordinates
+        execute( """
+                CREATE (a:Dot3D {x: 1, y: 1, z:1}),
+                       (b:Dot3D {x: 2, y: 2, z:3}),
+                       (a)-[:CONNECTED]->(b);
+                """ );
+        res = execute( """
+                MATCH (a:Dot3D)-[:CONNECTED]->(b:Dot3D)
+                WITH a, b,
+                     point({x: a.x, y: a.y, z: a.z}) AS d1,
+                     point({x: b.x, y: b.y, z: b.z}) AS d2
+                RETURN point.distance(d1, d2) AS distance;
+                """ );
+        assert res.data[0].length == 1;
+        assert Math.abs( PolyValue.fromJson( res.data[0][0] ).asDocument().get( new PolyString( "value" ) ).asDouble().doubleValue() - Math.sqrt( 2 )) < 1e-9;
     }
 
 

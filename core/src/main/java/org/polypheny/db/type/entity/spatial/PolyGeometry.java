@@ -47,7 +47,9 @@ import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.geom.TopologyException;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
@@ -901,7 +903,7 @@ public class PolyGeometry extends PolyValue {
         // During code generation, we cannot throw an InvalidGeometryException nor return null. This is why we use
         // this method to create the PolyGeometry which throws a GenericRuntimeException if it fails (which should
         // never be this case).
-        return Expressions.call(PolyGeometry.class, "ofOrThrow", Expressions.constant(this.toString()));
+        return Expressions.call( PolyGeometry.class, "ofOrThrow", Expressions.constant( this.toString() ) );
     }
 
 
@@ -937,7 +939,31 @@ public class PolyGeometry extends PolyValue {
 
 
     public @NotNull String toWKT() {
+        if ( geometryType == PolyGeometryType.POINT &&
+                jtsGeometry instanceof Point point &&
+                !Double.isNaN( point.getCoordinate().z ) ) {
+            Coordinate coordinate = point.getCoordinate();
+            return String.format(
+                    "SRID=%d; POINT(%s %s %s)",
+                    SRID,
+                    formatDouble( coordinate.x ),
+                    formatDouble( coordinate.y ),
+                    formatDouble( coordinate.z )
+            );
+        }
+
         return String.format( "SRID=%d;%s", SRID, jtsGeometry.toString() );
+    }
+
+
+    /**
+     * Remove comma with trailing numbers if they are 0. This is how
+     * doubles are formatted when converted to WKT by JTS Geometry.
+     */
+    private static String formatDouble( double value ) {
+        return value % 1 == 0
+                ? String.format( "%.0f", value )
+                : String.format( "%s", value );
     }
 
 
