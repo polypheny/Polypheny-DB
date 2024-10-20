@@ -27,7 +27,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.function.Deterministic;
-import org.apache.commons.lang3.NotImplementedException;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.PrecisionModel;
@@ -434,6 +433,43 @@ public class CypherFunctions {
     }
 
 
+    /**
+     * 5 possible argument names with values:
+     * - 3 coordinates
+     * - 2 options
+     */
+    @SuppressWarnings("unused")
+    public static PolyGeometry point(
+            PolyValue argName1,
+            PolyValue argValue1,
+            PolyValue argName2,
+            PolyValue argValue2,
+            PolyValue argName3,
+            PolyValue argValue3,
+            PolyValue argName4,
+            PolyValue argValue4,
+            PolyValue argName5,
+            PolyValue argValue5 ) {
+        Map<PolyValue, PolyValue> map = new HashMap<>();
+        if ( argName1 != null && argValue1 != null ) {
+            map.put( argName1, argValue1 );
+        }
+        if ( argName2 != null && argValue2 != null ) {
+            map.put( argName2, argValue2 );
+        }
+        if ( argName3 != null && argValue3 != null ) {
+            map.put( argName3, argValue3 );
+        }
+        if ( argName4 != null && argValue4 != null ) {
+            map.put( argName4, argValue4 );
+        }
+        if ( argName5 != null && argValue5 != null ) {
+            map.put( argName5, argValue5 );
+        }
+        return point( PolyMap.of( map ) );
+    }
+
+    @SuppressWarnings("unused")
     public static PolyGeometry point( PolyValue map ) {
         if ( !map.isMap() ) {
             throw new GenericRuntimeException( "point() expects a map." );
@@ -458,30 +494,29 @@ public class CypherFunctions {
         Coordinate coordinate = new Coordinate();
 
         if ( polyMap.containsKey( x ) && polyMap.containsKey( y ) ) {
-            if(polyMap.get( x ).isNull()){
+            if ( polyMap.get( x ).isNull() ) {
                 return null;
             }
             coordinate.setX( convertPolyValueToDouble( polyMap.get( x ) ) );
-            if(polyMap.get( y ).isNull()){
+            if ( polyMap.get( y ).isNull() ) {
                 return null;
             }
             coordinate.setY( convertPolyValueToDouble( polyMap.get( y ) ) );
             if ( polyMap.containsKey( z ) ) {
-                if(polyMap.get( z ).isNull()){
+                if ( polyMap.get( z ).isNull() ) {
                     return null;
                 }
                 coordinate.setZ( convertPolyValueToDouble( polyMap.get( z ) ) );
             }
 
-            if (polyMap.containsKey( srid )){
-                SRID = switch (polyMap.get(srid).asInteger().intValue()){
+            if ( polyMap.containsKey( srid ) ) {
+                SRID = switch ( polyMap.get( srid ).asInteger().intValue() ) {
                     case WGS_84 -> WGS_84;
                     case WGS_84_3D -> WGS_84_3D;
                     default -> 0;
                 };
-            }
-            else if (polyMap.containsKey( crs )){
-                SRID = switch (polyMap.get(crs).asString().value){
+            } else if ( polyMap.containsKey( crs ) ) {
+                SRID = switch ( polyMap.get( crs ).asString().value ) {
                     case "WGS-84-2D" -> WGS_84;
                     case "WGS-84-3D" -> WGS_84_3D;
                     default -> 0;
@@ -489,16 +524,16 @@ public class CypherFunctions {
             }
 
         } else if ( polyMap.containsKey( longitude ) && polyMap.containsKey( latitude ) ) {
-            if(polyMap.get( longitude ).isNull()){
+            if ( polyMap.get( longitude ).isNull() ) {
                 return null;
             }
             coordinate.setX( convertPolyValueToDouble( polyMap.get( longitude ) ) );
-            if(polyMap.get( latitude ).isNull()){
+            if ( polyMap.get( latitude ).isNull() ) {
                 return null;
             }
             coordinate.setY( convertPolyValueToDouble( polyMap.get( latitude ) ) );
             if ( polyMap.containsKey( height ) ) {
-                if(polyMap.get( height ).isNull()){
+                if ( polyMap.get( height ).isNull() ) {
                     return null;
                 }
                 coordinate.setZ( convertPolyValueToDouble( polyMap.get( height ) ) );
@@ -511,7 +546,8 @@ public class CypherFunctions {
         return PolyGeometry.of( geometryFactory.createPoint( coordinate ) );
     }
 
-    public static PolyDouble distance(PolyValue p1, PolyValue p2) {
+    @SuppressWarnings("unused")
+    public static PolyDouble distance( PolyValue p1, PolyValue p2 ) {
         PolyGeometry g1 = p1.asGeometry();
         PolyGeometry g2 = p2.asGeometry();
 
@@ -522,14 +558,20 @@ public class CypherFunctions {
         }
     }
 
-    public static PolyBoolean withinBBox(PolyValue point, PolyValue bbox) {
+    @SuppressWarnings("unused")
+    public static PolyBoolean withinBBox( PolyValue point, PolyValue bbox ) {
         PolyGeometry g = point.asGeometry();
         PolyGeometry gBBox = bbox.asGeometry();
         return new PolyBoolean( g.within( gBBox ) );
     }
 
+
     private static double convertPolyValueToDouble( PolyValue value ) {
         // This should be sufficient, as all numerical values from Cypher are stored as BigDecimal.
+        if (value.isString()){
+            return Double.parseDouble( value.toString() );
+        }
+
         assert value.isBigDecimal() : "Extend method to handle other numerical data types.";
         return Objects.requireNonNull( value.asBigDecimal().getValue() ).doubleValue();
     }

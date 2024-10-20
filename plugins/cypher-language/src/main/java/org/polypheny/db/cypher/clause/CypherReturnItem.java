@@ -20,6 +20,7 @@ import javax.annotation.Nullable;
 import lombok.Getter;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.cypher.expression.CypherAggregate;
@@ -33,10 +34,12 @@ import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexNameRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.util.Pair;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -83,29 +86,29 @@ public class CypherReturnItem extends CypherReturn {
 
                 switch ( func.getOperatorName() ) {
                     case CYPHER_POINT: {
+                        // VERY UGLY, but it works for now. This could be improved by using the function MAP_OF_ENTRIES,
+                        // but I am not sure how to call it.
                         CypherLiteral mapExpression = (CypherLiteral) func.getArguments().get( 0 );
-                        // RexBuilder cannot handle CypherLiteral values, so we have to extract the values first.
-                        Map<String, Object> map = new HashMap<>();
+                        List<RexNode> arguments = new ArrayList<>();
                         mapExpression.getMapValue().forEach( ( key, value ) -> {
-                            if ( value instanceof CypherLiteral ) {
-                                map.put( key, ((CypherLiteral) value).getValue() );
-                            }
-                            if (value instanceof CypherProperty ){
-                                throw new NotImplementedException( "TODO" );
-                            }
+                            Pair<PolyString, RexNode> pair = value.getRex( context, RexType.PROJECT );
+                            arguments.add( context.rexBuilder.makeLiteral( key ) );
+                            arguments.add( pair.right );
                         } );
-                        RexNode node = context.rexBuilder.makeLiteral(
-                                map,
-                                context.typeFactory.createMapType(
-                                        context.typeFactory.createPolyType( PolyType.VARCHAR ),
-                                        context.typeFactory.createPolyType( PolyType.ANY ) ),
-                                true );
+                        // Fill with NULL to make sure we have the correct amount of arguments.
+                        // 3 coordinates + 3 names + srid + crs = up to 8 possible
+                        while (arguments.size() < 10){
+                            arguments.add( context.rexBuilder.makeNullLiteral( context.typeFactory.createUnknownType()  ) );
+                        }
                         return Pair.of( PolyString.of( name ), new RexCall(
                                 context.geometryType,
                                 OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_POINT ),
-                                List.of( node ) ) );
+                                arguments ) );
+
                     }
                     case DISTANCE: {
+
+
                         throw new NotImplementedException( "TODO" );
                     }
                     default:
