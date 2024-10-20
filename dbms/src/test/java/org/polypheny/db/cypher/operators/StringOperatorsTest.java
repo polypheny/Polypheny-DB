@@ -14,38 +14,29 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.cypher;
+package org.polypheny.db.cypher.operators;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.polypheny.db.cypher.CypherTestTemplate;
+import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.webui.models.results.GraphResult;
 
-public class FilterTest extends CypherTestTemplate {
+
+public class StringOperatorsTest extends CypherTestTemplate {
+
 
     @BeforeEach
-    public void reset() {
+    public void setUp() {
         tearDown();
         createGraph();
     }
 
-    ///////////////////////////////////////////////
-    ///////// FILTER
-    ///////////////////////////////////////////////
-
 
     @Test
-    public void simplePropertyFilter() {
-        execute( SINGLE_NODE_PERSON_1 );
-        execute( SINGLE_NODE_ANIMAL );
-        GraphResult res = execute( "MATCH (p) WHERE p.age > 3 RETURN p" );
-        assertNode( res, 0 );
-
-        assert containsRows( res, true, false );
-
-        res = execute( "MATCH (p) WHERE p.age >= 3 RETURN p" );
-        assertNode( res, 0 );
-
-        assert containsRows( res, true, false, Row.of( KIRA ) );
+    public void concatenateWithPlusOperatorTest() {
+        GraphResult res = execute( "RETURN 'neo' + '4j' AS result" );
+        containsRows( res, true, true, Row.of( TestLiteral.from( "neo4j" ) ) );
     }
 
 }
