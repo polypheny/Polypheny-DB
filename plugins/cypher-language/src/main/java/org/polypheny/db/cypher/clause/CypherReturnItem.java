@@ -97,8 +97,8 @@ public class CypherReturnItem extends CypherReturn {
                         } );
                         // Fill with NULL to make sure we have the correct amount of arguments.
                         // 3 coordinates + 3 names + srid + crs = up to 8 possible
-                        while (arguments.size() < 10){
-                            arguments.add( context.rexBuilder.makeNullLiteral( context.typeFactory.createUnknownType()  ) );
+                        while ( arguments.size() < 10 ) {
+                            arguments.add( context.rexBuilder.makeNullLiteral( context.typeFactory.createUnknownType() ) );
                         }
                         return Pair.of( PolyString.of( name ), new RexCall(
                                 context.geometryType,
@@ -107,9 +107,13 @@ public class CypherReturnItem extends CypherReturn {
 
                     }
                     case DISTANCE: {
-
-
-                        throw new NotImplementedException( "TODO" );
+                        return Pair.of( PolyString.of( name ), new RexCall(
+                                context.numberType,
+                                OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.DISTANCE ),
+                                List.of(
+                                        func.getArguments().get( 0 ).getRex( context, RexType.PROJECT ).getRight(),
+                                        func.getArguments().get( 1 ).getRex( context, RexType.PROJECT ).getRight()
+                                ) ) );
                     }
                     default:
                         throw new NotImplementedException( "Cypher Function to alg conversion missing: " + func.getOperatorName() );

@@ -21,6 +21,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.webui.models.results.GraphResult;
 
@@ -67,8 +70,9 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
         assert geometry.asPoint().getZ() == 100.0;
     }
 
+
     @Test
-    public void createPointFromNodeFields(){
+    public void createPointFromNodeFields() {
         execute( "CREATE (c:Coordinate { lon: 56.7, lat: 12 })" );
         GraphResult res = execute( "MATCH (c:Coordinate) RETURN point({longitude: c.lon, latitude: c.lat}) AS point" );
         PolyGeometry geometry = convertJsonToPolyGeometry( res.data[0][0] );
@@ -77,12 +81,13 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
         assert geometry.asPoint().getY() == 12.0;
     }
 
+
     @Test
-    public void distanceTest(){
-//        execute( """
-//                CREATE (basel:City {name: 'Basel', latitude: 47.5595, longitude: 7.5885}),
-//                       (zurich:City {name: 'Zürich', latitude: 47.3770, longitude: 8.5416});
-//                """ );
+    public void distanceTest() {
+        execute( """
+                CREATE (basel:City {name: 'Basel', latitude: 47.5595, longitude: 7.5885}),
+                       (zurich:City {name: 'Zürich', latitude: 47.3770, longitude: 8.5416});
+                """ );
         GraphResult res = execute( """
                 MATCH (basel:City {name: 'Basel'}), (zurich:City {name: 'Zürich'})
                 WITH basel, zurich,
@@ -90,7 +95,8 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
                      point({latitude: zurich.latitude, longitude: zurich.longitude}) AS point2
                 RETURN basel.name, zurich.name, distance(point1, point2) AS distance;
                 """ );
-        System.out.println(res.toString());
+        assert res.data[0].length == 3;
+        assert Math.abs( PolyValue.fromJson( res.data[0][2] ).asDocument().get( new PolyString( "value" ) ).asDouble().doubleValue() - 74460.31287583392 ) < 1e-9;
     }
 
 
