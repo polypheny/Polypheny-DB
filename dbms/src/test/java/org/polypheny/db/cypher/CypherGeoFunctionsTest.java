@@ -55,9 +55,6 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
         assert geometry.getSRID() == 0;
         assert geometry.asPoint().getX() == 1.0;
         assert geometry.asPoint().getY() == 2.0;
-        // TODO: fix this
-        // JTS Geometry WKT Representation is hardcoded to 2 dimensions
-        // https://github.com/locationtech/jts/blob/6a9af07059671bdc6e62542c9739137ab53fd4d8/modules/core/src/main/java/org/locationtech/jts/io/WKTWriter.java#L139
         assert geometry.asPoint().getZ() == 3.0;
 
         res = execute( "MATCH (n) RETURN point({longitude: 55.5, latitude: 12.2, height: 100}) AS point" );
@@ -65,7 +62,6 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
         assert geometry.getSRID() == PolyGeometry.WGS_84_3D;
         assert geometry.asPoint().getX() == 55.5;
         assert geometry.asPoint().getY() == 12.2;
-        // TODO: fix this
         assert geometry.asPoint().getZ() == 100.0;
     }
 
@@ -117,7 +113,7 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
         // Compute distance in euclidean coordinate system with 3 coordinates
         execute( """
                 CREATE (a:Dot3D {x: 1, y: 1, z:1}),
-                       (b:Dot3D {x: 2, y: 2, z:3}),
+                       (b:Dot3D {x: 2, y: 2, z:2}),
                        (a)-[:CONNECTED]->(b);
                 """ );
         res = execute( """
@@ -128,7 +124,7 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
                 RETURN point.distance(d1, d2) AS distance;
                 """ );
         assert res.data[0].length == 1;
-        assert Math.abs( PolyValue.fromJson( res.data[0][0] ).asDocument().get( new PolyString( "value" ) ).asDouble().doubleValue() - Math.sqrt( 2 )) < 1e-9;
+        assert Math.abs( PolyValue.fromJson( res.data[0][0] ).asDocument().get( new PolyString( "value" ) ).asDouble().doubleValue() - 1.7320508075688772) < 1e-9;
     }
 
 

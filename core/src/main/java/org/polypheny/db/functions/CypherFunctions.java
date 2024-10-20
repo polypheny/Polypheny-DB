@@ -47,6 +47,7 @@ import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.relational.PolyMap;
 import org.polypheny.db.type.entity.spatial.GeometryTopologicalException;
 import org.polypheny.db.type.entity.spatial.PolyGeometry;
+import org.polypheny.db.type.entity.spatial.PolyPoint;
 
 import static org.polypheny.db.type.entity.spatial.PolyGeometry.WGS_84;
 import static org.polypheny.db.type.entity.spatial.PolyGeometry.WGS_84_3D;
@@ -469,6 +470,7 @@ public class CypherFunctions {
         return point( PolyMap.of( map ) );
     }
 
+
     @SuppressWarnings("unused")
     public static PolyGeometry point( PolyValue map ) {
         if ( !map.isMap() ) {
@@ -546,17 +548,31 @@ public class CypherFunctions {
         return PolyGeometry.of( geometryFactory.createPoint( coordinate ) );
     }
 
+
     @SuppressWarnings("unused")
     public static PolyDouble distance( PolyValue p1, PolyValue p2 ) {
-        PolyGeometry g1 = p1.asGeometry();
-        PolyGeometry g2 = p2.asGeometry();
+        PolyPoint g1 = p1.asGeometry().asPoint();
+        PolyPoint g2 = p2.asGeometry().asPoint();
+
+        if ( !Objects.equals( g1.getSRID(), g2.getSRID() ) ) {
+            throw new GenericRuntimeException( "Cannot compute point.distance(%s, %s) because of different SRIDs.".formatted( g1, g2 ) );
+        }
+        Integer srid = g1.getSRID();
 
         try {
+            if ( g1.hasZ() && g2.hasZ() ) {
+                if ( srid == 0 ) {
+                    return new PolyDouble(
+                            Math.sqrt( Math.pow( g2.getX() - g1.getX(), 2 ) + Math.pow( g2.getY() - g1.getY(), 2 ) + Math.pow( g2.getZ() - g1.getZ(), 2 ) )
+                    );
+                }
+            }
             return new PolyDouble( g1.distance( g2 ) );
         } catch ( GeometryTopologicalException e ) {
             throw new GenericRuntimeException( e );
         }
     }
+
 
     @SuppressWarnings("unused")
     public static PolyBoolean withinBBox( PolyValue point, PolyValue bbox ) {
@@ -568,10 +584,10 @@ public class CypherFunctions {
 
     private static double convertPolyValueToDouble( PolyValue value ) {
         // This should be sufficient, as all numerical values from Cypher are stored as BigDecimal.
-        if (value.isString()){
+        if ( value.isString() ) {
             return Double.parseDouble( value.toString() );
         }
-        if (value.isDouble()){
+        if ( value.isDouble() ) {
             return value.asDouble().doubleValue();
         }
 
