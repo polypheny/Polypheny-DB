@@ -49,6 +49,8 @@ import org.polypheny.db.type.entity.spatial.GeometryTopologicalException;
 import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.type.entity.spatial.PolyPoint;
 
+import static java.lang.Math.toRadians;
+import static org.polypheny.db.functions.spatial.GeoDistanceFunctions.EARTH_RADIUS_M;
 import static org.polypheny.db.type.entity.spatial.PolyGeometry.WGS_84;
 import static org.polypheny.db.type.entity.spatial.PolyGeometry.WGS_84_3D;
 
@@ -565,12 +567,39 @@ public class CypherFunctions {
                     return new PolyDouble(
                             Math.sqrt( Math.pow( g2.getX() - g1.getX(), 2 ) + Math.pow( g2.getY() - g1.getY(), 2 ) + Math.pow( g2.getZ() - g1.getZ(), 2 ) )
                     );
+                } else if ( srid == WGS_84_3D ) {
+                    // See https://github.com/neo4j/neo4j/blob/5.20/community/values/src/main/java/org/neo4j/values/storable/CRSCalculator.java
+                    double greatCircleDistance = getGreatCircleDistance( g1, g2 );
+                    double avgHeight = (g1.getZ() + g2.getZ()) / 2;
+                    // Note: Neo4j uses a different earth radius of 6378140.0, which is why the same calculation
+                    //       in Neo4j does not yield (exactly) the same results.
+                    double distance2D = (EARTH_RADIUS_M + avgHeight) * greatCircleDistance;
+                    double heightDifference = g1.getZ() - g2.getZ();
+                    return new PolyDouble( Math.sqrt( Math.pow( distance2D, 2 ) + Math.pow( heightDifference, 2 ) ) );
                 }
+            } else {
+                return new PolyDouble( g1.distance( g2 ) );
             }
-            return new PolyDouble( g1.distance( g2 ) );
         } catch ( GeometryTopologicalException e ) {
             throw new GenericRuntimeException( e );
         }
+
+        throw new GenericRuntimeException( "This should not be possible!" );
+    }
+    
+
+    /**
+     * Use same logic as Neo4j to calculate the spherical distance.
+     * See: <a href="https://github.com/neo4j/neo4j/blob/5.20/community/values/src/main/java/org/neo4j/values/storable/CRSCalculator.java">GitHub</a>
+     */
+    private static double getGreatCircleDistance( PolyPoint g1, PolyPoint g2 ) {
+        double lat1 = toRadians( g1.getY() );
+        double lat2 = toRadians( g2.getY() );
+        double latDifference = lat2 - lat1;
+        double lonDifference = toRadians( g2.getX() - g1.getX() );
+        double alpha = Math.pow( Math.sin( latDifference / 2 ), 2 ) +
+                Math.cos( lat1 ) * Math.cos( lat2 ) * Math.pow( Math.sin( lonDifference / 2 ), 2 );
+        return 2.0 * Math.atan2( Math.sqrt( alpha ), Math.sqrt( 1 - alpha ) );
     }
 
 

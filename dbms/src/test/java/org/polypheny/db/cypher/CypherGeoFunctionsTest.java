@@ -79,7 +79,7 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
 
     @Test
     public void distanceTest() {
-        // Compute distance in spherical coordinate system
+        // Compute distance in spherical coordinate system (2 dimensions)
         execute( """
                 CREATE (basel:City {name: 'Basel', latitude: 47.5595, longitude: 7.5885}),
                        (zurich:City {name: 'Zürich', latitude: 47.3770, longitude: 8.5416});
@@ -94,7 +94,22 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
         assert res.data[0].length == 3;
         assert Math.abs( PolyValue.fromJson( res.data[0][2] ).asDocument().get( new PolyString( "value" ) ).asDouble().doubleValue() - 74460.31287583392 ) < 1e-9;
 
-        // Compute distance in euclidean coordinate system
+        // Compute distance in spherical coordinate system (3 dimensions)
+        execute( """
+                CREATE (basel:City {name: 'Basel', latitude: 47.5595, longitude: 7.5885}),
+                       (zurich:City {name: 'Zürich', latitude: 47.3770, longitude: 8.5416});
+                """ );
+        res = execute( """
+                MATCH (basel:City {name: 'Basel'}), (zurich:City {name: 'Zürich'})
+                WITH basel, zurich,
+                     point({latitude: basel.latitude, longitude: basel.longitude, height: 100}) AS point1,
+                     point({latitude: zurich.latitude, longitude: zurich.longitude, height: 200}) AS point2
+                RETURN basel.name, zurich.name, point.distance(point1, point2) AS distance;
+                """ );
+        assert res.data[0].length == 3;
+        assert Math.abs( PolyValue.fromJson( res.data[0][2] ).asDocument().get( new PolyString( "value" ) ).asDouble().doubleValue() - 74462.13313143898 ) < 1e-9;
+
+        // Compute distance in euclidean coordinate system (2 dimensions)
         execute( """
                 CREATE (a:Dot {x: 1, y: 1}),
                        (b:Dot {x: 2, y: 2}),
@@ -110,7 +125,7 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
         assert res.data[0].length == 1;
         assert Math.abs( PolyValue.fromJson( res.data[0][0] ).asDocument().get( new PolyString( "value" ) ).asDouble().doubleValue() - Math.sqrt( 2 )) < 1e-9;
 
-        // Compute distance in euclidean coordinate system with 3 coordinates
+        // Compute distance in euclidean coordinate system (3 dimensions)
         execute( """
                 CREATE (a:Dot3D {x: 1, y: 1, z:1}),
                        (b:Dot3D {x: 2, y: 2, z:2}),
