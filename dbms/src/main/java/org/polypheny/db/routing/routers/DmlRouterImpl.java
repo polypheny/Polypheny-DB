@@ -660,14 +660,11 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         LogicalCollection collection = alg.entity.unwrap( LogicalCollection.class ).orElseThrow( () -> new GenericRuntimeException( String.format( "%s is not a collection", alg.entity.name ) ) );
 
         if ( !collection.modifiable ) {
-            if ( collection.entityType == EntityType.ENTITY ) {
-                throw new GenericRuntimeException( "Unable to modify a collection marked as read-only!" );
-            } else if ( collection.entityType == EntityType.SOURCE ) {
-                throw new GenericRuntimeException( "The collection '%s' is provided by a data source which does not support data modification.", collection.name );
-            } else if ( collection.entityType == EntityType.VIEW ) {
-                throw new GenericRuntimeException( "Polypheny-DB does not support modifying views." );
-            }
-            throw new GenericRuntimeException( "Unknown collection type: %s", collection.entityType.name() );
+            throw switch ( collection.entityType ) {
+                case ENTITY -> new GenericRuntimeException( "Unable to modify a collection marked as read-only!" );
+                case SOURCE -> new GenericRuntimeException( "The collection '%s' is provided by a data source which does not support data modification.", collection.name );
+                case VIEW, MATERIALIZED_VIEW -> new GenericRuntimeException( "Polypheny-DB does not support modifying views." );
+            };
         }
 
         List<AlgNode> modifies = new ArrayList<>();
