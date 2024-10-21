@@ -16,7 +16,6 @@
 
 package org.polypheny.db.adapter.json;
 
-
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.plugins.PluginContext;
 import org.polypheny.db.plugins.PolyPlugin;

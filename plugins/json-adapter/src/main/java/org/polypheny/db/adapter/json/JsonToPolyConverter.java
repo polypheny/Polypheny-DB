@@ -51,29 +51,14 @@ public class JsonToPolyConverter {
 
     public PolyValue nodeToPolyValue( JsonNode node ) {
         return switch ( node.getNodeType() ) {
-            case NULL -> nodeToPolyNull();
+            case NULL -> new PolyNull();
             case ARRAY -> nodeToPolyList( node );
             case OBJECT -> nodeToPolyMap( node );
             case NUMBER -> nodeToPolyNumber( node );
-            case STRING -> nodeToPolyString( node );
-            case BOOLEAN -> nodeToPolyBoolean( node );
+            case STRING -> new PolyString( node.toString() );
+            case BOOLEAN -> new PolyBoolean( node.asBoolean() );
             case BINARY, MISSING, POJO -> new PolyNull();
         };
-    }
-
-
-    public PolyNull nodeToPolyNull() {
-        return new PolyNull();
-    }
-
-
-    public PolyString nodeToPolyString( JsonNode node ) {
-        return new PolyString( node.asText() );
-    }
-
-
-    public PolyBoolean nodeToPolyBoolean( JsonNode node ) {
-        return new PolyBoolean( node.asBoolean() );
     }
 
 

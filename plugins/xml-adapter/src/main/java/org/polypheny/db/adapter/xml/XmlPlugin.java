@@ -46,5 +46,4 @@ public class XmlPlugin extends PolyPlugin {
         AdapterManager.removeAdapterTemplate( id );
     }
 
-
 }
