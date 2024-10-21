@@ -37,7 +37,6 @@ import org.polypheny.db.sql.language.SqlNodeList;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.sql.language.ddl.SqlAlterTable;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.ImmutableNullableList;
 
@@ -120,36 +119,32 @@ public class SqlAlterTableAddIndex extends SqlAlterTable {
 
         String indexMethodName = indexMethod != null ? indexMethod.getSimple() : null;
 
-        try {
-            if ( storeName != null && storeName.getSimple().equalsIgnoreCase( IndexManager.POLYPHENY ) ) {
-                DdlManager.getInstance().createPolyphenyIndex(
-                        logicalTable,
-                        indexMethodName,
-                        columnList.getList().stream().map( Node::toString ).toList(),
-                        indexName.getSimple(),
-                        unique,
-                        statement );
-            } else {
-                DataStore<?> storeInstance = null;
-                if ( storeName != null ) {
-                    storeInstance = getDataStoreInstance( storeName );
-                    if ( storeInstance == null ) {
-                        throw CoreUtil.newContextException(
-                                storeName.getPos(),
-                                RESOURCE.unknownAdapter( storeName.getSimple() ) );
-                    }
+        if ( storeName != null && storeName.getSimple().equalsIgnoreCase( IndexManager.POLYPHENY ) ) {
+            DdlManager.getInstance().createPolyphenyIndex(
+                    logicalTable,
+                    indexMethodName,
+                    columnList.getList().stream().map( Node::toString ).toList(),
+                    indexName.getSimple(),
+                    unique,
+                    statement );
+        } else {
+            DataStore<?> storeInstance = null;
+            if ( storeName != null ) {
+                storeInstance = getDataStoreInstance( storeName );
+                if ( storeInstance == null ) {
+                    throw CoreUtil.newContextException(
+                            storeName.getPos(),
+                            RESOURCE.unknownAdapter( storeName.getSimple() ) );
                 }
-                DdlManager.getInstance().createIndex(
-                        logicalTable,
-                        indexMethodName,
-                        columnList.getList().stream().map( Node::toString ).toList(),
-                        indexName.getSimple(),
-                        unique,
-                        storeInstance,
-                        statement );
             }
-        } catch ( TransactionException e ) {
-            throw new GenericRuntimeException( e );
+            DdlManager.getInstance().createIndex(
+                    logicalTable,
+                    indexMethodName,
+                    columnList.getList().stream().map( Node::toString ).toList(),
+                    indexName.getSimple(),
+                    unique,
+                    storeInstance,
+                    statement );
         }
     }
 

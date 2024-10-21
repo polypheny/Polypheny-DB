@@ -40,20 +40,20 @@ import org.polypheny.db.algebra.AlgNode;
 
 
 /**
- * RelMetadataProvider defines an interface for obtaining metadata about relational expressions. This interface is weakly-typed and is not intended to be called directly in most contexts;
+ * {@link AlgMetadataProvider} defines an interface for obtaining metadata about algebra expressions. This interface is weakly-typed and is not intended to be called directly in most contexts;
  * instead, use a strongly-typed facade such as {@link AlgMetadataQuery}.
- *
+ * <p>
  * For background and motivation, see <a href="http://wiki.eigenbase.org/RelationalExpressionMetadata">wiki</a>.
- *
+ * <p>
  * If your provider is not a singleton, we recommend that you implement {@link Object#equals(Object)} and {@link Object#hashCode()} methods. This makes the cache of {@link JaninoRelMetadataProvider} more effective.
  */
 public interface AlgMetadataProvider {
 
     /**
      * Retrieves metadata of a particular type and for a particular sub-class of relational expression.
-     *
-     * The object returned is a function. It can be applied to a relational expression of the given type to create a metadata object.
-     *
+     * <p>
+     * The object returned is a function. It can be applied to an algebra expression of the given type to create a metadata object.
+     * <p>
      * For example, you might call
      *
      * <blockquote><pre>
@@ -65,7 +65,7 @@ public interface AlgMetadataProvider {
      * Double d = selectivity.selectivity(predicate);
      * </pre></blockquote>
      *
-     * @param algClass Type of relational expression
+     * @param algClass Type of algebra expression
      * @param metadataClass Type of metadata
      * @return Function that will field a metadata instance; or null if this provider cannot supply metadata of this type
      */

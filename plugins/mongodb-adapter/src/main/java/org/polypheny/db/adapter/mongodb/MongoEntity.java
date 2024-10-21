@@ -446,12 +446,12 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
 
             try {
                 final long changes = doDML( operation, filter, operations, onlyOne, needsDocument, xid, bucket );
-
+                // this has to be a list of arrays, so List.of(...) will unwrap array and produce errors
                 return Linq4j.asEnumerable( Collections.singletonList( new PolyValue[]{ PolyLong.of( changes ) } ) );
             } catch ( MongoException e ) {
                 entity.getTransactionProvider().rollback( xid );
-                log.warn( "Failed" );
-                log.warn( String.format( "op: %s\nfilter: %s\nops: [%s]", operation.name(), filter, String.join( ";", operations ) ) );
+
+                log.warn( "Failed op: {}\nfilter: {}\nops: [{}]", operation.name(), filter, String.join( ";", operations ) );
                 log.warn( e.getMessage() );
                 throw new GenericRuntimeException( e.getMessage(), e );
             }
@@ -495,10 +495,12 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
                                 } else {
                                     changes += entity
                                             .getCollection()
-                                            .updateOne( session, filterUtil.insert( parameterValue ), Collections.singletonList( docUtil.insert( parameterValue ) ) )
+                                            .updateOne( session, filterUtil.insert( parameterValue ), List.of( docUtil.insert( parameterValue ) ) )
                                             .getModifiedCount();
                                 }
                             } else {
+                                log.debug( "filter {}", filterUtil.insert( parameterValue ) );
+                                log.debug( "operation {}", docUtil.insert( parameterValue ) );
                                 if ( needsDocument ) {
                                     changes += entity
                                             .getCollection()
@@ -507,7 +509,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
                                 } else {
                                     changes += entity
                                             .getCollection()
-                                            .updateMany( session, filterUtil.insert( parameterValue ), Collections.singletonList( docUtil.insert( parameterValue ) ) )
+                                            .updateMany( session, filterUtil.insert( parameterValue ), List.of( docUtil.insert( parameterValue ) ) )
                                             .getModifiedCount();
                                 }
                             }

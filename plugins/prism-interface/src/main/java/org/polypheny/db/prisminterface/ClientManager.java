@@ -23,6 +23,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalUser;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
@@ -53,8 +54,8 @@ class ClientManager {
     }
 
 
-    public void unregisterConnection( PIClient client ) {
-        client.prepareForDisposal();
+    public void unregisterConnection( PIClient client, @Nullable String reason ) {
+        client.prepareForDisposal( reason );
         clients.remove( client.getClientUUID() );
     }
 

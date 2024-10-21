@@ -352,12 +352,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         try {
             transaction.commit();
         } catch ( TransactionException e ) {
-            log.error( "Caught exception while committing transaction", e );
-            try {
-                transaction.rollback();
-            } catch ( TransactionException transactionException ) {
-                log.error( "Exception while rollback", transactionException );
-            }
+            transaction.rollback( "Caught exception while committing transaction. " + e );
         }
         return resultBuilder.build();
     }
@@ -2032,12 +2027,12 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             transaction.createStatement().getQueryProcessor().resetCaches();
             transaction.commit();
         } catch ( TransactionException e ) {
-            try {
-                transaction.rollback();
-            } catch ( TransactionException transactionException ) {
-                log.error( "Exception while rollback", transactionException );
+            String error = "Error while resetting caches: " + e.getMessage();
+            if ( transaction != null ) {
+                transaction.rollback( error );
             }
-            ctx.json( RelationalResult.builder().error( "Error while resetting caches: " + e.getMessage() ).build() );
+
+            ctx.json( RelationalResult.builder().error( error ).build() );
             return;
         }
 
@@ -2490,13 +2485,10 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             try {
                 transaction.commit();
             } catch ( TransactionException e ) {
-                log.error( "Caught exception while creating View from Planbuilder.", e );
-                try {
-                    transaction.rollback();
-                } catch ( TransactionException transactionException ) {
-                    log.error( "Exception while rollback", transactionException );
-                }
-                throw new GenericRuntimeException( e );
+                String error = "Caught exception while creating View from Planbuilder. " + e;
+
+                transaction.rollback( error);
+                throw e;
             }
 
             return RelationalResult.builder().query( "Created " + viewType + " \"" + viewName + "\" from logical query plan" ).build();
@@ -2528,13 +2520,10 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             executionTime += System.nanoTime() - temp;
             transaction.commit();
         } catch ( TransactionException e ) {
-            log.error( "Caught exception while committing the plan builder tree", e );
-            try {
-                transaction.rollback();
-            } catch ( TransactionException transactionException ) {
-                log.error( "Exception while rollback", transactionException );
-            }
-            throw new GenericRuntimeException( e );
+            String error = "Caught exception while iterating the plan builder tree. " + e;
+
+            transaction.rollback( error );
+            throw e;
         }
         RelationalResult finalResult = RelationalResult.builder()
                 .header( header )
