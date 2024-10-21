@@ -37,9 +37,9 @@ import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.util.Source;
 import org.polypheny.db.util.Sources;
 
-public class JsonMetaRetriever {
+final class JsonMetaRetriever {
 
-    public static List<ExportedDocument> getDocuments( URL jsonFiles ) throws IOException {
+    static List<ExportedDocument> getDocuments( URL jsonFiles ) throws IOException {
         List<ExportedDocument> exportedDocuments = new LinkedList<>();
         Set<String> fileNames = getFileNames( jsonFiles );
         ObjectMapper objectMapper = new ObjectMapper();
@@ -62,7 +62,7 @@ public class JsonMetaRetriever {
     }
 
 
-    public static URL findDocumentUrl( URL jsonFiles, String name ) throws MalformedURLException, NoSuchFileException {
+    static URL findDocumentUrl( URL jsonFiles, String name ) throws MalformedURLException, NoSuchFileException {
         String[] extensions = { ".json", ".json.gz" };
         String path = jsonFiles.getPath();
 

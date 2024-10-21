@@ -39,14 +39,14 @@ import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 
-public class JsonScan extends DocumentScan<JsonCollection> implements EnumerableAlg {
+public final class JsonScan extends DocumentScan<JsonCollection> implements EnumerableAlg {
 
     @Getter
     private final JsonCollection collection;
     private final int[] fields;
 
 
-    protected JsonScan( AlgCluster cluster, @NotNull JsonCollection collection, int[] fields ) {
+    JsonScan( AlgCluster cluster, @NotNull JsonCollection collection, int[] fields ) {
         super( cluster, cluster.traitSetOf( EnumerableConvention.INSTANCE ), collection );
         this.collection = collection;
         this.fields = fields;

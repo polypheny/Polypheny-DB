@@ -24,9 +24,9 @@ import org.polypheny.db.plan.Convention;
 import org.polypheny.db.schema.Namespace;
 
 @Getter
-public class JsonNamespace extends Namespace {
+final class JsonNamespace extends Namespace {
 
-    String name;
+    private final String name;
 
 
     public JsonNamespace( String name, long id, long adapterId ) {

@@ -24,12 +24,12 @@ import org.polypheny.db.plan.Convention;
 import org.polypheny.db.schema.Namespace;
 
 @Getter
-public class XmlNamespace extends Namespace {
+final class XmlNamespace extends Namespace {
 
-    String name;
+    private final String name;
 
 
-    public XmlNamespace( String name, long id, long adapterId ) {
+    XmlNamespace( String name, long id, long adapterId ) {
         super( id, adapterId );
         this.name = name;
     }

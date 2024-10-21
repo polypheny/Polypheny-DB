@@ -32,7 +32,7 @@ import org.polypheny.db.type.entity.temporal.PolyDate;
 import org.polypheny.db.type.entity.temporal.PolyTime;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 
-public class XmlToPolyConverter {
+public final class XmlToPolyConverter {
 
     public PolyDocument toPolyDocument( XMLStreamReader reader, String elementOuterName ) throws XMLStreamException, DecoderException {
         return new PolyDocument( toPolyMap( reader, elementOuterName ) );
@@ -62,7 +62,7 @@ public class XmlToPolyConverter {
     }
 
 
-    public PolyValue toPolyValue( XMLStreamReader reader ) throws XMLStreamException, DecoderException {
+    private PolyValue toPolyValue( XMLStreamReader reader ) throws XMLStreamException, DecoderException {
         String currentElementName = reader.getLocalName();
         String typeName = reader.getAttributeValue( null, "type" );
         if ( typeName == null ) {

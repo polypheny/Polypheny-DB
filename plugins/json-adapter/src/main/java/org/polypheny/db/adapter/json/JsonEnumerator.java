@@ -11,7 +11,7 @@ import org.apache.calcite.linq4j.Enumerator;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.entity.PolyValue;
 
-public class JsonEnumerator implements Enumerator<PolyValue[]> {
+final class JsonEnumerator implements Enumerator<PolyValue[]> {
 
     private final static ObjectMapper MAPPER = new ObjectMapper();
     private final static JsonToPolyConverter CONVERTER = new JsonToPolyConverter();
@@ -22,7 +22,7 @@ public class JsonEnumerator implements Enumerator<PolyValue[]> {
     private boolean isCollection;
 
 
-    public JsonEnumerator( URL url ) {
+    JsonEnumerator( URL url ) {
         this.url = url;
     }
 

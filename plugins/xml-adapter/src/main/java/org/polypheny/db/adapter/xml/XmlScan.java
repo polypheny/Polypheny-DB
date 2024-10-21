@@ -39,14 +39,14 @@ import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 
-public class XmlScan extends DocumentScan<XmlCollection> implements EnumerableAlg {
+public final class XmlScan extends DocumentScan<XmlCollection> implements EnumerableAlg {
 
     @Getter
     private final XmlCollection collection;
     private final int[] fields;
 
 
-    protected XmlScan( AlgCluster cluster, @NotNull XmlCollection collection, int[] fields ) {
+    XmlScan( AlgCluster cluster, @NotNull XmlCollection collection, int[] fields ) {
         super( cluster, cluster.traitSetOf( EnumerableConvention.INSTANCE ), collection );
         this.collection = collection;
         this.fields = fields;
@@ -83,6 +83,7 @@ public class XmlScan extends DocumentScan<XmlCollection> implements EnumerableAl
     }
 
 
+    @Override
     public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         // copied over from the csv project scan rule
         return super.computeSelfCost( planner, mq ).multiplyBy( ((double) fields.length + 2D) / ((double) entity.getTupleType().getFieldCount() + 2D) );

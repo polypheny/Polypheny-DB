@@ -12,7 +12,7 @@ import org.apache.commons.codec.DecoderException;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.entity.PolyValue;
 
-public class XmlEnumerator implements Enumerator<PolyValue[]> {
+final class XmlEnumerator implements Enumerator<PolyValue[]> {
 
     private final static XmlToPolyConverter CONVERTER = new XmlToPolyConverter();
 
@@ -22,7 +22,7 @@ public class XmlEnumerator implements Enumerator<PolyValue[]> {
     private PolyValue[] current;
 
 
-    public XmlEnumerator( URL url ) {
+    XmlEnumerator( URL url ) {
         this.url = url;
         initializeReader();
     }

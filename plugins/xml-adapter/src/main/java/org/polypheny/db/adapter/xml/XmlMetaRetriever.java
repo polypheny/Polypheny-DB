@@ -32,9 +32,9 @@ import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.util.Source;
 import org.polypheny.db.util.Sources;
 
-public class XmlMetaRetriever {
+final class XmlMetaRetriever {
 
-    public static List<ExportedDocument> getDocuments( URL xmlFiles ) throws IOException {
+    static List<ExportedDocument> getDocuments( URL xmlFiles ) throws IOException {
         List<ExportedDocument> exportedDocuments = new LinkedList<>();
         Set<String> fileNames = getFileNames( xmlFiles );
 
@@ -51,7 +51,7 @@ public class XmlMetaRetriever {
     }
 
 
-    public static URL findDocumentUrl( URL xmlFiles, String name ) throws MalformedURLException, NoSuchFileException {
+    static URL findDocumentUrl( URL xmlFiles, String name ) throws MalformedURLException, NoSuchFileException {
         String[] extensions = { ".xml", ".xml.gz" };
         String path = xmlFiles.getPath();
 

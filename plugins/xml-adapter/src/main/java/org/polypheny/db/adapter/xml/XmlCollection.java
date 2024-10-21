@@ -34,7 +34,7 @@ import org.polypheny.db.schema.types.ScannableEntity;
 import org.polypheny.db.schema.types.TranslatableEntity;
 import org.polypheny.db.type.entity.PolyValue;
 
-public class XmlCollection extends PhysicalCollection implements ScannableEntity, TranslatableEntity {
+final class XmlCollection extends PhysicalCollection implements ScannableEntity, TranslatableEntity {
 
     private final URL url;
     private final Adapter<DocAdapterCatalog> adapter;

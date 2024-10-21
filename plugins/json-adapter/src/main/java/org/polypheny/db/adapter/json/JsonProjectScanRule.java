@@ -22,12 +22,12 @@ import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.tools.AlgBuilderFactory;
 
-public class JsonProjectScanRule extends AlgOptRule {
+final class JsonProjectScanRule extends AlgOptRule {
 
-    public static final JsonProjectScanRule INSTANCE = new JsonProjectScanRule( AlgFactories.LOGICAL_BUILDER );
+    static final JsonProjectScanRule INSTANCE = new JsonProjectScanRule( AlgFactories.LOGICAL_BUILDER );
 
 
-    public JsonProjectScanRule( AlgBuilderFactory algBuilderFactory ) {
+    private JsonProjectScanRule( AlgBuilderFactory algBuilderFactory ) {
         super(
                 operand( LogicalDocumentScan.class, none() ),
                 algBuilderFactory,
@@ -40,7 +40,6 @@ public class JsonProjectScanRule extends AlgOptRule {
     public void onMatch( AlgOptRuleCall call ) {
         final LogicalDocumentScan scan = call.alg( 0 );
         call.transformTo( new JsonScan( scan.getCluster(), scan.getEntity().unwrapOrThrow( JsonCollection.class ), new int[]{ 0 } ) );
-
     }
 
 }

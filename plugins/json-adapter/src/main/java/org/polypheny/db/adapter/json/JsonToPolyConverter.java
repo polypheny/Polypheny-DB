@@ -31,14 +31,14 @@ import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.type.entity.relational.PolyMap;
 
-public class JsonToPolyConverter {
+public final class JsonToPolyConverter {
 
     public PolyDocument nodeToPolyDocument( JsonNode node ) {
         return new PolyDocument( nodeToPolyMap( node ) );
     }
 
 
-    public PolyMap<PolyString, PolyValue> nodeToPolyMap( JsonNode node ) {
+    private PolyMap<PolyString, PolyValue> nodeToPolyMap( JsonNode node ) {
         Map<PolyString, PolyValue> map = new HashMap<>();
         node.fields().forEachRemaining( entry -> {
             PolyString key = new PolyString( entry.getKey() );
@@ -62,7 +62,7 @@ public class JsonToPolyConverter {
     }
 
 
-    public PolyNumber nodeToPolyNumber( JsonNode node ) {
+    private PolyNumber nodeToPolyNumber( JsonNode node ) {
         if ( node.isIntegralNumber() ) {
             return new PolyLong( node.asLong() );
         }
@@ -70,7 +70,7 @@ public class JsonToPolyConverter {
     }
 
 
-    public PolyValue nodeToPolyList( JsonNode node ) {
+    private PolyValue nodeToPolyList( JsonNode node ) {
         return PolyList.of( StreamSupport.stream( node.spliterator(), false )
                 .map( this::nodeToPolyValue )
                 .toList() );
