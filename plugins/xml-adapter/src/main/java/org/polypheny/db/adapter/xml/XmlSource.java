@@ -222,13 +222,13 @@ public class XmlSource extends DataSource<DocAdapterCatalog> implements Document
     @Override
     public void renameLogicalColumn( long id, String newColumnName ) {
         // TODO: Ask David: Why is this part of this interface?
-        log.debug( "NOT SUPPORTED: XML source does not support method logicalColumn()" );
+        log.debug( "NOT SUPPORTED: XML source does not support method renameLogicalColumn()" );
     }
 
 
     @Override
     public void truncate( Context context, long allocId ) {
-        log.debug( "NOT SUPPORTED: XML source does not support method commit()." );
+        log.debug( "NOT SUPPORTED: XML source does not support method truncate()." );
     }
 
 
