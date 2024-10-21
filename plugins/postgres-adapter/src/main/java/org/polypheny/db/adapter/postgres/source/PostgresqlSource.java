@@ -23,7 +23,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.DeployMode;
-import org.polypheny.db.adapter.DocumentDataSource;
 import org.polypheny.db.adapter.RelationalDataSource;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.annotations.AdapterSettingInteger;
@@ -119,32 +118,8 @@ public class PostgresqlSource extends AbstractJdbcSource {
 
 
     @Override
-    public boolean supportsRelational() {
-        return true;
-    }
-
-
-    @Override
-    public boolean supportsDocument() {
-        return false;
-    }
-
-
-    @Override
-    public boolean supportsGraph() {
-        return false;
-    }
-
-
-    @Override
     public RelationalDataSource asRelationalDataSource() {
         return this;
-    }
-
-
-    @Override
-    public DocumentDataSource asDocumentDataSource() {
-        throw new IllegalStateException( "This source does not support the relational model." );
     }
 
 }
