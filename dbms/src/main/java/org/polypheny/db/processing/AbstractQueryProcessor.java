@@ -881,7 +881,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         } else if ( logicalRoot.getModel() == ModelTrait.DOCUMENT ) {
             return routeDocument( logicalRoot, queryInformation, dmlRouter );
         } else if ( logicalRoot.alg instanceof LogicalRelModify ) {
-            AlgNode routedDml = dmlRouter.routeDml( (LogicalRelModify) logicalRoot.alg, statement );
+            AlgNode routedDml = dmlRouter.routeRelationalDml( (LogicalRelModify) logicalRoot.alg, statement );
             return Lists.newArrayList( new ProposedRoutingPlanImpl( routedDml, logicalRoot, queryInformation.getQueryHash() ) );
         } else if ( logicalRoot.alg instanceof ConditionalExecute ) {
             AlgNode routedConditionalExecute = dmlRouter.handleConditionalExecute( logicalRoot.alg, context );
