@@ -33,7 +33,6 @@ import org.polypheny.db.adapter.DocumentDataSource;
 import org.polypheny.db.adapter.DocumentScanDelegate;
 import org.polypheny.db.adapter.Scannable;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
-import org.polypheny.db.adapter.annotations.AdapterSettingDirectory;
 import org.polypheny.db.adapter.annotations.AdapterSettingList;
 import org.polypheny.db.adapter.annotations.AdapterSettingString;
 import org.polypheny.db.catalog.Catalog;
@@ -96,14 +95,14 @@ public class JsonSource extends DataSource<DocAdapterCatalog> implements Documen
 
 
     private URL getJsonFilesUrl( final Map<String, String> settings ) {
-        switch ( connectionMethod ) {
+        return switch ( connectionMethod ) {
             case LINK -> {
                 String files = settings.get( "directoryName" );
                 if ( files.startsWith( "classpath://" ) ) {
-                    return this.getClass().getClassLoader().getResource( files.replace( "classpath://", "" ) );
+                    yield this.getClass().getClassLoader().getResource( files.replace( "classpath://", "" ) );
                 }
                 try {
-                    return new File( files ).toURI().toURL();
+                    yield new File( files ).toURI().toURL();
                 } catch ( MalformedURLException e ) {
                     throw new GenericRuntimeException( e );
                 }
@@ -111,10 +110,10 @@ public class JsonSource extends DataSource<DocAdapterCatalog> implements Documen
             case UPLOAD -> {
                 String files = settings.get( "directory" );
                 if ( files.startsWith( "classpath://" ) ) {
-                    return this.getClass().getClassLoader().getResource( files.replace( "classpath://", "" ) + "/" );
+                    yield this.getClass().getClassLoader().getResource( files.replace( "classpath://", "" ) + "/" );
                 }
                 try {
-                    return new File( files ).toURI().toURL();
+                    yield new File( files ).toURI().toURL();
                 } catch ( MalformedURLException e ) {
                     throw new GenericRuntimeException( e );
                 }
@@ -122,13 +121,12 @@ public class JsonSource extends DataSource<DocAdapterCatalog> implements Documen
             case URL -> {
                 String files = settings.get( "url" );
                 try {
-                    return new URL( files );
+                    yield new URL( files );
                 } catch ( MalformedURLException e ) {
                     throw new GenericRuntimeException( e );
                 }
             }
-            default -> throw new GenericRuntimeException( "Unknown connection method " + connectionMethod );
-        }
+        };
     }
 
 

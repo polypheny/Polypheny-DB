@@ -50,27 +50,15 @@ public class JsonToPolyConverter {
 
 
     public PolyValue nodeToPolyValue( JsonNode node ) {
-        switch ( node.getNodeType() ) {
-            case NULL -> {
-                return nodeToPolyNull();
-            }
-            case ARRAY -> {
-                return nodeToPolyList( node );
-            }
-            case OBJECT -> {
-                return nodeToPolyMap( node );
-            }
-            case NUMBER -> {
-                return nodeToPolyNumber( node );
-            }
-            case STRING -> {
-                return nodeToPolyString( node );
-            }
-            case BOOLEAN -> {
-                return nodeToPolyBoolean( node );
-            }
-        }
-        return new PolyNull();
+        return switch ( node.getNodeType() ) {
+            case NULL -> nodeToPolyNull();
+            case ARRAY -> nodeToPolyList( node );
+            case OBJECT -> nodeToPolyMap( node );
+            case NUMBER -> nodeToPolyNumber( node );
+            case STRING -> nodeToPolyString( node );
+            case BOOLEAN -> nodeToPolyBoolean( node );
+            case BINARY, MISSING, POJO -> new PolyNull();
+        };
     }
 
 
