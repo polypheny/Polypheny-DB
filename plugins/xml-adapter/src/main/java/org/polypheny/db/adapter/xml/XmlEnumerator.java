@@ -37,17 +37,18 @@ public class XmlEnumerator implements Enumerator<PolyValue[]> {
             InputStream inputStream = url.openStream();
             reader = factory.createXMLStreamReader( inputStream );
 
-            while (reader.hasNext() && reader.next() != XMLStreamConstants.START_ELEMENT);
+            while ( reader.hasNext() && reader.next() != XMLStreamConstants.START_ELEMENT )
+                ;
             rootElementName = reader.getLocalName();
-            if(!reader.hasNext()) {
+            if ( !reader.hasNext() ) {
                 throw new GenericRuntimeException( "Unexpected end of stream" );
             }
             do {
-                if (!reader.hasNext()) {
+                if ( !reader.hasNext() ) {
                     return;
                 }
                 reader.next();
-            } while (reader.getEventType() != XMLStreamConstants.START_ELEMENT );
+            } while ( reader.getEventType() != XMLStreamConstants.START_ELEMENT );
         } catch ( XMLStreamException | IOException e ) {
             throw new GenericRuntimeException( "Error initializing XML reader: " + e.getMessage(), e );
         }
@@ -66,23 +67,22 @@ public class XmlEnumerator implements Enumerator<PolyValue[]> {
             String documentOuterName = reader.getLocalName();
             reader.next();
             current = new PolyValue[]{ converter.toPolyDocument( reader, documentOuterName ) };
-            if (!reader.hasNext() ) {
+            if ( !reader.hasNext() ) {
                 return false;
             }
-            if (reader.next() == XMLStreamConstants.END_ELEMENT && rootElementName.equals( reader.getLocalName())) {
+            if ( reader.next() == XMLStreamConstants.END_ELEMENT && rootElementName.equals( reader.getLocalName() ) ) {
                 return false;
             }
-            while (reader.getEventType() != XMLStreamConstants.START_ELEMENT ) {
-                if (!reader.hasNext()) {
+            while ( reader.getEventType() != XMLStreamConstants.START_ELEMENT ) {
+                if ( !reader.hasNext() ) {
                     return false;
                 }
                 reader.next();
             }
             return true;
         } catch ( XMLStreamException | DecoderException e ) {
-            throw new RuntimeException( "Filed to get next document.", e );
+            throw new GenericRuntimeException( "Filed to get next document.", e );
         }
-
     }
 
 

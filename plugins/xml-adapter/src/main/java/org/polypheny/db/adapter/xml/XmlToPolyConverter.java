@@ -15,6 +15,7 @@ import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyList;
@@ -114,7 +115,7 @@ public class XmlToPolyConverter {
                 yield new PolyBinary( hexBinaryData, hexBinaryData.length );
             }
             case "string" -> new PolyString( value );
-            default -> throw new RuntimeException( "Illegal type encountered: " + typeName );
+            default -> throw new GenericRuntimeException( "Illegal type encountered: " + typeName );
         };
     }
 
