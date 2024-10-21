@@ -20,7 +20,6 @@ import java.util.List;
 import lombok.Getter;
 import org.apache.calcite.linq4j.tree.Blocks;
 import org.apache.calcite.linq4j.tree.Expressions;
-import org.apache.calcite.linq4j.tree.Primitive;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
@@ -32,7 +31,6 @@ import org.polypheny.db.algebra.enumerable.PhysType;
 import org.polypheny.db.algebra.enumerable.PhysTypeImpl;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
@@ -43,37 +41,31 @@ public final class XmlScan extends DocumentScan<XmlCollection> implements Enumer
 
     @Getter
     private final XmlCollection collection;
-    private final int[] fields;
 
 
-    XmlScan( AlgCluster cluster, @NotNull XmlCollection collection, int[] fields ) {
+    XmlScan( AlgCluster cluster, @NotNull XmlCollection collection ) {
         super( cluster, cluster.traitSetOf( EnumerableConvention.INSTANCE ), collection );
         this.collection = collection;
-        this.fields = fields;
     }
 
 
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         assert inputs.isEmpty();
-        return new XmlScan( getCluster(), collection, fields );
+        return new XmlScan( getCluster(), collection );
     }
 
 
     @Override
     public AlgWriter explainTerms( AlgWriter pw ) {
-        return super.explainTerms( pw ).item( "fields", Primitive.asList( fields ) );
+        return super.explainTerms( pw );
     }
 
 
     @Override
     public AlgDataType deriveRowType() {
         final List<AlgDataTypeField> fieldList = entity.getTupleType().getFields();
-        final AlgDataTypeFactory.Builder builder = getCluster().getTypeFactory().builder();
-        for ( int field : fields ) {
-            builder.add( fieldList.get( field ) );
-        }
-        return builder.build();
+        return getCluster().getTypeFactory().builder().add( fieldList.get( 0 ) ).build();
     }
 
 
@@ -86,7 +78,7 @@ public final class XmlScan extends DocumentScan<XmlCollection> implements Enumer
     @Override
     public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         // copied over from the csv project scan rule
-        return super.computeSelfCost( planner, mq ).multiplyBy( ((double) fields.length + 2D) / ((double) entity.getTupleType().getFieldCount() + 2D) );
+        return super.computeSelfCost( planner, mq ).multiplyBy( ((double) 1 + 2D) / ((double) entity.getTupleType().getFieldCount() + 2D) );
     }
 
 
@@ -94,7 +86,7 @@ public final class XmlScan extends DocumentScan<XmlCollection> implements Enumer
     public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
         PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getTupleType(), pref.preferArray() );
 
-        return implementor.result( physType, Blocks.toBlock( Expressions.call( entity.asExpression( XmlCollection.class ), "project", implementor.getRootExpression(), Expressions.constant( fields ) ) ) );
+        return implementor.result( physType, Blocks.toBlock( Expressions.call( entity.asExpression( XmlCollection.class ), "project", implementor.getRootExpression() ) ) );
     }
 
 }

@@ -67,11 +67,11 @@ final class XmlCollection extends PhysicalCollection implements ScannableEntity,
 
 
     public AlgNode toAlg( AlgCluster cluster, AlgTraitSet traitSet ) {
-        return new XmlScan( cluster, this, new int[]{ 0 } );
+        return new XmlScan( cluster, this );
     }
 
 
-    public Enumerable<PolyValue[]> project( final DataContext dataContext, final int[] fields ) {
+    public Enumerable<PolyValue[]> project( final DataContext dataContext ) {
         dataContext.getStatement().getTransaction().registerInvolvedAdapter( adapter );
         return new AbstractEnumerable<>() {
             @Override

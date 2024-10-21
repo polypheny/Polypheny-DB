@@ -67,11 +67,11 @@ final class JsonCollection extends PhysicalCollection implements ScannableEntity
 
 
     public AlgNode toAlg( AlgCluster cluster, AlgTraitSet traitSet ) {
-        return new JsonScan( cluster, this, new int[]{ 0 } );
+        return new JsonScan( cluster, this );
     }
 
 
-    public Enumerable<PolyValue[]> project( final DataContext dataContext, final int[] fields ) {
+    public Enumerable<PolyValue[]> project( final DataContext dataContext ) {
         dataContext.getStatement().getTransaction().registerInvolvedAdapter( adapter );
         return new AbstractEnumerable<>() {
             @Override

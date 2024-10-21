@@ -39,7 +39,7 @@ final class JsonProjectScanRule extends AlgOptRule {
     @Override
     public void onMatch( AlgOptRuleCall call ) {
         final LogicalDocumentScan scan = call.alg( 0 );
-        call.transformTo( new JsonScan( scan.getCluster(), scan.getEntity().unwrapOrThrow( JsonCollection.class ), new int[]{ 0 } ) );
+        call.transformTo( new JsonScan( scan.getCluster(), scan.getEntity().unwrapOrThrow( JsonCollection.class ) ) );
     }
 
 }

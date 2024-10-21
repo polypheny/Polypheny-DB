@@ -20,7 +20,6 @@ import java.util.List;
 import lombok.Getter;
 import org.apache.calcite.linq4j.tree.Blocks;
 import org.apache.calcite.linq4j.tree.Expressions;
-import org.apache.calcite.linq4j.tree.Primitive;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
@@ -43,37 +42,31 @@ public final class JsonScan extends DocumentScan<JsonCollection> implements Enum
 
     @Getter
     private final JsonCollection collection;
-    private final int[] fields;
 
 
-    JsonScan( AlgCluster cluster, @NotNull JsonCollection collection, int[] fields ) {
+    JsonScan( AlgCluster cluster, @NotNull JsonCollection collection ) {
         super( cluster, cluster.traitSetOf( EnumerableConvention.INSTANCE ), collection );
         this.collection = collection;
-        this.fields = fields;
     }
 
 
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         assert inputs.isEmpty();
-        return new JsonScan( getCluster(), collection, fields );
+        return new JsonScan( getCluster(), collection );
     }
 
 
     @Override
     public AlgWriter explainTerms( AlgWriter pw ) {
-        return super.explainTerms( pw ).item( "fields", Primitive.asList( fields ) );
+        return super.explainTerms( pw );
     }
 
 
     @Override
     public AlgDataType deriveRowType() {
         final List<AlgDataTypeField> fieldList = entity.getTupleType().getFields();
-        final AlgDataTypeFactory.Builder builder = getCluster().getTypeFactory().builder();
-        for ( int field : fields ) {
-            builder.add( fieldList.get( field ) );
-        }
-        return builder.build();
+        return getCluster().getTypeFactory().builder().add( fieldList.get( 0 ) ).build();
     }
 
 
@@ -86,7 +79,7 @@ public final class JsonScan extends DocumentScan<JsonCollection> implements Enum
     @Override
     public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         // copied over from the csv project scan rule
-        return super.computeSelfCost( planner, mq ).multiplyBy( ((double) fields.length + 2D) / ((double) entity.getTupleType().getFieldCount() + 2D) );
+        return super.computeSelfCost( planner, mq ).multiplyBy( (3D) / ((double) entity.getTupleType().getFieldCount() + 2D) );
     }
 
 
@@ -94,7 +87,7 @@ public final class JsonScan extends DocumentScan<JsonCollection> implements Enum
     public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
         PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getTupleType(), pref.preferArray() );
 
-        return implementor.result( physType, Blocks.toBlock( Expressions.call( entity.asExpression( JsonCollection.class ), "project", implementor.getRootExpression(), Expressions.constant( fields ) ) ) );
+        return implementor.result( physType, Blocks.toBlock( Expressions.call( entity.asExpression( JsonCollection.class ), "project", implementor.getRootExpression() ) ) );
     }
 
 }
