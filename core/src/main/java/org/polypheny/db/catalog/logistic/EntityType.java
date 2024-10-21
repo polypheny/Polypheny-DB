@@ -18,8 +18,6 @@ package org.polypheny.db.catalog.logistic;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.polypheny.db.type.entity.PolyString;
-import org.polypheny.db.type.entity.PolyValue;
 
 @Getter
 public enum EntityType {
@@ -34,12 +32,6 @@ public enum EntityType {
 
     EntityType( int id ) {
         this.id = id;
-    }
-
-
-    // Used for creating ResultSets
-    public PolyValue[] getParameterArray() {
-        return new PolyValue[]{ PolyString.of( name() ) };
     }
 
 
