@@ -51,9 +51,9 @@ import org.polypheny.db.util.Pair;
 public class PolyEdge extends GraphPropertyHolder {
 
     @JsonProperty
-    public PolyString source;
+    public PolyString left;
     @JsonProperty
-    public PolyString target;
+    public PolyString right;
     @JsonProperty
     public EdgeDirection direction;
 
@@ -67,11 +67,11 @@ public class PolyEdge extends GraphPropertyHolder {
     public PolyEdge(
             @NonNull PolyDictionary properties,
             List<PolyString> labels,
-            PolyString source,
-            PolyString target,
+            PolyString left,
+            PolyString right,
             EdgeDirection direction,
             PolyString variableName ) {
-        this( PolyString.of( UUID.randomUUID().toString() ), properties, labels, source, target, direction, variableName );
+        this( PolyString.of( UUID.randomUUID().toString() ), properties, labels, left, right, direction, variableName );
     }
 
 
@@ -79,13 +79,13 @@ public class PolyEdge extends GraphPropertyHolder {
             @JsonProperty("id") PolyString id,
             @JsonProperty("properties") @NonNull PolyDictionary properties,
             @JsonProperty("labels") List<PolyString> labels,
-            @JsonProperty("source") PolyString source,
-            @JsonProperty("target") PolyString target,
+            @JsonProperty("source") PolyString left,
+            @JsonProperty("target") PolyString right,
             @JsonProperty("direction") EdgeDirection direction,
             @JsonProperty("variableName") PolyString variableName ) {
         super( id, PolyType.EDGE, properties, labels, variableName );
-        this.source = source;
-        this.target = target;
+        this.left = left;
+        this.right = right;
         this.direction = direction;
     }
 
@@ -99,7 +99,7 @@ public class PolyEdge extends GraphPropertyHolder {
 
 
     public PolyEdge from( PolyString left, PolyString right ) {
-        return new PolyEdge( id, properties, labels, left == null ? this.source : left, right == null ? this.target : right, direction, null );
+        return new PolyEdge( id, properties, labels, left == null ? this.left : left, right == null ? this.right : right, direction, null );
     }
 
 
@@ -120,7 +120,7 @@ public class PolyEdge extends GraphPropertyHolder {
             // no copy needed
             return this;
         }
-        return new PolyEdge( id, properties, labels, source, target, direction, newName );
+        return new PolyEdge( id, properties, labels, left, right, direction, newName );
     }
 
 
@@ -182,8 +182,8 @@ public class PolyEdge extends GraphPropertyHolder {
                                 id.asExpression(),
                                 properties.asExpression(),
                                 labels.asExpression(),
-                                source.asExpression(),
-                                target.asExpression(),
+                                left.asExpression(),
+                                right.asExpression(),
                                 Expressions.constant( direction ),
                                 getVariableName() == null ? Expressions.constant( null ) : getVariableName().asExpression() ),
                         PolyEdge.class );
@@ -200,8 +200,8 @@ public class PolyEdge extends GraphPropertyHolder {
         return "{\"id\":" + id.toQuotedJson() +
                 ", \"properties\":" + properties.toJson() +
                 ", \"labels\":" + labels.toJson() +
-                ", \"source\":" + source.toQuotedJson() +
-                ", \"target\":" + target.toQuotedJson() +
+                ", \"source\":" + left.toQuotedJson() +
+                ", \"target\":" + right.toQuotedJson() +
                 ", \"direction\":\"" + direction.name() + "\"" +
                 "}";
     }
@@ -238,8 +238,8 @@ public class PolyEdge extends GraphPropertyHolder {
                 "id=" + id +
                 ", properties=" + properties +
                 ", labels=" + labels +
-                ", leftId=" + source +
-                ", rightId=" + target +
+                ", leftId=" + left +
+                ", rightId=" + right +
                 ", direction=" + direction +
                 '}';
     }
@@ -259,8 +259,8 @@ public class PolyEdge extends GraphPropertyHolder {
                         out.writeUTF8Nullable( item.variableName.value );
                     }
                     out.writeUTF8( item.direction.name() );
-                    out.writeUTF8( item.source.value );
-                    out.writeUTF8( item.target.value );
+                    out.writeUTF8( item.left.value );
+                    out.writeUTF8( item.right.value );
                     out.writeUTF8( item.properties.serialize() );
                 }
 

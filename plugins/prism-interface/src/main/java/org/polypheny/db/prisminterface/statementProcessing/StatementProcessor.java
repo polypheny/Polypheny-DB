@@ -16,18 +16,15 @@
 
 package org.polypheny.db.prisminterface.statementProcessing;
 
-import com.google.common.collect.ImmutableMap;
 import java.util.List;
-import java.util.Map;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.prisminterface.PIServiceException;
-import org.polypheny.db.prisminterface.relational.RelationalMetaRetriever;
+import org.polypheny.db.prisminterface.metaRetrieval.RelationalMetaRetriever;
 import org.polypheny.db.prisminterface.statements.PIPreparedStatement;
 import org.polypheny.db.prisminterface.statements.PIStatement;
 import org.polypheny.db.processing.ImplementationContext;
@@ -44,26 +41,21 @@ public class StatementProcessor {
 
     private static final String ORIGIN = "prism-interface";
 
-    private static final Map<DataModel, Executor> RESULT_RETRIEVERS =
-            ImmutableMap.<DataModel, Executor>builder()
-                    .put( DataModel.RELATIONAL, new RelationalExecutor() )
-                    .put( DataModel.DOCUMENT, new DocumentExecutor() )
-                    .build();
+    private static final RelationalExecutor relationalExecutor = new RelationalExecutor();
+    private static final GraphExecutor graphExecutor = new GraphExecutor();
+    private static final DocumentExecutor documentExecutor = new DocumentExecutor();
 
 
     public static void implement( PIStatement piStatement ) {
         Statement statement = piStatement.getStatement();
         if ( statement == null ) {
-            throw new PIServiceException( "Statement is not linked to a PolyphenyStatement",
-                    "I9003",
-                    9003
-            );
+            throw new PIServiceException( "Statement is not linked to a PolyphenyStatement" );
         }
         QueryContext context = QueryContext.builder()
                 .query( piStatement.getQuery() )
                 .language( piStatement.getLanguage() )
                 .namespaceId( piStatement.getNamespace().id )
-                .transactionManager( piStatement.getTransaction().getTransactionManager() )
+                .transactions( List.of( piStatement.getTransaction() ) )
                 .origin( ORIGIN )
                 .build();
         List<ImplementationContext> implementations = LanguageManager.getINSTANCE().anyPrepareQuery( context, statement );
@@ -90,27 +82,12 @@ public class StatementProcessor {
 
 
     public static StatementResult executeAndGetResult( PIStatement piStatement ) {
-        Executor executor = RESULT_RETRIEVERS.get( piStatement.getLanguage().dataModel() );
-        if ( executor == null ) {
-            throw new PIServiceException( "No result retriever registered for namespace type "
-                    + piStatement.getLanguage().dataModel(),
-                    "I9004",
-                    9004
-            );
-        }
-        return executor.executeAndGetResult( piStatement );
+        return getExecutor( piStatement ).executeAndGetResult( piStatement );
     }
 
 
     public static StatementResult executeAndGetResult( PIStatement piStatement, int fetchSize ) {
-        Executor executor = RESULT_RETRIEVERS.get( piStatement.getLanguage().dataModel() );
-        if ( executor == null ) {
-            throw new PIServiceException( "No result retriever registered for namespace type "
-                    + piStatement.getLanguage().dataModel(),
-                    "I9004",
-                    9004
-            );
-        }
+        Executor executor = getExecutor( piStatement );
         try {
             return executor.executeAndGetResult( piStatement, fetchSize );
         } catch ( Exception e ) {
@@ -120,14 +97,7 @@ public class StatementProcessor {
 
 
     public static Frame fetch( PIStatement piStatement, int fetchSize ) {
-        Executor executor = RESULT_RETRIEVERS.get( piStatement.getLanguage().dataModel() );
-        if ( executor == null ) {
-            throw new PIServiceException( "No result retriever registered for namespace type "
-                    + piStatement.getLanguage().dataModel(),
-                    "I9004",
-                    9004
-            );
-        }
+        Executor executor = getExecutor( piStatement );
         return executor.fetch( piStatement, fetchSize );
     }
 
@@ -145,6 +115,15 @@ public class StatementProcessor {
         AlgDataType parameterRowType = queryProcessor.getParameterRowType( validated.left );
         piStatement.setParameterMetas( RelationalMetaRetriever.retrieveParameterMetas( parameterRowType ) );
         piStatement.setParameterPolyTypes( parameterRowType.getFields().stream().map( AlgDataTypeField::getType ).toList() );
+    }
+
+
+    private static Executor getExecutor( PIStatement piStatement ) {
+        return switch ( piStatement.getLanguage().dataModel() ) {
+            case RELATIONAL -> relationalExecutor;
+            case GRAPH -> graphExecutor;
+            case DOCUMENT -> documentExecutor;
+        };
     }
 
 }

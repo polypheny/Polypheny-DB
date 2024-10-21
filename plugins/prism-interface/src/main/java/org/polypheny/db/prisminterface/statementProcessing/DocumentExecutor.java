@@ -20,7 +20,9 @@ import java.util.List;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.ResultIterator;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.monitoring.events.MonitoringType;
 import org.polypheny.db.prisminterface.PIClient;
 import org.polypheny.db.prisminterface.PIServiceException;
 import org.polypheny.db.prisminterface.statements.PIStatement;
@@ -43,62 +45,38 @@ public class DocumentExecutor extends Executor {
 
     @Override
     StatementResult executeAndGetResult( PIStatement piStatement ) {
-        if ( hasInvalidNamespaceType( piStatement ) ) {
-            throw new PIServiceException( "The results of type "
-                    + piStatement.getLanguage().dataModel()
-                    + "returned by this statement can't be retrieved by a document retriever.",
-                    "I9000",
-                    9000
-            );
-        }
-        PolyImplementation implementation = piStatement.getImplementation();
-        if ( implementation == null ) {
-            throw new PIServiceException( "Can't retrieve results form an unexecuted statement.",
-                    "I9002",
-                    9002
-            );
-        }
-        PIClient client = piStatement.getClient();
+        throwOnIllegalState( piStatement );
         StatementResult.Builder resultBuilder = StatementResult.newBuilder();
-        if ( implementation.isDDL() ) {
+        if ( piStatement.getImplementation().isDDL() ) {
             resultBuilder.setScalar( 1 );
             return resultBuilder.build();
         }
-        throw new PIServiceException( "Can't execute a non DDL or non DML statement using this method..",
-                "I9003",
-                9002
-        );
+        throw new PIServiceException( "Can't execute a non DDL or non DML statement using this method." );
     }
 
 
     @Override
     StatementResult executeAndGetResult( PIStatement piStatement, int fetchSize ) {
-        if ( hasInvalidNamespaceType( piStatement ) ) {
-            throw new PIServiceException( "The results of type "
-                    + piStatement.getLanguage().dataModel()
-                    + "returned by this statement can't be retrieved by a document retriever.",
-                    "I9000",
-                    9000
-            );
-        }
+        throwOnIllegalState( piStatement );
+        Statement statement = piStatement.getStatement();
         PolyImplementation implementation = piStatement.getImplementation();
-        if ( implementation == null ) {
-            throw new PIServiceException( "Can't retrieve results form an unexecuted statement.",
-                    "I9002",
-                    9002
-            );
-        }
         PIClient client = piStatement.getClient();
         StatementResult.Builder resultBuilder = StatementResult.newBuilder();
-        if ( implementation.isDDL() ) {
+        if ( Kind.DDL.contains( implementation.getKind() ) ) {
             resultBuilder.setScalar( 1 );
+            return resultBuilder.build();
+        }
+        if ( Kind.DML.contains( implementation.getKind() ) ) {
+            try ( ResultIterator iterator = implementation.execute( statement, -1 ) ) {
+                resultBuilder.setScalar( PolyImplementation.getRowsChanged( statement, iterator.getIterator(), MonitoringType.from( implementation.getKind() ) ) );
+            }
+            client.commitCurrentTransactionIfAuto();
             return resultBuilder.build();
         }
         piStatement.setIterator( implementation.execute( piStatement.getStatement(), fetchSize ) );
         Frame frame = fetch( piStatement, fetchSize );
         resultBuilder.setFrame( frame );
         if ( frame.getIsLast() ) {
-            //TODO TH: special handling for result set updates. Do we need to wait with committing until all changes have been done?
             client.commitCurrentTransactionIfAuto();
         }
         return resultBuilder.build();
@@ -107,40 +85,17 @@ public class DocumentExecutor extends Executor {
 
     @Override
     Frame fetch( PIStatement piStatement, int fetchSize ) {
-        if ( hasInvalidNamespaceType( piStatement ) ) {
-            throw new PIServiceException( "The results of type "
-                    + piStatement.getLanguage().dataModel()
-                    + "returned by this statement can't be retrieved by a document retriever.",
-                    "I9000",
-                    9000
-            );
-        }
+        throwOnIllegalState( piStatement );
         StopWatch executionStopWatch = piStatement.getExecutionStopWatch();
-        Statement statement = piStatement.getStatement();
-        if ( statement == null ) {
-            throw new PIServiceException( "Statement is not linked to a polypheny statement",
-                    "I9001",
-                    9001
-            );
-        }
-        PolyImplementation implementation = piStatement.getImplementation();
-        if ( implementation == null ) {
-            throw new PIServiceException( "Can't fetch from an unexecuted statement.",
-                    "I9002",
-                    9002
-            );
-        }
         ResultIterator iterator = piStatement.getIterator();
-        if ( iterator == null ) {
-            throw new PIServiceException( "Can't fetch from an unexecuted statement.",
-                    "I9002",
-                    9002
-            );
-        }
         startOrResumeStopwatch( executionStopWatch );
         List<PolyValue> data = iterator.getNextBatch( fetchSize ).stream().map( p -> p.get( 0 ) ).toList();
-        executionStopWatch.stop();
-        return PrismUtils.buildDocumentFrame( !iterator.hasMoreRows(), data );
+        boolean isLast = !iterator.hasMoreRows();
+        if ( isLast ) {
+            executionStopWatch.stop();
+            piStatement.getImplementation().getExecutionTimeMonitor().setExecutionTime( executionStopWatch.getNanoTime() );
+        }
+        return PrismUtils.buildDocumentFrame( isLast, data );
     }
 
 }
