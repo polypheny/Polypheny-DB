@@ -55,7 +55,7 @@ public class JsonToPolyConverter {
             case ARRAY -> nodeToPolyList( node );
             case OBJECT -> nodeToPolyMap( node );
             case NUMBER -> nodeToPolyNumber( node );
-            case STRING -> new PolyString( node.toString() );
+            case STRING -> new PolyString( node.asText() );
             case BOOLEAN -> new PolyBoolean( node.asBoolean() );
             case BINARY, MISSING, POJO -> new PolyNull();
         };
