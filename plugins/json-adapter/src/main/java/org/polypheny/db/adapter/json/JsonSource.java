@@ -169,16 +169,7 @@ public class JsonSource extends DataSource<DocAdapterCatalog> implements Documen
         PhysicalEntity collection = entities.get( 0 ); // TODO: set breakpoint and take a look at what's in this list...
         updateNamespace( collection.getNamespaceName(), collection.getNamespaceId() );
         try {
-            PhysicalCollection physicalCollection = new JsonCollection.Builder()
-                    .url( JsonMetaRetriever.findDocumentUrl( jsonFiles, collection.getName() ) )
-                    .collectionId( collection.getId() )
-                    .allocationId( allocation.getId() )
-                    .logicalId( collection.getLogicalId() )
-                    .namespaceId( namespace.getId() )
-                    .collectionName( collection.getName() )
-                    .namespaceName( namespace.getName() )
-                    .adapter( this )
-                    .build();
+            PhysicalCollection physicalCollection = new JsonCollection( JsonMetaRetriever.findDocumentUrl( jsonFiles, collection.getName() ), collection, allocation.getId(), namespace, this );
             adapterCatalog.addPhysical( allocation, physicalCollection );
         } catch ( MalformedURLException | NoSuchFileException e ) {
             throw new GenericRuntimeException( e );
@@ -195,16 +186,7 @@ public class JsonSource extends DataSource<DocAdapterCatalog> implements Documen
                 allocation
         );
         try {
-            PhysicalCollection physicalCollection = new JsonCollection.Builder()
-                    .url( JsonMetaRetriever.findDocumentUrl( jsonFiles, collection.getName() ) )
-                    .collectionId( collection.getId() )
-                    .allocationId( allocation.getId() )
-                    .logicalId( collection.getLogicalId() )
-                    .namespaceId( namespace.getId() )
-                    .collectionName( collection.getName() )
-                    .namespaceName( namespace.getName() )
-                    .adapter( this )
-                    .build();
+            PhysicalCollection physicalCollection = new JsonCollection( JsonMetaRetriever.findDocumentUrl( jsonFiles, collection.getName() ), collection, allocation.getId(), namespace, this );
             adapterCatalog.replacePhysical( physicalCollection );
             return List.of( physicalCollection );
         } catch ( MalformedURLException | NoSuchFileException e ) {

@@ -169,16 +169,7 @@ public class XmlSource extends DataSource<DocAdapterCatalog> implements Document
         PhysicalEntity collection = entities.get( 0 ); // TODO: set breakpoint and take a look at what's in this list...
         updateNamespace( collection.getNamespaceName(), collection.getNamespaceId() );
         try {
-            PhysicalCollection physicalCollection = new XmlCollection.Builder()
-                    .url( XmlMetaRetriever.findDocumentUrl( xmlFiles, collection.getName() ) )
-                    .collectionId( collection.getId() )
-                    .allocationId( allocation.getId() )
-                    .logicalId( collection.getLogicalId() )
-                    .namespaceId( namespace.getId() )
-                    .collectionName( collection.getName() )
-                    .namespaceName( namespace.getName() )
-                    .adapter( this )
-                    .build();
+            PhysicalCollection physicalCollection = new XmlCollection( XmlMetaRetriever.findDocumentUrl( xmlFiles, collection.getName() ), collection, allocation.getId(), namespace, this );
             adapterCatalog.addPhysical( allocation, physicalCollection );
         } catch ( MalformedURLException | NoSuchFileException e ) {
             throw new GenericRuntimeException( e );
@@ -195,16 +186,7 @@ public class XmlSource extends DataSource<DocAdapterCatalog> implements Document
                 allocation
         );
         try {
-            PhysicalCollection physicalCollection = new XmlCollection.Builder()
-                    .url( XmlMetaRetriever.findDocumentUrl( xmlFiles, collection.getName() ) )
-                    .collectionId( collection.getId() )
-                    .allocationId( allocation.getId() )
-                    .logicalId( collection.getLogicalId() )
-                    .namespaceId( namespace.getId() )
-                    .collectionName( collection.getName() )
-                    .namespaceName( namespace.getName() )
-                    .adapter( this )
-                    .build();
+            PhysicalCollection physicalCollection = new XmlCollection( XmlMetaRetriever.findDocumentUrl( xmlFiles, collection.getName() ), collection, allocation.getId(), namespace, this );
             adapterCatalog.replacePhysical( physicalCollection );
             return List.of( physicalCollection );
         } catch ( MalformedURLException | NoSuchFileException e ) {

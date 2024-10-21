@@ -27,6 +27,7 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.catalogs.DocAdapterCatalog;
 import org.polypheny.db.catalog.entity.physical.PhysicalCollection;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.schema.types.ScannableEntity;
@@ -39,10 +40,10 @@ public class JsonCollection extends PhysicalCollection implements ScannableEntit
     private final Adapter<DocAdapterCatalog> adapter;
 
 
-    private JsonCollection( Builder builder ) {
-        super( builder.collectionId, builder.allocationId, builder.logicalId, builder.namespaceId, builder.collectionName, builder.namespaceName, builder.adapter.getAdapterId() );
-        this.url = builder.url;
-        this.adapter = builder.adapter;
+    JsonCollection( URL url, PhysicalEntity collection, long allocationId, JsonNamespace namespace, Adapter<DocAdapterCatalog> adapter ) {
+        super( collection.getId(), allocationId, collection.getLogicalId(), namespace.getId(), collection.getName(), namespace.getName(), adapter.getAdapterId() );
+        this.url = url;
+        this.adapter = adapter;
     }
 
 
@@ -78,73 +79,6 @@ public class JsonCollection extends PhysicalCollection implements ScannableEntit
                 return new JsonEnumerator( url );
             }
         };
-    }
-
-
-    public static class Builder {
-
-        private URL url;
-        private long collectionId;
-        private long allocationId;
-        private long logicalId;
-        private long namespaceId;
-        private String collectionName;
-        private String namespaceName;
-        private Adapter<DocAdapterCatalog> adapter;
-
-
-        public Builder url( URL uri ) {
-            this.url = uri;
-            return this;
-        }
-
-
-        public Builder collectionId( long id ) {
-            this.collectionId = id;
-            return this;
-        }
-
-
-        public Builder allocationId( long allocationId ) {
-            this.allocationId = allocationId;
-            return this;
-        }
-
-
-        public Builder logicalId( long logicalId ) {
-            this.logicalId = logicalId;
-            return this;
-        }
-
-
-        public Builder namespaceId( long namespaceId ) {
-            this.namespaceId = namespaceId;
-            return this;
-        }
-
-
-        public Builder collectionName( String name ) {
-            this.collectionName = name;
-            return this;
-        }
-
-
-        public Builder namespaceName( String namespaceName ) {
-            this.namespaceName = namespaceName;
-            return this;
-        }
-
-
-        public Builder adapter( Adapter<DocAdapterCatalog> adapter ) {
-            this.adapter = adapter;
-            return this;
-        }
-
-
-        public JsonCollection build() {
-            return new JsonCollection( this );
-        }
-
     }
 
 }
