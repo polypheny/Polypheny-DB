@@ -17,7 +17,6 @@
 package org.polypheny.db.adapter.xml;
 
 import java.net.URL;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
@@ -25,7 +24,6 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.DataContext.Variable;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.catalogs.DocAdapterCatalog;
 import org.polypheny.db.catalog.entity.physical.PhysicalCollection;
@@ -58,7 +56,6 @@ public class XmlCollection extends PhysicalCollection implements ScannableEntity
     @Override
     public Enumerable<PolyValue[]> scan( DataContext dataContext ) {
         dataContext.getStatement().getTransaction().registerInvolvedAdapter( adapter );
-        final AtomicBoolean cancelFlag = Variable.CANCEL_FLAG.get( dataContext );
         return new AbstractEnumerable<>() {
             @Override
             public Enumerator<PolyValue[]> enumerator() {
