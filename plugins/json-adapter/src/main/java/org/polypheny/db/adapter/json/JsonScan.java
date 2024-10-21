@@ -46,12 +46,10 @@ public class JsonScan extends DocumentScan<JsonCollection> implements Enumerable
     private final int[] fields;
 
 
-    protected JsonScan( AlgCluster cluster, JsonCollection collection, int[] fields ) {
+    protected JsonScan( AlgCluster cluster, @NotNull JsonCollection collection, int[] fields ) {
         super( cluster, cluster.traitSetOf( EnumerableConvention.INSTANCE ), collection );
         this.collection = collection;
         this.fields = fields;
-
-        assert collection != null;
     }
 
 
