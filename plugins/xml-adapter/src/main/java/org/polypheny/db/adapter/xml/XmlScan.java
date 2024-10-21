@@ -46,12 +46,10 @@ public class XmlScan extends DocumentScan<XmlCollection> implements EnumerableAl
     private final int[] fields;
 
 
-    protected XmlScan( AlgCluster cluster, XmlCollection collection, int[] fields ) {
+    protected XmlScan( AlgCluster cluster, @NotNull XmlCollection collection, int[] fields ) {
         super( cluster, cluster.traitSetOf( EnumerableConvention.INSTANCE ), collection );
         this.collection = collection;
         this.fields = fields;
-
-        assert collection != null;
     }
 
 

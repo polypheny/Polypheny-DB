@@ -100,7 +100,7 @@ public class XmlToPolyConverter {
             }
             case "time" -> {
                 LocalTime time = LocalTime.parse( value, DateTimeFormatter.ISO_TIME );
-                yield new PolyTime( (int) (time.toNanoOfDay() / 1000000) );
+                yield new PolyTime( (int) (time.toNanoOfDay() / 1_000_000) );
             }
             case "dateTime" -> {
                 LocalDateTime dateTime = LocalDateTime.parse( value, DateTimeFormatter.ISO_DATE_TIME );

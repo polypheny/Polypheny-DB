@@ -40,7 +40,6 @@ public class XmlProjectScanRule extends AlgOptRule {
     public void onMatch( AlgOptRuleCall call ) {
         final LogicalDocumentScan scan = call.alg( 0 );
         call.transformTo( new XmlScan( scan.getCluster(), scan.getEntity().unwrapOrThrow( XmlCollection.class ), new int[]{ 0 } ) );
-
     }
 
 }
