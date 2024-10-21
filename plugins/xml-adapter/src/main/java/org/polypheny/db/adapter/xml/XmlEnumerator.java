@@ -14,19 +14,16 @@ import org.polypheny.db.type.entity.PolyValue;
 
 public class XmlEnumerator implements Enumerator<PolyValue[]> {
 
+    private final static XmlToPolyConverter CONVERTER = new XmlToPolyConverter();
+
     private final URL url;
     private XMLStreamReader reader;
-    private XmlToPolyConverter converter;
     private String rootElementName;
     private PolyValue[] current;
-    private boolean inTopLevelElement = false;
 
 
     public XmlEnumerator( URL url ) {
         this.url = url;
-        this.converter = new XmlToPolyConverter();
-        this.current = null;
-        this.rootElementName = null;
         initializeReader();
     }
 
@@ -66,7 +63,7 @@ public class XmlEnumerator implements Enumerator<PolyValue[]> {
         try {
             String documentOuterName = reader.getLocalName();
             reader.next();
-            current = new PolyValue[]{ converter.toPolyDocument( reader, documentOuterName ) };
+            current = new PolyValue[]{ CONVERTER.toPolyDocument( reader, documentOuterName ) };
             if ( !reader.hasNext() ) {
                 return false;
             }

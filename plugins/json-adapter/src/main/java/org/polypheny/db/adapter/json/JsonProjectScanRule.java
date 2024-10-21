@@ -16,13 +16,10 @@
 
 package org.polypheny.db.adapter.json;
 
-import java.util.List;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
-import org.polypheny.db.rex.RexIndexRef;
-import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.tools.AlgBuilderFactory;
 
 public class JsonProjectScanRule extends AlgOptRule {
@@ -44,20 +41,6 @@ public class JsonProjectScanRule extends AlgOptRule {
         final LogicalDocumentScan scan = call.alg( 0 );
         call.transformTo( new JsonScan( scan.getCluster(), scan.getEntity().unwrapOrThrow( JsonCollection.class ), new int[]{ 0 } ) );
 
-    }
-
-
-    private int[] getProjectFields( List<RexNode> childExpressions ) {
-        final int[] fields = new int[childExpressions.size()];
-        int i = 0;
-        for ( final RexNode childExpression : childExpressions ) {
-            if ( childExpression instanceof RexIndexRef ) {
-                fields[i] = ((RexIndexRef) childExpression).getIndex();
-            } else {
-                return null;
-            }
-        }
-        return fields;
     }
 
 }

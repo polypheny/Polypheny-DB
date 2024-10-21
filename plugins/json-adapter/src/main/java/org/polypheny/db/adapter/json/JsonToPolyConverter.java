@@ -18,7 +18,7 @@ package org.polypheny.db.adapter.json;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.HashMap;
-import java.util.stream.Collectors;
+import java.util.Map;
 import java.util.stream.StreamSupport;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyList;
@@ -39,7 +39,7 @@ public class JsonToPolyConverter {
 
 
     public PolyMap<PolyString, PolyValue> nodeToPolyMap( JsonNode node ) {
-        HashMap<PolyString, PolyValue> map = new HashMap<>();
+        Map<PolyString, PolyValue> map = new HashMap<>();
         node.fields().forEachRemaining( entry -> {
             PolyString key = new PolyString( entry.getKey() );
             PolyValue value = nodeToPolyValue( entry.getValue() );
@@ -86,10 +86,9 @@ public class JsonToPolyConverter {
 
 
     public PolyValue nodeToPolyList( JsonNode node ) {
-        return StreamSupport.stream( node.spliterator(), false )
+        return PolyList.of( StreamSupport.stream( node.spliterator(), false )
                 .map( this::nodeToPolyValue )
-                .collect( Collectors.toCollection( PolyList::new ) );
+                .toList() );
     }
-
 
 }

@@ -13,18 +13,17 @@ import org.polypheny.db.type.entity.PolyValue;
 
 public class JsonEnumerator implements Enumerator<PolyValue[]> {
 
-    private URL url;
-    private ObjectMapper mapper;
+    private final static ObjectMapper MAPPER = new ObjectMapper();
+    private final static JsonToPolyConverter CONVERTER = new JsonToPolyConverter();
+
+    private final URL url;
     private JsonParser parser;
-    private JsonToPolyConverter converter;
     private PolyValue[] current;
     private boolean isCollection;
 
 
     public JsonEnumerator( URL url ) {
         this.url = url;
-        this.mapper = new ObjectMapper();
-        this.converter = new JsonToPolyConverter();
     }
 
 
@@ -50,13 +49,13 @@ public class JsonEnumerator implements Enumerator<PolyValue[]> {
                 if ( parser.currentToken() != JsonToken.START_OBJECT ) {
                     continue;
                 }
-                return mapper.readTree( parser );
+                return MAPPER.readTree( parser );
             }
         }
 
         JsonNode node = null;
         if ( parser.currentToken() == JsonToken.START_OBJECT ) {
-            node = mapper.readTree( parser );
+            node = MAPPER.readTree( parser );
             isCollection = false;
         }
         return node;
@@ -76,7 +75,7 @@ public class JsonEnumerator implements Enumerator<PolyValue[]> {
                 initializeParser();
             }
             JsonNode node = getNextNode();
-            current = node == null ? null : new PolyValue[]{ converter.nodeToPolyDocument( node ) };
+            current = node == null ? null : new PolyValue[]{ CONVERTER.nodeToPolyDocument( node ) };
             return node != null;
         } catch ( IOException e ) {
             throw new GenericRuntimeException( "Error reading JSON: " + e.getMessage(), e );
