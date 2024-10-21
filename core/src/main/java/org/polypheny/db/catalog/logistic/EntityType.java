@@ -17,7 +17,6 @@
 package org.polypheny.db.catalog.logistic;
 
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 
 @Getter
 public enum EntityType {
@@ -34,12 +33,4 @@ public enum EntityType {
         this.id = id;
     }
 
-
-    // Required for building JDBC result set
-    @RequiredArgsConstructor
-    public static class PrimitiveTableType {
-
-        public final String tableType;
-
-    }
 }
