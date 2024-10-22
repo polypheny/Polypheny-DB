@@ -33,6 +33,7 @@ import org.locationtech.jts.geom.PrecisionModel;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.graph.GraphObject;
@@ -605,15 +606,29 @@ public class CypherFunctions {
 
     @SuppressWarnings("unused")
     public static PolyBoolean withinBBox( PolyValue point, PolyValue lowerLeft, PolyValue upperRight ) {
-        PolyGeometry g = point.asGeometry();
-        PolyGeometry gBBox = createBbox(lowerLeft.asGeometry().asPoint(), upperRight.asGeometry().asPoint());
+        PolyPoint g = point.asGeometry().asPoint();
+        PolyPoint lowerLeftGeometry = lowerLeft.asGeometry().asPoint();
+        PolyPoint upperRightGeometry = upperRight.asGeometry().asPoint();
+
+        if ( !(g.getSRID().equals( lowerLeftGeometry.getSRID() ) && lowerLeftGeometry.getSRID().equals( upperRightGeometry.getSRID() )) ) {
+            // Return null if the CRS of all points are not the same.
+            //return PolyNull.NULL;
+            return null;
+        }
+        if ( !(g.hasZ() == lowerLeftGeometry.hasZ() && lowerLeftGeometry.hasZ() == upperRightGeometry.hasZ()) ) {
+            // Return null if the CRS of all points are not the same.
+            //return PolyNull.NULL;
+            return null;
+        }
+
+        PolyGeometry gBBox = createBbox( lowerLeftGeometry, upperRightGeometry );
         return new PolyBoolean( g.coveredBy( gBBox ) );
     }
 
 
-    private static PolyGeometry createBbox(PolyPoint lowerLeft, PolyPoint upperRight){
-        Coordinate bottomLeft = new Coordinate(lowerLeft.getX(), lowerLeft.getY());
-        Coordinate topRight = new Coordinate(upperRight.getX(), upperRight.getY());
+    private static PolyGeometry createBbox( PolyPoint lowerLeft, PolyPoint upperRight ) {
+        Coordinate bottomLeft = new Coordinate( lowerLeft.getX(), lowerLeft.getY() );
+        Coordinate topRight = new Coordinate( upperRight.getX(), upperRight.getY() );
         Coordinate topLeft = new Coordinate( bottomLeft.x, topRight.y );
         Coordinate bottomRight = new Coordinate( topRight.x, bottomLeft.y );
         // Form a closed Ring, starting on the bottom left and going clockwise.
