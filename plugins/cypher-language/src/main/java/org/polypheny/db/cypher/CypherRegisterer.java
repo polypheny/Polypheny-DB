@@ -90,7 +90,7 @@ public class CypherRegisterer {
 
         register( OperatorName.DISTANCE, new LangFunctionOperator( "DISTANCE", Kind.CYPHER_FUNCTION ) );
 
-        register( OperatorName.CYPHER_WITHIN_BBOX, new LangFunctionOperator( "CYPHER_WITHIN_BBOX", Kind.CYPHER_FUNCTION ) );
+        register( OperatorName.CYPHER_WITHINBBOX, new LangFunctionOperator( "CYPHER_WITHIN_BBOX", Kind.CYPHER_FUNCTION ) );
 
         isInit = true;
     }

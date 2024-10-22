@@ -76,6 +76,11 @@ public class CypherExpression extends CypherNode {
 
 
     public Pair<PolyString, RexNode> getRex( CypherContext context, RexType type ) {
+        if (this instanceof CypherFunctionInvocation func){
+            // var is null in case of function call
+            return Pair.of( PolyString.of( null ), func.getRexCall( context ));
+        }
+
         OperatorName operatorName = switch ( this.type ) {
             // EveryPathPattern
             //return pattern.getPatternMatch( context );

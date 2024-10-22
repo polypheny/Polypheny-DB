@@ -586,7 +586,7 @@ public class CypherFunctions {
 
         throw new GenericRuntimeException( "This should not be possible!" );
     }
-    
+
 
     /**
      * Use same logic as Neo4j to calculate the spherical distance.
@@ -604,10 +604,28 @@ public class CypherFunctions {
 
 
     @SuppressWarnings("unused")
-    public static PolyBoolean withinBBox( PolyValue point, PolyValue bbox ) {
+    public static PolyBoolean withinBBox( PolyValue point, PolyValue lowerLeft, PolyValue upperRight ) {
         PolyGeometry g = point.asGeometry();
-        PolyGeometry gBBox = bbox.asGeometry();
-        return new PolyBoolean( g.within( gBBox ) );
+        PolyGeometry gBBox = createBbox(lowerLeft.asGeometry().asPoint(), upperRight.asGeometry().asPoint());
+        return new PolyBoolean( g.coveredBy( gBBox ) );
+    }
+
+
+    private static PolyGeometry createBbox(PolyPoint lowerLeft, PolyPoint upperRight){
+        Coordinate bottomLeft = new Coordinate(lowerLeft.getX(), lowerLeft.getY());
+        Coordinate topRight = new Coordinate(upperRight.getX(), upperRight.getY());
+        Coordinate topLeft = new Coordinate( bottomLeft.x, topRight.y );
+        Coordinate bottomRight = new Coordinate( topRight.x, bottomLeft.y );
+        // Form a closed Ring, starting on the bottom left and going clockwise.
+        Coordinate[] linearRing = new Coordinate[]{
+                bottomLeft,
+                topLeft,
+                topRight,
+                bottomRight,
+                bottomLeft
+        };
+        GeometryFactory geoFactory = new GeometryFactory();
+        return new PolyGeometry( geoFactory.createPolygon( linearRing ) );
     }
 
 

@@ -25,6 +25,8 @@ import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.webui.models.results.GraphResult;
+import java.util.ArrayList;
+import java.util.List;
 
 public class CypherGeoFunctionsTest extends CypherTestTemplate {
 
@@ -123,7 +125,7 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
                 RETURN point.distance(d1, d2) AS distance;
                 """ );
         assert res.data[0].length == 1;
-        assert Math.abs( PolyValue.fromJson( res.data[0][0] ).asDocument().get( new PolyString( "value" ) ).asDouble().doubleValue() - Math.sqrt( 2 )) < 1e-9;
+        assert Math.abs( PolyValue.fromJson( res.data[0][0] ).asDocument().get( new PolyString( "value" ) ).asDouble().doubleValue() - Math.sqrt( 2 ) ) < 1e-9;
 
         // Compute distance in euclidean coordinate system (3 dimensions)
         execute( """
@@ -139,7 +141,44 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
                 RETURN point.distance(d1, d2) AS distance;
                 """ );
         assert res.data[0].length == 1;
-        assert Math.abs( PolyValue.fromJson( res.data[0][0] ).asDocument().get( new PolyString( "value" ) ).asDouble().doubleValue() - 1.7320508075688772) < 1e-9;
+        assert Math.abs( PolyValue.fromJson( res.data[0][0] ).asDocument().get( new PolyString( "value" ) ).asDouble().doubleValue() - 1.7320508075688772 ) < 1e-9;
+    }
+
+
+    @Test
+    public void withinBBoxTest() {
+        // Compute distance in euclidean coordinate system (2 dimensions)
+        execute( """
+                CREATE (a:Dot {x: 1, y: 1, name: 'on edge'}),
+                       (b:Dot {x: 1.5, y: 1.5, name: 'inside'}),
+                       (c:Dot {x: 3, y: 3, name: 'outside'});
+                """ );
+
+        GraphResult res = execute( """
+                MATCH (d:Dot {name: 'inside'})
+                WITH point({x: d.x, y: d.y}) AS dPoint, d
+                RETURN point.withinBBox(dPoint, point({x: 1, y: 1}), point({x: 2, y: 2})) AS result, d.name
+                """ );
+        assert res.data[0][0].contains( "\"value\":true" );
+
+        res = execute( """
+                MATCH (d:Dot {name: 'outside'})
+                WITH point({x: d.x, y: d.y}) AS dPoint, d
+                RETURN point.withinBBox(dPoint, point({x: 1, y: 1}), point({x: 2, y: 2})) AS result, d.name
+                """ );
+        assert res.data[0][0].contains( "\"value\":false" );
+
+        res = execute( """
+                MATCH (d:Dot {name: 'on edge'})
+                WITH point({x: d.x, y: d.y}) AS dPoint, d
+                RETURN point.withinBBox(dPoint, point({x: 1, y: 1}), point({x: 2, y: 2})) AS result, d.name
+                """ );
+        assert res.data[0][0].contains( "\"value\":true" );
+
+        // TODO:
+        // Switching the latitude of the lowerLeft and upperRight in geographic coordinates so that the former is north of the latter will result in an empty range.
+        // Attempting to use POINT values with different Coordinate Reference Systems (such as WGS 84 2D and WGS 84 3D) will return null.
+        // point.withinBBox will handle crossing the 180th meridian in geographic coordinates. ???
     }
 
 
@@ -152,6 +191,24 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
         } catch ( JsonProcessingException e ) {
             throw new RuntimeException( e );
         }
+    }
+
+    private List<List<JsonNode>> convertResultsToJsonList(String[][] data){
+        List<List<JsonNode>> results = new ArrayList<>();
+        ObjectMapper objectMapper = new ObjectMapper();
+        for (String[] d : data){
+            List<JsonNode> nodes = new ArrayList<>();
+            for(String result : d){
+                try {
+                    JsonNode jsonNode = objectMapper.readTree( result );
+                    nodes.add( jsonNode );
+                } catch ( JsonProcessingException e ) {
+                    throw new RuntimeException( e );
+                }
+            }
+            results.add( nodes );
+        }
+        return results;
     }
 
 }

@@ -18,32 +18,17 @@ package org.polypheny.db.cypher.clause;
 
 import javax.annotation.Nullable;
 import lombok.Getter;
-import org.apache.commons.lang3.NotImplementedException;
-import org.polypheny.db.algebra.operators.OperatorName;
-import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.cypher.expression.CypherAggregate;
 import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.cypher.expression.CypherExpression.ExpressionType;
 import org.polypheny.db.cypher.expression.CypherFunctionInvocation;
-import org.polypheny.db.cypher.expression.CypherLiteral;
-import org.polypheny.db.cypher.expression.CypherProperty;
 import org.polypheny.db.cypher.expression.CypherVariable;
-import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.languages.QueryLanguage;
-import org.polypheny.db.rex.RexCall;
-import org.polypheny.db.rex.RexNameRef;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.util.Pair;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 
 
 @Getter
@@ -81,43 +66,8 @@ public class CypherReturnItem extends CypherReturn {
     public Pair<PolyString, RexNode> getRex( CypherContext context, RexType type ) {
         if ( variable != null ) {
             String name = variable.getName();
-            if ( this.expression instanceof CypherFunctionInvocation ) {
-                CypherFunctionInvocation func = (CypherFunctionInvocation) this.expression;
-
-                switch ( func.getOperatorName() ) {
-                    case CYPHER_POINT: {
-                        // VERY UGLY, but it works for now. This could be improved by using the function MAP_OF_ENTRIES,
-                        // but I am not sure how to call it.
-                        CypherLiteral mapExpression = (CypherLiteral) func.getArguments().get( 0 );
-                        List<RexNode> arguments = new ArrayList<>();
-                        mapExpression.getMapValue().forEach( ( key, value ) -> {
-                            Pair<PolyString, RexNode> pair = value.getRex( context, RexType.PROJECT );
-                            arguments.add( context.rexBuilder.makeLiteral( key ) );
-                            arguments.add( pair.right );
-                        } );
-                        // Fill with NULL to make sure we have the correct amount of arguments.
-                        // 3 coordinates + 3 names + srid + crs = up to 8 possible
-                        while ( arguments.size() < 10 ) {
-                            arguments.add( context.rexBuilder.makeNullLiteral( context.typeFactory.createUnknownType() ) );
-                        }
-                        return Pair.of( PolyString.of( name ), new RexCall(
-                                context.geometryType,
-                                OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_POINT ),
-                                arguments ) );
-
-                    }
-                    case DISTANCE: {
-                        return Pair.of( PolyString.of( name ), new RexCall(
-                                context.numberType,
-                                OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.DISTANCE ),
-                                List.of(
-                                        func.getArguments().get( 0 ).getRex( context, RexType.PROJECT ).getRight(),
-                                        func.getArguments().get( 1 ).getRex( context, RexType.PROJECT ).getRight()
-                                ) ) );
-                    }
-                    default:
-                        throw new NotImplementedException( "Cypher Function to alg conversion missing: " + func.getOperatorName() );
-                }
+            if ( this.expression instanceof CypherFunctionInvocation func ) {
+                return Pair.of( PolyString.of( name ), func.getRexCall( context ) );
             }
 
             // name -> aggregate

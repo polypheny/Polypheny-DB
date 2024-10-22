@@ -543,7 +543,7 @@ public enum BuiltInMethod {
     CYPHER_REMOVE_PROPERTY( CypherFunctions.class, "removeProperty", GraphPropertyHolder.class, String.class ),
     CYPHER_POINT( CypherFunctions.class, "point", PolyValue.class, PolyValue.class, PolyValue.class, PolyValue.class, PolyValue.class, PolyValue.class, PolyValue.class, PolyValue.class, PolyValue.class, PolyValue.class ),
     CYPHER_DISTANCE( CypherFunctions.class, "distance", PolyValue.class, PolyValue.class ),
-    CYPHER_WITHIN_BBOX( CypherFunctions.class, "withinBBox", PolyValue.class, PolyValue.class ),
+    CYPHER_WITHIN_BBOX( CypherFunctions.class, "withinBBox", PolyValue.class, PolyValue.class, PolyValue.class ),
     TO_NODE( CypherFunctions.class, "toNode", Enumerable.class ),
     TO_EDGE( CypherFunctions.class, "toEdge", Enumerable.class ),
     TO_GRAPH( CypherFunctions.class, "toGraph", Enumerable.class, Enumerable.class ),
