@@ -246,7 +246,7 @@ public class LanguageCrud {
         };
 
         if ( transaction.isActive() ) {
-            transaction.rollback( t != null ? t.getMessage() : "Unknown reason during error building.");
+            transaction.rollback( t != null ? t.getMessage() : "Unknown reason during error building." );
         }
 
         return result;

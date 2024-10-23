@@ -2487,7 +2487,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             } catch ( TransactionException e ) {
                 String error = "Caught exception while creating View from Planbuilder. " + e;
 
-                transaction.rollback( error);
+                transaction.rollback( error );
                 throw e;
             }
 

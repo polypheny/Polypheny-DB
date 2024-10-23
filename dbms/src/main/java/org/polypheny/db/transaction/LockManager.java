@@ -24,12 +24,10 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.stream.Collectors;
 import javax.transaction.xa.Xid;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
-import org.polypheny.db.PolyphenyDb;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.transaction.Lock.LockMode;
@@ -67,11 +65,10 @@ public class LockManager {
         Thread thread = Thread.currentThread();
 
         synchronized ( waiters ) {
-            if ( !waiters.add( Triple.of( thread, mode, transaction.getXid() ) ) ){
+            if ( !waiters.add( Triple.of( thread, mode, transaction.getXid() ) ) ) {
                 log.debug( "could not add" );
             }
         }
-
 
         // wait
         while ( true ) {
@@ -108,7 +105,7 @@ public class LockManager {
                     signalAll();
 
                     return;
-                }else if ( owners.contains( transaction.getXid() ) && (mode == LockMode.EXCLUSIVE )
+                } else if ( owners.contains( transaction.getXid() ) && (mode == LockMode.EXCLUSIVE)
                         && owners.size() <= waiters.size()
                         // trx is owner and wants to upgrade, other transaction has the same -> deadlock
                         && waiters.stream().filter( w -> w.right != transaction.getXid() ).anyMatch( w -> owners.contains( w.right ) && w.middle == LockMode.EXCLUSIVE ) ) {
@@ -136,11 +133,10 @@ public class LockManager {
     }
 
 
-
     private void cleanupWaiters( Thread thread ) {
-        synchronized ( waiters ){
+        synchronized ( waiters ) {
             List<Triple<Thread, LockMode, PolyXid>> remove = waiters.stream().filter( w -> w.left == thread ).toList();
-            if ( remove.isEmpty() ){
+            if ( remove.isEmpty() ) {
                 return;
             }
             assert remove.size() == 1;
@@ -148,10 +144,11 @@ public class LockManager {
         }
     }
 
+
     private void cleanupWaiters( PolyXid xid ) {
-        synchronized ( waiters ){
+        synchronized ( waiters ) {
             List<Triple<Thread, LockMode, PolyXid>> remove = waiters.stream().filter( w -> w.right == xid ).toList();
-            if ( remove.isEmpty() ){
+            if ( remove.isEmpty() ) {
                 return;
             }
             assert remove.size() == 1;
