@@ -552,7 +552,7 @@ public class JaninoRelMetadataProvider implements AlgMetadataProvider {
             constructor = compiler.getClassLoader().loadClass( className ).getDeclaredConstructors()[0];
             o = constructor.newInstance( argList.toArray() );
         } catch ( InstantiationException | IllegalAccessException | InvocationTargetException | ClassNotFoundException e ) {
-            throw new RuntimeException( e );
+            throw new GenericRuntimeException( e );
         }
         return def.handlerClass.cast( o );
     }
