@@ -65,7 +65,7 @@ public class LockManager {
         Thread thread = Thread.currentThread();
 
         synchronized ( waiters ) {
-            if ( !waiters.add( Triple.of( thread, mode, transaction.getXid() ) ) ) {
+            if ( waiters.add( Triple.of( thread, mode, transaction.getXid() ) ) ) {
                 log.debug( "could not add" );
             }
         }
@@ -115,7 +115,7 @@ public class LockManager {
                 }
 
                 if ( owners.isEmpty() ) {
-                    waiters.remove( Triple.of( thread, mode, transaction.getXid() ) );
+                    cleanupWaiters( transaction.getXid() );
                     throw new GenericRuntimeException( "Could not acquire lock" );
                 }
 
