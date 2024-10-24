@@ -592,7 +592,7 @@ public enum PolyType {
      * @param scale Scale, or -1 if not applicable
      * @return Limit value
      */
-    public Object getLimit( boolean sign, Limit limit, boolean beyond, int precision, int scale ) {
+    Object getLimit( boolean sign, Limit limit, boolean beyond, int precision, int scale ) {
         assert allowsPrecScale( precision != -1, scale != -1 ) : this;
         if ( limit == Limit.ZERO ) {
             if ( beyond ) {
@@ -877,10 +877,7 @@ public enum PolyType {
 
 
     public boolean isYearMonth() {
-        return switch ( this ) {
-            case INTERVAL -> true;
-            default -> false;
-        };
+        return this == INTERVAL;
     }
 
 
@@ -895,7 +892,6 @@ public enum PolyType {
     private BigDecimal getNumericLimit( int radix, int exponent, boolean sign, Limit limit, boolean beyond ) {
         return switch ( limit ) {
             case OVERFLOW -> {
-
                 // 2-based schemes run from -2^(N-1) to 2^(N-1)-1 e.g. -128 to +127
                 // 10-based schemas run from -(10^N-1) to 10^N-1 e.g. -99 to +99
                 final BigDecimal bigRadix = BigDecimal.valueOf( radix );
@@ -943,10 +939,7 @@ public enum PolyType {
      * Example: "DECIMAL" not "DECIMAL(7, 2)"; "INTEGER" not "JavaType(int)".
      */
     public String getTypeName() {
-        return switch ( this ) {
-            case ARRAY, MULTISET, MAP, ROW -> this.toString(); // e.g. "INTEGER ARRAY"
-            default -> this.getName(); // e.g. "DECIMAL", "INTERVAL_YEAR_MONTH"
-        };
+        return this.toString();
     }
 
 
