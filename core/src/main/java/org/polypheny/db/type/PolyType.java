@@ -608,7 +608,6 @@ public enum PolyType {
                     case ZERO -> false;
                     case UNDERFLOW -> null;
                     case OVERFLOW -> {
-
                         if ( beyond || !sign ) {
                             yield null;
                         } else {
@@ -660,25 +659,24 @@ public enum PolyType {
                     return null; // this type does not have negative values
                 }
                 StringBuilder buf = new StringBuilder();
-                switch ( limit ) {
-                    case ZERO:
-                        break;
-                    case UNDERFLOW:
+                return switch ( limit ) {
+                    case ZERO -> buf.toString();
+                    case UNDERFLOW -> {
                         if ( beyond ) {
                             // There is no value between the empty string and the smallest non-empty string.
-                            return null;
+                            yield null;
                         }
                         buf.append( "a" );
-                        break;
-                    case OVERFLOW:
+                        yield buf.toString();
+                    }
+                    case OVERFLOW -> {
                         buf.append( "Z".repeat( Math.max( 0, precision ) ) );
                         if ( beyond ) {
                             buf.append( "Z" );
                         }
-                        break;
-                }
-                return buf.toString();
-
+                        yield buf.toString();
+                    }
+                };
             case BINARY:
             case VARBINARY:
                 if ( !sign ) {
@@ -747,17 +745,17 @@ public enum PolyType {
                     return null; // invalid values are impossible to represent
                 }
                 calendar = Util.calendar();
-                switch ( limit ) {
-                    case ZERO:
+                return switch ( limit ) {
+                    case ZERO -> {
                         // The epoch.
                         calendar.set( Calendar.HOUR_OF_DAY, 0 );
                         calendar.set( Calendar.MINUTE, 0 );
                         calendar.set( Calendar.SECOND, 0 );
                         calendar.set( Calendar.MILLISECOND, 0 );
-                        break;
-                    case UNDERFLOW:
-                        return null;
-                    case OVERFLOW:
+                        yield calendar;
+                    }
+                    case UNDERFLOW -> null;
+                    case OVERFLOW -> {
                         calendar.set( Calendar.HOUR_OF_DAY, 23 );
                         calendar.set( Calendar.MINUTE, 59 );
                         calendar.set( Calendar.SECOND, 59 );
@@ -766,15 +764,13 @@ public enum PolyType {
                                         : ((precision == 1) ? 900
                                                 : 0));
                         calendar.set( Calendar.MILLISECOND, millis );
-                        break;
-                }
-                return calendar;
-
+                        yield calendar;
+                    }
+                };
             case TIMESTAMP:
                 calendar = Util.calendar();
-                switch ( limit ) {
-                    case ZERO:
-
+                return switch ( limit ) {
+                    case ZERO -> {
                         // The epoch.
                         calendar.set( Calendar.YEAR, 1970 );
                         calendar.set( Calendar.MONTH, 0 );
@@ -783,16 +779,16 @@ public enum PolyType {
                         calendar.set( Calendar.MINUTE, 0 );
                         calendar.set( Calendar.SECOND, 0 );
                         calendar.set( Calendar.MILLISECOND, 0 );
-                        break;
-                    case UNDERFLOW:
-                        return null;
-                    case OVERFLOW:
+                        yield calendar;
+                    }
+                    case UNDERFLOW -> null;
+                    case OVERFLOW -> {
                         if ( beyond ) {
                             // It is impossible to represent an invalid year as a date literal. SQL dates are represented
                             // as 'yyyy-mm-dd', and 1 <= yyyy <= 9999 is valid. There is no year 0: the year before
                             // 1AD is 1BC, so SimpleDateFormat renders the day before 0001-01-01 (AD) as 0001-12-31 (BC),
                             // which looks like a valid date.
-                            return null;
+                            yield null;
                         }
 
                         // "SQL:2003 6.1 <data type> Access Rules 6" says that year is between 1 and 9999, and days/months
@@ -819,10 +815,9 @@ public enum PolyType {
                             calendar.set( Calendar.SECOND, 0 );
                             calendar.set( Calendar.MILLISECOND, 0 );
                         }
-                        break;
-                }
-                return calendar;
-
+                        yield calendar;
+                    }
+                };
             default:
                 throw Util.unexpected( this );
         }
