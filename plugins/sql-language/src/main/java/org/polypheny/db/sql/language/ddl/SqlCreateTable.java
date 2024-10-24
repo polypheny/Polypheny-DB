@@ -54,7 +54,6 @@ import org.polypheny.db.sql.language.SqlOperator;
 import org.polypheny.db.sql.language.SqlSpecialOperator;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 
@@ -238,35 +237,30 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
             constraints = columnsConstraints.right;
         }
 
-        try {
-            DdlManager.getInstance().createTable(
-                    namespaceId,
-                    tableName,
-                    columns,
-                    constraints,
-                    ifNotExists,
+        DdlManager.getInstance().createTable(
+                namespaceId,
+                tableName,
+                columns,
+                constraints,
+                ifNotExists,
+                stores,
+                placementType,
+                statement );
+
+        if ( partitionType != null ) {
+            context.updateSnapshot();
+            DdlManager.getInstance().createTablePartition(
+                    PartitionInformation.fromNodeLists(
+                            getTableFailOnEmpty( context, new SqlIdentifier( tableName, ParserPos.ZERO ) ),
+                            partitionType.getSimple(),
+                            partitionColumn.getSimple(),
+                            partitionGroupNamesList.stream().map( n -> (Identifier) n ).toList(),
+                            numPartitionGroups,
+                            numPartitions,
+                            partitionQualifierList.stream().map( l -> l.stream().map( e -> (Node) e ).toList() ).toList(),
+                            rawPartitionInfo ),
                     stores,
-                    placementType,
                     statement );
-
-            if ( partitionType != null ) {
-                context.updateSnapshot();
-                DdlManager.getInstance().createTablePartition(
-                        PartitionInformation.fromNodeLists(
-                                getTableFailOnEmpty( context, new SqlIdentifier( tableName, ParserPos.ZERO ) ),
-                                partitionType.getSimple(),
-                                partitionColumn.getSimple(),
-                                partitionGroupNamesList.stream().map( n -> (Identifier) n ).toList(),
-                                numPartitionGroups,
-                                numPartitions,
-                                partitionQualifierList.stream().map( l -> l.stream().map( e -> (Node) e ).toList() ).toList(),
-                                rawPartitionInfo ),
-                        stores,
-                        statement );
-            }
-
-        } catch ( TransactionException e ) {
-            throw new GenericRuntimeException( e );
         }
     }
 

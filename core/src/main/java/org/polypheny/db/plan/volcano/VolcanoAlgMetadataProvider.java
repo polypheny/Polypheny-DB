@@ -46,7 +46,7 @@ import org.polypheny.db.algebra.metadata.UnboundMetadata;
 
 
 /**
- * VolcanoRelMetadataProvider implements the {@link AlgMetadataProvider} interface by combining metadata from the rels making up an equivalence class.
+ * {@link VolcanoAlgMetadataProvider} implements the {@link AlgMetadataProvider} interface by combining metadata from the alg making up an equivalence class.
  */
 public class VolcanoAlgMetadataProvider implements AlgMetadataProvider {
 
@@ -87,7 +87,7 @@ public class VolcanoAlgMetadataProvider implements AlgMetadataProvider {
                 }
             }
 
-            // Otherwise, try rels in same logical equivalence class to see if any of them have a good answer.  We use the full logical equivalence class rather than just the subset because
+            // Otherwise, try algs in same logical equivalence class to see if any of them have a good answer.  We use the full logical equivalence class rather than just the subset because
             // many metadata providers only know about logical metadata.
 
             // Equivalence classes can get tangled up in interesting ways, so avoid an infinite loop. REVIEW: There's a chance this will cause us to fail on metadata queries which invoke other queries,

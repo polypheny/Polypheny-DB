@@ -555,12 +555,9 @@ public class Rest {
 
             statement.getTransaction().commit();
         } catch ( Throwable e ) {
-            log.error( "Error during execution of REST query", e );
-            try {
-                statement.getTransaction().rollback();
-            } catch ( TransactionException transactionException ) {
-                log.error( "Could not rollback", e );
-            }
+            String error = "Error during execution of REST query. " + e;
+
+            statement.getTransaction().rollback(error);
             return null;
         }
         Pair<String, Integer> result = restResult.getResult( ctx );

@@ -75,7 +75,7 @@ public final class AlgTraitSet extends AbstractList<AlgTrait<?>> {
 
     /**
      * Creates an empty trait set.
-     *
+     * <p>
      * It has a new cache, which will be shared by any trait set created from it. Thus each empty trait set is the start of a new ancestral line.
      */
     public static AlgTraitSet createEmpty() {
@@ -149,7 +149,7 @@ public final class AlgTraitSet extends AbstractList<AlgTrait<?>> {
 
     /**
      * Retrieves a list of traits of the given type from the set.
-     *
+     * <p>
      * Only valid for traits that support multiple entries. (E.g. collation.)
      *
      * @param traitDef the type of RelTrait to retrieve
@@ -187,7 +187,7 @@ public final class AlgTraitSet extends AbstractList<AlgTrait<?>> {
 
     /**
      * Returns a trait set consisting of the current set plus a new trait.
-     *
+     * <p>
      * If the set does not contain a trait of the same {@link AlgTraitDef}, the trait is ignored, and this trait set is returned.
      *
      * @param trait the new trait
@@ -212,7 +212,7 @@ public final class AlgTraitSet extends AbstractList<AlgTrait<?>> {
 
     /**
      * Returns whether an element occurs within an array.
-     *
+     * <p>
      * Uses {@code ==}, not {@link #equals}. Nulls are allowed.
      */
     private static <T> boolean containsShallow( T[] ts, AlgTrait<?> seek ) {
@@ -227,7 +227,7 @@ public final class AlgTraitSet extends AbstractList<AlgTrait<?>> {
 
     /**
      * Replaces the trait(s) of a given type with a list of traits of the same type.
-     *
+     * <p>
      * The list must not be empty, and all traits must be of the same type.
      */
     public <T extends AlgMultipleTrait<?>> AlgTraitSet replace( List<T> traits ) {
@@ -239,7 +239,7 @@ public final class AlgTraitSet extends AbstractList<AlgTrait<?>> {
 
     /**
      * Replaces the trait(s) of a given type with a list of traits of the same type.
-     *
+     * <p>
      * The list must not be empty, and all traits must be of the same type.
      */
     public <T extends AlgMultipleTrait<?>> AlgTraitSet replace( AlgTraitDef<T> def, List<T> traits ) {
@@ -286,7 +286,7 @@ public final class AlgTraitSet extends AbstractList<AlgTrait<?>> {
 
     /**
      * Converts a trait to canonical form.
-     *
+     * <p>
      * After canonization, t1.equals(t2) if and only if t1 == t2.
      *
      * @param trait Trait
@@ -329,11 +329,11 @@ public final class AlgTraitSet extends AbstractList<AlgTrait<?>> {
 
     /**
      * Returns whether this trait set satisfies another trait set.
-     *
+     * <p>
      * For that to happen, each trait satisfies the corresponding trait in the other set. In particular, each trait set satisfies itself, because each trait subsumes itself.
-     *
+     * <p>
      * Intuitively, if a relational expression is needed that has trait set S (A, B), and trait set S1 (A1, B1) subsumes S, then any relational expression R in S1 meets that need.
-     *
+     * <p>
      * For example, if we need a relational expression that has trait set S = {enumerable convention, sorted on [C1 asc]}, and R has {enumerable convention, sorted on [C3], [C1, C2]}.
      * R has two sort keys, but one them [C1, C2] satisfies S [C1], and that is enough.
      *

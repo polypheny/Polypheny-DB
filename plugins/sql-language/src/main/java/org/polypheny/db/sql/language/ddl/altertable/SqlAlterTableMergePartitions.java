@@ -34,7 +34,6 @@ import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.sql.language.ddl.SqlAlterTable;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.util.ImmutableNullableList;
 
 
@@ -90,11 +89,7 @@ public class SqlAlterTableMergePartitions extends SqlAlterTable {
                 log.debug( "Merging partitions for table: {} with id {} on namespace: {}", table.name, table.id, statement.getTransaction().getSnapshot().getNamespace( table.namespaceId ).orElseThrow().name );
             }
 
-            try {
-                DdlManager.getInstance().dropTablePartition( table, statement );
-            } catch ( TransactionException e ) {
-                throw new GenericRuntimeException( "Error while merging partitions", e );
-            }
+            DdlManager.getInstance().dropTablePartition( table, statement );
 
             if ( log.isDebugEnabled() ) {
                 log.debug( "Table: '{}' has been merged", table.name );

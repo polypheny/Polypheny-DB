@@ -52,9 +52,7 @@ public abstract class Processor {
             // Execute statement
             return getImplementation( statement, node, context );
         } catch ( DeadlockException e ) {
-            throw new GenericRuntimeException( "Exception while acquiring global schema lock", e );
-        } catch ( TransactionException e ) {
-            throw new GenericRuntimeException( e );
+            throw new DeadlockException( e.getMessage() + " Exception while acquiring global schema lock" );
         } finally {
             // Release lock
             unlock( statement );

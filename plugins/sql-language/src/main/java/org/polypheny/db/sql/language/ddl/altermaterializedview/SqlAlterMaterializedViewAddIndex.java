@@ -25,7 +25,6 @@ import lombok.Value;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Node;
@@ -37,7 +36,6 @@ import org.polypheny.db.sql.language.SqlNodeList;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.sql.language.ddl.SqlAlterMaterializedView;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.ImmutableNullableList;
 
@@ -114,37 +112,34 @@ public class SqlAlterMaterializedViewAddIndex extends SqlAlterMaterializedView {
         LogicalTable table = getTableFailOnEmpty( context, this.table );
         String indexMethodName = indexMethod != null ? indexMethod.getSimple() : null;
 
-        try {
-            if ( storeName != null && storeName.getSimple().equalsIgnoreCase( IndexManager.POLYPHENY ) ) {
-                DdlManager.getInstance().createPolyphenyIndex(
-                        table,
-                        indexMethodName,
-                        columnList.getList().stream().map( Node::toString ).toList(),
-                        indexName.getSimple(),
-                        unique,
-                        statement );
-            } else {
-                DataStore<?> storeInstance = null;
-                if ( storeName != null ) {
-                    storeInstance = getDataStoreInstance( storeName );
-                    if ( storeInstance == null ) {
-                        throw CoreUtil.newContextException(
-                                storeName.getPos(),
-                                RESOURCE.unknownAdapter( storeName.getSimple() ) );
-                    }
+        if ( storeName != null && storeName.getSimple().equalsIgnoreCase( IndexManager.POLYPHENY ) ) {
+            DdlManager.getInstance().createPolyphenyIndex(
+                    table,
+                    indexMethodName,
+                    columnList.getList().stream().map( Node::toString ).toList(),
+                    indexName.getSimple(),
+                    unique,
+                    statement );
+        } else {
+            DataStore<?> storeInstance = null;
+            if ( storeName != null ) {
+                storeInstance = getDataStoreInstance( storeName );
+                if ( storeInstance == null ) {
+                    throw CoreUtil.newContextException(
+                            storeName.getPos(),
+                            RESOURCE.unknownAdapter( storeName.getSimple() ) );
                 }
-                DdlManager.getInstance().createIndex(
-                        table,
-                        indexMethodName,
-                        columnList.getList().stream().map( Node::toString ).toList(),
-                        indexName.getSimple(),
-                        unique,
-                        storeInstance,
-                        statement );
             }
-        } catch ( TransactionException e ) {
-            throw new GenericRuntimeException( e );
+            DdlManager.getInstance().createIndex(
+                    table,
+                    indexMethodName,
+                    columnList.getList().stream().map( Node::toString ).toList(),
+                    indexName.getSimple(),
+                    unique,
+                    storeInstance,
+                    statement );
         }
+
     }
 
 }

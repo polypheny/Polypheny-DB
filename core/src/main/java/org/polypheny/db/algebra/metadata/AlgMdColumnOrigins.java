@@ -141,16 +141,15 @@ public class AlgMdColumnOrigins implements MetadataHandler<BuiltInMetadata.Colum
         final AlgNode input = alg.getInput();
         RexNode rexNode = alg.getProjects().get( iOutputColumn );
 
-        if ( rexNode instanceof RexIndexRef ) {
+        if ( rexNode instanceof RexIndexRef inputRef ) {
             // Direct reference:  no derivation added.
-            RexIndexRef inputRef = (RexIndexRef) rexNode;
             return mq.getColumnOrigins( input, inputRef.getIndex() );
         }
 
         // Anything else is a derivation, possibly from multiple columns.
         final Set<AlgColumnOrigin> set = new HashSet<>();
-        RexVisitor visitor =
-                new RexVisitorImpl<Void>( true ) {
+        RexVisitor<Void> visitor =
+                new RexVisitorImpl<>( true ) {
                     @Override
                     public Void visitIndexRef( RexIndexRef inputRef ) {
                         Set<AlgColumnOrigin> inputSet = mq.getColumnOrigins( input, inputRef.getIndex() );
@@ -185,7 +184,7 @@ public class AlgMdColumnOrigins implements MetadataHandler<BuiltInMetadata.Colum
         final Set<AlgColumnOrigin> set = new HashSet<>();
         Set<AlgColumnMapping> mappings = alg.getColumnMappings();
         if ( mappings == null ) {
-            if ( alg.getInputs().size() > 0 ) {
+            if ( !alg.getInputs().isEmpty() ) {
                 // This is a non-leaf transformation:  say we don't know about origins, because there are probably columns below.
                 return null;
             } else {
@@ -215,7 +214,7 @@ public class AlgMdColumnOrigins implements MetadataHandler<BuiltInMetadata.Colum
     // Catch-all rule when none of the others apply.
     public Set<AlgColumnOrigin> getColumnOrigins( AlgNode alg, AlgMetadataQuery mq, int iOutputColumn ) {
         // NOTE jvs 28-Mar-2006: We may get this wrong for a physical table expression which supports projections.  In that case, it's up to the plugin writer to override with the correct information.
-        if ( alg.getInputs().size() > 0 ) {
+        if ( !alg.getInputs().isEmpty() ) {
             // No generic logic available for non-leaf rels.
             return null;
         }

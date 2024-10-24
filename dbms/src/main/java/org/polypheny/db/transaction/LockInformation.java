@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,10 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.util;
+package org.polypheny.db.transaction;
 
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.transaction.Lock.LockMode;
 
-public class DeadlockException extends GenericRuntimeException {
-
-    public DeadlockException( String msg ) {
-        super( msg );
-    }
+public record LockInformation( Thread thread, LockMode mode, PolyXid xid ) {
 
 }

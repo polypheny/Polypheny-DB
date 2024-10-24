@@ -56,7 +56,7 @@ public class NumericalStatisticColumn extends StatisticColumn {
 
     @Override
     public void insert( List<PolyValue> values ) {
-        if ( values != null && !(values.get( 0 ).isList()) ) {
+        if ( values != null ) {
             for ( PolyValue val : values ) {
                 if ( val != null ) {
                     insert( val );
