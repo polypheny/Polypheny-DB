@@ -32,7 +32,6 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.transaction.Lock.LockMode;
 import org.polypheny.db.util.DeadlockException;
-import org.polypheny.db.util.Triple;
 
 @Slf4j
 public class LockManager {
@@ -226,6 +225,11 @@ public class LockManager {
 
     public void removeTransaction( @NonNull Transaction transaction ) {
         unlock( transaction );
+    }
+
+
+    private record LockInformation( Thread thread, LockMode mode, PolyXid xid ) {
+
     }
 
 }
