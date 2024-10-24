@@ -104,7 +104,7 @@ public class LockManager {
                     signalAll();
 
                     return;
-                } else if ( owners.contains( transaction.getXid() ) && (mode == LockMode.EXCLUSIVE)
+                } else if ( owners.contains( transaction.getXid() ) && mode == LockMode.EXCLUSIVE
                         && owners.size() <= waiters.size()
                         // trx is owner and wants to upgrade, other transaction has the same -> deadlock
                         && waiters.stream().filter( w -> w.xid() != transaction.getXid() ).anyMatch( w -> owners.contains( w.xid() ) && w.mode() == LockMode.EXCLUSIVE ) ) {
