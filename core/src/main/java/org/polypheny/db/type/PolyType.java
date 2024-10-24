@@ -887,7 +887,7 @@ public enum PolyType {
     /**
      * Limit.
      */
-    public enum Limit {
+    enum Limit {
         ZERO, UNDERFLOW, OVERFLOW
     }
 
