@@ -41,7 +41,7 @@ public class LockManager {
 
     private boolean isExclusive = false;
     private final Set<Xid> owners = new HashSet<>();
-    private final ConcurrentLinkedQueue<Triple<Thread, LockMode, PolyXid>> waiters = new ConcurrentLinkedQueue<>();
+    private final ConcurrentLinkedQueue<LockInformation> waiters = new ConcurrentLinkedQueue<>();
     private final ReentrantLock lock = new ReentrantLock();
     private final Condition condition = lock.newCondition();
 
@@ -65,7 +65,7 @@ public class LockManager {
         Thread thread = Thread.currentThread();
 
         synchronized ( waiters ) {
-            if ( waiters.add( Triple.of( thread, mode, transaction.getXid() ) ) ) {
+            if ( waiters.add( new LockInformation( thread, mode, transaction.getXid() ) ) ) {
                 log.debug( "could not add" );
             }
         }
@@ -75,7 +75,7 @@ public class LockManager {
             lock.lock();
             try {
                 //noinspection DataFlowIssue // else we have a general problem
-                while ( waiters.peek().left != thread ) {
+                while ( waiters.peek().thread() != thread ) {
                     log.debug( "wait {} ", transaction.getXid() );
                     boolean successful = condition.await( RuntimeConfig.LOCKING_MAX_TIMEOUT_SECONDS.getInteger(), TimeUnit.SECONDS );
 
@@ -108,7 +108,7 @@ public class LockManager {
                 } else if ( owners.contains( transaction.getXid() ) && (mode == LockMode.EXCLUSIVE)
                         && owners.size() <= waiters.size()
                         // trx is owner and wants to upgrade, other transaction has the same -> deadlock
-                        && waiters.stream().filter( w -> w.right != transaction.getXid() ).anyMatch( w -> owners.contains( w.right ) && w.middle == LockMode.EXCLUSIVE ) ) {
+                        && waiters.stream().filter( w -> w.xid() != transaction.getXid() ).anyMatch( w -> owners.contains( w.xid() ) && w.mode() == LockMode.EXCLUSIVE ) ) {
                     cleanupWaiters( thread );
                     // we have to interrupt one transaction, all want to upgrade
                     throw new DeadlockException( "Write-write conflict with multiple transactions." );
@@ -135,7 +135,7 @@ public class LockManager {
 
     private void cleanupWaiters( Thread thread ) {
         synchronized ( waiters ) {
-            List<Triple<Thread, LockMode, PolyXid>> remove = waiters.stream().filter( w -> w.left == thread ).toList();
+            List<LockInformation> remove = waiters.stream().filter( w -> w.thread() == thread ).toList();
             if ( remove.isEmpty() ) {
                 return;
             }
@@ -147,12 +147,12 @@ public class LockManager {
 
     private void cleanupWaiters( PolyXid xid ) {
         synchronized ( waiters ) {
-            List<Triple<Thread, LockMode, PolyXid>> remove = waiters.stream().filter( w -> w.right == xid ).toList();
+            List<LockInformation> remove = waiters.stream().filter( w -> w.xid() == xid ).toList();
             if ( remove.isEmpty() ) {
                 return;
             }
             assert remove.size() == 1;
-            assert remove.get( 0 ).left == Thread.currentThread();
+            assert remove.get( 0 ).thread() == Thread.currentThread();
             waiters.remove( remove.get( 0 ) );
         }
     }
