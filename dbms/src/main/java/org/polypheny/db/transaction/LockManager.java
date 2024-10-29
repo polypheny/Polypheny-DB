@@ -64,9 +64,7 @@ public class LockManager {
         Thread thread = Thread.currentThread();
 
         synchronized ( waiters ) {
-            if ( waiters.add( new LockInformation( thread, mode, transaction.getXid() ) ) ) {
-                log.debug( "could not add" );
-            }
+            waiters.add( new LockInformation( thread, mode, transaction.getXid() ) );
         }
 
         // wait
