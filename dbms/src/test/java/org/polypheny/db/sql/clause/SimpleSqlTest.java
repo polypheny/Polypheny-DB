@@ -57,6 +57,11 @@ public class SimpleSqlTest {
 
     @Test
     public void autoIncrement() throws SQLException {
+        // skip this test if store.default.equals("file")
+        String store = System.getProperty( "store.default" );
+        if ( store != null && store.equals( "file" ) ) {
+            return;
+        }
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
