@@ -61,16 +61,15 @@ public class SimpleSqlTest {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 statement.executeUpdate( "DROP TABLE IF EXISTS TableAutoInc" );
-                statement.executeUpdate( "CREATE TABLE TableAutoInc(ID INTEGER NOT NULL AUTO_INCREMENT, YAC INTEGER NOT NULL AUTO_INCREMENT, PRIMARY KEY (ID))" );
+                statement.executeUpdate( "CREATE TABLE TableAutoInc(RID INTEGER NOT NULL AUTO_INCREMENT, YAC INTEGER NOT NULL, PRIMARY KEY (RID))" );
                 statement.executeUpdate( "INSERT INTO TableAutoInc VALUES (1, 61), (2, 62)" );
                 statement.executeUpdate( "INSERT INTO TableAutoInc(YAC) VALUES (63)" );
                 statement.executeUpdate( "INSERT INTO TableAutoInc VALUES (100, 120)" );
                 statement.executeUpdate( "INSERT INTO TableAutoInc(YAC) VALUES (121)" );
                 statement.executeUpdate( "INSERT INTO TableAutoInc VALUES (4, 64)" );
                 statement.executeUpdate( "INSERT INTO TableAutoInc(YAC) VALUES (122)" );
-                statement.executeUpdate( "INSERT INTO TableAutoInc(ID) VALUES (103)" );
                 TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT ID, YAC FROM TableAutoInc" ),
+                        statement.executeQuery( "SELECT RID, YAC FROM TableAutoInc" ),
                         ImmutableList.of(
                                 new Object[]{1, 61},
                                 new Object[]{2, 62},
@@ -78,8 +77,7 @@ public class SimpleSqlTest {
                                 new Object[]{100, 120},
                                 new Object[]{101, 121},
                                 new Object[]{4, 64},
-                                new Object[]{102, 122},
-                                new Object[]{103, 123}
+                                new Object[]{102, 122}
                         )
                 );
                 statement.executeUpdate( "DROP TABLE TableAutoInc" );
