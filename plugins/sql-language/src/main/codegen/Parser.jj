@@ -8233,6 +8233,7 @@ void NonReservedKeyWord0of3() :
     |    <ASSIGNMENT>
     |    <ATTRIBUTE>
     |    <ATTRIBUTES>
+    |   < AUTO_INCREMENT>
     |    <BEFORE>
     |    <BERNOULLI>
     |    <BREADTH>
