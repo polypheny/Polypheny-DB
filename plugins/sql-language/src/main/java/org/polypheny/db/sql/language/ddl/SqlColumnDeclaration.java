@@ -53,6 +53,9 @@ public class SqlColumnDeclaration extends SqlCall {
     final ColumnStrategy strategy;
     final String collation;
 
+    @Getter
+    final boolean auto_increment;
+
 
     /**
      * Creates a SqlColumnDeclaration; use {@link SqlDdlNodes#column}.
@@ -64,6 +67,17 @@ public class SqlColumnDeclaration extends SqlCall {
         this.expression = expression;
         this.strategy = strategy;
         this.collation = collation;
+        this.auto_increment = false;
+    }
+
+    SqlColumnDeclaration( ParserPos pos, SqlIdentifier name, SqlDataTypeSpec dataType, String collation, SqlNode expression, ColumnStrategy strategy, boolean auto_increment ) {
+        super( pos );
+        this.name = name;
+        this.dataType = dataType;
+        this.expression = expression;
+        this.strategy = strategy;
+        this.collation = collation;
+        this.auto_increment = auto_increment;
     }
 
 

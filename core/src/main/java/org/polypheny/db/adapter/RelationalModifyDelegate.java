@@ -112,8 +112,8 @@ public class RelationalModifyDelegate extends RelationalScanDelegate implements 
     @Override
     public List<PhysicalEntity> createCollection( Context context, LogicalCollection logical, AllocationCollection allocation ) {
         PhysicalTable physical = Scannable.createSubstitutionTable( modifiable, context, logical, allocation, "_doc_", List.of(
-                new ColumnContext( DocumentType.DOCUMENT_ID, null, PolyType.TEXT, false ),
-                new ColumnContext( DocumentType.DOCUMENT_DATA, null, PolyType.TEXT, true ) ), 1 );
+                new ColumnContext( DocumentType.DOCUMENT_ID, null, PolyType.TEXT, false, false ),
+                new ColumnContext( DocumentType.DOCUMENT_DATA, null, PolyType.TEXT, true, false ) ), 1 );
         catalog.addPhysical( allocation, physical );
 
         return List.of( physical );

@@ -60,7 +60,7 @@ public interface Scannable {
 
         int i = 0;
         for ( ColumnContext col : columnsInformations ) {
-            LogicalColumn column = new LogicalColumn( builder.getNewFieldId(), col.name, table.id, table.namespaceId, i, col.type, null, col.precision, null, null, null, col.nullable, Collation.getDefaultCollation(), null );
+            LogicalColumn column = new LogicalColumn( builder.getNewFieldId(), col.name, table.id, table.namespaceId, i, col.type, null, col.precision, null, null, null, col.nullable, Collation.getDefaultCollation(), null, col.autoIncrement );
             columns.add( column );
             i++;
         }
@@ -170,24 +170,24 @@ public interface Scannable {
 
     static List<PhysicalEntity> createGraphSubstitute( Scannable scannable, Context context, LogicalGraph logical, AllocationGraph allocation ) {
         PhysicalEntity node = createSubstitutionEntity( scannable, context, logical, allocation, "_node_", List.of(
-                new ColumnContext( "id", GraphType.ID_SIZE, PolyType.VARCHAR, false ),
-                new ColumnContext( "label", null, PolyType.TEXT, false ) ), 2 );
+                new ColumnContext( "id", GraphType.ID_SIZE, PolyType.VARCHAR, false, false ),
+                new ColumnContext( "label", null, PolyType.TEXT, false, false ) ), 2 );
 
         PhysicalEntity nProperties = createSubstitutionEntity( scannable, context, logical, allocation, "_nProperties_", List.of(
-                new ColumnContext( "id", GraphType.ID_SIZE, PolyType.VARCHAR, false ),
-                new ColumnContext( "key", null, PolyType.TEXT, false ),
-                new ColumnContext( "value", null, PolyType.TEXT, true ) ), 2 );
+                new ColumnContext( "id", GraphType.ID_SIZE, PolyType.VARCHAR, false, false ),
+                new ColumnContext( "key", null, PolyType.TEXT, false, false ),
+                new ColumnContext( "value", null, PolyType.TEXT, true, false ) ), 2 );
 
         PhysicalEntity edge = createSubstitutionEntity( scannable, context, logical, allocation, "_edge_", List.of(
-                new ColumnContext( "id", GraphType.ID_SIZE, PolyType.VARCHAR, false ),
-                new ColumnContext( "label", null, PolyType.TEXT, true ),
-                new ColumnContext( "_l_id_", GraphType.ID_SIZE, PolyType.VARCHAR, true ),
-                new ColumnContext( "_r_id_", GraphType.ID_SIZE, PolyType.VARCHAR, true ) ), 1 );
+                new ColumnContext( "id", GraphType.ID_SIZE, PolyType.VARCHAR, false, false ),
+                new ColumnContext( "label", null, PolyType.TEXT, true, false ),
+                new ColumnContext( "_l_id_", GraphType.ID_SIZE, PolyType.VARCHAR, true, false ),
+                new ColumnContext( "_r_id_", GraphType.ID_SIZE, PolyType.VARCHAR, true, false ) ), 1 );
 
         PhysicalEntity eProperties = createSubstitutionEntity( scannable, context, logical, allocation, "_eProperties_", List.of(
-                new ColumnContext( "id", GraphType.ID_SIZE, PolyType.VARCHAR, false ),
-                new ColumnContext( "key", null, PolyType.TEXT, false ),
-                new ColumnContext( "value", null, PolyType.TEXT, true ) ), 2 );
+                new ColumnContext( "id", GraphType.ID_SIZE, PolyType.VARCHAR, false, false ),
+                new ColumnContext( "key", null, PolyType.TEXT, false, false ),
+                new ColumnContext( "value", null, PolyType.TEXT, true, false ) ), 2 );
 
         scannable.getCatalog().addPhysical( allocation, node, nProperties, edge, eProperties );
         return List.of( node, nProperties, edge, eProperties );
@@ -222,8 +222,8 @@ public interface Scannable {
 
     static List<PhysicalEntity> createCollectionSubstitute( Scannable scannable, Context context, LogicalCollection logical, AllocationCollection allocation ) {
         PhysicalEntity doc = createSubstitutionEntity( scannable, context, logical, allocation, "_doc_", List.of(
-                new ColumnContext( DocumentType.DOCUMENT_ID, null, PolyType.TEXT, false ),
-                new ColumnContext( DocumentType.DOCUMENT_DATA, null, PolyType.TEXT, false ) ), 1 );
+                new ColumnContext( DocumentType.DOCUMENT_ID, null, PolyType.TEXT, false, false ),
+                new ColumnContext( DocumentType.DOCUMENT_DATA, null, PolyType.TEXT, false, false ) ), 1 );
 
         scannable.getCatalog().addPhysical( allocation, doc );
         return List.of( doc );
@@ -250,7 +250,7 @@ public interface Scannable {
     void renameLogicalColumn( long id, String newColumnName );
 
 
-    record ColumnContext( String name, Integer precision, PolyType type, boolean nullable ) {
+    record ColumnContext( String name, Integer precision, PolyType type, boolean nullable, boolean autoIncrement ) {
 
     }
 

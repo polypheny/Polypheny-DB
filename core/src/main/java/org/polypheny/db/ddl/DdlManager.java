@@ -166,7 +166,7 @@ public abstract class DdlManager {
      * @param defaultValue a default value for the column; can be null
      * @param statement the query statement
      */
-    public abstract void createColumn( String columnName, LogicalTable table, String beforeColumnName, String afterColumnName, ColumnTypeInformation type, boolean nullable, PolyValue defaultValue, Statement statement );
+    public abstract void createColumn( String columnName, LogicalTable table, String beforeColumnName, String afterColumnName, ColumnTypeInformation type, boolean nullable, PolyValue defaultValue, Statement statement, boolean autoIncrement );
 
     /**
      * Add a foreign key to a table
@@ -605,7 +605,7 @@ public abstract class DdlManager {
      * decoupled from the used query language
      */
 
-    public record ColumnTypeInformation( PolyType type, @Nullable PolyType collectionType, Integer precision, Integer scale, Integer dimension, Integer cardinality, Boolean nullable ) {
+    public record ColumnTypeInformation( PolyType type, @Nullable PolyType collectionType, Integer precision, Integer scale, Integer dimension, Integer cardinality, Boolean nullable, Boolean autoIncrement ) {
 
         public ColumnTypeInformation(
                 PolyType type,
@@ -614,7 +614,8 @@ public abstract class DdlManager {
                 Integer scale,
                 Integer dimension,
                 Integer cardinality,
-                Boolean nullable ) {
+                Boolean nullable,
+                Boolean autoIncrement ) {
             this.type = type;
             this.collectionType = collectionType == type ? null : collectionType;
             this.precision = precision == null || precision == -1 ? null : precision;
@@ -622,6 +623,7 @@ public abstract class DdlManager {
             this.dimension = dimension == null || dimension == -1 ? null : dimension;
             this.cardinality = cardinality == null || cardinality == -1 ? null : cardinality;
             this.nullable = nullable;
+            this.autoIncrement = autoIncrement == null ? false : autoIncrement;
         }
 
 
@@ -633,7 +635,8 @@ public abstract class DdlManager {
                     sqlDataType.getScale(),
                     sqlDataType.getDimension(),
                     sqlDataType.getCardinality(),
-                    sqlDataType.getNullable() );
+                    sqlDataType.getNullable(),
+                    sqlDataType.getAutoIncrement());
         }
 
     }

@@ -244,7 +244,8 @@ public class Qfs extends DataSource<RelAdapterCatalog> {
                 physTableName,
                 "path",
                 1,
-                true
+                true,
+                false
         ) );
 
         columns.add( new ExportedColumn(
@@ -260,6 +261,7 @@ public class Qfs extends DataSource<RelAdapterCatalog> {
                 physTableName,
                 "name",
                 2,
+                false,
                 false
         ) );
 
@@ -276,6 +278,7 @@ public class Qfs extends DataSource<RelAdapterCatalog> {
                 physTableName,
                 "size",
                 3,
+                false,
                 false
         ) );
 
@@ -292,6 +295,7 @@ public class Qfs extends DataSource<RelAdapterCatalog> {
                 physTableName,
                 "file",
                 4,
+                false,
                 false
         ) );
 

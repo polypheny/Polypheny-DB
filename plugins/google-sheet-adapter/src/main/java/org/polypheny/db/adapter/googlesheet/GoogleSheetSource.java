@@ -297,7 +297,8 @@ public class GoogleSheetSource extends DataSource<RelAdapterCatalog> {
                         tableName,
                         col.toString(),
                         position,
-                        position == 0
+                        position == 0,
+                        false
                 ) );
                 position++;
             }

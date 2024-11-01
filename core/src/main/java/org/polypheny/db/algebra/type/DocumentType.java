@@ -183,6 +183,11 @@ public class DocumentType implements AlgDataType, AlgDataTypeFamily {
         return false;
     }
 
+    @Override
+    public boolean isAutoIncrement() {
+        return false;
+    }
+
 
     @Override
     public AlgDataType getComponentType() {
