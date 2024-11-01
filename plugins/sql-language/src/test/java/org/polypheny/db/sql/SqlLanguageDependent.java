@@ -107,9 +107,9 @@ public class SqlLanguageDependent {
         DdlManager manager = DdlManager.getInstance();
 
         List<FieldInformation> columns = List.of(
-                new FieldInformation( "deptno", new ColumnTypeInformation( PolyType.INTEGER, null, null, null, null, null, false ), null, null, 0 ),
-                new FieldInformation( "name", new ColumnTypeInformation( PolyType.VARCHAR, null, 20, null, null, null, false ), null, null, 1 ),
-                new FieldInformation( "loc", new ColumnTypeInformation( PolyType.VARCHAR, null, 50, null, null, null, true ), null, null, 2 )
+                new FieldInformation( "deptno", new ColumnTypeInformation( PolyType.INTEGER, null, null, null, null, null, false, false ), null, null, 0 ),
+                new FieldInformation( "name", new ColumnTypeInformation( PolyType.VARCHAR, null, 20, null, null, null, false, false ), null, null, 1 ),
+                new FieldInformation( "loc", new ColumnTypeInformation( PolyType.VARCHAR, null, 50, null, null, null, true, false ), null, null, 2 )
         );
 
         List<ConstraintInformation> constraints = List.of(
@@ -133,9 +133,9 @@ public class SqlLanguageDependent {
         DdlManager manager = DdlManager.getInstance();
 
         List<FieldInformation> columns = List.of(
-                new FieldInformation( "deptno", new ColumnTypeInformation( PolyType.INTEGER, null, null, null, null, null, false ), null, null, 0 ),
-                new FieldInformation( "name", new ColumnTypeInformation( PolyType.VARCHAR, null, 20, null, null, null, false ), null, null, 1 ),
-                new FieldInformation( "loc", new ColumnTypeInformation( PolyType.VARCHAR, null, 50, null, null, null, true ), null, null, 2 )
+                new FieldInformation( "deptno", new ColumnTypeInformation( PolyType.INTEGER, null, null, null, null, null, false, false ), null, null, 0 ),
+                new FieldInformation( "name", new ColumnTypeInformation( PolyType.VARCHAR, null, 20, null, null, null, false, false ), null, null, 1 ),
+                new FieldInformation( "loc", new ColumnTypeInformation( PolyType.VARCHAR, null, 50, null, null, null, true, false ), null, null, 2 )
         );
 
         List<ConstraintInformation> constraints = List.of(
@@ -146,13 +146,13 @@ public class SqlLanguageDependent {
 
         // "CREATE TABLE employee( empid BIGINT NOT NULL, ename VARCHAR(20), job VARCHAR(10), mgr INTEGER, hiredate DATE, salary DECIMAL(7,2), commission DECIMAL(7,2), deptno INTEGER NOT NULL, PRIMARY KEY (empid)) "
         columns = List.of(
-                new FieldInformation( "empid", new ColumnTypeInformation( PolyType.BIGINT, null, null, null, null, null, false ), null, null, 0 ),
-                new FieldInformation( "ename", new ColumnTypeInformation( PolyType.VARCHAR, null, 20, null, null, null, true ), null, null, 1 ),
-                new FieldInformation( "job", new ColumnTypeInformation( PolyType.VARCHAR, null, 10, null, null, null, true ), null, null, 2 ),
-                new FieldInformation( "mgr", new ColumnTypeInformation( PolyType.INTEGER, null, null, null, null, null, true ), null, null, 3 ),
-                new FieldInformation( "hiredate", new ColumnTypeInformation( PolyType.DATE, null, null, null, null, null, true ), null, null, 4 ),
-                new FieldInformation( "salary", new ColumnTypeInformation( PolyType.DECIMAL, null, null, 7, 2, null, true ), null, null, 5 ),
-                new FieldInformation( "deptno", new ColumnTypeInformation( PolyType.INTEGER, null, null, null, null, null, true ), null, null, 6 )
+                new FieldInformation( "empid", new ColumnTypeInformation( PolyType.BIGINT, null, null, null, null, null, false, false ), null, null, 0 ),
+                new FieldInformation( "ename", new ColumnTypeInformation( PolyType.VARCHAR, null, 20, null, null, null, true, false ), null, null, 1 ),
+                new FieldInformation( "job", new ColumnTypeInformation( PolyType.VARCHAR, null, 10, null, null, null, true, false ), null, null, 2 ),
+                new FieldInformation( "mgr", new ColumnTypeInformation( PolyType.INTEGER, null, null, null, null, null, true, false ), null, null, 3 ),
+                new FieldInformation( "hiredate", new ColumnTypeInformation( PolyType.DATE, null, null, null, null, null, true, false ), null, null, 4 ),
+                new FieldInformation( "salary", new ColumnTypeInformation( PolyType.DECIMAL, null, null, 7, 2, null, true, false ), null, null, 5 ),
+                new FieldInformation( "deptno", new ColumnTypeInformation( PolyType.INTEGER, null, null, null, null, null, true, false ), null, null, 6 )
         );
 
         constraints = List.of(
@@ -165,7 +165,7 @@ public class SqlLanguageDependent {
         long id = manager.createNamespace( "customer", DataModel.RELATIONAL, true, false, transaction.createStatement() );
 
         columns = List.of(
-                new FieldInformation( "fname", new ColumnTypeInformation( PolyType.VARCHAR, null, 50, null, null, null, false ), null, null, 0 )
+                new FieldInformation( "fname", new ColumnTypeInformation( PolyType.VARCHAR, null, 50, null, null, null, false, false ), null, null, 0 )
         );
 
         constraints = List.of(

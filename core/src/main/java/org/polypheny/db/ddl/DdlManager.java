@@ -626,6 +626,17 @@ public abstract class DdlManager {
             this.autoIncrement = autoIncrement == null ? false : autoIncrement;
         }
 
+        public ColumnTypeInformation(
+                PolyType type,
+                @Nullable PolyType collectionType,
+                Integer precision,
+                Integer scale,
+                Integer dimension,
+                Integer cardinality,
+                Boolean nullable ) {
+            this(type, collectionType, precision, scale, dimension, cardinality, nullable, false);
+        }
+
 
         public static ColumnTypeInformation fromDataTypeSpec( DataTypeSpec sqlDataType ) {
             return new ColumnTypeInformation(
