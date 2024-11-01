@@ -60,6 +60,7 @@ public class SimpleSqlTest {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( "DROP TABLE IF EXISTS TableA" );
                 statement.executeUpdate( "CREATE TABLE TableA(ID INTEGER NOT NULL AUTO_INCREMENT, YAC INTEGER NOT NULL AUTO_INCREMENT, PRIMARY KEY (ID))" );
                 statement.executeUpdate( "INSERT INTO TableA VALUES (1, 61), (2, 62)" );
                 statement.executeUpdate( "INSERT INTO TableA(YAC) VALUES (63)" );
