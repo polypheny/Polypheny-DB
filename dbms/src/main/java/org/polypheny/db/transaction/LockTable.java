@@ -1,19 +1,3 @@
-/*
- * Copyright 2019-2024 The Polypheny Project
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package org.polypheny.db.transaction;
 
 import java.util.HashMap;
@@ -30,6 +14,7 @@ import org.polypheny.db.util.ByteString;
 public class LockTable {
 
     public static final LockTable INSTANCE = new LockTable();
+    private static final ByteString GLOBAL_ENTRY_ID = ByteString.EMPTY;
 
     private final Map<ByteString, Lock> locks;
     private final Map<ByteString, Queue<Transaction>> waitingQueues;
@@ -37,33 +22,41 @@ public class LockTable {
     private final ReentrantLock lockTable;
     private final Condition waitingCondition;
 
+    private final ReentrantLock schemaLock;
+
+
     private LockTable() {
         locks = new HashMap<>();
         waitingQueues = new HashMap<>();
         this.entriesByTransaction = new HashMap<>();
         lockTable = new ReentrantLock();
         waitingCondition = lockTable.newCondition();
+        schemaLock = new ReentrantLock();
     }
 
-    public void lock( Transaction transaction, LockType lockType, ByteString entryId ) throws InterruptedException {
+    public void lock(Transaction transaction, LockType lockType, ByteString entryId) throws InterruptedException {
         lockTable.lock();
         try {
-            while ( true ) {
-                Lock currentLock = locks.get( entryId );
-                if ( currentLock == null ) {
-                    locks.put( entryId, new Lock( transaction, lockType, entryId ) );
-                    entriesByTransaction.computeIfAbsent( transaction, k -> new HashSet<>() ).add(entryId);
+            while (schemaLock.isLocked()) {
+                waitingCondition.await();
+            }
+
+            while (true) {
+                Lock currentLock = locks.get(entryId);
+                if (currentLock == null) {
+                    locks.put(entryId, new Lock(transaction, lockType, entryId));
+                    entriesByTransaction.computeIfAbsent(transaction, k -> new HashSet<>()).add(entryId);
                     return;
                 }
-                if ( currentLock.getLockType() == LockType.SHARED && lockType == LockType.SHARED ) {
-                    currentLock.getOwners().add( transaction );
-                    entriesByTransaction.computeIfAbsent( transaction, k -> new HashSet<>() ).add(entryId);
+                if (currentLock.getLockType() == LockType.SHARED && lockType == LockType.SHARED) {
+                    currentLock.getOwners().add(transaction);
+                    entriesByTransaction.computeIfAbsent(transaction, k -> new HashSet<>()).add(entryId);
                     return;
                 }
-                if ( currentLock.getOwners().contains( transaction ) && currentLock.getLockType() == lockType ) {
+                if (currentLock.getOwners().contains(transaction) && currentLock.getLockType() == lockType) {
                     return;
                 }
-                waitingQueues.computeIfAbsent( entryId, k -> new LinkedList<>() ).add( transaction );
+                waitingQueues.computeIfAbsent(entryId, k -> new LinkedList<>()).add(transaction);
                 waitingCondition.await();
             }
         } finally {
@@ -71,36 +64,50 @@ public class LockTable {
         }
     }
 
+    public void lockAll(Transaction transaction) {
+        schemaLock.lock();
+        try {
+            // Acquire global schema lock
+            entriesByTransaction.computeIfAbsent(transaction, k -> new HashSet<>()).add(GLOBAL_ENTRY_ID);
+        } catch (Exception e) {
+            schemaLock.unlock(); // Ensure unlock in case of failure
+            throw e;
+        }
+    }
+
     public void unlockAll(Transaction transaction) {
         lockTable.lock();
         try {
-            Set<ByteString> entries = entriesByTransaction.get( transaction );
+            Set<ByteString> entries = entriesByTransaction.get(transaction);
             if (entries == null) {
                 return;
             }
-            entries.forEach( entryId -> unlockUnsave( transaction, entryId ) );
-            entriesByTransaction.remove( transaction );
+            entries.forEach(entryId -> unlockUnsave(transaction, entryId));
+            entriesByTransaction.remove(transaction);
+            if (entries.contains(GLOBAL_ENTRY_ID)) {
+                schemaLock.unlock();
+            }
         } finally {
             lockTable.unlock();
         }
     }
 
-    private void unlockUnsave( Transaction transaction, ByteString entryId ) {
-            Lock currentLock = locks.get( entryId );
-            if ( currentLock == null ) {
-                return;
-            }
-            if ( currentLock.getOwners().remove( transaction) ) {
-                locks.remove( entryId );
-                removeLockIfNoOwnerUnsave( currentLock, entryId );
-            }
+    private void unlockUnsave(Transaction transaction, ByteString entryId) {
+        Lock currentLock = locks.get(entryId);
+        if (currentLock == null) {
+            return;
+        }
+        if (currentLock.getOwners().remove(transaction)) {
+            locks.remove(entryId);
+            removeLockIfNoOwnerUnsave(currentLock, entryId);
+        }
     }
 
     private void removeLockIfNoOwnerUnsave(Lock lock, ByteString entryId) {
         if (!lock.getOwners().isEmpty()) {
             return;
         }
-        locks.remove( entryId );
+        locks.remove(entryId);
         waitingCondition.signalAll();
     }
 }
