@@ -555,6 +555,12 @@ public abstract class AbstractAlgNode implements AlgNode {
 
 
     @Override
+    public boolean isDataModifying() {
+        return true;
+    }
+
+
+    @Override
     public void replaceCluster( AlgCluster cluster ) {
         for ( AlgNode input : getInputs() ) {
             input.replaceCluster( cluster );

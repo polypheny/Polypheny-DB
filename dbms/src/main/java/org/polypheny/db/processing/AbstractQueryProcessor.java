@@ -136,10 +136,11 @@ import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.Program;
 import org.polypheny.db.tools.Programs;
 import org.polypheny.db.tools.RoutedAlgBuilder;
-import org.polypheny.db.transaction.EntityAccessMap;
-import org.polypheny.db.transaction.Lock.LockMode;
-import org.polypheny.db.transaction.LockManager;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.locking.AlgEntityScanner;
+import org.polypheny.db.transaction.locking.Lockable.LockType;
+import org.polypheny.db.transaction.locking.LockablesRegistry;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.type.entity.PolyValue;
@@ -158,6 +159,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     protected static final boolean ENABLE_MODEL_TRAIT = true;
     protected static final boolean CONSTANT_REDUCTION = false;
     protected static final boolean ENABLE_STREAM = true;
+
     private final Statement statement;
 
 
@@ -308,6 +310,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
         // Analyze query, get logical partitions, queryId and initialize monitoring
         LogicalQueryInformation logicalQueryInformation = this.analyzeQueryAndPrepareMonitoring( statement, logicalRoot, isAnalyze, isSubQuery );
+        lock &= !logicalQueryInformation.getAccessedPartitions().isEmpty();
 
         if ( isAnalyze ) {
             statement.getProcessingDuration().stop( "Analyze" );
@@ -344,7 +347,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             }
 
             if ( lock ) {
-                this.acquireLock( isAnalyze, logicalRoot, logicalQueryInformation.getAccessedPartitions() );
+                this.acquireLocks( logicalRoot );
             }
 
             // Index Update
@@ -603,18 +606,18 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     }
 
 
-    private void acquireLock( boolean isAnalyze, AlgRoot logicalRoot, Map<Long, List<Long>> accessedPartitions ) {
-        if ( accessedPartitions.isEmpty() ) { // TODO: Does this happen for create table?
-            // Do not acquire any locks if nothing is accessed
-            return;
-        }
-        // Locking
-
-        // Get locks for individual entities
-        EntityAccessMap accessMap = new EntityAccessMap( logicalRoot.alg, accessedPartitions );
-        // Get a shared global schema lock (only DDLs acquire an exclusive global schema lock)
-
-        LockManager.INSTANCE.lock( accessMap.getNeededLock(), statement.getTransaction() );
+    private void acquireLocks( AlgRoot logicalRoot ) {
+        AlgEntityScanner entityScanner = new AlgEntityScanner();
+        AlgOptUtil.go( entityScanner, logicalRoot.alg );
+        Transaction transaction = statement.getTransaction();
+        entityScanner.getResult().forEach( ( k, v ) -> {
+            try {
+                transaction.acquireLockable( k, v );
+            } catch ( DeadlockException e ) {
+                throw new RuntimeException( e );
+            }
+        } );
+        // TODO: Differentiate DDLs from others. Q: Do DDLs event call this method? A: No.
     }
 
 
@@ -1430,20 +1433,14 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     }
 
 
-    @Override
-    public void unlock( Statement statement ) {
-        LockManager.INSTANCE.unlock( statement.getTransaction() );
-    }
-
-
     /**
      * To acquire a global shared lock for a statement.
      * This method is used before the statistics are updated to make sure nothing changes during the updating process.
      */
     @Override
-    public void lock( Statement statement ) {
+    public void lock( Transaction transaction ) {
         try {
-            LockManager.INSTANCE.lock( LockMode.SHARED, statement.getTransaction() );
+            transaction.acquireLockable( LockablesRegistry.GLOBAL_SCHEMA_LOCKABLE, LockType.SHARED );
         } catch ( DeadlockException e ) {
             throw new GenericRuntimeException( "DeadLock while locking to reevaluate statistics", e );
         }

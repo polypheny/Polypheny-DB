@@ -51,4 +51,9 @@ public class DocumentUnwind extends SingleAlg implements DocumentAlg {
         return DocType.UNWIND;
     }
 
+    @Override
+    public boolean isDataModifying() {
+        return false;
+    }
+
 }

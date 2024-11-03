@@ -70,4 +70,9 @@ public abstract class LpgFilter extends SingleAlg implements LpgAlg {
 
     protected abstract AlgNode copy( AlgTraitSet traitSet, AlgNode input, RexNode condition );
 
+    @Override
+    public boolean isDataModifying() {
+        return false;
+    }
+
 }

@@ -47,4 +47,9 @@ public abstract class Scan<E extends Entity> extends AbstractAlgNode {
         return true;
     }
 
+    @Override
+    public boolean isDataModifying() {
+        return false;
+    }
+
 }
