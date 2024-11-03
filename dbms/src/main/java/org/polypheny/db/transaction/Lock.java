@@ -16,149 +16,31 @@
 
 package org.polypheny.db.transaction;
 
+import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.ReentrantLock;
-import java.util.stream.Collectors;
 import lombok.Getter;
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.transaction.Transaction.AccessMode;
+import org.polypheny.db.util.ByteString;
 
-
-// Based on code taken from https://github.com/dstibrany/LockManager
 public class Lock {
 
-    @Getter
-    private final Set<TransactionImpl> owners = new CopyOnWriteArraySet<>();
-    private final ReentrantLock lock = new ReentrantLock( true );
-    private final Condition waiters = lock.newCondition();
-    private final WaitForGraph waitForGraph;
-    private int xLockCount = 0;
-    private int sLockCount = 0;
-
-
-    Lock( WaitForGraph waitForGraph ) {
-        this.waitForGraph = waitForGraph;
-    }
-
-
-    void acquire( TransactionImpl txn, LockMode lockMode ) throws InterruptedException {
-        if ( lockMode == LockMode.SHARED ) {
-            acquireSLock( txn );
-            txn.updateAccessMode( AccessMode.READ_ACCESS );
-        } else if ( lockMode == LockMode.EXCLUSIVE ) {
-            acquireXLock( txn );
-            txn.updateAccessMode( AccessMode.WRITE_ACCESS );
-        } else {
-            throw new GenericRuntimeException( "Lock mode does not exist" );
-        }
-    }
-
-
-    void release( TransactionImpl txn ) {
-        lock.lock();
-        try {
-            if ( sLockCount > 0 ) {
-                sLockCount--;
-            }
-            if ( xLockCount == 1 ) {
-                xLockCount = 0;
-            }
-
-            owners.remove( txn );
-            waitForGraph.remove( txn );
-
-            waiters.signalAll();
-        } finally {
-            lock.unlock();
-        }
-    }
-
-
-    void upgrade( TransactionImpl txn ) throws InterruptedException {
-        lock.lock();
-        try {
-            if ( owners.contains( txn ) && isXLocked() ) {
-                return;
-            }
-            while ( isXLocked() || sLockCount > 1 ) {
-                Set<TransactionImpl> ownersWithSelfRemoved = owners.stream().filter( ownerTxn -> !ownerTxn.equals( txn ) ).collect( Collectors.toSet() );
-                waitForGraph.add( txn, ownersWithSelfRemoved );
-                waitForGraph.detectDeadlock( txn );
-                waiters.await();
-            }
-            sLockCount = 0;
-            xLockCount = 1;
-        } finally {
-            lock.unlock();
-        }
-    }
-
-
-    LockMode getMode() {
-        LockMode lockMode = null;
-        lock.lock();
-
-        try {
-            if ( isXLocked() ) {
-                lockMode = LockMode.EXCLUSIVE;
-            } else if ( isSLocked() ) {
-                lockMode = LockMode.SHARED;
-            }
-        } finally {
-            lock.unlock();
-        }
-
-        return lockMode;
-    }
-
-
-    private void acquireSLock( TransactionImpl txn ) throws InterruptedException {
-        lock.lock();
-        try {
-            while ( isXLocked() || lock.hasWaiters( waiters ) ) {
-                waitForGraph.add( txn, owners );
-                waitForGraph.detectDeadlock( txn );
-                waiters.await();
-            }
-            sLockCount++;
-            owners.add( txn );
-        } finally {
-            lock.unlock();
-        }
-    }
-
-
-    private void acquireXLock( TransactionImpl txn ) throws InterruptedException {
-        lock.lock();
-        try {
-            while ( isXLocked() || isSLocked() ) {
-                waitForGraph.add( txn, owners );
-                waitForGraph.detectDeadlock( txn );
-                waiters.await();
-            }
-            xLockCount = 1;
-            owners.add( txn );
-        } finally {
-            lock.unlock();
-        }
-    }
-
-
-    private boolean isXLocked() {
-        return xLockCount == 1;
-    }
-
-
-    private boolean isSLocked() {
-        return sLockCount > 0;
-    }
-
-
-    public enum LockMode {
+    public enum LockType {
         SHARED,
         EXCLUSIVE
+    }
+
+
+    @Getter
+    private Set<Transaction> owners;
+    @Getter
+    private LockType lockType;
+    private ByteString entryId;
+
+
+    public Lock( Transaction owner, LockType lockType, ByteString entryId ) {
+        this.owners = new HashSet<>();
+        this.owners.add( owner );
+        this.lockType = lockType;
+        this.entryId = entryId;
     }
 
 }
