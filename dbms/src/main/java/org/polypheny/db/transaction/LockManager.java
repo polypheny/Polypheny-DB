@@ -27,11 +27,10 @@ import java.util.concurrent.locks.ReentrantLock;
 import javax.transaction.xa.Xid;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.transaction.Lock.LockMode;
+import org.polypheny.db.transaction.Lock.LockType;
 import org.polypheny.db.util.DeadlockException;
 
 @Slf4j
@@ -49,32 +48,13 @@ public class LockManager {
     private LockManager() {
     }
 
-
-    public void lock( LockRequest lockRequest ) {
-        throw new NotImplementedException();
-    }
-
-    public void unlock( LockRequest lockRequest ) {
-        throw new NotImplementedException();
-
-    }
-
-    public void lock(List<LockRequest> lockRequest ) {
-        lockRequest.forEach( this::lock );
-    }
-
-    public void unlock( List<LockRequest> lockRequest ) {
-        lockRequest.forEach( this::unlock );
-    }
-
-
-    public void lock( LockMode mode, @NonNull Transaction transaction ) throws DeadlockException {
+    public void lock( LockType mode, @NonNull Transaction transaction ) throws DeadlockException {
         // Decide on which locking approach to focus
         synchronized ( this ) {
             if ( owners.isEmpty() ) {
                 handleLockOrThrow( mode, transaction );
                 return;
-            } else if ( owners.contains( transaction.getXid() ) && (mode == LockMode.SHARED || isExclusive) ) {
+            } else if ( owners.contains( transaction.getXid() ) && (mode == LockType.SHARED || isExclusive) ) {
                 log.debug( "already locked {}", transaction.getXid() );
                 // already have the required lock
                 return;
@@ -121,10 +101,10 @@ public class LockManager {
                     signalAll();
 
                     return;
-                } else if ( owners.contains( transaction.getXid() ) && mode == LockMode.EXCLUSIVE
+                } else if ( owners.contains( transaction.getXid() ) && mode == LockType.EXCLUSIVE
                         && owners.size() <= waiters.size()
                         // trx is owner and wants to upgrade, other transaction has the same -> deadlock
-                        && waiters.stream().filter( w -> w.xid() != transaction.getXid() ).anyMatch( w -> owners.contains( w.xid() ) && w.mode() == LockMode.EXCLUSIVE ) ) {
+                        && waiters.stream().filter( w -> w.xid() != transaction.getXid() ).anyMatch( w -> owners.contains( w.xid() ) && w.mode() == LockType.EXCLUSIVE ) ) {
                     cleanupWaiters( thread );
                     // we have to interrupt one transaction, all want to upgrade
                     throw new DeadlockException( "Write-write conflict with multiple transactions." );
@@ -174,15 +154,15 @@ public class LockManager {
     }
 
 
-    private void handleLockOrThrow( LockMode mode, @NotNull Transaction transaction ) {
+    private void handleLockOrThrow( LockType mode, @NotNull Transaction transaction ) {
         if ( !handleSimpleLock( mode, transaction ) ) {
             throw new GenericRuntimeException( "Could not acquire lock, as single transaction" );
         }
     }
 
 
-    private synchronized boolean handleSimpleLock( @NonNull LockMode mode, Transaction transaction ) {
-        if ( mode == LockMode.EXCLUSIVE ) {
+    private synchronized boolean handleSimpleLock( @NonNull LockType mode, Transaction transaction ) {
+        if ( mode == LockType.EXCLUSIVE ) {
             // get w
             if ( owners.isEmpty() || (owners.size() == 1 && owners.contains( transaction.getXid() )) ) {
                 if ( isExclusive ) {
@@ -245,7 +225,7 @@ public class LockManager {
     }
 
 
-    private record OldLockInformation( Thread thread, LockMode mode, PolyXid xid ) {
+    private record OldLockInformation( Thread thread, LockType mode, PolyXid xid ) {
 
     }
 

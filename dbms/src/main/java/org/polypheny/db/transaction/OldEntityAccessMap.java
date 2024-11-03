@@ -45,7 +45,7 @@ import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.plan.AlgOptUtil;
-import org.polypheny.db.transaction.Lock.LockMode;
+import org.polypheny.db.transaction.Lock.LockType;
 import org.polypheny.db.transaction.OldEntityAccessMap.EntityIdentifier.NamespaceLevel;
 
 
@@ -83,7 +83,7 @@ public class OldEntityAccessMap {
 
 
     private final Map<EntityIdentifier, Mode> accessMap;
-    private final Map<EntityIdentifier, LockMode> accessLockMap;
+    private final Map<EntityIdentifier, LockType> accessLockMap;
 
     private final Map<Long, List<Long>> accessedPartitions;
 
@@ -108,15 +108,15 @@ public class OldEntityAccessMap {
 
 
     @NotNull
-    private Map<EntityIdentifier, LockMode> evaluateAccessLockMap() {
+    private Map<EntityIdentifier, LockType> evaluateAccessLockMap() {
         return accessMap.entrySet()
                 .stream()
                 .filter( e -> Arrays.asList( Mode.READ_ACCESS, Mode.WRITE_ACCESS, Mode.READWRITE_ACCESS ).contains( e.getValue() ) )
                 .collect( Collectors.toMap( Entry::getKey, e -> {
                     if ( e.getValue() == Mode.READ_ACCESS ) {
-                        return LockMode.SHARED;
+                        return LockType.SHARED;
                     } else if ( e.getValue() == Mode.WRITE_ACCESS || e.getValue() == Mode.READWRITE_ACCESS ) {
-                        return LockMode.EXCLUSIVE;
+                        return LockType.EXCLUSIVE;
                     } else {
                         throw new GenericRuntimeException( "LockMode not possible." );
                     }
@@ -124,8 +124,8 @@ public class OldEntityAccessMap {
     }
 
 
-    public LockMode getNeededLock() {
-        return accessLockMap.values().stream().anyMatch( l -> l == LockMode.EXCLUSIVE ) ? LockMode.EXCLUSIVE : LockMode.SHARED;
+    public LockType getNeededLock() {
+        return accessLockMap.values().stream().anyMatch( l -> l == LockType.EXCLUSIVE ) ? LockType.EXCLUSIVE : LockType.SHARED;
     }
 
 

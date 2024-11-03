@@ -138,8 +138,8 @@ import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.Program;
 import org.polypheny.db.tools.Programs;
 import org.polypheny.db.tools.RoutedAlgBuilder;
+import org.polypheny.db.transaction.Lock.LockType;
 import org.polypheny.db.transaction.OldEntityAccessMap;
-import org.polypheny.db.transaction.Lock.LockMode;
 import org.polypheny.db.transaction.LockManager;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyType;
@@ -1493,7 +1493,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     @Override
     public void lock( Statement statement ) {
         try {
-            LockManager.INSTANCE.lock( LockMode.SHARED, statement.getTransaction() );
+            LockManager.INSTANCE.lock( LockType.SHARED, statement.getTransaction() );
         } catch ( DeadlockException e ) {
             throw new GenericRuntimeException( "DeadLock while locking to reevaluate statistics", e );
         }
