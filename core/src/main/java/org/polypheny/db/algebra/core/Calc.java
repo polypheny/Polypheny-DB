@@ -170,6 +170,11 @@ public abstract class Calc extends SingleAlg {
                 (program != null ? program.toString() : "") + "&";
     }
 
+    @Override
+    public boolean isDataModifying() {
+        return false;
+    }
+
 
     public static RexProgram getProgramFromArgs( PolyAlgArgs args, AlgNode input, RexBuilder b ) {
         List<RexNode> exprs = args.getListArg( "exprs", RexArg.class ).map( RexArg::getNode );
