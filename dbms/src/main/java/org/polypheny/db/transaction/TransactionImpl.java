@@ -17,10 +17,12 @@
 package org.polypheny.db.transaction;
 
 
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -51,7 +53,6 @@ import org.polypheny.db.catalog.entity.LogicalUser;
 import org.polypheny.db.catalog.entity.logical.LogicalKey.EnforcementTime;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.catalog.util.ConstraintCondition;
 import org.polypheny.db.config.RuntimeConfig;
@@ -65,7 +66,9 @@ import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.processing.DataMigratorImpl;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.processing.QueryProcessor;
+import org.polypheny.db.transaction.locking.Lockable;
 import org.polypheny.db.type.entity.category.PolyNumber;
+import org.polypheny.db.util.DeadlockException;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.view.MaterializedViewManager;
 
@@ -127,6 +130,9 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     private final Collection<Runnable> commitActions = new ConcurrentLinkedDeque<>();
 
     private final Collection<ConstraintCondition> commitConstraints = new ConcurrentLinkedDeque<>();
+
+    @Getter
+    private Set<Lockable> lockedEntities = new HashSet<>();
 
 
     TransactionImpl(
@@ -263,7 +269,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
         statements.forEach( Statement::close );
 
         // Release locks
-        LockManager.INSTANCE.removeTransaction( this );
+        releaseAllLocks();
         // Remove transaction
         transactionManager.removeTransaction( xid );
 
@@ -300,7 +306,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
             } );
         } finally {
             // Release locks
-            LockManager.INSTANCE.removeTransaction( this );
+            releaseAllLocks();
             // Remove transaction
             transactionManager.removeTransaction( xid );
         }
@@ -397,76 +403,33 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
 
     @Override
-    public void removeNewConstraint( long entityId, LogicalConstraint constraint ) {
-        List<LogicalConstraint> constraints = this.entityConstraints.get( entityId );
-        constraints.remove( constraint );
-        this.entityConstraints.put( entityId, constraints );
-    }
-
-
-    /**
-     * Used to specify if a TX was started using freshness tolerance levels and
-     * therefore allows the usage of outdated replicas.
-     * <p>
-     * If this is active no DML operations are possible for this TX.
-     * If however a DML operation was already executed by this TX.
-     * This TX can now support no more freshness-related queries.
-     */
-    @Override
-    public void setAcceptsOutdated( boolean acceptsOutdated ) {
-        this.acceptsOutdated = acceptsOutdated;
-    }
-
-
-    @Override
-    public boolean acceptsOutdated() {
-        return this.acceptsOutdated;
-    }
-
-
-    @Override
-    public AccessMode getAccessMode() {
-        return accessMode;
-    }
-
-
-    @Override
-    public void updateAccessMode( AccessMode accessModeCandidate ) {
-
-        // If TX is already in RW access we can skip immediately
-        if ( this.accessMode.equals( AccessMode.READWRITE_ACCESS ) || this.accessMode.equals( accessModeCandidate ) ) {
-            return;
-        }
-
-        switch ( accessModeCandidate ) {
-            case WRITE_ACCESS:
-                if ( this.accessMode.equals( AccessMode.READ_ACCESS ) ) {
-                    accessModeCandidate = AccessMode.READWRITE_ACCESS;
-                }
-                break;
-
-            case READ_ACCESS:
-                if ( this.accessMode.equals( AccessMode.WRITE_ACCESS ) ) {
-                    accessModeCandidate = AccessMode.READWRITE_ACCESS;
-                }
-                break;
-
-            case NO_ACCESS:
-                throw new GenericRuntimeException( "Not possible to reset the access mode to NO_ACCESS" );
-        }
-
-        // If nothing else has matched so far. It's safe to simply use the input
-        this.accessMode = accessModeCandidate;
-    }
-
-
-    @Override
     public List<LogicalConstraint> getUsedConstraints( long id ) {
         return this.entityConstraints.getOrDefault( id, List.of() );
     }
 
 
-    void abort() {
+    @Override
+    public void releaseAllLocks() {
+        lockedEntities.forEach( lockedEntity -> {
+            try {
+                lockedEntity.release( this );
+            } catch ( Exception e ) {
+                // TODO TH: introduce proper exception type here. Or wrap in release method of lockable
+                throw new DeadlockException( MessageFormat.format( "Failed to release lock for transaction {0}", this ) );
+            }
+        } );
+    }
+
+
+    @Override
+    public void acquireLockable( Lockable lockable, Lockable.LockType lockType ) {
+        lockable.acquire( this, lockType );
+        lockedEntities.add( lockable );
+    }
+
+
+    @Override
+    public void wakeup() {
         Thread.currentThread().interrupt();
     }
 

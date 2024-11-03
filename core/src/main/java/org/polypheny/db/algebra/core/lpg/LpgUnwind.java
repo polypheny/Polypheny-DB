@@ -94,4 +94,9 @@ public abstract class LpgUnwind extends SingleAlg implements LpgAlg {
         return NodeType.UNWIND;
     }
 
+    @Override
+    public boolean isDataModifying() {
+        return false;
+    }
+
 }

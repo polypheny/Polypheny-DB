@@ -95,4 +95,10 @@ public abstract class LpgAggregate extends SingleAlg implements LpgAlg {
         return builder.build();
     }
 
+
+    @Override
+    public boolean isDataModifying() {
+        return false;
+    }
+
 }
