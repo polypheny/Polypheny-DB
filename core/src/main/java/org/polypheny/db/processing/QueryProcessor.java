@@ -22,6 +22,7 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.Transaction;
 
 
 public interface QueryProcessor {
@@ -95,9 +96,6 @@ public interface QueryProcessor {
      */
     void lock( Statement statement );
 
-    /**
-     * Unlocks statement
-     */
-    void unlock( Statement statement );
+    void lock( Transaction transaction );
 
 }

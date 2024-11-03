@@ -109,4 +109,10 @@ public abstract class LpgMatch extends SingleAlg implements LpgAlg {
         return args;
     }
 
+
+    @Override
+    public boolean isDataModifying() {
+        return false;
+    }
+
 }

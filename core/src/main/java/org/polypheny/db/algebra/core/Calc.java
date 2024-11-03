@@ -198,4 +198,10 @@ public abstract class Calc extends SingleAlg {
         return args;
     }
 
+
+    @Override
+    public boolean isDataModifying() {
+        return false;
+    }
+
 }

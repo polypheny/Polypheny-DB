@@ -122,9 +122,6 @@ public class StatisticQueryProcessor {
             transaction.commit();
         } catch ( TransactionException e ) {
             transaction.rollback( "Caught exception while executing a query from the console. " + e );
-        } finally {
-            // Release lock
-            statement.getQueryProcessor().unlock( statement );
         }
     }
 
