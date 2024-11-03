@@ -167,4 +167,10 @@ public abstract class Filter extends SingleAlg {
         return args.put( 0, new RexArg( condition ) );
     }
 
+
+    @Override
+    public boolean isDataModifying() {
+        return false;
+    }
+
 }

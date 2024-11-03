@@ -227,5 +227,11 @@ public abstract class Values extends AbstractAlgNode {
         return args;
     }
 
+
+    @Override
+    public boolean isDataModifying() {
+        return false;
+    }
+
 }
 

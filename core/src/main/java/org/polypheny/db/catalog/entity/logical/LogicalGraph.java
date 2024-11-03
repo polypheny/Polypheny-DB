@@ -28,6 +28,7 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
+import org.polypheny.db.transaction.locking.Lockable;
 import org.polypheny.db.type.entity.PolyString;
 
 @EqualsAndHashCode(callSuper = true)
@@ -63,6 +64,12 @@ public class LogicalGraph extends LogicalEntity {
     }
 
 
+    @Override
+    public ObjectType getObjectType() {
+        return ObjectType.ENTITY;
+    }
+
+
     public static class SubstitutionGraph extends LogicalGraph {
 
         @Serial
@@ -76,6 +83,8 @@ public class LogicalGraph extends LogicalEntity {
         }
 
     }
+
+
 
 
 }

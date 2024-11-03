@@ -170,4 +170,9 @@ public class Uncollect extends SingleAlg {
         return builder.build();
     }
 
+    @Override
+    public boolean isDataModifying() {
+        return false;
+    }
+
 }

@@ -167,5 +167,11 @@ public class EnumerableLimit extends SingleAlg implements EnumerableAlg {
                 .put( "offset", new RexArg( offset ) );
     }
 
+
+    @Override
+    public boolean isDataModifying() {
+        return false;
+    }
+
 }
 
