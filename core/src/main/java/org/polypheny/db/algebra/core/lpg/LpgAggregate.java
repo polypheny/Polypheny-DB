@@ -80,4 +80,9 @@ public abstract class LpgAggregate extends SingleAlg implements LpgAlg {
         return NodeType.AGGREGATE;
     }
 
+    @Override
+    public boolean isDataModifying() {
+        return false;
+    }
+
 }

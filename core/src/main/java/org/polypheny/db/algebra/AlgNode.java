@@ -268,6 +268,16 @@ public interface AlgNode extends AlgOptNode, Cloneable {
      */
     Entity getEntity();
 
+
+    /**
+     * If this relational expression represents an access to a table, returns wether the access modifies any data in that table.
+     * If this relational expression does not represent an access this returns false.
+     *
+     * @return If this relational expression represents an access to a table, returns wether the access modifies any data in that table.
+     */
+    boolean isDataModifying();
+
+
     /**
      * Returns the name of this relational expression's class, sans package name, for use in explain. For example, for a
      * <code> org.polypheny.db.alg.ArrayRel.ArrayReader</code>, this method returns "ArrayReader".

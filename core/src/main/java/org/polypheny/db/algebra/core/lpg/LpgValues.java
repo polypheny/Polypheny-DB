@@ -63,4 +63,9 @@ public abstract class LpgValues extends AbstractAlgNode implements LpgAlg {
                 + values.hashCode() + "&";
     }
 
+    @Override
+    public boolean isDataModifying() {
+        return false;
+    }
+
 }

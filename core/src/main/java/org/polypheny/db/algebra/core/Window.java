@@ -425,5 +425,10 @@ public abstract class Window extends SingleAlg {
 
     }
 
+    @Override
+    public boolean isDataModifying() {
+        return false;
+    }
+
 }
 

@@ -214,7 +214,6 @@ public class StatisticsManagerImpl extends StatisticsManager {
             log.debug( "Finished resetting StatisticManager." );
             statisticQueryInterface.commitTransaction( transaction, statement );
         } catch ( Exception e ) {
-            statement.getQueryProcessor().unlock( statement );
             statement.getTransaction().rollback( e.getMessage() );
         }
     }
@@ -237,7 +236,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
 
 
     /**
-     * Gets a columns of a table and reevaluates them.
+     * Gets the columns of a table and reevaluates them.
      *
      * @param entityId id of table
      */
@@ -245,19 +244,13 @@ public class StatisticsManagerImpl extends StatisticsManager {
     public void reevaluateEntity( long entityId ) {
         transaction = getTransaction();
         statement = transaction.createStatement();
-        statement.getQueryProcessor().lock( statement );
+        statement.getQueryProcessor().lock( transaction );
 
         if ( statisticQueryInterface == null ) {
+            statement.getTransaction().releaseAllLocks(); // this is ok to do as a new transaction is created on every call to this method.
             return;
         }
         statisticQueryInterface.commitTransaction( transaction, statement );
-    }
-
-
-    private void deleteTable( LogicalTable table ) {
-        for ( long columnId : table.getColumnIds() ) {
-            this.statisticFields.remove( columnId );
-        }
     }
 
 
