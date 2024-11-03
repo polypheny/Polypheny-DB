@@ -138,7 +138,7 @@ import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.Program;
 import org.polypheny.db.tools.Programs;
 import org.polypheny.db.tools.RoutedAlgBuilder;
-import org.polypheny.db.transaction.EntityAccessMap;
+import org.polypheny.db.transaction.OldEntityAccessMap;
 import org.polypheny.db.transaction.Lock.LockMode;
 import org.polypheny.db.transaction.LockManager;
 import org.polypheny.db.transaction.Statement;
@@ -553,14 +553,13 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
 
     private void acquireLock( boolean isAnalyze, AlgRoot logicalRoot, Map<Long, List<Long>> accessedPartitions ) {
-        if ( accessedPartitions.isEmpty() ) { // TODO: Does this happen for create table?
-            // Do not acquire any locks if nothing is accessed
+        if ( accessedPartitions.isEmpty() ) { // TODO: Q: Does this happen for create table? A: Create table does not enter this method
             return;
         }
         // Locking
 
         // Get locks for individual entities
-        EntityAccessMap accessMap = new EntityAccessMap( logicalRoot.alg, accessedPartitions );
+        OldEntityAccessMap accessMap = new OldEntityAccessMap( logicalRoot.alg, accessedPartitions );
         // Get a shared global schema lock (only DDLs acquire an exclusive global schema lock)
 
         LockManager.INSTANCE.lock( accessMap.getNeededLock(), statement.getTransaction() );
