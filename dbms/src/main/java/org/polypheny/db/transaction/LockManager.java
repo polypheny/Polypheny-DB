@@ -27,6 +27,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import javax.transaction.xa.Xid;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
@@ -40,12 +41,30 @@ public class LockManager {
 
     private boolean isExclusive = false;
     private final Set<Xid> owners = new HashSet<>();
-    private final ConcurrentLinkedQueue<LockInformation> waiters = new ConcurrentLinkedQueue<>();
+    private final ConcurrentLinkedQueue<OldLockInformation> waiters = new ConcurrentLinkedQueue<>();
     private final ReentrantLock lock = new ReentrantLock();
     private final Condition condition = lock.newCondition();
 
 
     private LockManager() {
+    }
+
+
+    public void lock( LockRequest lockRequest ) {
+        throw new NotImplementedException();
+    }
+
+    public void unlock( LockRequest lockRequest ) {
+        throw new NotImplementedException();
+
+    }
+
+    public void lock(List<LockRequest> lockRequest ) {
+        lockRequest.forEach( this::lock );
+    }
+
+    public void unlock( List<LockRequest> lockRequest ) {
+        lockRequest.forEach( this::unlock );
     }
 
 
@@ -64,7 +83,7 @@ public class LockManager {
         Thread thread = Thread.currentThread();
 
         synchronized ( waiters ) {
-            waiters.add( new LockInformation( thread, mode, transaction.getXid() ) );
+            waiters.add( new OldLockInformation( thread, mode, transaction.getXid() ) );
         }
 
         // wait
@@ -132,7 +151,7 @@ public class LockManager {
 
     private void cleanupWaiters( Thread thread ) {
         synchronized ( waiters ) {
-            List<LockInformation> remove = waiters.stream().filter( w -> w.thread() == thread ).toList();
+            List<OldLockInformation> remove = waiters.stream().filter( w -> w.thread() == thread ).toList();
             if ( remove.isEmpty() ) {
                 return;
             }
@@ -144,7 +163,7 @@ public class LockManager {
 
     private void cleanupWaiters( PolyXid xid ) {
         synchronized ( waiters ) {
-            List<LockInformation> remove = waiters.stream().filter( w -> w.xid() == xid ).toList();
+            List<OldLockInformation> remove = waiters.stream().filter( w -> w.xid() == xid ).toList();
             if ( remove.isEmpty() ) {
                 return;
             }
@@ -226,7 +245,7 @@ public class LockManager {
     }
 
 
-    private record LockInformation( Thread thread, LockMode mode, PolyXid xid ) {
+    private record OldLockInformation( Thread thread, LockMode mode, PolyXid xid ) {
 
     }
 

@@ -18,17 +18,13 @@ package org.polypheny.db.transaction;
 
 
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.AlgNode;
@@ -49,15 +45,15 @@ import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.plan.AlgOptUtil;
-import org.polypheny.db.transaction.EntityAccessMap.EntityIdentifier.NamespaceLevel;
 import org.polypheny.db.transaction.Lock.LockMode;
+import org.polypheny.db.transaction.OldEntityAccessMap.EntityIdentifier.NamespaceLevel;
 
 
 /**
- * <code>EntityAccessMap</code> represents the entities accessed by a query plan, with READ/WRITE information.
+ * <code>OldEntityAccessMap</code> represents the entities accessed by a query plan, with READ/WRITE information.
  */
 @Slf4j
-public class EntityAccessMap {
+public class OldEntityAccessMap {
 
 
     /**
@@ -93,46 +89,21 @@ public class EntityAccessMap {
 
 
     /**
-     * Constructs a permanently empty EntityAccessMap.
-     */
-    public EntityAccessMap() {
-        accessMap = Collections.emptyMap();
-        accessLockMap = Collections.emptyMap();
-        accessedPartitions = Collections.emptyMap();
-    }
-
-
-    /**
-     * Constructs a EntityAccessMap for all entities accessed by a {@link AlgNode} and its descendants.
+     * Constructs a OldEntityAccessMap for all entities accessed by a {@link AlgNode} and its descendants.
      *
      * @param alg the {@link AlgNode} for which to build the map
      * @param accessedPartitions entityId to partitions
      */
-    public EntityAccessMap( AlgNode alg, Map<Long, List<Long>> accessedPartitions ) {
+    public OldEntityAccessMap( AlgNode alg, Map<Long, List<Long>> accessedPartitions ) {
         // NOTE: This method must NOT retain a reference to the input alg, because we use it for cached statements, and we
         // don't want to retain any alg references after preparation completes.
         this.accessMap = new HashMap<>();
 
-        //TODO @HENNLO remove this and rather integrate EntityAccessMap directly into Query Processor when DML Partitions can be queried
+        //TODO @HENNLO remove this and rather integrate OldEntityAccessMap directly into Query Processor when DML Partitions can be queried
         this.accessedPartitions = accessedPartitions;
 
         AlgOptUtil.go( new EntityAlgVisitor(), alg );
         this.accessLockMap = evaluateAccessLockMap();
-    }
-
-
-    /**
-     * Constructs a EntityAccessMap for a single entity
-     *
-     * @param entityIdentifier fully qualified name of the entity, represented as a list
-     * @param mode access mode for the entity
-     */
-    public EntityAccessMap( EntityIdentifier entityIdentifier, Mode mode ) {
-        accessMap = new HashMap<>();
-        accessMap.put( entityIdentifier, mode );
-        accessLockMap = evaluateAccessLockMap();
-
-        this.accessedPartitions = new HashMap<>();
     }
 
 
@@ -153,76 +124,8 @@ public class EntityAccessMap {
     }
 
 
-    /**
-     * @return set of qualified names for all accessed entities
-     */
-    public Set<EntityIdentifier> getAccessedEntities() {
-        return accessMap.keySet();
-    }
-
-
-    /**
-     * Return the required lock mode per entity analogously to the entity access mode.
-     *
-     * @return all accessed entities and their lock mode
-     */
-    public Collection<Entry<EntityIdentifier, LockMode>> getAccessedEntityPair() {
-        return accessLockMap.entrySet();
-    }
-
-
     public LockMode getNeededLock() {
         return accessLockMap.values().stream().anyMatch( l -> l == LockMode.EXCLUSIVE ) ? LockMode.EXCLUSIVE : LockMode.SHARED;
-    }
-
-
-    /**
-     * Determines whether an entity is accessed at all.
-     *
-     * @param entityIdentifier qualified name of the entity of interest
-     * @return true if entity is accessed
-     */
-    public boolean isEntityAccessed( EntityIdentifier entityIdentifier ) {
-        return accessMap.containsKey( entityIdentifier );
-    }
-
-
-    /**
-     * Determines whether an entity is accessed for read.
-     *
-     * @param entityIdentifier qualified name of the entity of interest
-     * @return true if entity is accessed for read
-     */
-    public boolean isEntityAccessedForRead( EntityIdentifier entityIdentifier ) {
-        Mode mode = getEntityAccessMode( entityIdentifier );
-        return (mode == Mode.READ_ACCESS) || (mode == Mode.READWRITE_ACCESS);
-    }
-
-
-    /**
-     * Determines whether an Entity is accessed for write.
-     *
-     * @param entityIdentifier qualified name of the Entity of interest
-     * @return true if Entity is accessed for write
-     */
-    public boolean isEntityAccessedForWrite( EntityIdentifier entityIdentifier ) {
-        Mode mode = getEntityAccessMode( entityIdentifier );
-        return (mode == Mode.WRITE_ACCESS) || (mode == Mode.READWRITE_ACCESS);
-    }
-
-
-    /**
-     * Determines the access mode of an entity.
-     *
-     * @param entityIdentifier qualified name of the entity of interest
-     * @return access mode
-     */
-    public Mode getEntityAccessMode( @NonNull EntityAccessMap.EntityIdentifier entityIdentifier ) {
-        Mode mode = accessMap.get( entityIdentifier );
-        if ( mode == null ) {
-            return Mode.NO_ACCESS;
-        }
-        return mode;
     }
 
 
@@ -281,7 +184,7 @@ public class EntityAccessMap {
 
             // TODO @HENNLO Integrate PartitionIds into Entities
             // If entity has no info which partitions are accessed, ergo has no concrete entries in map
-            // assume that all are accessed. --> Add all to AccessMap
+            // assume that all are accessed. --> Add all to EntityList
             List<Long> relevantAllocations;
             if ( accessedPartitions.containsKey( p.getEntity().id ) ) {
                 relevantAllocations = accessedPartitions.get( p.getEntity().id );
