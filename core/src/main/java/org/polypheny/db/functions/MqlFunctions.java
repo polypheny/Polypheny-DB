@@ -884,6 +884,12 @@ public class MqlFunctions {
         if ( input.isDocument() ) {
             PolyDocument inputDocument = input.asDocument();
 
+            if ( inputDocument.keySet().isEmpty() ){
+                // TODO: Should we detect this in each spatial function, and then just return false, if the document
+                //       does not contain the field / document?
+                throw new GenericRuntimeException( "Field selected in query is empty or does not exist." );
+            }
+
             try {
                 // In GeoJSON, WGS84 is assumed by default. This is also the case for MongoDB.
                 return PolyGeometry.fromGeoJson( inputDocument.toJson() );

@@ -113,9 +113,55 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
         compareResults( results );
     }
 
+    @Test
+    public void docGeoWithinGeoJsonTest(){
+        List<DocResult> results;
+        String insertMany = """
+                db.%s.insertMany([
+                    {
+                      name: "GeoJSON [0,0]",
+                      num: 1,
+                      location: {
+                        type: "Point",
+                        coordinates: [0,0]
+                      }
+                    },
+                    {
+                      name: "GeoJSON [1,1]",
+                      num: 2,
+                      location: {
+                        type: "Point",
+                        coordinates: [1,1]
+                      }
+                    },
+                    {
+                      name: "GeoJSON [2,2]",
+                      num: 3,
+                      location: {
+                        type: "Point",
+                        coordinates: [2,2]
+                      }
+                    }
+                ])
+                """;
+        String geoWithinBox = """
+                db.%s.find({
+                    location: {
+                       $geoWithin: {
+                          $box: [
+                            [0,0],
+                            [1,1]
+                          ]
+                       }
+                    }
+                })
+                """;
+        results = runQueries( Arrays.asList( insertMany, geoWithinBox ) );
+        compareResults( results );
+    }
 
     @Test
-    public void docGeoWithinTest() {
+    public void docGeoWithinLegacyCoordinatesTest() {
         List<DocResult> results;
         String insertMany = """
                 db.%s.insertMany([
