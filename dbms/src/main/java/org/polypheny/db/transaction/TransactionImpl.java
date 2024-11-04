@@ -225,7 +225,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
         statements.forEach( Statement::close );
 
         // Release locks
-        LockManager.INSTANCE.removeTransaction( this );
+        LockTable.INSTANCE.unlockAll( this );
         // Remove transaction
         transactionManager.removeTransaction( xid );
 
@@ -263,7 +263,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
             } );
         } finally {
             // Release locks
-            LockManager.INSTANCE.removeTransaction( this );
+            LockTable.INSTANCE.unlockAll( this );
             // Remove transaction
             transactionManager.removeTransaction( xid );
         }
