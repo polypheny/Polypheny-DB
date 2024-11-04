@@ -38,8 +38,8 @@ import org.polypheny.db.processing.Processor;
 import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.tools.AlgBuilder;
-import org.polypheny.db.transaction.Lock.LockMode;
-import org.polypheny.db.transaction.LockManager;
+import org.polypheny.db.transaction.Lock.LockType;
+import org.polypheny.db.transaction.LockTable;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.util.DeadlockException;
@@ -148,13 +148,18 @@ public class MqlProcessor extends Processor {
 
     @Override
     public void unlock( Statement statement ) {
-        LockManager.INSTANCE.unlock( statement.getTransaction() );
+        LockTable.INSTANCE.unlockAll( statement.getTransaction() );
     }
 
 
     @Override
     public void lock( Statement statement ) throws DeadlockException {
-        LockManager.INSTANCE.lock( LockMode.EXCLUSIVE, statement.getTransaction() );
+        // exclusive
+        try {
+            LockTable.INSTANCE.lock( statement.getTransaction(), LockType.EXCLUSIVE, LockTable.GLOBAL_ENTRY_ID );
+        } catch ( InterruptedException e ) {
+            throw new RuntimeException( e );
+        }
     }
 
 

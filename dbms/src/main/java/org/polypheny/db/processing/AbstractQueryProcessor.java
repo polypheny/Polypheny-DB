@@ -138,13 +138,14 @@ import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.Program;
 import org.polypheny.db.tools.Programs;
 import org.polypheny.db.tools.RoutedAlgBuilder;
+import org.polypheny.db.transaction.AlgEntityScanner;
 import org.polypheny.db.transaction.Lock.LockType;
-import org.polypheny.db.transaction.OldEntityAccessMap;
-import org.polypheny.db.transaction.LockManager;
+import org.polypheny.db.transaction.LockTable;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.util.ByteString;
 import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.DeadlockException;
 import org.polypheny.db.util.Pair;
@@ -160,7 +161,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     protected static final boolean ENABLE_MODEL_TRAIT = true;
     protected static final boolean CONSTANT_REDUCTION = false;
     protected static final boolean ENABLE_STREAM = true;
+
     private final Statement statement;
+    private Map<ByteString, LockType> accessMap;
 
     // This map is required to allow plans with multiple physical placements of the same logical table.
     // scanId -> tableId
@@ -172,6 +175,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         if ( !statement.getTransaction().isActive() ) {
             throw new GenericRuntimeException( "Transaction is not active" );
         }
+        this.accessMap = new HashMap<>();
     }
 
 
@@ -310,7 +314,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             }
 
             if ( lock ) {
-                this.acquireLock( isAnalyze, logicalRoot, logicalQueryInformation.getAccessedPartitions() );
+                this.acquireLocks( logicalRoot, logicalQueryInformation.getAccessedPartitions() );
             }
 
             // Index Update
@@ -552,17 +556,26 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     }
 
 
-    private void acquireLock( boolean isAnalyze, AlgRoot logicalRoot, Map<Long, List<Long>> accessedPartitions ) {
+    private void acquireLocks( AlgRoot logicalRoot, Map<Long, List<Long>> accessedPartitions ) {
         if ( accessedPartitions.isEmpty() ) { // TODO: Q: Does this happen for create table? A: Create table does not enter this method
             return;
         }
-        // Locking
 
-        // Get locks for individual entities
-        OldEntityAccessMap accessMap = new OldEntityAccessMap( logicalRoot.alg, accessedPartitions );
+        // get list of all entities to be locked including their lock types
+        AlgEntityScanner entityScanner = new AlgEntityScanner();
+        AlgOptUtil.go( entityScanner, logicalRoot.alg );
+        this.accessMap = entityScanner.getResult();
+        accessMap.forEach( ( k, v ) -> {
+            try {
+                LockTable.INSTANCE.lock( statement.getTransaction(), v, k );
+            } catch ( InterruptedException e ) {
+                throw new RuntimeException( e );
+            }
+        } );
+
         // Get a shared global schema lock (only DDLs acquire an exclusive global schema lock)
-
-        LockManager.INSTANCE.lock( accessMap.getNeededLock(), statement.getTransaction() );
+        // TODO: Differentiate DDLs from others. Q: Do DDLs event call this method?
+        //LockManager.INSTANCE.lock( accessMap.getNeededLock(), statement.getTransaction() );
     }
 
 
@@ -1482,7 +1495,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
     @Override
     public void unlock( Statement statement ) {
-        LockManager.INSTANCE.unlock( statement.getTransaction() );
+        LockTable.INSTANCE.unlockAll( statement.getTransaction() );
     }
 
 
@@ -1493,8 +1506,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     @Override
     public void lock( Statement statement ) {
         try {
-            LockManager.INSTANCE.lock( LockType.SHARED, statement.getTransaction() );
-        } catch ( DeadlockException e ) {
+            // TODO TH: This only needs a shared lock...
+            LockTable.INSTANCE.lock( statement.getTransaction(), LockType.SHARED, LockTable.GLOBAL_ENTRY_ID );
+        } catch ( DeadlockException | InterruptedException e ) {
             throw new GenericRuntimeException( "DeadLock while locking to reevaluate statistics", e );
         }
     }
