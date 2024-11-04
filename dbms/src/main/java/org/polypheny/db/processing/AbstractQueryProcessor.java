@@ -572,10 +572,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 throw new RuntimeException( e );
             }
         } );
-
-        // Get a shared global schema lock (only DDLs acquire an exclusive global schema lock)
-        // TODO: Differentiate DDLs from others. Q: Do DDLs event call this method?
-        //LockManager.INSTANCE.lock( accessMap.getNeededLock(), statement.getTransaction() );
+        // TODO: Differentiate DDLs from others. Q: Do DDLs event call this method? A: No.
     }
 
 
