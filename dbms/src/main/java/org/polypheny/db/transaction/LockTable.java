@@ -14,7 +14,7 @@ import org.polypheny.db.util.ByteString;
 public class LockTable {
 
     public static final LockTable INSTANCE = new LockTable();
-    private static final ByteString GLOBAL_ENTRY_ID = ByteString.EMPTY;
+    public static final ByteString GLOBAL_ENTRY_ID = ByteString.EMPTY;
 
     private final Map<ByteString, Lock> locks;
     private final Map<ByteString, Queue<Transaction>> waitingQueues;
@@ -22,25 +22,17 @@ public class LockTable {
     private final ReentrantLock lockTable;
     private final Condition waitingCondition;
 
-    private final ReentrantLock schemaLock;
-
-
     private LockTable() {
         locks = new HashMap<>();
         waitingQueues = new HashMap<>();
         this.entriesByTransaction = new HashMap<>();
         lockTable = new ReentrantLock();
         waitingCondition = lockTable.newCondition();
-        schemaLock = new ReentrantLock();
     }
 
     public void lock(Transaction transaction, LockType lockType, ByteString entryId) throws InterruptedException {
         lockTable.lock();
         try {
-            while (schemaLock.isLocked()) {
-                waitingCondition.await();
-            }
-
             while (true) {
                 Lock currentLock = locks.get(entryId);
                 if (currentLock == null) {
@@ -64,17 +56,6 @@ public class LockTable {
         }
     }
 
-    public void lockAll(Transaction transaction) {
-        schemaLock.lock();
-        try {
-            // Acquire global schema lock
-            entriesByTransaction.computeIfAbsent(transaction, k -> new HashSet<>()).add(GLOBAL_ENTRY_ID);
-        } catch (Exception e) {
-            schemaLock.unlock(); // Ensure unlock in case of failure
-            throw e;
-        }
-    }
-
     public void unlockAll(Transaction transaction) {
         lockTable.lock();
         try {
@@ -84,9 +65,6 @@ public class LockTable {
             }
             entries.forEach(entryId -> unlockUnsave(transaction, entryId));
             entriesByTransaction.remove(transaction);
-            if (entries.contains(GLOBAL_ENTRY_ID)) {
-                schemaLock.unlock();
-            }
         } finally {
             lockTable.unlock();
         }
