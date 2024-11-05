@@ -35,7 +35,7 @@ public class WaitForGraph {
     private final Lock exclusiveLock = concurrencyLock.readLock();
 
 
-    public void add( Transaction predecessor, Set<Transaction> successors ) {
+    public void addAndAbortIfDeadlock( Transaction predecessor, Set<Transaction> successors ) {
         sharedLock.lock();
         try {
             Set<Transaction> currentSuccessors = adjacencyList.getOrDefault(
@@ -44,6 +44,9 @@ public class WaitForGraph {
             );
             currentSuccessors.addAll( successors );
             adjacencyList.put( predecessor, currentSuccessors );
+            if (isMemberOfCycle( predecessor )) {
+                predecessor.unwrapOrThrow( TransactionImpl.class ).abort();
+            }
         } finally {
             sharedLock.unlock();
         }
@@ -65,7 +68,7 @@ public class WaitForGraph {
     }
 
 
-    public boolean isMemberOfCycle( Transaction transaction ) {
+    private boolean isMemberOfCycle( Transaction transaction ) {
         Set<Transaction> visited = new HashSet<>();
         Set<Transaction> recursionStack = new HashSet<>();
         exclusiveLock.lock();

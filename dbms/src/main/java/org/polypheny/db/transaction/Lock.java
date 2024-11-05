@@ -16,8 +16,11 @@
 
 package org.polypheny.db.transaction;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
 
 public class Lock {
 
@@ -27,82 +30,86 @@ public class Lock {
     }
 
 
-    private static final long EXCLUSIVE_OWNER = -1;
-    private static final long NO_OWNER = 0;
-
     private final ReentrantLock concurrencyLock = new ReentrantLock( true );
     private final Condition concurrencyCondition = concurrencyLock.newCondition();
+    private final Set<Transaction> owners = new HashSet<>();
 
-    private long ownership = 0;
+    private boolean isExclusive = false;
 
 
-    public void acquire( LockType lockType ) throws InterruptedException {
+    public void acquire( Transaction transaction, LockType lockType, WaitForGraph waitForGraph ) throws InterruptedException {
         switch ( lockType ) {
-            case SHARED -> acquireShared();
-            case EXCLUSIVE -> acquireExclusive();
+            case SHARED -> acquireShared( transaction, waitForGraph );
+            case EXCLUSIVE -> acquireExclusive( transaction, waitForGraph );
         }
     }
 
 
-    public void upgradeToExclusive() throws InterruptedException {
+    public void upgradeToExclusive( Transaction transaction, WaitForGraph waitForGraph ) throws InterruptedException {
         concurrencyLock.lock();
         try {
-            if ( ownership == EXCLUSIVE_OWNER ) {
+            if ( isExclusive ) {
                 return;
             }
-            while ( ownership != NO_OWNER ) {
+            while ( !owners.isEmpty() ) {
+                waitForGraph.addAndAbortIfDeadlock(
+                        transaction,
+                        owners.stream().filter( owner -> !owner.equals( transaction ) ).collect( Collectors.toSet()
+                        ) );
                 concurrencyCondition.await();
             }
-            ownership = EXCLUSIVE_OWNER;
+            isExclusive = true;
         } finally {
             concurrencyLock.unlock();
         }
     }
 
 
-    public void release() {
+    public void release( Transaction transaction, WaitForGraph waitForGraph ) throws InterruptedException {
         concurrencyLock.lock();
         try {
-            if ( ownership == EXCLUSIVE_OWNER ) {
-                ownership = NO_OWNER;
+            if ( isExclusive ) {
+                owners.clear();
+                isExclusive = false;
             }
-            if ( ownership != NO_OWNER ) {
-                ownership--;
+            if ( !owners.isEmpty() ) {
+                owners.remove( transaction );
             }
+            waitForGraph.remove( transaction );
             concurrencyCondition.signalAll();
         } finally {
             concurrencyLock.unlock();
         }
     }
 
+
     public LockType getLockType() {
-        if ( ownership == EXCLUSIVE_OWNER ) {
-            return LockType.EXCLUSIVE;
-        }
-        return LockType.SHARED;
+        return isExclusive ? LockType.EXCLUSIVE : LockType.SHARED;
     }
 
 
-    private void acquireShared() throws InterruptedException {
+    private void acquireShared( Transaction transaction, WaitForGraph waitForGraph ) throws InterruptedException {
         concurrencyLock.lock();
         try {
-            while ( ownership == EXCLUSIVE_OWNER || hasWaitingTransactions() ) {
+            while ( isExclusive || hasWaitingTransactions() ) {
+                waitForGraph.addAndAbortIfDeadlock( transaction, owners );
                 concurrencyCondition.await();
             }
-            ownership++;
+            owners.add( transaction );
         } finally {
             concurrencyLock.unlock();
         }
     }
 
 
-    private void acquireExclusive() throws InterruptedException {
+    private void acquireExclusive( Transaction transaction, WaitForGraph waitForGraph ) throws InterruptedException {
         concurrencyLock.lock();
         try {
-            while ( ownership != NO_OWNER ) {
+            while ( !owners.isEmpty() ) {
+                waitForGraph.addAndAbortIfDeadlock( transaction, owners );
                 concurrencyCondition.await();
             }
-            ownership = EXCLUSIVE_OWNER;
+            isExclusive = true;
         } finally {
             concurrencyLock.unlock();
         }
