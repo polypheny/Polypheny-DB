@@ -36,7 +36,7 @@ public class Lock {
     private long ownership = 0;
 
 
-    public void aquire( LockType lockType ) throws InterruptedException {
+    public void acquire( LockType lockType ) throws InterruptedException {
         switch ( lockType ) {
             case SHARED -> acquireShared();
             case EXCLUSIVE -> acquireExclusive();
