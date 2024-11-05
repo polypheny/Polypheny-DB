@@ -135,11 +135,8 @@ public class CypherProcessor extends Processor {
     @Override
     protected void lock( Statement statement ) throws DeadlockException {
         // exclusive
-        try {
-            LockTable.INSTANCE.lock( statement.getTransaction(), LockType.EXCLUSIVE, LockTable.GLOBAL_ENTRY_ID );
-        } catch ( InterruptedException e ) {
-            throw new RuntimeException( e );
-        }
+        LockTable.INSTANCE.lock( statement.getTransaction(), LockType.EXCLUSIVE, LockTable.GLOBAL_LOCK );
+
     }
 
 
