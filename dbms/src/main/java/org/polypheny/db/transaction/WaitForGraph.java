@@ -16,6 +16,7 @@
 
 package org.polypheny.db.transaction;
 
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -28,16 +29,19 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 // Cycle detection improved to return on first cycle containing a specific transaction
 public class WaitForGraph {
 
-    private final ConcurrentMap<TransactionImpl, Set<TransactionImpl>> adjacencyList = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Transaction, Set<Transaction>> adjacencyList = new ConcurrentHashMap<>();
     private final ReentrantReadWriteLock concurrencyLock = new ReentrantReadWriteLock();
     private final Lock sharedLock = concurrencyLock.readLock();
     private final Lock exclusiveLock = concurrencyLock.readLock();
 
 
-    public void add( TransactionImpl predecessor, Set<TransactionImpl> successors ) {
+    public void add( Transaction predecessor, Set<Transaction> successors ) {
         sharedLock.lock();
         try {
-            Set<TransactionImpl> currentSuccessors = adjacencyList.getOrDefault( predecessor, new ConcurrentSkipListSet<>() );
+            Set<Transaction> currentSuccessors = adjacencyList.getOrDefault(
+                    predecessor,
+                    new ConcurrentSkipListSet<>( Comparator.comparingLong( Transaction::getId ) )
+            );
             currentSuccessors.addAll( successors );
             adjacencyList.put( predecessor, currentSuccessors );
         } finally {
@@ -46,7 +50,7 @@ public class WaitForGraph {
     }
 
 
-    public void remove( TransactionImpl transaction ) {
+    public void remove( Transaction transaction ) {
         sharedLock.lock();
         try {
             adjacencyList.remove( transaction );
@@ -61,9 +65,9 @@ public class WaitForGraph {
     }
 
 
-    public boolean isMemberOfCycle( TransactionImpl transaction ) {
-        Set<TransactionImpl> visited = new HashSet<>();
-        Set<TransactionImpl> recursionStack = new HashSet<>();
+    public boolean isMemberOfCycle( Transaction transaction ) {
+        Set<Transaction> visited = new HashSet<>();
+        Set<Transaction> recursionStack = new HashSet<>();
         exclusiveLock.lock();
         try {
             return runDepthFirstSearch( transaction, visited, recursionStack );
@@ -73,7 +77,7 @@ public class WaitForGraph {
     }
 
 
-    private boolean runDepthFirstSearch( TransactionImpl currentTransaction, Set<TransactionImpl> visited, Set<TransactionImpl> recursionStack ) {
+    private boolean runDepthFirstSearch( Transaction currentTransaction, Set<Transaction> visited, Set<Transaction> recursionStack ) {
         if ( recursionStack.contains( currentTransaction ) ) {
             return true;
         }
@@ -82,7 +86,7 @@ public class WaitForGraph {
         }
         visited.add( currentTransaction );
         recursionStack.add( currentTransaction );
-        for ( TransactionImpl neighbor : adjacencyList.get( currentTransaction ) ) {
+        for ( Transaction neighbor : adjacencyList.get( currentTransaction ) ) {
             if ( runDepthFirstSearch( neighbor, visited, recursionStack ) ) {
                 return true;
             }
