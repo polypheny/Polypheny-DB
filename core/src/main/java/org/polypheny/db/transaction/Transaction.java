@@ -32,9 +32,10 @@ import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.processing.Processor;
+import org.polypheny.db.util.Wrapper;
 
 
-public interface Transaction {
+public interface Transaction extends Wrapper {
 
     long getId();
 
