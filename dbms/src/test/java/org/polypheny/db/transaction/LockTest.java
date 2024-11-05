@@ -24,9 +24,22 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 public class LockTest {
+
+    private WaitForGraph waitForGraph;
+    private TransactionImpl transaction1;
+    private TransactionImpl transaction2;
+
+    @BeforeEach
+    public void setup() {
+        waitForGraph = new WaitForGraph();
+        transaction1 = Mockito.mock( TransactionImpl.class );
+        transaction2 = Mockito.mock( TransactionImpl.class );
+    }
 
     @Test
     void testSharedLockMultipleOwners() throws InterruptedException {
@@ -37,7 +50,7 @@ public class LockTest {
 
         executor.execute( () -> {
             try {
-                lock.acquire( Lock.LockType.SHARED );
+                lock.acquire(transaction1, Lock.LockType.SHARED, waitForGraph );
                 results.add( true );
             } catch ( InterruptedException e ) {
                 results.add( false );
@@ -63,10 +76,10 @@ public class LockTest {
 
         executor.execute(() -> {
             try {
-                lock.acquire(Lock.LockType.EXCLUSIVE);
+                lock.acquire(transaction1, Lock.LockType.EXCLUSIVE, waitForGraph);
                 results.add(true);
                 Thread.sleep(1000); // ensure contention
-                lock.release();
+                lock.release(transaction1, waitForGraph);
             } catch (InterruptedException e) {
                 results.add(false);
                 Thread.currentThread().interrupt();
@@ -77,9 +90,9 @@ public class LockTest {
 
         executor.execute(() -> {
             try {
-                lock.acquire(Lock.LockType.EXCLUSIVE);
+                lock.acquire(transaction2, Lock.LockType.EXCLUSIVE, waitForGraph);
                 results.add(true);
-                lock.release();
+                lock.release(transaction2, waitForGraph);
             } catch (InterruptedException e) {
                 results.add(false);
                 Thread.currentThread().interrupt();
@@ -104,10 +117,10 @@ public class LockTest {
 
         executor.execute(() -> {
             try {
-                lock.acquire(Lock.LockType.SHARED);
-                lock.upgradeToExclusive();
+                lock.acquire(transaction1, Lock.LockType.SHARED, waitForGraph);
+                lock.upgradeToExclusive(transaction1, waitForGraph);
                 results.add(lock.getLockType() == Lock.LockType.EXCLUSIVE);
-                lock.release();
+                lock.release(transaction1, waitForGraph);
             } catch (InterruptedException e) {
                 results.add(false);
                 Thread.currentThread().interrupt();
@@ -133,11 +146,11 @@ public class LockTest {
 
         executor.execute(() -> {
             try {
-                lock.acquire(Lock.LockType.EXCLUSIVE);
+                lock.acquire(transaction1, Lock.LockType.EXCLUSIVE, waitForGraph);
                 results.add("EXCLUSIVE_ACQUIRED");
                 secondThreadStartLatch.countDown();
                 Thread.sleep(1000); // ensure contention
-                lock.release();
+                lock.release(transaction1, waitForGraph);
                 results.add("EXCLUSIVE_RELEASED");
             } catch (InterruptedException e) {
                 results.add("EXCLUSIVE_FAILED");
@@ -150,9 +163,9 @@ public class LockTest {
         executor.execute(() -> {
             try {
                 secondThreadStartLatch.await();
-                lock.acquire(Lock.LockType.SHARED);
+                lock.acquire(transaction2, Lock.LockType.SHARED, waitForGraph);
                 results.add("SHARED_ACQUIRED");
-                lock.release();
+                lock.release(transaction2, waitForGraph);
             } catch (InterruptedException e) {
                 results.add("SHARED_FAILED");
                 Thread.currentThread().interrupt();
@@ -180,10 +193,10 @@ public class LockTest {
         executor.execute(() -> {
             try {
 
-                lock.acquire(Lock.LockType.SHARED);
+                lock.acquire(transaction1, Lock.LockType.SHARED, waitForGraph);
                 results.add("SHARED_ACQUIRED");
                 secondThreadStartLatch.countDown();
-                lock.release();
+                lock.release(transaction1, waitForGraph);
             } catch (InterruptedException e) {
                 results.add("SHARED_FAILED");
                 Thread.currentThread().interrupt();
@@ -195,10 +208,10 @@ public class LockTest {
         executor.execute(() -> {
             try {
                 secondThreadStartLatch.await();
-                lock.acquire(Lock.LockType.EXCLUSIVE);
+                lock.acquire(transaction2, Lock.LockType.EXCLUSIVE, waitForGraph);
                 results.add("EXCLUSIVE_ACQUIRED");
                 Thread.sleep(1000); // ensure contention
-                lock.release();
+                lock.release(transaction2, waitForGraph);
                 results.add("EXCLUSIVE_RELEASED");
             } catch (InterruptedException e) {
                 results.add("EXCLUSIVE_FAILED");

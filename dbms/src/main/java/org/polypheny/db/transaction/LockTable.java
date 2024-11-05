@@ -16,11 +16,13 @@ public class LockTable {
 
     ConcurrentHashMap<ByteString, Lock> lockByEntry; // TODO TH: Currently we don't remove locks from this map as they might be requested again later. We might need a cleanup method for this later on.
     ConcurrentHashMap<Transaction, Set<Lock>> locksByTransaction;
+    WaitForGraph waitForGraph;
 
 
     private LockTable() {
         lockByEntry = new ConcurrentHashMap<>();
         locksByTransaction = new ConcurrentHashMap<>();
+        waitForGraph = new WaitForGraph();
     }
 
 
@@ -32,7 +34,7 @@ public class LockTable {
 
         try {
             if ( !locksByTransaction.get( transaction ).contains( lock ) ) {
-                lock.acquire( lockType );
+                lock.acquire( transaction, lockType, waitForGraph );
                 locksByTransaction.get( transaction ).add( lock );
                 return;
             }
@@ -41,7 +43,7 @@ public class LockTable {
                 return;
             }
             if ( heldLockType == LockType.SHARED ) {
-                lock.upgradeToExclusive();
+                lock.upgradeToExclusive( transaction, waitForGraph );
             }
         } catch ( InterruptedException e ) {
             unlockAll( transaction );
@@ -49,8 +51,16 @@ public class LockTable {
         }
     }
 
-    public void unlockAll(Transaction transaction) throws DeadlockException {
+
+    public void unlockAll( Transaction transaction ) throws DeadlockException {
         Optional.ofNullable(locksByTransaction.remove(transaction))
-                .ifPresent(locks -> locks.forEach(Lock::release));
+                .ifPresent(locks -> locks.forEach(lock -> {
+                    try {
+                        lock.release(transaction, waitForGraph);
+                    } catch (Exception e) {
+                        throw new DeadlockException(MessageFormat.format("Failed to release lock for transaction {0}", transaction));
+                    }
+                }));
     }
+
 }
