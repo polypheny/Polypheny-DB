@@ -16,10 +16,8 @@
 
 package org.polypheny.db.transaction;
 
-import java.util.HashSet;
-import java.util.Set;
-import lombok.Getter;
-import org.polypheny.db.util.ByteString;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class Lock {
 
@@ -29,18 +27,64 @@ public class Lock {
     }
 
 
-    @Getter
-    private Set<Transaction> owners;
-    @Getter
-    private LockType lockType;
-    private ByteString entryId;
+    private static final long EXCLUSIVE_OWNER = -1;
+    private static final long NO_OWNER = 0;
+
+    private final ReentrantLock concurrencyLock = new ReentrantLock();
+    private final Condition concurrencyCondition = concurrencyLock.newCondition();
+
+    private long ownership = 0;
 
 
-    public Lock( Transaction owner, LockType lockType, ByteString entryId ) {
-        this.owners = new HashSet<>();
-        this.owners.add( owner );
-        this.lockType = lockType;
-        this.entryId = entryId;
+    public Lock( LockType lockType ) throws InterruptedException {
+        switch ( lockType ) {
+            case SHARED -> acquireShared();
+            case EXCLUSIVE -> acquireExclusive();
+        }
     }
+
+    public void acquireShared() throws InterruptedException {
+        concurrencyLock.lock();
+        try {
+            while ( ownership == EXCLUSIVE_OWNER || hasWaitingTransactions()) {
+                concurrencyCondition.await();
+            }
+            ownership++;
+        } finally {
+            concurrencyLock.unlock();
+        }
+    }
+
+    public void acquireExclusive() throws InterruptedException {
+        concurrencyLock.lock();
+        try {
+            while( ownership != NO_OWNER) {
+                concurrencyCondition.await();
+            }
+            ownership = EXCLUSIVE_OWNER;
+        } finally {
+            concurrencyLock.unlock();
+        }
+    }
+
+    public void release() {
+        concurrencyLock.lock();
+        try {
+            if ( ownership == EXCLUSIVE_OWNER ) {
+                ownership = NO_OWNER;
+            }
+            if ( ownership != NO_OWNER ) {
+                ownership--;
+            }
+            concurrencyCondition.signalAll();
+        } finally {
+            concurrencyLock.unlock();
+        }
+    }
+
+    private boolean hasWaitingTransactions() {
+        return concurrencyLock.hasWaiters( concurrencyCondition );
+    }
+
 
 }
