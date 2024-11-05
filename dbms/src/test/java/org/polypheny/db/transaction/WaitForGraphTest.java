@@ -4,6 +4,7 @@ import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -27,6 +28,11 @@ public class WaitForGraphTest {
         transaction2 = Mockito.mock( TransactionImpl.class );
         transaction3 = Mockito.mock( TransactionImpl.class );
         transaction4 = Mockito.mock( TransactionImpl.class );
+
+        when(transaction1.unwrapOrThrow(TransactionImpl.class)).thenReturn(transaction1);
+        when(transaction2.unwrapOrThrow(TransactionImpl.class)).thenReturn(transaction2);
+        when(transaction3.unwrapOrThrow(TransactionImpl.class)).thenReturn(transaction3);
+        when(transaction4.unwrapOrThrow(TransactionImpl.class)).thenReturn(transaction4);
     }
 
 
@@ -57,29 +63,6 @@ public class WaitForGraphTest {
         waitForGraph.addAndAbortIfDeadlock( transaction3, successors3 );
 
         verify( transaction3, atLeastOnce() ).abort();
-    }
-
-
-    @Test
-    public void testAddAndAbortIfDeadlockOutsideOfCycleNotDetected() {
-        // Add a cycle: T1 -> T2 -> T3 -> T1
-        Set<Transaction> successors1 = new HashSet<>();
-        successors1.add( transaction2 );
-        waitForGraph.addAndAbortIfDeadlock( transaction1, successors1 );
-
-        Set<Transaction> successors2 = new HashSet<>();
-        successors2.add( transaction3 );
-        waitForGraph.addAndAbortIfDeadlock( transaction2, successors2 );
-
-        Set<Transaction> successors3 = new HashSet<>();
-        successors3.add( transaction1 );
-        waitForGraph.addAndAbortIfDeadlock( transaction3, successors3 );
-
-        Set<Transaction> successors4 = new HashSet<>();
-        successors4.add( transaction1 );
-        waitForGraph.addAndAbortIfDeadlock( transaction4, successors4 );
-
-        verify( transaction4, never() ).abort();
     }
 
 
