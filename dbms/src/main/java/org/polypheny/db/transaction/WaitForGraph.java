@@ -16,9 +16,7 @@
 
 package org.polypheny.db.transaction;
 
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -27,127 +25,70 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 // Based on code taken from https://github.com/dstibrany/LockManager
+// Cycle detection improved to return on first cycle containing a specific transaction
 public class WaitForGraph {
 
     private final ConcurrentMap<TransactionImpl, Set<TransactionImpl>> adjacencyList = new ConcurrentHashMap<>();
-    private final ReentrantReadWriteLock rwl = new ReentrantReadWriteLock();
-    private final Lock sharedLock = rwl.readLock();
-    private final Lock exclusiveLock = rwl.readLock();
+    private final ReentrantReadWriteLock concurrencyLock = new ReentrantReadWriteLock();
+    private final Lock sharedLock = concurrencyLock.readLock();
+    private final Lock exclusiveLock = concurrencyLock.readLock();
 
 
-    void add( TransactionImpl predecessor, Set<TransactionImpl> successors ) {
+    public void add( TransactionImpl predecessor, Set<TransactionImpl> successors ) {
         sharedLock.lock();
         try {
-            Set<TransactionImpl> txnList = adjacencyList.getOrDefault( predecessor, new ConcurrentSkipListSet<>() );
-            txnList.addAll( successors );
-            adjacencyList.put( predecessor, txnList );
+            Set<TransactionImpl> currentSuccessors = adjacencyList.getOrDefault( predecessor, new ConcurrentSkipListSet<>() );
+            currentSuccessors.addAll( successors );
+            adjacencyList.put( predecessor, currentSuccessors );
         } finally {
             sharedLock.unlock();
         }
     }
 
 
-    void remove( TransactionImpl txn ) {
+    public void remove( TransactionImpl transaction ) {
         sharedLock.lock();
         try {
-            adjacencyList.remove( txn );
-            removeSuccessor( txn );
+            adjacencyList.remove( transaction );
+            adjacencyList.forEach( ( predecessor, successors ) -> {
+                if ( successors != null ) {
+                    successors.remove( transaction );
+                }
+            } );
         } finally {
             sharedLock.unlock();
         }
     }
 
 
-    boolean hasEdge( TransactionImpl txn1, TransactionImpl txn2 ) {
-        Set<TransactionImpl> txnList = adjacencyList.get( txn1 );
-        if ( txnList == null ) {
-            return false;
-        }
-        return txnList.contains( txn2 );
-    }
-
-
-    List<List<TransactionImpl>> findCycles() {
+    public boolean isMemberOfCycle( TransactionImpl transaction ) {
+        Set<TransactionImpl> visited = new HashSet<>();
+        Set<TransactionImpl> recursionStack = new HashSet<>();
         exclusiveLock.lock();
         try {
-            DepthFirstSearch dfs = new DepthFirstSearch();
-            dfs.start();
-            return dfs.getCycles();
+            return runDepthFirstSearch( transaction, visited, recursionStack );
         } finally {
             exclusiveLock.unlock();
         }
     }
 
 
-    void detectDeadlock( TransactionImpl currentTxn ) {
-        List<List<TransactionImpl>> cycles = findCycles();
-
-        for ( List<TransactionImpl> cycleGroup : cycles ) {
-            if ( cycleGroup.contains( currentTxn ) ) {
-                currentTxn.abort();
+    private boolean runDepthFirstSearch( TransactionImpl currentTransaction, Set<TransactionImpl> visited, Set<TransactionImpl> recursionStack ) {
+        if ( recursionStack.contains( currentTransaction ) ) {
+            return true;
+        }
+        if ( visited.contains( currentTransaction ) ) {
+            return false;
+        }
+        visited.add( currentTransaction );
+        recursionStack.add( currentTransaction );
+        for ( TransactionImpl neighbor : adjacencyList.get( currentTransaction ) ) {
+            if ( runDepthFirstSearch( neighbor, visited, recursionStack ) ) {
+                return true;
             }
         }
-    }
-
-
-    private void removeSuccessor( TransactionImpl txnToRemove ) {
-        for ( TransactionImpl predecessor : adjacencyList.keySet() ) {
-            Set<TransactionImpl> successors = adjacencyList.get( predecessor );
-            if ( successors != null ) {
-                successors.remove( txnToRemove );
-            }
-        }
-    }
-
-
-    class DepthFirstSearch {
-
-        private final Set<TransactionImpl> visited = new HashSet<>();
-        private final List<List<TransactionImpl>> cycles = new ArrayList<>();
-
-
-        void start() {
-            for ( TransactionImpl txn : adjacencyList.keySet() ) {
-                if ( !visited.contains( txn ) ) {
-                    visit( txn, new ArrayList<>() );
-                }
-            }
-        }
-
-
-        List<List<TransactionImpl>> getCycles() {
-            return cycles;
-        }
-
-
-        Set<TransactionImpl> getVisited() {
-            return visited;
-        }
-
-
-        private void visit( TransactionImpl node, List<TransactionImpl> path ) {
-            visited.add( node );
-            path.add( node );
-
-            Set<TransactionImpl> set = adjacencyList.get( node );
-            if ( set != null ) {
-                for ( TransactionImpl neighbour : set ) {
-                    if ( !visited.contains( neighbour ) ) {
-                        visit( neighbour, new ArrayList<>( path ) );
-                    } else {
-                        if ( path.contains( neighbour ) ) {
-                            cycles.add( getCycleFromPath( path, neighbour ) );
-                        }
-                    }
-                }
-            }
-        }
-
-
-        private List<TransactionImpl> getCycleFromPath( List<TransactionImpl> path, TransactionImpl target ) {
-            return path.subList( path.indexOf( target ), path.size() );
-        }
-
+        recursionStack.remove( currentTransaction );
+        return false;
     }
 
 }
