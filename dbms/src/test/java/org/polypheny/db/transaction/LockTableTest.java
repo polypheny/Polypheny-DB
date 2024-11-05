@@ -16,20 +16,7 @@
 
 package org.polypheny.db.transaction;
 
-import org.polypheny.db.util.ByteString;
+public class LockTableTest {
 
-public record LockRequest( ) {
-
-    static Transaction transaction;
-    static long entityId;
-    static ByteString entryId;
-    static AccessType accessType;
-
-
-    public enum AccessType {
-        NONE,
-        SHARED,
-        EXCLUSIVE
-    }
 
 }
