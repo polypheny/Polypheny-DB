@@ -89,6 +89,9 @@ public class WaitForGraph {
         }
         visited.add( currentTransaction );
         recursionStack.add( currentTransaction );
+        if (!adjacencyList.containsKey( currentTransaction ) ) {
+            return false;
+        }
         for ( Transaction neighbor : adjacencyList.get( currentTransaction ) ) {
             if ( runDepthFirstSearch( neighbor, visited, recursionStack ) ) {
                 return true;
