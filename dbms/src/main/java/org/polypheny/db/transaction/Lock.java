@@ -20,7 +20,6 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.stream.Collectors;
 
 public class Lock {
 
@@ -51,14 +50,13 @@ public class Lock {
             if ( isExclusive ) {
                 return;
             }
+            owners.remove( transaction );
             while ( !owners.isEmpty() ) {
-                waitForGraph.addAndAbortIfDeadlock(
-                        transaction,
-                        owners.stream().filter( owner -> !owner.equals( transaction ) ).collect( Collectors.toSet()
-                        ) );
+                waitForGraph.addAndAbortIfDeadlock( transaction, owners );
                 concurrencyCondition.await();
             }
             isExclusive = true;
+            owners.add( transaction );
         } finally {
             concurrencyLock.unlock();
         }
