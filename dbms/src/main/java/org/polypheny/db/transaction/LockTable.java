@@ -32,7 +32,7 @@ public class LockTable {
 
         try {
             if ( !locksByTransaction.get( transaction ).contains( lock ) ) {
-                lock.aquire( lockType );
+                lock.acquire( lockType );
                 locksByTransaction.get( transaction ).add( lock );
                 return;
             }
