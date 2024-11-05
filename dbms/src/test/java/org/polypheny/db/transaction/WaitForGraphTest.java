@@ -1,23 +1,9 @@
-/*
- * Copyright 2019-2024 The Polypheny Project
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package org.polypheny.db.transaction;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.verify;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -45,97 +31,103 @@ public class WaitForGraphTest {
 
 
     @Test
-    public void testAddSingleTransactionNoCycle() {
-        Set<TransactionImpl> successors = new HashSet<>();
+    public void testAddAndAbortIfDeadlockSingleTransaction() {
+        Set<Transaction> successors = new HashSet<>();
         successors.add( transaction2 );
-        waitForGraph.add( transaction1, successors );
+        waitForGraph.addAndAbortIfDeadlock( transaction1, successors );
 
-        assertFalse( waitForGraph.isMemberOfCycle( transaction1 ) );
+        verify( transaction1, never() ).abort();
+        verify( transaction2, never() ).abort();
     }
 
 
     @Test
-    public void testAddAndDetectCycle() {
+    public void testAddAndAbortIfDeadlockCycle() {
         // Add a cycle: T1 -> T2 -> T3 -> T1
-        Set<TransactionImpl> successors1 = new HashSet<>();
+        Set<Transaction> successors1 = new HashSet<>();
         successors1.add( transaction2 );
-        waitForGraph.add( transaction1, successors1 );
+        waitForGraph.addAndAbortIfDeadlock( transaction1, successors1 );
 
-        Set<TransactionImpl> successors2 = new HashSet<>();
+        Set<Transaction> successors2 = new HashSet<>();
         successors2.add( transaction3 );
-        waitForGraph.add( transaction2, successors2 );
+        waitForGraph.addAndAbortIfDeadlock( transaction2, successors2 );
 
-        Set<TransactionImpl> successors3 = new HashSet<>();
+        Set<Transaction> successors3 = new HashSet<>();
         successors3.add( transaction1 );
-        waitForGraph.add( transaction3, successors3 );
+        waitForGraph.addAndAbortIfDeadlock( transaction3, successors3 );
 
-        assertTrue( waitForGraph.isMemberOfCycle( transaction1 ) );
-        assertTrue( waitForGraph.isMemberOfCycle( transaction2 ) );
-        assertFalse( waitForGraph.isMemberOfCycle( transaction3 ) );
+        verify( transaction3, atLeastOnce() ).abort();
     }
 
 
     @Test
-    public void testAddOutsideOfCycleNotDetected() {
+    public void testAddAndAbortIfDeadlockOutsideOfCycleNotDetected() {
         // Add a cycle: T1 -> T2 -> T3 -> T1
-        Set<TransactionImpl> successors1 = new HashSet<>();
+        Set<Transaction> successors1 = new HashSet<>();
         successors1.add( transaction2 );
-        waitForGraph.add( transaction1, successors1 );
+        waitForGraph.addAndAbortIfDeadlock( transaction1, successors1 );
 
-        Set<TransactionImpl> successors2 = new HashSet<>();
+        Set<Transaction> successors2 = new HashSet<>();
         successors2.add( transaction3 );
-        waitForGraph.add( transaction2, successors2 );
+        waitForGraph.addAndAbortIfDeadlock( transaction2, successors2 );
 
-        Set<TransactionImpl> successors3 = new HashSet<>();
+        Set<Transaction> successors3 = new HashSet<>();
         successors3.add( transaction1 );
-        waitForGraph.add( transaction3, successors3 );
+        waitForGraph.addAndAbortIfDeadlock( transaction3, successors3 );
 
-        // Add transaction not involved in cycle
-        Set<TransactionImpl> successors4 = new HashSet<>();
-        successors3.add( transaction1 );
-        waitForGraph.add( transaction4, successors4 );
+        Set<Transaction> successors4 = new HashSet<>();
+        successors4.add( transaction1 );
+        waitForGraph.addAndAbortIfDeadlock( transaction4, successors4 );
 
-        assertFalse( waitForGraph.isMemberOfCycle( transaction4 ) );
+        verify( transaction4, never() ).abort();
     }
 
 
     @Test
-    public void testAddTransactionsWithoutCycle() {
+    public void testAddAndAbortIfDeadlockTransactionsWithoutCycle() {
         // No cycle: T1 -> T2 -> T3
-        Set<TransactionImpl> successors1 = new HashSet<>();
+        Set<Transaction> successors1 = new HashSet<>();
         successors1.add( transaction2 );
-        waitForGraph.add( transaction1, successors1 );
+        waitForGraph.addAndAbortIfDeadlock( transaction1, successors1 );
 
-        Set<TransactionImpl> successors2 = new HashSet<>();
+        Set<Transaction> successors2 = new HashSet<>();
         successors2.add( transaction3 );
-        waitForGraph.add( transaction2, successors2 );
+        waitForGraph.addAndAbortIfDeadlock( transaction2, successors2 );
 
-        assertFalse( waitForGraph.isMemberOfCycle( transaction1 ) );
-        assertFalse( waitForGraph.isMemberOfCycle( transaction2 ) );
-        assertFalse( waitForGraph.isMemberOfCycle( transaction3 ) );
+        verify( transaction1, never() ).abort();
+        verify( transaction2, never() ).abort();
+        verify( transaction3, never() ).abort();
     }
 
 
     @Test
     public void testRemoveTransactionBreaksCycle() {
         // Add a cycle: T1 -> T2 -> T3 -> T1
-        Set<TransactionImpl> successors1 = new HashSet<>();
+        Set<Transaction> successors1 = new HashSet<>();
         successors1.add( transaction2 );
-        waitForGraph.add( transaction1, successors1 );
+        waitForGraph.addAndAbortIfDeadlock( transaction1, successors1 );
 
-        Set<TransactionImpl> successors2 = new HashSet<>();
+        Set<Transaction> successors2 = new HashSet<>();
         successors2.add( transaction3 );
-        waitForGraph.add( transaction2, successors2 );
+        waitForGraph.addAndAbortIfDeadlock( transaction2, successors2 );
 
-        Set<TransactionImpl> successors3 = new HashSet<>();
+        Set<Transaction> successors3 = new HashSet<>();
         successors3.add( transaction1 );
-        waitForGraph.add( transaction3, successors3 );
+        waitForGraph.addAndAbortIfDeadlock( transaction3, successors3 );
 
-        assertTrue( waitForGraph.isMemberOfCycle( transaction1 ) );
+        verify( transaction3, atLeastOnce() ).abort();
 
         waitForGraph.remove( transaction2 );
 
-        assertFalse( waitForGraph.isMemberOfCycle( transaction1 ) );
-        assertFalse( waitForGraph.isMemberOfCycle( transaction3 ) );
+        reset( transaction1 );
+        reset( transaction2 );
+        reset( transaction3 );
+
+        waitForGraph.addAndAbortIfDeadlock( transaction3, successors1 );
+
+        verify( transaction1, never() ).abort();
+        verify( transaction2, never() ).abort();
+        verify( transaction3, never() ).abort();
     }
+
 }
