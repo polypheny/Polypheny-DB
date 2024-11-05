@@ -561,14 +561,14 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             return;
         }
 
-        // get list of all entities to be locked including their lock types
         AlgEntityScanner entityScanner = new AlgEntityScanner();
         AlgOptUtil.go( entityScanner, logicalRoot.alg );
         this.accessMap = entityScanner.getResult();
+        LockTable.INSTANCE.lock( statement.getTransaction(), LockType.SHARED, LockTable.GLOBAL_LOCK );
         accessMap.forEach( ( k, v ) -> {
             try {
                 LockTable.INSTANCE.lock( statement.getTransaction(), v, k );
-            } catch ( InterruptedException e ) {
+            } catch ( DeadlockException e ) {
                 throw new RuntimeException( e );
             }
         } );
@@ -1504,8 +1504,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     public void lock( Statement statement ) {
         try {
             // TODO TH: This only needs a shared lock...
-            LockTable.INSTANCE.lock( statement.getTransaction(), LockType.SHARED, LockTable.GLOBAL_ENTRY_ID );
-        } catch ( DeadlockException | InterruptedException e ) {
+            LockTable.INSTANCE.lock( statement.getTransaction(), LockType.SHARED, LockTable.GLOBAL_LOCK );
+        } catch ( DeadlockException e ) {
             throw new GenericRuntimeException( "DeadLock while locking to reevaluate statistics", e );
         }
     }

@@ -291,8 +291,8 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
                 return;
             }
 
-            LockTable.INSTANCE.lock( statement.getTransaction(), LockType.EXCLUSIVE, LockTable.GLOBAL_ENTRY_ID );
-        } catch ( DeadlockException | InterruptedException e ) {
+            LockTable.INSTANCE.lock( statement.getTransaction(), LockType.EXCLUSIVE, LockTable.GLOBAL_LOCK );
+        } catch ( DeadlockException e ) {
             throw new GenericRuntimeException( "DeadLock while locking for materialized view update", e );
         }
 
