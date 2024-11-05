@@ -37,7 +37,7 @@ public class LockTest {
 
         executor.execute( () -> {
             try {
-                lock.aquire( Lock.LockType.SHARED );
+                lock.acquire( Lock.LockType.SHARED );
                 results.add( true );
             } catch ( InterruptedException e ) {
                 results.add( false );
@@ -63,7 +63,7 @@ public class LockTest {
 
         executor.execute(() -> {
             try {
-                lock.aquire(Lock.LockType.EXCLUSIVE);
+                lock.acquire(Lock.LockType.EXCLUSIVE);
                 results.add(true);
                 Thread.sleep(1000); // ensure contention
                 lock.release();
@@ -77,7 +77,7 @@ public class LockTest {
 
         executor.execute(() -> {
             try {
-                lock.aquire(Lock.LockType.EXCLUSIVE);
+                lock.acquire(Lock.LockType.EXCLUSIVE);
                 results.add(true);
                 lock.release();
             } catch (InterruptedException e) {
@@ -104,7 +104,7 @@ public class LockTest {
 
         executor.execute(() -> {
             try {
-                lock.aquire(Lock.LockType.SHARED);
+                lock.acquire(Lock.LockType.SHARED);
                 lock.upgradeToExclusive();
                 results.add(lock.getLockType() == Lock.LockType.EXCLUSIVE);
                 lock.release();
@@ -133,7 +133,7 @@ public class LockTest {
 
         executor.execute(() -> {
             try {
-                lock.aquire(Lock.LockType.EXCLUSIVE);
+                lock.acquire(Lock.LockType.EXCLUSIVE);
                 results.add("EXCLUSIVE_ACQUIRED");
                 secondThreadStartLatch.countDown();
                 Thread.sleep(1000); // ensure contention
@@ -150,7 +150,7 @@ public class LockTest {
         executor.execute(() -> {
             try {
                 secondThreadStartLatch.await();
-                lock.aquire(Lock.LockType.SHARED);
+                lock.acquire(Lock.LockType.SHARED);
                 results.add("SHARED_ACQUIRED");
                 lock.release();
             } catch (InterruptedException e) {
@@ -180,7 +180,7 @@ public class LockTest {
         executor.execute(() -> {
             try {
 
-                lock.aquire(Lock.LockType.SHARED);
+                lock.acquire(Lock.LockType.SHARED);
                 results.add("SHARED_ACQUIRED");
                 secondThreadStartLatch.countDown();
                 lock.release();
@@ -195,7 +195,7 @@ public class LockTest {
         executor.execute(() -> {
             try {
                 secondThreadStartLatch.await();
-                lock.aquire(Lock.LockType.EXCLUSIVE);
+                lock.acquire(Lock.LockType.EXCLUSIVE);
                 results.add("EXCLUSIVE_ACQUIRED");
                 Thread.sleep(1000); // ensure contention
                 lock.release();
