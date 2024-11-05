@@ -14,21 +14,21 @@ public class LockTable {
     public static final LockTable INSTANCE = new LockTable();
     public static final ByteString GLOBAL_LOCK = ByteString.EMPTY;
 
-    ConcurrentHashMap<ByteString, Lock> locksByEntry; // TODO TH: Currently we don't remove locks from this list as they might be requested again later. We might need a cleanup method for this later on.
+    ConcurrentHashMap<ByteString, Lock> lockByEntry; // TODO TH: Currently we don't remove locks from this map as they might be requested again later. We might need a cleanup method for this later on.
     ConcurrentHashMap<Transaction, Set<Lock>> locksByTransaction;
 
 
     private LockTable() {
-        locksByEntry = new ConcurrentHashMap<>();
+        lockByEntry = new ConcurrentHashMap<>();
         locksByTransaction = new ConcurrentHashMap<>();
     }
 
 
     public void lock( Transaction transaction, LockType lockType, ByteString entryId ) throws DeadlockException {
-        locksByEntry.putIfAbsent( entryId, new Lock() );
+        lockByEntry.putIfAbsent( entryId, new Lock() );
         locksByTransaction.putIfAbsent( transaction, new HashSet<>() );
 
-        Lock lock = locksByEntry.get( entryId );
+        Lock lock = lockByEntry.get( entryId );
 
         try {
             if ( !locksByTransaction.get( transaction ).contains( lock ) ) {
@@ -36,7 +36,7 @@ public class LockTable {
                 locksByTransaction.get( transaction ).add( lock );
                 return;
             }
-            LockType heldLockType = locksByEntry.get( entryId ).getLockType();
+            LockType heldLockType = lockByEntry.get( entryId ).getLockType();
             if ( heldLockType == lockType ) {
                 return;
             }
