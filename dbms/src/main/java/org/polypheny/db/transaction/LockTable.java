@@ -44,7 +44,7 @@ public class LockTable {
                 lock.upgradeToExclusive();
             }
         } catch ( InterruptedException e ) {
-            // TODO: release all locks held by this TX
+            unlockAll( transaction );
             throw new DeadlockException( MessageFormat.format( "Transaction {0} encountered a deadlock while acquiring a lock of type {1} on entry {2}.", transaction.getId(), lockType, entryId ) );
         }
     }
