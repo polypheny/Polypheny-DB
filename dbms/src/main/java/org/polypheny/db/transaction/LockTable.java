@@ -1,91 +1,56 @@
 package org.polypheny.db.transaction;
 
-import java.util.HashMap;
+import java.text.MessageFormat;
 import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.Queue;
+import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.ConcurrentHashMap;
 import org.polypheny.db.transaction.Lock.LockType;
 import org.polypheny.db.util.ByteString;
+import org.polypheny.db.util.DeadlockException;
 
 public class LockTable {
 
     public static final LockTable INSTANCE = new LockTable();
-    public static final ByteString GLOBAL_ENTRY_ID = ByteString.EMPTY;
+    public static final ByteString GLOBAL_LOCK = ByteString.EMPTY;
 
-    private final Map<ByteString, Lock> locks;
-    private final Map<ByteString, Queue<Transaction>> waitingQueues;
-    private final Map<Transaction, Set<ByteString>> entriesByTransaction;
-    private final ReentrantLock lockTable;
-    private final Condition waitingCondition;
+    ConcurrentHashMap<ByteString, Lock> locksByEntry; // TODO TH: Currently we don't remove locks from this list as they might be requested again later. We might need a cleanup method for this later on.
+    ConcurrentHashMap<Transaction, Set<Lock>> locksByTransaction;
+
 
     private LockTable() {
-        locks = new HashMap<>();
-        waitingQueues = new HashMap<>();
-        this.entriesByTransaction = new HashMap<>();
-        lockTable = new ReentrantLock();
-        waitingCondition = lockTable.newCondition();
+        locksByEntry = new ConcurrentHashMap<>();
+        locksByTransaction = new ConcurrentHashMap<>();
     }
 
-    public void lock(Transaction transaction, LockType lockType, ByteString entryId) throws InterruptedException {
-        lockTable.lock();
-        try {
-            while (true) {
-                Lock currentLock = locks.get(entryId);
-                if (currentLock == null) {
-                    locks.put(entryId, new Lock(transaction, lockType, entryId));
-                    entriesByTransaction.computeIfAbsent(transaction, k -> new HashSet<>()).add(entryId);
-                    return;
-                }
-                if (currentLock.getLockType() == LockType.SHARED && lockType == LockType.SHARED) {
-                    currentLock.getOwners().add(transaction);
-                    entriesByTransaction.computeIfAbsent(transaction, k -> new HashSet<>()).add(entryId);
-                    return;
-                }
-                if (currentLock.getOwners().contains(transaction) && currentLock.getLockType() == lockType) {
-                    return;
-                }
-                waitingQueues.computeIfAbsent(entryId, k -> new LinkedList<>()).add(transaction);
-                waitingCondition.await();
-            }
-        } finally {
-            lockTable.unlock();
-        }
-    }
 
-    public void unlockAll(Transaction transaction) {
-        lockTable.lock();
+    public void lock( Transaction transaction, LockType lockType, ByteString entryId ) throws DeadlockException {
+        locksByEntry.putIfAbsent( entryId, new Lock() );
+        locksByTransaction.putIfAbsent( transaction, new HashSet<>() );
+
+        Lock lock = locksByEntry.get( entryId );
+
         try {
-            Set<ByteString> entries = entriesByTransaction.get(transaction);
-            if (entries == null) {
+            if ( !locksByTransaction.get( transaction ).contains( lock ) ) {
+                lock.aquire( lockType );
+                locksByTransaction.get( transaction ).add( lock );
                 return;
             }
-            entries.forEach(entryId -> unlockUnsave(transaction, entryId));
-            entriesByTransaction.remove(transaction);
-        } finally {
-            lockTable.unlock();
+            LockType heldLockType = locksByEntry.get( entryId ).getLockType();
+            if ( heldLockType == lockType ) {
+                return;
+            }
+            if ( heldLockType == LockType.SHARED ) {
+                lock.upgradeToExclusive();
+            }
+        } catch ( InterruptedException e ) {
+            // TODO: release all locks held by this TX
+            throw new DeadlockException( MessageFormat.format( "Transaction {0} encountered a deadlock while acquiring a lock of type {1} on entry {2}.", transaction.getId(), lockType, entryId ) );
         }
     }
 
-    private void unlockUnsave(Transaction transaction, ByteString entryId) {
-        Lock currentLock = locks.get(entryId);
-        if (currentLock == null) {
-            return;
-        }
-        if (currentLock.getOwners().remove(transaction)) {
-            locks.remove(entryId);
-            removeLockIfNoOwnerUnsave(currentLock, entryId);
-        }
-    }
-
-    private void removeLockIfNoOwnerUnsave(Lock lock, ByteString entryId) {
-        if (!lock.getOwners().isEmpty()) {
-            return;
-        }
-        locks.remove(entryId);
-        waitingCondition.signalAll();
+    public void unlockAll(Transaction transaction) throws DeadlockException {
+        Optional.ofNullable(locksByTransaction.remove(transaction))
+                .ifPresent(locks -> locks.forEach(Lock::release));
     }
 }
