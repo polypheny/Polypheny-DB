@@ -36,7 +36,6 @@ import org.polypheny.db.processing.Processor;
 import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
-import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.util.Pair;
 import org.polypheny.prism.Frame;
 import org.polypheny.prism.StatementResult;

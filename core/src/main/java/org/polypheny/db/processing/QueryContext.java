@@ -110,11 +110,11 @@ public class QueryContext {
                 namespaceId = Catalog.snapshot().getNamespace( queryNode.getNamespaceName() ).map( n -> n.id ).orElse( queryNode.getNamespaceId() );
             }
 
-            if ( context.transactions.stream().anyMatch( t -> !t.isActive() ) ){
+            if ( context.transactions.stream().anyMatch( t -> !t.isActive() ) ) {
                 throw new GenericRuntimeException( "No active transaction" );
             }
 
-            if ( context.transactions.size() > 1 ){
+            if ( context.transactions.size() > 1 ) {
                 log.warn( "Multiple active transactions {}", context.transactions.size() );
             }
 
@@ -147,7 +147,7 @@ public class QueryContext {
     public <T extends QueryContext> T addTransaction( Transaction transaction ) {
         if ( transaction == null ) {
             return (T) this;
-        }else if ( !transaction.isActive() ){
+        } else if ( !transaction.isActive() ) {
             throw new GenericRuntimeException( "Transaction is not active" );
         }
         transactions = new ArrayList<>( transactions );

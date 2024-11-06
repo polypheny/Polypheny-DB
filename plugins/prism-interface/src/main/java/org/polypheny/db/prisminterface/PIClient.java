@@ -130,7 +130,7 @@ public class PIClient {
     }
 
 
-    void prepareForDisposal( @Nullable String reason) {
+    void prepareForDisposal( @Nullable String reason ) {
         statementManager.closeAll();
         rollbackCurrentTransaction( reason );
         monitoringPage.removeStatementManager( statementManager );

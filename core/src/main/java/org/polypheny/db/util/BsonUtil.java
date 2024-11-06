@@ -264,7 +264,7 @@ public class BsonUtil {
 
     private static BsonValue handleString( PolyValue obj ) {
         BsonString string = new BsonString( obj.toString() );
-        if ( string.getValue().contains( "$" ) ){
+        if ( string.getValue().contains( "$" ) ) {
             // apparently mongo requires that for $ in strings
             return new BsonDocument( "$literal", string );
         }
