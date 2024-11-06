@@ -35,7 +35,7 @@ import org.polypheny.db.processing.Processor;
 import org.polypheny.db.util.Wrapper;
 
 
-public interface Transaction extends Wrapper {
+public interface Transaction {
 
     long getId();
 
@@ -81,6 +81,8 @@ public interface Transaction extends Wrapper {
     String getOrigin();
 
     MultimediaFlavor getFlavor();
+
+    void wakeup();
 
     long getNumberOfStatements();
 

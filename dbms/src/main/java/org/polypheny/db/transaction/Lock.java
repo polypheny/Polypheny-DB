@@ -36,15 +36,15 @@ public class Lock {
     private boolean isExclusive = false;
 
 
-    public void acquire( Transaction transaction, LockType lockType, WaitForGraph waitForGraph ) throws InterruptedException {
+    public void acquire( Transaction transaction, LockType lockType) throws InterruptedException {
         switch ( lockType ) {
-            case SHARED -> acquireShared( transaction, waitForGraph );
-            case EXCLUSIVE -> acquireExclusive( transaction, waitForGraph );
+            case SHARED -> acquireShared( transaction);
+            case EXCLUSIVE -> acquireExclusive( transaction);
         }
     }
 
 
-    public void upgradeToExclusive( Transaction transaction, WaitForGraph waitForGraph ) throws InterruptedException {
+    public void upgradeToExclusive( Transaction transaction) throws InterruptedException {
         concurrencyLock.lock();
         try {
             if ( isExclusive ) {
@@ -52,7 +52,7 @@ public class Lock {
             }
             owners.remove( transaction );
             while ( !owners.isEmpty() ) {
-                waitForGraph.addAndAbortIfDeadlock( transaction, owners );
+                LockTable.INSTANCE.deadlockHandler.addAndResolveDeadlock( transaction, owners );
                 concurrencyCondition.await();
             }
             isExclusive = true;
@@ -63,7 +63,7 @@ public class Lock {
     }
 
 
-    public void release( Transaction transaction, WaitForGraph waitForGraph ) throws InterruptedException {
+    public void release( Transaction transaction) throws InterruptedException {
         concurrencyLock.lock();
         try {
             if ( isExclusive ) {
@@ -73,7 +73,7 @@ public class Lock {
             if ( !owners.isEmpty() ) {
                 owners.remove( transaction );
             }
-            waitForGraph.remove( transaction );
+            LockTable.INSTANCE.deadlockHandler.addAndResolveDeadlock( transaction, owners );
             concurrencyCondition.signalAll();
         } finally {
             concurrencyLock.unlock();
@@ -86,11 +86,11 @@ public class Lock {
     }
 
 
-    private void acquireShared( Transaction transaction, WaitForGraph waitForGraph ) throws InterruptedException {
+    private void acquireShared( Transaction transaction ) throws InterruptedException {
         concurrencyLock.lock();
         try {
             while ( isExclusive || hasWaitingTransactions() ) {
-                waitForGraph.addAndAbortIfDeadlock( transaction, owners );
+                LockTable.INSTANCE.deadlockHandler.addAndResolveDeadlock( transaction, owners );
                 concurrencyCondition.await();
             }
             owners.add( transaction );
@@ -100,11 +100,11 @@ public class Lock {
     }
 
 
-    private void acquireExclusive( Transaction transaction, WaitForGraph waitForGraph ) throws InterruptedException {
+    private void acquireExclusive( Transaction transaction) throws InterruptedException {
         concurrencyLock.lock();
         try {
             while ( !owners.isEmpty() ) {
-                waitForGraph.addAndAbortIfDeadlock( transaction, owners );
+                LockTable.INSTANCE.deadlockHandler.addAndResolveDeadlock( transaction, owners );
                 concurrencyCondition.await();
             }
             isExclusive = true;
