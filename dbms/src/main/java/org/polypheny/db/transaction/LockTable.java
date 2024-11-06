@@ -6,6 +6,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import org.polypheny.db.transaction.Lock.LockType;
+import org.polypheny.db.transaction.deadlocks.DeadlockHandler;
+import org.polypheny.db.transaction.deadlocks.FirstTransactionDeadlockResolver;
+import org.polypheny.db.transaction.deadlocks.GraphDeadlockDetector;
 import org.polypheny.db.util.ByteString;
 import org.polypheny.db.util.DeadlockException;
 
@@ -14,18 +17,18 @@ public class LockTable {
     public static final LockTable INSTANCE = new LockTable();
     public static final ByteString GLOBAL_LOCK = ByteString.EMPTY;
 
-    ConcurrentHashMap<ByteString, Lock> lockByEntry; // TODO TH: Currently we don't remove locks from this map as they might be requested again later. We might need a cleanup method for this later on.
-    ConcurrentHashMap<Transaction, Set<Lock>> locksByTransaction;
-    WaitForGraph waitForGraph;
+    private final ConcurrentHashMap<ByteString, Lock> lockByEntry; // TODO TH: Currently we don't remove locks from this map as they might be requested again later. We might need a cleanup method for this later on.
+    private final ConcurrentHashMap<Transaction, Set<Lock>> locksByTransaction;
+    final DeadlockHandler deadlockHandler;
 
 
     private LockTable() {
-        lockByEntry = new ConcurrentHashMap<>();
-        locksByTransaction = new ConcurrentHashMap<>();
-        waitForGraph = new WaitForGraph();
+        this.lockByEntry = new ConcurrentHashMap<>();
+        this.locksByTransaction = new ConcurrentHashMap<>();
+        this.deadlockHandler = new DeadlockHandler( new GraphDeadlockDetector(), new FirstTransactionDeadlockResolver() );
     }
 
-
+    //TODO TH: accept interfaces such as entity or lock instead of byte string
     public void lock( Transaction transaction, LockType lockType, ByteString entryId ) throws DeadlockException {
         lockByEntry.putIfAbsent( entryId, new Lock() );
         locksByTransaction.putIfAbsent( transaction, new HashSet<>() );
@@ -34,7 +37,7 @@ public class LockTable {
 
         try {
             if ( !locksByTransaction.get( transaction ).contains( lock ) ) {
-                lock.acquire( transaction, lockType, waitForGraph );
+                lock.acquire( transaction, lockType);
                 locksByTransaction.get( transaction ).add( lock );
                 return;
             }
@@ -43,7 +46,7 @@ public class LockTable {
                 return;
             }
             if ( heldLockType == LockType.SHARED ) {
-                lock.upgradeToExclusive( transaction, waitForGraph );
+                lock.upgradeToExclusive( transaction);
             }
         } catch ( InterruptedException e ) {
             unlockAll( transaction );
@@ -56,7 +59,7 @@ public class LockTable {
         Optional.ofNullable(locksByTransaction.remove(transaction))
                 .ifPresent(locks -> locks.forEach(lock -> {
                     try {
-                        lock.release(transaction, waitForGraph);
+                        lock.release(transaction);
                     } catch (Exception e) {
                         throw new DeadlockException(MessageFormat.format("Failed to release lock for transaction {0}", transaction));
                     }
