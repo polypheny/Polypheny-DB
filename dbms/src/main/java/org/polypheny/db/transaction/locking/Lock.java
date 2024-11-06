@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.transaction;
+package org.polypheny.db.transaction.locking;
 
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
+import org.polypheny.db.transaction.Transaction;
 
 public class Lock {
 
