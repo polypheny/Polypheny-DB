@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.transaction;
+package org.polypheny.db.transaction.locking;
 
 import java.nio.ByteBuffer;
 import java.util.HashMap;
@@ -27,7 +27,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.partition.properties.PartitionProperty;
-import org.polypheny.db.transaction.Lock.LockType;
+import org.polypheny.db.transaction.locking.Lock.LockType;
 import org.polypheny.db.util.ByteString;
 
 @Getter

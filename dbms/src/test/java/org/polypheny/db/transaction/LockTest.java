@@ -29,7 +29,8 @@ import java.util.concurrent.ThreadPoolExecutor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-import org.polypheny.db.transaction.Lock.LockType;
+import org.polypheny.db.transaction.locking.Lock;
+import org.polypheny.db.transaction.locking.Lock.LockType;
 
 public class LockTest {
 
