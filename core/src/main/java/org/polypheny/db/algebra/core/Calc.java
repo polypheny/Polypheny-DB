@@ -164,4 +164,9 @@ public abstract class Calc extends SingleAlg {
                 (program != null ? program.toString() : "") + "&";
     }
 
+    @Override
+    public boolean isDataModifying() {
+        return false;
+    }
+
 }

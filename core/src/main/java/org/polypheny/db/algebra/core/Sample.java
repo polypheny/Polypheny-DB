@@ -108,4 +108,9 @@ public class Sample extends SingleAlg {
                 .item( "repeatableSeed", params.isRepeatable() ? params.getRepeatableSeed() : "-" );
     }
 
+    @Override
+    public boolean isDataModifying() {
+        return false;
+    }
+
 }

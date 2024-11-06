@@ -154,4 +154,9 @@ public abstract class Filter extends SingleAlg {
                 (condition != null ? condition.hashCode() : "") + "&";
     }
 
+    @Override
+    public boolean isDataModifying() {
+        return false;
+    }
+
 }

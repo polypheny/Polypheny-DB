@@ -92,4 +92,9 @@ public abstract class LpgMatch extends SingleAlg implements LpgAlg {
         return new LogicalLpgMatch( getCluster(), traitSet, input, exps.stream().map( e -> (RexCall) e ).toList(), names );
     }
 
+    @Override
+    public boolean isDataModifying() {
+        return false;
+    }
+
 }

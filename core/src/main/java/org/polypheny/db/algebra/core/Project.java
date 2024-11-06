@@ -322,5 +322,10 @@ public abstract class Project extends SingleAlg {
                 rowType.toString() + types + "&";
     }
 
+    @Override
+    public boolean isDataModifying() {
+        return false;
+    }
+
 }
 

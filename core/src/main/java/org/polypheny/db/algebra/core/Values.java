@@ -188,5 +188,10 @@ public abstract class Values extends AbstractAlgNode {
         // empty on purpose
     }
 
+    @Override
+    public boolean isDataModifying() {
+        return false;
+    }
+
 }
 

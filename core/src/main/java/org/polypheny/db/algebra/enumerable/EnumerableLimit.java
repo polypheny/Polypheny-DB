@@ -149,5 +149,10 @@ public class EnumerableLimit extends SingleAlg implements EnumerableAlg {
         }
     }
 
+    @Override
+    public boolean isDataModifying() {
+        return false;
+    }
+
 }
 
