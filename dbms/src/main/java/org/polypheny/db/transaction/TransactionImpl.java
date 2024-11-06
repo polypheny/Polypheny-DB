@@ -429,8 +429,8 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
         return this.entityConstraints.getOrDefault( id, List.of() );
     }
 
-
-    void abort() {
+    @Override
+    public void wakeup() {
         Thread.currentThread().interrupt();
     }
 
