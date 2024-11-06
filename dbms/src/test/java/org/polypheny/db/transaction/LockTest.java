@@ -33,14 +33,12 @@ import org.polypheny.db.transaction.Lock.LockType;
 
 public class LockTest {
 
-    private WaitForGraph waitForGraph;
     private TransactionImpl transaction1;
     private TransactionImpl transaction2;
 
 
     @BeforeEach
     public void setup() {
-        waitForGraph = new WaitForGraph();
         transaction1 = Mockito.mock( TransactionImpl.class );
         transaction2 = Mockito.mock( TransactionImpl.class );
     }
@@ -56,7 +54,7 @@ public class LockTest {
 
         executor.execute( () -> {
             try {
-                lock.acquire( transaction1, Lock.LockType.SHARED, waitForGraph );
+                lock.acquire( transaction1, Lock.LockType.SHARED );
                 results.add( true );
             } catch ( InterruptedException e ) {
                 results.add( false );
@@ -70,7 +68,7 @@ public class LockTest {
         executor.execute( () -> {
             try {
                 secondThreadStartLatch.await();
-                lock.acquire( transaction1, Lock.LockType.SHARED, waitForGraph );
+                lock.acquire( transaction1, Lock.LockType.SHARED );
                 results.add( true );
             } catch ( InterruptedException e ) {
                 results.add( false );
@@ -98,7 +96,7 @@ public class LockTest {
 
         executor.execute( () -> {
             try {
-                lock.acquire( transaction1, Lock.LockType.SHARED, waitForGraph );
+                lock.acquire( transaction1, Lock.LockType.SHARED );
                 results.add( true );
             } catch ( InterruptedException e ) {
                 results.add( false );
@@ -112,7 +110,7 @@ public class LockTest {
         executor.execute( () -> {
             try {
                 secondThreadStartLatch.await();
-                lock.acquire( transaction2, Lock.LockType.SHARED, waitForGraph );
+                lock.acquire( transaction2, Lock.LockType.SHARED );
                 results.add( true );
             } catch ( InterruptedException e ) {
                 results.add( false );
@@ -139,10 +137,10 @@ public class LockTest {
 
         executor.execute( () -> {
             try {
-                lock.acquire( transaction1, Lock.LockType.EXCLUSIVE, waitForGraph );
+                lock.acquire( transaction1, Lock.LockType.EXCLUSIVE );
                 results.add( true );
                 Thread.sleep( 1000 ); // ensure contention
-                lock.release( transaction1, waitForGraph );
+                lock.release( transaction1 );
             } catch ( InterruptedException e ) {
                 results.add( false );
                 Thread.currentThread().interrupt();
@@ -153,9 +151,9 @@ public class LockTest {
 
         executor.execute( () -> {
             try {
-                lock.acquire( transaction2, Lock.LockType.EXCLUSIVE, waitForGraph );
+                lock.acquire( transaction2, Lock.LockType.EXCLUSIVE );
                 results.add( true );
-                lock.release( transaction2, waitForGraph );
+                lock.release( transaction2);
             } catch ( InterruptedException e ) {
                 results.add( false );
                 Thread.currentThread().interrupt();
@@ -176,10 +174,10 @@ public class LockTest {
     void testUpgradeSharedToExclusive() {
         Lock lock = new Lock();
         try {
-            lock.acquire( transaction1, Lock.LockType.SHARED, waitForGraph );
-            lock.upgradeToExclusive( transaction1, waitForGraph );
+            lock.acquire( transaction1, Lock.LockType.SHARED );
+            lock.upgradeToExclusive( transaction1 );
             assertSame( lock.getLockType(), LockType.EXCLUSIVE );
-            lock.release( transaction1, waitForGraph );
+            lock.release( transaction1 );
         } catch ( InterruptedException e ) {
             fail();
         }
@@ -196,11 +194,11 @@ public class LockTest {
 
         executor.execute( () -> {
             try {
-                lock.acquire( transaction1, Lock.LockType.EXCLUSIVE, waitForGraph );
+                lock.acquire( transaction1, Lock.LockType.EXCLUSIVE );
                 results.add( "EXCLUSIVE_ACQUIRED" );
                 secondThreadStartLatch.countDown();
                 Thread.sleep( 1000 ); // ensure contention
-                lock.release( transaction1, waitForGraph );
+                lock.release( transaction1 );
                 results.add( "EXCLUSIVE_RELEASED" );
             } catch ( InterruptedException e ) {
                 results.add( "EXCLUSIVE_FAILED" );
@@ -213,9 +211,9 @@ public class LockTest {
         executor.execute( () -> {
             try {
                 secondThreadStartLatch.await();
-                lock.acquire( transaction2, Lock.LockType.SHARED, waitForGraph );
+                lock.acquire( transaction2, Lock.LockType.SHARED );
                 results.add( "SHARED_ACQUIRED" );
-                lock.release( transaction2, waitForGraph );
+                lock.release( transaction2 );
             } catch ( InterruptedException e ) {
                 results.add( "SHARED_FAILED" );
                 Thread.currentThread().interrupt();
@@ -244,10 +242,10 @@ public class LockTest {
         executor.execute( () -> {
             try {
 
-                lock.acquire( transaction1, Lock.LockType.SHARED, waitForGraph );
+                lock.acquire( transaction1, Lock.LockType.SHARED );
                 results.add( "SHARED_ACQUIRED" );
                 secondThreadStartLatch.countDown();
-                lock.release( transaction1, waitForGraph );
+                lock.release( transaction1 );
             } catch ( InterruptedException e ) {
                 results.add( "SHARED_FAILED" );
                 Thread.currentThread().interrupt();
@@ -259,10 +257,10 @@ public class LockTest {
         executor.execute( () -> {
             try {
                 secondThreadStartLatch.await();
-                lock.acquire( transaction2, Lock.LockType.EXCLUSIVE, waitForGraph );
+                lock.acquire( transaction2, Lock.LockType.EXCLUSIVE );
                 results.add( "EXCLUSIVE_ACQUIRED" );
                 Thread.sleep( 1000 ); // ensure contention
-                lock.release( transaction2, waitForGraph );
+                lock.release( transaction2);
                 results.add( "EXCLUSIVE_RELEASED" );
             } catch ( InterruptedException e ) {
                 results.add( "EXCLUSIVE_FAILED" );
