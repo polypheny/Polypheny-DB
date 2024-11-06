@@ -234,7 +234,6 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
                             i + 1,
                             values.get( index ),
                             context.getParameterType( index ),
-                            preparedStatement.getParameterMetaData().getParameterType( i + 1 ),
                             connectionHandler );
                 }
                 if ( batch ) {
@@ -250,7 +249,7 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
      * Assigns a value to a dynamic parameter in a prepared statement, calling the appropriate {@code setXxx}
      * method based on the type of the parameter.
      */
-    private static void setDynamicParam( PreparedStatement preparedStatement, int i, PolyValue value, AlgDataType type, int sqlType, ConnectionHandler connectionHandler ) throws SQLException {
+    private static void setDynamicParam( PreparedStatement preparedStatement, int i, PolyValue value, AlgDataType type, ConnectionHandler connectionHandler ) throws SQLException {
         if ( value == null || value.isNull() ) {
             preparedStatement.setNull( i, Types.NULL );
             return;

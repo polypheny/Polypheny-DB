@@ -38,7 +38,6 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Transaction;
-import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.type.entity.PolyValue;
 
 
@@ -232,12 +231,8 @@ public class SelectTest {
 
         assertEquals( 2, first.size() );
         assertEquals( 1, others.size() );
-        try {
-            iter.close();
-            trx.commit();
-        } catch ( TransactionException | Exception e ) {
-            throw new RuntimeException( e );
-        }
+        iter.close();
+        trx.commit();
     }
 
 

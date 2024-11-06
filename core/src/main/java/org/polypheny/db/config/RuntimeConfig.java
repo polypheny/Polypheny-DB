@@ -509,7 +509,7 @@ public enum RuntimeConfig {
     LOCKING_MAX_TIMEOUT_SECONDS(
             "runtime/maxTimeout",
             "How long a transactions should wait for a lock until it is aborted",
-            30,
+            90,
             ConfigType.INTEGER );
 
 
