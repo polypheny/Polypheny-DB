@@ -123,5 +123,10 @@ public class EnumerableInterpreter extends SingleAlg implements EnumerableAlg {
         return implementor.result( physType, builder.toBlock() );
     }
 
+    @Override
+    public boolean isDataModifying() {
+        return false;
+    }
+
 }
 

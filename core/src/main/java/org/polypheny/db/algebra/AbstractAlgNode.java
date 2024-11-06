@@ -406,7 +406,7 @@ public abstract class AbstractAlgNode implements AlgNode {
 
     @Override
     public boolean isDataModifying() {
-        return false;
+        return true;
     }
 
 

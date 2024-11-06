@@ -512,5 +512,10 @@ public abstract class Aggregate extends SingleAlg {
 
     }
 
+    @Override
+    public boolean isDataModifying() {
+        return false;
+    }
+
 }
 

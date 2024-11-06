@@ -102,4 +102,9 @@ public class Transformer extends AbstractAlgNode {
                 + inputs.stream().map( AlgNode::algCompareString ).collect( Collectors.joining( "$" ) ) + "&";
     }
 
+    @Override
+    public boolean isDataModifying() {
+        return false;
+    }
+
 }

@@ -193,5 +193,10 @@ public abstract class Sort extends SingleAlg {
                 (fetch != null ? fetch.toString() : "") + "&";
     }
 
+    @Override
+    public boolean isDataModifying() {
+        return false;
+    }
+
 }
 
