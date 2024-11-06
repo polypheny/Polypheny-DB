@@ -85,7 +85,7 @@ public class AlgEntityScanner extends AlgVisitor {
 
 
     @Deprecated
-    // This is to be replaced with actual entry identifiers instead of using the entity identifiers to allow locking on the entry level.
+    // TODO TH: This is to be replaced with actual entry identifiers instead of using the entity identifiers to allow locking on the entry level.
     private ByteString deriveEntryId( long entityId ) {
         ByteBuffer buffer = ByteBuffer.allocate( Long.BYTES );
         buffer.putLong( entityId );
