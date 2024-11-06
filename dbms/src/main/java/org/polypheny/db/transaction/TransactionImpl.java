@@ -59,6 +59,7 @@ import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.processing.DataMigratorImpl;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.processing.QueryProcessor;
+import org.polypheny.db.transaction.locking.LockTable;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.view.MaterializedViewManager;
