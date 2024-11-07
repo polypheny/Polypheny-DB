@@ -113,9 +113,8 @@ public interface EnumerableAlg extends AlgNode {
      *
      * @param physType Describes the Java type returned by this relational expression, and the mapping between it and the fields of the logical row type.
      */
-    record Result(BlockStatement block, PhysType physType, JavaTupleFormat format) {
+    record Result( BlockStatement block, PhysType physType, JavaTupleFormat format ) {
 
     }
 
 }
-

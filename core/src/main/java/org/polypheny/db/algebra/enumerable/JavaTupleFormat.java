@@ -274,4 +274,3 @@ public enum JavaTupleFormat {
      */
     public abstract Expression field( Expression expression, int field, Type fromType, Type fieldType );
 }
-

@@ -170,4 +170,3 @@ public class OracleSqlOperatorTable extends ReflectiveSqlOperatorTable {
     }
 
 }
-

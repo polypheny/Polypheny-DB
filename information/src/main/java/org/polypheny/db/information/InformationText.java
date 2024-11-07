@@ -45,7 +45,8 @@ public class InformationText extends Information {
         this.text = text;
     }
 
-    public InformationText setText ( final String text ) {
+
+    public InformationText setText( final String text ) {
         this.text = text;
         this.notifyManager();
         return this;

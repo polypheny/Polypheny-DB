@@ -82,5 +82,5 @@ public class HepProgram {
             instruction.initialize( clearCache );
         }
     }
-}
 
+}

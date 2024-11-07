@@ -71,7 +71,7 @@ public class DashboardInformation {
 
 
     public void updateStatistic() {
-        Snapshot snapshot = Catalog.getInstance().getSnapshot();
+        Snapshot snapshot = Catalog.snapshot();
         this.catalogPersistent = Catalog.getInstance().isPersistent;
 
         this.numberOfQueries = MonitoringServiceProvider.getInstance().getAllDataPoints( QueryDataPointImpl.class ).size();

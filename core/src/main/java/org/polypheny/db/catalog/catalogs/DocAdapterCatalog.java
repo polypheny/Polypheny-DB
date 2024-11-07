@@ -21,9 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
-import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
-import lombok.Getter;
 import lombok.Value;
 import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
@@ -41,7 +39,6 @@ import org.polypheny.db.catalog.entity.physical.PhysicalField;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.util.Pair;
 
-@Getter
 @EqualsAndHashCode(callSuper = true)
 @Value
 public class DocAdapterCatalog extends AdapterCatalog {
@@ -57,7 +54,7 @@ public class DocAdapterCatalog extends AdapterCatalog {
         List<PhysicalColumn> updates = new ArrayList<>();
         for ( PhysicalField field : fields.values() ) {
             if ( field.id == id ) {
-                updates.add( field.unwrap( PhysicalColumn.class ).orElseThrow().toBuilder().logicalName( newFieldName ).build() );
+                updates.add( field.unwrapOrThrow( PhysicalColumn.class ).toBuilder().logicalName( newFieldName ).build() );
             }
         }
         for ( PhysicalColumn u : updates ) {
@@ -77,7 +74,7 @@ public class DocAdapterCatalog extends AdapterCatalog {
 
 
     public <T extends PhysicalEntity> T fromAllocation( long id, Class<T> clazz ) {
-        return getPhysicalsFromAllocs( id ).get( 0 ).unwrap( clazz ).orElseThrow();
+        return getPhysicalsFromAllocs( id ).get( 0 ).unwrapOrThrow( clazz );
     }
 
 
@@ -98,7 +95,7 @@ public class DocAdapterCatalog extends AdapterCatalog {
 
 
     public PhysicalColumn getColumn( long columnId, long allocId ) {
-        return fields.get( Pair.of( allocId, columnId ) ).unwrap( PhysicalColumn.class ).orElseThrow();
+        return fields.get( Pair.of( allocId, columnId ) ).unwrapOrThrow( PhysicalColumn.class );
     }
 
 
@@ -119,6 +116,7 @@ public class DocAdapterCatalog extends AdapterCatalog {
         return column;
     }
 
+
     public PhysicalTable createTable(
             String namespaceName,
             String tableName,
@@ -129,7 +127,7 @@ public class DocAdapterCatalog extends AdapterCatalog {
             AllocationTableWrapper wrapper ) {
         AllocationTable allocation = wrapper.table;
         List<AllocationColumn> columns = wrapper.columns;
-        List<PhysicalColumn> pColumns = columns.stream().map( c -> new PhysicalColumn( columnNames.get( c.columnId ), logical.id, allocation.id, allocation.adapterId, c.position, logicalColumns.get( c.columnId ) ) ).collect( Collectors.toList() );
+        List<PhysicalColumn> pColumns = columns.stream().map( c -> new PhysicalColumn( columnNames.get( c.columnId ), logical.id, allocation.id, allocation.adapterId, c.position, logicalColumns.get( c.columnId ) ) ).toList();
         long physicalId = IdBuilder.getInstance().getNewPhysicalId();
         PhysicalTable table = new PhysicalTable( physicalId, allocation.id, allocation.logicalId, tableName, pColumns, logical.namespaceId, namespaceName, pkIds, allocation.adapterId );
         pColumns.forEach( this::addColumn );

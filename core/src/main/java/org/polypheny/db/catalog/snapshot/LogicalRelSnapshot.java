@@ -41,13 +41,17 @@ public interface LogicalRelSnapshot {
      * @param name Pattern for the table name. null returns all.
      * @return List of tables which fit to the specified filters. If there is no table which meets the criteria, an empty list is returned.
      */
-    @NonNull List<LogicalTable> getTables( @Nullable Pattern namespace, @Nullable Pattern name );
+    @NonNull
+    List<LogicalTable> getTables( @Nullable Pattern namespace, @Nullable Pattern name );
 
-    @NonNull List<LogicalTable> getTables( long namespaceId, @Nullable Pattern name );
+    @NonNull
+    List<LogicalTable> getTables( long namespaceId, @Nullable Pattern name );
 
-    @NonNull Optional<LogicalTable> getTables( @Nullable String namespace, @NonNull String name );
+    @NonNull
+    Optional<LogicalTable> getTables( @Nullable String namespace, @NonNull String name );
 
-    @NonNull List<LogicalTable> getTablesFromNamespace( long namespace );
+    @NonNull
+    List<LogicalTable> getTablesFromNamespace( long namespace );
 
 
     /**
@@ -56,9 +60,11 @@ public interface LogicalRelSnapshot {
      * @param tableName The name of the table
      * @return The table
      */
-    @NonNull Optional<LogicalTable> getTable( long namespaceId, String tableName );
+    @NonNull
+    Optional<LogicalTable> getTable( long namespaceId, String tableName );
 
-    @NonNull Optional<LogicalTable> getTable( String namespaceName, String tableName );
+    @NonNull
+    Optional<LogicalTable> getTable( String namespaceName, String tableName );
 
 
     /**
@@ -66,7 +72,8 @@ public interface LogicalRelSnapshot {
      *
      * @return The keys
      */
-    @NonNull List<LogicalKey> getKeys();
+    @NonNull
+    List<LogicalKey> getKeys();
 
 
     /**
@@ -75,7 +82,8 @@ public interface LogicalRelSnapshot {
      * @param tableId The id of the table for which the keys are returned
      * @return The collection of keys
      */
-    @NonNull List<LogicalKey> getTableKeys( long tableId );
+    @NonNull
+    List<LogicalKey> getTableKeys( long tableId );
 
 
     /**
@@ -84,7 +92,8 @@ public interface LogicalRelSnapshot {
      * @param tableId The id of the table
      * @return List of columns which fit to the specified filters. If there is no column which meets the criteria, an empty list is returned.
      */
-    @NonNull List<LogicalColumn> getColumns( long tableId );
+    @NonNull
+    List<LogicalColumn> getColumns( long tableId );
 
     /**
      * Get all columns of the specified database which fit to the specified filter patterns.
@@ -94,7 +103,8 @@ public interface LogicalRelSnapshot {
      * @param columnName Pattern for the column name. null returns all.
      * @return List of columns which fit to the specified filters. If there is no column which meets the criteria, an empty list is returned.
      */
-    @NonNull List<LogicalColumn> getColumns( @Nullable Pattern tableName, @Nullable Pattern columnName );
+    @NonNull
+    List<LogicalColumn> getColumns( @Nullable Pattern tableName, @Nullable Pattern columnName );
 
     /**
      * Returns the column with the specified id.
@@ -102,7 +112,8 @@ public interface LogicalRelSnapshot {
      * @param columnId The id of the column
      * @return A CatalogColumn
      */
-    @NonNull Optional<LogicalColumn> getColumn( long columnId );
+    @NonNull
+    Optional<LogicalColumn> getColumn( long columnId );
 
     /**
      * Returns the column with the specified name in the specified table of the specified database and schema.
@@ -111,7 +122,8 @@ public interface LogicalRelSnapshot {
      * @param columnName The name of the column
      * @return A CatalogColumn
      */
-    @NonNull Optional<LogicalColumn> getColumn( long tableId, String columnName );
+    @NonNull
+    Optional<LogicalColumn> getColumn( long tableId, String columnName );
 
     /**
      * Returns the column with the specified name in the specified table of the specified database and schema.
@@ -121,7 +133,8 @@ public interface LogicalRelSnapshot {
      * @param columnName The name of the column
      * @return A CatalogColumn
      */
-    @NonNull Optional<LogicalColumn> getColumn( long namespace, String tableName, String columnName );
+    @NonNull
+    Optional<LogicalColumn> getColumn( long namespace, String tableName, String columnName );
 
     /**
      * Returns a specified primary key
@@ -170,7 +183,8 @@ public interface LogicalRelSnapshot {
      * @param tableId The id of the table
      * @return List of foreign keys
      */
-    @NonNull List<LogicalForeignKey> getForeignKeys( long tableId );
+    @NonNull
+    List<LogicalForeignKey> getForeignKeys( long tableId );
 
     /**
      * Returns all foreign keys that reference the specified table (exported keys).
@@ -178,7 +192,8 @@ public interface LogicalRelSnapshot {
      * @param tableId The id of the table
      * @return List of foreign keys
      */
-    @NonNull List<LogicalForeignKey> getExportedKeys( long tableId );
+    @NonNull
+    List<LogicalForeignKey> getExportedKeys( long tableId );
 
     /**
      * Get all constraints of the specified table
@@ -186,7 +201,8 @@ public interface LogicalRelSnapshot {
      * @param tableId The id of the table
      * @return List of constraints
      */
-    @NonNull List<LogicalConstraint> getConstraints( long tableId );
+    @NonNull
+    List<LogicalConstraint> getConstraints( long tableId );
 
 
     /**
@@ -195,7 +211,8 @@ public interface LogicalRelSnapshot {
      * @param key The key for which the collection is returned
      * @return The collection of constraints
      */
-    @NonNull List<LogicalConstraint> getConstraints( LogicalKey key );
+    @NonNull
+    List<LogicalConstraint> getConstraints( LogicalKey key );
 
     /**
      * Returns the constraint with the specified name in the specified table.
@@ -204,7 +221,8 @@ public interface LogicalRelSnapshot {
      * @param constraintName The name of the constraint
      * @return The constraint
      */
-    @NonNull Optional<LogicalConstraint> getConstraint( long tableId, String constraintName );
+    @NonNull
+    Optional<LogicalConstraint> getConstraint( long tableId, String constraintName );
 
     /**
      * Return the foreign key with the specified name from the specified table
@@ -213,7 +231,8 @@ public interface LogicalRelSnapshot {
      * @param foreignKeyName The name of the foreign key
      * @return The foreign key
      */
-    @NonNull Optional<LogicalForeignKey> getForeignKey( long tableId, String foreignKeyName );
+    @NonNull
+    Optional<LogicalForeignKey> getForeignKey( long tableId, String foreignKeyName );
 
     List<LogicalIndex> getIndexes();
 
@@ -223,7 +242,8 @@ public interface LogicalRelSnapshot {
      * @param key The key for which the collection is returned
      * @return The collection of indexes
      */
-    @NonNull List<LogicalIndex> getIndexes( LogicalKey key );
+    @NonNull
+    List<LogicalIndex> getIndexes( LogicalKey key );
 
     /**
      * Gets a collection of foreign keys for a given {@link Catalog Key}.
@@ -231,7 +251,8 @@ public interface LogicalRelSnapshot {
      * @param key The key for which the collection is returned
      * @return The collection foreign keys
      */
-    @NonNull List<LogicalIndex> getForeignKeys( LogicalKey key );
+    @NonNull
+    List<LogicalIndex> getForeignKeys( LogicalKey key );
 
     /**
      * Returns all indexes of a table
@@ -240,7 +261,8 @@ public interface LogicalRelSnapshot {
      * @param onlyUnique true if only indexes for unique values are returned. false if all indexes are returned.
      * @return List of indexes
      */
-    @NonNull List<LogicalIndex> getIndexes( long tableId, boolean onlyUnique );
+    @NonNull
+    List<LogicalIndex> getIndexes( long tableId, boolean onlyUnique );
 
     /**
      * Returns the index with the specified name in the specified table
@@ -249,7 +271,8 @@ public interface LogicalRelSnapshot {
      * @param indexName The name of the index
      * @return The Index
      */
-    @NonNull Optional<LogicalIndex> getIndex( long tableId, String indexName );
+    @NonNull
+    Optional<LogicalIndex> getIndex( long tableId, String indexName );
 
     /**
      * Returns the index with the specified id
@@ -257,23 +280,30 @@ public interface LogicalRelSnapshot {
      * @param indexId The id of the index
      * @return The Index
      */
-    @NonNull Optional<LogicalIndex> getIndex( long indexId );
+    @NonNull
+    Optional<LogicalIndex> getIndex( long indexId );
 
-    @NonNull Optional<LogicalTable> getTable( long id );
+    @NonNull
+    Optional<LogicalTable> getTable( long id );
 
 
     AlgNode getNodeInfo( long id );
 
     List<LogicalView> getConnectedViews( long id );
 
-    @NotNull Optional<LogicalKey> getKeys( long[] columnIds );
+    @NotNull
+    Optional<LogicalKey> getKeys( long[] columnIds );
 
-    @NotNull Optional<LogicalKey> getKey( long id );
+    @NotNull
+    Optional<LogicalKey> getKey( long id );
 
-    @NotNull List<LogicalConstraint> getConstraints();
+    @NotNull
+    List<LogicalConstraint> getConstraints();
 
-    @NotNull List<LogicalPrimaryKey> getPrimaryKeys();
+    @NotNull
+    List<LogicalPrimaryKey> getPrimaryKeys();
 
-    @NotNull List<LogicalForeignKey> getForeignKeys();
+    @NotNull
+    List<LogicalForeignKey> getForeignKeys();
 
 }

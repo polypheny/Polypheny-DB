@@ -106,7 +106,6 @@ public class CypherFunctions {
     }
 
 
-
     /**
      * Transforms the relational normalized edges into {@link PolyEdge}s
      *

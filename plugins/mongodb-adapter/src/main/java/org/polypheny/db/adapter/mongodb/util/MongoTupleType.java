@@ -45,6 +45,7 @@ public class MongoTupleType implements Expressible {
         this.name = name == null ? null : name.split( "\\." )[name.split( "\\." ).length - 1];
     }
 
+
     public static MongoTupleType from( AlgDataType type ) {
         if ( !type.isStruct() ) {
             return from( (AlgDataTypeField) type );

@@ -17,139 +17,217 @@
 package org.polypheny.db.transaction;
 
 
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Map.Entry;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import lombok.Getter;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
+import javax.transaction.xa.Xid;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.transaction.EntityAccessMap.EntityIdentifier;
-import org.polypheny.db.transaction.EntityAccessMap.EntityIdentifier.NamespaceLevel;
+import org.jetbrains.annotations.NotNull;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.transaction.Lock.LockMode;
 import org.polypheny.db.util.DeadlockException;
 
-
-// Based on code taken from https://github.com/dstibrany/LockManager
 @Slf4j
 public class LockManager {
 
     public static final LockManager INSTANCE = new LockManager();
-    public static final EntityIdentifier GLOBAL_LOCK = new EntityIdentifier( -1L, -1L, NamespaceLevel.ENTITY_LEVEL ); // For locking whole schema
 
-    private final ConcurrentHashMap<EntityIdentifier, Lock> lockTable;
-    @Getter
-    private final WaitForGraph waitForGraph;
+    private boolean isExclusive = false;
+    private final Set<Xid> owners = new HashSet<>();
+    private final ConcurrentLinkedQueue<LockInformation> waiters = new ConcurrentLinkedQueue<>();
+    private final ReentrantLock lock = new ReentrantLock();
+    private final Condition condition = lock.newCondition();
 
 
     private LockManager() {
-        lockTable = new ConcurrentHashMap<>();
-        waitForGraph = new WaitForGraph();
     }
 
 
-    public void lock( @NonNull Collection<Entry<EntityIdentifier, LockMode>> idAccessMap, @NonNull TransactionImpl transaction ) throws DeadlockException {
-        // Decide on which locking  approach to focus
-        if ( transaction.acceptsOutdated() ) {
-            handleSecondaryLocks( idAccessMap, transaction );
-        } else {
-            handlePrimaryLocks( idAccessMap, transaction );
+    public void lock( LockMode mode, @NonNull Transaction transaction ) throws DeadlockException {
+        // Decide on which locking approach to focus
+        synchronized ( this ) {
+            if ( owners.isEmpty() ) {
+                handleLockOrThrow( mode, transaction );
+                return;
+            } else if ( owners.contains( transaction.getXid() ) && (mode == LockMode.SHARED || isExclusive) ) {
+                log.debug( "already locked {}", transaction.getXid() );
+                // already have the required lock
+                return;
+            }
         }
-    }
+        Thread thread = Thread.currentThread();
 
+        synchronized ( waiters ) {
+            waiters.add( new LockInformation( thread, mode, transaction.getXid() ) );
+        }
 
-    /**
-     * Used in traditional transactional workload to lck all entities that will eagerly receive any update
-     */
-    private void handlePrimaryLocks( @NonNull Collection<Entry<EntityIdentifier, LockMode>> idAccessMap, @NonNull TransactionImpl transaction ) throws DeadlockException {
-        Iterator<Entry<EntityIdentifier, LockMode>> iter = idAccessMap.stream().sorted( ( a, b ) -> Math.toIntExact( a.getKey().entityId - b.getKey().entityId ) ).iterator();
-        Entry<EntityIdentifier, LockMode> pair;
-        while ( iter.hasNext() ) {
-            pair = iter.next();
-            lockTable.putIfAbsent( pair.getKey(), new Lock( waitForGraph ) );
-
-            Lock lock = lockTable.get( pair.getKey() );
-
+        // wait
+        while ( true ) {
+            lock.lock();
             try {
-                if ( hasLock( transaction, pair.getKey() ) && pair.getValue() == lock.getMode() ) {
-                    continue;
-                } else if ( pair.getValue() == Lock.LockMode.SHARED && hasLock( transaction, pair.getKey() ) && lock.getMode() == Lock.LockMode.EXCLUSIVE ) {
-                    continue;
-                } else if ( pair.getValue() == Lock.LockMode.EXCLUSIVE && hasLock( transaction, pair.getKey() ) && lock.getMode() == Lock.LockMode.SHARED ) {
-                    lock.upgrade( transaction );
-                } else {
-                    lock.acquire( transaction, pair.getValue() );
+                //noinspection DataFlowIssue // else we have a general problem
+                while ( waiters.peek().thread() != thread ) {
+                    log.debug( "wait {} ", transaction.getXid() );
+                    boolean successful = condition.await( RuntimeConfig.LOCKING_MAX_TIMEOUT_SECONDS.getInteger(), TimeUnit.SECONDS );
+
+                    if ( !successful ) {
+                        cleanupWaiters( thread );
+                        lock.unlock();
+                        log.warn( "open transactions isExclusive: {} in {}", isExclusive, owners );
+                        log.warn( "waiters {}", waiters );
+                        throw new DeadlockException( "Could not acquire lock, after max timeout was reached" );
+                    }
                 }
             } catch ( InterruptedException e ) {
-                removeTransaction( transaction );
-                throw new DeadlockException( e );
+                cleanupWaiters( thread );
+                lock.unlock();
+                throw new GenericRuntimeException( e );
             }
 
-            transaction.addLock( lock );
-        }
-    }
+            lock.unlock();
 
+            synchronized ( this ) {
 
-    /**
-     * Used in freshness related workload to lock all entities that will lazily receive updates (considered secondaries)
-     */
-    private void handleSecondaryLocks( @NonNull Collection<Entry<EntityIdentifier, LockMode>> idAccessMap, @NonNull TransactionImpl transaction ) throws DeadlockException {
-        // Try locking secondaries first.
-        // If this cannot be fulfilled by data distribution fallback and try to acquire a regular primary lock
-        // TODO @HENNLO Check if this decision should even be made here or somewhere else
+                // try execute
+                if ( handleSimpleLock( mode, transaction ) ) {
+                    // remove successful
+                    waiters.poll();
+                    // signal
+                    signalAll();
 
-        // This is mainly relevant for Queries on secondaries/outdated nodes.
-        // In theory, we already know for each query which partitions are going to be accessed.
-        // The FreshnessManager could therefore already be invoked prior to Routing to decide if the Freshness can be
-        // guaranteed or if we need to fall back to primary locking mechanisms.
-    }
+                    return;
+                } else if ( owners.contains( transaction.getXid() ) && mode == LockMode.EXCLUSIVE
+                        && owners.size() <= waiters.size()
+                        // trx is owner and wants to upgrade, other transaction has the same -> deadlock
+                        && waiters.stream().filter( w -> w.xid() != transaction.getXid() ).anyMatch( w -> owners.contains( w.xid() ) && w.mode() == LockMode.EXCLUSIVE ) ) {
+                    cleanupWaiters( thread );
+                    // we have to interrupt one transaction, all want to upgrade
+                    throw new DeadlockException( "Write-write conflict with multiple transactions." );
+                }
 
+                if ( owners.isEmpty() ) {
+                    cleanupWaiters( transaction.getXid() );
+                    throw new GenericRuntimeException( "Could not acquire lock" );
+                }
 
-    public void unlock( @NonNull Collection<EntityIdentifier> ids, @NonNull TransactionImpl transaction ) {
-        Iterator<EntityIdentifier> iter = ids.iterator();
-        EntityIdentifier entityIdentifier;
-        while ( iter.hasNext() ) {
-            entityIdentifier = iter.next();
-            Lock lock = lockTable.get( entityIdentifier );
-            if ( lock != null ) {
-                lock.release( transaction );
+                // we wait until next signal
+                if ( !owners.contains( transaction.getXid() ) && waiters.size() > 1 ) {
+                    // not in owners list queue at the end -> current owner has shared or exclusive lock
+                    waiters.add( waiters.poll() );
+                    // signal
+                    signalAll();
+                }
             }
-            transaction.removeLock( lock );
+
+        }
+
+    }
+
+
+    private void cleanupWaiters( Thread thread ) {
+        synchronized ( waiters ) {
+            List<LockInformation> remove = waiters.stream().filter( w -> w.thread() == thread ).toList();
+            if ( remove.isEmpty() ) {
+                return;
+            }
+            assert remove.size() == 1;
+            waiters.remove( remove.get( 0 ) );
         }
     }
 
 
-    public void removeTransaction( @NonNull TransactionImpl transaction ) {
-        Set<Lock> txnLockList = transaction.getLocks();
-        for ( Lock lock : txnLockList ) {
-            lock.release( transaction );
+    private void cleanupWaiters( PolyXid xid ) {
+        synchronized ( waiters ) {
+            List<LockInformation> remove = waiters.stream().filter( w -> w.xid() == xid ).toList();
+            if ( remove.isEmpty() ) {
+                return;
+            }
+            assert remove.size() == 1;
+            assert remove.get( 0 ).thread() == Thread.currentThread();
+            waiters.remove( remove.get( 0 ) );
         }
     }
 
 
-    public boolean hasLock( @NonNull TransactionImpl transaction, @NonNull EntityAccessMap.EntityIdentifier entityIdentifier ) {
-        Set<Lock> locks = transaction.getLocks();
-        if ( locks == null ) {
-            return false;
+    private void handleLockOrThrow( LockMode mode, @NotNull Transaction transaction ) {
+        if ( !handleSimpleLock( mode, transaction ) ) {
+            throw new GenericRuntimeException( "Could not acquire lock, as single transaction" );
         }
-        for ( Lock txnLock : locks ) {
-            if ( txnLock == lockTable.get( entityIdentifier ) ) {
+    }
+
+
+    private synchronized boolean handleSimpleLock( @NonNull LockMode mode, Transaction transaction ) {
+        if ( mode == LockMode.EXCLUSIVE ) {
+            // get w
+            if ( owners.isEmpty() || (owners.size() == 1 && owners.contains( transaction.getXid() )) ) {
+                if ( isExclusive ) {
+                    log.debug( "lock already exclusive" );
+                    return true;
+                }
+
+                log.debug( "x lock {}", transaction.getXid() );
+                isExclusive = true;
+                owners.add( transaction.getXid() );
                 return true;
             }
+
+        } else {
+            // get r
+            if ( !isExclusive || owners.contains( transaction.getXid() ) ) {
+                log.debug( "r lock {}", transaction.getXid() );
+                owners.add( transaction.getXid() );
+                return true;
+            }
+
         }
         return false;
     }
 
 
-    Lock.LockMode getLockMode( @NonNull EntityAccessMap.EntityIdentifier entityIdentifier ) {
-        return lockTable.get( entityIdentifier ).getMode();
+    private void signalAll() {
+        lock.lock();
+        try {
+            synchronized ( condition ) {
+                condition.signalAll();
+            }
+        } finally {
+            lock.unlock();
+        }
     }
 
 
-    public Map<EntityIdentifier, Lock> getLocks() {
-        return Map.copyOf( lockTable );
+    public synchronized void unlock( @NonNull Transaction transaction ) {
+        if ( !owners.contains( transaction.getXid() ) ) {
+            log.debug( "Transaction is no owner" );
+            return;
+        }
+
+        if ( isExclusive ) {
+            isExclusive = false;
+        }
+        log.debug( "release {}", transaction.getXid() );
+        owners.remove( transaction.getXid() );
+
+        cleanupWaiters( transaction.getXid() );
+
+        // wake up waiters
+        signalAll();
+    }
+
+
+    public void removeTransaction( @NonNull Transaction transaction ) {
+        unlock( transaction );
+    }
+
+
+    private record LockInformation( Thread thread, LockMode mode, PolyXid xid ) {
+
     }
 
 }

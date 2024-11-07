@@ -160,7 +160,7 @@ public class RexTableIndexRef extends RexIndexRef {
 
 
         public List<String> getQualifiedName() {
-            return List.of( Catalog.getInstance().getSnapshot().getNamespace( table.namespaceId ).orElseThrow().name, table.name );
+            return List.of( Catalog.snapshot().getNamespace( table.namespaceId ).orElseThrow().name, table.name );
         }
 
 

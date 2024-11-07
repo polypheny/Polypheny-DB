@@ -57,5 +57,5 @@ public interface ImplementableAggFunction extends AggregateFunction {
      * @return implementor that translates the function to linq4j expression.
      */
     AggImplementor getImplementor( boolean windowContext );
-}
 
+}

@@ -16,6 +16,11 @@
 
 package org.polypheny.db.catalog.impl;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.collect.ImmutableMap;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.annotations.Deserialize;
@@ -24,6 +29,7 @@ import java.beans.PropertyChangeListener;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -83,6 +89,15 @@ import org.polypheny.db.util.Pair;
 @Slf4j
 public class PolyCatalog extends Catalog implements PolySerializable {
 
+    private final static JsonMapper MAPPER = JsonMapper.builder()
+            .configure( MapperFeature.AUTO_DETECT_CREATORS, false )
+            .configure( MapperFeature.AUTO_DETECT_FIELDS, false )
+            .configure( MapperFeature.AUTO_DETECT_GETTERS, false )
+            .configure( MapperFeature.AUTO_DETECT_IS_GETTERS, false )
+            .configure( MapperFeature.AUTO_DETECT_SETTERS, false )
+            .configure( SerializationFeature.FAIL_ON_EMPTY_BEANS, false )
+            .build();
+
     @Getter
     private final BinarySerializer<PolyCatalog> serializer = PolySerializable.buildSerializer( PolyCatalog.class );
 
@@ -94,20 +109,25 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
 
     @Serialize
+    @JsonProperty
     public final Map<Long, LogicalCatalog> logicalCatalogs;
 
     @Serialize
+    @JsonProperty
     public final Map<Long, AllocationCatalog> allocationCatalogs;
 
     @Serialize
+    @JsonProperty
     @Getter
     public final Map<Long, LogicalUser> users;
 
     @Serialize
+    @JsonProperty
     @Getter
     public final Map<Long, LogicalAdapter> adapters;
 
     @Serialize
+    @JsonProperty
     @Getter
     public final Map<Long, LogicalQueryInterface> interfaces;
 
@@ -121,9 +141,11 @@ public class PolyCatalog extends Catalog implements PolySerializable {
     public final Map<Long, AdapterCatalog> adapterCatalogs;
 
     @Serialize
+    @JsonProperty
     public final Map<Long, AdapterRestore> adapterRestore;
 
     @Serialize
+    @JsonProperty
     public final IdBuilder idBuilder;
 
     private final Persister persister;
@@ -147,7 +169,6 @@ public class PolyCatalog extends Catalog implements PolySerializable {
                 Map.of(),
                 Map.of(),
                 IdBuilder.getInstance() );
-
     }
 
 
@@ -203,6 +224,16 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
 
     @Override
+    public String getJson() {
+        try {
+            return MAPPER.writeValueAsString( this );
+        } catch ( JsonProcessingException e ) {
+            throw new GenericRuntimeException( e );
+        }
+    }
+
+
+    @Override
     public void executeCommitActions() {
         // execute physical changes
         commitActions.forEach( Runnable::run );
@@ -225,7 +256,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
         this.adapterRestore.clear();
         adapterCatalogs.forEach( ( id, catalog ) -> {
-            Map<Long, List<PhysicalEntity>> restore = catalog.allocToPhysicals.entrySet().stream().map( a -> Pair.of( a, a.getValue().stream().map( key -> catalog.physicals.get( key ).normalize() ).toList() ) ).collect( Collectors.toMap( a -> a.getKey().getKey(), Pair::getValue ) );
+            Map<Long, List<PhysicalEntity>> restore = catalog.allocToPhysicals.entrySet().stream().collect( Collectors.toMap( Entry::getKey, a -> a.getValue().stream().map( key -> catalog.physicals.get( key ).normalize() ).toList() ) );
             this.adapterRestore.put( id, new AdapterRestore( id, restore, catalog.allocations ) );
         } );
 
@@ -342,8 +373,8 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
 
     @Override
-    public <S extends AdapterCatalog> Optional<S> getAdapterCatalog( long id ) {
-        return Optional.ofNullable( (S) adapterCatalogs.get( id ) );
+    public Optional<AdapterCatalog> getAdapterCatalog( long id ) {
+        return Optional.ofNullable( adapterCatalogs.get( id ) );
     }
 
 
@@ -366,20 +397,15 @@ public class PolyCatalog extends Catalog implements PolySerializable {
         long id = idBuilder.getNewLogicalId();
         LogicalNamespace namespace = new LogicalNamespace( id, name, dataModel, caseSensitive );
 
-        switch ( dataModel ) {
-            case RELATIONAL:
-                logicalCatalogs.put( id, new RelationalCatalog( namespace ) );
-                allocationCatalogs.put( id, new PolyAllocRelCatalog( namespace ) );
-                break;
-            case DOCUMENT:
-                logicalCatalogs.put( id, new DocumentCatalog( namespace ) );
-                allocationCatalogs.put( id, new PolyAllocDocCatalog( namespace ) );
-                break;
-            case GRAPH:
-                logicalCatalogs.put( id, new GraphCatalog( namespace ) );
-                allocationCatalogs.put( id, new PolyAllocGraphCatalog( namespace ) );
-                break;
-        }
+        Pair<LogicalCatalog, AllocationCatalog> catalogs = switch ( dataModel ) {
+            case RELATIONAL -> Pair.of( new RelationalCatalog( namespace ), new PolyAllocRelCatalog( namespace ) );
+            case DOCUMENT -> Pair.of( new DocumentCatalog( namespace ), new PolyAllocDocCatalog( namespace ) );
+            case GRAPH -> Pair.of( new GraphCatalog( namespace ), new PolyAllocGraphCatalog( namespace ) );
+        };
+
+        logicalCatalogs.put( id, catalogs.left );
+        allocationCatalogs.put( id, catalogs.right );
+
         change();
         return id;
     }
@@ -426,6 +452,8 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
     @Override
     public void dropAdapter( long id ) {
+        adapterCatalogs.remove( id );
+        adapterRestore.remove( id );
         adapters.remove( id );
         change();
     }

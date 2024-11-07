@@ -18,7 +18,7 @@ package org.polypheny.db.catalog.persistance;
 
 public class InMemoryPersister implements Persister {
 
-    String backup = "";
+    private String backup = "";
 
 
     @Override

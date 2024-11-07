@@ -42,7 +42,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
@@ -4943,9 +4942,9 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                     }
                 } );
         return typeFactory.createStructType(
-                types.stream().map( t -> (Long) null ).collect( Collectors.toList() ),
+                types.stream().map( t -> (Long) null ).toList(),
                 types,
-                IntStream.range( 0, types.size() ).mapToObj( i -> "?" + i ).collect( Collectors.toList() ) );
+                IntStream.range( 0, types.size() ).mapToObj( i -> "?" + i ).toList() );
     }
 
 
@@ -5907,7 +5906,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                         final AlgDataTypeField f2 = right.field( name );
                         final ImmutableList<Integer> source2 = right.sources.get( f2.getIndex() );
                         sourceSet.add( source2 );
-                        sources.add( ImmutableList.copyOf( Stream.concat( source.stream(), source2.stream() ).collect( Collectors.toList() ) ) );
+                        sources.add( ImmutableList.copyOf( Stream.concat( source.stream(), source2.stream() ).toList() ) );
                         final boolean nullable =
                                 (f.getType().isNullable()
                                         || join.getJoinType().generatesNullsOnLeft())

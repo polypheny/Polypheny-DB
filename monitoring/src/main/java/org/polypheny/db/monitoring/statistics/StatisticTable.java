@@ -25,6 +25,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 
 
 /**
@@ -70,9 +71,9 @@ public class StatisticTable {
     public StatisticTable( Long tableId ) {
         this.tableId = tableId;
 
-        Catalog catalog = Catalog.getInstance();
-        if ( catalog.getSnapshot().getLogicalEntity( tableId ).isPresent() ) {
-            LogicalTable catalogTable = catalog.getSnapshot().getLogicalEntity( tableId ).map( e -> e.unwrap( LogicalTable.class ) ).orElseThrow().orElseThrow();
+        Snapshot snapshot = Catalog.snapshot();
+        if ( snapshot.getLogicalEntity( tableId ).isPresent() ) {
+            LogicalTable catalogTable = snapshot.getLogicalEntity( tableId ).flatMap( e -> e.unwrap( LogicalTable.class ) ).orElseThrow();
             this.table = catalogTable.name;
             this.dataModel = catalogTable.dataModel;
             this.entityType = catalogTable.entityType;

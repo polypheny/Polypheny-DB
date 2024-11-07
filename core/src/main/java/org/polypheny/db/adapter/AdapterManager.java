@@ -68,7 +68,7 @@ public class AdapterManager {
 
     public static void removeAdapterTemplate( long templateId ) {
         AdapterTemplate template = Catalog.snapshot().getAdapterTemplate( templateId ).orElseThrow();
-        if ( Catalog.getInstance().getSnapshot().getAdapters().stream().anyMatch( a -> a.adapterName.equals( template.adapterName ) && a.type == template.adapterType ) ) {
+        if ( Catalog.snapshot().getAdapters().stream().anyMatch( a -> a.adapterName.equals( template.adapterName ) && a.type == template.adapterType ) ) {
             throw new GenericRuntimeException( "Adapter is still deployed!" );
         }
         Catalog.getInstance().dropAdapterTemplate( templateId );
@@ -196,10 +196,10 @@ public class AdapterManager {
         }
         Adapter<?> adapterInstance = optionalAdapter.get();
 
-        LogicalAdapter logicalAdapter = Catalog.getInstance().getSnapshot().getAdapter( adapterId ).orElseThrow();
+        LogicalAdapter logicalAdapter = Catalog.snapshot().getAdapter( adapterId ).orElseThrow();
 
         // Check if the store has any placements
-        List<AllocationEntity> placements = Catalog.getInstance().getSnapshot().alloc().getEntitiesOnAdapter( logicalAdapter.id ).orElseThrow( () -> new GenericRuntimeException( "There is still data placed on this data store" ) );
+        List<AllocationEntity> placements = Catalog.snapshot().alloc().getEntitiesOnAdapter( logicalAdapter.id ).orElseThrow( () -> new GenericRuntimeException( "There is still data placed on this data store" ) );
         if ( !placements.isEmpty() ) {
             if ( adapterInstance instanceof DataStore<?> ) {
                 throw new GenericRuntimeException( "There is still data placed on this data store" );

@@ -24,29 +24,19 @@ import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.mql.Mql.Type;
 
 
+@Getter
 public class MqlFindAndModify extends MqlCollectionStatement implements MqlQueryStatement {
 
-    @Getter
     private final BsonDocument query;
-    @Getter
     private final BsonDocument sort;
-    @Getter
     private final boolean remove;
-    @Getter
     private final BsonDocument update;
-    @Getter
     private final boolean newKey;
-    @Getter
     private final BsonDocument fields;
-    @Getter
     private final boolean upsert;
-    @Getter
     private final boolean bypassDocumentValidation;
-    @Getter
     private final BsonDocument collation;
-    @Getter
     private final BsonArray arrayFilters;
-    @Getter
     private final BsonDocument let;
 
 

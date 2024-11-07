@@ -83,6 +83,7 @@ public class RexCall extends RexNode {
         this( type, op, ImmutableList.copyOf( operands ) );
     }
 
+
     public RexCall( AlgDataType type, Operator op, List<? extends RexNode> operands ) {
         this.type = Objects.requireNonNull( type );
         this.op = Objects.requireNonNull( op );
@@ -268,4 +269,3 @@ public class RexCall extends RexNode {
     }
 
 }
-

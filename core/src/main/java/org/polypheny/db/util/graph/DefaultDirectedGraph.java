@@ -220,6 +220,7 @@ public class DefaultDirectedGraph<V, E extends DefaultEdge> implements DirectedG
     static class VertexInfo<V, E> {
 
         public List<E> outEdges = new ArrayList<>();
-    }
-}
 
+    }
+
+}

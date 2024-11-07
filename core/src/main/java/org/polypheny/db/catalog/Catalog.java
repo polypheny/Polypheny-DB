@@ -109,6 +109,8 @@ public abstract class Catalog implements ExtensionPoint {
 
     public abstract void change();
 
+    public abstract String getJson();
+
     public abstract void executeCommitActions();
 
     public abstract void clearCommitActions();
@@ -132,7 +134,7 @@ public abstract class Catalog implements ExtensionPoint {
 
     public abstract AllocationGraphCatalog getAllocGraph( long namespaceId );
 
-    public abstract <S extends AdapterCatalog> Optional<S> getAdapterCatalog( long id );
+    public abstract Optional<AdapterCatalog> getAdapterCatalog( long id );
 
     public abstract void addStoreSnapshot( AdapterCatalog snapshot );
 
@@ -256,11 +258,6 @@ public abstract class Catalog implements ExtensionPoint {
 
 
     public abstract Snapshot getSnapshot();
-
-
-    public Snapshot getSnapshot( long id ) {
-        return snapshot();
-    }
 
 
     public static Snapshot snapshot() {

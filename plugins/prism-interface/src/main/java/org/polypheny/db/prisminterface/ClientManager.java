@@ -23,6 +23,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalUser;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
@@ -31,7 +32,6 @@ import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.prisminterface.PIPlugin.PrismInterface;
 import org.polypheny.db.prisminterface.transport.Transport;
 import org.polypheny.db.prisminterface.utils.PropertyUtils;
-import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.prism.ConnectionRequest;
@@ -54,8 +54,8 @@ class ClientManager {
     }
 
 
-    public void unregisterConnection( PIClient client ) {
-        client.prepareForDisposal();
+    public void unregisterConnection( PIClient client, @Nullable String reason ) {
+        client.prepareForDisposal( reason );
         clients.remove( client.getClientUUID() );
     }
 
@@ -70,12 +70,12 @@ class ClientManager {
             return authenticator.authenticate( username, password );
         } else if ( t.getPeer().isPresent() ) {
             String username = t.getPeer().get();
-            Optional<LogicalUser> catalogUser = Catalog.getInstance().getSnapshot().getUser( username );
+            Optional<LogicalUser> catalogUser = Catalog.snapshot().getUser( username );
             if ( catalogUser.isPresent() ) {
                 return catalogUser.get();
             } else {
                 if ( username.equals( System.getProperty( "user.name" ) ) ) {
-                    return Catalog.getInstance().getSnapshot().getUser( Catalog.USER_NAME ).orElseThrow();
+                    return Catalog.snapshot().getUser( Catalog.USER_NAME ).orElseThrow();
                 } else {
                     throw new AuthenticationException( "Peer authentication failed: No user with that name" );
                 }
@@ -94,8 +94,6 @@ class ClientManager {
             log.trace( "User {} tries to establish connection via prism interface.", uuid );
         }
         final LogicalUser user = getUser( connectionRequest, t );
-        Transaction transaction = transactionManager.startTransaction( user.id, false, "prism-interface" );
-        transaction.commit();
         LogicalNamespace namespace = getNamespaceOrDefault( connectionRequest );
         boolean isAutocommit = getAutocommitOrDefault( connectionRequest );
         PIClient client = new PIClient(
@@ -129,7 +127,7 @@ class ClientManager {
         if ( connectionRequest.hasConnectionProperties() && connectionRequest.getConnectionProperties().hasNamespaceName() ) {
             namespaceName = connectionRequest.getConnectionProperties().getNamespaceName();
         }
-        Optional<LogicalNamespace> optionalNamespace = Catalog.getInstance().getSnapshot().getNamespace( namespaceName );
+        Optional<LogicalNamespace> optionalNamespace = Catalog.snapshot().getNamespace( namespaceName );
         if ( optionalNamespace.isEmpty() ) {
             throw new PIServiceException( "Getting namespace " + namespaceName + " failed." );
         }

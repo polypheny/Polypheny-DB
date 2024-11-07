@@ -40,5 +40,5 @@ public interface CallImplementor {
      * @return Translated call
      */
     Expression implement( RexToLixTranslator translator, RexCall call, RexImpTable.NullAs nullAs );
-}
 
+}

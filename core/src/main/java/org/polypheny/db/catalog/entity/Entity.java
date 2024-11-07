@@ -16,10 +16,10 @@
 
 package org.polypheny.db.catalog.entity;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.activej.serializer.annotations.Serialize;
 import java.io.Serializable;
 import java.util.List;
-import lombok.Getter;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 import lombok.experimental.SuperBuilder;
@@ -41,28 +41,33 @@ import org.polypheny.db.schema.types.Typed;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Wrapper;
 
-@Getter
 @SuperBuilder(toBuilder = true)
 @Value
 @NonFinal
 public abstract class Entity implements PolyObject, Wrapper, Serializable, CatalogType, Expressible, Typed, Comparable<Entity> {
 
     @Serialize
+    @JsonProperty
     public long id;
 
     @Serialize
+    @JsonProperty
     public EntityType entityType;
 
     @Serialize
+    @JsonProperty
     public DataModel dataModel;
 
     @Serialize
+    @JsonProperty
     public String name;
 
     @Serialize
+    @JsonProperty
     public long namespaceId;
 
     @Serialize
+    @JsonProperty
     public boolean modifiable;
 
 
@@ -153,7 +158,7 @@ public abstract class Entity implements PolyObject, Wrapper, Serializable, Catal
         if ( !this.getClass().getSimpleName().equals( o.getClass().getSimpleName() ) ) {
             return -1;
         }
-        return (int) (this.id - o.id);
+        return Long.compare( this.id, o.id );
     }
 
 }

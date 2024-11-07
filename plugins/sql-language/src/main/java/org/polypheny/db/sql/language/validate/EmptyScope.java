@@ -108,7 +108,6 @@ class EmptyScope implements SqlValidatorScope {
     }
 
 
-
     @Override
     public AlgDataType nullifyType( SqlNode node, AlgDataType type ) {
         return type;
@@ -118,7 +117,6 @@ class EmptyScope implements SqlValidatorScope {
     @Override
     public void findAllColumnNames( List<Moniker> result ) {
     }
-
 
 
     @Override
@@ -185,4 +183,3 @@ class EmptyScope implements SqlValidatorScope {
     }
 
 }
-

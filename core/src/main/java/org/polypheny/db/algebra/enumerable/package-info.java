@@ -20,4 +20,3 @@
  */
 
 package org.polypheny.db.algebra.enumerable;
-

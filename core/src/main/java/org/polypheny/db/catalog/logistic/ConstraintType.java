@@ -35,16 +35,6 @@ public enum ConstraintType {
     }
 
 
-    public static ConstraintType getById( int id ) {
-        for ( ConstraintType e : values() ) {
-            if ( e.id == id ) {
-                return e;
-            }
-        }
-        throw new GenericRuntimeException( "Unknown ConstraintType with id: " + id );
-    }
-
-
     public static ConstraintType parse( @NonNull String str ) {
         if ( str.equalsIgnoreCase( "UNIQUE" ) ) {
             return ConstraintType.UNIQUE;

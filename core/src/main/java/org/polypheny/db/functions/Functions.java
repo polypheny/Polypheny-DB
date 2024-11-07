@@ -2137,7 +2137,7 @@ public class Functions {
      * NULL &rarr; NULL, FALSE &rarr; TRUE, TRUE &rarr; FALSE.
      */
     public static PolyBoolean not( PolyBoolean b ) {
-        return PolyBoolean.of( !b.value );
+        return b == null ? PolyBoolean.of( null ) : PolyBoolean.of( !b.value );
     }
 
 
@@ -2845,9 +2845,9 @@ public class Functions {
     }
 
 
-    private static RuntimeException toUnchecked( Exception e ) {
-        if ( e instanceof RuntimeException ) {
-            return (RuntimeException) e;
+    static RuntimeException toUnchecked( Exception e ) {
+        if ( e instanceof RuntimeException runtime ) {
+            return runtime;
         }
         return new GenericRuntimeException( e );
     }

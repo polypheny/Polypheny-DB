@@ -59,7 +59,6 @@ import org.polypheny.db.util.mapping.Mappings;
  * to a {@link BindableScan}.
  *
  * The {@link #INTERPRETER} variant allows an intervening {@link EnumerableInterpreter}.
- *
  */
 public abstract class FilterScanRule extends AlgOptRule {
 

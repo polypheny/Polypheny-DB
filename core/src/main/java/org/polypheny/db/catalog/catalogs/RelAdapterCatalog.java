@@ -24,9 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.SortedSet;
-import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
-import lombok.Getter;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
@@ -44,7 +42,6 @@ import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.util.Pair;
 
-@Getter
 @EqualsAndHashCode(callSuper = true)
 @Value
 @Slf4j
@@ -77,7 +74,7 @@ public class RelAdapterCatalog extends AdapterCatalog {
         }
         for ( PhysicalColumn u : updates ) {
             PhysicalTable table = fromAllocation( u.allocId );
-            List<PhysicalColumn> newColumns = table.columns.stream().filter( c -> c.id != id ).collect( Collectors.toList() );
+            List<PhysicalColumn> newColumns = new ArrayList<>( table.columns.stream().filter( c -> c.id != id ).toList() );
             newColumns.add( u );
             physicals.put( table.id, table.toBuilder().columns( ImmutableList.copyOf( newColumns ) ).build() );
             fields.put( Pair.of( u.allocId, u.id ), u );
@@ -91,19 +88,19 @@ public class RelAdapterCatalog extends AdapterCatalog {
 
 
     public PhysicalTable getTable( long id ) {
-        return getPhysical( id ).unwrap( PhysicalTable.class ).orElseThrow();
+        return getPhysical( id ).unwrapOrThrow( PhysicalTable.class );
     }
 
 
     public PhysicalColumn getColumn( long id, long allocId ) {
-        return fields.get( Pair.of( allocId, id ) ).unwrap( PhysicalColumn.class ).orElseThrow();
+        return fields.get( Pair.of( allocId, id ) ).unwrapOrThrow( PhysicalColumn.class );
     }
 
 
     public PhysicalTable createTable( String namespaceName, String tableName, Map<Long, String> columnNames, LogicalTable logical, Map<Long, LogicalColumn> lColumns, List<Long> pkIds, AllocationTableWrapper wrapper ) {
         AllocationTable allocation = wrapper.table;
         List<AllocationColumn> columns = wrapper.columns;
-        List<PhysicalColumn> pColumns = Streams.mapWithIndex( columns.stream(), ( c, i ) -> new PhysicalColumn( columnNames.get( c.columnId ), logical.id, allocation.id, allocation.adapterId, (int) i, lColumns.get( c.columnId ) ) ).collect( Collectors.toList() );
+        List<PhysicalColumn> pColumns = Streams.mapWithIndex( columns.stream(), ( c, i ) -> new PhysicalColumn( columnNames.get( c.columnId ), logical.id, allocation.id, allocation.adapterId, (int) i, lColumns.get( c.columnId ) ) ).toList();
         PhysicalTable table = new PhysicalTable( IdBuilder.getInstance().getNewPhysicalId(), allocation.id, allocation.logicalId, tableName, pColumns, logical.namespaceId, namespaceName, pkIds, allocation.adapterId );
         pColumns.forEach( this::addColumn );
         addPhysical( allocation, table );
@@ -139,12 +136,12 @@ public class RelAdapterCatalog extends AdapterCatalog {
         if ( allocs == null || allocs.isEmpty() ) {
             throw new GenericRuntimeException( "No physical table found for allocation with id %s", id );
         }
-        return allocs.get( 0 ).unwrap( PhysicalTable.class ).orElseThrow();
+        return allocs.get( 0 ).unwrapOrThrow( PhysicalTable.class );
     }
 
 
     public void dropColumn( long allocId, long columnId ) {
-        PhysicalColumn column = fields.get( Pair.of( allocId, columnId ) ).unwrap( PhysicalColumn.class ).orElseThrow();
+        PhysicalColumn column = fields.get( Pair.of( allocId, columnId ) ).unwrapOrThrow( PhysicalColumn.class );
         PhysicalTable table = fromAllocation( allocId );
         List<PhysicalColumn> pColumns = new ArrayList<>( table.columns );
         pColumns.remove( column );
@@ -154,9 +151,8 @@ public class RelAdapterCatalog extends AdapterCatalog {
 
 
     public List<PhysicalColumn> getColumns( long allocId ) {
-        return fields.values().stream().map( p -> p.unwrap( PhysicalColumn.class ) ).filter( Optional::isPresent ).map( Optional::get ).filter( c -> c.allocId == allocId ).collect( Collectors.toList() );
+        return fields.values().stream().map( p -> p.unwrap( PhysicalColumn.class ) ).filter( Optional::isPresent ).map( Optional::get ).filter( c -> c.allocId == allocId ).toList();
     }
-
 
 
 }

@@ -172,7 +172,6 @@ public class LanguageCrud {
 
 
     public static void commitAndFinish( List<ExecutedContext> executedContexts, InformationManager queryAnalyzer, List<Result<?, ?>> results, long executionTime ) {
-        executionTime = System.nanoTime() - executionTime;
         String commitStatus = "Error on starting committing";
         for ( Transaction transaction : executedContexts.stream().flatMap( c -> c.getQuery().getTransactions().stream() ).toList() ) {
             // this has a lot of unnecessary no-op commits atm
@@ -180,10 +179,9 @@ public class LanguageCrud {
                 transaction.commit();
                 commitStatus = "Committed";
             } catch ( TransactionException e ) {
-                log.error( "Caught exception", e );
                 results.add( RelationalResult.builder().error( e.getMessage() ).build() );
                 try {
-                    transaction.rollback();
+                    transaction.rollback( e.getMessage() );
                     commitStatus = "Rolled back";
                 } catch ( TransactionException ex ) {
                     log.error( "Caught exception while rollback", e );
@@ -230,7 +228,7 @@ public class LanguageCrud {
         try {
             iterator.close();
             transaction.commit();
-        } catch ( Exception | TransactionException e ) {
+        } catch ( Exception e ) {
             throw new GenericRuntimeException( "Error while committing graph retrieval query." );
         }
 
@@ -251,11 +249,7 @@ public class LanguageCrud {
         };
 
         if ( transaction.isActive() ) {
-            try {
-                transaction.rollback();
-            } catch ( TransactionException e ) {
-                throw new GenericRuntimeException( "Error while rolling back the failed transaction." );
-            }
+            transaction.rollback( t != null ? t.getMessage() : "Unknown reason during error building." );
         }
 
         return result;
@@ -460,7 +454,7 @@ public class LanguageCrud {
      * as a query result
      */
     public void getDocumentDatabases( final Context ctx ) {
-        Map<String, String> names = Catalog.getInstance().getSnapshot()
+        Map<String, String> names = Catalog.snapshot()
                 .getNamespaces( null )
                 .stream()
                 .collect( Collectors.toMap( LogicalNamespace::getName, s -> s.dataModel.name() ) );
@@ -482,29 +476,23 @@ public class LanguageCrud {
 
     private PlacementModel getPlacements( final IndexModel index ) {
         Catalog catalog = Catalog.getInstance();
-        LogicalGraph graph = Catalog.snapshot().graph().getGraph( index.namespaceId ).orElseThrow();
-        EntityType type = EntityType.ENTITY;
+        LogicalGraph graph = catalog.getSnapshot().graph().getGraph( index.namespaceId ).orElseThrow();
         PlacementModel p = new PlacementModel( false, List.of(), EntityType.ENTITY );
-        if ( type == EntityType.VIEW ) {
-            return p;
-        } else {
-            List<AllocationPlacement> placements = catalog.getSnapshot().alloc().getPlacementsFromLogical( graph.id );
-            for ( AllocationPlacement placement : placements ) {
-                Adapter<?> adapter = AdapterManager.getInstance().getAdapter( placement.adapterId ).orElseThrow();
-                p.addAdapter( new PlacementModel.GraphStore(
-                        adapter.getUniqueName(),
-                        adapter.getUniqueName(),
-                        catalog.getSnapshot().alloc().getFromLogical( placement.adapterId ),
-                        false ) );
-            }
-            return p;
+        List<AllocationPlacement> placements = catalog.getSnapshot().alloc().getPlacementsFromLogical( graph.id );
+        for ( AllocationPlacement placement : placements ) {
+            Adapter<?> adapter = AdapterManager.getInstance().getAdapter( placement.adapterId ).orElseThrow();
+            p.addAdapter( new PlacementModel.GraphStore(
+                    adapter.getUniqueName(),
+                    adapter.getUniqueName(),
+                    catalog.getSnapshot().alloc().getFromLogical( placement.adapterId ),
+                    false ) );
         }
+        return p;
 
     }
 
 
     public void getFixedFields( Context context ) {
-        Catalog catalog = Catalog.getInstance();
         UIRequest request = context.bodyAsClass( UIRequest.class );
         RelationalResult result;
         List<UiColumnDefinition> cols = new ArrayList<>();

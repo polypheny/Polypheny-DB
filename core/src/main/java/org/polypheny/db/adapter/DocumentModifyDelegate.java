@@ -42,6 +42,7 @@ public class DocumentModifyDelegate extends DocumentScanDelegate implements Modi
         return Modifiable.getGraphModifySubstitute( modifiable, allocId, modify, builder );
     }
 
+
     @Override
     public void addColumn( Context context, long allocId, LogicalColumn column ) {
         modifiable.addColumn( context, allocId, column );

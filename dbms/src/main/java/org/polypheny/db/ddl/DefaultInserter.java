@@ -97,22 +97,22 @@ public class DefaultInserter {
     }
 
 
-    public static void restoreInterfacesIfNecessary() {
+    public static void restoreInterfacesIfNecessary( Catalog catalog ) {
         ////////////////////////
         // init query interfaces
-        if ( !Catalog.getInstance().getInterfaces().isEmpty() ) {
+        if ( !catalog.getInterfaces().isEmpty() ) {
             return;
         }
-        Catalog.getInstance().getInterfaceTemplates().values().forEach( i -> Catalog.getInstance().createQueryInterface( i.interfaceName().toLowerCase(), i.interfaceName(), i.getDefaultSettings() ) );
+        catalog.getInterfaceTemplates().values().forEach( i -> Catalog.getInstance().createQueryInterface( i.interfaceType().toLowerCase(), i.interfaceType(), i.getDefaultSettings() ) );
         // TODO: This is ugly, both because it is racy, and depends on a string (which might be changed)
-        if ( Catalog.getInstance().getInterfaceTemplates().values().stream().anyMatch( t -> t.interfaceName().equals( "Prism Interface (Unix transport)" ) ) ) {
-            Catalog.getInstance().createQueryInterface(
+        if ( catalog.getInterfaceTemplates().values().stream().anyMatch( t -> t.interfaceType().equals( "Prism Interface (Unix transport)" ) ) ) {
+            catalog.createQueryInterface(
                     "prism interface (unix transport @ .polypheny)",
                     "Prism Interface (Unix transport)",
                     Map.of( "path", PolyphenyHomeDirManager.getInstance().registerNewGlobalFile( "polypheny-prism.sock" ).getAbsolutePath() )
             );
         }
-        Catalog.getInstance().commit();
+        catalog.commit();
 
     }
 

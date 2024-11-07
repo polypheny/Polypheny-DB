@@ -21,9 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
-import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
-import lombok.Getter;
 import lombok.Value;
 import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
@@ -42,7 +40,6 @@ import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.util.Pair;
 
 
-@Getter
 @EqualsAndHashCode(callSuper = true)
 @Value
 public class GraphAdapterCatalog extends AdapterCatalog {
@@ -68,7 +65,7 @@ public class GraphAdapterCatalog extends AdapterCatalog {
         List<PhysicalColumn> updates = new ArrayList<>();
         for ( PhysicalField field : fields.values() ) {
             if ( field.id == id ) {
-                updates.add( field.unwrap( PhysicalColumn.class ).orElseThrow().toBuilder().logicalName( newFieldName ).build() );
+                updates.add( field.unwrapOrThrow( PhysicalColumn.class ).toBuilder().logicalName( newFieldName ).build() );
             }
         }
         for ( PhysicalColumn u : updates ) {
@@ -89,7 +86,7 @@ public class GraphAdapterCatalog extends AdapterCatalog {
         List<AllocationColumn> columns = wrapper.columns;
         List<PhysicalColumn> pColumns = columns.stream()
                 .map( c -> new PhysicalColumn( columnNames.get( c.columnId ), logical.id, allocation.id, allocation.adapterId, c.position, logicalColumns.get( c.columnId ) ) )
-                .collect( Collectors.toList() );
+                .toList();
         long physicalId = IdBuilder.getInstance().getNewPhysicalId();
         PhysicalTable table = new PhysicalTable( physicalId, allocation.id, logical.id, tableName, pColumns, logical.namespaceId, namespaceName, pkIds, allocation.adapterId );
         pColumns.forEach( this::addColumn );
@@ -99,7 +96,7 @@ public class GraphAdapterCatalog extends AdapterCatalog {
 
 
     public <E extends PhysicalEntity> E fromAllocation( long id, Class<E> clazz ) {
-        return getPhysicalsFromAllocs( id ).get( 0 ).unwrap( clazz ).orElseThrow();
+        return getPhysicalsFromAllocs( id ).get( 0 ).unwrapOrThrow( clazz );
     }
 
 
@@ -146,7 +143,7 @@ public class GraphAdapterCatalog extends AdapterCatalog {
 
 
     public PhysicalColumn updateColumnType( long allocId, LogicalColumn newCol ) {
-        PhysicalColumn old = getField( newCol.id, allocId ).unwrap( PhysicalColumn.class ).orElseThrow();
+        PhysicalColumn old = getField( newCol.id, allocId ).unwrapOrThrow( PhysicalColumn.class );
         PhysicalColumn column = new PhysicalColumn( old.name, newCol.tableId, allocId, old.adapterId, old.position, newCol );
         addColumn( column );
         return column;

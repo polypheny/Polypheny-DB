@@ -259,5 +259,5 @@ public class BitSetsTest {
         assertThat( BitSets.closure( map2 ).toString(), equalTo( expected ) );
         assertThat( "argument modified", map2.toString(), equalTo( original2 ) );
     }
-}
 
+}

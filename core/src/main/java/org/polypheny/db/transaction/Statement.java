@@ -45,7 +45,7 @@ public interface Statement {
      * Get the index of this statement in the list of statements for that transaction
      * @return the index this statement has in the statements list of the transaction
      */
-    int getIndex();
+    long getIndex();
 
     void setMonitoringEvent( StatementEvent event );
 

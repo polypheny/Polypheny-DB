@@ -36,6 +36,7 @@ public interface TrimFunction extends Operator {
 
         @Nullable
         Flag getFlag();
+
     }
 
 }

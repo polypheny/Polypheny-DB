@@ -405,7 +405,7 @@ public class MongoDynamic {
 
         @Override
         public List<Document> getAll( List<Map<Long, PolyValue>> parameterValues ) {
-            return parameterValues.stream().flatMap( e -> e.values().stream().map( polyValue -> Document.parse( polyValue.asDocument().toJson() ) ) ).collect( Collectors.toList() );
+            return parameterValues.stream().flatMap( e -> e.values().stream().map( polyValue -> Document.parse( polyValue.asDocument().toJson() ) ) ).toList();
         }
 
 

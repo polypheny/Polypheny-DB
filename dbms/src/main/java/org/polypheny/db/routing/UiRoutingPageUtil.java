@@ -28,6 +28,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
@@ -49,7 +50,7 @@ import org.polypheny.db.transaction.Statement;
 public class UiRoutingPageUtil {
 
 
-    public static void outputSingleResult( Plan plan, InformationManager queryAnalyzer, int stmtIdx, boolean attachTextualPlan ) {
+    public static void outputSingleResult( Plan plan, InformationManager queryAnalyzer, long stmtIdx, boolean attachTextualPlan ) {
         addPhysicalPlanPage( plan.optimalNode(), queryAnalyzer, stmtIdx, attachTextualPlan );
 
         InformationPage page = queryAnalyzer.getPage( "routing" );
@@ -62,12 +63,12 @@ public class UiRoutingPageUtil {
     }
 
 
-    public static void addPhysicalPlanPage( AlgNode optimalNode, InformationManager queryAnalyzer, int stmtIdx, boolean attachTextualPlan ) {
+    public static void addPhysicalPlanPage( AlgNode optimalNode, InformationManager queryAnalyzer, long stmtIdx, boolean attachTextualPlan ) {
         new Thread( () -> addRoutedPolyPlanPage( optimalNode, queryAnalyzer, stmtIdx, true, attachTextualPlan ) ).start();
     }
 
 
-    private static void addRoutedPolyPlanPage( AlgNode routedNode, InformationManager queryAnalyzer, int stmtIdx, boolean isPhysical, boolean attachTextualPlan ) {
+    private static void addRoutedPolyPlanPage( AlgNode routedNode, InformationManager queryAnalyzer, long stmtIdx, boolean isPhysical, boolean attachTextualPlan ) {
         ObjectMapper objectMapper = new ObjectMapper();
         GlobalStats gs = GlobalStats.computeGlobalStats( routedNode );
         String prefix = isPhysical ? "Physical" : "Routed";
@@ -87,7 +88,7 @@ public class UiRoutingPageUtil {
             queryAnalyzer.registerInformation( infoPolyAlg );
 
         } catch ( Exception e ) {
-            e.printStackTrace();
+            throw new GenericRuntimeException( e );
         }
 
     }

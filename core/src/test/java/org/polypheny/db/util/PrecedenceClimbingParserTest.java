@@ -203,5 +203,5 @@ public class PrecedenceClimbingParserTest {
         final PrecedenceClimbingParser.Token token = p.parse();
         assertThat( p.print( token ), is( "(((a = b) like c) = d)" ) );
     }
-}
 
+}

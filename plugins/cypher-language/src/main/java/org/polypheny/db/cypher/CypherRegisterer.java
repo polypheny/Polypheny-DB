@@ -77,6 +77,14 @@ public class CypherRegisterer {
 
         register( OperatorName.CYPHER_REMOVE_LABELS, new LangFunctionOperator( OperatorName.CYPHER_REMOVE_LABELS.name(), Kind.CYPHER_FUNCTION, PolyType.ANY ) );
 
+        register( OperatorName.CYPHER_GEO_DISTANCE, new LangFunctionOperator( "GEO_DISTANCE", Kind.CYPHER_FUNCTION, PolyType.GEOMETRY ) );
+
+        register( OperatorName.CYPHER_GEO_CONTAINS, new LangFunctionOperator( "GEO_CONTAINS", Kind.CYPHER_FUNCTION, PolyType.BOOLEAN ) );
+
+        register( OperatorName.CYPHER_GEO_INTERSECTS, new LangFunctionOperator( "GEO_INTERSECTS", Kind.CYPHER_FUNCTION, PolyType.BOOLEAN ) );
+
+        register( OperatorName.CYPHER_GEO_WITHIN, new LangFunctionOperator( "GEO_WITHIN", Kind.CYPHER_FUNCTION, PolyType.BOOLEAN ) );
+
         isInit = true;
     }
 

@@ -371,8 +371,8 @@ public class SqlUtilTest {
     public void multipleStatements2() {
         String statement = """
                 SEL/**/ECT "id/*""\", 'O''Reily--' FROM emp; -- Comment
-
-
+                
+                
                 COMMIT;
                 /**/SEL--
                 ECT "", username FROM emp--""";

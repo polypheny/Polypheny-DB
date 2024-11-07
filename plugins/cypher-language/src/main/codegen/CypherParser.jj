@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project (Modifications)
+ * Copyright 2019-2024 The Polypheny Project (Modifications)
  * Copyright (c) Neo4j Sweden AB (http://neo4j.com) (Original Version)
 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -323,6 +323,7 @@ TOKEN [IGNORE_CASE] :
     | < FUNCTION: "FUNCTION" >
     | < FUNCTIONS: "FUNCTIONS" >
     | < GE: ">=" >
+    | < GEOMETRY: "GEOMETRY" >
     | < GRANT: "GRANT">
     | < GRAPH: "GRAPH" >
     | < GRAPHS: "GRAPHS" >
@@ -5422,6 +5423,7 @@ Token UnescapedSymbolicNameString() :
         | t=<FULLTEXT>
         | t=<FUNCTION>
         | t=<FUNCTIONS>
+        | t=<GEOMETRY>
         | t=<GRANT>
         | t=<GRAPH>
         | t=<GRAPHS>

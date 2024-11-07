@@ -37,6 +37,7 @@ import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.ForeignKeyOption;
 import org.polypheny.db.catalog.logistic.IndexType;
 import org.polypheny.db.languages.QueryLanguage;
+import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
 
@@ -87,7 +88,7 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
     /**
      * Renames a table
      *
-     * @param tableId The if of the table to rename
+     * @param tableId The id of the table to rename
      * @param name New name of the table
      */
     void renameTable( long tableId, String name );
@@ -126,7 +127,7 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
     /**
      * Renames a column
      *
-     * @param columnId The if of the column to rename
+     * @param columnId The id of the column to rename
      * @param name New name of the column
      */
     void renameColumn( long columnId, String name );
@@ -178,7 +179,7 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
      * @param columnId The id of the column
      * @param type The type of the default value
      * @param defaultValue True if the column should allow null values, false if not.
-     * @return
+     * @return LogicalColumn
      */
     LogicalColumn setDefaultValue( long columnId, PolyType type, PolyValue defaultValue );
 
@@ -195,8 +196,9 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
      *
      * @param tableId The id of the table
      * @param columnIds The id of key which will be part of the primary keys
+     * @param statement The statement used to attach constraint enforcement on commit
      */
-    void addPrimaryKey( long tableId, List<Long> columnIds );
+    void addPrimaryKey( long tableId, List<Long> columnIds, Statement statement );
 
 
     /**
@@ -204,7 +206,7 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
      *
      * @param tableId The id of the table
      * @param columnIds The id of the columns which are part of the foreign key
-     * @param referencesTableId The if of the referenced table
+     * @param referencesTableId The id of the referenced table
      * @param referencesIds The id of columns forming the key referenced by this key
      * @param constraintName The name of the constraint
      * @param onUpdate The option for updates
@@ -218,8 +220,9 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
      * @param tableId The id of the table
      * @param constraintName The name of the constraint
      * @param columnIds A list of column ids
+     * @param statement The statement to attach the constraint checks on commit
      */
-    void addUniqueConstraint( long tableId, String constraintName, List<Long> columnIds );
+    void addUniqueConstraint( long tableId, String constraintName, List<Long> columnIds, Statement statement );
 
 
     /**
@@ -229,8 +232,9 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
      * @param constraintName The name of the constraint
      * @param columnIds A list of column ids
      * @param type The type of the constraint
+     * @param statement
      */
-    void addConstraint( long tableId, String constraintName, List<Long> columnIds, ConstraintType type );
+    long addConstraint( long tableId, String constraintName, List<Long> columnIds, ConstraintType type, Statement statement );
 
     /**
      * Deletes the specified primary key (including the entry in the key table). If there is an index on this key, make sure to delete it first.

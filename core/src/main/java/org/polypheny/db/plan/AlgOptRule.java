@@ -164,8 +164,6 @@ public abstract class AlgOptRule {
     }
 
 
-
-
     /**
      * Creates an operand that matches an algebra expression that has no children.
      *
@@ -571,4 +569,3 @@ public abstract class AlgOptRule {
     }
 
 }
-

@@ -17,7 +17,6 @@
 package org.polypheny.db.algebra.enumerable.common;
 
 
-import lombok.SneakyThrows;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.AlgFactories;
@@ -25,6 +24,7 @@ import org.polypheny.db.algebra.core.common.ConditionalExecute;
 import org.polypheny.db.algebra.core.common.ConditionalExecute.Condition;
 import org.polypheny.db.algebra.enumerable.EnumerableConvention;
 import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.plan.Convention;
 
 
@@ -38,11 +38,14 @@ public class EnumerableConditionalExecuteFalseRule extends ConverterRule {
     }
 
 
-    @SneakyThrows
     @Override
     public AlgNode convert( AlgNode alg ) {
         ConditionalExecute ce = (ConditionalExecute) alg;
-        throw ce.getExceptionClass().getConstructor( String.class ).newInstance( ce.getExceptionMessage() );
+        try {
+            throw ce.getExceptionClass().getConstructor( String.class ).newInstance( ce.getExceptionMessage() );
+        } catch ( Exception e ) {
+            throw new GenericRuntimeException( e );
+        }
     }
 
 }

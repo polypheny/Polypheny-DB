@@ -78,7 +78,7 @@ public class SimpleRouter extends AbstractDqlRouter {
 
         // Only one builder available
         //builders.get( 0 ).addPhysicalInfo( placementDistribution );
-        ColumnDistribution columnDistribution = new ColumnDistribution( table.id, table.getColumnIds(), partitionIds, partitionIds, List.of(), context.getSnapshot() );
+        ColumnDistribution columnDistribution = new ColumnDistribution( table.id, table.getColumnIds(), partitionIds, partitionIds, List.of(), Catalog.snapshot() );
         context.fieldDistribution = columnDistribution;
         builders.get( 0 ).push( super.buildJoinedScan( columnDistribution, context ) );
 

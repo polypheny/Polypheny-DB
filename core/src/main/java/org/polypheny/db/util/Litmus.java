@@ -110,4 +110,5 @@ public interface Litmus {
      * If the condition is true, calls {@link #succeed}; if the condition is false, calls {@link #fail}, converting {@code info} into a string message.
      */
     boolean check( boolean condition, String message, Object... args );
+
 }

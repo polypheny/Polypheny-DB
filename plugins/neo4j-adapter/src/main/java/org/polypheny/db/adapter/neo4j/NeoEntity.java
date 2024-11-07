@@ -120,12 +120,6 @@ public class NeoEntity extends PhysicalEntity implements TranslatableEntity, Mod
 
 
     @Override
-    public PolyValue[] getParameterArray() {
-        return new PolyValue[0];
-    }
-
-
-    @Override
     public Expression asExpression() {
         return Expressions.call(
                 Expressions.convert_(
@@ -216,9 +210,7 @@ public class NeoEntity extends PhysicalEntity implements TranslatableEntity, Mod
 
             dataContext.getStatement().getTransaction().registerInvolvedAdapter( entity.namespace.store );
 
-            if ( log.isDebugEnabled() ) {
-                log.warn( "Executing query: {}", query );
-            }
+            log.debug( "Executing query: {}", query );
 
             List<Result> results = new ArrayList<>();
             if ( dataContext.getParameterValues().size() == 1 ) {

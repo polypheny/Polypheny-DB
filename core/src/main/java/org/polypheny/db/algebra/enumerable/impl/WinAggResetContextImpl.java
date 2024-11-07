@@ -101,5 +101,5 @@ public class WinAggResetContextImpl extends AggResetContextImpl implements WinAg
     public Expression getPartitionRowCount() {
         return partitionRowCount;
     }
-}
 
+}

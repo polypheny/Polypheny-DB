@@ -171,7 +171,7 @@ public class InformationPage extends Refreshable {
         this.implicit = false;
     }
 
-    public InformationPage setStmtLabel(int stmtIdx) {
+    public InformationPage setStmtLabel(long stmtIdx) {
         this.label = "Query " + (stmtIdx + 1);
         return this;
     }

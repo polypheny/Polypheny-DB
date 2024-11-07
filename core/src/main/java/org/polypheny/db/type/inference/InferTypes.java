@@ -99,6 +99,18 @@ public abstract class InferTypes {
 
 
     /**
+     * Operand type-inference strategy where an unknown operand type is assumed to be GEOMETRY.
+     */
+    public static final PolyOperandTypeInference GEOMETRY =
+            ( callBinding, returnType, operandTypes ) -> {
+                AlgDataTypeFactory typeFactory = callBinding.getTypeFactory();
+                for ( int i = 0; i < operandTypes.length; ++i ) {
+                    operandTypes[i] = typeFactory.createPolyType( PolyType.GEOMETRY );
+                }
+            };
+
+
+    /**
      * Returns an {@link PolyOperandTypeInference} that returns a given list of types.
      */
     public static PolyOperandTypeInference explicit( List<AlgDataType> types ) {

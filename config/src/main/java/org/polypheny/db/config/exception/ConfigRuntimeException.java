@@ -25,4 +25,5 @@ public class ConfigRuntimeException extends RuntimeException {
     public ConfigRuntimeException( String msg ) {
         super( msg );
     }
+
 }

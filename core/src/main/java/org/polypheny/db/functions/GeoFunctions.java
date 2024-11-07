@@ -34,777 +34,628 @@
 package org.polypheny.db.functions;
 
 
-import com.esri.core.geometry.Envelope;
-import com.esri.core.geometry.Geometry;
-import com.esri.core.geometry.GeometryEngine;
-import com.esri.core.geometry.Line;
-import com.esri.core.geometry.MapGeometry;
-import com.esri.core.geometry.Operator;
-import com.esri.core.geometry.OperatorBoundary;
-import com.esri.core.geometry.OperatorFactoryLocal;
-import com.esri.core.geometry.OperatorIntersects;
-import com.esri.core.geometry.Point;
-import com.esri.core.geometry.Polygon;
-import com.esri.core.geometry.Polyline;
-import com.esri.core.geometry.SpatialReference;
-import com.esri.core.geometry.WktExportFlags;
-import com.esri.core.geometry.WktImportFlags;
-import java.math.BigDecimal;
+import static org.polypheny.db.functions.Functions.toUnchecked;
+
 import java.util.Objects;
-import org.apache.calcite.linq4j.function.Deterministic;
-import org.apache.calcite.linq4j.function.Experimental;
-import org.apache.calcite.linq4j.function.SemiStrict;
 import org.apache.calcite.linq4j.function.Strict;
-import org.polypheny.db.type.ExtraPolyTypes;
-import org.polypheny.db.util.Util;
+import org.jetbrains.annotations.ApiStatus.Experimental;
+import org.polypheny.db.functions.spatial.GeoTransformFunctions;
+import org.polypheny.db.type.entity.PolyBoolean;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.category.PolyNumber;
+import org.polypheny.db.type.entity.numerical.PolyFloat;
+import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.spatial.GeometryTopologicalException;
+import org.polypheny.db.type.entity.spatial.InvalidGeometryException;
+import org.polypheny.db.type.entity.spatial.PolyGeometry;
+import org.polypheny.db.type.entity.spatial.PolyGeometryType.BufferCapStyle;
 
 
 /**
- * Helper methods to implement Geo-spatial functions in generated code.
- * <p>
- * Remaining tasks:
- *
- * <ul>
- * <li>Determine type code for {@link ExtraPolyTypes#GEOMETRY}</li>
- * <li>Should we create aliases for functions in upper-case? Without ST_ prefix?</li>
- * <li>Consider adding spatial literals, e.g. `GEOMETRY 'POINT (30 10)'`</li>
- * <li>Integer arguments, e.g. SELECT ST_MakePoint(1, 2, 1.5), ST_MakePoint(1, 2)</li>
- * <li>Are GEOMETRY values comparable? If so add ORDER BY test</li>
- * <li>We have to add 'Z' to create 3D objects. This is inconsistent with PostGIS. Who is right? At least document the difference.</li>
- * <li>Should add GeometryEngine.intersects; similar to disjoint etc.</li>
- * <li>Make {@link #ST_MakeLine(Geom, Geom)} varargs</li>
- * </ul>
+ * Implementations of Geo functions
  */
 @SuppressWarnings({ "WeakerAccess", "unused" })
-@Deterministic
 @Strict
 @Experimental
 public class GeoFunctions {
 
-    private static final int NO_SRID = 0;
-    private static final SpatialReference SPATIAL_REFERENCE = SpatialReference.create( 4326 );
+    private static final String POINT_RESTRICTION = "This function could be applied only to points";
+    private static final String LINE_STRING_RESTRICTION = "This function could be applied only to line strings";
+    private static final String POLYGON_RESTRICTION = "This function could be applied only to polygons";
+    private static final String GEOMETRY_COLLECTION_RESTRICTION = "This function could be applied only to geometry collections";
+    private static final String SRID_RESTRICTION = "Geometries of the same SRID should be used";
 
 
     private GeoFunctions() {
         // empty on purpose
     }
 
+    /*
+     * Create Geometry
+     */
 
-    private static UnsupportedOperationException todo() {
-        return new UnsupportedOperationException();
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyGeometry stGeomFromText( PolyString wkt ) {
+        try {
+            return PolyGeometry.fromWKT( wkt.value );
+        } catch ( InvalidGeometryException e ) {
+            throw toUnchecked( e );
+        }
     }
 
 
-    protected static Geom bind( Geometry geometry, int srid ) {
-        if ( geometry == null ) {
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyGeometry stGeomFromText( PolyString wkt, PolyNumber srid ) {
+        try {
+            return PolyGeometry.fromWKT( wkt.value, srid.intValue() );
+        } catch ( InvalidGeometryException e ) {
+            throw toUnchecked( e );
+        }
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyGeometry stGeomFromTWKB( PolyString twkb ) {
+        try {
+            return PolyGeometry.fromTWKB( twkb.value );
+        } catch ( InvalidGeometryException e ) {
+            throw toUnchecked( e );
+        }
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyGeometry stGeomFromTWKB( PolyString twkb, PolyNumber srid ) {
+        try {
+            return PolyGeometry.fromTWKB( twkb.value, srid.intValue() );
+        } catch ( InvalidGeometryException e ) {
+            throw toUnchecked( e );
+        }
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyGeometry stGeomFromGeoJson( PolyString geoJson ) {
+        try {
+            return PolyGeometry.fromGeoJson( geoJson.value );
+        } catch ( InvalidGeometryException e ) {
+            throw toUnchecked( e );
+        }
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyGeometry stGeomFromGeoJson( PolyString geoJson, PolyNumber srid ) {
+        try {
+            return PolyGeometry.fromGeoJson( geoJson.value, srid.intValue() );
+        } catch ( InvalidGeometryException e ) {
+            throw toUnchecked( e );
+        }
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyString stAsText( PolyGeometry geometry ) {
+        return PolyString.of( geometry.toString() );
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyString stAsTWKB( PolyGeometry geometry ) {
+        return PolyString.of( geometry.toBinary() );
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyString stAsGeoJson( PolyGeometry geometry ) {
+        return PolyString.of( geometry.toJson() );
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyGeometry stTransform( PolyGeometry geometry, PolyNumber srid ) {
+        try {
+            return GeoTransformFunctions.transform( geometry, srid.intValue() );
+        } catch ( InvalidGeometryException e ) {
+            throw toUnchecked( e );
+        }
+    }
+
+
+    /*
+     * Common properties
+     */
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyBoolean stIsSimple( PolyGeometry geometry ) {
+        return PolyBoolean.of( geometry.isSimple() );
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyBoolean stIsEmpty( PolyGeometry geometry ) {
+        return PolyBoolean.of( geometry.isEmpty() );
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyInteger stNumPoints( PolyGeometry geometry ) {
+        return PolyInteger.of( geometry.getNumPoints() );
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyInteger stDimension( PolyGeometry geometry ) {
+        return PolyInteger.of( geometry.getDimension() );
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyFloat stLength( PolyGeometry geometry ) {
+        return PolyFloat.of( geometry.getLength() );
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyFloat stArea( PolyGeometry geometry ) {
+        return PolyFloat.of( geometry.getArea() );
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyGeometry stEnvelope( PolyGeometry geometry ) {
+        return geometry.getEnvelope();
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyGeometry stBoundary( PolyGeometry geometry ) {
+        return geometry.getBoundary();
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyInteger stBoundaryDimension( PolyGeometry geometry ) {
+        return PolyInteger.of( geometry.getBoundaryDimension() );
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyGeometry stConvexHull( PolyGeometry geometry ) {
+        return geometry.convexHull();
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyGeometry stCentroid( PolyGeometry geometry ) {
+        return geometry.getCentroid();
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyGeometry stReverse( PolyGeometry geometry ) {
+        return geometry.reverse();
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyGeometry stBuffer( PolyGeometry geometry, PolyNumber distance ) {
+        return geometry.buffer( distance.doubleValue() );
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyGeometry stBuffer( PolyGeometry geometry, PolyNumber distance, PolyNumber quadrantSegments ) {
+        return geometry.buffer( distance.doubleValue(), quadrantSegments.intValue() );
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyGeometry stBuffer( PolyGeometry geometry, PolyNumber distance, PolyNumber quadrantSegments, PolyString endCapStyle ) {
+        return geometry.buffer( distance.doubleValue(), quadrantSegments.intValue(), BufferCapStyle.of( endCapStyle.value ) );
+    }
+
+    /*
+     * Spatial relationships
+     */
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyBoolean stEquals( PolyGeometry g1, PolyGeometry g2 ) {
+        restrictToSrid( g1, g2 );
+        return PolyBoolean.of( g1.equals( g2 ) );
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyBoolean stDWithin( PolyGeometry g1, PolyGeometry g2, PolyNumber distance ) {
+        restrictToSrid( g1, g2 );
+        try {
+            return PolyBoolean.of( g1.isWithinDistance( g2, distance.doubleValue() ) );
+        } catch ( GeometryTopologicalException e ) {
+            throw toUnchecked( e );
+        }
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyBoolean stDisjoint( PolyGeometry g1, PolyGeometry g2 ) {
+        restrictToSrid( g1, g2 );
+        return PolyBoolean.of( g1.disjoint( g2 ) );
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyBoolean stTouches( PolyGeometry g1, PolyGeometry g2 ) {
+        restrictToSrid( g1, g2 );
+        return PolyBoolean.of( g1.touches( g2 ) );
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyBoolean stIntersects( PolyGeometry g1, PolyGeometry g2 ) {
+        restrictToSrid( g1, g2 );
+        return PolyBoolean.of( g1.intersects( g2 ) );
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyBoolean stIntersects( PolyValue g1, PolyValue g2 ) {
+        try {
+            PolyGeometry geom1 = validateAndCreateGeometry( g1 );
+            PolyGeometry geom2 = validateAndCreateGeometry( g2 );
+            if ( geom1 == null || geom2 == null ) {
+                throw new InvalidGeometryException( "Could not analyze spatial relationship of null geometries" );
+            }
+            return PolyBoolean.of( geom1.intersects( geom2 ) );
+        } catch ( InvalidGeometryException e ) {
+            // could not throw exceptions in Cypher for now
+            return PolyBoolean.of( Boolean.FALSE );
+        }
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyBoolean stCrosses( PolyGeometry g1, PolyGeometry g2 ) {
+        restrictToSrid( g1, g2 );
+        return PolyBoolean.of( g1.crosses( g2 ) );
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyBoolean stWithin( PolyGeometry g1, PolyGeometry g2 ) {
+        restrictToSrid( g1, g2 );
+        return PolyBoolean.of( g1.within( g2 ) );
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyBoolean stWithin( PolyValue g1, PolyValue g2 ) {
+        try {
+            PolyGeometry geom1 = validateAndCreateGeometry( g1 );
+            PolyGeometry geom2 = validateAndCreateGeometry( g2 );
+            if ( geom1 == null || geom2 == null ) {
+                throw new InvalidGeometryException( "Could not analyze spatial relationship of null geometries" );
+            }
+            return PolyBoolean.of( geom1.within( geom2 ) );
+        } catch ( InvalidGeometryException e ) {
+            // could not throw exceptions in Cypher for now
+            return PolyBoolean.of( Boolean.FALSE );
+        }
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyBoolean stContains( PolyGeometry g1, PolyGeometry g2 ) {
+        restrictToSrid( g1, g2 );
+        return PolyBoolean.of( g1.contains( g2 ) );
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyBoolean stContains( PolyValue g1, PolyValue g2 ) {
+        try {
+            PolyGeometry geom1 = validateAndCreateGeometry( g1 );
+            PolyGeometry geom2 = validateAndCreateGeometry( g2 );
+            if ( geom1 == null || geom2 == null ) {
+                throw new InvalidGeometryException( "Could not analyze spatial relationship of null geometries" );
+            }
+            return PolyBoolean.of( geom1.contains( geom2 ) );
+        } catch ( InvalidGeometryException e ) {
+            // could not throw exceptions in Cypher for now
+            return PolyBoolean.of( Boolean.FALSE );
+        }
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyBoolean stOverlaps( PolyGeometry g1, PolyGeometry g2 ) {
+        restrictToSrid( g1, g2 );
+        return PolyBoolean.of( g1.overlaps( g2 ) );
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyBoolean stCovers( PolyGeometry g1, PolyGeometry g2 ) {
+        restrictToSrid( g1, g2 );
+        return PolyBoolean.of( g1.covers( g2 ) );
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyBoolean stCoveredBy( PolyGeometry g1, PolyGeometry g2 ) {
+        restrictToSrid( g1, g2 );
+        return PolyBoolean.of( g1.coveredBy( g2 ) );
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyBoolean stRelate( PolyGeometry g1, PolyGeometry g2, PolyString pattern ) {
+        restrictToSrid( g1, g2 );
+        try {
+            return PolyBoolean.of( g1.relate( g2, pattern.value ) );
+        } catch ( GeometryTopologicalException e ) {
+            throw toUnchecked( e );
+        }
+    }
+
+
+
+    /*
+     * Yield metric values
+     */
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyNumber stDistance( PolyGeometry g1, PolyGeometry g2 ) {
+        restrictToSrid( g1, g2 );
+        try {
+            return PolyFloat.of( g1.distance( g2 ) );
+        } catch ( GeometryTopologicalException e ) {
+            throw toUnchecked( e );
+        }
+    }
+
+
+    /**
+     * Calculate the distance for WKT input (Cypher data model). Use WGS 84 SRID.
+     *
+     * @param g1 WKT with the geometry
+     * @param g2 WKT with the other geometry
+     * @return spherical distance between two geometries
+     */
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyNumber stDistance( PolyValue g1, PolyValue g2 ) {
+        try {
+            PolyGeometry geom1 = validateAndCreateGeometry( g1 );
+            PolyGeometry geom2 = validateAndCreateGeometry( g2 );
+            if ( geom1 == null || geom2 == null ) {
+                throw new InvalidGeometryException( "Could not calculate distance of null geometries" );
+            }
+            return PolyFloat.of( geom1.distance( geom2 ) );
+        } catch ( InvalidGeometryException | GeometryTopologicalException e ) {
+            // could not throw exceptions in Cypher for now
+            return PolyFloat.of( 0 );
+        }
+    }
+
+    /*
+     * Set operations
+     */
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyGeometry stIntersection( PolyGeometry g1, PolyGeometry g2 ) {
+        restrictToSrid( g1, g2 );
+        try {
+            return g1.intersection( g2 );
+        } catch ( GeometryTopologicalException e ) {
+            throw toUnchecked( e );
+        }
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyGeometry stUnion( PolyGeometry g1, PolyGeometry g2 ) {
+        restrictToSrid( g1, g2 );
+        try {
+            return g1.union( g2 );
+        } catch ( GeometryTopologicalException e ) {
+            throw toUnchecked( e );
+        }
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyGeometry stDifference( PolyGeometry g1, PolyGeometry g2 ) {
+        restrictToSrid( g1, g2 );
+        try {
+            return g1.difference( g2 );
+        } catch ( GeometryTopologicalException e ) {
+            throw toUnchecked( e );
+        }
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyGeometry stSymDifference( PolyGeometry g1, PolyGeometry g2 ) {
+        restrictToSrid( g1, g2 );
+        try {
+            return g1.symDifference( g2 );
+        } catch ( GeometryTopologicalException e ) {
+            throw toUnchecked( e );
+        }
+    }
+
+
+    /*
+     * Geometry Specific Functions
+     */
+
+    /*
+     * on Points
+     */
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyFloat stX( PolyGeometry geometry ) {
+        restrictToPoints( geometry );
+        return PolyFloat.of( geometry.asPoint().getX() );
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyFloat stY( PolyGeometry geometry ) {
+        restrictToPoints( geometry );
+        return PolyFloat.of( geometry.asPoint().getY() );
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyFloat stZ( PolyGeometry geometry ) {
+        restrictToPoints( geometry );
+        return PolyFloat.of( geometry.asPoint().getZ() );
+    }
+
+    /*
+     * on LineStrings
+     */
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyBoolean stIsClosed( PolyGeometry geometry ) {
+        restrictToLineStrings( geometry );
+        return PolyBoolean.of( geometry.asLineString().isClosed() );
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyBoolean stIsRing( PolyGeometry geometry ) {
+        restrictToLineStrings( geometry );
+        return PolyBoolean.of( geometry.asLineString().isRing() );
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyBoolean stIsCoordinate( PolyGeometry geometry, PolyGeometry point ) {
+        restrictToSrid( geometry, point );
+        restrictToLineStrings( geometry );
+        restrictToPoints( point );
+        return PolyBoolean.of( geometry.asLineString().isCoordinate( point.asPoint() ) );
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyGeometry stStartPoint( PolyGeometry geometry ) {
+        restrictToLineStrings( geometry );
+        return PolyGeometry.of( geometry.asLineString().getStartPoint().getJtsGeometry() );
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyGeometry stEndPoint( PolyGeometry geometry ) {
+        restrictToLineStrings( geometry );
+        return PolyGeometry.of( geometry.asLineString().getEndPoint().getJtsGeometry() );
+    }
+
+    /*
+     * on Polygons
+     */
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyBoolean stIsRectangle( PolyGeometry geometry ) {
+        restrictToPolygons( geometry );
+        return PolyBoolean.of( geometry.asPolygon().isRectangle() );
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyGeometry stExteriorRing( PolyGeometry geometry ) {
+        restrictToPolygons( geometry );
+        return geometry.asPolygon().getExteriorRing();
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyInteger stNumInteriorRing( PolyGeometry geometry ) {
+        restrictToPolygons( geometry );
+        return PolyInteger.of( geometry.asPolygon().getNumInteriorRing() );
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyGeometry stInteriorRingN( PolyGeometry geometry, PolyNumber n ) {
+        restrictToPolygons( geometry );
+        return PolyGeometry.of( geometry.asPolygon().getInteriorRingN( n.intValue() ).getJtsGeometry() );
+    }
+
+    /*
+     * on GeometryCollection
+     */
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyInteger stNumGeometries( PolyGeometry geometry ) {
+        restrictToGeometryCollection( geometry );
+        return PolyInteger.of( geometry.asGeometryCollection().getNumGeometries() );
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyGeometry stGeometryN( PolyGeometry geometry, PolyNumber n ) {
+        restrictToGeometryCollection( geometry );
+        return geometry.asGeometryCollection().getGeometryN( n.intValue() );
+    }
+
+    /*
+     * Helpers
+     */
+
+
+    private static void restrictToPoints( PolyGeometry geometry ) {
+        if ( !geometry.isPoint() ) {
+            throw toUnchecked( new InvalidGeometryException( POINT_RESTRICTION ) );
+        }
+    }
+
+
+    private static void restrictToLineStrings( PolyGeometry geometry ) {
+        if ( !geometry.isLineString() ) {
+            throw toUnchecked( new InvalidGeometryException( LINE_STRING_RESTRICTION ) );
+        }
+    }
+
+
+    private static void restrictToPolygons( PolyGeometry geometry ) {
+        if ( !geometry.isPolygon() ) {
+            throw toUnchecked( new InvalidGeometryException( POLYGON_RESTRICTION ) );
+        }
+    }
+
+
+    private static void restrictToGeometryCollection( PolyGeometry geometry ) {
+        if ( !geometry.isGeometryCollection() ) {
+            throw toUnchecked( new InvalidGeometryException( GEOMETRY_COLLECTION_RESTRICTION ) );
+        }
+    }
+
+
+    private static void restrictToSrid( PolyGeometry g1, PolyGeometry g2 ) {
+        if ( !Objects.equals( g1.getSRID(), g2.getSRID() ) ) {
+            throw toUnchecked( new GeometryTopologicalException( SRID_RESTRICTION ) );
+        }
+    }
+
+
+    private static PolyGeometry validateAndCreateGeometry( PolyValue input ) throws InvalidGeometryException {
+        if ( input == null || !input.isString() ) {
             return null;
         }
-        if ( srid == NO_SRID ) {
-            return new SimpleGeom( geometry );
-        }
-        return bind( geometry, SpatialReference.create( srid ) );
-    }
-
-
-    private static MapGeom bind( Geometry geometry, SpatialReference sr ) {
-        return new MapGeom( new MapGeometry( geometry, sr ) );
-    }
-
-
-    public static String ST_AsText( Geom g ) {
-        return ST_AsWKT( g );
-    }
-
-
-    public static String ST_AsWKT( Geom g ) {
-        return GeometryEngine.geometryToWkt( g.g(), WktExportFlags.wktExportDefaults );
-    }
-
-
-    public static Geom ST_GeomFromText( String s ) {
-        return ST_GeomFromText( s, NO_SRID );
-    }
-
-
-    public static Geom ST_GeomFromText( String s, int srid ) {
-        final Geometry g = GeometryEngine.geometryFromWkt( s, WktImportFlags.wktImportDefaults, Geometry.Type.Unknown );
-        return bind( g, srid );
-    }
-
-
-    public static Geom ST_LineFromText( String s ) {
-        return ST_GeomFromText( s, NO_SRID );
-    }
-
-
-    public static Geom ST_LineFromText( String wkt, int srid ) {
-        final Geometry g = GeometryEngine.geometryFromWkt( wkt, WktImportFlags.wktImportDefaults, Geometry.Type.Line );
-        return bind( g, srid );
-    }
-
-
-    public static Geom ST_MPointFromText( String s ) {
-        return ST_GeomFromText( s, NO_SRID );
-    }
-
-
-    public static Geom ST_MPointFromText( String wkt, int srid ) {
-        final Geometry g = GeometryEngine.geometryFromWkt( wkt, WktImportFlags.wktImportDefaults, Geometry.Type.MultiPoint );
-        return bind( g, srid );
-    }
-
-
-    public static Geom ST_PointFromText( String s ) {
-        return ST_GeomFromText( s, NO_SRID );
-    }
-
-
-    public static Geom ST_PointFromText( String wkt, int srid ) {
-        final Geometry g = GeometryEngine.geometryFromWkt( wkt, WktImportFlags.wktImportDefaults, Geometry.Type.Point );
-        return bind( g, srid );
-    }
-
-
-    public static Geom ST_PolyFromText( String s ) {
-        return ST_GeomFromText( s, NO_SRID );
-    }
-
-
-    public static Geom ST_PolyFromText( String wkt, int srid ) {
-        final Geometry g = GeometryEngine.geometryFromWkt( wkt, WktImportFlags.wktImportDefaults, Geometry.Type.Polygon );
-        return bind( g, srid );
-    }
-
-
-    public static Geom ST_MLineFromText( String s ) {
-        return ST_GeomFromText( s, NO_SRID );
-    }
-
-
-    public static Geom ST_MLineFromText( String wkt, int srid ) {
-        final Geometry g = GeometryEngine.geometryFromWkt( wkt, WktImportFlags.wktImportDefaults, Geometry.Type.Unknown ); // NOTE: there is no Geometry.Type.MultiLine
-        return bind( g, srid );
-    }
-
-
-    public static Geom ST_MPolyFromText( String s ) {
-        return ST_GeomFromText( s, NO_SRID );
-    }
-
-
-    public static Geom ST_MPolyFromText( String wkt, int srid ) {
-        final Geometry g = GeometryEngine.geometryFromWkt( wkt, WktImportFlags.wktImportDefaults, Geometry.Type.Unknown ); // NOTE: there is no Geometry.Type.MultiPolygon
-        return bind( g, srid );
-    }
-
-
-    /**
-     * Creates a line-string from the given POINTs (or MULTIPOINTs).
-     */
-    public static Geom ST_MakeLine( Geom geom1, Geom geom2 ) {
-        return makeLine( geom1, geom2 );
-    }
-
-
-    public static Geom ST_MakeLine( Geom geom1, Geom geom2, Geom geom3 ) {
-        return makeLine( geom1, geom2, geom3 );
-    }
-
-
-    public static Geom ST_MakeLine( Geom geom1, Geom geom2, Geom geom3, Geom geom4 ) {
-        return makeLine( geom1, geom2, geom3, geom4 );
-    }
-
-
-    public static Geom ST_MakeLine( Geom geom1, Geom geom2, Geom geom3, Geom geom4, Geom geom5 ) {
-        return makeLine( geom1, geom2, geom3, geom4, geom5 );
-    }
-
-
-    public static Geom ST_MakeLine( Geom geom1, Geom geom2, Geom geom3, Geom geom4, Geom geom5, Geom geom6 ) {
-        return makeLine( geom1, geom2, geom3, geom4, geom5, geom6 );
-    }
-
-
-    private static Geom makeLine( Geom... geoms ) {
-        final Polyline g = new Polyline();
-        Point p = null;
-        for ( Geom geom : geoms ) {
-            if ( geom.g() instanceof Point ) {
-                final Point prev = p;
-                p = (Point) geom.g();
-                if ( prev != null ) {
-                    final Line line = new Line();
-                    line.setStart( prev );
-                    line.setEnd( p );
-                    g.addSegment( line, false );
-                }
-            }
-        }
-        return new SimpleGeom( g );
-    }
-
-
-    /**
-     * Alias for {@link #ST_Point(BigDecimal, BigDecimal)}.
-     */
-    public static Geom ST_MakePoint( BigDecimal x, BigDecimal y ) {
-        return ST_Point( x, y );
-    }
-
-
-    /**
-     * Alias for {@link #ST_Point(BigDecimal, BigDecimal, BigDecimal)}.
-     */
-    public static Geom ST_MakePoint( BigDecimal x, BigDecimal y, BigDecimal z ) {
-        return ST_Point( x, y, z );
-    }
-
-
-    /**
-     * Constructs a 2D point from coordinates.
-     */
-    public static Geom ST_Point( BigDecimal x, BigDecimal y ) {
-        // NOTE: Combine the double and BigDecimal variants of this function
-        return point( x.doubleValue(), y.doubleValue() );
-    }
-
-
-    /**
-     * Constructs a 3D point from coordinates.
-     */
-    public static Geom ST_Point( BigDecimal x, BigDecimal y, BigDecimal z ) {
-        final Geometry g = new Point( x.doubleValue(), y.doubleValue(), z.doubleValue() );
-        return new SimpleGeom( g );
-    }
-
-
-    private static Geom point( double x, double y ) {
-        final Geometry g = new Point( x, y );
-        return new SimpleGeom( g );
-    }
-
-
-    /**
-     * Returns whether {@code geom} has at least one z-coordinate.
-     */
-    public static boolean ST_Is3D( Geom geom ) {
-        return geom.g().hasZ();
-    }
-
-
-    /**
-     * Returns the x-value of the first coordinate of {@code geom}.
-     */
-    public static Double ST_X( Geom geom ) {
-        return geom.g() instanceof Point ? ((Point) geom.g()).getX() : null;
-    }
-
-
-    /**
-     * Returns the y-value of the first coordinate of {@code geom}.
-     */
-    public static Double ST_Y( Geom geom ) {
-        return geom.g() instanceof Point ? ((Point) geom.g()).getY() : null;
-    }
-
-
-    /**
-     * Returns the z-value of the first coordinate of {@code geom}.
-     */
-    public static Double ST_Z( Geom geom ) {
-        return geom.g().getDescription().hasZ() && geom.g() instanceof Point ? ((Point) geom.g()).getZ() : null;
-    }
-
-
-    /**
-     * Returns the boundary of {@code geom}.
-     */
-    public static Geom ST_Boundary( Geom geom ) {
-        OperatorBoundary op = OperatorBoundary.local();
-        Geometry result = op.execute( geom.g(), null );
-        return geom.wrap( result );
-    }
-
-
-    /**
-     * Returns the distance between {@code geom1} and {@code geom2}.
-     */
-    public static double ST_Distance( Geom geom1, Geom geom2 ) {
-        return GeometryEngine.distance( geom1.g(), geom2.g(), geom1.sr() );
-    }
-
-
-    /**
-     * Returns the type of {@code geom}.
-     */
-    public static String ST_GeometryType( Geom geom ) {
-        return type( geom.g() ).name();
-    }
-
-
-    /**
-     * Returns the OGC SFS type code of {@code geom}.
-     */
-    public static int ST_GeometryTypeCode( Geom geom ) {
-        return type( geom.g() ).code;
-    }
-
-
-    /**
-     * Returns the OGC type of a geometry.
-     */
-    private static Type type( Geometry g ) {
-        switch ( g.getType() ) {
-            case Point:
-                return Type.POINT;
-            case Polyline:
-                return Type.LINESTRING;
-            case Polygon:
-                return Type.POLYGON;
-            case MultiPoint:
-                return Type.MULTIPOINT;
-            case Envelope:
-                return Type.POLYGON;
-            case Line:
-                return Type.LINESTRING;
-            case Unknown:
-                return Type.Geometry;
-            default:
-                throw new AssertionError( g );
-        }
-    }
-
-
-    /**
-     * Returns the minimum bounding box of {@code geom} (which may be a GEOMETRYCOLLECTION).
-     */
-    public static Geom ST_Envelope( Geom geom ) {
-        final Envelope env = envelope( geom.g() );
-        return geom.wrap( env );
-    }
-
-
-    private static Envelope envelope( Geometry g ) {
-        final Envelope env = new Envelope();
-        g.queryEnvelope( env );
-        return env;
-    }
-
-
-    /**
-     * Returns whether {@code geom1} contains {@code geom2}.
-     */
-    public static boolean ST_Contains( Geom geom1, Geom geom2 ) {
-        return GeometryEngine.contains( geom1.g(), geom2.g(), geom1.sr() );
-    }
-
-
-    /**
-     * Returns whether {@code geom1} contains {@code geom2} but does not intersect its boundary.
-     */
-    public static boolean ST_ContainsProperly( Geom geom1, Geom geom2 ) {
-        return GeometryEngine.contains( geom1.g(), geom2.g(), geom1.sr() ) && !GeometryEngine.crosses( geom1.g(), geom2.g(), geom1.sr() );
-    }
-
-
-    /**
-     * Returns whether no point in {@code geom2} is outside {@code geom1}.
-     */
-    private static boolean ST_Covers( Geom geom1, Geom geom2 ) {
-        throw todo();
-    }
-
-
-    /**
-     * Returns whether {@code geom1} crosses {@code geom2}.
-     */
-    public static boolean ST_Crosses( Geom geom1, Geom geom2 ) {
-        return GeometryEngine.crosses( geom1.g(), geom2.g(), geom1.sr() );
-    }
-
-
-    /**
-     * Returns whether {@code geom1} and {@code geom2} are disjoint.
-     */
-    public static boolean ST_Disjoint( Geom geom1, Geom geom2 ) {
-        return GeometryEngine.disjoint( geom1.g(), geom2.g(), geom1.sr() );
-    }
-
-
-    /**
-     * Returns whether the envelope of {@code geom1} intersects the envelope of {@code geom2}.
-     */
-    public static boolean ST_EnvelopesIntersect( Geom geom1, Geom geom2 ) {
-        final Geometry e1 = envelope( geom1.g() );
-        final Geometry e2 = envelope( geom2.g() );
-        return intersects( e1, e2, geom1.sr() );
-    }
-
-
-    /**
-     * Returns whether {@code geom1} equals {@code geom2}.
-     */
-    public static boolean ST_Equals( Geom geom1, Geom geom2 ) {
-        return GeometryEngine.equals( geom1.g(), geom2.g(), geom1.sr() );
-    }
-
-
-    /**
-     * Returns whether {@code geom1} intersects {@code geom2}.
-     */
-    public static boolean ST_Intersects( Geom geom1, Geom geom2 ) {
-        final Geometry g1 = geom1.g();
-        final Geometry g2 = geom2.g();
-        final SpatialReference sr = geom1.sr();
-        return intersects( g1, g2, sr );
-    }
-
-
-    private static boolean intersects( Geometry g1, Geometry g2, SpatialReference sr ) {
-        final OperatorIntersects op = (OperatorIntersects) OperatorFactoryLocal.getInstance().getOperator( Operator.Type.Intersects );
-        return op.execute( g1, g2, sr, null );
-    }
-
-
-    /**
-     * Returns whether {@code geom1} equals {@code geom2} and their coordinates and component Geometries are listed in the same order.
-     */
-    public static boolean ST_OrderingEquals( Geom geom1, Geom geom2 ) {
-        return GeometryEngine.equals( geom1.g(), geom2.g(), geom1.sr() );
-    }
-
-
-    /**
-     * Returns {@code geom1} overlaps {@code geom2}.
-     */
-    public static boolean ST_Overlaps( Geom geom1, Geom geom2 ) {
-        return GeometryEngine.overlaps( geom1.g(), geom2.g(), geom1.sr() );
-    }
-
-
-    /**
-     * Returns whether {@code geom1} touches {@code geom2}.
-     */
-    public static boolean ST_Touches( Geom geom1, Geom geom2 ) {
-        return GeometryEngine.touches( geom1.g(), geom2.g(), geom1.sr() );
-    }
-
-
-    /**
-     * Returns whether {@code geom1} is within {@code geom2}.
-     */
-    public static boolean ST_Within( Geom geom1, Geom geom2 ) {
-        return GeometryEngine.within( geom1.g(), geom2.g(), geom1.sr() );
-    }
-
-
-    /**
-     * Returns whether {@code geom1} and {@code geom2} are within {@code distance} of each other.
-     */
-    public static boolean ST_DWithin( Geom geom1, Geom geom2, double distance ) {
-        final double distance1 = GeometryEngine.distance( geom1.g(), geom2.g(), geom1.sr() );
-        return distance1 <= distance;
-    }
-
-
-    /**
-     * Computes a buffer around {@code geom}.
-     */
-    public static Geom ST_Buffer( Geom geom, double distance ) {
-        final Polygon g = GeometryEngine.buffer( geom.g(), geom.sr(), distance );
-        return geom.wrap( g );
-    }
-
-
-    /**
-     * Computes a buffer around {@code geom} with .
-     */
-    public static Geom ST_Buffer( Geom geom, double distance, int quadSegs ) {
-        throw todo();
-    }
-
-
-    /**
-     * Computes a buffer around {@code geom}.
-     */
-    public static Geom ST_Buffer( Geom geom, double bufferSize, String style ) {
-        int quadSegCount = 8;
-        CapStyle endCapStyle = CapStyle.ROUND;
-        JoinStyle joinStyle = JoinStyle.ROUND;
-        float mitreLimit = 5f;
-        int i = 0;
-        parse:
-        for ( ; ; ) {
-            int equals = style.indexOf( '=', i );
-            if ( equals < 0 ) {
-                break;
-            }
-            int space = style.indexOf( ' ', equals );
-            if ( space < 0 ) {
-                space = style.length();
-            }
-            String name = style.substring( i, equals );
-            String value = style.substring( equals + 1, space );
-            switch ( name ) {
-                case "quad_segs":
-                    quadSegCount = Integer.valueOf( value );
-                    break;
-                case "endcap":
-                    endCapStyle = CapStyle.of( value );
-                    break;
-                case "join":
-                    joinStyle = JoinStyle.of( value );
-                    break;
-                case "mitre_limit":
-                case "miter_limit":
-                    mitreLimit = Float.parseFloat( value );
-                    break;
-                default:
-                    // ignore the value
-            }
-            i = space;
-            for ( ; ; ) {
-                if ( i >= style.length() ) {
-                    break parse;
-                }
-                if ( style.charAt( i ) != ' ' ) {
-                    break;
-                }
-                ++i;
-            }
-        }
-        return buffer( geom, bufferSize, quadSegCount, endCapStyle, joinStyle, mitreLimit );
-    }
-
-
-    private static Geom buffer( Geom geom, double bufferSize, int quadSegCount, CapStyle endCapStyle, JoinStyle joinStyle, float mitreLimit ) {
-        Util.discard( endCapStyle + ":" + joinStyle + ":" + mitreLimit + ":" + quadSegCount );
-        throw todo();
-    }
-
-
-    /**
-     * Computes the union of {@code geom1} and {@code geom2}.
-     */
-    public static Geom ST_Union( Geom geom1, Geom geom2 ) {
-        SpatialReference sr = geom1.sr();
-        final Geometry g = GeometryEngine.union( new Geometry[]{ geom1.g(), geom2.g() }, sr );
-        return bind( g, sr );
-    }
-
-
-    /**
-     * Computes the union of the geometries in {@code geomCollection}.
-     */
-    @SemiStrict
-    public static Geom ST_Union( Geom geomCollection ) {
-        SpatialReference sr = geomCollection.sr();
-        final Geometry g = GeometryEngine.union( new Geometry[]{ geomCollection.g() }, sr );
-        return bind( g, sr );
-    }
-
-
-    /**
-     * Transforms {@code geom} from one coordinate reference system (CRS) to the CRS specified by {@code srid}.
-     */
-    public static Geom ST_Transform( Geom geom, int srid ) {
-        return geom.transform( srid );
-    }
-
-
-    /**
-     * Returns a copy of {@code geom} with a new SRID.
-     */
-    public static Geom ST_SetSRID( Geom geom, int srid ) {
-        return geom.transform( srid );
-    }
-
-
-    /**
-     * How the "buffer" command terminates the end of a line.
-     */
-    enum CapStyle {
-        ROUND, FLAT, SQUARE;
-
-
-        static CapStyle of( String value ) {
-            switch ( value ) {
-                case "round":
-                    return ROUND;
-                case "flat":
-                case "butt":
-                    return FLAT;
-                case "square":
-                    return SQUARE;
-                default:
-                    throw new IllegalArgumentException( "unknown endcap value: " + value );
-            }
-        }
-    }
-
-
-    /**
-     * How the "buffer" command decorates junctions between line segments.
-     */
-    enum JoinStyle {
-        ROUND, MITRE, BEVEL;
-
-
-        static JoinStyle of( String value ) {
-            switch ( value ) {
-                case "round":
-                    return ROUND;
-                case "mitre":
-                case "miter":
-                    return MITRE;
-                case "bevel":
-                    return BEVEL;
-                default:
-                    throw new IllegalArgumentException( "unknown join value: " + value );
-            }
-        }
-    }
-
-
-    /**
-     * Geometry. It may or may not have a spatial reference associated with it.
-     */
-    public interface Geom {
-
-        Geometry g();
-
-        SpatialReference sr();
-
-        Geom transform( int srid );
-
-        Geom wrap( Geometry g );
-
-    }
-
-
-    /**
-     * Sub-class of geometry that has no spatial reference.
-     */
-    static class SimpleGeom implements Geom {
-
-        final Geometry g;
-
-
-        SimpleGeom( Geometry g ) {
-            this.g = Objects.requireNonNull( g );
-        }
-
-
-        @Override
-        public String toString() {
-            return g.toString();
-        }
-
-
-        @Override
-        public Geometry g() {
-            return g;
-        }
-
-
-        @Override
-        public SpatialReference sr() {
-            return SPATIAL_REFERENCE;
-        }
-
-
-        @Override
-        public Geom transform( int srid ) {
-            if ( srid == SPATIAL_REFERENCE.getID() ) {
-                return this;
-            }
-            return bind( g, srid );
-        }
-
-
-        @Override
-        public Geom wrap( Geometry g ) {
-            return new SimpleGeom( g );
-        }
-
-    }
-
-
-    /**
-     * Sub-class of geometry that has a spatial reference.
-     */
-    static class MapGeom implements Geom {
-
-        final MapGeometry mg;
-
-
-        MapGeom( MapGeometry mg ) {
-            this.mg = Objects.requireNonNull( mg );
-        }
-
-
-        @Override
-        public String toString() {
-            return mg.toString();
-        }
-
-
-        @Override
-        public Geometry g() {
-            return mg.getGeometry();
-        }
-
-
-        @Override
-        public SpatialReference sr() {
-            return mg.getSpatialReference();
-        }
-
-
-        @Override
-        public Geom transform( int srid ) {
-            if ( srid == NO_SRID ) {
-                return new SimpleGeom( mg.getGeometry() );
-            }
-            if ( srid == mg.getSpatialReference().getID() ) {
-                return this;
-            }
-            return bind( mg.getGeometry(), srid );
-        }
-
-
-        @Override
-        public Geom wrap( Geometry g ) {
-            return bind( g, this.mg.getSpatialReference() );
-        }
-
-    }
-
-
-    /**
-     * Geometry types, with the names and codes assigned by OGC.
-     */
-    enum Type {
-        Geometry( 0 ),
-        POINT( 1 ),
-        LINESTRING( 2 ),
-        POLYGON( 3 ),
-        MULTIPOINT( 4 ),
-        MULTILINESTRING( 5 ),
-        MULTIPOLYGON( 6 ),
-        GEOMCOLLECTION( 7 ),
-        CURVE( 13 ),
-        SURFACE( 14 ),
-        POLYHEDRALSURFACE( 15 );
-
-        final int code;
-
-
-        Type( int code ) {
-            this.code = code;
-        }
+        return PolyGeometry.fromWKT( input.asString().getValue(), PolyGeometry.WGS_84 );
     }
 
 }
-

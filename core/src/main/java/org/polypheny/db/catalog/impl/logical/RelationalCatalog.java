@@ -16,19 +16,18 @@
 
 package org.polypheny.db.catalog.impl.logical;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.beans.PropertyChangeSupport;
 import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import lombok.Getter;
 import lombok.Value;
 import lombok.experimental.SuperBuilder;
 import org.jetbrains.annotations.Nullable;
@@ -62,6 +61,7 @@ import org.polypheny.db.catalog.logistic.IndexType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.catalog.util.CatalogEvent;
 import org.polypheny.db.languages.QueryLanguage;
+import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
@@ -70,42 +70,46 @@ import org.polypheny.db.type.entity.PolyValue;
 @SuperBuilder(toBuilder = true)
 public class RelationalCatalog implements PolySerializable, LogicalRelationalCatalog {
 
-    @Getter
     public BinarySerializer<RelationalCatalog> serializer = PolySerializable.buildSerializer( RelationalCatalog.class );
 
-    public IdBuilder idBuilder = IdBuilder.getInstance();
+    IdBuilder idBuilder = IdBuilder.getInstance();
 
     @Serialize
-    @Getter
-    public Map<Long, LogicalTable> tables;
-
-    @Serialize
-    @Getter
-    public Map<Long, LogicalColumn> columns;
-
-    @Getter
-    public Map<Long, AlgNode> nodes;
-
-    @Serialize
-    @Getter
+    @JsonProperty
     public LogicalNamespace logicalNamespace;
 
     @Serialize
-    @Getter
+    @JsonProperty
+    public Map<Long, LogicalTable> tables;
+
+    @Serialize
+    @JsonProperty
+    public Map<Long, LogicalColumn> columns;
+
+    public Map<Long, AlgNode> nodes;
+
+
+    @Serialize
+    @JsonProperty
     public Map<Long, LogicalIndex> indexes;
 
     // while keys "belong" to a specific table, they can reference other namespaces, atm they are place here, might change later
     @Serialize
-    @Getter
+    @JsonProperty
     public Map<Long, LogicalKey> keys;
 
-
     @Serialize
-    @Getter
+    @JsonProperty
     public Map<Long, LogicalConstraint> constraints;
 
+    Set<Long> tablesFlaggedForDeletion = new HashSet<>();
 
-    List<Long> tablesFlaggedForDeletion = new ArrayList<>();
+    PropertyChangeSupport listeners = new PropertyChangeSupport( this );
+
+
+    public RelationalCatalog( LogicalNamespace namespace ) {
+        this( namespace, Map.of(), Map.of(), Map.of(), Map.of(), Map.of() );
+    }
 
 
     public RelationalCatalog(
@@ -127,16 +131,8 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
     }
 
 
-    PropertyChangeSupport listeners = new PropertyChangeSupport( this );
-
-
     public void change( CatalogEvent event, Object oldValue, Object newValue ) {
         listeners.firePropertyChange( event.name(), oldValue, newValue );
-    }
-
-
-    public RelationalCatalog( LogicalNamespace namespace ) {
-        this( namespace, new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashMap<>() );
     }
 
 
@@ -207,9 +203,7 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
 
     @Override
     public void deleteTable( long tableId ) {
-        for ( Long columnId : tables.get( tableId ).getColumnIds() ) {
-            columns.remove( columnId );
-        }
+        tables.get( tableId ).getColumnIds().forEach( columns::remove );
         tables.remove( tableId );
         change( CatalogEvent.LOGICAL_REL_ENTITY_DROPPED, tableId, null );
     }
@@ -217,9 +211,8 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
 
     @Override
     public void setPrimaryKey( long tableId, @Nullable Long keyId ) {
-        LogicalTable oldTable = tables.get( tableId );
         // we temporarily can remove the primary, to clean-up old primaries before adding a new one
-        tables.put( tableId, oldTable.toBuilder().primaryKey( keyId ).build() );
+        tables.computeIfPresent( tableId, ( k, oldTable ) -> oldTable.toBuilder().primaryKey( keyId ).build() );
 
         if ( keyId != null ) {
             keys.put( keyId, new LogicalPrimaryKey( keys.get( keyId ) ) );
@@ -371,18 +364,15 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
 
 
     @Override
-    public void addPrimaryKey( long tableId, List<Long> columnIds ) {
+    public void addPrimaryKey( long tableId, List<Long> columnIds, Statement statement ) {
         if ( columnIds.stream().anyMatch( id -> columns.get( id ).nullable ) ) {
             throw new GenericRuntimeException( "Primary key is not allowed to use nullable columns." );
         }
-
-        // TODO: Check if the current values are unique
 
         // Check if there is already a primary key defined for this table and if so, delete it.
         LogicalTable table = tables.get( tableId );
 
         if ( table.primaryKey != null ) {
-            // CatalogCombinedKey combinedKey = getCombinedKey( table.primaryKey );
             if ( getKeyUniqueCount( table.primaryKey ) == 1 && isForeignKey( table.primaryKey ) ) {
                 // This primary key is the only constraint for the uniqueness of this key.
                 throw new GenericRuntimeException( "This key is referenced by at least one foreign key which requires this key to be unique. To drop this primary key, first drop the foreign keys or create a unique constraint." );
@@ -394,8 +384,8 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
         }
         long keyId = getOrAddKey( tableId, columnIds, EnforcementTime.ON_QUERY );
         setPrimaryKey( tableId, keyId );
+
         change( CatalogEvent.PRIMARY_KEY_CREATED, tableId, keyId );
-        tables.get( tableId );
     }
 
 
@@ -437,23 +427,14 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
     }
 
 
-    private int getKeyUniqueCount( long keyId ) {
-        int count = 0;
+    private long getKeyUniqueCount( long keyId ) {
+        long count = 0;
         if ( Catalog.snapshot().rel().getPrimaryKey( keyId ).isPresent() ) {
             count++;
         }
 
-        for ( LogicalConstraint constraint : constraints.values().stream().filter( c -> c.keyId == keyId ).toList() ) {
-            if ( constraint.type == ConstraintType.UNIQUE ) {
-                count++;
-            }
-        }
-
-        for ( LogicalIndex index : indexes.values().stream().filter( i -> i.keyId == keyId ).toList() ) {
-            if ( index.unique ) {
-                count++;
-            }
-        }
+        count += constraints.values().stream().filter( c -> c.keyId == keyId && c.type == ConstraintType.UNIQUE ).count();
+        count += indexes.values().stream().filter( i -> i.keyId == keyId && i.unique ).count();
 
         return count;
     }
@@ -466,7 +447,7 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
         }
 
         LogicalTable table = tables.get( tableId );
-        Snapshot snapshot = Catalog.getInstance().getSnapshot();
+        Snapshot snapshot = Catalog.snapshot();
         List<LogicalKey> childKeys = snapshot.rel().getTableKeys( referencesTableId );
 
         for ( LogicalKey refKey : childKeys ) {
@@ -507,7 +488,7 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
 
 
     @Override
-    public void addUniqueConstraint( long tableId, String constraintName, List<Long> columnIds ) {
+    public void addUniqueConstraint( long tableId, String constraintName, List<Long> columnIds, Statement statement ) {
         long keyId = getOrAddKey( tableId, columnIds, EnforcementTime.ON_QUERY );
         // Check if there is already a unique constraint
         List<LogicalConstraint> logicalConstraints = constraints.values().stream()
@@ -516,20 +497,23 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
         if ( !logicalConstraints.isEmpty() ) {
             throw new GenericRuntimeException( "There is already a unique constraint!" );
         }
-        addConstraint( tableId, constraintName, columnIds, ConstraintType.UNIQUE );
+        long id = addConstraint( tableId, constraintName, columnIds, ConstraintType.UNIQUE, statement );
+        statement.getTransaction().addNewConstraint( tableId, constraints.get( id ) );
     }
 
 
     @Override
-    public void addConstraint( long tableId, String constraintName, List<Long> columnIds, ConstraintType type ) {
+    public long addConstraint( long tableId, String constraintName, List<Long> columnIds, ConstraintType type, Statement statement ) {
         long keyId = getOrAddKey( tableId, columnIds, EnforcementTime.ON_QUERY );
 
         long id = idBuilder.getNewConstraintId();
+        LogicalConstraint constraint = new LogicalConstraint( id, keyId, type, constraintName, Objects.requireNonNull( keys.get( keyId ) ) );
         synchronized ( this ) {
-            constraints.put( id, new LogicalConstraint( id, keyId, type, constraintName, Objects.requireNonNull( keys.get( keyId ) ) ) );
+            constraints.put( id, constraint );
             change( CatalogEvent.CONSTRAINT_CREATED, null, id );
         }
-        tables.get( tableId );
+        statement.getTransaction().addNewConstraint( tableId, constraint );
+        return id;
     }
 
 
@@ -592,9 +576,9 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
 
     @Override
     public void flagTableForDeletion( long tableId, boolean flag ) {
-        if ( flag && !tablesFlaggedForDeletion.contains( tableId ) ) {
+        if ( flag ) {
             tablesFlaggedForDeletion.add( tableId );
-        } else if ( !flag && tablesFlaggedForDeletion.contains( tableId ) ) {
+        } else {
             tablesFlaggedForDeletion.remove( tableId );
         }
     }

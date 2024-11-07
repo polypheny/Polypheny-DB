@@ -43,7 +43,6 @@ import java.lang.reflect.UndeclaredThrowableException;
  * A class derived from <code>BarfingInvocationHandler</code> handles a method call by looking for a method in itself with identical parameters. If no such method is found, it throws {@link UnsupportedOperationException}.
  *
  * It is useful when you are prototyping code. You can rapidly create a prototype class which implements the important methods in an interface, then implement other methods as they are called.
- *
  */
 public class BarfingInvocationHandler implements InvocationHandler {
 
@@ -89,5 +88,5 @@ public class BarfingInvocationHandler implements InvocationHandler {
         String signature = method.getReturnType().getName() + " " + method.getDeclaringClass().getName() + "." + method.getName() + "(" + buf.toString() + ")";
         return new UnsupportedOperationException( signature );
     }
-}
 
+}

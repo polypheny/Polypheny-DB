@@ -38,18 +38,18 @@ subprojects {
         }
     }
 
-    task plugin(type: Jar) {
+    tasks.register('plugin', Jar) {
         manifest {
             attributes 'Plugin-Class': "${pluginClass}",
-                    'Plugin-Id': "${pluginId}",
-                    'Plugin-Version': "${pluginVersion}",
-                    'Plugin-Provider': "${pluginProvider}",
-                    'Plugin-Dependencies': "${pluginDependencies}",
-                    'Plugin-Url-Path': "${pluginUrlPath}",
-                    'Plugin-Categories': "${pluginCategories}",
-                    'Plugin-Polypheny-Dependencies': "${pluginPolyDependencies}",
-                    'Plugin-System-Component': "${pluginIsSystemComponent}",
-                    'Plugin-Ui-Visible': "${pluginIsUiVisible}"
+                'Plugin-Id': "${pluginId}",
+                'Plugin-Version': "${pluginVersion}",
+                'Plugin-Provider': "${pluginProvider}",
+                'Plugin-Dependencies': "${pluginDependencies}",
+                'Plugin-Url-Path': "${pluginUrlPath}",
+                'Plugin-Categories': "${pluginCategories}",
+                'Plugin-Polypheny-Dependencies': "${pluginPolyDependencies}",
+                'Plugin-System-Component': "${pluginIsSystemComponent}",
+                'Plugin-Ui-Visible': "${pluginIsUiVisible}"
         }
         archiveBaseName = "plugin-${pluginId}"
         into('classes') {

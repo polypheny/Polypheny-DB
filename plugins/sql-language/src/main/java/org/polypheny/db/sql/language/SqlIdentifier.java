@@ -148,7 +148,7 @@ public class SqlIdentifier extends SqlNode implements Identifier {
      * Converts a list of strings to a qualified identifier.
      */
     public static String getString( List<String> names ) {
-        return Util.sepList( toStar( names ), "." );
+        return String.join( ".", toStar( names ) );
     }
 
 

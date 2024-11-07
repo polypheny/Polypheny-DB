@@ -19,6 +19,7 @@ package org.polypheny.db.prisminterface;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.catalog.entity.LogicalUser;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.prisminterface.statements.StatementManager;
@@ -32,6 +33,8 @@ public class PIClient {
     @Getter
     private final String clientUUID;
     private final LogicalUser catalogUser;
+    @Getter
+    @Setter
     private Transaction currentTransaction;
     private final TransactionManager transactionManager;
     @Getter
@@ -94,7 +97,7 @@ public class PIClient {
         }
         try {
             currentTransaction.commit();
-        } catch ( TransactionException e ) {
+        } catch ( Throwable e ) {
             throw new PIServiceException( "Committing current transaction failed: " + e.getMessage() );
         } finally {
             clearCurrentTransaction();
@@ -102,13 +105,13 @@ public class PIClient {
     }
 
 
-    public void rollbackCurrentTransaction() throws PIServiceException {
+    public void rollbackCurrentTransaction( @Nullable String reason ) throws PIServiceException {
         if ( hasNoTransaction() ) {
             return;
         }
         try {
             currentTransaction.getCancelFlag().set( true );
-            currentTransaction.rollback();
+            currentTransaction.rollback( reason );
         } catch ( TransactionException e ) {
             throw new PIServiceException( "Rollback of current transaction failed: " + e.getLocalizedMessage() );
         } finally {
@@ -127,9 +130,9 @@ public class PIClient {
     }
 
 
-    void prepareForDisposal() {
+    void prepareForDisposal( @Nullable String reason ) {
         statementManager.closeAll();
-        rollbackCurrentTransaction();
+        rollbackCurrentTransaction( reason );
         monitoringPage.removeStatementManager( statementManager );
     }
 

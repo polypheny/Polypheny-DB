@@ -43,4 +43,5 @@ public interface AggregateLambdaFactory<TSource, TOrigAccumulate, TAccumulate, T
     Function1<TAccumulate, TResult> singleGroupResultSelector( Function1<TOrigAccumulate, TResult> resultSelector );
 
     Function2<TKey, TAccumulate, TResult> resultSelector( Function2<TKey, TOrigAccumulate, TResult> resultSelector );
+
 }

@@ -192,5 +192,5 @@ public class ConsList<E> extends AbstractImmutableList<E> {
     public int lastIndexOf( Object o ) {
         return toList().lastIndexOf( o );
     }
-}
 
+}

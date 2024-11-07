@@ -79,4 +79,5 @@ public interface AggImplementor {
      * @return Expression that is a result of calculating final value of the aggregate being implemented
      */
     Expression implementResult( AggContext info, AggResultContext result );
+
 }

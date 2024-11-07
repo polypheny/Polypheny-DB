@@ -70,7 +70,6 @@ public class PigAlgBuilderTest extends PigTestTemplate {
     }
 
 
-
     @Test
     public void testDistinct() {
         // Syntax:
@@ -105,8 +104,6 @@ public class PigAlgBuilderTest extends PigTestTemplate {
                 """;
         assertThat( str( root ), is( plan ) );
     }
-
-
 
 
     @Test
@@ -154,7 +151,6 @@ public class PigAlgBuilderTest extends PigTestTemplate {
     }
 
 
-
     @Test
     public void testLoad() {
         // Syntax:
@@ -166,7 +162,6 @@ public class PigAlgBuilderTest extends PigTestTemplate {
                 .build();
         assertThat( str( root ), is( "LogicalRelScan(model=[RELATIONAL], table=[0], layer=[LOGICAL])\n" ) );
     }
-
 
 
 }

@@ -55,5 +55,5 @@ public interface WinAggAddContext extends AggAddContext, WinAggResultContext {
      * @see WinAggFrameContext#startIndex()
      */
     Expression currentPosition();
-}
 
+}

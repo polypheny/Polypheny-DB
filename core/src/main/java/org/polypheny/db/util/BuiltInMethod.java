@@ -110,6 +110,7 @@ import org.polypheny.db.functions.CrossModelFunctions;
 import org.polypheny.db.functions.CypherFunctions;
 import org.polypheny.db.functions.Functions;
 import org.polypheny.db.functions.Functions.FlatProductInputType;
+import org.polypheny.db.functions.GeoFunctions;
 import org.polypheny.db.functions.MqlFunctions;
 import org.polypheny.db.functions.TemporalFunctions;
 import org.polypheny.db.interpreter.Context;
@@ -140,6 +141,8 @@ import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.type.entity.graph.PolyNode;
 import org.polypheny.db.type.entity.graph.PolyPath;
+import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.type.entity.temporal.PolyDate;
 import org.polypheny.db.type.entity.temporal.PolyTime;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
@@ -423,6 +426,66 @@ public enum BuiltInMethod {
     AGG_LAMBDA_FACTORY_ACC_SINGLE_GROUP_RESULT_SELECTOR( AggregateLambdaFactory.class, "singleGroupResultSelector", Function1.class ),
     RESULTSET_GETBYTES( ResultSet.class, "getBytes", int.class ),
     RESULTSET_GETBINARYSTREAM( ResultSet.class, "getBinaryStream", int.class ),
+    // GEO METHODS
+    ST_GEOMFROMTEXT( GeoFunctions.class, "stGeomFromText", PolyString.class ),
+    ST_GEOMFROMTWKB( GeoFunctions.class, "stGeomFromTWKB", PolyString.class ),
+    ST_GEOMFROMGEOJSON( GeoFunctions.class, "stGeomFromGeoJson", PolyString.class ),
+    ST_ASTEXT( GeoFunctions.class, "stAsText", PolyGeometry.class ),
+    ST_ASTWKB( GeoFunctions.class, "stAsTWKB", PolyGeometry.class ),
+    ST_ASGEOJSON( GeoFunctions.class, "stAsGeoJson", PolyGeometry.class ),
+    ST_TRANSFORM( GeoFunctions.class, "stTransform", PolyGeometry.class, PolyNumber.class ),
+    // Common properties
+    ST_ISSIMPLE( GeoFunctions.class, "stIsSimple", PolyGeometry.class ),
+    ST_ISEMPTY( GeoFunctions.class, "stIsEmpty", PolyGeometry.class ),
+    ST_NUMPOINTS( GeoFunctions.class, "stNumPoints", PolyGeometry.class ),
+    ST_DIMENSION( GeoFunctions.class, "stDimension", PolyGeometry.class ),
+    ST_LENGTH( GeoFunctions.class, "stLength", PolyGeometry.class ),
+    ST_AREA( GeoFunctions.class, "stArea", PolyGeometry.class ),
+    ST_ENVELOPE( GeoFunctions.class, "stEnvelope", PolyGeometry.class ),
+    ST_BOUNDARY( GeoFunctions.class, "stBoundary", PolyGeometry.class ),
+    ST_BOUNDARYDIMENSION( GeoFunctions.class, "stBoundaryDimension", PolyGeometry.class ),
+    ST_CONVEXHULL( GeoFunctions.class, "stConvexHull", PolyGeometry.class ),
+    ST_CENTROID( GeoFunctions.class, "stCentroid", PolyGeometry.class ),
+    ST_REVERSE( GeoFunctions.class, "stReverse", PolyGeometry.class ),
+    ST_BUFFER( GeoFunctions.class, "stBuffer", PolyGeometry.class, PolyNumber.class ),
+    // Spatial relationships
+    ST_EQUALS( GeoFunctions.class, "stEquals", PolyGeometry.class, PolyGeometry.class ),
+    ST_DWITHIN( GeoFunctions.class, "stDWithin", PolyGeometry.class, PolyGeometry.class, PolyNumber.class ),
+    ST_DISJOINT( GeoFunctions.class, "stDisjoint", PolyGeometry.class, PolyGeometry.class ),
+    ST_TOUCHES( GeoFunctions.class, "stTouches", PolyGeometry.class, PolyGeometry.class ),
+    ST_INTERSECTS( GeoFunctions.class, "stIntersects", PolyGeometry.class, PolyGeometry.class ),
+    ST_CROSSES( GeoFunctions.class, "stCrosses", PolyGeometry.class, PolyGeometry.class ),
+    ST_WITHIN( GeoFunctions.class, "stWithin", PolyGeometry.class, PolyGeometry.class ),
+    ST_CONTAINS( GeoFunctions.class, "stContains", PolyGeometry.class, PolyGeometry.class ),
+    ST_OVERLAPS( GeoFunctions.class, "stOverlaps", PolyGeometry.class, PolyGeometry.class ),
+    ST_COVERS( GeoFunctions.class, "stCovers", PolyGeometry.class, PolyGeometry.class ),
+    ST_COVEREDBY( GeoFunctions.class, "stCoveredBy", PolyGeometry.class, PolyGeometry.class ),
+    ST_RELATE( GeoFunctions.class, "stRelate", PolyGeometry.class, PolyGeometry.class, PolyString.class ),
+    // Yield metric values
+    ST_DISTANCE( GeoFunctions.class, "stDistance", PolyGeometry.class, PolyGeometry.class ),
+    // Set operations
+    ST_INTERSECTION( GeoFunctions.class, "stIntersection", PolyGeometry.class, PolyGeometry.class ),
+    ST_UNION( GeoFunctions.class, "stUnion", PolyGeometry.class, PolyGeometry.class ),
+    ST_DIFFERENCE( GeoFunctions.class, "stDifference", PolyGeometry.class, PolyGeometry.class ),
+    ST_SYMDIFFERENCE( GeoFunctions.class, "stSymDifference", PolyGeometry.class, PolyGeometry.class ),
+    // on Points
+    ST_X( GeoFunctions.class, "stX", PolyGeometry.class ),
+    ST_Y( GeoFunctions.class, "stY", PolyGeometry.class ),
+    ST_Z( GeoFunctions.class, "stZ", PolyGeometry.class ),
+    // on LineStrings
+    ST_ISCLOSED( GeoFunctions.class, "stIsClosed", PolyGeometry.class ),
+    ST_ISRING( GeoFunctions.class, "stIsRing", PolyGeometry.class ),
+    ST_ISCOORDINATE( GeoFunctions.class, "stIsCoordinate", PolyGeometry.class, PolyGeometry.class ),
+    ST_STARTPOINT( GeoFunctions.class, "stStartPoint", PolyGeometry.class ),
+    ST_ENDPOINT( GeoFunctions.class, "stEndPoint", PolyGeometry.class ),
+    // on Polygons
+    ST_ISRECTANGLE( GeoFunctions.class, "stIsRectangle", PolyGeometry.class ),
+    ST_EXTERIORRING( GeoFunctions.class, "stExteriorRing", PolyGeometry.class ),
+    ST_NUMINTERIORRING( GeoFunctions.class, "stNumInteriorRing", PolyGeometry.class ),
+    ST_INTERIORRINGN( GeoFunctions.class, "stInteriorRingN", PolyGeometry.class, PolyInteger.class ),
+    // on GeometryCollection
+    ST_NUMGEOMETRIES( GeoFunctions.class, "stNumGeometries", PolyGeometry.class ),
+    ST_GEOMETRYN( GeoFunctions.class, "stGeometryN", PolyGeometry.class, PolyInteger.class ),
     /// MQL BUILT-IN METHODS
     MQL_EQ( MqlFunctions.class, "docEq", PolyValue.class, PolyValue.class ),
     MQL_GT( MqlFunctions.class, "docGt", PolyValue.class, PolyValue.class ),

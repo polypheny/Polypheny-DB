@@ -141,6 +141,7 @@ public class Benchmark {
                 log.debug( "{}: {} first; {} +- {}; {} min; {} max; {} nanos", desc, durations.get( 0 ), avg, stddev, coreDurations.get( 0 ), Util.last( coreDurations ), durationsString );
             }
         }
-    }
-}
 
+    }
+
+}

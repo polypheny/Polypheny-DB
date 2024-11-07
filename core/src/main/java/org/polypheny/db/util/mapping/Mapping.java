@@ -88,5 +88,5 @@ public interface Mapping extends Mappings.FunctionMapping, Mappings.SourceMappin
      */
     @Override
     int size();
-}
 
+}

@@ -19,12 +19,17 @@ package org.polypheny.db.util;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import net.lingala.zip4j.ZipFile;
+import net.lingala.zip4j.exception.ZipException;
 import org.jetbrains.annotations.NotNull;
 
 
@@ -39,10 +44,11 @@ public class PolyphenyHomeDirManager {
 
     private static PolyphenyHomeDirManager INSTANCE = null;
 
-    private File root;
+    private final File root;
     private File home;
     private final List<File> dirs = new ArrayList<>();
     private final List<File> deleteOnExit = new ArrayList<>();
+    private final FileLock lock; // Reference so the lock is not released
     @Getter
     private static RunMode mode;
 
@@ -73,6 +79,18 @@ public class PolyphenyHomeDirManager {
             }
         }
 
+        File lockFile = registerNewFile( ".lock" );
+        try {
+            FileChannel fileChannel = FileChannel.open( lockFile.toPath(), StandardOpenOption.CREATE, StandardOpenOption.WRITE );
+            Optional<FileLock> fileLock = Optional.ofNullable( fileChannel.tryLock() );
+            if ( fileLock.isPresent() ) {
+                lock = fileLock.get();
+            } else {
+                throw new RuntimeException( "There is already another Polypheny instance running in this directory" );
+            }
+        } catch ( IOException e ) {
+            throw new RuntimeException( "Failed to open lockfile", e );
+        }
         Runtime.getRuntime().addShutdownHook( new Thread( () -> {
             for ( File file : deleteOnExit ) {
                 if ( file.exists() ) {
@@ -103,16 +121,16 @@ public class PolyphenyHomeDirManager {
     }
 
 
-    private boolean probeCreatingFolder( File file ) {
+    private static boolean probeCreatingFolder( File file ) {
         if ( file.isFile() ) {
             return false;
         }
 
         boolean couldCreate = true;
-        if ( !home.exists() ) {
-            couldCreate = home.mkdirs();
+        if ( !file.exists() ) {
+            couldCreate = file.mkdirs();
         }
-        return couldCreate && home.canWrite();
+        return couldCreate && file.canWrite();
     }
 
 
@@ -253,8 +271,17 @@ public class PolyphenyHomeDirManager {
     }
 
 
-    public File registerNewGlobalFolder( String testBackup ) {
-        return registerNewFolder( this.root, testBackup );
+    public File registerNewGlobalFolder( String folder ) {
+        return registerNewFolder( this.root, folder );
+    }
+
+
+    public void unzipInto( File zip, File target ) {
+        try {
+            new ZipFile( zip ).extractAll( target.getAbsolutePath() );
+        } catch ( ZipException e ) {
+            throw new RuntimeException( "Could not unzip: {}", e );
+        }
     }
 
 
@@ -263,8 +290,13 @@ public class PolyphenyHomeDirManager {
     }
 
 
-    public File getRootPath() {
+    public File getHomePath() {
         return home;
+    }
+
+
+    public File getRootPath() {
+        return root;
     }
 
 }

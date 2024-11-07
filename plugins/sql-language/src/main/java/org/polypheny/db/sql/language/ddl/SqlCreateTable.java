@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
@@ -55,7 +54,6 @@ import org.polypheny.db.sql.language.SqlOperator;
 import org.polypheny.db.sql.language.SqlSpecialOperator;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 
@@ -93,7 +91,7 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
     List<List<SqlNode>> partitionQualifierList;
 
     private static final SqlOperator OPERATOR = new SqlSpecialOperator( "CREATE TABLE", Kind.CREATE_TABLE );
-    Snapshot snapshot = Catalog.getInstance().getSnapshot();
+    Snapshot snapshot = Catalog.snapshot();
 
 
     /**
@@ -239,35 +237,30 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
             constraints = columnsConstraints.right;
         }
 
-        try {
-            DdlManager.getInstance().createTable(
-                    namespaceId,
-                    tableName,
-                    columns,
-                    constraints,
-                    ifNotExists,
+        DdlManager.getInstance().createTable(
+                namespaceId,
+                tableName,
+                columns,
+                constraints,
+                ifNotExists,
+                stores,
+                placementType,
+                statement );
+
+        if ( partitionType != null ) {
+            context.updateSnapshot();
+            DdlManager.getInstance().createTablePartition(
+                    PartitionInformation.fromNodeLists(
+                            getTableFailOnEmpty( context, new SqlIdentifier( tableName, ParserPos.ZERO ) ),
+                            partitionType.getSimple(),
+                            partitionColumn.getSimple(),
+                            partitionGroupNamesList.stream().map( n -> (Identifier) n ).toList(),
+                            numPartitionGroups,
+                            numPartitions,
+                            partitionQualifierList.stream().map( l -> l.stream().map( e -> (Node) e ).toList() ).toList(),
+                            rawPartitionInfo ),
                     stores,
-                    placementType,
                     statement );
-
-            if ( partitionType != null ) {
-                context.updateSnapshot();
-                DdlManager.getInstance().createTablePartition(
-                        PartitionInformation.fromNodeLists(
-                                getTableFailOnEmpty( context, new SqlIdentifier( tableName, ParserPos.ZERO ) ),
-                                partitionType.getSimple(),
-                                partitionColumn.getSimple(),
-                                partitionGroupNamesList.stream().map( n -> (Identifier) n ).collect( Collectors.toList() ),
-                                numPartitionGroups,
-                                numPartitions,
-                                partitionQualifierList.stream().map( l -> l.stream().map( e -> (Node) e ).toList() ).toList(),
-                                rawPartitionInfo ),
-                        stores,
-                        statement );
-            }
-
-        } catch ( TransactionException e ) {
-            throw new GenericRuntimeException( e );
         }
     }
 
@@ -313,13 +306,13 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
                     constraint.getConstraintType(),
                     constraint.getFields().getSqlList().stream()
                             .map( SqlNode::toString )
-                            .collect( Collectors.toList() ) );
+                            .toList() );
             case FOREIGN -> new ConstraintInformation(
                     constraintName,
                     constraint.getConstraintType(),
                     constraint.getFields().getSqlList().stream()
                             .map( SqlNode::toString )
-                            .collect( Collectors.toList() ),
+                            .toList(),
                     ((SqlForeignKeyConstraint) constraint).getReferencedEntity().toString(),
                     ((SqlForeignKeyConstraint) constraint).getReferencedField().toString() );
         };

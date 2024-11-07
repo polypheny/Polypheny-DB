@@ -42,5 +42,4 @@ public class EditTableRequest {
     public EntityType tableType;
 
 
-
 }

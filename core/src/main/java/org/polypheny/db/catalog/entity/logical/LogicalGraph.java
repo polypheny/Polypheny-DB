@@ -29,7 +29,6 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.type.entity.PolyString;
-import org.polypheny.db.type.entity.PolyValue;
 
 @EqualsAndHashCode(callSuper = true)
 @Value
@@ -55,12 +54,6 @@ public class LogicalGraph extends LogicalEntity {
 
     public LogicalGraph( LogicalGraph graph ) {
         this( graph.id, graph.name, graph.modifiable, graph.caseSensitive );
-    }
-
-
-    @Override
-    public PolyValue[] getParameterArray() {
-        return new PolyString[0];
     }
 
 

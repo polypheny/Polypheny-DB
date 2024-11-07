@@ -59,7 +59,6 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
@@ -657,7 +656,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
     public AlgNode routeDocumentDml( LogicalDocumentModify alg, Statement statement, @Nullable AllocationEntity target, @Nullable List<Long> excludedPlacements ) {
         Snapshot snapshot = statement.getTransaction().getSnapshot();
 
-        LogicalCollection collection = alg.entity.unwrap( LogicalCollection.class ).orElseThrow();
+        LogicalCollection collection = alg.entity.unwrap( LogicalCollection.class ).orElseThrow( () -> new GenericRuntimeException( String.format( "%s is not a collection", alg.entity.name ) ) );
 
         List<AlgNode> modifies = new ArrayList<>();
 
@@ -890,7 +889,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
         builder = super.handleValues( values, builder );
 
-        List<LogicalColumn> columns = Catalog.snapshot().rel().getColumns( table.id );
+        List<LogicalColumn> columns = catalog.getSnapshot().rel().getColumns( table.id );
         if ( columns.size() == placements.size() ) { // full placement, no additional checks required
             return builder;
         } else if ( node.getTupleType().toString().equals( "RecordType(INTEGER ZERO)" ) ) {
@@ -951,7 +950,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                 }
                 columnName = columnNames[1];
             } else if ( columnNames.length == 3 ) { // schemaName.tableName.columnName
-                if ( !Catalog.snapshot().getNamespace( catalogTable.id ).orElseThrow().name.equalsIgnoreCase( columnNames[0] ) ) {
+                if ( !catalog.getSnapshot().getNamespace( catalogTable.id ).orElseThrow().name.equalsIgnoreCase( columnNames[0] ) ) {
                     throw new GenericRuntimeException( "Schema name does not match expected schema name: " + field.getName() );
                 }
                 if ( !catalogTable.name.equalsIgnoreCase( columnNames[1] ) ) {
@@ -961,8 +960,8 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             } else {
                 throw new GenericRuntimeException( "Invalid column name: " + field.getName() );
             }
-            column = Catalog.snapshot().rel().getColumn( catalogTable.id, columnName ).orElseThrow();
-            if ( Catalog.snapshot().alloc().getColumn( placements.get( 0 ).placementId, column.id ).isEmpty() ) {
+            column = catalog.getSnapshot().rel().getColumn( catalogTable.id, columnName ).orElseThrow();
+            if ( catalog.getSnapshot().alloc().getColumn( placements.get( 0 ).placementId, column.id ).isEmpty() ) {
                 throw new GenericRuntimeException( "Current implementation of vertical partitioning does not allow conditions on partitioned columns. " );
                 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 // TODO: Use indexes

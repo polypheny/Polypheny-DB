@@ -60,5 +60,5 @@ public interface WinAggResultContext extends AggResultContext, WinAggFrameResult
      * @return Linq4j form of arguments of the particular row
      */
     List<Expression> arguments( Expression rowIndex );
-}
 
+}

@@ -131,7 +131,7 @@ public class ConstraintEnforceAttacher {
             throw new GenericRuntimeException( "The tree did no conform, while generating the constraint enforcement query!" );
         }
 
-        statement.getTransaction().getLogicalTables().add( modify.entity.unwrap( LogicalTable.class ).orElseThrow() );
+        statement.getTransaction().addUsedTable( modify.entity.unwrap( LogicalTable.class ).orElseThrow() );
     }
 
 
@@ -648,7 +648,7 @@ public class ConstraintEnforceAttacher {
                             .getSnapshot()
                             .getNamespaces( null )
                             .stream()
-                            .flatMap( n -> Catalog.getInstance().getSnapshot().rel().getTables( n.id, null ).stream() )
+                            .flatMap( n -> Catalog.snapshot().rel().getTables( n.id, null ).stream() )
                             .filter( t -> t.entityType == EntityType.ENTITY && t.getDataModel() == DataModel.RELATIONAL )
                             .toList();
                     Transaction transaction = this.manager.startTransaction( Catalog.defaultUserId, false, "ConstraintEnforcement" );
@@ -667,20 +667,22 @@ public class ConstraintEnforceAttacher {
 
                     if ( !rows.isEmpty() ) {
                         int index = rows.get( 0 ).get( 0 ).get( 1 ).asNumber().intValue();
+                        String error = infos.get( 0 ).errorMessages().get( index ) + "\nThere are violated constraints, the transaction was rolled back!";
                         if ( statement.getTransaction() != null ) {
-                            statement.getTransaction().rollback();
+                            statement.getTransaction().rollback( error );
                         }
 
-                        throw new TransactionException( infos.get( 0 ).errorMessages().get( index ) + "\nThere are violated constraints, the transaction was rolled back!" );
+                        throw new TransactionException( error );
                     }
                     try {
                         statement.getTransaction().commit();
                     } catch ( TransactionException e ) {
+                        String error = "Error while committing constraint enforcement check, the transaction was rolled back!" + e.getMessage();
                         if ( statement.getTransaction() != null ) {
-                            statement.getTransaction().rollback();
+                            statement.getTransaction().rollback( error );
                         }
 
-                        throw new GenericRuntimeException( "Error while committing constraint enforcement check, the transaction was rolled back!" );
+                        throw new GenericRuntimeException( error );
                     }
 
 

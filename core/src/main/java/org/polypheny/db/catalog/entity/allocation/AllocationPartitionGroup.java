@@ -16,35 +16,38 @@
 
 package org.polypheny.db.catalog.entity.allocation;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.annotations.SerializeNullable;
-import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.catalog.entity.PolyObject;
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.type.entity.PolyValue;
 
 
-@EqualsAndHashCode
 @Value
 public class AllocationPartitionGroup implements PolyObject {
 
     private static final long serialVersionUID = 6229244317971622972L;
 
     @Serialize
+    @JsonProperty
     public long id;
     @Serialize
+    @JsonProperty
     @SerializeNullable
     public String name;
     @Serialize
+    @JsonProperty
     public long logicalEntityId;
     @Serialize
+    @JsonProperty
     public long namespaceId;
     @Serialize
+    @JsonProperty
     public boolean isUnbound;
     @Serialize
+    @JsonProperty
     public long partitionKey;
 
 
@@ -61,12 +64,6 @@ public class AllocationPartitionGroup implements PolyObject {
         this.namespaceId = namespaceId;
         this.partitionKey = partitionKey;
         this.isUnbound = isUnbound;
-    }
-
-
-    @Override
-    public PolyValue[] getParameterArray() {
-        throw new GenericRuntimeException( "Not implemented" );
     }
 
 }

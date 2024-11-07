@@ -122,7 +122,7 @@ public class SqlCallBinding extends SqlOperatorBinding implements CallBinding {
 
 
     public List<SqlNode> sqlOperands() {
-        return operands().stream().map( e -> (SqlNode) e ).collect( Collectors.toList() );
+        return operands().stream().map( e -> (SqlNode) e ).toList();
     }
 
 

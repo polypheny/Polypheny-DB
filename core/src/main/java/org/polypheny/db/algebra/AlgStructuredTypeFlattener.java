@@ -945,7 +945,6 @@ public class AlgStructuredTypeFlattener implements AlgConsumingVisitor {
     private class RewriteAlgVisitor extends AlgVisitor {
 
 
-
         @Override
         public void visit( AlgNode p, int ordinal, AlgNode parent ) {
             // Rewrite children first
@@ -1097,4 +1096,3 @@ public class AlgStructuredTypeFlattener implements AlgConsumingVisitor {
     }
 
 }
-
