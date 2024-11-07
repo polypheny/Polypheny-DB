@@ -108,7 +108,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
     private final Collection<Runnable> commitActions = new ConcurrentLinkedDeque<>();
 
     // indicates if the state has advanced and the snapshot has to be recreated or can be reused // trx without ddl
-    long lastCommitSnapshotId = 0;
+    private long lastCommitSnapshotId = 0;
 
     @Serialize
     @JsonProperty
@@ -323,7 +323,6 @@ public class PolyCatalog extends Catalog implements PolySerializable {
         adapterRestore.clear();
         adapterRestore.putAll( old.adapterRestore );
         idBuilder.restore( old.idBuilder );
-
     }
 
 
