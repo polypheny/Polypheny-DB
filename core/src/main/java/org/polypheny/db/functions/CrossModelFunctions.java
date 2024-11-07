@@ -220,8 +220,8 @@ public class CrossModelFunctions {
     private static void edgeTableInsert( DataContext context, List<Function0<Enumerable<?>>> enumerables, int i, AlgDataType idType, AlgDataType labelType, PolyEdge edge ) {
         context.addParameterValues( 0, idType, Collections.nCopies( edge.labels.size(), edge.id ) );
         context.addParameterValues( 1, labelType, List.of( edge.labels.get( 0 ) ) );
-        context.addParameterValues( 2, idType, List.of( edge.source ) );
-        context.addParameterValues( 3, idType, List.of( edge.target ) );
+        context.addParameterValues( 2, idType, List.of( edge.left ) );
+        context.addParameterValues( 3, idType, List.of( edge.right ) );
 
         // execute all inserts
         drainInserts( enumerables.get( i ), edge.labels.size() );
