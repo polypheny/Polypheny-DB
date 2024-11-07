@@ -143,10 +143,12 @@ public class DmlInsertTest extends CypherTestTemplate {
         GraphResult res = execute( "MATCH p = ()-[]->() RETURN p" );
         PolyPath p = PolyValue.fromTypedJson( res.getData()[0][0], PolyPath.class );
         assert p.getSegments().size() == 1;
+        assert p.getNodes().size() == 2;
+        assert p.getEdges().size() == 1;
         PolySegment s = p.getSegments().get( 0 );
-        assert TestNode.from( List.of( "Person" ), Pair.of( "name", "Tim" ) ).matches( s.source, true );
-        assert TestEdge.from( List.of( "KOWS" ), Pair.of( "since", "two weeks" ) ).matches( s.edge, true );
-        assert TestNode.from( List.of( "PERSON" ), Pair.of( "name", "tom" ) ).matches( s.target, true );
+        assert TestNode.from( List.of( "PERSON" ), Pair.of( "name", "tim" ) ).matches( p.getNodes().stream().filter( n -> n.id == s.sourceId ).findFirst().orElseThrow(), true );
+        assert TestEdge.from( List.of( "KNOWS" ), Pair.of( "since", "two weeks" ) ).matches( p.getEdges().stream().filter( e -> e.id == s.edgeId ).findFirst().orElseThrow(), true );
+        assert TestNode.from( List.of( "PERSON" ), Pair.of( "name", "tom" ) ).matches( p.getNodes().stream().filter( n -> n.id == s.targetId ).findFirst().orElseThrow(), true );
     }
 
 
