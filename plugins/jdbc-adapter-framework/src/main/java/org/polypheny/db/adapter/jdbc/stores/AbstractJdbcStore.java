@@ -492,10 +492,6 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
     @Override
     public void shutdown() {
         try {
-            if ( deployMode == DeployMode.DOCKER ) {
-                // This call is supposed to destroy all containers belonging to this adapterId
-                DockerContainer.getContainerByUUID( deploymentId ).ifPresent( DockerContainer::destroy );
-            }
             removeInformationPage();
             connectionFactory.close();
         } catch ( SQLException e ) {
