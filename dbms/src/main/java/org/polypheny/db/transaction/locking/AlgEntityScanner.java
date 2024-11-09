@@ -16,9 +16,9 @@
 
 package org.polypheny.db.transaction.locking;
 
-import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgVisitor;
@@ -27,13 +27,12 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.partition.properties.PartitionProperty;
-import org.polypheny.db.transaction.locking.Lock.LockType;
-import org.polypheny.db.util.ByteString;
+import org.polypheny.db.transaction.locking.Lockable.LockType;
 
 @Getter
 public class AlgEntityScanner extends AlgVisitor {
 
-    Map<ByteString, LockType> result;
+    Map<Lockable, Lockable.LockType> result;
 
 
     public AlgEntityScanner() {
@@ -43,7 +42,6 @@ public class AlgEntityScanner extends AlgVisitor {
 
     @Override
     public void visit( AlgNode currentNode, int ordinal, AlgNode parentNode ) {
-        //TODO TH: Q: What does ordinal do? Tree depth?
         super.visit( currentNode, ordinal, parentNode );
         if ( currentNode.getEntity() == null ) {
             return;
@@ -61,8 +59,7 @@ public class AlgEntityScanner extends AlgVisitor {
         if ( RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() ) {
             extractWriteConstraints( currentNode.getEntity().unwrap( LogicalTable.class ).orElseThrow() );
         }
-        ByteString entryId = deriveEntryId( currentNode.getEntity().getId() );
-        result.put( entryId, lockType );
+        result.put( LockablesRegistry.INSTANCE.getOrCreateLockable(currentNode.getEntity()), lockType );
     }
 
 
@@ -71,25 +68,17 @@ public class AlgEntityScanner extends AlgVisitor {
                 .flatMap( constraintTableId -> {
                     PartitionProperty property = Catalog.snapshot().alloc().getPartitionProperty( logicalTable.id ).orElseThrow();
                     return property.partitionIds.stream()
-                            .map( constraintPartitionIds -> deriveEntryId( constraintTableId ) );
+                            .map( constraintPartitionId -> Catalog.snapshot().rel().getTable( constraintPartitionId ) )
+                            .filter( Optional::isPresent ) // Filter out empty entries
+                            .map( Optional::get ); // Map to the actual non-empty entry
                 } )
-                .forEach( entryId -> result.putIfAbsent( entryId, LockType.SHARED ) );
+                .forEach( entry -> result.putIfAbsent( LockablesRegistry.INSTANCE.getOrCreateLockable(entry), LockType.SHARED ) );
     }
 
 
     private void visitNonRelationalNode( AlgNode currentNode ) {
         LockType lockType = currentNode.isDataModifying() ? LockType.EXCLUSIVE : LockType.SHARED;
-        ByteString entryId = deriveEntryId( currentNode.getEntity().getId() );
-        result.put( entryId, lockType );
-    }
-
-
-    @Deprecated
-    // TODO TH: This is to be replaced with actual entry identifiers instead of using the entity identifiers to allow locking on the entry level.
-    private ByteString deriveEntryId( long entityId ) {
-        ByteBuffer buffer = ByteBuffer.allocate( Long.BYTES );
-        buffer.putLong( entityId );
-        return new ByteString( buffer.array() );
+        result.put( LockablesRegistry.INSTANCE.getOrCreateLockable(currentNode.getEntity()) , lockType );
     }
 
 }
