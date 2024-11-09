@@ -38,10 +38,10 @@ import org.polypheny.db.processing.Processor;
 import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.tools.AlgBuilder;
-import org.polypheny.db.transaction.locking.Lock.LockType;
-import org.polypheny.db.transaction.locking.LockTable;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.locking.Lockable.LockType;
+import org.polypheny.db.transaction.locking.LockablesRegistry;
 import org.polypheny.db.util.DeadlockException;
 import org.polypheny.db.util.Pair;
 
@@ -128,15 +128,14 @@ public class CypherProcessor extends Processor {
 
     @Override
     public void unlock( Statement statement ) {
-        LockTable.INSTANCE.unlockAll( statement.getTransaction() );
+        LockablesRegistry.GLOBAL_SCHEMA_LOCKABLE.release( statement.getTransaction() );
     }
 
 
     @Override
     protected void lock( Statement statement ) throws DeadlockException {
-        // exclusive
-        LockTable.INSTANCE.lock( statement.getTransaction(), LockType.EXCLUSIVE, LockTable.GLOBAL_LOCK );
-
+        // exclusive lock
+        LockablesRegistry.GLOBAL_SCHEMA_LOCKABLE.acquire( statement.getTransaction(), LockType.EXCLUSIVE );
     }
 
 
