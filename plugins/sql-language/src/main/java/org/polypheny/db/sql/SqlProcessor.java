@@ -67,10 +67,10 @@ import org.polypheny.db.sql.language.validate.PolyphenyDbSqlValidator;
 import org.polypheny.db.sql.sql2alg.SqlToAlgConverter;
 import org.polypheny.db.sql.sql2alg.StandardConvertletTable;
 import org.polypheny.db.tools.AlgBuilder;
-import org.polypheny.db.transaction.locking.Lock.LockType;
-import org.polypheny.db.transaction.locking.LockTable;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.locking.Lockable.LockType;
+import org.polypheny.db.transaction.locking.LockablesRegistry;
 import org.polypheny.db.util.Casing;
 import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.DeadlockException;
@@ -223,14 +223,14 @@ public class SqlProcessor extends Processor {
 
     @Override
     public void unlock( Statement statement ) {
-        LockTable.INSTANCE.unlockAll( statement.getTransaction() );
+        LockablesRegistry.GLOBAL_SCHEMA_LOCKABLE.release( statement.getTransaction() );
     }
 
 
     @Override
-    public void lock( Statement statement ) throws DeadlockException {
-        // exclusive
-        LockTable.INSTANCE.lock( statement.getTransaction(), LockType.EXCLUSIVE, LockTable.GLOBAL_LOCK );
+    protected void lock( Statement statement ) throws DeadlockException {
+        // exclusive lock
+        LockablesRegistry.GLOBAL_SCHEMA_LOCKABLE.acquire( statement.getTransaction(), LockType.EXCLUSIVE );
     }
 
 

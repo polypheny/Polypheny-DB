@@ -61,13 +61,13 @@ import org.polypheny.db.plan.Convention;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.tools.AlgBuilder;
-import org.polypheny.db.transaction.locking.Lock.LockType;
-import org.polypheny.db.transaction.locking.LockTable;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
+import org.polypheny.db.transaction.locking.Lockable.LockType;
+import org.polypheny.db.transaction.locking.LockablesRegistry;
 import org.polypheny.db.util.DeadlockException;
 import org.polypheny.db.util.background.BackgroundTask.TaskPriority;
 import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
@@ -291,7 +291,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
                 return;
             }
 
-            LockTable.INSTANCE.lock( statement.getTransaction(), LockType.EXCLUSIVE, LockTable.GLOBAL_LOCK );
+            statement.getTransaction().acquireLockable( LockablesRegistry.GLOBAL_SCHEMA_LOCKABLE, LockType.EXCLUSIVE );
         } catch ( DeadlockException e ) {
             throw new GenericRuntimeException( "DeadLock while locking for materialized view update", e );
         }
@@ -391,9 +391,6 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
             transaction.commit();
         } catch ( TransactionException e ) {
             transaction.rollback( "Caught exception while executing a query from the console. " + e );
-        } finally {
-            // Release lock
-            LockTable.INSTANCE.unlockAll( transaction );
         }
     }
 

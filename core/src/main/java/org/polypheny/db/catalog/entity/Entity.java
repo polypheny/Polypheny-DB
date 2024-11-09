@@ -38,6 +38,7 @@ import org.polypheny.db.schema.Statistic;
 import org.polypheny.db.schema.Statistics;
 import org.polypheny.db.schema.types.Expressible;
 import org.polypheny.db.schema.types.Typed;
+import org.polypheny.db.transaction.locking.Lockable;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Wrapper;
 

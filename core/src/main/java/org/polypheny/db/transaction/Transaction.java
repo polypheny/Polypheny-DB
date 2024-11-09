@@ -32,6 +32,7 @@ import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.processing.Processor;
+import org.polypheny.db.transaction.locking.Lockable;
 import org.polypheny.db.util.Wrapper;
 
 
@@ -100,19 +101,13 @@ public interface Transaction {
 
     void addNewConstraint( long entityId, LogicalConstraint constraint );
 
-    void removeNewConstraint( long entityId, LogicalConstraint constraint );
-
-    void setAcceptsOutdated( boolean acceptsOutdated );
-
-    boolean acceptsOutdated();
-
-    AccessMode getAccessMode();
-
-    void updateAccessMode( AccessMode accessCandidate );
-
     TransactionManager getTransactionManager();
 
     List<LogicalConstraint> getUsedConstraints( long id );
+
+    void releaseAllLocks();
+
+    void acquireLockable( Lockable lockable, Lockable.LockType lockType );
 
     /**
      * Flavor, how multimedia results should be returned from a store.

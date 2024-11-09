@@ -16,15 +16,15 @@
 
 package org.polypheny.db.transaction.deadlocks;
 
-import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.polypheny.db.transaction.Transaction;
 
 public class DeadlockHandler {
+
+    public static final DeadlockHandler INSTANCE = new DeadlockHandler( new GraphDeadlockDetector(), new FirstTransactionDeadlockResolver() );
 
     private final DeadlockDetector deadlockDetector;
     private final DeadlockResolver deadlockResolver;
@@ -43,7 +43,7 @@ public class DeadlockHandler {
     public void addAndResolveDeadlock( Transaction transaction, Set<Transaction> owners ) {
         sharedLock.lock();
         try {
-            deadlockDetector.add(transaction, owners);
+            deadlockDetector.add( transaction, owners );
             exclusiveLock.lock();
             List<Transaction> conflictingTransactions = deadlockDetector.getConflictingTransactions();
             exclusiveLock.unlock();
