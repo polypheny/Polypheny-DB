@@ -25,8 +25,11 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.deadlocks.DeadlockHandler;
 import org.polypheny.db.util.DeadlockException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class LockableImpl implements Lockable {
+    private static final Logger LOGGER = LoggerFactory.getLogger( LockableImpl.class );
 
     private final ReentrantLock concurrencyLock = new ReentrantLock( true );
     private final Condition concurrencyCondition = concurrencyLock.newCondition();
@@ -164,7 +167,13 @@ public class LockableImpl implements Lockable {
 
 
     private void printInfo( String message, Transaction transaction ) {
-        System.out.println( MessageFormat.format( "{0}, TX: {1}, L: {2}", message, transaction, this ) );
+        LOGGER.info ( MessageFormat.format(
+                "{0}, TX: {1}, L: {2}",
+                message,
+                transaction,
+                this
+        ) );
+
     }
 
 }
