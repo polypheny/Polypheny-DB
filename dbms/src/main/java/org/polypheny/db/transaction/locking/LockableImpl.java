@@ -84,7 +84,7 @@ public class LockableImpl implements Lockable {
     }
 
 
-    public void release( Transaction transaction) {
+    public void release( Transaction transaction ) {
         concurrencyLock.lock();
         try {
             if ( isExclusive ) {
@@ -96,14 +96,14 @@ public class LockableImpl implements Lockable {
                 long newValue = value - 1;
                 return newValue <= 0 ? null : newValue;
             } );
-            DeadlockHandler.INSTANCE.remove( transaction);
+            DeadlockHandler.INSTANCE.remove( transaction );
             concurrencyCondition.signalAll();
             printInfo( "R", transaction );
         } finally {
             concurrencyLock.unlock();
         }
         if ( !isRoot() ) {
-            parent.release( transaction);
+            parent.release( transaction );
         }
     }
 
@@ -162,8 +162,9 @@ public class LockableImpl implements Lockable {
         return concurrencyLock.hasWaiters( concurrencyCondition );
     }
 
-    private void printInfo(String message, Transaction transaction) {
-        System.out.println(MessageFormat.format("{0}, TX: {1}, L: {2}", message, transaction, this));
+
+    private void printInfo( String message, Transaction transaction ) {
+        System.out.println( MessageFormat.format( "{0}, TX: {1}, L: {2}", message, transaction, this ) );
     }
 
 }
