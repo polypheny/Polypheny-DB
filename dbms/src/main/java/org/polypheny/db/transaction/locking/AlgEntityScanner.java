@@ -24,6 +24,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgVisitor;
 import org.polypheny.db.algebra.core.relational.RelAlg;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.partition.properties.PartitionProperty;
@@ -59,7 +60,7 @@ public class AlgEntityScanner extends AlgVisitor {
         if ( RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() ) {
             extractWriteConstraints( currentNode.getEntity().unwrap( LogicalTable.class ).orElseThrow() );
         }
-        result.put( LockablesRegistry.INSTANCE.getOrCreateLockable(currentNode.getEntity()), lockType );
+        result.put( LockablesRegistry.INSTANCE.getOrCreateLockable(unwrapToLockableObject(currentNode.getEntity())), lockType );
     }
 
 
@@ -69,8 +70,8 @@ public class AlgEntityScanner extends AlgVisitor {
                     PartitionProperty property = Catalog.snapshot().alloc().getPartitionProperty( logicalTable.id ).orElseThrow();
                     return property.partitionIds.stream()
                             .map( constraintPartitionId -> Catalog.snapshot().rel().getTable( constraintPartitionId ) )
-                            .filter( Optional::isPresent ) // Filter out empty entries
-                            .map( Optional::get ); // Map to the actual non-empty entry
+                            .filter( Optional::isPresent )
+                            .map( Optional::get );
                 } )
                 .forEach( entry -> result.putIfAbsent( LockablesRegistry.INSTANCE.getOrCreateLockable(entry), LockType.SHARED ) );
     }
@@ -78,7 +79,15 @@ public class AlgEntityScanner extends AlgVisitor {
 
     private void visitNonRelationalNode( AlgNode currentNode ) {
         LockType lockType = currentNode.isDataModifying() ? LockType.EXCLUSIVE : LockType.SHARED;
-        result.put( LockablesRegistry.INSTANCE.getOrCreateLockable(currentNode.getEntity()) , lockType );
+        result.put( LockablesRegistry.INSTANCE.getOrCreateLockable(unwrapToLockableObject(currentNode.getEntity())) , lockType );
+    }
+
+    private LockableObject unwrapToLockableObject( Entity entity) {
+        Optional<LockableObject> lockableObject = entity.unwrap( LockableObject.class );
+        if ( lockableObject.isPresent() ) {
+            return lockableObject.get();
+        }
+        throw new RuntimeException( "Could not unwrap lockableObject" );
     }
 
 }
