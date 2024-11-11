@@ -48,7 +48,6 @@ import org.polypheny.db.catalog.entity.LogicalUser;
 import org.polypheny.db.catalog.entity.logical.LogicalKey.EnforcementTime;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationManager;
@@ -62,7 +61,6 @@ import org.polypheny.db.processing.DataMigratorImpl;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.processing.QueryProcessor;
 import org.polypheny.db.transaction.locking.Lockable;
-import org.polypheny.db.transaction.locking.LockableImpl;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.util.DeadlockException;
 import org.polypheny.db.util.Pair;
@@ -379,6 +377,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
             try {
                 lockedEntity.release( this );
             } catch ( Exception e ) {
+                // TODO TH: introduce proper exception type here. Or wrap in release method of lockable
                 throw new DeadlockException( MessageFormat.format( "Failed to release lock for transaction {0}", this ) );
             }
         } );

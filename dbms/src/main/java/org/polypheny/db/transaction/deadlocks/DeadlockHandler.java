@@ -47,7 +47,14 @@ public class DeadlockHandler {
             exclusiveLock.lock();
             List<Transaction> conflictingTransactions = deadlockDetector.getConflictingTransactions();
             exclusiveLock.unlock();
-            deadlockResolver.resolveDeadlock( conflictingTransactions );
+            // lock can be release here as concurrently adding or removing transactions does not affect the resolution process
+            while ( !conflictingTransactions.isEmpty() ) {
+                deadlockResolver.resolveDeadlock( conflictingTransactions );
+                exclusiveLock.lock();
+                conflictingTransactions = deadlockDetector.getConflictingTransactions();
+                exclusiveLock.unlock();
+                // lock can be release here as concurrently adding or removing transactions does not affect the resolution process
+            }
         } finally {
             sharedLock.unlock();
         }

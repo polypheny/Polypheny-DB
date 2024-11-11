@@ -16,20 +16,17 @@
 
 package org.polypheny.db.transaction.locking;
 
-import lombok.Getter;
-import org.polypheny.db.catalog.entity.Entity;
+public class LockableObjectWrapper extends LockableImpl {
 
-@Getter
-public class EntityLockable extends LockableImpl{
+    private final LockableObject lockableObject;
 
-    private final Entity entity;
-
-    public EntityLockable( Entity entity) {
-        super( LockablesRegistry.GLOBAL_SCHEMA_LOCKABLE );
-        this.entity = entity;
+    public LockableObjectWrapper( Lockable parent, LockableObject lockableObject ) {
+        super( parent );
+        this.lockableObject = lockableObject;
     }
 
     public String toString() {
-        return entity.toString();
+        return lockableObject.toString();
     }
+
 }

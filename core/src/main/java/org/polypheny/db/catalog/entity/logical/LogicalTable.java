@@ -40,6 +40,7 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.schema.ColumnStrategy;
+import org.polypheny.db.transaction.locking.Lockable;
 
 @EqualsAndHashCode(callSuper = false)
 @SuperBuilder(toBuilder = true)
@@ -122,6 +123,12 @@ public class LogicalTable extends LogicalEntity {
     }
 
 
+    @Override
+    public ObjectType getObjectType() {
+        return ObjectType.ENTITY;
+    }
+
+
     @RequiredArgsConstructor
     public static class PrimitiveCatalogTable {
 
@@ -150,5 +157,7 @@ public class LogicalTable extends LogicalEntity {
                 ", name='" + name + '\'' +
                 '}';
     }
+
+
 
 }
