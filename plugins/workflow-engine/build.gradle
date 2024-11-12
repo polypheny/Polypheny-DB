@@ -1,0 +1,81 @@
+group "org.polypheny"
+
+
+dependencies {
+    compileOnly project(":core")
+    compileOnly project(":dbms")
+    compileOnly project(":webui")
+    compileOnly project(":plugins:sql-language")
+    compileOnly project(":plugins:mql-language")
+    compileOnly project(":plugins:cypher-language")
+
+
+    // --- Test Compile ---
+    testImplementation project(path: ":dbms", configuration: "test")
+    testImplementation project(path: ":core", configuration: "tests")
+    testImplementation project(path: ":core")
+    testImplementation project(path: ":webui")
+    testImplementation project(path: ":plugins:sql-language")
+}
+
+
+sourceSets {
+    main {
+        java {
+            srcDirs = ["src/main/java"]
+        }
+        resources {
+            srcDirs = ["src/main/resources"]
+        }
+        output.resourcesDir = file(project.buildDir.absolutePath + "/classes")
+    }
+    test {
+        java {
+            srcDirs = ["src/test/java"]
+            destinationDirectory.set(file(project.buildDir.absolutePath + "/test-classes"))
+        }
+        resources {
+            srcDirs = ["src/test/resources"]
+        }
+        output.resourcesDir = file(project.buildDir.absolutePath + "/test-classes")
+    }
+}
+
+compileJava {
+    dependsOn(":config:processResources")
+    dependsOn(":core:processResources")
+    dependsOn(":information:processResources")
+    dependsOn(":webui:processResources")
+    dependsOn(":plugins:sql-language:processResources")
+    dependsOn(":plugins:mql-language:processResources")
+    dependsOn(":plugins:cypher-language:processResources")
+}
+
+delombok {
+    dependsOn(":plugins:sql-language:processResources")
+    dependsOn(":webui:processResources")
+    dependsOn(":plugins:sql-language:processResources")
+    dependsOn(":plugins:mql-language:processResources")
+    dependsOn(":plugins:cypher-language:processResources")
+}
+
+
+/**
+ * JARs
+ */
+jar {
+    manifest {
+        attributes "Manifest-Version": "1.0"
+        attributes "Copyright": "The Polypheny Project (polypheny.org)"
+        attributes "Version": "$project.version"
+    }
+}
+java {
+    withJavadocJar()
+    withSourcesJar()
+}
+
+licensee {
+    allow('MIT')
+    allow('Apache-2.0')
+}
