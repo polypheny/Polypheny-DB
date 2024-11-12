@@ -8,6 +8,7 @@ dependencies {
     compileOnly project(":plugins:sql-language")
     compileOnly project(":plugins:mql-language")
     compileOnly project(":plugins:cypher-language")
+    compileOnly group: "io.javalin", name: "javalin", version: javalin_version
 
 
     // --- Test Compile ---

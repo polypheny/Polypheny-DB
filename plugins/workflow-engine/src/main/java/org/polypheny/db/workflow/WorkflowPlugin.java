@@ -22,6 +22,8 @@ import org.polypheny.db.plugins.PolyPlugin;
 
 public class WorkflowPlugin extends PolyPlugin {
 
+    private WorkflowManager manager;
+
 
     /**
      * Constructor to be used by plugin manager for plugin instantiation.
@@ -35,6 +37,7 @@ public class WorkflowPlugin extends PolyPlugin {
     @Override
     public void afterCatalogInit() {
         System.out.println( "WorkflowPlugin: after catalog init" );
+        manager = new WorkflowManager();
     }
 
 

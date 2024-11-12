@@ -14,16 +14,13 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.workflow.session;
+package org.polypheny.db.workflow.models.requests;
 
-import org.polypheny.db.workflow.dag.Workflow;
+import lombok.Value;
 
-public abstract class WorkflowSession {
-    private final Workflow wf;
+@Value
+public class SaveSessionRequest {
 
-
-    protected WorkflowSession( Workflow wf ) {
-        this.wf = wf;
-    }
+    String message;
 
 }

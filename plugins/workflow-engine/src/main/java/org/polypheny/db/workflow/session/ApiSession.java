@@ -17,25 +17,15 @@
 package org.polypheny.db.workflow.session;
 
 import java.util.UUID;
-import lombok.Getter;
-import lombok.Setter;
 import org.polypheny.db.workflow.dag.Workflow;
 import org.polypheny.db.workflow.models.SessionModel;
 import org.polypheny.db.workflow.models.SessionModel.SessionModelType;
 
-public class UserSession extends AbstractSession {
-
-    @Getter
-    private final UUID wId;
-    @Getter
-    @Setter
-    private int openedVersion;
+public class ApiSession extends AbstractSession {
 
 
-    public UserSession( UUID sessionId, Workflow wf, UUID workflowId, int openedVersion ) {
+    public ApiSession( UUID sessionId, Workflow wf ) {
         super( wf, sessionId );
-        this.wId = workflowId;
-        this.openedVersion = openedVersion;
     }
 
 
@@ -47,7 +37,7 @@ public class UserSession extends AbstractSession {
 
     @Override
     public SessionModel toModel() {
-        return new SessionModel( SessionModelType.USER_SESSION, sId, wId, openedVersion );
+        return new SessionModel( SessionModelType.API_SESSION, sId );
     }
 
 }

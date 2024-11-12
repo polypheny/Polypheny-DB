@@ -18,24 +18,32 @@ package org.polypheny.db.workflow.dag.edges;
 
 import java.util.Map;
 import java.util.UUID;
+import lombok.Getter;
+import org.polypheny.db.util.Pair;
 import org.polypheny.db.workflow.dag.activities.Activity;
 import org.polypheny.db.workflow.models.EdgeModel;
 
 public abstract class Edge {
 
+    @Getter
     final Activity from;
+    @Getter
     final Activity to;
 
 
-    public Edge( Activity from, Activity to) {
+    public Edge( Activity from, Activity to ) {
         this.from = from;
         this.to = to;
     }
 
+
+    public abstract EdgeModel toModel();
+
+
     public static Edge fromModel( EdgeModel model, Map<UUID, Activity> activities ) {
         Activity from = activities.get( model.getFromId() );
         Activity to = activities.get( model.getToId() );
-        if (model.isControl()) {
+        if ( model.isControl() ) {
             return new ControlEdge( from, to, model.getFromPort() == 0 );
         } else {
             return new DataEdge( from, to, model.getFromPort(), model.getToPort() );
@@ -43,6 +51,8 @@ public abstract class Edge {
     }
 
 
-    public abstract EdgeModel toModel();
+    public Pair<UUID, UUID> toPair() {
+        return Pair.of( from.getId(), to.getId() );
+    }
 
 }

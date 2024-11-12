@@ -67,6 +67,7 @@ public interface WorkflowRepo {
      * @param id the unique ID of the workflow.
      * @param description a description of the new version.
      * @param wf the workflow model to be saved as a new version.
+     * @return the newly created version number
      * @throws WorkflowRepoException if the workflow cannot be written.
      */
     int writeVersion( UUID id, String description, WorkflowModel wf ) throws WorkflowRepoException;

@@ -16,18 +16,31 @@
 
 package org.polypheny.db.workflow.dag;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import org.polypheny.db.util.Pair;
 import org.polypheny.db.workflow.dag.activities.Activity;
 import org.polypheny.db.workflow.dag.edges.Edge;
+import org.polypheny.db.workflow.models.WorkflowModel;
 
 public class WorkflowImpl implements Workflow {
-    private final List<Activity> activities;
-    private final List<Edge> edges;
+
+    private final Map<UUID, Activity> activities;
+    private final Map<Pair<UUID, UUID>, Edge> edges;
     private final Map<String, Object> config;
 
 
-    public WorkflowImpl( List<Activity> activities, List<Edge> edges, Map<String, Object> config ) {
+    public WorkflowImpl() {
+        this.activities = new ConcurrentHashMap<>();
+        this.edges = new ConcurrentHashMap<>();
+        this.config = new ConcurrentHashMap<>();
+    }
+
+
+    private WorkflowImpl( Map<UUID, Activity> activities, Map<Pair<UUID, UUID>, Edge> edges, Map<String, Object> config ) {
         this.activities = activities;
         this.edges = edges;
         this.config = config;
@@ -36,19 +49,35 @@ public class WorkflowImpl implements Workflow {
 
     @Override
     public List<Activity> getActivities() {
-        return activities;
+        return new ArrayList<>( activities.values() );
     }
 
 
     @Override
     public List<Edge> getEdges() {
-        return edges;
+        return new ArrayList<>( edges.values() );
     }
 
 
     @Override
     public Map<String, Object> getConfig() {
         return config;
+    }
+
+
+    public static Workflow fromModel( WorkflowModel model ) {
+
+        Map<UUID, Activity> activities = new ConcurrentHashMap<>();
+        Map<Pair<UUID, UUID>, Edge> edges = new ConcurrentHashMap<>();
+        /* TODO: uncomment when Activity.fromModel and Edge.fromModel are implemented
+        for ( ActivityModel a : model.getActivities() ) {
+            activities.put( a.getId(), Activity.fromModel( a ) );
+        }
+        for ( EdgeModel e : model.getEdges()) {
+            edges.put( Pair.of( e.getFromId(), e.getToId() ), Edge.fromModel( e, activities ) );
+        }*/
+
+        return new WorkflowImpl( activities, edges, model.getConfig() );
     }
 
 }

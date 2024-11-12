@@ -18,24 +18,32 @@ package org.polypheny.db.workflow.dag;
 
 import java.util.List;
 import java.util.Map;
-import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.workflow.dag.activities.Activity;
 import org.polypheny.db.workflow.dag.edges.Edge;
 import org.polypheny.db.workflow.models.WorkflowModel;
 
+/**
+ * Represents an opened workflow that can be edited and executed.
+ */
 public interface Workflow {
 
-    List<Activity> getActivities();
+    List<Activity> getActivities(); // TODO: change return type to Map<UUID, Activity> ?
+
     List<Edge> getEdges();
+
     Map<String, Object> getConfig(); // TODO: change from object to custom ConfigValue interface.
 
+
+    /**
+     * Returns a WorkflowModel corresponding to the static representation of this workflow.
+     * It is used for persistently storing workflows.
+     *
+     * @return WorkflowModel corresponding to this workflow
+     */
     default WorkflowModel toModel() {
-        return new WorkflowModel(getActivities().stream().map( Activity::toModel ).toList(),
+        return new WorkflowModel( getActivities().stream().map( Activity::toModel ).toList(),
                 getEdges().stream().map( Edge::toModel ).toList(),
-                getConfig());
-    }
-    static Workflow fromModel( WorkflowModel model ) {
-        throw new NotImplementedException();
+                getConfig() );
     }
 
 }

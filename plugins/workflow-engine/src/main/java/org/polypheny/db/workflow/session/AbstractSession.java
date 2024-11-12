@@ -16,38 +16,43 @@
 
 package org.polypheny.db.workflow.session;
 
+import java.util.Map;
 import java.util.UUID;
 import lombok.Getter;
-import lombok.Setter;
 import org.polypheny.db.workflow.dag.Workflow;
+import org.polypheny.db.workflow.engine.execution.ExecutionContext;
+import org.polypheny.db.workflow.models.ActiveWorkflowModel;
 import org.polypheny.db.workflow.models.SessionModel;
-import org.polypheny.db.workflow.models.SessionModel.SessionModelType;
 
-public class UserSession extends AbstractSession {
+
+public abstract class AbstractSession {
 
     @Getter
-    private final UUID wId;
-    @Getter
-    @Setter
-    private int openedVersion;
+    private final Workflow wf;
+    final UUID sId;
+    private final ExecutionContext exeCtx;
 
 
-    public UserSession( UUID sessionId, Workflow wf, UUID workflowId, int openedVersion ) {
-        super( wf, sessionId );
-        this.wId = workflowId;
-        this.openedVersion = openedVersion;
+    protected AbstractSession( Workflow wf, UUID sId ) {
+        this.wf = wf;
+        this.sId = sId;
+        this.exeCtx = new ExecutionContext( wf.getActivities(), wf.getEdges(), Map.of() );
     }
 
 
-    @Override
-    public void terminate() {
+    public abstract void terminate();
 
+
+    public UUID getId() {
+        return sId;
     }
 
 
-    @Override
-    public SessionModel toModel() {
-        return new SessionModel( SessionModelType.USER_SESSION, sId, wId, openedVersion );
+    public abstract SessionModel toModel();
+
+
+    public ActiveWorkflowModel toActiveWorkflowModel() {
+        return new ActiveWorkflowModel( wf, exeCtx );
     }
 
 }
