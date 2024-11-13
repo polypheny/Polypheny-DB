@@ -16,31 +16,50 @@
 
 package org.polypheny.db.workflow.session;
 
-import java.util.Map;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 import lombok.Getter;
+import org.eclipse.jetty.websocket.api.Session;
 import org.polypheny.db.workflow.dag.Workflow;
-import org.polypheny.db.workflow.engine.execution.ExecutionContext;
-import org.polypheny.db.workflow.models.ActiveWorkflowModel;
 import org.polypheny.db.workflow.models.SessionModel;
+import org.polypheny.db.workflow.models.websocket.CreateActivityRequest;
+import org.polypheny.db.workflow.models.websocket.DeleteActivityRequest;
+import org.polypheny.db.workflow.models.websocket.WsRequest;
 
 
 public abstract class AbstractSession {
 
     @Getter
-    private final Workflow wf;
+    final Workflow wf;
     final UUID sId;
-    private final ExecutionContext exeCtx;
+    private final Set<Session> subscribers = new HashSet<>();
 
 
     protected AbstractSession( Workflow wf, UUID sId ) {
         this.wf = wf;
         this.sId = sId;
-        this.exeCtx = new ExecutionContext( wf.getActivities(), wf.getEdges(), Map.of() );
     }
 
 
     public abstract void terminate();
+
+
+    /**
+     * Subscribe to any updates.
+     *
+     * @param session the UI websocket session to be registered
+     */
+    public void subscribe( Session session ) {
+        System.out.println( "subscribed" );
+        subscribers.add( session );
+    }
+
+
+    public void unsubscribe( Session session ) {
+        System.out.println( "unsubscribed" );
+        subscribers.remove( session );
+    }
 
 
     public UUID getId() {
@@ -51,8 +70,18 @@ public abstract class AbstractSession {
     public abstract SessionModel toModel();
 
 
-    public ActiveWorkflowModel toActiveWorkflowModel() {
-        return new ActiveWorkflowModel( wf, exeCtx );
+    public void handleRequest( CreateActivityRequest request ) {
+        throwUnsupported( request );
+    }
+
+
+    public void handleRequest( DeleteActivityRequest request ) {
+        throwUnsupported( request );
+    }
+
+
+    private void throwUnsupported( WsRequest request ) {
+        throw new UnsupportedOperationException( "This session type does not support " + request.type + " requests." );
     }
 
 }

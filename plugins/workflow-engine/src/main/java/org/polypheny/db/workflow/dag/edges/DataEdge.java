@@ -20,6 +20,7 @@ import org.polypheny.db.workflow.dag.activities.Activity;
 import org.polypheny.db.workflow.models.EdgeModel;
 
 public class DataEdge extends Edge {
+
     private final int fromPort;
     private final int toPort;
 
@@ -31,8 +32,15 @@ public class DataEdge extends Edge {
     }
 
 
-    public EdgeModel toModel() {
-        return new EdgeModel( from.getId(), to.getId(), fromPort, toPort, false );
+    public EdgeModel toModel( boolean includeState ) {
+        EdgeState state = includeState ? getState() : null;
+        return new EdgeModel( from.getId(), to.getId(), fromPort, toPort, false, state );
+    }
+
+
+    @Override
+    public boolean isEquivalent( EdgeModel model ) {
+        return hasSameEndpoints( model ) && !model.isControl() && model.getFromPort() == fromPort && model.getToPort() == toPort;
     }
 
 }

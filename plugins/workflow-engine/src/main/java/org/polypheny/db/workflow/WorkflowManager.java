@@ -31,6 +31,7 @@ import org.polypheny.db.workflow.repo.WorkflowRepo;
 import org.polypheny.db.workflow.repo.WorkflowRepo.WorkflowRepoException;
 import org.polypheny.db.workflow.repo.WorkflowRepoImpl;
 import org.polypheny.db.workflow.session.SessionManager;
+import org.polypheny.db.workflow.session.WorkflowWebSocket;
 
 public class WorkflowManager {
 
@@ -63,6 +64,9 @@ public class WorkflowManager {
 
     private void registerEndpoints() {
         HttpServer server = HttpServer.getInstance();
+
+        server.addWebsocketRoute( PATH + "/websocket/{sessionId}", new WorkflowWebSocket() );
+
         server.addSerializedRoute( PATH + "/sessions", this::getSessions, HandlerType.GET );
         server.addSerializedRoute( PATH + "/sessions/{sessionId}", this::getSession, HandlerType.GET );
         server.addSerializedRoute( PATH + "/sessions/{sessionId}/workflow", this::getActiveWorkflow, HandlerType.GET );
@@ -70,6 +74,8 @@ public class WorkflowManager {
 
         server.addSerializedRoute( PATH + "/sessions", this::createSession, HandlerType.POST );
         server.addSerializedRoute( PATH + "/sessions/{sessionId}/save", this::saveSession, HandlerType.POST );
+
+        server.addSerializedRoute( PATH + "/sessions/{sessionId}", this::terminateSession, HandlerType.DELETE );
     }
 
 
@@ -106,6 +112,15 @@ public class WorkflowManager {
         SaveSessionRequest request = ctx.bodyAsClass( SaveSessionRequest.class );
         process( ctx, () -> {
             sessionManager.saveUserSession( sessionId, request.getMessage() );
+            return "success";
+        } );
+    }
+
+
+    private void terminateSession( final Context ctx ) {
+        UUID sessionId = UUID.fromString( ctx.pathParam( "sessionId" ) );
+        process( ctx, () -> {
+            sessionManager.terminateSession( sessionId );
             return "success";
         } );
     }

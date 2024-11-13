@@ -19,6 +19,7 @@ package org.polypheny.db.workflow.dag.activities;
 import java.util.Map;
 import java.util.UUID;
 import lombok.Getter;
+import lombok.Setter;
 import org.polypheny.db.workflow.models.ActivityModel;
 
 public abstract class AbstractActivity implements Activity {
@@ -28,6 +29,9 @@ public abstract class AbstractActivity implements Activity {
     private final Map<String, Object> settings; // TODO: create custom classes for settings, config, rendering
     private final Map<String, Object> config;
     private final Map<String, Object> rendering;
+    @Getter
+    @Setter
+    private ActivityState state = ActivityState.IDLE;
 
 
     protected AbstractActivity( UUID id, Map<String, Object> settings, Map<String, Object> config, Map<String, Object> rendering ) {
@@ -38,8 +42,10 @@ public abstract class AbstractActivity implements Activity {
     }
 
 
-    public ActivityModel toModel() {
-        return new ActivityModel( getType(), id, settings, config, rendering );
+    @Override
+    public ActivityModel toModel( boolean includeState ) {
+        ActivityState state = includeState ? this.state : null;
+        return new ActivityModel( getType(), id, settings, config, rendering, state );
     }
 
 }

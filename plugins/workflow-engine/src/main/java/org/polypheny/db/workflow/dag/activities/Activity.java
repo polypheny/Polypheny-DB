@@ -26,21 +26,39 @@ import org.polypheny.db.workflow.models.ActivityModel;
 public interface Activity {
 
     String getType();
+
     UUID getId();
-    boolean validate( List<AlgDataType> inSchemas);
-    List<AlgDataType> computeOutSchemas( List<AlgDataType> inSchemas);
+
+    ActivityState getState();
+
+    /**
+     * Changes the state of this activity to the specified state.
+     * After initialization, this should never be done by the activity itself.
+     * The state is typically changed by the scheduler.
+     *
+     * @param state the new state of this activity
+     */
+    void setState( ActivityState state );
+
+    boolean validate( List<AlgDataType> inSchemas );
+
+    List<AlgDataType> computeOutSchemas( List<AlgDataType> inSchemas );
+
     List<PortType> inPortTypes();
+
     List<PortType> outPortTypes();
 
     void execute(); // default execution method. TODO: introduce execution context to track progress, abort, inputs, outputs...
 
-    void updateSettings( Map<String, Object> settings);
-    void updateConfig( Map<String, Object> config);
-    void updateRendering( Map<String, Object> rendering);
+    void updateSettings( Map<String, Object> settings );
 
-    ActivityModel toModel();
+    void updateConfig( Map<String, Object> config );
 
-    static Activity fromModel(ActivityModel model) {
+    void updateRendering( Map<String, Object> rendering );
+
+    ActivityModel toModel( boolean includeState );
+
+    static Activity fromModel( ActivityModel model ) {
         throw new NotImplementedException();
     }
 
@@ -50,4 +68,16 @@ public interface Activity {
         DOC,
         LPG
     }
+
+
+    enum ActivityState {
+        IDLE,
+        QUEUED,
+        EXECUTING,
+        SKIPPED,  // => execution was aborted
+        FAILED,
+        FINISHED,
+        SAVED  // => finished + checkpoint created
+    }
+
 }

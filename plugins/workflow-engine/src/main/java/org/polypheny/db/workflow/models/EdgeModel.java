@@ -16,11 +16,15 @@
 
 package org.polypheny.db.workflow.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Value;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.workflow.dag.edges.Edge.EdgeState;
 
 @Value
 public class EdgeModel {
@@ -33,10 +37,19 @@ public class EdgeModel {
     @Getter(AccessLevel.NONE)
     boolean isControl;
 
+    @JsonInclude(JsonInclude.Include.NON_NULL) // do not serialize EdgeState in static version
+    EdgeState state;
+
 
     @JsonProperty("isControl")
     public boolean isControl() {
         return isControl;
+    }
+
+
+    @JsonIgnore
+    public Pair<UUID, UUID> toPair() {
+        return Pair.of( fromId, toId );
     }
 
 }

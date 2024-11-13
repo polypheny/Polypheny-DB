@@ -23,7 +23,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import org.polypheny.db.workflow.dag.Workflow;
 import org.polypheny.db.workflow.dag.WorkflowImpl;
-import org.polypheny.db.workflow.models.ActiveWorkflowModel;
 import org.polypheny.db.workflow.models.SessionModel;
 import org.polypheny.db.workflow.models.WorkflowModel;
 import org.polypheny.db.workflow.repo.WorkflowRepo;
@@ -91,13 +90,13 @@ public class SessionManager {
     }
 
 
-    public ActiveWorkflowModel getActiveWorkflowModel( UUID sId ) {
+    public WorkflowModel getActiveWorkflowModel( UUID sId ) {
         AbstractSession session = getSession( sId );
         if ( session == null ) {
             // TODO: handle invalid sId
             return null;
         }
-        return session.toActiveWorkflowModel();
+        return session.getWf().toModel( true );
     }
 
 
@@ -108,7 +107,7 @@ public class SessionManager {
             return;
         }
         session.terminate();
-
+        removeSession( sId );
     }
 
 
@@ -118,18 +117,23 @@ public class SessionManager {
             // TODO: handle invalid sId
             return;
         }
-        int version = repo.writeVersion( session.getWId(), versionDesc, session.getWf().toModel() );
+        int version = repo.writeVersion( session.getWId(), versionDesc, session.getWf().toModel( false ) );
         session.setOpenedVersion( version );
     }
 
 
-    private AbstractSession getSession( UUID sId ) {
+    public AbstractSession getSession( UUID sId ) {
         if ( userSessions.containsKey( sId ) ) {
             return userSessions.get( sId );
         } else if ( apiSessions.containsKey( sId ) ) {
             return apiSessions.get( sId );
         }
         return null;
+    }
+
+
+    private boolean removeSession( UUID sId ) {
+        return userSessions.remove( sId ) == null || apiSessions.remove( sId ) == null;
     }
 
 

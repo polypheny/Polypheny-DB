@@ -19,6 +19,7 @@ package org.polypheny.db.workflow.dag.edges;
 import java.util.Map;
 import java.util.UUID;
 import lombok.Getter;
+import lombok.Setter;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.workflow.dag.activities.Activity;
 import org.polypheny.db.workflow.models.EdgeModel;
@@ -29,6 +30,9 @@ public abstract class Edge {
     final Activity from;
     @Getter
     final Activity to;
+    @Getter
+    @Setter
+    private EdgeState state = EdgeState.IDLE;
 
 
     public Edge( Activity from, Activity to ) {
@@ -37,7 +41,7 @@ public abstract class Edge {
     }
 
 
-    public abstract EdgeModel toModel();
+    public abstract EdgeModel toModel( boolean includeState );
 
 
     public static Edge fromModel( EdgeModel model, Map<UUID, Activity> activities ) {
@@ -51,8 +55,31 @@ public abstract class Edge {
     }
 
 
+    /**
+     * Returns true if this Edge is equivalent to the specified EdgeModel in a static context.
+     * This means the EdgeStates do not have to be equal.
+     * At the very least, this guarantees that source and target activity are the same between model and edge.
+     *
+     * @param model the model to compare this Edge to
+     * @return true if the model is equivalent.
+     */
+    public abstract boolean isEquivalent( EdgeModel model );
+
+
+    public boolean hasSameEndpoints( EdgeModel model ) {
+        return from.getId().equals( model.getFromId() ) && to.getId().equals( model.getToId() );
+    }
+
+
     public Pair<UUID, UUID> toPair() {
         return Pair.of( from.getId(), to.getId() );
+    }
+
+
+    public enum EdgeState {
+        IDLE,
+        ACTIVE,
+        INACTIVE
     }
 
 }

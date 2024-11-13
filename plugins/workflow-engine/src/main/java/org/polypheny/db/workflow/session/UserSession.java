@@ -19,9 +19,14 @@ package org.polypheny.db.workflow.session;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
+import org.apache.commons.lang3.NotImplementedException;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.workflow.dag.Workflow;
+import org.polypheny.db.workflow.dag.Workflow.WorkflowState;
 import org.polypheny.db.workflow.models.SessionModel;
 import org.polypheny.db.workflow.models.SessionModel.SessionModelType;
+import org.polypheny.db.workflow.models.websocket.CreateActivityRequest;
+import org.polypheny.db.workflow.models.websocket.DeleteActivityRequest;
 
 public class UserSession extends AbstractSession {
 
@@ -46,8 +51,43 @@ public class UserSession extends AbstractSession {
 
 
     @Override
+    public synchronized void handleRequest( CreateActivityRequest request ) {
+        throwIfNotEditable();
+        throw new NotImplementedException();
+        //Activity activity = Activity.fromType(request.activityType);
+        //wf.addActivity(activity);
+
+        // send updates to subscriber
+
+    }
+
+
+    @Override
+    public synchronized void handleRequest( DeleteActivityRequest request ) {
+        // TODO: propagate state changes and reset of nodes in workflow
+        throwIfNotEditable();
+        wf.deleteActivity( request.targetId );
+        throw new NotImplementedException();
+    }
+
+
+    @Override
     public SessionModel toModel() {
         return new SessionModel( SessionModelType.USER_SESSION, sId, wId, openedVersion );
+    }
+
+
+    private boolean isEditable() {
+        // While we could perform this check within the workflow, we follow the approach where the workflow is not
+        // aware of the semantic meaning of its state.
+        return wf.getState() == WorkflowState.IDLE;
+    }
+
+
+    private void throwIfNotEditable() {
+        if ( !isEditable() ) {
+            throw new GenericRuntimeException( "Workflow is currently not editable." );
+        }
     }
 
 }

@@ -18,8 +18,10 @@ package org.polypheny.db.workflow.dag;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import org.polypheny.db.workflow.dag.activities.Activity;
 import org.polypheny.db.workflow.dag.edges.Edge;
+import org.polypheny.db.workflow.models.EdgeModel;
 import org.polypheny.db.workflow.models.WorkflowModel;
 
 /**
@@ -29,21 +31,70 @@ public interface Workflow {
 
     List<Activity> getActivities(); // TODO: change return type to Map<UUID, Activity> ?
 
+    /**
+     * Get all edges of this workflow as list with arbitrary order.
+     *
+     * @return a list of all edges in this workflow.
+     */
     List<Edge> getEdges();
+
+    /**
+     * Returns an unmodifiable list of all edges between from and to.
+     *
+     * @param from source activity id
+     * @param to target activity id
+     * @return A list of all edges between from and to. If there are no edges, an empty list is returned.
+     */
+    List<Edge> getEdges( UUID from, UUID to );
+
+    List<Edge> getEdges( Activity from, Activity to );
+
+    List<Edge> getInEdges( UUID target );
+
+    List<Edge> getOutEdges( UUID source );
+
+    Edge getEdge( EdgeModel model );
 
     Map<String, Object> getConfig(); // TODO: change from object to custom ConfigValue interface.
 
+    WorkflowState getState();
 
     /**
-     * Returns a WorkflowModel corresponding to the static representation of this workflow.
-     * It is used for persistently storing workflows.
+     * Sets the state of this workflow to the specified value.
+     * A workflow should not change its state by itself (after initialization).
+     * This falls under the responsibility of the scheduler.
+     * In general, any state related logic should be handled outside the workflow class.
      *
+     * @param state the new state to be used
+     */
+    void setState( WorkflowState state );
+
+    void addActivity( Activity activity );
+
+    void deleteActivity( UUID activityId );
+
+    void deleteEdge( EdgeModel model );
+
+
+    /**
+     * Returns a WorkflowModel of this workflow.
+     * It can be either a static representation (without states) or a dynamic representation (with states).
+     * The static representation is used for persistently storing workflows.
+     *
+     * @param includeState whether to get the dynamic representation that includes states or not
      * @return WorkflowModel corresponding to this workflow
      */
-    default WorkflowModel toModel() {
-        return new WorkflowModel( getActivities().stream().map( Activity::toModel ).toList(),
-                getEdges().stream().map( Edge::toModel ).toList(),
-                getConfig() );
+    default WorkflowModel toModel( boolean includeState ) {
+        WorkflowState state = includeState ? getState() : null;
+        return new WorkflowModel( getActivities().stream().map( a -> a.toModel( includeState ) ).toList(),
+                getEdges().stream().map( e -> e.toModel( includeState ) ).toList(),
+                getConfig(), state );
+    }
+
+
+    enum WorkflowState {
+        IDLE,
+        EXECUTING
     }
 
 }

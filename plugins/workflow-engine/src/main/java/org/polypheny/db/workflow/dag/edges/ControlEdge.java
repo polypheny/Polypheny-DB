@@ -16,10 +16,13 @@
 
 package org.polypheny.db.workflow.dag.edges;
 
+import lombok.Getter;
 import org.polypheny.db.workflow.dag.activities.Activity;
 import org.polypheny.db.workflow.models.EdgeModel;
 
 public class ControlEdge extends Edge {
+
+    @Getter
     private final boolean onSuccess;
 
 
@@ -29,9 +32,20 @@ public class ControlEdge extends Edge {
     }
 
 
-    public EdgeModel toModel() {
-        int fromPort = onSuccess ? 0 : 1;
-        return new EdgeModel( from.getId(), to.getId(), fromPort, 0, false );
+    public EdgeModel toModel( boolean includeState ) {
+        EdgeState state = includeState ? getState() : null;
+        return new EdgeModel( from.getId(), to.getId(), getControlPort(), 0, false, state );
+    }
+
+
+    public int getControlPort() {
+        return onSuccess ? 0 : 1;
+    }
+
+
+    @Override
+    public boolean isEquivalent( EdgeModel model ) {
+        return hasSameEndpoints( model ) && model.isControl() && model.getFromPort() == getControlPort();
     }
 
 }
