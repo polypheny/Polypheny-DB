@@ -34,7 +34,7 @@ public class WorkflowRepoImpl implements WorkflowRepo {
 
     private static WorkflowRepoImpl INSTANCE = null;
 
-    private static final String DEF_FILE = "workflow.json";
+    private static final String DEF_FILE = "meta.json";
     public static final String WORKFLOWS_PATH = "data/workflows";
     private final ObjectMapper mapper = new ObjectMapper();
     private final PolyphenyHomeDirManager phm = PolyphenyHomeDirManager.getInstance();
@@ -91,7 +91,7 @@ public class WorkflowRepoImpl implements WorkflowRepo {
         try {
             return mapper.readValue( defFile, WorkflowDefModel.class );
         } catch ( IOException e ) {
-            throw new WorkflowRepoException( "Failed to read or deserialize workflow.json for ID: " + id, e );
+            throw new WorkflowRepoException( "Failed to read or deserialize " + DEF_FILE + " for ID: " + id, e );
         }
     }
 

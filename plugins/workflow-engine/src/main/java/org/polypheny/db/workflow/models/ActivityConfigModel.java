@@ -14,15 +14,21 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.workflow.dag.activities;
+package org.polypheny.db.workflow.models;
 
-import java.util.List;
-import org.polypheny.db.algebra.AlgNode;
+import lombok.Value;
 
-public interface FuseActivity extends Activity {
 
-    boolean canFuse();
+// Available config keys are determined by activity category (e.g. extract activity and transform can enforce checkpoint, load can't)
+@Value
+public class ActivityConfigModel {
 
-    AlgNode fuse( List<AlgNode> inputs );
+    boolean enforceCheckpoint;
+    String[] preferredStore;  // one entry per output
+
+
+    public static ActivityConfigModel of() {
+        return new ActivityConfigModel( false, null );
+    }
 
 }

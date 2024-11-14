@@ -21,7 +21,10 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.workflow.dag.settings.SettingValue;
+import org.polypheny.db.workflow.models.ActivityConfigModel;
 import org.polypheny.db.workflow.models.ActivityModel;
+import org.polypheny.db.workflow.models.RenderModel;
 
 public interface Activity {
 
@@ -44,17 +47,17 @@ public interface Activity {
 
     List<AlgDataType> computeOutSchemas( List<AlgDataType> inSchemas );
 
-    List<PortType> inPortTypes();
-
-    List<PortType> outPortTypes();
-
     void execute(); // default execution method. TODO: introduce execution context to track progress, abort, inputs, outputs...
 
-    void updateSettings( Map<String, Object> settings );
+    void updateSettings( Map<String, SettingValue> settings );
 
-    void updateConfig( Map<String, Object> config );
+    ActivityConfigModel getConfig();
 
-    void updateRendering( Map<String, Object> rendering );
+    void setConfig( ActivityConfigModel config );
+
+    RenderModel getRendering();
+
+    void setRendering( RenderModel rendering );
 
     ActivityModel toModel( boolean includeState );
 
@@ -63,7 +66,7 @@ public interface Activity {
     }
 
     enum PortType {
-        COMMMON, // compatible with any other type
+        ANY,
         REL,
         DOC,
         LPG
@@ -78,6 +81,14 @@ public interface Activity {
         FAILED,
         FINISHED,
         SAVED  // => finished + checkpoint created
+    }
+
+
+    enum ActivityCategory {
+        EXTRACT,
+        TRANSFORM,
+        LOAD
+        // more granular categories are also thinkable
     }
 
 }

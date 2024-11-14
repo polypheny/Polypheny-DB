@@ -14,10 +14,17 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.workflow.dag.activities;
+package org.polypheny.db.workflow.dag.settings;
 
-public interface PipeActivity {
+import lombok.Value;
 
-    boolean canPipe();
+@Value
+public class StringValue implements SettingValue {
+
+    String value;
+
+    public static StringValue of(String s) {
+        return new StringValue( s );
+    }
 
 }

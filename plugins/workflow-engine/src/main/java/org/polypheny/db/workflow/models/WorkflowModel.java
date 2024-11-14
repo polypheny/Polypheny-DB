@@ -50,9 +50,9 @@ public class WorkflowModel {
 
     public static WorkflowModel getSample() {
         List<ActivityModel> activities = List.of(
-                new ActivityModel( "extract", UUID.randomUUID(), Map.of(), Map.of(), Map.of(), null ),
-                new ActivityModel( "transform", UUID.randomUUID(), Map.of(), Map.of(), Map.of(), null ),
-                new ActivityModel( "load", UUID.randomUUID(), Map.of(), Map.of(), Map.of(), null )
+                new ActivityModel( "extract", UUID.randomUUID(), Map.of(), ActivityConfigModel.of(), RenderModel.of(), null ),
+                new ActivityModel( "transform", UUID.randomUUID(), Map.of(), ActivityConfigModel.of(), RenderModel.of(), null ),
+                new ActivityModel( "load", UUID.randomUUID(), Map.of(), ActivityConfigModel.of(), RenderModel.of(), null )
         );
         List<EdgeModel> edges = List.of(
                 new EdgeModel( activities.get( 0 ).getId(), activities.get( 1 ).getId(), 0, 0, false, null ),

@@ -16,23 +16,19 @@
 
 package org.polypheny.db.workflow.models;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import java.util.Map;
-import java.util.UUID;
 import lombok.Value;
-import org.polypheny.db.workflow.dag.activities.Activity.ActivityState;
-import org.polypheny.db.workflow.dag.settings.SettingValue;
 
 @Value
-public class ActivityModel {
+public class RenderModel {
 
-    String type;
-    UUID id;  // activity-ID
-    Map<String, SettingValue> settings; // type depends on the actual setting, given by activity type + setting key
-    ActivityConfigModel config;
-    RenderModel rendering;
+    int posX;
+    int posY;
+    String name;  // the display name of an element
+    String notes;  // add additional notes to an element
 
-    @JsonInclude(JsonInclude.Include.NON_NULL) // do not serialize in static version
-    ActivityState state;
+
+    public static RenderModel of() {
+        return new RenderModel( 0, 0, null, null );
+    }
 
 }

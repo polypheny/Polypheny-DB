@@ -20,25 +20,52 @@ import java.util.Map;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
+import org.polypheny.db.workflow.dag.annotations.ActivityDefinition;
+import org.polypheny.db.workflow.dag.settings.SettingValue;
+import org.polypheny.db.workflow.models.ActivityConfigModel;
 import org.polypheny.db.workflow.models.ActivityModel;
+import org.polypheny.db.workflow.models.RenderModel;
 
 public abstract class AbstractActivity implements Activity {
 
     @Getter
     private final UUID id;
-    private final Map<String, Object> settings; // TODO: create custom classes for settings, config, rendering
-    private final Map<String, Object> config;
-    private final Map<String, Object> rendering;
+    private final Map<String, SettingValue> settings;
+    @Getter
+    @Setter
+    private ActivityConfigModel config;
+    @Getter
+    @Setter
+    private RenderModel rendering;
     @Getter
     @Setter
     private ActivityState state = ActivityState.IDLE;
 
 
-    protected AbstractActivity( UUID id, Map<String, Object> settings, Map<String, Object> config, Map<String, Object> rendering ) {
+    protected AbstractActivity( UUID id, Map<String, SettingValue> settings, ActivityConfigModel config, RenderModel rendering ) {
         this.id = id;
         this.settings = settings;
         this.config = config;
         this.rendering = rendering;
+    }
+
+
+    @Override
+    public String getType() {
+        // Use reflection to check if the subclass has the ActivityDefinition annotation
+        ActivityDefinition annotation = this.getClass().getAnnotation( ActivityDefinition.class );
+
+        if ( annotation == null ) {
+            throw new IllegalStateException( "Class " + this.getClass().getSimpleName() +
+                    " is missing the required @ActivityDefinition annotation." );
+        }
+        return annotation.type();
+    }
+
+
+    @Override
+    public void updateSettings( Map<String, SettingValue> newSettings ) {
+        settings.putAll( newSettings );
     }
 
 
