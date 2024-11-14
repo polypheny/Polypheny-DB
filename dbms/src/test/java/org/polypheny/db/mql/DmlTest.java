@@ -76,6 +76,21 @@ public class DmlTest extends MqlTestTemplate {
 
 
     @Test
+    public void handleDollarTest() {
+        String data = "{\"test\": \"Test with $\"}";
+        insert( data );
+
+        DocResult result = find( "{}", "{}" );
+
+        assertTrue(
+                MongoConnection.checkDocResultSet(
+                        result,
+                        ImmutableList.of( data ), true,
+                        true ) );
+    }
+
+
+    @Test
     public void insertManyTest() {
         List<String> data = Arrays.asList( "{\"test\":1}", "{\"test\":2}", "{\"test\":3}" );
         insertMany( data );
