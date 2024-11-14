@@ -127,7 +127,7 @@ public class AlgFieldCollation implements Serializable {
                 case STRICTLY_INCREASING -> STRICTLY_ASCENDING;
                 case STRICTLY_DECREASING -> STRICTLY_DESCENDING;
                 case MONOTONIC -> CLUSTERED;
-                default -> throw new AssertionError( "unknown: " + monotonicity );
+                case CONSTANT, NOT_MONOTONIC -> throw new UnsupportedOperationException( "Cannot convert monotonicity " + monotonicity + " into a direction" );
             };
         }
 
