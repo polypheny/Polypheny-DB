@@ -34,6 +34,6 @@ jobs:
             -   name: Build Plugins
                 timeout-minutes: 5
                 run: ./gradlew assemblePlugins -PwithoutpullingUi=true
-            -   name: Execute integration tests for ${{ matrix.adapter }}
+            -   name: Execute test for ${{ matrix.adapter }}
                 timeout-minutes: 30
-                run: ./gradlew integrationTests -Dstore.default=${{ matrix.adapter }} -PwithoutpullingUi=true
+                run: ./gradlew test -Dstore.default=${{ matrix.adapter }} -PwithoutpullingUi=true
