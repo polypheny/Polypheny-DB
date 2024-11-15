@@ -16,12 +16,12 @@
 
 package org.polypheny.db.workflow.dag.activities;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import java.util.Map;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition;
-import org.polypheny.db.workflow.dag.settings.SettingValue;
 import org.polypheny.db.workflow.models.ActivityConfigModel;
 import org.polypheny.db.workflow.models.ActivityModel;
 import org.polypheny.db.workflow.models.RenderModel;
@@ -30,7 +30,7 @@ public abstract class AbstractActivity implements Activity {
 
     @Getter
     private final UUID id;
-    private final Map<String, SettingValue> settings;
+    private final Map<String, JsonNode> settings;  // may contain variables that need to be replaced first
     @Getter
     @Setter
     private ActivityConfigModel config;
@@ -42,7 +42,7 @@ public abstract class AbstractActivity implements Activity {
     private ActivityState state = ActivityState.IDLE;
 
 
-    protected AbstractActivity( UUID id, Map<String, SettingValue> settings, ActivityConfigModel config, RenderModel rendering ) {
+    protected AbstractActivity( UUID id, Map<String, JsonNode> settings, ActivityConfigModel config, RenderModel rendering ) {
         this.id = id;
         this.settings = settings;
         this.config = config;
@@ -64,7 +64,7 @@ public abstract class AbstractActivity implements Activity {
 
 
     @Override
-    public void updateSettings( Map<String, SettingValue> newSettings ) {
+    public void updateSettings( Map<String, JsonNode> newSettings ) {
         settings.putAll( newSettings );
     }
 

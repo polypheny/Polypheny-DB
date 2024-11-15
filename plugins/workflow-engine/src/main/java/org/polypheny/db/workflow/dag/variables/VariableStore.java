@@ -16,13 +16,18 @@
 
 package org.polypheny.db.workflow.dag.variables;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
-import org.polypheny.db.workflow.dag.settings.SettingValue;
+import java.util.Map.Entry;
 
 public class VariableStore implements ReadableVariableStore, WritableVariableStore {
 
-    private final Map<String, SettingValue> variables = new HashMap<>();
+    private final Map<String, JsonNode> variables = new HashMap<>();
 
 
     public ReadableVariableStore asReadable() {
@@ -36,7 +41,7 @@ public class VariableStore implements ReadableVariableStore, WritableVariableSto
 
 
     @Override
-    public void setVariable( String key, SettingValue value ) {
+    public void setVariable( String key, JsonNode value ) {
         variables.put( key, value );
     }
 
@@ -60,14 +65,59 @@ public class VariableStore implements ReadableVariableStore, WritableVariableSto
 
 
     @Override
-    public SettingValue getVariable( String key ) {
+    public JsonNode getVariable( String key ) {
         return variables.get( key );
     }
 
 
     @Override
-    public Map<String, SettingValue> getVariables() {
+    public Map<String, JsonNode> getVariables() {
         return Map.copyOf( variables );
     }
+
+
+    // TODO: make sure to not change the existing JsonNode
+    public JsonNode resolveVariables( JsonNode node ) {
+        if ( node.isObject() ) {
+            ObjectNode objectNode = (ObjectNode) node;
+            if ( objectNode.size() == 1 && objectNode.has( VARIABLE_REF_FIELD ) ) {
+                String variableRef = objectNode.get( VARIABLE_REF_FIELD ).asText();
+                JsonNode replacement = variables.get( variableRef );
+
+                // Replace the entire object with the value from the map, if it exists
+                if ( replacement == null ) {
+                    throw new IllegalArgumentException( "Cannot resolve variable with name: " + variableRef );
+                }
+                return replacement;
+            } else {
+                // Recursively process child fields
+                Iterator<Entry<String, JsonNode>> fields = objectNode.fields();
+                while ( fields.hasNext() ) {
+                    Map.Entry<String, JsonNode> field = fields.next();
+                    objectNode.set( field.getKey(), resolveVariables( field.getValue() ) );
+                }
+                return objectNode;
+            }
+        } else if ( node.isArray() ) {
+            // Recursively process child fields
+            for ( int i = 0; i < node.size(); i++ ) {
+                ((ArrayNode) node).set( i, resolveVariables( node.get( i ) ) );
+            }
+            return node;
+        } else {
+            return node;
+        }
+    }
+
+
+    @Override
+    public Map<String, JsonNode> resolveVariables( Map<String, JsonNode> nodes ) {
+        Map<String, JsonNode> resolved = new HashMap<>();
+        for ( Entry<String, JsonNode> entry : nodes.entrySet() ) {
+            resolved.put( entry.getKey(), resolveVariables( entry.getValue() ) );
+        }
+        return Collections.unmodifiableMap( resolved );
+    }
+
 
 }

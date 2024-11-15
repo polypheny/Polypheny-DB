@@ -14,23 +14,21 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.workflow.dag.variables;
+package org.polypheny.db.workflow.dag.annotations;
 
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import org.polypheny.db.workflow.dag.annotations.Group.Subgroup;
 
-import com.fasterxml.jackson.databind.JsonNode;
+/**
+ * Configure the default group (identified by key {@code GroupDef.DEFAULT_GROUP}).
+ */
+@Target(ElementType.TYPE)
+@Retention(RetentionPolicy.RUNTIME)
+public @interface DefaultGroup {
 
-public interface WritableVariableStore {
-
-    void setVariable( String key, JsonNode value );
-
-    /**
-     * Merge this variableStore with the specified store.
-     * In the case of duplicates, newStore takes priority.
-     *
-     * @param newStore the store that is merged with this store
-     */
-    void merge( ReadableVariableStore newStore );
-
-    void clear();
+    Subgroup[] subgroups() default {};
 
 }

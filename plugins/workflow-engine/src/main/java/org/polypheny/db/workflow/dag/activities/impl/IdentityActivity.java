@@ -14,25 +14,44 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.workflow.dag.activities;
+package org.polypheny.db.workflow.dag.activities.impl;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.workflow.dag.activities.AbstractActivity;
 import org.polypheny.db.workflow.dag.activities.Activity.ActivityCategory;
+import org.polypheny.db.workflow.dag.activities.Fusable;
+import org.polypheny.db.workflow.dag.activities.Pipeable;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition;
-import org.polypheny.db.workflow.dag.settings.SettingValue;
+import org.polypheny.db.workflow.dag.annotations.DefaultGroup;
+import org.polypheny.db.workflow.dag.annotations.Group;
+import org.polypheny.db.workflow.dag.annotations.Group.Subgroup;
+import org.polypheny.db.workflow.dag.annotations.IntSetting;
+import org.polypheny.db.workflow.dag.annotations.StringSetting;
 import org.polypheny.db.workflow.models.ActivityConfigModel;
 import org.polypheny.db.workflow.models.ActivityModel;
 import org.polypheny.db.workflow.models.RenderModel;
 
 @ActivityDefinition(type = "identity", displayName = "Identity", categories = { ActivityCategory.TRANSFORM })
+
+@DefaultGroup(subgroups = {
+        @Subgroup(key = "a", displayName = "Sub1"),
+        @Subgroup(key = "b", displayName = "Sub2")
+})
+@IntSetting(key = "I1", displayName = "FIRST", defaultValue = 2)
+@StringSetting(key = "S1", displayName = "SECOND", subGroup = "a")
+
+@Group(key = "group1", displayName = "Group 1")
+@IntSetting(key = "I2", displayName = "FIRST", defaultValue = 0, isList = true)
+@StringSetting(key = "S2", displayName = "THIRD", defaultValue = "test", isList = true)
 public class IdentityActivity extends AbstractActivity implements Fusable, Pipeable {
 
 
-    public IdentityActivity( UUID id, Map<String, SettingValue> settings, ActivityConfigModel config, RenderModel rendering ) {
+    public IdentityActivity( UUID id, Map<String, JsonNode> settings, ActivityConfigModel config, RenderModel rendering ) {
         super( id, settings, config, rendering );
     }
 

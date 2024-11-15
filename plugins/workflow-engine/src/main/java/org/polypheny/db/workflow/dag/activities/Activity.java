@@ -16,12 +16,12 @@
 
 package org.polypheny.db.workflow.dag.activities;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.workflow.dag.settings.SettingValue;
 import org.polypheny.db.workflow.models.ActivityConfigModel;
 import org.polypheny.db.workflow.models.ActivityModel;
 import org.polypheny.db.workflow.models.RenderModel;
@@ -49,7 +49,7 @@ public interface Activity {
 
     void execute(); // default execution method. TODO: introduce execution context to track progress, abort, inputs, outputs...
 
-    void updateSettings( Map<String, SettingValue> settings );
+    void updateSettings( Map<String, JsonNode> settings );
 
     ActivityConfigModel getConfig();
 

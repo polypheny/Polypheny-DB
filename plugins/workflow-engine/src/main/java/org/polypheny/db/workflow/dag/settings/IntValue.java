@@ -18,36 +18,34 @@ package org.polypheny.db.workflow.dag.settings;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.json.JsonMapper;
-import com.fasterxml.jackson.databind.node.TextNode;
-import java.util.Objects;
-import lombok.NonNull;
+import com.fasterxml.jackson.databind.node.IntNode;
 import lombok.Value;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingValue;
 
 @Value
-public class StringValue implements SettingValue {
+public class IntValue implements SettingValue {
 
-    @NonNull
-    String value;
-
-
-    public static StringValue of( String s ) {
-
-        return new StringValue( Objects.requireNonNullElse( s, "" ) );
-    }
+    int value;
 
 
-    public static StringValue of( JsonNode node ) {
-        if ( !node.isTextual() ) {
-            throw new IllegalArgumentException( node + " does not represent a string." );
+    /**
+     * Converts the given {@link JsonNode} to an {@link IntValue}.
+     *
+     * @param node The {@link JsonNode} to convert. It must represent an integer value.
+     * @return A new {@link IntValue} instance containing the integer value.
+     * @throws IllegalArgumentException if the {@link JsonNode} cannot be converted to an integer.
+     */
+    public static IntValue of( JsonNode node ) {
+        if ( !node.canConvertToInt() ) {
+            throw new IllegalArgumentException( node + " does not represent an integer" );
         }
-        return new StringValue( node.textValue() );
+        return new IntValue( node.intValue() );
     }
 
 
     @Override
     public JsonNode toJson( JsonMapper mapper ) {
-        return TextNode.valueOf( value );
+        return IntNode.valueOf( value );
     }
 
 }

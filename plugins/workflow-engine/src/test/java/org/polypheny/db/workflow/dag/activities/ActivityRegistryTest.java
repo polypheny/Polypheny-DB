@@ -16,12 +16,30 @@
 
 package org.polypheny.db.workflow.dag.activities;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.databind.node.IntNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.polypheny.db.workflow.dag.settings.GroupDef;
+import org.polypheny.db.workflow.dag.settings.GroupDef.SubgroupDef;
+import org.polypheny.db.workflow.dag.settings.IntValue;
+import org.polypheny.db.workflow.dag.settings.SettingDef;
+import org.polypheny.db.workflow.dag.settings.SettingDef.SettingValue;
+import org.polypheny.db.workflow.dag.variables.ReadableVariableStore;
+import org.polypheny.db.workflow.dag.variables.VariableStore;
 import org.polypheny.db.workflow.models.ActivityConfigModel;
 import org.polypheny.db.workflow.models.ActivityModel;
 import org.polypheny.db.workflow.models.RenderModel;
@@ -32,19 +50,111 @@ class ActivityRegistryTest {
     @Test
     public void checkRequiredConstructorsForAnnotatedActivities() {
         Set<Class<? extends Activity>> activityClasses = ActivityRegistry.findAllAnnotatedActivities();
-        for (Class<? extends Activity> activityClass : activityClasses) {
-            assertConstructorExists(activityClass, ActivityModel.class);
-            assertConstructorExists(activityClass, UUID.class, Map.class, ActivityConfigModel.class, RenderModel.class);
+        for ( Class<? extends Activity> activityClass : activityClasses ) {
+            assertConstructorExists( activityClass, ActivityModel.class );
+            assertConstructorExists( activityClass, UUID.class, Map.class, ActivityConfigModel.class, RenderModel.class );
         }
     }
 
-    private static void assertConstructorExists(Class<?> activityClass, Class<?>... argumentTypes) {
-        try {
-            activityClass.getConstructor(argumentTypes);
-        } catch (NoSuchMethodException e) {
-            fail(
-                    "Constructor with arguments " + java.util.Arrays.toString(argumentTypes) +
-                    " is missing for: " + activityClass.getSimpleName());
+
+    @Test
+    public void serializationTest() {
+        System.out.println( ActivityRegistry.serialize() );
+    }
+
+
+    @Test
+    public void checkGroupKeysTest() {
+        for ( ActivityDef activity : ActivityRegistry.getRegistry().values() ) {
+            String activityName = activity.getActivityClass().getSimpleName();
+            Set<String> groupKeys = new HashSet<>();
+            Map<String, Set<String>> subgroupKeysMap = new HashMap<>();
+            for ( GroupDef g : activity.getGroups() ) {
+                String key = g.getKey();
+                assertFalse( groupKeys.contains( key ), "Found duplicate group key '" + key + "' in: " + activityName );
+                groupKeys.add( key );
+
+                Set<String> subSet = new HashSet<>();
+                for ( SubgroupDef sg : g.getSubgroups() ) {
+                    String subKey = sg.getKey();
+                    assertFalse( subSet.contains( subKey ), "Found duplicate subgroup key '" + subKey + "' in: " + activityName );
+                    subSet.add( subKey );
+                }
+                assertFalse( subSet.contains( GroupDef.DEFAULT_SUBGROUP ), "Cannot redefine predefined DEFAULT subgroup in: " + activityName );
+                subgroupKeysMap.put( key, subSet );
+            }
+            // DEFAULT_GROUP and ADVANCED_GROUP redefinition is already checked with assertions within the GroupDef class.
+
+            for ( SettingDef setting : activity.getSettings().values() ) {
+                String key = setting.getGroup();
+                String subKey = setting.getSubgroup();
+                assertTrue( groupKeys.contains( key ), "Encountered undefined group key '" + key + "' in: " + activityName );
+                assertTrue( subKey.equals( GroupDef.DEFAULT_SUBGROUP ) ||
+                        subgroupKeysMap.get( key ).contains( subKey ), "Encountered undefined subgroup key '" + subKey + "' in: " + activityName );
+            }
         }
     }
+
+
+    @Test
+    public void getDefaultSettingValuesTest() {
+        for ( String key : ActivityRegistry.getRegistry().keySet() ) {
+            int noSettings = ActivityRegistry.get( key ).getSettings().size();
+            assertEquals( noSettings, ActivityRegistry.getSerializableSettingValues( key ).size() );
+            System.out.println( ActivityRegistry.getSerializableSettingValues( key ) );
+        }
+    }
+
+
+    @Test
+    public void buildSettingValuesTest() {
+        for ( String key : ActivityRegistry.getRegistry().keySet() ) {
+            Map<String, JsonNode> defaultSettings = ActivityRegistry.getSerializableSettingValues( key );
+
+            // We check whether building the default settings results in an equivalent serializable object
+            Map<String, SettingValue> rebuiltSettings = ActivityRegistry.buildSettingValues( key, defaultSettings );
+            assertEquals( defaultSettings.size(), rebuiltSettings.size() );
+
+            JsonMapper mapper = new JsonMapper();
+            for ( Entry<String, SettingValue> entry : rebuiltSettings.entrySet() ) {
+                JsonNode rebuiltJson = entry.getValue().toJson( mapper );
+                assertEquals( defaultSettings.get( entry.getKey() ), rebuiltJson );
+            }
+        }
+    }
+
+
+    @Test
+    public void intVariableResolveTest() {
+        // TODO: make test independent of a specific activity
+        int newValue = 42;
+        String varName = "intVariable";
+        String activity = "identity";
+        String settingKey = "I1";
+
+        JsonMapper mapper = new JsonMapper();
+        VariableStore vStore = new VariableStore();
+        vStore.setVariable( varName, IntNode.valueOf( newValue ) );
+
+        assertNotEquals( newValue, ActivityRegistry.getSettingValues( activity ).get( settingKey ).unwrapOrThrow( IntValue.class ).getValue() );
+        Map<String, JsonNode> settings = new HashMap<>( ActivityRegistry.getSerializableSettingValues( activity ) );
+
+        ObjectNode variable = mapper.createObjectNode().put( ReadableVariableStore.VARIABLE_REF_FIELD, varName );
+        settings.put( settingKey, variable );
+        Map<String, SettingValue> settingValues = ActivityRegistry.buildSettingValues( activity, vStore.resolveVariables( settings ) );
+        assertEquals( newValue, settingValues.get( settingKey ).unwrapOrThrow( IntValue.class ).getValue() );
+
+    }
+
+
+    private static void assertConstructorExists( Class<?> activityClass, Class<?>... argumentTypes ) {
+        try {
+            activityClass.getConstructor( argumentTypes );
+        } catch ( NoSuchMethodException e ) {
+            fail(
+                    "Constructor with arguments " + java.util.Arrays.toString( argumentTypes ) +
+                            " is missing for: " + activityClass.getSimpleName() );
+        }
+    }
+
 }

@@ -14,9 +14,21 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.workflow.dag.settings;
+package org.polypheny.db.workflow.dag.annotations;
 
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import org.polypheny.db.workflow.dag.annotations.Group.Subgroup;
 
-public interface SettingValue {
+/**
+ * Configure the advanced group (identified by key {@code GroupDef.ADVANCED_GROUP}).
+ */
+@Target(ElementType.TYPE)
+@Retention(RetentionPolicy.RUNTIME)
+public @interface AdvancedGroup {
+
+    Subgroup[] subgroups() default {};
 
 }

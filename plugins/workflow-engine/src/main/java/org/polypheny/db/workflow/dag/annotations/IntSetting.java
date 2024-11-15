@@ -24,40 +24,40 @@ import java.lang.annotation.Target;
 
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-@Repeatable(StringSetting.List.class)
-public @interface StringSetting {
+@Repeatable(IntSetting.List.class)
+public @interface IntSetting {
 
-    /**
-     * A unique key that identifies this setting.
-     * Must not contain {@code SettingDef.SUB_SEP}.
-     *
-     * @return the key of this setting
-     */
+    // Common properties
     String key();
 
     String displayName();
 
     String description() default "";
 
-    String group() default "";  // the group this setting belongs to. Default is {@code GroupDef.DEFAULT_GROUP}, advanced is {@code GroupDef.ADVANCED_GROUP}. Others must be created manually
+    String group() default "";
 
-    String subGroup() default "";  // the subgroup this setting belongs to. Default is {@code GroupDef.DEFAULT_SUBGROUP}
+    String subGroup() default "";
 
-    int position() default 100;  // manually impose order within subGroup (lower pos => further to the top)
+    int position() default 100;
 
-    String subOf() default "";  // determine the visibility of this setting, possibly using {@code SettingDef.SUB_SEP}.
+    String subOf() default "";
 
-    // String-specific settings
-    String defaultValue() default "";
+    // Setting-specific properties
 
-    boolean isList() default false;  // results in values of type ListValue<StringValue> if true.
+    int defaultValue() default 0;
+
+    boolean isList() default false;  // results in values of type ListValue<IntValue> if true.
+
+    int min() default Integer.MIN_VALUE;
+
+    int max() default Integer.MAX_VALUE;
 
 
     @Target(ElementType.TYPE)
     @Retention(RetentionPolicy.RUNTIME)
     @interface List {
 
-        StringSetting[] value();
+        IntSetting[] value();
 
     }
 

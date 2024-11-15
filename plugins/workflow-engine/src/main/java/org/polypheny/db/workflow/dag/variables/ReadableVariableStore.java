@@ -17,20 +17,35 @@
 package org.polypheny.db.workflow.dag.variables;
 
 
+import com.fasterxml.jackson.databind.JsonNode;
 import java.util.Map;
-import org.polypheny.db.workflow.dag.settings.SettingValue;
 
 public interface ReadableVariableStore {
 
+    String VARIABLE_REF_FIELD = "_variableRef";
+
     boolean contains( String key );
 
-    SettingValue getVariable( String key );
+    JsonNode getVariable( String key );
 
     /**
      * Get an unmodifiable snapshot of the underlying variables map.
      *
      * @return an unmodifiable map containing mappings for all stored variables.
      */
-    Map<String, SettingValue> getVariables();
+    Map<String, JsonNode> getVariables();
+
+    /**
+     * Recursively replaces any variable references in the specified JsonNode with the value stored in this store.
+     * Variable references are indicated by objects that contain a single field with name equal to the value of {@code VARIABLE_REF_FIELD}.
+     *
+     * @param node The node to be resolved recursively
+     * @return a JsonNode with any variable references replaced by their value stored in this store.
+     * @throws IllegalArgumentException if a variable reference cannot be resolved in the variableMap
+     */
+    JsonNode resolveVariables( JsonNode node );
+
+
+    Map<String, JsonNode> resolveVariables( Map<String, JsonNode> nodes );
 
 }

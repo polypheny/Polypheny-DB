@@ -17,21 +17,34 @@
 package org.polypheny.db.workflow.dag.activities;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.Getter;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition;
+import org.polypheny.db.workflow.dag.annotations.AdvancedGroup;
+import org.polypheny.db.workflow.dag.annotations.DefaultGroup;
+import org.polypheny.db.workflow.dag.annotations.Group;
+import org.polypheny.db.workflow.dag.settings.SettingDef;
+import org.polypheny.db.workflow.dag.settings.SettingDef.SettingValue;
 import org.polypheny.db.workflow.models.ActivityModel;
 import org.reflections.Reflections;
 
 public class ActivityRegistry {
 
-    private static final Map<String, ActivityInfo> registry;
+    private static final String ACTIVITY_PATH = "org.polypheny.db.workflow.dag.activities.impl";
+
+    @Getter
+    private static final Map<String, ActivityDef> registry;
 
 
     static {
@@ -39,23 +52,75 @@ public class ActivityRegistry {
     }
 
 
-    public static ActivityInfo get( String activityType ) {
-        return registry.get( activityType );
+    /**
+     * Returns the ActivityDef for the specified type or throws an IllegalArgumentException if it does not exist.
+     *
+     * @param activityType the unique identifier for the activityType.
+     * @return the ActivityDef corresponding to activityType
+     * @throws IllegalArgumentException if the activityType is not registered
+     */
+    public static ActivityDef get( String activityType ) {
+        ActivityDef def = registry.get( activityType );
+        if ( def == null ) {
+            throw new IllegalArgumentException( "No activity found for type: " + activityType );
+        }
+        return def;
     }
 
 
-    public static Activity fromModel( ActivityModel model ) {
-        ActivityInfo info = get( model.getType() );
-        if ( info == null ) {
-            throw new IllegalArgumentException( "No activity found for type: " + model.getType() );
-        }
+    public static Activity activityFromModel( ActivityModel model ) {
+        ActivityDef def = get( model.getType() );
         try {
-            Constructor<? extends Activity> constructor = info.getActivityClass().getConstructor( ActivityModel.class );
+            Constructor<? extends Activity> constructor = def.getActivityClass().getConstructor( ActivityModel.class );
             return constructor.newInstance( model );
         } catch ( InvocationTargetException | NoSuchMethodException | InstantiationException | IllegalAccessException e ) {
             throw new RuntimeException( "Encountered problem during instantiation for type: " + model.getType() );
         }
     }
+
+
+    /**
+     * Builds a map of setting values for a specified activity type based on the resolved JSON nodes (meaning it contains no variable references).
+     *
+     * @param activityType the unique identifier for the activity type.
+     * @param resolved a map of setting keys to their resolved JSON node representations.
+     * @return an unmodifiable map of setting keys to their corresponding {@code SettingValue} instances.
+     * @throws IllegalArgumentException if no activity definition is found for the provided {@code activityType}
+     * or if a JsonNode has an unexpected format.
+     */
+    public static Map<String, SettingValue> buildSettingValues( String activityType, Map<String, JsonNode> resolved ) {
+        Map<String, SettingDef> settingDefs = get( activityType ).getSettings();
+
+        Map<String, SettingValue> settingValues = new HashMap<>();
+        for ( Entry<String, JsonNode> entry : resolved.entrySet() ) {
+            String key = entry.getKey();
+            SettingValue settingValue = settingDefs.get( key ).buildValue( entry.getValue() );
+            settingValues.put( key, settingValue );
+        }
+        return Collections.unmodifiableMap( settingValues );
+    }
+
+
+    public static Map<String, SettingValue> getSettingValues( String activityType ) {
+        Map<String, SettingDef> settingDefs = get( activityType ).getSettings();
+        Map<String, SettingValue> settingValues = new HashMap<>();
+
+        for ( Entry<String, SettingDef> entry : settingDefs.entrySet() ) {
+            settingValues.put( entry.getKey(), entry.getValue().getDefaultValue() );
+        }
+        return Collections.unmodifiableMap( settingValues );
+    }
+
+
+    public static Map<String, JsonNode> getSerializableSettingValues( String activityType ) {
+        JsonMapper mapper = new JsonMapper();
+        Map<String, JsonNode> settingValues = new HashMap<>();
+        for ( Entry<String, SettingValue> entry : getSettingValues( activityType ).entrySet() ) {
+            settingValues.put( entry.getKey(), entry.getValue().toJson( mapper ) );
+        }
+        return Collections.unmodifiableMap( settingValues );
+    }
+
 
     public static String serialize() {
         ObjectMapper mapper = new ObjectMapper();
@@ -67,22 +132,33 @@ public class ActivityRegistry {
     }
 
 
-    private static Map<String, ActivityInfo> registerActivities() {
-        Map<String, ActivityInfo> registry = new HashMap<>();
+    private static Map<String, ActivityDef> registerActivities() {
+        Map<String, ActivityDef> registry = new HashMap<>();
         for ( Class<? extends Activity> cls : findAllAnnotatedActivities() ) {
             ActivityDefinition definition = cls.getAnnotation( ActivityDefinition.class );
             String key = definition.type();
             assert !registry.containsKey( key ) : "Found duplicate activity type: " + key;
 
-            ActivityInfo info = ActivityInfo.fromAnnotations( cls, definition );
-            registry.put( key, info );
+            Annotation groups = cls.getAnnotation( Group.class );
+            if ( groups == null ) {
+                groups = cls.getAnnotation( Group.List.class );
+            }
+
+            ActivityDef def = ActivityDef.fromAnnotations(
+                    cls,
+                    definition,
+                    groups,
+                    cls.getAnnotation( DefaultGroup.class ),
+                    cls.getAnnotation( AdvancedGroup.class ),
+                    cls.getAnnotations() );
+            registry.put( key, def );
         }
         return Collections.unmodifiableMap( registry );
     }
 
 
     public static Set<Class<? extends Activity>> findAllAnnotatedActivities() {
-        Reflections reflections = new Reflections( "org.polypheny.db.workflow" );
+        Reflections reflections = new Reflections( ACTIVITY_PATH );
         Set<Class<? extends Activity>> activityClasses = reflections.getSubTypesOf( Activity.class );
 
         return activityClasses.stream()
