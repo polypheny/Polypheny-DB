@@ -2671,23 +2671,17 @@ public class Functions {
             if ( context.pathReturned == null ) {
                 value = null;
             } else {
-                switch ( wrapperBehavior ) {
-                    case WITHOUT_ARRAY:
-                        value = context.pathReturned;
-                        break;
-                    case WITH_UNCONDITIONAL_ARRAY:
-                        value = PolyList.of( context.pathReturned );
-                        break;
-                    case WITH_CONDITIONAL_ARRAY:
+                value = switch ( wrapperBehavior ) {
+                    case WITHOUT_ARRAY ->  context.pathReturned;
+                    case WITH_UNCONDITIONAL_ARRAY ->  PolyList.of( context.pathReturned );
+                    case WITH_CONDITIONAL_ARRAY -> {
                         if ( context.pathReturned instanceof Collection ) {
-                            value = context.pathReturned;
+                            yield  context.pathReturned;
                         } else {
-                            value = PolyList.of( context.pathReturned );
+                            yield  PolyList.of( context.pathReturned );
                         }
-                        break;
-                    default:
-                        throw Static.RESOURCE.illegalWrapperBehaviorInJsonQueryFunc( wrapperBehavior.toString() ).ex();
-                }
+                    }
+                };
             }
             if ( value == null || context.mode == PathMode.LAX && isScalarObject( value ) ) {
                 return switch ( emptyBehavior ) {
