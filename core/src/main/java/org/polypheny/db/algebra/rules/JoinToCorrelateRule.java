@@ -51,7 +51,6 @@ import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.AlgBuilderFactory;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.ImmutableBitSet.Builder;
-import org.polypheny.db.util.Util;
 
 
 /**
@@ -126,4 +125,3 @@ public class JoinToCorrelateRule extends AlgOptRule {
     }
 
 }
-

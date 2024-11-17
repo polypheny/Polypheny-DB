@@ -30,6 +30,7 @@ public class RollbackTest {
         TestHelper.getInstance();
     }
 
+
     @Test
     public void failedCreateRollbackTest() {
         Assertions.assertThrows( Exception.class, () -> {
@@ -41,7 +42,6 @@ public class RollbackTest {
         TestHelper.executeSql(
                 ( c, s ) -> s.executeUpdate( "DROP TABLE IF EXISTS t" )
         );
-
     }
 
 }

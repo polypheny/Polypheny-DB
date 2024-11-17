@@ -2672,13 +2672,13 @@ public class Functions {
                 value = null;
             } else {
                 value = switch ( wrapperBehavior ) {
-                    case WITHOUT_ARRAY ->  context.pathReturned;
-                    case WITH_UNCONDITIONAL_ARRAY ->  PolyList.of( context.pathReturned );
+                    case WITHOUT_ARRAY -> context.pathReturned;
+                    case WITH_UNCONDITIONAL_ARRAY -> PolyList.of( context.pathReturned );
                     case WITH_CONDITIONAL_ARRAY -> {
                         if ( context.pathReturned instanceof Collection ) {
-                            yield  context.pathReturned;
+                            yield context.pathReturned;
                         } else {
-                            yield  PolyList.of( context.pathReturned );
+                            yield PolyList.of( context.pathReturned );
                         }
                     }
                 };
