@@ -17,6 +17,7 @@
 package org.polypheny.db.workflow.dag.variables;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.Collections;
@@ -24,8 +25,11 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
+import org.polypheny.db.workflow.dag.settings.SettingDef.SettingValue;
 
 public class VariableStore implements ReadableVariableStore, WritableVariableStore {
+    private static final JsonMapper mapper = new JsonMapper();
 
     private final Map<String, JsonNode> variables = new HashMap<>();
 
@@ -42,7 +46,15 @@ public class VariableStore implements ReadableVariableStore, WritableVariableSto
 
     @Override
     public void setVariable( String key, JsonNode value ) {
+        if ( containsVariableRef( value ) ) {
+            throw new IllegalArgumentException( "Setting a variable containing a variable reference is not allowed" );
+        }
         variables.put( key, value );
+    }
+
+    @Override
+    public void setVariable( String key, SettingValue value ) {
+        variables.put( key, value.toJson( mapper ) );
     }
 
 
@@ -117,6 +129,44 @@ public class VariableStore implements ReadableVariableStore, WritableVariableSto
             resolved.put( entry.getKey(), resolveVariables( entry.getValue() ) );
         }
         return Collections.unmodifiableMap( resolved );
+    }
+
+
+    @Override
+    public Map<String, Optional<JsonNode>> resolveAvailableVariables( Map<String, JsonNode> nodes ) {
+        Map<String, Optional<JsonNode>> resolved = new HashMap<>();
+        for (Map.Entry<String, JsonNode> entry : nodes.entrySet()) {
+            try {
+                resolved.put(entry.getKey(), Optional.of(resolveVariables(entry.getValue())));
+            } catch (IllegalArgumentException e) {
+                resolved.put(entry.getKey(), Optional.empty());
+            }
+        }
+        return Collections.unmodifiableMap(resolved);
+    }
+
+
+    private static boolean containsVariableRef( JsonNode node ) {
+        if ( node.isObject() ) {
+            ObjectNode objectNode = (ObjectNode) node;
+            if ( objectNode.size() == 1 && objectNode.has( VARIABLE_REF_FIELD ) ) {
+                return true;
+            } else {
+                for ( JsonNode value : objectNode ) {
+                    if ( containsVariableRef( value ) ) {
+                        return true;
+                    }
+                }
+            }
+        } else if ( node.isArray() ) {
+            for ( int i = 0; i < node.size(); i++ ) {
+                if ( containsVariableRef( node.get( i ) ) ) {
+                    return true;
+                }
+            }
+        }
+        return false;
+
     }
 
 

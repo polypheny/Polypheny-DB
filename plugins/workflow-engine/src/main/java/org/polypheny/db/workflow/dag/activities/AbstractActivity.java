@@ -30,7 +30,7 @@ public abstract class AbstractActivity implements Activity {
 
     @Getter
     private final UUID id;
-    private final Map<String, JsonNode> settings;  // may contain variables that need to be replaced first
+    private final Map<String, JsonNode> serializableSettings;  // may contain variables that need to be replaced first
     @Getter
     @Setter
     private ActivityConfigModel config;
@@ -44,7 +44,7 @@ public abstract class AbstractActivity implements Activity {
 
     protected AbstractActivity( UUID id, Map<String, JsonNode> settings, ActivityConfigModel config, RenderModel rendering ) {
         this.id = id;
-        this.settings = settings;
+        this.serializableSettings = settings;
         this.config = config;
         this.rendering = rendering;
     }
@@ -65,14 +65,19 @@ public abstract class AbstractActivity implements Activity {
 
     @Override
     public void updateSettings( Map<String, JsonNode> newSettings ) {
-        settings.putAll( newSettings );
+        serializableSettings.putAll( newSettings );
+    }
+
+    @Override
+    public ActivityDef getDef() {
+        return ActivityRegistry.get( getType() );
     }
 
 
     @Override
     public ActivityModel toModel( boolean includeState ) {
         ActivityState state = includeState ? this.state : null;
-        return new ActivityModel( getType(), id, settings, config, rendering, state );
+        return new ActivityModel( getType(), id, serializableSettings, config, rendering, state );
     }
 
 }

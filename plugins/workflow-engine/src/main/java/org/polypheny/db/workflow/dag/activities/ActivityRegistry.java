@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.Getter;
@@ -95,6 +96,28 @@ public class ActivityRegistry {
         for ( Entry<String, JsonNode> entry : resolved.entrySet() ) {
             String key = entry.getKey();
             SettingValue settingValue = settingDefs.get( key ).buildValue( entry.getValue() );
+            settingValues.put( key, settingValue );
+        }
+        return Collections.unmodifiableMap( settingValues );
+    }
+
+
+    /**
+     * Builds a map of available setting values for the specified activity type using resolved JSON nodes.
+     * If a supplied setting is {@link Optional#empty()}, it is represented as {@link Optional#empty()} in the output map.
+     *
+     * @param activityType the identifier for the activity type.
+     * @param resolved a map of setting keys to {@link Optional<JsonNode>} values, where unresolved settings are {@link Optional#empty()}.
+     * @return an unmodifiable map of setting keys to {@link Optional<SettingValue>} instances, where missing or unresolved settings are {@link Optional#empty()}.
+     * @throws IllegalArgumentException if the {@code activityType} is invalid or a {@link JsonNode} has an unexpected format.
+     */
+    public static Map<String, Optional<SettingValue>> buildAvailableSettingValues( String activityType, Map<String, Optional<JsonNode>> resolved ) {
+        Map<String, SettingDef> settingDefs = get( activityType ).getSettings();
+
+        Map<String, Optional<SettingValue>> settingValues = new HashMap<>();
+        for ( Entry<String, Optional<JsonNode>> entry : resolved.entrySet() ) {
+            String key = entry.getKey();
+            Optional<SettingValue> settingValue = entry.getValue().map( v -> settingDefs.get( key ).buildValue( v ) );
             settingValues.put( key, settingValue );
         }
         return Collections.unmodifiableMap( settingValues );

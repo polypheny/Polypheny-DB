@@ -17,11 +17,27 @@
 package org.polypheny.db.workflow.dag.activities;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.workflow.dag.settings.SettingDef.SettingValue;
+import org.polypheny.db.workflow.engine.execution.ExecutionContext;
+import org.polypheny.db.workflow.engine.storage.CheckpointReader;
 
+// TODO: write test to ensure at most 1 output was specified
 public interface Fusable extends Activity {
 
-    boolean canFuse();
+    default boolean canFuse( Optional<AlgDataType>[] inTypes, Map<String, Optional<SettingValue>> settings ) {
+        return true;
+    }
+
+    @Override
+    default void execute( CheckpointReader[] inputs, ExecutionContext ctx ) throws Exception {
+        // TODO: add default implementation that calls fuse().
+        throw new NotImplementedException();
+    }
 
     AlgNode fuse( List<AlgNode> inputs );
 

@@ -16,8 +16,40 @@
 
 package org.polypheny.db.workflow.dag.activities;
 
-public interface Pipeable {
+import java.util.Map;
+import java.util.Optional;
+import org.apache.commons.lang3.NotImplementedException;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.workflow.dag.settings.SettingDef.SettingValue;
+import org.polypheny.db.workflow.engine.execution.ExecutionContext;
+import org.polypheny.db.workflow.engine.execution.queue.InputPipe;
+import org.polypheny.db.workflow.engine.execution.queue.OutputPipe;
+import org.polypheny.db.workflow.engine.storage.CheckpointReader;
 
-    boolean canPipe();
+// TODO: write test to ensure at most 1 input and output was specified
+public interface Pipeable extends Activity {
+
+    default boolean canPipe( AlgDataType inType, Map<String, Optional<SettingValue>> settings ) {
+        return true;
+    }
+
+    @Override
+    default void execute( CheckpointReader[] inputs, ExecutionContext ctx ) throws Exception {
+        // TODO: add default implementation that calls pipe().
+        throw new NotImplementedException();
+    }
+
+    /**
+     * Define the output type of this pipe.
+     * Afterward, it may no longer be changed until reset() is called.
+     *
+     * @param inType the type of the input pipe
+     * @param settings the resolved settings
+     * @return the compulsory output type of this instance until the next call to reset().
+     */
+    AlgDataType lockOutputType( AlgDataType inType, Map<String, SettingValue> settings );
+
+    void pipe( InputPipe input, OutputPipe output, ExecutionContext ctx );
+
 
 }

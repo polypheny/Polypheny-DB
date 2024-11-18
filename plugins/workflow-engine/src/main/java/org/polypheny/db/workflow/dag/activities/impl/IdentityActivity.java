@@ -17,21 +17,23 @@
 package org.polypheny.db.workflow.dag.activities.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
-import org.polypheny.db.algebra.AlgNode;
+import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.workflow.dag.activities.AbstractActivity;
 import org.polypheny.db.workflow.dag.activities.Activity.ActivityCategory;
-import org.polypheny.db.workflow.dag.activities.Fusable;
-import org.polypheny.db.workflow.dag.activities.Pipeable;
+import org.polypheny.db.workflow.dag.activities.ActivityException;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition;
 import org.polypheny.db.workflow.dag.annotations.DefaultGroup;
 import org.polypheny.db.workflow.dag.annotations.Group;
 import org.polypheny.db.workflow.dag.annotations.Group.Subgroup;
 import org.polypheny.db.workflow.dag.annotations.IntSetting;
 import org.polypheny.db.workflow.dag.annotations.StringSetting;
+import org.polypheny.db.workflow.dag.settings.SettingDef.SettingValue;
+import org.polypheny.db.workflow.engine.execution.ExecutionContext;
+import org.polypheny.db.workflow.engine.storage.CheckpointReader;
 import org.polypheny.db.workflow.models.ActivityConfigModel;
 import org.polypheny.db.workflow.models.ActivityModel;
 import org.polypheny.db.workflow.models.RenderModel;
@@ -48,7 +50,7 @@ import org.polypheny.db.workflow.models.RenderModel;
 @Group(key = "group1", displayName = "Group 1")
 @IntSetting(key = "I2", displayName = "FIRST", defaultValue = 0, isList = true)
 @StringSetting(key = "S2", displayName = "THIRD", defaultValue = "test", isList = true)
-public class IdentityActivity extends AbstractActivity implements Fusable, Pipeable {
+public class IdentityActivity extends AbstractActivity {
 
 
     public IdentityActivity( UUID id, Map<String, JsonNode> settings, ActivityConfigModel config, RenderModel rendering ) {
@@ -62,38 +64,20 @@ public class IdentityActivity extends AbstractActivity implements Fusable, Pipea
 
 
     @Override
-    public boolean validate( List<AlgDataType> inSchemas ) {
-        return false;
+    public Optional<AlgDataType>[] previewOutTypes( Optional<AlgDataType>[] inTypes, Map<String, Optional<SettingValue>> settings ) throws ActivityException {
+        throw new NotImplementedException();
     }
 
 
     @Override
-    public List<AlgDataType> computeOutSchemas( List<AlgDataType> inSchemas ) {
-        return null;
+    public void execute( CheckpointReader[] inputs, ExecutionContext ctx ) throws Exception {
+        throw new NotImplementedException();
     }
 
 
     @Override
-    public void execute() {
-
-    }
-
-
-    @Override
-    public boolean canFuse() {
-        return false;
-    }
-
-
-    @Override
-    public AlgNode fuse( List<AlgNode> inputs ) {
-        return null;
-    }
-
-
-    @Override
-    public boolean canPipe() {
-        return false;
+    public void reset() {
+        throw new NotImplementedException();
     }
 
 }

@@ -70,6 +70,16 @@ public class ActivityDef {
         );
     }
 
+    @JsonIgnore
+    public PortType[] getInPortTypes() {
+        return Arrays.stream( inPorts ).map( InPortDef::getType ).toArray(PortType[]::new);
+    }
+
+    @JsonIgnore
+    public PortType[] getOutPortTypes() {
+        return Arrays.stream( outPorts ).map( OutPortDef::getType ).toArray(PortType[]::new);
+    }
+
 
     @Value
     public static class InPortDef {

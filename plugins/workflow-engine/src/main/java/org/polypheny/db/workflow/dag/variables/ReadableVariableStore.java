@@ -19,6 +19,7 @@ package org.polypheny.db.workflow.dag.variables;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.Map;
+import java.util.Optional;
 
 public interface ReadableVariableStore {
 
@@ -46,6 +47,22 @@ public interface ReadableVariableStore {
     JsonNode resolveVariables( JsonNode node );
 
 
+    /**
+     * Resolves variables in the given map by recursively replacing any variable references with their resolved values.
+     *
+     * @param nodes The nodes to be resolved
+     * @return an immutable map with JsonNodes that have any variable references replaced by their value stored in this store.
+     * @throws IllegalArgumentException if any {@link JsonNode} contains an unresolved variable reference.
+     */
     Map<String, JsonNode> resolveVariables( Map<String, JsonNode> nodes );
+
+    /**
+     * Resolves variables in the given map by recursively replacing any variable references with their resolved values.
+     * If a variable cannot be resolved, inserts {@link Optional#empty()} for that variable.
+     *
+     * @param nodes The nodes to be resolved
+     * @return an immutable map with resolved variables wrapped in {@link Optional}.
+     */
+    Map<String, Optional<JsonNode>> resolveAvailableVariables( Map<String, JsonNode> nodes );
 
 }
