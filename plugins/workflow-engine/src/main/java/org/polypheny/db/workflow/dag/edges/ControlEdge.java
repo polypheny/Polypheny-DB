@@ -22,6 +22,9 @@ import org.polypheny.db.workflow.models.EdgeModel;
 
 public class ControlEdge extends Edge {
 
+    public static final int SUCCESS_PORT = 0;
+    public static final int FAIL_PORT = 1;
+
     @Getter
     private final boolean onSuccess;
 
@@ -32,6 +35,11 @@ public class ControlEdge extends Edge {
     }
 
 
+    public ControlEdge( Activity from, Activity to, int controlPort ) {
+        this( from, to, controlPort == SUCCESS_PORT );
+    }
+
+
     public EdgeModel toModel( boolean includeState ) {
         EdgeState state = includeState ? getState() : null;
         return new EdgeModel( from.getId(), to.getId(), getControlPort(), 0, false, state );
@@ -39,7 +47,7 @@ public class ControlEdge extends Edge {
 
 
     public int getControlPort() {
-        return onSuccess ? 0 : 1;
+        return onSuccess ? SUCCESS_PORT : FAIL_PORT;
     }
 
 

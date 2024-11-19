@@ -18,7 +18,6 @@ package org.polypheny.db.workflow.models;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -34,7 +33,7 @@ public class WorkflowModel {
 
     List<ActivityModel> activities;
     List<EdgeModel> edges;
-    Map<String, Object> config;
+    WorkflowConfigModel config;
 
     @JsonInclude(JsonInclude.Include.NON_NULL) // do not serialize EdgeState in static version
     WorkflowState state;
@@ -43,7 +42,7 @@ public class WorkflowModel {
     public WorkflowModel() {
         activities = new ArrayList<>();
         edges = new ArrayList<>();
-        config = new HashMap<>();
+        config = WorkflowConfigModel.of();
         state = null;
     }
 
@@ -58,7 +57,7 @@ public class WorkflowModel {
                 new EdgeModel( activities.get( 0 ).getId(), activities.get( 1 ).getId(), 0, 0, false, null ),
                 new EdgeModel( activities.get( 1 ).getId(), activities.get( 2 ).getId(), 0, 0, false, null )
         );
-        Map<String, Object> config = Map.of( "relStore", "hsqldb", "docStore", "hsqldb", "graphStore", "hsqldb" );
+        WorkflowConfigModel config = WorkflowConfigModel.of();
         return new WorkflowModel( activities, edges, config, null );
     }
 

@@ -28,14 +28,16 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.workflow.dag.activities.Activity;
 import org.polypheny.db.workflow.dag.edges.Edge;
+import org.polypheny.db.workflow.models.ActivityModel;
 import org.polypheny.db.workflow.models.EdgeModel;
+import org.polypheny.db.workflow.models.WorkflowConfigModel;
 import org.polypheny.db.workflow.models.WorkflowModel;
 
 public class WorkflowImpl implements Workflow {
 
     private final Map<UUID, Activity> activities;
     private final Map<Pair<UUID, UUID>, List<Edge>> edges;
-    private final Map<String, Object> config;
+    private final WorkflowConfigModel config;
     @Getter
     @Setter
     private WorkflowState state = WorkflowState.IDLE;
@@ -44,11 +46,11 @@ public class WorkflowImpl implements Workflow {
     public WorkflowImpl() {
         this.activities = new ConcurrentHashMap<>();
         this.edges = new ConcurrentHashMap<>();
-        this.config = new ConcurrentHashMap<>();
+        this.config = WorkflowConfigModel.of();
     }
 
 
-    private WorkflowImpl( Map<UUID, Activity> activities, Map<Pair<UUID, UUID>, List<Edge>> edges, Map<String, Object> config ) {
+    private WorkflowImpl( Map<UUID, Activity> activities, Map<Pair<UUID, UUID>, List<Edge>> edges, WorkflowConfigModel config ) {
         this.activities = activities;
         this.edges = edges;
         this.config = config;
@@ -59,15 +61,15 @@ public class WorkflowImpl implements Workflow {
 
         Map<UUID, Activity> activities = new ConcurrentHashMap<>();
         Map<Pair<UUID, UUID>, List<Edge>> edges = new ConcurrentHashMap<>();
-        /* TODO: uncomment when Activity.fromModel and Edge.fromModel are implemented
+
         for ( ActivityModel a : model.getActivities() ) {
             activities.put( a.getId(), Activity.fromModel( a ) );
         }
-        for ( EdgeModel e : model.getEdges()) {
+        for ( EdgeModel e : model.getEdges() ) {
             Pair<UUID, UUID> key = Pair.of( e.getFromId(), e.getToId() );
-            List<Edge> edgeList = edges.computeIfAbsent( key, k -> new ArrayList<>());
+            List<Edge> edgeList = edges.computeIfAbsent( key, k -> new ArrayList<>() );
             edgeList.add( Edge.fromModel( e, activities ) );
-        } */
+        }
 
         return new WorkflowImpl( activities, edges, model.getConfig() );
     }
@@ -125,7 +127,7 @@ public class WorkflowImpl implements Workflow {
 
 
     @Override
-    public Map<String, Object> getConfig() {
+    public WorkflowConfigModel getConfig() {
         return config;
     }
 

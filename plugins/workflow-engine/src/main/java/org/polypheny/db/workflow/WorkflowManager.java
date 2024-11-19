@@ -46,7 +46,7 @@ public class WorkflowManager {
         sessionManager = SessionManager.getInstance();
         registerEndpoints();
 
-        createDummySession();
+        //createDummySession();
     }
 
 

@@ -71,7 +71,7 @@ public class ExecutionContext {
         PortType type = Objects.requireNonNull( remainingOutPorts[idx] );
         remainingOutPorts[idx] = null;
         if ( type.canWriteTo( PortType.REL ) ) {
-            return sm.createRelCheckpoint( activity.getId(), idx, tupleType );
+            return sm.createRelCheckpoint( activity.getId(), idx, tupleType, getStore( idx ) );
         }
         throw new IllegalArgumentException( "Unable to create a relational checkpoint for output type " + type );
     }
@@ -81,7 +81,7 @@ public class ExecutionContext {
         PortType type = Objects.requireNonNull( remainingOutPorts[idx] );
         remainingOutPorts[idx] = null;
         if ( type.canWriteTo( PortType.DOC ) ) {
-            return sm.createDocCheckpoint( activity.getId(), idx );
+            return sm.createDocCheckpoint( activity.getId(), idx, getStore( idx ) );
         }
         throw new IllegalArgumentException( "Unable to create a document checkpoint for output type " + type );
     }
@@ -91,9 +91,14 @@ public class ExecutionContext {
         PortType type = Objects.requireNonNull( remainingOutPorts[idx] );
         remainingOutPorts[idx] = null;
         if ( type.canWriteTo( PortType.LPG ) ) {
-            return sm.createLpgCheckpoint( activity.getId(), idx );
+            return sm.createLpgCheckpoint( activity.getId(), idx, getStore( idx ) );
         }
         throw new IllegalArgumentException( "Unable to create a graph checkpoint for output type " + type );
+    }
+
+
+    private String getStore( int idx ) {
+        return activity.getConfig().getPreferredStore( idx );
     }
 
 

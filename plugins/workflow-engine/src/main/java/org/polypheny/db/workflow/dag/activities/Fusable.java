@@ -29,16 +29,16 @@ import org.polypheny.db.workflow.engine.storage.CheckpointReader;
 // TODO: write test to ensure at most 1 output was specified
 public interface Fusable extends Activity {
 
-    default boolean canFuse( Optional<AlgDataType>[] inTypes, Map<String, Optional<SettingValue>> settings ) {
+    default boolean canFuse( List<Optional<AlgDataType>> inTypes, Map<String, Optional<SettingValue>> settings ) {
         return true;
     }
 
     @Override
-    default void execute( CheckpointReader[] inputs, ExecutionContext ctx ) throws Exception {
+    default void execute( List<CheckpointReader> inputs, ExecutionContext ctx ) throws Exception {
         // TODO: add default implementation that calls fuse().
         throw new NotImplementedException();
     }
 
-    AlgNode fuse( List<AlgNode> inputs );
+    AlgNode fuse( List<AlgNode> inputs ) throws Exception;
 
 }

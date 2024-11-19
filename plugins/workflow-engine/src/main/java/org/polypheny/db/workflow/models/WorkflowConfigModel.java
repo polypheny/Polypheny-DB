@@ -14,26 +14,29 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.workflow.engine.storage;
+package org.polypheny.db.workflow.models;
 
-import java.util.Iterator;
-import org.polypheny.db.catalog.entity.logical.LogicalEntity;
-import org.polypheny.db.type.entity.PolyValue;
+import java.util.Map;
+import lombok.Value;
+import org.polypheny.db.catalog.logistic.DataModel;
 
-public abstract class CheckpointWriter {
 
-    private final LogicalEntity entity;
+@Value
+public class WorkflowConfigModel {
 
-    public CheckpointWriter( LogicalEntity entity ) {
-        this.entity = entity;
-    }
+    Map<DataModel, String> preferredStores;
+    boolean fusionEnabled;
+    boolean pipelineEnabled;
+    int numExecutors;
 
-    public abstract void write( PolyValue[] tuple);
 
-    public void write( Iterator<PolyValue[]> iterator) {
-        while ( iterator.hasNext() ) {
-            write( iterator.next() );
-        }
+    public static WorkflowConfigModel of() {
+        return new WorkflowConfigModel(
+                Map.of( DataModel.RELATIONAL, "hsqldb", DataModel.DOCUMENT, "hsqldb", DataModel.GRAPH, "hsqldb" ),
+                true,
+                true,
+                1
+        );
     }
 
 }

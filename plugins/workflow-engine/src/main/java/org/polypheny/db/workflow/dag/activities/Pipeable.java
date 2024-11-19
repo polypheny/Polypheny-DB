@@ -16,6 +16,7 @@
 
 package org.polypheny.db.workflow.dag.activities;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.apache.commons.lang3.NotImplementedException;
@@ -29,12 +30,12 @@ import org.polypheny.db.workflow.engine.storage.CheckpointReader;
 // TODO: write test to ensure at most 1 input and output was specified
 public interface Pipeable extends Activity {
 
-    default boolean canPipe( AlgDataType inType, Map<String, Optional<SettingValue>> settings ) {
+    default boolean canPipe( Optional<AlgDataType> inType, Map<String, Optional<SettingValue>> settings ) {
         return true;
     }
 
     @Override
-    default void execute( CheckpointReader[] inputs, ExecutionContext ctx ) throws Exception {
+    default void execute( List<CheckpointReader> inputs, ExecutionContext ctx ) throws Exception {
         // TODO: add default implementation that calls pipe().
         throw new NotImplementedException();
     }
@@ -49,7 +50,7 @@ public interface Pipeable extends Activity {
      */
     AlgDataType lockOutputType( AlgDataType inType, Map<String, SettingValue> settings );
 
-    void pipe( InputPipe input, OutputPipe output, ExecutionContext ctx );
+    void pipe( InputPipe input, OutputPipe output, ExecutionContext ctx ) throws Exception;
 
 
 }

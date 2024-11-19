@@ -17,11 +17,11 @@
 package org.polypheny.db.workflow.dag;
 
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import org.polypheny.db.workflow.dag.activities.Activity;
 import org.polypheny.db.workflow.dag.edges.Edge;
 import org.polypheny.db.workflow.models.EdgeModel;
+import org.polypheny.db.workflow.models.WorkflowConfigModel;
 import org.polypheny.db.workflow.models.WorkflowModel;
 
 /**
@@ -55,7 +55,7 @@ public interface Workflow {
 
     Edge getEdge( EdgeModel model );
 
-    Map<String, Object> getConfig(); // TODO: change from object to custom ConfigValue interface.
+    WorkflowConfigModel getConfig();
 
     WorkflowState getState();
 

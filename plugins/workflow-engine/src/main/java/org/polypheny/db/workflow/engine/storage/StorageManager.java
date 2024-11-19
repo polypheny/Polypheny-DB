@@ -17,6 +17,7 @@
 package org.polypheny.db.workflow.engine.storage;
 
 import java.util.UUID;
+import javax.annotation.Nullable;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.logistic.DataModel;
 
@@ -25,20 +26,26 @@ import org.polypheny.db.catalog.logistic.DataModel;
  * It is NOT responsible to enforce compliance of the checkpoint data model with the corresponding ActivityDef.
  */
 public interface StorageManager {
+    String ORIGIN = "WorkflowEngine";
+    String PK_COL = "key";
 
     UUID getSessionId();
 
+    String getDefaultStore( DataModel model );
+
+    void setDefaultStore( DataModel model, String storeName );
+
     CheckpointReader readCheckpoint( UUID activityId, int outputIdx );
 
-    DataModel getDataModel(UUID activityId, int outputIdx);
+    DataModel getDataModel( UUID activityId, int outputIdx );
 
-    RelWriter createRelCheckpoint( UUID activityId, int outputIdx, AlgDataType type );
+    RelWriter createRelCheckpoint( UUID activityId, int outputIdx, AlgDataType type, @Nullable String storeName );
 
-    DocWriter createDocCheckpoint( UUID activityId, int outputIdx );
+    DocWriter createDocCheckpoint( UUID activityId, int outputIdx, @Nullable String storeName );
 
-    LpgWriter createLpgCheckpoint( UUID activityId, int outputIdx );
+    LpgWriter createLpgCheckpoint( UUID activityId, int outputIdx, @Nullable String storeName );
 
-    void dropCheckpoints(UUID activityId);
+    void dropCheckpoints( UUID activityId );
 
     void dropAllCheckpoints();
 

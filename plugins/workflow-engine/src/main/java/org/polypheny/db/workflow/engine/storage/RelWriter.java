@@ -17,13 +17,13 @@
 package org.polypheny.db.workflow.engine.storage;
 
 import org.apache.commons.lang3.NotImplementedException;
-import org.polypheny.db.catalog.entity.logical.LogicalEntity;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.type.entity.PolyValue;
 
 public class RelWriter extends CheckpointWriter {
 
-    public RelWriter( LogicalEntity entity ) {
-        super( entity );
+    public RelWriter( LogicalTable table ) {
+        super( table );
     }
 
 
@@ -35,7 +35,7 @@ public class RelWriter extends CheckpointWriter {
     }
 
 
-    public void write( PolyValue[] row, PolyValue insertValue, int insertIdx ) {
+    public void wInserted( PolyValue[] row, PolyValue insertValue, int insertIdx ) {
         PolyValue[] inserted = new PolyValue[row.length + 1];
         System.arraycopy( row, 0, inserted, 0, insertIdx );
         inserted[insertIdx] = insertValue;
@@ -43,8 +43,30 @@ public class RelWriter extends CheckpointWriter {
         write( inserted );
     }
 
-    public void write(PolyValue value) {
-        write( new PolyValue[]{value} );
+
+    public void wReplaced( PolyValue[] row, PolyValue replaceValue, int replaceIdx ) {
+        PolyValue[] replaced = row.clone();
+        replaced[replaceIdx] = replaceValue;
+        write( replaced );
+    }
+
+
+    public void wReplacedInPlace( PolyValue[] row, PolyValue replaceValue, int replaceIdx ) {
+        row[replaceIdx] = replaceValue;
+        write( row );
+    }
+
+
+    public void wRemoved( PolyValue[] row, int removeIdx ) {
+        PolyValue[] removed = new PolyValue[row.length - 1];
+        System.arraycopy( row, 0, removed, 0, removeIdx );
+        System.arraycopy( row, removeIdx + 1, removed, removeIdx, row.length - removeIdx - 1 );
+        write( removed );
+    }
+
+
+    public void write( PolyValue value ) {
+        write( new PolyValue[]{ value } );
     }
 
 

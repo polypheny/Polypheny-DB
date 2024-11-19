@@ -17,23 +17,33 @@
 package org.polypheny.db.workflow.engine.storage;
 
 import java.util.Iterator;
+import org.apache.commons.lang3.NotImplementedException;
+import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.type.entity.PolyValue;
 
-public abstract class CheckpointWriter {
+public class LpgReader extends CheckpointReader{
 
-    private final LogicalEntity entity;
-
-    public CheckpointWriter( LogicalEntity entity ) {
-        this.entity = entity;
+    public LpgReader( LogicalEntity entity ) {
+        super( entity );
     }
 
-    public abstract void write( PolyValue[] tuple);
 
-    public void write( Iterator<PolyValue[]> iterator) {
-        while ( iterator.hasNext() ) {
-            write( iterator.next() );
-        }
+    @Override
+    public AlgNode getAlgNode() {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public Iterator<PolyValue[]> getIterator() {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public Iterator<PolyValue[]> getIteratorFromQuery( String query ) {
+        throw new NotImplementedException();
     }
 
 }

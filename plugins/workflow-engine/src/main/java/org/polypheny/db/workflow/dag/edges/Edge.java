@@ -48,7 +48,7 @@ public abstract class Edge {
         Activity from = activities.get( model.getFromId() );
         Activity to = activities.get( model.getToId() );
         if ( model.isControl() ) {
-            return new ControlEdge( from, to, model.getFromPort() == 0 );
+            return new ControlEdge( from, to, model.getFromPort() );
         } else {
             return new DataEdge( from, to, model.getFromPort(), model.getToPort() );
         }

@@ -22,6 +22,8 @@ import java.util.UUID;
 import lombok.Getter;
 import org.eclipse.jetty.websocket.api.Session;
 import org.polypheny.db.workflow.dag.Workflow;
+import org.polypheny.db.workflow.engine.storage.StorageManager;
+import org.polypheny.db.workflow.engine.storage.StorageManagerImpl;
 import org.polypheny.db.workflow.models.SessionModel;
 import org.polypheny.db.workflow.models.websocket.CreateActivityRequest;
 import org.polypheny.db.workflow.models.websocket.DeleteActivityRequest;
@@ -33,12 +35,14 @@ public abstract class AbstractSession {
     @Getter
     final Workflow wf;
     final UUID sId;
+    final StorageManager storageMan;
     private final Set<Session> subscribers = new HashSet<>();
 
 
     protected AbstractSession( Workflow wf, UUID sId ) {
         this.wf = wf;
         this.sId = sId;
+        this.storageMan = new StorageManagerImpl( sId, wf.getConfig().getPreferredStores() );
     }
 
 

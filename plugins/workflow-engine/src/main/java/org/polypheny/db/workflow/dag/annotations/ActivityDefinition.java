@@ -37,12 +37,12 @@ public @interface ActivityDefinition {
 
     @interface InPort {
         PortType type();
-        String description();
+        String description() default "";
         boolean isOptional() default false;
     }
 
     @interface OutPort {
         PortType type();
-        String description();
+        String description() default "";
     }
 }

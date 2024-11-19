@@ -1,5 +1,10 @@
 group "org.polypheny"
 
+configurations {
+    tests {
+        extendsFrom testRuntimeOnly
+    }
+}
 
 dependencies {
     compileOnly project(":core")
@@ -13,11 +18,14 @@ dependencies {
 
     // --- Test Compile ---
     testImplementation project(path: ":dbms", configuration: "test")
+    testImplementation project(path: ":dbms")
     testImplementation project(path: ":core", configuration: "tests")
     testImplementation project(path: ":core")
     testImplementation project(path: ":webui")
     testImplementation project(path: ":plugins:sql-language")
 }
+
+test.dependsOn(":dbms:shadowJar")
 
 
 sourceSets {

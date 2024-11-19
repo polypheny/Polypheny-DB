@@ -16,6 +16,7 @@
 
 package org.polypheny.db.workflow.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Value;
 
 
@@ -24,7 +25,23 @@ import lombok.Value;
 public class ActivityConfigModel {
 
     boolean enforceCheckpoint;
-    String[] preferredStore;  // one entry per output
+    String[] preferredStores;  // one entry per output
+
+
+    /**
+     * Returns the name of the preferred store corresponding to the given output index
+     * or null if no preferred store is configured for that output.
+     *
+     * @param outputIdx the index of the output in question
+     * @return name of the preferred DataStore for that output or null if the default store should be used.
+     */
+    @JsonIgnore
+    public String getPreferredStore( int outputIdx ) {
+        if ( preferredStores == null || preferredStores.length <= outputIdx ) {
+            return null;
+        }
+        return preferredStores[outputIdx];
+    }
 
 
     public static ActivityConfigModel of() {

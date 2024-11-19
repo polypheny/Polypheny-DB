@@ -17,10 +17,10 @@
 package org.polypheny.db.workflow.dag.activities;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingValue;
 import org.polypheny.db.workflow.engine.execution.ExecutionContext;
@@ -48,20 +48,20 @@ public interface Activity {
 
     /**
      * This method computes the output tuple-types by considering (a preview of) input types and settings.
-     * If the input types or settings are not available or cannot be validated yet, it returns an empty {@link Optional}
+     * If the input types or settings are not available or cannot be validated yet, the output type is set to an empty {@link Optional}
      * for the outputs that depend on it. The same holds for outputs whose type can only be determined during execution.
      * If any available setting or input type results in a contradiction or invalid state,
      * an {@link ActivityException} is thrown.
      *
-     * @param inTypes an array of {@link Optional<AlgDataType>} representing the input tuple types.
+     * @param inTypes a list of {@link Optional<AlgDataType>} representing the input tuple types.
      * @param settings a map of setting keys to {@link Optional<SettingValue>} representing the available settings.
-     * @return an array of {@link Optional<AlgDataType>} representing the expected output tuple types.
+     * @return a list of {@link Optional<AlgDataType>} representing the expected output tuple types.
      * If an output type cannot be determined at this point, the corresponding {@link Optional} will be empty.
      * @throws ActivityException if any available setting or input type results in a contradiction or invalid state.
      */
-    Optional<AlgDataType>[] previewOutTypes( Optional<AlgDataType>[] inTypes, Map<String, Optional<SettingValue>> settings ) throws ActivityException;
+    List<Optional<AlgDataType>> previewOutTypes( List<Optional<AlgDataType>> inTypes, Map<String, Optional<SettingValue>> settings ) throws ActivityException;
 
-    void execute( CheckpointReader[] inputs, ExecutionContext ctx ) throws Exception; // default execution method. TODO: introduce execution context to track progress, abort, inputs, outputs...
+    void execute( List<CheckpointReader> inputs, ExecutionContext ctx ) throws Exception; // default execution method. TODO: introduce execution context to track progress, abort, inputs, outputs...
 
     void updateSettings( Map<String, JsonNode> settings );
 
@@ -84,7 +84,7 @@ public interface Activity {
     ActivityModel toModel( boolean includeState );
 
     static Activity fromModel( ActivityModel model ) {
-        throw new NotImplementedException();
+        return ActivityRegistry.activityFromModel( model );
     }
 
     enum PortType {
