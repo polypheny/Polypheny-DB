@@ -26,6 +26,8 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.ExplainFormat;
 import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.mql.MqlNode;
 import org.polypheny.db.languages.mql.parser.MqlParser;
@@ -147,15 +149,10 @@ public class MqlProcessor extends Processor {
 
 
     @Override
-    public void unlock( Statement statement ) {
-        LockablesRegistry.GLOBAL_SCHEMA_LOCKABLE.release( statement.getTransaction() );
-    }
-
-
-    @Override
-    protected void lock( Statement statement ) throws DeadlockException {
+    protected void lock( Transaction transaction, ParsedQueryContext context ) throws DeadlockException {
         // exclusive lock
-        LockablesRegistry.GLOBAL_SCHEMA_LOCKABLE.acquire( statement.getTransaction(), LockType.EXCLUSIVE );
+        LogicalNamespace namespace = Catalog.getInstance().getSnapshot().getNamespace( context.getNamespaceId() ).orElseThrow();
+        transaction.acquireLockable( LockablesRegistry.INSTANCE.getOrCreateLockable( namespace ), LockType.EXCLUSIVE );
     }
 
 

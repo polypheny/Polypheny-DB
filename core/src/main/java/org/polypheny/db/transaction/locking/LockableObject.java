@@ -23,5 +23,5 @@ public interface LockableObject {
         ENTITY
     }
 
-    ObjectType getObjectType();
+    ObjectType getLockableObjectType();
 }

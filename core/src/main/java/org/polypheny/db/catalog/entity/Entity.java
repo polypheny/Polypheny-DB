@@ -163,7 +163,7 @@ public abstract class Entity implements PolyObject, Wrapper, Serializable, Catal
         return Long.compare( this.id, o.id );
     }
 
-    public ObjectType getObjectType() {
+    public ObjectType getLockableObjectType() {
         throw new UnsupportedOperationException( "Should be overwritten by child" );
     }
 

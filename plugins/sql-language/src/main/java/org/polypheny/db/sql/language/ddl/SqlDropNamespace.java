@@ -18,8 +18,15 @@ package org.polypheny.db.sql.language.ddl;
 
 
 import com.google.common.collect.ImmutableList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.ExecutableStatement;
@@ -33,6 +40,9 @@ import org.polypheny.db.sql.language.SqlOperator;
 import org.polypheny.db.sql.language.SqlSpecialOperator;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.locking.Lockable;
+import org.polypheny.db.transaction.locking.Lockable.LockType;
+import org.polypheny.db.transaction.locking.LockableUtils;
 
 
 /**
@@ -81,4 +91,8 @@ public class SqlDropNamespace extends SqlDrop implements ExecutableStatement {
         DdlManager.getInstance().dropNamespace( name.getSimple(), ifExists, statement );
     }
 
+    @Override
+    public Map<Lockable, LockType> deriveLockables( Context context, ParsedQueryContext parsedQueryContext ) {
+        return getMapOfNamespaceLockable( name, context, LockType.EXCLUSIVE );
+    }
 }

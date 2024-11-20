@@ -140,7 +140,7 @@ import org.polypheny.db.tools.Programs;
 import org.polypheny.db.tools.RoutedAlgBuilder;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
-import org.polypheny.db.transaction.locking.AlgEntityScanner;
+import org.polypheny.db.transaction.locking.AlgEntityLockablesExtractor;
 import org.polypheny.db.transaction.locking.Lockable.LockType;
 import org.polypheny.db.transaction.locking.LockablesRegistry;
 import org.polypheny.db.type.PolyType;
@@ -556,17 +556,17 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
 
     private void acquireLocks( AlgRoot logicalRoot ) {
-        AlgEntityScanner entityScanner = new AlgEntityScanner();
+        AlgEntityLockablesExtractor entityScanner = new AlgEntityLockablesExtractor();
         AlgOptUtil.go( entityScanner, logicalRoot.alg );
         Transaction transaction = statement.getTransaction();
         entityScanner.getResult().forEach( ( k, v ) -> {
             try {
                 transaction.acquireLockable( k, v );
             } catch ( DeadlockException e ) {
+                // TODO TH: throw more expressive exception
                 throw new RuntimeException( e );
             }
         } );
-        // TODO: Differentiate DDLs from others. Q: Do DDLs event call this method? A: No.
     }
 
 
@@ -869,7 +869,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 }
                 return super.visit( node );
             }
-
         };
         newRoot = newRoot.accept( shuttle2 );
         return AlgRoot.of( newRoot, logicalRoot.kind );
