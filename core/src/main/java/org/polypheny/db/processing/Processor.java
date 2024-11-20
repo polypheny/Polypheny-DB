@@ -31,6 +31,7 @@ import org.polypheny.db.routing.ExecutionTimeMonitor;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
+import org.polypheny.db.transaction.locking.Lockable;
 import org.polypheny.db.util.DeadlockException;
 import org.polypheny.db.util.Pair;
 
@@ -47,16 +48,12 @@ public abstract class Processor {
     public PolyImplementation prepareDdl( Statement statement, ExecutableStatement node, ParsedQueryContext context ) {
         try {
             // Acquire global schema lock
-            lock( statement );
+            lock( statement.getTransaction(), context );
             // Execute statement
             return getImplementation( statement, node, context );
         } catch ( DeadlockException e ) {
             throw new DeadlockException( e.getMessage() + " Exception while acquiring global schema lock" );
-        } finally {
-            // Release lock
-            unlock( statement );
         }
-
     }
 
 
@@ -75,9 +72,7 @@ public abstract class Processor {
     }
 
 
-    public abstract void unlock( Statement statement );
-
-    protected abstract void lock( Statement statement ) throws DeadlockException;
+    protected abstract void lock( Transaction transaction, ParsedQueryContext context ) throws DeadlockException;
 
     public abstract String getQuery( Node parsed, QueryParameters parameters );
 

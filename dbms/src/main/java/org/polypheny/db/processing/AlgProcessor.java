@@ -65,13 +65,7 @@ public class AlgProcessor extends Processor {
 
 
     @Override
-    public void unlock( Statement statement ) {
-        throw new GenericRuntimeException( AlgProcessor.class.getSimpleName() + " does not support DML or DDLs and should therefore not lock." );
-    }
-
-
-    @Override
-    public void lock( Statement statement ) throws DeadlockException {
+    protected void lock( Transaction transaction, ParsedQueryContext context ) throws DeadlockException {
         throw new GenericRuntimeException( AlgProcessor.class.getSimpleName() + " does not support DML or DDLs and should therefore not lock." );
     }
 
