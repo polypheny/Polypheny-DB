@@ -16,9 +16,14 @@
 
 package org.polypheny.db.nodes;
 
+import java.util.HashMap;
+import java.util.Map;
+import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.locking.Lockable;
+import org.polypheny.db.transaction.locking.Lockable.LockType;
 
 
 /**
@@ -31,4 +36,8 @@ public interface UnsupportedExecutableStatement extends ExecutableStatement {
         throw new UnsupportedOperationException( "The operation is not supported by the used language." );
     }
 
+    @Override
+    default Map<Lockable, LockType> deriveLockables( Context context, ParsedQueryContext parsedQueryContext ) {
+        return Map.of();
+    }
 }

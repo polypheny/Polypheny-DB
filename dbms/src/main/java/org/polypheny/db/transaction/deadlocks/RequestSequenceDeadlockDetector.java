@@ -41,6 +41,7 @@ public class RequestSequenceDeadlockDetector implements DeadlockDetector {
         long lockableSequenceNumber = lockableSequenceNumbers.get( lockable );
         if ( transactionSequenceNumber > lockableSequenceNumber ) {
             criticalTransaction = newTransaction;
+            return;
         }
         transactionSequenceNumbers.put( newTransaction, transactionSequenceNumber );
     }

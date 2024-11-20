@@ -17,7 +17,9 @@
 package org.polypheny.db.sql.language.ddl;
 
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import org.apache.commons.lang3.StringUtils;
 import org.polypheny.db.algebra.constant.Kind;
@@ -34,6 +36,10 @@ import org.polypheny.db.sql.language.SqlOperator;
 import org.polypheny.db.sql.language.SqlSpecialOperator;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.locking.Lockable;
+import org.polypheny.db.transaction.locking.Lockable.LockType;
+import org.polypheny.db.transaction.locking.LockableUtils;
+import org.polypheny.db.transaction.locking.LockablesRegistry;
 import org.polypheny.db.util.ImmutableNullableList;
 
 
@@ -101,6 +107,11 @@ public class SqlAlterConfig extends SqlAlter {
             throw new GenericRuntimeException( "Unknown config key: " + keyStr );
         }
         config.parseStringAndSetValue( valueStr );
+    }
+
+    @Override
+    public Map<Lockable, LockType> deriveLockables( Context context, ParsedQueryContext parsedQueryContext ) {
+        return LockableUtils.getMapWithGlobalLockable(LockType.EXCLUSIVE);
     }
 
 }
