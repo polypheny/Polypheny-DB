@@ -29,7 +29,6 @@ import org.polypheny.db.workflow.dag.activities.ActivityException;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition.InPort;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition.OutPort;
-import org.polypheny.db.workflow.dag.annotations.DefaultGroup;
 import org.polypheny.db.workflow.dag.annotations.Group;
 import org.polypheny.db.workflow.dag.annotations.Group.Subgroup;
 import org.polypheny.db.workflow.dag.annotations.IntSetting;
@@ -48,16 +47,14 @@ import org.polypheny.db.workflow.models.RenderModel;
         outPorts = { @OutPort(type = PortType.REL) }
 )
 
-@DefaultGroup(subgroups = {
-        @Subgroup(key = "a", displayName = "Sub1"),
-        @Subgroup(key = "b", displayName = "Sub2")
-})
 @IntSetting(key = "I1", displayName = "FIRST", defaultValue = 2)
-@StringSetting(key = "S1", displayName = "SECOND", subGroup = "a")
+@StringSetting(key = "S1", displayName = "SECOND")
 
-@Group(key = "group1", displayName = "Group 1")
-@IntSetting(key = "I2", displayName = "FIRST", defaultValue = 0, isList = true)
-@StringSetting(key = "S2", displayName = "THIRD", defaultValue = "test", isList = true)
+@Group(key = "groupA", displayName = "Group A",
+        subgroups = { @Subgroup(key = "a", displayName = "Sub1") }
+)
+@IntSetting(key = "I2", displayName = "THIRD", defaultValue = 0, isList = true, group = "groupA")
+@StringSetting(key = "S2", displayName = "FOURTH", defaultValue = "test", isList = true, group = "groupA", subGroup = "a")
 public class IdentityActivity extends AbstractActivity {
 
 
@@ -80,8 +77,9 @@ public class IdentityActivity extends AbstractActivity {
     @Override
     public void execute( List<CheckpointReader> inputs, ExecutionContext ctx ) throws Exception {
         RelReader input = (RelReader) inputs.get( 0 );
-        RelWriter output = ctx.createRelWriter( 0, input.getTupleType(), input.getPkCols() );
-        output.write( input.getIterator() );
+        try ( RelWriter output = ctx.createRelWriter( 0, input.getTupleType(), false ) ) {
+            output.write( input.getIterator() );
+        }
     }
 
 

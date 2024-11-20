@@ -19,6 +19,7 @@ package org.polypheny.db.workflow;
 
 import org.polypheny.db.plugins.PluginContext;
 import org.polypheny.db.plugins.PolyPlugin;
+import org.polypheny.db.transaction.TransactionManager;
 
 public class WorkflowPlugin extends PolyPlugin {
 
@@ -35,8 +36,8 @@ public class WorkflowPlugin extends PolyPlugin {
 
 
     @Override
-    public void afterCatalogInit() {
-        System.out.println( "WorkflowPlugin: after catalog init" );
+    public void afterTransactionInit( TransactionManager tm ) {
+        System.out.println( "WorkflowPlugin: after transaction init" );
         manager = new WorkflowManager();
     }
 

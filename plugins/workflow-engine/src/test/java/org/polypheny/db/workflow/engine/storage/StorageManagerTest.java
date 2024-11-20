@@ -19,6 +19,7 @@ package org.polypheny.db.workflow.engine.storage;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
@@ -35,7 +36,9 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.numerical.PolyInteger;
 
 class StorageManagerTest {
 
@@ -64,8 +67,7 @@ class StorageManagerTest {
         StorageManager sm = new StorageManagerImpl( sessionId, Map.of() );
         UUID activityId = UUID.randomUUID();
         AlgDataType type = getSampleType();
-        List<String> primaryKeys = List.of(type.getFieldNames().get( 0 ));
-        RelWriter writer = sm.createRelCheckpoint( activityId, 0, type, primaryKeys,false,null );
+        RelWriter writer = sm.createRelCheckpoint( activityId, 0, type, false, null );
 
         LogicalTable table = Catalog.snapshot().rel().getTable( StorageManagerImpl.REL_PREFIX + sessionId, activityId + "_0" ).orElseThrow();
         for ( int i = 0; i < type.getFieldCount(); i++ ) {
@@ -75,24 +77,36 @@ class StorageManagerTest {
         }
 
         RelReader reader = (RelReader) sm.readCheckpoint( activityId, 0 );
-        assertEquals( primaryKeys, reader.getPkCols() );
     }
 
+
     @Test
-    void writeAndReadRelCheckpointTest() {
+    void writeAndReadRelCheckpointTest() throws Exception {
         StorageManager sm = new StorageManagerImpl( sessionId, Map.of() );
         UUID activityId = UUID.randomUUID();
         AlgDataType type = getSampleType();
-        List<String> primaryKeys = List.of(type.getFieldNames().get( 0 ));
-        RelWriter writer = sm.createRelCheckpoint( activityId, 0, type, primaryKeys,false,null );
+        List<PolyValue[]> sampleData = getSampleData();
+
+        try ( RelWriter writer = sm.createRelCheckpoint( activityId, 0, type, false, null ) ) {
+            // write data
+            System.out.println( "Writing..." );
+            for ( PolyValue[] tuple : sampleData ) {
+                writer.write( tuple );
+            }
+        }
 
         RelReader reader = (RelReader) sm.readCheckpoint( activityId, 0 );
+        System.out.println( "\nTuple type of checkpoint: " + reader.getTupleType() );
         Iterator<PolyValue[]> it = reader.getIterator();
-        System.out.println("Iterating...");
+        System.out.println( "Iterating..." );
+
+        int i = 0;
         while ( it.hasNext() ) {
-            System.out.println( Arrays.toString( it.next() ) );
+            PolyValue[] tuple = it.next();
+            System.out.println( Arrays.toString( tuple ) );
+            assertTupleEquals( tuple, sampleData.get( i++ ) );
         }
-        System.out.println("Finished...");
+        System.out.println( "Finished..." );
 
     }
 
@@ -101,12 +115,33 @@ class StorageManagerTest {
     void dropCheckpoints() {
     }
 
+
     private AlgDataType getSampleType() {
         AlgDataTypeFactory typeFactory = AlgDataTypeFactory.DEFAULT;
         return typeFactory.builder()
                 .add( null, "field0", null, typeFactory.createPolyType( PolyType.INTEGER ) )
                 .add( null, "field1", null, typeFactory.createPolyType( PolyType.VARCHAR ) )
                 .build();
+    }
+
+
+    private List<PolyValue[]> getSampleData() {
+        List<PolyValue[]> tuples = new ArrayList<>();
+        tuples.add( new PolyValue[]{ PolyInteger.of( 42 ), PolyString.of( "test" ) } );
+        //tuples.add( new PolyValue[]{ PolyInteger.of( 123 ), PolyString.of( "abcd" ) } );
+        //tuples.add( new PolyValue[]{ PolyInteger.of( 123 ) } );
+        return tuples;
+    }
+
+
+    private void assertTupleEquals( PolyValue[] t1, PolyValue[] t2 ) {
+        assertEquals( t1.length, t2.length );
+        for ( int i = 0; i < t1.length; i++ ) {
+            PolyValue v1 = t1[i];
+            PolyValue v2 = t2[i];
+            assertEquals( v1.type, v2.type );
+            assertEquals( v1.toJson(), v2.toJson() );
+        }
     }
 
 }

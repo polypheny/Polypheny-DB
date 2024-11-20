@@ -21,9 +21,19 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.javalin.http.ContentType;
 import io.javalin.http.Context;
 import io.javalin.http.HttpCode;
+import java.util.Map;
 import java.util.UUID;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.webui.ConfigService.HandlerType;
 import org.polypheny.db.webui.HttpServer;
+import org.polypheny.db.workflow.engine.storage.RelWriter;
+import org.polypheny.db.workflow.engine.storage.StorageManager;
+import org.polypheny.db.workflow.engine.storage.StorageManagerImpl;
 import org.polypheny.db.workflow.models.WorkflowModel;
 import org.polypheny.db.workflow.models.requests.CreateSessionRequest;
 import org.polypheny.db.workflow.models.requests.SaveSessionRequest;
@@ -46,7 +56,16 @@ public class WorkflowManager {
         sessionManager = SessionManager.getInstance();
         registerEndpoints();
 
-        //createDummySession();
+        // waiting with test to ensure everything has started
+        new java.util.Timer().schedule(
+                new java.util.TimerTask() {
+                    @Override
+                    public void run() {
+                        createDummyCheckpoint();
+                    }
+                },
+                5000
+        );
     }
 
 
@@ -57,6 +76,31 @@ public class WorkflowManager {
             sessionManager.createUserSession( id, version );
         } catch ( WorkflowRepoException e ) {
             e.printStackTrace();
+        }
+
+    }
+
+
+    // Only for testing
+    private void createDummyCheckpoint() {
+        try {
+            UUID sessionId = sessionManager.createUserSession( "Dummy Workflow" );
+            StorageManager sm = new StorageManagerImpl( sessionId, Map.of() );
+            UUID activityId = UUID.randomUUID();
+            AlgDataTypeFactory typeFactory = AlgDataTypeFactory.DEFAULT;
+            AlgDataType type = typeFactory.builder()
+                    .add( null, "field0", null, typeFactory.createPolyType( PolyType.INTEGER ) )
+                    .add( null, "field1", null, typeFactory.createPolyType( PolyType.VARCHAR ) )
+                    .build();
+
+            try ( RelWriter writer = sm.createRelCheckpoint( activityId, 0, type, false, null ) ) {
+                // write data
+                System.out.println( "Writing..." );
+                writer.write( new PolyValue[]{ PolyInteger.of( 42 ), PolyString.of( "test" ) } );
+            }
+
+        } catch ( Exception e ) {
+            throw new RuntimeException( e );
         }
 
     }

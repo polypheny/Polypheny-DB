@@ -51,7 +51,7 @@ public class RelReader extends CheckpointReader {
     @Override
     public AlgNode getAlgNode( AlgCluster cluster ) {
         AlgTraitSet traits = AlgTraitSet.createEmpty().plus( ModelTrait.RELATIONAL );
-        return new LogicalRelScan( cluster, traits, getEntity() );
+        return new LogicalRelScan( cluster, traits, entity );
     }
 
 
@@ -70,7 +70,7 @@ public class RelReader extends CheckpointReader {
 
 
     private LogicalTable getTable() {
-        return (LogicalTable) getEntity();
+        return (LogicalTable) entity;
     }
 
     private Iterator<PolyValue[]> executeSqlQuery(String query) {
@@ -81,7 +81,7 @@ public class RelReader extends CheckpointReader {
                 .isAnalysed( false )
                 .origin( StorageManager.ORIGIN )
                 .namespaceId( table.getNamespaceId() )
-                .transactionManager( getTransactionManager() )
+                .transactionManager( transactionManager )
                 .transactions( List.of( startTransaction() ) ).build();
         List<ExecutedContext> executedContexts = LanguageManager.getINSTANCE().anyQuery( context );
         return executedContexts.get( 0 ).getIterator().getIterator();

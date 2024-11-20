@@ -50,7 +50,7 @@ public class DocReader extends CheckpointReader {
 
 
     private LogicalCollection getCollection() {
-        return (LogicalCollection) getEntity();
+        return (LogicalCollection) entity;
     }
 
 }

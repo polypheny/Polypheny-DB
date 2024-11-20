@@ -50,7 +50,7 @@ public class LpgReader extends CheckpointReader {
 
 
     private LogicalGraph getGraph() {
-        return (LogicalGraph) getEntity();
+        return (LogicalGraph) entity;
     }
 
 }

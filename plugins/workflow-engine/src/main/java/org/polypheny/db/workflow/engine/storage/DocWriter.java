@@ -17,23 +17,37 @@
 package org.polypheny.db.workflow.engine.storage;
 
 import org.apache.commons.lang3.NotImplementedException;
-import org.polypheny.db.catalog.entity.logical.LogicalEntity;
+import org.polypheny.db.catalog.entity.logical.LogicalCollection;
+import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
 
-public class DocWriter extends CheckpointWriter{
+public class DocWriter extends CheckpointWriter {
 
-    public DocWriter( LogicalEntity entity ) {
-        super( entity );
+    public DocWriter( LogicalCollection collection, TransactionManager transactionManager ) {
+        super( collection, transactionManager );
     }
+
 
     public void write( PolyDocument document ) {
-        write( new PolyValue[]{document} );
+        write( new PolyValue[]{ document } );
     }
+
 
     @Override
     public void write( PolyValue[] tuple ) {
         throw new NotImplementedException();
+    }
+
+
+    @Override
+    public void close() throws Exception {
+        throw new NotImplementedException();
+    }
+
+
+    private LogicalCollection getCollection() {
+        return (LogicalCollection) entity;
     }
 
 }

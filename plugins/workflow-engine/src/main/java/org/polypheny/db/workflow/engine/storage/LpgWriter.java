@@ -17,28 +17,42 @@
 package org.polypheny.db.workflow.engine.storage;
 
 import org.apache.commons.lang3.NotImplementedException;
-import org.polypheny.db.catalog.entity.logical.LogicalEntity;
+import org.polypheny.db.catalog.entity.logical.LogicalGraph;
+import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyNode;
 
-public class LpgWriter extends CheckpointWriter{
+public class LpgWriter extends CheckpointWriter {
 
-    public LpgWriter( LogicalEntity entity ) {
-        super( entity );
+    public LpgWriter( LogicalGraph graph, TransactionManager transactionManager ) {
+        super( graph, transactionManager );
     }
 
 
-    public void writeNode( PolyNode node) {
+    public void writeNode( PolyNode node ) {
 
     }
 
-    public void writeEdge( PolyEdge edge) {
+
+    public void writeEdge( PolyEdge edge ) {
 
     }
+
 
     @Override
     public void write( PolyValue[] tuple ) {
+        throw new NotImplementedException();
+    }
+
+
+    private LogicalGraph getGraph() {
+        return (LogicalGraph) entity;
+    }
+
+
+    @Override
+    public void close() throws Exception {
         throw new NotImplementedException();
     }
 

@@ -17,7 +17,6 @@
 package org.polypheny.db.workflow.engine.storage;
 
 import java.util.Iterator;
-import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
@@ -27,11 +26,10 @@ import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.entity.PolyValue;
 
-@Getter
 public abstract class CheckpointReader {
 
-    private final LogicalEntity entity;
-    private final TransactionManager transactionManager;
+    final LogicalEntity entity;
+    final TransactionManager transactionManager;
 
 
     public CheckpointReader( LogicalEntity entity, TransactionManager transactionManager ) {
@@ -52,7 +50,7 @@ public abstract class CheckpointReader {
     }
 
 
-    protected Transaction startTransaction() {
+    Transaction startTransaction() {
         return transactionManager.startTransaction( Catalog.defaultUserId, entity.getNamespaceId(), false, StorageManager.ORIGIN );
     }
 

@@ -16,24 +16,60 @@
 
 package org.polypheny.db.workflow.engine.storage;
 
-import org.apache.commons.lang3.NotImplementedException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.StringJoiner;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.languages.LanguageManager;
+import org.polypheny.db.languages.QueryLanguage;
+import org.polypheny.db.processing.ImplementationContext;
+import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
+import org.polypheny.db.processing.QueryContext;
+import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.numerical.PolyLong;
 
 public class RelWriter extends CheckpointWriter {
+
     private final boolean resetPk;
     private long currentPk = 0;
-    private final int colToReset;  // column index of the primary key in the table
 
-    public RelWriter( LogicalTable table, int colToReset ) {
-        super( table );
-        resetPk = colToReset != -1;
-        this.colToReset = colToReset;
-    }
+    private final AlgDataType[] dataTypes;
+    private final Transaction transaction;
+    private final Statement statement;
+    private final ImplementationContext implementation;
 
-    public RelWriter( LogicalTable table ) {
-        this(table, -1);
+
+    public RelWriter( LogicalTable table, TransactionManager transactionManager, boolean resetPk ) {
+        super( table, transactionManager );
+        this.resetPk = resetPk;
+
+        dataTypes = entity.getTupleType().getFields().stream().map( AlgDataTypeField::getType ).toArray( AlgDataType[]::new );
+        transaction = startTransaction();
+        statement = transaction.createStatement();
+
+        StringJoiner joiner = new StringJoiner( ", ", "(", ")" );
+        for ( AlgDataTypeField field : table.getTupleType().getFields() ) {
+            joiner.add( "?" );
+        }
+
+        String query = "INSERT INTO \"" + table.getName() + "\" VALUES " + joiner;
+        QueryContext context = QueryContext.builder()
+                .query( query )
+                .language( QueryLanguage.from( "SQL" ) )
+                .isAnalysed( false )
+                .origin( StorageManager.ORIGIN )
+                .namespaceId( table.getNamespaceId() )
+                .transactionManager( transactionManager )
+                .transactions( List.of( transaction ) ).build();
+        implementation = LanguageManager.getINSTANCE().anyPrepareQuery( context, statement ).get( 0 );
+
+
     }
 
 
@@ -82,11 +118,38 @@ public class RelWriter extends CheckpointWriter {
 
     @Override
     public void write( PolyValue[] row ) {
-        if (resetPk) {
-            row[colToReset] = PolyLong.of(currentPk);
+        if ( resetPk ) {
+            row[0] = PolyLong.of( currentPk );
             currentPk++;
         }
-        throw new NotImplementedException();
+
+        // TODO: perform insertion of parameters and execution in batches
+        statement.getDataContext().resetParameterValues();
+        for ( int i = 0; i < row.length; i++ ) {
+            statement.getDataContext().addParameterValues( i, dataTypes[i], List.of( row[i] ) );
+        }
+        ExecutedContext executedContext = implementation.execute( statement ); // TODO: new implementation for each batch?
+
+        if ( executedContext.getException().isPresent() ) {
+            throw new GenericRuntimeException( "An error occured while writing to the checkpoint" );
+        }
+        List<List<PolyValue>> results = executedContext.getIterator().getAllRowsAndClose();
+        long changedCount = results.size() == 1 ? results.get( 0 ).get( 0 ).asLong().longValue() : 0;
+        if ( changedCount != 1 ) {
+            throw new GenericRuntimeException( "Unable to write tuple to checkpoint: " + Arrays.toString( row ) );
+        }
     }
+
+
+    @Override
+    public void close() throws Exception {
+        transaction.commit();
+    }
+
+
+    private LogicalTable getTable() {
+        return (LogicalTable) entity;
+    }
+
 
 }

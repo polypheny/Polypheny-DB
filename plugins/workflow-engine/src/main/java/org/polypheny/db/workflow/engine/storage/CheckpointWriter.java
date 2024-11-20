@@ -17,16 +17,21 @@
 package org.polypheny.db.workflow.engine.storage;
 
 import java.util.Iterator;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
+import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.entity.PolyValue;
 
-public abstract class CheckpointWriter {
+public abstract class CheckpointWriter implements AutoCloseable {
 
-    private final LogicalEntity entity;
+    final LogicalEntity entity;
+    final TransactionManager transactionManager;
 
 
-    public CheckpointWriter( LogicalEntity entity ) {
+    public CheckpointWriter( LogicalEntity entity, TransactionManager transactionManager ) {
         this.entity = entity;
+        this.transactionManager = transactionManager;
     }
 
 
@@ -46,5 +51,11 @@ public abstract class CheckpointWriter {
             write( iterator.next() );
         }
     }
+
+
+    Transaction startTransaction() {
+        return transactionManager.startTransaction( Catalog.defaultUserId, entity.getNamespaceId(), false, StorageManager.ORIGIN );
+    }
+
 
 }
