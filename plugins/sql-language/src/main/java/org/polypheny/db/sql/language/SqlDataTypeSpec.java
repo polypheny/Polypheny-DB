@@ -68,11 +68,11 @@ public class SqlDataTypeSpec extends SqlNode implements DataTypeSpec {
     private final TimeZone timeZone;
 
     /**
-     * Whether data type is allows nulls.
+     * Whether data type is allowing nulls.
      * <p>
      * Nullable is nullable! Null means "not specified". E.g. {@code CAST(x AS INTEGER)} preserves has the same nullability as {@code x}.
      */
-    private Boolean nullable;
+    private final Boolean nullable;
 
 
     /**

@@ -122,7 +122,7 @@ public class LogicalTable extends LogicalEntity {
 
 
     @Override
-    public ObjectType getObjectType() {
+    public ObjectType getLockableObjectType() {
         return ObjectType.ENTITY;
     }
 

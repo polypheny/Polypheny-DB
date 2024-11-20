@@ -16,23 +16,10 @@
 
 package org.polypheny.db.transaction.locking;
 
-import lombok.NonNull;
-import org.polypheny.db.transaction.Transaction;
-import org.polypheny.db.util.DeadlockException;
+public class GlobalLockable extends LockableImpl {
 
-public interface Lockable {
-
-    enum LockType {
-        SHARED,
-        EXCLUSIVE,
+    public GlobalLockable() {
+        super( null );
     }
-
-    void acquire(@NonNull Transaction transaction, @NonNull LockType lockType ) throws DeadlockException;
-
-    void release(@NonNull Transaction transaction );
-
-    LockType getLockType();
-
-    boolean isRoot();
 
 }

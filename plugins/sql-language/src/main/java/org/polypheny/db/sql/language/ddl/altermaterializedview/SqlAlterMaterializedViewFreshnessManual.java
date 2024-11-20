@@ -16,7 +16,9 @@
 
 package org.polypheny.db.sql.language.ddl.altermaterializedview;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.EntityType;
@@ -30,6 +32,9 @@ import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.sql.language.ddl.SqlAlterMaterializedView;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.locking.Lockable;
+import org.polypheny.db.transaction.locking.Lockable.LockType;
+import org.polypheny.db.transaction.locking.LockableUtils;
 import org.polypheny.db.util.ImmutableNullableList;
 
 public class SqlAlterMaterializedViewFreshnessManual extends SqlAlterMaterializedView {
@@ -75,6 +80,11 @@ public class SqlAlterMaterializedViewFreshnessManual extends SqlAlterMaterialize
 
         DdlManager.getInstance().refreshView( statement, table.id );
 
+    }
+
+    @Override
+    public Map<Lockable, LockType> deriveLockables( Context context, ParsedQueryContext parsedQueryContext ) {
+        return getMapOfTableLockable( name, context, LockType.EXCLUSIVE );
     }
 
 }

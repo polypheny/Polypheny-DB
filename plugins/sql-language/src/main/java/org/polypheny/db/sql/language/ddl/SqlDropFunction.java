@@ -17,7 +17,11 @@
 package org.polypheny.db.sql.language.ddl;
 
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.prepare.Context;
@@ -26,6 +30,9 @@ import org.polypheny.db.sql.language.SqlIdentifier;
 import org.polypheny.db.sql.language.SqlOperator;
 import org.polypheny.db.sql.language.SqlSpecialOperator;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.locking.Lockable;
+import org.polypheny.db.transaction.locking.Lockable.LockType;
+import org.polypheny.db.transaction.locking.LockableUtils;
 
 
 /**
@@ -47,6 +54,11 @@ public class SqlDropFunction extends SqlDropObject {
     @Override
     public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
         DdlManager.getInstance().dropFunction();
+    }
+
+    @Override
+    public Map<Lockable, LockType> deriveLockables( Context context, ParsedQueryContext parsedQueryContext ) {
+        return LockableUtils.getMapWithGlobalLockable(LockType.EXCLUSIVE);
     }
 
 }
