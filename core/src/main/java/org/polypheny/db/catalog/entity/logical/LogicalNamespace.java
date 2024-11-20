@@ -77,7 +77,7 @@ public class LogicalNamespace implements PolyObject, Comparable<LogicalNamespace
 
 
     @Override
-    public ObjectType getObjectType() {
+    public ObjectType getLockableObjectType() {
         return ObjectType.NAMESPACE;
     }
 

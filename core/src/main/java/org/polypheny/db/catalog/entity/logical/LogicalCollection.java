@@ -53,7 +53,7 @@ public class LogicalCollection extends LogicalEntity implements PolyObject {
 
 
     @Override
-    public ObjectType getObjectType() {
+    public ObjectType getLockableObjectType() {
         return ObjectType.ENTITY;
     }
 

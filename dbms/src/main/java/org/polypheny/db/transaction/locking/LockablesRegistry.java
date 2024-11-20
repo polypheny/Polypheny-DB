@@ -18,51 +18,16 @@ package org.polypheny.db.transaction.locking;
 
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.NonNull;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.Entity;
-import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 
 public class LockablesRegistry {
 
-    public static final GlobalSchemaLockable GLOBAL_SCHEMA_LOCKABLE = new GlobalSchemaLockable();
+    public static final GlobalLockable GLOBAL_SCHEMA_LOCKABLE = new GlobalLockable();
     public static final LockablesRegistry INSTANCE = new LockablesRegistry();
 
     private final ConcurrentHashMap<LockableObject, Lockable> lockables = new ConcurrentHashMap<>();
 
 
     public Lockable getOrCreateLockable(@NonNull LockableObject lockableObject ) {
-        return lockables.computeIfAbsent( lockableObject, LockablesRegistry::convertToLockable );
+        return lockables.computeIfAbsent( lockableObject, LockableUtils::convertToLockable );
     }
-
-
-    public static Lockable convertToLockable(@NonNull LockableObject lockableObject ) {
-        switch ( lockableObject.getObjectType() ) {
-            case NAMESPACE -> {
-                return convertNamespaceToLockable( lockableObject );
-            }
-
-            case ENTITY -> {
-                return convertEntityToLockable( lockableObject );
-            }
-
-            default -> {
-                throw new IllegalArgumentException( "Can not convert object of unknown type to lockable: " + lockableObject.getObjectType() );
-            }
-        }
-
-    }
-
-
-    private static Lockable convertNamespaceToLockable(@NonNull LockableObject lockableObject ) {
-        LogicalNamespace namespace = (LogicalNamespace) lockableObject;
-        return new LockableObjectWrapper( GLOBAL_SCHEMA_LOCKABLE, namespace );
-    }
-
-
-    private static Lockable convertEntityToLockable(@NonNull LockableObject lockableObject ) {
-        Entity entity = (Entity) lockableObject;
-        Lockable namespace = convertToLockable( Catalog.getInstance().getSnapshot().getNamespace( entity.getNamespaceId() ).orElseThrow() );
-        return new LockableObjectWrapper( namespace, entity );
-    }
-
 }

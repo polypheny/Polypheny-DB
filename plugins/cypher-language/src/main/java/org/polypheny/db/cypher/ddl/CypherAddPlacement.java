@@ -16,7 +16,9 @@
 
 package org.polypheny.db.cypher.ddl;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.polypheny.db.adapter.Adapter;
@@ -24,6 +26,7 @@ import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
+import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.cypher.CypherParameter;
@@ -35,6 +38,10 @@ import org.polypheny.db.nodes.ExecutableStatement;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.locking.Lockable;
+import org.polypheny.db.transaction.locking.Lockable.LockType;
+import org.polypheny.db.transaction.locking.LockableUtils;
+import org.polypheny.db.transaction.locking.LockablesRegistry;
 
 
 public class CypherAddPlacement extends CypherAdminCommand implements ExecutableStatement {
@@ -84,6 +91,11 @@ public class CypherAddPlacement extends CypherAdminCommand implements Executable
         }
 
         DdlManager.getInstance().createGraphPlacement( graphs.get( 0 ).id, dataStores, statement );
+    }
+
+    @Override
+    public Map<Lockable, LockType> deriveLockables( Context context, ParsedQueryContext parsedQueryContext ) {
+        return LockableUtils.getMapWithGlobalLockable( LockType.EXCLUSIVE );
     }
 
 }
