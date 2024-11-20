@@ -17,6 +17,7 @@
 package org.polypheny.db.transaction.locking;
 
 import java.util.concurrent.ConcurrentHashMap;
+import lombok.NonNull;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
@@ -29,12 +30,12 @@ public class LockablesRegistry {
     private final ConcurrentHashMap<LockableObject, Lockable> lockables = new ConcurrentHashMap<>();
 
 
-    public Lockable getOrCreateLockable( LockableObject lockableObject ) {
+    public Lockable getOrCreateLockable(@NonNull LockableObject lockableObject ) {
         return lockables.computeIfAbsent( lockableObject, LockablesRegistry::convertToLockable );
     }
 
 
-    public static Lockable convertToLockable( LockableObject lockableObject ) {
+    public static Lockable convertToLockable(@NonNull LockableObject lockableObject ) {
         switch ( lockableObject.getObjectType() ) {
             case NAMESPACE -> {
                 return convertNamespaceToLockable( lockableObject );
@@ -52,13 +53,13 @@ public class LockablesRegistry {
     }
 
 
-    private static Lockable convertNamespaceToLockable( LockableObject lockableObject ) {
+    private static Lockable convertNamespaceToLockable(@NonNull LockableObject lockableObject ) {
         LogicalNamespace namespace = (LogicalNamespace) lockableObject;
         return new LockableObjectWrapper( GLOBAL_SCHEMA_LOCKABLE, namespace );
     }
 
 
-    private static Lockable convertEntityToLockable( LockableObject lockableObject ) {
+    private static Lockable convertEntityToLockable(@NonNull LockableObject lockableObject ) {
         Entity entity = (Entity) lockableObject;
         Lockable namespace = convertToLockable( Catalog.getInstance().getSnapshot().getNamespace( entity.getNamespaceId() ).orElseThrow() );
         return new LockableObjectWrapper( namespace, entity );

@@ -22,6 +22,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.deadlocks.DeadlockHandler;
 import org.polypheny.db.util.DeadlockException;
@@ -35,7 +36,6 @@ public class LockableImpl implements Lockable {
     private final Condition concurrencyCondition = concurrencyLock.newCondition();
     private final HashMap<Transaction, Long> owners = new HashMap<>();
     Lockable parent;
-    Set<Lockable> children = new HashSet<>();
 
     private boolean isExclusive = false;
 
@@ -45,7 +45,7 @@ public class LockableImpl implements Lockable {
     }
 
 
-    public void acquire( Transaction transaction, LockType lockType ) throws DeadlockException {
+    public void acquire( @NotNull Transaction transaction, @NotNull LockType lockType ) throws DeadlockException {
         try {
             if ( !owners.containsKey( transaction ) ) {
                 switch ( lockType ) {
@@ -76,7 +76,7 @@ public class LockableImpl implements Lockable {
             }
             long count = owners.remove( transaction );
             while ( !owners.isEmpty() ) {
-                DeadlockHandler.INSTANCE.addAndResolveDeadlock( transaction, owners.keySet() );
+                DeadlockHandler.INSTANCE.addAndResolveDeadlock(this, transaction, owners.keySet() );
                 concurrencyCondition.await();
             }
             isExclusive = true;
@@ -87,7 +87,7 @@ public class LockableImpl implements Lockable {
     }
 
 
-    public void release( Transaction transaction ) {
+    public void release( @NotNull Transaction transaction ) {
         concurrencyLock.lock();
         try {
             if ( isExclusive ) {
@@ -99,7 +99,7 @@ public class LockableImpl implements Lockable {
                 long newValue = value - 1;
                 return newValue <= 0 ? null : newValue;
             } );
-            DeadlockHandler.INSTANCE.remove( transaction );
+            DeadlockHandler.INSTANCE.remove( this, transaction );
             concurrencyCondition.signalAll();
             printInfo( "R", transaction );
         } finally {
@@ -130,7 +130,7 @@ public class LockableImpl implements Lockable {
         concurrencyLock.lock();
         try {
             while ( isExclusive || hasWaitingTransactions() ) {
-                DeadlockHandler.INSTANCE.addAndResolveDeadlock( transaction, owners.keySet() );
+                DeadlockHandler.INSTANCE.addAndResolveDeadlock(this, transaction, owners.keySet() );
                 concurrencyCondition.await();
             }
             owners.put( transaction, owners.getOrDefault( transaction, 0L ) + 1 );
@@ -149,7 +149,7 @@ public class LockableImpl implements Lockable {
         concurrencyLock.lock();
         try {
             while ( !owners.isEmpty() ) {
-                DeadlockHandler.INSTANCE.addAndResolveDeadlock( transaction, owners.keySet() );
+                DeadlockHandler.INSTANCE.addAndResolveDeadlock(this, transaction, owners.keySet() );
                 concurrencyCondition.await();
             }
             isExclusive = true;

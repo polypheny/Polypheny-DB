@@ -16,6 +16,7 @@
 
 package org.polypheny.db.transaction.locking;
 
+import lombok.NonNull;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.util.DeadlockException;
 
@@ -26,9 +27,9 @@ public interface Lockable {
         EXCLUSIVE
     }
 
-    void acquire( Transaction transaction, LockType lockType ) throws DeadlockException;
+    void acquire(@NonNull Transaction transaction, @NonNull LockType lockType ) throws DeadlockException;
 
-    void release( Transaction transaction );
+    void release(@NonNull Transaction transaction );
 
     LockType getLockType();
 

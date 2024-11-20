@@ -20,11 +20,13 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import lombok.NonNull;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.locking.Lockable;
 
 public class DeadlockHandler {
 
-    public static final DeadlockHandler INSTANCE = new DeadlockHandler( new GraphDeadlockDetector(), new FirstTransactionDeadlockResolver() );
+    public static final DeadlockHandler INSTANCE = new DeadlockHandler( new RequestSequenceDeadlockDetector(), new FirstTransactionDeadlockResolver() );
 
     private final DeadlockDetector deadlockDetector;
     private final DeadlockResolver deadlockResolver;
@@ -34,16 +36,16 @@ public class DeadlockHandler {
     private final Lock exclusiveLock = concurrencyLock.readLock();
 
 
-    public DeadlockHandler( DeadlockDetector deadlockDetector, DeadlockResolver deadlockResolver ) {
+    public DeadlockHandler(@NonNull DeadlockDetector deadlockDetector, @NonNull DeadlockResolver deadlockResolver ) {
         this.deadlockDetector = deadlockDetector;
         this.deadlockResolver = deadlockResolver;
     }
 
 
-    public void addAndResolveDeadlock( Transaction transaction, Set<Transaction> owners ) {
+    public void addAndResolveDeadlock(@NonNull Lockable lockable, @NonNull Transaction transaction, @NonNull Set<Transaction> owners ) {
         sharedLock.lock();
         try {
-            deadlockDetector.add( transaction, owners );
+            deadlockDetector.add(lockable, transaction, owners );
             exclusiveLock.lock();
             List<Transaction> conflictingTransactions = deadlockDetector.getConflictingTransactions();
             exclusiveLock.unlock();
@@ -61,10 +63,10 @@ public class DeadlockHandler {
     }
 
 
-    public void remove( Transaction transaction ) {
+    public void remove(@NonNull Lockable lockable, @NonNull Transaction transaction ) {
         sharedLock.lock();
         try {
-            deadlockDetector.remove( transaction );
+            deadlockDetector.remove(lockable, transaction );
         } finally {
             sharedLock.unlock();
         }
