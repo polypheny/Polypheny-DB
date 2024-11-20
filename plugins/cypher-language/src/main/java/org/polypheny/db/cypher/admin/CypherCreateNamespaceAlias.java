@@ -16,7 +16,10 @@
 
 package org.polypheny.db.cypher.admin;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.locks.Lock;
 import lombok.Getter;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
@@ -30,6 +33,9 @@ import org.polypheny.db.nodes.ExecutableStatement;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.locking.Lockable;
+import org.polypheny.db.transaction.locking.Lockable.LockType;
+import org.polypheny.db.transaction.locking.LockableUtils;
 
 
 @Getter
@@ -74,6 +80,11 @@ public class CypherCreateNamespaceAlias extends CypherAdminCommand implements Ex
     @Override
     public @Nullable String getEntity() {
         return targetName;
+    }
+
+    @Override
+    public Map<Lockable, LockType> deriveLockables( Context context, ParsedQueryContext parsedQueryContext ) {
+        return LockableUtils.getMapOfNamespaceLockableFromContext( context, parsedQueryContext, LockType.EXCLUSIVE );
     }
 
 }

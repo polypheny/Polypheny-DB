@@ -18,10 +18,9 @@ package org.polypheny.db.transaction.locking;
 
 import java.text.MessageFormat;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
+import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.deadlocks.DeadlockHandler;
@@ -81,32 +80,32 @@ public class LockableImpl implements Lockable {
             }
             isExclusive = true;
             owners.put( transaction, count );
+            printAcquiredInfo("UEx", transaction);
         } finally {
             concurrencyLock.unlock();
         }
     }
 
 
-    public void release( @NotNull Transaction transaction ) {
+    public void release(@NotNull Transaction transaction) {
         concurrencyLock.lock();
         try {
-            if ( isExclusive ) {
+            if (isExclusive) {
                 owners.clear();
                 isExclusive = false;
             }
-            // this decrements the entry if > 1 else it is removed
-            owners.computeIfPresent( transaction, ( key, value ) -> {
+            owners.computeIfPresent(transaction, (key, value) -> {
                 long newValue = value - 1;
                 return newValue <= 0 ? null : newValue;
-            } );
-            DeadlockHandler.INSTANCE.remove( this, transaction );
+            });
+            DeadlockHandler.INSTANCE.remove(this, transaction);
             concurrencyCondition.signalAll();
-            printInfo( "R", transaction );
+            printAcquiredInfo("R", transaction);
         } finally {
             concurrencyLock.unlock();
         }
-        if ( !isRoot() ) {
-            parent.release( transaction );
+        if (!isRoot()) {
+            parent.release(transaction);
         }
     }
 
@@ -116,6 +115,9 @@ public class LockableImpl implements Lockable {
         return isExclusive ? LockType.EXCLUSIVE : LockType.SHARED;
     }
 
+    public HashMap<Transaction, Long> getCopyOfOwners() {
+        return new HashMap<>(owners);
+    }
 
     @Override
     public boolean isRoot() {
@@ -134,11 +136,10 @@ public class LockableImpl implements Lockable {
                 concurrencyCondition.await();
             }
             owners.put( transaction, owners.getOrDefault( transaction, 0L ) + 1 );
-            printInfo( "ASh", transaction );
+            printAcquiredInfo( "ASh", transaction );
         } finally {
             concurrencyLock.unlock();
         }
-
     }
 
 
@@ -154,7 +155,7 @@ public class LockableImpl implements Lockable {
             }
             isExclusive = true;
             owners.put( transaction, 1L );
-            printInfo( "AEx", transaction );
+            printAcquiredInfo( "AEx", transaction );
         } finally {
             concurrencyLock.unlock();
         }
@@ -166,7 +167,8 @@ public class LockableImpl implements Lockable {
     }
 
 
-    private void printInfo( String message, Transaction transaction ) {
+    private void printAcquiredInfo( String message, Transaction transaction ) {
+
         LOGGER.info ( MessageFormat.format(
                 "{0}, TX: {1}, L: {2}",
                 message,
@@ -174,6 +176,7 @@ public class LockableImpl implements Lockable {
                 this
         ) );
 
-    }
 
+
+    }
 }

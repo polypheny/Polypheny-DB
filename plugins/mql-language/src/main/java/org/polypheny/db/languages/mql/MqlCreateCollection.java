@@ -16,12 +16,15 @@
 
 package org.polypheny.db.languages.mql;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import org.bson.BsonDocument;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
+import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.logistic.PlacementType;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
@@ -30,6 +33,10 @@ import org.polypheny.db.nodes.ExecutableStatement;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.locking.Lockable;
+import org.polypheny.db.transaction.locking.Lockable.LockType;
+import org.polypheny.db.transaction.locking.LockableUtils;
+import org.polypheny.db.transaction.locking.LockablesRegistry;
 
 
 public class MqlCreateCollection extends MqlNode implements ExecutableStatement {
@@ -84,6 +91,11 @@ public class MqlCreateCollection extends MqlNode implements ExecutableStatement 
                 dataStores.isEmpty() ? null : dataStores,
                 placementType,
                 statement );
+    }
+
+    @Override
+    public Map<Lockable, LockType> deriveLockables( Context context, ParsedQueryContext parsedQueryContext ) {
+        return LockableUtils.getMapOfNamespaceLockableFromContext( context, parsedQueryContext, LockType.EXCLUSIVE );
     }
 
 }

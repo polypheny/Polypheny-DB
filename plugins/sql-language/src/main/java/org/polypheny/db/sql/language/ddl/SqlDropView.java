@@ -17,6 +17,7 @@
 package org.polypheny.db.sql.language.ddl;
 
 
+import java.util.Map;
 import java.util.Optional;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
@@ -31,6 +32,8 @@ import org.polypheny.db.sql.language.SqlIdentifier;
 import org.polypheny.db.sql.language.SqlOperator;
 import org.polypheny.db.sql.language.SqlSpecialOperator;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.locking.Lockable;
+import org.polypheny.db.transaction.locking.Lockable.LockType;
 
 
 /**
@@ -77,6 +80,11 @@ public class SqlDropView extends SqlDropObject {
         DdlManager.getInstance().dropView( view, statement );
 
 
+    }
+
+    @Override
+    public Map<Lockable, LockType> deriveLockables( Context context, ParsedQueryContext parsedQueryContext ) {
+        return getMapOfTableLockable( name, context, LockType.EXCLUSIVE );
     }
 
 }

@@ -17,9 +17,12 @@
 package org.polypheny.db.nodes;
 
 
+import java.util.Map;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.locking.Lockable;
+import org.polypheny.db.transaction.locking.Lockable.LockType;
 
 
 /**
@@ -29,5 +32,5 @@ public interface ExecutableStatement {
 
     void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext );
 
-
+    Map<Lockable, LockType> deriveLockables(Context context, ParsedQueryContext parsedQueryContext);
 }

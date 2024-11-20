@@ -14,25 +14,9 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.transaction.locking;
+package org.polypheny.db.transaction;
 
-import lombok.NonNull;
-import org.polypheny.db.transaction.Transaction;
-import org.polypheny.db.util.DeadlockException;
-
-public interface Lockable {
-
-    enum LockType {
-        SHARED,
-        EXCLUSIVE,
-    }
-
-    void acquire(@NonNull Transaction transaction, @NonNull LockType lockType ) throws DeadlockException;
-
-    void release(@NonNull Transaction transaction );
-
-    LockType getLockType();
-
-    boolean isRoot();
-
+public enum DeadlockDetectorType {
+    GRAPH_DEADLOCK_DETECTOR,
+    SEQUENCE_DEADLOCK_DETECTOR
 }
