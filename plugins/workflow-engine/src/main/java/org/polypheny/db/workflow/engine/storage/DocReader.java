@@ -19,18 +19,20 @@ package org.polypheny.db.workflow.engine.storage;
 import java.util.Iterator;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.catalog.entity.logical.LogicalEntity;
+import org.polypheny.db.catalog.entity.logical.LogicalCollection;
+import org.polypheny.db.plan.AlgCluster;
+import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.entity.PolyValue;
 
 public class DocReader extends CheckpointReader {
 
-    public DocReader( LogicalEntity entity ) {
-        super( entity );
+    public DocReader( LogicalCollection collection, TransactionManager transactionManager ) {
+        super( collection, transactionManager );
     }
 
 
     @Override
-    public AlgNode getAlgNode() {
+    public AlgNode getAlgNode( AlgCluster cluster ) {
         throw new NotImplementedException();
     }
 
@@ -44,6 +46,11 @@ public class DocReader extends CheckpointReader {
     @Override
     public Iterator<PolyValue[]> getIteratorFromQuery( String query ) {
         throw new NotImplementedException();
+    }
+
+
+    private LogicalCollection getCollection() {
+        return (LogicalCollection) getEntity();
     }
 
 }

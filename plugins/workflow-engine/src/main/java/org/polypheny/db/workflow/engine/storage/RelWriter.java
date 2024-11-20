@@ -19,11 +19,21 @@ package org.polypheny.db.workflow.engine.storage;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.numerical.PolyLong;
 
 public class RelWriter extends CheckpointWriter {
+    private final boolean resetPk;
+    private long currentPk = 0;
+    private final int colToReset;  // column index of the primary key in the table
+
+    public RelWriter( LogicalTable table, int colToReset ) {
+        super( table );
+        resetPk = colToReset != -1;
+        this.colToReset = colToReset;
+    }
 
     public RelWriter( LogicalTable table ) {
-        super( table );
+        this(table, -1);
     }
 
 
@@ -72,6 +82,10 @@ public class RelWriter extends CheckpointWriter {
 
     @Override
     public void write( PolyValue[] row ) {
+        if (resetPk) {
+            row[colToReset] = PolyLong.of(currentPk);
+            currentPk++;
+        }
         throw new NotImplementedException();
     }
 

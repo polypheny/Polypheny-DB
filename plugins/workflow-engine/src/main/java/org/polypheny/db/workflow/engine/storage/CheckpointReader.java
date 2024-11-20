@@ -20,29 +20,40 @@ import java.util.Iterator;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
+import org.polypheny.db.plan.AlgCluster;
+import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.entity.PolyValue;
 
 @Getter
 public abstract class CheckpointReader {
 
     private final LogicalEntity entity;
+    private final TransactionManager transactionManager;
 
 
-    public CheckpointReader( LogicalEntity entity ) {
+    public CheckpointReader( LogicalEntity entity, TransactionManager transactionManager ) {
         this.entity = entity;
+        this.transactionManager = transactionManager;
     }
 
 
-    public abstract AlgNode getAlgNode();
+    public abstract AlgNode getAlgNode( AlgCluster cluster );
 
     public abstract Iterator<PolyValue[]> getIterator();
 
-    public abstract Iterator<PolyValue[]> getIteratorFromQuery(String query); // TODO: How to specify query? Query language, PolyAlg or AlgNodes
+    public abstract Iterator<PolyValue[]> getIteratorFromQuery( String query ); // TODO: How to specify query? Query language, PolyAlg or AlgNodes
 
 
     public AlgDataType getTupleType() {
         return entity.getTupleType();
+    }
+
+
+    protected Transaction startTransaction() {
+        return transactionManager.startTransaction( Catalog.defaultUserId, entity.getNamespaceId(), false, StorageManager.ORIGIN );
     }
 
 }

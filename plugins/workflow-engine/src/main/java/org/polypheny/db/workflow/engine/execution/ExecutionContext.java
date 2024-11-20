@@ -16,6 +16,7 @@
 
 package org.polypheny.db.workflow.engine.execution;
 
+import java.util.List;
 import java.util.Objects;
 import lombok.Getter;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -67,11 +68,39 @@ public class ExecutionContext {
     }
 
 
-    public RelWriter createRelWriter( int idx, AlgDataType tupleType ) {
+    /**
+     * Creates a {@link RelWriter} for the specified output index with the given tuple type and primary key columns.
+     *
+     * @param idx the output index.
+     * @param tupleType the schema of the output.
+     * @param pkCols the names of the primary key columns. Must contain at least one column.
+     * @return a {@link RelWriter} for writing data to the output.
+     */
+    public RelWriter createRelWriter( int idx, AlgDataType tupleType, List<String> pkCols ) {
+        return createRelWriter( idx, tupleType, pkCols, false );
+
+    }
+
+
+    /**
+     * Creates a {@link RelWriter} for the specified output index with the given tuple type and primary key column.
+     *
+     * @param idx the output index.
+     * @param tupleType the schema of the output.
+     * @param pkCol the name of the primary key column.
+     * @param resetPk whether to reset the primary key (allowed only for single integer-type keys).
+     * @return a {@link RelWriter} for writing data to the output.
+     */
+    public RelWriter createRelWriter( int idx, AlgDataType tupleType, String pkCol, boolean resetPk ) {
+        return createRelWriter( idx, tupleType, List.of( pkCol ), resetPk );
+    }
+
+
+    private RelWriter createRelWriter( int idx, AlgDataType tupleType, List<String> pkCols, boolean resetPk ) {
         PortType type = Objects.requireNonNull( remainingOutPorts[idx] );
         remainingOutPorts[idx] = null;
         if ( type.canWriteTo( PortType.REL ) ) {
-            return sm.createRelCheckpoint( activity.getId(), idx, tupleType, getStore( idx ) );
+            return sm.createRelCheckpoint( activity.getId(), idx, tupleType, pkCols, resetPk, getStore( idx ) );
         }
         throw new IllegalArgumentException( "Unable to create a relational checkpoint for output type " + type );
     }

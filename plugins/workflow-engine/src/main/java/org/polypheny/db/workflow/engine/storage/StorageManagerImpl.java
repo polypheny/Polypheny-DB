@@ -31,6 +31,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
+import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.Collation;
 import org.polypheny.db.catalog.logistic.ConstraintType;
@@ -103,7 +104,12 @@ public class StorageManagerImpl implements StorageManager {
 
     @Override
     public CheckpointReader readCheckpoint( UUID activityId, int outputIdx ) {
-        throw new NotImplementedException();
+        LogicalEntity entity = Objects.requireNonNull( checkpoints.get( activityId ).get( outputIdx ) );
+        return switch ( entity.dataModel ) {
+            case RELATIONAL -> new RelReader( (LogicalTable) entity, transactionManager );
+            case DOCUMENT -> new DocReader( (LogicalCollection) entity, transactionManager );
+            case GRAPH -> new LpgReader( (LogicalGraph) entity, transactionManager );
+        };
     }
 
 
@@ -114,12 +120,24 @@ public class StorageManagerImpl implements StorageManager {
 
 
     @Override
-    public RelWriter createRelCheckpoint( UUID activityId, int outputIdx, AlgDataType type, @Nullable String storeName ) {
-        if ( storeName == null ) {
+    public RelWriter createRelCheckpoint( UUID activityId, int outputIdx, AlgDataType type, List<String> pkCols, boolean resetPk, @Nullable String storeName ) {
+        if ( storeName == null || storeName.isEmpty() ) {
             storeName = getDefaultStore( DataModel.RELATIONAL );
         }
         if ( type.getFieldCount() == 0 ) {
             throw new IllegalArgumentException( "An output table must contain at least one column" );
+        }
+        if ( pkCols.isEmpty() ) {
+            throw new IllegalArgumentException( "At least one primary key column must be specified" );
+        }
+        if ( resetPk ) {
+            if ( pkCols.size() > 1 ) {
+                throw new IllegalArgumentException( "Cannot reset the primary key of a composite key" );
+            }
+            AlgDataTypeField pkField = type.getField( pkCols.get( 0 ), true, false );
+            if ( !PolyType.INT_TYPES.contains( pkField.getType().getPolyType() ) ) {
+                throw new IllegalArgumentException( "Only primary keys of an integer type can be reset" );
+            }
         }
 
         Transaction transaction = startTransaction( relNamespace );
@@ -128,7 +146,7 @@ public class StorageManagerImpl implements StorageManager {
                 relNamespace,
                 tableName,
                 getFieldInfo( type ),
-                getPkConstraint( type ),
+                getPkConstraint( pkCols ),
                 false,
                 List.of( getStore( storeName ) ),
                 PlacementType.AUTOMATIC,
@@ -137,6 +155,10 @@ public class StorageManagerImpl implements StorageManager {
 
         LogicalTable table = Catalog.snapshot().rel().getTable( relNamespace, tableName ).orElseThrow();
         register( activityId, outputIdx, table );
+        if ( resetPk ) {
+            int pkColIndex = type.getFieldNames().indexOf( pkCols.get( 0 ) );
+            return new RelWriter( table, pkColIndex );
+        }
         return new RelWriter( table );
     }
 
@@ -214,9 +236,8 @@ public class StorageManagerImpl implements StorageManager {
     }
 
 
-    private List<ConstraintInformation> getPkConstraint( AlgDataType tupleType ) {
-        String pkColName = tupleType.getFields().get( 0 ).getName();
-        return List.of( new ConstraintInformation( "PRIMARY KEY", ConstraintType.PRIMARY, List.of( pkColName ) ) );
+    private List<ConstraintInformation> getPkConstraint( List<String> pkCols ) {
+        return List.of( new ConstraintInformation( "PRIMARY KEY", ConstraintType.PRIMARY, pkCols ) );
     }
 
 

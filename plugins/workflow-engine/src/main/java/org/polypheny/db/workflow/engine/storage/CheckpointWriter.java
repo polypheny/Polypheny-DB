@@ -24,13 +24,24 @@ public abstract class CheckpointWriter {
 
     private final LogicalEntity entity;
 
+
     public CheckpointWriter( LogicalEntity entity ) {
         this.entity = entity;
     }
 
-    public abstract void write( PolyValue[] tuple);
 
-    public void write( Iterator<PolyValue[]> iterator) {
+    /**
+     * Writes the given tuple to this checkpoint.
+     * The tuple type of the checkpoint must be compatible with this tuple.
+     * The tuple should be discarded after calling this method, as its contents
+     * can get modified during writing.
+     *
+     * @param tuple the tuple to write to this checkpoint
+     */
+    public abstract void write( PolyValue[] tuple );
+
+
+    public void write( Iterator<PolyValue[]> iterator ) {
         while ( iterator.hasNext() ) {
             write( iterator.next() );
         }
