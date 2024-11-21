@@ -32,8 +32,6 @@ import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyString;
@@ -63,20 +61,21 @@ class StorageManagerTest {
 
 
     @Test
-    void createRelCheckpointTest() {
+    void createRelCheckpointTest() throws Exception {
         StorageManager sm = new StorageManagerImpl( sessionId, Map.of() );
         UUID activityId = UUID.randomUUID();
         AlgDataType type = getSampleType();
-        RelWriter writer = sm.createRelCheckpoint( activityId, 0, type, false, null );
+        sm.createRelCheckpoint( activityId, 0, type, false, null ).close();
 
-        LogicalTable table = Catalog.snapshot().rel().getTable( StorageManagerImpl.REL_PREFIX + sessionId, activityId + "_0" ).orElseThrow();
-        for ( int i = 0; i < type.getFieldCount(); i++ ) {
-            AlgDataTypeField field = table.getTupleType().getFields().get( i );
-            assertEquals( type.getFields().get( i ).getName(), field.getName() );
-            assertEquals( type.getFields().get( i ).getType().getPolyType(), field.getType().getPolyType() );
+        try ( RelReader reader = (RelReader) sm.readCheckpoint( activityId, 0 ) ) {
+            reader.getTupleType();
+            for ( int i = 0; i < type.getFieldCount(); i++ ) {
+                AlgDataTypeField field = reader.getTupleType().getFields().get( i );
+                assertEquals( type.getFields().get( i ).getName(), field.getName() );
+                assertEquals( type.getFields().get( i ).getType().getPolyType(), field.getType().getPolyType() );
+            }
+
         }
-
-        RelReader reader = (RelReader) sm.readCheckpoint( activityId, 0 );
     }
 
 
@@ -88,23 +87,25 @@ class StorageManagerTest {
         List<PolyValue[]> sampleData = getSampleData();
 
         try ( RelWriter writer = sm.createRelCheckpoint( activityId, 0, type, false, null ) ) {
-            // write data
             System.out.println( "Writing..." );
             for ( PolyValue[] tuple : sampleData ) {
+                System.out.println( Arrays.toString( tuple ) );
                 writer.write( tuple );
             }
         }
 
-        RelReader reader = (RelReader) sm.readCheckpoint( activityId, 0 );
-        System.out.println( "\nTuple type of checkpoint: " + reader.getTupleType() );
-        Iterator<PolyValue[]> it = reader.getIterator();
-        System.out.println( "Iterating..." );
+        System.out.println( "Reading..." );
+        try ( RelReader reader = (RelReader) sm.readCheckpoint( activityId, 0 ) ) {
+            System.out.println( "\nTuple type of checkpoint: " + reader.getTupleType() );
+            Iterator<PolyValue[]> it = reader.getIterator();
 
-        int i = 0;
-        while ( it.hasNext() ) {
-            PolyValue[] tuple = it.next();
-            System.out.println( Arrays.toString( tuple ) );
-            assertTupleEquals( tuple, sampleData.get( i++ ) );
+            int i = 0;
+            while ( it.hasNext() ) {
+                PolyValue[] tuple = it.next();
+                System.out.println( Arrays.toString( tuple ) );
+                assertTupleEquals( tuple, sampleData.get( i++ ) );
+            }
+            assertEquals( sampleData.size(), i );
         }
         System.out.println( "Finished..." );
 
@@ -127,8 +128,9 @@ class StorageManagerTest {
 
     private List<PolyValue[]> getSampleData() {
         List<PolyValue[]> tuples = new ArrayList<>();
-        tuples.add( new PolyValue[]{ PolyInteger.of( 42 ), PolyString.of( "test" ) } );
-        //tuples.add( new PolyValue[]{ PolyInteger.of( 123 ), PolyString.of( "abcd" ) } );
+        tuples.add( new PolyValue[]{ PolyInteger.of( 42 ), PolyString.of( "THIS is a test" ) } );
+        tuples.add( new PolyValue[]{ PolyInteger.of( 123 ), PolyString.of( "abcd" ) } );
+        tuples.add( new PolyValue[]{ PolyInteger.of( 456 ), PolyString.of( "efgh" ) } );
         //tuples.add( new PolyValue[]{ PolyInteger.of( 123 ) } );
         return tuples;
     }

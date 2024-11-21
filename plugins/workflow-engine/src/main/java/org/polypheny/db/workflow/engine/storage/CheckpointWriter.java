@@ -16,22 +16,36 @@
 
 package org.polypheny.db.workflow.engine.storage;
 
+import java.util.Collection;
 import java.util.Iterator;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionManager;
+import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.category.PolyBlob;
+import org.polypheny.db.type.entity.graph.GraphPropertyHolder;
+import org.polypheny.db.type.entity.graph.PolyGraph;
+import org.polypheny.db.type.entity.graph.PolyPath;
+import org.polypheny.db.type.entity.relational.PolyMap;
 
 public abstract class CheckpointWriter implements AutoCloseable {
 
+    private static final long DEFAULT_BYTE_SIZE = 32; // used as fallback to estimate number of bytes in a PolyValue
+    private static final long MAX_BYTES_PER_BATCH = 1024 * 1024L; // 1 MiB, upper limit to (estimated) size of batch in bytes
+    private static final long MAX_TUPLES_PER_BATCH = 10_000; // upper limit to tuples per batch
+
+
     final LogicalEntity entity;
     final TransactionManager transactionManager;
+    final Transaction transaction;
 
 
     public CheckpointWriter( LogicalEntity entity, TransactionManager transactionManager ) {
         this.entity = entity;
         this.transactionManager = transactionManager;
+        transaction = transactionManager.startTransaction( Catalog.defaultUserId, entity.getNamespaceId(), false, StorageManager.ORIGIN );
     }
 
 
@@ -53,8 +67,94 @@ public abstract class CheckpointWriter implements AutoCloseable {
     }
 
 
-    Transaction startTransaction() {
-        return transactionManager.startTransaction( Catalog.defaultUserId, entity.getNamespaceId(), false, StorageManager.ORIGIN );
+    @Override
+    public void close() throws Exception {
+        // even in case of an error we can commit, since the checkpoint will be dropped
+        transaction.commit();
+    }
+
+
+    //////////////////
+    // Static Utils //
+    //////////////////
+    static long computeBatchSize( PolyValue[] representativeTuple ) {
+        long maxFromBytes = MAX_BYTES_PER_BATCH / estimateByteSize( representativeTuple );
+        return Math.max( Math.min( maxFromBytes, MAX_TUPLES_PER_BATCH ), 1 );
+    }
+
+
+    private static long estimateByteSize( PolyValue[] tuple ) {
+        long size = 0;
+        for ( PolyValue value : tuple ) {
+            try {
+                System.out.println( "Size of " + value + ": " + value.getByteSize().orElse( getFallbackByteSize( value ) ) );
+                size += value.getByteSize().orElse( getFallbackByteSize( value ) );
+            } catch ( Exception e ) {
+                size += DEFAULT_BYTE_SIZE;
+            }
+        }
+        return size;
+    }
+
+
+    private static long estimateByteSize( Collection<? extends PolyValue> values ) {
+        return estimateByteSize( values.toArray( new PolyValue[0] ) );
+    }
+
+
+    private static long estimateByteSize( PolyMap<? extends PolyValue, ? extends PolyValue> polyMap ) {
+        return estimateByteSize( polyMap.getMap().keySet() ) +
+                estimateByteSize( polyMap.getMap().values() );
+    }
+
+
+    private static long getFallbackByteSize( PolyValue value ) {
+
+        return switch ( value.type ) {
+            case DATE -> 16L;
+            case SYMBOL -> 0L; // ?
+            case ARRAY -> {
+                if ( value instanceof PolyList<? extends PolyValue> polyList ) {
+                    yield estimateByteSize( polyList.value );
+                }
+                yield DEFAULT_BYTE_SIZE;
+            }
+            case DOCUMENT, MAP -> {
+                if ( value instanceof PolyMap<? extends PolyValue, ? extends PolyValue> polyMap ) {
+                    yield estimateByteSize( polyMap );
+                }
+                yield DEFAULT_BYTE_SIZE;
+            }
+            case GRAPH -> {
+                if ( value instanceof PolyGraph polyGraph ) {
+                    yield estimateByteSize( polyGraph.getNodes() ) + estimateByteSize( polyGraph.getEdges() );
+                }
+                yield DEFAULT_BYTE_SIZE;
+            }
+            case EDGE, NODE -> {
+                if ( value instanceof GraphPropertyHolder propHolder ) {
+                    yield estimateByteSize( propHolder.properties ) + estimateByteSize( propHolder.labels );
+                }
+                yield DEFAULT_BYTE_SIZE;
+            }
+            case PATH -> {
+                if ( value instanceof PolyPath polyPath ) {
+                    yield estimateByteSize( polyPath.getNodes() ) +
+                            estimateByteSize( polyPath.getEdges() ) +
+                            estimateByteSize( polyPath.getPath() ) +
+                            estimateByteSize( polyPath.getNames() ) +
+                            estimateByteSize( polyPath.getSegments() );
+                }
+                yield DEFAULT_BYTE_SIZE;
+            }
+            case FILE -> {
+                if ( value instanceof PolyBlob polyBlob ) {
+                    yield polyBlob.value.length;
+                }
+                yield DEFAULT_BYTE_SIZE;
+            }
+            default -> DEFAULT_BYTE_SIZE;
+        };
     }
 
 

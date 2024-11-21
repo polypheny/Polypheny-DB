@@ -53,6 +53,8 @@ public class StorageManagerImpl implements StorageManager {
     public static final String REL_PREFIX = "rel_";
     public static final String DOC_PREFIX = "doc_";
     public static final String LPG_PREFIX = "lpg_";
+    public static final String TABLE_PREFIX = "t_";
+    public static final String COLLECTION_PREFIX = "c_";
 
     private final UUID sessionId;
     private final Map<DataModel, String> defaultStores;
@@ -135,7 +137,7 @@ public class StorageManagerImpl implements StorageManager {
         }
 
         Transaction transaction = startTransaction( relNamespace );
-        String tableName = activityId + "_" + outputIdx;
+        String tableName = TABLE_PREFIX + activityId + "_" + outputIdx;
         ddlManager.createTable(
                 relNamespace,
                 tableName,

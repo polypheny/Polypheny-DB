@@ -18,6 +18,7 @@ package org.polypheny.db.workflow.engine.storage;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.catalog.Catalog;
@@ -58,13 +59,15 @@ public class RelReader extends CheckpointReader {
     @Override
     public Iterator<PolyValue[]> getIterator() {
         LogicalTable table = getTable();
-        String query = "SELECT * FROM \"" + table.getName() + "\"";
+        String query = "SELECT " + getQuotedColumns() + " FROM \"" + table.getName() + "\"";
+        System.out.println( "Query: " + query );
         return executeSqlQuery( query );
     }
 
 
     @Override
     public Iterator<PolyValue[]> getIteratorFromQuery( String query ) {
+        // TODO: first transform into AlgNodes, then check if valid. Also should be prepared statement with dynamic variables
         return executeSqlQuery( query );
     }
 
@@ -73,7 +76,8 @@ public class RelReader extends CheckpointReader {
         return (LogicalTable) entity;
     }
 
-    private Iterator<PolyValue[]> executeSqlQuery(String query) {
+
+    private Iterator<PolyValue[]> executeSqlQuery( String query ) {
         LogicalTable table = getTable();
         QueryContext context = QueryContext.builder()
                 .query( query )
@@ -82,9 +86,22 @@ public class RelReader extends CheckpointReader {
                 .origin( StorageManager.ORIGIN )
                 .namespaceId( table.getNamespaceId() )
                 .transactionManager( transactionManager )
-                .transactions( List.of( startTransaction() ) ).build();
+                .transactions( List.of( transaction ) ).build();
+        System.out.println( "executing" );
         List<ExecutedContext> executedContexts = LanguageManager.getINSTANCE().anyQuery( context );
-        return executedContexts.get( 0 ).getIterator().getIterator();
+        System.out.println( "getting iterator" );
+        Iterator<PolyValue[]> iterator = executedContexts.get( 0 ).getIterator().getIterator();
+        registerIterator( iterator );
+        return iterator;
+    }
+
+
+    private String getQuotedColumns() {
+        LogicalTable table = getTable();
+        return table.getColumnNames().stream()
+                //.map( s -> "\"" + s + "\"" )
+                .collect( Collectors.joining( ", " ) );
+
     }
 
 }

@@ -16,7 +16,9 @@
 
 package org.polypheny.db.workflow.engine.storage;
 
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Set;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
@@ -26,15 +28,18 @@ import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.entity.PolyValue;
 
-public abstract class CheckpointReader {
+public abstract class CheckpointReader implements AutoCloseable {
 
     final LogicalEntity entity;
     final TransactionManager transactionManager;
+    final Transaction transaction;
+    private final Set<AutoCloseable> openIterators = new HashSet<>();
 
 
     public CheckpointReader( LogicalEntity entity, TransactionManager transactionManager ) {
         this.entity = entity;
         this.transactionManager = transactionManager;
+        this.transaction = transactionManager.startTransaction( Catalog.defaultUserId, entity.getNamespaceId(), false, StorageManager.ORIGIN );
     }
 
 
@@ -50,8 +55,20 @@ public abstract class CheckpointReader {
     }
 
 
-    Transaction startTransaction() {
-        return transactionManager.startTransaction( Catalog.defaultUserId, entity.getNamespaceId(), false, StorageManager.ORIGIN );
+    void registerIterator( Iterator<PolyValue[]> iterator ) {
+        if ( iterator instanceof AutoCloseable closeable ) {
+            openIterators.add( closeable );
+        }
+    }
+
+
+    @Override
+    public void close() throws Exception {
+        for ( AutoCloseable iterator : openIterators ) {
+            iterator.close();
+        }
+        openIterators.clear();
+        transaction.rollback( null );  // read-only transaction
     }
 
 }

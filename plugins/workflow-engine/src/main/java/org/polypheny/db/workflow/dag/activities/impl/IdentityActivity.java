@@ -75,7 +75,7 @@ public class IdentityActivity extends AbstractActivity {
 
 
     @Override
-    public void execute( List<CheckpointReader> inputs, ExecutionContext ctx ) throws Exception {
+    public void execute( List<CheckpointReader> inputs, Map<String, SettingValue> settings, ExecutionContext ctx ) throws Exception {
         RelReader input = (RelReader) inputs.get( 0 );
         try ( RelWriter output = ctx.createRelWriter( 0, input.getTupleType(), false ) ) {
             output.write( input.getIterator() );

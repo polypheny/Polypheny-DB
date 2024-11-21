@@ -16,8 +16,10 @@
 
 package org.polypheny.db.workflow.engine.storage;
 
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.StringJoiner;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
@@ -29,7 +31,6 @@ import org.polypheny.db.processing.ImplementationContext;
 import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
 import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.numerical.PolyLong;
@@ -40,9 +41,11 @@ public class RelWriter extends CheckpointWriter {
     private long currentPk = 0;
 
     private final AlgDataType[] dataTypes;
-    private final Transaction transaction;
     private final Statement statement;
     private final ImplementationContext implementation;
+    private final Map<Long, AlgDataType> paramTypes = new HashMap<>();
+    private final List<Map<Long, PolyValue>> paramValues = new ArrayList<>();
+    private long batchSize = -1;
 
 
     public RelWriter( LogicalTable table, TransactionManager transactionManager, boolean resetPk ) {
@@ -50,12 +53,13 @@ public class RelWriter extends CheckpointWriter {
         this.resetPk = resetPk;
 
         dataTypes = entity.getTupleType().getFields().stream().map( AlgDataTypeField::getType ).toArray( AlgDataType[]::new );
-        transaction = startTransaction();
         statement = transaction.createStatement();
 
         StringJoiner joiner = new StringJoiner( ", ", "(", ")" );
-        for ( AlgDataTypeField field : table.getTupleType().getFields() ) {
+        for ( int i = 0; i < table.getTupleType().getFieldCount(); i++ ) {
             joiner.add( "?" );
+            AlgDataType fieldType = table.getTupleType().getFields().get( i ).getType();
+            paramTypes.put( (long) i, fieldType );
         }
 
         String query = "INSERT INTO \"" + table.getName() + "\" VALUES " + joiner;
@@ -122,28 +126,61 @@ public class RelWriter extends CheckpointWriter {
             row[0] = PolyLong.of( currentPk );
             currentPk++;
         }
-
-        // TODO: perform insertion of parameters and execution in batches
-        statement.getDataContext().resetParameterValues();
-        for ( int i = 0; i < row.length; i++ ) {
-            statement.getDataContext().addParameterValues( i, dataTypes[i], List.of( row[i] ) );
+        if ( batchSize == -1 ) {
+            batchSize = computeBatchSize( row );
         }
-        ExecutedContext executedContext = implementation.execute( statement ); // TODO: new implementation for each batch?
+        paramValues.add( getParamMap( row ) );
+        executeIfBatchFull();
+    }
+
+
+    @Override
+    public void close() throws Exception {
+        if ( !paramValues.isEmpty() ) {
+            executeBatch();
+        }
+        super.close();
+    }
+
+
+    private void executeIfBatchFull() {
+        if ( paramValues.size() < batchSize ) { // TODO: correctly determine threshold
+            System.out.println( "Batch is not yet full (" + paramValues.size() + " of " + batchSize + ")" );
+            return;
+        }
+        System.out.println( "batch is full, writing " + paramValues );
+        executeBatch();
+    }
+
+
+    private void executeBatch() {
+        int batchSize = paramValues.size();
+
+        statement.getDataContext().setParameterTypes( paramTypes );
+        statement.getDataContext().setParameterValues( paramValues );
+
+        ExecutedContext executedContext = implementation.execute( statement );
 
         if ( executedContext.getException().isPresent() ) {
             throw new GenericRuntimeException( "An error occured while writing to the checkpoint" );
         }
         List<List<PolyValue>> results = executedContext.getIterator().getAllRowsAndClose();
         long changedCount = results.size() == 1 ? results.get( 0 ).get( 0 ).asLong().longValue() : 0;
-        if ( changedCount != 1 ) {
-            throw new GenericRuntimeException( "Unable to write tuple to checkpoint: " + Arrays.toString( row ) );
+        if ( changedCount != batchSize ) {
+            throw new GenericRuntimeException( "Unable to write batch to checkpoint: " + changedCount + " of " + batchSize + " tuples were written" );
         }
+
+        paramValues.clear();
+        statement.getDataContext().resetParameterValues();
     }
 
 
-    @Override
-    public void close() throws Exception {
-        transaction.commit();
+    private Map<Long, PolyValue> getParamMap( PolyValue[] row ) {
+        Map<Long, PolyValue> map = new HashMap<>();
+        for ( int i = 0; i < row.length; i++ ) {
+            map.put( (long) i, row[i] );
+        }
+        return map;
     }
 
 

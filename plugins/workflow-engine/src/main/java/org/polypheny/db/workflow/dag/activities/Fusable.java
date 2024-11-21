@@ -34,11 +34,11 @@ public interface Fusable extends Activity {
     }
 
     @Override
-    default void execute( List<CheckpointReader> inputs, ExecutionContext ctx ) throws Exception {
+    default void execute( List<CheckpointReader> inputs, Map<String, SettingValue> settings, ExecutionContext ctx ) throws Exception {
         // TODO: add default implementation that calls fuse().
         throw new NotImplementedException();
     }
 
-    AlgNode fuse( List<AlgNode> inputs ) throws Exception;
+    AlgNode fuse( List<AlgNode> inputs, Map<String, SettingValue> settings ) throws Exception;
 
 }

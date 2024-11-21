@@ -61,7 +61,7 @@ public interface Activity {
      */
     List<Optional<AlgDataType>> previewOutTypes( List<Optional<AlgDataType>> inTypes, Map<String, Optional<SettingValue>> settings ) throws ActivityException;
 
-    void execute( List<CheckpointReader> inputs, ExecutionContext ctx ) throws Exception; // default execution method. TODO: introduce execution context to track progress, abort, inputs, outputs...
+    void execute( List<CheckpointReader> inputs, Map<String, SettingValue> settings, ExecutionContext ctx ) throws Exception; // default execution method. TODO: introduce execution context to track progress, abort, inputs, outputs...
 
     void updateSettings( Map<String, JsonNode> settings );
 

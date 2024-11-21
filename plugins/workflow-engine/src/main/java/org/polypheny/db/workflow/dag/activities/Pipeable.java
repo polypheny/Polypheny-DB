@@ -35,7 +35,7 @@ public interface Pipeable extends Activity {
     }
 
     @Override
-    default void execute( List<CheckpointReader> inputs, ExecutionContext ctx ) throws Exception {
+    default void execute( List<CheckpointReader> inputs, Map<String, SettingValue> settings, ExecutionContext ctx ) throws Exception {
         // TODO: add default implementation that calls pipe().
         throw new NotImplementedException();
     }
@@ -50,7 +50,7 @@ public interface Pipeable extends Activity {
      */
     AlgDataType lockOutputType( AlgDataType inType, Map<String, SettingValue> settings );
 
-    void pipe( InputPipe input, OutputPipe output, ExecutionContext ctx ) throws Exception;
+    void pipe( InputPipe input, OutputPipe output, Map<String, SettingValue> settings, ExecutionContext ctx ) throws Exception;
 
 
 }
