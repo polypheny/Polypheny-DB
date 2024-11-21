@@ -243,6 +243,8 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
             constraints = columnsConstraints.right;
         }
 
+
+
         DdlManager.getInstance().createTable(
                 namespaceId,
                 tableName,
