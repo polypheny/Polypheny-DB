@@ -31,7 +31,16 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
+import org.polypheny.db.catalog.catalogs.LogicalRelationalCatalog;
 import org.polypheny.db.catalog.entity.LogicalAdapter;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.impl.PolyCatalog;
+import org.polypheny.db.catalog.logistic.Collation;
+import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.catalog.logistic.EntityType;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.numerical.PolyInteger;
 
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
@@ -219,6 +228,20 @@ public class CatalogTest {
                     connection.getMetaData().getExportedKeys( "APP", "schema1", "table1" ),
                     ImmutableList.of( foreignKeys ) );
         }
+    }
+
+
+    @Test
+    public void testDefaultValuesDeserialization() {
+        PolyCatalog catalog = new PolyCatalog();
+        long ns = catalog.createNamespace( "test", DataModel.RELATIONAL, true );
+        LogicalRelationalCatalog rel = catalog.getLogicalRel( ns );
+        LogicalTable t = rel.addTable( "table", EntityType.ENTITY, true );
+        rel.addColumn( "pk", t.id, 0, PolyType.INTEGER, null, null, null, null, null, false, Collation.CASE_INSENSITIVE );
+        LogicalColumn i = rel.addColumn( "i", t.id, 0, PolyType.INTEGER, null, null, null, null, null, false, Collation.CASE_INSENSITIVE );
+        rel.setDefaultValue( i.id, PolyType.INTEGER, PolyInteger.of( 0 ) );
+        catalog.commit();
+        catalog.rollback();
     }
 
 }
