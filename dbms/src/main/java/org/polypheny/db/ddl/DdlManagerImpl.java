@@ -114,6 +114,7 @@ import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.view.MaterializedViewManager;
 
@@ -2059,8 +2060,15 @@ public class DdlManagerImpl extends DdlManager {
 
         Map<String, LogicalColumn> ids = new HashMap<>();
         for ( FieldInformation information : fields ) {
-            ids.put( information.name(), addColumn( namespaceId, information.name(), information.typeInformation(), information.collation(), information.defaultValue(), logical.id, information.position() ) );
+            ids.put( information.name(), addColumn( namespaceId, information.name(), information.typeInformation(), information.collation(), information.defaultValue(), logical.id, information.position() + 1 ) ); // pos + 1 to make space for entry identifier column
         }
+
+        // add entry identifier column
+        ColumnTypeInformation entryColumnTypeInformation = new ColumnTypeInformation( PolyType.BIGINT, null, null, null, null, null, false);
+        // TODO: set collation properly
+        LogicalColumn entryIdentifierColumn = addColumn( namespaceId, "eid", entryColumnTypeInformation , Collation.CASE_SENSITIVE, null, logical.id, 1);
+        ids.put("edi", entryIdentifierColumn);
+
 
         List<Long> pkIds = new ArrayList<>();
 
@@ -2101,7 +2109,6 @@ public class DdlManagerImpl extends DdlManager {
 
         catalog.updateSnapshot();
     }
-
 
     @NotNull
     private Pair<AllocationPartition, PartitionProperty> createSinglePartition( long namespaceId, LogicalTable logical ) {
