@@ -2140,7 +2140,6 @@ public class DdlManagerImpl extends DdlManager {
         catalog.updateSnapshot();
     }
 
-
     @NotNull
     private Pair<AllocationPartition, PartitionProperty> createSinglePartition( long namespaceId, LogicalTable logical ) {
         AllocationPartitionGroup group = catalog.getAllocRel( namespaceId ).addPartitionGroup( logical.id, UNPARTITIONED, namespaceId, PartitionType.NONE, 1, false );
