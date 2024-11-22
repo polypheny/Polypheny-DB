@@ -70,7 +70,7 @@ public class RelReader extends CheckpointReader {
 
 
     @Override
-    public Iterator<PolyValue[]> getIterator() {
+    public Iterator<PolyValue[]> getArrayIterator() {
         LogicalTable table = getTable();
         String query = "SELECT " + getQuotedColumns() + " FROM \"" + table.getName() + "\"";
         return executeSqlQuery( query );
@@ -78,9 +78,9 @@ public class RelReader extends CheckpointReader {
 
 
     @Override
-    public Iterator<PolyValue[]> getIteratorFromQuery( String query ) {
+    public Iterator<List<PolyValue>> getIteratorFromQuery( String query ) {
         // TODO: first transform into AlgNodes, then check if valid. Also should be prepared statement with dynamic variables
-        return executeSqlQuery( query );
+        return arrayToListIterator( executeSqlQuery( query ), false);
     }
 
 

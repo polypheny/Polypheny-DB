@@ -18,6 +18,7 @@ package org.polypheny.db.workflow.engine.storage;
 
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionManager;
@@ -51,15 +52,14 @@ public abstract class CheckpointWriter implements AutoCloseable {
     /**
      * Writes the given tuple to this checkpoint.
      * The tuple type of the checkpoint must be compatible with this tuple.
-     * The tuple should be discarded after calling this method, as its contents
-     * can get modified during writing.
+     * The list is guaranteed to remain unmodified.
      *
      * @param tuple the tuple to write to this checkpoint
      */
-    public abstract void write( PolyValue[] tuple );
+    public abstract void write( List<PolyValue> tuple );
 
 
-    public void write( Iterator<PolyValue[]> iterator ) {
+    public void write( Iterator<List<PolyValue>> iterator ) {
         while ( iterator.hasNext() ) {
             write( iterator.next() );
         }

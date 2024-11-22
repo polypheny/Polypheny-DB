@@ -16,6 +16,7 @@
 
 package org.polypheny.db.workflow.engine.storage;
 
+import java.util.List;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.transaction.Transaction;
@@ -30,12 +31,12 @@ public class DocWriter extends CheckpointWriter {
 
 
     public void write( PolyDocument document ) {
-        write( new PolyValue[]{ document } );
+        throw new NotImplementedException();
     }
 
 
     @Override
-    public void write( PolyValue[] tuple ) {
+    public void write( List<PolyValue> tuple ) {
         throw new NotImplementedException();
     }
 

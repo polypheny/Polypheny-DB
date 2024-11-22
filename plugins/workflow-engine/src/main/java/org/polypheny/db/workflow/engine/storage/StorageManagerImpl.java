@@ -175,6 +175,7 @@ public class StorageManagerImpl implements StorageManager {
         for ( LogicalEntity entity : checkpoints.get( activityId ).values() ) {
             dropEntity( entity );
         }
+        checkpoints.remove( activityId );
     }
 
 
@@ -183,6 +184,12 @@ public class StorageManagerImpl implements StorageManager {
         for ( UUID activityId : checkpoints.keySet() ) {
             dropCheckpoints( activityId );
         }
+    }
+
+
+    @Override
+    public boolean hasCheckpoint( UUID activityId, int outputIdx ) {
+        return checkpoints.getOrDefault( activityId, Map.of() ).containsKey( outputIdx );
     }
 
 

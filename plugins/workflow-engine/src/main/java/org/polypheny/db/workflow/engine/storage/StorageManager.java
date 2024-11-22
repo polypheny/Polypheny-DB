@@ -61,4 +61,6 @@ public interface StorageManager extends AutoCloseable { // TODO: remove AutoClos
 
     void dropAllCheckpoints();
 
+    boolean hasCheckpoint( UUID activityId, int outputIdx );
+
 }

@@ -41,7 +41,9 @@ public class RelWriter extends CheckpointWriter {
     private long currentPk = 0;
 
     private final AlgDataType[] dataTypes;
+    private final int mapCapacity; // Since we know the size of each paramValue map, we can specify the initialCapacity for better performance
     private final Statement statement;
+
     private ImplementationContext implementation;
     private final Map<Long, AlgDataType> paramTypes = new HashMap<>();
     private final List<Map<Long, PolyValue>> paramValues = new ArrayList<>();
@@ -55,6 +57,7 @@ public class RelWriter extends CheckpointWriter {
         this.resetPk = resetPk;
 
         dataTypes = entity.getTupleType().getFields().stream().map( AlgDataTypeField::getType ).toArray( AlgDataType[]::new );
+        mapCapacity = (int) Math.ceil( dataTypes.length / 0.75 ); // 0.75 is the default loadFactor of HashMap
         statement = transaction.createStatement();
 
         StringJoiner joiner = new StringJoiner( ", ", "(", ")" );
@@ -75,65 +78,66 @@ public class RelWriter extends CheckpointWriter {
                 .transactions( List.of( transaction ) ).build();
         implementation = LanguageManager.getINSTANCE().anyPrepareQuery( context, statement ).get( 0 );
         this.context = context;
-
-
     }
 
 
-    public void write( PolyValue[] row, PolyValue appendValue ) {
-        PolyValue[] appended = new PolyValue[row.length + 1];
-        System.arraycopy( row, 0, appended, 0, row.length );
-        appended[row.length] = appendValue;
-        write( appended );
+    public void wAppend( List<PolyValue> row, PolyValue appendValue ) {
+        Map<Long, PolyValue> map = getParamMap( row );
+        map.put( (long) row.size(), appendValue );
     }
 
 
-    public void wInserted( PolyValue[] row, PolyValue insertValue, int insertIdx ) {
-        PolyValue[] inserted = new PolyValue[row.length + 1];
-        System.arraycopy( row, 0, inserted, 0, insertIdx );
-        inserted[insertIdx] = insertValue;
-        System.arraycopy( row, insertIdx, inserted, insertIdx + 1, row.length - insertIdx );
-        write( inserted );
+    public void wInsert( List<PolyValue> row, PolyValue insertValue, int insertIdx ) {
+        Map<Long, PolyValue> map = new HashMap<>( mapCapacity );
+
+        for ( int i = 0; i < insertIdx; i++ ) {
+            map.put( (long) i, row.get( i ) );
+        }
+        map.put( (long) insertIdx, insertValue );
+        for ( int i = insertIdx + 1; i < row.size(); i++ ) {
+            map.put( (long) i, row.get( i - 1 ) );
+        }
+        writeToBatch( map );
     }
 
 
-    public void wReplaced( PolyValue[] row, PolyValue replaceValue, int replaceIdx ) {
-        PolyValue[] replaced = row.clone();
-        replaced[replaceIdx] = replaceValue;
-        write( replaced );
+    public void wReplace( List<PolyValue> row, PolyValue replaceValue, int replaceIdx ) {
+        Map<Long, PolyValue> map = getParamMap( row );
+        map.put( (long) replaceIdx, replaceValue );
+        writeToBatch( map );
     }
 
 
-    public void wReplacedInPlace( PolyValue[] row, PolyValue replaceValue, int replaceIdx ) {
-        row[replaceIdx] = replaceValue;
-        write( row );
+    public void wRemove( List<PolyValue> row, int removeIdx ) {
+        Map<Long, PolyValue> map = new HashMap<>( mapCapacity );
+
+        for ( int i = 0; i < removeIdx; i++ ) {
+            map.put( (long) i, row.get( i ) );
+        }
+        for ( int i = removeIdx + 1; i < row.size(); i++ ) {
+            map.put( (long) i - 1, row.get( i ) );
+        }
+        writeToBatch( map );
     }
 
 
-    public void wRemoved( PolyValue[] row, int removeIdx ) {
-        PolyValue[] removed = new PolyValue[row.length - 1];
-        System.arraycopy( row, 0, removed, 0, removeIdx );
-        System.arraycopy( row, removeIdx + 1, removed, removeIdx, row.length - removeIdx - 1 );
-        write( removed );
-    }
-
-
+    /**
+     * Writes a row with two columns: the primary key and the specified value.
+     * Only use this method in combination with resetPk = true.
+     *
+     * @param value the value of the second column
+     */
     public void write( PolyValue value ) {
-        write( new PolyValue[]{ value } );
+        assert resetPk : "Writing a single value without generating a new primary key is never reasonable.";
+        Map<Long, PolyValue> rowMap = new HashMap<>( mapCapacity );
+        rowMap.put( 1L, value );
+        writeToBatch( rowMap );
     }
 
 
     @Override
-    public void write( PolyValue[] row ) {
-        if ( resetPk ) {
-            row[0] = PolyLong.of( currentPk );
-            currentPk++;
-        }
-        if ( batchSize == -1 ) {
-            batchSize = computeBatchSize( row );
-        }
-        paramValues.add( getParamMap( row ) );
-        executeIfBatchFull();
+    public void write( List<PolyValue> row ) {
+        writeToBatch( getParamMap( row ) );
     }
 
 
@@ -146,7 +150,16 @@ public class RelWriter extends CheckpointWriter {
     }
 
 
-    private void executeIfBatchFull() {
+    private void writeToBatch( Map<Long, PolyValue> rowMap ) {
+        if ( resetPk ) {
+            rowMap.put( 0L, PolyLong.of( currentPk ) );
+            currentPk++;
+        }
+        if ( batchSize == -1 ) {
+            batchSize = computeBatchSize( rowMap.values().toArray( new PolyValue[0] ) );
+        }
+        paramValues.add( rowMap );
+
         if ( paramValues.size() < batchSize ) {
             //System.out.println( "Batch is not yet full (" + paramValues.size() + " of " + batchSize + ")" );
             return;
@@ -179,10 +192,11 @@ public class RelWriter extends CheckpointWriter {
     }
 
 
-    private Map<Long, PolyValue> getParamMap( PolyValue[] row ) {
-        Map<Long, PolyValue> map = new HashMap<>();
-        for ( int i = 0; i < row.length; i++ ) {
-            map.put( (long) i, row[i] );
+    private Map<Long, PolyValue> getParamMap( List<PolyValue> row ) {
+        Map<Long, PolyValue> map = new HashMap<>( mapCapacity );
+
+        for ( int i = resetPk ? 1 : 0; i < row.size(); i++ ) {
+            map.put( (long) i, row.get( i ) );
         }
         return map;
     }

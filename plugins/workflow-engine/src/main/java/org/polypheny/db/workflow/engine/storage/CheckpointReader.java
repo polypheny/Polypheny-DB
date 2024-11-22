@@ -16,8 +16,11 @@
 
 package org.polypheny.db.workflow.engine.storage;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -44,9 +47,40 @@ public abstract class CheckpointReader implements AutoCloseable {
 
     public abstract AlgNode getAlgNode( AlgCluster cluster );
 
-    public abstract Iterator<PolyValue[]> getIterator();
+    /**
+     * Get a new PolyValue[] iterator for this checkpoint.
+     * The iterator is closed automatically when this reader is closed.
+     *
+     * @return a PolyValue[] iterator representing the tuples of this checkpoint.
+     */
+    public abstract Iterator<PolyValue[]> getArrayIterator();
 
-    public abstract Iterator<PolyValue[]> getIteratorFromQuery( String query ); // TODO: How to specify query? Query language, PolyAlg or AlgNodes
+
+    /**
+     * Get a new iterator for this checkpoint that transforms the raw PolyValue array into a
+     * mutable list.
+     * The iterator is closed automatically when this reader is closed.
+     *
+     * @return An iterator that yields tuples as mutable lists.
+     */
+    public Iterator<List<PolyValue>> getIterator() {
+        return arrayToListIterator( getArrayIterator(), false );
+    }
+
+
+    /**
+     * Get a new iterator for this checkpoint that transforms the raw PolyValue array into a
+     * list.
+     *
+     * @param fixedSize whether the generated lists by the iterator should be of fixedSize (more efficient).
+     * @return An iterator that yields tuples as lists.
+     */
+    public Iterator<List<PolyValue>> getIterator( boolean fixedSize ) {
+        return arrayToListIterator( getArrayIterator(), fixedSize );
+    }
+
+
+    public abstract Iterator<List<PolyValue>> getIteratorFromQuery( String query ); // TODO: How to specify query? Query language, PolyAlg or AlgNodes
 
 
     public AlgDataType getTupleType() {
@@ -58,6 +92,43 @@ public abstract class CheckpointReader implements AutoCloseable {
         if ( iterator instanceof AutoCloseable closeable ) {
             openIterators.add( closeable );
         }
+    }
+
+
+    Iterator<List<PolyValue>> arrayToListIterator( Iterator<PolyValue[]> iterator, boolean fixedSize ) {
+        if ( fixedSize ) {
+            return new Iterator<>() {
+                private final Iterator<PolyValue[]> arrayIterator = iterator;
+
+
+                @Override
+                public boolean hasNext() {
+                    return arrayIterator.hasNext();
+                }
+
+
+                @Override
+                public List<PolyValue> next() {
+                    return Arrays.asList( arrayIterator.next() );
+                }
+            };
+        }
+        return new Iterator<>() {
+            private final Iterator<PolyValue[]> arrayIterator = iterator;
+
+
+            @Override
+            public boolean hasNext() {
+                return arrayIterator.hasNext();
+            }
+
+
+            @Override
+            public List<PolyValue> next() {
+                return new ArrayList<>( Arrays.asList( arrayIterator.next() ) );
+            }
+        };
+
     }
 
 

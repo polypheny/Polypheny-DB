@@ -21,18 +21,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.javalin.http.ContentType;
 import io.javalin.http.Context;
 import io.javalin.http.HttpCode;
-import java.util.Arrays;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.entity.PolyString;
-import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.webui.ConfigService.HandlerType;
 import org.polypheny.db.webui.HttpServer;
 import org.polypheny.db.workflow.engine.storage.RelReader;
@@ -83,42 +75,6 @@ public class WorkflowManager {
             sessionManager.createUserSession( id, version );
         } catch ( WorkflowRepoException e ) {
             e.printStackTrace();
-        }
-
-    }
-
-
-    // Only for testing
-    private void createDummyCheckpoint() {
-        try {
-            UUID sessionId = sessionManager.createUserSession( "Dummy Workflow" );
-            StorageManager sm = new StorageManagerImpl( sessionId, Map.of() );
-            UUID activityId = UUID.randomUUID();
-            AlgDataTypeFactory typeFactory = AlgDataTypeFactory.DEFAULT;
-            AlgDataType type = typeFactory.builder()
-                    .add( null, "field0", null, typeFactory.createPolyType( PolyType.INTEGER ) )
-                    .add( null, "field1", null, typeFactory.createPolyType( PolyType.VARCHAR ) )
-                    .build();
-
-            try ( RelWriter writer = sm.createRelCheckpoint( activityId, 0, type, false, null ) ) {
-                // write data
-                System.out.println( "Writing..." );
-                writer.write( new PolyValue[]{ PolyInteger.of( 42 ), PolyString.of( "test" ) } );
-            }
-
-            try ( RelReader reader = (RelReader) sm.readCheckpoint( activityId, 0 ) ) {
-                System.out.println( "\nTuple type of checkpoint: " + reader.getTupleType() );
-                Iterator<PolyValue[]> it = reader.getIterator();
-                System.out.println( "Iterating..." );
-
-                while ( it.hasNext() ) {
-                    PolyValue[] tuple = it.next();
-                    System.out.println( Arrays.toString( tuple ) );
-                }
-
-            }
-        } catch ( Exception e ) {
-            throw new RuntimeException( e );
         }
 
     }

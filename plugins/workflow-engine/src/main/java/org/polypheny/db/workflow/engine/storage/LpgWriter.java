@@ -16,6 +16,7 @@
 
 package org.polypheny.db.workflow.engine.storage;
 
+import java.util.List;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.transaction.Transaction;
@@ -40,14 +41,16 @@ public class LpgWriter extends CheckpointWriter {
     }
 
 
-    @Override
-    public void write( PolyValue[] tuple ) {
-        throw new NotImplementedException();
-    }
 
 
     private LogicalGraph getGraph() {
         return (LogicalGraph) entity;
+    }
+
+
+    @Override
+    public void write( List<PolyValue> tuple ) {
+        throw new NotImplementedException();
     }
 
 
