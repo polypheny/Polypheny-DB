@@ -20,6 +20,7 @@ package org.polypheny.db.catalog.entity;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.annotations.SerializeNullable;
+import java.io.Serial;
 import java.io.Serializable;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
@@ -30,6 +31,7 @@ import org.polypheny.db.type.entity.PolyValue;
 @EqualsAndHashCode
 public class LogicalDefaultValue implements Serializable {
 
+    @Serial
     private static final long serialVersionUID = 6085682952587659184L;
 
     @Serialize
@@ -53,7 +55,7 @@ public class LogicalDefaultValue implements Serializable {
             @Deserialize("functionName") final String functionName ) {
         this.fieldId = fieldId;
         this.type = type;
-        this.value = PolyValue.deserialize( typedJson );
+        this.value = PolyValue.fromTypedJson( typedJson, PolyValue.class );
         this.typedJson = typedJson;
         this.functionName = functionName;
     }
