@@ -18,7 +18,6 @@ package org.polypheny.db.workflow.engine.storage;
 
 import java.util.Collection;
 import java.util.Iterator;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionManager;
@@ -33,7 +32,7 @@ import org.polypheny.db.type.entity.relational.PolyMap;
 public abstract class CheckpointWriter implements AutoCloseable {
 
     private static final long DEFAULT_BYTE_SIZE = 32; // used as fallback to estimate number of bytes in a PolyValue
-    private static final long MAX_BYTES_PER_BATCH = 1024 * 1024L; // 1 MiB, upper limit to (estimated) size of batch in bytes
+    private static final long MAX_BYTES_PER_BATCH = 10 * 1024 * 1024L; // 10 MiB, upper limit to (estimated) size of batch in bytes
     private static final long MAX_TUPLES_PER_BATCH = 10_000; // upper limit to tuples per batch
 
 
@@ -42,10 +41,10 @@ public abstract class CheckpointWriter implements AutoCloseable {
     final Transaction transaction;
 
 
-    public CheckpointWriter( LogicalEntity entity, TransactionManager transactionManager ) {
+    public CheckpointWriter( LogicalEntity entity, Transaction transaction ) {
         this.entity = entity;
-        this.transactionManager = transactionManager;
-        transaction = transactionManager.startTransaction( Catalog.defaultUserId, entity.getNamespaceId(), false, StorageManager.ORIGIN );
+        this.transactionManager = transaction.getTransactionManager();
+        this.transaction = transaction;
     }
 
 
@@ -87,7 +86,6 @@ public abstract class CheckpointWriter implements AutoCloseable {
         long size = 0;
         for ( PolyValue value : tuple ) {
             try {
-                System.out.println( "Size of " + value + ": " + value.getByteSize().orElse( getFallbackByteSize( value ) ) );
                 size += value.getByteSize().orElse( getFallbackByteSize( value ) );
             } catch ( Exception e ) {
                 size += DEFAULT_BYTE_SIZE;

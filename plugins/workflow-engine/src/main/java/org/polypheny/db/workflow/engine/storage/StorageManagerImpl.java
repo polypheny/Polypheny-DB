@@ -23,6 +23,7 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nullable;
+import lombok.Getter;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
@@ -63,6 +64,9 @@ public class StorageManagerImpl implements StorageManager {
     private final TransactionManager transactionManager;
     private final DdlManager ddlManager;
 
+    @Getter // TODO: remove getter for transaction
+    private Transaction transaction; // currently just a workaround to avoid waiting indefinitely for locks
+
     private final long relNamespace;
     private final long docNamespace;
 
@@ -82,7 +86,6 @@ public class StorageManagerImpl implements StorageManager {
         relNamespace = ddlManager.createNamespace(
                 REL_PREFIX + sessionId, DataModel.RELATIONAL, true, false, null );
         docNamespace = ddlManager.createNamespace( DOC_PREFIX + sessionId, DataModel.DOCUMENT, true, false, null );
-
     }
 
 
@@ -108,9 +111,9 @@ public class StorageManagerImpl implements StorageManager {
     public CheckpointReader readCheckpoint( UUID activityId, int outputIdx ) {
         LogicalEntity entity = Objects.requireNonNull( checkpoints.get( activityId ).get( outputIdx ) );
         return switch ( entity.dataModel ) {
-            case RELATIONAL -> new RelReader( (LogicalTable) entity, transactionManager );
-            case DOCUMENT -> new DocReader( (LogicalCollection) entity, transactionManager );
-            case GRAPH -> new LpgReader( (LogicalGraph) entity, transactionManager );
+            case RELATIONAL -> new RelReader( (LogicalTable) entity, getActiveTransaction() );
+            case DOCUMENT -> new DocReader( (LogicalCollection) entity, getActiveTransaction() );
+            case GRAPH -> new LpgReader( (LogicalGraph) entity, getActiveTransaction() );
         };
     }
 
@@ -136,7 +139,7 @@ public class StorageManagerImpl implements StorageManager {
             }
         }
 
-        Transaction transaction = startTransaction( relNamespace );
+        Transaction createTransaction = startTransaction( relNamespace );
         String tableName = TABLE_PREFIX + activityId + "_" + outputIdx;
         ddlManager.createTable(
                 relNamespace,
@@ -146,12 +149,12 @@ public class StorageManagerImpl implements StorageManager {
                 false,
                 List.of( getStore( storeName ) ),
                 PlacementType.AUTOMATIC,
-                transaction.createStatement() );
-        transaction.commit();
+                createTransaction.createStatement() );
+        createTransaction.commit();
 
         LogicalTable table = Catalog.snapshot().rel().getTable( relNamespace, tableName ).orElseThrow();
         register( activityId, outputIdx, table );
-        return new RelWriter( table, transactionManager, resetPk );
+        return new RelWriter( table, getActiveTransaction(), resetPk );
     }
 
 
@@ -267,6 +270,22 @@ public class StorageManagerImpl implements StorageManager {
                 isArray ? (int) ((ArrayType) field.getType()).getDimension() : -1,
                 isArray ? (int) ((ArrayType) field.getType()).getCardinality() : -1,
                 field.getType().isNullable() );
+    }
+
+
+    private Transaction getActiveTransaction() {
+        if ( transaction == null || !transaction.isActive() ) {
+            transaction = startTransaction( relNamespace );
+        }
+        return transaction;
+    }
+
+
+    @Override
+    public void close() throws Exception {
+        if ( transaction != null ) {
+            transaction.commit(); // TODO: move commit / rollback to writer / reader
+        }
     }
 
 }

@@ -21,16 +21,21 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.javalin.http.ContentType;
 import io.javalin.http.Context;
 import io.javalin.http.HttpCode;
+import java.util.Arrays;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.webui.ConfigService.HandlerType;
 import org.polypheny.db.webui.HttpServer;
+import org.polypheny.db.workflow.engine.storage.RelReader;
 import org.polypheny.db.workflow.engine.storage.RelWriter;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
 import org.polypheny.db.workflow.engine.storage.StorageManagerImpl;
@@ -56,16 +61,18 @@ public class WorkflowManager {
         sessionManager = SessionManager.getInstance();
         registerEndpoints();
 
+        createDummyExecutionTest();
+
         // waiting with test to ensure everything has started
-        new java.util.Timer().schedule(
+        /*new java.util.Timer().schedule(
                 new java.util.TimerTask() {
                     @Override
                     public void run() {
-                        createDummyCheckpoint();
+                        //createDummyCheckpoint();
                     }
                 },
                 5000
-        );
+        );*/
     }
 
 
@@ -99,10 +106,61 @@ public class WorkflowManager {
                 writer.write( new PolyValue[]{ PolyInteger.of( 42 ), PolyString.of( "test" ) } );
             }
 
+            try ( RelReader reader = (RelReader) sm.readCheckpoint( activityId, 0 ) ) {
+                System.out.println( "\nTuple type of checkpoint: " + reader.getTupleType() );
+                Iterator<PolyValue[]> it = reader.getIterator();
+                System.out.println( "Iterating..." );
+
+                while ( it.hasNext() ) {
+                    PolyValue[] tuple = it.next();
+                    System.out.println( Arrays.toString( tuple ) );
+                }
+
+            }
         } catch ( Exception e ) {
             throw new RuntimeException( e );
         }
 
+    }
+
+
+    private void createDummyExecutionTest() {
+        HttpServer server = HttpServer.getInstance();
+        server.addSerializedRoute( PATH + "/dummy/{tableName}", ctx -> {
+            System.out.println( "handling dummy..." );
+            String tableName = ctx.pathParam( "tableName" );
+            LogicalTable table = Catalog.snapshot().rel().getTable( Catalog.defaultNamespaceId, tableName ).orElseThrow();
+
+            try ( StorageManager sm = new StorageManagerImpl( sessionManager.createUserSession( "Dummy Execution Test " + UUID.randomUUID() ), Map.of() ) ) {
+
+                UUID activityId = UUID.randomUUID();
+
+                try ( RelWriter writer = sm.createRelCheckpoint( activityId, 0, table.getTupleType(), false, null );
+                        RelReader reader = new RelReader( table, ((StorageManagerImpl) sm).getTransaction() ) ) {
+                    System.out.println( "Reading and writing..." );
+
+                    long start = System.currentTimeMillis();
+
+                    /*Iterator<PolyValue[]> it = reader.getIterator();
+                    System.out.println( "start iteration..." );
+                    while ( it.hasNext() ) {
+                        System.out.println( Arrays.toString( it.next() ) );
+                    }*/
+                    writer.write( reader.getIterator() );
+
+                    long finish = System.currentTimeMillis();
+                    long timeElapsed = finish - start;
+                    System.out.println( "Time in ms: " + timeElapsed );
+                }
+
+                sendResult( ctx, "success!" );
+
+            } catch ( Exception e ) {
+                e.printStackTrace();
+            }
+
+
+        }, HandlerType.GET );
     }
 
 

@@ -51,64 +51,92 @@ class StorageManagerTest {
 
 
     @Test
-    void hasValidDefaultStoresTest() {
-        StorageManager sm = new StorageManagerImpl( sessionId, Map.of() );
-
-        AdapterManager.getInstance().getStore( sm.getDefaultStore( DataModel.RELATIONAL ) ).orElseThrow();
-        AdapterManager.getInstance().getStore( sm.getDefaultStore( DataModel.DOCUMENT ) ).orElseThrow();
-        AdapterManager.getInstance().getStore( sm.getDefaultStore( DataModel.GRAPH ) ).orElseThrow();
+    void hasValidDefaultStoresTest() throws Exception {
+        try ( StorageManager sm = new StorageManagerImpl( sessionId, Map.of() ) ) {
+            AdapterManager.getInstance().getStore( sm.getDefaultStore( DataModel.RELATIONAL ) ).orElseThrow();
+            AdapterManager.getInstance().getStore( sm.getDefaultStore( DataModel.DOCUMENT ) ).orElseThrow();
+            AdapterManager.getInstance().getStore( sm.getDefaultStore( DataModel.GRAPH ) ).orElseThrow();
+        }
     }
 
 
     @Test
     void createRelCheckpointTest() throws Exception {
-        StorageManager sm = new StorageManagerImpl( sessionId, Map.of() );
-        UUID activityId = UUID.randomUUID();
-        AlgDataType type = getSampleType();
-        sm.createRelCheckpoint( activityId, 0, type, false, null ).close();
+        try ( StorageManager sm = new StorageManagerImpl( sessionId, Map.of() ) ) {
+            UUID activityId = UUID.randomUUID();
+            AlgDataType type = getSampleType();
+            sm.createRelCheckpoint( activityId, 0, type, false, null ).close();
 
-        try ( RelReader reader = (RelReader) sm.readCheckpoint( activityId, 0 ) ) {
-            reader.getTupleType();
-            for ( int i = 0; i < type.getFieldCount(); i++ ) {
-                AlgDataTypeField field = reader.getTupleType().getFields().get( i );
-                assertEquals( type.getFields().get( i ).getName(), field.getName() );
-                assertEquals( type.getFields().get( i ).getType().getPolyType(), field.getType().getPolyType() );
+            try ( RelReader reader = (RelReader) sm.readCheckpoint( activityId, 0 ) ) {
+                reader.getTupleType();
+                for ( int i = 0; i < type.getFieldCount(); i++ ) {
+                    AlgDataTypeField field = reader.getTupleType().getFields().get( i );
+                    assertEquals( type.getFields().get( i ).getName(), field.getName() );
+                    assertEquals( type.getFields().get( i ).getType().getPolyType(), field.getType().getPolyType() );
+                }
+
             }
-
         }
     }
 
 
     @Test
     void writeAndReadRelCheckpointTest() throws Exception {
-        StorageManager sm = new StorageManagerImpl( sessionId, Map.of() );
-        UUID activityId = UUID.randomUUID();
-        AlgDataType type = getSampleType();
-        List<PolyValue[]> sampleData = getSampleData();
+        try ( StorageManager sm = new StorageManagerImpl( sessionId, Map.of() ) ) {
+            UUID activityId = UUID.randomUUID();
+            AlgDataType type = getSampleType();
+            List<PolyValue[]> sampleData = getSampleData();
 
-        try ( RelWriter writer = sm.createRelCheckpoint( activityId, 0, type, false, null ) ) {
             System.out.println( "Writing..." );
-            for ( PolyValue[] tuple : sampleData ) {
-                System.out.println( Arrays.toString( tuple ) );
-                writer.write( tuple );
+            try ( RelWriter writer = sm.createRelCheckpoint( activityId, 0, type, false, null ) ) {
+                for ( PolyValue[] tuple : sampleData ) {
+                    writer.write( tuple );
+                }
             }
+
+            System.out.println( "Reading..." );
+            try ( RelReader reader = (RelReader) sm.readCheckpoint( activityId, 0 ) ) {
+                System.out.println( "\nTuple type of checkpoint: " + reader.getTupleType() );
+                assertEquals( sampleData.size(), reader.getRowCount() );
+                Iterator<PolyValue[]> it = reader.getIterator();
+
+                int i = 0;
+                while ( it.hasNext() ) {
+                    PolyValue[] tuple = it.next();
+                    System.out.println( Arrays.toString( tuple ) );
+                    assertTupleEquals( tuple, sampleData.get( i++ ) );
+                }
+                assertEquals( sampleData.size(), i );
+            }
+            System.out.println( "Finished..." );
         }
 
-        System.out.println( "Reading..." );
-        try ( RelReader reader = (RelReader) sm.readCheckpoint( activityId, 0 ) ) {
-            System.out.println( "\nTuple type of checkpoint: " + reader.getTupleType() );
-            Iterator<PolyValue[]> it = reader.getIterator();
+    }
 
-            int i = 0;
-            while ( it.hasNext() ) {
-                PolyValue[] tuple = it.next();
-                System.out.println( Arrays.toString( tuple ) );
-                assertTupleEquals( tuple, sampleData.get( i++ ) );
+
+    @Test
+    void writeWhileReadingRelCheckpointTest() throws Exception {
+        try ( StorageManager sm = new StorageManagerImpl( sessionId, Map.of() ) ) {
+            UUID activityId1 = UUID.randomUUID();
+            UUID activityId2 = UUID.randomUUID();
+            AlgDataType type = getSampleType();
+            List<PolyValue[]> sampleData = getSampleData();
+
+            try ( RelWriter writer = sm.createRelCheckpoint( activityId1, 0, type, false, null ) ) {
+                System.out.println( "Writing 1..." );
+                for ( PolyValue[] tuple : sampleData ) {
+                    System.out.println( Arrays.toString( tuple ) );
+                    writer.write( tuple );
+                }
             }
-            assertEquals( sampleData.size(), i );
-        }
-        System.out.println( "Finished..." );
 
+            try ( RelWriter writer = sm.createRelCheckpoint( activityId2, 0, type, false, null );
+                    RelReader reader = (RelReader) sm.readCheckpoint( activityId1, 0 )
+            ) {
+                System.out.println( "Concurrently reading 1 and writing 2" );
+                writer.write( reader.getIterator() );
+            }
+        }
     }
 
 
@@ -128,7 +156,7 @@ class StorageManagerTest {
 
     private List<PolyValue[]> getSampleData() {
         List<PolyValue[]> tuples = new ArrayList<>();
-        tuples.add( new PolyValue[]{ PolyInteger.of( 42 ), PolyString.of( "THIS is a test" ) } );
+        tuples.add( new PolyValue[]{ PolyInteger.of( 42 ), PolyString.of( "This is a test" ) } );
         tuples.add( new PolyValue[]{ PolyInteger.of( 123 ), PolyString.of( "abcd" ) } );
         tuples.add( new PolyValue[]{ PolyInteger.of( 456 ), PolyString.of( "efgh" ) } );
         //tuples.add( new PolyValue[]{ PolyInteger.of( 123 ) } );

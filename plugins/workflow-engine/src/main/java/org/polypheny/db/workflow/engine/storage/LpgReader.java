@@ -21,13 +21,13 @@ import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.plan.AlgCluster;
-import org.polypheny.db.transaction.TransactionManager;
+import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyValue;
 
 public class LpgReader extends CheckpointReader {
 
-    public LpgReader( LogicalGraph graph, TransactionManager transactionManager ) {
-        super( graph, transactionManager );
+    public LpgReader( LogicalGraph graph, Transaction transaction ) {
+        super( graph, transaction );
     }
 
 

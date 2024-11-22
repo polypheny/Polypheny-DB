@@ -18,6 +18,7 @@ package org.polypheny.db.workflow.engine.storage;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
@@ -31,14 +32,14 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
 import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.schema.trait.ModelTrait;
-import org.polypheny.db.transaction.TransactionManager;
+import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyValue;
 
 public class RelReader extends CheckpointReader {
 
 
-    public RelReader( LogicalTable table, TransactionManager transactionManager ) {
-        super( table, transactionManager );
+    public RelReader( LogicalTable table, Transaction transaction ) {
+        super( table, transaction );
     }
 
 
@@ -46,6 +47,18 @@ public class RelReader extends CheckpointReader {
         LogicalTable table = getTable();
         LogicalPrimaryKey pk = Catalog.snapshot().rel().getPrimaryKey( table.primaryKey ).orElseThrow();
         return pk.getFieldNames();
+    }
+
+
+    public long getRowCount() {
+        LogicalTable table = getTable();
+        String query = "SELECT COUNT(*) FROM \"" + table.getName() + "\"";
+        Iterator<PolyValue[]> it = executeSqlQuery( query );
+        try {
+            return it.next()[0].asLong().longValue();
+        } catch ( NoSuchElementException | IndexOutOfBoundsException | NullPointerException ignored ) {
+            return 0;
+        }
     }
 
 
@@ -60,7 +73,6 @@ public class RelReader extends CheckpointReader {
     public Iterator<PolyValue[]> getIterator() {
         LogicalTable table = getTable();
         String query = "SELECT " + getQuotedColumns() + " FROM \"" + table.getName() + "\"";
-        System.out.println( "Query: " + query );
         return executeSqlQuery( query );
     }
 
@@ -87,9 +99,7 @@ public class RelReader extends CheckpointReader {
                 .namespaceId( table.getNamespaceId() )
                 .transactionManager( transactionManager )
                 .transactions( List.of( transaction ) ).build();
-        System.out.println( "executing" );
         List<ExecutedContext> executedContexts = LanguageManager.getINSTANCE().anyQuery( context );
-        System.out.println( "getting iterator" );
         Iterator<PolyValue[]> iterator = executedContexts.get( 0 ).getIterator().getIterator();
         registerIterator( iterator );
         return iterator;
@@ -99,7 +109,7 @@ public class RelReader extends CheckpointReader {
     private String getQuotedColumns() {
         LogicalTable table = getTable();
         return table.getColumnNames().stream()
-                //.map( s -> "\"" + s + "\"" )
+                .map( s -> "\"" + s + "\"" )
                 .collect( Collectors.joining( ", " ) );
 
     }

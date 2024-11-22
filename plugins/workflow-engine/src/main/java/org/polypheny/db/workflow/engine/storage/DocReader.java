@@ -21,13 +21,13 @@ import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.plan.AlgCluster;
-import org.polypheny.db.transaction.TransactionManager;
+import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyValue;
 
 public class DocReader extends CheckpointReader {
 
-    public DocReader( LogicalCollection collection, TransactionManager transactionManager ) {
-        super( collection, transactionManager );
+    public DocReader( LogicalCollection collection, Transaction transaction ) {
+        super( collection, transaction );
     }
 
 

@@ -25,7 +25,8 @@ import org.polypheny.db.catalog.logistic.DataModel;
  * A StorageManager is responsible for managing the checkpoints of a specific session.
  * It is NOT responsible to enforce compliance of the checkpoint data model with the corresponding ActivityDef.
  */
-public interface StorageManager {
+public interface StorageManager extends AutoCloseable { // TODO: remove AutoCloseable when transactions are managed by individual readers / writers
+
     String ORIGIN = "WorkflowEngine";
     String PK_COL = "key";
 

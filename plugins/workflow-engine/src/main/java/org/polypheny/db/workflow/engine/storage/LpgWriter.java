@@ -18,15 +18,15 @@ package org.polypheny.db.workflow.engine.storage;
 
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
-import org.polypheny.db.transaction.TransactionManager;
+import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyNode;
 
 public class LpgWriter extends CheckpointWriter {
 
-    public LpgWriter( LogicalGraph graph, TransactionManager transactionManager ) {
-        super( graph, transactionManager );
+    public LpgWriter( LogicalGraph graph, Transaction transaction ) {
+        super( graph, transaction );
     }
 
 

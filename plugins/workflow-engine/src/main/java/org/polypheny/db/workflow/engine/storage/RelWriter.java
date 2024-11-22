@@ -31,7 +31,7 @@ import org.polypheny.db.processing.ImplementationContext;
 import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
 import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.transaction.TransactionManager;
+import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.numerical.PolyLong;
 
@@ -42,14 +42,16 @@ public class RelWriter extends CheckpointWriter {
 
     private final AlgDataType[] dataTypes;
     private final Statement statement;
-    private final ImplementationContext implementation;
+    private ImplementationContext implementation;
     private final Map<Long, AlgDataType> paramTypes = new HashMap<>();
     private final List<Map<Long, PolyValue>> paramValues = new ArrayList<>();
     private long batchSize = -1;
 
+    private QueryContext context; // TODO: remove
 
-    public RelWriter( LogicalTable table, TransactionManager transactionManager, boolean resetPk ) {
-        super( table, transactionManager );
+
+    public RelWriter( LogicalTable table, Transaction transaction, boolean resetPk ) {
+        super( table, transaction );
         this.resetPk = resetPk;
 
         dataTypes = entity.getTupleType().getFields().stream().map( AlgDataTypeField::getType ).toArray( AlgDataType[]::new );
@@ -72,6 +74,7 @@ public class RelWriter extends CheckpointWriter {
                 .transactionManager( transactionManager )
                 .transactions( List.of( transaction ) ).build();
         implementation = LanguageManager.getINSTANCE().anyPrepareQuery( context, statement ).get( 0 );
+        this.context = context;
 
 
     }
@@ -144,11 +147,11 @@ public class RelWriter extends CheckpointWriter {
 
 
     private void executeIfBatchFull() {
-        if ( paramValues.size() < batchSize ) { // TODO: correctly determine threshold
-            System.out.println( "Batch is not yet full (" + paramValues.size() + " of " + batchSize + ")" );
+        if ( paramValues.size() < batchSize ) {
+            //System.out.println( "Batch is not yet full (" + paramValues.size() + " of " + batchSize + ")" );
             return;
         }
-        System.out.println( "batch is full, writing " + paramValues );
+        //System.out.println( "batch is full, writing " + paramValues );
         executeBatch();
     }
 
@@ -159,6 +162,7 @@ public class RelWriter extends CheckpointWriter {
         statement.getDataContext().setParameterTypes( paramTypes );
         statement.getDataContext().setParameterValues( paramValues );
 
+        implementation = LanguageManager.getINSTANCE().anyPrepareQuery( context, statement ).get( 0 ); // TODO: remove and make implementation final
         ExecutedContext executedContext = implementation.execute( statement );
 
         if ( executedContext.getException().isPresent() ) {

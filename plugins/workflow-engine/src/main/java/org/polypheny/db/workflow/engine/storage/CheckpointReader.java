@@ -21,7 +21,6 @@ import java.util.Iterator;
 import java.util.Set;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.transaction.Transaction;
@@ -36,10 +35,10 @@ public abstract class CheckpointReader implements AutoCloseable {
     private final Set<AutoCloseable> openIterators = new HashSet<>();
 
 
-    public CheckpointReader( LogicalEntity entity, TransactionManager transactionManager ) {
+    public CheckpointReader( LogicalEntity entity, Transaction transaction ) {
         this.entity = entity;
-        this.transactionManager = transactionManager;
-        this.transaction = transactionManager.startTransaction( Catalog.defaultUserId, entity.getNamespaceId(), false, StorageManager.ORIGIN );
+        this.transactionManager = transaction.getTransactionManager();
+        this.transaction = transaction;
     }
 
 
@@ -63,12 +62,15 @@ public abstract class CheckpointReader implements AutoCloseable {
 
 
     @Override
-    public void close() throws Exception {
+    public void close() {
         for ( AutoCloseable iterator : openIterators ) {
-            iterator.close();
+            try {
+                iterator.close();
+            } catch ( Exception ignored ) {
+            }
         }
         openIterators.clear();
-        transaction.rollback( null );  // read-only transaction
+        //transaction.rollback( null );  // read-only transaction TODO: activate when transactions fixed
     }
 
 }
