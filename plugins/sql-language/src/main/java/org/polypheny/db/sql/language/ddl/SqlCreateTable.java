@@ -30,7 +30,9 @@ import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.Collation;
 import org.polypheny.db.catalog.logistic.PlacementType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.ddl.DdlManager;
@@ -54,6 +56,9 @@ import org.polypheny.db.sql.language.SqlOperator;
 import org.polypheny.db.sql.language.SqlSpecialOperator;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.locking.EntityIdentifierUtils;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 
@@ -237,8 +242,6 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
             constraints = columnsConstraints.right;
         }
 
-
-
         DdlManager.getInstance().createTable(
                 namespaceId,
                 tableName,
@@ -271,7 +274,9 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
         List<FieldInformation> fieldInformation = new ArrayList<>();
         List<ConstraintInformation> constraintInformation = new ArrayList<>();
 
-        int position = 1;
+        fieldInformation.add( EntityIdentifierUtils.IDENTIFIER_FIELD_INFORMATION);
+
+        int position = 2; // first column is entry identifier
         for ( Ord<SqlNode> c : Ord.zip( columns.getSqlList() ) ) {
             if ( c.e instanceof SqlColumnDeclaration columnDeclaration ) {
 

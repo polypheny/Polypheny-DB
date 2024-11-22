@@ -2062,13 +2062,6 @@ public class DdlManagerImpl extends DdlManager {
             ids.put( information.name(), addColumn( namespaceId, information.name(), information.typeInformation(), information.collation(), information.defaultValue(), logical.id, information.position() + 1 ) ); // pos + 1 to make space for entry identifier column
         }
 
-        // add entry identifier column
-        ColumnTypeInformation entryColumnTypeInformation = new ColumnTypeInformation( PolyType.BIGINT, null, null, null, null, null, false);
-        // TODO: set collation properly
-        LogicalColumn entryIdentifierColumn = addColumn( namespaceId, "eid", entryColumnTypeInformation , Collation.CASE_SENSITIVE, null, logical.id, 1);
-        ids.put("edi", entryIdentifierColumn);
-
-
         List<Long> pkIds = new ArrayList<>();
 
         // create foreign keys later on

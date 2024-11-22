@@ -70,8 +70,12 @@ import org.polypheny.db.sql.sql2alg.StandardConvertletTable;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.locking.EntityIdentifierGenerator;
+import org.polypheny.db.transaction.locking.EntityIdentifierUtils;
 import org.polypheny.db.transaction.locking.Lockable.LockType;
 import org.polypheny.db.transaction.locking.LockablesRegistry;
+import org.polypheny.db.type.entity.PolyBinary;
+import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.util.Casing;
 import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.DeadlockException;
@@ -247,122 +251,147 @@ public class SqlProcessor extends Processor {
     }
 
 
-    // Add default values for unset fields
-    private void addDefaultValues( Transaction transaction, SqlInsert insert ) {
+    private void addDefaultValues(Transaction transaction, SqlInsert insert) {
         SqlNodeList oldColumnList = insert.getTargetColumnList();
 
-        if ( oldColumnList != null ) {
-            LogicalTable catalogTable = getTable( transaction, (SqlIdentifier) insert.getTargetTable() );
-            DataModel dataModel = Catalog.snapshot().getNamespace( catalogTable.namespaceId ).orElseThrow().dataModel;
+        if (oldColumnList != null) {
+            LogicalTable catalogTable = getTable(transaction, (SqlIdentifier) insert.getTargetTable());
+            DataModel dataModel = Catalog.snapshot().getNamespace(catalogTable.namespaceId)
+                    .orElseThrow()
+                    .dataModel;
 
-            catalogTable = getTable( transaction, (SqlIdentifier) insert.getTargetTable() );
-
-            SqlNodeList newColumnList = new SqlNodeList( ParserPos.ZERO );
-            int size = catalogTable.getColumns().size();
-            if ( dataModel == DataModel.DOCUMENT ) {
-                List<String> columnNames = catalogTable.getColumnNames();
-                size += (int) oldColumnList.getSqlList().stream().filter( column -> !columnNames.contains( ((SqlIdentifier) column).names.get( 0 ) ) ).count();
-            }
+            SqlNodeList newColumnList = new SqlNodeList(ParserPos.ZERO);
+            int size = computeTargetSize(catalogTable, oldColumnList, dataModel);
 
             SqlNode[][] newValues = new SqlNode[((SqlBasicCall) insert.getSource()).getOperands().length][size];
-            int pos = 0;
-            for ( LogicalColumn column : catalogTable.getColumns() ) {
+            processColumns(catalogTable, oldColumnList, newColumnList, newValues, insert);
 
-                // Add column
-                newColumnList.add( new SqlIdentifier( column.name, ParserPos.ZERO ) );
-
-                // Add value (loop because it can be a multi insert (insert into test(id) values (1),(2),(3))
-                int i = 0;
-                for ( SqlNode sqlNode : ((SqlBasicCall) insert.getSource()).getOperands() ) {
-                    SqlBasicCall call = (SqlBasicCall) sqlNode;
-                    int position = getPositionInSqlNodeList( oldColumnList, column.name );
-                    if ( position >= 0 ) {
-                        newValues[i][pos] = call.getOperands()[position];
-                    } else {
-                        // Add value
-                        if ( column.defaultValue != null ) {
-                            LogicalDefaultValue defaultValue = column.defaultValue;
-                            //TODO NH handle arrays
-                            switch ( column.type ) {
-                                case BOOLEAN:
-                                    newValues[i][pos] = SqlLiteral.createBoolean(
-                                            Boolean.parseBoolean( column.defaultValue.value.toJson() ),
-                                            ParserPos.ZERO );
-                                    break;
-                                case INTEGER:
-                                case DECIMAL:
-                                case BIGINT:
-                                    newValues[i][pos] = SqlLiteral.createExactNumeric(
-                                            column.defaultValue.value.toJson(),
-                                            ParserPos.ZERO );
-                                    break;
-                                case REAL:
-                                case DOUBLE:
-                                    newValues[i][pos] = SqlLiteral.createApproxNumeric(
-                                            column.defaultValue.value.toJson(),
-                                            ParserPos.ZERO );
-                                    break;
-                                case VARCHAR:
-                                    newValues[i][pos] = SqlLiteral.createCharString(
-                                            column.defaultValue.value.toJson(),
-                                            ParserPos.ZERO );
-                                    break;
-                                default:
-                                    throw new PolyphenyDbException( "Not yet supported default value type: " + defaultValue.type );
-                            }
-                        } else if ( column.nullable ) {
-                            newValues[i][pos] = SqlLiteral.createNull( ParserPos.ZERO );
-                        } else {
-                            throw new PolyphenyDbException( "The not nullable field '" + column.name + "' is missing in the insert statement and has no default value defined." );
-                        }
-                    }
-                    i++;
-                }
-                pos++;
+            if (dataModel == DataModel.DOCUMENT) {
+                addDocumentValues(oldColumnList, newColumnList, newValues, insert);
             }
 
-            // add doc values back TODO DL: change
-            if ( dataModel == DataModel.DOCUMENT ) {
-                List<SqlIdentifier> documentColumns = new ArrayList<>();
-                for ( Node column : oldColumnList.getSqlList() ) {
-                    if ( newColumnList.getSqlList()
-                            .stream()
-                            .filter( c -> c instanceof SqlIdentifier )
-                            .map( c -> ((SqlIdentifier) c).names.get( 0 ) )
-                            .noneMatch( c -> c.equals( ((SqlIdentifier) column).names.get( 0 ) ) ) ) {
-                        documentColumns.add( (SqlIdentifier) column );
-                    }
+            insert.setColumns(newColumnList);
+            updateSourceValues(insert, newValues);
+        }
+    }
+
+    private int computeTargetSize(LogicalTable catalogTable, SqlNodeList oldColumnList, DataModel dataModel) {
+        int size = catalogTable.getColumns().size();
+        if (dataModel == DataModel.DOCUMENT) {
+            List<String> columnNames = catalogTable.getColumnNames();
+            size += (int) oldColumnList.getSqlList()
+                    .stream()
+                    .filter(column -> !columnNames.contains(((SqlIdentifier) column).names.get(0)))
+                    .count();
+        }
+        return size;
+    }
+
+    private void processColumns(LogicalTable catalogTable, SqlNodeList oldColumnList, SqlNodeList newColumnList,
+            SqlNode[][] newValues, SqlInsert insert) {
+        int pos = 0;
+
+        for (LogicalColumn column : catalogTable.getColumns()) {
+            newColumnList.add(new SqlIdentifier(column.name, ParserPos.ZERO));
+
+            for (int i = 0; i < ((SqlBasicCall) insert.getSource()).getOperands().length; i++) {
+                SqlNode sqlNode = ((SqlBasicCall) insert.getSource()).getOperands()[i];
+                SqlBasicCall call = (SqlBasicCall) sqlNode;
+
+                int position = getPositionInSqlNodeList(oldColumnList, column.name);
+                if (column.name.equals( EntityIdentifierUtils.IDENTIFIER_KEY )) {
+                    newValues[i][pos] = createEntityIdentifierLiteral();
+                } else if (position >= 0) {
+                    newValues[i][pos] = call.getOperands()[position];
+                } else {
+                    newValues[i][pos] = resolveDefaultValue(column);
                 }
-
-                for ( SqlIdentifier doc : documentColumns ) {
-                    int i = 0;
-                    newColumnList.add( doc );
-
-                    for ( SqlNode sqlNode : ((SqlBasicCall) insert.getSource()).getOperands() ) {
-                        int position = getPositionInSqlNodeList( oldColumnList, doc.getSimple() );
-                        newValues[i][pos] = ((SqlBasicCall) sqlNode).getOperands()[position];
-                    }
-                    pos++;
-                }
-
             }
+            pos++;
+        }
+    }
 
-            // Add new column list
-            insert.setColumns( newColumnList );
-            // Replace value in parser tree
-            for ( int i = 0; i < newValues.length; i++ ) {
-                SqlBasicCall call = ((SqlBasicCall) ((SqlBasicCall) insert.getSource()).getOperands()[i]);
-                ((SqlBasicCall) insert.getSource()).getOperands()[i] = (SqlNode) call.getOperator().createCall(
-                        call.getFunctionQuantifier(),
-                        call.getPos(),
-                        newValues[i] );
+    private SqlNode resolveDefaultValue(LogicalColumn column) {
+        if (column.defaultValue != null) {
+            LogicalDefaultValue defaultValue = column.defaultValue;
+            // TODO NH handle arrays
+            return createDefaultValueLiteral(column, defaultValue);
+        } else if (column.nullable) {
+            return SqlLiteral.createNull( ParserPos.ZERO );
+        } else {
+            throw new PolyphenyDbException(
+                    "The not nullable field '" + column.name + "' is missing in the insert statement and has no default value defined."
+            );
+        }
+    }
+
+    private SqlNode createDefaultValueLiteral(LogicalColumn column, LogicalDefaultValue defaultValue) {
+        return switch ( column.type ) {
+            case BOOLEAN -> SqlLiteral.createBoolean(
+                    Boolean.parseBoolean( defaultValue.value.toJson() ),
+                    ParserPos.ZERO
+            );
+            case INTEGER, DECIMAL, BIGINT -> SqlLiteral.createExactNumeric(
+                    defaultValue.value.toJson(),
+                    ParserPos.ZERO
+            );
+            case REAL, DOUBLE -> SqlLiteral.createApproxNumeric(
+                    defaultValue.value.toJson(),
+                    ParserPos.ZERO
+            );
+            case VARCHAR -> SqlLiteral.createCharString(
+                    defaultValue.value.toJson(),
+                    ParserPos.ZERO
+            );
+            default -> throw new PolyphenyDbException( "Unsupported default value type: " + defaultValue.type );
+        };
+    }
+
+    private SqlNode createEntityIdentifierLiteral() {
+        return SqlLiteral.createExactNumeric(
+                String.valueOf(EntityIdentifierGenerator.INSTANCE.getEntryIdentifier()), // ToDo TH: is there no better way to do this?
+                ParserPos.ZERO
+        );
+    }
+
+    private void addDocumentValues(SqlNodeList oldColumnList, SqlNodeList newColumnList,
+            SqlNode[][] newValues, SqlInsert insert) {
+        List<SqlIdentifier> documentColumns = new ArrayList<>();
+
+        for (SqlNode column : oldColumnList.getSqlList()) {
+            if (newColumnList.getSqlList()
+                    .stream()
+                    .filter(c -> c instanceof SqlIdentifier)
+                    .map(c -> ((SqlIdentifier) c).names.get(0))
+                    .noneMatch(c -> c.equals(((SqlIdentifier) column).names.get(0)))) {
+                documentColumns.add((SqlIdentifier) column);
             }
+        }
+
+        int pos = newColumnList.getSqlList().size();
+        for (SqlIdentifier doc : documentColumns) {
+            newColumnList.add(doc);
+            for (int i = 0; i < ((SqlBasicCall) insert.getSource()).getOperands().length; i++) {
+                int position = getPositionInSqlNodeList(oldColumnList, doc.getSimple());
+                newValues[i][pos] = ((SqlBasicCall) ((SqlBasicCall) insert.getSource()).getOperands()[i])
+                        .getOperands()[position];
+            }
+        }
+    }
+
+    private void updateSourceValues(SqlInsert insert, SqlNode[][] newValues) {
+        for (int i = 0; i < newValues.length; i++) {
+            SqlBasicCall call = (SqlBasicCall) ((SqlBasicCall) insert.getSource()).getOperands()[i];
+            ((SqlBasicCall) insert.getSource()).getOperands()[i] = (SqlNode) call.getOperator().createCall(
+                    call.getFunctionQuantifier(),
+                    call.getPos(),
+                    newValues[i]
+            );
         }
     }
 
 
     private LogicalTable getTable( Transaction transaction, SqlIdentifier tableName ) {
-        LogicalTable table;
         Snapshot snapshot = transaction.getSnapshot();
         long namespaceId;
         String tableOldName;
@@ -401,20 +430,8 @@ public class SqlProcessor extends Processor {
      * @return Trimmed relational expression
      */
     protected AlgRoot trimUnusedFields( AlgRoot root, SqlToAlgConverter sqlToAlgConverter ) {
-        final Config config = NodeToAlgConverter.configBuilder()
-                .trimUnusedFields( shouldTrim( root.alg ) )
-                .expand( false )
-                .build();
         final boolean ordered = !root.collation.getFieldCollations().isEmpty();
         final boolean dml = Kind.DML.contains( root.kind );
         return root.withAlg( sqlToAlgConverter.trimUnusedFields( dml || ordered, root.alg ) );
     }
-
-
-    private boolean shouldTrim( AlgNode rootAlg ) {
-        // For now, don't trim if there are more than 3 joins. The projects near the leaves created by trim migrate past
-        // joins and seem to prevent join-reordering.
-        return AlgOptUtil.countJoins( rootAlg ) < 2;
-    }
-
 }

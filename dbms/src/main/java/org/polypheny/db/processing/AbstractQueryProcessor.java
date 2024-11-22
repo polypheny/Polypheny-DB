@@ -563,10 +563,10 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             try {
                 transaction.acquireLockable( k, v );
             } catch ( DeadlockException e ) {
+                // TODO TH: throw more expressive exception
                 throw new RuntimeException( e );
             }
         } );
-        // TODO: Differentiate DDLs from others. Q: Do DDLs event call this method? A: No.
     }
 
 
@@ -869,7 +869,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 }
                 return super.visit( node );
             }
-
         };
         newRoot = newRoot.accept( shuttle2 );
         return AlgRoot.of( newRoot, logicalRoot.kind );
