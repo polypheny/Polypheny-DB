@@ -31,7 +31,9 @@ import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.Collation;
 import org.polypheny.db.catalog.logistic.PlacementType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.ddl.DdlManager;
@@ -241,8 +243,6 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
             constraints = columnsConstraints.right;
         }
 
-
-
         DdlManager.getInstance().createTable(
                 namespaceId,
                 tableName,
@@ -275,7 +275,9 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
         List<FieldInformation> fieldInformation = new ArrayList<>();
         List<ConstraintInformation> constraintInformation = new ArrayList<>();
 
-        int position = 1;
+        fieldInformation.add( EntityIdentifierUtils.IDENTIFIER_FIELD_INFORMATION);
+
+        int position = 2; // first column is entry identifier
         for ( Ord<SqlNode> c : Ord.zip( columns.getSqlList() ) ) {
             if ( c.e instanceof SqlColumnDeclaration columnDeclaration ) {
 
