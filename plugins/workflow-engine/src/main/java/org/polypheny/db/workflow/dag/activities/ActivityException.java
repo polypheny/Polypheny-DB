@@ -21,10 +21,10 @@ import lombok.Getter;
 @Getter
 public class ActivityException extends Exception {
 
-    private final Activity activity;
+    private final ActivityWrapper activity;
 
 
-    public ActivityException( String message, Activity activity ) {
+    public ActivityException( String message, ActivityWrapper activity ) {
         super( message );
         this.activity = activity;
     }
@@ -42,7 +42,7 @@ public class ActivityException extends Exception {
         private final String settingKey;
 
 
-        public InvalidSettingException( String message, Activity activity, String settingKey ) {
+        public InvalidSettingException( String message, ActivityWrapper activity, String settingKey ) {
             super( message, activity );
             this.settingKey = settingKey;
         }
@@ -61,7 +61,7 @@ public class ActivityException extends Exception {
         private final int index;
 
 
-        public InvalidInputException( String message, Activity activity, int index ) {
+        public InvalidInputException( String message, ActivityWrapper activity, int index ) {
             super( message, activity );
             this.index = index;
         }

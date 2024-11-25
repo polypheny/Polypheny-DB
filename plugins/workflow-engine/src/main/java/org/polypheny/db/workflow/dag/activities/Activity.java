@@ -16,35 +16,17 @@
 
 package org.polypheny.db.workflow.dag.activities;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingValue;
+import org.polypheny.db.workflow.dag.variables.WritableVariableStore;
 import org.polypheny.db.workflow.engine.execution.ExecutionContext;
 import org.polypheny.db.workflow.engine.storage.CheckpointReader;
-import org.polypheny.db.workflow.models.ActivityConfigModel;
-import org.polypheny.db.workflow.models.ActivityModel;
-import org.polypheny.db.workflow.models.RenderModel;
 
 public interface Activity {
-
-    String getType();
-
-    UUID getId();
-
-    ActivityState getState();
-
-    /**
-     * Changes the state of this activity to the specified state.
-     * After initialization, this should never be done by the activity itself.
-     * The state is typically changed by the scheduler.
-     *
-     * @param state the new state of this activity
-     */
-    void setState( ActivityState state );
 
     /**
      * This method computes the output tuple-types by considering (a preview of) input types and settings.
@@ -61,31 +43,38 @@ public interface Activity {
      */
     List<Optional<AlgDataType>> previewOutTypes( List<Optional<AlgDataType>> inTypes, Map<String, Optional<SettingValue>> settings ) throws ActivityException;
 
-    void execute( List<CheckpointReader> inputs, Map<String, SettingValue> settings, ExecutionContext ctx ) throws Exception; // default execution method. TODO: introduce execution context to track progress, abort, inputs, outputs...
 
-    void updateSettings( Map<String, JsonNode> settings );
+    /**
+     * This method is called just before execution starts and can be used to write variables based on input tuple types and settings.
+     * To be able to update variables while having access to the input data, the activity should instead implement {@link VariableWriter}.
+     *
+     * @param inTypes a list of {@link AlgDataType} representing the input tuple types.
+     * @param settings a map of setting keys to {@link SettingValue} representing the settings.
+     * @param variables a WritableVariableStore to be used for updating any variable values.
+     */
+    default void updateVariables( List<AlgDataType> inTypes, Map<String, SettingValue> settings, WritableVariableStore variables ) {
+    }
 
-    ActivityConfigModel getConfig();
+    // settings do NOT include values from the updateVariables step.
 
-    void setConfig( ActivityConfigModel config );
-
-    RenderModel getRendering();
-
-    void setRendering( RenderModel rendering );
-
-    ActivityDef getDef();
+    /**
+     * Execute this activity.
+     * Any input CheckpointReaders are provided and expected to be closed by the caller.
+     * CheckpointWriters for any outputs are created from the ExecutionContext.
+     * The settings do not incorporate any changes to variables from {@code  updateVariables()}.
+     *
+     * @param inputs a list of input readers for each input specified by the annotation.
+     * @param settings the instantiated setting values, according to the specified settings annotations
+     * @param ctx ExecutionContext to be used for creating checkpoints, updating progress and periodically checking for an abort
+     * @throws Exception in case the execution fails at any point
+     */
+    void execute( List<CheckpointReader> inputs, Map<String, SettingValue> settings, ExecutionContext ctx ) throws Exception; // default execution method
 
     /**
      * Reset any execution-specific state of this activity.
      * It is guaranteed to be called before execution starts.
      */
     void reset();
-
-    ActivityModel toModel( boolean includeState );
-
-    static Activity fromModel( ActivityModel model ) {
-        return ActivityRegistry.activityFromModel( model );
-    }
 
     enum PortType {
         ANY,
@@ -102,17 +91,21 @@ public interface Activity {
         public boolean canWriteTo( PortType other ) {
             return this == other || other == ANY;
         }
-    }
 
 
-    enum ActivityState {
-        IDLE,
-        QUEUED,
-        EXECUTING,
-        SKIPPED,  // => execution was aborted
-        FAILED,
-        FINISHED,
-        SAVED  // => finished + checkpoint created
+        /**
+         * Returns the corresponding DataModel enum.
+         * In case of ANY, DataModel.RELATIONAL is returned.
+         *
+         * @return the corresponding DataModel
+         */
+        public DataModel getDataModel() {
+            return switch ( this ) {
+                case ANY, REL -> DataModel.RELATIONAL;
+                case DOC -> DataModel.DOCUMENT;
+                case LPG -> DataModel.GRAPH;
+            };
+        }
     }
 
 

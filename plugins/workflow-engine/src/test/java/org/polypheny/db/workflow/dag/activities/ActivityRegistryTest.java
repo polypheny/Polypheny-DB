@@ -31,7 +31,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.workflow.dag.settings.GroupDef;
 import org.polypheny.db.workflow.dag.settings.GroupDef.SubgroupDef;
@@ -40,9 +39,6 @@ import org.polypheny.db.workflow.dag.settings.SettingDef;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingValue;
 import org.polypheny.db.workflow.dag.variables.ReadableVariableStore;
 import org.polypheny.db.workflow.dag.variables.VariableStore;
-import org.polypheny.db.workflow.models.ActivityConfigModel;
-import org.polypheny.db.workflow.models.ActivityModel;
-import org.polypheny.db.workflow.models.RenderModel;
 
 class ActivityRegistryTest {
 
@@ -51,8 +47,7 @@ class ActivityRegistryTest {
     public void checkRequiredConstructorsForAnnotatedActivities() {
         Set<Class<? extends Activity>> activityClasses = ActivityRegistry.findAllAnnotatedActivities();
         for ( Class<? extends Activity> activityClass : activityClasses ) {
-            assertConstructorExists( activityClass, ActivityModel.class );
-            assertConstructorExists( activityClass, UUID.class, Map.class, ActivityConfigModel.class, RenderModel.class );
+            assertConstructorExists( activityClass );
         }
     }
 

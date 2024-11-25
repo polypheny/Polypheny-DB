@@ -21,7 +21,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import java.util.Map;
 import java.util.UUID;
 import lombok.Value;
-import org.polypheny.db.workflow.dag.activities.Activity.ActivityState;
+import org.polypheny.db.workflow.dag.activities.ActivityWrapper.ActivityState;
 
 @Value
 public class ActivityModel {

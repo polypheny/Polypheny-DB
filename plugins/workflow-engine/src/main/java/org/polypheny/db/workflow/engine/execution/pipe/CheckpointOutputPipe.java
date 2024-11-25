@@ -14,40 +14,44 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.workflow.engine.execution.queue;
+package org.polypheny.db.workflow.engine.execution.pipe;
 
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.List;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.workflow.engine.storage.CheckpointWriter;
 
-public class QueueWrapper implements InputPipe, OutputPipe {
+public class CheckpointOutputPipe implements OutputPipe {
 
-    private final BlockingQueue<PolyValue[]> queue;
     private final AlgDataType type;
+    private final CheckpointWriter writer;
 
 
-    public QueueWrapper( int capacity, AlgDataType type ) {
-        this.queue = new LinkedBlockingQueue<>( capacity );
+    public CheckpointOutputPipe( AlgDataType type, CheckpointWriter writer ) {
         this.type = type;
+        this.writer = writer;
     }
 
 
     @Override
-    public PolyValue[] take() throws InterruptedException {
-        return queue.take();
+    public void put( List<PolyValue> value ) throws InterruptedException {
+        writer.write( value );
+    }
+
+
+    @Override
+    public void close() {
+        try {
+            writer.close();
+        } catch ( Exception ignored ) {
+
+        }
     }
 
 
     @Override
     public AlgDataType getType() {
         return type;
-    }
-
-
-    @Override
-    public void put( PolyValue[] value ) throws InterruptedException {
-        queue.put( value );
     }
 
 }

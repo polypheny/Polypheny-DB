@@ -26,7 +26,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.util.Pair;
-import org.polypheny.db.workflow.dag.activities.Activity;
+import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
 import org.polypheny.db.workflow.dag.edges.Edge;
 import org.polypheny.db.workflow.models.ActivityModel;
 import org.polypheny.db.workflow.models.EdgeModel;
@@ -35,7 +35,7 @@ import org.polypheny.db.workflow.models.WorkflowModel;
 
 public class WorkflowImpl implements Workflow {
 
-    private final Map<UUID, Activity> activities;
+    private final Map<UUID, ActivityWrapper> activities;
     private final Map<Pair<UUID, UUID>, List<Edge>> edges;
     private final WorkflowConfigModel config;
     @Getter
@@ -50,7 +50,7 @@ public class WorkflowImpl implements Workflow {
     }
 
 
-    private WorkflowImpl( Map<UUID, Activity> activities, Map<Pair<UUID, UUID>, List<Edge>> edges, WorkflowConfigModel config ) {
+    private WorkflowImpl( Map<UUID, ActivityWrapper> activities, Map<Pair<UUID, UUID>, List<Edge>> edges, WorkflowConfigModel config ) {
         this.activities = activities;
         this.edges = edges;
         this.config = config;
@@ -59,11 +59,11 @@ public class WorkflowImpl implements Workflow {
 
     public static Workflow fromModel( WorkflowModel model ) {
 
-        Map<UUID, Activity> activities = new ConcurrentHashMap<>();
+        Map<UUID, ActivityWrapper> activities = new ConcurrentHashMap<>();
         Map<Pair<UUID, UUID>, List<Edge>> edges = new ConcurrentHashMap<>();
 
         for ( ActivityModel a : model.getActivities() ) {
-            activities.put( a.getId(), Activity.fromModel( a ) );
+            activities.put( a.getId(), ActivityWrapper.fromModel( a ) );
         }
         for ( EdgeModel e : model.getEdges() ) {
             Pair<UUID, UUID> key = Pair.of( e.getFromId(), e.getToId() );
@@ -76,8 +76,14 @@ public class WorkflowImpl implements Workflow {
 
 
     @Override
-    public List<Activity> getActivities() {
+    public List<ActivityWrapper> getActivities() {
         return new ArrayList<>( activities.values() );
+    }
+
+
+    @Override
+    public ActivityWrapper getActivity( UUID activityId ) {
+        return activities.get( activityId );
     }
 
 
@@ -97,7 +103,7 @@ public class WorkflowImpl implements Workflow {
 
 
     @Override
-    public List<Edge> getEdges( Activity from, Activity to ) {
+    public List<Edge> getEdges( ActivityWrapper from, ActivityWrapper to ) {
         return getEdges( from.getId(), to.getId() );
     }
 
@@ -133,7 +139,7 @@ public class WorkflowImpl implements Workflow {
 
 
     @Override
-    public void addActivity( Activity activity ) {
+    public void addActivity( ActivityWrapper activity ) {
         if ( activities.containsKey( activity.getId() ) ) {
             throw new GenericRuntimeException( "Cannot add activity instance that is already part of this workflow." );
         }

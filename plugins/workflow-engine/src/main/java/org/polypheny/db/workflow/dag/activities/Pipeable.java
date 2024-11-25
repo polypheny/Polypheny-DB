@@ -23,14 +23,14 @@ import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingValue;
 import org.polypheny.db.workflow.engine.execution.ExecutionContext;
-import org.polypheny.db.workflow.engine.execution.queue.InputPipe;
-import org.polypheny.db.workflow.engine.execution.queue.OutputPipe;
+import org.polypheny.db.workflow.engine.execution.pipe.InputPipe;
+import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
 import org.polypheny.db.workflow.engine.storage.CheckpointReader;
 
-// TODO: write test to ensure at most 1 input and output was specified
+// TODO: write test to ensure at most 1 output was specified
 public interface Pipeable extends Activity {
 
-    default boolean canPipe( Optional<AlgDataType> inType, Map<String, Optional<SettingValue>> settings ) {
+    default boolean canPipe( List<Optional<AlgDataType>> inType, Map<String, Optional<SettingValue>> settings ) {
         return true;
     }
 
@@ -44,13 +44,14 @@ public interface Pipeable extends Activity {
      * Define the output type of this pipe.
      * Afterward, it may no longer be changed until reset() is called.
      *
-     * @param inType the type of the input pipe
+     * @param inTypes the types of the input pipes
      * @param settings the resolved settings
      * @return the compulsory output type of this instance until the next call to reset().
      */
-    AlgDataType lockOutputType( AlgDataType inType, Map<String, SettingValue> settings );
+    AlgDataType lockOutputType( List<AlgDataType> inTypes, Map<String, SettingValue> settings );
 
-    void pipe( InputPipe input, OutputPipe output, Map<String, SettingValue> settings, ExecutionContext ctx ) throws Exception;
+    // TODO: how to indicate final tuple?
+    void pipe( List<InputPipe> inputs, OutputPipe output, Map<String, SettingValue> settings, ExecutionContext ctx ) throws Exception;
 
 
 }

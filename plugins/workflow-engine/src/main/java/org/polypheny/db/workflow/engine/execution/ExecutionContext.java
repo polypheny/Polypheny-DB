@@ -19,9 +19,8 @@ package org.polypheny.db.workflow.engine.execution;
 import java.util.Objects;
 import lombok.Getter;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.workflow.dag.activities.Activity;
 import org.polypheny.db.workflow.dag.activities.Activity.PortType;
-import org.polypheny.db.workflow.dag.variables.ReadableVariableStore;
+import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
 import org.polypheny.db.workflow.engine.storage.DocWriter;
 import org.polypheny.db.workflow.engine.storage.LpgWriter;
 import org.polypheny.db.workflow.engine.storage.RelWriter;
@@ -29,20 +28,21 @@ import org.polypheny.db.workflow.engine.storage.StorageManager;
 
 
 public class ExecutionContext {
+    // TODO: provide access to global variables + error msgs?
 
-    private StorageManager sm;
-    private Activity activity;
-    private PortType[] remainingOutPorts; // contains the PortType for each outPort or null after the checkpoint was created to avoid duplicate checkpoints
-    private ReadableVariableStore variables; // TODO: only store global variables + error msgs?
+    private final StorageManager sm;
+    private final ActivityWrapper activityWrapper;
+    private final PortType[] remainingOutPorts; // contains the PortType for each outPort or null after the checkpoint was created to avoid duplicate checkpoints
+
     private volatile boolean interrupt = false;  // can be set by external thread to indicate that the activity should stop its execution
     @Getter
     private volatile double progress = 0; // 1 => 100%, can only be updated by activity thread, external thread is only allowed to read
 
 
-    public ExecutionContext( Activity activity, ReadableVariableStore variables ) {
-        this.activity = activity;
-        this.remainingOutPorts = activity.getDef().getOutPortTypes();
-        this.variables = variables;
+    public ExecutionContext( ActivityWrapper activityWrapper, StorageManager storageManager ) {
+        this.sm = storageManager;
+        this.activityWrapper = activityWrapper;
+        this.remainingOutPorts = activityWrapper.getDef().getOutPortTypes();
     }
 
 
@@ -62,6 +62,7 @@ public class ExecutionContext {
     }
 
 
+    // TODO: make method inaccessible from Activity
     public void setInterrupted() {
         interrupt = true;
     }
@@ -79,7 +80,7 @@ public class ExecutionContext {
         PortType type = Objects.requireNonNull( remainingOutPorts[idx] );
         remainingOutPorts[idx] = null;
         if ( type.canWriteTo( PortType.REL ) ) {
-            return sm.createRelCheckpoint( activity.getId(), idx, tupleType, resetPk, getStore( idx ) );
+            return sm.createRelCheckpoint( activityWrapper.getId(), idx, tupleType, resetPk, getStore( idx ) );
         }
         throw new IllegalArgumentException( "Unable to create a relational checkpoint for output type " + type );
     }
@@ -89,7 +90,7 @@ public class ExecutionContext {
         PortType type = Objects.requireNonNull( remainingOutPorts[idx] );
         remainingOutPorts[idx] = null;
         if ( type.canWriteTo( PortType.DOC ) ) {
-            return sm.createDocCheckpoint( activity.getId(), idx, getStore( idx ) );
+            return sm.createDocCheckpoint( activityWrapper.getId(), idx, getStore( idx ) );
         }
         throw new IllegalArgumentException( "Unable to create a document checkpoint for output type " + type );
     }
@@ -99,14 +100,14 @@ public class ExecutionContext {
         PortType type = Objects.requireNonNull( remainingOutPorts[idx] );
         remainingOutPorts[idx] = null;
         if ( type.canWriteTo( PortType.LPG ) ) {
-            return sm.createLpgCheckpoint( activity.getId(), idx, getStore( idx ) );
+            return sm.createLpgCheckpoint( activityWrapper.getId(), idx, getStore( idx ) );
         }
         throw new IllegalArgumentException( "Unable to create a graph checkpoint for output type " + type );
     }
 
 
     private String getStore( int idx ) {
-        return activity.getConfig().getPreferredStore( idx );
+        return activityWrapper.getConfig().getPreferredStore( idx );
     }
 
 

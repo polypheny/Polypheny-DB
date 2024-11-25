@@ -21,63 +21,80 @@ import java.util.Map;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
-import org.polypheny.db.workflow.dag.annotations.ActivityDefinition;
+import org.polypheny.db.workflow.dag.settings.SettingDef.SettingValue;
+import org.polypheny.db.workflow.dag.variables.VariableStore;
 import org.polypheny.db.workflow.models.ActivityConfigModel;
 import org.polypheny.db.workflow.models.ActivityModel;
 import org.polypheny.db.workflow.models.RenderModel;
 
-public abstract class AbstractActivity implements Activity {
+@Getter
+public class ActivityWrapper {
 
-    @Getter
+    private final Activity activity;
+    private final String type;
+
     private final UUID id;
     private final Map<String, JsonNode> serializableSettings;  // may contain variables that need to be replaced first
-    @Getter
     @Setter
     private ActivityConfigModel config;
-    @Getter
     @Setter
     private RenderModel rendering;
-    @Getter
+    private final VariableStore variables; // depending on state, this either represents the variables before or after execution
+
+    /**
+     * After initialization, the state should never be changed by the wrapper itself.
+     * The state is typically changed by the scheduler.
+     */
     @Setter
     private ActivityState state = ActivityState.IDLE;
 
 
-    protected AbstractActivity( UUID id, Map<String, JsonNode> settings, ActivityConfigModel config, RenderModel rendering ) {
+    protected ActivityWrapper( UUID id, Activity activity, String type, Map<String, JsonNode> settings, ActivityConfigModel config, RenderModel rendering ) {
+        this.activity = activity;
         this.id = id;
+        this.type = type;
         this.serializableSettings = settings;
         this.config = config;
         this.rendering = rendering;
+
+        this.variables = new VariableStore();
     }
 
 
-    @Override
-    public String getType() {
-        // Use reflection to check if the subclass has the ActivityDefinition annotation
-        ActivityDefinition annotation = this.getClass().getAnnotation( ActivityDefinition.class );
-
-        if ( annotation == null ) {
-            throw new IllegalStateException( "Class " + this.getClass().getSimpleName() +
-                    " is missing the required @ActivityDefinition annotation." );
-        }
-        return annotation.type();
-    }
-
-
-    @Override
     public void updateSettings( Map<String, JsonNode> newSettings ) {
         serializableSettings.putAll( newSettings );
     }
 
-    @Override
+
+    public Map<String, SettingValue> resolveSettings() {
+        return ActivityRegistry.buildSettingValues( type, variables.resolveVariables( serializableSettings ) );
+    }
+
+
     public ActivityDef getDef() {
         return ActivityRegistry.get( getType() );
     }
 
 
-    @Override
     public ActivityModel toModel( boolean includeState ) {
         ActivityState state = includeState ? this.state : null;
-        return new ActivityModel( getType(), id, serializableSettings, config, rendering, state );
+        return new ActivityModel( type, id, serializableSettings, config, rendering, state );
+    }
+
+
+    public static ActivityWrapper fromModel( ActivityModel model ) {
+        return new ActivityWrapper( model.getId(), ActivityRegistry.activityFromType( model.getType() ), model.getType(), model.getSettings(), model.getConfig(), model.getRendering() );
+    }
+
+
+    public enum ActivityState {
+        IDLE,
+        QUEUED,
+        EXECUTING,
+        SKIPPED,  // => execution was aborted
+        FAILED,
+        FINISHED,
+        SAVED  // => finished + checkpoint created
     }
 
 }

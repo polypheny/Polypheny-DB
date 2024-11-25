@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.workflow.engine.execution.queue;
+package org.polypheny.db.workflow.engine.execution.pipe;
 
+import java.util.List;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.entity.PolyValue;
 
-public interface OutputPipe {
-    void put( PolyValue[] value) throws InterruptedException;
+public interface InputPipe extends Iterable<List<PolyValue>> {
 
     AlgDataType getType();
+
 }

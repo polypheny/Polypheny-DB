@@ -171,6 +171,16 @@ public class StorageManagerImpl implements StorageManager {
 
 
     @Override
+    public CheckpointWriter createCheckpoint( UUID activityId, int outputIdx, AlgDataType type, boolean resetPk, @Nullable String storeName, DataModel model ) {
+        return switch ( model ) {
+            case RELATIONAL -> createRelCheckpoint( activityId, outputIdx, type, resetPk, storeName );
+            case DOCUMENT -> createDocCheckpoint( activityId, outputIdx, storeName );
+            case GRAPH -> createLpgCheckpoint( activityId, outputIdx, storeName );
+        };
+    }
+
+
+    @Override
     public void dropCheckpoints( UUID activityId ) {
         for ( LogicalEntity entity : checkpoints.get( activityId ).values() ) {
             dropEntity( entity );

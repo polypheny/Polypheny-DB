@@ -18,7 +18,7 @@ package org.polypheny.db.workflow.dag;
 
 import java.util.List;
 import java.util.UUID;
-import org.polypheny.db.workflow.dag.activities.Activity;
+import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
 import org.polypheny.db.workflow.dag.edges.Edge;
 import org.polypheny.db.workflow.models.EdgeModel;
 import org.polypheny.db.workflow.models.WorkflowConfigModel;
@@ -29,7 +29,9 @@ import org.polypheny.db.workflow.models.WorkflowModel;
  */
 public interface Workflow {
 
-    List<Activity> getActivities(); // TODO: change return type to Map<UUID, Activity> ?
+    List<ActivityWrapper> getActivities(); // TODO: change return type to Map<UUID, Activity> ?
+
+    ActivityWrapper getActivity( UUID activityId );
 
     /**
      * Get all edges of this workflow as list with arbitrary order.
@@ -47,7 +49,7 @@ public interface Workflow {
      */
     List<Edge> getEdges( UUID from, UUID to );
 
-    List<Edge> getEdges( Activity from, Activity to );
+    List<Edge> getEdges( ActivityWrapper from, ActivityWrapper to );
 
     List<Edge> getInEdges( UUID target );
 
@@ -69,7 +71,7 @@ public interface Workflow {
      */
     void setState( WorkflowState state );
 
-    void addActivity( Activity activity );
+    void addActivity( ActivityWrapper activity );
 
     void deleteActivity( UUID activityId );
 

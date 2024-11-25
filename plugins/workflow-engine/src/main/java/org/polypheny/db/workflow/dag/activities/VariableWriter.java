@@ -16,6 +16,7 @@
 
 package org.polypheny.db.workflow.dag.activities;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -42,6 +43,10 @@ public interface VariableWriter extends Activity {
     }
 
 
-    void execute( CheckpointReader[] inputs, ExecutionContext ctx, WritableVariableStore writer );
+    /**
+     * The slightly different execute method that comes with a writable variable store.
+     * In the case that this method is called, it can be assumed that {@code updateVariables} was NOT called.
+     */
+    void execute( List<CheckpointReader> inputs, Map<String, SettingValue> settings, ExecutionContext ctx, WritableVariableStore writer );
 
 }

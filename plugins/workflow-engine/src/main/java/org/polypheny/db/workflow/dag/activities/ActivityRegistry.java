@@ -37,7 +37,6 @@ import org.polypheny.db.workflow.dag.annotations.DefaultGroup;
 import org.polypheny.db.workflow.dag.annotations.Group;
 import org.polypheny.db.workflow.dag.settings.SettingDef;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingValue;
-import org.polypheny.db.workflow.models.ActivityModel;
 import org.reflections.Reflections;
 
 public class ActivityRegistry {
@@ -69,13 +68,13 @@ public class ActivityRegistry {
     }
 
 
-    public static Activity activityFromModel( ActivityModel model ) {
-        ActivityDef def = get( model.getType() );
+    public static Activity activityFromType( String activityType ) {
+        ActivityDef def = get( activityType );
         try {
-            Constructor<? extends Activity> constructor = def.getActivityClass().getConstructor( ActivityModel.class );
-            return constructor.newInstance( model );
+            Constructor<? extends Activity> constructor = def.getActivityClass().getConstructor();
+            return constructor.newInstance();
         } catch ( InvocationTargetException | NoSuchMethodException | InstantiationException | IllegalAccessException e ) {
-            throw new RuntimeException( "Encountered problem during instantiation for type: " + model.getType() );
+            throw new RuntimeException( "Encountered problem during activity instantiation for type: " + activityType );
         }
     }
 

@@ -16,13 +16,11 @@
 
 package org.polypheny.db.workflow.dag.activities.impl;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.workflow.dag.activities.AbstractActivity;
+import org.polypheny.db.workflow.dag.activities.Activity;
 import org.polypheny.db.workflow.dag.activities.Activity.ActivityCategory;
 import org.polypheny.db.workflow.dag.activities.Activity.PortType;
 import org.polypheny.db.workflow.dag.activities.ActivityException;
@@ -38,9 +36,6 @@ import org.polypheny.db.workflow.engine.execution.ExecutionContext;
 import org.polypheny.db.workflow.engine.storage.CheckpointReader;
 import org.polypheny.db.workflow.engine.storage.RelReader;
 import org.polypheny.db.workflow.engine.storage.RelWriter;
-import org.polypheny.db.workflow.models.ActivityConfigModel;
-import org.polypheny.db.workflow.models.ActivityModel;
-import org.polypheny.db.workflow.models.RenderModel;
 
 @ActivityDefinition(type = "identity", displayName = "Identity", categories = { ActivityCategory.TRANSFORM },
         inPorts = { @InPort(type = PortType.REL) },
@@ -55,16 +50,10 @@ import org.polypheny.db.workflow.models.RenderModel;
 )
 @IntSetting(key = "I2", displayName = "THIRD", defaultValue = 0, isList = true, group = "groupA")
 @StringSetting(key = "S2", displayName = "FOURTH", defaultValue = "test", isList = true, group = "groupA", subGroup = "a")
-public class IdentityActivity extends AbstractActivity {
+public class IdentityActivity implements Activity {
 
 
-    public IdentityActivity( UUID id, Map<String, JsonNode> settings, ActivityConfigModel config, RenderModel rendering ) {
-        super( id, settings, config, rendering );
-    }
-
-
-    public IdentityActivity( ActivityModel model ) {
-        super( model.getId(), model.getSettings(), model.getConfig(), model.getRendering() );
+    public IdentityActivity() {
     }
 
 

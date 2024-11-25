@@ -59,7 +59,7 @@ public abstract class CheckpointWriter implements AutoCloseable {
     public abstract void write( List<PolyValue> tuple );
 
 
-    public void write( Iterator<List<PolyValue>> iterator ) {
+    public final void write( Iterator<List<PolyValue>> iterator ) {
         while ( iterator.hasNext() ) {
             write( iterator.next() );
         }

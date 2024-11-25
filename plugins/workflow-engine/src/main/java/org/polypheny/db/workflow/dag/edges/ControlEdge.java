@@ -17,7 +17,7 @@
 package org.polypheny.db.workflow.dag.edges;
 
 import lombok.Getter;
-import org.polypheny.db.workflow.dag.activities.Activity;
+import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
 import org.polypheny.db.workflow.models.EdgeModel;
 
 public class ControlEdge extends Edge {
@@ -29,13 +29,13 @@ public class ControlEdge extends Edge {
     private final boolean onSuccess;
 
 
-    public ControlEdge( Activity from, Activity to, boolean onSuccess ) {
+    public ControlEdge( ActivityWrapper from, ActivityWrapper to, boolean onSuccess ) {
         super( from, to );
         this.onSuccess = onSuccess;
     }
 
 
-    public ControlEdge( Activity from, Activity to, int controlPort ) {
+    public ControlEdge( ActivityWrapper from, ActivityWrapper to, int controlPort ) {
         this( from, to, controlPort == SUCCESS_PORT );
     }
 

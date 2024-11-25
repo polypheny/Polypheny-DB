@@ -16,16 +16,18 @@
 
 package org.polypheny.db.workflow.dag.edges;
 
-import org.polypheny.db.workflow.dag.activities.Activity;
+import lombok.Getter;
+import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
 import org.polypheny.db.workflow.models.EdgeModel;
 
+@Getter
 public class DataEdge extends Edge {
 
     private final int fromPort;
     private final int toPort;
 
 
-    public DataEdge( Activity from, Activity to, int fromPort, int toPort ) {
+    public DataEdge( ActivityWrapper from, ActivityWrapper to, int fromPort, int toPort ) {
         super( from, to );
         this.fromPort = fromPort;
         this.toPort = toPort;

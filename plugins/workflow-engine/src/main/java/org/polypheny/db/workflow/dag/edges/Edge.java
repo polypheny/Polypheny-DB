@@ -21,21 +21,19 @@ import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.util.Pair;
-import org.polypheny.db.workflow.dag.activities.Activity;
+import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
 import org.polypheny.db.workflow.models.EdgeModel;
 
+@Getter
 public abstract class Edge {
 
-    @Getter
-    final Activity from;
-    @Getter
-    final Activity to;
-    @Getter
+    final ActivityWrapper from;
+    final ActivityWrapper to;
     @Setter
     private EdgeState state = EdgeState.IDLE;
 
 
-    public Edge( Activity from, Activity to ) {
+    public Edge( ActivityWrapper from, ActivityWrapper to ) {
         this.from = from;
         this.to = to;
     }
@@ -44,9 +42,9 @@ public abstract class Edge {
     public abstract EdgeModel toModel( boolean includeState );
 
 
-    public static Edge fromModel( EdgeModel model, Map<UUID, Activity> activities ) {
-        Activity from = activities.get( model.getFromId() );
-        Activity to = activities.get( model.getToId() );
+    public static Edge fromModel( EdgeModel model, Map<UUID, ActivityWrapper> activities ) {
+        ActivityWrapper from = activities.get( model.getFromId() );
+        ActivityWrapper to = activities.get( model.getToId() );
         if ( model.isControl() ) {
             return new ControlEdge( from, to, model.getFromPort() );
         } else {
@@ -73,6 +71,11 @@ public abstract class Edge {
 
     public Pair<UUID, UUID> toPair() {
         return Pair.of( from.getId(), to.getId() );
+    }
+
+
+    public boolean isActive() {
+        return state == EdgeState.ACTIVE;
     }
 
 

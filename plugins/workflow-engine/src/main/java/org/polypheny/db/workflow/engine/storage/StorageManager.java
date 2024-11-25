@@ -57,6 +57,8 @@ public interface StorageManager extends AutoCloseable { // TODO: remove AutoClos
 
     LpgWriter createLpgCheckpoint( UUID activityId, int outputIdx, @Nullable String storeName );
 
+    CheckpointWriter createCheckpoint( UUID activityId, int outputIdx, AlgDataType type, boolean resetPk, @Nullable String storeName, DataModel model );
+
     void dropCheckpoints( UUID activityId );
 
     void dropAllCheckpoints();

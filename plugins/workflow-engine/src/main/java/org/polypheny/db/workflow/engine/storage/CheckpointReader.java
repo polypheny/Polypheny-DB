@@ -63,7 +63,7 @@ public abstract class CheckpointReader implements AutoCloseable {
      *
      * @return An iterator that yields tuples as mutable lists.
      */
-    public Iterator<List<PolyValue>> getIterator() {
+    public final Iterator<List<PolyValue>> getIterator() {
         return arrayToListIterator( getArrayIterator(), false );
     }
 
@@ -75,7 +75,7 @@ public abstract class CheckpointReader implements AutoCloseable {
      * @param fixedSize whether the generated lists by the iterator should be of fixedSize (more efficient).
      * @return An iterator that yields tuples as lists.
      */
-    public Iterator<List<PolyValue>> getIterator( boolean fixedSize ) {
+    public final Iterator<List<PolyValue>> getIterator( boolean fixedSize ) {
         return arrayToListIterator( getArrayIterator(), fixedSize );
     }
 
