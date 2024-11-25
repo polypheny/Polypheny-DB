@@ -27,12 +27,20 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.ddl.DdlManager.DefaultIndexPlacementStrategy;
 import org.polypheny.db.processing.ConstraintStrategy;
+import org.polypheny.db.transaction.locking.S2plLockingLevel;
 import org.polypheny.db.util.background.BackgroundTask;
 import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
 
 
 @Slf4j
 public enum RuntimeConfig {
+
+    S2PL_LOCKING_LEVEL(
+            "runtime/s2plLockingLevel",
+            "Define the granularity of lock aquisition.",
+            S2plLockingLevel.ENTITY,
+            ConfigType.ENUM
+    ),
 
     APPROXIMATE_DISTINCT_COUNT(
             "runtime/approximateDistinctCount",

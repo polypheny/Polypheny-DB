@@ -23,6 +23,7 @@ import java.util.Set;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import org.jetbrains.annotations.NotNull;
+import org.polypheny.db.config.ConfigManager;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.deadlocks.DeadlockHandler;
 import org.polypheny.db.util.DeadlockException;
@@ -175,5 +176,4 @@ public class LockableImpl implements Lockable {
         ) );
 
     }
-
 }
