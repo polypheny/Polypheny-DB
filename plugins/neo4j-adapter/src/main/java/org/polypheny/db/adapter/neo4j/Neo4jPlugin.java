@@ -561,8 +561,6 @@ public class Neo4jPlugin extends PolyPlugin {
 
         @Override
         public void shutdown() {
-            DockerContainer.getContainerByUUID( deploymentId ).ifPresent( DockerContainer::destroy );
-
             removeInformationPage();
         }
 

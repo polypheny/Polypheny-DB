@@ -51,7 +51,6 @@ import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.AlgBuilderFactory;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.ImmutableBitSet.Builder;
-import org.polypheny.db.util.Util;
 
 
 /**
@@ -85,16 +84,10 @@ public class JoinToCorrelateRule extends AlgOptRule {
     @Override
     public boolean matches( AlgOptRuleCall call ) {
         LogicalRelJoin join = call.alg( 0 );
-        switch ( join.getJoinType() ) {
-            case INNER:
-            case LEFT:
-                return true;
-            case FULL:
-            case RIGHT:
-                return false;
-            default:
-                throw Util.unexpected( join.getJoinType() );
-        }
+        return switch ( join.getJoinType() ) {
+            case INNER, LEFT -> true;
+            case FULL, RIGHT -> false;
+        };
     }
 
 
@@ -132,4 +125,3 @@ public class JoinToCorrelateRule extends AlgOptRule {
     }
 
 }
-
