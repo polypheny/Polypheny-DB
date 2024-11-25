@@ -16,7 +16,6 @@
 
 package org.polypheny.db.cypher.helper;
 
-
 import java.util.List;
 import lombok.SneakyThrows;
 import org.polypheny.db.cypher.CypherTestTemplate;
@@ -24,6 +23,7 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.graph.GraphObject;
 import org.polypheny.db.type.entity.graph.GraphPropertyHolder;
 import org.polypheny.db.type.entity.graph.PolyPath;
+
 
 public class TestPath implements TestObject {
 

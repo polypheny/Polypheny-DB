@@ -522,7 +522,7 @@ public class RexToLixTranslator {
         final Operator operator = call.getOperator();
         CallImplementor implementor = RexImpTable.INSTANCE.get( operator );
         if ( implementor == null ) {
-            throw new GenericRuntimeException( "cannot translate call " + call );
+            throw new GenericRuntimeException( "Cannot translate call " + call );
         }
         return implementor.implement( this, call, nullAs );
     }

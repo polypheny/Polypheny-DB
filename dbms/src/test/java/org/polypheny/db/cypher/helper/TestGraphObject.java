@@ -33,6 +33,7 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.graph.GraphPropertyHolder;
 import org.polypheny.db.util.Pair;
 
+
 public class TestGraphObject implements TestObject {
 
     public static double EPSILON = 0.2;
@@ -98,15 +99,12 @@ public class TestGraphObject implements TestObject {
                     if ( entry.getValue().isList() ) {
                         int i = 0;
                         PolyList<PolyString> list = entry.getValue().asList();
-
                         for ( PolyValue o : list ) {
                             matches &= o.equals( ((List<?>) properties.get( entry.getKey() )).get( i ) );
                             i++;
                         }
                     } else if ( entry.getValue().isNumber() || other.properties.get( entry.getKey() ).isNumber() ) {
-                        matches &=
-                                toBigDecimal( other.properties.get( entry.getKey() ).toString() ).doubleValue()
-                                        - toBigDecimal( entry.getValue().toString() ).doubleValue() < EPSILON;
+                        matches &= toBigDecimal( other.properties.get( entry.getKey() ).toString() ).doubleValue() - toBigDecimal( entry.getValue().toString() ).doubleValue() < EPSILON;
                     } else {
                         matches &= other.properties.get( entry.getKey() ).equals( entry.getValue() );
                     }

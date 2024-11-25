@@ -83,7 +83,7 @@ public class CypherExpression extends CypherNode {
             case ANY -> OperatorName.CYPHER_ANY_MATCH;
             case NONE -> OperatorName.CYPHER_NONE_MATCH;
             case SINGLE -> OperatorName.CYPHER_SINGLE_MATCH;
-            default -> throw new UnsupportedOperationException();
+            default -> throw new UnsupportedOperationException( "Unsupported cypher expression: " + this.type );
         };
 
         //  ANY ( Variable IN Expression(list) Where? )

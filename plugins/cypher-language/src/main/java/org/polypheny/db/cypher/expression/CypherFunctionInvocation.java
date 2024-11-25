@@ -43,7 +43,7 @@ public class CypherFunctionInvocation extends CypherExpression {
         if ( operatorNames.contains( image.toUpperCase( Locale.ROOT ) ) ) {
             this.op = OperatorName.valueOf( image.toUpperCase( Locale.ROOT ) );
         } else {
-            throw new GenericRuntimeException( "Used function is not supported!" );
+            throw new GenericRuntimeException( "Unsupported cypher function: " + image.toUpperCase( Locale.ROOT ) );
         }
         this.distinct = distinct;
         this.arguments = arguments;

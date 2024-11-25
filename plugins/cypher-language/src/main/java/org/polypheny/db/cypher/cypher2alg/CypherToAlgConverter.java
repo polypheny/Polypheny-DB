@@ -159,15 +159,13 @@ public class CypherToAlgConverter {
         switch ( node.getCypherKind() ) {
             case SINGLE:
                 CypherSingleQuery query = (CypherSingleQuery) node;
-
                 for ( CypherClause clause : query.getClauses() ) {
                     convertClauses( clause, context );
                 }
-
                 break;
             case PERIODIC_COMMIT:
             case UNION:
-                throw new UnsupportedOperationException();
+                throw new UnsupportedOperationException( "Unsupported cypher operation: " + node.getCypherKind() );
         }
     }
 
@@ -201,9 +199,8 @@ public class CypherToAlgConverter {
                 convertRemove( (CypherRemove) clause, context );
                 break;
             default:
-                throw new UnsupportedOperationException();
+                throw new UnsupportedOperationException( "Unsupported cypher clause: " + clause.getCypherKind() );
         }
-
     }
 
 

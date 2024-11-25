@@ -24,6 +24,7 @@ import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 
+
 public class TestNode extends TestGraphObject {
 
     public TestNode( @Nullable String id, @Nullable Map<PolyString, PolyValue> properties, @Nullable List<PolyString> labels ) {
@@ -41,6 +42,5 @@ public class TestNode extends TestGraphObject {
     public static TestNode from( @NotNull List<String> labels, Pair<String, Object>... properties ) {
         return new TestNode( null, getProps( properties ), getLabels( labels ) );
     }
-
 
 }
