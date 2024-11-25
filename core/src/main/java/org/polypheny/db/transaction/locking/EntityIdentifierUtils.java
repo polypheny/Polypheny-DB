@@ -26,7 +26,7 @@ public class EntityIdentifierUtils {
     public static final String IDENTIFIER_KEY = "_eid";
 
     public static final ColumnTypeInformation IDENTIFIER_COLUMN_TYPE = new ColumnTypeInformation(
-            PolyType.BIGINT, // binary not supported by hsqldb
+            PolyType.BIGINT, // binary not supported by hsqldb TODO TH: check for other stores, datatypes
             null,
             null,
             null,
