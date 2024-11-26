@@ -66,7 +66,7 @@ public interface Activity {
      * @param inputs a list of input readers for each input specified by the annotation.
      * @param settings the instantiated setting values, according to the specified settings annotations
      * @param ctx ExecutionContext to be used for creating checkpoints, updating progress and periodically checking for an abort
-     * @throws Exception in case the execution fails at any point
+     * @throws Exception in case the execution fails or is interrupted at any point
      */
     void execute( List<CheckpointReader> inputs, Map<String, SettingValue> settings, ExecutionContext ctx ) throws Exception; // default execution method
 

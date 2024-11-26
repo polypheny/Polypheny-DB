@@ -17,6 +17,7 @@
 package org.polypheny.db.workflow.engine.execution.context;
 
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.workflow.engine.storage.CheckpointWriter;
 import org.polypheny.db.workflow.engine.storage.DocWriter;
 import org.polypheny.db.workflow.engine.storage.LpgWriter;
 import org.polypheny.db.workflow.engine.storage.RelWriter;
@@ -40,5 +41,17 @@ public interface ExecutionContext {
     DocWriter createDocWriter( int idx );
 
     LpgWriter createLpgWriter( int idx );
+
+    /**
+     * Creates a CheckpointWriter for the specified output index and tuple type.
+     * The data model of the checkpoint is automatically inferred from the output port definition.
+     * In case of {@code PortType.ANY}, the relational data model is used.
+     *
+     * @param idx the output index.
+     * @param tupleType the schema of the output. Only relevant for relational outputs.
+     * @param resetPk whether to reset the primary key. Only relevant for relational outputs.
+     * @return a CheckpointWriter for writing data to the output.
+     */
+    CheckpointWriter createWriter( int idx, AlgDataType tupleType, boolean resetPk );
 
 }

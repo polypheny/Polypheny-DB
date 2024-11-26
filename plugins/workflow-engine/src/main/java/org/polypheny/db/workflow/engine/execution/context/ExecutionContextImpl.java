@@ -21,6 +21,7 @@ import lombok.Getter;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.workflow.dag.activities.Activity.PortType;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
+import org.polypheny.db.workflow.engine.storage.CheckpointWriter;
 import org.polypheny.db.workflow.engine.storage.DocWriter;
 import org.polypheny.db.workflow.engine.storage.LpgWriter;
 import org.polypheny.db.workflow.engine.storage.RelWriter;
@@ -94,6 +95,14 @@ public class ExecutionContextImpl implements ExecutionContext, PipeExecutionCont
             return sm.createLpgCheckpoint( activityWrapper.getId(), idx, getStore( idx ) );
         }
         throw new IllegalArgumentException( "Unable to create a graph checkpoint for output type " + type );
+    }
+
+
+    @Override
+    public CheckpointWriter createWriter( int idx, AlgDataType tupleType, boolean resetPk ) {
+        PortType type = Objects.requireNonNull( remainingOutPorts[idx] );
+        remainingOutPorts[idx] = null;
+        return sm.createCheckpoint( activityWrapper.getId(), idx, tupleType, resetPk, getStore( idx ), type.getDataModel() );
     }
 
 

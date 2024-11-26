@@ -77,31 +77,7 @@ public class PipeExecutor extends Executor {
 
     @Override
     void execute() throws ExecutorException {
-        UUID rootId = GraphUtils.findInvertedTreeRoot( execTree );
-
-        AlgDataType rootType = registerOutputPipes( rootId );
-
-        List<Callable<Void>> callables = new ArrayList<>();
-        for ( UUID currentId : TopologicalOrderIterator.of( execTree ) ) {
-            ActivityWrapper wrapper = workflow.getActivity( currentId );
-            List<ExecutionEdge> inEdges = execTree.getInwardEdges( currentId );
-
-            InputPipe[] inPipesArr = new InputPipe[wrapper.getDef().getInPorts().length];
-            for ( ExecutionEdge edge : inEdges ) {
-                assert !edge.isControl() : "Execution tree for pipelining must not contain control edges";
-                inPipesArr[edge.getToPort()] = outQueues.get( edge.getSource() );
-            }
-            for ( int i = 0; i < inPipesArr.length; i++ ) {
-                if ( inPipesArr[i] == null ) {
-                    // add remaining pipes for existing checkpoints
-                    inPipesArr[i] = new CheckpointInputPipe( getReader( wrapper, i ) );
-                }
-            }
-
-            List<InputPipe> inPipes = List.of( inPipesArr );
-            OutputPipe outPipe = currentId.equals( rootId ) ? getCheckpointWriterPipe( rootId, rootType ) : outQueues.get( wrapper.getId() );
-            callables.add( getCallable( wrapper, inPipes, outPipe ) );
-        }
+        List<Callable<Void>> callables = getCallables();
 
         // Start tasks
         ExecutorService executor = Executors.newFixedThreadPool( callables.size() ); // we need as many threads as activities, otherwise we could get a deadlock
@@ -128,7 +104,6 @@ public class PipeExecutor extends Executor {
                         hasDetectedAbort = true;
                         futures.forEach( future -> future.cancel( true ) ); // ensure all remaining tasks are cancelled
                         abortReason = new ExecutorException( e.getCause() );
-
                     }
                     // only the first task to throw an exception is relevant
                 } catch ( CancellationException ignored ) {
@@ -194,6 +169,36 @@ public class PipeExecutor extends Executor {
 
         CheckpointWriter writer = sm.createCheckpoint( rootId, 0, rootType, true, store, model );
         return new CheckpointOutputPipe( rootType, writer );
+    }
+
+
+    private List<Callable<Void>> getCallables() {
+        UUID rootId = GraphUtils.findInvertedTreeRoot( execTree );
+
+        AlgDataType rootType = registerOutputPipes( rootId );
+
+        List<Callable<Void>> callables = new ArrayList<>();
+        for ( UUID currentId : TopologicalOrderIterator.of( execTree ) ) {
+            ActivityWrapper wrapper = workflow.getActivity( currentId );
+            List<ExecutionEdge> inEdges = execTree.getInwardEdges( currentId );
+
+            InputPipe[] inPipesArr = new InputPipe[wrapper.getDef().getInPorts().length];
+            for ( ExecutionEdge edge : inEdges ) {
+                assert !edge.isControl() : "Execution tree for pipelining must not contain control edges";
+                inPipesArr[edge.getToPort()] = outQueues.get( edge.getSource() );
+            }
+            for ( int i = 0; i < inPipesArr.length; i++ ) {
+                if ( inPipesArr[i] == null ) {
+                    // add remaining pipes for existing checkpoints
+                    inPipesArr[i] = new CheckpointInputPipe( getReader( wrapper, i ) );
+                }
+            }
+
+            List<InputPipe> inPipes = List.of( inPipesArr );
+            OutputPipe outPipe = currentId.equals( rootId ) ? getCheckpointWriterPipe( rootId, rootType ) : outQueues.get( wrapper.getId() );
+            callables.add( getCallable( wrapper, inPipes, outPipe ) );
+        }
+        return callables;
     }
 
 
