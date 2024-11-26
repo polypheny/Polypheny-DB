@@ -638,7 +638,7 @@ public class RexImpTable {
                             if ( Objects.requireNonNull( nullAs ) == NullAs.NULL ) {
                                 return Expressions.call( BuiltInMethod.NOT.method, translator.translateList( call.getOperands(), nullAs ) );
                             }
-                            return Expressions.not( translator.translate( call.getOperands().get( 0 ), negate( nullAs ) ) );
+                            return EnumUtils.not( translator.translate( call.getOperands().get( 0 ), negate( nullAs ) ) );
                         }
 
 
