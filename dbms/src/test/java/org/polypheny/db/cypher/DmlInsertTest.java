@@ -139,7 +139,7 @@ public class DmlInsertTest extends CypherTestTemplate {
 
     @Test
     public void insertSingleHopPathReturnPathTest() {
-        execute( "CREATE (:PERSON {name: 'tim'}) -[:KNOWS {since:'two weeks'}]-> (:PERSON {name:'tom'})" );
+        execute( "CREATE (:PERSON {name: 'tim'})-[:KNOWS {since:'two weeks'}]-> (:PERSON {name:'tom'})" );
         GraphResult res = execute( "MATCH p = ()-[]->() RETURN p" );
         PolyPath p = PolyValue.fromTypedJson( res.getData()[0][0], PolyPath.class );
         assert p.getSegments().size() == 1;
