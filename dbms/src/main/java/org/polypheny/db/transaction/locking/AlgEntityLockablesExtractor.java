@@ -31,12 +31,12 @@ import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.transaction.locking.Lockable.LockType;
 
 @Getter
-public class AlgEntityScanner extends AlgVisitor {
+public class AlgEntityLockablesExtractor extends AlgVisitor {
 
     Map<Lockable, Lockable.LockType> result;
 
 
-    public AlgEntityScanner() {
+    public AlgEntityLockablesExtractor() {
         this.result = new HashMap<>();
     }
 
@@ -60,7 +60,7 @@ public class AlgEntityScanner extends AlgVisitor {
         if ( RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() ) {
             extractWriteConstraints( currentNode.getEntity().unwrap( LogicalTable.class ).orElseThrow() );
         }
-        result.put( LockablesRegistry.INSTANCE.getOrCreateLockable(LockableUtils.unwrapToLockableObject(currentNode.getEntity())), lockType );
+        addResult( currentNode.getEntity(), lockType);
     }
 
 
@@ -73,13 +73,36 @@ public class AlgEntityScanner extends AlgVisitor {
                             .filter( Optional::isPresent )
                             .map( Optional::get );
                 } )
-                .forEach( entry -> result.putIfAbsent( LockablesRegistry.INSTANCE.getOrCreateLockable(entry), LockType.SHARED ) );
+                .forEach( entry -> addResult( entry, LockType.SHARED ) );
     }
 
 
     private void visitNonRelationalNode( AlgNode currentNode ) {
         LockType lockType = currentNode.isDataModifying() ? LockType.EXCLUSIVE : LockType.SHARED;
         result.put( LockablesRegistry.INSTANCE.getOrCreateLockable(LockableUtils.unwrapToLockableObject(currentNode.getEntity())) , lockType );
+    }
+
+    private void addResult(Entity entity, LockType lockType) {
+        switch ((S2plLockingLevel) RuntimeConfig.S2PL_LOCKING_LEVEL.getEnum()) {
+            case GLOBAL -> {
+                LockType currentLockType = result.get( LockablesRegistry.GLOBAL_SCHEMA_LOCKABLE );
+                if ( currentLockType == null || currentLockType == LockType.EXCLUSIVE ) {
+                    result.put( LockablesRegistry.GLOBAL_SCHEMA_LOCKABLE, lockType );
+
+                }
+            }
+            case NAMESPACE -> {
+                Lockable lockable = LockablesRegistry.INSTANCE.getOrCreateLockable(LockableUtils.getNamespaceLockableObjectOfEntity(entity));
+                LockType currentLockType = result.get( lockable );
+                if ( currentLockType == null || currentLockType == LockType.EXCLUSIVE ) {
+                    result.put( lockable, lockType );
+                }
+            }
+            case ENTITY -> {
+                Lockable lockable = LockablesRegistry.INSTANCE.getOrCreateLockable(entity);
+                result.put(lockable, lockType);
+            }
+        }
     }
 
 }
