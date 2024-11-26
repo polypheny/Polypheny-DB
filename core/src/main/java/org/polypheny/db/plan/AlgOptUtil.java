@@ -462,14 +462,6 @@ public abstract class AlgOptUtil {
             return new Exists( seekAlg, false, true );
         }
 
-        /*switch ( logic ) { // this leads to too optimistic optimizations if not null and result empty
-            case TRUE_FALSE_UNKNOWN:
-            case UNKNOWN_AS_TRUE:
-                if ( notIn && !containsNullableFields( seekAlg ) ) {
-                    logic = Logic.TRUE_FALSE;
-                }
-        }*/
-
         AlgNode ret = seekAlg;
         final AlgCluster cluster = seekAlg.getCluster();
         final RexBuilder rexBuilder = cluster.getRexBuilder();
