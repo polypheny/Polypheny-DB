@@ -23,7 +23,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingValue;
 import org.polypheny.db.workflow.dag.variables.WritableVariableStore;
 import org.polypheny.db.workflow.engine.execution.context.ExecutionContextImpl;
-import org.polypheny.db.workflow.engine.storage.CheckpointReader;
+import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 
 public interface VariableWriter extends Activity {
 

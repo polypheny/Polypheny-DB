@@ -14,35 +14,38 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.workflow.engine.storage;
+package org.polypheny.db.workflow.engine.storage.reader;
 
+import java.util.Iterator;
 import java.util.List;
 import org.apache.commons.lang3.NotImplementedException;
+import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.type.entity.document.PolyDocument;
 
-public class DocWriter extends CheckpointWriter {
+public class DocReader extends CheckpointReader {
 
-    public DocWriter( LogicalCollection collection, Transaction transaction ) {
+    public DocReader( LogicalCollection collection, Transaction transaction ) {
         super( collection, transaction );
     }
 
 
-    public void write( PolyDocument document ) {
+    @Override
+    public AlgNode getAlgNode( AlgCluster cluster ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public void write( List<PolyValue> tuple ) {
+    public Iterator<PolyValue[]> getArrayIterator() {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public void close() throws Exception {
+    public Iterator<List<PolyValue>> getIteratorFromQuery( CheckpointQuery query ) {
         throw new NotImplementedException();
     }
 

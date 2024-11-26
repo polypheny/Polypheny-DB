@@ -21,7 +21,7 @@ import java.util.List;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.workflow.engine.storage.CheckpointReader;
+import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 
 public class CheckpointInputPipe implements InputPipe, AutoCloseable {
 

@@ -38,6 +38,10 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.workflow.engine.storage.reader.CheckpointQuery;
+import org.polypheny.db.workflow.engine.storage.reader.RelReader;
+import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
 
 class StorageManagerTest {
 
@@ -136,6 +140,38 @@ class StorageManagerTest {
             ) {
                 System.out.println( "Concurrently reading 1 and writing 2" );
                 writer.write( reader.getIterator() );
+            }
+        }
+    }
+
+
+    @Test
+    void readQueryResultFromRelCheckpointTest() throws Exception {
+        try ( StorageManager sm = new StorageManagerImpl( sessionId, Map.of() ) ) {
+            UUID activityId = UUID.randomUUID();
+            AlgDataType type = getSampleType();
+            List<List<PolyValue>> sampleData = getSampleData();
+
+            try ( RelWriter writer = sm.createRelCheckpoint( activityId, 0, type, false, null ) ) {
+                writer.write( sampleData.iterator() );
+            }
+
+            PolyInteger newValue = PolyInteger.of( sampleData.get( 0 ).get( 0 ).asInteger().value + 1 );
+            String intField = type.getFieldNames().get( 0 );
+            CheckpointQuery query = CheckpointQuery.builder()
+                    .queryLanguage( "SQL" )
+                    .query( "SELECT * FROM " + CheckpointQuery.ENTITY + " WHERE " + intField + " > ? ORDER BY " + intField + " DESC" )
+                    .parameter( 0, Pair.of( type.getFields().get( 0 ).getType(), newValue ) )
+                    .build();
+
+            try ( RelReader reader = (RelReader) sm.readCheckpoint( activityId, 0 ) ) {
+
+                int i = sampleData.size() - 1;  // reverse order because of DESC
+                Iterator<List<PolyValue>> it = reader.getIteratorFromQuery( query );
+                while ( it.hasNext() ) {
+                    assertTupleEquals( sampleData.get( i ), it.next() );
+                    i--;
+                }
             }
         }
     }

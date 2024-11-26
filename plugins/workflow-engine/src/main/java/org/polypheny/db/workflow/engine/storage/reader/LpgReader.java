@@ -14,21 +14,21 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.workflow.engine.storage;
+package org.polypheny.db.workflow.engine.storage.reader;
 
 import java.util.Iterator;
 import java.util.List;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.catalog.entity.logical.LogicalCollection;
+import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyValue;
 
-public class DocReader extends CheckpointReader {
+public class LpgReader extends CheckpointReader {
 
-    public DocReader( LogicalCollection collection, Transaction transaction ) {
-        super( collection, transaction );
+    public LpgReader( LogicalGraph graph, Transaction transaction ) {
+        super( graph, transaction );
     }
 
 
@@ -45,13 +45,13 @@ public class DocReader extends CheckpointReader {
 
 
     @Override
-    public Iterator<List<PolyValue>> getIteratorFromQuery( String query ) {
+    public Iterator<List<PolyValue>> getIteratorFromQuery( CheckpointQuery query ) {
         throw new NotImplementedException();
     }
 
 
-    private LogicalCollection getCollection() {
-        return (LogicalCollection) entity;
+    private LogicalGraph getGraph() {
+        return (LogicalGraph) entity;
     }
 
 }

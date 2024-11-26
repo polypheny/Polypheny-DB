@@ -24,7 +24,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingValue;
 import org.polypheny.db.workflow.engine.execution.context.ExecutionContext;
-import org.polypheny.db.workflow.engine.storage.CheckpointReader;
+import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 
 // TODO: write test to ensure at most 1 output was specified
 public interface Fusable extends Activity {

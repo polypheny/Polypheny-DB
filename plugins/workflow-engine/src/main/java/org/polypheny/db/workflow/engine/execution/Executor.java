@@ -25,8 +25,8 @@ import org.polypheny.db.workflow.dag.edges.DataEdge;
 import org.polypheny.db.workflow.dag.edges.Edge;
 import org.polypheny.db.workflow.dag.variables.ReadableVariableStore;
 import org.polypheny.db.workflow.dag.variables.WritableVariableStore;
-import org.polypheny.db.workflow.engine.storage.CheckpointReader;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
+import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 
 /**
  * An executor is responsible for executing a connected subgraph of a workflow.

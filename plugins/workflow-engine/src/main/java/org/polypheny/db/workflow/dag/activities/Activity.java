@@ -24,7 +24,7 @@ import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingValue;
 import org.polypheny.db.workflow.dag.variables.WritableVariableStore;
 import org.polypheny.db.workflow.engine.execution.context.ExecutionContext;
-import org.polypheny.db.workflow.engine.storage.CheckpointReader;
+import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 
 public interface Activity {
 

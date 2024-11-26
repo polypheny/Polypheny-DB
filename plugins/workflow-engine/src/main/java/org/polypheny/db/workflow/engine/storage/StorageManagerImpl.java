@@ -48,6 +48,14 @@ import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.transaction.TransactionManagerImpl;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
+import org.polypheny.db.workflow.engine.storage.reader.DocReader;
+import org.polypheny.db.workflow.engine.storage.reader.LpgReader;
+import org.polypheny.db.workflow.engine.storage.reader.RelReader;
+import org.polypheny.db.workflow.engine.storage.writer.CheckpointWriter;
+import org.polypheny.db.workflow.engine.storage.writer.DocWriter;
+import org.polypheny.db.workflow.engine.storage.writer.LpgWriter;
+import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
 
 public class StorageManagerImpl implements StorageManager {
 

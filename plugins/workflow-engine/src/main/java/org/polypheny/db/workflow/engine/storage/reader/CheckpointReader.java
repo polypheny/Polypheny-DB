@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.workflow.engine.storage;
+package org.polypheny.db.workflow.engine.storage.reader;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -80,7 +80,7 @@ public abstract class CheckpointReader implements AutoCloseable {
     }
 
 
-    public abstract Iterator<List<PolyValue>> getIteratorFromQuery( String query ); // TODO: How to specify query? Query language, PolyAlg or AlgNodes
+    public abstract Iterator<List<PolyValue>> getIteratorFromQuery( CheckpointQuery query ); // TODO: How to specify query? Query language, PolyAlg or AlgNodes
 
 
     public AlgDataType getTupleType() {

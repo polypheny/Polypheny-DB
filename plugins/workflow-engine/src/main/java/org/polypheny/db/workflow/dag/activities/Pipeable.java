@@ -29,8 +29,8 @@ import org.polypheny.db.workflow.engine.execution.pipe.CheckpointInputPipe;
 import org.polypheny.db.workflow.engine.execution.pipe.CheckpointOutputPipe;
 import org.polypheny.db.workflow.engine.execution.pipe.InputPipe;
 import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
-import org.polypheny.db.workflow.engine.storage.CheckpointReader;
-import org.polypheny.db.workflow.engine.storage.CheckpointWriter;
+import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
+import org.polypheny.db.workflow.engine.storage.writer.CheckpointWriter;
 
 // TODO: write test to ensure at most 1 output was specified
 public interface Pipeable extends Activity {

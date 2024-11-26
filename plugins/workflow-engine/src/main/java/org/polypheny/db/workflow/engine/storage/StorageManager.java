@@ -20,6 +20,11 @@ import java.util.UUID;
 import javax.annotation.Nullable;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
+import org.polypheny.db.workflow.engine.storage.writer.CheckpointWriter;
+import org.polypheny.db.workflow.engine.storage.writer.DocWriter;
+import org.polypheny.db.workflow.engine.storage.writer.LpgWriter;
+import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
 
 /**
  * A StorageManager is responsible for managing the checkpoints of a specific session.

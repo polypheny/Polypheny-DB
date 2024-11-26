@@ -19,7 +19,7 @@ package org.polypheny.db.workflow.engine.execution.pipe;
 import java.util.List;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.workflow.engine.storage.CheckpointWriter;
+import org.polypheny.db.workflow.engine.storage.writer.CheckpointWriter;
 
 public class CheckpointOutputPipe implements OutputPipe {
 

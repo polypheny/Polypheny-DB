@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.workflow.engine.storage;
+package org.polypheny.db.workflow.engine.storage.writer;
 
 import java.util.Collection;
 import java.util.Iterator;

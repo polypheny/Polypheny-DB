@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.workflow.engine.storage;
+package org.polypheny.db.workflow.engine.storage.writer;
 
 import java.util.List;
 import org.apache.commons.lang3.NotImplementedException;

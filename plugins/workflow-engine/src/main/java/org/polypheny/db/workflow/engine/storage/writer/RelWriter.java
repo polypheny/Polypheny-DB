@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.workflow.engine.storage;
+package org.polypheny.db.workflow.engine.storage.writer;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -27,13 +27,13 @@ import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.QueryLanguage;
-import org.polypheny.db.processing.ImplementationContext;
 import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
 import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.numerical.PolyLong;
+import org.polypheny.db.workflow.engine.storage.StorageManager;
 
 public class RelWriter extends CheckpointWriter {
 
@@ -44,7 +44,6 @@ public class RelWriter extends CheckpointWriter {
     private final int mapCapacity; // Since we know the size of each paramValue map, we can specify the initialCapacity for better performance
     private final Statement statement;
 
-    private ImplementationContext implementation;
     private final Map<Long, AlgDataType> paramTypes = new HashMap<>();
     private final List<Map<Long, PolyValue>> paramValues = new ArrayList<>();
     private long batchSize = -1;
@@ -68,7 +67,7 @@ public class RelWriter extends CheckpointWriter {
         }
 
         String query = "INSERT INTO \"" + table.getName() + "\" VALUES " + joiner;
-        QueryContext context = QueryContext.builder()
+        this.context = QueryContext.builder()
                 .query( query )
                 .language( QueryLanguage.from( "SQL" ) )
                 .isAnalysed( false )
@@ -76,8 +75,6 @@ public class RelWriter extends CheckpointWriter {
                 .namespaceId( table.getNamespaceId() )
                 .transactionManager( transactionManager )
                 .transactions( List.of( transaction ) ).build();
-        implementation = LanguageManager.getINSTANCE().anyPrepareQuery( context, statement ).get( 0 );
-        this.context = context;
     }
 
 
@@ -175,11 +172,11 @@ public class RelWriter extends CheckpointWriter {
         statement.getDataContext().setParameterTypes( paramTypes );
         statement.getDataContext().setParameterValues( paramValues );
 
-        implementation = LanguageManager.getINSTANCE().anyPrepareQuery( context, statement ).get( 0 ); // TODO: remove and make implementation final
-        ExecutedContext executedContext = implementation.execute( statement );
+        // create new implementation each batch
+        ExecutedContext executedContext = LanguageManager.getINSTANCE().anyPrepareQuery( context, statement ).get( 0 ).execute( statement );
 
         if ( executedContext.getException().isPresent() ) {
-            throw new GenericRuntimeException( "An error occured while writing to the checkpoint" );
+            throw new GenericRuntimeException( "An error occurred while writing to the checkpoint" );
         }
         List<List<PolyValue>> results = executedContext.getIterator().getAllRowsAndClose();
         long changedCount = results.size() == 1 ? results.get( 0 ).get( 0 ).asLong().longValue() : 0;

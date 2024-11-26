@@ -46,9 +46,9 @@ import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
 import org.polypheny.db.workflow.engine.execution.pipe.QueuePipe;
 import org.polypheny.db.workflow.engine.scheduler.ExecutionEdge;
 import org.polypheny.db.workflow.engine.scheduler.GraphUtils;
-import org.polypheny.db.workflow.engine.storage.CheckpointReader;
-import org.polypheny.db.workflow.engine.storage.CheckpointWriter;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
+import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
+import org.polypheny.db.workflow.engine.storage.writer.CheckpointWriter;
 
 /**
  * Each activity is executed as a separate thread.

@@ -33,9 +33,9 @@ import org.polypheny.db.workflow.dag.annotations.IntSetting;
 import org.polypheny.db.workflow.dag.annotations.StringSetting;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingValue;
 import org.polypheny.db.workflow.engine.execution.context.ExecutionContext;
-import org.polypheny.db.workflow.engine.storage.CheckpointReader;
-import org.polypheny.db.workflow.engine.storage.RelReader;
-import org.polypheny.db.workflow.engine.storage.RelWriter;
+import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
+import org.polypheny.db.workflow.engine.storage.reader.RelReader;
+import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
 
 @ActivityDefinition(type = "identity", displayName = "Identity", categories = { ActivityCategory.TRANSFORM },
         inPorts = { @InPort(type = PortType.REL) },

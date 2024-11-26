@@ -14,44 +14,41 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.workflow.engine.storage;
+package org.polypheny.db.workflow.engine.storage.writer;
 
-import java.util.Iterator;
 import java.util.List;
 import org.apache.commons.lang3.NotImplementedException;
-import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.catalog.entity.logical.LogicalGraph;
-import org.polypheny.db.plan.AlgCluster;
+import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.document.PolyDocument;
 
-public class LpgReader extends CheckpointReader {
+public class DocWriter extends CheckpointWriter {
 
-    public LpgReader( LogicalGraph graph, Transaction transaction ) {
-        super( graph, transaction );
+    public DocWriter( LogicalCollection collection, Transaction transaction ) {
+        super( collection, transaction );
     }
 
 
-    @Override
-    public AlgNode getAlgNode( AlgCluster cluster ) {
+    public void write( PolyDocument document ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public Iterator<PolyValue[]> getArrayIterator() {
+    public void write( List<PolyValue> tuple ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public Iterator<List<PolyValue>> getIteratorFromQuery( String query ) {
+    public void close() throws Exception {
         throw new NotImplementedException();
     }
 
 
-    private LogicalGraph getGraph() {
-        return (LogicalGraph) entity;
+    private LogicalCollection getCollection() {
+        return (LogicalCollection) entity;
     }
 
 }

@@ -16,11 +16,16 @@
 
 package org.polypheny.db.workflow.engine.execution.context;
 
+import java.util.Iterator;
+import java.util.List;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.workflow.engine.storage.CheckpointWriter;
-import org.polypheny.db.workflow.engine.storage.DocWriter;
-import org.polypheny.db.workflow.engine.storage.LpgWriter;
-import org.polypheny.db.workflow.engine.storage.RelWriter;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.workflow.engine.storage.reader.CheckpointQuery;
+import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
+import org.polypheny.db.workflow.engine.storage.writer.CheckpointWriter;
+import org.polypheny.db.workflow.engine.storage.writer.DocWriter;
+import org.polypheny.db.workflow.engine.storage.writer.LpgWriter;
+import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
 
 public interface ExecutionContext {
 
@@ -53,5 +58,10 @@ public interface ExecutionContext {
      * @return a CheckpointWriter for writing data to the output.
      */
     CheckpointWriter createWriter( int idx, AlgDataType tupleType, boolean resetPk );
+
+    Iterator<List<PolyValue>> getIteratorFromQuery( CheckpointQuery query, List<CheckpointReader> readers );
+
+    // TODO: add ability to create temporary "checkpoints" for intermediary results within an activity
+    // -> identified by sessionId + activityId + "temp" + unique name of save
 
 }
