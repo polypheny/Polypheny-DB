@@ -247,10 +247,18 @@ public class RexToLixTranslator {
 
 
     Expression translate( RexNode expr, RexImpTable.NullAs nullAs, Type storageType ) {
-        Expression expression = translate0( expr, nullAs, storageType );
+        Expression expression = translatePlain( expr, nullAs, storageType );
         expression = EnumUtils.enforce( storageType, expression );
         assert expression != null;
         return list.append( "v", expression );
+    }
+
+
+    Expression translateWithoutAttach( RexNode expr, RexImpTable.NullAs nullAs, Type storageType ) {
+        Expression expression = translatePlain( expr, nullAs, storageType );
+        expression = EnumUtils.enforce( storageType, expression );
+        assert expression != null;
+        return expression;
     }
 
 
@@ -436,7 +444,7 @@ public class RexToLixTranslator {
      * @param nullAs If false, if expression is definitely not null at runtime. Therefore we can optimize. For example, we can cast to int using x.intValue().
      * @return Translated expression
      */
-    private Expression translate0( RexNode expr, RexImpTable.NullAs nullAs, Type storageType ) {
+    private Expression translatePlain( RexNode expr, RexImpTable.NullAs nullAs, Type storageType ) {
         if ( nullAs == RexImpTable.NullAs.NULL && !expr.getType().isNullable() ) {
             nullAs = RexImpTable.NullAs.NOT_POSSIBLE;
         }
