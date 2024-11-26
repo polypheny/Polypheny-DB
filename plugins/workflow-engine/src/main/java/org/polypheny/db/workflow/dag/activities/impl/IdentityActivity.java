@@ -32,7 +32,7 @@ import org.polypheny.db.workflow.dag.annotations.Group.Subgroup;
 import org.polypheny.db.workflow.dag.annotations.IntSetting;
 import org.polypheny.db.workflow.dag.annotations.StringSetting;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingValue;
-import org.polypheny.db.workflow.engine.execution.ExecutionContext;
+import org.polypheny.db.workflow.engine.execution.context.ExecutionContext;
 import org.polypheny.db.workflow.engine.storage.CheckpointReader;
 import org.polypheny.db.workflow.engine.storage.RelReader;
 import org.polypheny.db.workflow.engine.storage.RelWriter;

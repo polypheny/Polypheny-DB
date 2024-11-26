@@ -16,7 +16,6 @@
 
 package org.polypheny.db.workflow.engine.execution;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -52,7 +51,7 @@ public class FusionExecutor extends Executor {
 
 
     @Override
-    public void execute() throws ExecutorException {
+    void execute() throws ExecutorException {
         UUID rootId = GraphUtils.findInvertedTreeRoot( execTree );
 
         try {
@@ -81,18 +80,18 @@ public class FusionExecutor extends Executor {
     private AlgNode constructAlgNode( UUID rootId, AlgCluster cluster ) throws Exception {
         ActivityWrapper wrapper = workflow.getActivity( rootId );
         List<ExecutionEdge> inEdges = execTree.getInwardEdges( rootId );
-        List<AlgNode> inputs;
-        if ( inEdges.isEmpty() ) {
-            // leaf node
-            inputs = getReaders( wrapper ).stream().map( r -> r.getAlgNode( cluster ) ).toList();
-            // TODO: handle nodes with 1 input connected to other AlgNode, the other to checkpoint
-        } else {
-            // inner node
-            inputs = new ArrayList<>();
-            for ( ExecutionEdge e : inEdges ) {
-                inputs.add( constructAlgNode( e.getSource(), cluster ) );
+        AlgNode[] inputsArr = new AlgNode[wrapper.getDef().getInPorts().length];
+        for ( ExecutionEdge edge : inEdges ) {
+            assert !edge.isControl() : "Execution tree for fusion must not contain control edges";
+            inputsArr[edge.getToPort()] = constructAlgNode( edge.getSource(), cluster );
+        }
+        for ( int i = 0; i < inputsArr.length; i++ ) {
+            if ( inputsArr[i] == null ) {
+                // add remaining inputs for existing checkpoints
+                inputsArr[i] = getReader( wrapper, i ).getAlgNode( cluster );
             }
         }
+        List<AlgNode> inputs = List.of( inputsArr );
 
         mergeInputVariables( rootId );
 

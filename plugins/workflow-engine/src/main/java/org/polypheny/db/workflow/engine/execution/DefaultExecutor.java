@@ -23,6 +23,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.workflow.dag.Workflow;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingValue;
+import org.polypheny.db.workflow.engine.execution.context.ExecutionContextImpl;
 import org.polypheny.db.workflow.engine.storage.CheckpointReader;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
 
@@ -33,7 +34,7 @@ import org.polypheny.db.workflow.engine.storage.StorageManager;
 public class DefaultExecutor extends Executor {
 
     private final ActivityWrapper wrapper;
-    private ExecutionContext ctx;
+    private ExecutionContextImpl ctx;
 
 
     protected DefaultExecutor( StorageManager sm, Workflow wf, UUID activityId ) {
@@ -43,19 +44,19 @@ public class DefaultExecutor extends Executor {
 
 
     @Override
-    public void execute() {
+    void execute() throws ExecutorException {
         List<CheckpointReader> inputs = getReaders( wrapper );
         List<AlgDataType> inputTypes = inputs.stream().map( CheckpointReader::getTupleType ).toList();
 
         mergeInputVariables( wrapper.getId() );
         Map<String, SettingValue> settings = wrapper.resolveSettings(); // settings before variable update
-        ctx = new ExecutionContext( wrapper, sm );
+        ctx = new ExecutionContextImpl( wrapper, sm );
 
         try ( CloseableList ignored = new CloseableList( inputs ) ) {
             wrapper.getActivity().updateVariables( inputTypes, settings, wrapper.getVariables() );
             wrapper.getActivity().execute( inputs, settings, ctx );
         } catch ( Exception e ) {
-            // TODO: Exception handling when executing an activity
+            throw new ExecutorException( e );
         }
     }
 

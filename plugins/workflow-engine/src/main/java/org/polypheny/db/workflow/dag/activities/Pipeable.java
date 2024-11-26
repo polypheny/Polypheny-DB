@@ -22,7 +22,8 @@ import java.util.Optional;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingValue;
-import org.polypheny.db.workflow.engine.execution.ExecutionContext;
+import org.polypheny.db.workflow.engine.execution.context.ExecutionContext;
+import org.polypheny.db.workflow.engine.execution.context.PipeExecutionContext;
 import org.polypheny.db.workflow.engine.execution.pipe.InputPipe;
 import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
 import org.polypheny.db.workflow.engine.storage.CheckpointReader;
@@ -50,8 +51,29 @@ public interface Pipeable extends Activity {
      */
     AlgDataType lockOutputType( List<AlgDataType> inTypes, Map<String, SettingValue> settings );
 
-    // TODO: how to indicate final tuple?
-    void pipe( List<InputPipe> inputs, OutputPipe output, Map<String, SettingValue> settings, ExecutionContext ctx ) throws Exception;
+    /**
+     * Successively consumes the tuples of the input pipe(s) and forwards produced tuples to the output pipe.
+     * There does not have to be a 1:1 relationship between input and output tuples.
+     * The Pipeable activity is not expected to close the output themselves. This is done by the executor
+     * after the pipe method returns.
+     *
+     * @param inputs the InputPipes to iterate over
+     * @param output the output pipe for sending output tuples to that respect the locked output type
+     * @param settings the resolved settings
+     * @param ctx ExecutionContext to be used for updating progress (interrupt checking is done automatically by the pipes)
+     * @throws PipeInterruptedException if thread gets interrupted during execution (used for prematurely stopping execution)
+     * @throws Exception if some other problem occurs during execution that requires the execution of the pipe to stop
+     */
+    void pipe( List<InputPipe> inputs, OutputPipe output, Map<String, SettingValue> settings, PipeExecutionContext ctx ) throws Exception;
 
+
+    class PipeInterruptedException extends RuntimeException {
+
+        // Constructor that accepts a cause
+        public PipeInterruptedException( Throwable cause ) {
+            super( "The pipe operation was interrupted.", cause );
+        }
+
+    }
 
 }

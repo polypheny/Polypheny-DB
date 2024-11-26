@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.workflow.engine.execution;
+package org.polypheny.db.workflow.engine.execution.context;
 
 import java.util.Objects;
 import lombok.Getter;
@@ -27,7 +27,7 @@ import org.polypheny.db.workflow.engine.storage.RelWriter;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
 
 
-public class ExecutionContext {
+public class ExecutionContextImpl implements ExecutionContext, PipeExecutionContext {
     // TODO: provide access to global variables + error msgs?
 
     private final StorageManager sm;
@@ -39,13 +39,14 @@ public class ExecutionContext {
     private volatile double progress = 0; // 1 => 100%, can only be updated by activity thread, external thread is only allowed to read
 
 
-    public ExecutionContext( ActivityWrapper activityWrapper, StorageManager storageManager ) {
+    public ExecutionContextImpl( ActivityWrapper activityWrapper, StorageManager storageManager ) {
         this.sm = storageManager;
         this.activityWrapper = activityWrapper;
         this.remainingOutPorts = activityWrapper.getDef().getOutPortTypes();
     }
 
 
+    @Override
     public void updateProgress( double value ) {
         if ( value > progress ) {
             progress = Math.min( 1, value );
@@ -54,6 +55,7 @@ public class ExecutionContext {
 
 
     // Inspired by the ExecutionContext of KNIME: See its usage on https://github.com/knime/knime-examples/
+    @Override
     public boolean checkInterrupted() throws Exception {
         if ( interrupt ) {
             throw new Exception( "Activity execution was interrupted" );
@@ -62,20 +64,7 @@ public class ExecutionContext {
     }
 
 
-    // TODO: make method inaccessible from Activity
-    public void setInterrupted() {
-        interrupt = true;
-    }
-
-
-    /**
-     * Creates a {@link RelWriter} for the specified output index with the given tuple type.
-     *
-     * @param idx the output index.
-     * @param tupleType the schema of the output.
-     * @param resetPk whether to reset the primary key (=> first column) (allowed only for single integer-type keys).
-     * @return a {@link RelWriter} for writing data to the output.
-     */
+    @Override
     public RelWriter createRelWriter( int idx, AlgDataType tupleType, boolean resetPk ) {
         PortType type = Objects.requireNonNull( remainingOutPorts[idx] );
         remainingOutPorts[idx] = null;
@@ -86,6 +75,7 @@ public class ExecutionContext {
     }
 
 
+    @Override
     public DocWriter createDocWriter( int idx ) {
         PortType type = Objects.requireNonNull( remainingOutPorts[idx] );
         remainingOutPorts[idx] = null;
@@ -96,6 +86,7 @@ public class ExecutionContext {
     }
 
 
+    @Override
     public LpgWriter createLpgWriter( int idx ) {
         PortType type = Objects.requireNonNull( remainingOutPorts[idx] );
         remainingOutPorts[idx] = null;
@@ -103,6 +94,11 @@ public class ExecutionContext {
             return sm.createLpgCheckpoint( activityWrapper.getId(), idx, getStore( idx ) );
         }
         throw new IllegalArgumentException( "Unable to create a graph checkpoint for output type " + type );
+    }
+
+
+    public void setInterrupted() {
+        interrupt = true;
     }
 
 

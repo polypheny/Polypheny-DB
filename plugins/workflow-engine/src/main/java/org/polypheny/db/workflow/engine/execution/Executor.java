@@ -43,25 +43,24 @@ public abstract class Executor implements Callable<Void> {
     final Workflow workflow;
 
 
+    // TODO: add reference to monitor for monitoring the progress of activities
     protected Executor( StorageManager sm, Workflow workflow ) {
         this.sm = sm;
         this.workflow = workflow;
     }
 
 
-    public abstract void execute() throws ExecutorException;
+    abstract void execute() throws ExecutorException;
 
+    /**
+     * Tries to halt the execution in a best-effort manner.
+     * Only when call() returns or throws an exception is the execution really terminated.
+     */
     public abstract void interrupt();
-
-
-    public static class ExecutorException extends Exception {
-        // TODO: implement ExecutorException
-    }
 
 
     @Override
     public Void call() throws ExecutorException {
-        // TODO: return Map<UUID, VariableStore> with updated variableStores or update in place?
         execute();
         return null;
     }
@@ -97,6 +96,25 @@ public abstract class Executor implements Callable<Void> {
             }
         }
         return List.of( inputs );
+    }
+
+
+    CheckpointReader getReader( ActivityWrapper target, int toPort ) {
+        DataEdge edge = workflow.getDataEdge( target.getId(), toPort );
+        if ( edge == null ) {
+            return null;
+        }
+        return sm.readCheckpoint( edge.getFrom().getId(), edge.getFromPort() );
+    }
+
+
+    public static class ExecutorException extends Exception {
+
+        // TODO: implement ExecutorException
+        public ExecutorException( Throwable cause ) {
+            super( cause );
+        }
+
     }
 
 

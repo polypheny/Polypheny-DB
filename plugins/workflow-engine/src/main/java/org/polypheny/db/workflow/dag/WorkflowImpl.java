@@ -27,6 +27,7 @@ import lombok.Setter;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
+import org.polypheny.db.workflow.dag.edges.DataEdge;
 import org.polypheny.db.workflow.dag.edges.Edge;
 import org.polypheny.db.workflow.models.ActivityModel;
 import org.polypheny.db.workflow.models.EdgeModel;
@@ -126,6 +127,19 @@ public class WorkflowImpl implements Workflow {
         for ( Edge e : candidates ) {
             if ( e.isEquivalent( model ) ) {
                 return e;
+            }
+        }
+        return null;
+    }
+
+
+    @Override
+    public DataEdge getDataEdge( UUID to, int toPort ) {
+        for (Edge edge : getInEdges(to)) {
+            if (edge instanceof DataEdge dataEdge) {
+                if (dataEdge.getToPort() == toPort) {
+                    return dataEdge;
+                }
             }
         }
         return null;

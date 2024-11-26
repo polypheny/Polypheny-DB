@@ -22,7 +22,7 @@ import java.util.Optional;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingValue;
 import org.polypheny.db.workflow.dag.variables.WritableVariableStore;
-import org.polypheny.db.workflow.engine.execution.ExecutionContext;
+import org.polypheny.db.workflow.engine.execution.context.ExecutionContextImpl;
 import org.polypheny.db.workflow.engine.storage.CheckpointReader;
 
 public interface VariableWriter extends Activity {
@@ -47,6 +47,6 @@ public interface VariableWriter extends Activity {
      * The slightly different execute method that comes with a writable variable store.
      * In the case that this method is called, it can be assumed that {@code updateVariables} was NOT called.
      */
-    void execute( List<CheckpointReader> inputs, Map<String, SettingValue> settings, ExecutionContext ctx, WritableVariableStore writer );
+    void execute( List<CheckpointReader> inputs, Map<String, SettingValue> settings, ExecutionContextImpl ctx, WritableVariableStore writer );
 
 }

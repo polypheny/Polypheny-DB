@@ -19,6 +19,7 @@ package org.polypheny.db.workflow.dag;
 import java.util.List;
 import java.util.UUID;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
+import org.polypheny.db.workflow.dag.edges.DataEdge;
 import org.polypheny.db.workflow.dag.edges.Edge;
 import org.polypheny.db.workflow.models.EdgeModel;
 import org.polypheny.db.workflow.models.WorkflowConfigModel;
@@ -56,6 +57,8 @@ public interface Workflow {
     List<Edge> getOutEdges( UUID source );
 
     Edge getEdge( EdgeModel model );
+
+    DataEdge getDataEdge( UUID to, int toPort );
 
     WorkflowConfigModel getConfig();
 

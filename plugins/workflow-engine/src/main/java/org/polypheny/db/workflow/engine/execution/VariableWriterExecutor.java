@@ -24,13 +24,14 @@ import org.polypheny.db.workflow.dag.Workflow;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
 import org.polypheny.db.workflow.dag.activities.VariableWriter;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingValue;
+import org.polypheny.db.workflow.engine.execution.context.ExecutionContextImpl;
 import org.polypheny.db.workflow.engine.storage.CheckpointReader;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
 
 public class VariableWriterExecutor extends Executor {
 
     private final ActivityWrapper wrapper;
-    private ExecutionContext ctx;
+    private ExecutionContextImpl ctx;
 
 
     protected VariableWriterExecutor( StorageManager sm, Workflow workflow, UUID activityId ) {
@@ -40,20 +41,20 @@ public class VariableWriterExecutor extends Executor {
 
 
     @Override
-    public void execute() throws ExecutorException {
+    void execute() throws ExecutorException {
         List<CheckpointReader> inputs = getReaders( wrapper );
         List<AlgDataType> inputTypes = inputs.stream().map( CheckpointReader::getTupleType ).toList();
 
         mergeInputVariables( wrapper.getId() );
         Map<String, SettingValue> settings = wrapper.resolveSettings(); // settings before variable update
-        ctx = new ExecutionContext( wrapper, sm );
+        ctx = new ExecutionContextImpl( wrapper, sm );
 
         try ( CloseableList ignored = new CloseableList( inputs ) ) {
             VariableWriter activity = (VariableWriter) wrapper.getActivity();
             // we skip activity.updateVariables() on purpose, since variable updates are performed within execute
             activity.execute( inputs, settings, ctx, wrapper.getVariables() );
         } catch ( Exception e ) {
-            // TODO: Exception handling when executing an activity
+            throw new ExecutorException( e );
         }
     }
 

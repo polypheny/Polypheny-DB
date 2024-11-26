@@ -23,7 +23,7 @@ import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingValue;
-import org.polypheny.db.workflow.engine.execution.ExecutionContext;
+import org.polypheny.db.workflow.engine.execution.context.ExecutionContext;
 import org.polypheny.db.workflow.engine.storage.CheckpointReader;
 
 // TODO: write test to ensure at most 1 output was specified

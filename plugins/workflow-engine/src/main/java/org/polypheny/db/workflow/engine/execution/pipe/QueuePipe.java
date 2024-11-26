@@ -22,14 +22,14 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.workflow.dag.activities.Pipeable.PipeInterruptedException;
 
 public class QueuePipe implements InputPipe, OutputPipe {
 
     private final BlockingQueue<List<PolyValue>> queue;
     private final AlgDataType type;
-    private boolean hasNext = true;
+    private boolean hasNext = true; // whether new tuples are still being inserted into the queue
 
 
     public QueuePipe( int capacity, AlgDataType type ) {
@@ -56,17 +56,16 @@ public class QueuePipe implements InputPipe, OutputPipe {
         return new Iterator<>() {
             @Override
             public boolean hasNext() {
-                return hasNext;
+                return hasNext || !queue.isEmpty();
             }
 
 
             @Override
-            public List<PolyValue> next() {
+            public List<PolyValue> next() throws PipeInterruptedException {
                 try {
                     return queue.take();
                 } catch ( InterruptedException e ) {
-                    // TODO: handle interrupt
-                    throw new GenericRuntimeException( e );
+                    throw new PipeInterruptedException( e );
                 }
             }
         };
