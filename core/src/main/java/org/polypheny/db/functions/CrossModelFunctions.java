@@ -340,7 +340,7 @@ public class CrossModelFunctions {
      */
     private static void edgeTableDelete( DataContext context, List<Function0<Enumerable<?>>> enumerables, int enumIndex, AlgDataType idType, AlgDataType labelType, PolyEdge edge ) {
         context.addParameterValues( 0, idType, List.of( edge.id ) );
-        context.addParameterValues( 1, labelType, List.of( edge.labels ) );
+        context.addParameterValues( 1, labelType, List.copyOf( edge.labels ) );
         Enumerator<?> enumerable = enumerables.get( enumIndex ).apply().enumerator();
         enumerable.moveNext();
         context.resetParameterValues();
