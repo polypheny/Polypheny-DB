@@ -17,14 +17,55 @@
 package org.polypheny.db.transaction.locking;
 
 import java.util.Optional;
+import lombok.NonNull;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.Entity;
+import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 
 public class LockableUtils {
-    public static LockableObject unwrapToLockableObject( Entity entity) {
+
+    public static LockableObject unwrapToLockableObject( Entity entity ) {
         Optional<LockableObject> lockableObject = entity.unwrap( LockableObject.class );
         if ( lockableObject.isPresent() ) {
             return lockableObject.get();
         }
         throw new RuntimeException( "Could not unwrap lockableObject" );
     }
+
+
+    public static Lockable convertToLockable( @NonNull LockableObject lockableObject ) {
+        switch ( lockableObject.getObjectType() ) {
+            case NAMESPACE -> {
+                return convertNamespaceToLockable( lockableObject );
+            }
+
+            case ENTITY -> {
+                return convertEntityToLockable( lockableObject );
+            }
+
+            default -> {
+                throw new IllegalArgumentException( "Can not convert object of unknown type to lockable: " + lockableObject.getObjectType() );
+            }
+        }
+
+    }
+
+
+    private static Lockable convertNamespaceToLockable( @NonNull LockableObject lockableObject ) {
+        LogicalNamespace namespace = (LogicalNamespace) lockableObject;
+        return new LockableObjectWrapper( LockablesRegistry.GLOBAL_SCHEMA_LOCKABLE, namespace );
+    }
+
+
+    private static Lockable convertEntityToLockable( @NonNull LockableObject lockableObject ) {
+        Entity entity = (Entity) lockableObject;
+        Lockable namespace = convertNamespaceToLockable( getNamespaceLockableObjectOfEntity( entity ) );
+        return new LockableObjectWrapper( namespace, entity );
+    }
+
+
+    public static LockableObject getNamespaceLockableObjectOfEntity( Entity entity ) {
+        return Catalog.getInstance().getSnapshot().getNamespace( entity.getNamespaceId() ).orElseThrow();
+    }
+
 }

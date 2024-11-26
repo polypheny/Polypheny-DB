@@ -27,12 +27,10 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.cql.parser.CqlParser;
 import org.polypheny.db.cql.parser.ParseException;
 import org.polypheny.db.languages.QueryParameters;
-import org.polypheny.db.nodes.ExecutableStatement;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.rex.RexBuilder;
-import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
@@ -70,12 +68,14 @@ public class CqlProcessor extends Processor {
         return cql2AlgConverter.convert2Alg( algBuilder, rexBuilder );
     }
 
+
     @Override
     protected void lock( Transaction transaction, ParsedQueryContext context ) throws DeadlockException {
         // exclusive lock
         LogicalNamespace namespace = Catalog.getInstance().getSnapshot().getNamespace( context.getNamespaceId() ).orElseThrow();
-        transaction.acquireLockable( LockablesRegistry.convertToLockable( namespace ), LockType.EXCLUSIVE );
+        transaction.acquireLockable( LockablesRegistry.INSTANCE.getOrCreateLockable( namespace ), LockType.EXCLUSIVE );
     }
+
 
     @Override
     public String getQuery( Node parsed, QueryParameters parameters ) {

@@ -31,38 +31,6 @@ public class LockablesRegistry {
 
 
     public Lockable getOrCreateLockable(@NonNull LockableObject lockableObject ) {
-        return lockables.computeIfAbsent( lockableObject, LockablesRegistry::convertToLockable );
+        return lockables.computeIfAbsent( lockableObject, LockableUtils::convertToLockable );
     }
-
-
-    public static Lockable convertToLockable(@NonNull LockableObject lockableObject ) {
-        switch ( lockableObject.getObjectType() ) {
-            case NAMESPACE -> {
-                return convertNamespaceToLockable( lockableObject );
-            }
-
-            case ENTITY -> {
-                return convertEntityToLockable( lockableObject );
-            }
-
-            default -> {
-                throw new IllegalArgumentException( "Can not convert object of unknown type to lockable: " + lockableObject.getObjectType() );
-            }
-        }
-
-    }
-
-
-    private static Lockable convertNamespaceToLockable(@NonNull LockableObject lockableObject ) {
-        LogicalNamespace namespace = (LogicalNamespace) lockableObject;
-        return new LockableObjectWrapper( GLOBAL_SCHEMA_LOCKABLE, namespace );
-    }
-
-
-    private static Lockable convertEntityToLockable(@NonNull LockableObject lockableObject ) {
-        Entity entity = (Entity) lockableObject;
-        Lockable namespace = convertToLockable( Catalog.getInstance().getSnapshot().getNamespace( entity.getNamespaceId() ).orElseThrow() );
-        return new LockableObjectWrapper( namespace, entity );
-    }
-
 }

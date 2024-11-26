@@ -230,7 +230,7 @@ public class SqlProcessor extends Processor {
     protected void lock( Transaction transaction, ParsedQueryContext context ) throws DeadlockException {
         // exclusive lock
         LogicalNamespace namespace = Catalog.getInstance().getSnapshot().getNamespace( context.getNamespaceId() ).orElseThrow();
-        transaction.acquireLockable( LockablesRegistry.convertToLockable( namespace ), LockType.EXCLUSIVE );
+        transaction.acquireLockable( LockablesRegistry.INSTANCE.getOrCreateLockable(namespace ), LockType.EXCLUSIVE );
     }
 
 
