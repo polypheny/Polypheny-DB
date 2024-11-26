@@ -15,7 +15,7 @@ import org.apache.commons.lang3.NotImplementedException;
 public class EntityIdentifierGenerator {
 
     private static final int QUEUE_SIZE = 10000;
-    private static final int MAX_IDENTIFIER = 16;
+    private static final int MAX_IDENTIFIER = 100000;
 
     public static final EntityIdentifierGenerator INSTANCE = new EntityIdentifierGenerator();
     private static final String GENERATOR_LOG = "entry_identifier_counter.dat";
