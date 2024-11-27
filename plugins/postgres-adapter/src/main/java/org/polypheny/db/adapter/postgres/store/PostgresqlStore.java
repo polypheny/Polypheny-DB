@@ -38,6 +38,7 @@ import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.adapter.jdbc.connection.TransactionalConnectionFactory;
 import org.polypheny.db.adapter.jdbc.stores.AbstractJdbcStore;
 import org.polypheny.db.adapter.postgres.PostgresqlSqlDialect;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalIndex;
@@ -58,6 +59,7 @@ import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.util.PasswordGenerator;
+import org.polypheny.db.util.RunMode;
 
 
 @Slf4j
@@ -372,7 +374,13 @@ public class PostgresqlStore extends AbstractJdbcStore {
             return false;
         }
 
-        HostAndPort hp = container.connectToContainer( 5432 );
+        HostAndPort hp;
+        if ( Catalog.mode == RunMode.BENCHMARK ) {
+            log.warn( "Using direct Docker connection in benchmark mode" );
+            hp = container.connectToContainerDirectly( 5432 );
+        } else {
+            hp = container.connectToContainer( 5432 );
+        }
         this.host = hp.host();
         this.port = hp.port();
 
