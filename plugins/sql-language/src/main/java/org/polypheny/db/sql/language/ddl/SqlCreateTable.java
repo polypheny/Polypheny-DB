@@ -19,8 +19,11 @@ package org.polypheny.db.sql.language.ddl;
 
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
@@ -31,6 +34,7 @@ import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.Collation;
 import org.polypheny.db.catalog.logistic.PlacementType;
@@ -46,6 +50,7 @@ import org.polypheny.db.nodes.Identifier;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.partition.raw.RawPartitionInformation;
 import org.polypheny.db.prepare.Context;
+import org.polypheny.db.prepare.Prepare;
 import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.sql.language.SqlCreate;
 import org.polypheny.db.sql.language.SqlIdentifier;
@@ -57,6 +62,9 @@ import org.polypheny.db.sql.language.SqlSpecialOperator;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.locking.EntityIdentifierUtils;
+import org.polypheny.db.transaction.locking.Lockable;
+import org.polypheny.db.transaction.locking.Lockable.LockType;
+import org.polypheny.db.transaction.locking.LockableUtils;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyValue;
@@ -323,6 +331,11 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
                     ((SqlForeignKeyConstraint) constraint).getReferencedEntity().toString(),
                     ((SqlForeignKeyConstraint) constraint).getReferencedField().toString() );
         };
+    }
+
+    @Override
+    public Map<Lockable, LockType> deriveLockables( Context context, ParsedQueryContext parsedQueryContext ) {
+        return getMapOfNamespaceLockableOrDefault(name, context, LockType.EXCLUSIVE);
     }
 
 

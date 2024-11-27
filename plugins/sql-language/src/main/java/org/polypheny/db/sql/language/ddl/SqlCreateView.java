@@ -18,8 +18,11 @@ package org.polypheny.db.sql.language.ddl;
 
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import lombok.Getter;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.algebra.AlgCollation;
@@ -27,6 +30,8 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.logical.LogicalEntity;
+import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.PlacementType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
@@ -48,6 +53,9 @@ import org.polypheny.db.sql.language.SqlSpecialOperator;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.sql.language.dialect.PolyphenyDbSqlDialect;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.locking.Lockable;
+import org.polypheny.db.transaction.locking.Lockable.LockType;
+import org.polypheny.db.transaction.locking.LockableUtils;
 import org.polypheny.db.util.ImmutableNullableList;
 
 
@@ -183,6 +191,11 @@ public class SqlCreateView extends SqlCreate implements ExecutableStatement {
         writer.keyword( "AS" );
         writer.newlineAndIndent();
         query.unparse( writer, 0, 0 );
+    }
+
+    @Override
+    public Map<Lockable, LockType> deriveLockables( Context context, ParsedQueryContext parsedQueryContext ) {
+        return getMapOfNamespaceLockableOrDefault(name, context, LockType.EXCLUSIVE);
     }
 
 

@@ -18,13 +18,10 @@ package org.polypheny.db.transaction.locking;
 
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.NonNull;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.Entity;
-import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 
 public class LockablesRegistry {
 
-    public static final GlobalSchemaLockable GLOBAL_SCHEMA_LOCKABLE = new GlobalSchemaLockable();
+    public static final GlobalLockable GLOBAL_SCHEMA_LOCKABLE = new GlobalLockable();
     public static final LockablesRegistry INSTANCE = new LockablesRegistry();
 
     private final ConcurrentHashMap<LockableObject, Lockable> lockables = new ConcurrentHashMap<>();

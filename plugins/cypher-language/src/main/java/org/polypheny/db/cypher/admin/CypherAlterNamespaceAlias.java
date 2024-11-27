@@ -16,7 +16,10 @@
 
 package org.polypheny.db.cypher.admin;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import lombok.Getter;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -29,6 +32,9 @@ import org.polypheny.db.nodes.ExecutableStatement;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.locking.Lockable;
+import org.polypheny.db.transaction.locking.Lockable.LockType;
+import org.polypheny.db.transaction.locking.LockableUtils;
 
 
 @Getter
@@ -63,6 +69,11 @@ public class CypherAlterNamespaceAlias extends CypherAdminCommand implements Exe
         }
 
         DdlManager.getInstance().replaceGraphAlias( graphs.get( 0 ).id, targetName, aliasName );
+    }
+
+    @Override
+    public Map<Lockable, LockType> deriveLockables( Context context, ParsedQueryContext parsedQueryContext ) {
+        return LockableUtils.getMapWithGlobalLockable( LockType.EXCLUSIVE );
     }
 
 }

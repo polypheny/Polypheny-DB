@@ -16,7 +16,9 @@
 
 package org.polypheny.db.cypher.ddl;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
@@ -32,6 +34,9 @@ import org.polypheny.db.nodes.ExecutableStatement;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.locking.Lockable;
+import org.polypheny.db.transaction.locking.Lockable.LockType;
+import org.polypheny.db.transaction.locking.LockableUtils;
 
 public class CypherDropPlacement extends CypherAdminCommand implements ExecutableStatement {
 
@@ -64,6 +69,11 @@ public class CypherDropPlacement extends CypherAdminCommand implements Executabl
         }
 
         DdlManager.getInstance().dropGraphPlacement( graphs.get( 0 ).id, dataStore, statement );
+    }
+
+    @Override
+    public Map<Lockable, LockType> deriveLockables( Context context, ParsedQueryContext parsedQueryContext ) {
+        return LockableUtils.getMapWithGlobalLockable( LockType.EXCLUSIVE );
     }
 
 }

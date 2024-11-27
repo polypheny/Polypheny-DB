@@ -17,7 +17,9 @@
 package org.polypheny.db.sql.language.ddl.altertable;
 
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import javax.annotation.Nullable;
 import lombok.EqualsAndHashCode;
@@ -40,6 +42,9 @@ import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.sql.language.ddl.SqlAlterTable;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.locking.Lockable;
+import org.polypheny.db.transaction.locking.Lockable.LockType;
+import org.polypheny.db.transaction.locking.LockableUtils;
 import org.polypheny.db.util.ImmutableNullableList;
 
 
@@ -149,6 +154,11 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
                 nullable,
                 defaultValue == null ? null : SqlLiteral.toPoly( defaultValue ),
                 statement );
+    }
+
+    @Override
+    public Map<Lockable, LockType> deriveLockables( Context context, ParsedQueryContext parsedQueryContext ) {
+        return getMapOfTableLockable( table, context, LockType.EXCLUSIVE );
     }
 
 }

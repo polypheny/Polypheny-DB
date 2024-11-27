@@ -16,11 +16,15 @@
 
 package org.polypheny.db.sql.language.ddl;
 
+import java.util.Map;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.prepare.Context;
 import org.polypheny.db.sql.language.SqlAlter;
 import org.polypheny.db.sql.language.SqlOperator;
 import org.polypheny.db.sql.language.SqlSpecialOperator;
+import org.polypheny.db.transaction.locking.Lockable.LockType;
+import org.polypheny.db.transaction.locking.LockableObject;
 
 
 /**

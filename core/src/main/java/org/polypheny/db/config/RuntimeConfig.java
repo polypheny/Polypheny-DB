@@ -38,7 +38,7 @@ public enum RuntimeConfig {
     S2PL_LOCKING_LEVEL(
             "runtime/s2plLockingLevel",
             "Define the granularity of lock acquisition.",
-            S2plLockingLevel.GLOBAL,
+            S2plLockingLevel.ENTITY,
             ConfigType.ENUM
     ),
 

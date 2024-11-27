@@ -16,9 +16,9 @@
 
 package org.polypheny.db.transaction.locking;
 
-public class GlobalSchemaLockable extends LockableImpl {
+public class GlobalLockable extends LockableImpl {
 
-    public GlobalSchemaLockable() {
+    public GlobalLockable() {
         super( null );
     }
 

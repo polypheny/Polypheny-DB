@@ -16,8 +16,12 @@
 
 package org.polypheny.db.languages.mql;
 
+import java.util.HashMap;
+import java.util.Map;
 import org.jetbrains.annotations.Nullable;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
+import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.mql.Mql.Type;
@@ -25,6 +29,9 @@ import org.polypheny.db.nodes.ExecutableStatement;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.locking.Lockable;
+import org.polypheny.db.transaction.locking.Lockable.LockType;
+import org.polypheny.db.transaction.locking.LockableUtils;
 
 
 public class MqlRenameCollection extends MqlCollectionStatement implements ExecutableStatement {
@@ -58,6 +65,12 @@ public class MqlRenameCollection extends MqlCollectionStatement implements Execu
 
         DdlManager.getInstance().renameCollection( collection, newName, statement );
 
+    }
+
+
+    @Override
+    public Map<Lockable, LockType> deriveLockables( Context context, ParsedQueryContext parsedQueryContext ) {
+        return LockableUtils.getMapOfCollectionLockableFromContext(context, parsedQueryContext, LockType.EXCLUSIVE  );
     }
 
 
