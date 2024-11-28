@@ -21,17 +21,20 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.StringJoiner;
+import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
 import org.polypheny.db.processing.QueryContext;
+import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.numerical.PolyLong;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.workflow.engine.storage.QueryUtils;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
 
 public class RelWriter extends CheckpointWriter {
@@ -40,31 +43,31 @@ public class RelWriter extends CheckpointWriter {
     private long currentPk = 0;
 
     private final int mapCapacity; // Since we know the size of each paramValue map, we can specify the initialCapacity for better performance
-    private final Statement statement;
 
     private final Map<Long, AlgDataType> paramTypes = new HashMap<>();
     private final List<Map<Long, PolyValue>> paramValues = new ArrayList<>();
     private long batchSize = -1;
 
-    private final QueryContext context;
+    private final Statement writeStatement;
+    private final Pair<ParsedQueryContext, AlgRoot> parsed;
 
 
     public RelWriter( LogicalTable table, Transaction transaction, boolean resetPk ) {
         super( table, transaction );
         this.resetPk = resetPk;
 
-        mapCapacity = (int) Math.ceil( table.getTupleType().getFieldCount() / 0.75 ); // 0.75 is the default loadFactor of HashMap
-        statement = transaction.createStatement();
+        this.mapCapacity = (int) Math.ceil( table.getTupleType().getFieldCount() / 0.75 ); // 0.75 is the default loadFactor of HashMap
+        this.writeStatement = transaction.createStatement();
 
         StringJoiner joiner = new StringJoiner( ", ", "(", ")" );
         for ( int i = 0; i < table.getTupleType().getFieldCount(); i++ ) {
             joiner.add( "?" );
             AlgDataType fieldType = table.getTupleType().getFields().get( i ).getType();
-            paramTypes.put( (long) i, fieldType );
+            this.paramTypes.put( (long) i, fieldType );
         }
 
         String query = "INSERT INTO \"" + table.getName() + "\" VALUES " + joiner;
-        this.context = QueryContext.builder()
+        QueryContext context = QueryContext.builder()
                 .query( query )
                 .language( QueryLanguage.from( "SQL" ) )
                 .isAnalysed( false )
@@ -72,6 +75,7 @@ public class RelWriter extends CheckpointWriter {
                 .namespaceId( table.getNamespaceId() )
                 .transactionManager( transactionManager )
                 .transactions( List.of( transaction ) ).build();
+        this.parsed = QueryUtils.parseAndTranslateQuery( context, writeStatement );
     }
 
 
@@ -166,11 +170,11 @@ public class RelWriter extends CheckpointWriter {
     private void executeBatch() {
         int batchSize = paramValues.size();
 
-        statement.getDataContext().setParameterTypes( paramTypes );
-        statement.getDataContext().setParameterValues( paramValues );
+        writeStatement.getDataContext().setParameterTypes( paramTypes );
+        writeStatement.getDataContext().setParameterValues( paramValues );
 
-        // create new implementation each batch
-        ExecutedContext executedContext = LanguageManager.getINSTANCE().anyPrepareQuery( context, statement ).get( 0 ).execute( statement );
+        // create new implementation for each batch
+        ExecutedContext executedContext = QueryUtils.executeQuery( parsed, writeStatement );
 
         if ( executedContext.getException().isPresent() ) {
             throw new GenericRuntimeException( "An error occurred while writing to the checkpoint" );
@@ -182,7 +186,7 @@ public class RelWriter extends CheckpointWriter {
         }
 
         paramValues.clear();
-        statement.getDataContext().resetParameterValues();
+        writeStatement.getDataContext().resetParameterValues();
     }
 
 

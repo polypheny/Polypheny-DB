@@ -23,12 +23,22 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.plan.AlgCluster;
+import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
+import org.polypheny.db.processing.QueryContext;
+import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
+import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.workflow.engine.storage.QueryUtils;
+import org.polypheny.db.workflow.engine.storage.StorageManager;
 
 public abstract class CheckpointReader implements AutoCloseable {
 
@@ -80,7 +90,17 @@ public abstract class CheckpointReader implements AutoCloseable {
     }
 
 
-    public abstract Iterator<List<PolyValue>> getIteratorFromQuery( CheckpointQuery query ); // TODO: How to specify query? Query language, PolyAlg or AlgNodes
+    /**
+     * Read this checkpoint through the means of a custom query.
+     * The query may not modify any data. It can only read this checkpoint.
+     * For user defined input, it is advised to use dynamic parameters in the CheckpointQuery, to avoid SQL injections.
+     *
+     * @param query The CheckpointQuery to be executed.
+     * @return An iterator of the query result.
+     */
+    public Iterator<List<PolyValue>> getIteratorFromQuery( CheckpointQuery query ) {
+        return getIteratorFromQuery( query, List.of( this ) );
+    }
 
 
     public AlgDataType getTupleType() {
@@ -128,7 +148,53 @@ public abstract class CheckpointReader implements AutoCloseable {
                 return new ArrayList<>( Arrays.asList( arrayIterator.next() ) );
             }
         };
+    }
 
+
+    /**
+     * Read any of the checkpoints for the given input readers through the means of a custom query.
+     * This reader is used as the primary reader and must always be part of the inputs list. When it gets closed, the iterator will also be closed.
+     * The query may not modify any data. It can only read the checkpoints of the specified readers.
+     * For user defined input, it is advised to use dynamic parameters in the CheckpointQuery, to avoid SQL injections.
+     *
+     * @param query The CheckpointQuery to be executed.
+     * @param inputs The readers whose checkpoints can be used in the query. The index of a reader in this list corresponds to the placeholder index in the CheckpointQuery.
+     * @return An iterator of the query result.
+     */
+    public Iterator<List<PolyValue>> getIteratorFromQuery( CheckpointQuery query, List<CheckpointReader> inputs ) {
+        assert inputs.contains( this );
+        List<LogicalEntity> entities = inputs.stream().map( reader -> reader.entity ).toList();
+
+        String queryStr = query.getQueryWithPlaceholdersReplaced( entities );
+        QueryContext context = QueryContext.builder()
+                .query( queryStr )
+                .language( QueryLanguage.from( query.getQueryLanguage() ) )
+                .isAnalysed( false )
+                .origin( StorageManager.ORIGIN )
+                .namespaceId( entity.getNamespaceId() )
+                .transactionManager( transactionManager )
+                .transactions( List.of( transaction ) ).build();
+
+        Statement statement = transaction.createStatement();
+        Pair<ParsedQueryContext, AlgRoot> parsed = QueryUtils.parseAndTranslateQuery( context, statement );
+
+        if ( !QueryUtils.validateAlg( parsed.right, false, List.of( entity ) ) ) {
+            throw new GenericRuntimeException( "The specified query is not permitted: " + queryStr );
+        }
+
+        if ( query.hasParams() ) {
+            statement.getDataContext().setParameterTypes( query.getParameterTypes() );
+            statement.getDataContext().setParameterValues( List.of( query.getParameterValues() ) );
+        }
+
+        ExecutedContext executedContext = QueryUtils.executeQuery( parsed, statement );
+        if ( executedContext.getException().isPresent() ) {
+            throw new GenericRuntimeException( "An error occurred while executing a query on a checkpoint." );
+        }
+
+        Iterator<PolyValue[]> iterator = executedContext.getIterator().getIterator();
+        registerIterator( iterator );
+        return arrayToListIterator( iterator, false );
     }
 
 

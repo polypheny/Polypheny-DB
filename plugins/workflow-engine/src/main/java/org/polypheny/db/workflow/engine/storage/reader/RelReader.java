@@ -25,16 +25,13 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.processing.ImplementationContext;
 import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
 import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.schema.trait.ModelTrait;
-import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
@@ -78,39 +75,6 @@ public class RelReader extends CheckpointReader {
         LogicalTable table = getTable();
         String query = "SELECT " + getQuotedColumns() + " FROM \"" + table.getName() + "\"";
         return executeSqlQuery( query );
-    }
-
-
-    @Override
-    public Iterator<List<PolyValue>> getIteratorFromQuery( CheckpointQuery query ) {
-        String queryStr = query.getQueryWithPlaceholderReplaced( entity );
-        QueryContext context = QueryContext.builder()
-                .query( queryStr )
-                .language( QueryLanguage.from( query.getQueryLanguage() ) )
-                .isAnalysed( false )
-                .origin( StorageManager.ORIGIN )
-                .namespaceId( getTable().getNamespaceId() )
-                .transactionManager( transactionManager )
-                .transactions( List.of( transaction ) ).build();
-
-        Statement statement = transaction.createStatement();
-        ImplementationContext implementation = LanguageManager.getINSTANCE().anyPrepareQuery( context, statement ).get( 0 );
-
-        // TODO: verify AlgNode tree
-
-        if ( query.hasParams() ) {
-            statement.getDataContext().setParameterTypes( query.getParameterTypes() );
-            statement.getDataContext().setParameterValues( List.of( query.getParameterValues() ) );
-        }
-
-        ExecutedContext executedContext = implementation.execute( statement );
-        if ( executedContext.getException().isPresent() ) {
-            throw new GenericRuntimeException( "An error occurred while executing a query on a checkpoint." );
-        }
-
-        Iterator<PolyValue[]> iterator = executedContext.getIterator().getIterator();
-        registerIterator( iterator );
-        return arrayToListIterator( iterator, false );
     }
 
 

@@ -160,7 +160,7 @@ class StorageManagerTest {
             String intField = type.getFieldNames().get( 0 );
             CheckpointQuery query = CheckpointQuery.builder()
                     .queryLanguage( "SQL" )
-                    .query( "SELECT * FROM " + CheckpointQuery.ENTITY + " WHERE " + intField + " > ? ORDER BY " + intField + " DESC" )
+                    .query( "SELECT * FROM " + CheckpointQuery.ENTITY() + " WHERE " + intField + " > ? ORDER BY " + intField + " DESC" )
                     .parameter( 0, Pair.of( type.getFields().get( 0 ).getType(), newValue ) )
                     .build();
 

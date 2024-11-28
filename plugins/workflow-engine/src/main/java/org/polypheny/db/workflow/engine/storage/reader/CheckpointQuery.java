@@ -18,6 +18,7 @@ package org.polypheny.db.workflow.engine.storage.reader;
 
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import lombok.Builder;
 import lombok.Getter;
@@ -35,7 +36,8 @@ import org.polypheny.db.util.Pair;
 @Builder
 public class CheckpointQuery {
 
-    public static final String ENTITY = "{???}"; // entity name placeholder
+    private static final String ENTITY_L = "{?";
+    private static final String ENTITY_R = "?}";
 
     @Getter
     private final String query;
@@ -46,8 +48,41 @@ public class CheckpointQuery {
     private final Map<Integer, Pair<@NotNull AlgDataType, PolyValue>> parameters;
 
 
-    public String getQueryWithPlaceholderReplaced( LogicalEntity entity ) {
-        return query.replace( ENTITY, getEntityName( entity ) );
+    public String getQueryWithPlaceholdersReplaced( LogicalEntity entity ) {
+        return query.replace( ENTITY(), getEntityName( entity ) );
+    }
+
+
+    public String getQueryWithPlaceholdersReplaced( List<LogicalEntity> entities ) {
+        String replaced = query;
+        for ( int i = 0; i < entities.size(); i++ ) {
+            replaced = replaced.replace( ENTITY( i ), getEntityName( entities.get( i ) ) );
+        }
+        return replaced;
+    }
+
+
+    /**
+     * Get the input-entity placeholder to be used to construct the query.
+     * Example Query String: {@code String query = "SELECT * FROM " + CheckpointQuery.ENTITY() }.
+     * In the case that there are multiple entities (query goes over several checkpoints), the placeholder for the first input is returned.
+     *
+     * @return A string to be used as an entity placeholder
+     */
+    public static String ENTITY() {
+        return ENTITY_L + 0 + ENTITY_R;
+    }
+
+
+    /**
+     * Get the entity placeholder to be used to construct the query for the specified input index.
+     * Example Query String: {@code String query = "SELECT * FROM " + CheckpointQuery.ENTITY(0) + ", " + CheckpointQuery.ENTITY(1) }
+     *
+     * @param inputIdx the index of the input entity whose placeholder will be returned
+     * @return A string to be used as a target entity placeholder
+     */
+    public static String ENTITY( int inputIdx ) {
+        return ENTITY_L + inputIdx + ENTITY_R;
     }
 
 
