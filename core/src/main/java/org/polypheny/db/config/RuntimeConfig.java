@@ -366,14 +366,14 @@ public enum RuntimeConfig {
     UNIQUE_CONSTRAINT_ENFORCEMENT(
             "runtime/uniqueConstraintEnforcement",
             "Enable enforcement of uniqueness constraints.",
-            false,
+            true,
             ConfigType.BOOLEAN,
             "constraintEnforcementGroup" ),
 
     FOREIGN_KEY_ENFORCEMENT(
             "runtime/foreignKeyEnforcement",
             "Enable enforcement of foreign key constraints.",
-            false,
+            true,
             ConfigType.BOOLEAN,
             "constraintEnforcementGroup" ),
 
