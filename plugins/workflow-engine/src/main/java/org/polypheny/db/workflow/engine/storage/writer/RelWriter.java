@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.StringJoiner;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.LanguageManager;
@@ -40,7 +39,6 @@ public class RelWriter extends CheckpointWriter {
     private final boolean resetPk;
     private long currentPk = 0;
 
-    private final AlgDataType[] dataTypes;
     private final int mapCapacity; // Since we know the size of each paramValue map, we can specify the initialCapacity for better performance
     private final Statement statement;
 
@@ -48,15 +46,14 @@ public class RelWriter extends CheckpointWriter {
     private final List<Map<Long, PolyValue>> paramValues = new ArrayList<>();
     private long batchSize = -1;
 
-    private QueryContext context; // TODO: remove
+    private final QueryContext context;
 
 
     public RelWriter( LogicalTable table, Transaction transaction, boolean resetPk ) {
         super( table, transaction );
         this.resetPk = resetPk;
 
-        dataTypes = entity.getTupleType().getFields().stream().map( AlgDataTypeField::getType ).toArray( AlgDataType[]::new );
-        mapCapacity = (int) Math.ceil( dataTypes.length / 0.75 ); // 0.75 is the default loadFactor of HashMap
+        mapCapacity = (int) Math.ceil( table.getTupleType().getFieldCount() / 0.75 ); // 0.75 is the default loadFactor of HashMap
         statement = transaction.createStatement();
 
         StringJoiner joiner = new StringJoiner( ", ", "(", ")" );

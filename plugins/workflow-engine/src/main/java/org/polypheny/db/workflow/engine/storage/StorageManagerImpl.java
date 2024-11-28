@@ -24,6 +24,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nullable;
 import lombok.Getter;
+import lombok.NonNull;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
@@ -56,6 +57,7 @@ import org.polypheny.db.workflow.engine.storage.writer.CheckpointWriter;
 import org.polypheny.db.workflow.engine.storage.writer.DocWriter;
 import org.polypheny.db.workflow.engine.storage.writer.LpgWriter;
 import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
+import org.polypheny.db.workflow.models.ActivityConfigModel.CommonTransaction;
 
 public class StorageManagerImpl implements StorageManager {
 
@@ -74,6 +76,9 @@ public class StorageManagerImpl implements StorageManager {
 
     @Getter // TODO: remove getter for transaction
     private Transaction transaction; // currently just a workaround to avoid waiting indefinitely for locks
+    private final Map<UUID, Transaction> localTransactions = new ConcurrentHashMap<>();
+    private final Transaction extractTransaction;
+    private final Transaction loadTransaction;
 
     private final long relNamespace;
     private final long docNamespace;
@@ -90,6 +95,9 @@ public class StorageManagerImpl implements StorageManager {
         this.defaultStores.putIfAbsent( DataModel.RELATIONAL, fallbackStore );
         this.defaultStores.putIfAbsent( DataModel.DOCUMENT, fallbackStore );
         this.defaultStores.putIfAbsent( DataModel.GRAPH, fallbackStore );
+
+        extractTransaction = startTransaction( Catalog.defaultNamespaceId );
+        loadTransaction = startTransaction( Catalog.defaultNamespaceId );
 
         relNamespace = ddlManager.createNamespace(
                 REL_PREFIX + sessionId, DataModel.RELATIONAL, true, false, null );
@@ -211,6 +219,52 @@ public class StorageManagerImpl implements StorageManager {
     }
 
 
+    @Override
+    public Transaction getTransaction( UUID activityId, CommonTransaction commonType ) {
+        return switch ( commonType ) {
+            case NONE -> localTransactions.computeIfAbsent( activityId, id -> startTransaction( Catalog.defaultNamespaceId ) );
+            case EXTRACT -> extractTransaction;
+            case LOAD -> loadTransaction;
+        };
+    }
+
+
+    @Override
+    public void commitTransaction( UUID activityId ) {
+        if ( localTransactions.containsKey( activityId ) ) {
+            localTransactions.remove( activityId ).commit();
+        }
+    }
+
+
+    @Override
+    public void rollbackTransaction( UUID activityId ) {
+        if ( localTransactions.containsKey( activityId ) ) {
+            localTransactions.remove( activityId ).rollback( null );
+        }
+    }
+
+
+    @Override
+    public void commitCommonTransaction( @NonNull CommonTransaction commonType ) {
+        assert commonType != CommonTransaction.NONE;
+        Transaction t = commonType == CommonTransaction.EXTRACT ? extractTransaction : loadTransaction;
+        if ( t.isActive() ) {
+            t.commit();
+        }
+    }
+
+
+    @Override
+    public void rollbackCommonTransaction( @NonNull CommonTransaction commonType ) {
+        assert commonType != CommonTransaction.NONE;
+        Transaction t = commonType == CommonTransaction.EXTRACT ? extractTransaction : loadTransaction;
+        if ( t.isActive() ) {
+            t.rollback( null );
+        }
+    }
+
+
     private LogicalEntity getCheckpoint( UUID activityId, int outputIdx ) {
         return Objects.requireNonNull( checkpoints.get( activityId ).get( outputIdx ) );
     }
@@ -311,6 +365,16 @@ public class StorageManagerImpl implements StorageManager {
         if ( transaction != null ) {
             transaction.commit(); // TODO: move commit / rollback to writer / reader
         }
+
+        assert !extractTransaction.isActive() || extractTransaction.getNumberOfStatements() == 0 : "Common extract transaction should get explicitly committed or aborted";
+        assert !loadTransaction.isActive() || loadTransaction.getNumberOfStatements() == 0 : "Common load transaction should get explicitly committed or aborted";
+        rollbackCommonTransaction( CommonTransaction.EXTRACT );
+        rollbackCommonTransaction( CommonTransaction.LOAD );
+        for ( Transaction t : localTransactions.values() ) {
+            assert !t.isActive() : "local transactions should get explicitly committed or aborted";
+            t.rollback( null );
+        }
+
     }
 
 }

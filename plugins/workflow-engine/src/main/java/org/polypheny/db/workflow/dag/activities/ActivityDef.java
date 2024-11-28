@@ -70,14 +70,29 @@ public class ActivityDef {
         );
     }
 
+
     @JsonIgnore
     public PortType[] getInPortTypes() {
-        return Arrays.stream( inPorts ).map( InPortDef::getType ).toArray(PortType[]::new);
+        return Arrays.stream( inPorts ).map( InPortDef::getType ).toArray( PortType[]::new );
     }
+
 
     @JsonIgnore
     public PortType[] getOutPortTypes() {
-        return Arrays.stream( outPorts ).map( OutPortDef::getType ).toArray(PortType[]::new);
+        return Arrays.stream( outPorts ).map( OutPortDef::getType ).toArray( PortType[]::new );
+    }
+
+
+    public boolean hasCategory( ActivityCategory category ) {
+        if ( category == null ) {
+            return false;
+        }
+        for ( ActivityCategory cat : categories ) {
+            if ( category.equals( cat ) ) {
+                return true;
+            }
+        }
+        return false;
     }
 
 

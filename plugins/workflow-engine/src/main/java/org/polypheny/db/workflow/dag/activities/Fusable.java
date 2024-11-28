@@ -22,6 +22,7 @@ import java.util.Optional;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingValue;
 import org.polypheny.db.workflow.engine.execution.context.ExecutionContext;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
@@ -33,12 +34,21 @@ public interface Fusable extends Activity {
         return true;
     }
 
+
     @Override
     default void execute( List<CheckpointReader> inputs, Map<String, SettingValue> settings, ExecutionContext ctx ) throws Exception {
         // TODO: add default implementation that calls fuse().
         throw new NotImplementedException();
     }
 
-    AlgNode fuse( List<AlgNode> inputs, Map<String, SettingValue> settings ) throws Exception;
+    /**
+     * Return an AlgNode representing the new root of a logical query plan.
+     *
+     * @param inputs A list of logical input AlgNodes. For relational inputs, the first column contains the primary key. Make sure to remove unnecessary primary key columns, for instance when joining 2 tables.
+     * @param settings The resolved settings
+     * @param cluster the AlgCluster that is used for the construction of the query plan
+     * @return The created logical AlgNode. In case of a relational result, its tuple type has the first column reserved for the primary key. It can be left empty.
+     */
+    AlgNode fuse( List<AlgNode> inputs, Map<String, SettingValue> settings, AlgCluster cluster ) throws Exception;
 
 }

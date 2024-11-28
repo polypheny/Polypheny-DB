@@ -22,7 +22,9 @@ import java.util.Objects;
 import lombok.Getter;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.workflow.dag.activities.Activity.ActivityCategory;
 import org.polypheny.db.workflow.dag.activities.Activity.PortType;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
@@ -118,6 +120,15 @@ public class ExecutionContextImpl implements ExecutionContext, PipeExecutionCont
         // requires a special CheckpointQuery that can specify placeholders for any one of the reader, given its index.
         // Idea for closing the iterator correctly: register it with one of the supplied readers.
         throw new NotImplementedException();
+    }
+
+
+    @Override
+    public Transaction getTransaction() {
+        if ( !activityWrapper.getDef().hasCategory( ActivityCategory.EXTRACT ) && !activityWrapper.getDef().hasCategory( ActivityCategory.LOAD ) ) {
+            throw new IllegalStateException( "Only EXTRACT or LOAD activities have access to transactions" );
+        }
+        return sm.getTransaction( activityWrapper.getId(), activityWrapper.getConfig().getTransactionMode() );
     }
 
 

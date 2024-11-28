@@ -17,6 +17,7 @@
 package org.polypheny.db.workflow.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Value;
 
 
@@ -26,6 +27,9 @@ public class ActivityConfigModel {
 
     boolean enforceCheckpoint;
     String[] preferredStores;  // one entry per output
+
+    @JsonProperty(required = true)
+    CommonTransaction transactionMode;
 
 
     /**
@@ -45,7 +49,17 @@ public class ActivityConfigModel {
 
 
     public static ActivityConfigModel of() {
-        return new ActivityConfigModel( false, null );
+        return new ActivityConfigModel( false, null, CommonTransaction.NONE );
+    }
+
+
+    public enum CommonTransaction {
+        // TODO: scheduler must take EXTRACT and LOAD "transactions" into account (these activities are executed first / last and succeed or fail atomically). LOAD can only start when EXTRACT has committed.
+        // Any predecessor of a EXTRACT must also be a EXTRACT
+        // Any successor of a LOAD must also be a LOAD
+        NONE,
+        EXTRACT, // only relevant for EXTRACT + TRANSFORM category activities
+        LOAD // only relevant for LOAD + TRANSFORM category activities
     }
 
 }

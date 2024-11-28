@@ -17,46 +17,50 @@
 package org.polypheny.db.workflow.dag.annotations;
 
 import java.lang.annotation.ElementType;
+import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import org.polypheny.db.workflow.dag.activities.Activity.ActivityCategory;
-import org.polypheny.db.workflow.dag.activities.Activity.PortType;
+import org.polypheny.db.catalog.logistic.DataModel;
 
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface ActivityDefinition {
+@Repeatable(EntitySetting.List.class)
+public @interface EntitySetting {
 
-    String type();                    // unique identifier for the activity type
+    /**
+     * A unique key that identifies this setting.
+     * Must not contain {@code SettingDef.SUB_SEP}.
+     *
+     * @return the key of this setting
+     */
+    String key();
 
-    String displayName();            // Display name used by the UI
+    String displayName();
 
     String description() default "";
 
-    ActivityCategory[] categories();
+    String group() default "";
 
-    InPort[] inPorts();
+    String subGroup() default "";
 
-    OutPort[] outPorts();
+    int position() default 100;
 
-    String iconPath() default "";               // Path to an icon for display
+    String subOf() default "";
 
-    @interface InPort {
+    // Setting-specifics
+    String defaultNamespace() default "";
 
-        PortType type();
+    String defaultName() default "";
 
-        String description() default "";
-
-        boolean isOptional() default false;
-
-    }
+    DataModel dataModel();
 
 
-    @interface OutPort {
+    @Target(ElementType.TYPE)
+    @Retention(RetentionPolicy.RUNTIME)
+    @interface List {
 
-        PortType type();
-
-        String description() default "";
+        EntitySetting[] value();
 
     }
 

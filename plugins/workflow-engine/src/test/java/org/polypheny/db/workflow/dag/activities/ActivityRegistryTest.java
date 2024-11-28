@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
+import org.polypheny.db.workflow.dag.activities.Activity.ActivityCategory;
 import org.polypheny.db.workflow.dag.settings.GroupDef;
 import org.polypheny.db.workflow.dag.settings.GroupDef.SubgroupDef;
 import org.polypheny.db.workflow.dag.settings.IntValue;
@@ -55,6 +56,22 @@ class ActivityRegistryTest {
     @Test
     public void serializationTest() {
         System.out.println( ActivityRegistry.serialize() );
+    }
+
+
+    @Test
+    public void checkCategoriesTest() {
+        for ( ActivityDef activity : ActivityRegistry.getRegistry().values() ) {
+            String activityName = activity.getActivityClass().getSimpleName();
+            assertFalse( activity.hasCategory( ActivityCategory.EXTRACT ) && activity.hasCategory( ActivityCategory.LOAD ),
+                    "An activity cannot extract and load data at the same time: " + activityName );
+            assertTrue( activity.hasCategory(
+                            ActivityCategory.EXTRACT ) ||
+                            activity.hasCategory( ActivityCategory.TRANSFORM ) ||
+                            activity.hasCategory( ActivityCategory.LOAD ),
+                    "Found activity without any one of the required categories (EXTRACT, TRANSFORM or LOAD): " + activityName );
+        }
+
     }
 
 

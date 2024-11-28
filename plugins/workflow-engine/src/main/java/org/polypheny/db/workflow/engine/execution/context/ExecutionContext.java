@@ -19,7 +19,9 @@ package org.polypheny.db.workflow.engine.execution.context;
 import java.util.Iterator;
 import java.util.List;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.workflow.dag.activities.Activity;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointQuery;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 import org.polypheny.db.workflow.engine.storage.writer.CheckpointWriter;
@@ -60,6 +62,15 @@ public interface ExecutionContext {
     CheckpointWriter createWriter( int idx, AlgDataType tupleType, boolean resetPk );
 
     Iterator<List<PolyValue>> getIteratorFromQuery( CheckpointQuery query, List<CheckpointReader> readers );
+
+    /**
+     * Returns a transaction to be used for extracting or loading data from data stores or data sources.
+     * The transaction MUST NOT be committed or rolled back, as this is done externally.
+     * This method can only be called by {@link Activity.ActivityCategory#EXTRACT} or {@link Activity.ActivityCategory#LOAD} activities.
+     *
+     * @return A transaction to be used for either reading or writing arbitrary entities in this Polypheny instance.
+     */
+    Transaction getTransaction();
 
     // TODO: add ability to create temporary "checkpoints" for intermediary results within an activity
     // -> identified by sessionId + activityId + "temp" + unique name of save

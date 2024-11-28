@@ -100,8 +100,7 @@ public class FusionExecutor extends Executor {
         Fusable activity = (Fusable) wrapper.getActivity();
 
         activity.updateVariables( inTypes, settings, wrapper.getVariables() );
-        return activity.fuse( inputs, settings );
-
+        return activity.fuse( inputs, settings, cluster );
     }
 
 }

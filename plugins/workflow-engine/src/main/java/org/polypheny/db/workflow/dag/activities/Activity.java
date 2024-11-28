@@ -19,6 +19,7 @@ package org.polypheny.db.workflow.dag.activities;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import javax.annotation.Nullable;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingValue;
@@ -42,6 +43,10 @@ public interface Activity {
      * @throws ActivityException if any available setting or input type results in a contradiction or invalid state.
      */
     List<Optional<AlgDataType>> previewOutTypes( List<Optional<AlgDataType>> inTypes, Map<String, Optional<SettingValue>> settings ) throws ActivityException;
+
+    static List<Optional<AlgDataType>> wrapType( @Nullable AlgDataType type ) {
+        return List.of( Optional.ofNullable( type ) );
+    }
 
 
     /**

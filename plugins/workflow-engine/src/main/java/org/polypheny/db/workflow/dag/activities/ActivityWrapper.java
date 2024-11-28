@@ -18,6 +18,7 @@ package org.polypheny.db.workflow.dag.activities;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
@@ -68,6 +69,11 @@ public class ActivityWrapper {
 
     public Map<String, SettingValue> resolveSettings() {
         return ActivityRegistry.buildSettingValues( type, variables.resolveVariables( serializableSettings ) );
+    }
+
+
+    public Map<String, Optional<SettingValue>> resolveAvailableSettings() {
+        return ActivityRegistry.buildAvailableSettingValues( type, variables.resolveAvailableVariables( serializableSettings ) );
     }
 
 

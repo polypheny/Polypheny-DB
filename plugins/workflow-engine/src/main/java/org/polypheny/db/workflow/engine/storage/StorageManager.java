@@ -18,13 +18,16 @@ package org.polypheny.db.workflow.engine.storage;
 
 import java.util.UUID;
 import javax.annotation.Nullable;
+import lombok.NonNull;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 import org.polypheny.db.workflow.engine.storage.writer.CheckpointWriter;
 import org.polypheny.db.workflow.engine.storage.writer.DocWriter;
 import org.polypheny.db.workflow.engine.storage.writer.LpgWriter;
 import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
+import org.polypheny.db.workflow.models.ActivityConfigModel.CommonTransaction;
 
 /**
  * A StorageManager is responsible for managing the checkpoints of a specific session.
@@ -69,5 +72,53 @@ public interface StorageManager extends AutoCloseable { // TODO: remove AutoClos
     void dropAllCheckpoints();
 
     boolean hasCheckpoint( UUID activityId, int outputIdx );
+
+    /**
+     * Returns a transaction to be used by the specified activity for extracting or loading data stored in this Polypheny instance (excluding checkpoints).
+     * Each activity has at most 1 such transaction at any point. If commonType != NONE, the transaction is shared between multiple activities
+     * and only committed when all of these activities finish their execution successfully.
+     * The returned activity must not be committed or aborted. This should only be done by the scheduler, using an appropriate method of this interface.
+     *
+     * @param activityId the activity for which the transaction is returned
+     * @param commonType whether to return a common transaction for the specified common type or return a transaction only for this activity
+     * @return the transaction for the activity
+     */
+    Transaction getTransaction( UUID activityId, CommonTransaction commonType );
+
+    /**
+     * If the activity has any active extract or load transaction associated with it (excluding common transactions) it will be committed.
+     * This method should only be called after the activity has terminated its execution.
+     *
+     * @param activityId the activity whose associated extract or load transaction will be committed if it exists.
+     */
+    void commitTransaction( UUID activityId );
+
+    /**
+     * If the activity has any active extract or load transaction associated with it (excluding common transactions) it will be aborted.
+     * This method should only be called after the activity has terminated its execution.
+     *
+     * @param activityId the activity whose associated extract or load transaction will be aborted if it exists.
+     */
+    void rollbackTransaction( UUID activityId );
+
+    /**
+     * Commits the common transaction of the given type (either EXTRACT or LOAD).
+     * Any activity that uses this transaction must have terminated its execution before this method should be called.
+     * <p>
+     * This method is NOT thread safe. It should only be called by the scheduler and at most once.
+     *
+     * @param commonType which common transaction to commit
+     */
+    void commitCommonTransaction( @NonNull CommonTransaction commonType );
+
+    /**
+     * Aborts the common transaction of the given type (either EXTRACT or LOAD).
+     * Any activity that uses this transaction must have terminated its execution before this method should be called.
+     * <p>
+     * This method is NOT thread safe. It should only be called by the scheduler and at most once.
+     *
+     * @param commonType which common transaction to roll back
+     */
+    void rollbackCommonTransaction( @NonNull CommonTransaction commonType );
 
 }

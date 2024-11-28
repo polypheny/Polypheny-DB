@@ -77,7 +77,12 @@ public class PipeExecutor extends Executor {
 
     @Override
     void execute() throws ExecutorException {
-        List<Callable<Void>> callables = getCallables();
+        List<Callable<Void>> callables;
+        try {
+            callables = getCallables();
+        } catch ( Exception e ) {
+            throw new ExecutorException( e );
+        }
 
         // Start tasks
         ExecutorService executor = Executors.newFixedThreadPool( callables.size() ); // we need as many threads as activities, otherwise we could get a deadlock
@@ -133,7 +138,7 @@ public class PipeExecutor extends Executor {
     }
 
 
-    private AlgDataType registerOutputPipes( UUID rootId ) {
+    private AlgDataType registerOutputPipes( UUID rootId ) throws Exception {
         ActivityWrapper wrapper = workflow.getActivity( rootId );
 
         List<ExecutionEdge> inEdges = execTree.getInwardEdges( rootId );
@@ -157,12 +162,19 @@ public class PipeExecutor extends Executor {
 
         activity.updateVariables( inTypes, settings, wrapper.getVariables() );
         AlgDataType outType = activity.lockOutputType( inTypes, settings );
-        outQueues.put( rootId, new QueuePipe( queueCapacity, outType ) );
+        if ( outType != null ) {
+            outQueues.put( rootId, new QueuePipe( queueCapacity, outType ) );
+        }
+        // else: we are at the actual root of the tree, and it's an activity with no outputs.
         return outType;
     }
 
 
     private OutputPipe getCheckpointWriterPipe( UUID rootId, AlgDataType rootType ) {
+        if ( rootType == null ) {
+            // This could be a LOAD activity. It generally has no outputs and instead uses side effects to load the data -> no pipe required
+            return null;
+        }
         ActivityWrapper wrapper = workflow.getActivity( rootId );
         DataModel model = wrapper.getDef().getOutPortTypes()[0].getDataModel();
         String store = wrapper.getConfig().getPreferredStore( 0 );
@@ -172,7 +184,7 @@ public class PipeExecutor extends Executor {
     }
 
 
-    private List<Callable<Void>> getCallables() {
+    private List<Callable<Void>> getCallables() throws Exception {
         UUID rootId = GraphUtils.findInvertedTreeRoot( execTree );
 
         AlgDataType rootType = registerOutputPipes( rootId );
@@ -207,8 +219,14 @@ public class PipeExecutor extends Executor {
         Pipeable activity = (Pipeable) wrapper.getActivity();
         PipeExecutionContext ctx = new ExecutionContextImpl( wrapper, sm );
         return () -> {
-            try ( outPipe ) { // try-with-resource to close pipe (in case of the CheckpointOutputPipe, this closes the checkpoint writer)
-                activity.pipe( inPipes, outPipe, settings, ctx );
+            try {
+                if ( outPipe != null ) {
+                    try ( outPipe ) { // try-with-resource to close pipe (in case of the CheckpointOutputPipe, this closes the checkpoint writer)
+                        activity.pipe( inPipes, outPipe, settings, ctx );
+                    }
+                } else {
+                    activity.pipe( inPipes, null, settings, ctx );
+                }
             } finally {
                 for ( InputPipe inputPipe : inPipes ) {
                     if ( inputPipe instanceof CheckpointInputPipe closeable ) {

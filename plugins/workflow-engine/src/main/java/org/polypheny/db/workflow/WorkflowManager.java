@@ -18,19 +18,28 @@ package org.polypheny.db.workflow;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.javalin.http.ContentType;
 import io.javalin.http.Context;
 import io.javalin.http.HttpCode;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.webui.ConfigService.HandlerType;
 import org.polypheny.db.webui.HttpServer;
+import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
+import org.polypheny.db.workflow.dag.activities.ActivityWrapper.ActivityState;
+import org.polypheny.db.workflow.engine.execution.context.ExecutionContextImpl;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
 import org.polypheny.db.workflow.engine.storage.StorageManagerImpl;
 import org.polypheny.db.workflow.engine.storage.reader.RelReader;
 import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
+import org.polypheny.db.workflow.models.ActivityConfigModel;
+import org.polypheny.db.workflow.models.ActivityModel;
+import org.polypheny.db.workflow.models.RenderModel;
 import org.polypheny.db.workflow.models.WorkflowModel;
 import org.polypheny.db.workflow.models.requests.CreateSessionRequest;
 import org.polypheny.db.workflow.models.requests.SaveSessionRequest;
@@ -54,6 +63,7 @@ public class WorkflowManager {
         registerEndpoints();
 
         createDummyExecutionTest();
+        createExecuteDummyWorkflowTest();
 
         // waiting with test to ensure everything has started
         /*new java.util.Timer().schedule(
@@ -117,6 +127,46 @@ public class WorkflowManager {
 
 
         }, HandlerType.GET );
+    }
+
+
+    /**
+     * Add a route that tests the relExtract activity.
+     * A target relational entity can be specified via path parameters.
+     * The entity is read by the relExtract activity and the result is written to a checkpoint.
+     */
+    private void createExecuteDummyWorkflowTest() {
+        HttpServer server = HttpServer.getInstance();
+        server.addSerializedRoute( PATH + "/executeDummy/{namespaceName}/{tableName}", ctx -> {
+            System.out.println( "handling dummy execution..." );
+
+            JsonMapper mapper = new JsonMapper();
+            ObjectNode setting = mapper.createObjectNode();
+            setting.put( "namespace", ctx.pathParam( "namespaceName" ) );
+            setting.put( "name", ctx.pathParam( "tableName" ) );
+
+            try ( StorageManager sm = new StorageManagerImpl( sessionManager.createUserSession( "Dummy Execution Test " + UUID.randomUUID() ), Map.of() ) ) {
+                UUID activityId = UUID.randomUUID();
+
+                ActivityWrapper wrapper = ActivityWrapper.fromModel( new ActivityModel(
+                        "relExtract",
+                        activityId,
+                        Map.of( "table", setting ),
+                        ActivityConfigModel.of(),
+                        RenderModel.of(),
+                        ActivityState.IDLE
+                ) );
+
+                System.out.println( wrapper.getActivity().previewOutTypes( List.of(), wrapper.resolveAvailableSettings() ) );
+                wrapper.getActivity().execute( List.of(), wrapper.resolveSettings(), new ExecutionContextImpl( wrapper, sm ) );
+                sm.commitTransaction( activityId );
+
+                sendResult( ctx, "success!" );
+            } catch ( Exception e ) {
+                e.printStackTrace();
+            }
+        }, HandlerType.GET );
+
     }
 
 

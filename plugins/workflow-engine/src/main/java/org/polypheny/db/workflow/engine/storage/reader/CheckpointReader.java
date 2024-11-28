@@ -95,7 +95,7 @@ public abstract class CheckpointReader implements AutoCloseable {
     }
 
 
-    Iterator<List<PolyValue>> arrayToListIterator( Iterator<PolyValue[]> iterator, boolean fixedSize ) {
+    public static Iterator<List<PolyValue>> arrayToListIterator( Iterator<PolyValue[]> iterator, boolean fixedSize ) {
         if ( fixedSize ) {
             return new Iterator<>() {
                 private final Iterator<PolyValue[]> arrayIterator = iterator;

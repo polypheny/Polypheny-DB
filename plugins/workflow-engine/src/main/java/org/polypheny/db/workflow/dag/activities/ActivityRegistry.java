@@ -123,6 +123,12 @@ public class ActivityRegistry {
     }
 
 
+    /**
+     * Get the default setting values for the specified activityType.
+     *
+     * @param activityType the identifier for the activity type.
+     * @return an unmodifiable map of setting keys to default {@link SettingValue}s for that key.
+     */
     public static Map<String, SettingValue> getSettingValues( String activityType ) {
         Map<String, SettingDef> settingDefs = get( activityType ).getSettings();
         Map<String, SettingValue> settingValues = new HashMap<>();
@@ -134,6 +140,12 @@ public class ActivityRegistry {
     }
 
 
+    /**
+     * Get the default setting values for the specified activityType in its serializable form.
+     *
+     * @param activityType the identifier for the activity type.
+     * @return an unmodifiable map of setting keys to their default values.
+     */
     public static Map<String, JsonNode> getSerializableSettingValues( String activityType ) {
         JsonMapper mapper = new JsonMapper();
         Map<String, JsonNode> settingValues = new HashMap<>();

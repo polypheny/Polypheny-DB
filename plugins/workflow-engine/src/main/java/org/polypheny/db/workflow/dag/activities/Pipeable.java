@@ -84,9 +84,9 @@ public interface Pipeable extends Activity {
      *
      * @param inTypes the types of the input pipes
      * @param settings the resolved settings
-     * @return the compulsory output type of this instance until the next call to reset().
+     * @return the compulsory output type of this instance until the next call to reset(), or null if this activity has no outputs.
      */
-    AlgDataType lockOutputType( List<AlgDataType> inTypes, Map<String, SettingValue> settings );
+    AlgDataType lockOutputType( List<AlgDataType> inTypes, Map<String, SettingValue> settings ) throws Exception;
 
     /**
      * Successively consumes the tuples of the input pipe(s) and forwards produced tuples to the output pipe.
@@ -95,7 +95,7 @@ public interface Pipeable extends Activity {
      * after the pipe method returns.
      *
      * @param inputs the InputPipes to iterate over
-     * @param output the output pipe for sending output tuples to that respect the locked output type
+     * @param output the output pipe for sending output tuples to that respect the locked output type, or null if this activity has no output
      * @param settings the resolved settings
      * @param ctx ExecutionContext to be used for updating progress (interrupt checking is done automatically by the pipes)
      * @throws PipeInterruptedException if thread gets interrupted during execution (used for prematurely stopping execution)

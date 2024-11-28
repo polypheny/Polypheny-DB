@@ -26,6 +26,7 @@ import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.util.Wrapper;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition;
+import org.polypheny.db.workflow.dag.annotations.EntitySetting;
 import org.polypheny.db.workflow.dag.annotations.IntSetting;
 import org.polypheny.db.workflow.dag.annotations.StringSetting;
 
@@ -89,6 +90,10 @@ public abstract class SettingDef {
                 settings.add( new IntSettingDef( a ) );
             } else if ( annotation instanceof IntSetting.List a ) {
                 Arrays.stream( a.value() ).forEach( el -> settings.add( new IntSettingDef( el ) ) );
+            } else if ( annotation instanceof EntitySetting a ) {
+                settings.add( new EntitySettingDef( a ) );
+            } else if ( annotation instanceof EntitySetting.List a ) {
+                Arrays.stream( a.value() ).forEach( el -> settings.add( new EntitySettingDef( el ) ) );
             }
 
         }
@@ -96,9 +101,21 @@ public abstract class SettingDef {
     }
 
 
+    /**
+     * Steps for adding a new {@code SettingType}:
+     * <ol>
+     *     <li>Introduce new {@link SettingType} enum</li>
+     *     <li>Create Annotation</li>
+     *     <li>Either extend {@link SettingValue} or express value as a composition of existing {@code SettingValue}s</li>
+     *     <li>Extend {@link SettingDef}</li>
+     *     <li>Register the created annotation and {@link SettingDef} in {@link SettingDef#fromAnnotations}</li>
+     *     <li>(Introduce the new SettingType to Polypheny-UI)</li>
+     * </ol>
+     */
     public enum SettingType {
         STRING,
-        INT
+        INT,
+        ENTITY
     }
 
 
