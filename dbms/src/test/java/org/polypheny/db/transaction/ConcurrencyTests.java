@@ -61,6 +61,12 @@ public class ConcurrencyTests {
     }
 
 
+    /**
+     * This tests for deadlocks under concurrent access of a table.
+     * The test case is inspired by the following one of PostgreSQL:
+     * https://github.com/postgres/postgres/blob/master/src/test/isolation/specs/alter-table-1.spec
+     */
+
     @Test
     public void alterTable1() {
         Session session1 = new Session( testHelper );
