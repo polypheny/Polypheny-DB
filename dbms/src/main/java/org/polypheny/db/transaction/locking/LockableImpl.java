@@ -18,12 +18,9 @@ package org.polypheny.db.transaction.locking;
 
 import java.text.MessageFormat;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import org.jetbrains.annotations.NotNull;
-import org.polypheny.db.config.ConfigManager;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.deadlocks.DeadlockHandler;
 import org.polypheny.db.util.DeadlockException;
@@ -102,7 +99,7 @@ public class LockableImpl implements Lockable {
             } );
             DeadlockHandler.INSTANCE.remove( this, transaction );
             concurrencyCondition.signalAll();
-            printInfo( "R", transaction );
+            printAcquiredInfo( "R", transaction );
         } finally {
             concurrencyLock.unlock();
         }
@@ -135,7 +132,7 @@ public class LockableImpl implements Lockable {
                 concurrencyCondition.await();
             }
             owners.put( transaction, owners.getOrDefault( transaction, 0L ) + 1 );
-            printInfo( "ASh", transaction );
+            printAcquiredInfo( "ASh", transaction );
         } finally {
             concurrencyLock.unlock();
         }
@@ -155,7 +152,7 @@ public class LockableImpl implements Lockable {
             }
             isExclusive = true;
             owners.put( transaction, 1L );
-            printInfo( "AEx", transaction );
+            printAcquiredInfo( "AEx", transaction );
         } finally {
             concurrencyLock.unlock();
         }
@@ -167,7 +164,7 @@ public class LockableImpl implements Lockable {
     }
 
 
-    private void printInfo( String message, Transaction transaction ) {
+    private void printAcquiredInfo( String message, Transaction transaction ) {
         LOGGER.info ( MessageFormat.format(
                 "{0}, TX: {1}, L: {2}",
                 message,
