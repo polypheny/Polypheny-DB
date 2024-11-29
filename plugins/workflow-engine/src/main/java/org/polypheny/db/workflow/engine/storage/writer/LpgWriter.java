@@ -41,8 +41,6 @@ public class LpgWriter extends CheckpointWriter {
     }
 
 
-
-
     private LogicalGraph getGraph() {
         return (LogicalGraph) entity;
     }
@@ -56,7 +54,7 @@ public class LpgWriter extends CheckpointWriter {
 
     @Override
     public void close() throws Exception {
-        throw new NotImplementedException();
+        super.close();
     }
 
 }

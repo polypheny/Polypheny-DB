@@ -31,6 +31,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.Getter;
+import org.polypheny.db.workflow.dag.activities.impl.RelExtractActivity;
+import org.polypheny.db.workflow.dag.activities.impl.RelLoadActivity;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition;
 import org.polypheny.db.workflow.dag.annotations.AdvancedGroup;
 import org.polypheny.db.workflow.dag.annotations.DefaultGroup;
@@ -194,6 +196,8 @@ public class ActivityRegistry {
     public static Set<Class<? extends Activity>> findAllAnnotatedActivities() {
         Reflections reflections = new Reflections( ACTIVITY_PATH );
         Set<Class<? extends Activity>> activityClasses = reflections.getSubTypesOf( Activity.class );
+        activityClasses.add( RelExtractActivity.class ); // TODO: remove as soon as reflection works
+        activityClasses.add( RelLoadActivity.class ); // TODO: remove as soon as reflection works
 
         return activityClasses.stream()
                 .filter( cls -> cls.isAnnotationPresent( ActivityDefinition.class ) )

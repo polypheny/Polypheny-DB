@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.transaction.TransactionManagerImpl;
 import org.polypheny.db.webui.ConfigService.HandlerType;
 import org.polypheny.db.webui.HttpServer;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
@@ -35,6 +36,7 @@ import org.polypheny.db.workflow.dag.activities.ActivityWrapper.ActivityState;
 import org.polypheny.db.workflow.engine.execution.context.ExecutionContextImpl;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
 import org.polypheny.db.workflow.engine.storage.StorageManagerImpl;
+import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 import org.polypheny.db.workflow.engine.storage.reader.RelReader;
 import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
 import org.polypheny.db.workflow.models.ActivityConfigModel;
@@ -97,12 +99,12 @@ public class WorkflowManager {
             String tableName = ctx.pathParam( "tableName" );
             LogicalTable table = Catalog.snapshot().rel().getTable( Catalog.defaultNamespaceId, tableName ).orElseThrow();
 
-            try ( StorageManager sm = new StorageManagerImpl( sessionManager.createUserSession( "Dummy Execution Test " + UUID.randomUUID() ), Map.of() ) ) {
+            try ( StorageManager sm = new StorageManagerImpl( UUID.randomUUID(), Map.of() ) ) {
 
                 UUID activityId = UUID.randomUUID();
 
                 try ( RelWriter writer = sm.createRelCheckpoint( activityId, 0, table.getTupleType(), false, null );
-                        RelReader reader = new RelReader( table, ((StorageManagerImpl) sm).getTransaction() ) ) {
+                        RelReader reader = new RelReader( table, TransactionManagerImpl.getInstance().startTransaction( Catalog.defaultUserId, table.namespaceId, false, StorageManager.ORIGIN ) ) ) {
                     System.out.println( "Reading and writing..." );
 
                     long start = System.currentTimeMillis();
@@ -145,7 +147,7 @@ public class WorkflowManager {
             setting.put( "namespace", ctx.pathParam( "namespaceName" ) );
             setting.put( "name", ctx.pathParam( "tableName" ) );
 
-            try ( StorageManager sm = new StorageManagerImpl( sessionManager.createUserSession( "Dummy Execution Test " + UUID.randomUUID() ), Map.of() ) ) {
+            try ( StorageManager sm = new StorageManagerImpl( UUID.randomUUID(), Map.of() ) ) {
                 UUID activityId = UUID.randomUUID();
 
                 ActivityWrapper wrapper = ActivityWrapper.fromModel( new ActivityModel(
@@ -158,8 +160,29 @@ public class WorkflowManager {
                 ) );
 
                 System.out.println( wrapper.getActivity().previewOutTypes( List.of(), wrapper.resolveAvailableSettings() ) );
+
+                long start = System.currentTimeMillis();
                 wrapper.getActivity().execute( List.of(), wrapper.resolveSettings(), new ExecutionContextImpl( wrapper, sm ) );
+
                 sm.commitTransaction( activityId );
+                System.out.println( "Extract time in ms: " + (System.currentTimeMillis() - start) );
+
+                UUID activityId2 = UUID.randomUUID();
+                ActivityWrapper loadWrapper = ActivityWrapper.fromModel( new ActivityModel(
+                        "relLoad",
+                        activityId2,
+                        Map.of( "table", setting ),
+                        ActivityConfigModel.of(),
+                        RenderModel.of(),
+                        ActivityState.IDLE
+                ) );
+
+                start = System.currentTimeMillis();
+                try ( CheckpointReader reader = sm.readCheckpoint( activityId, 0 ) ) {
+                    loadWrapper.getActivity().execute( List.of( reader ), loadWrapper.resolveSettings(), new ExecutionContextImpl( loadWrapper, sm ) );
+                }
+                sm.commitTransaction( activityId2 );
+                System.out.println( "Load time in ms: " + (System.currentTimeMillis() - start) );
 
                 sendResult( ctx, "success!" );
             } catch ( Exception e ) {

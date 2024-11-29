@@ -102,6 +102,11 @@ public interface StorageManager extends AutoCloseable { // TODO: remove AutoClos
     void rollbackTransaction( UUID activityId );
 
     /**
+     * Starts a common EXTRACT and LOAD transaction.
+     */
+    void startCommonTransactions();
+
+    /**
      * Commits the common transaction of the given type (either EXTRACT or LOAD).
      * Any activity that uses this transaction must have terminated its execution before this method should be called.
      * <p>

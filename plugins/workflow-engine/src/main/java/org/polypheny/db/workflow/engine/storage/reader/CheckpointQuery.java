@@ -25,12 +25,10 @@ import lombok.Getter;
 import lombok.Singular;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
-import org.polypheny.db.catalog.entity.logical.LogicalGraph;
-import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
+import org.polypheny.db.workflow.engine.storage.QueryUtils;
 
 
 @Builder
@@ -49,14 +47,14 @@ public class CheckpointQuery {
 
 
     public String getQueryWithPlaceholdersReplaced( LogicalEntity entity ) {
-        return query.replace( ENTITY(), getEntityName( entity ) );
+        return query.replace( ENTITY(), QueryUtils.quotedIdentifier( entity ) );
     }
 
 
     public String getQueryWithPlaceholdersReplaced( List<LogicalEntity> entities ) {
         String replaced = query;
         for ( int i = 0; i < entities.size(); i++ ) {
-            replaced = replaced.replace( ENTITY( i ), getEntityName( entities.get( i ) ) );
+            replaced = replaced.replace( ENTITY( i ), QueryUtils.quotedIdentifier( entities.get( i ) ) );
         }
         return replaced;
     }
@@ -110,18 +108,6 @@ public class CheckpointQuery {
 
     public boolean hasParams() {
         return !parameters.isEmpty();
-    }
-
-
-    private String getEntityName( LogicalEntity entity ) {
-        if ( entity instanceof LogicalTable table ) {
-            return "\"" + table.getNamespaceName() + "\".\"" + table.getName() + "\"";
-        } else if ( entity instanceof LogicalCollection collection ) {
-            return "\"" + collection.getNamespaceName() + "\".\"" + collection.getName() + "\"";
-        } else if ( entity instanceof LogicalGraph graph ) {
-            return "\"" + graph.getNamespaceName() + "\"";
-        }
-        throw new IllegalArgumentException( "Encountered unknown entity type" );
     }
 
 }

@@ -19,12 +19,11 @@ package org.polypheny.db.workflow.dag.activities.impl;
 import static org.polypheny.db.workflow.dag.activities.impl.RelExtractActivity.TABLE_KEY;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
+import java.util.StringJoiner;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.ResultIterator;
 import org.polypheny.db.algebra.AlgNode;
@@ -40,9 +39,7 @@ import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
 import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.transaction.Transaction;
-import org.polypheny.db.transaction.TransactionManagerImpl;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.workflow.dag.activities.Activity;
 import org.polypheny.db.workflow.dag.activities.Activity.ActivityCategory;
 import org.polypheny.db.workflow.dag.activities.Activity.PortType;
@@ -59,8 +56,10 @@ import org.polypheny.db.workflow.engine.execution.context.ExecutionContext;
 import org.polypheny.db.workflow.engine.execution.context.PipeExecutionContext;
 import org.polypheny.db.workflow.engine.execution.pipe.InputPipe;
 import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
+import org.polypheny.db.workflow.engine.storage.QueryUtils;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
+import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
 
 @ActivityDefinition(type = "relExtract", displayName = "Read Table", categories = { ActivityCategory.EXTRACT },
         inPorts = {},
@@ -90,38 +89,49 @@ public class RelExtractActivity implements Activity, Fusable, Pipeable {
     @Override
     public void execute( List<CheckpointReader> inputs, Map<String, SettingValue> settings, ExecutionContext ctx ) throws Exception {
         LogicalTable table = getEntity( settings.get( TABLE_KEY ) );
+        AlgDataType type = getOutputType( table );
 
-        // TODO: reuse code from CheckpointReader?
-
-        String quotedCols = table.getColumnNames().stream()
-                .map( s -> "\"" + s + "\"" )
-                .collect( Collectors.joining( ", " ) );
-        String quotedName = "\"" + table.getNamespaceName() + "\".\"" + table.getName() + "\"";
+        String quotedCols = QueryUtils.quoteAndJoin( table.getColumnNames() );
+        String quotedName = QueryUtils.quotedIdentifier( table );
         String query = "SELECT 0, " + quotedCols + " FROM " + quotedName; // add a new column for the primary key
 
-        Transaction transaction = ctx.getTransaction(); // transaction will get committed or rolled back externally
 
-        QueryContext context = QueryContext.builder()
-                .query( query )
-                .language( QueryLanguage.from( "SQL" ) )
-                .isAnalysed( false )
-                .origin( StorageManager.ORIGIN )
-                .namespaceId( table.getNamespaceId() )
-                .transactionManager( TransactionManagerImpl.getInstance() )
-                .transactions( List.of( transaction ) ).build();
+
+        /* TODO: This order sometimes results in a deadlock. Could be a Problem of hsqldb, since Postgres has no problem
         List<ExecutedContext> executedContexts = LanguageManager.getINSTANCE().anyQuery( context );
-
-        // TODO: uncomment when locking works correctly
-
-        /*try ( ResultIterator result = executedContexts.get( 0 ).getIterator();
+        try ( ResultIterator result = executedContexts.get( 0 ).getIterator();
                 RelWriter writer = (RelWriter) ctx.createWriter( 0, type, true ) ) {
             writer.write( CheckpointReader.arrayToListIterator( result.getIterator(), true ) );
-        }}*/
-        try ( ResultIterator result = executedContexts.get( 0 ).getIterator() ) {
-            Iterator<PolyValue[]> iterator = result.getIterator();
-            while ( iterator.hasNext() ) {
-                System.out.println( Arrays.toString( iterator.next() ) ); // only print read data for testing
+        }*/
+
+        // 1. open tx 1
+        // 2. 1 reads table A
+        // 3. open tx 2
+        // 4. create table B -> does not complete
+
+        Map<Long, AlgDataType> paramTypes = new HashMap<>();
+        StringJoiner joiner = new StringJoiner( ", ", "(", ")" );
+        for ( int i = 0; i < table.getTupleType().getFieldCount(); i++ ) {
+            joiner.add( "?" );
+            AlgDataType fieldType = table.getTupleType().getFields().get( i ).getType();
+            paramTypes.put( (long) i, fieldType );
+        }
+
+        try ( RelWriter writer = (RelWriter) ctx.createWriter( 0, type, true ) ) {
+            Transaction transaction = ctx.getTransaction(); // transaction will get committed or rolled back externally
+            QueryContext context = QueryContext.builder()
+                    .query( query )
+                    .language( QueryLanguage.from( "SQL" ) )
+                    .isAnalysed( false )
+                    .origin( StorageManager.ORIGIN )
+                    .namespaceId( table.getNamespaceId() )
+                    .transactionManager( transaction.getTransactionManager() )
+                    .transactions( List.of( transaction ) ).build();
+            List<ExecutedContext> executedContexts = LanguageManager.getINSTANCE().anyQuery( context );
+            try ( ResultIterator result = executedContexts.get( 0 ).getIterator() ) {
+                writer.write( CheckpointReader.arrayToListIterator( result.getIterator(), true ) );
             }
+
         }
 
     }

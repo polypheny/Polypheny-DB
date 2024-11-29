@@ -43,7 +43,7 @@ public class DocWriter extends CheckpointWriter {
 
     @Override
     public void close() throws Exception {
-        throw new NotImplementedException();
+        super.close();
     }
 
 

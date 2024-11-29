@@ -23,7 +23,6 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nullable;
-import lombok.Getter;
 import lombok.NonNull;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.adapter.AdapterManager;
@@ -74,11 +73,9 @@ public class StorageManagerImpl implements StorageManager {
     private final TransactionManager transactionManager;
     private final DdlManager ddlManager;
 
-    @Getter // TODO: remove getter for transaction
-    private Transaction transaction; // currently just a workaround to avoid waiting indefinitely for locks
     private final Map<UUID, Transaction> localTransactions = new ConcurrentHashMap<>();
-    private final Transaction extractTransaction;
-    private final Transaction loadTransaction;
+    private Transaction extractTransaction;
+    private Transaction loadTransaction;
 
     private final long relNamespace;
     private final long docNamespace;
@@ -95,9 +92,6 @@ public class StorageManagerImpl implements StorageManager {
         this.defaultStores.putIfAbsent( DataModel.RELATIONAL, fallbackStore );
         this.defaultStores.putIfAbsent( DataModel.DOCUMENT, fallbackStore );
         this.defaultStores.putIfAbsent( DataModel.GRAPH, fallbackStore );
-
-        extractTransaction = startTransaction( Catalog.defaultNamespaceId );
-        loadTransaction = startTransaction( Catalog.defaultNamespaceId );
 
         relNamespace = ddlManager.createNamespace(
                 REL_PREFIX + sessionId, DataModel.RELATIONAL, true, false, null );
@@ -127,9 +121,9 @@ public class StorageManagerImpl implements StorageManager {
     public CheckpointReader readCheckpoint( UUID activityId, int outputIdx ) {
         LogicalEntity entity = Objects.requireNonNull( checkpoints.get( activityId ).get( outputIdx ) );
         return switch ( entity.dataModel ) {
-            case RELATIONAL -> new RelReader( (LogicalTable) entity, getActiveTransaction() );
-            case DOCUMENT -> new DocReader( (LogicalCollection) entity, getActiveTransaction() );
-            case GRAPH -> new LpgReader( (LogicalGraph) entity, getActiveTransaction() );
+            case RELATIONAL -> new RelReader( (LogicalTable) entity, startTransaction( relNamespace, "RelRead" ) );
+            case DOCUMENT -> new DocReader( (LogicalCollection) entity, startTransaction( docNamespace, "DocRead" ) );
+            case GRAPH -> new LpgReader( (LogicalGraph) entity, startTransaction( entity.getNamespaceId(), "LpgRead" ) );
         };
     }
 
@@ -155,7 +149,7 @@ public class StorageManagerImpl implements StorageManager {
             }
         }
 
-        Transaction createTransaction = startTransaction( relNamespace );
+        Transaction createTransaction = startTransaction( relNamespace, "RelCreate" );
         String tableName = TABLE_PREFIX + activityId + "_" + outputIdx;
         ddlManager.createTable(
                 relNamespace,
@@ -170,7 +164,7 @@ public class StorageManagerImpl implements StorageManager {
 
         LogicalTable table = Catalog.snapshot().rel().getTable( relNamespace, tableName ).orElseThrow();
         register( activityId, outputIdx, table );
-        return new RelWriter( table, getActiveTransaction(), resetPk );
+        return new RelWriter( table, startTransaction( relNamespace, "RelWrite" ), resetPk );
     }
 
 
@@ -222,7 +216,7 @@ public class StorageManagerImpl implements StorageManager {
     @Override
     public Transaction getTransaction( UUID activityId, CommonTransaction commonType ) {
         return switch ( commonType ) {
-            case NONE -> localTransactions.computeIfAbsent( activityId, id -> startTransaction( Catalog.defaultNamespaceId ) );
+            case NONE -> localTransactions.computeIfAbsent( activityId, id -> startTransaction( Catalog.defaultNamespaceId, "LocalTx" ) );
             case EXTRACT -> extractTransaction;
             case LOAD -> loadTransaction;
         };
@@ -246,6 +240,13 @@ public class StorageManagerImpl implements StorageManager {
 
 
     @Override
+    public void startCommonTransactions() {
+        extractTransaction = startTransaction( Catalog.defaultNamespaceId );
+        loadTransaction = startTransaction( Catalog.defaultNamespaceId );
+    }
+
+
+    @Override
     public void commitCommonTransaction( @NonNull CommonTransaction commonType ) {
         assert commonType != CommonTransaction.NONE;
         Transaction t = commonType == CommonTransaction.EXTRACT ? extractTransaction : loadTransaction;
@@ -259,7 +260,7 @@ public class StorageManagerImpl implements StorageManager {
     public void rollbackCommonTransaction( @NonNull CommonTransaction commonType ) {
         assert commonType != CommonTransaction.NONE;
         Transaction t = commonType == CommonTransaction.EXTRACT ? extractTransaction : loadTransaction;
-        if ( t.isActive() ) {
+        if ( t != null && t.isActive() ) {
             t.rollback( null );
         }
     }
@@ -295,7 +296,13 @@ public class StorageManagerImpl implements StorageManager {
 
     // Utils:
     private Transaction startTransaction( long namespace ) {
-        return transactionManager.startTransaction( Catalog.defaultUserId, namespace, false, ORIGIN );
+        return startTransaction( namespace, null );
+    }
+
+
+    private Transaction startTransaction( long namespace, String originSuffix ) {
+        String origin = (originSuffix == null || originSuffix.isEmpty()) ? ORIGIN : ORIGIN + "-" + originSuffix;
+        return transactionManager.startTransaction( Catalog.defaultUserId, namespace, false, origin );
     }
 
 
@@ -352,22 +359,15 @@ public class StorageManagerImpl implements StorageManager {
     }
 
 
-    private Transaction getActiveTransaction() {
-        if ( transaction == null || !transaction.isActive() ) {
-            transaction = startTransaction( relNamespace );
-        }
-        return transaction;
-    }
-
-
+    /**
+     * In practice, calling close should not be required, since the transactions should be closed manually
+     * TODO: remove close() when ensured it's not needed
+     */
     @Override
     public void close() throws Exception {
-        if ( transaction != null ) {
-            transaction.commit(); // TODO: move commit / rollback to writer / reader
-        }
 
-        assert !extractTransaction.isActive() || extractTransaction.getNumberOfStatements() == 0 : "Common extract transaction should get explicitly committed or aborted";
-        assert !loadTransaction.isActive() || loadTransaction.getNumberOfStatements() == 0 : "Common load transaction should get explicitly committed or aborted";
+        assert extractTransaction == null || !extractTransaction.isActive() || extractTransaction.getNumberOfStatements() == 0 : "Common extract transaction should get explicitly committed or aborted";
+        assert loadTransaction == null || !loadTransaction.isActive() || loadTransaction.getNumberOfStatements() == 0 : "Common load transaction should get explicitly committed or aborted";
         rollbackCommonTransaction( CommonTransaction.EXTRACT );
         rollbackCommonTransaction( CommonTransaction.LOAD );
         for ( Transaction t : localTransactions.values() ) {

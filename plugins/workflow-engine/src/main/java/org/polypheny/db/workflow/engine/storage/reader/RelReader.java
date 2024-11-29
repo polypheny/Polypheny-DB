@@ -91,7 +91,7 @@ public class RelReader extends CheckpointReader {
                 .isAnalysed( false )
                 .origin( StorageManager.ORIGIN )
                 .namespaceId( table.getNamespaceId() )
-                .transactionManager( transactionManager )
+                .transactionManager( transaction.getTransactionManager() )
                 .transactions( List.of( transaction ) ).build();
         List<ExecutedContext> executedContexts = LanguageManager.getINSTANCE().anyQuery( context );
         Iterator<PolyValue[]> iterator = executedContexts.get( 0 ).getIterator().getIterator();

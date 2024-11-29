@@ -18,16 +18,23 @@ package org.polypheny.db.workflow.dag.activities.impl;
 
 import static org.polypheny.db.workflow.dag.activities.impl.RelLoadActivity.TABLE_KEY;
 
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.StringJoiner;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.plan.AlgCluster;
+import org.polypheny.db.processing.QueryContext;
+import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.workflow.dag.activities.Activity;
 import org.polypheny.db.workflow.dag.activities.Activity.ActivityCategory;
 import org.polypheny.db.workflow.dag.activities.Activity.PortType;
@@ -44,6 +51,8 @@ import org.polypheny.db.workflow.engine.execution.context.ExecutionContext;
 import org.polypheny.db.workflow.engine.execution.context.PipeExecutionContext;
 import org.polypheny.db.workflow.engine.execution.pipe.InputPipe;
 import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
+import org.polypheny.db.workflow.engine.storage.QueryUtils.BatchWriter;
+import org.polypheny.db.workflow.engine.storage.StorageManager;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
 
@@ -74,10 +83,37 @@ public class RelLoadActivity implements Activity, Fusable, Pipeable {
     @Override
     public void execute( List<CheckpointReader> inputs, Map<String, SettingValue> settings, ExecutionContext ctx ) throws Exception {
         LogicalTable table = getEntity( settings.get( TABLE_KEY ) );
+        Transaction transaction = ctx.getTransaction();
+        int mapCapacity = (int) Math.ceil( table.getTupleType().getFieldCount() / 0.75 );
 
-        // TODO: modify writer to allow its use for arbitrary entities, not just checkpoints (requires disabling of auto commit etc.)
-        try ( RelWriter writer = new RelWriter( table, ctx.getTransaction(), true ) ) {
-            writer.write( inputs.get( 0 ).getIterator() );
+        Map<Long, AlgDataType> paramTypes = new HashMap<>();
+        StringJoiner joiner = new StringJoiner( ", ", "(", ")" );
+        for ( int i = 1; i < table.getTupleType().getFieldCount(); i++ ) {
+            joiner.add( "?" );
+            AlgDataType fieldType = table.getTupleType().getFields().get( i ).getType();
+            paramTypes.put( (long) i-1, fieldType );
+        }
+
+        String query = "INSERT INTO \"" + table.getName() + "\" VALUES " + joiner;
+        QueryContext context = QueryContext.builder()
+                .query( query )
+                .language( QueryLanguage.from( "SQL" ) )
+                .isAnalysed( false )
+                .origin( StorageManager.ORIGIN + "-RelWriterCtx" )
+                .namespaceId( table.getNamespaceId() )
+                .transactionManager( transaction.getTransactionManager() )
+                .transactions( List.of( transaction ) ).build();
+
+        try(BatchWriter writer = new BatchWriter( context, transaction.createStatement(), paramTypes )) {
+            Iterator<List<PolyValue>> it = inputs.get( 0 ).getIterator();
+            while ( it.hasNext() ) {
+                Map<Long, PolyValue> map = new HashMap<>( mapCapacity );
+                List<PolyValue> row = it.next();
+                for ( int i = 1; i < row.size(); i++ ) { // skip primary key
+                    map.put( (long) i-1, row.get( i ) );
+                }
+                writer.write( map );
+            }
         }
 
     }

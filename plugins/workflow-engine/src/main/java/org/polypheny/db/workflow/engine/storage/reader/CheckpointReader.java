@@ -34,7 +34,6 @@ import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
-import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.workflow.engine.storage.QueryUtils;
@@ -43,14 +42,12 @@ import org.polypheny.db.workflow.engine.storage.StorageManager;
 public abstract class CheckpointReader implements AutoCloseable {
 
     final LogicalEntity entity;
-    final TransactionManager transactionManager;
     final Transaction transaction;
     private final Set<AutoCloseable> openIterators = new HashSet<>();
 
 
     public CheckpointReader( LogicalEntity entity, Transaction transaction ) {
         this.entity = entity;
-        this.transactionManager = transaction.getTransactionManager();
         this.transaction = transaction;
     }
 
@@ -172,7 +169,7 @@ public abstract class CheckpointReader implements AutoCloseable {
                 .isAnalysed( false )
                 .origin( StorageManager.ORIGIN )
                 .namespaceId( entity.getNamespaceId() )
-                .transactionManager( transactionManager )
+                .transactionManager( transaction.getTransactionManager() )
                 .transactions( List.of( transaction ) ).build();
 
         Statement statement = transaction.createStatement();
@@ -207,7 +204,7 @@ public abstract class CheckpointReader implements AutoCloseable {
             }
         }
         openIterators.clear();
-        //transaction.rollback( null );  // read-only transaction TODO: activate when transactions fixed
+        transaction.commit();  // read-only transaction
     }
 
 }
