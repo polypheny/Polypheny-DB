@@ -63,9 +63,6 @@ public class PolyPath extends GraphObject {
     @JsonDeserialize(using = PolyListDeserializer.class)
     private final PolyList<GraphPropertyHolder> path;
 
-    @JsonProperty
-    @JsonDeserialize(using = PolyListDeserializer.class)
-
     @JsonIgnore
     @Getter
     private final PolyList<PolySegment> segments;
@@ -100,12 +97,17 @@ public class PolyPath extends GraphObject {
             i++;
         }
         this.segments = new PolyList<>( segments );
+    }
 
+
+    @Override
+    public String toJson() {
+        return "{\"nodes\":" + nodes.toJson() + ", \"edges\":" + edges.toJson() + "}";
     }
 
 
     public int getVariants() {
-        return edges.stream().map( e -> ((PolyEdge) e).getVariants() ).reduce( 1, Math::multiplyExact );
+        return edges.stream().map( PolyEdge::getVariants ).reduce( 1, Math::multiplyExact );
     }
 
 
@@ -406,6 +408,5 @@ public class PolyPath extends GraphObject {
         }
 
     }
-
 
 }
