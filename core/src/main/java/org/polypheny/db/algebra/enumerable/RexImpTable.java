@@ -638,7 +638,7 @@ public class RexImpTable {
                             if ( Objects.requireNonNull( nullAs ) == NullAs.NULL ) {
                                 return Expressions.call( BuiltInMethod.NOT.method, translator.translateList( call.getOperands(), nullAs ) );
                             }
-                            return Expressions.not( translator.translate( call.getOperands().get( 0 ), negate( nullAs ) ) );
+                            return EnumUtils.not( translator.translate( call.getOperands().get( 0 ), negate( nullAs ) ) );
                         }
 
 
@@ -2459,6 +2459,7 @@ public class RexImpTable {
             final ParameterExpression _list = Expressions.parameter( Types.of( List.class, PolyValue.class ), "_list" );
             final ParameterExpression par = Expressions.parameter( PolyValue.class, "_arr" );
             final ParameterExpression get_ = Expressions.parameter( PolyValue.class, "_elem$" );
+            final ParameterExpression cond_ = Expressions.parameter( boolean.class, "_cond" );
             builder.add( Expressions.declare( 0, par, translator.translate( call.getOperands().get( 0 ), NullAs.NOT_POSSIBLE, null ) ) );
             builder.add(
                     Expressions.declare( 0, predicate, Expressions.constant( false ) ) );
@@ -2467,8 +2468,9 @@ public class RexImpTable {
             );
             BlockStatement _do = Expressions.block(
                     Expressions.declare( 0, get_, Expressions.convert_( Expressions.call( _list, "get", i_ ), PolyValue.class ) ),
+                    Expressions.declare( 0, cond_, Expressions.field( translator.translateWithoutAttach( call.getOperands().get( 1 ), NullAs.NOT_POSSIBLE, null ), "value" ) ),
                     EnumUtils.ifThen(
-                            translator.translate( call.getOperands().get( 1 ), NullAs.NOT_POSSIBLE, null ),
+                            cond_,
                             Expressions.block( Expressions.return_( null, Expressions.constant( true ) ) ) )
             );
 
