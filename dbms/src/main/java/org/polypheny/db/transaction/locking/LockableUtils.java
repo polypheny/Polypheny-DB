@@ -98,7 +98,7 @@ public class LockableUtils {
 
     private static void updateLockableMapEntry( Lockable lockable, LockType lockType, Map<Lockable, LockType> currentLockables ) {
         LockType currentLockType = currentLockables.get( lockable );
-        if ( currentLockType == null || currentLockType == LockType.EXCLUSIVE ) {
+        if ( currentLockType == null || lockType == LockType.EXCLUSIVE ) {
             currentLockables.put( lockable, lockType );
         }
     }
