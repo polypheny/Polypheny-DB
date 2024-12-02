@@ -16,12 +16,16 @@
 
 package org.polypheny.db.workflow.dag.activities;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 import javax.annotation.Nullable;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.workflow.dag.edges.Edge.EdgeState;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingValue;
 import org.polypheny.db.workflow.dag.variables.WritableVariableStore;
 import org.polypheny.db.workflow.engine.execution.context.ExecutionContext;
@@ -81,6 +85,16 @@ public interface Activity {
      */
     void reset();
 
+    default DataStateMerger getDataStateMerger() {
+        // typically depends on the activity type
+        return DataStateMerger.AND;
+    }
+
+
+    default ControlStateMerger overrideControlStateMerger() {
+        return null; // typically depends on the activity config -> we return null
+    }
+
     enum PortType {
         ANY,
         REL,
@@ -119,6 +133,126 @@ public interface Activity {
         TRANSFORM,
         LOAD
         // more granular categories are also thinkable
+    }
+
+
+    enum DataStateMerger {
+        AND( DataStateMerger::andMerger ),
+        OR( DataStateMerger::orMerger );
+
+        private final Function<List<EdgeState>, Boolean> merger;
+
+
+        DataStateMerger( Function<List<EdgeState>, Boolean> merger ) {
+            this.merger = merger;
+        }
+
+
+        /**
+         * Computes whether an activity is NOT aborted based on its data edge states.
+         *
+         * @param dataEdges the EdgeState of all data inputs of an activity
+         * @return false if the data edge states result in an abort, true otherwise.
+         */
+        public boolean merge( List<EdgeState> dataEdges ) {
+            return merger.apply( dataEdges );
+        }
+
+
+        private static boolean andMerger( List<EdgeState> dataEdges ) {
+            // abort if any dataEdge is inactive
+            return !dataEdges.contains( EdgeState.INACTIVE );
+        }
+
+
+        private static boolean orMerger( List<EdgeState> dataEdges ) {
+            // only abort if all dataEdges are inactive. Useful for merging activities
+            if ( dataEdges.isEmpty() ) {
+                return true;
+            }
+            return !dataEdges.stream().allMatch( state -> state == EdgeState.INACTIVE );
+        }
+    }
+
+
+    enum ControlStateMerger {
+        /**
+         * Corresponds to ANDing all success control edges and ORing all fail control edges
+         * The merged result is therefore only ACTIVE if all success control edges are active and at least
+         * one of the fail control edges (if present) is active.
+         */
+        AND_OR( ControlStateMerger::andOrMerger ),
+
+        /**
+         * Corresponds to ANDing all control edges.
+         * The merged result is only ACTIVE, if all control edges are ACTIVE.
+         */
+        AND_AND( ControlStateMerger::andAndMerger );
+
+        private final BiFunction<List<EdgeState>, List<EdgeState>, EdgeState> merger;
+
+
+        ControlStateMerger( BiFunction<List<EdgeState>, List<EdgeState>, EdgeState> merger ) {
+            this.merger = merger;
+        }
+
+
+        /**
+         * Merges the states of all incoming control edges of an activity into a single state.
+         * This state can be interpreted as:
+         * <ul>
+         *     <li>{@link EdgeState#INACTIVE}: trigger an abort</li>
+         *     <li>{@link EdgeState#IDLE}: wait for more control edges to become active or inactive</li>
+         *     <li>{@link EdgeState#ACTIVE}: the activity is ready to be executed</li>
+         * </ul>
+         *
+         * @param successEdges the EdgeStates of all onSuccess control inputs of the activity
+         * @param failEdges the EdgeStates of all onFail control inputs of the activity
+         * @return the EdgeState resulting from the merge of all input edges
+         */
+        public EdgeState merge( List<EdgeState> successEdges, List<EdgeState> failEdges ) {
+            return merger.apply( successEdges, failEdges );
+        }
+
+
+        private static EdgeState andOrMerger( List<EdgeState> successEdges, List<EdgeState> failEdges ) {
+            // ANDing all successEdges and ORing all failEdges
+
+            if ( successEdges.contains( EdgeState.INACTIVE ) ) {
+                return EdgeState.INACTIVE;
+            }
+
+            if ( !failEdges.isEmpty() ) {
+                if ( failEdges.stream().allMatch( state -> state == EdgeState.INACTIVE ) ) {
+                    return EdgeState.INACTIVE;
+                }
+
+                if ( !failEdges.contains( EdgeState.ACTIVE ) ) {
+                    return EdgeState.IDLE;
+                }
+            }
+
+            if ( successEdges.contains( EdgeState.IDLE ) ) {
+                return EdgeState.IDLE;
+            }
+            return EdgeState.ACTIVE;
+        }
+
+
+        private static EdgeState andAndMerger( List<EdgeState> successEdges, List<EdgeState> failEdges ) {
+            List<EdgeState> allEdges = new ArrayList<>();
+            allEdges.addAll( successEdges );
+            allEdges.addAll( failEdges );
+
+            if ( allEdges.contains( EdgeState.INACTIVE ) ) {
+                return EdgeState.INACTIVE;
+            }
+            if ( allEdges.contains( EdgeState.IDLE ) ) {
+                return EdgeState.IDLE;
+            }
+            return EdgeState.ACTIVE;
+        }
+
     }
 
 }

@@ -61,6 +61,7 @@ public class VariableWriterExecutor extends Executor {
 
     @Override
     public void interrupt() {
+        super.interrupt();
         if ( ctx != null ) {
             ctx.setInterrupted();
         }

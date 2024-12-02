@@ -19,9 +19,11 @@ package org.polypheny.db.workflow.session;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+import javax.annotation.Nullable;
 import lombok.Getter;
 import org.eclipse.jetty.websocket.api.Session;
 import org.polypheny.db.workflow.dag.Workflow;
+import org.polypheny.db.workflow.engine.scheduler.GlobalScheduler;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
 import org.polypheny.db.workflow.engine.storage.StorageManagerImpl;
 import org.polypheny.db.workflow.models.SessionModel;
@@ -35,14 +37,14 @@ public abstract class AbstractSession {
     @Getter
     final Workflow wf;
     final UUID sId;
-    final StorageManager storageMan;
+    final StorageManager sm;
     private final Set<Session> subscribers = new HashSet<>();
 
 
     protected AbstractSession( Workflow wf, UUID sId ) {
         this.wf = wf;
         this.sId = sId;
-        this.storageMan = new StorageManagerImpl( sId, wf.getConfig().getPreferredStores() );
+        this.sm = new StorageManagerImpl( sId, wf.getConfig().getPreferredStores() );
     }
 
 
@@ -81,6 +83,18 @@ public abstract class AbstractSession {
 
     public void handleRequest( DeleteActivityRequest request ) {
         throwUnsupported( request );
+    }
+
+
+    void startExecution( @Nullable UUID targetActivity ) {
+        // TODO: add execution request
+
+        // TODO: implement correct error handling when execution cannot be started
+        try {
+            GlobalScheduler.getInstance().startExecution( wf, sm, targetActivity );
+        } catch ( Exception e ) {
+            throw new RuntimeException( e );
+        }
     }
 
 

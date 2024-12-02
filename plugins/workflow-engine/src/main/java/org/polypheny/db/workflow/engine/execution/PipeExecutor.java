@@ -132,6 +132,7 @@ public class PipeExecutor extends Executor {
 
     @Override
     public void interrupt() {
+        super.interrupt();
         if ( !hasDetectedAbort && executor != null ) {
             executor.shutdownNow();
         }

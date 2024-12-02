@@ -41,6 +41,7 @@ public abstract class Executor implements Callable<Void> {
 
     final StorageManager sm;
     final Workflow workflow;
+    boolean isInterrupted;
 
 
     // TODO: add reference to monitor for monitoring the progress of activities
@@ -52,16 +53,21 @@ public abstract class Executor implements Callable<Void> {
 
     abstract void execute() throws ExecutorException;
 
+
     /**
      * Tries to halt the execution in a best-effort manner.
      * Only when call() returns or throws an exception is the execution really terminated.
      */
-    public abstract void interrupt();
+    public void interrupt() {
+        isInterrupted = true;
+    }
 
 
     @Override
     public Void call() throws ExecutorException {
-        execute();
+        if ( !isInterrupted ) {
+            execute();
+        }
         return null;
     }
 
@@ -110,9 +116,18 @@ public abstract class Executor implements Callable<Void> {
 
     public static class ExecutorException extends Exception {
 
-        // TODO: implement ExecutorException
+        public ExecutorException( String message ) {
+            super( message );
+        }
+
+
         public ExecutorException( Throwable cause ) {
             super( cause );
+        }
+
+
+        public ExecutorException( String message, Throwable cause ) {
+            super( message, cause );
         }
 
     }

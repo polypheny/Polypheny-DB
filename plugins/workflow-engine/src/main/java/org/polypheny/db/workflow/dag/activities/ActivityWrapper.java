@@ -22,6 +22,7 @@ import java.util.Optional;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
+import org.polypheny.db.workflow.dag.activities.Activity.ControlStateMerger;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingValue;
 import org.polypheny.db.workflow.dag.variables.VariableStore;
 import org.polypheny.db.workflow.models.ActivityConfigModel;
@@ -85,6 +86,15 @@ public class ActivityWrapper {
     public ActivityModel toModel( boolean includeState ) {
         ActivityState state = includeState ? this.state : null;
         return new ActivityModel( type, id, serializableSettings, config, rendering, state );
+    }
+
+
+    public ControlStateMerger getControlStateMerger() {
+        ControlStateMerger merger = activity.overrideControlStateMerger();
+        if ( merger == null ) {
+            return config.getControlStateMerger();
+        }
+        return merger;
     }
 
 

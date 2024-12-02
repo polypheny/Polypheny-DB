@@ -73,6 +73,7 @@ public class FusionExecutor extends Executor {
 
     @Override
     public void interrupt() {
+        super.interrupt();
         throw new NotImplementedException();
     }
 

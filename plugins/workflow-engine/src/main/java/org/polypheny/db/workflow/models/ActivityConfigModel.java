@@ -19,6 +19,7 @@ package org.polypheny.db.workflow.models;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Value;
+import org.polypheny.db.workflow.dag.activities.Activity.ControlStateMerger;
 
 
 // Available config keys are determined by activity category (e.g. extract activity and transform can enforce checkpoint, load can't)
@@ -30,6 +31,8 @@ public class ActivityConfigModel {
 
     @JsonProperty(required = true)
     CommonTransaction transactionMode;
+
+    ControlStateMerger controlStateMerger;
 
 
     /**
@@ -49,7 +52,7 @@ public class ActivityConfigModel {
 
 
     public static ActivityConfigModel of() {
-        return new ActivityConfigModel( false, null, CommonTransaction.NONE );
+        return new ActivityConfigModel( false, null, CommonTransaction.NONE, ControlStateMerger.AND_AND );
     }
 
 

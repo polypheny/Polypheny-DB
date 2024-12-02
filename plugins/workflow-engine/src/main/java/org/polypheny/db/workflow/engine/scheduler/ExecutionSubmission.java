@@ -14,29 +14,20 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.workflow.models;
+package org.polypheny.db.workflow.engine.scheduler;
 
-import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import lombok.Value;
-import org.polypheny.db.catalog.logistic.DataModel;
-
+import org.polypheny.db.workflow.engine.execution.Executor;
+import org.polypheny.db.workflow.models.ActivityConfigModel.CommonTransaction;
 
 @Value
-public class WorkflowConfigModel {
+public class ExecutionSubmission {
 
-    Map<DataModel, String> preferredStores;
-    boolean fusionEnabled;
-    boolean pipelineEnabled;
-    int maxWorkers;
-
-
-    public static WorkflowConfigModel of() {
-        return new WorkflowConfigModel(
-                Map.of( DataModel.RELATIONAL, "hsqldb", DataModel.DOCUMENT, "hsqldb", DataModel.GRAPH, "hsqldb" ),
-                true,
-                true,
-                1
-        );
-    }
+    CommonTransaction commonType;
+    Executor executor;
+    Set<UUID> activities;
+    UUID sessionId;
 
 }
