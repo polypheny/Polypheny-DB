@@ -23,12 +23,17 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.javalin.http.ContentType;
 import io.javalin.http.Context;
 import io.javalin.http.HttpCode;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.polypheny.db.PolyphenyDb;
+import org.polypheny.db.adapter.java.AdapterTemplate;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.transaction.TransactionManagerImpl;
+import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
+import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.ddl.DdlManager;
+import org.polypheny.db.util.RunMode;
 import org.polypheny.db.webui.ConfigService.HandlerType;
 import org.polypheny.db.webui.HttpServer;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
@@ -37,12 +42,9 @@ import org.polypheny.db.workflow.engine.execution.context.ExecutionContextImpl;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
 import org.polypheny.db.workflow.engine.storage.StorageManagerImpl;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
-import org.polypheny.db.workflow.engine.storage.reader.RelReader;
-import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
 import org.polypheny.db.workflow.models.ActivityConfigModel;
 import org.polypheny.db.workflow.models.ActivityModel;
 import org.polypheny.db.workflow.models.RenderModel;
-import org.polypheny.db.workflow.models.WorkflowModel;
 import org.polypheny.db.workflow.models.requests.CreateSessionRequest;
 import org.polypheny.db.workflow.models.requests.SaveSessionRequest;
 import org.polypheny.db.workflow.repo.WorkflowRepo;
@@ -64,71 +66,18 @@ public class WorkflowManager {
         sessionManager = SessionManager.getInstance();
         registerEndpoints();
 
-        createDummyExecutionTest();
         createExecuteDummyWorkflowTest();
 
         // waiting with test to ensure everything has started
-        /*new java.util.Timer().schedule(
+        new java.util.Timer().schedule(
                 new java.util.TimerTask() {
                     @Override
                     public void run() {
-                        //createDummyCheckpoint();
+                        registerAdapter(); // TODO: only register adapter when the first workflow is opened
                     }
                 },
-                5000
-        );*/
-    }
-
-
-    private void createDummySession() {
-        try {
-            UUID id = repo.createWorkflow( "Dummy Workflow" );
-            int version = repo.writeVersion( id, "Initial version", WorkflowModel.getSample() );
-            sessionManager.createUserSession( id, version );
-        } catch ( WorkflowRepoException e ) {
-            e.printStackTrace();
-        }
-
-    }
-
-
-    private void createDummyExecutionTest() {
-        HttpServer server = HttpServer.getInstance();
-        server.addSerializedRoute( PATH + "/dummy/{tableName}", ctx -> {
-            System.out.println( "handling dummy..." );
-            String tableName = ctx.pathParam( "tableName" );
-            LogicalTable table = Catalog.snapshot().rel().getTable( Catalog.defaultNamespaceId, tableName ).orElseThrow();
-
-            try ( StorageManager sm = new StorageManagerImpl( UUID.randomUUID(), Map.of() ) ) {
-
-                UUID activityId = UUID.randomUUID();
-
-                try ( RelWriter writer = sm.createRelCheckpoint( activityId, 0, table.getTupleType(), false, null );
-                        RelReader reader = new RelReader( table, TransactionManagerImpl.getInstance().startTransaction( Catalog.defaultUserId, table.namespaceId, false, StorageManager.ORIGIN ) ) ) {
-                    System.out.println( "Reading and writing..." );
-
-                    long start = System.currentTimeMillis();
-
-                    /*Iterator<PolyValue[]> it = reader.getIterator();
-                    System.out.println( "start iteration..." );
-                    while ( it.hasNext() ) {
-                        System.out.println( Arrays.toString( it.next() ) );
-                    }*/
-                    writer.write( reader.getIterator() );
-
-                    long finish = System.currentTimeMillis();
-                    long timeElapsed = finish - start;
-                    System.out.println( "Time in ms: " + timeElapsed );
-                }
-
-                sendResult( ctx, "success!" );
-
-            } catch ( Exception e ) {
-                e.printStackTrace();
-            }
-
-
-        }, HandlerType.GET );
+                1000
+        );
     }
 
 
@@ -139,7 +88,7 @@ public class WorkflowManager {
      */
     private void createExecuteDummyWorkflowTest() {
         HttpServer server = HttpServer.getInstance();
-        server.addSerializedRoute( PATH + "/executeDummy/{namespaceName}/{tableName}", ctx -> {
+        server.addSerializedRoute( PATH + "/executeDummy/{namespaceName}/{tableName}/{storeName}", ctx -> {
             System.out.println( "handling dummy execution..." );
 
             JsonMapper mapper = new JsonMapper();
@@ -147,7 +96,14 @@ public class WorkflowManager {
             setting.put( "namespace", ctx.pathParam( "namespaceName" ) );
             setting.put( "name", ctx.pathParam( "tableName" ) );
 
-            try ( StorageManager sm = new StorageManagerImpl( UUID.randomUUID(), Map.of() ) ) {
+            String storeName = ctx.pathParam( "storeName" );
+            Map<DataModel, String> stores = Map.of(
+                    DataModel.RELATIONAL, storeName,
+                    DataModel.DOCUMENT, storeName,
+                    DataModel.GRAPH, storeName
+            );
+
+            try ( StorageManager sm = new StorageManagerImpl( UUID.randomUUID(), stores ) ) {
                 UUID activityId = UUID.randomUUID();
 
                 ActivityWrapper wrapper = ActivityWrapper.fromModel( new ActivityModel(
@@ -159,13 +115,12 @@ public class WorkflowManager {
                         ActivityState.IDLE
                 ) );
 
-                System.out.println( wrapper.getActivity().previewOutTypes( List.of(), wrapper.resolveAvailableSettings() ) );
-
                 long start = System.currentTimeMillis();
                 wrapper.getActivity().execute( List.of(), wrapper.resolveSettings(), new ExecutionContextImpl( wrapper, sm ) );
 
                 sm.commitTransaction( activityId );
-                System.out.println( "Extract time in ms: " + (System.currentTimeMillis() - start) );
+                long extractTimeMs = System.currentTimeMillis() - start;
+                System.out.println( "Extract time in ms: " + extractTimeMs );
 
                 UUID activityId2 = UUID.randomUUID();
                 ActivityWrapper loadWrapper = ActivityWrapper.fromModel( new ActivityModel(
@@ -182,14 +137,30 @@ public class WorkflowManager {
                     loadWrapper.getActivity().execute( List.of( reader ), loadWrapper.resolveSettings(), new ExecutionContextImpl( loadWrapper, sm ) );
                 }
                 sm.commitTransaction( activityId2 );
-                System.out.println( "Load time in ms: " + (System.currentTimeMillis() - start) );
+                long loadTimeMs = System.currentTimeMillis() - start;
+                System.out.println( "Load time in ms: " + loadTimeMs );
 
-                sendResult( ctx, "success!" );
+                ctx.json( Map.of( "Extract Time", extractTimeMs, "Load Time", loadTimeMs ) );
             } catch ( Exception e ) {
                 e.printStackTrace();
             }
         }, HandlerType.GET );
 
+    }
+
+
+    private void registerAdapter() {
+        if ( PolyphenyDb.mode == RunMode.TEST || Catalog.getInstance().getAdapters().values().stream().anyMatch( a -> a.adapterName.equals( "hsqldb_disk" ) ) ) {
+            return;
+        }
+
+        AdapterTemplate storeTemplate = Catalog.snapshot().getAdapterTemplate( "HSQLDB", AdapterType.STORE ).orElseThrow();
+        Map<String, String> settings = new HashMap<>( storeTemplate.getDefaultSettings() );
+        settings.put( "trxControlMode", "locks" );
+        settings.put( "type", "File" );
+        settings.put( "tableType", "Cached" );
+
+        DdlManager.getInstance().createStore( "hsqldb_disk", storeTemplate.getAdapterName(), AdapterType.STORE, settings, storeTemplate.getDefaultMode() );
     }
 
 

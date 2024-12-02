@@ -69,6 +69,7 @@ public class StorageManagerImpl implements StorageManager {
     private final UUID sessionId;
     private final Map<DataModel, String> defaultStores;
     private final Map<UUID, Map<Integer, LogicalEntity>> checkpoints = new ConcurrentHashMap<>();
+    private final List<String> registeredNamespaces = new ArrayList<>();
     private final AdapterManager adapterManager;
     private final TransactionManager transactionManager;
     private final DdlManager ddlManager;
@@ -95,7 +96,10 @@ public class StorageManagerImpl implements StorageManager {
 
         relNamespace = ddlManager.createNamespace(
                 REL_PREFIX + sessionId, DataModel.RELATIONAL, true, false, null );
+        registeredNamespaces.add( REL_PREFIX + sessionId );
+
         docNamespace = ddlManager.createNamespace( DOC_PREFIX + sessionId, DataModel.DOCUMENT, true, false, null );
+        registeredNamespaces.add( DOC_PREFIX + sessionId );
     }
 
 
@@ -121,9 +125,9 @@ public class StorageManagerImpl implements StorageManager {
     public CheckpointReader readCheckpoint( UUID activityId, int outputIdx ) {
         LogicalEntity entity = Objects.requireNonNull( checkpoints.get( activityId ).get( outputIdx ) );
         return switch ( entity.dataModel ) {
-            case RELATIONAL -> new RelReader( (LogicalTable) entity, startTransaction( relNamespace, "RelRead" ) );
-            case DOCUMENT -> new DocReader( (LogicalCollection) entity, startTransaction( docNamespace, "DocRead" ) );
-            case GRAPH -> new LpgReader( (LogicalGraph) entity, startTransaction( entity.getNamespaceId(), "LpgRead" ) );
+            case RELATIONAL -> new RelReader( (LogicalTable) entity, QueryUtils.startTransaction( relNamespace, "RelRead" ) );
+            case DOCUMENT -> new DocReader( (LogicalCollection) entity, QueryUtils.startTransaction( docNamespace, "DocRead" ) );
+            case GRAPH -> new LpgReader( (LogicalGraph) entity, QueryUtils.startTransaction( entity.getNamespaceId(), "LpgRead" ) );
         };
     }
 
@@ -149,7 +153,7 @@ public class StorageManagerImpl implements StorageManager {
             }
         }
 
-        Transaction createTransaction = startTransaction( relNamespace, "RelCreate" );
+        Transaction createTransaction = QueryUtils.startTransaction( relNamespace, "RelCreate" );
         String tableName = TABLE_PREFIX + activityId + "_" + outputIdx;
         ddlManager.createTable(
                 relNamespace,
@@ -163,8 +167,10 @@ public class StorageManagerImpl implements StorageManager {
         createTransaction.commit();
 
         LogicalTable table = Catalog.snapshot().rel().getTable( relNamespace, tableName ).orElseThrow();
+        //QueryUtils.createIndex( table, List.of(PK_COL), true ); // TODO: if using batch reader: index significantly increases performance for some stores
+
         register( activityId, outputIdx, table );
-        return new RelWriter( table, startTransaction( relNamespace, "RelWrite" ), resetPk );
+        return new RelWriter( table, QueryUtils.startTransaction( relNamespace, "RelWrite" ), resetPk );
     }
 
 
@@ -216,7 +222,7 @@ public class StorageManagerImpl implements StorageManager {
     @Override
     public Transaction getTransaction( UUID activityId, CommonTransaction commonType ) {
         return switch ( commonType ) {
-            case NONE -> localTransactions.computeIfAbsent( activityId, id -> startTransaction( Catalog.defaultNamespaceId, "LocalTx" ) );
+            case NONE -> localTransactions.computeIfAbsent( activityId, id -> QueryUtils.startTransaction( Catalog.defaultNamespaceId, "LocalTx" ) );
             case EXTRACT -> extractTransaction;
             case LOAD -> loadTransaction;
         };
@@ -241,8 +247,8 @@ public class StorageManagerImpl implements StorageManager {
 
     @Override
     public void startCommonTransactions() {
-        extractTransaction = startTransaction( Catalog.defaultNamespaceId );
-        loadTransaction = startTransaction( Catalog.defaultNamespaceId );
+        extractTransaction = QueryUtils.startTransaction( Catalog.defaultNamespaceId );
+        loadTransaction = QueryUtils.startTransaction( Catalog.defaultNamespaceId );
     }
 
 
@@ -294,22 +300,21 @@ public class StorageManagerImpl implements StorageManager {
     }
 
 
+    private void dropNamespaces() {
+        Transaction transaction = QueryUtils.startTransaction( relNamespace, "DropNamespaces" );
+        for ( String ns : registeredNamespaces ) {
+            ddlManager.dropNamespace( ns, false, transaction.createStatement() );
+        }
+        transaction.commit();
+    }
+
     // Utils:
-    private Transaction startTransaction( long namespace ) {
-        return startTransaction( namespace, null );
-    }
-
-
-    private Transaction startTransaction( long namespace, String originSuffix ) {
-        String origin = (originSuffix == null || originSuffix.isEmpty()) ? ORIGIN : ORIGIN + "-" + originSuffix;
-        return transactionManager.startTransaction( Catalog.defaultUserId, namespace, false, origin );
-    }
 
 
     private Transaction startTransaction( LogicalEntity targetEntity ) {
         return switch ( targetEntity.dataModel ) {
-            case RELATIONAL -> startTransaction( relNamespace );
-            case DOCUMENT -> startTransaction( docNamespace );
+            case RELATIONAL -> QueryUtils.startTransaction( relNamespace );
+            case DOCUMENT -> QueryUtils.startTransaction( docNamespace );
             case GRAPH -> {
                 throw new NotImplementedException();
             }
@@ -361,11 +366,10 @@ public class StorageManagerImpl implements StorageManager {
 
     /**
      * In practice, calling close should not be required, since the transactions should be closed manually
-     * TODO: remove close() when ensured it's not needed
      */
     @Override
     public void close() throws Exception {
-
+        // In practice, calling close for closing transactions is not required, since the transactions should be closed manually
         assert extractTransaction == null || !extractTransaction.isActive() || extractTransaction.getNumberOfStatements() == 0 : "Common extract transaction should get explicitly committed or aborted";
         assert loadTransaction == null || !loadTransaction.isActive() || loadTransaction.getNumberOfStatements() == 0 : "Common load transaction should get explicitly committed or aborted";
         rollbackCommonTransaction( CommonTransaction.EXTRACT );
@@ -374,6 +378,9 @@ public class StorageManagerImpl implements StorageManager {
             assert !t.isActive() : "local transactions should get explicitly committed or aborted";
             t.rollback( null );
         }
+
+        dropAllCheckpoints();
+        dropNamespaces();
 
     }
 

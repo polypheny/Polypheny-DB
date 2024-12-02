@@ -22,8 +22,6 @@ import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.QueryLanguage;
@@ -34,6 +32,7 @@ import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.workflow.engine.storage.QueryUtils;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
 
 public class RelReader extends CheckpointReader {
@@ -41,13 +40,6 @@ public class RelReader extends CheckpointReader {
 
     public RelReader( LogicalTable table, Transaction transaction ) {
         super( table, transaction );
-    }
-
-
-    public List<String> getPkCols() {
-        LogicalTable table = getTable();
-        LogicalPrimaryKey pk = Catalog.snapshot().rel().getPrimaryKey( table.primaryKey ).orElseThrow();
-        return pk.getFieldNames();
     }
 
 
@@ -73,7 +65,12 @@ public class RelReader extends CheckpointReader {
     @Override
     public Iterator<PolyValue[]> getArrayIterator() {
         LogicalTable table = getTable();
-        String query = "SELECT " + getQuotedColumns() + " FROM \"" + table.getName() + "\"";
+        /* Alternatively: Batch reader approach
+        Iterator<PolyValue[]> iterator = new AsyncRelBatchReader( table, transaction, StorageManager.PK_COL, true );
+        registerIterator( iterator );
+        return iterator;*/
+
+        String query = "SELECT " + QueryUtils.quoteAndJoin( table.getColumnNames() ) + " FROM " + QueryUtils.quotedIdentifier( table );
         return executeSqlQuery( query );
     }
 

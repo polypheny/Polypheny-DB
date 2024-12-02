@@ -19,11 +19,9 @@ package org.polypheny.db.workflow.dag.activities.impl;
 import static org.polypheny.db.workflow.dag.activities.impl.RelExtractActivity.TABLE_KEY;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.StringJoiner;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.ResultIterator;
 import org.polypheny.db.algebra.AlgNode;
@@ -91,31 +89,29 @@ public class RelExtractActivity implements Activity, Fusable, Pipeable {
         LogicalTable table = getEntity( settings.get( TABLE_KEY ) );
         AlgDataType type = getOutputType( table );
 
+
+        /* Batch Reader approach (slower for some adapters like HSQLDB Disk, but faster for others (Postgres Docker))
+
+        List<String> pkCols = QueryUtils.getPkCols( table );
+        if (!QueryUtils.hasIndex(table, pkCols)) {
+            QueryUtils.createIndex( table, pkCols, false ); // TODO: drop index after reading
+        }
+
+        // TODO: uniqueness of pk values is currently an issue
+        if (pkCols.size() != 1) {
+            throw new NotImplementedException("RelExtract does not yet support tables with multiple pk columns");
+        }
+
+        try ( RelWriter writer = (RelWriter) ctx.createWriter( 0, type, true );
+                RelBatchReader batchReader = new AsyncRelBatchReader( table, ctx.getTransaction(), pkCols.get( 0 ),true ); ) { // transaction will get committed or rolled back externally
+            while (batchReader.hasNext()) {
+                writer.wInsert( Arrays.asList( batchReader.next() ), null, 0 );
+            }
+        }*/
+
         String quotedCols = QueryUtils.quoteAndJoin( table.getColumnNames() );
         String quotedName = QueryUtils.quotedIdentifier( table );
         String query = "SELECT 0, " + quotedCols + " FROM " + quotedName; // add a new column for the primary key
-
-
-
-        /* TODO: This order sometimes results in a deadlock. Could be a Problem of hsqldb, since Postgres has no problem
-        List<ExecutedContext> executedContexts = LanguageManager.getINSTANCE().anyQuery( context );
-        try ( ResultIterator result = executedContexts.get( 0 ).getIterator();
-                RelWriter writer = (RelWriter) ctx.createWriter( 0, type, true ) ) {
-            writer.write( CheckpointReader.arrayToListIterator( result.getIterator(), true ) );
-        }*/
-
-        // 1. open tx 1
-        // 2. 1 reads table A
-        // 3. open tx 2
-        // 4. create table B -> does not complete
-
-        Map<Long, AlgDataType> paramTypes = new HashMap<>();
-        StringJoiner joiner = new StringJoiner( ", ", "(", ")" );
-        for ( int i = 0; i < table.getTupleType().getFieldCount(); i++ ) {
-            joiner.add( "?" );
-            AlgDataType fieldType = table.getTupleType().getFields().get( i ).getType();
-            paramTypes.put( (long) i, fieldType );
-        }
 
         try ( RelWriter writer = (RelWriter) ctx.createWriter( 0, type, true ) ) {
             Transaction transaction = ctx.getTransaction(); // transaction will get committed or rolled back externally
@@ -127,7 +123,12 @@ public class RelExtractActivity implements Activity, Fusable, Pipeable {
                     .namespaceId( table.getNamespaceId() )
                     .transactionManager( transaction.getTransactionManager() )
                     .transactions( List.of( transaction ) ).build();
+
+            System.out.println("Before exec");
+            long start = System.currentTimeMillis();
             List<ExecutedContext> executedContexts = LanguageManager.getINSTANCE().anyQuery( context );
+            System.out.println("After exec (" + (System.currentTimeMillis() - start) + " ms)");
+
             try ( ResultIterator result = executedContexts.get( 0 ).getIterator() ) {
                 writer.write( CheckpointReader.arrayToListIterator( result.getIterator(), true ) );
             }

@@ -31,8 +31,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.Getter;
-import org.polypheny.db.workflow.dag.activities.impl.RelExtractActivity;
-import org.polypheny.db.workflow.dag.activities.impl.RelLoadActivity;
+import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition;
 import org.polypheny.db.workflow.dag.annotations.AdvancedGroup;
 import org.polypheny.db.workflow.dag.annotations.DefaultGroup;
@@ -40,6 +39,8 @@ import org.polypheny.db.workflow.dag.annotations.Group;
 import org.polypheny.db.workflow.dag.settings.SettingDef;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingValue;
 import org.reflections.Reflections;
+import org.reflections.util.ClasspathHelper;
+import org.reflections.util.ConfigurationBuilder;
 
 public class ActivityRegistry {
 
@@ -194,10 +195,15 @@ public class ActivityRegistry {
 
 
     public static Set<Class<? extends Activity>> findAllAnnotatedActivities() {
-        Reflections reflections = new Reflections( ACTIVITY_PATH );
+        final ClassLoader loader = PolySerializable.CLASS_LOADER;
+
+        Reflections reflections = new Reflections(
+                new ConfigurationBuilder()
+                        .addClassLoaders( loader )
+                        .forPackages( ACTIVITY_PATH )
+                        .setUrls( ClasspathHelper.forClassLoader( loader ).stream().filter( u -> u.getPath().contains( "workflow-engine" ) ).toList() )
+        );
         Set<Class<? extends Activity>> activityClasses = reflections.getSubTypesOf( Activity.class );
-        activityClasses.add( RelExtractActivity.class ); // TODO: remove as soon as reflection works
-        activityClasses.add( RelLoadActivity.class ); // TODO: remove as soon as reflection works
 
         return activityClasses.stream()
                 .filter( cls -> cls.isAnnotationPresent( ActivityDefinition.class ) )

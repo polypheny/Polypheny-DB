@@ -23,6 +23,10 @@ dependencies {
     testImplementation project(path: ":core")
     testImplementation project(path: ":webui")
     testImplementation project(path: ":plugins:sql-language")
+
+    testImplementation(group: "org.polypheny", name: "polypheny-jdbc-driver", version: polypheny_jdbc_driver_version) {
+        exclude(group: "com.fasterxml.jackson.core")
+    }
 }
 
 test.dependsOn(":dbms:shadowJar")

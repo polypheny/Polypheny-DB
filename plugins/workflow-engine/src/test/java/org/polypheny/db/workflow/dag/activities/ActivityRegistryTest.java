@@ -26,12 +26,15 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.node.IntNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.polypheny.db.TestHelper;
 import org.polypheny.db.workflow.dag.activities.Activity.ActivityCategory;
 import org.polypheny.db.workflow.dag.settings.GroupDef;
 import org.polypheny.db.workflow.dag.settings.GroupDef.SubgroupDef;
@@ -43,10 +46,17 @@ import org.polypheny.db.workflow.dag.variables.VariableStore;
 
 class ActivityRegistryTest {
 
+    @BeforeAll
+    public static void start() throws SQLException {
+        //noinspection ResultOfMethodCallIgnored
+        TestHelper.getInstance(); // required for access to the plugin classloader, itself a requirement for detecting all activities
+    }
+
 
     @Test
     public void checkRequiredConstructorsForAnnotatedActivities() {
         Set<Class<? extends Activity>> activityClasses = ActivityRegistry.findAllAnnotatedActivities();
+        assertFalse( activityClasses.isEmpty() );
         for ( Class<? extends Activity> activityClass : activityClasses ) {
             assertConstructorExists( activityClass );
         }
@@ -55,7 +65,9 @@ class ActivityRegistryTest {
 
     @Test
     public void serializationTest() {
-        System.out.println( ActivityRegistry.serialize() );
+        String serialized = ActivityRegistry.serialize();
+        System.out.println( serialized );
+        assertTrue( serialized.length() > 100 ); // 100 is somewhat arbitrary, just ensure it has some content
     }
 
 
