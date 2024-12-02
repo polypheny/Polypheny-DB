@@ -74,7 +74,7 @@ public class LockableImpl implements Lockable {
             }
             long count = owners.remove( transaction );
             while ( !owners.isEmpty() ) {
-                DeadlockHandler.INSTANCE.addAndResolveDeadlock(this, transaction, owners.keySet() );
+                //DeadlockHandler.INSTANCE.addAndResolveDeadlock(this, transaction, owners.keySet() );
                 concurrencyCondition.await();
             }
             isExclusive = true;
@@ -85,26 +85,25 @@ public class LockableImpl implements Lockable {
     }
 
 
-    public void release( @NotNull Transaction transaction ) {
+    public void release(@NotNull Transaction transaction) {
         concurrencyLock.lock();
         try {
-            if ( isExclusive ) {
+            if (isExclusive) {
                 owners.clear();
                 isExclusive = false;
             }
-            // this decrements the entry if > 1 else it is removed
-            owners.computeIfPresent( transaction, ( key, value ) -> {
+            owners.computeIfPresent(transaction, (key, value) -> {
                 long newValue = value - 1;
                 return newValue <= 0 ? null : newValue;
-            } );
-            DeadlockHandler.INSTANCE.remove( this, transaction );
+            });
+            DeadlockHandler.INSTANCE.remove(this, transaction);
             concurrencyCondition.signalAll();
-            printAcquiredInfo( "R", transaction );
+            printAcquiredInfo("R", transaction);
         } finally {
             concurrencyLock.unlock();
         }
-        if ( !isRoot() ) {
-            parent.release( transaction );
+        if (!isRoot()) {
+            parent.release(transaction);
         }
     }
 
@@ -136,7 +135,6 @@ public class LockableImpl implements Lockable {
         } finally {
             concurrencyLock.unlock();
         }
-
     }
 
 
