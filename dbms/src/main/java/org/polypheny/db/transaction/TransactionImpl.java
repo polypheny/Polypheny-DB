@@ -417,8 +417,8 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
         lockedEntities.forEach( lockedEntity -> {
             try {
                 lockedEntity.release( this );
-            } catch ( Exception e ) {
-                // TODO TH: introduce proper exception type here. Or wrap in release method of lockable
+
+            } catch ( IllegalMonitorStateException e ) {
                 throw new DeadlockException( MessageFormat.format( "Failed to release lock for transaction {0}", this ) );
             }
         } );
