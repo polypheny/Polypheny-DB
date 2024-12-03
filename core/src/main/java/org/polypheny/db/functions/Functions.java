@@ -1984,6 +1984,13 @@ public class Functions {
         return s.replace( search, replacement );
     }
 
+    /**
+     * SQL {@code REPLACE(string, search, replacement)} function.
+     */
+    public static PolyString replace( PolyString s, PolyString search, PolyString replacement ) {
+        return PolyString.of( s.value.replace( search.value, replacement.value ) );
+    }
+
 
     /**
      * Helper for "array element reference". Caller has already ensured that array and index are not null. Index is 1-based, per SQL.
