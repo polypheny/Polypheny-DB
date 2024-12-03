@@ -18,9 +18,11 @@ package org.polypheny.db.sql.clause;
 
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.common.collect.ImmutableList;
 import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
@@ -274,6 +276,24 @@ public class SelectTest {
                 statement.executeUpdate( insert );
                 statement.executeUpdate( update );
 
+            }
+        }
+    }
+
+
+    @Test
+    public void selectNotInSubqueryTest() throws SQLException {
+        try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( "DROP TABLE IF EXISTS partsupp" );
+                statement.executeUpdate( "DROP TABLE IF EXISTS supplier" );
+                statement.executeUpdate( "CREATE TABLE partsupp ( ps_partkey INTEGER NOT NULL, ps_suppkey INTEGER NOT NULL, PRIMARY KEY (ps_partkey, ps_suppkey) );" );
+                statement.executeUpdate( "CREATE TABLE supplier ( s_suppkey INTEGER PRIMARY KEY, s_comment VARCHAR(101) NOT NULL )" );
+                statement.executeUpdate( "INSERT INTO partsupp VALUES (1, 1)" );
+                statement.executeUpdate( "INSERT INTO supplier VALUES (1, '')" );
+                ResultSet rs = statement.executeQuery( "SELECT * FROM partsupp WHERE ps_suppkey NOT IN (SELECT s_suppkey FROM supplier WHERE s_comment <> '')" );
+                assertTrue( rs.next() );
             }
         }
     }

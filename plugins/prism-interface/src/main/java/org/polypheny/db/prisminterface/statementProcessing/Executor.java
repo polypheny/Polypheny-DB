@@ -45,7 +45,7 @@ public abstract class Executor {
 
     abstract StatementResult executeAndGetResult( PIStatement piStatement );
 
-    abstract StatementResult executeAndGetResult( PIStatement piStatement, int fetchSize ) throws Exception;
+    abstract StatementResult executeAndGetResult( PIStatement piStatement, int fetchSize );
 
     abstract Frame fetch( PIStatement piStatement, int fetchSize );
 

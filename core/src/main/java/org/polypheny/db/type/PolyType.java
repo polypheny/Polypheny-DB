@@ -592,7 +592,7 @@ public enum PolyType {
      * @param scale Scale, or -1 if not applicable
      * @return Limit value
      */
-    public Object getLimit( boolean sign, Limit limit, boolean beyond, int precision, int scale ) {
+    Object getLimit( boolean sign, Limit limit, boolean beyond, int precision, int scale ) {
         assert allowsPrecScale( precision != -1, scale != -1 ) : this;
         if ( limit == Limit.ZERO ) {
             if ( beyond ) {
@@ -604,20 +604,17 @@ public enum PolyType {
 
         switch ( this ) {
             case BOOLEAN:
-                switch ( limit ) {
-                    case ZERO:
-                        return false;
-                    case UNDERFLOW:
-                        return null;
-                    case OVERFLOW:
+                return switch ( limit ) {
+                    case ZERO -> false;
+                    case UNDERFLOW -> null;
+                    case OVERFLOW -> {
                         if ( beyond || !sign ) {
-                            return null;
+                            yield null;
                         } else {
-                            return true;
+                            yield true;
                         }
-                    default:
-                        throw Util.unexpected( limit );
-                }
+                    }
+                };
 
             case TINYINT:
                 return getNumericLimit( 2, 8, sign, limit, beyond );
@@ -662,50 +659,44 @@ public enum PolyType {
                     return null; // this type does not have negative values
                 }
                 StringBuilder buf = new StringBuilder();
-                switch ( limit ) {
-                    case ZERO:
-                        break;
-                    case UNDERFLOW:
+                return switch ( limit ) {
+                    case ZERO -> buf.toString();
+                    case UNDERFLOW -> {
                         if ( beyond ) {
                             // There is no value between the empty string and the smallest non-empty string.
-                            return null;
+                            yield null;
                         }
                         buf.append( "a" );
-                        break;
-                    case OVERFLOW:
+                        yield buf.toString();
+                    }
+                    case OVERFLOW -> {
                         buf.append( "Z".repeat( Math.max( 0, precision ) ) );
                         if ( beyond ) {
                             buf.append( "Z" );
                         }
-                        break;
-                }
-                return buf.toString();
-
+                        yield buf.toString();
+                    }
+                };
             case BINARY:
             case VARBINARY:
                 if ( !sign ) {
                     return null; // this type does not have negative values
                 }
-                byte[] bytes;
-                switch ( limit ) {
-                    case ZERO:
-                        bytes = new byte[0];
-                        break;
-                    case UNDERFLOW:
+                return switch ( limit ) {
+                    case ZERO -> new byte[0];
+                    case UNDERFLOW -> {
                         if ( beyond ) {
                             // There is no value between the empty string and the smallest value.
-                            return null;
+                            yield null;
                         }
-                        bytes = new byte[]{ 0x00 };
-                        break;
-                    case OVERFLOW:
-                        bytes = new byte[precision + (beyond ? 1 : 0)];
+                        yield new byte[]{ 0x00 };
+                    }
+                    case OVERFLOW -> {
+                        byte[] bytes = new byte[precision + (beyond ? 1 : 0)];
                         Arrays.fill( bytes, (byte) 0xff );
-                        break;
-                    default:
-                        throw Util.unexpected( limit );
-                }
-                return bytes;
+                        yield bytes;
+                    }
+                };
 
             case DATE:
                 calendar = Util.calendar();
@@ -754,17 +745,17 @@ public enum PolyType {
                     return null; // invalid values are impossible to represent
                 }
                 calendar = Util.calendar();
-                switch ( limit ) {
-                    case ZERO:
+                return switch ( limit ) {
+                    case ZERO -> {
                         // The epoch.
                         calendar.set( Calendar.HOUR_OF_DAY, 0 );
                         calendar.set( Calendar.MINUTE, 0 );
                         calendar.set( Calendar.SECOND, 0 );
                         calendar.set( Calendar.MILLISECOND, 0 );
-                        break;
-                    case UNDERFLOW:
-                        return null;
-                    case OVERFLOW:
+                        yield calendar;
+                    }
+                    case UNDERFLOW -> null;
+                    case OVERFLOW -> {
                         calendar.set( Calendar.HOUR_OF_DAY, 23 );
                         calendar.set( Calendar.MINUTE, 59 );
                         calendar.set( Calendar.SECOND, 59 );
@@ -773,15 +764,13 @@ public enum PolyType {
                                         : ((precision == 1) ? 900
                                                 : 0));
                         calendar.set( Calendar.MILLISECOND, millis );
-                        break;
-                }
-                return calendar;
-
+                        yield calendar;
+                    }
+                };
             case TIMESTAMP:
                 calendar = Util.calendar();
-                switch ( limit ) {
-                    case ZERO:
-
+                return switch ( limit ) {
+                    case ZERO -> {
                         // The epoch.
                         calendar.set( Calendar.YEAR, 1970 );
                         calendar.set( Calendar.MONTH, 0 );
@@ -790,16 +779,16 @@ public enum PolyType {
                         calendar.set( Calendar.MINUTE, 0 );
                         calendar.set( Calendar.SECOND, 0 );
                         calendar.set( Calendar.MILLISECOND, 0 );
-                        break;
-                    case UNDERFLOW:
-                        return null;
-                    case OVERFLOW:
+                        yield calendar;
+                    }
+                    case UNDERFLOW -> null;
+                    case OVERFLOW -> {
                         if ( beyond ) {
                             // It is impossible to represent an invalid year as a date literal. SQL dates are represented
                             // as 'yyyy-mm-dd', and 1 <= yyyy <= 9999 is valid. There is no year 0: the year before
                             // 1AD is 1BC, so SimpleDateFormat renders the day before 0001-01-01 (AD) as 0001-12-31 (BC),
                             // which looks like a valid date.
-                            return null;
+                            yield null;
                         }
 
                         // "SQL:2003 6.1 <data type> Access Rules 6" says that year is between 1 and 9999, and days/months
@@ -826,10 +815,9 @@ public enum PolyType {
                             calendar.set( Calendar.SECOND, 0 );
                             calendar.set( Calendar.MILLISECOND, 0 );
                         }
-                        break;
-                }
-                return calendar;
-
+                        yield calendar;
+                    }
+                };
             default:
                 throw Util.unexpected( this );
         }
@@ -889,25 +877,21 @@ public enum PolyType {
 
 
     public boolean isYearMonth() {
-        return switch ( this ) {
-            case INTERVAL -> true;
-            default -> false;
-        };
+        return this == INTERVAL;
     }
 
 
     /**
      * Limit.
      */
-    public enum Limit {
+    private enum Limit {
         ZERO, UNDERFLOW, OVERFLOW
     }
 
 
     private BigDecimal getNumericLimit( int radix, int exponent, boolean sign, Limit limit, boolean beyond ) {
-        switch ( limit ) {
-            case OVERFLOW:
-
+        return switch ( limit ) {
+            case OVERFLOW -> {
                 // 2-based schemes run from -2^(N-1) to 2^(N-1)-1 e.g. -128 to +127
                 // 10-based schemas run from -(10^N-1) to 10^N-1 e.g. -99 to +99
                 final BigDecimal bigRadix = BigDecimal.valueOf( radix );
@@ -924,14 +908,11 @@ public enum PolyType {
                 if ( !sign ) {
                     decimal = decimal.negate();
                 }
-                return decimal;
-            case UNDERFLOW:
-                return beyond ? null : (sign ? BigDecimal.ONE : BigDecimal.ONE.negate());
-            case ZERO:
-                return BigDecimal.ZERO;
-            default:
-                throw Util.unexpected( limit );
-        }
+                yield decimal;
+            }
+            case UNDERFLOW -> beyond ? null : (sign ? BigDecimal.ONE : BigDecimal.ONE.negate());
+            case ZERO -> BigDecimal.ZERO;
+        };
     }
 
 
@@ -958,10 +939,7 @@ public enum PolyType {
      * Example: "DECIMAL" not "DECIMAL(7, 2)"; "INTEGER" not "JavaType(int)".
      */
     public String getTypeName() {
-        return switch ( this ) {
-            case ARRAY, MULTISET, MAP, ROW -> this.toString(); // e.g. "INTEGER ARRAY"
-            default -> this.getName(); // e.g. "DECIMAL", "INTERVAL_YEAR_MONTH"
-        };
+        return this.toString();
     }
 
 

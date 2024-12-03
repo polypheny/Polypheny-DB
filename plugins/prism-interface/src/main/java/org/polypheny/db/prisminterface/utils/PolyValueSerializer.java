@@ -92,7 +92,7 @@ public class PolyValueSerializer {
             case TIME -> serializeAsProtoTime( polyValue.asTime() );
             case TIMESTAMP -> serializeAsProtoTimestamp( polyValue.asTimestamp() );
             case INTERVAL -> serializeAsProtoInterval( polyValue.asInterval() );
-            case CHAR, VARCHAR -> serializeAsProtoString( polyValue.asString() );
+            case CHAR, VARCHAR, TEXT -> serializeAsProtoString( polyValue.asString() );
             case BINARY, VARBINARY -> serializeAsProtoBinary( polyValue.asBinary() );
             case NULL -> serializeAsProtoNull();
             case ARRAY -> serializeAsProtoList( polyValue.asList() );
@@ -100,7 +100,6 @@ public class PolyValueSerializer {
             case GEOMETRY -> serializeGeometry( polyValue.asGeometry() );
             case IMAGE, VIDEO, AUDIO, FILE -> serializeAsProtoFile( polyValue.asBlob() ); // used
             case MAP, GRAPH, NODE, EDGE, PATH, DISTINCT, STRUCTURED, ROW, OTHER, CURSOR, COLUMN_LIST, DYNAMIC_STAR, SYMBOL, JSON, MULTISET, USER_DEFINED_TYPE, ANY -> throw new NotImplementedException( "Serialization of " + polyValue.getType() + " to proto not implemented" );
-            default -> throw new NotImplementedException();
         };
     }
 

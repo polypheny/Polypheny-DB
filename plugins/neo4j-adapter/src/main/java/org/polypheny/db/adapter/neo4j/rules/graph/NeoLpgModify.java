@@ -166,7 +166,7 @@ public class NeoLpgModify extends LpgModify<NeoGraph> implements NeoGraphAlg {
             statements.add( node_( node, PolyString.of( implementor.getGraph().mappingLabel ), true ) );
         }
         for ( PolyEdge edge : edges ) {
-            statements.add( path_( node_( uuidNameMapping.get( edge.source ) ), edge_( edge, true ), node_( uuidNameMapping.get( edge.target ) ) ) );
+            statements.add( path_( node_( uuidNameMapping.get( edge.left ) ), edge_( edge, true ), node_( uuidNameMapping.get( edge.right ) ) ) );
         }
 
         return statements;

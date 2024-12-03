@@ -24,6 +24,7 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
+import java.net.StandardSocketOptions;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
@@ -218,6 +219,7 @@ public final class DockerContainer {
                 while ( true ) {
                     try {
                         Socket local = server.accept();
+                        local.setOption( StandardSocketOptions.TCP_NODELAY, true );
                         DockerInstance dockerInstance = getDockerInstance().orElseThrow( () -> new IOException( "Not connected to docker host" ) );
                         startProxyForConnection( dockerInstance, local, port );
                     } catch ( IOException e ) {

@@ -324,8 +324,8 @@ public interface NeoStatements {
         List<PropertyStatement> props = new ArrayList<>( properties_( edge.properties ) );
         if ( addId ) {
             props.add( property_( PolyString.of( "_id" ), string_( edge.id ) ) );
-            props.add( property_( PolyString.of( "__sourceId__" ), string_( edge.source ) ) );
-            props.add( property_( PolyString.of( "__targetId__" ), string_( edge.target ) ) );
+            props.add( property_( PolyString.of( "__sourceId__" ), string_( edge.left ) ) );
+            props.add( property_( PolyString.of( "__targetId__" ), string_( edge.right ) ) );
         }
         PolyString defIdentifier = edge.getVariableName();
 

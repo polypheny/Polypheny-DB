@@ -356,7 +356,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
         try {
             return JSON_WRAPPER.writeValueAsString( this );
         } catch ( JsonProcessingException e ) {
-            log.warn( "Error on deserialize JSON." );
+            log.warn( "Error on serialize JSON." );
             return null;
         }
     }

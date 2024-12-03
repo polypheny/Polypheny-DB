@@ -108,11 +108,7 @@ public class StatementProcessor {
                     9004
             );
         }
-        try {
-            return executor.executeAndGetResult( piStatement, fetchSize );
-        } catch ( Exception e ) {
-            throw new GenericRuntimeException( e ); // TODO: check if this is still needed, or if executeAndGetResult throws another exception by now
-        }
+        return executor.executeAndGetResult( piStatement, fetchSize );
     }
 
 

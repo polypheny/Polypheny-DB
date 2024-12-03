@@ -55,9 +55,7 @@ public class RequestParserTest extends SqlLanguageDependent {
             Pair<String, String> unibasDbis = RequestParser.decodeBasicAuthorization( "Basic dW5pY!mFzOmRi!" );
             assertEquals( "unibas", unibasDbis.left, "Username was decoded incorrectly." );
             assertEquals( "dbis", unibasDbis.right, "Password was decoded incorrectly." );
-        } );
-        assertEquals( "Basic Authorization header is not properly encoded.", thrown.getMessage() );
-
+        }, "Basic Authorization header is not properly encoded." );
     }
 
 
@@ -78,7 +76,7 @@ public class RequestParserTest extends SqlLanguageDependent {
                 null,
                 "username",
                 "testdb" );
-        LogicalTable table = requestParser.parseCatalogTableName( "schema1.table1." );
+        requestParser.parseCatalogTableName( "schema1.table1." );
         verify( mockSnapshot ).rel(); // check if the snapshot was called
         verify( mockRelSnapshot ).getTable( "schema1", "table1" );
     }
@@ -86,7 +84,6 @@ public class RequestParserTest extends SqlLanguageDependent {
 
     @Test
     public void testParseFilterOperation() {
-        Catalog mockedCatalog = mock( Catalog.class );
         RequestParser requestParser = new RequestParser(
                 null,
                 null,

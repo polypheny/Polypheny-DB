@@ -206,20 +206,12 @@ public class PushProjector {
             childBitmap = ImmutableBitSet.range( 0, nFields );
             rightBitmap = ImmutableBitSet.range( nFields, nChildFields );
 
-            switch ( joinRel.getJoinType() ) {
-                case INNER:
-                    strongBitmap = ImmutableBitSet.of();
-                    break;
-                case RIGHT:  // All the left-input's columns must be strong
-                    strongBitmap = ImmutableBitSet.range( 0, nFields );
-                    break;
-                case LEFT: // All the right-input's columns must be strong
-                    strongBitmap = ImmutableBitSet.range( nFields, nChildFields );
-                    break;
-                case FULL:
-                default:
-                    strongBitmap = ImmutableBitSet.range( 0, nChildFields );
-            }
+            strongBitmap = switch ( joinRel.getJoinType() ) {
+                case INNER -> ImmutableBitSet.of();
+                case RIGHT -> ImmutableBitSet.range( 0, nFields );// All the left-input's columns must be strong
+                case LEFT -> ImmutableBitSet.range( nFields, nChildFields );// All the right-input's columns must be strong
+                case FULL -> ImmutableBitSet.range( 0, nChildFields );
+            };
 
         } else if ( childRel instanceof Correlate corrAlg ) {
             List<AlgDataTypeField> leftFields = corrAlg.getLeft().getTupleType().getFields();
@@ -240,20 +232,11 @@ public class PushProjector {
             // Required columns need to be included in project
             projRefs.or( BitSets.of( corrAlg.getRequiredColumns() ) );
 
-            switch ( joinType ) {
-                case INNER:
-                    strongBitmap = ImmutableBitSet.of();
-                    break;
-                case ANTI:
-                case SEMI:  // All the left-input's columns must be strong
-                    strongBitmap = ImmutableBitSet.range( 0, nFields );
-                    break;
-                case LEFT: // All the right-input's columns must be strong
-                    strongBitmap = ImmutableBitSet.range( nFields, nChildFields );
-                    break;
-                default:
-                    strongBitmap = ImmutableBitSet.range( 0, nChildFields );
-            }
+            strongBitmap = switch ( joinType ) {
+                case INNER -> ImmutableBitSet.of();
+                case ANTI, SEMI -> ImmutableBitSet.range( 0, nFields ); // All the left-input's columns must be strong
+                case LEFT -> ImmutableBitSet.range( nFields, nChildFields ); // All the right-input's columns must be strong
+            };
         } else {
             nFields = nChildFields;
             nFieldsRight = 0;

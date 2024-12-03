@@ -148,6 +148,7 @@ public class WebSocket implements Consumer<WsConfig> {
                         xIds.add( result.xid );
                     }
                 }
+
                 ctx.send( results );
                 break;
             case "PolyAlgRequest":
