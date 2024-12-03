@@ -20,6 +20,7 @@ import java.text.MessageFormat;
 import java.util.HashMap;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
+import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.deadlocks.DeadlockHandler;
@@ -113,6 +114,9 @@ public class LockableImpl implements Lockable {
         return isExclusive ? LockType.EXCLUSIVE : LockType.SHARED;
     }
 
+    public HashMap<Transaction, Long> getCopyOfOwners() {
+        return new HashMap<>(owners);
+    }
 
     @Override
     public boolean isRoot() {
