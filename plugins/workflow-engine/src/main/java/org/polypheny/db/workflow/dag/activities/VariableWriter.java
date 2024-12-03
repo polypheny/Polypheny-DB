@@ -29,17 +29,18 @@ public interface VariableWriter extends Activity {
 
     /**
      * Whether the activity wants to be able to write variables during execution.
-     * Activities that implement this interface are typically pure writers, the default return value is thus {@code true}.
-     *
+     * Activities that implement this interface are typically pure writers, the default return value is thus {@code Optional.of(true)}.
+     * <p>
      * We let activities decide dynamically whether they intend to write variables to allow any activity to write variables.
      * The goal of restricting variable writing is to minimize the impact on performance (writing variables disables fusion and pipelining).
+     * <p>
+     * Returning a non-empty Optional is definitive and the decision may not be changed at a later point.
+     * If no decision can be made, an empty Optional is returned instead
      *
-     * Returning false is definitive. Returning true at a later point during the same execution might no longer be respected.
-     *
-     * @return true if this activity intends to write variables during execution.
+     * @return an Optional containing the final decision whether this activity intends to write variables, or an empty Optional if it cannot be stated at this point
      */
-    default boolean requestsToWrite( Optional<AlgDataType>[] inTypes, Map<String, Optional<SettingValue>> settings ) {
-        return true;
+    default Optional<Boolean> requestsToWrite( List<Optional<AlgDataType>> inTypes, Map<String, Optional<SettingValue>> settings ) {
+        return Optional.of( true );
     }
 
 

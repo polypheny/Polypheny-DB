@@ -66,7 +66,7 @@ public class PipeExecutor extends Executor {
     private ExecutorService executor;
 
 
-    protected PipeExecutor( StorageManager sm, Workflow workflow, AttributedDirectedGraph<UUID, ExecutionEdge> execTree, int queueCapacity ) {
+    public PipeExecutor( StorageManager sm, Workflow workflow, AttributedDirectedGraph<UUID, ExecutionEdge> execTree, int queueCapacity ) {
         super( sm, workflow );
         this.execTree = execTree;
         this.queueCapacity = queueCapacity;
@@ -127,6 +127,12 @@ public class PipeExecutor extends Executor {
         if ( abortReason != null ) {
             throw abortReason; // we only throw now to ensure threads are all shut down.
         }
+    }
+
+
+    @Override
+    ExecutorType getType() {
+        return ExecutorType.PIPE;
     }
 
 

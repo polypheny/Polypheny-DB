@@ -37,15 +37,16 @@ public interface Pipeable extends Activity {
 
     /**
      * Whether this activity instance can be piped, given the input tuple types and setting values.
+     * If no final decision can be made yet, an empty optional is returned.
      * If this method is overridden, it is required to also provide a custom execute implementation.
-     * This is necessary in the case that canPipe returns false.
+     * This is necessary, as it might be used in the case that this activity cannot be piped.
      *
      * @param inTypes preview of the input types
      * @param settings preview of the settings
-     * @return false if this activity instance cannot be piped for certain, true otherwise
+     * @return an Optional containing the final decision whether this activity can be piped, or an empty Optional if it cannot be stated at this point
      */
-    default boolean canPipe( List<Optional<AlgDataType>> inTypes, Map<String, Optional<SettingValue>> settings ) {
-        return true;
+    default Optional<Boolean> canPipe( List<Optional<AlgDataType>> inTypes, Map<String, Optional<SettingValue>> settings ) {
+        return Optional.of( true );
     }
 
     /**
@@ -67,7 +68,7 @@ public interface Pipeable extends Activity {
                         .collect( Collectors.toMap(
                                 Map.Entry::getKey,
                                 entry -> Optional.ofNullable( entry.getValue() )
-                        ) ) ) : "Cannot use the default execute implementation of Pipeable if canPipe returns false.";
+                        ) ) ).orElseThrow() : "Cannot use the default execute implementation of Pipeable if canPipe returns false.";
 
         AlgDataType type = lockOutputType( inputTypes, settings );
         List<InputPipe> inPipes = inputs.stream().map( reader -> (InputPipe) new CheckpointInputPipe( reader ) ).toList();

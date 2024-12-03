@@ -34,7 +34,7 @@ public class VariableWriterExecutor extends Executor {
     private ExecutionContextImpl ctx;
 
 
-    protected VariableWriterExecutor( StorageManager sm, Workflow workflow, UUID activityId ) {
+    public VariableWriterExecutor( StorageManager sm, Workflow workflow, UUID activityId ) {
         super( sm, workflow );
         this.wrapper = workflow.getActivity( activityId );
     }
@@ -56,6 +56,12 @@ public class VariableWriterExecutor extends Executor {
         } catch ( Exception e ) {
             throw new ExecutorException( e );
         }
+    }
+
+
+    @Override
+    ExecutorType getType() {
+        return ExecutorType.VARIABLE_WRITER;
     }
 
 

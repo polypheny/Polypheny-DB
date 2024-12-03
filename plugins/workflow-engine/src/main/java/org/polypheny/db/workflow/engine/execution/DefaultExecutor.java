@@ -37,7 +37,7 @@ public class DefaultExecutor extends Executor {
     private ExecutionContextImpl ctx;
 
 
-    protected DefaultExecutor( StorageManager sm, Workflow wf, UUID activityId ) {
+    public DefaultExecutor( StorageManager sm, Workflow wf, UUID activityId ) {
         super( sm, wf );
         this.wrapper = wf.getActivity( activityId );
     }
@@ -58,6 +58,12 @@ public class DefaultExecutor extends Executor {
         } catch ( Exception e ) {
             throw new ExecutorException( e );
         }
+    }
+
+
+    @Override
+    ExecutorType getType() {
+        return ExecutorType.DEFAULT;
     }
 
 

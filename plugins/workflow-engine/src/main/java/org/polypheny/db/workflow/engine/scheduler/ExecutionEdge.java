@@ -18,6 +18,7 @@ package org.polypheny.db.workflow.engine.scheduler;
 
 import java.util.UUID;
 import lombok.Getter;
+import lombok.Setter;
 import org.polypheny.db.util.graph.AttributedDirectedGraph;
 import org.polypheny.db.util.graph.DefaultEdge;
 import org.polypheny.db.workflow.dag.edges.ControlEdge;
@@ -38,10 +39,12 @@ public class ExecutionEdge extends DefaultEdge {
 
     // isControl == true
     private final boolean onSuccess;
+    @Setter
+    private boolean isIgnored = false; // control edge has no influence anymore as target is already allowed to execute
 
 
-    public ExecutionEdge( Edge edge ) {
-        super( edge.getFrom().getId(), edge.getTo().getId() );
+    public ExecutionEdge( UUID v0, UUID v1, Edge edge ) {
+        super( v0, v1 );
         if ( edge instanceof DataEdge data ) {
             isControl = false;
             fromPort = data.getFromPort();
@@ -59,6 +62,16 @@ public class ExecutionEdge extends DefaultEdge {
     }
 
 
+    public ExecutionEdge( ExecutionEdge edge ) {
+        super( edge.getSource(), edge.getTarget() );
+        this.isControl = edge.isControl;
+        this.fromPort = edge.fromPort;
+        this.toPort = edge.toPort;
+        this.onSuccess = edge.onSuccess;
+        this.isIgnored = edge.isIgnored;
+    }
+
+
     public UUID getSource() {
         return (UUID) source;
     }
@@ -69,12 +82,27 @@ public class ExecutionEdge extends DefaultEdge {
     }
 
 
+    public boolean representsEdge( Edge edge ) {
+        if ( edge.getFrom().getId() != getSource() || edge.getTo().getId() != getTarget() ) {
+            return false;
+        }
+        if ( edge instanceof ControlEdge control ) {
+            return isControl && control.isOnSuccess() == onSuccess;
+        } else if ( edge instanceof DataEdge data ) {
+            return !isControl && data.getFromPort() == fromPort && data.getToPort() == toPort;
+        } else {
+            throw new IllegalArgumentException( "Unexpected Edge type" );
+        }
+    }
+
+
     @Override
     public int hashCode() {
         int result = super.hashCode();
         result = 31 * result + Boolean.hashCode( isControl );
         if ( isControl ) {
             result = 31 * result + Boolean.hashCode( onSuccess );
+            // isIgnored is not part of hashCode, as it is mutable
         } else {
             result = 31 * result + Integer.hashCode( fromPort );
             result = 31 * result + Integer.hashCode( toPort );
@@ -89,7 +117,6 @@ public class ExecutionEdge extends DefaultEdge {
             return true;
         }
         if ( obj instanceof ExecutionEdge e ) {
-
             return e.source.equals( source )
                     && e.target.equals( target )
                     && e.isControl == isControl
@@ -101,19 +128,25 @@ public class ExecutionEdge extends DefaultEdge {
     }
 
 
-    public static class ExecutionEdgeFactory implements AttributedDirectedGraph.AttributedEdgeFactory<UUID, DefaultEdge> {
+    public static class ExecutionEdgeFactory implements AttributedDirectedGraph.AttributedEdgeFactory<UUID, ExecutionEdge> {
 
         @Override
-        public DefaultEdge createEdge( UUID v0, UUID v1, Object... attributes ) {
+        public ExecutionEdge createEdge( UUID v0, UUID v1, Object... attributes ) {
             if ( attributes.length != 1 ) {
                 throw new IllegalArgumentException( "Invalid number of objects" );
             }
-            return new ExecutionEdge( (Edge) attributes[0] );
+
+            if ( attributes[0] instanceof Edge edge ) {
+                return new ExecutionEdge( v0, v1, edge );
+            } else if ( attributes[0] instanceof ExecutionEdge edge ) {
+                return new ExecutionEdge( edge );
+            }
+            throw new IllegalArgumentException( "Invalid attribute type" );
         }
 
 
         @Override
-        public DefaultEdge createEdge( UUID v0, UUID v1 ) {
+        public ExecutionEdge createEdge( UUID v0, UUID v1 ) {
             throw new UnsupportedOperationException();
         }
 

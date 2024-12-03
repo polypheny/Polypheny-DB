@@ -30,8 +30,18 @@ import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 // TODO: write test to ensure at most 1 output was specified
 public interface Fusable extends Activity {
 
-    default boolean canFuse( List<Optional<AlgDataType>> inTypes, Map<String, Optional<SettingValue>> settings ) {
-        return true;
+    /**
+     * Whether this activity instance can be fused, given the input tuple types and setting values.
+     * If no final decision can be made yet, an empty optional is returned.
+     * If this method is overridden, it is required to also provide a custom execute implementation.
+     * This is necessary, as it will be used in the case that the activity cannot be fused.
+     *
+     * @param inTypes preview of the input types
+     * @param settings preview of the settings
+     * @return an Optional containing the final decision whether this activity can be fused, or an empty Optional if it cannot be stated at this point.
+     */
+    default Optional<Boolean> canFuse( List<Optional<AlgDataType>> inTypes, Map<String, Optional<SettingValue>> settings ) {
+        return Optional.of( true );
     }
 
 

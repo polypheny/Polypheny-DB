@@ -39,9 +39,10 @@ public interface Activity {
      * for the outputs that depend on it. The same holds for outputs whose type can only be determined during execution.
      * If any available setting or input type results in a contradiction or invalid state,
      * an {@link ActivityException} is thrown.
+     * If a setting, input or output type is available, it is guaranteed to not change anymore.
      *
      * @param inTypes a list of {@link Optional<AlgDataType>} representing the input tuple types.
-     * @param settings a map of setting keys to {@link Optional<SettingValue>} representing the available settings.
+     * @param settings a map of setting keys to {@link Optional<SettingValue>} representing the available settings, i.e. all settings that do not contain variables.
      * @return a list of {@link Optional<AlgDataType>} representing the expected output tuple types.
      * If an output type cannot be determined at this point, the corresponding {@link Optional} will be empty.
      * @throws ActivityException if any available setting or input type results in a contradiction or invalid state.

@@ -18,9 +18,11 @@ package org.polypheny.db.workflow.dag;
 
 import java.util.List;
 import java.util.UUID;
+import org.polypheny.db.util.graph.AttributedDirectedGraph;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
 import org.polypheny.db.workflow.dag.edges.DataEdge;
 import org.polypheny.db.workflow.dag.edges.Edge;
+import org.polypheny.db.workflow.engine.scheduler.ExecutionEdge;
 import org.polypheny.db.workflow.models.EdgeModel;
 import org.polypheny.db.workflow.models.WorkflowConfigModel;
 import org.polypheny.db.workflow.models.WorkflowModel;
@@ -79,6 +81,8 @@ public interface Workflow {
     void deleteActivity( UUID activityId );
 
     void deleteEdge( EdgeModel model );
+
+    AttributedDirectedGraph<UUID, ExecutionEdge> toDag();
 
 
     /**

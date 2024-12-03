@@ -44,7 +44,7 @@ public class FusionExecutor extends Executor {
     private final AttributedDirectedGraph<UUID, ExecutionEdge> execTree; // TODO: just use Set<UUID> instead?
 
 
-    protected FusionExecutor( StorageManager sm, Workflow workflow, AttributedDirectedGraph<UUID, ExecutionEdge> execTree ) {
+    public FusionExecutor( StorageManager sm, Workflow workflow, AttributedDirectedGraph<UUID, ExecutionEdge> execTree ) {
         super( sm, workflow );
         this.execTree = execTree;
     }
@@ -68,6 +68,12 @@ public class FusionExecutor extends Executor {
 
         throw new NotImplementedException();
 
+    }
+
+
+    @Override
+    ExecutorType getType() {
+        return ExecutorType.FUSION;
     }
 
 

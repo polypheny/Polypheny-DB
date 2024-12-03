@@ -53,6 +53,8 @@ public abstract class Executor implements Callable<Void> {
 
     abstract void execute() throws ExecutorException;
 
+    abstract ExecutorType getType();
+
 
     /**
      * Tries to halt the execution in a best-effort manner.
@@ -73,7 +75,7 @@ public abstract class Executor implements Callable<Void> {
 
 
     /**
-     * Merges all the input variableStores of the target activity and updates the target activity variableStore accordingly.
+     * Merges all the active (= successfully executed) input variableStores of the target activity and updates the target activity variableStore accordingly.
      * In the process, the target variableStore is completely reset.
      *
      * @param targetId the identifier of the target activity whose variables are going to be set based on its inputs.
@@ -111,6 +113,21 @@ public abstract class Executor implements Callable<Void> {
             return null;
         }
         return sm.readCheckpoint( edge.getFrom().getId(), edge.getFromPort() );
+    }
+
+
+    public enum ExecutorType {
+        DEFAULT( DefaultExecutor.class ),
+        FUSION( FusionExecutor.class ),
+        PIPE( PipeExecutor.class ),
+        VARIABLE_WRITER( VariableWriterExecutor.class );
+
+        public final Class<? extends Executor> clazz;
+
+
+        ExecutorType( Class<? extends Executor> clazz ) {
+            this.clazz = clazz;
+        }
     }
 
 

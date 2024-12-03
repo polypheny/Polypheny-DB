@@ -26,9 +26,12 @@ import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.graph.AttributedDirectedGraph;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
 import org.polypheny.db.workflow.dag.edges.DataEdge;
 import org.polypheny.db.workflow.dag.edges.Edge;
+import org.polypheny.db.workflow.engine.scheduler.ExecutionEdge;
+import org.polypheny.db.workflow.engine.scheduler.ExecutionEdge.ExecutionEdgeFactory;
 import org.polypheny.db.workflow.models.ActivityModel;
 import org.polypheny.db.workflow.models.EdgeModel;
 import org.polypheny.db.workflow.models.WorkflowConfigModel;
@@ -135,9 +138,9 @@ public class WorkflowImpl implements Workflow {
 
     @Override
     public DataEdge getDataEdge( UUID to, int toPort ) {
-        for (Edge edge : getInEdges(to)) {
-            if (edge instanceof DataEdge dataEdge) {
-                if (dataEdge.getToPort() == toPort) {
+        for ( Edge edge : getInEdges( to ) ) {
+            if ( edge instanceof DataEdge dataEdge ) {
+                if ( dataEdge.getToPort() == toPort ) {
                     return dataEdge;
                 }
             }
@@ -175,6 +178,17 @@ public class WorkflowImpl implements Workflow {
             return;
         }
         edgeList.removeIf( e -> e.isEquivalent( model ) );
+    }
+
+
+    @Override
+    public AttributedDirectedGraph<UUID, ExecutionEdge> toDag() {
+        AttributedDirectedGraph<UUID, ExecutionEdge> dag = AttributedDirectedGraph.create( new ExecutionEdgeFactory() );
+
+        activities.keySet().forEach( dag::addVertex );
+        getEdges().forEach( edge -> dag.addEdge( edge.getFrom().getId(), edge.getTo().getId(), edge ) );
+
+        return dag;
     }
 
 }
