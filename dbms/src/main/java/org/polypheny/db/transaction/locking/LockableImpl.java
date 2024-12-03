@@ -74,7 +74,7 @@ public class LockableImpl implements Lockable {
             }
             long count = owners.remove( transaction );
             while ( !owners.isEmpty() ) {
-                //DeadlockHandler.INSTANCE.addAndResolveDeadlock(this, transaction, owners.keySet() );
+                DeadlockHandler.INSTANCE.addAndResolveDeadlock(this, transaction, owners.keySet() );
                 concurrencyCondition.await();
             }
             isExclusive = true;
@@ -163,12 +163,15 @@ public class LockableImpl implements Lockable {
 
 
     private void printAcquiredInfo( String message, Transaction transaction ) {
+
         LOGGER.info ( MessageFormat.format(
                 "{0}, TX: {1}, L: {2}",
                 message,
                 transaction,
                 this
         ) );
+
+
 
     }
 }

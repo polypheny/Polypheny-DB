@@ -16,10 +16,7 @@
 
 package org.polypheny.db.transaction;
 
-import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.languages.LanguageManager;
@@ -38,6 +35,7 @@ public class ConcurrencyTestUtils {
 
 
     public static List<ExecutedContext> executeStatement( String query, String languageName, String namespaceName, Transaction transaction, TestHelper testHelper ) {
+        System.out.println( query + ":::" + transaction );
         QueryLanguage language = QueryLanguage.from( languageName );
         long namespaceId = Catalog.getInstance().getSnapshot().getNamespace( namespaceName ).orElseThrow().getId();
         QueryContext context = QueryContext.builder()
@@ -48,28 +46,6 @@ public class ConcurrencyTestUtils {
                 .origin( "IsolationTests" )
                 .build();
         return LanguageManager.getINSTANCE().anyQuery( context.addTransaction( transaction ) );
-    }
-
-
-    public static void executePermutations( List<String> executions, Map<String, Runnable> operations, Set<Session> sessions, Runnable setup, Runnable cleanup ) {
-        executions.forEach( sequence -> {
-            System.out.println( "Executing:" + sequence );
-            setup.run();
-            Arrays.stream( sequence.split( " " ) )
-                    .forEach(
-                            operations::get );
-            sessions.forEach( session -> {
-                try {
-                    if (!session.awaitCompletion()) {
-                        throw new RuntimeException( "Session did not complete properly." );
-                    }
-                } catch ( InterruptedException e ) {
-                    throw new RuntimeException( "Execution of operation sequence failed.", e );
-                }
-            } );
-            cleanup.run();
-        } );
-
     }
 
 }
