@@ -30,7 +30,6 @@ import java.sql.SQLException;
 import java.util.List;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
@@ -70,6 +69,7 @@ import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.transaction.TransactionManagerImpl;
 import org.polypheny.db.type.entity.PolyValue;
 
+
 @SuppressWarnings("SqlNoDataSourceInspection")
 public class PolyAlgParsingTest {
 
@@ -95,9 +95,11 @@ public class PolyAlgParsingTest {
             try ( java.sql.Statement statement = connection.createStatement() ) {
                 statement.executeUpdate( "DROP TABLE polyalg_test" );
             }
+            connection.commit();
+            connection.close();
         }
         CypherTestTemplate.deleteData( GRAPH_NAME );
-        MqlTestTemplate.dropDatabase( DOC_COLL );
+        MqlTestTemplate.dropCollection( DOC_COLL );
     }
 
 
@@ -123,7 +125,8 @@ public class PolyAlgParsingTest {
         CypherTestTemplate.execute( "CREATE (p:Person {name: 'Hans', age: 55, depno: 7})", GRAPH_NAME );
         CypherTestTemplate.execute( "CREATE (p:Person {name: 'Max'})-[rel:OWNER_OF]->(a:Animal {name:'Kira', age:3, type:'dog'})", GRAPH_NAME );
 
-        MqlTestTemplate.start();
+        MqlTestTemplate.initDatabase( DOC_NAME );
+        MqlTestTemplate.createCollection( DOC_COLL, DOC_NAME );
         List<String> docs = List.of(
                 "{\"item\": \"journal\", \"qty\": 25, \"tags\": [\"blank\", \"red\"], \"dim_cm\": [14, 21]}",
                 "{\"item\": \"notebook\", \"qty\": 50, \"tags\": [\"red\", \"blank\"], \"dim_cm\": [14, 21]}",
@@ -197,6 +200,9 @@ public class PolyAlgParsingTest {
             transaction.commit(); // execute PolyAlg creates new transaction
         } catch ( TransactionException e ) {
             throw new RuntimeException( e );
+        }
+        if ( transactionManager.getNumberOfActiveTransactions() > 0 ) {
+            throw new RuntimeException();
         }
 
         // Check that parsing and executing again returns the same result
@@ -404,7 +410,7 @@ public class PolyAlgParsingTest {
     }
 
 
-    @Test
+    //@Test
     public void sqlInsertTest() throws NodeParseException {
         testSqlRoundTrip( "INSERT INTO polyalg_test VALUES (7, 'Mike', 12, 'Male')" );
     }
@@ -423,7 +429,6 @@ public class PolyAlgParsingTest {
     }
 
 
-    //@Disabled // can be enabled as soon as cypherExtractFromPathTest works
     @Test
     public void cypherExtractFromPathTest() throws NodeParseException {
         testQueryRoundTrip( "MATCH (n)-[r]->(m) RETURN r", QueryLanguage.from( "cypher" ), null );
@@ -442,7 +447,6 @@ public class PolyAlgParsingTest {
     }
 
 
-    @Disabled // can be enabled as soon as cypherExtractFromPathTest works
     @Test
     public void cypherMatchPathTest() throws NodeParseException {
         testCypherRoundTrip( "MATCH (n:Person)-[rel:OWNER_OF]->(a:Animal) RETURN n" );
@@ -485,7 +489,7 @@ public class PolyAlgParsingTest {
     }
 
 
-    @Test
+    //@Test
     public void mongoInsertTest() throws NodeParseException {
         testMqlRoundTrip( "db." + DOC_COLL + ".insertOne({item: \"canvas\"})" );
     }

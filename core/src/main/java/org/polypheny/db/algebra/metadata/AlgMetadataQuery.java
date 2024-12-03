@@ -305,6 +305,8 @@ public class AlgMetadataQuery {
                 return nonCumulativeCostHandler.getNonCumulativeCost( alg, this );
             } catch ( JaninoRelMetadataProvider.NoHandler e ) {
                 nonCumulativeCostHandler = revise( e.algClass, BuiltInMetadata.NonCumulativeCost.DEF );
+            } catch ( CyclicMetadataException e ) {
+                return nonCumulativeCostHandler.getNonCumulativeCost( alg, this );
             }
         }
     }

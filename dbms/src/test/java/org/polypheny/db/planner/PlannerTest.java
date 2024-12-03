@@ -40,7 +40,8 @@ import org.polypheny.db.plan.volcano.VolcanoPlanner;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 
-public class PlannerTest {
+public class
+PlannerTest {
 
     static final Convention PHYS_CALLING_CONVENTION = new Convention.Impl( "PHYS", AlgNode.class ) {
 
