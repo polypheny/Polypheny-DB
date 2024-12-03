@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Products>
+    <Product>
+        <ProductID type="string">001</ProductID>
+        <Name type="string">Eco-Friendly Water Bottle</Name>
+        <Category type="string">Home and Kitchen</Category>
+        <Description type="string">A reusable, BPA-free water bottle made from sustainable materials.</Description>
+        <Price type="decimal">19.99</Price>
+        <Stock type="integer">150</Stock>
+        <Features type="list">
+            <Feature type="string">Reusable</Feature>
+            <Feature type="string">BPA-free</Feature>
+            <Feature type="string">Sustainable materials</Feature>
+        </Features>
+        <Manufacturer>
+            <Name type="string">Fancy Ltd.</Name>
+            <BusinessId type="integer">22</BusinessId>
+        </Manufacturer>
+    </Product>
+    <Product>
+        <ProductID type="string">002</ProductID>
+        <Name type="string">Wireless Noise-Canceling Headphones</Name>
+        <Category type="string">Electronics</Category>
+        <Description type="string">High-quality headphones with active noise cancellation and long battery life.</Description>
+        <Price type="decimal">129.99</Price>
+        <Stock type="integer">75</Stock>
+        <Features type="list">
+            <Feature type="string">Active noise cancellation</Feature>
+            <Feature type="string">Long battery life</Feature>
+            <Feature type="string">Wireless</Feature>
+        </Features>
+        <Manufacturer>
+            <Name type="string">SoundTech Inc.</Name>
+            <BusinessId type="integer">45</BusinessId>
+        </Manufacturer>
+    </Product>
+    <Product>
+        <ProductID type="string">003</ProductID>
+        <Name type="string">Smart LED Bulb</Name>
+        <Category type="string">Smart Home</Category>
+        <Description type="string">Color-changing smart LED bulb controllable via mobile app or voice assistant.</Description>
+        <Price type="decimal">24.99</Price>
+        <Stock type="integer">200</Stock>
+        <Features type="list">
+            <Feature type="string">Color-changing</Feature>
+            <Feature type="string">Controllable via app</Feature>
+            <Feature type="string">Voice assistant compatible</Feature>
+        </Features>
+        <Manufacturer>
+            <Name type="string">BrightHome</Name>
+            <BusinessId type="integer">67</BusinessId>
+        </Manufacturer>
+    </Product>
+    <Product>
+        <ProductID type="string">004</ProductID>
+        <Name type="string">Portable Bluetooth Speaker</Name>
+        <Category type="string">Audio</Category>
+        <Description type="string">Compact, waterproof Bluetooth speaker with rich sound and deep bass.</Description>
+        <Price type="decimal">59.99</Price>
+        <Stock type="integer">120</Stock>
+        <Features type="list">
+            <Feature type="string">Compact</Feature>
+            <Feature type="string">Waterproof</Feature>
+            <Feature type="string">Rich sound</Feature>
+        </Features>
+        <Manufacturer>
+            <Name type="string">SoundWave Co.</Name>
+            <BusinessId type="integer">89</BusinessId>
+        </Manufacturer>
+    </Product>
+    <Product>
+        <ProductID type="string">005</ProductID>
+        <Name type="string">Stainless Steel Cookware Set</Name>
+        <Category type="string">Home and Kitchen</Category>
+        <Description type="string">Durable and stylish stainless steel cookware set with non-stick coating.</Description>
+        <Price type="decimal">249.99</Price>
+        <Stock type="integer">50</Stock>
+        <Features type="list">
+            <Feature type="string">Durable</Feature>
+            <Feature type="string">Stylish</Feature>
+            <Feature type="string">Non-stick coating</Feature>
+        </Features>
+        <Manufacturer>
+            <Name type="string">CookMaster</Name>
+            <BusinessId type="integer">33</BusinessId>
+        </Manufacturer>
+    </Product>
+    <Product>
+        <ProductID type="string">006</ProductID>
+        <Name type="string">4K Ultra HD Smart TV</Name>
+        <Category type="string">Electronics</Category>
+        <Description type="string">55-inch 4K Ultra HD Smart TV with built-in streaming services and HDR support.</Description>
+        <Price type="decimal">499.99</Price>
+        <Stock type="integer">30</Stock>
+        <Features type="list">
+            <Feature type="string">55-inch</Feature>
+            <Feature type="string">4K Ultra HD</Feature>
+            <Feature type="string">HDR support</Feature>
+            <Feature type="string">Built-in streaming services</Feature>
+        </Features>
+        <Manufacturer>
+            <Name type="string">VisionTech</Name>
+            <BusinessId type="integer">57</BusinessId>
+        </Manufacturer>
+    </Product>
+    <Product>
+        <ProductID type="string">007</ProductID>
+        <Name type="string">Ergonomic Office Chair</Name>
+        <Category type="string">Office</Category>
+        <Description type="string">Comfortable office chair with lumbar support and adjustable height settings.</Description>
+        <Price type="decimal">179.99</Price>
+        <Stock type="integer">40</Stock>
+        <Features type="list">
+            <Feature type="string">Lumbar support</Feature>
+            <Feature type="string">Adjustable height</Feature>
+            <Feature type="string">Comfortable</Feature>
+        </Features>
+        <Manufacturer>
+            <Name type="string">ComfortSeating</Name>
+            <BusinessId type="integer">72</BusinessId>
+        </Manufacturer>
+    </Product>
+    <Product>
+        <ProductID type="string">008</ProductID>
+        <Name type="string">Fitness Tracker</Name>
+        <Category type="string">Health and Wellness</Category>
+        <Description type="string">Wearable fitness tracker with heart rate monitor, GPS, and sleep tracking.</Description>
+        <Price type="decimal">99.99</Price>
+        <Stock type="integer">100</Stock>
+        <Features type="list">
+            <Feature type="string">Heart rate monitor</Feature>
+            <Feature type="string">GPS</Feature>
+            <Feature type="string">Sleep tracking</Feature>
+        </Features>
+        <Manufacturer>
+            <Name type="string">FitLife</Name>
+            <BusinessId type="integer">88</BusinessId>
+        </Manufacturer>
+    </Product>
+</Products>

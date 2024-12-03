@@ -78,14 +78,15 @@ import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.ResultIterator;
 import org.polypheny.db.adapter.AbstractAdapterSetting;
 import org.polypheny.db.adapter.AbstractAdapterSettingDirectory;
+import org.polypheny.db.adapter.AbstractAdapterSettingString;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.AdapterManager.AdapterInformation;
 import org.polypheny.db.adapter.ConnectionMethod;
 import org.polypheny.db.adapter.DataSource;
-import org.polypheny.db.adapter.DataSource.ExportedColumn;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DataStore.FunctionalIndexInfo;
+import org.polypheny.db.adapter.RelationalDataSource.ExportedColumn;
 import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.adapter.java.AdapterTemplate;
 import org.polypheny.db.algebra.AlgCollation;
@@ -1088,19 +1089,19 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         for ( Long adapterId : adapterIds ) {
             Adapter<?> adapter = AdapterManager.getInstance().getAdapter( adapterId ).orElseThrow();
             if ( adapter instanceof DataSource<?> dataSource ) {
-                for ( Entry<String, List<ExportedColumn>> entry : dataSource.getExportedColumns().entrySet() ) {
+                for ( Entry<String, List<ExportedColumn>> entry : dataSource.asRelationalDataSource().getExportedColumns().entrySet() ) {
                     List<UiColumnDefinition> columnList = new ArrayList<>();
                     for ( ExportedColumn col : entry.getValue() ) {
                         UiColumnDefinition dbCol = UiColumnDefinition.builder()
-                                .name( col.name )
-                                .dataType( col.type.getName() )
-                                .collectionsType( col.collectionsType == null ? "" : col.collectionsType.getName() )
-                                .nullable( col.nullable )
-                                .precision( col.length )
-                                .scale( col.scale )
-                                .dimension( col.dimension )
-                                .cardinality( col.cardinality )
-                                .primary( col.primary )
+                                .name( col.name() )
+                                .dataType( col.type().getName() )
+                                .collectionsType( col.collectionsType() == null ? "" : col.collectionsType().getName() )
+                                .nullable( col.nullable() )
+                                .precision( col.length() )
+                                .scale( col.scale() )
+                                .dimension( col.dimension() )
+                                .cardinality( col.cardinality() )
+                                .primary( col.primary() )
                                 .build();
                         columnList.add( dbCol );
                     }
@@ -1109,8 +1110,8 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 }
                 ctx.json( exportedColumns.toArray( new RelationalResult[0] ) );
                 return;
-            }
 
+            }
         }
 
         ctx.json( RelationalResult.builder().error( "Could not retrieve exported source fields." ).build() );
@@ -2076,7 +2077,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         String body = "";
         Map<String, InputStream> inputStreams = new HashMap<>();
 
-        final AdapterModel a;
+        final AdapterModel adapterModel;
         if ( ctx.isMultipartFormData() ) {
             // collect all files e.g. csv files
             for ( Part part : ctx.req.getParts() ) {
@@ -2086,50 +2087,56 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                     inputStreams.put( part.getName(), part.getInputStream() );
                 }
             }
-            a = HttpServer.mapper.readValue( body, AdapterModel.class );
+            adapterModel = HttpServer.mapper.readValue( body, AdapterModel.class );
         } else if ( "application/json".equals( ctx.contentType() ) ) {
-            a = ctx.bodyAsClass( AdapterModel.class );
+            adapterModel = ctx.bodyAsClass( AdapterModel.class );
         } else {
             ctx.status( HttpCode.BAD_REQUEST );
             return;
         }
 
-        Map<String, String> settings = new HashMap<>();
+        AdapterTemplate adapterTemplate = AdapterManager.getAdapterTemplate( adapterModel.adapterName, adapterModel.type );
 
+        // This is only used to be able to get the type of property based on the key
+        Map<String, AbstractAdapterSetting> defaultSettings = adapterTemplate.settings.stream().collect( Collectors.toMap( e -> e.name, e -> e ) );
         ConnectionMethod method = ConnectionMethod.UPLOAD;
-        if ( a.settings.containsKey( "method" ) ) {
-            method = ConnectionMethod.valueOf( a.settings.get( "method" ).toUpperCase() );
+        if ( adapterModel.settings.containsKey( "method" ) ) {
+            method = ConnectionMethod.valueOf( adapterModel.settings.get( "method" ).toUpperCase() );
         }
-        AdapterTemplate adapter = AdapterManager.getAdapterTemplate( a.adapterName, a.type );
-        Map<String, AbstractAdapterSetting> allSettings = adapter.settings.stream().collect( Collectors.toMap( e -> e.name, e -> e ) );
 
-        for ( Map.Entry<String, String> entry : a.settings.entrySet() ) {
-            AbstractAdapterSetting set = allSettings.get( entry.getKey() );
-            if ( set == null ) {
+        Map<String, String> adapterSettings = new HashMap<>();
+
+        for ( Map.Entry<String, String> entry : adapterModel.settings.entrySet() ) {
+            if ( !defaultSettings.containsKey( entry.getKey() ) ) {
+                // specified property is not available for this adapter
                 continue;
             }
-            if ( set instanceof AbstractAdapterSettingDirectory setting ) {
-                if ( method == ConnectionMethod.LINK ) {
-                    Exception e = handleLinkFiles( ctx, a, setting, allSettings );
-                    if ( e != null ) {
-                        ctx.json( RelationalResult.builder().exception( e ).build() );
-                        return;
-                    }
-                    settings.put( set.name, entry.getValue() );
-                } else {
-                    List<String> fileNames = HttpServer.mapper.readValue( entry.getValue(), new TypeReference<>() {
-                    } );
-                    String directory = handleUploadFiles( inputStreams, fileNames, setting, a );
-                    settings.put( set.name, directory );
+            adapterSettings.put( entry.getKey(), entry.getValue() );
+            AbstractAdapterSetting set = defaultSettings.get( entry.getKey() );
+            // handle upload
+            if ( (set instanceof AbstractAdapterSettingDirectory settingDirectory) && method == ConnectionMethod.UPLOAD ) {
+                List<String> fileNames = HttpServer.mapper.readValue( entry.getValue(), new TypeReference<>() {
+                } );
+                String directory = handleUploadFiles( inputStreams, fileNames, settingDirectory, adapterModel );
+                adapterSettings.put( entry.getKey(), directory );
+                continue;
+            }
+            // handle linking
+            if ( (set instanceof AbstractAdapterSettingString settingString) && method == ConnectionMethod.LINK ) {
+                if ( !settingString.name.equals( "directoryName" ) ) {
+                    continue;
                 }
-            } else {
-                settings.put( set.name, entry.getValue() );
+                Exception e = handleLinkFiles( settingString );
+                if ( e != null ) {
+                    ctx.json( RelationalResult.builder().exception( e ).build() );
+                    return;
+                }
             }
         }
 
-        settings.put( "mode", a.mode.toString() );
+        adapterSettings.put( "mode", adapterModel.mode.toString() );
 
-        String query = String.format( "ALTER ADAPTERS ADD \"%s\" USING '%s' AS '%s' WITH '%s'", a.name, a.adapterName, a.type, Crud.gson.toJson( settings ) );
+        String query = String.format( "ALTER ADAPTERS ADD \"%s\" USING '%s' AS '%s' WITH '%s'", adapterModel.name, adapterModel.adapterName, adapterModel.type, Crud.gson.toJson( adapterSettings ) );
         QueryLanguage language = QueryLanguage.from( "sql" );
         Result<?, ?> res = LanguageCrud.anyQueryResult(
                 QueryContext.builder()
@@ -2153,20 +2160,20 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     }
 
 
-    private Exception handleLinkFiles( Context ctx, AdapterModel a, AbstractAdapterSettingDirectory setting, Map<String, AbstractAdapterSetting> settings ) {
-        if ( !settings.containsKey( "directoryName" ) ) {
-            return new GenericRuntimeException( "Security check for access was not performed; id missing." );
-        }
-        Path path = Path.of( settings.get( "directoryName" ).defaultValue );
+    private Exception handleLinkFiles( AbstractAdapterSettingString setting ) {
+        Path path = Path.of( setting.getValue() );
+        SecurityManager.getInstance().requestPathAccess( "webui", "webui", path );
         if ( !SecurityManager.getInstance().checkPathAccess( path ) ) {
             return new GenericRuntimeException( "Security check for access was not successful; not enough permissions." );
         }
-
         return null;
     }
 
 
     private static String handleUploadFiles( Map<String, InputStream> inputStreams, List<String> fileNames, AbstractAdapterSettingDirectory setting, AdapterModel a ) {
+        if ( fileNames.isEmpty() ) {
+            throw new GenericRuntimeException( "No file or directory specified for upload!" );
+        }
         for ( String fileName : fileNames ) {
             setting.inputStreams.put( fileName, inputStreams.get( fileName ) );
         }

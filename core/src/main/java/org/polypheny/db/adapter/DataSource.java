@@ -18,68 +18,26 @@ package org.polypheny.db.adapter;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSerializer;
-import java.util.List;
 import java.util.Map;
-import lombok.AllArgsConstructor;
+import java.util.Set;
 import lombok.Getter;
 import org.pf4j.ExtensionPoint;
 import org.polypheny.db.catalog.catalogs.AdapterCatalog;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
-import org.polypheny.db.type.PolyType;
+import org.polypheny.db.catalog.logistic.DataModel;
 
 @Getter
 public abstract class DataSource<S extends AdapterCatalog> extends Adapter<S> implements ExtensionPoint {
 
+    private final Set<DataModel> supportedDataModels;
     private final boolean dataReadOnly;
 
 
-    protected DataSource( final long adapterId, final String uniqueName, final Map<String, String> settings, final DeployMode mode, boolean dataReadOnly, S catalog ) {
+    protected DataSource( final long adapterId, final String uniqueName, final Map<String, String> settings, final DeployMode mode, boolean dataReadOnly, S catalog, Set<DataModel> supportedModels ) {
         super( adapterId, uniqueName, settings, mode, catalog );
         this.dataReadOnly = dataReadOnly;
-
+        this.supportedDataModels = Set.copyOf( supportedModels );
         informationPage.setLabel( "Sources" );
-    }
-
-
-    public abstract Map<String, List<ExportedColumn>> getExportedColumns();
-
-
-    @AllArgsConstructor
-    public static class ExportedColumn {
-
-        public final String name;
-        public final PolyType type;
-        public final PolyType collectionsType;
-        public final Integer length;
-        public final Integer scale;
-        public final Integer dimension;
-        public final Integer cardinality;
-        public final boolean nullable;
-        public final String physicalSchemaName;
-        public final String physicalTableName;
-        public final String physicalColumnName;
-        public final int physicalPosition;
-        public final boolean primary;
-
-
-        public String getDisplayType() {
-            String typeStr = type.getName();
-            if ( scale != null ) {
-                typeStr += "(" + length + "," + scale + ")";
-            } else if ( length != null ) {
-                typeStr += "(" + length + ")";
-            }
-
-            if ( collectionsType != null ) {
-                typeStr += " " + collectionsType.getName();
-                if ( cardinality != null ) {
-                    typeStr += "(" + dimension + "," + cardinality + ")";
-                } else if ( dimension != null ) {
-                    typeStr += "(" + dimension + ")";
-                }
-            }
-            return typeStr;
-        }
 
     }
 
@@ -102,6 +60,39 @@ public abstract class DataSource<S extends AdapterCatalog> extends Adapter<S> im
 
     private AdapterType getAdapterType() {
         return AdapterType.SOURCE;
+    }
+
+
+    public boolean supportsRelational() {
+        return supportedDataModels.contains( DataModel.RELATIONAL );
+    }
+
+
+    public boolean supportsDocument() {
+        return supportedDataModels.contains( DataModel.DOCUMENT );
+    }
+
+
+    public boolean supportsGraph() {
+        return supportedDataModels.contains( DataModel.GRAPH );
+    }
+
+
+    public RelationalDataSource asRelationalDataSource() {
+        // should be overridden by subclasses accordingly
+        throw new IllegalStateException( "This source does not support the relational data model." );
+    }
+
+
+    public DocumentDataSource asDocumentDataSource() {
+        // should be overridden by subclasses accordingly
+        throw new IllegalStateException( "This source does not support the document data model." );
+    }
+
+
+    public DocumentDataSource asGraphDataSource() {
+        // should be overridden by subclasses accordingly
+        throw new IllegalStateException( "This source does not support the graph data model." );
     }
 
 }
