@@ -223,7 +223,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
     @Override
     public PolyImplementation prepareQuery( AlgRoot logicalRoot, AlgDataType parameterRowType, boolean isRouted, boolean isSubquery, boolean withMonitoring ) {
-        return prepareQuery( logicalRoot, parameterRowType, false, false, false, withMonitoring );
+        return prepareQuery( logicalRoot, parameterRowType, isRouted, false, isSubquery, withMonitoring );
     }
 
 
@@ -962,7 +962,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                             .toList();
                     proposedPlans.addAll( plans );
                 } catch ( Throwable e ) {
-                    log.warn( String.format( "Router: %s was not able to route the query.", router.getClass().getSimpleName() ) );
+                    log.warn( "Router: {} was not able to route the query.", router.getClass().getSimpleName() );
                 }
             }
 
