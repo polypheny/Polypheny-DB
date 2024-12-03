@@ -47,6 +47,7 @@ public class StatementImpl implements Statement {
     private final long id;
     @Getter
     private final TransactionImpl transaction;
+
     private final List<FileInputHandle> fileInputHandles = new ArrayList<>();
 
     private QueryProcessor queryProcessor;
@@ -146,6 +147,12 @@ public class StatementImpl implements Statement {
 
 
     @Override
+    public long getIndex() {
+        return id;
+    }
+
+
+    @Override
     public void setMonitoringEvent( StatementEvent event ) {
         this.statementEvent = event;
     }
@@ -155,6 +162,7 @@ public class StatementImpl implements Statement {
         InformationManager im = transaction.getQueryAnalyzer();
         if ( executionTimePage == null ) {
             executionTimePage = new InformationPage( "Execution Time", "Query processing & execution time" );
+            executionTimePage.setStmtLabel( id );
             im.addPage( executionTimePage );
         }
         InformationGroup group = new InformationGroup( executionTimePage, title );
