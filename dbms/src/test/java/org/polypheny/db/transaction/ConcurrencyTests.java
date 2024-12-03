@@ -16,13 +16,19 @@
 
 package org.polypheny.db.transaction;
 
-import java.util.HashMap;
+import static org.bson.assertions.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
+import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
 
 public class ConcurrencyTests {
 
@@ -37,10 +43,20 @@ public class ConcurrencyTests {
 
     private void setupTables() {
         List.of(
-                "CREATE TABLE a (i INT PRIMARY KEY);",
-                "CREATE TABLE b (a_id INT PRIMARY KEY, a_ref INT NULL);",
-                "INSERT INTO a (i) VALUES (0), (1), (2), (3);",
-                "INSERT INTO b (a_id) VALUES (0), (1), (2), (3), (4), (5), (6), (7), (8);"
+                "CREATE TABLE accounts (id INT PRIMARY KEY, balance INT);",
+                "INSERT INTO accounts (id, balance) VALUES (1, 100), (2, 100);"
+        ).forEach( s -> {
+            Transaction transaction = testHelper.getTransaction();
+            ConcurrencyTestUtils.executeStatement( s, "sql", transaction, testHelper );
+            transaction.commit();
+        } );
+    }
+
+
+    private void setupTables2() {
+        List.of(
+                "CREATE TABLE coordinates (id INT PRIMARY KEY, x INT, y INT);",
+                "INSERT INTO coordinates (id, x, y) VALUES (1, 100, 200);"
         ).forEach( s -> {
             Transaction transaction = testHelper.getTransaction();
             ConcurrencyTestUtils.executeStatement( s, "sql", transaction, testHelper );
@@ -51,8 +67,7 @@ public class ConcurrencyTests {
 
     private void dropTables() {
         List.of(
-                "DROP TABLE IF EXISTS b;",
-                "DROP TABLE IF EXISTS a;"
+                "DROP TABLE IF EXISTS accounts;"
         ).forEach( s -> {
             Transaction transaction = testHelper.getTransaction();
             ConcurrencyTestUtils.executeStatement( s, "sql", transaction, testHelper );
@@ -61,282 +76,367 @@ public class ConcurrencyTests {
     }
 
 
-    /**
-     * The test case is inspired by the following one of PostgreSQL:
-     * https://github.com/postgres/postgres/blob/master/src/test/isolation/specs/alter-table-1.spec
-     */
-
-    @Test
-    public void alterTableAndReadWrites() {
-        Session session1 = new Session( testHelper );
-        Session session2 = new Session( testHelper );
-        Set<Session> sessions = Set.of( session1, session2 );
-
-        Map<String, Runnable> operations = new HashMap<>();
-        
-        operations.put( "s1_1", session1::startTransaction );
-        operations.put( "at1_1", () -> session1.executeStatement(
-                "ALTER TABLE b ADD CONSTRAINT bfk FOREIGN KEY (a_ref) REFERENCES a (i);",
-                "sql"
-        ) );
-        operations.put( "c1_1", session1::commitTransaction );
-
-        operations.put( "s1_2", session1::startTransaction );
-        operations.put( "at1_2", () -> session1.executeStatement(
-                "ALTER TABLE b ADD INDEX bid ON a_ref;",
-                "sql"
-        ) );
-        operations.put( "c1_2", session1::commitTransaction );
-
-        operations.put( "s2", session2::startTransaction );
-        operations.put( "s2 s2 r2_1", () -> session2.executeStatement(
-                "SELECT * FROM b WHERE a_id = 1 LIMIT 1;",
-                "sql"
-        ) );
-        operations.put( "w2", () -> session2.executeStatement(
-                "INSERT INTO b (a_id, a_ref) VALUES (0, NULL);",
-                "sql"
-        ) );
-        operations.put( "r2_2", () -> session2.executeStatement(
-                "SELECT * FROM b WHERE a_id = 3 LIMIT 3;",
-                "sql"
-        ) );
-        operations.put( "c2", session2::commitTransaction );
-
-        List<String> executions = List.of(
-                "s1_1 at1_1 c1_1 s1_2 at1_2 c1_2 s2 r2_1 w2 r2_2 c2",
-                "s1_1 at1_1 c1_1 s1_2 at1_2 s2 r2_1 c1_2 w2 r2_2 c2",
-                "s1_1 at1_1 c1_1 s1_2 at1_2 s2 r2_1 w2 c1_2 r2_2 c2",
-                "s1_1 at1_1 c1_1 s1_2 at1_2 s2 r2_1 w2 r2_2 c1_2 c2",
-                "s1_1 at1_1 c1_1 s1_2 at1_2 s2 r2_1 w2 r2_2 c2 c1_2",
-                "s1_1 at1_1 c1_1 s1_2 s2 r2_1 at1_2 c1_2 w2 r2_2 c2",
-                "s1_1 at1_1 c1_1 s1_2 s2 r2_1 at1_2 w2 c1_2 r2_2 c2",
-                "s1_1 at1_1 c1_1 s1_2 s2 r2_1 at1_2 w2 r2_2 c1_2 c2",
-                "s1_1 at1_1 c1_1 s1_2 s2 r2_1 at1_2 w2 r2_2 c2 c1_2",
-                "s1_1 at1_1 c1_1 s1_2 s2 r2_1 w2 at1_2 c1_2 r2_2 c2",
-                "s1_1 at1_1 c1_1 s1_2 s2 r2_1 w2 at1_2 r2_2 c1_2 c2",
-                "s1_1 at1_1 c1_1 s1_2 s2 r2_1 w2 at1_2 r2_2 c2 c1_2",
-                "s1_1 at1_1 c1_1 s1_2 s2 r2_1 w2 r2_2 at1_2 c1_2 c2",
-                "s1_1 at1_1 c1_1 s1_2 s2 r2_1 w2 r2_2 at1_2 c2 c1_2",
-                "s1_1 at1_1 c1_1 s1_2 s2 r2_1 w2 r2_2 c2 at1_2 c1_2",
-                "s1_1 at1_1 c1_1 s2 r2_1 s1_2 at1_2 c1_2 w2 r2_2 c2",
-                "s1_1 at1_1 c1_1 s2 r2_1 s1_2 at1_2 w2 c1_2 r2_2 c2",
-                "s1_1 at1_1 c1_1 s2 r2_1 s1_2 at1_2 w2 r2_2 c1_2 c2",
-                "s1_1 at1_1 c1_1 s2 r2_1 s1_2 at1_2 w2 r2_2 c2 c1_2",
-                "s1_1 at1_1 c1_1 s2 r2_1 s1_2 w2 at1_2 c1_2 r2_2 c2",
-                "s1_1 at1_1 c1_1 s2 r2_1 s1_2 w2 at1_2 r2_2 c1_2 c2",
-                "s1_1 at1_1 c1_1 s2 r2_1 s1_2 w2 at1_2 r2_2 c2 c1_2",
-                "s1_1 at1_1 c1_1 s2 r2_1 s1_2 w2 r2_2 at1_2 c1_2 c2",
-                "s1_1 at1_1 c1_1 s2 r2_1 s1_2 w2 r2_2 at1_2 c2 c1_2",
-                "s1_1 at1_1 c1_1 s2 r2_1 s1_2 w2 r2_2 c2 at1_2 c1_2",
-                "s1_1 at1_1 c1_1 s2 r2_1 w2 s1_2 at1_2 c1_2 r2_2 c2",
-                "s1_1 at1_1 c1_1 s2 r2_1 w2 s1_2 at1_2 r2_2 c1_2 c2",
-                "s1_1 at1_1 c1_1 s2 r2_1 w2 s1_2 at1_2 r2_2 c2 c1_2",
-                "s1_1 at1_1 c1_1 s2 r2_1 w2 s1_2 r2_2 at1_2 c1_2 c2",
-                "s1_1 at1_1 c1_1 s2 r2_1 w2 s1_2 r2_2 at1_2 c2 c1_2",
-                "s1_1 at1_1 c1_1 s2 r2_1 w2 s1_2 r2_2 c2 at1_2 c1_2",
-                "s1_1 at1_1 c1_1 s2 r2_1 w2 r2_2 s1_2 at1_2 c1_2 c2",
-                "s1_1 at1_1 c1_1 s2 r2_1 w2 r2_2 s1_2 at1_2 c2 c1_2",
-                "s1_1 at1_1 c1_1 s2 r2_1 w2 r2_2 s1_2 c2 at1_2 c1_2",
-                "s1_1 at1_1 c1_1 s2 r2_1 w2 r2_2 c2 s1_2 at1_2 c1_2",
-                "s1_1 at1_1 s2 r2_1 c1_1 s1_2 at1_2 c1_2 w2 r2_2 c2",
-                "s1_1 at1_1 s2 r2_1 c1_1 s1_2 at1_2 w2 c1_2 r2_2 c2",
-                "s1_1 at1_1 s2 r2_1 c1_1 s1_2 at1_2 w2 r2_2 c1_2 c2",
-                "s1_1 at1_1 s2 r2_1 c1_1 s1_2 at1_2 w2 r2_2 c2 c1_2",
-                "s1_1 at1_1 s2 r2_1 c1_1 s1_2 w2 at1_2 c1_2 r2_2 c2",
-                "s1_1 at1_1 s2 r2_1 c1_1 s1_2 w2 at1_2 r2_2 c1_2 c2",
-                "s1_1 at1_1 s2 r2_1 c1_1 s1_2 w2 at1_2 r2_2 c2 c1_2",
-                "s1_1 at1_1 s2 r2_1 c1_1 s1_2 w2 r2_2 at1_2 c1_2 c2",
-                "s1_1 at1_1 s2 r2_1 c1_1 s1_2 w2 r2_2 at1_2 c2 c1_2",
-                "s1_1 at1_1 s2 r2_1 c1_1 s1_2 w2 r2_2 c2 at1_2 c1_2",
-                "s1_1 at1_1 s2 r2_1 c1_1 w2 s1_2 at1_2 c1_2 r2_2 c2",
-                "s1_1 at1_1 s2 r2_1 c1_1 w2 s1_2 at1_2 r2_2 c1_2 c2",
-                "s1_1 at1_1 s2 r2_1 c1_1 w2 s1_2 at1_2 r2_2 c2 c1_2",
-                "s1_1 at1_1 s2 r2_1 c1_1 w2 s1_2 r2_2 at1_2 c1_2 c2",
-                "s1_1 at1_1 s2 r2_1 c1_1 w2 s1_2 r2_2 at1_2 c2 c1_2",
-                "s1_1 at1_1 s2 r2_1 c1_1 w2 s1_2 r2_2 c2 at1_2 c1_2",
-                "s1_1 at1_1 s2 r2_1 c1_1 w2 r2_2 s1_2 at1_2 c1_2 c2",
-                "s1_1 at1_1 s2 r2_1 c1_1 w2 r2_2 s1_2 at1_2 c2 c1_2",
-                "s1_1 at1_1 s2 r2_1 c1_1 w2 r2_2 s1_2 c2 at1_2 c1_2",
-                "s1_1 at1_1 s2 r2_1 c1_1 w2 r2_2 c2 s1_2 at1_2 c1_2",
-                "s1_1 at1_1 s2 r2_1 w2 c1_1 s1_2 at1_2 c1_2 r2_2 c2",
-                "s1_1 at1_1 s2 r2_1 w2 c1_1 s1_2 at1_2 r2_2 c1_2 c2",
-                "s1_1 at1_1 s2 r2_1 w2 c1_1 s1_2 at1_2 r2_2 c2 c1_2",
-                "s1_1 at1_1 s2 r2_1 w2 c1_1 s1_2 r2_2 at1_2 c1_2 c2",
-                "s1_1 at1_1 s2 r2_1 w2 c1_1 s1_2 r2_2 at1_2 c2 c1_2",
-                "s1_1 at1_1 s2 r2_1 w2 c1_1 s1_2 r2_2 c2 at1_2 c1_2",
-                "s1_1 at1_1 s2 r2_1 w2 c1_1 r2_2 s1_2 at1_2 c1_2 c2",
-                "s1_1 at1_1 s2 r2_1 w2 c1_1 r2_2 s1_2 at1_2 c2 c1_2",
-                "s1_1 at1_1 s2 r2_1 w2 c1_1 r2_2 s1_2 c2 at1_2 c1_2",
-                "s1_1 at1_1 s2 r2_1 w2 c1_1 r2_2 c2 s1_2 at1_2 c1_2",
-                "s1_1 s2 r2_1 at1_1 c1_1 s1_2 at1_2 c1_2 w2 r2_2 c2",
-                "s1_1 s2 r2_1 at1_1 c1_1 s1_2 at1_2 w2 c1_2 r2_2 c2",
-                "s1_1 s2 r2_1 at1_1 c1_1 s1_2 at1_2 w2 r2_2 c1_2 c2",
-                "s1_1 s2 r2_1 at1_1 c1_1 s1_2 at1_2 w2 r2_2 c2 c1_2",
-                "s1_1 s2 r2_1 at1_1 c1_1 s1_2 w2 at1_2 c1_2 r2_2 c2",
-                "s1_1 s2 r2_1 at1_1 c1_1 s1_2 w2 at1_2 r2_2 c1_2 c2",
-                "s1_1 s2 r2_1 at1_1 c1_1 s1_2 w2 at1_2 r2_2 c2 c1_2",
-                "s1_1 s2 r2_1 at1_1 c1_1 s1_2 w2 r2_2 at1_2 c1_2 c2",
-                "s1_1 s2 r2_1 at1_1 c1_1 s1_2 w2 r2_2 at1_2 c2 c1_2",
-                "s1_1 s2 r2_1 at1_1 c1_1 s1_2 w2 r2_2 c2 at1_2 c1_2",
-                "s1_1 s2 r2_1 at1_1 c1_1 w2 s1_2 at1_2 c1_2 r2_2 c2",
-                "s1_1 s2 r2_1 at1_1 c1_1 w2 s1_2 at1_2 r2_2 c1_2 c2",
-                "s1_1 s2 r2_1 at1_1 c1_1 w2 s1_2 at1_2 r2_2 c2 c1_2",
-                "s1_1 s2 r2_1 at1_1 c1_1 w2 s1_2 r2_2 at1_2 c1_2 c2",
-                "s1_1 s2 r2_1 at1_1 c1_1 w2 s1_2 r2_2 at1_2 c2 c1_2",
-                "s1_1 s2 r2_1 at1_1 c1_1 w2 s1_2 r2_2 c2 at1_2 c1_2",
-                "s1_1 s2 r2_1 at1_1 c1_1 w2 r2_2 s1_2 at1_2 c1_2 c2",
-                "s1_1 s2 r2_1 at1_1 c1_1 w2 r2_2 s1_2 at1_2 c2 c1_2",
-                "s1_1 s2 r2_1 at1_1 c1_1 w2 r2_2 s1_2 c2 at1_2 c1_2",
-                "s1_1 s2 r2_1 at1_1 c1_1 w2 r2_2 c2 s1_2 at1_2 c1_2",
-                "s1_1 s2 r2_1 at1_1 w2 c1_1 s1_2 at1_2 c1_2 r2_2 c2",
-                "s1_1 s2 r2_1 at1_1 w2 c1_1 s1_2 at1_2 r2_2 c1_2 c2",
-                "s1_1 s2 r2_1 at1_1 w2 c1_1 s1_2 at1_2 r2_2 c2 c1_2",
-                "s1_1 s2 r2_1 at1_1 w2 c1_1 s1_2 r2_2 at1_2 c1_2 c2",
-                "s1_1 s2 r2_1 at1_1 w2 c1_1 s1_2 r2_2 at1_2 c2 c1_2",
-                "s1_1 s2 r2_1 at1_1 w2 c1_1 s1_2 r2_2 c2 at1_2 c1_2",
-                "s1_1 s2 r2_1 at1_1 w2 c1_1 r2_2 s1_2 at1_2 c1_2 c2",
-                "s1_1 s2 r2_1 at1_1 w2 c1_1 r2_2 s1_2 at1_2 c2 c1_2",
-                "s1_1 s2 r2_1 at1_1 w2 c1_1 r2_2 s1_2 c2 at1_2 c1_2",
-                "s1_1 s2 r2_1 at1_1 w2 c1_1 r2_2 c2 s1_2 at1_2 c1_2",
-                "s1_1 s2 r2_1 w2 at1_1 r2_2 c2 c1_1 s1_2 at1_2 c1_2",
-                "s1_1 s2 r2_1 w2 r2_2 at1_1 c2 c1_1 s1_2 at1_2 c1_2",
-                "s1_1 s2 r2_1 w2 r2_2 c2 at1_1 c1_1 s1_2 at1_2 c1_2",
-                "s2 r2_1 s1_1 at1_1 c1_1 s1_2 at1_2 c1_2 w2 r2_2 c2",
-                "s2 r2_1 s1_1 at1_1 c1_1 s1_2 at1_2 w2 c1_2 r2_2 c2",
-                "s2 r2_1 s1_1 at1_1 c1_1 s1_2 at1_2 w2 r2_2 c1_2 c2",
-                "s2 r2_1 s1_1 at1_1 c1_1 s1_2 at1_2 w2 r2_2 c2 c1_2",
-                "s2 r2_1 s1_1 at1_1 c1_1 s1_2 w2 at1_2 c1_2 r2_2 c2",
-                "s2 r2_1 s1_1 at1_1 c1_1 s1_2 w2 at1_2 r2_2 c1_2 c2",
-                "s2 r2_1 s1_1 at1_1 c1_1 s1_2 w2 at1_2 r2_2 c2 c1_2",
-                "s2 r2_1 s1_1 at1_1 c1_1 s1_2 w2 r2_2 at1_2 c1_2 c2",
-                "s2 r2_1 s1_1 at1_1 c1_1 s1_2 w2 r2_2 at1_2 c2 c1_2",
-                "s2 r2_1 s1_1 at1_1 c1_1 s1_2 w2 r2_2 c2 at1_2 c1_2",
-                "s2 r2_1 s1_1 at1_1 c1_1 w2 s1_2 at1_2 c1_2 r2_2 c2",
-                "s2 r2_1 s1_1 at1_1 c1_1 w2 s1_2 at1_2 r2_2 c1_2 c2",
-                "s2 r2_1 s1_1 at1_1 c1_1 w2 s1_2 at1_2 r2_2 c2 c1_2",
-                "s2 r2_1 s1_1 at1_1 c1_1 w2 s1_2 r2_2 at1_2 c1_2 c2",
-                "s2 r2_1 s1_1 at1_1 c1_1 w2 s1_2 r2_2 at1_2 c2 c1_2",
-                "s2 r2_1 s1_1 at1_1 c1_1 w2 s1_2 r2_2 c2 at1_2 c1_2",
-                "s2 r2_1 s1_1 at1_1 c1_1 w2 r2_2 s1_2 at1_2 c1_2 c2",
-                "s2 r2_1 s1_1 at1_1 c1_1 w2 r2_2 s1_2 at1_2 c2 c1_2",
-                "s2 r2_1 s1_1 at1_1 c1_1 w2 r2_2 s1_2 c2 at1_2 c1_2",
-                "s2 r2_1 s1_1 at1_1 c1_1 w2 r2_2 c2 s1_2 at1_2 c1_2",
-                "s2 r2_1 s1_1 at1_1 w2 c1_1 s1_2 at1_2 c1_2 r2_2 c2",
-                "s2 r2_1 s1_1 at1_1 w2 c1_1 s1_2 at1_2 r2_2 c1_2 c2",
-                "s2 r2_1 s1_1 at1_1 w2 c1_1 s1_2 at1_2 r2_2 c2 c1_2",
-                "s2 r2_1 s1_1 at1_1 w2 c1_1 s1_2 r2_2 at1_2 c1_2 c2",
-                "s2 r2_1 s1_1 at1_1 w2 c1_1 s1_2 r2_2 at1_2 c2 c1_2",
-                "s2 r2_1 s1_1 at1_1 w2 c1_1 s1_2 r2_2 c2 at1_2 c1_2",
-                "s2 r2_1 s1_1 at1_1 w2 c1_1 r2_2 s1_2 at1_2 c1_2 c2",
-                "s2 r2_1 s1_1 at1_1 w2 c1_1 r2_2 s1_2 at1_2 c2 c1_2",
-                "s2 r2_1 s1_1 at1_1 w2 c1_1 r2_2 s1_2 c2 at1_2 c1_2",
-                "s2 r2_1 s1_1 at1_1 w2 c1_1 r2_2 c2 s1_2 at1_2 c1_2",
-                "s2 r2_1 s1_1 w2 at1_1 r2_2 c2 c1_1 s1_2 at1_2 c1_2",
-                "s2 r2_1 s1_1 w2 r2_2 at1_1 c2 c1_1 s1_2 at1_2 c1_2",
-                "s2 r2_1 s1_1 w2 r2_2 c2 at1_1 c1_1 s1_2 at1_2 c1_2",
-                "s2 r2_1 w2 s1_1 at1_1 r2_2 c2 c1_1 s1_2 at1_2 c1_2",
-                "s2 r2_1 w2 s1_1 r2_2 at1_1 c2 c1_1 s1_2 at1_2 c1_2",
-                "s2 r2_1 w2 s1_1 r2_2 c2 at1_1 c1_1 s1_2 at1_2 c1_2",
-                "s2 r2_1 w2 r2_2 s1_1 at1_1 c2 c1_1 s1_2 at1_2 c1_2",
-                "s2 r2_1 w2 r2_2 s1_1 c2 at1_1 c1_1 s1_2 at1_2 c1_2",
-                "s2 r2_1 w2 r2_2 c2 s1_1 at1_1 c1_1 s1_2 at1_2 c1_2"
-        );
-
-        ConcurrencyTestUtils.executePermutations(
-                executions,
-                operations,
-                sessions,
-                this::setupTables,
-                this::dropTables );
+    private void dropTables2() {
+        List.of(
+                "DROP TABLE IF EXISTS coordinates;"
+        ).forEach( s -> {
+            Transaction transaction = testHelper.getTransaction();
+            ConcurrencyTestUtils.executeStatement( s, "sql", transaction, testHelper );
+            transaction.commit();
+        } );
     }
 
-    /**
-     * The test case is inspired by the following one of PostgreSQL:
-     * https://github.com/postgres/postgres/blob/master/src/test/isolation/specs/alter-table-2.spec
-     */
+
+    private void closeAndIgnore( List<ExecutedContext> result ) {
+        result.forEach( e -> e.getIterator().getAllRowsAndClose() );
+    }
+
+
+    private void closeAndIgnore( Future<List<ExecutedContext>> result ) throws ExecutionException, InterruptedException, TimeoutException {
+        result.get( 1, TimeUnit.MINUTES ).forEach( e -> e.getIterator().getAllRowsAndClose() );
+    }
+
 
     @Test
-    public void testConcurrentAlterAndInsert() {
-        Session session1 = new Session(testHelper);
-        Session session2 = new Session(testHelper);
-        Set<Session> sessions = Set.of(session1, session2);
+    public void dirtyReadSimple() throws ExecutionException, InterruptedException, TimeoutException {
+        setupTables();
 
-        Map<String, Runnable> operations = new HashMap<>();
+        Session session1 = new Session( testHelper );
+        Session session2 = new Session( testHelper );
 
-        operations.put("s1a", session1::startTransaction);
-        operations.put("s1b", () -> session1.executeStatement(
-                "ALTER TABLE b ADD CONSTRAINT bfk FOREIGN KEY (a_id) REFERENCES a (i);",
+        session1.startTransaction();
+        session1.executeStatementIgnoreResult(
+                "UPDATE accounts SET balance = 200 WHERE id = 1;",
                 "sql"
-        ));
-        operations.put("s1c", session1::commitTransaction);
-
-        operations.put("s2a", session2::startTransaction);
-        operations.put("s2b", () -> session2.executeStatement(
-                "SELECT * FROM a WHERE i = 1 LIMIT 1 FOR UPDATE;",
-                "sql"
-        ));
-        operations.put("s2c", () -> session2.executeStatement(
-                "SELECT * FROM b WHERE a_id = 3 LIMIT 1 FOR UPDATE;",
-                "sql"
-        ));
-        operations.put("s2d", () -> session2.executeStatement(
-                "INSERT INTO b VALUES (0);",
-                "sql"
-        ));
-        operations.put("s2e", () -> session2.executeStatement(
-                "INSERT INTO a VALUES (4);",
-                "sql"
-        ));
-        operations.put("s2f", session2::commitTransaction);
-
-        List<String> permutations = List.of(
-                "s1a s1b s1c s2a s2b s2c s2d s2e s2f",
-                "s1a s1b s2a s1c s2b s2c s2d s2e s2f",
-                "s1a s1b s2a s2b s1c s2c s2d s2e s2f",
-                "s1a s1b s2a s2b s2c s1c s2d s2e s2f",
-                "s1a s1b s2a s2b s2c s2d s1c s2e s2f",
-                "s1a s2a s1b s1c s2b s2c s2d s2e s2f",
-                "s1a s2a s1b s2b s1c s2c s2d s2e s2f",
-                "s1a s2a s1b s2b s2c s1c s2d s2e s2f",
-                "s1a s2a s1b s2b s2c s2d s1c s2e s2f",
-                "s1a s2a s2b s1b s1c s2c s2d s2e s2f",
-                "s1a s2a s2b s1b s2c s1c s2d s2e s2f",
-                "s1a s2a s2b s1b s2c s2d s1c s2e s2f",
-                "s1a s2a s2b s2c s1b s1c s2d s2e s2f",
-                "s1a s2a s2b s2c s1b s2d s1c s2e s2f",
-                "s1a s2a s2b s2c s2d s1b s2e s2f s1c",
-                "s1a s2a s2b s2c s2d s2e s1b s2f s1c",
-                "s1a s2a s2b s2c s2d s2e s2f s1b s1c",
-                "s2a s1a s1b s1c s2b s2c s2d s2e s2f",
-                "s2a s1a s1b s2b s1c s2c s2d s2e s2f",
-                "s2a s1a s1b s2b s2c s1c s2d s2e s2f",
-                "s2a s1a s1b s2b s2c s2d s1c s2e s2f",
-                "s2a s1a s2b s1b s1c s2c s2d s2e s2f",
-                "s2a s1a s2b s1b s2c s1c s2d s2e s2f",
-                "s2a s1a s2b s1b s2c s2d s1c s2e s2f",
-                "s2a s1a s2b s2c s1b s1c s2d s2e s2f",
-                "s2a s1a s2b s2c s1b s2d s1c s2e s2f",
-                "s2a s1a s2b s2c s2d s1b s2e s2f s1c",
-                "s2a s1a s2b s2c s2d s2e s1b s2f s1c",
-                "s2a s1a s2b s2c s2d s2e s2f s1b s1c",
-                "s2a s2b s1a s1b s1c s2c s2d s2e s2f",
-                "s2a s2b s1a s1b s2c s1c s2d s2e s2f",
-                "s2a s2b s1a s1b s2c s2d s1c s2e s2f",
-                "s2a s2b s1a s2c s1b s1c s2d s2e s2f",
-                "s2a s2b s1a s2c s1b s2d s1c s2e s2f",
-                "s2a s2b s1a s2c s2d s1b s2e s2f s1c",
-                "s2a s2b s1a s2c s2d s2e s1b s2f s1c",
-                "s2a s2b s1a s2c s2d s2e s2f s1b s1c"
         );
 
-        ConcurrencyTestUtils.executePermutations(
-                permutations,
-                operations,
-                sessions,
-                this::setupTables,
-                this::dropTables
+        session2.startTransaction();
+        Future<List<ExecutedContext>> futureResult = session2.executeStatement(
+                "SELECT balance FROM accounts WHERE id = 1;",
+                "sql"
         );
+
+        session1.rollbackTransaction();
+
+        List<ExecutedContext> results = futureResult.get( 1, TimeUnit.MINUTES );
+        assertEquals( 1, results.size() );
+        int balance = results.get( 0 ).getIterator().getIterator().next()[0].asInteger().intValue();
+        assertEquals( 100, balance );
+        closeAndIgnore( results );
+
+        session2.commitTransaction();
+
+        session1.awaitCompletion();
+        session2.awaitCompletion();
+
+        dropTables();
+    }
+
+
+    @Test
+    public void fuzzyReadSimple() throws ExecutionException, InterruptedException, TimeoutException {
+        setupTables();
+
+        Session session1 = new Session( testHelper );
+        Session session2 = new Session( testHelper );
+
+        session1.startTransaction();
+        Future<List<ExecutedContext>> futureFirstRead = session1.executeStatement(
+                "SELECT balance FROM accounts WHERE id = 1;",
+                "sql"
+        );
+
+        List<ExecutedContext> firstRead = futureFirstRead.get( 1, TimeUnit.MINUTES );
+        assertEquals( 1, firstRead.size() );
+        int firstBalance = firstRead.get( 0 ).getIterator().getIterator().next()[0].asInteger().intValue();
+        assertEquals( 100, firstBalance );
+        closeAndIgnore( firstRead );
+
+        session2.startTransaction();
+        session2.executeStatementIgnoreResult(
+                "UPDATE accounts SET balance = 300 WHERE id = 1;",
+                "sql"
+        );
+        session2.commitTransaction();
+
+        Future<List<ExecutedContext>> futureSecondRead = session1.executeStatement(
+                "SELECT balance FROM accounts WHERE id = 1;",
+                "sql"
+        );
+
+        List<ExecutedContext> secondRead = futureSecondRead.get( 1, TimeUnit.MINUTES );
+        assertEquals( 1, secondRead.size() );
+        int secondBalance = secondRead.get( 0 ).getIterator().getIterator().next()[0].asInteger().intValue();
+        assertEquals( 100, secondBalance );
+        closeAndIgnore( secondRead );
+
+        session1.commitTransaction();
+
+        session1.awaitCompletion();
+        session2.awaitCompletion();
+
+        dropTables();
+    }
+
+
+    @Test
+    public void phantomSimple() throws ExecutionException, InterruptedException, TimeoutException {
+        setupTables();
+
+        Session session1 = new Session( testHelper );
+        Session session2 = new Session( testHelper );
+
+        session1.startTransaction();
+        Future<List<ExecutedContext>> futureFirstRead = session1.executeStatement(
+                "SELECT balance FROM accounts WHERE balance > 150;",
+                "sql"
+        );
+
+        List<ExecutedContext> firstRead = futureFirstRead.get( 1, TimeUnit.MINUTES );
+        assertEquals( 1, firstRead.size() );
+        assertFalse( firstRead.get( 0 ).getIterator().hasMoreRows() );
+        closeAndIgnore( firstRead );
+
+        session2.startTransaction();
+        session2.executeStatementIgnoreResult(
+                "INSERT INTO accounts (id, balance) VALUES (3, 200);",
+                "sql"
+        );
+        session2.commitTransaction();
+
+        Future<List<ExecutedContext>> futureSecondRead = session1.executeStatement(
+                "SELECT balance FROM accounts WHERE balance > 150;",
+                "sql"
+        );
+
+        List<ExecutedContext> secondRead = futureSecondRead.get( 1, TimeUnit.MINUTES );
+        assertEquals( 1, secondRead.size() );
+        assertFalse( secondRead.get( 0 ).getIterator().hasMoreRows() );
+        closeAndIgnore( secondRead );
+
+        session1.commitTransaction();
+
+        session1.awaitCompletion();
+        session2.awaitCompletion();
+
+        dropTables();
+    }
+
+
+    @Test
+    public void dirtyWriteSimple() throws InterruptedException, ExecutionException, TimeoutException {
+        setupTables();
+
+        Session session1 = new Session( testHelper );
+        Session session2 = new Session( testHelper );
+
+        session1.startTransaction();
+        session1.executeStatementIgnoreResult(
+                "UPDATE accounts SET balance = 250 WHERE id = 1;",
+                "sql"
+        );
+
+        session1.commitTransaction();
+
+        session2.startTransaction();
+        session2.executeStatementIgnoreResult(
+                "UPDATE accounts SET balance = 300 WHERE id = 1;",
+                "sql"
+        );
+
+        session2.commitTransaction();
+
+        session1.awaitCompletion();
+        session2.awaitCompletion();
+
+        Session validator = new Session( testHelper );
+        validator.startTransaction();
+        Future<List<ExecutedContext>> futureValidation = validator.executeStatement(
+                "SELECT balance FROM accounts WHERE id = 1;",
+                "sql"
+        );
+        List<ExecutedContext> validation = futureValidation.get( 1, TimeUnit.MINUTES );
+        assertEquals( 1, validation.size() );
+        int balance = validation.get( 0 ).getIterator().getIterator().next()[0].asInteger().intValue();
+        assertEquals( 300, balance );
+        closeAndIgnore( validation );
+
+        validator.commitTransaction();
+        validator.awaitCompletion();
+
+        dropTables();
+    }
+
+
+    @Test
+    public void lostUpdateSimple() throws InterruptedException, ExecutionException, TimeoutException {
+        setupTables();
+
+        Session session1 = new Session( testHelper );
+        Session session2 = new Session( testHelper );
+
+        session1.startTransaction();
+        Future<List<ExecutedContext>> firstSelect = session1.executeStatement(
+                "SELECT balance FROM accounts WHERE id = 1;",
+                "sql"
+        );
+        closeAndIgnore( firstSelect ); // done manually as this forces the first statement to be completed before session 2 starts
+
+        session2.startTransaction();
+        session2.executeStatementIgnoreResult(
+                "UPDATE accounts SET balance = 200 WHERE id = 1;",
+                "sql"
+        );
+        session2.commitTransaction();
+
+        session1.executeStatementIgnoreResult(
+                "UPDATE accounts SET balance = 300 WHERE id = 1;",
+                "sql"
+        );
+        session1.commitTransaction();
+
+        session1.awaitCompletion();
+        session2.awaitCompletion();
+
+        Session validator = new Session( testHelper );
+        validator.startTransaction();
+        Future<List<ExecutedContext>> futureValidation = validator.executeStatement(
+                "SELECT balance FROM accounts WHERE id = 1;",
+                "sql"
+        );
+        List<ExecutedContext> validation = futureValidation.get( 1, TimeUnit.MINUTES );
+        assertEquals( 1, validation.size() );
+        int balance = validation.get( 0 ).getIterator().getIterator().next()[0].asInteger().intValue();
+        assertEquals( 200, balance );
+        closeAndIgnore( validation );
+
+        validator.commitTransaction();
+        validator.awaitCompletion();
+
+        dropTables();
+    }
+
+
+    @Test
+    public void readSkewSimple() throws ExecutionException, InterruptedException, TimeoutException {
+        setupTables2();
+
+        Session session1 = new Session( testHelper );
+        Session session2 = new Session( testHelper );
+
+        session1.startTransaction();
+        Future<List<ExecutedContext>> futureReadX = session1.executeStatement(
+                "SELECT x FROM coordinates WHERE id = 1;",
+                "sql"
+        );
+
+        List<ExecutedContext> readX = futureReadX.get( 1, TimeUnit.MINUTES );
+        assertEquals( 1, readX.size() );
+        int xCoordinate = readX.get( 0 ).getIterator().getIterator().next()[0].asInteger().intValue();
+        assertEquals( 100, xCoordinate );
+        closeAndIgnore( readX );
+
+        session2.startTransaction();
+        session2.executeStatementIgnoreResult(
+                "UPDATE coordinates SET x = 300, y = 400 WHERE id = 1;",
+                "sql"
+        );
+        session2.commitTransaction();
+
+        Future<List<ExecutedContext>> futureReadY = session1.executeStatement(
+                "SELECT y FROM coordinates WHERE id = 1;",
+                "sql"
+        );
+
+        List<ExecutedContext> readY = futureReadY.get( 1, TimeUnit.MINUTES );
+        assertEquals( 1, readY.size() );
+        int yCoordinate = readY.get( 0 ).getIterator().getIterator().next()[0].asInteger().intValue();
+        assertEquals( 200, yCoordinate );
+        closeAndIgnore( readY );
+
+        session1.commitTransaction();
+
+        session1.awaitCompletion();
+        session2.awaitCompletion();
+
+        dropTables2();
+    }
+
+
+    @Test
+    public void writeSkewSimple() throws ExecutionException, InterruptedException, TimeoutException {
+        setupTables();
+
+        Session session1 = new Session( testHelper );
+        Session session2 = new Session( testHelper );
+
+        session1.startTransaction();
+        Future<List<ExecutedContext>> futureRead1 = session1.executeStatement(
+                "SELECT balance FROM accounts WHERE id = 1 OR id = 2;",
+                "sql"
+        );
+        closeAndIgnore( futureRead1 );
+
+        session2.startTransaction();
+        Future<List<ExecutedContext>> futureRead2 = session2.executeStatement(
+                "SELECT balance FROM accounts WHERE id = 1 OR id = 2;",
+                "sql"
+        );
+        closeAndIgnore( futureRead2 );
+
+        session1.executeStatementIgnoreResult(
+                "UPDATE accounts SET balance = balance - 200 WHERE id = 1;",
+                "sql"
+        );
+        Future<List<ExecutedContext>> futureCheck1 = session1.executeStatement(
+                "SELECT SUM(balance) AS total_balance FROM accounts;",
+                "sql"
+        );
+
+        session2.executeStatementIgnoreResult(
+                "UPDATE accounts SET balance = balance - 200 WHERE id = 2;",
+                "sql"
+        );
+        Future<List<ExecutedContext>> futureCheck2 = session2.executeStatement(
+                "SELECT SUM(balance) AS total_balance FROM accounts;",
+                "sql"
+        );
+
+
+        List<ExecutedContext> result1 = futureCheck1.get( 1, TimeUnit.HOURS );
+        int totalBalance1 = result1.get( 0 ).getIterator().getIterator().next()[0].asInteger().intValue();
+        if ( totalBalance1 < 0 ) {
+            session1.rollbackTransaction();
+        } else {
+            session1.commitTransaction();
+        }
+
+        List<ExecutedContext> result2 = futureCheck2.get( 1, TimeUnit.HOURS );
+        int totalBalance2 = result2.get( 0 ).getIterator().getIterator().next()[0].asInteger().intValue();
+        if ( totalBalance2 < 0 ) {
+            session2.rollbackTransaction();
+        } else {
+            session2.commitTransaction();
+        }
+
+        session1.awaitCompletion();
+        session2.awaitCompletion();
+
+        Session validator = new Session( testHelper );
+        validator.startTransaction();
+        Future<List<ExecutedContext>> futureValidation = validator.executeStatement(
+                "SELECT SUM(balance) AS total_balance FROM accounts;",
+                "sql"
+        );
+        List<ExecutedContext> validation = futureValidation.get( 1, TimeUnit.HOURS );
+        int finalTotalBalance = validation.get( 0 ).getIterator().getIterator().next()[0].asInteger().intValue();
+        assertTrue( "Total balance should not be negative", finalTotalBalance >= 0 );
+        closeAndIgnore( validation );
+
+        validator.commitTransaction();
+        validator.awaitCompletion();
+
+        dropTables();
     }
 
 }
