@@ -283,7 +283,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             queryAnalyzer.registerInformation( infoPolyAlg );
 
         } catch ( Exception e ) {
-            e.printStackTrace();
+            throw new GenericRuntimeException( e.getMessage(), e );
         }
 
     }

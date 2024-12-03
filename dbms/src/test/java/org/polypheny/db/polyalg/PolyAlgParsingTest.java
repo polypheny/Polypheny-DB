@@ -193,17 +193,19 @@ public class PolyAlgParsingTest {
         assertNotNull( allocation );
         assertNotNull( physical ); // Physical is not yet tested further since it is only partially implemented
 
+        try {
+            transaction.commit(); // execute PolyAlg creates new transaction
+        } catch ( TransactionException e ) {
+            throw new RuntimeException( e );
+        }
+
         // Check that parsing and executing again returns the same result
         String resultFromLogical = executePolyAlg( logical, PlanType.LOGICAL, ql );
         assertEquals( result, resultFromLogical, "Result from query does not match result when executing the logical plan." );
         String resultFromAllocation = executePolyAlg( allocation, PlanType.ALLOCATION, ql );
         assertEquals( result, resultFromAllocation, "Result from query does not match result when executing the allocation plan." );
 
-        try {
-            transaction.commit();
-        } catch ( TransactionException e ) {
-            throw new RuntimeException( e );
-        }
+
     }
 
 
