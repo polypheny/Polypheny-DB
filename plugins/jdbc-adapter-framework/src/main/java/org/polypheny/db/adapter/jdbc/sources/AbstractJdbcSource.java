@@ -296,7 +296,8 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
                                 row.getString( "TABLE_NAME" ),
                                 row.getString( "COLUMN_NAME" ),
                                 row.getInt( "ORDINAL_POSITION" ),
-                                primaryKeyColumns.contains( row.getString( "COLUMN_NAME" ) )
+                                primaryKeyColumns.contains( row.getString( "COLUMN_NAME" )),
+                                false
                         ) );
                     }
                     map.put( tableName, list );

@@ -16,9 +16,12 @@
 
 package org.polypheny.db.sql.clause;
 
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.List;
+import com.google.common.collect.ImmutableList;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
@@ -50,6 +53,43 @@ public class SimpleSqlTest {
                 ( c, s ) -> s.executeUpdate( "DROP TABLE TableA" ),
                 ( c, s ) -> c.commit()
         );
+    }
+
+    @Test
+    public void autoIncrement() throws SQLException {
+        // skip this test if store.default.equals("file")
+        String store = System.getProperty( "store.default" );
+        if ( store != null && store.equals( "file" ) ) {
+            return;
+        }
+        try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( "DROP TABLE IF EXISTS TableAutoInc" );
+                statement.executeUpdate( "CREATE TABLE TableAutoInc(RID INTEGER NOT NULL AUTO_INCREMENT, YAC INTEGER NOT NULL, PRIMARY KEY (RID))" );
+                statement.executeUpdate( "INSERT INTO TableAutoInc VALUES (1, 61), (2, 62)" );
+                statement.executeUpdate( "INSERT INTO TableAutoInc(YAC) VALUES (63)" );
+                statement.executeUpdate( "INSERT INTO TableAutoInc VALUES (100, 120)" );
+                statement.executeUpdate( "INSERT INTO TableAutoInc(YAC) VALUES (121)" );
+                statement.executeUpdate( "INSERT INTO TableAutoInc VALUES (4, 64)" );
+                statement.executeUpdate( "INSERT INTO TableAutoInc(YAC) VALUES (122)" );
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT RID, YAC FROM TableAutoInc" ),
+                        ImmutableList.of(
+                                new Object[]{1, 61},
+                                new Object[]{2, 62},
+                                new Object[]{3, 63},
+                                new Object[]{100, 120},
+                                new Object[]{101, 121},
+                                new Object[]{4, 64},
+                                new Object[]{102, 122}
+                        )
+                );
+                statement.executeUpdate( "DROP TABLE TableAutoInc" );
+                connection.commit();
+            }
+
+        }
     }
 
 
