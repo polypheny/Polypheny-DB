@@ -113,7 +113,7 @@ public abstract class OperatorBinding {
      * @return collected list
      */
     public List<AlgDataType> collectOperandTypes() {
-        return new AbstractList<AlgDataType>() {
+        return new AbstractList<>() {
             @Override
             public AlgDataType get( int index ) {
                 return getOperandType( index );

@@ -21,14 +21,15 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.nodes.OperatorBinding;
+import org.polypheny.db.rex.RexCallBinding;
+import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.type.PathType;
 
 public class CypherFromPathUtil {
 
     public static AlgDataType inferReturnType( OperatorBinding opBinding ) {
-        return inferReturnType( opBinding.collectOperandTypes() );
+        return inferReturnType( opBinding.collectOperandTypes(), opBinding );
     }
-
 
     public static AlgDataType inferReturnType( List<AlgDataType> operandTypes ) {
         if ( operandTypes.size() < 2 || !(operandTypes.get( 0 ) instanceof PathType pathType) ) {
@@ -36,6 +37,21 @@ public class CypherFromPathUtil {
         }
         AlgDataType toExtract = operandTypes.get( 1 );
         String targetName = toExtract.getFieldNames().get( 0 );
+
+        for ( AlgDataTypeField element : pathType.getFields() ) {
+            if ( element.getName().equals( targetName ) ) {
+                return element.getType();
+            }
+        }
+        throw new GenericRuntimeException( "Could not get element to derive type for extract from path" );
+    }
+
+
+    public static AlgDataType inferReturnType( List<AlgDataType> operandTypes, OperatorBinding opBinding ) {
+        if ( operandTypes.size() < 2 || !(operandTypes.get( 0 ) instanceof PathType pathType) || !(opBinding instanceof RexCallBinding callBinding) || !(callBinding.getOperands().get( 1 ) instanceof RexLiteral extract) ) {
+            throw new GenericRuntimeException( "Could not get element to derive type for extract from path" );
+        }
+        String targetName = extract.value.asString().value;
 
         for ( AlgDataTypeField element : pathType.getFields() ) {
             if ( element.getName().equals( targetName ) ) {

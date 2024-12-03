@@ -593,7 +593,7 @@ public class PolyAlgUtils {
 
             StringBuilder sb = new StringBuilder();
             if ( withPrefix ) {
-                sb.append( "PolyEdge (" ).append( edge.source ).append( ")" );
+                sb.append( "PolyEdge (" ).append( edge.left ).append( ")" );
             }
             sb.append( left );
             String lp = visitGraphLabelProps( edge.labels, edge.properties, edge.variableName );
@@ -604,7 +604,7 @@ public class PolyAlgUtils {
             }
             sb.append( right );
             if ( withPrefix ) {
-                sb.append( "(" ).append( edge.target ).append( ")" );
+                sb.append( "(" ).append( edge.right ).append( ")" );
             }
             return sb.toString();
         }

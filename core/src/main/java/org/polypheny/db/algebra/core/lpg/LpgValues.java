@@ -135,14 +135,14 @@ public abstract class LpgValues extends AbstractAlgNode implements LpgAlg {
 
         List<PolyPath> paths = new ArrayList<>();
         for ( PolyEdge e : edges ) {
-            PolyNode source = nodeLookup.get( e.source );
-            PolyNode target = nodeLookup.get( e.target );
+            PolyNode source = nodeLookup.get( e.left );
+            PolyNode target = nodeLookup.get( e.right );
 
             PolyNode fakeSource = source == null ?
-                    new PolyNode( e.source, new PolyDictionary(), List.of(), e.source ) :
+                    new PolyNode( e.left, new PolyDictionary(), List.of(), e.left ) :
                     new PolyNode( source.id, new PolyDictionary(), List.of(), source.variableName );
             PolyNode fakeTarget = target == null ?
-                    new PolyNode( e.target, new PolyDictionary(), List.of(), null ) :
+                    new PolyNode( e.left, new PolyDictionary(), List.of(), null ) :
                     new PolyNode( target.id, new PolyDictionary(), List.of(), target.variableName );
 
             paths.add( PolyPath.create(

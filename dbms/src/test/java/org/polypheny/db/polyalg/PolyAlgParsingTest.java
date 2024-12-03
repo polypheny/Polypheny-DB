@@ -70,6 +70,7 @@ import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.transaction.TransactionManagerImpl;
 import org.polypheny.db.type.entity.PolyValue;
 
+@SuppressWarnings("SqlNoDataSourceInspection")
 public class PolyAlgParsingTest {
 
     private static final String ORIGIN = "PolyAlgParsingTest";
@@ -153,11 +154,11 @@ public class PolyAlgParsingTest {
      * Executes the query and checks whether both the result and the (logical and allocation) PolyAlgebra are still equal after one round-trip.
      * For this we do the following:
      * Query -> AlgNode1 -> Result1
-     *
+     * <p>
      * AlgNode1 -> PolyAlg1 -> AlgNode2 -> Result2
-     *
+     * <p>
      * AlgNode2 -> PolyAlg2
-     *
+     * <p>
      * Then we check whether PolyAlg1 equals PolyAlg2 and Result1 equals Result2.
      */
     private static void testQueryRoundTrip( String query, QueryLanguage ql, String namespace ) throws NodeParseException {
@@ -243,7 +244,7 @@ public class PolyAlgParsingTest {
 
 
     private static String getResultAsString( List<ExecutedContext> executedContexts, DataModel dataModel ) {
-        assertEquals( executedContexts.size(), 1 );
+        assertEquals( 1, executedContexts.size() );
         ExecutedContext context = executedContexts.get( 0 );
         assertTrue( context.getException().isEmpty() ||
                 context.getException().get().getClass() == CyclicMetadataException.class, "Query resulted in an exception" );
@@ -420,7 +421,7 @@ public class PolyAlgParsingTest {
     }
 
 
-    @Disabled // can be enabled as soon as cypherExtractFromPathTest works
+    //@Disabled // can be enabled as soon as cypherExtractFromPathTest works
     @Test
     public void cypherExtractFromPathTest() throws NodeParseException {
         testQueryRoundTrip( "MATCH (n)-[r]->(m) RETURN r", QueryLanguage.from( "cypher" ), null );
