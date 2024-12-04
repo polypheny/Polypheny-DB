@@ -71,12 +71,10 @@ import org.polypheny.db.sql.sql2alg.StandardConvertletTable;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
-import org.polypheny.db.transaction.locking.EntityIdentifierGenerator;
-import org.polypheny.db.transaction.locking.EntityIdentifierUtils;
+import org.polypheny.db.transaction.locking.IdentifierRegistry;
+import org.polypheny.db.transaction.locking.IdentifierUtils;
 import org.polypheny.db.transaction.locking.Lockable.LockType;
 import org.polypheny.db.transaction.locking.LockablesRegistry;
-import org.polypheny.db.type.entity.PolyBinary;
-import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.util.Casing;
 import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.DeadlockException;
@@ -301,7 +299,7 @@ public class SqlProcessor extends Processor {
                 SqlBasicCall call = (SqlBasicCall) sqlNode;
 
                 int position = getPositionInSqlNodeList(oldColumnList, column.name);
-                if (column.name.equals( EntityIdentifierUtils.IDENTIFIER_KEY )) {
+                if (column.name.equals( IdentifierUtils.IDENTIFIER_KEY )) {
                     newValues[i][pos] = createEntityIdentifierLiteral();
                 } else if (position >= 0) {
                     newValues[i][pos] = call.getOperands()[position];
@@ -351,7 +349,7 @@ public class SqlProcessor extends Processor {
 
     private SqlNode createEntityIdentifierLiteral() {
         return SqlLiteral.createExactNumeric(
-                String.valueOf(EntityIdentifierGenerator.INSTANCE.getEntryIdentifier()), // ToDo TH: is there no better way to do this?
+                String.valueOf( IdentifierRegistry.INSTANCE.getEntryIdentifier()), // ToDo TH: is there no better way to do this?
                 ParserPos.ZERO
         );
     }
