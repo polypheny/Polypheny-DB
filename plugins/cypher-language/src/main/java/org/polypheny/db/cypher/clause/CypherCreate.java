@@ -30,8 +30,8 @@ import org.polypheny.db.cypher.pattern.CypherNodePattern;
 import org.polypheny.db.cypher.pattern.CypherPattern;
 import org.polypheny.db.cypher.pattern.CypherRelPattern;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.transaction.locking.EntityIdentifierGenerator;
-import org.polypheny.db.transaction.locking.EntityIdentifierUtils;
+import org.polypheny.db.transaction.locking.IdentifierRegistry;
+import org.polypheny.db.transaction.locking.IdentifierUtils;
 
 
 @Getter
@@ -57,11 +57,11 @@ public class CypherCreate extends CypherClause {
                 ).forEach( pattern -> {
                     CypherLiteral properties = extractProperties( pattern );
                     properties.getMapValue().put(
-                            EntityIdentifierUtils.IDENTIFIER_KEY,
+                            IdentifierUtils.IDENTIFIER_KEY,
                             new CypherLiteral(
                                     ParserPos.ZERO,
                                     Literal.DECIMAL,
-                                    String.valueOf( EntityIdentifierGenerator.INSTANCE.getEntryIdentifier() ),
+                                    String.valueOf( IdentifierRegistry.INSTANCE.getEntryIdentifier() ),
                                     false
                             )
                     );

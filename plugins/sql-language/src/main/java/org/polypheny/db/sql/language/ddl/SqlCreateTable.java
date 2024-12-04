@@ -57,6 +57,7 @@ import org.polypheny.db.sql.language.SqlOperator;
 import org.polypheny.db.sql.language.SqlSpecialOperator;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.locking.IdentifierUtils;
 import org.polypheny.db.transaction.locking.Lockable;
 import org.polypheny.db.transaction.locking.Lockable.LockType;
 import org.polypheny.db.type.entity.PolyValue;
@@ -129,7 +130,6 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
         this.partitionGroupNamesList = partitionGroupNamesList;
         this.partitionQualifierList = partitionQualifierList;
         this.rawPartitionInfo = rawPartitionInfo;
-
     }
 
 
@@ -243,8 +243,6 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
             constraints = columnsConstraints.right;
         }
 
-
-
         DdlManager.getInstance().createTable(
                 namespaceId,
                 tableName,
@@ -277,7 +275,9 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
         List<FieldInformation> fieldInformation = new ArrayList<>();
         List<ConstraintInformation> constraintInformation = new ArrayList<>();
 
-        int position = 1;
+        fieldInformation.add( IdentifierUtils.IDENTIFIER_FIELD_INFORMATION);
+
+        int position = 2; // first column is entry identifier
         for ( Ord<SqlNode> c : Ord.zip( columns.getSqlList() ) ) {
             if ( c.e instanceof SqlColumnDeclaration columnDeclaration ) {
 
@@ -327,10 +327,9 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
         };
     }
 
-
     @Override
     public Map<Lockable, LockType> deriveLockables( Context context, ParsedQueryContext parsedQueryContext ) {
-        return getMapOfNamespaceLockableOrDefault( name, context, LockType.EXCLUSIVE );
+        return getMapOfNamespaceLockableOrDefault(name, context, LockType.EXCLUSIVE);
     }
 
 
