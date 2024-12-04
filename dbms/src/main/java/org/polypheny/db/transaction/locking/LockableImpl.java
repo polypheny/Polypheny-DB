@@ -80,6 +80,7 @@ public class LockableImpl implements Lockable {
             }
             isExclusive = true;
             owners.put( transaction, count );
+            printAcquiredInfo("UEx", transaction);
         } finally {
             concurrencyLock.unlock();
         }
