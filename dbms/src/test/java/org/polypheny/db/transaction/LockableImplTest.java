@@ -42,10 +42,12 @@ public class LockableImplTest {
     private Transaction transaction2;
     private Transaction transaction3;
 
+
     @BeforeAll
     public static void setUpClass() {
         testHelper = TestHelper.getInstance();
     }
+
 
     @BeforeEach
     public void setup() {
@@ -55,11 +57,13 @@ public class LockableImplTest {
         lockable = new LockableImpl( null );
     }
 
+
     @Test
     public void isSharedByDefault() {
-        assertEquals( LockType.SHARED, lockable.getLockType());
+        assertEquals( LockType.SHARED, lockable.getLockType() );
         assertTrue( lockable.getCopyOfOwners().isEmpty() );
     }
+
 
     @Test
     public void isExclusiveAfterAcquired() {
@@ -68,39 +72,57 @@ public class LockableImplTest {
         assertEquals( 1, lockable.getCopyOfOwners().size() );
     }
 
+
     @Test
     public void isSharedAfterAcquired() {
         transaction1.acquireLockable( lockable, LockType.SHARED );
-        assertEquals( LockType.SHARED, lockable.getLockType());
+        assertEquals( LockType.SHARED, lockable.getLockType() );
         assertEquals( 1, lockable.getCopyOfOwners().size() );
     }
+
 
     @Test
     public void simpleUpgrade() {
         transaction1.acquireLockable( lockable, LockType.SHARED );
-        assertEquals( LockType.SHARED, lockable.getLockType());
+        assertEquals( LockType.SHARED, lockable.getLockType() );
         transaction1.acquireLockable( lockable, LockType.EXCLUSIVE );
         assertEquals( LockType.EXCLUSIVE, lockable.getLockType() );
         assertEquals( 1, lockable.getCopyOfOwners().size() );
     }
 
+
+    @Test
+    public void simpleSharedAfterUpgrade() {
+        transaction1.acquireLockable( lockable, LockType.SHARED );
+        assertEquals( LockType.SHARED, lockable.getLockType() );
+        transaction1.acquireLockable( lockable, LockType.EXCLUSIVE );
+        assertEquals( LockType.EXCLUSIVE, lockable.getLockType() );
+        assertEquals( 1, lockable.getCopyOfOwners().size() );
+        transaction1.acquireLockable( lockable, LockType.SHARED );
+        assertEquals( LockType.EXCLUSIVE, lockable.getLockType() );
+        assertEquals( 1, lockable.getCopyOfOwners().size() );
+    }
+
+
     @Test
     public void multipleSharedOwners() {
         transaction1.acquireLockable( lockable, LockType.SHARED );
         transaction2.acquireLockable( lockable, LockType.SHARED );
-        assertEquals( LockType.SHARED, lockable.getLockType());
+        assertEquals( LockType.SHARED, lockable.getLockType() );
         assertEquals( 2, lockable.getCopyOfOwners().size() );
     }
+
 
     @Test
     public void releaseSharedSingle() {
         transaction1.acquireLockable( lockable, LockType.SHARED );
-        assertEquals( LockType.SHARED, lockable.getLockType());
+        assertEquals( LockType.SHARED, lockable.getLockType() );
         assertEquals( 1, lockable.getCopyOfOwners().size() );
         transaction1.commit();
-        assertEquals( LockType.SHARED, lockable.getLockType());
+        assertEquals( LockType.SHARED, lockable.getLockType() );
         assertTrue( lockable.getCopyOfOwners().isEmpty() );
     }
+
 
     @Test
     public void releaseExclusiveSingle() {
@@ -108,179 +130,184 @@ public class LockableImplTest {
         assertEquals( LockType.EXCLUSIVE, lockable.getLockType() );
         assertEquals( 1, lockable.getCopyOfOwners().size() );
         transaction1.commit();
-        assertEquals( LockType.SHARED, lockable.getLockType());
+        assertEquals( LockType.SHARED, lockable.getLockType() );
         assertTrue( lockable.getCopyOfOwners().isEmpty() );
     }
 
+
     @Test
     public void multipleTransactionsExclusive() throws ExecutionException, InterruptedException, TimeoutException {
-        transaction1.acquireLockable(lockable, LockType.EXCLUSIVE);
-        assertEquals(LockType.EXCLUSIVE, lockable.getLockType());
-        assertEquals(1, lockable.getCopyOfOwners().size());
+        transaction1.acquireLockable( lockable, LockType.EXCLUSIVE );
+        assertEquals( LockType.EXCLUSIVE, lockable.getLockType() );
+        assertEquals( 1, lockable.getCopyOfOwners().size() );
 
         ExecutorService executorService = Executors.newSingleThreadExecutor();
-        Future<?> future = executorService.submit(() -> {
+        Future<?> future = executorService.submit( () -> {
             try {
-                transaction2.acquireLockable(lockable, LockType.EXCLUSIVE);
-                assertEquals(LockType.EXCLUSIVE, lockable.getLockType());
-                assertEquals(1, lockable.getCopyOfOwners().size());
-                assertTrue(lockable.getCopyOfOwners().containsKey(transaction2));
+                transaction2.acquireLockable( lockable, LockType.EXCLUSIVE );
+                assertEquals( LockType.EXCLUSIVE, lockable.getLockType() );
+                assertEquals( 1, lockable.getCopyOfOwners().size() );
+                assertTrue( lockable.getCopyOfOwners().containsKey( transaction2 ) );
                 transaction2.commit();
-            } catch (Exception e) {
-                fail("Transaction 2 failed: " + e.getMessage());
+            } catch ( Exception e ) {
+                fail( "Transaction 2 failed: " + e.getMessage() );
             }
-        });
+        } );
 
         Thread.sleep( 2000 );
 
         transaction1.commit();
 
-        future.get(1, TimeUnit.MINUTES);
+        future.get( 1, TimeUnit.MINUTES );
 
-        assertEquals(LockType.SHARED, lockable.getLockType());
-        assertTrue(lockable.getCopyOfOwners().isEmpty());
+        assertEquals( LockType.SHARED, lockable.getLockType() );
+        assertTrue( lockable.getCopyOfOwners().isEmpty() );
 
         executorService.shutdown();
     }
 
+
     @Test
     public void twoTransactionsUpgrade() throws ExecutionException, InterruptedException, TimeoutException {
-        transaction1.acquireLockable(lockable, LockType.SHARED);
-        assertEquals(LockType.SHARED, lockable.getLockType());
-        assertEquals(1, lockable.getCopyOfOwners().size());
+        transaction1.acquireLockable( lockable, LockType.SHARED );
+        assertEquals( LockType.SHARED, lockable.getLockType() );
+        assertEquals( 1, lockable.getCopyOfOwners().size() );
 
-        transaction2.acquireLockable(lockable, LockType.SHARED);
-        assertEquals(LockType.SHARED, lockable.getLockType());
-        assertEquals(2, lockable.getCopyOfOwners().size());
+        transaction2.acquireLockable( lockable, LockType.SHARED );
+        assertEquals( LockType.SHARED, lockable.getLockType() );
+        assertEquals( 2, lockable.getCopyOfOwners().size() );
 
         ExecutorService executorService = Executors.newSingleThreadExecutor();
-        Future<?> future = executorService.submit(() -> {
+        Future<?> future = executorService.submit( () -> {
             try {
-                transaction2.acquireLockable(lockable, LockType.EXCLUSIVE);
-                assertEquals(LockType.EXCLUSIVE, lockable.getLockType());
-                assertEquals(1, lockable.getCopyOfOwners().size());
-                assertTrue(lockable.getCopyOfOwners().containsKey(transaction2));
+                transaction2.acquireLockable( lockable, LockType.EXCLUSIVE );
+                assertEquals( LockType.EXCLUSIVE, lockable.getLockType() );
+                assertEquals( 1, lockable.getCopyOfOwners().size() );
+                assertTrue( lockable.getCopyOfOwners().containsKey( transaction2 ) );
                 transaction2.commit();
-            } catch (Exception e) {
-                fail("Transaction 2 failed: " + e.getMessage());
+            } catch ( Exception e ) {
+                fail( "Transaction 2 failed: " + e.getMessage() );
             }
-        });
+        } );
 
         Thread.sleep( 2000 );
 
         try {
-            transaction1.acquireLockable(lockable, LockType.EXCLUSIVE);
-            assertEquals(LockType.EXCLUSIVE, lockable.getLockType());
-            assertEquals(1, lockable.getCopyOfOwners().size());
-            assertTrue(lockable.getCopyOfOwners().containsKey(transaction1));
+            transaction1.acquireLockable( lockable, LockType.EXCLUSIVE );
+            assertEquals( LockType.EXCLUSIVE, lockable.getLockType() );
+            assertEquals( 1, lockable.getCopyOfOwners().size() );
+            assertTrue( lockable.getCopyOfOwners().containsKey( transaction1 ) );
             transaction1.commit();
-        } catch (Exception e) {
-            fail("Transaction 2 failed: " + e.getMessage());
+        } catch ( Exception e ) {
+            fail( "Transaction 2 failed: " + e.getMessage() );
         }
 
-        future.get(1, TimeUnit.MINUTES);
+        future.get( 1, TimeUnit.MINUTES );
 
-        assertEquals(LockType.SHARED, lockable.getLockType());
-        assertTrue(lockable.getCopyOfOwners().isEmpty());
+        assertEquals( LockType.SHARED, lockable.getLockType() );
+        assertTrue( lockable.getCopyOfOwners().isEmpty() );
 
         executorService.shutdown();
     }
 
+
     @Test
     public void threeTransactionsUpgrade() throws ExecutionException, InterruptedException, TimeoutException {
-        transaction1.acquireLockable(lockable, LockType.SHARED);
-        assertEquals(LockType.SHARED, lockable.getLockType());
-        assertEquals(1, lockable.getCopyOfOwners().size());
+        transaction1.acquireLockable( lockable, LockType.SHARED );
+        assertEquals( LockType.SHARED, lockable.getLockType() );
+        assertEquals( 1, lockable.getCopyOfOwners().size() );
 
-        transaction2.acquireLockable(lockable, LockType.SHARED);
-        assertEquals(LockType.SHARED, lockable.getLockType());
-        assertEquals(2, lockable.getCopyOfOwners().size());
+        transaction2.acquireLockable( lockable, LockType.SHARED );
+        assertEquals( LockType.SHARED, lockable.getLockType() );
+        assertEquals( 2, lockable.getCopyOfOwners().size() );
 
-        transaction3.acquireLockable(lockable, LockType.SHARED);
-        assertEquals(LockType.SHARED, lockable.getLockType());
-        assertEquals(3, lockable.getCopyOfOwners().size());
+        transaction3.acquireLockable( lockable, LockType.SHARED );
+        assertEquals( LockType.SHARED, lockable.getLockType() );
+        assertEquals( 3, lockable.getCopyOfOwners().size() );
 
         ExecutorService executorService1 = Executors.newSingleThreadExecutor();
-        Future<?> future1 = executorService1.submit(() -> {
+        Future<?> future1 = executorService1.submit( () -> {
             try {
-                transaction1.acquireLockable(lockable, LockType.EXCLUSIVE);
-                assertEquals(LockType.EXCLUSIVE, lockable.getLockType());
-                assertEquals(1, lockable.getCopyOfOwners().size());
-                assertTrue(lockable.getCopyOfOwners().containsKey(transaction1));
+                transaction1.acquireLockable( lockable, LockType.EXCLUSIVE );
+                assertEquals( LockType.EXCLUSIVE, lockable.getLockType() );
+                assertEquals( 1, lockable.getCopyOfOwners().size() );
+                assertTrue( lockable.getCopyOfOwners().containsKey( transaction1 ) );
                 transaction1.commit();
-            } catch (Exception e) {
-                fail("Transaction 2 failed: " + e.getMessage());
+            } catch ( Exception e ) {
+                fail( "Transaction 2 failed: " + e.getMessage() );
             }
-        });
+        } );
 
         Thread.sleep( 2000 );
 
         ExecutorService executorService2 = Executors.newSingleThreadExecutor();
-        Future<?> future2 = executorService2.submit(() -> {
+        Future<?> future2 = executorService2.submit( () -> {
             try {
-                transaction2.acquireLockable(lockable, LockType.EXCLUSIVE);
-                assertEquals(LockType.EXCLUSIVE, lockable.getLockType());
-                assertEquals(1, lockable.getCopyOfOwners().size());
-                assertTrue(lockable.getCopyOfOwners().containsKey(transaction2));
+                transaction2.acquireLockable( lockable, LockType.EXCLUSIVE );
+                assertEquals( LockType.EXCLUSIVE, lockable.getLockType() );
+                assertEquals( 1, lockable.getCopyOfOwners().size() );
+                assertTrue( lockable.getCopyOfOwners().containsKey( transaction2 ) );
                 transaction2.commit();
-            } catch (Exception e) {
-                fail("Transaction 2 failed: " + e.getMessage());
+            } catch ( Exception e ) {
+                fail( "Transaction 2 failed: " + e.getMessage() );
             }
-        });
+        } );
 
-        Thread.sleep(2000);
+        Thread.sleep( 2000 );
 
         try {
-            transaction3.acquireLockable(lockable, LockType.EXCLUSIVE);
-            assertEquals(LockType.EXCLUSIVE, lockable.getLockType());
-            assertEquals(1, lockable.getCopyOfOwners().size());
-            assertTrue(lockable.getCopyOfOwners().containsKey(transaction3));
+            transaction3.acquireLockable( lockable, LockType.EXCLUSIVE );
+            assertEquals( LockType.EXCLUSIVE, lockable.getLockType() );
+            assertEquals( 1, lockable.getCopyOfOwners().size() );
+            assertTrue( lockable.getCopyOfOwners().containsKey( transaction3 ) );
             transaction3.commit();
-        } catch (Exception e) {
-            fail("Transaction 2 failed: " + e.getMessage());
+        } catch ( Exception e ) {
+            fail( "Transaction 2 failed: " + e.getMessage() );
         }
 
-        future1.get(1, TimeUnit.MINUTES);
-        future2.get(1, TimeUnit.MINUTES);
+        future1.get( 1, TimeUnit.MINUTES );
+        future2.get( 1, TimeUnit.MINUTES );
 
-        assertEquals(LockType.SHARED, lockable.getLockType());
-        assertTrue(lockable.getCopyOfOwners().isEmpty());
+        assertEquals( LockType.SHARED, lockable.getLockType() );
+        assertTrue( lockable.getCopyOfOwners().isEmpty() );
 
         executorService1.shutdown();
         executorService2.shutdown();
     }
 
+
     @Test
     public void upgradeWhileShared() throws ExecutionException, InterruptedException, TimeoutException {
-        transaction1.acquireLockable(lockable, LockType.SHARED);
-        assertEquals(LockType.SHARED, lockable.getLockType());
-        assertEquals(1, lockable.getCopyOfOwners().size());
+        transaction1.acquireLockable( lockable, LockType.SHARED );
+        assertEquals( LockType.SHARED, lockable.getLockType() );
+        assertEquals( 1, lockable.getCopyOfOwners().size() );
 
-        transaction2.acquireLockable(lockable, LockType.SHARED);
-        assertEquals(LockType.SHARED, lockable.getLockType());
-        assertEquals(2, lockable.getCopyOfOwners().size());
+        transaction2.acquireLockable( lockable, LockType.SHARED );
+        assertEquals( LockType.SHARED, lockable.getLockType() );
+        assertEquals( 2, lockable.getCopyOfOwners().size() );
 
         ExecutorService executorService = Executors.newSingleThreadExecutor();
-        Future<?> future = executorService.submit(() -> {
+        Future<?> future = executorService.submit( () -> {
             try {
-                transaction2.acquireLockable(lockable, LockType.EXCLUSIVE);
-                assertEquals(LockType.EXCLUSIVE, lockable.getLockType());
-                assertEquals(1, lockable.getCopyOfOwners().size());
-                assertTrue(lockable.getCopyOfOwners().containsKey(transaction2));
+                transaction2.acquireLockable( lockable, LockType.EXCLUSIVE );
+                assertEquals( LockType.EXCLUSIVE, lockable.getLockType() );
+                assertEquals( 1, lockable.getCopyOfOwners().size() );
+                assertTrue( lockable.getCopyOfOwners().containsKey( transaction2 ) );
                 transaction2.commit();
-            } catch (Exception e) {
-                fail("Transaction 2 failed: " + e.getMessage());
+            } catch ( Exception e ) {
+                fail( "Transaction 2 failed: " + e.getMessage() );
             }
-        });
+        } );
 
         Thread.sleep( 2000 );
 
         transaction1.commit();
-        future.get(1, TimeUnit.MINUTES);
+        future.get( 1, TimeUnit.MINUTES );
 
-        assertEquals(LockType.SHARED, lockable.getLockType());
-        assertTrue(lockable.getCopyOfOwners().isEmpty());
+        assertEquals( LockType.SHARED, lockable.getLockType() );
+        assertTrue( lockable.getCopyOfOwners().isEmpty() );
 
         executorService.shutdown();
     }
+
 }
