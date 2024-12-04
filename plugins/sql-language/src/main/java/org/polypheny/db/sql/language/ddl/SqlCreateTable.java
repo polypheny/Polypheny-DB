@@ -275,7 +275,7 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
         List<FieldInformation> fieldInformation = new ArrayList<>();
         List<ConstraintInformation> constraintInformation = new ArrayList<>();
 
-        fieldInformation.add( EntityIdentifierUtils.IDENTIFIER_FIELD_INFORMATION);
+        fieldInformation.add( IdentifierUtils.IDENTIFIER_FIELD_INFORMATION);
 
         int position = 2; // first column is entry identifier
         for ( Ord<SqlNode> c : Ord.zip( columns.getSqlList() ) ) {
