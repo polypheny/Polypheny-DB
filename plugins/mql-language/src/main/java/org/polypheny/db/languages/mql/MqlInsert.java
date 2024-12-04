@@ -19,7 +19,6 @@ package org.polypheny.db.languages.mql;
 import java.util.Collections;
 import lombok.Getter;
 import org.bson.BsonArray;
-import org.bson.BsonBinary;
 import org.bson.BsonDocument;
 import org.bson.BsonInt64;
 import org.bson.BsonValue;
@@ -27,8 +26,8 @@ import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.mql.Mql.Type;
-import org.polypheny.db.transaction.locking.EntityIdentifierGenerator;
-import org.polypheny.db.transaction.locking.EntityIdentifierUtils;
+import org.polypheny.db.transaction.locking.IdentifierRegistry;
+import org.polypheny.db.transaction.locking.IdentifierUtils;
 
 
 @Getter
@@ -56,8 +55,8 @@ public class MqlInsert extends MqlCollectionStatement {
                 .stream()
                 .map(BsonValue::asDocument)
                 .forEach(doc -> doc.put(
-                        EntityIdentifierUtils.IDENTIFIER_KEY,
-                        new BsonInt64(EntityIdentifierGenerator.INSTANCE.getEntryIdentifier())
+                        IdentifierUtils.IDENTIFIER_KEY,
+                        new BsonInt64( IdentifierRegistry.INSTANCE.getEntryIdentifier())
                 ));
 
     }

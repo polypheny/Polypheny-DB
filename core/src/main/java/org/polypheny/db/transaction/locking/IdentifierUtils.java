@@ -21,7 +21,7 @@ import org.polypheny.db.ddl.DdlManager.ColumnTypeInformation;
 import org.polypheny.db.ddl.DdlManager.FieldInformation;
 import org.polypheny.db.type.PolyType;
 
-public class EntityIdentifierUtils {
+public class IdentifierUtils {
 
     public static final String IDENTIFIER_KEY = "_eid";
 
