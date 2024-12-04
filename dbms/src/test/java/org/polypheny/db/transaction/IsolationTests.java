@@ -30,7 +30,7 @@ import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
 
-public class ConcurrencyTests {
+public class IsolationTests {
 
     private static TestHelper testHelper;
 
@@ -105,18 +105,18 @@ public class ConcurrencyTests {
         Session session2 = new Session( testHelper );
 
         session1.startTransaction();
-        session1.executeStatementIgnoreResult(
+        session1.executeStatementIgnoreResultAsync(
                 "UPDATE accounts SET balance = 200 WHERE id = 1;",
                 "sql"
         );
 
         session2.startTransaction();
-        Future<List<ExecutedContext>> futureResult = session2.executeStatement(
+        Future<List<ExecutedContext>> futureResult = session2.executeStatementAsync(
                 "SELECT balance FROM accounts WHERE id = 1;",
                 "sql"
         );
 
-        session1.rollbackTransaction();
+        session1.rollbackTransactionAsync();
 
         List<ExecutedContext> results = futureResult.get( 1, TimeUnit.MINUTES );
         assertEquals( 1, results.size() );
@@ -124,7 +124,7 @@ public class ConcurrencyTests {
         assertEquals( 100, balance );
         closeAndIgnore( results );
 
-        session2.commitTransaction();
+        session2.commitTransactionAsync();
 
         session1.awaitCompletion();
         session2.awaitCompletion();
@@ -141,7 +141,7 @@ public class ConcurrencyTests {
         Session session2 = new Session( testHelper );
 
         session1.startTransaction();
-        Future<List<ExecutedContext>> futureFirstRead = session1.executeStatement(
+        Future<List<ExecutedContext>> futureFirstRead = session1.executeStatementAsync(
                 "SELECT balance FROM accounts WHERE id = 1;",
                 "sql"
         );
@@ -153,13 +153,13 @@ public class ConcurrencyTests {
         closeAndIgnore( firstRead );
 
         session2.startTransaction();
-        session2.executeStatementIgnoreResult(
+        session2.executeStatementIgnoreResultAsync(
                 "UPDATE accounts SET balance = 300 WHERE id = 1;",
                 "sql"
         );
-        session2.commitTransaction();
+        session2.commitTransactionAsync();
 
-        Future<List<ExecutedContext>> futureSecondRead = session1.executeStatement(
+        Future<List<ExecutedContext>> futureSecondRead = session1.executeStatementAsync(
                 "SELECT balance FROM accounts WHERE id = 1;",
                 "sql"
         );
@@ -170,7 +170,7 @@ public class ConcurrencyTests {
         assertEquals( 100, secondBalance );
         closeAndIgnore( secondRead );
 
-        session1.commitTransaction();
+        session1.commitTransactionAsync();
 
         session1.awaitCompletion();
         session2.awaitCompletion();
@@ -187,7 +187,7 @@ public class ConcurrencyTests {
         Session session2 = new Session( testHelper );
 
         session1.startTransaction();
-        Future<List<ExecutedContext>> futureFirstRead = session1.executeStatement(
+        Future<List<ExecutedContext>> futureFirstRead = session1.executeStatementAsync(
                 "SELECT balance FROM accounts WHERE balance > 150;",
                 "sql"
         );
@@ -198,13 +198,13 @@ public class ConcurrencyTests {
         closeAndIgnore( firstRead );
 
         session2.startTransaction();
-        session2.executeStatementIgnoreResult(
+        session2.executeStatementIgnoreResultAsync(
                 "INSERT INTO accounts (id, balance) VALUES (3, 200);",
                 "sql"
         );
-        session2.commitTransaction();
+        session2.commitTransactionAsync();
 
-        Future<List<ExecutedContext>> futureSecondRead = session1.executeStatement(
+        Future<List<ExecutedContext>> futureSecondRead = session1.executeStatementAsync(
                 "SELECT balance FROM accounts WHERE balance > 150;",
                 "sql"
         );
@@ -214,7 +214,7 @@ public class ConcurrencyTests {
         assertFalse( secondRead.get( 0 ).getIterator().hasMoreRows() );
         closeAndIgnore( secondRead );
 
-        session1.commitTransaction();
+        session1.commitTransactionAsync();
 
         session1.awaitCompletion();
         session2.awaitCompletion();
@@ -231,27 +231,27 @@ public class ConcurrencyTests {
         Session session2 = new Session( testHelper );
 
         session1.startTransaction();
-        session1.executeStatementIgnoreResult(
+        Future<List<ExecutedContext>> futureFirst = session1.executeStatementAsync(
                 "UPDATE accounts SET balance = 250 WHERE id = 1;",
                 "sql"
         );
-
-        session1.commitTransaction();
+        closeAndIgnore( futureFirst );
 
         session2.startTransaction();
-        session2.executeStatementIgnoreResult(
+        session2.executeStatementIgnoreResultAsync(
                 "UPDATE accounts SET balance = 300 WHERE id = 1;",
                 "sql"
         );
 
-        session2.commitTransaction();
+        session1.commitTransactionAsync();
+        session2.commitTransactionAsync();
 
         session1.awaitCompletion();
         session2.awaitCompletion();
 
         Session validator = new Session( testHelper );
         validator.startTransaction();
-        Future<List<ExecutedContext>> futureValidation = validator.executeStatement(
+        Future<List<ExecutedContext>> futureValidation = validator.executeStatementAsync(
                 "SELECT balance FROM accounts WHERE id = 1;",
                 "sql"
         );
@@ -261,7 +261,7 @@ public class ConcurrencyTests {
         assertEquals( 300, balance );
         closeAndIgnore( validation );
 
-        validator.commitTransaction();
+        validator.commitTransactionAsync();
         validator.awaitCompletion();
 
         dropTables();
@@ -276,31 +276,31 @@ public class ConcurrencyTests {
         Session session2 = new Session( testHelper );
 
         session1.startTransaction();
-        Future<List<ExecutedContext>> firstSelect = session1.executeStatement(
+        Future<List<ExecutedContext>> firstSelect = session1.executeStatementAsync(
                 "SELECT balance FROM accounts WHERE id = 1;",
                 "sql"
         );
         closeAndIgnore( firstSelect ); // done manually as this forces the first statement to be completed before session 2 starts
 
         session2.startTransaction();
-        session2.executeStatementIgnoreResult(
+        session2.executeStatementIgnoreResultAsync(
                 "UPDATE accounts SET balance = 200 WHERE id = 1;",
                 "sql"
         );
-        session2.commitTransaction();
+        session2.commitTransactionAsync();
 
-        session1.executeStatementIgnoreResult(
+        session1.executeStatementIgnoreResultAsync(
                 "UPDATE accounts SET balance = 300 WHERE id = 1;",
                 "sql"
         );
-        session1.commitTransaction();
+        session1.commitTransactionAsync();
 
         session1.awaitCompletion();
         session2.awaitCompletion();
 
         Session validator = new Session( testHelper );
         validator.startTransaction();
-        Future<List<ExecutedContext>> futureValidation = validator.executeStatement(
+        Future<List<ExecutedContext>> futureValidation = validator.executeStatementAsync(
                 "SELECT balance FROM accounts WHERE id = 1;",
                 "sql"
         );
@@ -310,7 +310,7 @@ public class ConcurrencyTests {
         assertEquals( 200, balance );
         closeAndIgnore( validation );
 
-        validator.commitTransaction();
+        validator.commitTransactionAsync();
         validator.awaitCompletion();
 
         dropTables();
@@ -325,7 +325,7 @@ public class ConcurrencyTests {
         Session session2 = new Session( testHelper );
 
         session1.startTransaction();
-        Future<List<ExecutedContext>> futureReadX = session1.executeStatement(
+        Future<List<ExecutedContext>> futureReadX = session1.executeStatementAsync(
                 "SELECT x FROM coordinates WHERE id = 1;",
                 "sql"
         );
@@ -337,13 +337,13 @@ public class ConcurrencyTests {
         closeAndIgnore( readX );
 
         session2.startTransaction();
-        session2.executeStatementIgnoreResult(
+        session2.executeStatementIgnoreResultAsync(
                 "UPDATE coordinates SET x = 300, y = 400 WHERE id = 1;",
                 "sql"
         );
-        session2.commitTransaction();
+        session2.commitTransactionAsync();
 
-        Future<List<ExecutedContext>> futureReadY = session1.executeStatement(
+        Future<List<ExecutedContext>> futureReadY = session1.executeStatementAsync(
                 "SELECT y FROM coordinates WHERE id = 1;",
                 "sql"
         );
@@ -354,7 +354,7 @@ public class ConcurrencyTests {
         assertEquals( 200, yCoordinate );
         closeAndIgnore( readY );
 
-        session1.commitTransaction();
+        session1.commitTransactionAsync();
 
         session1.awaitCompletion();
         session2.awaitCompletion();
@@ -370,61 +370,73 @@ public class ConcurrencyTests {
         Session session1 = new Session( testHelper );
         Session session2 = new Session( testHelper );
 
+        // This class represents transaction logic required for this test. In presence of stored procedures those could be used instead.
+        class Checker {
+
+            public void checkBalance1( List<ExecutedContext> result ) {
+                int totalBalance = result.get( 0 ).getIterator().getIterator().next()[0].asInteger().intValue();
+                if ( totalBalance < 0 ) {
+                    session1.rollbackTransaction();
+                } else {
+                    session1.commitTransaction();
+                }
+            }
+
+
+            public void checkBalance2( List<ExecutedContext> result ) {
+                int totalBalance = result.get( 0 ).getIterator().getIterator().next()[0].asInteger().intValue();
+                if ( totalBalance < 0 ) {
+                    session2.rollbackTransaction();
+                } else {
+                    session2.commitTransaction();
+                }
+            }
+
+        }
+        Checker checker = new Checker();
+
         session1.startTransaction();
-        Future<List<ExecutedContext>> futureRead1 = session1.executeStatement(
+        Future<List<ExecutedContext>> futureRead1 = session1.executeStatementAsync(
                 "SELECT balance FROM accounts WHERE id = 1 OR id = 2;",
                 "sql"
         );
-        closeAndIgnore( futureRead1 );
 
         session2.startTransaction();
-        Future<List<ExecutedContext>> futureRead2 = session2.executeStatement(
+        Future<List<ExecutedContext>> futureRead2 = session2.executeStatementAsync(
                 "SELECT balance FROM accounts WHERE id = 1 OR id = 2;",
                 "sql"
         );
+
+        closeAndIgnore( futureRead1 );
         closeAndIgnore( futureRead2 );
 
-        session1.executeStatementIgnoreResult(
+        session1.executeStatementIgnoreResultAsync(
                 "UPDATE accounts SET balance = balance - 200 WHERE id = 1;",
                 "sql"
         );
-        Future<List<ExecutedContext>> futureCheck1 = session1.executeStatement(
+        session1.executeStatementAndProcessAsync(
                 "SELECT SUM(balance) AS total_balance FROM accounts;",
-                "sql"
+                "sql",
+                checker::checkBalance1
+
         );
 
-        session2.executeStatementIgnoreResult(
+        session2.executeStatementIgnoreResultAsync(
                 "UPDATE accounts SET balance = balance - 200 WHERE id = 2;",
                 "sql"
         );
-        Future<List<ExecutedContext>> futureCheck2 = session2.executeStatement(
+        session2.executeStatementAndProcessAsync(
                 "SELECT SUM(balance) AS total_balance FROM accounts;",
-                "sql"
+                "sql",
+                checker::checkBalance2
         );
-
-
-        List<ExecutedContext> result1 = futureCheck1.get( 1, TimeUnit.HOURS );
-        int totalBalance1 = result1.get( 0 ).getIterator().getIterator().next()[0].asInteger().intValue();
-        if ( totalBalance1 < 0 ) {
-            session1.rollbackTransaction();
-        } else {
-            session1.commitTransaction();
-        }
-
-        List<ExecutedContext> result2 = futureCheck2.get( 1, TimeUnit.HOURS );
-        int totalBalance2 = result2.get( 0 ).getIterator().getIterator().next()[0].asInteger().intValue();
-        if ( totalBalance2 < 0 ) {
-            session2.rollbackTransaction();
-        } else {
-            session2.commitTransaction();
-        }
 
         session1.awaitCompletion();
         session2.awaitCompletion();
 
         Session validator = new Session( testHelper );
         validator.startTransaction();
-        Future<List<ExecutedContext>> futureValidation = validator.executeStatement(
+        Future<List<ExecutedContext>> futureValidation = validator.executeStatementAsync(
                 "SELECT SUM(balance) AS total_balance FROM accounts;",
                 "sql"
         );

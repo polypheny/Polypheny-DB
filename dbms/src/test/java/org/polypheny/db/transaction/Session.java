@@ -5,6 +5,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import lombok.Getter;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
@@ -29,14 +30,23 @@ public class Session {
     }
 
 
-    Future<List<ExecutedContext>> executeStatement( String query, String languageName ) {
+    Future<List<ExecutedContext>> executeStatementAsync( String query, String languageName ) {
         if ( executorService.isShutdown() || executorService.isTerminated() ) {
             executorService = Executors.newSingleThreadExecutor();
         }
         return executorService.submit( () -> ConcurrencyTestUtils.executeStatement( query, languageName, transaction, testHelper ) );
     }
 
-    void executeStatementIgnoreResult( String query, String languageName ) {
+
+    void executeStatementAndProcessAsync( String query, String languageName, Consumer<List<ExecutedContext>> consumer ) {
+        if ( executorService.isShutdown() || executorService.isTerminated() ) {
+            executorService = Executors.newSingleThreadExecutor();
+        }
+        executorService.submit( () -> consumer.accept( ConcurrencyTestUtils.executeStatement( query, languageName, transaction, testHelper ) ) );
+    }
+
+
+    void executeStatementIgnoreResultAsync( String query, String languageName ) {
         if ( executorService.isShutdown() || executorService.isTerminated() ) {
             executorService = Executors.newSingleThreadExecutor();
         }
@@ -49,13 +59,23 @@ public class Session {
     }
 
 
+    void commitTransactionAsync() {
+        executorService.submit( () -> transaction.commit() );
+    }
+
+
+    void rollbackTransactionAsync() {
+        executorService.submit( () -> transaction.rollback( "Requested by TestCase." ) );
+    }
+
+
     void commitTransaction() {
-        executorService.submit(() -> transaction.commit());
+        transaction.commit();
     }
 
 
     void rollbackTransaction() {
-        executorService.submit(() -> transaction.rollback( "Requested by TestCase." ));
+        transaction.rollback( "Requested by TestCase." );
     }
 
 }
