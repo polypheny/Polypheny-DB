@@ -74,7 +74,7 @@ public class GlobalScheduler {
         }
         interruptedSessions.remove( sessionId );
 
-        WorkflowScheduler scheduler = new WorkflowScheduler( workflow, sm, targetActivity );
+        WorkflowScheduler scheduler = new WorkflowScheduler( workflow, sm, globalWorkers, targetActivity );
         List<ExecutionSubmission> submissions = scheduler.startExecution();
         if ( submissions.isEmpty() ) {
             throw new GenericRuntimeException( "At least one activity needs to be executable when submitting a workflow for execution" );

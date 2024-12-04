@@ -17,22 +17,32 @@
 package org.polypheny.db.workflow.engine.scheduler;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
 import javax.annotation.Nullable;
 import org.apache.commons.lang3.NotImplementedException;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.util.graph.AttributedDirectedGraph;
+import org.polypheny.db.util.graph.TopologicalOrderIterator;
 import org.polypheny.db.workflow.dag.Workflow;
+import org.polypheny.db.workflow.dag.activities.Activity;
+import org.polypheny.db.workflow.dag.activities.ActivityException;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper.ActivityState;
+import org.polypheny.db.workflow.dag.edges.DataEdge;
 import org.polypheny.db.workflow.dag.edges.Edge;
 import org.polypheny.db.workflow.dag.edges.Edge.EdgeState;
+import org.polypheny.db.workflow.dag.settings.SettingDef.SettingValue;
 import org.polypheny.db.workflow.engine.scheduler.optimizer.WorkflowOptimizer;
+import org.polypheny.db.workflow.engine.scheduler.optimizer.WorkflowOptimizer.SubmissionFactory;
 import org.polypheny.db.workflow.engine.scheduler.optimizer.WorkflowOptimizerImpl;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
 
@@ -59,15 +69,17 @@ public class WorkflowScheduler {
     private boolean isFinished;
 
     private int pendingCount = 0; // current number of unfinished submissions
-    private final Queue<ExecutionSubmission> submissionBuffer = new LinkedList<>(); // contains not yet submitted subtrees because of the maxWorkers limit
     private final Set<UUID> remainingActivities = new HashSet<>(); // activities that have not finished execution
     private final Set<UUID> pendingActivities = new HashSet<>(); // contains activities submitted for execution
 
+    private final Map<UUID, List<Optional<AlgDataType>>> typePreviews = new HashMap<>(); // contains the (possibly not yet known) output types of execDag activities
+    private final Map<UUID, Map<String, Optional<SettingValue>>> settingsPreviews = new HashMap<>(); // contains the (possibly not yet known) settings of execDag activities
 
-    public WorkflowScheduler( Workflow workflow, StorageManager sm, @Nullable UUID targetActivity ) throws Exception {
+
+    public WorkflowScheduler( Workflow workflow, StorageManager sm, int globalWorkers, @Nullable UUID targetActivity ) throws Exception {
         this.workflow = workflow;
         this.sm = sm;
-        this.maxWorkers = workflow.getConfig().getMaxWorkers();
+        this.maxWorkers = Math.min( workflow.getConfig().getMaxWorkers(), globalWorkers );
 
         if ( targetActivity != null && workflow.getActivity( targetActivity ).getState() == ActivityState.SAVED ) {
             throw new GenericRuntimeException( "A saved activity first needs to be reset before executing it" );
@@ -78,13 +90,14 @@ public class WorkflowScheduler {
         validateCommonLoad();
 
         this.execDag = targetActivity == null ? prepareExecutionDag() : prepareExecutionDag( List.of( targetActivity ) );
+        initPreviews();
         this.optimizer = new WorkflowOptimizerImpl( workflow, execDag );
 
     }
 
 
     public List<ExecutionSubmission> startExecution() {
-        return getNextBufferedSubmissions( computeNextSubmissions() );
+        return computeNextSubmissions();
     }
 
 
@@ -108,9 +121,7 @@ public class WorkflowScheduler {
 
         propagateResult( result.isSuccess(), result.getActivities() );
 
-        List<ExecutionSubmission> nextSubmissions = computeNextSubmissions();
-
-        return getNextBufferedSubmissions( null );
+        return computeNextSubmissions();
     }
 
 
@@ -205,24 +216,65 @@ public class WorkflowScheduler {
     }
 
 
-    private List<ExecutionSubmission> getNextBufferedSubmissions( List<ExecutionSubmission> newSubmissions ) {
-        submissionBuffer.addAll( newSubmissions );
-        // TODO: update state of involved activities to queued or something similar
+    private void initPreviews() throws ActivityException {
+        for ( UUID n : TopologicalOrderIterator.of( execDag ) ) {
+            ActivityWrapper wrapper = workflow.getActivity( n );
+            Activity activity = wrapper.getActivity();
+            ActivityState state = wrapper.getState();
 
-        List<ExecutionSubmission> submissions = new ArrayList<>();
-        while ( pendingActivities.size() < maxWorkers && !submissionBuffer.isEmpty() ) {
-            ExecutionSubmission submission = submissionBuffer.remove();
-            submissions.add( submission );
-            pendingActivities.addAll( submission.getActivities() );
-            pendingCount++;
+            if ( state == ActivityState.SAVED ) {
+                // settings are not required for already executed nodes
+                typePreviews.put( n, sm.getTupleTypes( n ).stream().map( Optional::ofNullable ).toList() );
+
+            } else if ( state == ActivityState.IDLE ) {
+                List<Optional<AlgDataType>> inputTypes = new ArrayList<>();
+                boolean allInputsSaved = true;
+                for ( int i = 0; i < wrapper.getDef().getInPorts().length; i++ ) {
+                    DataEdge dataEdge = workflow.getDataEdge( n, i );
+                    ActivityWrapper inWrapper = dataEdge.getFrom();
+                    if ( remainingActivities.contains( inWrapper.getId() ) ) {
+                        allInputsSaved = false;
+                    }
+                    inputTypes.add( typePreviews.get( inWrapper.getId() ).get( dataEdge.getFromPort() ) );
+                }
+                // TODO: ensure control inputs are also saved, then merge variables correctly
+                // Also change executor merge to be correct (correct order, only active)
+
+                Map<String, Optional<SettingValue>> settings = wrapper.resolveAvailableSettings();
+                settingsPreviews.put( n, settings );
+                typePreviews.put( n, activity.previewOutTypes( inputTypes, settings ) );
+
+            } else {
+                throw new IllegalStateException( "Illegal state of activity while initiating scheduler: " + state + " for " + n );
+            }
+
+            switch ( state ) {
+
+                case IDLE -> {
+                }
+                case QUEUED -> {
+                }
+                case EXECUTING -> {
+                }
+                case SKIPPED -> {
+                }
+                case FAILED -> {
+                }
+                case FINISHED -> {
+                }
+                case SAVED -> {
+                }
+            }
         }
-        return submissions;
     }
 
 
     private List<ExecutionSubmission> computeNextSubmissions() {
         // TODO: determine previews
-        return optimizer.computeNextTrees( null, null ).stream().map( f -> f.create( sm, workflow ) ).toList();
+
+        List<SubmissionFactory> factories = optimizer.computeNextTrees( null, null, maxWorkers - pendingCount, null );
+        pendingCount += factories.size();
+        return factories.stream().map( f -> f.create( sm, workflow ) ).toList();
     }
 
 

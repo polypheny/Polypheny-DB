@@ -16,6 +16,7 @@
 
 package org.polypheny.db.workflow.engine.storage;
 
+import java.util.List;
 import java.util.UUID;
 import javax.annotation.Nullable;
 import lombok.NonNull;
@@ -47,6 +48,10 @@ public interface StorageManager extends AutoCloseable { // TODO: remove AutoClos
     CheckpointReader readCheckpoint( UUID activityId, int outputIdx );
 
     DataModel getDataModel( UUID activityId, int outputIdx );
+
+    AlgDataType getTupleType( UUID activityId, int outputIdx );
+
+    List<AlgDataType> getTupleTypes( UUID activityId );
 
     /**
      * Creates a relational checkpoint for an activity output and returns a RelWriter for that checkpoint.

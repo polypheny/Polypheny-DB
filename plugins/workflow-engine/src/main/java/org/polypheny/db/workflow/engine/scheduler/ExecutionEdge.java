@@ -18,7 +18,6 @@ package org.polypheny.db.workflow.engine.scheduler;
 
 import java.util.UUID;
 import lombok.Getter;
-import lombok.Setter;
 import org.polypheny.db.util.graph.AttributedDirectedGraph;
 import org.polypheny.db.util.graph.DefaultEdge;
 import org.polypheny.db.workflow.dag.edges.ControlEdge;
@@ -39,8 +38,6 @@ public class ExecutionEdge extends DefaultEdge {
 
     // isControl == true
     private final boolean onSuccess;
-    @Setter
-    private boolean isIgnored = false; // control edge has no influence anymore as target is already allowed to execute
 
 
     public ExecutionEdge( UUID v0, UUID v1, Edge edge ) {
@@ -68,7 +65,6 @@ public class ExecutionEdge extends DefaultEdge {
         this.fromPort = edge.fromPort;
         this.toPort = edge.toPort;
         this.onSuccess = edge.onSuccess;
-        this.isIgnored = edge.isIgnored;
     }
 
 
@@ -102,7 +98,6 @@ public class ExecutionEdge extends DefaultEdge {
         result = 31 * result + Boolean.hashCode( isControl );
         if ( isControl ) {
             result = 31 * result + Boolean.hashCode( onSuccess );
-            // isIgnored is not part of hashCode, as it is mutable
         } else {
             result = 31 * result + Integer.hashCode( fromPort );
             result = 31 * result + Integer.hashCode( toPort );

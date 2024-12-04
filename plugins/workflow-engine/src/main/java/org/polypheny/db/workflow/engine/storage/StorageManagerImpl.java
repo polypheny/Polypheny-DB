@@ -139,6 +139,24 @@ public class StorageManagerImpl implements StorageManager {
 
 
     @Override
+    public AlgDataType getTupleType( UUID activityId, int outputIdx ) {
+        return getCheckpoint( activityId, outputIdx ).getTupleType();
+    }
+
+
+    @Override
+    public List<AlgDataType> getTupleTypes( UUID activityId ) {
+        List<AlgDataType> types = new ArrayList<>();
+        Map<Integer, LogicalEntity> outputs = checkpoints.get( activityId );
+        for ( int i = 0; i < outputs.size(); i++ ) {
+            LogicalEntity output = outputs.get( i );
+            types.add( output == null ? null : output.getTupleType() );
+        }
+        return types;
+    }
+
+
+    @Override
     public RelWriter createRelCheckpoint( UUID activityId, int outputIdx, AlgDataType type, boolean resetPk, @Nullable String storeName ) {
         if ( storeName == null || storeName.isEmpty() ) {
             storeName = getDefaultStore( DataModel.RELATIONAL );

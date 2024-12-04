@@ -54,6 +54,13 @@ public interface Workflow {
 
     List<Edge> getEdges( ActivityWrapper from, ActivityWrapper to );
 
+    /**
+     * Returns a list of all edges incident to the target.
+     * The order of the returned edges is arbitrary.
+     *
+     * @param target target activity id
+     * @return a list of all edges incident to the target
+     */
     List<Edge> getInEdges( UUID target );
 
     List<Edge> getOutEdges( UUID source );

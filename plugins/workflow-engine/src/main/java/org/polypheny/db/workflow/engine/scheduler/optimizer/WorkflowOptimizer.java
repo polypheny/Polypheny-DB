@@ -16,6 +16,7 @@
 
 package org.polypheny.db.workflow.engine.scheduler.optimizer;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -26,6 +27,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.util.graph.AttributedDirectedGraph;
 import org.polypheny.db.workflow.dag.Workflow;
+import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper.ActivityState;
 import org.polypheny.db.workflow.dag.activities.Fusable;
 import org.polypheny.db.workflow.dag.activities.Pipeable;
@@ -42,6 +44,7 @@ import org.polypheny.db.workflow.engine.execution.VariableWriterExecutor;
 import org.polypheny.db.workflow.engine.scheduler.ExecutionEdge;
 import org.polypheny.db.workflow.engine.scheduler.ExecutionEdge.ExecutionEdgeFactory;
 import org.polypheny.db.workflow.engine.scheduler.ExecutionSubmission;
+import org.polypheny.db.workflow.engine.scheduler.GraphUtils;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
 import org.polypheny.db.workflow.models.ActivityConfigModel.CommonTransaction;
 
@@ -60,14 +63,24 @@ public abstract class WorkflowOptimizer {
     }
 
 
-    public final List<SubmissionFactory> computeNextTrees( Map<UUID, List<Optional<AlgDataType>>> typePreviews, Map<UUID, Map<String, Optional<SettingValue>>> settingsPreviews ) {
+    public final List<SubmissionFactory> computeNextTrees( Map<UUID, List<Optional<AlgDataType>>> typePreviews, Map<UUID, Map<String, Optional<SettingValue>>> settingsPreviews, int submissionCount, CommonTransaction commonType ) {
         this.typePreviews = typePreviews;
         this.settingsPreviews = settingsPreviews;
-        return computeNextTrees();
+
+        List<SubmissionFactory> orderedCandidates = computeNextTrees( commonType );
+        return orderedCandidates.subList( 0, Math.min( submissionCount, orderedCandidates.size() ) );
     }
 
 
-    abstract List<SubmissionFactory> computeNextTrees();
+    /**
+     * Returns a list of candidate submissions based on the current state of the optimizer.
+     * The list is ordered by priority (most important submission first).
+     * This operation must not perform any changes to any of the fields of the abstract WorkflowOptimizer.
+     * There is no guarantee whether the returned submissions will actually be queued for execution.
+     *
+     * @return A list of SubmissionFactories that can be used to create actual submissions.
+     */
+    abstract List<SubmissionFactory> computeNextTrees( CommonTransaction commonType );
 
 
     /**
@@ -92,13 +105,6 @@ public abstract class WorkflowOptimizer {
     }
 
 
-    boolean canPipe( ExecutionEdge edge ) {
-        UUID source = edge.getSource(), target = edge.getTarget();
-        return execDag.getOutwardEdges( source ).size() == 1
-                && canPipe( source ) && canPipe( target );
-    }
-
-
     boolean requestsToWrite( UUID activityId ) {
         if ( workflow.getActivity( activityId ).getActivity() instanceof VariableWriter writer ) {
             // true is more restricting for optimizer -> return true if empty Optional
@@ -118,13 +124,30 @@ public abstract class WorkflowOptimizer {
     }
 
 
-    EdgeState getEdgeState( ExecutionEdge edge ) {
-        for ( Edge candidate : workflow.getEdges( edge.getSource(), edge.getTarget() ) ) {
-            if ( edge.representsEdge( candidate ) ) {
-                return candidate.getState();
+    AttributedDirectedGraph<UUID, ExecutionEdge> getCommonSubExecDag( CommonTransaction commonType ) {
+        Set<UUID> nodes = new HashSet<>();
+        for ( UUID n : execDag.vertexSet() ) {
+            ActivityWrapper wrapper = workflow.getActivity( n );
+            if ( wrapper.getConfig().getTransactionMode() == commonType ) {
+                nodes.add( n );
             }
         }
-        throw new IllegalArgumentException( "Cannot return edge state of edge that is not part of the workflow: " + edge );
+        return GraphUtils.getInducedSubgraph( execDag, nodes );
+    }
+
+
+    Edge getEdge( ExecutionEdge edge ) {
+        for ( Edge candidate : workflow.getEdges( edge.getSource(), edge.getTarget() ) ) {
+            if ( edge.representsEdge( candidate ) ) {
+                return candidate;
+            }
+        }
+        throw new IllegalArgumentException( "Cannot return Edge of ExecutionEdge that is not part of the workflow: " + edge );
+    }
+
+
+    EdgeState getEdgeState( ExecutionEdge edge ) {
+        return getEdge( edge ).getState();
     }
 
 
