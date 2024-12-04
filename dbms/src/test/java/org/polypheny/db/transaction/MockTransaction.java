@@ -16,6 +16,7 @@
 
 package org.polypheny.db.transaction;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -35,11 +36,19 @@ import org.polypheny.db.transaction.locking.Lockable;
 import org.polypheny.db.transaction.locking.Lockable.LockType;
 
 public class MockTransaction implements Transaction {
+
     private long id;
 
-    public MockTransaction(long id) {
+    private Set<Lockable> locks;
+
+    private boolean committed = false;
+
+
+    public MockTransaction( long id ) {
         this.id = id;
+        this.locks = new HashSet<>();
     }
+
 
     @Override
     public long getId() {
@@ -67,13 +76,14 @@ public class MockTransaction implements Transaction {
 
     @Override
     public void commit() throws TransactionException {
-
+        releaseAllLocks();
+        committed = true;
     }
 
 
     @Override
     public void rollback( @Nullable String reason ) throws TransactionException {
-
+        releaseAllLocks();
     }
 
 
@@ -223,13 +233,14 @@ public class MockTransaction implements Transaction {
 
     @Override
     public void releaseAllLocks() {
-
+        locks.forEach( l -> l.release( this ) );
     }
 
 
     @Override
     public void acquireLockable( Lockable lockable, LockType lockType ) {
-
+        lockable.acquire( this, lockType );
+        locks.add( lockable );
     }
 
 }
