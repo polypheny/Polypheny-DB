@@ -111,10 +111,10 @@ import org.polypheny.db.routing.RoutingManager;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
+import org.polypheny.db.transaction.locking.IdentifierUtils;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.view.MaterializedViewManager;
 
@@ -2057,8 +2057,11 @@ public class DdlManagerImpl extends DdlManager {
                 true );
 
         // addLColumns
-
         Map<String, LogicalColumn> ids = new HashMap<>();
+
+        IdentifierUtils.throwIfContainsIdentifierField( fields );
+        fields = IdentifierUtils.addIdentifierFieldIfAbsent(fields);
+
         for ( FieldInformation information : fields ) {
             ids.put( information.name(), addColumn( namespaceId, information.name(), information.typeInformation(), information.collation(), information.defaultValue(), logical.id, information.position() + 1 ) ); // pos + 1 to make space for entry identifier column
         }
