@@ -138,6 +138,7 @@ import org.polypheny.db.sql.language.fun.SqlCase;
 import org.polypheny.db.sql.language.fun.SqlCrossMapItemOperator;
 import org.polypheny.db.sql.language.util.SqlShuttle;
 import org.polypheny.db.sql.language.util.SqlTypeUtil;
+import org.polypheny.db.transaction.locking.IdentifierUtils;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
@@ -4005,7 +4006,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             switch ( strategies.get( field.getIndex() ) ) {
                 case NOT_NULLABLE:
                     assert !field.getType().isNullable();
-                    if ( targetField == null ) {
+                    if ( targetField == null && !field.getName().equals( IdentifierUtils.IDENTIFIER_KEY ) ) {
                         throw newValidationError( node, RESOURCE.columnNotNullable( field.getName() ) );
                     }
                     break;
