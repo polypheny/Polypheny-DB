@@ -29,6 +29,7 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.ExplainFormat;
 import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalDefaultValue;
@@ -70,7 +71,6 @@ import org.polypheny.db.sql.sql2alg.StandardConvertletTable;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
-import org.polypheny.db.transaction.locking.IdentifierRegistry;
 import org.polypheny.db.transaction.locking.IdentifierUtils;
 import org.polypheny.db.transaction.locking.Lockable.LockType;
 import org.polypheny.db.transaction.locking.LockablesRegistry;
@@ -79,11 +79,15 @@ import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.DeadlockException;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.SourceStringReader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 @Setter
 @Slf4j
 public class SqlProcessor extends Processor {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger( SqlProcessor.class );
 
     private static final ParserConfig parserConfig;
 
@@ -227,8 +231,9 @@ public class SqlProcessor extends Processor {
     @Override
     protected void lock( Transaction transaction, ParsedQueryContext context ) throws DeadlockException {
         // exclusive lock
+        //TODO: TH check what this is used for...
         LogicalNamespace namespace = Catalog.getInstance().getSnapshot().getNamespace( context.getNamespaceId() ).orElseThrow();
-        transaction.acquireLockable( LockablesRegistry.INSTANCE.getOrCreateLockable(namespace ), LockType.EXCLUSIVE );
+        transaction.acquireLockable( LockablesRegistry.INSTANCE.getOrCreateLockable( namespace ), LockType.EXCLUSIVE );
     }
 
 
@@ -249,72 +254,113 @@ public class SqlProcessor extends Processor {
     }
 
 
-    private void addDefaultValues(Transaction transaction, SqlInsert insert) {
+    private void addDefaultValues( Transaction transaction, SqlInsert insert ) {
+        //TODO: please fix me. Not all sources are SqlBasicCalls
+        if (!(insert.getSource() instanceof SqlBasicCall)) {
+            LOGGER.warn( "Non SqlBasicCall input encountered. Default values not added." );
+            return;
+        }
+
         SqlNodeList oldColumnList = insert.getTargetColumnList();
 
-        if (oldColumnList != null) {
-            LogicalTable catalogTable = getTable(transaction, (SqlIdentifier) insert.getTargetTable());
-            DataModel dataModel = Catalog.snapshot().getNamespace(catalogTable.namespaceId)
+        if ( oldColumnList != null ) {
+            LogicalTable catalogTable = getTable( transaction, (SqlIdentifier) insert.getTargetTable() );
+            DataModel dataModel = Catalog.snapshot().getNamespace( catalogTable.namespaceId )
                     .orElseThrow()
                     .dataModel;
 
-            SqlNodeList newColumnList = new SqlNodeList(ParserPos.ZERO);
-            int size = computeTargetSize(catalogTable, oldColumnList, dataModel);
+            SqlNodeList newColumnList = new SqlNodeList( ParserPos.ZERO );
+            int size = computeTargetSize( catalogTable, oldColumnList, dataModel );
 
             SqlNode[][] newValues = new SqlNode[((SqlBasicCall) insert.getSource()).getOperands().length][size];
-            processColumns(catalogTable, oldColumnList, newColumnList, newValues, insert);
+            processColumns( catalogTable, oldColumnList, newColumnList, newValues, insert );
 
-            if (dataModel == DataModel.DOCUMENT) {
-                addDocumentValues(oldColumnList, newColumnList, newValues, insert);
+            if ( dataModel == DataModel.DOCUMENT ) {
+                addDocumentValues( oldColumnList, newColumnList, newValues, insert );
             }
 
-            insert.setColumns(newColumnList);
-            updateSourceValues(insert, newValues);
+            insert.setColumns( newColumnList );
+            updateSourceValues( insert, newValues );
         }
     }
 
-    private int computeTargetSize(LogicalTable catalogTable, SqlNodeList oldColumnList, DataModel dataModel) {
-        int size = catalogTable.getColumns().size();
-        if (dataModel == DataModel.DOCUMENT) {
-            List<String> columnNames = catalogTable.getColumnNames();
-            size += (int) oldColumnList.getSqlList()
-                    .stream()
-                    .filter(column -> !columnNames.contains(((SqlIdentifier) column).names.get(0)))
-                    .count();
+
+    public static void updateSourceValues( SqlInsert insert, SqlNode[][] newValues ) {
+        for ( int i = 0; i < newValues.length; i++ ) {
+            SqlBasicCall call = (SqlBasicCall) ((SqlBasicCall) insert.getSource()).getOperands()[i];
+            ((SqlBasicCall) insert.getSource()).getOperands()[i] = (SqlNode) call.getOperator().createCall(
+                    call.getFunctionQuantifier(),
+                    call.getPos(),
+                    newValues[i]
+            );
         }
-        return size;
     }
 
-    private void processColumns(LogicalTable catalogTable, SqlNodeList oldColumnList, SqlNodeList newColumnList,
-            SqlNode[][] newValues, SqlInsert insert) {
+
+    private void processColumns(
+            LogicalTable catalogTable, SqlNodeList oldColumnList, SqlNodeList newColumnList,
+            SqlNode[][] newValues, SqlInsert insert ) {
         int pos = 0;
 
-        for (LogicalColumn column : catalogTable.getColumns()) {
-            newColumnList.add(new SqlIdentifier(column.name, ParserPos.ZERO));
+        for ( LogicalColumn column : catalogTable.getColumns() ) {
+            newColumnList.add( new SqlIdentifier( column.name, ParserPos.ZERO ) );
 
-            for (int i = 0; i < ((SqlBasicCall) insert.getSource()).getOperands().length; i++) {
+            for ( int i = 0; i < ((SqlBasicCall) insert.getSource()).getOperands().length; i++ ) {
                 SqlNode sqlNode = ((SqlBasicCall) insert.getSource()).getOperands()[i];
                 SqlBasicCall call = (SqlBasicCall) sqlNode;
 
-                int position = getPositionInSqlNodeList(oldColumnList, column.name);
-                if (column.name.equals( IdentifierUtils.IDENTIFIER_KEY )) {
-                    newValues[i][pos] = createEntityIdentifierLiteral();
-                } else if (position >= 0) {
+                int position = getPositionInSqlNodeList( oldColumnList, column.name );
+                if ( position >= 0 ) {
+                    if ( column.name.equals( IdentifierUtils.IDENTIFIER_KEY ) ) {
+                        IdentifierUtils.throwIllegalFieldName();
+                    }
                     newValues[i][pos] = call.getOperands()[position];
                 } else {
-                    newValues[i][pos] = resolveDefaultValue(column);
+                    newValues[i][pos] = resolveDefaultValue( column );
                 }
             }
             pos++;
         }
     }
 
-    private SqlNode resolveDefaultValue(LogicalColumn column) {
-        if (column.defaultValue != null) {
+
+    public static int computeTargetSize( LogicalTable catalogTable, SqlNodeList oldColumnList, DataModel dataModel ) {
+        int size = catalogTable.getColumns().size();
+        if ( dataModel == DataModel.DOCUMENT ) {
+            List<String> columnNames = catalogTable.getColumnNames();
+            size += (int) oldColumnList.getSqlList()
+                    .stream()
+                    .filter( column -> !columnNames.contains( ((SqlIdentifier) column).names.get( 0 ) ) )
+                    .count();
+        }
+        return size;
+    }
+
+
+    public static LogicalTable getTable( Transaction transaction, SqlIdentifier tableName ) {
+        Snapshot snapshot = transaction.getSnapshot();
+        long namespaceId;
+        String tableOldName;
+        if ( tableName.names.size() == 3 ) { // DatabaseName.SchemaName.TableName
+            namespaceId = snapshot.getNamespace( tableName.names.get( 1 ) ).orElseThrow().id;
+            tableOldName = tableName.names.get( 2 );
+        } else if ( tableName.names.size() == 2 ) { // SchemaName.TableName
+            namespaceId = snapshot.getNamespace( tableName.names.get( 0 ) ).orElseThrow().id;
+            tableOldName = tableName.names.get( 1 );
+        } else { // TableName
+            namespaceId = snapshot.getNamespace( transaction.getDefaultNamespace().name ).orElseThrow().id;
+            tableOldName = tableName.names.get( 0 );
+        }
+        return snapshot.rel().getTable( namespaceId, tableOldName ).orElseThrow( () -> new GenericRuntimeException( "Could not find table with name " + tableName.names ) );
+    }
+
+
+    private SqlNode resolveDefaultValue( LogicalColumn column ) {
+        if ( column.defaultValue != null ) {
             LogicalDefaultValue defaultValue = column.defaultValue;
             // TODO NH handle arrays
-            return createDefaultValueLiteral(column, defaultValue);
-        } else if (column.nullable) {
+            return createDefaultValueLiteral( column, defaultValue );
+        } else if ( column.nullable ) {
             return SqlLiteral.createNull( ParserPos.ZERO );
         } else {
             throw new PolyphenyDbException(
@@ -323,7 +369,8 @@ public class SqlProcessor extends Processor {
         }
     }
 
-    private SqlNode createDefaultValueLiteral(LogicalColumn column, LogicalDefaultValue defaultValue) {
+
+    private SqlNode createDefaultValueLiteral( LogicalColumn column, LogicalDefaultValue defaultValue ) {
         return switch ( column.type ) {
             case BOOLEAN -> SqlLiteral.createBoolean(
                     Boolean.parseBoolean( defaultValue.value.toJson() ),
@@ -345,65 +392,31 @@ public class SqlProcessor extends Processor {
         };
     }
 
-    private SqlNode createEntityIdentifierLiteral() {
-        return SqlLiteral.createExactNumeric(
-                String.valueOf( IdentifierRegistry.INSTANCE.getEntryIdentifier()), // ToDo TH: is there no better way to do this?
-                ParserPos.ZERO
-        );
-    }
 
-    private void addDocumentValues(SqlNodeList oldColumnList, SqlNodeList newColumnList,
-            SqlNode[][] newValues, SqlInsert insert) {
+    private void addDocumentValues(
+            SqlNodeList oldColumnList, SqlNodeList newColumnList,
+            SqlNode[][] newValues, SqlInsert insert ) {
         List<SqlIdentifier> documentColumns = new ArrayList<>();
 
-        for (SqlNode column : oldColumnList.getSqlList()) {
-            if (newColumnList.getSqlList()
+        for ( SqlNode column : oldColumnList.getSqlList() ) {
+            if ( newColumnList.getSqlList()
                     .stream()
-                    .filter(c -> c instanceof SqlIdentifier)
-                    .map(c -> ((SqlIdentifier) c).names.get(0))
-                    .noneMatch(c -> c.equals(((SqlIdentifier) column).names.get(0)))) {
-                documentColumns.add((SqlIdentifier) column);
+                    .filter( c -> c instanceof SqlIdentifier )
+                    .map( c -> ((SqlIdentifier) c).names.get( 0 ) )
+                    .noneMatch( c -> c.equals( ((SqlIdentifier) column).names.get( 0 ) ) ) ) {
+                documentColumns.add( (SqlIdentifier) column );
             }
         }
 
         int pos = newColumnList.getSqlList().size();
-        for (SqlIdentifier doc : documentColumns) {
-            newColumnList.add(doc);
-            for (int i = 0; i < ((SqlBasicCall) insert.getSource()).getOperands().length; i++) {
-                int position = getPositionInSqlNodeList(oldColumnList, doc.getSimple());
+        for ( SqlIdentifier doc : documentColumns ) {
+            newColumnList.add( doc );
+            for ( int i = 0; i < ((SqlBasicCall) insert.getSource()).getOperands().length; i++ ) {
+                int position = getPositionInSqlNodeList( oldColumnList, doc.getSimple() );
                 newValues[i][pos] = ((SqlBasicCall) ((SqlBasicCall) insert.getSource()).getOperands()[i])
                         .getOperands()[position];
             }
         }
-    }
-
-    private void updateSourceValues(SqlInsert insert, SqlNode[][] newValues) {
-        for (int i = 0; i < newValues.length; i++) {
-            SqlBasicCall call = (SqlBasicCall) ((SqlBasicCall) insert.getSource()).getOperands()[i];
-            ((SqlBasicCall) insert.getSource()).getOperands()[i] = (SqlNode) call.getOperator().createCall(
-                    call.getFunctionQuantifier(),
-                    call.getPos(),
-                    newValues[i]
-            );
-        }
-    }
-
-
-    private LogicalTable getTable( Transaction transaction, SqlIdentifier tableName ) {
-        Snapshot snapshot = transaction.getSnapshot();
-        long namespaceId;
-        String tableOldName;
-        if ( tableName.names.size() == 3 ) { // DatabaseName.SchemaName.TableName
-            namespaceId = snapshot.getNamespace( tableName.names.get( 1 ) ).orElseThrow().id;
-            tableOldName = tableName.names.get( 2 );
-        } else if ( tableName.names.size() == 2 ) { // SchemaName.TableName
-            namespaceId = snapshot.getNamespace( tableName.names.get( 0 ) ).orElseThrow().id;
-            tableOldName = tableName.names.get( 1 );
-        } else { // TableName
-            namespaceId = snapshot.getNamespace( transaction.getDefaultNamespace().name ).orElseThrow().id;
-            tableOldName = tableName.names.get( 0 );
-        }
-        return snapshot.rel().getTable( namespaceId, tableOldName ).orElseThrow( () -> new GenericRuntimeException( "Could not find table with name " + tableName.names ) );
     }
 
 
@@ -432,4 +445,5 @@ public class SqlProcessor extends Processor {
         final boolean dml = Kind.DML.contains( root.kind );
         return root.withAlg( sqlToAlgConverter.trimUnusedFields( dml || ordered, root.alg ) );
     }
+
 }

@@ -26,6 +26,8 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.common.Modify;
+import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
+import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
@@ -37,7 +39,10 @@ import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.trait.ModelTrait;
+import org.polypheny.db.transaction.locking.IdentifierUtils;
 import org.polypheny.db.type.PolyTypeUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -54,6 +59,7 @@ import org.polypheny.db.type.PolyTypeUtil;
  */
 public abstract class RelModify<E extends Entity> extends Modify<E> implements RelAlg {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger( RelModify.class );
 
     /**
      * The table definition.
@@ -99,15 +105,31 @@ public abstract class RelModify<E extends Entity> extends Modify<E> implements R
         this.operation = operation;
         this.updateColumns = updateColumns;
         this.sourceExpressions = sourceExpressions;
-        if ( operation == Operation.UPDATE ) {
-            Objects.requireNonNull( updateColumns );
-            Objects.requireNonNull( sourceExpressions );
-            Preconditions.checkArgument( sourceExpressions.size() == updateColumns.size() );
-        } else {
-            Preconditions.checkArgument( updateColumns == null );
-            Preconditions.checkArgument( sourceExpressions == null );
+        switch(operation) {
+            case UPDATE -> {
+                Objects.requireNonNull( updateColumns );
+                Objects.requireNonNull( sourceExpressions );
+                Preconditions.checkArgument( sourceExpressions.size() == updateColumns.size() );
+            }
+            case INSERT -> {
+                Preconditions.checkArgument( updateColumns == null );
+                Preconditions.checkArgument( sourceExpressions == null );
+                addIdentifiers();
+            }
+            default -> {
+                Preconditions.checkArgument( updateColumns == null );
+                Preconditions.checkArgument( sourceExpressions == null );
+            }
         }
         this.flattened = flattened;
+    }
+
+    private void addIdentifiers() {
+        if (!(input instanceof LogicalRelValues values) ) {
+            LOGGER.warn("New source type detected: {}", input);
+            return;
+        }
+        input = IdentifierUtils.overwriteIdentifierInInput( values );
     }
 
 

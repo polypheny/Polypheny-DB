@@ -110,6 +110,7 @@ public abstract class AbstractAlgNode implements AlgNode {
     /**
      * Cached type of this relational expression.
      */
+    @Getter
     protected AlgDataType rowType;
 
     /**

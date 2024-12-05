@@ -46,6 +46,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.Value;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
@@ -57,6 +58,7 @@ import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
+import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.util.Collation;
 import org.polypheny.db.util.NlsString;
 import org.polypheny.db.util.Pair;
@@ -189,6 +191,21 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
         this.digest = computeDigest( RexDigestIncludeType.OPTIONAL );
     }
 
+    public RexLiteral( PolyValue value, AlgDataType type, PolyType polyType, String digest ) {
+        this.value = value;
+        this.type = Objects.requireNonNull( type );
+        this.polyType = Objects.requireNonNull( polyType );
+        if ( !valueMatchesType( value, polyType, true ) ) {
+            System.err.println( value );
+            System.err.println( value.getClass().getCanonicalName() );
+            System.err.println( type );
+            System.err.println( polyType );
+            throw new IllegalArgumentException();
+        }
+        Preconditions.checkArgument( (value != null) || type.isNullable() );
+        Preconditions.checkArgument( polyType != PolyType.ANY );
+        this.digest = digest;
+    }
 
     public RexLiteral( PolyValue value, AlgDataType type, PolyType polyType, boolean raw ) {
         this.value = value;
@@ -424,7 +441,11 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
                 pw.print( value.asBoolean().value );
                 break;
             case DECIMAL:
-                assert value.isBigDecimal();
+                assert value.isBigDecimal() || value.isLong();
+                if (value.isLong()) {
+                    pw.print( value.asLong().value );
+                    break;
+                }
                 pw.print( value.asBigDecimal().value );
                 break;
             case DOUBLE:
@@ -662,6 +683,5 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
         }
         return value;
     }
-
 }
 

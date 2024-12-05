@@ -35,6 +35,7 @@ package org.polypheny.db.rex;
 
 
 import java.util.Collection;
+import lombok.Getter;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.nodes.Node;
@@ -54,6 +55,7 @@ import org.polypheny.db.util.Wrapper;
 public abstract class RexNode implements Wrapper {
 
     // Effectively final. Set in each sub-class constructor, and never re-set.
+    @Getter
     protected String digest;
 
 
