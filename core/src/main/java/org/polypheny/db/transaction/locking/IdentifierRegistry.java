@@ -6,9 +6,10 @@ import java.util.TreeSet;
 public class IdentifierRegistry {
 
     private static final Long MAX_IDENTIFIER_VALUE = Long.MAX_VALUE;
-    public static final IdentifierRegistry INSTANCE = new IdentifierRegistry(MAX_IDENTIFIER_VALUE);
+    public static final IdentifierRegistry INSTANCE = new IdentifierRegistry( MAX_IDENTIFIER_VALUE );
 
     private final TreeSet<IdentifierInterval> availableIdentifiers;
+
 
     IdentifierRegistry( long maxIdentifierValue ) {
         this.availableIdentifiers = new TreeSet<>();
