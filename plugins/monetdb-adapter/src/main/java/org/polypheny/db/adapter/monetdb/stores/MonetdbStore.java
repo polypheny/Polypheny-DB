@@ -260,28 +260,62 @@ public class MonetdbStore extends AbstractJdbcStore {
 
     @Override
     public String addIndex( Context context, LogicalIndex index, AllocationTable allocation ) {
-        throw new GenericRuntimeException( "MonetDB adapter does not support adding indexes" );
+        PhysicalTable physical = adapterCatalog.fromAllocation( allocation.id );
+        String physicalIndexName = getPhysicalIndexName( physical.id, index.id );
+
+        StringBuilder builder = new StringBuilder();
+        builder.append( "CREATE " );
+        if ( index.unique ) {
+            builder.append( "UNIQUE INDEX " );
+        } else {
+            builder.append( "INDEX " );
+        }
+
+        builder.append( dialect.quoteIdentifier( physicalIndexName ) )
+                .append( " ON " )
+                .append( dialect.quoteIdentifier( physical.namespaceName ) )
+                .append( "." )
+                .append( dialect.quoteIdentifier( physical.name ) );
+
+        builder.append( "(" );
+        boolean first = true;
+        for ( long columnId : index.key.fieldIds ) {
+            if ( !first ) {
+                builder.append( ", " );
+            }
+            first = false;
+            builder.append( dialect.quoteIdentifier( getPhysicalColumnName( columnId ) ) );
+        }
+        builder.append( ")" );
+
+        executeUpdate( builder, context );
+
+        return physicalIndexName;
     }
 
 
     @Override
     public void dropIndex( Context context, LogicalIndex index, long allocId ) {
-        throw new GenericRuntimeException( "MonetDB adapter does not support dropping indexes" );
+        PhysicalTable table = adapterCatalog.fromAllocation( allocId );
+
+        StringBuilder builder = new StringBuilder();
+        builder.append( "DROP INDEX " );
+        builder.append( dialect.quoteIdentifier( index.physicalName + "_" + table.id ) );
+        executeUpdate( builder, context );
     }
 
 
     @Override
     public List<IndexMethodModel> getAvailableIndexMethods() {
         // According to the MonetDB documentation, MonetDB takes create index statements only as an advice and often freely
-        // neglects them. Indexes are created and removed automatically. We therefore decided to not support manually creating
-        // indexes on MonetDB.
-        return ImmutableList.of();
+        // neglects them. Indexes are created and removed automatically.
+        return ImmutableList.of( new IndexMethodModel( "index", "index" ) );
     }
 
 
     @Override
     public IndexMethodModel getDefaultIndexMethod() {
-        throw new GenericRuntimeException( "MonetDB adapter does not support adding indexes" );
+        return new IndexMethodModel( "index", "index" );
     }
 
 
