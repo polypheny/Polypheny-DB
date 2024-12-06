@@ -51,7 +51,7 @@ public class EntityIdentifierTests {
                     statement.executeUpdate( "CREATE TABLE identifiers (a INTEGER NOT NULL, b INTEGER, PRIMARY KEY (a))" );
                     connection.commit();
                 } finally {
-                    statement.executeUpdate( "DROP TABLE identifiers" );
+                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
                     connection.commit();
                 }
             }
@@ -70,7 +70,7 @@ public class EntityIdentifierTests {
 
                     connection.commit();
                 } finally {
-                    statement.executeUpdate( "DROP TABLE identifiers" );
+                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
                     connection.commit();
                 }
             }
@@ -91,7 +91,7 @@ public class EntityIdentifierTests {
                     preparedStatement.executeUpdate();
                     connection.commit();
                 } finally {
-                    statement.executeUpdate( "DROP TABLE identifiers" );
+                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
                     connection.commit();
                 }
             }
@@ -110,7 +110,7 @@ public class EntityIdentifierTests {
 
                     connection.commit();
                 } finally {
-                    statement.executeUpdate( "DROP TABLE identifiers" );
+                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
                     connection.commit();
                 }
             }
@@ -134,7 +134,7 @@ public class EntityIdentifierTests {
                     preparedStatement.executeBatch();
                     connection.commit();
                 } finally {
-                    statement.executeUpdate( "DROP TABLE identifiers" );
+                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
                     connection.commit();
                 }
             }
@@ -158,8 +158,8 @@ public class EntityIdentifierTests {
                     //TODO TH: check that new identifiers had been assigned instead of copying from the first table
                     connection.commit();
                 } finally {
-                    statement.executeUpdate( "DROP TABLE identifiers1" );
-                    statement.executeUpdate( "DROP TABLE identifiers2" );
+                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers1" );
+                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers2" );
                     connection.commit();
                 }
             }
@@ -181,8 +181,8 @@ public class EntityIdentifierTests {
                     //TODO TH: check that new identifiers had been assigned instead of copying from the first table
                     connection.commit();
                 } finally {
-                    statement.executeUpdate( "DROP TABLE identifiers1" );
-                    statement.executeUpdate( "DROP TABLE identifiers2" );
+                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers1" );
+                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers2" );
                     connection.commit();
                 }
             }
@@ -205,8 +205,8 @@ public class EntityIdentifierTests {
                     //TODO TH: check that new identifiers had been assigned instead of copying from the first table
                     connection.commit();
                 } finally {
-                    statement.executeUpdate( "DROP TABLE identifiers1" );
-                    statement.executeUpdate( "DROP TABLE identifiers2" );
+                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers1" );
+                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers2" );
                     connection.commit();
                 }
             }
@@ -224,7 +224,7 @@ public class EntityIdentifierTests {
                     statement.executeUpdate( "INSERT INTO identifiers1 (a, b) VALUES (1, DEFAULT)" );
                     connection.commit();
                 } finally {
-                    statement.executeUpdate( "DROP TABLE identifiers1" );
+                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers1" );
                     connection.commit();
                 }
             }
@@ -242,7 +242,7 @@ public class EntityIdentifierTests {
                     statement.executeUpdate( "INSERT INTO identifiers1 (a) VALUES (1)" );
                     connection.commit();
                 } finally {
-                    statement.executeUpdate( "DROP TABLE identifiers1" );
+                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers1" );
                     connection.commit();
                 }
             }
@@ -260,7 +260,7 @@ public class EntityIdentifierTests {
                     statement.executeUpdate( "INSERT INTO identifiers1 VALUES (1, DEFAULT)" );
                     connection.commit();
                 } finally {
-                    statement.executeUpdate( "DROP TABLE identifiers1" );
+                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers1" );
                     connection.commit();
                 }
             }
@@ -283,7 +283,7 @@ public class EntityIdentifierTests {
                     }
                     connection.commit();
                 } finally {
-                    statement.executeUpdate( "DROP TABLE identifiers1" );
+                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers1" );
                     connection.commit();
                 }
             }
@@ -306,7 +306,7 @@ public class EntityIdentifierTests {
                     }
                     connection.commit();
                 } finally {
-                    statement.executeUpdate( "DROP TABLE identifiers1" );
+                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers1" );
                     connection.commit();
                 }
             }
@@ -328,7 +328,7 @@ public class EntityIdentifierTests {
                     }
                     connection.commit();
                 } finally {
-                    statement.executeUpdate( "DROP TABLE identifiers1" );
+                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers1" );
                     connection.commit();
                 }
             }
@@ -346,7 +346,7 @@ public class EntityIdentifierTests {
                     statement.executeUpdate( "INSERT INTO identifiers1 (a, b) VALUES (1, DEFAULT), (2, 3), (3, DEFAULT)" );
                     connection.commit();
                 } finally {
-                    statement.executeUpdate( "DROP TABLE identifiers" );
+                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
                     connection.commit();
                 }
             }
@@ -364,7 +364,7 @@ public class EntityIdentifierTests {
                     statement.executeUpdate( "INSERT INTO identifiers1 VALUES (1, DEFAULT), (2, 3), (3, DEFAULT)" );
                     connection.commit();
                 } finally {
-                    statement.executeUpdate( "DROP TABLE identifiers" );
+                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
                     connection.commit();
                 }
             }
@@ -382,7 +382,7 @@ public class EntityIdentifierTests {
                     statement.executeUpdate( "INSERT INTO identifiers1 (a) VALUES (1), (2), (3)" );
                     connection.commit();
                 } finally {
-                    statement.executeUpdate( "DROP TABLE identifiers" );
+                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
                     connection.commit();
                 }
             }
@@ -409,7 +409,7 @@ public class EntityIdentifierTests {
 
                     connection.commit();
                 } finally {
-                    statement.executeUpdate( "DROP TABLE identifiers1" );
+                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers1" );
                     connection.commit();
                 }
             }
@@ -436,7 +436,7 @@ public class EntityIdentifierTests {
 
                     connection.commit();
                 } finally {
-                    statement.executeUpdate( "DROP TABLE identifiers1" );
+                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers1" );
                     connection.commit();
                 }
             }
@@ -462,7 +462,7 @@ public class EntityIdentifierTests {
 
                     connection.commit();
                 } finally {
-                    statement.executeUpdate( "DROP TABLE identifiers1" );
+                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers1" );
                     connection.commit();
                 }
             }
@@ -480,7 +480,7 @@ public class EntityIdentifierTests {
                     statement.executeUpdate( "INSERT INTO identifiers VALUES (1, 2)" );
                     connection.commit();
                 } finally {
-                    statement.executeUpdate( "DROP TABLE identifiers" );
+                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
                     connection.commit();
                 }
             }
@@ -495,7 +495,7 @@ public class EntityIdentifierTests {
             try ( Statement statement = connection.createStatement() ) {
                 try {
                     statement.executeUpdate( "CREATE TABLE identifiers (a INTEGER NOT NULL, b INTEGER, PRIMARY KEY (a))" );
-                    String insertSql = "INSERT INTO table_name VALUES (?, ?)";
+                    String insertSql = "INSERT INTO identifiers VALUES (?, ?)";
                     try ( PreparedStatement preparedStatement = connection.prepareStatement( insertSql ) ) {
                         preparedStatement.setInt( 1, 1 );
                         preparedStatement.setInt( 2, 2 );
@@ -503,7 +503,7 @@ public class EntityIdentifierTests {
                     }
                     connection.commit();
                 } finally {
-                    statement.executeUpdate( "DROP TABLE table_name" );
+                    statement.executeUpdate( "DROP TABLE identifiers" );
                     connection.commit();
                 }
             }
@@ -563,7 +563,7 @@ public class EntityIdentifierTests {
                     statement.executeUpdate( "INSERT INTO identifiers VALUES (1, 2, 3)" );
                     connection.commit();
                 } finally {
-                    statement.executeUpdate( "DROP TABLE identifiers" );
+                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
                     connection.commit();
                 }
             }
@@ -583,7 +583,7 @@ public class EntityIdentifierTests {
                     statement.executeUpdate( "UPDATE identifiers SET _eid = 1 WHERE a = 1 AND b = 2" );
                     connection.commit();
                 } finally {
-                    statement.executeUpdate( "DROP TABLE identifiers" );
+                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
                     connection.commit();
                 }
             }
@@ -604,7 +604,7 @@ public class EntityIdentifierTests {
 
                     connection.commit();
                 } finally {
-                    statement.executeUpdate( "DROP TABLE identifiers" );
+                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
                     connection.commit();
                 }
             }
@@ -625,7 +625,7 @@ public class EntityIdentifierTests {
 
                     connection.commit();
                 } finally {
-                    statement.executeUpdate( "DROP TABLE identifiers" );
+                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
                     connection.commit();
                 }
             }
@@ -646,7 +646,7 @@ public class EntityIdentifierTests {
 
                     connection.commit();
                 } finally {
-                    statement.executeUpdate( "DROP TABLE identifiers" );
+                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
                     connection.commit();
                 }
             }
@@ -666,7 +666,7 @@ public class EntityIdentifierTests {
 
                     connection.commit();
                 } finally {
-                    statement.executeUpdate( "DROP TABLE identifiers" );
+                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
                     connection.commit();
                 }
             }
@@ -686,7 +686,7 @@ public class EntityIdentifierTests {
 
                     connection.commit();
                 } finally {
-                    statement.executeUpdate( "DROP TABLE identifiers" );
+                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
                     connection.commit();
                 }
             }
@@ -706,7 +706,7 @@ public class EntityIdentifierTests {
 
                     connection.commit();
                 } finally {
-                    statement.executeUpdate( "DROP TABLE identifiers" );
+                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
                     connection.commit();
                 }
             }
