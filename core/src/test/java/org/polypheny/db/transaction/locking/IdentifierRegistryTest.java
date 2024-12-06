@@ -40,14 +40,14 @@ public class IdentifierRegistryTest {
         long firstId = registry.getEntryIdentifier();
         long secondId = registry.getEntryIdentifier();
 
-        assertEquals( 0, firstId );
-        assertEquals( 1, secondId );
+        assertEquals( 1, firstId );
+        assertEquals( 2, secondId );
     }
 
 
     @Test
     void testGetEntryIdentifierUntilOverflow() {
-        for ( int i = 0; i < 100; i++ ) {
+        for ( int i = 0; i < 99; i++ ) {
             registry.getEntryIdentifier();
         }
         Exception exception = assertThrows( IllegalStateException.class, registry::getEntryIdentifier );
@@ -61,7 +61,7 @@ public class IdentifierRegistryTest {
         registry.getEntryIdentifier();
 
         registry.releaseEntryIdentifiers( Set.of( firstIdentifier ) );
-        assertEquals( 0, registry.getEntryIdentifier() );
+        assertEquals( 1, registry.getEntryIdentifier() );
     }
 
 
@@ -75,7 +75,7 @@ public class IdentifierRegistryTest {
             registry.getEntryIdentifier();
         }
         registry.releaseEntryIdentifiers( Set.of( middleIdentifier ) );
-        assertEquals( 25, registry.getEntryIdentifier() );
+        assertEquals( 26, registry.getEntryIdentifier() );
     }
 
 
@@ -92,7 +92,7 @@ public class IdentifierRegistryTest {
             registry.getEntryIdentifier();
         }
         registry.releaseEntryIdentifiers( identifiers );
-        for ( int i = 20; i < 40; i++ ) {
+        for ( int i = 21; i < 40; i++ ) {
             assertEquals( i, registry.getEntryIdentifier() );
         }
     }
@@ -104,17 +104,19 @@ public class IdentifierRegistryTest {
         Set<Long> oddIdentifiers = new HashSet<>();
 
         for ( int i = 0; i < 60; i++ ) {
-            if ( i % 2 == 0 ) {
-                evenIdentifiers.add( registry.getEntryIdentifier() );
+            long id = registry.getEntryIdentifier();
+            if ( id % 2 == 0 ) {
+                evenIdentifiers.add( id );
                 continue;
             }
-            oddIdentifiers.add( registry.getEntryIdentifier() );
+            oddIdentifiers.add( id );
         }
 
         registry.releaseEntryIdentifiers( evenIdentifiers );
 
         for ( int i = 0; i < 30; i++ ) {
-            assertEquals( 0, registry.getEntryIdentifier() % 2 );
+            long id = registry.getEntryIdentifier();
+            assertEquals( 0, id % 2);
         }
     }
 

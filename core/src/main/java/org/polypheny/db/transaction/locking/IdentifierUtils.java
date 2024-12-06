@@ -16,20 +16,14 @@
 
 package org.polypheny.db.transaction.locking;
 
-import com.google.common.collect.ImmutableList;
 import java.text.MessageFormat;
-import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.catalog.logistic.Collation;
 import org.polypheny.db.ddl.DdlManager.ColumnTypeInformation;
 import org.polypheny.db.ddl.DdlManager.FieldInformation;
-import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyLong;
 
 public class IdentifierUtils {
@@ -55,60 +49,44 @@ public class IdentifierUtils {
             1
     );
 
+
     public static PolyLong getIdentifier() {
         return new PolyLong( IdentifierRegistry.INSTANCE.getEntryIdentifier() );
     }
 
+
     public static void throwIllegalFieldName() {
         throw new IllegalArgumentException( MessageFormat.format(
                 "The field {0} is reserved for internal use and cannot be used.",
-                IdentifierUtils.IDENTIFIER_KEY)
+                IdentifierUtils.IDENTIFIER_KEY )
         );
-    }
-
-    public static AlgNode overwriteIdentifierInInput( LogicalRelValues value ) {
-        List<List<RexLiteral>> newValues = new ArrayList<>();
-        value.tuples.forEach(row -> {
-            List<RexLiteral> newRow = new ArrayList<>(row);
-            RexLiteral identifierLiteral = newRow.get(0);
-            newRow.set(0, IdentifierUtils.copyAndUpdateIdentifier(identifierLiteral, getIdentifier()));
-            newValues.add(newRow);
-        });
-
-        ImmutableList<ImmutableList<RexLiteral>> immutableValues = new ImmutableList.Builder<ImmutableList<RexLiteral>>()
-                .addAll(newValues.stream()
-                        .map(ImmutableList::copyOf)
-                        .toList())
-                .build();
-
-        return new LogicalRelValues(
-                value.getCluster(),
-                value.getTraitSet(),
-                value.getRowType(),
-                immutableValues
-        );
-    }
-
-    private static RexLiteral copyAndUpdateIdentifier( RexLiteral identifierLiteral, PolyLong identifier ) {
-        return new RexLiteral(identifier,  identifierLiteral.getType(), PolyType.DECIMAL);
     }
 
 
     public static List<FieldInformation> addIdentifierFieldIfAbsent( List<FieldInformation> fields ) {
-        if (fields.get(0).name().equals( IDENTIFIER_KEY )){
+        if ( fields.get( 0 ).name().equals( IDENTIFIER_KEY ) ) {
             return fields;
         }
         List<FieldInformation> newFields = fields.stream()
-                .map( f -> new FieldInformation(f.name(), f.typeInformation(), f.collation(), f.defaultValue(), f.position() + 1) )
+                .map( f -> new FieldInformation( f.name(), f.typeInformation(), f.collation(), f.defaultValue(), f.position() + 1 ) )
                 .collect( Collectors.toCollection( LinkedList::new ) );
-        newFields.add(0, IDENTIFIER_FIELD_INFORMATION );
+        newFields.add( 0, IDENTIFIER_FIELD_INFORMATION );
         return newFields;
     }
 
-    public static void throwIfContainsIdentifierField(List<FieldInformation> fields) {
-        if (fields.stream().noneMatch( f -> f.name().equals(IDENTIFIER_FIELD_INFORMATION.name()))) {
+
+    public static void throwIfContainsIdentifierField( List<FieldInformation> fields ) {
+        if ( fields.stream().noneMatch( f -> f.name().equals( IDENTIFIER_FIELD_INFORMATION.name() ) ) ) {
             return;
 
+        }
+        throwIllegalFieldName();
+    }
+
+
+    public static void throwIfIsIdentifierKey( String string ) {
+        if ( !string.equals( IDENTIFIER_KEY ) ) {
+            return;
         }
         throwIllegalFieldName();
     }

@@ -18,6 +18,7 @@ package org.polypheny.db.ddl;
 
 
 import com.google.common.collect.ImmutableList;
+import io.grpc.xds.shaded.com.google.api.expr.v1alpha1.Expr.Ident;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -459,6 +460,7 @@ public class DdlManagerImpl extends DdlManager {
     @Override
     public void createColumn( String columnName, LogicalTable table, String beforeColumnName, String afterColumnName, ColumnTypeInformation type, boolean nullable, PolyValue defaultValue, Statement statement ) {
         columnName = adjustNameIfNeeded( columnName, table.namespaceId );
+        IdentifierUtils.throwIfIsIdentifierKey( columnName );
         // Check if the column either allows null values or has a default value defined.
         if ( defaultValue == null && !nullable ) {
             throw new GenericRuntimeException( "Column is not nullable and does not have a default value defined." );
@@ -851,6 +853,7 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void dropColumn( LogicalTable table, String columnName, Statement statement ) {
+        IdentifierUtils.throwIfIsIdentifierKey( columnName );
         List<LogicalColumn> columns = catalog.getSnapshot().rel().getColumns( table.id );
         if ( columns.size() < 2 ) {
             throw new GenericRuntimeException( "Cannot drop sole column of table %s", table.name );
@@ -1098,6 +1101,7 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void setColumnType( LogicalTable table, String columnName, ColumnTypeInformation type, Statement statement ) {
+        IdentifierUtils.throwIfIsIdentifierKey( columnName );
         // Make sure that this is a table of type TABLE (and not SOURCE)
         checkIfDdlPossible( table.entityType );
 
@@ -1617,6 +1621,9 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void renameColumn( LogicalTable table, String columnName, String newColumnName, Statement statement ) {
+        IdentifierUtils.throwIfIsIdentifierKey( columnName );
+        IdentifierUtils.throwIfIsIdentifierKey( newColumnName );
+
         LogicalColumn logicalColumn = catalog.getSnapshot().rel().getColumn( table.id, columnName ).orElseThrow();
 
         if ( catalog.getSnapshot().rel().getColumn( table.id, newColumnName ).isPresent() ) {
@@ -2060,7 +2067,7 @@ public class DdlManagerImpl extends DdlManager {
         Map<String, LogicalColumn> ids = new HashMap<>();
 
         IdentifierUtils.throwIfContainsIdentifierField( fields );
-        fields = IdentifierUtils.addIdentifierFieldIfAbsent(fields);
+        fields = IdentifierUtils.addIdentifierFieldIfAbsent( fields );
 
         for ( FieldInformation information : fields ) {
             ids.put( information.name(), addColumn( namespaceId, information.name(), information.typeInformation(), information.collation(), information.defaultValue(), logical.id, information.position() + 1 ) ); // pos + 1 to make space for entry identifier column
@@ -2105,6 +2112,7 @@ public class DdlManagerImpl extends DdlManager {
 
         catalog.updateSnapshot();
     }
+
 
     @NotNull
     private Pair<AllocationPartition, PartitionProperty> createSinglePartition( long namespaceId, LogicalTable logical ) {
