@@ -13,7 +13,7 @@ public class IdentifierRegistry {
 
     IdentifierRegistry( long maxIdentifierValue ) {
         this.availableIdentifiers = new TreeSet<>();
-        this.availableIdentifiers.add( new IdentifierInterval( 0, maxIdentifierValue ) );
+        this.availableIdentifiers.add( new IdentifierInterval( IdentifierUtils.MISSING_IDENTIFIER + 1, maxIdentifierValue ) );
     }
 
 
