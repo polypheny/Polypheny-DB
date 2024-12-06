@@ -32,14 +32,13 @@ import org.polypheny.db.util.graph.AttributedDirectedGraph;
 import org.polypheny.db.util.graph.TopologicalOrderIterator;
 import org.polypheny.db.workflow.dag.Workflow;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper.ActivityState;
-import org.polypheny.db.workflow.dag.edges.ControlEdge;
 import org.polypheny.db.workflow.dag.edges.Edge;
 import org.polypheny.db.workflow.dag.edges.Edge.EdgeState;
 import org.polypheny.db.workflow.engine.execution.Executor.ExecutorType;
 import org.polypheny.db.workflow.engine.scheduler.ExecutionEdge;
 import org.polypheny.db.workflow.engine.scheduler.ExecutionEdge.ExecutionEdgeFactory;
 import org.polypheny.db.workflow.engine.scheduler.GraphUtils;
-import org.polypheny.db.workflow.models.ActivityConfigModel.CommonTransaction;
+import org.polypheny.db.workflow.models.ActivityConfigModel.CommonType;
 
 public class WorkflowOptimizerImpl extends WorkflowOptimizer {
 
@@ -50,7 +49,7 @@ public class WorkflowOptimizerImpl extends WorkflowOptimizer {
 
 
     @Override
-    public List<SubmissionFactory> computeNextTrees( CommonTransaction commonType ) {
+    public List<SubmissionFactory> computeNextTrees( CommonType commonType ) {
         AttributedDirectedGraph<UUID, ExecutionEdge> subDag = AttributedDirectedGraph.create( new ExecutionEdgeFactory() );
         Map<UUID, NodeColor> nodeColors = new HashMap<>();
         Map<ExecutionEdge, EdgeColor> edgeColors = new HashMap<>();
@@ -58,8 +57,12 @@ public class WorkflowOptimizerImpl extends WorkflowOptimizer {
 
         // order determines priority if an activity implements multiple interfaces
         determineVariableWriters( subDag, nodeColors, edgeColors );
-        determineFusions( subDag, nodeColors, edgeColors );
-        determinePipes( subDag, nodeColors, edgeColors );
+        if ( isFusionEnabled ) {
+            determineFusions( subDag, nodeColors, edgeColors );
+        }
+        if ( isPipelineEnabled ) {
+            determinePipes( subDag, nodeColors, edgeColors );
+        }
 
         System.out.println( "\nSub-DAG: " + subDag );
         System.out.println( "Node Colors: " + nodeColors );
@@ -88,10 +91,10 @@ public class WorkflowOptimizerImpl extends WorkflowOptimizer {
                     continue; // edge to an activity that was already aborted
                 }
 
-                Edge edgeData = getEdge( edge );
+                Edge edgeData = workflow.getEdge( edge );
 
                 assert edgeData.getState() == EdgeState.IDLE : "Encountered edge of queued or executing activity that is not idle: " + edge;
-                if ( edgeData instanceof ControlEdge control && control.isIgnored() ) {
+                if ( edgeData.isIgnored() ) {
                     continue; // control edges that are no longer required are not added to the subDag
                 }
 
@@ -254,7 +257,7 @@ public class WorkflowOptimizerImpl extends WorkflowOptimizer {
                     GraphUtils.getInducedSubgraph( subDag, component.left ),
                     component.left,
                     component.right.executorType, // TODO: use fusion executor even for single activities if possible
-                    CommonTransaction.NONE );
+                    CommonType.NONE );
             queue.add( Pair.of( factory.getActivities().size(), factory ) ); // larger trees have higher priority
         }
 

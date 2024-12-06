@@ -128,7 +128,7 @@ public class ExecutionContextImpl implements ExecutionContext, PipeExecutionCont
         if ( !activityWrapper.getDef().hasCategory( ActivityCategory.EXTRACT ) && !activityWrapper.getDef().hasCategory( ActivityCategory.LOAD ) ) {
             throw new IllegalStateException( "Only EXTRACT or LOAD activities have access to transactions" );
         }
-        return sm.getTransaction( activityWrapper.getId(), activityWrapper.getConfig().getTransactionMode() );
+        return sm.getTransaction( activityWrapper.getId(), activityWrapper.getConfig().getCommonType() );
     }
 
 

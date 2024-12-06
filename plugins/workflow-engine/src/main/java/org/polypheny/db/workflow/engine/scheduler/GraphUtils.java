@@ -18,11 +18,15 @@ package org.polypheny.db.workflow.engine.scheduler;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.Objects;
+import java.util.Queue;
 import java.util.Set;
+import lombok.NonNull;
 import org.polypheny.db.util.graph.AttributedDirectedGraph;
 import org.polypheny.db.util.graph.AttributedDirectedGraph.AttributedEdgeFactory;
 import org.polypheny.db.util.graph.DefaultEdge;
+import org.polypheny.db.util.graph.TopologicalOrderIterator;
 
 public class GraphUtils {
 
@@ -77,6 +81,30 @@ public class GraphUtils {
         }
 
         return subgraph;
+    }
+
+
+    /**
+     * Returns a TopologicalOrderIterator for the subgraph that is reachable from root (excluding root)
+     */
+    public static <V, E extends DefaultEdge> Iterable<V> getTopologicalIterable( AttributedDirectedGraph<V, E> graph, @NonNull V root, boolean includeRoot ) {
+        Set<V> reachable = new HashSet<>();
+        Queue<V> open = new LinkedList<>();
+
+        if ( includeRoot ) {
+            open.add( root );
+        } else {
+            graph.getOutwardEdges( root ).forEach( e -> open.add( (V) e.target ) );
+        }
+        while ( !open.isEmpty() ) {
+            V n = open.remove();
+            if ( !reachable.contains( n ) ) {
+                reachable.add( n );
+                graph.getOutwardEdges( n ).forEach( e -> open.add( (V) e.target ) );
+            }
+        }
+
+        return TopologicalOrderIterator.of( getInducedSubgraph( graph, reachable ) );
     }
 
 }

@@ -18,20 +18,29 @@ package org.polypheny.db.workflow.dag;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
 import lombok.Setter;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.graph.AttributedDirectedGraph;
+import org.polypheny.db.util.graph.CycleDetector;
+import org.polypheny.db.util.graph.TopologicalOrderIterator;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
 import org.polypheny.db.workflow.dag.edges.DataEdge;
 import org.polypheny.db.workflow.dag.edges.Edge;
+import org.polypheny.db.workflow.dag.edges.Edge.EdgeState;
+import org.polypheny.db.workflow.dag.variables.ReadableVariableStore;
 import org.polypheny.db.workflow.engine.scheduler.ExecutionEdge;
 import org.polypheny.db.workflow.engine.scheduler.ExecutionEdge.ExecutionEdgeFactory;
+import org.polypheny.db.workflow.models.ActivityConfigModel.CommonType;
 import org.polypheny.db.workflow.models.ActivityModel;
 import org.polypheny.db.workflow.models.EdgeModel;
 import org.polypheny.db.workflow.models.WorkflowConfigModel;
@@ -114,12 +123,14 @@ public class WorkflowImpl implements Workflow {
 
     @Override
     public List<Edge> getInEdges( UUID target ) {
+        // TODO: make more efficient
         return getEdges().stream().filter( e -> e.getTo().getId().equals( target ) ).toList();
     }
 
 
     @Override
     public List<Edge> getOutEdges( UUID source ) {
+        // TODO: make more efficient
         return getEdges().stream().filter( e -> e.getFrom().getId().equals( source ) ).toList();
     }
 
@@ -130,6 +141,20 @@ public class WorkflowImpl implements Workflow {
         for ( Edge e : candidates ) {
             if ( e.isEquivalent( model ) ) {
                 return e;
+            }
+        }
+        return null;
+    }
+
+
+    @Override
+    public Edge getEdge( ExecutionEdge execEdge ) {
+        List<Edge> candidates = edges.get( Pair.of( execEdge.getSource(), execEdge.getTarget() ) );
+        if ( candidates != null ) {
+            for ( Edge candidate : candidates ) {
+                if ( execEdge.representsEdge( candidate ) ) {
+                    return candidate;
+                }
             }
         }
         return null;
@@ -152,6 +177,43 @@ public class WorkflowImpl implements Workflow {
     @Override
     public WorkflowConfigModel getConfig() {
         return config;
+    }
+
+
+    @Override
+    public ReadableVariableStore recomputeInVariables( UUID activityId ) {
+        ActivityWrapper wrapper = activities.get( activityId );
+        wrapper.getVariables().mergeInputStores( getInEdges( activityId ), wrapper.getDef().getInPorts().length );
+        return wrapper.getVariables();
+    }
+
+
+    @Override
+    public boolean hasStableInVariables( UUID activityId ) {
+        for ( Edge edge : getInEdges( activityId ) ) {
+            if ( edge.getState() == EdgeState.IDLE && !edge.isIgnored() ) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+
+    @Override
+    public List<Optional<AlgDataType>> getInputTypes( UUID activityId ) {
+        List<Optional<AlgDataType>> inputTypes = new ArrayList<>();
+
+        for ( int i = 0; i < getInPortCount( activityId ); i++ ) {
+            DataEdge dataEdge = getDataEdge( activityId, i );
+            inputTypes.add( dataEdge.getFrom().getOutTypePreview().get( dataEdge.getFromPort() ) );
+        }
+        return inputTypes;
+    }
+
+
+    @Override
+    public int getInPortCount( UUID activityId ) {
+        return activities.get( activityId ).getDef().getInPorts().length;
     }
 
 
@@ -189,6 +251,80 @@ public class WorkflowImpl implements Workflow {
         getEdges().forEach( edge -> dag.addEdge( edge.getFrom().getId(), edge.getTo().getId(), edge ) );
 
         return dag;
+    }
+
+
+    @Override
+    public void validateStructure() throws Exception {
+        validateStructure( toDag() );
+    }
+
+
+    @Override
+    public void validateStructure( AttributedDirectedGraph<UUID, ExecutionEdge> subDag ) throws IllegalStateException {
+        if ( subDag.vertexSet().isEmpty() && subDag.edgeSet().isEmpty() ) {
+            return;
+        }
+
+        for ( ExecutionEdge execEdge : subDag.edgeSet() ) {
+            if ( !activities.containsKey( execEdge.getSource() ) || !activities.containsKey( execEdge.getTarget() ) ) {
+                throw new IllegalStateException( "Source and target activities of an edge must be part of the workflow: " + execEdge );
+            }
+            Edge edge = getEdge( execEdge );
+            if ( edge instanceof DataEdge data && !data.isCompatible() ) {
+                throw new IllegalStateException( "Incompatible port types for data edge: " + edge );
+            }
+        }
+
+        if ( !(new CycleDetector<>( subDag ).findCycles().isEmpty()) ) {
+            throw new IllegalStateException( "A workflow must not contain cycles" );
+        }
+
+        for ( UUID n : TopologicalOrderIterator.of( subDag ) ) {
+            ActivityWrapper wrapper = getActivity( n );
+            CommonType type = wrapper.getConfig().getCommonType();
+            Set<Integer> requiredInPorts = wrapper.getDef().getRequiredInPorts();
+            Set<Integer> occupiedInPorts = new HashSet<>();
+            for ( ExecutionEdge execEdge : subDag.getInwardEdges( n ) ) {
+                ActivityWrapper source = getActivity( execEdge.getSource() );
+                CommonType sourceType = source.getConfig().getCommonType();
+                int toPort = execEdge.getToPort();
+
+                requiredInPorts.remove( toPort );
+
+                if ( occupiedInPorts.contains( toPort ) ) {
+                    throw new IllegalStateException( "InPort " + toPort + " is already occupied: " + execEdge );
+                }
+                occupiedInPorts.add( toPort );
+
+                if ( wrapper.getState().isExecuted() && !source.getState().isExecuted() ) {
+                    throw new IllegalStateException( "An activity that is executed cannot have a not yet executed predecessor: " + execEdge );
+                }
+                if ( type == CommonType.EXTRACT ) {
+                    if ( sourceType != CommonType.EXTRACT ) {
+                        throw new IllegalStateException( "An activity with CommonType EXTRACT must only have EXTRACT predecessors: " + execEdge );
+                    }
+                    if ( execEdge.isControl() && !execEdge.isOnSuccess() ) {
+                        throw new IllegalStateException( "Cannot have a onFail control edge between common EXTRACT activities" + execEdge );
+                    }
+                } else if ( sourceType == CommonType.LOAD ) {
+                    if ( type != CommonType.LOAD ) {
+                        throw new IllegalStateException( "An activity with CommonType LOAD must only have LOAD successors: " + execEdge );
+                    }
+                    if ( execEdge.isControl() && !execEdge.isOnSuccess() ) {
+                        throw new IllegalStateException( "Cannot have a onFail control edge between common LOAD activities" + execEdge );
+                    }
+                }
+
+            }
+            if ( !requiredInPorts.isEmpty() ) {
+                throw new IllegalStateException( "Activity is missing the required data input(s) " + requiredInPorts + ": " + wrapper );
+            }
+        }
+
+        // compatible settings
+        // TODO: verify succesors of idle nodes are idle as well
+
     }
 
 }

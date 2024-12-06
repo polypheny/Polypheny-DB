@@ -27,7 +27,6 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.workflow.dag.edges.Edge.EdgeState;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingValue;
-import org.polypheny.db.workflow.dag.variables.WritableVariableStore;
 import org.polypheny.db.workflow.engine.execution.context.ExecutionContext;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 
@@ -40,6 +39,7 @@ public interface Activity {
      * If any available setting or input type results in a contradiction or invalid state,
      * an {@link ActivityException} is thrown.
      * If a setting, input or output type is available, it is guaranteed to not change anymore.
+     * This method should be idempotent.
      *
      * @param inTypes a list of {@link Optional<AlgDataType>} representing the input tuple types.
      * @param settings a map of setting keys to {@link Optional<SettingValue>} representing the available settings, i.e. all settings that do not contain variables.
@@ -53,19 +53,6 @@ public interface Activity {
         return List.of( Optional.ofNullable( type ) );
     }
 
-
-    /**
-     * This method is called just before execution starts and can be used to write variables based on input tuple types and settings.
-     * To be able to update variables while having access to the input data, the activity should instead implement {@link VariableWriter}.
-     *
-     * @param inTypes a list of {@link AlgDataType} representing the input tuple types.
-     * @param settings a map of setting keys to {@link SettingValue} representing the settings.
-     * @param variables a WritableVariableStore to be used for updating any variable values.
-     */
-    default void updateVariables( List<AlgDataType> inTypes, Map<String, SettingValue> settings, WritableVariableStore variables ) {
-    }
-
-    // settings do NOT include values from the updateVariables step.
 
     /**
      * Execute this activity.
@@ -152,7 +139,7 @@ public interface Activity {
         /**
          * Computes whether an activity is NOT aborted based on its data edge states.
          *
-         * @param dataEdges the EdgeState of all data inputs of an activity
+         * @param dataEdges the EdgeState of all data inputs of an activity in port order, null in case no edge is connected
          * @return false if the data edge states result in an abort, true otherwise.
          */
         public boolean merge( List<EdgeState> dataEdges ) {

@@ -1,0 +1,83 @@
+/*
+ * Copyright 2019-2024 The Polypheny Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.polypheny.db.workflow.engine.storage;
+
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import org.polypheny.db.TestHelper;
+import org.polypheny.db.TestHelper.JdbcConnection;
+import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
+
+public class StorageUtils {
+
+    public static final String HSQLDB_LOCKS = "hsqldb_locks";
+    public static final String HSQLDB_MVLOCKS = "hsqldb_mvlocks";
+
+
+    public static void addHsqldbStore( String name, String trxControlMode ) throws SQLException {
+        TestHelper.executeSQL( "ALTER ADAPTERS ADD \"%s\" USING 'Hsqldb' AS 'Store'".formatted( name )
+                + " WITH '{maxConnections:\"25\",trxControlMode:%s,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'".formatted( trxControlMode )
+        );
+    }
+
+
+    public static void addHsqldbLocksStore( String name ) throws SQLException {
+        addHsqldbStore( name, HSQLDB_LOCKS );
+    }
+
+
+    public static void removeStore( String name ) throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+
+                statement.executeUpdate( String.format( "ALTER ADAPTERS DROP \"%s\"", name ) );
+
+            }
+        }
+    }
+
+
+    public static Map<DataModel, String> getDefaultStoreMap( String storeName ) {
+        return Map.of(
+                DataModel.RELATIONAL, storeName,
+                DataModel.DOCUMENT, storeName,
+                DataModel.GRAPH, storeName
+        );
+    }
+
+
+    public static List<List<PolyValue>> readCheckpoint( StorageManager sm, UUID activityId, int index ) {
+        List<List<PolyValue>> list = new ArrayList<>();
+        try ( CheckpointReader reader = sm.readCheckpoint( activityId, index ) ) {
+            Iterator<List<PolyValue>> it = reader.getIterator();
+            while ( it.hasNext() ) {
+                list.add( it.next() );
+            }
+        }
+        return list;
+    }
+
+}

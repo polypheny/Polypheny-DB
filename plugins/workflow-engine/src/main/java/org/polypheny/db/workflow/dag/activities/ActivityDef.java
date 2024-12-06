@@ -19,9 +19,11 @@ package org.polypheny.db.workflow.dag.activities;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import lombok.Value;
 import org.polypheny.db.workflow.dag.activities.Activity.ActivityCategory;
 import org.polypheny.db.workflow.dag.activities.Activity.PortType;
@@ -80,6 +82,18 @@ public class ActivityDef {
     @JsonIgnore
     public PortType[] getOutPortTypes() {
         return Arrays.stream( outPorts ).map( OutPortDef::getType ).toArray( PortType[]::new );
+    }
+
+
+    @JsonIgnore
+    public Set<Integer> getRequiredInPorts() {
+        Set<Integer> set = new HashSet<>();
+        for ( int i = 0; i < inPorts.length; i++ ) {
+            if ( !inPorts[i].isOptional ) {
+                set.add( i );
+            }
+        }
+        return set;
     }
 
 

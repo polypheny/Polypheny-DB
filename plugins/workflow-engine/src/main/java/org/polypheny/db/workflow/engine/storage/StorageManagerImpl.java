@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nullable;
@@ -56,7 +57,8 @@ import org.polypheny.db.workflow.engine.storage.writer.CheckpointWriter;
 import org.polypheny.db.workflow.engine.storage.writer.DocWriter;
 import org.polypheny.db.workflow.engine.storage.writer.LpgWriter;
 import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
-import org.polypheny.db.workflow.models.ActivityConfigModel.CommonTransaction;
+import org.polypheny.db.workflow.models.ActivityConfigModel;
+import org.polypheny.db.workflow.models.ActivityConfigModel.CommonType;
 
 public class StorageManagerImpl implements StorageManager {
 
@@ -145,7 +147,7 @@ public class StorageManagerImpl implements StorageManager {
 
 
     @Override
-    public List<AlgDataType> getTupleTypes( UUID activityId ) {
+    public List<AlgDataType> getCheckpointTypes( UUID activityId ) {
         List<AlgDataType> types = new ArrayList<>();
         Map<Integer, LogicalEntity> outputs = checkpoints.get( activityId );
         for ( int i = 0; i < outputs.size(); i++ ) {
@@ -153,6 +155,12 @@ public class StorageManagerImpl implements StorageManager {
             types.add( output == null ? null : output.getTupleType() );
         }
         return types;
+    }
+
+
+    @Override
+    public List<Optional<AlgDataType>> getOptionalCheckpointTypes( UUID activityId ) {
+        return getCheckpointTypes( activityId ).stream().map( Optional::ofNullable ).toList();
     }
 
 
@@ -238,7 +246,7 @@ public class StorageManagerImpl implements StorageManager {
 
 
     @Override
-    public Transaction getTransaction( UUID activityId, CommonTransaction commonType ) {
+    public Transaction getTransaction( UUID activityId, CommonType commonType ) {
         return switch ( commonType ) {
             case NONE -> localTransactions.computeIfAbsent( activityId, id -> QueryUtils.startTransaction( Catalog.defaultNamespaceId, "LocalTx" ) );
             case EXTRACT -> extractTransaction;
@@ -271,9 +279,9 @@ public class StorageManagerImpl implements StorageManager {
 
 
     @Override
-    public void commitCommonTransaction( @NonNull CommonTransaction commonType ) {
-        assert commonType != CommonTransaction.NONE;
-        Transaction t = commonType == CommonTransaction.EXTRACT ? extractTransaction : loadTransaction;
+    public void commitCommonTransaction( @NonNull ActivityConfigModel.CommonType commonType ) {
+        assert commonType != CommonType.NONE;
+        Transaction t = commonType == CommonType.EXTRACT ? extractTransaction : loadTransaction;
         if ( t.isActive() ) {
             t.commit();
         }
@@ -281,9 +289,9 @@ public class StorageManagerImpl implements StorageManager {
 
 
     @Override
-    public void rollbackCommonTransaction( @NonNull CommonTransaction commonType ) {
-        assert commonType != CommonTransaction.NONE;
-        Transaction t = commonType == CommonTransaction.EXTRACT ? extractTransaction : loadTransaction;
+    public void rollbackCommonTransaction( @NonNull ActivityConfigModel.CommonType commonType ) {
+        assert commonType != CommonType.NONE;
+        Transaction t = commonType == CommonType.EXTRACT ? extractTransaction : loadTransaction;
         if ( t != null && t.isActive() ) {
             t.rollback( null );
         }
@@ -390,8 +398,8 @@ public class StorageManagerImpl implements StorageManager {
         // In practice, calling close for closing transactions is not required, since the transactions should be closed manually
         assert extractTransaction == null || !extractTransaction.isActive() || extractTransaction.getNumberOfStatements() == 0 : "Common extract transaction should get explicitly committed or aborted";
         assert loadTransaction == null || !loadTransaction.isActive() || loadTransaction.getNumberOfStatements() == 0 : "Common load transaction should get explicitly committed or aborted";
-        rollbackCommonTransaction( CommonTransaction.EXTRACT );
-        rollbackCommonTransaction( CommonTransaction.LOAD );
+        rollbackCommonTransaction( CommonType.EXTRACT );
+        rollbackCommonTransaction( CommonType.LOAD );
         for ( Transaction t : localTransactions.values() ) {
             assert !t.isActive() : "local transactions should get explicitly committed or aborted";
             t.rollback( null );

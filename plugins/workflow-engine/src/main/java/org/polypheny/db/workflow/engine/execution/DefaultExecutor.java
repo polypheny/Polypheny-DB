@@ -17,12 +17,9 @@
 package org.polypheny.db.workflow.engine.execution;
 
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
-import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.workflow.dag.Workflow;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
-import org.polypheny.db.workflow.dag.settings.SettingDef.SettingValue;
 import org.polypheny.db.workflow.engine.execution.context.ExecutionContextImpl;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
@@ -46,15 +43,12 @@ public class DefaultExecutor extends Executor {
     @Override
     void execute() throws ExecutorException {
         List<CheckpointReader> inputs = getReaders( wrapper );
-        List<AlgDataType> inputTypes = inputs.stream().map( CheckpointReader::getTupleType ).toList();
-
-        mergeInputVariables( wrapper.getId() );
-        Map<String, SettingValue> settings = wrapper.resolveSettings(); // settings before variable update
         ctx = new ExecutionContextImpl( wrapper, sm );
 
         try ( CloseableList ignored = new CloseableList( inputs ) ) {
-            wrapper.getActivity().updateVariables( inputTypes, settings, wrapper.getVariables() );
-            wrapper.getActivity().execute( inputs, settings, ctx );
+            wrapper.getActivity().execute( inputs, wrapper.resolveSettings(), ctx );
+            wrapper.setOutTypePreview( sm.getOptionalCheckpointTypes( wrapper.getId() ) );
+            ctx.updateProgress( 1 ); // ensure progress is correct
         } catch ( Exception e ) {
             throw new ExecutorException( e );
         }

@@ -16,25 +16,24 @@
 
 package org.polypheny.db.workflow.engine.execution;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.Callable;
 import org.polypheny.db.workflow.dag.Workflow;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
 import org.polypheny.db.workflow.dag.edges.DataEdge;
 import org.polypheny.db.workflow.dag.edges.Edge;
-import org.polypheny.db.workflow.dag.variables.ReadableVariableStore;
-import org.polypheny.db.workflow.dag.variables.WritableVariableStore;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 
 /**
  * An executor is responsible for executing a connected subgraph of a workflow.
- * Predecessor activities of activities in this subgraph are guaranteed to have finished their execution (and written their results to checkpoints)
+ * Predecessor activities of activities in this subgraph are guaranteed to have finished their execution (and written their results to checkpoints and merged their variables)
  * or are itself part of this subgraph.
  * After the Executor gets instantiated, the workflow structure remains static at least until execution finishes.
  * The execution of the subgraph is atomic: it is either completely successful or fails (=throws an exception).
- * An executor is responsible for updating the variables of its activities (including before execution starts).
+ * An executor is responsible for updating the variables of its non-leaf activities (including before execution starts) and the outTypePreview of all activities (in case the execution is successful).
  * An executor does not modify the state of any activities. The scheduler is responsible for this.
  */
 public abstract class Executor implements Callable<Void> {
@@ -71,27 +70,6 @@ public abstract class Executor implements Callable<Void> {
             execute();
         }
         return null;
-    }
-
-
-    /**
-     * Merges all the active (= successfully executed) input variableStores of the target activity and updates the target activity variableStore accordingly.
-     * In the process, the target variableStore is completely reset.
-     *
-     * @param targetId the identifier of the target activity whose variables are going to be set based on its inputs.
-     */
-    void mergeInputVariables( UUID targetId ) {
-        List<Edge> edges = workflow.getInEdges( targetId );
-
-        ActivityWrapper target = workflow.getActivity( targetId );
-        WritableVariableStore targetVariables = target.getVariables();
-        targetVariables.clear();
-        for ( Edge edge : edges ) {
-            if ( edge.isActive() ) {
-                ReadableVariableStore inputVariables = edge.getFrom().getVariables();
-                targetVariables.merge( inputVariables );
-            }
-        }
     }
 
 
@@ -145,6 +123,15 @@ public abstract class Executor implements Callable<Void> {
 
         public ExecutorException( String message, Throwable cause ) {
             super( message, cause );
+        }
+
+
+        public ObjectNode getVariableValue() {
+            ObjectMapper mapper = new ObjectMapper();
+            ObjectNode node = mapper.createObjectNode();
+            node.put( "message", getMessage() );
+            node.put( "cause", getCause().getMessage() );
+            return node;
         }
 
     }

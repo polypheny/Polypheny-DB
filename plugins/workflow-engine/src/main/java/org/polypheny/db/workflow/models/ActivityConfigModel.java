@@ -30,7 +30,7 @@ public class ActivityConfigModel {
     String[] preferredStores;  // one entry per output
 
     @JsonProperty(required = true)
-    CommonTransaction transactionMode;
+    CommonType commonType;
 
     ControlStateMerger controlStateMerger;
 
@@ -52,11 +52,11 @@ public class ActivityConfigModel {
 
 
     public static ActivityConfigModel of() {
-        return new ActivityConfigModel( false, null, CommonTransaction.NONE, ControlStateMerger.AND_AND );
+        return new ActivityConfigModel( false, null, CommonType.NONE, ControlStateMerger.AND_AND );
     }
 
 
-    public enum CommonTransaction {
+    public enum CommonType {
         // TODO: scheduler must take EXTRACT and LOAD "transactions" into account (these activities are executed first / last and succeed or fail atomically). LOAD can only start when EXTRACT has committed.
         // Any predecessor of a EXTRACT must also be a EXTRACT
         // Any successor of a LOAD must also be a LOAD

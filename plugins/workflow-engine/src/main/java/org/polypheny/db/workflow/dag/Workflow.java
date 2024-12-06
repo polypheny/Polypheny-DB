@@ -17,11 +17,14 @@
 package org.polypheny.db.workflow.dag;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.util.graph.AttributedDirectedGraph;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
 import org.polypheny.db.workflow.dag.edges.DataEdge;
 import org.polypheny.db.workflow.dag.edges.Edge;
+import org.polypheny.db.workflow.dag.variables.ReadableVariableStore;
 import org.polypheny.db.workflow.engine.scheduler.ExecutionEdge;
 import org.polypheny.db.workflow.models.EdgeModel;
 import org.polypheny.db.workflow.models.WorkflowConfigModel;
@@ -67,6 +70,8 @@ public interface Workflow {
 
     Edge getEdge( EdgeModel model );
 
+    Edge getEdge( ExecutionEdge execEdge );
+
     DataEdge getDataEdge( UUID to, int toPort );
 
     WorkflowConfigModel getConfig();
@@ -83,6 +88,31 @@ public interface Workflow {
      */
     void setState( WorkflowState state );
 
+    /**
+     * Recomputes the variables of the specified activity based on the variables stored in its input activities
+     * and the edge state.
+     * The resulting variables might not yet be stable.
+     *
+     * @param activityId the activity whose variables will be recomputed
+     * @return a readable view of the recomputed variable store
+     */
+    ReadableVariableStore recomputeInVariables( UUID activityId );
+
+    /**
+     * Returns true if all edges that could change the variables of the specified activity are
+     * not IDLE (except for ignored edges).
+     * If the specified activity is not yet executed, calling {@code recomputeInVariables()} more than once
+     * does not change its variables.
+     *
+     * @param activityId the activity whose variables will be recomputed
+     * @return true if the variables of the activities are stable.
+     */
+    boolean hasStableInVariables( UUID activityId );
+
+    List<Optional<AlgDataType>> getInputTypes( UUID activityId );
+
+    int getInPortCount( UUID activityId );
+
     void addActivity( ActivityWrapper activity );
 
     void deleteActivity( UUID activityId );
@@ -90,6 +120,10 @@ public interface Workflow {
     void deleteEdge( EdgeModel model );
 
     AttributedDirectedGraph<UUID, ExecutionEdge> toDag();
+
+    void validateStructure() throws Exception;
+
+    void validateStructure( AttributedDirectedGraph<UUID, ExecutionEdge> subDag ) throws IllegalStateException;
 
 
     /**
@@ -110,7 +144,8 @@ public interface Workflow {
 
     enum WorkflowState {
         IDLE,
-        EXECUTING
+        EXECUTING,
+        INTERRUPTED
     }
 
 }

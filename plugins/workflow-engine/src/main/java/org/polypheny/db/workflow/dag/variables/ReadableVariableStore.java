@@ -18,6 +18,7 @@ package org.polypheny.db.workflow.dag.variables;
 
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.Map;
 import java.util.Optional;
 
@@ -28,6 +29,8 @@ public interface ReadableVariableStore {
     boolean contains( String key );
 
     JsonNode getVariable( String key );
+
+    ObjectNode getError();
 
     /**
      * Get an unmodifiable snapshot of the underlying variables map.

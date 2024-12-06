@@ -79,6 +79,11 @@ public abstract class Edge {
     }
 
 
+    public boolean isIgnored() {
+        return false;
+    }
+
+
     public enum EdgeState {
         IDLE,
         ACTIVE,

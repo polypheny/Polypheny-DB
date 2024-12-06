@@ -20,14 +20,15 @@ import java.util.Set;
 import java.util.UUID;
 import lombok.Value;
 import org.polypheny.db.workflow.engine.execution.Executor;
-import org.polypheny.db.workflow.models.ActivityConfigModel.CommonTransaction;
+import org.polypheny.db.workflow.models.ActivityConfigModel.CommonType;
 
 @Value
 public class ExecutionSubmission {
 
-    CommonTransaction commonType;
+    CommonType commonType;
     Executor executor;
     Set<UUID> activities;
+    UUID rootId;
     UUID sessionId;
 
 }

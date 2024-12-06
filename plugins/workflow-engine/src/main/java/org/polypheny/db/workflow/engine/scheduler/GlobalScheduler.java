@@ -73,7 +73,6 @@ public class GlobalScheduler {
             throw new GenericRuntimeException( "Cannot execute a workflow that is already being executed." );
         }
         interruptedSessions.remove( sessionId );
-
         WorkflowScheduler scheduler = new WorkflowScheduler( workflow, sm, globalWorkers, targetActivity );
         List<ExecutionSubmission> submissions = scheduler.startExecution();
         if ( submissions.isEmpty() ) {
@@ -120,11 +119,18 @@ public class GlobalScheduler {
     }
 
 
+    public void awaitResultProcessor( long millis ) throws InterruptedException {
+        resultProcessor.join( millis );
+    }
+
+
     private void submit( List<ExecutionSubmission> submissions ) {
         for ( ExecutionSubmission submission : submissions ) {
+            log.info( "Submitting {}", submission );
             UUID sessionId = submission.getSessionId();
 
             completionService.submit( () -> {
+                log.info( "Starting actual execution {}", submission );
                 if ( interruptedSessions.contains( sessionId ) ) {
                     return new ExecutionResult( submission, new ExecutorException( "Execution was interrupted before it started" ) );
                 }
@@ -140,6 +146,7 @@ public class GlobalScheduler {
                     result = new ExecutionResult( submission, new ExecutorException( "Unexpected exception", e ) );
                 }
                 activeSubmissions.get( sessionId ).remove( submission );
+                log.info( "Finished actual execution with result {}", result );
                 return result;
             } );
         }
@@ -148,10 +155,12 @@ public class GlobalScheduler {
 
     private Thread startResultProcessor() {
         Thread t = new Thread( () -> {
+            log.info( "Started ResultProcessor thread" );
             while ( true ) {
                 List<ExecutionSubmission> nextSubmissions;
                 try {
                     ExecutionResult result = completionService.take().get();
+                    log.info( "Processing result: {}", result );
                     WorkflowScheduler scheduler = schedulers.get( result.getSessionId() );
                     nextSubmissions = scheduler.handleExecutionResult( result );
 
@@ -173,6 +182,7 @@ public class GlobalScheduler {
                     submit( nextSubmissions );
                 }
             }
+            log.info( "Processor is finished" );
         } );
         t.start();
         return t;

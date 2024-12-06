@@ -18,6 +18,7 @@ package org.polypheny.db.workflow.dag.variables;
 
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingValue;
 
 public interface WritableVariableStore {
@@ -40,6 +41,8 @@ public interface WritableVariableStore {
      */
     void setVariable( String key, SettingValue value );
 
+    void setError( ObjectNode value );
+
     /**
      * Merge this variableStore with the specified store.
      * In the case of duplicates, newStore takes priority.
@@ -49,5 +52,12 @@ public interface WritableVariableStore {
     void merge( ReadableVariableStore newStore );
 
     void clear();
+
+    /**
+     * Clears the store and then sets it to newStore
+     *
+     * @param newStore the store whose values are used to populate this store after clearing it
+     */
+    void reset( ReadableVariableStore newStore );
 
 }

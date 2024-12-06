@@ -17,6 +17,7 @@
 package org.polypheny.db.workflow.dag.edges;
 
 import lombok.Getter;
+import org.polypheny.db.workflow.dag.activities.Activity.PortType;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
 import org.polypheny.db.workflow.models.EdgeModel;
 
@@ -43,6 +44,21 @@ public class DataEdge extends Edge {
     @Override
     public boolean isEquivalent( EdgeModel model ) {
         return hasSameEndpoints( model ) && !model.isControl() && model.getFromPort() == fromPort && model.getToPort() == toPort;
+    }
+
+
+    public PortType getFromPortType() {
+        return from.getDef().getOutPortTypes()[fromPort];
+    }
+
+
+    public PortType getToPortType() {
+        return to.getDef().getInPortTypes()[toPort];
+    }
+
+
+    public boolean isCompatible() {
+        return getToPortType().canReadFrom( getFromPortType() );
     }
 
 }

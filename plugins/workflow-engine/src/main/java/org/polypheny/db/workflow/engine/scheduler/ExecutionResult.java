@@ -46,6 +46,11 @@ public class ExecutionResult {
     }
 
 
+    public UUID getRootId() {
+        return submission.getRootId();
+    }
+
+
     public boolean isSuccess() {
         return exception == null;
     }

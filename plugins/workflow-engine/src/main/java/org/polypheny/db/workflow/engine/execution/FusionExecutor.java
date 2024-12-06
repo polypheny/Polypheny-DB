@@ -18,10 +18,10 @@ package org.polypheny.db.workflow.engine.execution;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.util.graph.AttributedDirectedGraph;
 import org.polypheny.db.workflow.dag.Workflow;
@@ -29,7 +29,6 @@ import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
 import org.polypheny.db.workflow.dag.activities.Fusable;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingValue;
 import org.polypheny.db.workflow.engine.scheduler.ExecutionEdge;
-import org.polypheny.db.workflow.engine.scheduler.GraphUtils;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
 
 /**
@@ -41,18 +40,20 @@ import org.polypheny.db.workflow.engine.storage.StorageManager;
  */
 public class FusionExecutor extends Executor {
 
-    private final AttributedDirectedGraph<UUID, ExecutionEdge> execTree; // TODO: just use Set<UUID> instead?
+    private final AttributedDirectedGraph<UUID, ExecutionEdge> execTree;
+    private final UUID rootId;
 
 
-    public FusionExecutor( StorageManager sm, Workflow workflow, AttributedDirectedGraph<UUID, ExecutionEdge> execTree ) {
+    public FusionExecutor( StorageManager sm, Workflow workflow, AttributedDirectedGraph<UUID, ExecutionEdge> execTree, UUID rootId ) {
         super( sm, workflow );
         this.execTree = execTree;
+        this.rootId = rootId;
     }
 
 
     @Override
     void execute() throws ExecutorException {
-        UUID rootId = GraphUtils.findInvertedTreeRoot( execTree );
+        System.out.println( "Start execution fused tree: " + execTree );
 
         try {
             // TODO: implement after PolyAlgebra is merged
@@ -84,9 +85,9 @@ public class FusionExecutor extends Executor {
     }
 
 
-    private AlgNode constructAlgNode( UUID rootId, AlgCluster cluster ) throws Exception {
-        ActivityWrapper wrapper = workflow.getActivity( rootId );
-        List<ExecutionEdge> inEdges = execTree.getInwardEdges( rootId );
+    private AlgNode constructAlgNode( UUID root, AlgCluster cluster ) throws Exception {
+        ActivityWrapper wrapper = workflow.getActivity( root );
+        List<ExecutionEdge> inEdges = execTree.getInwardEdges( root );
         AlgNode[] inputsArr = new AlgNode[wrapper.getDef().getInPorts().length];
         for ( ExecutionEdge edge : inEdges ) {
             assert !edge.isControl() : "Execution tree for fusion must not contain control edges";
@@ -100,14 +101,16 @@ public class FusionExecutor extends Executor {
         }
         List<AlgNode> inputs = List.of( inputsArr );
 
-        mergeInputVariables( rootId );
+        if ( !inEdges.isEmpty() ) {
+            workflow.recomputeInVariables( root ); // inner nodes should get their variables merged
+        }
 
-        List<AlgDataType> inTypes = inputs.stream().map( AlgNode::getTupleType ).toList();
         Map<String, SettingValue> settings = wrapper.resolveSettings();
         Fusable activity = (Fusable) wrapper.getActivity();
 
-        activity.updateVariables( inTypes, settings, wrapper.getVariables() );
-        return activity.fuse( inputs, settings, cluster );
+        AlgNode fused = activity.fuse( inputs, settings, cluster );
+        wrapper.setOutTypePreview( List.of( Optional.of( fused.getTupleType() ) ) );
+        return fused;
     }
 
 }

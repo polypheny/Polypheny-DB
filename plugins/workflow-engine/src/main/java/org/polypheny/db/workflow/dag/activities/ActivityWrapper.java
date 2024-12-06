@@ -17,12 +17,19 @@
 package org.polypheny.db.workflow.dag.activities;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.workflow.dag.activities.Activity.ControlStateMerger;
+import org.polypheny.db.workflow.dag.edges.ControlEdge;
+import org.polypheny.db.workflow.dag.edges.DataEdge;
+import org.polypheny.db.workflow.dag.edges.Edge;
+import org.polypheny.db.workflow.dag.edges.Edge.EdgeState;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingValue;
 import org.polypheny.db.workflow.dag.variables.VariableStore;
 import org.polypheny.db.workflow.models.ActivityConfigModel;
@@ -41,14 +48,12 @@ public class ActivityWrapper {
     private ActivityConfigModel config;
     @Setter
     private RenderModel rendering;
-    private final VariableStore variables; // depending on state, this either represents the variables before or after execution
-
-    /**
-     * After initialization, the state should never be changed by the wrapper itself.
-     * The state is typically changed by the scheduler.
-     */
     @Setter
     private ActivityState state = ActivityState.IDLE;
+
+    private final VariableStore variables; // depending on state, this either represents the variables before (possibly not yet stable) or after execution (always stable)
+    @Setter
+    private List<Optional<AlgDataType>> outTypePreview; // TODO: ensure this is always up to date
 
 
     protected ActivityWrapper( UUID id, Activity activity, String type, Map<String, JsonNode> settings, ActivityConfigModel config, RenderModel rendering ) {
@@ -72,9 +77,19 @@ public class ActivityWrapper {
         return ActivityRegistry.buildSettingValues( type, variables.resolveVariables( serializableSettings ) );
     }
 
+    // TODO: be careful to use correct variables (must be sure they are correct)
 
-    public Map<String, Optional<SettingValue>> resolveAvailableSettings() {
-        return ActivityRegistry.buildAvailableSettingValues( type, variables.resolveAvailableVariables( serializableSettings ) );
+
+    public Map<String, Optional<SettingValue>> resolveAvailableSettings( boolean hasStableVariables ) {
+        VariableStore store = hasStableVariables ? variables : new VariableStore();
+        return ActivityRegistry.buildAvailableSettingValues( type, store.resolveAvailableVariables( serializableSettings ) );
+    }
+
+
+    public Map<String, Optional<SettingValue>> updateOutTypePreview( List<Optional<AlgDataType>> inTypePreviews, boolean hasStableVariables ) throws ActivityException {
+        Map<String, Optional<SettingValue>> settings = resolveAvailableSettings( hasStableVariables );
+        outTypePreview = activity.previewOutTypes( inTypePreviews, settings );
+        return settings;
     }
 
 
@@ -98,19 +113,64 @@ public class ActivityWrapper {
     }
 
 
+    public EdgeState canExecute( List<Edge> inEdges ) {
+        EdgeState[] dataEdges = new EdgeState[getDef().getInPorts().length];
+        List<EdgeState> successEdges = new ArrayList<>();
+        List<EdgeState> failEdges = new ArrayList<>();
+        for ( Edge edge : inEdges ) {
+            if ( edge instanceof DataEdge data ) {
+                dataEdges[data.getToPort()] = data.getState();
+            } else if ( edge instanceof ControlEdge control ) {
+                List<EdgeState> list = control.isOnSuccess() ? successEdges : failEdges;
+                list.add( control.getState() );
+            }
+        }
+
+        if ( !activity.getDataStateMerger().merge( List.of( dataEdges ) ) ) {
+            return EdgeState.INACTIVE;
+        }
+        return getControlStateMerger().merge( successEdges, failEdges );
+    }
+
+
+    public void resetExecution() {
+        activity.reset();
+        variables.clear();
+        state = ActivityState.IDLE;
+    }
+
+
     public static ActivityWrapper fromModel( ActivityModel model ) {
         return new ActivityWrapper( model.getId(), ActivityRegistry.activityFromType( model.getType() ), model.getType(), model.getSettings(), model.getConfig(), model.getRendering() );
     }
 
 
+    @Override
+    public String toString() {
+        return "ActivityWrapper{" +
+                "type='" + type + '\'' +
+                ", id=" + id +
+                ", state=" + state +
+                '}';
+    }
+
+
     public enum ActivityState {
-        IDLE,
-        QUEUED,
-        EXECUTING,
-        SKIPPED,  // => execution was aborted
-        FAILED,
-        FINISHED,
-        SAVED  // => finished + checkpoint created
+        IDLE( false ),
+        QUEUED( false ),
+        EXECUTING( false ),
+        SKIPPED( false ),  // => execution was aborted
+        FAILED( true ),
+        FINISHED( true ),
+        SAVED( true );  // => finished + checkpoint created
+
+        @Getter
+        private final boolean isExecuted;
+
+
+        ActivityState( boolean isExecuted ) {
+            this.isExecuted = isExecuted;
+        }
     }
 
 }

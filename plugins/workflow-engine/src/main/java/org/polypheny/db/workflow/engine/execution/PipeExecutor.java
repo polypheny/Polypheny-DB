@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
@@ -45,7 +46,6 @@ import org.polypheny.db.workflow.engine.execution.pipe.InputPipe;
 import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
 import org.polypheny.db.workflow.engine.execution.pipe.QueuePipe;
 import org.polypheny.db.workflow.engine.scheduler.ExecutionEdge;
-import org.polypheny.db.workflow.engine.scheduler.GraphUtils;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 import org.polypheny.db.workflow.engine.storage.writer.CheckpointWriter;
@@ -57,7 +57,8 @@ import org.polypheny.db.workflow.engine.storage.writer.CheckpointWriter;
  */
 public class PipeExecutor extends Executor {
 
-    private final AttributedDirectedGraph<UUID, ExecutionEdge> execTree; // TODO: just use Set<UUID> instead?
+    private final AttributedDirectedGraph<UUID, ExecutionEdge> execTree;
+    private final UUID rootId;
     private final Map<UUID, QueuePipe> outQueues = new HashMap<>(); // maps activities to their (only!) output queue
     private final Map<UUID, Map<String, SettingValue>> settingsSnapshot = new HashMap<>();
     private final int queueCapacity;
@@ -66,9 +67,10 @@ public class PipeExecutor extends Executor {
     private ExecutorService executor;
 
 
-    public PipeExecutor( StorageManager sm, Workflow workflow, AttributedDirectedGraph<UUID, ExecutionEdge> execTree, int queueCapacity ) {
+    public PipeExecutor( StorageManager sm, Workflow workflow, AttributedDirectedGraph<UUID, ExecutionEdge> execTree, UUID rootId, int queueCapacity ) {
         super( sm, workflow );
         this.execTree = execTree;
+        this.rootId = rootId;
         this.queueCapacity = queueCapacity;
 
         assert execTree.vertexSet().size() > 1 : "A PipeExecutor is not suited for the execution of a single activity, since the CheckpointPipes do not check for interrupts.";
@@ -145,10 +147,10 @@ public class PipeExecutor extends Executor {
     }
 
 
-    private AlgDataType registerOutputPipes( UUID rootId ) throws Exception {
-        ActivityWrapper wrapper = workflow.getActivity( rootId );
+    private AlgDataType registerOutputPipes( UUID root ) throws Exception {
+        ActivityWrapper wrapper = workflow.getActivity( root );
 
-        List<ExecutionEdge> inEdges = execTree.getInwardEdges( rootId );
+        List<ExecutionEdge> inEdges = execTree.getInwardEdges( root );
         List<AlgDataType> inTypes;
         if ( inEdges.isEmpty() ) {
             // leaf node
@@ -159,20 +161,21 @@ public class PipeExecutor extends Executor {
             for ( ExecutionEdge e : inEdges ) {
                 inTypes.add( registerOutputPipes( e.getSource() ) );
             }
+            workflow.recomputeInVariables( root ); // inner nodes should get their variables merged
         }
-
-        mergeInputVariables( rootId );
 
         Map<String, SettingValue> settings = wrapper.resolveSettings();
-        settingsSnapshot.put( rootId, settings ); // store current state of settings for later use, since updateVariables might change it
+        settingsSnapshot.put( root, settings ); // store current state of settings for later use
         Pipeable activity = (Pipeable) wrapper.getActivity();
 
-        activity.updateVariables( inTypes, settings, wrapper.getVariables() );
         AlgDataType outType = activity.lockOutputType( inTypes, settings );
         if ( outType != null ) {
-            outQueues.put( rootId, new QueuePipe( queueCapacity, outType ) );
+            outQueues.put( root, new QueuePipe( queueCapacity, outType ) );
+            wrapper.setOutTypePreview( List.of( Optional.of( outType ) ) );
+        } else {
+            // we are at the actual root of the tree, and it's an activity with no outputs.
+            wrapper.setOutTypePreview( List.of() );
         }
-        // else: we are at the actual root of the tree, and it's an activity with no outputs.
         return outType;
     }
 
@@ -192,7 +195,6 @@ public class PipeExecutor extends Executor {
 
 
     private List<Callable<Void>> getCallables() throws Exception {
-        UUID rootId = GraphUtils.findInvertedTreeRoot( execTree );
 
         AlgDataType rootType = registerOutputPipes( rootId );
 
@@ -244,6 +246,7 @@ public class PipeExecutor extends Executor {
                         }
                     }
                 }
+                ctx.updateProgress( 1 );
             }
             return null;
         };

@@ -16,6 +16,7 @@
 
 package org.polypheny.db.workflow.engine.scheduler;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -27,24 +28,26 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
 import javax.annotation.Nullable;
-import org.apache.commons.lang3.NotImplementedException;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.util.graph.AttributedDirectedGraph;
-import org.polypheny.db.util.graph.TopologicalOrderIterator;
 import org.polypheny.db.workflow.dag.Workflow;
-import org.polypheny.db.workflow.dag.activities.Activity;
+import org.polypheny.db.workflow.dag.Workflow.WorkflowState;
 import org.polypheny.db.workflow.dag.activities.ActivityException;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper.ActivityState;
-import org.polypheny.db.workflow.dag.edges.DataEdge;
+import org.polypheny.db.workflow.dag.edges.ControlEdge;
 import org.polypheny.db.workflow.dag.edges.Edge;
 import org.polypheny.db.workflow.dag.edges.Edge.EdgeState;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingValue;
+import org.polypheny.db.workflow.engine.execution.Executor.ExecutorException;
 import org.polypheny.db.workflow.engine.scheduler.optimizer.WorkflowOptimizer;
 import org.polypheny.db.workflow.engine.scheduler.optimizer.WorkflowOptimizer.SubmissionFactory;
 import org.polypheny.db.workflow.engine.scheduler.optimizer.WorkflowOptimizerImpl;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
+import org.polypheny.db.workflow.models.ActivityConfigModel.CommonType;
 
 /**
  * The scheduler takes a workflow and a (optional) target activitiy.
@@ -55,6 +58,7 @@ import org.polypheny.db.workflow.engine.storage.StorageManager;
  * WorkflowScheduler instance after its construction.
  * Sole control over the provided Workflow and StorageManager is given to the scheduler from creation up to the point the execution is finished.
  */
+@Slf4j
 public class WorkflowScheduler {
 
     private final Workflow workflow;
@@ -63,20 +67,21 @@ public class WorkflowScheduler {
     private final AttributedDirectedGraph<UUID, ExecutionEdge> execDag;
     private final WorkflowOptimizer optimizer;
 
-    private boolean isExtractFinished = false;
-    private boolean isLoadFinished = false;
     private boolean isAborted; // either by interruption or failure
     private boolean isFinished;
 
     private int pendingCount = 0; // current number of unfinished submissions
     private final Set<UUID> remainingActivities = new HashSet<>(); // activities that have not finished execution
-    private final Set<UUID> pendingActivities = new HashSet<>(); // contains activities submitted for execution
+    private final Set<UUID> remainingCommonExtract = new HashSet<>();
+    private final Set<UUID> remainingCommonLoad = new HashSet<>();
 
-    private final Map<UUID, List<Optional<AlgDataType>>> typePreviews = new HashMap<>(); // contains the (possibly not yet known) output types of execDag activities
+    private final Map<UUID, List<Optional<AlgDataType>>> inTypePreviews = new HashMap<>(); // contains the (possibly not yet known) input types of execDag activities
     private final Map<UUID, Map<String, Optional<SettingValue>>> settingsPreviews = new HashMap<>(); // contains the (possibly not yet known) settings of execDag activities
 
 
     public WorkflowScheduler( Workflow workflow, StorageManager sm, int globalWorkers, @Nullable UUID targetActivity ) throws Exception {
+        log.info( "Instantiating WorkflowScheduler with target: {}", targetActivity );
+        workflow.setState( WorkflowState.EXECUTING );
         this.workflow = workflow;
         this.sm = sm;
         this.maxWorkers = Math.min( workflow.getConfig().getMaxWorkers(), globalWorkers );
@@ -85,12 +90,12 @@ public class WorkflowScheduler {
             throw new GenericRuntimeException( "A saved activity first needs to be reset before executing it" );
         }
 
-        validateStructure();
-        validateCommonExtract();
-        validateCommonLoad();
-
         this.execDag = targetActivity == null ? prepareExecutionDag() : prepareExecutionDag( List.of( targetActivity ) );
-        initPreviews();
+        log.info( "ExecDag after initialization: {}", this.execDag );
+
+        workflow.validateStructure( this.execDag );
+        log.info( "Structure is valid" );
+
         this.optimizer = new WorkflowOptimizerImpl( workflow, execDag );
 
     }
@@ -103,23 +108,41 @@ public class WorkflowScheduler {
 
     public List<ExecutionSubmission> handleExecutionResult( ExecutionResult result ) {
         pendingCount--;
-        remainingActivities.removeAll( result.getActivities() );
+
+        try {
+            updateRemaining( result );
+        } catch ( TransactionException e ) {
+            result = new ExecutionResult( result.getSubmission(), new ExecutorException( "An error occurred while closing open transactions of executed activities", e ) );
+        }
+
+        if ( !result.isSuccess() ) {
+            Throwable cause = result.getException().getCause();
+
+            // for debugging
+            result.getException().printStackTrace();
+            if ( cause != null ) {
+                log.warn( "ExecutorException has inner exception", cause );
+            }
+            setErrorVariable( result.getActivities(), result.getException() );
+        }
+
+        updateGraph( result.isSuccess(), result.getActivities(), result.getRootId(), execDag );
 
         if ( remainingActivities.isEmpty() ) {
             assert pendingCount == 0;
 
             isFinished = true;
+            workflow.setState( WorkflowState.IDLE );
             return null;
         }
 
         if ( isAborted ) {
             if ( pendingCount == 0 ) {
                 isFinished = true;
+                workflow.setState( WorkflowState.IDLE );
             }
             return null;
         }
-
-        propagateResult( result.isSuccess(), result.getActivities() );
 
         return computeNextSubmissions();
     }
@@ -127,6 +150,7 @@ public class WorkflowScheduler {
 
     public void interruptExecution() {
         isAborted = true;
+        workflow.setState( WorkflowState.INTERRUPTED );
     }
 
 
@@ -159,7 +183,7 @@ public class WorkflowScheduler {
 
     private AttributedDirectedGraph<UUID, ExecutionEdge> prepareExecutionDag( List<UUID> targets ) throws Exception {
         if ( targets.isEmpty() ) {
-            throw new GenericRuntimeException( "Cannot prepare executionDag for no targets" );
+            throw new GenericRuntimeException( "Cannot prepare executionDag for empty targets" );
         }
         Set<UUID> savedActivities = new HashSet<>();
         Queue<UUID> open = new LinkedList<>( targets );
@@ -174,15 +198,38 @@ public class WorkflowScheduler {
             visited.add( n );
 
             ActivityWrapper nWrapper = workflow.getActivity( n );
+            CommonType type = nWrapper.getConfig().getCommonType(); // TODO: what if common activities partially executed? -> execute all of them again or only new ones, or fail?
             if ( nWrapper.getState() == ActivityState.SAVED ) {
                 savedActivities.add( n );
                 continue;
             }
 
+            nWrapper.resetExecution();
             nWrapper.setState( ActivityState.QUEUED );
-            for ( Edge edge : workflow.getInEdges( n ) ) {
+            remainingActivities.add( n );
+            if ( type == CommonType.EXTRACT ) {
+                remainingCommonExtract.add( n );
+            } else if ( type == CommonType.LOAD ) {
+                remainingCommonLoad.add( n );
+            }
+
+            List<Edge> inEdges = workflow.getInEdges( n );
+            for ( Edge edge : inEdges ) {
                 edge.setState( EdgeState.IDLE );
                 open.add( edge.getFrom().getId() );
+            }
+            if ( inEdges.isEmpty() ) {
+                // TODO: also initialize any activities that are not successors to SAVED activity
+                workflow.recomputeInVariables( n );
+                inTypePreviews.put( n, List.of() );
+                try {
+                    Map<String, Optional<SettingValue>> settings = nWrapper.updateOutTypePreview( List.of(), true );
+                    settingsPreviews.put( n, settings );
+                } catch ( ActivityException e ) {
+                    // TODO: detected an inconsistency in the types and settings. Ignore?
+                    e.printStackTrace();
+                }
+
             }
         }
 
@@ -190,103 +237,164 @@ public class WorkflowScheduler {
 
         // handle saved activities (= simulate that they finish their execution successfully)
         for ( UUID saved : savedActivities ) {
-            updateGraph( true, Set.of( saved ), execDag ); // result propagation needs to happen individually
+            updateGraph( true, Set.of( saved ), saved, execDag ); // result propagation needs to happen individually
         }
 
         return execDag;
     }
 
 
-    private void validateStructure() throws Exception {
-        // no cycles
-        // compatible DataModels for edges
-        // compatible settings
-        // TODO: verify succesors of idle nodes are idle as well
-        // TODO: ensure all nodes to be executed have an empty variable store
-    }
+    private void updateRemaining( ExecutionResult result ) throws TransactionException {
+        CommonType type = result.getSubmission().getCommonType();
+        Set<UUID> activities = result.getActivities();
+        remainingActivities.removeAll( activities );
 
-
-    private void validateCommonExtract() throws Exception {
-        isExtractFinished = true; // TODO: only if no common extract activities present
-    }
-
-
-    private void validateCommonLoad() throws Exception {
-        isLoadFinished = true; // TODO: only if no common load activities present
-    }
-
-
-    private void initPreviews() throws ActivityException {
-        for ( UUID n : TopologicalOrderIterator.of( execDag ) ) {
-            ActivityWrapper wrapper = workflow.getActivity( n );
-            Activity activity = wrapper.getActivity();
-            ActivityState state = wrapper.getState();
-
-            if ( state == ActivityState.SAVED ) {
-                // settings are not required for already executed nodes
-                typePreviews.put( n, sm.getTupleTypes( n ).stream().map( Optional::ofNullable ).toList() );
-
-            } else if ( state == ActivityState.IDLE ) {
-                List<Optional<AlgDataType>> inputTypes = new ArrayList<>();
-                boolean allInputsSaved = true;
-                for ( int i = 0; i < wrapper.getDef().getInPorts().length; i++ ) {
-                    DataEdge dataEdge = workflow.getDataEdge( n, i );
-                    ActivityWrapper inWrapper = dataEdge.getFrom();
-                    if ( remainingActivities.contains( inWrapper.getId() ) ) {
-                        allInputsSaved = false;
-                    }
-                    inputTypes.add( typePreviews.get( inWrapper.getId() ).get( dataEdge.getFromPort() ) );
-                }
-                // TODO: ensure control inputs are also saved, then merge variables correctly
-                // Also change executor merge to be correct (correct order, only active)
-
-                Map<String, Optional<SettingValue>> settings = wrapper.resolveAvailableSettings();
-                settingsPreviews.put( n, settings );
-                typePreviews.put( n, activity.previewOutTypes( inputTypes, settings ) );
-
+        if ( type == CommonType.NONE ) {
+            if ( result.isSuccess() ) {
+                activities.forEach( sm::commitTransaction );
             } else {
-                throw new IllegalStateException( "Illegal state of activity while initiating scheduler: " + state + " for " + n );
+                activities.forEach( sm::rollbackTransaction );
             }
-
-            switch ( state ) {
-
-                case IDLE -> {
+        } else {
+            Set<UUID> remainingCommon = type == CommonType.EXTRACT ? remainingCommonExtract : remainingCommonLoad;
+            remainingCommon.removeAll( activities );
+            if ( result.isSuccess() ) {
+                if ( remainingCommon.isEmpty() ) {
+                    sm.commitCommonTransaction( type );
                 }
-                case QUEUED -> {
+            } else {
+                for ( UUID n : remainingCommon ) {
+                    ActivityWrapper wrapper = workflow.getActivity( n );
+                    if ( wrapper.getState() == ActivityState.QUEUED ) {
+                        wrapper.setState( ActivityState.SKIPPED ); // TODO: only skip later when updating graph?
+                    }
                 }
-                case EXECUTING -> {
-                }
-                case SKIPPED -> {
-                }
-                case FAILED -> {
-                }
-                case FINISHED -> {
-                }
-                case SAVED -> {
-                }
+                remainingCommon.clear();
+                sm.rollbackCommonTransaction( type ); // TODO: only roll back when all executing common have finished?
             }
         }
     }
 
 
     private List<ExecutionSubmission> computeNextSubmissions() {
-        // TODO: determine previews
-
-        List<SubmissionFactory> factories = optimizer.computeNextTrees( null, null, maxWorkers - pendingCount, null );
+        List<SubmissionFactory> factories = optimizer.computeNextTrees( inTypePreviews, settingsPreviews, maxWorkers - pendingCount, getActiveCommonType() );
         pendingCount += factories.size();
-        return factories.stream().map( f -> f.create( sm, workflow ) ).toList();
+        List<ExecutionSubmission> submissions = factories.stream().map( f -> f.create( sm, workflow ) ).toList();
+        for ( ExecutionSubmission submission : submissions ) {
+            setStates( submission.getActivities(), ActivityState.EXECUTING );
+        }
+
+        return submissions;
     }
 
 
-    private void propagateResult( boolean isSuccess, Set<UUID> activities ) {
-        throw new NotImplementedException();
+    private void setErrorVariable( Set<UUID> activities, ExecutorException exception ) {
+        ObjectNode value = exception.getVariableValue();
+        for ( UUID n : activities ) {
+            workflow.getActivity( n ).getVariables().setError( value );
+        }
     }
 
 
-    private void updateGraph( boolean isSuccess, Set<UUID> activities, AttributedDirectedGraph<UUID, ExecutionEdge> dag ) {
-        // does not access this.execDag
+    private void updateGraph( boolean isSuccess, Set<UUID> activities, UUID rootId, AttributedDirectedGraph<UUID, ExecutionEdge> dag ) {
+        // must not access this.execDag as it might be null at this point
         // TODO: any not yet executed activity whose input edges are all either Active or Inactive should have their variableStores updated -> reduce number of empty optionals in previews / canFuse etc.
-        throw new NotImplementedException();
+        ActivityWrapper root = workflow.getActivity( rootId );
+        boolean isInitialUpdate = root.getState() == ActivityState.SAVED;
+        for ( UUID n : activities ) {
+            ActivityWrapper wrapper = workflow.getActivity( n );
+            if ( !isInitialUpdate ) {
+                if ( isSuccess ) {
+                    wrapper.setState( n == rootId ? ActivityState.SAVED : ActivityState.FINISHED );
+                } else {
+                    wrapper.setState( ActivityState.FAILED );
+                }
+            }
+
+            for ( ExecutionEdge execEdge : dag.getOutwardEdges( n ) ) {
+                Edge edge = workflow.getEdge( execEdge );
+                if ( activities.contains( execEdge.getTarget() ) ) {
+                    edge.setState( isSuccess ? EdgeState.ACTIVE : EdgeState.INACTIVE );
+                } else {
+                    assert edge.isIgnored() || !edge.getTo().getState().isExecuted() :
+                            "Encountered an activity that was executed before its predecessors: " + edge.getTo();
+
+                    boolean isActive = isSuccess ?
+                            !(edge instanceof ControlEdge control) || control.isOnSuccess() :
+                            (edge instanceof ControlEdge control && !control.isOnSuccess());
+                    propagateResult( isActive, edge, dag );
+                }
+            }
+        }
+
+        // recompute successor typePreviews and settings
+        // TODO: update entire workflow instead of dag?
+        for ( UUID n : GraphUtils.getTopologicalIterable( dag, rootId, false ) ) {
+            ActivityWrapper wrapper = workflow.getActivity( n );
+            if ( isInitialUpdate && inTypePreviews.containsKey( n ) ) {
+                continue; // only initialize once
+            }
+            if ( wrapper.getState() == ActivityState.QUEUED ) {
+                workflow.recomputeInVariables( n );
+                List<Optional<AlgDataType>> inTypes = workflow.getInputTypes( n );
+                inTypePreviews.put( n, inTypes );
+                try {
+                    Map<String, Optional<SettingValue>> settings = wrapper.updateOutTypePreview( inTypes, workflow.hasStableInVariables( n ) );
+                    settingsPreviews.put( n, settings );
+                } catch ( ActivityException e ) {
+                    // TODO: detected an inconsistency in the types and settings. Ignore?
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+
+    private void propagateResult( boolean isActive, Edge edge, AttributedDirectedGraph<UUID, ExecutionEdge> dag ) {
+        // must not access this.execDag as it might be null at this point
+        edge.setState( isActive ? EdgeState.ACTIVE : EdgeState.INACTIVE );
+        if ( edge.isIgnored() || (isActive && !(edge instanceof ControlEdge)) ) {
+            return; // Cannot propagate activation of a data edge or ignored edge, since it cannot change the state of the activity
+        }
+        ActivityWrapper target = edge.getTo();
+        assert !target.getState().isExecuted() : "Encountered an activity that was executed before its predecessors: " + target;
+
+        List<Edge> inEdges = workflow.getInEdges( target.getId() );
+        EdgeState canExecute = target.canExecute( inEdges );
+        switch ( canExecute ) {
+            case IDLE -> {
+            }
+            case ACTIVE -> {
+                List<ControlEdge> controlEdges = inEdges.stream().filter( e -> e instanceof ControlEdge ).map( e -> (ControlEdge) e ).toList();
+                if ( !controlEdges.isEmpty() ) {
+                    controlEdges.forEach( e -> e.setIgnored( true ) ); // even the active edges can be ignored, since they are not needed anymore
+                }
+            }
+            case INACTIVE -> {
+                target.setState( ActivityState.SKIPPED );
+                remainingActivities.remove( target.getId() );
+                remainingCommonExtract.remove( target.getId() ); // TODO: what if a common activity is skipped? workflow config?
+                remainingCommonLoad.remove( target.getId() );
+                // a skipped activity does NOT count as failed -> onFail control edges also become INACTIVE
+                workflow.getOutEdges( target.getId() ).forEach( e -> propagateResult( false, e, dag ) );
+            }
+        }
+    }
+
+
+    private CommonType getActiveCommonType() {
+        if ( !remainingCommonExtract.isEmpty() ) {
+            return CommonType.EXTRACT;
+        }
+        if ( remainingActivities.size() > remainingCommonLoad.size() ) {
+            return CommonType.NONE;
+        }
+        return CommonType.LOAD;
+    }
+
+
+    private void setStates( Set<UUID> activities, ActivityState state ) {
+        activities.forEach( id -> workflow.getActivity( id ).setState( state ) );
     }
 
 }

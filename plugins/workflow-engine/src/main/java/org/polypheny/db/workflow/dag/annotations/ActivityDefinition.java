@@ -47,7 +47,7 @@ public @interface ActivityDefinition {
 
         String description() default "";
 
-        boolean isOptional() default false;
+        boolean isOptional() default false; // TODO: isOptional currently has no effect
 
     }
 

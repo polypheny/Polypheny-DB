@@ -20,10 +20,13 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.Map;
 import java.util.UUID;
+import lombok.AllArgsConstructor;
 import lombok.Value;
+import org.polypheny.db.workflow.dag.activities.ActivityRegistry;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper.ActivityState;
 
 @Value
+@AllArgsConstructor
 public class ActivityModel {
 
     String type;
@@ -34,5 +37,25 @@ public class ActivityModel {
 
     @JsonInclude(JsonInclude.Include.NON_NULL) // do not serialize in static version
     ActivityState state;
+
+
+    public ActivityModel( String type ) {
+        this( type, UUID.randomUUID() );
+    }
+
+
+    public ActivityModel( String type, UUID id ) {
+        this( type, id, ActivityRegistry.getSerializableSettingValues( type ), ActivityConfigModel.of(), RenderModel.of(), null );
+    }
+
+
+    public ActivityModel( String type, UUID id, Map<String, JsonNode> settings, ActivityConfigModel config, RenderModel rendering ) {
+        this.type = type;
+        this.id = id;
+        this.settings = settings;
+        this.config = config;
+        this.rendering = rendering;
+        this.state = null;
+    }
 
 }

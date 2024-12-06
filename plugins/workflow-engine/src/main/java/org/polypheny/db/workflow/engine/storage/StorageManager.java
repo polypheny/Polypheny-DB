@@ -17,6 +17,7 @@
 package org.polypheny.db.workflow.engine.storage;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import javax.annotation.Nullable;
 import lombok.NonNull;
@@ -28,7 +29,8 @@ import org.polypheny.db.workflow.engine.storage.writer.CheckpointWriter;
 import org.polypheny.db.workflow.engine.storage.writer.DocWriter;
 import org.polypheny.db.workflow.engine.storage.writer.LpgWriter;
 import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
-import org.polypheny.db.workflow.models.ActivityConfigModel.CommonTransaction;
+import org.polypheny.db.workflow.models.ActivityConfigModel;
+import org.polypheny.db.workflow.models.ActivityConfigModel.CommonType;
 
 /**
  * A StorageManager is responsible for managing the checkpoints of a specific session.
@@ -51,7 +53,9 @@ public interface StorageManager extends AutoCloseable { // TODO: remove AutoClos
 
     AlgDataType getTupleType( UUID activityId, int outputIdx );
 
-    List<AlgDataType> getTupleTypes( UUID activityId );
+    List<AlgDataType> getCheckpointTypes( UUID activityId );
+
+    List<Optional<AlgDataType>> getOptionalCheckpointTypes( UUID activityId );
 
     /**
      * Creates a relational checkpoint for an activity output and returns a RelWriter for that checkpoint.
@@ -88,7 +92,7 @@ public interface StorageManager extends AutoCloseable { // TODO: remove AutoClos
      * @param commonType whether to return a common transaction for the specified common type or return a transaction only for this activity
      * @return the transaction for the activity
      */
-    Transaction getTransaction( UUID activityId, CommonTransaction commonType );
+    Transaction getTransaction( UUID activityId, CommonType commonType );
 
     /**
      * If the activity has any active extract or load transaction associated with it (excluding common transactions) it will be committed.
@@ -119,7 +123,7 @@ public interface StorageManager extends AutoCloseable { // TODO: remove AutoClos
      *
      * @param commonType which common transaction to commit
      */
-    void commitCommonTransaction( @NonNull CommonTransaction commonType );
+    void commitCommonTransaction( @NonNull ActivityConfigModel.CommonType commonType );
 
     /**
      * Aborts the common transaction of the given type (either EXTRACT or LOAD).
@@ -129,6 +133,6 @@ public interface StorageManager extends AutoCloseable { // TODO: remove AutoClos
      *
      * @param commonType which common transaction to roll back
      */
-    void rollbackCommonTransaction( @NonNull CommonTransaction commonType );
+    void rollbackCommonTransaction( @NonNull ActivityConfigModel.CommonType commonType );
 
 }

@@ -24,6 +24,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Value;
 import org.polypheny.db.util.Pair;
+import org.polypheny.db.workflow.dag.edges.ControlEdge;
 import org.polypheny.db.workflow.dag.edges.Edge.EdgeState;
 
 @Value
@@ -50,6 +51,21 @@ public class EdgeModel {
     @JsonIgnore
     public Pair<UUID, UUID> toPair() {
         return Pair.of( fromId, toId );
+    }
+
+
+    public static EdgeModel of( ActivityModel from, ActivityModel to ) {
+        return new EdgeModel( from.getId(), to.getId(), 0, 0, false, null );
+    }
+
+
+    public static EdgeModel of( ActivityModel from, ActivityModel to, int toPort ) {
+        return new EdgeModel( from.getId(), to.getId(), 0, toPort, false, null );
+    }
+
+
+    public static EdgeModel of( ActivityModel from, ActivityModel to, boolean onSuccess ) {
+        return new EdgeModel( from.getId(), to.getId(), onSuccess ? ControlEdge.SUCCESS_PORT : ControlEdge.FAIL_PORT, 0, true, null );
     }
 
 }

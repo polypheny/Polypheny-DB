@@ -17,13 +17,10 @@
 package org.polypheny.db.workflow.engine.execution;
 
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
-import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.workflow.dag.Workflow;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
 import org.polypheny.db.workflow.dag.activities.VariableWriter;
-import org.polypheny.db.workflow.dag.settings.SettingDef.SettingValue;
 import org.polypheny.db.workflow.engine.execution.context.ExecutionContextImpl;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
@@ -43,16 +40,12 @@ public class VariableWriterExecutor extends Executor {
     @Override
     void execute() throws ExecutorException {
         List<CheckpointReader> inputs = getReaders( wrapper );
-        List<AlgDataType> inputTypes = inputs.stream().map( CheckpointReader::getTupleType ).toList();
-
-        mergeInputVariables( wrapper.getId() );
-        Map<String, SettingValue> settings = wrapper.resolveSettings(); // settings before variable update
         ctx = new ExecutionContextImpl( wrapper, sm );
 
         try ( CloseableList ignored = new CloseableList( inputs ) ) {
             VariableWriter activity = (VariableWriter) wrapper.getActivity();
-            // we skip activity.updateVariables() on purpose, since variable updates are performed within execute
-            activity.execute( inputs, settings, ctx, wrapper.getVariables() );
+            activity.execute( inputs, wrapper.resolveSettings(), ctx, wrapper.getVariables() );
+            wrapper.setOutTypePreview( sm.getOptionalCheckpointTypes( wrapper.getId() ) );
         } catch ( Exception e ) {
             throw new ExecutorException( e );
         }

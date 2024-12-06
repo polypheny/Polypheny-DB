@@ -123,6 +123,19 @@ public class ExecutionEdge extends DefaultEdge {
     }
 
 
+    @Override
+    public String toString() {
+        return "ExecutionEdge{" +
+                "source=" + source +
+                ", target=" + target +
+                ", isControl=" + isControl +
+                ", fromPort=" + fromPort +
+                ", toPort=" + toPort +
+                ", onSuccess=" + onSuccess +
+                '}';
+    }
+
+
     public static class ExecutionEdgeFactory implements AttributedDirectedGraph.AttributedEdgeFactory<UUID, ExecutionEdge> {
 
         @Override

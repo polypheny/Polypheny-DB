@@ -20,9 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.sql.Connection;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -32,7 +30,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.polypheny.db.TestHelper;
-import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
@@ -51,15 +48,13 @@ class StorageManagerTest {
 
     private static final UUID sessionId = UUID.randomUUID();
     private static TestHelper testHelper;
-    private static final String HSQLDB_LOCKS = "hsqldb_locks";
-    private static final String HSQLDB_MVLOCKS = "hsqldb_mvlocks";
 
 
     @BeforeAll
     public static void start() throws SQLException {
         testHelper = TestHelper.getInstance();
-        addHsqldbStore( HSQLDB_LOCKS, "locks" );
-        addHsqldbStore( HSQLDB_MVLOCKS, "mvlocks" );
+        StorageUtils.addHsqldbStore( StorageUtils.HSQLDB_LOCKS, "locks" );
+        StorageUtils.addHsqldbStore( StorageUtils.HSQLDB_MVLOCKS, "mvlocks" );
     }
 
 
@@ -188,28 +183,29 @@ class StorageManagerTest {
         testHelper.checkAllTrxClosed();
     }
 
+
     @Test
-    @Timeout( value = 10, threadMode = Timeout.ThreadMode.SEPARATE_THREAD )
+    @Timeout(value = 10, threadMode = Timeout.ThreadMode.SEPARATE_THREAD)
     void createCheckpointWhileReadingTest() throws Exception {
-        for (String store : List.of(HSQLDB_LOCKS, HSQLDB_MVLOCKS)) {
-            try ( StorageManager sm = new StorageManagerImpl( sessionId, getDefaultStoreMap(store) ) ) {
+        for ( String store : List.of( StorageUtils.HSQLDB_LOCKS, StorageUtils.HSQLDB_MVLOCKS ) ) {
+            try ( StorageManager sm = new StorageManagerImpl( sessionId, StorageUtils.getDefaultStoreMap( store ) ) ) {
                 UUID activityId1 = UUID.randomUUID();
                 UUID activityId2 = UUID.randomUUID();
                 AlgDataType type = getSampleType();
                 List<List<PolyValue>> sampleData = getSampleData();
-                System.out.println("Opening writer...");
+                System.out.println( "Opening writer..." );
 
                 try ( RelWriter writer = sm.createRelCheckpoint( activityId1, 0, type, false, null ) ) {
                     writer.write( sampleData.iterator() );
                 }
-                System.out.println("Wrote data to 1");
+                System.out.println( "Wrote data to 1" );
 
-                try (RelReader reader = (RelReader) sm.readCheckpoint( activityId1, 0 )) {
+                try ( RelReader reader = (RelReader) sm.readCheckpoint( activityId1, 0 ) ) {
                     Iterator<List<PolyValue>> it = reader.getIterator();
-                    System.out.println("Opened reader");
+                    System.out.println( "Opened reader" );
 
-                    try (RelWriter writer = sm.createRelCheckpoint( activityId2, 0, type, false, null )) {
-                        System.out.println("Opened writer");
+                    try ( RelWriter writer = sm.createRelCheckpoint( activityId2, 0, type, false, null ) ) {
+                        System.out.println( "Opened writer" );
 
                         while ( it.hasNext() ) {
                             List<PolyValue> tuple = it.next();
@@ -218,7 +214,7 @@ class StorageManagerTest {
                     }
                 }
 
-                System.out.println("Wrote data to 2");
+                System.out.println( "Wrote data to 2" );
 
             }
             testHelper.checkAllTrxClosed();
@@ -275,32 +271,6 @@ class StorageManagerTest {
             assertEquals( v1.type, v2.type );
             assertEquals( v1.toJson(), v2.toJson() );
         }
-    }
-
-    private static void addHsqldbStore( String name, String trxControlMode ) throws SQLException {
-        TestHelper.executeSQL( "ALTER ADAPTERS ADD \"%s\" USING 'Hsqldb' AS 'Store'".formatted( name )
-                + " WITH '{maxConnections:\"25\",trxControlMode:%s,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'".formatted( trxControlMode )
-        );
-    }
-
-
-    private static void removeStore( String name ) throws SQLException {
-        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
-            Connection connection = polyphenyDbConnection.getConnection();
-            try ( Statement statement = connection.createStatement() ) {
-
-                statement.executeUpdate( String.format( "ALTER ADAPTERS DROP \"%s\"", name ) );
-
-            }
-        }
-    }
-
-    private static Map<DataModel, String> getDefaultStoreMap(String storeName) {
-        return Map.of(
-                DataModel.RELATIONAL, storeName,
-                DataModel.DOCUMENT, storeName,
-                DataModel.GRAPH, storeName
-        );
     }
 
 }

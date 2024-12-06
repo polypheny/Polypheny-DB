@@ -175,7 +175,7 @@ public abstract class CheckpointReader implements AutoCloseable {
         Statement statement = transaction.createStatement();
         Pair<ParsedQueryContext, AlgRoot> parsed = QueryUtils.parseAndTranslateQuery( context, statement );
 
-        if ( !QueryUtils.validateAlg( parsed.right, false, List.of( entity ) ) ) {
+        if ( !QueryUtils.validateAlg( parsed.right, false, entities ) ) {
             throw new GenericRuntimeException( "The specified query is not permitted: " + queryStr );
         }
 
