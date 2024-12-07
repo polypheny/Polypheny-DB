@@ -519,6 +519,12 @@ public abstract class PolyTypeUtil {
             return false;
         }
 
+        if ( toType.getPolyType().getFamily() == PolyTypeFamily.GEO ) {
+            if ( fromType.getPolyType() == PolyType.CHAR || fromType.getPolyType() == PolyType.VARCHAR ) {
+                return true;
+            }
+        }
+
         return toType.getFamily() == fromType.getFamily();
     }
 
