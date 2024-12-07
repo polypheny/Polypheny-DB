@@ -16,13 +16,18 @@
 
 package org.polypheny.db.transaction.locking;
 
+import java.math.BigDecimal;
 import java.text.MessageFormat;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactoryImpl;
 import org.polypheny.db.catalog.logistic.Collation;
 import org.polypheny.db.ddl.DdlManager.ColumnTypeInformation;
 import org.polypheny.db.ddl.DdlManager.FieldInformation;
+import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.numerical.PolyLong;
 
@@ -30,6 +35,7 @@ public class IdentifierUtils {
 
     public static final String IDENTIFIER_KEY = "_eid";
     public static final long MISSING_IDENTIFIER = 0;
+    public static final AlgDataType IDENTIFIER_ALG_TYPE = AlgDataTypeFactoryImpl.DEFAULT.createPolyType( PolyType.BIGINT );
 
     public static final ColumnTypeInformation IDENTIFIER_COLUMN_TYPE = new ColumnTypeInformation(
             PolyType.BIGINT, // binary not supported by hsqldb TODO TH: check for other stores, datatypes
@@ -49,9 +55,11 @@ public class IdentifierUtils {
             1
     );
 
+    private static final RexBuilder REX_BUILDER = new RexBuilder( AlgDataTypeFactoryImpl.DEFAULT );
 
-    public static PolyLong getIdentifier() {
-        return new PolyLong( IdentifierRegistry.INSTANCE.getEntryIdentifier() );
+
+    public static RexLiteral getIdentifierAsLiteral() {
+        return REX_BUILDER.makeExactLiteral( BigDecimal.valueOf( IdentifierRegistry.INSTANCE.getEntryIdentifier() ) );
     }
 
 
