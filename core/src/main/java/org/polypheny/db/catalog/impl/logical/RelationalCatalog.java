@@ -294,11 +294,19 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
         change( CatalogEvent.KEY_DROPPED, id, null );
     }
 
+    @Override
+    public LogicalColumn addColumn( String name, long tableId, int position, PolyType type, PolyType collectionsType, Integer length, Integer scale, Integer dimension, Integer cardinality, boolean nullable, Collation collation) {
+        long id = idBuilder.getNewFieldId();
+        LogicalColumn column = new LogicalColumn( id, false, name, tableId, logicalNamespace.id, position, type, collectionsType, length, scale, dimension, cardinality, nullable, collation, null );
+        columns.put( id, column );
+        change( CatalogEvent.LOGICAL_REL_FIELD_CREATED, null, id );
+        return column;
+    }
 
     @Override
-    public LogicalColumn addColumn( String name, long tableId, int position, PolyType type, PolyType collectionsType, Integer length, Integer scale, Integer dimension, Integer cardinality, boolean nullable, Collation collation ) {
+    public LogicalColumn addColumn( String name, long tableId, int position, PolyType type, PolyType collectionsType, Integer length, Integer scale, Integer dimension, Integer cardinality, boolean nullable, Collation collation, boolean isIdentifier ) {
         long id = idBuilder.getNewFieldId();
-        LogicalColumn column = new LogicalColumn( id, name, tableId, logicalNamespace.id, position, type, collectionsType, length, scale, dimension, cardinality, nullable, collation, null );
+        LogicalColumn column = new LogicalColumn( id, isIdentifier, name, tableId, logicalNamespace.id, position, type, collectionsType, length, scale, dimension, cardinality, nullable, collation, null );
         columns.put( id, column );
         change( CatalogEvent.LOGICAL_REL_FIELD_CREATED, null, id );
         return column;

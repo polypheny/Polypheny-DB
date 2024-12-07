@@ -60,7 +60,7 @@ public interface Scannable {
 
         int i = 0;
         for ( ColumnContext col : columnsInformations ) {
-            LogicalColumn column = new LogicalColumn( builder.getNewFieldId(), col.name, table.id, table.namespaceId, i, col.type, null, col.precision, null, null, null, col.nullable, Collation.getDefaultCollation(), null );
+            LogicalColumn column = new LogicalColumn( builder.getNewFieldId(), false, col.name, table.id, table.namespaceId, i, col.type, null, col.precision, null, null, null, col.nullable, Collation.getDefaultCollation(), null );
             columns.add( column );
             i++;
         }
