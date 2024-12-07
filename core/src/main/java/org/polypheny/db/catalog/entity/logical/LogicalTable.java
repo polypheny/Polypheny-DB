@@ -23,9 +23,12 @@ import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.annotations.SerializeNullable;
 import java.io.Serial;
 import java.util.Comparator;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 import lombok.experimental.SuperBuilder;
@@ -39,6 +42,7 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.schema.ColumnStrategy;
+import org.polypheny.db.transaction.locking.IdentifierUtils;
 import org.polypheny.db.transaction.locking.Lockable;
 
 @EqualsAndHashCode(callSuper = false)
@@ -74,9 +78,15 @@ public class LogicalTable extends LogicalEntity {
 
     @Override
     public AlgDataType getTupleType() {
+        return getTupleType( false );
+    }
+
+
+    @Override
+    public AlgDataType getTupleType( boolean hideIdentifier ) {
         final AlgDataTypeFactory.Builder fieldInfo = AlgDataTypeFactory.DEFAULT.builder();
 
-        for ( LogicalColumn column : Catalog.snapshot().rel().getColumns( id ).stream().sorted( Comparator.comparingInt( a -> a.position ) ).toList() ) {
+        for ( LogicalColumn column : getColumns(hideIdentifier).stream().sorted( Comparator.comparingInt( a -> a.position ) ).toList() ) {
             AlgDataType sqlType = column.getAlgDataType( AlgDataTypeFactory.DEFAULT );
             fieldInfo.add( column.id, column.name, null, sqlType ).nullable( column.nullable );
         }
@@ -92,11 +102,23 @@ public class LogicalTable extends LogicalEntity {
 
 
     public List<ColumnStrategy> getColumnStrategies() {
-        return getColumns().stream().map( c -> c.nullable ? ColumnStrategy.NULLABLE : ColumnStrategy.NOT_NULLABLE ).toList();
+        return getColumnStrategies(false);
+    }
+
+    public List<ColumnStrategy> getColumnStrategies(boolean hideIdentifiers) {
+        return getColumns(hideIdentifiers).stream().map( c -> c.nullable ? ColumnStrategy.NULLABLE : ColumnStrategy.NOT_NULLABLE ).toList();
     }
 
 
     public List<LogicalColumn> getColumns() {
+        return getColumns( false );
+    }
+
+
+    public List<LogicalColumn> getColumns( boolean hideIdentifier ) {
+        if ( hideIdentifier ) {
+            return Catalog.snapshot().rel().getColumns( id ).stream().filter( c -> !c.isIdentifier() ).toList();
+        }
         return Catalog.snapshot().rel().getColumns( id );
     }
 
@@ -108,6 +130,11 @@ public class LogicalTable extends LogicalEntity {
 
     public List<String> getColumnNames() {
         return getColumns().stream().map( c -> c.name ).toList();
+    }
+
+
+    public List<String> getColumnNames(boolean hideIdentifier) {
+        return getColumns(hideIdentifier).stream().map( c -> c.name ).toList();
     }
 
 

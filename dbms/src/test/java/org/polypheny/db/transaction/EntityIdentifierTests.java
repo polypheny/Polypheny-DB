@@ -60,26 +60,10 @@ public class EntityIdentifierTests {
         }
     }
 
-    @Test
-    public void testCreateTableIllegalColumnName() throws SQLException {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
-            Connection connection = jdbcConnection.getConnection();
-            try ( Statement statement = connection.createStatement() ) {
-                try {
-                    assertThrows(
-                            PrismInterfaceServiceException.class,
-                            () -> statement.executeUpdate( "CREATE TABLE identifiers (a INTEGER NOT NULL, _eid INTEGER, PRIMARY KEY (a))" )
-                    );
-                    connection.commit();
-                } finally {
-                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
-                    connection.commit();
-                }
-            }
-        }
-    }
 
-
+    /*
+    Modify <- Project <- RelValues ('first', 'second')
+     */
     @Test
     public void testInsertUnparameterizedWithColumnNames() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
@@ -92,6 +76,113 @@ public class EntityIdentifierTests {
                     connection.commit();
                 } finally {
                     statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
+                    connection.commit();
+                }
+            }
+        }
+    }
+
+
+    /*
+    Modify <- Project <- RelValues ('first', 'second')
+    _eid is listed as varchar in rowtype
+     */
+    @Test
+    public void testInsertUnparameterizedNoColumnNames() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                try {
+                    statement.executeUpdate( "CREATE TABLE identifiers (a VARCHAR(8) NOT NULL, b VARCHAR(8), PRIMARY KEY (a))" );
+                    statement.executeUpdate( "INSERT INTO identifiers VALUES ('first', 'second')" );
+                    connection.commit();
+                } finally {
+                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
+                    connection.commit();
+                }
+            }
+        }
+    }
+
+
+    @Test
+    public void testInsertUnparameterizedIdentifierManipulation() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                try {
+                    statement.executeUpdate( "CREATE TABLE identifiers (a INTEGER NOT NULL, b INTEGER, PRIMARY KEY (a))" );
+                    assertThrows(
+                            PrismInterfaceServiceException.class,
+                            () -> statement.executeUpdate( "INSERT INTO identifiers VALUES (-32, 2, 3)" )
+                    );
+                    connection.commit();
+                } finally {
+                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
+                    connection.commit();
+                }
+            }
+        }
+    }
+
+
+    /*
+
+
+     */
+    @Test
+    public void testInsertFromTableWithColumnNames() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                try {
+                    statement.executeUpdate( "CREATE TABLE identifiers1 (a VARCHAR(8) NOT NULL, b VARCHAR(8), PRIMARY KEY (a))" );
+                    statement.executeUpdate( "INSERT INTO identifiers1 (a, b) VALUES ('first', 'second'), ('third', 'fourth')" );
+
+                    statement.executeUpdate( "CREATE TABLE identifiers2 (x VARCHAR(8) NOT NULL, y VARCHAR(8), PRIMARY KEY (x))" );
+                    statement.executeUpdate( "INSERT INTO identifiers2 (x, y) SELECT a, b FROM identifiers1" );
+
+                    // check that new identifiers had been assigned instead of copying from the first table
+                    try ( ResultSet rs = statement.executeQuery( """
+                            SELECT 1
+                            FROM identifiers1 id1
+                            WHERE EXISTS (
+                                SELECT 1
+                                FROM identifiers2 id2
+                                WHERE id1._eid = id2._eid
+                            );
+                            """ ) ) {
+                        TestHelper.checkResultSet( rs, List.of() );
+                    }
+
+                    connection.commit();
+                } finally {
+                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers1" );
+                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers2" );
+                    connection.commit();
+                }
+            }
+        }
+    }
+
+
+    @Test
+    public void testInsertFromTableWithoutTargetColumnNames() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                try {
+                    statement.executeUpdate( "CREATE TABLE identifiers1 (a VARCHAR(8) NOT NULL, b VARCHAR(8), PRIMARY KEY (a))" );
+                    statement.executeUpdate( "INSERT INTO identifiers1 (a, b) VALUES ('first', 'second'), ('third', 'fourth')" );
+
+                    statement.executeUpdate( "CREATE TABLE identifiers2 (x VARCHAR(8) NOT NULL, y VARCHAR(8), PRIMARY KEY (x))" );
+                    statement.executeUpdate( "INSERT INTO identifiers2 SELECT a, b FROM identifiers1" );
+
+                    //TODO TH: check that new identifiers had been assigned instead of copying from the first table
+                    connection.commit();
+                } finally {
+                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers1" );
+                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers2" );
                     connection.commit();
                 }
             }
@@ -189,30 +280,6 @@ public class EntityIdentifierTests {
                         TestHelper.checkResultSet( rs, List.of() );
                     }
 
-                    connection.commit();
-                } finally {
-                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers1" );
-                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers2" );
-                    connection.commit();
-                }
-            }
-        }
-    }
-
-
-    @Test
-    public void testInsertFromTableWithoutTargetColumnNames() throws SQLException {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
-            Connection connection = jdbcConnection.getConnection();
-            try ( Statement statement = connection.createStatement() ) {
-                try {
-                    statement.executeUpdate( "CREATE TABLE identifiers1 (a VARCHAR(8) NOT NULL, b VARCHAR(8), PRIMARY KEY (a))" );
-                    statement.executeUpdate( "INSERT INTO identifiers1 (a, b) VALUES ('first', 'second'), ('third', 'fourth')" );
-
-                    statement.executeUpdate( "CREATE TABLE identifiers2 (x VARCHAR(8) NOT NULL, y VARCHAR(8), PRIMARY KEY (x))" );
-                    statement.executeUpdate( "INSERT INTO identifiers2 SELECT a, b FROM identifiers1" );
-
-                    //TODO TH: check that new identifiers had been assigned instead of copying from the first table
                     connection.commit();
                 } finally {
                     statement.executeUpdate( "DROP TABLE IF EXISTS identifiers1" );
@@ -383,25 +450,6 @@ public class EntityIdentifierTests {
 
     @Test
     // TODO TH: Does this work?
-    public void testInsertUnparameterizedNoColumnNames() throws SQLException {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
-            Connection connection = jdbcConnection.getConnection();
-            try ( Statement statement = connection.createStatement() ) {
-                try {
-                    statement.executeUpdate( "CREATE TABLE identifiers (a VARCHAR(8) NOT NULL, b VARCHAR(8), PRIMARY KEY (a))" );
-                    statement.executeUpdate( "INSERT INTO identifiers VALUES ('first', 'second')" );
-                    connection.commit();
-                } finally {
-                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
-                    connection.commit();
-                }
-            }
-        }
-    }
-
-
-    @Test
-    // TODO TH: Does this work?
     public void testInsertPreparedNoColumnNames() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
@@ -453,27 +501,6 @@ public class EntityIdentifierTests {
                     assertThrows(
                             PrismInterfaceServiceException.class,
                             () -> statement.executeUpdate( "CREATE TABLE identifiers (_eid VARCHAR(15), a INTEGER NOT NULL, b INTEGER, PRIMARY KEY (a))" )
-                    );
-                    connection.commit();
-                } finally {
-                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
-                    connection.commit();
-                }
-            }
-        }
-    }
-
-
-    @Test
-    public void testInsertUnparameterizedIdentifierManipulationInsert() throws SQLException {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
-            Connection connection = jdbcConnection.getConnection();
-            try ( Statement statement = connection.createStatement() ) {
-                try {
-                    statement.executeUpdate( "CREATE TABLE identifiers (a INTEGER NOT NULL, b INTEGER, PRIMARY KEY (a))" );
-                    assertThrows(
-                            PrismInterfaceServiceException.class,
-                            () -> statement.executeUpdate( "INSERT INTO identifiers VALUES (-32, 2, 3)" )
                     );
                     connection.commit();
                 } finally {
@@ -602,6 +629,26 @@ public class EntityIdentifierTests {
                     assertThrows(
                             PrismInterfaceServiceException.class,
                             () -> statement.executeUpdate( "ALTER TABLE identifiers MODIFY COLUMN _eid SET TYPE VARCHAR(15)" )
+                    );
+                    connection.commit();
+                } finally {
+                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
+                    connection.commit();
+                }
+            }
+        }
+    }
+
+
+    @Test
+    public void testCreateTableIllegalColumnName() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                try {
+                    assertThrows(
+                            PrismInterfaceServiceException.class,
+                            () -> statement.executeUpdate( "CREATE TABLE identifiers (a INTEGER NOT NULL, _eid INTEGER, PRIMARY KEY (a))" )
                     );
                     connection.commit();
                 } finally {
