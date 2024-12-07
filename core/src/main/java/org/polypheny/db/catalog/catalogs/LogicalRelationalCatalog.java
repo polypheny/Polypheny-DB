@@ -123,6 +123,21 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
      */
     LogicalColumn addColumn( String name, long tableId, int position, PolyType type, PolyType collectionsType, Integer length, Integer scale, Integer dimension, Integer cardinality, boolean nullable, Collation collation );
 
+    /**
+     * Adds a column.
+     *
+     * @param name The name of the column
+     * @param tableId The id of the corresponding table
+     * @param position The ordinal position of the column (starting with 1)
+     * @param type The type of the column
+     * @param length The length of the field (if applicable, else null)
+     * @param scale The number of digits after the decimal point (if applicable, else null)
+     * @param nullable Weather the column can contain null values
+     * @param collation The collation of the field (if applicable, else null)
+     * @param isIdentifier Specifies weather the colum contains identifiers used for MVCC
+     * @return The id of the inserted column
+     */
+    LogicalColumn addColumn( String name, long tableId, int position, PolyType type, PolyType collectionsType, Integer length, Integer scale, Integer dimension, Integer cardinality, boolean nullable, Collation collation, boolean isIdentifier );
 
     /**
      * Renames a column

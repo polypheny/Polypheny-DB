@@ -1758,7 +1758,7 @@ public class DdlManagerImpl extends DdlManager {
         Map<String, LogicalColumn> ids = new LinkedHashMap<>();
 
         for ( FieldInformation field : fields ) {
-            ids.put( field.name(), addColumn( namespaceId, field.name(), field.typeInformation(), field.collation(), field.defaultValue(), view.id, field.position() ) );
+            ids.put( field.name(), addColumn( namespaceId, field.name(), field.typeInformation(), field.collation(), field.defaultValue(), view.id, field.position(), false ) );
         }
 
         // Sets previously created primary key
@@ -2069,7 +2069,8 @@ public class DdlManagerImpl extends DdlManager {
         fields = IdentifierUtils.addIdentifierFieldIfAbsent( fields );
 
         for ( FieldInformation information : fields ) {
-            ids.put( information.name(), addColumn( namespaceId, information.name(), information.typeInformation(), information.collation(), information.defaultValue(), logical.id, information.position() + 1 ) ); // pos + 1 to make space for entry identifier column
+            ids.put( information.name(), addColumn( namespaceId, information.name(), information.typeInformation(), information.collation(),
+                    information.defaultValue(), logical.id, information.position() + 1, information.name().equals( IdentifierUtils.IDENTIFIER_KEY ) ) ); // pos + 1 to make space for entry identifier column
         }
 
         List<Long> pkIds = new ArrayList<>();
@@ -2757,7 +2758,7 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
-    private LogicalColumn addColumn( long namespaceId, String columnName, ColumnTypeInformation typeInformation, Collation collation, PolyValue defaultValue, long tableId, int position ) {
+    private LogicalColumn addColumn( long namespaceId, String columnName, ColumnTypeInformation typeInformation, Collation collation, PolyValue defaultValue, long tableId, int position, boolean isIdentifier ) {
         columnName = adjustNameIfNeeded( columnName, namespaceId );
         // check arrays to be correctly typed
         checkValidType( typeInformation );
@@ -2773,7 +2774,8 @@ public class DdlManagerImpl extends DdlManager {
                 typeInformation.dimension(),
                 typeInformation.cardinality(),
                 typeInformation.nullable(),
-                collation
+                collation,
+                isIdentifier
         );
 
         // Add default value

@@ -302,7 +302,7 @@ public class SqlProcessor extends Processor {
             SqlNode[][] newValues, SqlInsert insert ) {
         int pos = 0;
 
-        for ( LogicalColumn column : catalogTable.getColumns() ) {
+        for ( LogicalColumn column : catalogTable.getColumns(true) ) {
             newColumnList.add( new SqlIdentifier( column.name, ParserPos.ZERO ) );
 
             for ( int i = 0; i < ((SqlBasicCall) insert.getSource()).getOperands().length; i++ ) {
@@ -325,9 +325,9 @@ public class SqlProcessor extends Processor {
 
 
     public static int computeTargetSize( LogicalTable catalogTable, SqlNodeList oldColumnList, DataModel dataModel ) {
-        int size = catalogTable.getColumns().size();
+        int size = catalogTable.getColumns(true).size();
         if ( dataModel == DataModel.DOCUMENT ) {
-            List<String> columnNames = catalogTable.getColumnNames();
+            List<String> columnNames = catalogTable.getColumnNames(true);
             size += (int) oldColumnList.getSqlList()
                     .stream()
                     .filter( column -> !columnNames.contains( ((SqlIdentifier) column).names.get( 0 ) ) )

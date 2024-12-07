@@ -3905,7 +3905,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
      * @return Rowtype
      */
     protected AlgDataType createTargetRowType( Entity table, SqlNodeList targetColumnList, boolean append, boolean allowDynamic ) {
-        AlgDataType baseRowType = table.getTupleType();
+        AlgDataType baseRowType = table.getTupleType(true); //
         if ( targetColumnList == null ) {
             return baseRowType;
         }
@@ -4000,8 +4000,8 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             throw newValidationError( node, RESOURCE.unmatchInsertColumn( targetFieldCount, sourceFieldCount ) );
         }
         // Ensure that non-nullable fields are targeted.
-        final List<ColumnStrategy> strategies = table.unwrap( LogicalTable.class ).orElseThrow().getColumnStrategies();
-        for ( final AlgDataTypeField field : table.getTupleType().getFields() ) {
+        final List<ColumnStrategy> strategies = table.unwrap( LogicalTable.class ).orElseThrow().getColumnStrategies(true);
+        for ( final AlgDataTypeField field : table.getTupleType(true).getFields() ) {
             final AlgDataTypeField targetField = logicalTargetRowType.getField( field.getName(), true, false );
             switch ( strategies.get( field.getIndex() ) ) {
                 case NOT_NULLABLE:
