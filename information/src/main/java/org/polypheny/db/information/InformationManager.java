@@ -257,6 +257,11 @@ public class InformationManager {
     }
 
 
+    public Information[] getInformationArray() {
+        return this.informationMap.values().toArray( new Information[0] );
+    }
+
+
     /**
      * Get a page from the Information Manager with a certain id.
      *
