@@ -49,6 +49,11 @@ public class ActivityModel {
     }
 
 
+    public ActivityModel( String type, Map<String, JsonNode> settings ) {
+        this( type, UUID.randomUUID(), settings, ActivityConfigModel.of(), RenderModel.of(), null );
+    }
+
+
     public ActivityModel( String type, UUID id, Map<String, JsonNode> settings, ActivityConfigModel config, RenderModel rendering ) {
         this.type = type;
         this.id = id;

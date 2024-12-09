@@ -34,12 +34,14 @@ import org.polypheny.db.util.graph.AttributedDirectedGraph;
 import org.polypheny.db.util.graph.CycleDetector;
 import org.polypheny.db.util.graph.TopologicalOrderIterator;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
+import org.polypheny.db.workflow.dag.activities.ActivityWrapper.ActivityState;
 import org.polypheny.db.workflow.dag.edges.DataEdge;
 import org.polypheny.db.workflow.dag.edges.Edge;
 import org.polypheny.db.workflow.dag.edges.Edge.EdgeState;
 import org.polypheny.db.workflow.dag.variables.ReadableVariableStore;
 import org.polypheny.db.workflow.engine.scheduler.ExecutionEdge;
 import org.polypheny.db.workflow.engine.scheduler.ExecutionEdge.ExecutionEdgeFactory;
+import org.polypheny.db.workflow.engine.storage.StorageManager;
 import org.polypheny.db.workflow.models.ActivityConfigModel.CommonType;
 import org.polypheny.db.workflow.models.ActivityModel;
 import org.polypheny.db.workflow.models.EdgeModel;
@@ -205,7 +207,11 @@ public class WorkflowImpl implements Workflow {
 
         for ( int i = 0; i < getInPortCount( activityId ); i++ ) {
             DataEdge dataEdge = getDataEdge( activityId, i );
-            inputTypes.add( dataEdge.getFrom().getOutTypePreview().get( dataEdge.getFromPort() ) );
+            if ( dataEdge.getState() == EdgeState.INACTIVE ) {
+                inputTypes.add( null );
+            } else {
+                inputTypes.add( dataEdge.getFrom().getOutTypePreview().get( dataEdge.getFromPort() ) );
+            }
         }
         return inputTypes;
     }
@@ -255,13 +261,13 @@ public class WorkflowImpl implements Workflow {
 
 
     @Override
-    public void validateStructure() throws Exception {
-        validateStructure( toDag() );
+    public void validateStructure( StorageManager sm ) throws Exception {
+        validateStructure( sm, toDag() );
     }
 
 
     @Override
-    public void validateStructure( AttributedDirectedGraph<UUID, ExecutionEdge> subDag ) throws IllegalStateException {
+    public void validateStructure( StorageManager sm, AttributedDirectedGraph<UUID, ExecutionEdge> subDag ) throws IllegalStateException {
         if ( subDag.vertexSet().isEmpty() && subDag.edgeSet().isEmpty() ) {
             return;
         }
@@ -283,6 +289,19 @@ public class WorkflowImpl implements Workflow {
         for ( UUID n : TopologicalOrderIterator.of( subDag ) ) {
             ActivityWrapper wrapper = getActivity( n );
             CommonType type = wrapper.getConfig().getCommonType();
+
+            if ( wrapper.getState() == ActivityState.SAVED ) {
+                if ( !sm.hasAllCheckpoints( n, wrapper.getDef().getOutPorts().length ) ) {
+                    throw new IllegalStateException( "Found missing checkpoint for saved activity: " + wrapper );
+                }
+            } else if ( wrapper.getState() != ActivityState.FINISHED ) {
+                for ( int i = 0; i < wrapper.getDef().getOutPorts().length; i++ ) {
+                    if ( sm.hasCheckpoint( n, i ) ) {
+                        throw new IllegalStateException( "Found a checkpoint for an activity that has not yet been executed successfully: " + wrapper );
+                    }
+                }
+            }
+
             Set<Integer> requiredInPorts = wrapper.getDef().getRequiredInPorts();
             Set<Integer> occupiedInPorts = new HashSet<>();
             for ( ExecutionEdge execEdge : subDag.getInwardEdges( n ) ) {

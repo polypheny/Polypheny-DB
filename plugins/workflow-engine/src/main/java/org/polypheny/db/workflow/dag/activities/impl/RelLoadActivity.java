@@ -27,7 +27,6 @@ import java.util.StringJoiner;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.languages.QueryLanguage;
@@ -145,8 +144,11 @@ public class RelLoadActivity implements Activity, Fusable, Pipeable {
 
     private LogicalTable getEntity( EntityValue setting ) throws ActivityException {
         // TODO: check if the adapter is a data store (and thus writable)
-        return Catalog.snapshot().rel().getTable( setting.getNamespace(), setting.getName() ).orElseThrow(
-                () -> new InvalidSettingException( "Specified table does not exist", "table" ) );
+        LogicalTable table = setting.getTable();
+        if ( table == null ) {
+            throw new InvalidSettingException( "Specified table does not exist", "table" );
+        }
+        return table;
     }
 
 }

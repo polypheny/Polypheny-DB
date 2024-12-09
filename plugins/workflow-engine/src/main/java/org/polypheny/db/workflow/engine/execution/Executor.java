@@ -18,12 +18,14 @@ package org.polypheny.db.workflow.engine.execution;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Callable;
 import org.polypheny.db.workflow.dag.Workflow;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
 import org.polypheny.db.workflow.dag.edges.DataEdge;
 import org.polypheny.db.workflow.dag.edges.Edge;
+import org.polypheny.db.workflow.dag.edges.Edge.EdgeState;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 
@@ -76,18 +78,18 @@ public abstract class Executor implements Callable<Void> {
     List<CheckpointReader> getReaders( ActivityWrapper target ) {
         CheckpointReader[] inputs = new CheckpointReader[target.getDef().getInPorts().length];
         for ( Edge edge : workflow.getInEdges( target.getId() ) ) {
-            if ( edge instanceof DataEdge dataEdge ) {
+            if ( edge instanceof DataEdge dataEdge && dataEdge.getState() != EdgeState.INACTIVE ) {
                 CheckpointReader reader = sm.readCheckpoint( dataEdge.getFrom().getId(), dataEdge.getFromPort() );
-                inputs[dataEdge.getToPort()] = reader;
+                inputs[dataEdge.getToPort()] = reader; // might be null
             }
         }
-        return List.of( inputs );
+        return Arrays.asList( inputs );
     }
 
 
     CheckpointReader getReader( ActivityWrapper target, int toPort ) {
         DataEdge edge = workflow.getDataEdge( target.getId(), toPort );
-        if ( edge == null ) {
+        if ( edge == null || edge.getState() == EdgeState.INACTIVE ) {
             return null;
         }
         return sm.readCheckpoint( edge.getFrom().getId(), edge.getFromPort() );

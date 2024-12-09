@@ -224,7 +224,7 @@ public class StorageManagerImpl implements StorageManager {
 
     @Override
     public void dropCheckpoints( UUID activityId ) {
-        for ( LogicalEntity entity : checkpoints.get( activityId ).values() ) {
+        for ( LogicalEntity entity : checkpoints.getOrDefault( activityId, Map.of() ).values() ) {
             dropEntity( entity );
         }
         checkpoints.remove( activityId );
@@ -242,6 +242,20 @@ public class StorageManagerImpl implements StorageManager {
     @Override
     public boolean hasCheckpoint( UUID activityId, int outputIdx ) {
         return checkpoints.getOrDefault( activityId, Map.of() ).containsKey( outputIdx );
+    }
+
+
+    @Override
+    public boolean hasAllCheckpoints( UUID activityId, int outputCount ) {
+        if ( outputCount < 0 ) {
+            return false;
+        }
+        for ( int i = 0; i < outputCount; i++ ) {
+            if ( !hasCheckpoint( activityId, i ) ) {
+                return false;
+            }
+        }
+        return true;
     }
 
 

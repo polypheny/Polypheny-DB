@@ -43,6 +43,20 @@ public class StringSettingDef extends SettingDef {
     }
 
 
+    @Override
+    public void validateValue( SettingValue value ) {
+        if ( value instanceof StringValue stringValue ) {
+            return;
+        } else if ( value instanceof ListValue<? extends SettingValue> list ) {
+            if ( !isList ) {
+                throw new IllegalArgumentException( "Value must not be a list" );
+            }
+            return;
+        }
+        throw new IllegalArgumentException( "Value is not a SettingValue" );
+    }
+
+
     private static SettingValue getDefaultValue( String s, boolean isList ) {
         if ( isList ) {
             if ( s.isEmpty() ) {

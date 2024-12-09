@@ -33,6 +33,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.util.graph.AttributedDirectedGraph;
+import org.polypheny.db.util.graph.TopologicalOrderIterator;
 import org.polypheny.db.workflow.dag.Workflow;
 import org.polypheny.db.workflow.dag.Workflow.WorkflowState;
 import org.polypheny.db.workflow.dag.activities.ActivityException;
@@ -93,7 +94,7 @@ public class WorkflowScheduler {
         this.execDag = targetActivity == null ? prepareExecutionDag() : prepareExecutionDag( List.of( targetActivity ) );
         log.info( "ExecDag after initialization: {}", this.execDag );
 
-        workflow.validateStructure( this.execDag );
+        workflow.validateStructure( sm, this.execDag );
         log.info( "Structure is valid" );
 
         this.optimizer = new WorkflowOptimizerImpl( workflow, execDag );
@@ -102,48 +103,6 @@ public class WorkflowScheduler {
 
 
     public List<ExecutionSubmission> startExecution() {
-        return computeNextSubmissions();
-    }
-
-
-    public List<ExecutionSubmission> handleExecutionResult( ExecutionResult result ) {
-        pendingCount--;
-
-        try {
-            updateRemaining( result );
-        } catch ( TransactionException e ) {
-            result = new ExecutionResult( result.getSubmission(), new ExecutorException( "An error occurred while closing open transactions of executed activities", e ) );
-        }
-
-        if ( !result.isSuccess() ) {
-            Throwable cause = result.getException().getCause();
-
-            // for debugging
-            result.getException().printStackTrace();
-            if ( cause != null ) {
-                log.warn( "ExecutorException has inner exception", cause );
-            }
-            setErrorVariable( result.getActivities(), result.getException() );
-        }
-
-        updateGraph( result.isSuccess(), result.getActivities(), result.getRootId(), execDag );
-
-        if ( remainingActivities.isEmpty() ) {
-            assert pendingCount == 0;
-
-            isFinished = true;
-            workflow.setState( WorkflowState.IDLE );
-            return null;
-        }
-
-        if ( isAborted ) {
-            if ( pendingCount == 0 ) {
-                isFinished = true;
-                workflow.setState( WorkflowState.IDLE );
-            }
-            return null;
-        }
-
         return computeNextSubmissions();
     }
 
@@ -206,6 +165,7 @@ public class WorkflowScheduler {
 
             nWrapper.resetExecution();
             nWrapper.setState( ActivityState.QUEUED );
+            sm.dropCheckpoints( n );
             remainingActivities.add( n );
             if ( type == CommonType.EXTRACT ) {
                 remainingCommonExtract.add( n );
@@ -219,7 +179,7 @@ public class WorkflowScheduler {
                 open.add( edge.getFrom().getId() );
             }
             if ( inEdges.isEmpty() ) {
-                // TODO: also initialize any activities that are not successors to SAVED activity
+                // TODO: also initialize any activities that are not successors to SAVED activity. Currently in wrong order (reverse DFS)
                 workflow.recomputeInVariables( n );
                 inTypePreviews.put( n, List.of() );
                 try {
@@ -240,7 +200,71 @@ public class WorkflowScheduler {
             updateGraph( true, Set.of( saved ), saved, execDag ); // result propagation needs to happen individually
         }
 
+        TopologicalOrderIterator.of( execDag ).forEach( this::updatePreview );
+
         return execDag;
+    }
+
+
+    private void updatePreview( UUID n ) {
+        ActivityWrapper wrapper = workflow.getActivity( n );
+        if ( wrapper.getState() != ActivityState.QUEUED ) {
+            return;
+        }
+        workflow.recomputeInVariables( n );
+        List<Optional<AlgDataType>> inTypes = workflow.getInputTypes( n );
+        inTypePreviews.put( n, inTypes );
+        try {
+            SettingsPreview settings = wrapper.updateOutTypePreview( inTypes, workflow.hasStableInVariables( n ) );
+            settingsPreviews.put( n, settings );
+        } catch ( ActivityException e ) {
+            // TODO: detected an inconsistency in the types and settings. Ignore?
+            e.printStackTrace();
+        }
+
+    }
+
+
+    public List<ExecutionSubmission> handleExecutionResult( ExecutionResult result ) {
+        pendingCount--;
+
+        try {
+            updateRemaining( result );
+        } catch ( TransactionException e ) {
+            result = new ExecutionResult( result.getSubmission(), new ExecutorException( "An error occurred while closing open transactions of executed activities", e ) );
+        }
+
+        if ( !result.isSuccess() ) {
+            sm.dropCheckpoints( result.getRootId() ); // remove any created checkpoints
+            Throwable cause = result.getException().getCause();
+
+            // for debugging
+            result.getException().printStackTrace();
+            if ( cause != null ) {
+                log.warn( "ExecutorException has inner exception", cause );
+            }
+            setErrorVariable( result.getActivities(), result.getException() );
+        }
+
+        updateGraph( result.isSuccess(), result.getActivities(), result.getRootId(), execDag );
+
+        if ( remainingActivities.isEmpty() ) {
+            assert pendingCount == 0;
+
+            isFinished = true;
+            workflow.setState( WorkflowState.IDLE );
+            return null;
+        }
+
+        if ( isAborted ) {
+            if ( pendingCount == 0 ) {
+                isFinished = true;
+                workflow.setState( WorkflowState.IDLE );
+            }
+            return null;
+        }
+
+        return computeNextSubmissions();
     }
 
 
@@ -327,26 +351,11 @@ public class WorkflowScheduler {
             }
         }
 
-        // recompute successor typePreviews and settings
         // TODO: update entire workflow instead of dag?
-        for ( UUID n : GraphUtils.getTopologicalIterable( dag, rootId, false ) ) {
-            ActivityWrapper wrapper = workflow.getActivity( n );
-            if ( isInitialUpdate && inTypePreviews.containsKey( n ) ) {
-                continue; // only initialize once
-            }
-            if ( wrapper.getState() == ActivityState.QUEUED ) {
-                workflow.recomputeInVariables( n );
-                List<Optional<AlgDataType>> inTypes = workflow.getInputTypes( n );
-                inTypePreviews.put( n, inTypes );
-                try {
-                    SettingsPreview settings = wrapper.updateOutTypePreview( inTypes, workflow.hasStableInVariables( n ) );
-                    settingsPreviews.put( n, settings );
-                } catch ( ActivityException e ) {
-                    // TODO: detected an inconsistency in the types and settings. Ignore?
-                    e.printStackTrace();
-                }
-            }
+        if ( !isInitialUpdate ) {
+            GraphUtils.getTopologicalIterable( dag, rootId, false ).forEach( this::updatePreview );
         }
+
     }
 
 

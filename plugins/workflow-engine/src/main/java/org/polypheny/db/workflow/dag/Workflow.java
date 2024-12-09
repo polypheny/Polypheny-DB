@@ -26,6 +26,7 @@ import org.polypheny.db.workflow.dag.edges.DataEdge;
 import org.polypheny.db.workflow.dag.edges.Edge;
 import org.polypheny.db.workflow.dag.variables.ReadableVariableStore;
 import org.polypheny.db.workflow.engine.scheduler.ExecutionEdge;
+import org.polypheny.db.workflow.engine.storage.StorageManager;
 import org.polypheny.db.workflow.models.EdgeModel;
 import org.polypheny.db.workflow.models.WorkflowConfigModel;
 import org.polypheny.db.workflow.models.WorkflowModel;
@@ -109,6 +110,14 @@ public interface Workflow {
      */
     boolean hasStableInVariables( UUID activityId );
 
+    /**
+     * Returns a list containing a preview of all input types for the specified activity.
+     * Not yet available input types are empty Optionals.
+     * As inactive data edges cannot transmit data, their type is set to null.
+     *
+     * @param activityId target activity
+     * @return a list of all input types ordered by inPort index
+     */
     List<Optional<AlgDataType>> getInputTypes( UUID activityId );
 
     int getInPortCount( UUID activityId );
@@ -121,9 +130,9 @@ public interface Workflow {
 
     AttributedDirectedGraph<UUID, ExecutionEdge> toDag();
 
-    void validateStructure() throws Exception;
+    void validateStructure( StorageManager sm ) throws Exception;
 
-    void validateStructure( AttributedDirectedGraph<UUID, ExecutionEdge> subDag ) throws IllegalStateException;
+    void validateStructure( StorageManager sm, AttributedDirectedGraph<UUID, ExecutionEdge> subDag ) throws IllegalStateException;
 
 
     /**

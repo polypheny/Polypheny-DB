@@ -20,6 +20,11 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import java.util.Objects;
 import lombok.Value;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.logical.LogicalCollection;
+import org.polypheny.db.catalog.entity.logical.LogicalGraph;
+import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingValue;
 
 @Value
@@ -52,6 +57,32 @@ public class EntityValue implements SettingValue {
         return mapper.createObjectNode()
                 .put( "namespace", namespace )
                 .put( "name", name );
+    }
+
+
+    public LogicalTable getTable() {
+        return Catalog.snapshot().rel().getTable( namespace, name ).orElse( null );
+    }
+
+
+    public LogicalCollection getCollection() {
+        LogicalNamespace ns = Catalog.snapshot().getNamespace( namespace ).orElse( null );
+        if ( ns == null ) {
+            return null;
+        }
+        return Catalog.snapshot().doc().getCollection( ns.id, name ).orElse( null );
+    }
+
+
+    public LogicalGraph getGraph() {
+        LogicalNamespace ns = Catalog.snapshot().getNamespace( namespace ).orElse( null );
+        if ( ns == null ) {
+            ns = Catalog.snapshot().getNamespace( name ).orElse( null );
+            if ( ns == null ) {
+                return null;
+            }
+        }
+        return Catalog.snapshot().graph().getGraph( ns.id ).orElse( null );
     }
 
 }

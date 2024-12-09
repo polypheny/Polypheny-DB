@@ -27,7 +27,6 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.languages.LanguageManager;
@@ -41,7 +40,6 @@ import org.polypheny.db.workflow.dag.activities.Activity;
 import org.polypheny.db.workflow.dag.activities.Activity.ActivityCategory;
 import org.polypheny.db.workflow.dag.activities.Activity.PortType;
 import org.polypheny.db.workflow.dag.activities.ActivityException;
-import org.polypheny.db.workflow.dag.activities.ActivityException.InvalidSettingException;
 import org.polypheny.db.workflow.dag.activities.Fusable;
 import org.polypheny.db.workflow.dag.activities.Pipeable;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition;
@@ -63,7 +61,7 @@ import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
         inPorts = {},
         outPorts = { @OutPort(type = PortType.REL) })
 
-@EntitySetting(key = TABLE_KEY, displayName = "Table", dataModel = DataModel.RELATIONAL)
+@EntitySetting(key = TABLE_KEY, displayName = "Table", dataModel = DataModel.RELATIONAL, mustExist = true)
 
 public class RelExtractActivity implements Activity, Fusable, Pipeable {
 
@@ -77,7 +75,7 @@ public class RelExtractActivity implements Activity, Fusable, Pipeable {
         Optional<EntityValue> table = settings.get( TABLE_KEY, EntityValue.class );
 
         if ( table.isPresent() ) {
-            AlgDataType type = getOutputType( getEntity( table.get() ) );
+            AlgDataType type = getOutputType( table.get().getTable() );
             return Activity.wrapType( type );
         }
         return Activity.wrapType( null );
@@ -86,7 +84,7 @@ public class RelExtractActivity implements Activity, Fusable, Pipeable {
 
     @Override
     public void execute( List<CheckpointReader> inputs, Settings settings, ExecutionContext ctx ) throws Exception {
-        LogicalTable table = getEntity( settings.get( TABLE_KEY, EntityValue.class ) );
+        LogicalTable table = settings.get( TABLE_KEY, EntityValue.class ).getTable();
         AlgDataType type = getOutputType( table );
 
 
@@ -158,7 +156,7 @@ public class RelExtractActivity implements Activity, Fusable, Pipeable {
 
     @Override
     public AlgDataType lockOutputType( List<AlgDataType> inTypes, Settings settings ) throws Exception {
-        lockedEntity = getEntity( settings.get( TABLE_KEY, EntityValue.class ) );
+        lockedEntity = settings.get( TABLE_KEY, EntityValue.class ).getTable();
         return getOutputType( lockedEntity );
     }
 
@@ -167,12 +165,6 @@ public class RelExtractActivity implements Activity, Fusable, Pipeable {
     public void pipe( List<InputPipe> inputs, OutputPipe output, Settings settings, PipeExecutionContext ctx ) throws Exception {
         // TODO: Create new transaction or use ctx?
         throw new NotImplementedException();
-    }
-
-
-    private LogicalTable getEntity( EntityValue setting ) throws ActivityException {
-        return Catalog.snapshot().rel().getTable( setting.getNamespace(), setting.getName() ).orElseThrow(
-                () -> new InvalidSettingException( "Specified table does not exist", "table" ) );
     }
 
 

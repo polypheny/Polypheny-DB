@@ -32,6 +32,7 @@ import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Value;
 import org.polypheny.db.util.Wrapper;
+import org.polypheny.db.workflow.dag.activities.ActivityException.InvalidSettingException;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition;
 import org.polypheny.db.workflow.dag.annotations.BoolSetting;
 import org.polypheny.db.workflow.dag.annotations.EntitySetting;
@@ -79,6 +80,30 @@ public abstract class SettingDef {
      * @throws IllegalArgumentException if the {@link JsonNode} has an unexpected format.
      */
     public abstract SettingValue buildValue( JsonNode node );
+
+    /**
+     * Validates that the specified value is valid for this SettingDef.
+     *
+     * @param value the value to validate
+     * @throws InvalidSettingException if the setting value is invalid
+     * @throws IllegalArgumentException if the setting value has the wrong SettingValue class
+     */
+    public abstract void validateValue( SettingValue value ) throws InvalidSettingException;
+
+
+    /**
+     * Builds a {@link SettingValue} from the given {@link JsonNode} and validates itthat represents a value for this SettingInfo.
+     *
+     * @param node the {@link JsonNode} containing the data (with any variable references already replaced) to build the {@link SettingValue}.
+     * @return the constructed {@link SettingValue}.
+     * @throws IllegalArgumentException if the {@link JsonNode} has an unexpected format
+     * @throws InvalidSettingException if the setting value is invalid
+     */
+    public SettingValue buildValidatedValue( JsonNode node ) throws InvalidSettingException {
+        SettingValue value = buildValue( node );
+        validateValue( value );
+        return value;
+    }
 
 
     public static List<SettingDef> fromAnnotations( Annotation[] annotations ) {

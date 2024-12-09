@@ -26,6 +26,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.workflow.dag.activities.Activity.ControlStateMerger;
+import org.polypheny.db.workflow.dag.activities.ActivityException.InvalidSettingException;
 import org.polypheny.db.workflow.dag.edges.ControlEdge;
 import org.polypheny.db.workflow.dag.edges.DataEdge;
 import org.polypheny.db.workflow.dag.edges.Edge;
@@ -74,14 +75,14 @@ public class ActivityWrapper {
     }
 
 
-    public Settings resolveSettings() {
+    public Settings resolveSettings() throws InvalidSettingException {
         return ActivityRegistry.buildSettingValues( type, variables.resolveVariables( serializableSettings ) );
     }
 
     // TODO: be careful to use correct variables (must be sure they are correct)
 
 
-    public SettingsPreview resolveAvailableSettings( boolean hasStableVariables ) {
+    public SettingsPreview resolveAvailableSettings( boolean hasStableVariables ) throws InvalidSettingException {
         VariableStore store = hasStableVariables ? variables : new VariableStore();
         return ActivityRegistry.buildAvailableSettingValues( type, store.resolveAvailableVariables( serializableSettings ) );
     }

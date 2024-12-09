@@ -20,7 +20,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import java.util.Objects;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
+import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.workflow.dag.activities.ActivityException.InvalidSettingException;
 import org.polypheny.db.workflow.dag.annotations.EntitySetting;
 
 @EqualsAndHashCode(callSuper = true)
@@ -28,17 +30,39 @@ import org.polypheny.db.workflow.dag.annotations.EntitySetting;
 public class EntitySettingDef extends SettingDef {
 
     DataModel dataModel;
+    boolean mustExist;
 
 
     public EntitySettingDef( EntitySetting a ) {
         super( SettingType.ENTITY, a.key(), a.displayName(), a.description(), getDefaultValue( a.defaultNamespace(), a.defaultName() ), a.group(), a.subGroup(), a.position(), a.subOf() );
         this.dataModel = a.dataModel();
+        this.mustExist = a.mustExist();
     }
 
 
     @Override
     public SettingValue buildValue( JsonNode node ) {
         return EntityValue.of( node );
+    }
+
+
+    @Override
+    public void validateValue( SettingValue value ) throws InvalidSettingException {
+        if ( value instanceof EntityValue entityValue ) {
+            if ( mustExist ) {
+                LogicalEntity entity = switch ( dataModel ) {
+                    case RELATIONAL -> entityValue.getTable();
+                    case DOCUMENT -> entityValue.getCollection();
+                    case GRAPH -> entityValue.getGraph();
+                };
+                if ( entity == null ) {
+                    throw new InvalidSettingException( "Entity does not exist", getKey() );
+                }
+            }
+            return;
+        }
+        throw new IllegalArgumentException( "Value is not an EntityValue" );
+
     }
 
 

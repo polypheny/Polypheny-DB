@@ -31,6 +31,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import org.polypheny.db.type.PolySerializable;
+import org.polypheny.db.workflow.dag.activities.ActivityException.InvalidSettingException;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition;
 import org.polypheny.db.workflow.dag.annotations.AdvancedGroup;
 import org.polypheny.db.workflow.dag.annotations.DefaultGroup;
@@ -91,14 +92,22 @@ public class ActivityRegistry {
      * @return an unmodifiable map of setting keys to their corresponding {@code SettingValue} instances.
      * @throws IllegalArgumentException if no activity definition is found for the provided {@code activityType}
      * or if a JsonNode has an unexpected format.
+     * @throws InvalidSettingException if the settingValue is not valid for the corresponding SettingDef
      */
-    public static Settings buildSettingValues( String activityType, Map<String, JsonNode> resolved ) {
+    public static Settings buildSettingValues( String activityType, Map<String, JsonNode> resolved ) throws InvalidSettingException {
+        return buildSettingValues( activityType, resolved, false );
+    }
+
+
+    public static Settings buildSettingValues( String activityType, Map<String, JsonNode> resolved, boolean disableValidation ) throws InvalidSettingException {
         Map<String, SettingDef> settingDefs = get( activityType ).getSettings();
 
         Map<String, SettingValue> settingValues = new HashMap<>();
         for ( Entry<String, JsonNode> entry : resolved.entrySet() ) {
             String key = entry.getKey();
-            SettingValue settingValue = settingDefs.get( key ).buildValue( entry.getValue() );
+            SettingValue settingValue = disableValidation ?
+                    settingDefs.get( key ).buildValue( entry.getValue() ) :
+                    settingDefs.get( key ).buildValidatedValue( entry.getValue() );
             settingValues.put( key, settingValue );
         }
         return new Settings( settingValues );
@@ -112,16 +121,20 @@ public class ActivityRegistry {
      * @param activityType the identifier for the activity type.
      * @param resolved a map of setting keys to {@link Optional<JsonNode>} values, where unresolved settings are {@link Optional#empty()}.
      * @return a wrapper around a map of setting keys to {@link Optional<SettingValue>} instances, where missing or unresolved settings are {@link Optional#empty()}.
-     * @throws IllegalArgumentException if the {@code activityType} is invalid or a {@link JsonNode} has an unexpected format.
+     * @throws IllegalArgumentException if the {@code activityType} is invalid or a {@link JsonNode} has an unexpected format or is invalid.
      */
-    public static SettingsPreview buildAvailableSettingValues( String activityType, Map<String, Optional<JsonNode>> resolved ) {
+    public static SettingsPreview buildAvailableSettingValues( String activityType, Map<String, Optional<JsonNode>> resolved ) throws InvalidSettingException {
         Map<String, SettingDef> settingDefs = get( activityType ).getSettings();
 
         Map<String, Optional<SettingValue>> settingValues = new HashMap<>();
         for ( Entry<String, Optional<JsonNode>> entry : resolved.entrySet() ) {
             String key = entry.getKey();
-            Optional<SettingValue> settingValue = entry.getValue().map( v -> settingDefs.get( key ).buildValue( v ) );
-            settingValues.put( key, settingValue );
+            Optional<JsonNode> node = entry.getValue();
+            if ( node.isPresent() ) {
+                settingValues.put( key, Optional.of( settingDefs.get( key ).buildValidatedValue( node.get() ) ) );
+            } else {
+                settingValues.put( key, Optional.empty() );
+            }
         }
         return new SettingsPreview( settingValues );
     }

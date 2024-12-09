@@ -42,7 +42,7 @@ public interface Activity {
      * If a setting, input or output type is available, it is guaranteed to not change anymore.
      * This method should be idempotent.
      *
-     * @param inTypes a list of {@link Optional<AlgDataType>} representing the input tuple types.
+     * @param inTypes a list of {@link Optional<AlgDataType>} representing the input tuple types. For inactive edges, the entry is null (important for non-default DataStateMergers).
      * @param settings a map of setting keys to {@link Optional<SettingValue>} representing the available settings, i.e. all settings that do not contain variables.
      * @return a list of {@link Optional<AlgDataType>} representing the expected output tuple types.
      * If an output type cannot be determined at this point, the corresponding {@link Optional} will be empty.
@@ -61,7 +61,7 @@ public interface Activity {
      * CheckpointWriters for any outputs are created from the ExecutionContext.
      * The settings do not incorporate any changes to variables from {@code  updateVariables()}.
      *
-     * @param inputs a list of input readers for each input specified by the annotation.
+     * @param inputs a list of input readers for each input specified by the annotation. For activities with a custom DataStateMerger that allows inactive inputs, readers of inactive edges are null.
      * @param settings the instantiated setting values, according to the specified settings annotations
      * @param ctx ExecutionContext to be used for creating checkpoints, updating progress and periodically checking for an abort
      * @throws Exception in case the execution fails or is interrupted at any point

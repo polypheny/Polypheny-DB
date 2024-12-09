@@ -17,6 +17,7 @@
 package org.polypheny.db.workflow.engine.execution;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -151,24 +152,29 @@ public class PipeExecutor extends Executor {
         ActivityWrapper wrapper = workflow.getActivity( root );
 
         List<ExecutionEdge> inEdges = execTree.getInwardEdges( root );
-        List<AlgDataType> inTypes;
-        if ( inEdges.isEmpty() ) {
-            // leaf node
-            inTypes = getReaders( wrapper ).stream().map( CheckpointReader::getTupleType ).toList();
-        } else {
-            // inner node
-            inTypes = new ArrayList<>();
-            for ( ExecutionEdge e : inEdges ) {
-                inTypes.add( registerOutputPipes( e.getSource() ) );
+        AlgDataType[] inTypes = new AlgDataType[wrapper.getDef().getInPorts().length];
+        boolean isInnerNode = false;
+        for ( ExecutionEdge edge : inEdges ) {
+            assert !edge.isControl() : "Execution tree for pipelining must not contain control edges";
+            inTypes[edge.getToPort()] = registerOutputPipes( edge.getSource() );
+            isInnerNode = true;
+        }
+        for ( int i = 0; i < inTypes.length; i++ ) {
+            if ( inTypes[i] == null ) {
+                // existing checkpoint
+                CheckpointReader reader = getReader( wrapper, i );
+                inTypes[i] = reader == null ? null : reader.getTupleType(); // null implies inactive data edge
             }
-            workflow.recomputeInVariables( root ); // inner nodes should get their variables merged
+        }
+        if ( isInnerNode ) { // leaf nodes already have correct variables from scheduler
+            workflow.recomputeInVariables( root );
         }
 
         Settings settings = wrapper.resolveSettings();
         settingsSnapshot.put( root, settings ); // store current state of settings for later use
         Pipeable activity = (Pipeable) wrapper.getActivity();
 
-        AlgDataType outType = activity.lockOutputType( inTypes, settings );
+        AlgDataType outType = activity.lockOutputType( Arrays.asList( inTypes ), settings );
         if ( outType != null ) {
             outQueues.put( root, new QueuePipe( queueCapacity, outType ) );
             wrapper.setOutTypePreview( List.of( Optional.of( outType ) ) );
@@ -211,11 +217,12 @@ public class PipeExecutor extends Executor {
             for ( int i = 0; i < inPipesArr.length; i++ ) {
                 if ( inPipesArr[i] == null ) {
                     // add remaining pipes for existing checkpoints
-                    inPipesArr[i] = new CheckpointInputPipe( getReader( wrapper, i ) );
+                    CheckpointReader reader = getReader( wrapper, i );
+                    inPipesArr[i] = reader == null ? null : new CheckpointInputPipe( reader );
                 }
             }
 
-            List<InputPipe> inPipes = List.of( inPipesArr );
+            List<InputPipe> inPipes = Arrays.asList( inPipesArr );
             OutputPipe outPipe = currentId.equals( rootId ) ? getCheckpointWriterPipe( rootId, rootType ) : outQueues.get( wrapper.getId() );
             callables.add( getCallable( wrapper, inPipes, outPipe ) );
         }

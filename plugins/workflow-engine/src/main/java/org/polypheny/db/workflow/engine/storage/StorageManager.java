@@ -82,6 +82,8 @@ public interface StorageManager extends AutoCloseable { // TODO: remove AutoClos
 
     boolean hasCheckpoint( UUID activityId, int outputIdx );
 
+    boolean hasAllCheckpoints( UUID activityId, int outputCount );
+
     /**
      * Returns a transaction to be used by the specified activity for extracting or loading data stored in this Polypheny instance (excluding checkpoints).
      * Each activity has at most 1 such transaction at any point. If commonType != NONE, the transaction is shared between multiple activities

@@ -36,6 +36,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.workflow.dag.activities.Activity.ActivityCategory;
+import org.polypheny.db.workflow.dag.activities.ActivityException.InvalidSettingException;
 import org.polypheny.db.workflow.dag.settings.GroupDef;
 import org.polypheny.db.workflow.dag.settings.GroupDef.SubgroupDef;
 import org.polypheny.db.workflow.dag.settings.IntValue;
@@ -132,12 +133,12 @@ class ActivityRegistryTest {
 
 
     @Test
-    public void buildSettingValuesTest() {
+    public void buildDefaultSettingValuesTest() throws InvalidSettingException {
         for ( String key : ActivityRegistry.getRegistry().keySet() ) {
             Map<String, JsonNode> defaultSettings = ActivityRegistry.getSerializableSettingValues( key );
 
             // We check whether building the default settings results in an equivalent serializable object
-            Map<String, SettingValue> rebuiltSettings = ActivityRegistry.buildSettingValues( key, defaultSettings ).getMap();
+            Map<String, SettingValue> rebuiltSettings = ActivityRegistry.buildSettingValues( key, defaultSettings, true ).getMap();
             assertEquals( defaultSettings.size(), rebuiltSettings.size() );
 
             JsonMapper mapper = new JsonMapper();
@@ -150,7 +151,7 @@ class ActivityRegistryTest {
 
 
     @Test
-    public void intVariableResolveTest() {
+    public void intVariableResolveTest() throws InvalidSettingException {
         // TODO: make test independent of a specific activity
         int newValue = 42;
         String varName = "intVariable";

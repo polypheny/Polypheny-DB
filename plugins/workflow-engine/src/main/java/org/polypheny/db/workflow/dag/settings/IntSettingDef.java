@@ -19,6 +19,7 @@ package org.polypheny.db.workflow.dag.settings;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
+import org.polypheny.db.workflow.dag.activities.ActivityException.InvalidSettingException;
 import org.polypheny.db.workflow.dag.annotations.IntSetting;
 
 @EqualsAndHashCode(callSuper = true)
@@ -35,6 +36,8 @@ public class IntSettingDef extends SettingDef {
         this.isList = a.isList();
         this.minValue = a.min();
         this.maxValue = a.max();
+
+        assert minValue < maxValue;
     }
 
 
@@ -44,6 +47,34 @@ public class IntSettingDef extends SettingDef {
             return ListValue.of( node, IntValue::of );
         }
         return IntValue.of( node );
+    }
+
+
+    @Override
+    public void validateValue( SettingValue value ) throws InvalidSettingException {
+        if ( value instanceof IntValue intValue ) {
+            validateIntValue( intValue );
+            return;
+        } else if ( value instanceof ListValue<? extends SettingValue> list ) {
+            if ( !isList ) {
+                throw new IllegalArgumentException( "Value must not be a list" );
+            }
+            for ( SettingValue v : list.getValues() ) {
+                validateIntValue( (IntValue) v );
+            }
+            return;
+        }
+        throw new IllegalArgumentException( "Value is not a IntValue" );
+    }
+
+
+    private void validateIntValue( IntValue value ) throws InvalidSettingException {
+        int i = value.getValue();
+        if ( i < minValue ) {
+            throw new InvalidSettingException( "Int must not be smaller than " + minValue, getKey() );
+        } else if ( i > maxValue ) {
+            throw new InvalidSettingException( "Int must not be larger than " + maxValue, getKey() );
+        }
     }
 
 

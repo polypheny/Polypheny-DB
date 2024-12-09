@@ -19,6 +19,7 @@ package org.polypheny.db.workflow.dag.activities.impl;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Random;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.type.PolyType;
@@ -31,6 +32,10 @@ import org.polypheny.db.workflow.dag.activities.Activity.PortType;
 import org.polypheny.db.workflow.dag.activities.ActivityException;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition.OutPort;
+import org.polypheny.db.workflow.dag.annotations.BoolSetting;
+import org.polypheny.db.workflow.dag.annotations.IntSetting;
+import org.polypheny.db.workflow.dag.settings.BoolValue;
+import org.polypheny.db.workflow.dag.settings.IntValue;
 import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingsPreview;
 import org.polypheny.db.workflow.engine.execution.context.ExecutionContext;
@@ -42,7 +47,13 @@ import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
         inPorts = {},
         outPorts = { @OutPort(type = PortType.REL) }
 )
+@IntSetting(key = "rowCount", displayName = "Row Count", defaultValue = 3, min = 1, max = 1_000_000)
+@BoolSetting(key = "fixSeed", displayName = "Fix Random Seed", defaultValue = false)
 public class RelValuesActivity implements Activity {
+
+    private static final List<String> NAMES = List.of( "Alice", "Bob", "Charlie", "Diana", "Eve", "Frank", "Grace", "Hank" );
+    private static final List<String> LAST_NAMES = List.of( "Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis" );
+
 
     @Override
     public List<Optional<AlgDataType>> previewOutTypes( List<Optional<AlgDataType>> inTypes, SettingsPreview settings ) throws ActivityException {
@@ -53,7 +64,10 @@ public class RelValuesActivity implements Activity {
     @Override
     public void execute( List<CheckpointReader> inputs, Settings settings, ExecutionContext ctx ) throws Exception {
         try ( RelWriter writer = ctx.createRelWriter( 0, getType(), true ) ) {
-            writer.write( getValues().iterator() );
+            writer.write( getValues(
+                    settings.get( "rowCount", IntValue.class ).getValue(),
+                    settings.get( "fixSeed", BoolValue.class ).getValue()
+            ).iterator() );
         }
     }
 
@@ -69,23 +83,29 @@ public class RelValuesActivity implements Activity {
         return typeFactory.builder()
                 .add( null, StorageManager.PK_COL, null, typeFactory.createPolyType( PolyType.BIGINT ) )
                 .add( null, "name", null, typeFactory.createPolyType( PolyType.VARCHAR, 50 ) )
+                .add( null, "lastName", null, typeFactory.createPolyType( PolyType.VARCHAR, 50 ) )
                 .add( null, "age", null, typeFactory.createPolyType( PolyType.INTEGER ) )
-                .add( null, "gender", null, typeFactory.createPolyType( PolyType.VARCHAR, 1 ) )
+                .add( null, "salary", null, typeFactory.createPolyType( PolyType.INTEGER ) )
                 .build();
     }
 
 
-    private static List<List<PolyValue>> getValues() {
+    private static List<List<PolyValue>> getValues( int n, boolean fixSeed ) {
+        Random random = fixSeed ? new Random( 42 ) : new Random();
         List<List<PolyValue>> tuples = new ArrayList<>();
-        tuples.add( getRow( "Alice", 25, true ) );
-        tuples.add( getRow( "Bob", 30, false ) );
-        tuples.add( getRow( "Charlie", 35, false ) );
+        for ( int i = 0; i < n; i++ ) {
+            String firstName = NAMES.get( random.nextInt( NAMES.size() ) );
+            String lastName = LAST_NAMES.get( random.nextInt( LAST_NAMES.size() ) );
+            int age = random.nextInt( 18, 66 );
+            int salary = random.nextInt( 5000, 10000 );
+            tuples.add( getRow( firstName, lastName, age, salary ) );
+        }
         return tuples;
     }
 
 
-    private static List<PolyValue> getRow( String name, int age, boolean isFemale ) {
-        return List.of( PolyInteger.of( 0 ), PolyString.of( name ), PolyInteger.of( age ), PolyString.of( isFemale ? "F" : "M" ) );
+    private static List<PolyValue> getRow( String name, String lastName, int age, int salary ) {
+        return List.of( PolyInteger.of( 0 ), PolyString.of( name ), PolyString.of( lastName ), PolyInteger.of( age ), PolyInteger.of( salary ) );
     }
 
 }

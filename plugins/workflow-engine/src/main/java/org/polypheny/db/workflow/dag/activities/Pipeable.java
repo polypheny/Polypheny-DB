@@ -40,7 +40,7 @@ public interface Pipeable extends Activity {
      * If this method is overridden, it is required to also provide a custom execute implementation.
      * This is necessary, as it might be used in the case that this activity cannot be piped.
      *
-     * @param inTypes preview of the input types
+     * @param inTypes preview of the input types. For inactive edges, the entry is null (important for non-default DataStateMergers).
      * @param settings preview of the settings
      * @return an Optional containing the final decision whether this activity can be piped, or an empty Optional if it cannot be stated at this point
      */
@@ -53,7 +53,7 @@ public interface Pipeable extends Activity {
      * It is always desirable to override this method with a custom implementation that does not depend on {@code pipe()}.
      * An issue of this implementation is that it does not check the ExecutionContext for interrupts -> no early return in case of an interrupt!
      *
-     * @param inputs a list of input readers for each input specified by the annotation.
+     * @param inputs a list of input readers for each input specified by the annotation. For inactive edges, the entry is null (important for non-default DataStateMergers).
      * @param settings the instantiated setting values, according to the specified settings annotations
      * @param ctx ExecutionContext to be used for creating checkpoints, updating progress and periodically checking for an abort
      * @throws Exception in case the execution fails or is interrupted at any point
@@ -79,7 +79,7 @@ public interface Pipeable extends Activity {
      * Define the output type of this pipe.
      * Afterward, it may no longer be changed until reset() is called.
      *
-     * @param inTypes the types of the input pipes
+     * @param inTypes the types of the input pipes. For inactive edges, the entry is null (important for non-default DataStateMergers).
      * @param settings the resolved settings
      * @return the compulsory output type of this instance until the next call to reset(), or null if this activity has no outputs.
      */
@@ -91,7 +91,7 @@ public interface Pipeable extends Activity {
      * The Pipeable activity is not expected to close the output themselves. This is done by the executor
      * after the pipe method returns.
      *
-     * @param inputs the InputPipes to iterate over
+     * @param inputs the InputPipes to iterate over. For inactive edges, the pipe is null (important for non-default DataStateMergers).
      * @param output the output pipe for sending output tuples to that respect the locked output type, or null if this activity has no output
      * @param settings the resolved settings
      * @param ctx ExecutionContext to be used for updating progress (interrupt checking is done automatically by the pipes)

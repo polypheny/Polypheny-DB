@@ -36,7 +36,7 @@ public interface Fusable extends Activity {
      * If this method is overridden, it is required to also provide a custom execute implementation.
      * This is necessary, as it will be used in the case that the activity cannot be fused.
      *
-     * @param inTypes preview of the input types
+     * @param inTypes preview of the input types. For inactive edges, the type is null (important for non-default DataStateMergers).
      * @param settings preview of the settings
      * @return an Optional containing the final decision whether this activity can be fused, or an empty Optional if it cannot be stated at this point.
      */
@@ -54,7 +54,7 @@ public interface Fusable extends Activity {
     /**
      * Return an AlgNode representing the new root of a logical query plan.
      *
-     * @param inputs A list of logical input AlgNodes. For relational inputs, the first column contains the primary key. Make sure to remove unnecessary primary key columns, for instance when joining 2 tables.
+     * @param inputs A list of logical input AlgNodes. For relational inputs, the first column contains the primary key. Make sure to remove unnecessary primary key columns, for instance when joining 2 tables. For inactive edges, the AlgNode is null (important for non-default DataStateMergers).
      * @param settings The resolved settings
      * @param cluster the AlgCluster that is used for the construction of the query plan
      * @return The created logical AlgNode. In case of a relational result, its tuple type has the first column reserved for the primary key. It can be left empty.

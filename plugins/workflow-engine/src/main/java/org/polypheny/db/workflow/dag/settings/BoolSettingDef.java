@@ -19,6 +19,7 @@ package org.polypheny.db.workflow.dag.settings;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
+import org.polypheny.db.workflow.dag.activities.ActivityException.InvalidSettingException;
 import org.polypheny.db.workflow.dag.annotations.BoolSetting;
 
 @EqualsAndHashCode(callSuper = true)
@@ -34,6 +35,14 @@ public class BoolSettingDef extends SettingDef {
     @Override
     public SettingValue buildValue( JsonNode node ) {
         return BoolValue.of( node );
+    }
+
+
+    @Override
+    public void validateValue( SettingValue value ) throws InvalidSettingException {
+        if ( !(value instanceof BoolValue) ) {
+            throw new IllegalArgumentException( "Value is not a BoolValue" );
+        }
     }
 
 

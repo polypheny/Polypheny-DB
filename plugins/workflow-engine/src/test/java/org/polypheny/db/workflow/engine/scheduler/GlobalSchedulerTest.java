@@ -16,6 +16,8 @@
 
 package org.polypheny.db.workflow.engine.scheduler;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+
 import java.sql.SQLException;
 import java.util.List;
 import java.util.UUID;
@@ -71,6 +73,7 @@ class GlobalSchedulerTest {
         scheduler.awaitResultProcessor( 5000 );
 
         System.out.println( StorageUtils.readCheckpoint( sm, ids.get( 1 ), 0 ) );
+        testHelper.checkAllTrxClosed();
     }
 
 
@@ -84,7 +87,36 @@ class GlobalSchedulerTest {
         System.out.println( StorageUtils.readCheckpoint( sm, ids.get( 0 ), 0 ) );
         System.out.println( StorageUtils.readCheckpoint( sm, ids.get( 1 ), 0 ) );
         System.out.println( StorageUtils.readCheckpoint( sm, ids.get( 2 ), 0 ) );
+        testHelper.checkAllTrxClosed();
 
+    }
+
+
+    @Test
+    void executeMergeWorkflowTest() throws Exception {
+        Workflow workflow = WorkflowUtils.getMergeWorkflow( true );
+        List<UUID> ids = WorkflowUtils.getTopologicalActivityIds( workflow );
+        scheduler.startExecution( workflow, sm, ids.get( 3 ) );
+        scheduler.awaitResultProcessor( 5000 );
+
+        System.out.println( StorageUtils.readCheckpoint( sm, ids.get( 0 ), 0 ) );
+        System.out.println( StorageUtils.readCheckpoint( sm, ids.get( 1 ), 0 ) );
+        assertFalse( sm.hasCheckpoint( ids.get( 2 ), 0 ) );
+        System.out.println( StorageUtils.readCheckpoint( sm, ids.get( 3 ), 0 ) );
+        testHelper.checkAllTrxClosed();
+    }
+
+
+    @Test
+    void executeWorkflowInStepsTest() throws Exception {
+        Workflow workflow = WorkflowUtils.getUnionWorkflow();
+        List<UUID> ids = WorkflowUtils.getTopologicalActivityIds( workflow );
+        for ( int i = 1; i < 3; i++ ) {
+            scheduler.startExecution( workflow, sm, ids.get( i ) );
+            scheduler.awaitResultProcessor( 5000 );
+            System.out.println( StorageUtils.readCheckpoint( sm, ids.get( i ), 0 ) );
+        }
+        testHelper.checkAllTrxClosed();
     }
 
 }

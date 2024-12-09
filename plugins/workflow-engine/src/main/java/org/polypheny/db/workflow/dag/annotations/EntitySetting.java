@@ -55,6 +55,15 @@ public @interface EntitySetting {
 
     DataModel dataModel();
 
+    /**
+     * Whether the entity must be present in Polypheny at any time.
+     * It is recommended to keep it false and check the existence of
+     * the entity at workflow execution time instead for entities that get created during the workflow.
+     *
+     * @return true if the entity must exist in Polypheny
+     */
+    boolean mustExist() default false;
+
 
     @Target(ElementType.TYPE)
     @Retention(RetentionPolicy.RUNTIME)

@@ -43,7 +43,7 @@ import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
         outPorts = { @OutPort(type = PortType.REL) }
 )
 
-@IntSetting(key = "delay", displayName = "Delay (ms)", defaultValue = 1000)
+@IntSetting(key = "delay", displayName = "Delay (ms)", defaultValue = 500)
 @BoolSetting(key = "isSuccessful", displayName = "Successful Execution", defaultValue = true)
 public class DebugActivity implements Activity {
 

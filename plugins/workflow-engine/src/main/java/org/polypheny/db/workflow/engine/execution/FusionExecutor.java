@@ -16,6 +16,7 @@
 
 package org.polypheny.db.workflow.engine.execution;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -29,6 +30,7 @@ import org.polypheny.db.workflow.dag.activities.Fusable;
 import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
 import org.polypheny.db.workflow.engine.scheduler.ExecutionEdge;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
+import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 
 /**
  * Executes a subgraph representing a set of fused activities, meaning they implement {@link org.polypheny.db.workflow.dag.activities.Fusable}
@@ -95,10 +97,11 @@ public class FusionExecutor extends Executor {
         for ( int i = 0; i < inputsArr.length; i++ ) {
             if ( inputsArr[i] == null ) {
                 // add remaining inputs for existing checkpoints
-                inputsArr[i] = getReader( wrapper, i ).getAlgNode( cluster );
+                CheckpointReader reader = getReader( wrapper, i );
+                inputsArr[i] = reader == null ? null : reader.getAlgNode( cluster );
             }
         }
-        List<AlgNode> inputs = List.of( inputsArr );
+        List<AlgNode> inputs = Arrays.asList( inputsArr );
 
         if ( !inEdges.isEmpty() ) {
             workflow.recomputeInVariables( root ); // inner nodes should get their variables merged
