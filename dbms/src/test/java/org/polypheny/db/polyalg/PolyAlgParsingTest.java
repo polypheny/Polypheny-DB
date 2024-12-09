@@ -258,8 +258,7 @@ public class PolyAlgParsingTest {
     private static String getResultAsString( List<ExecutedContext> executedContexts, DataModel dataModel ) {
         assertEquals( 1, executedContexts.size() );
         ExecutedContext context = executedContexts.get( 0 );
-        assertTrue( context.getException().isEmpty() ||
-                context.getException().get().getClass() == CyclicMetadataException.class, "Query resulted in an exception" );
+        assertTrue( context.getException().isEmpty() || context.getException().get().getClass() == CyclicMetadataException.class, "Query resulted in an exception" );
         @NotNull ResultIterator iter = context.getIterator();
         String tupleType = context.getImplementation().tupleType.toString();
         List<List<PolyValue>> rows = iter.getAllRowsAndClose();

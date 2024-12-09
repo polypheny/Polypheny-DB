@@ -288,6 +288,8 @@ public class AlgMetadataQuery {
                 return cumulativeCostHandler.getCumulativeCost( alg, this );
             } catch ( JaninoRelMetadataProvider.NoHandler e ) {
                 cumulativeCostHandler = revise( e.algClass, BuiltInMetadata.CumulativeCost.DEF );
+            } catch ( CyclicMetadataException e ) {
+                alg.getCluster().getPlanner().getCostFactory().makeInfiniteCost();
             }
         }
     }
