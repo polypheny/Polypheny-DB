@@ -70,12 +70,14 @@ public class AlgMdPercentageOriginalRows implements MetadataHandler<BuiltInMetad
     }
 
 
+    @SuppressWarnings("unused") // used by codegen
     public Double getPercentageOriginalRows( Aggregate alg, AlgMetadataQuery mq ) {
         // REVIEW jvs: The assumption here seems to be that aggregation does not apply any filtering, so it does not modify the percentage. That's very much oversimplified.
         return mq.getPercentageOriginalRows( alg.getInput() );
     }
 
 
+    @SuppressWarnings("unused") // used by codegen
     public Double getPercentageOriginalRows( Union alg, AlgMetadataQuery mq ) {
         double numerator = 0.0;
         double denominator = 0.0;
@@ -99,6 +101,7 @@ public class AlgMdPercentageOriginalRows implements MetadataHandler<BuiltInMetad
     }
 
 
+    @SuppressWarnings("unused") // used by codegen
     public Double getPercentageOriginalRows( Join alg, AlgMetadataQuery mq ) {
         // Assume any single-table filter conditions have already been pushed down.
 

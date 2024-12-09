@@ -38,6 +38,7 @@ import com.google.common.collect.ImmutableList;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -125,8 +126,11 @@ public class EnumerableMergeJoin extends EquiJoin implements EnumerableAlg {
         // We assume that the inputs are sorted. The price of sorting them has already been paid. The cost of the join is therefore proportional to the input and output size.
         final double rightRowCount = right.estimateTupleCount( mq );
         final double leftRowCount = left.estimateTupleCount( mq );
-        final double rowCount = mq.getTupleCount( this );
-        final double d = leftRowCount + rightRowCount + rowCount;
+        Optional<Double> rowCount = mq.getTupleCount( this );
+        if ( rowCount.isEmpty() ) {
+            return planner.getCostFactory().makeInfiniteCost();
+        }
+        final double d = leftRowCount + rightRowCount + rowCount.get();
         return planner.getCostFactory().makeCost( d, 0, 0 );
     }
 

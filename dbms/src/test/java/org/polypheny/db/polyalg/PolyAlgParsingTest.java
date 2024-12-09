@@ -77,12 +77,13 @@ public class PolyAlgParsingTest {
     private static final String GRAPH_NAME = "polyAlgGraph";
     private static final String DOC_NAME = MqlTestTemplate.namespace;
     private static final String DOC_COLL = "polyalgdocs";
+    private static TestHelper testHelper;
 
 
     @BeforeAll
     public static void start() throws SQLException {
         //noinspection ResultOfMethodCallIgnored
-        TestHelper.getInstance();
+        testHelper = TestHelper.getInstance();
         addTestData();
 
     }
@@ -192,18 +193,18 @@ public class PolyAlgParsingTest {
                 }
             }
         }
-        assertNotNull( logical );
-        assertNotNull( allocation );
-        assertNotNull( physical ); // Physical is not yet tested further since it is only partially implemented
-
         try {
-            transaction.commit(); // execute PolyAlg creates new transaction
-        } catch ( TransactionException e ) {
-            throw new RuntimeException( e );
+            assertNotNull( logical );
+            assertNotNull( allocation );
+            assertNotNull( physical ); // Physical is not yet tested further since it is only partially implemented
+
+        }finally {
+            transaction.commit(); // execute PolyAlg creates new transaction, as long as only DQLs are tested like this
         }
         if ( transactionManager.getNumberOfActiveTransactions() > 0 ) {
             throw new RuntimeException();
         }
+
 
         // Check that parsing and executing again returns the same result
         String resultFromLogical = executePolyAlg( logical, PlanType.LOGICAL, ql );
@@ -410,7 +411,7 @@ public class PolyAlgParsingTest {
     }
 
 
-    //@Test
+    @Test
     public void sqlInsertTest() throws NodeParseException {
         testSqlRoundTrip( "INSERT INTO polyalg_test VALUES (7, 'Mike', 12, 'Male')" );
     }
@@ -489,7 +490,7 @@ public class PolyAlgParsingTest {
     }
 
 
-    //@Test
+    @Test
     public void mongoInsertTest() throws NodeParseException {
         testMqlRoundTrip( "db." + DOC_COLL + ".insertOne({item: \"canvas\"})" );
     }

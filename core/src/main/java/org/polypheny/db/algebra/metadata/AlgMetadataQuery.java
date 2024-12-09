@@ -43,6 +43,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgCollation;
@@ -66,7 +67,7 @@ import org.polypheny.db.util.ImmutableBitSet;
  *
  * <ol>
  * <li>Add a static method <code>getXyz</code> specification to this class.</li>
- * <li>Add unit tests to {@code org.polypheny.db.test.RelMetadataTest}.</li>
+ * <li>Add unit tests to {@link AlgMetadataProvider}.</li>
  * <li>Write a new provider class <code>RelMdXyz</code> in this package. Follow the pattern from an existing class such as {@link AlgMdColumnOrigins}, overloading on all of the logical algebra expressions to which the query applies.</li>
  * <li>Add a {@code SOURCE} static member, similar to {@link AlgMdColumnOrigins#SOURCE}.</li>
  * <li>Register the {@code SOURCE} object in {@link DefaultAlgMetadataProvider}.</li>
@@ -227,18 +228,24 @@ public class AlgMetadataQuery {
      * @param alg the algebra expression
      * @return estimated tuple count, or null if no reliable estimate can be determined
      */
-    public Double getTupleCount( AlgNode alg ) {
+    public Optional<Double> getTupleCount( AlgNode alg ) {
         for ( ; ; ) {
             try {
                 Double result = rowCountHandler.getTupleCount( alg, this );
-                return validateResult( result );
+                return Optional.of( validateResult( result ) );
             } catch ( JaninoRelMetadataProvider.NoHandler e ) {
                 rowCountHandler = revise( e.algClass, TupleCount.DEF );
             } catch ( CyclicMetadataException e ) {
                 log.warn( "Cyclic metadata detected while computing row count for {}", alg );
-                return null;
+                return Optional.empty();
             }
         }
+    }
+
+
+    @SuppressWarnings("unused") // used by codegen
+    public double getTupleCountOrMax( AlgNode alg ) {
+        return getTupleCount( alg ).orElse( Double.MAX_VALUE );
     }
 
 
@@ -306,7 +313,7 @@ public class AlgMetadataQuery {
             } catch ( JaninoRelMetadataProvider.NoHandler e ) {
                 nonCumulativeCostHandler = revise( e.algClass, BuiltInMetadata.NonCumulativeCost.DEF );
             } catch ( CyclicMetadataException e ) {
-                return nonCumulativeCostHandler.getNonCumulativeCost( alg, this );
+                return alg.getCluster().getPlanner().getCostFactory().makeInfiniteCost();
             }
         }
     }

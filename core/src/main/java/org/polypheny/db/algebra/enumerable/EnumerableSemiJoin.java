@@ -36,6 +36,7 @@ package org.polypheny.db.algebra.enumerable;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
+import java.util.Optional;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -116,7 +117,11 @@ public class EnumerableSemiJoin extends SemiJoin implements EnumerableAlg {
 
     @Override
     public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
-        double rowCount = mq.getTupleCount( this );
+        Optional<Double> count = mq.getTupleCount( this );
+        if ( count.isEmpty() ) {
+            return planner.getCostFactory().makeInfiniteCost();
+        }
+        double rowCount = count.get();
 
         // Right-hand input is the "build", and hopefully small, input.
         final double rightRowCount = right.estimateTupleCount( mq );

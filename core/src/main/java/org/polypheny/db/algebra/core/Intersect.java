@@ -65,7 +65,7 @@ public abstract class Intersect extends SetOp {
         // REVIEW jvs:  I just pulled this out of a hat.
         double dRows = Double.MAX_VALUE;
         for ( AlgNode input : inputs ) {
-            dRows = Math.min( dRows, mq.getTupleCount( input ) );
+            dRows = Math.min( dRows, mq.getTupleCount( input ).orElse( Double.MAX_VALUE ) );
         }
         dRows *= 0.25;
         return dRows;

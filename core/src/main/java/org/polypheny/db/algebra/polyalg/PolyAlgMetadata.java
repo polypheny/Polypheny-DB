@@ -174,11 +174,11 @@ public class PolyAlgMetadata {
                 updateGlobalStats( child );
             }
             AlgMetadataQuery mq = node.getCluster().getMetadataQuery();
-            updateMaxCosts( mq.getNonCumulativeCost( node ), mq.getTupleCount( node ) );
+            updateMaxCosts( mq.getNonCumulativeCost( node ), mq.getTupleCount( node ).orElse( -1D ) );
         }
 
 
-        public void updateMaxCosts( AlgOptCost nonCumulative, double tupleCount ) {
+        public void updateMaxCosts( AlgOptCost nonCumulative, Double tupleCount ) {
             update( "tupleCount", tupleCount );
             update( "tuplesCost", nonCumulative.getRows() );
             update( "cpuCost", nonCumulative.getCpu() );
@@ -192,9 +192,9 @@ public class PolyAlgMetadata {
         }
 
 
-        public void update( String key, double value ) {
+        public void update( String key, Double value ) {
             double curr = maxValues.getOrDefault( key, 0d );
-            if ( value > curr ) {
+            if ( value != null && value > curr ) {
                 maxValues.put( key, value );
             }
         }

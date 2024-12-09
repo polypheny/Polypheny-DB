@@ -43,6 +43,7 @@ import org.apache.calcite.linq4j.tree.MemberExpression;
 import org.apache.calcite.linq4j.tree.MethodCallExpression;
 import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.algebra.metadata.CyclicMetadataException;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.interpreter.Row;
 import org.polypheny.db.runtime.Unit;
