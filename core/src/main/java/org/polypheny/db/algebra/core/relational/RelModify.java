@@ -187,8 +187,7 @@ public abstract class RelModify<E extends Entity> extends Modify<E> implements R
     @Override
     public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         // REVIEW jvs: Just for now...
-        double rowCount = mq.getTupleCount( this );
-        return planner.getCostFactory().makeCost( rowCount, 0, 0 );
+        return mq.getTupleCount( this ).map( count -> planner.getCostFactory().makeCost( count, 0, 0 ) ).orElse( planner.getCostFactory().makeInfiniteCost() );
     }
 
 

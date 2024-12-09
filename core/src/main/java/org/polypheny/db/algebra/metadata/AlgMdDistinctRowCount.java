@@ -80,16 +80,17 @@ public class AlgMdDistinctRowCount implements MetadataHandler<BuiltInMetadata.Di
      *
      * @see AlgMetadataQuery#getDistinctRowCount(AlgNode, ImmutableBitSet, RexNode)
      */
+    @SuppressWarnings("unused")//used by codegen
     public Double getDistinctRowCount( AlgNode alg, AlgMetadataQuery mq, ImmutableBitSet groupKey, RexNode predicate ) {
         // REVIEW zfong: Broadbase code does not take into consideration selectivity of predicates passed in.  Also, they assume the rows are unique even if the table is not
         boolean uniq = AlgMdUtil.areColumnsDefinitelyUnique( mq, alg, groupKey );
         if ( uniq ) {
-            return NumberUtil.multiply( mq.getTupleCount( alg ), mq.getSelectivity( alg, predicate ) );
+            return NumberUtil.multiply( mq.getTupleCount( alg ).orElse( Double.MAX_VALUE ), mq.getSelectivity( alg, predicate ) );
         }
         return null;
     }
 
-
+    @SuppressWarnings("unused")//used by codegen
     public Double getDistinctRowCount( Union alg, AlgMetadataQuery mq, ImmutableBitSet groupKey, RexNode predicate ) {
         double rowCount = 0.0;
         int[] adjustments = new int[alg.getTupleType().getFieldCount()];
@@ -258,7 +259,7 @@ public class AlgMdDistinctRowCount implements MetadataHandler<BuiltInMetadata.Di
             distinctRowCount *= subRowCount;
         }
 
-        return AlgMdUtil.numDistinctVals( distinctRowCount, mq.getTupleCount( alg ) );
+        return AlgMdUtil.numDistinctVals( distinctRowCount, mq.getTupleCount( alg ).orElse( Double.MAX_VALUE ) );
     }
 
 

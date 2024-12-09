@@ -242,13 +242,6 @@ public class AlgMetadataQuery {
         }
     }
 
-
-    @SuppressWarnings("unused") // used by codegen
-    public double getTupleCountOrMax( AlgNode alg ) {
-        return getTupleCount( alg ).orElse( Double.MAX_VALUE );
-    }
-
-
     /**
      * Returns the {@link BuiltInMetadata.MaxRowCount#getMaxRowCount()} statistic.
      *

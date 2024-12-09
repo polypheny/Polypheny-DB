@@ -37,6 +37,7 @@ package org.polypheny.db.algebra.core;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import org.apache.calcite.linq4j.Ord;
@@ -144,10 +145,13 @@ public abstract class Sort extends SingleAlg {
     @Override
     public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         // Higher cost if rows are wider discourages pushing a project through a sort.
-        final double rowCount = mq.getTupleCount( this );
+        Optional<Double> rowCount = mq.getTupleCount( this );
+        if ( rowCount.isEmpty() ) {
+            return planner.getCostFactory().makeInfiniteCost();
+        }
         final double bytesPerRow = getTupleType().getFieldCount() * 4;
-        final double cpu = Util.nLogN( rowCount ) * bytesPerRow;
-        return planner.getCostFactory().makeCost( rowCount, cpu, 0 );
+        final double cpu = Util.nLogN( rowCount.get() ) * bytesPerRow;
+        return planner.getCostFactory().makeCost( rowCount.get(), cpu, 0 );
     }
 
 

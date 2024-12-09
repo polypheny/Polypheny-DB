@@ -38,6 +38,7 @@ import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import lombok.Getter;
@@ -144,12 +145,15 @@ public abstract class Values extends AbstractAlgNode {
 
     @Override
     public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
-        double dRows = mq.getTupleCount( this );
+        Optional<Double> dRows = mq.getTupleCount( this );
+        if ( dRows.isEmpty() ) {
+            return planner.getCostFactory().makeInfiniteCost();
+        }
 
         // Assume CPU is negligible since values are precomputed.
         double dCpu = 1;
         double dIo = 0;
-        return planner.getCostFactory().makeCost( dRows, dCpu, dIo );
+        return planner.getCostFactory().makeCost( dRows.get(), dCpu, dIo );
     }
 
 

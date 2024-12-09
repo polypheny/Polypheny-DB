@@ -44,6 +44,7 @@ import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.Getter;
@@ -321,8 +322,12 @@ public abstract class AbstractAlgNode implements AlgNode {
     @Override
     public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         // by default, assume cost is proportional to number of rows
-        double tupleCount = mq.getTupleCount( this );
-        return planner.getCostFactory().makeCost( tupleCount, tupleCount, 0 );
+        Optional<Double> tupleCount = mq.getTupleCount( this );
+        if ( tupleCount.isEmpty() ) {
+            return planner.getCostFactory().makeInfiniteCost();
+        }
+
+        return planner.getCostFactory().makeCost( tupleCount.get(), tupleCount.get(), 0 );
     }
 
 
@@ -456,10 +461,9 @@ public abstract class AbstractAlgNode implements AlgNode {
         }
         PolyAlgMetadata meta = new PolyAlgMetadata( mapper, gs );
         AlgMetadataQuery mq = this.getCluster().getMetadataQuery();
-        try {
-            meta.addCosts( mq.getNonCumulativeCost( this ), mq.getCumulativeCost( this ), mq.getTupleCount( this ) );
-        } catch ( Exception ignored ) {
-        }
+
+        mq.getTupleCount( this ).ifPresent( aDouble -> meta.addCosts( mq.getNonCumulativeCost( this ), mq.getCumulativeCost( this ), aDouble ) );
+
         return meta.serialize();
     }
 

@@ -359,9 +359,12 @@ public class JdbcRules {
         @Override
         public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
             // We always "build" the
-            double rowCount = mq.getTupleCount( this );
+            Optional<Double> rowCount = mq.getTupleCount( this );
+            if ( rowCount.isEmpty() ) {
+                return planner.getCostFactory().makeInfiniteCost();
+            }
 
-            return planner.getCostFactory().makeCost( rowCount, 0, 0 );
+            return planner.getCostFactory().makeCost( rowCount.get(), 0, 0 );
         }
 
 
@@ -451,8 +454,8 @@ public class JdbcRules {
 
         @Override
         public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
-            double dRows = mq.getTupleCount( this );
-            double dCpu = mq.getTupleCount( getInput() ) * program.getExprCount();
+            double dRows = mq.getTupleCount( this ).orElse( Double.MAX_VALUE );
+            double dCpu = mq.getTupleCount( getInput() ).orElse( Double.MAX_VALUE ) * program.getExprCount();
             double dIo = 0;
             return planner.getCostFactory().makeCost( dRows, dCpu, dIo );
         }

@@ -28,9 +28,11 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.polypheny.db.ResultIterator;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.algebra.AlgNode;
@@ -46,6 +48,7 @@ import org.polypheny.db.algebra.polyalg.parser.PolyAlgToAlgConverter;
 import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgNode;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.cypher.CypherTestTemplate;
@@ -257,8 +260,10 @@ public class PolyAlgParsingTest {
         ExecutedContext context = executedContexts.get( 0 );
         assertTrue( context.getException().isEmpty() ||
                 context.getException().get().getClass() == CyclicMetadataException.class, "Query resulted in an exception" );
-        List<List<PolyValue>> rows = context.getIterator().getAllRowsAndClose();
-        String tupleType = context.getIterator().getImplementation().tupleType.toString();
+        @NotNull ResultIterator iter = context.getIterator();
+        String tupleType = context.getImplementation().tupleType.toString();
+        List<List<PolyValue>> rows = iter.getAllRowsAndClose();
+
         StringBuilder sb = new StringBuilder( tupleType );
 
         for ( List<PolyValue> row : rows ) {

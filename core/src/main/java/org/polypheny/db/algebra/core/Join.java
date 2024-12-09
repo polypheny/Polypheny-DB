@@ -39,6 +39,7 @@ import com.google.common.collect.ImmutableSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
@@ -162,8 +163,11 @@ public abstract class Join extends BiAlg {
     @Override
     public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         // REVIEW jvs: Just for now...
-        double rowCount = mq.getTupleCount( this );
-        return planner.getCostFactory().makeCost( rowCount, 0, 0 );
+        Optional<Double> rowCount = mq.getTupleCount( this );
+        if ( rowCount.isEmpty() ) {
+            return planner.getCostFactory().makeInfiniteCost();
+        }
+        return planner.getCostFactory().makeCost( rowCount.get(), 0, 0 );
     }
 
 

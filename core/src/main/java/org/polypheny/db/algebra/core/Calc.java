@@ -126,8 +126,8 @@ public abstract class Calc extends SingleAlg {
 
     @Override
     public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
-        double dRows = mq.getTupleCount( this );
-        double dCpu = mq.getTupleCount( getInput() ) * program.getExprCount();
+        double dRows = mq.getTupleCount( this ).orElse( Double.MAX_VALUE );
+        double dCpu = mq.getTupleCount( getInput() ).orElse( Double.MAX_VALUE ) * program.getExprCount();
         double dIo = 0;
         return planner.getCostFactory().makeCost( dRows, dCpu, dIo );
     }

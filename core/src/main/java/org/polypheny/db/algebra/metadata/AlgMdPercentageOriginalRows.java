@@ -89,7 +89,7 @@ public class AlgMdPercentageOriginalRows implements MetadataHandler<BuiltInMetad
         // case where a huge table has been completely filtered away.
 
         for ( AlgNode input : alg.getInputs() ) {
-            double rowCount = mq.getTupleCount( input );
+            double rowCount = mq.getTupleCount( input ).orElse( Double.MAX_VALUE );
             double percentage = mq.getPercentageOriginalRows( input );
             if ( percentage != 0.0 ) {
                 denominator += rowCount / percentage;
@@ -135,8 +135,7 @@ public class AlgMdPercentageOriginalRows implements MetadataHandler<BuiltInMetad
         }
 
         // Compute product of percentage filtering from this alg (assuming any filtering is the effect of single-table filters) with the percentage filtering performed by the child.
-        Double algPercentage =
-                quotientForPercentage( mq.getTupleCount( alg ), mq.getTupleCount( child ) );
+        Double algPercentage = quotientForPercentage( mq.getTupleCount( alg ).orElse( Double.MAX_VALUE ), mq.getTupleCount( child ).orElse( Double.MAX_VALUE ) );
         if ( algPercentage == null ) {
             return null;
         }

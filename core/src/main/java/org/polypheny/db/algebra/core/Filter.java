@@ -36,6 +36,7 @@ package org.polypheny.db.algebra.core;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
+import java.util.Optional;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
@@ -130,10 +131,13 @@ public abstract class Filter extends SingleAlg {
 
     @Override
     public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
-        double dRows = mq.getTupleCount( this );
-        double dCpu = mq.getTupleCount( getInput() );
+        Optional<Double> dRows = mq.getTupleCount( this );
+        Optional<Double> dCpu = mq.getTupleCount( getInput() );
         double dIo = 0;
-        return planner.getCostFactory().makeCost( dRows, dCpu, dIo );
+        if(dRows.isEmpty() || dCpu.isEmpty()) {
+            return planner.getCostFactory().makeInfiniteCost();
+        }
+        return planner.getCostFactory().makeCost( dRows.get(), dCpu.get(), dIo );
     }
 
 

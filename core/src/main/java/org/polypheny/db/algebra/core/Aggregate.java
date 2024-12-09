@@ -40,6 +40,7 @@ import com.google.common.math.IntMath;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.Getter;
@@ -281,7 +282,10 @@ public abstract class Aggregate extends SingleAlg {
     @Override
     public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         // REVIEW jvs:  This is bogus, but no more bogus than what's currently in Join.
-        double rowCount = mq.getTupleCount( this );
+        Optional<Double> rowCount = mq.getTupleCount( this );
+        if ( rowCount.isEmpty() ) {
+            return planner.getCostFactory().makeInfiniteCost();
+        }
         // Aggregates with more aggregate functions cost a bit more
         float multiplier = 1f + (float) aggCalls.size() * 0.125f;
         for ( AggregateCall aggCall : aggCalls ) {
@@ -290,7 +294,7 @@ public abstract class Aggregate extends SingleAlg {
                 multiplier += 0.0125f;
             }
         }
-        return planner.getCostFactory().makeCost( rowCount * multiplier, 0, 0 );
+        return planner.getCostFactory().makeCost( rowCount.get() * multiplier, 0, 0 );
     }
 
 

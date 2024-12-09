@@ -38,6 +38,7 @@ import com.google.common.collect.ImmutableList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.Ord;
@@ -180,10 +181,13 @@ public abstract class Project extends SingleAlg {
 
     @Override
     public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
-        double dRows = mq.getTupleCount( getInput() );
-        double dCpu = dRows * exps.size();
+        Optional<Double> dRows = mq.getTupleCount( getInput() );
+        if ( dRows.isEmpty() ) {
+            return planner.getCostFactory().makeInfiniteCost();
+        }
+        double dCpu = dRows.get() * exps.size();
         double dIo = 0;
-        return planner.getCostFactory().makeCost( dRows, dCpu, dIo );
+        return planner.getCostFactory().makeCost( dRows.get(), dCpu, dIo );
     }
 
 
