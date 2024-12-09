@@ -41,6 +41,7 @@ import org.polypheny.db.workflow.dag.settings.GroupDef.SubgroupDef;
 import org.polypheny.db.workflow.dag.settings.IntValue;
 import org.polypheny.db.workflow.dag.settings.SettingDef;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingValue;
+import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
 import org.polypheny.db.workflow.dag.variables.ReadableVariableStore;
 import org.polypheny.db.workflow.dag.variables.VariableStore;
 
@@ -136,7 +137,7 @@ class ActivityRegistryTest {
             Map<String, JsonNode> defaultSettings = ActivityRegistry.getSerializableSettingValues( key );
 
             // We check whether building the default settings results in an equivalent serializable object
-            Map<String, SettingValue> rebuiltSettings = ActivityRegistry.buildSettingValues( key, defaultSettings );
+            Map<String, SettingValue> rebuiltSettings = ActivityRegistry.buildSettingValues( key, defaultSettings ).getMap();
             assertEquals( defaultSettings.size(), rebuiltSettings.size() );
 
             JsonMapper mapper = new JsonMapper();
@@ -165,8 +166,8 @@ class ActivityRegistryTest {
 
         ObjectNode variable = mapper.createObjectNode().put( ReadableVariableStore.VARIABLE_REF_FIELD, varName );
         settings.put( settingKey, variable );
-        Map<String, SettingValue> settingValues = ActivityRegistry.buildSettingValues( activity, vStore.resolveVariables( settings ) );
-        assertEquals( newValue, settingValues.get( settingKey ).unwrapOrThrow( IntValue.class ).getValue() );
+        Settings setttings = ActivityRegistry.buildSettingValues( activity, vStore.resolveVariables( settings ) );
+        assertEquals( newValue, setttings.get( settingKey, IntValue.class ).getValue() );
 
     }
 

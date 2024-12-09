@@ -20,7 +20,6 @@ import static org.polypheny.db.workflow.dag.activities.impl.RelExtractActivity.T
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.ResultIterator;
@@ -49,7 +48,8 @@ import org.polypheny.db.workflow.dag.annotations.ActivityDefinition;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition.OutPort;
 import org.polypheny.db.workflow.dag.annotations.EntitySetting;
 import org.polypheny.db.workflow.dag.settings.EntityValue;
-import org.polypheny.db.workflow.dag.settings.SettingDef.SettingValue;
+import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
+import org.polypheny.db.workflow.dag.settings.SettingDef.SettingsPreview;
 import org.polypheny.db.workflow.engine.execution.context.ExecutionContext;
 import org.polypheny.db.workflow.engine.execution.context.PipeExecutionContext;
 import org.polypheny.db.workflow.engine.execution.pipe.InputPipe;
@@ -59,7 +59,7 @@ import org.polypheny.db.workflow.engine.storage.StorageManager;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
 
-@ActivityDefinition(type = "relExtract", displayName = "Read Table", categories = { ActivityCategory.EXTRACT },
+@ActivityDefinition(type = "relExtract", displayName = "Read Table", categories = { ActivityCategory.EXTRACT, ActivityCategory.RELATIONAL },
         inPorts = {},
         outPorts = { @OutPort(type = PortType.REL) })
 
@@ -73,8 +73,8 @@ public class RelExtractActivity implements Activity, Fusable, Pipeable {
 
 
     @Override
-    public List<Optional<AlgDataType>> previewOutTypes( List<Optional<AlgDataType>> inTypes, Map<String, Optional<SettingValue>> settings ) throws ActivityException {
-        Optional<SettingValue> table = settings.get( TABLE_KEY );
+    public List<Optional<AlgDataType>> previewOutTypes( List<Optional<AlgDataType>> inTypes, SettingsPreview settings ) throws ActivityException {
+        Optional<EntityValue> table = settings.get( TABLE_KEY, EntityValue.class );
 
         if ( table.isPresent() ) {
             AlgDataType type = getOutputType( getEntity( table.get() ) );
@@ -85,8 +85,8 @@ public class RelExtractActivity implements Activity, Fusable, Pipeable {
 
 
     @Override
-    public void execute( List<CheckpointReader> inputs, Map<String, SettingValue> settings, ExecutionContext ctx ) throws Exception {
-        LogicalTable table = getEntity( settings.get( TABLE_KEY ) );
+    public void execute( List<CheckpointReader> inputs, Settings settings, ExecutionContext ctx ) throws Exception {
+        LogicalTable table = getEntity( settings.get( TABLE_KEY, EntityValue.class ) );
         AlgDataType type = getOutputType( table );
 
 
@@ -124,10 +124,10 @@ public class RelExtractActivity implements Activity, Fusable, Pipeable {
                     .transactionManager( transaction.getTransactionManager() )
                     .transactions( List.of( transaction ) ).build();
 
-            System.out.println("Before exec");
+            System.out.println( "Before exec" );
             long start = System.currentTimeMillis();
             List<ExecutedContext> executedContexts = LanguageManager.getINSTANCE().anyQuery( context );
-            System.out.println("After exec (" + (System.currentTimeMillis() - start) + " ms)");
+            System.out.println( "After exec (" + (System.currentTimeMillis() - start) + " ms)" );
 
             try ( ResultIterator result = executedContexts.get( 0 ).getIterator() ) {
                 writer.write( CheckpointReader.arrayToListIterator( result.getIterator(), true ) );
@@ -145,7 +145,7 @@ public class RelExtractActivity implements Activity, Fusable, Pipeable {
 
 
     @Override
-    public AlgNode fuse( List<AlgNode> inputs, Map<String, SettingValue> settings, AlgCluster cluster ) throws Exception {
+    public AlgNode fuse( List<AlgNode> inputs, Settings settings, AlgCluster cluster ) throws Exception {
         throw new NotImplementedException();
         /*LogicalTable table = getEntity( settings.get( TABLE_KEY ) );
         AlgDataType type = getOutputType( table );
@@ -157,22 +157,21 @@ public class RelExtractActivity implements Activity, Fusable, Pipeable {
 
 
     @Override
-    public AlgDataType lockOutputType( List<AlgDataType> inTypes, Map<String, SettingValue> settings ) throws Exception {
-        lockedEntity = getEntity( settings.get( TABLE_KEY ) );
+    public AlgDataType lockOutputType( List<AlgDataType> inTypes, Settings settings ) throws Exception {
+        lockedEntity = getEntity( settings.get( TABLE_KEY, EntityValue.class ) );
         return getOutputType( lockedEntity );
     }
 
 
     @Override
-    public void pipe( List<InputPipe> inputs, OutputPipe output, Map<String, SettingValue> settings, PipeExecutionContext ctx ) throws Exception {
+    public void pipe( List<InputPipe> inputs, OutputPipe output, Settings settings, PipeExecutionContext ctx ) throws Exception {
         // TODO: Create new transaction or use ctx?
         throw new NotImplementedException();
     }
 
 
-    private LogicalTable getEntity( SettingValue setting ) throws ActivityException {
-        EntityValue entitySetting = (EntityValue) setting;
-        return Catalog.snapshot().rel().getTable( entitySetting.getNamespace(), entitySetting.getName() ).orElseThrow(
+    private LogicalTable getEntity( EntityValue setting ) throws ActivityException {
+        return Catalog.snapshot().rel().getTable( setting.getNamespace(), setting.getName() ).orElseThrow(
                 () -> new InvalidSettingException( "Specified table does not exist", "table" ) );
     }
 

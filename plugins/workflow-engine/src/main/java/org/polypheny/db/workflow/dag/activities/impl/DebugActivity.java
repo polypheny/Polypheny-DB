@@ -17,9 +17,9 @@
 package org.polypheny.db.workflow.dag.activities.impl;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.workflow.dag.activities.Activity;
 import org.polypheny.db.workflow.dag.activities.Activity.ActivityCategory;
 import org.polypheny.db.workflow.dag.activities.Activity.PortType;
@@ -27,20 +27,24 @@ import org.polypheny.db.workflow.dag.activities.ActivityException;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition.InPort;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition.OutPort;
+import org.polypheny.db.workflow.dag.annotations.BoolSetting;
 import org.polypheny.db.workflow.dag.annotations.IntSetting;
+import org.polypheny.db.workflow.dag.settings.BoolValue;
 import org.polypheny.db.workflow.dag.settings.IntValue;
-import org.polypheny.db.workflow.dag.settings.SettingDef.SettingValue;
+import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
+import org.polypheny.db.workflow.dag.settings.SettingDef.SettingsPreview;
 import org.polypheny.db.workflow.engine.execution.context.ExecutionContext;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 import org.polypheny.db.workflow.engine.storage.reader.RelReader;
 import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
 
-@ActivityDefinition(type = "debug", displayName = "Debugging", categories = { ActivityCategory.TRANSFORM },
+@ActivityDefinition(type = "debug", displayName = "Debugging", categories = { ActivityCategory.TRANSFORM, ActivityCategory.RELATIONAL },
         inPorts = { @InPort(type = PortType.REL) },
         outPorts = { @OutPort(type = PortType.REL) }
 )
 
 @IntSetting(key = "delay", displayName = "Delay (ms)", defaultValue = 1000)
+@BoolSetting(key = "isSuccessful", displayName = "Successful Execution", defaultValue = true)
 public class DebugActivity implements Activity {
 
 
@@ -49,16 +53,19 @@ public class DebugActivity implements Activity {
 
 
     @Override
-    public List<Optional<AlgDataType>> previewOutTypes( List<Optional<AlgDataType>> inTypes, Map<String, Optional<SettingValue>> settings ) throws ActivityException {
+    public List<Optional<AlgDataType>> previewOutTypes( List<Optional<AlgDataType>> inTypes, SettingsPreview settings ) throws ActivityException {
         return List.of( inTypes.get( 0 ) );
     }
 
 
     @Override
-    public void execute( List<CheckpointReader> inputs, Map<String, SettingValue> settings, ExecutionContext ctx ) throws Exception {
+    public void execute( List<CheckpointReader> inputs, Settings settings, ExecutionContext ctx ) throws Exception {
         RelReader input = (RelReader) inputs.get( 0 );
         try ( RelWriter output = ctx.createRelWriter( 0, input.getTupleType(), false ) ) {
-            Thread.sleep( settings.get( "delay" ).unwrapOrThrow( IntValue.class ).getValue() );
+            Thread.sleep( settings.get( "delay", IntValue.class ).getValue() );
+            if ( !settings.get( "isSuccessful", BoolValue.class ).getValue() ) {
+                throw new GenericRuntimeException( "Debug activity was configured to fail." );
+            }
             output.write( input.getIterator() );
         }
     }

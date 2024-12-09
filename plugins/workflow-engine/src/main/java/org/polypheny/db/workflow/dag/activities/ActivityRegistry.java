@@ -19,7 +19,6 @@ package org.polypheny.db.workflow.dag.activities;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -38,6 +37,8 @@ import org.polypheny.db.workflow.dag.annotations.DefaultGroup;
 import org.polypheny.db.workflow.dag.annotations.Group;
 import org.polypheny.db.workflow.dag.settings.SettingDef;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingValue;
+import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
+import org.polypheny.db.workflow.dag.settings.SettingDef.SettingsPreview;
 import org.reflections.Reflections;
 import org.reflections.util.ClasspathHelper;
 import org.reflections.util.ConfigurationBuilder;
@@ -91,7 +92,7 @@ public class ActivityRegistry {
      * @throws IllegalArgumentException if no activity definition is found for the provided {@code activityType}
      * or if a JsonNode has an unexpected format.
      */
-    public static Map<String, SettingValue> buildSettingValues( String activityType, Map<String, JsonNode> resolved ) {
+    public static Settings buildSettingValues( String activityType, Map<String, JsonNode> resolved ) {
         Map<String, SettingDef> settingDefs = get( activityType ).getSettings();
 
         Map<String, SettingValue> settingValues = new HashMap<>();
@@ -100,7 +101,7 @@ public class ActivityRegistry {
             SettingValue settingValue = settingDefs.get( key ).buildValue( entry.getValue() );
             settingValues.put( key, settingValue );
         }
-        return Collections.unmodifiableMap( settingValues );
+        return new Settings( settingValues );
     }
 
 
@@ -110,10 +111,10 @@ public class ActivityRegistry {
      *
      * @param activityType the identifier for the activity type.
      * @param resolved a map of setting keys to {@link Optional<JsonNode>} values, where unresolved settings are {@link Optional#empty()}.
-     * @return an unmodifiable map of setting keys to {@link Optional<SettingValue>} instances, where missing or unresolved settings are {@link Optional#empty()}.
+     * @return a wrapper around a map of setting keys to {@link Optional<SettingValue>} instances, where missing or unresolved settings are {@link Optional#empty()}.
      * @throws IllegalArgumentException if the {@code activityType} is invalid or a {@link JsonNode} has an unexpected format.
      */
-    public static Map<String, Optional<SettingValue>> buildAvailableSettingValues( String activityType, Map<String, Optional<JsonNode>> resolved ) {
+    public static SettingsPreview buildAvailableSettingValues( String activityType, Map<String, Optional<JsonNode>> resolved ) {
         Map<String, SettingDef> settingDefs = get( activityType ).getSettings();
 
         Map<String, Optional<SettingValue>> settingValues = new HashMap<>();
@@ -122,7 +123,7 @@ public class ActivityRegistry {
             Optional<SettingValue> settingValue = entry.getValue().map( v -> settingDefs.get( key ).buildValue( v ) );
             settingValues.put( key, settingValue );
         }
-        return Collections.unmodifiableMap( settingValues );
+        return new SettingsPreview( settingValues );
     }
 
 
@@ -132,14 +133,14 @@ public class ActivityRegistry {
      * @param activityType the identifier for the activity type.
      * @return an unmodifiable map of setting keys to default {@link SettingValue}s for that key.
      */
-    public static Map<String, SettingValue> getSettingValues( String activityType ) {
+    public static Settings getSettingValues( String activityType ) {
         Map<String, SettingDef> settingDefs = get( activityType ).getSettings();
         Map<String, SettingValue> settingValues = new HashMap<>();
 
         for ( Entry<String, SettingDef> entry : settingDefs.entrySet() ) {
             settingValues.put( entry.getKey(), entry.getValue().getDefaultValue() );
         }
-        return Collections.unmodifiableMap( settingValues );
+        return new Settings( settingValues );
     }
 
 
@@ -150,12 +151,7 @@ public class ActivityRegistry {
      * @return an unmodifiable map of setting keys to their default values.
      */
     public static Map<String, JsonNode> getSerializableSettingValues( String activityType ) {
-        JsonMapper mapper = new JsonMapper();
-        Map<String, JsonNode> settingValues = new HashMap<>();
-        for ( Entry<String, SettingValue> entry : getSettingValues( activityType ).entrySet() ) {
-            settingValues.put( entry.getKey(), entry.getValue().toJson( mapper ) );
-        }
-        return Collections.unmodifiableMap( settingValues );
+        return getSettingValues( activityType ).getSerializableSettings();
     }
 
 

@@ -46,7 +46,8 @@ import org.polypheny.db.workflow.dag.annotations.ActivityDefinition;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition.InPort;
 import org.polypheny.db.workflow.dag.annotations.EntitySetting;
 import org.polypheny.db.workflow.dag.settings.EntityValue;
-import org.polypheny.db.workflow.dag.settings.SettingDef.SettingValue;
+import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
+import org.polypheny.db.workflow.dag.settings.SettingDef.SettingsPreview;
 import org.polypheny.db.workflow.engine.execution.context.ExecutionContext;
 import org.polypheny.db.workflow.engine.execution.context.PipeExecutionContext;
 import org.polypheny.db.workflow.engine.execution.pipe.InputPipe;
@@ -56,7 +57,7 @@ import org.polypheny.db.workflow.engine.storage.StorageManager;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
 
-@ActivityDefinition(type = "relLoad", displayName = "Load Table", categories = { ActivityCategory.LOAD },
+@ActivityDefinition(type = "relLoad", displayName = "Load Table", categories = { ActivityCategory.LOAD, ActivityCategory.RELATIONAL },
         inPorts = { @InPort(type = PortType.REL) },
         outPorts = {})
 
@@ -69,7 +70,7 @@ public class RelLoadActivity implements Activity, Fusable, Pipeable {
 
 
     @Override
-    public List<Optional<AlgDataType>> previewOutTypes( List<Optional<AlgDataType>> inTypes, Map<String, Optional<SettingValue>> settings ) throws ActivityException {
+    public List<Optional<AlgDataType>> previewOutTypes( List<Optional<AlgDataType>> inTypes, SettingsPreview settings ) throws ActivityException {
         return List.of();
     }
 
@@ -81,8 +82,8 @@ public class RelLoadActivity implements Activity, Fusable, Pipeable {
 
 
     @Override
-    public void execute( List<CheckpointReader> inputs, Map<String, SettingValue> settings, ExecutionContext ctx ) throws Exception {
-        LogicalTable table = getEntity( settings.get( TABLE_KEY ) );
+    public void execute( List<CheckpointReader> inputs, Settings settings, ExecutionContext ctx ) throws Exception {
+        LogicalTable table = getEntity( settings.get( TABLE_KEY, EntityValue.class ) );
         Transaction transaction = ctx.getTransaction();
         int mapCapacity = (int) Math.ceil( table.getTupleType().getFieldCount() / 0.75 );
 
@@ -91,7 +92,7 @@ public class RelLoadActivity implements Activity, Fusable, Pipeable {
         for ( int i = 1; i < table.getTupleType().getFieldCount(); i++ ) {
             joiner.add( "?" );
             AlgDataType fieldType = table.getTupleType().getFields().get( i ).getType();
-            paramTypes.put( (long) i-1, fieldType );
+            paramTypes.put( (long) i - 1, fieldType );
         }
 
         String query = "INSERT INTO \"" + table.getName() + "\" VALUES " + joiner;
@@ -104,13 +105,13 @@ public class RelLoadActivity implements Activity, Fusable, Pipeable {
                 .transactionManager( transaction.getTransactionManager() )
                 .transactions( List.of( transaction ) ).build();
 
-        try(BatchWriter writer = new BatchWriter( context, transaction.createStatement(), paramTypes )) {
+        try ( BatchWriter writer = new BatchWriter( context, transaction.createStatement(), paramTypes ) ) {
             Iterator<List<PolyValue>> it = inputs.get( 0 ).getIterator();
             while ( it.hasNext() ) {
                 Map<Long, PolyValue> map = new HashMap<>( mapCapacity );
                 List<PolyValue> row = it.next();
                 for ( int i = 1; i < row.size(); i++ ) { // skip primary key
-                    map.put( (long) i-1, row.get( i ) );
+                    map.put( (long) i - 1, row.get( i ) );
                 }
                 writer.write( map );
             }
@@ -120,14 +121,14 @@ public class RelLoadActivity implements Activity, Fusable, Pipeable {
 
 
     @Override
-    public AlgDataType lockOutputType( List<AlgDataType> inTypes, Map<String, SettingValue> settings ) throws Exception {
+    public AlgDataType lockOutputType( List<AlgDataType> inTypes, Settings settings ) throws Exception {
         return null;
     }
 
 
     @Override
-    public void pipe( List<InputPipe> inputs, OutputPipe output, Map<String, SettingValue> settings, PipeExecutionContext ctx ) throws Exception {
-        LogicalTable table = getEntity( settings.get( TABLE_KEY ) );
+    public void pipe( List<InputPipe> inputs, OutputPipe output, Settings settings, PipeExecutionContext ctx ) throws Exception {
+        LogicalTable table = getEntity( settings.get( TABLE_KEY, EntityValue.class ) );
 
         // TODO: modify writer to allow its use for arbitrary entities, not just checkpoints (requires disabling of auto commit etc.)
         try ( RelWriter writer = new RelWriter( table, ctx.getTransaction(), true ) ) {
@@ -137,15 +138,14 @@ public class RelLoadActivity implements Activity, Fusable, Pipeable {
 
 
     @Override
-    public AlgNode fuse( List<AlgNode> inputs, Map<String, SettingValue> settings, AlgCluster cluster ) throws Exception {
+    public AlgNode fuse( List<AlgNode> inputs, Settings settings, AlgCluster cluster ) throws Exception {
         throw new NotImplementedException();
     }
 
 
-    private LogicalTable getEntity( SettingValue setting ) throws ActivityException {
-        EntityValue entitySetting = (EntityValue) setting;
+    private LogicalTable getEntity( EntityValue setting ) throws ActivityException {
         // TODO: check if the adapter is a data store (and thus writable)
-        return Catalog.snapshot().rel().getTable( entitySetting.getNamespace(), entitySetting.getName() ).orElseThrow(
+        return Catalog.snapshot().rel().getTable( setting.getNamespace(), setting.getName() ).orElseThrow(
                 () -> new InvalidSettingException( "Specified table does not exist", "table" ) );
     }
 

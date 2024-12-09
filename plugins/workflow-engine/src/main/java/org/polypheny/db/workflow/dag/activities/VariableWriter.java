@@ -17,10 +17,10 @@
 package org.polypheny.db.workflow.dag.activities;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.workflow.dag.settings.SettingDef.SettingValue;
+import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
+import org.polypheny.db.workflow.dag.settings.SettingDef.SettingsPreview;
 import org.polypheny.db.workflow.dag.variables.WritableVariableStore;
 import org.polypheny.db.workflow.engine.execution.context.ExecutionContextImpl;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
@@ -39,7 +39,7 @@ public interface VariableWriter extends Activity {
      *
      * @return an Optional containing the final decision whether this activity intends to write variables, or an empty Optional if it cannot be stated at this point
      */
-    default Optional<Boolean> requestsToWrite( List<Optional<AlgDataType>> inTypes, Map<String, Optional<SettingValue>> settings ) {
+    default Optional<Boolean> requestsToWrite( List<Optional<AlgDataType>> inTypes, SettingsPreview settings ) {
         return Optional.of( true );
     }
 
@@ -48,6 +48,6 @@ public interface VariableWriter extends Activity {
      * The slightly different execute method that comes with a writable variable store.
      * In the case that this method is called, it can be assumed that {@code updateVariables} was NOT called.
      */
-    void execute( List<CheckpointReader> inputs, Map<String, SettingValue> settings, ExecutionContextImpl ctx, WritableVariableStore writer );
+    void execute( List<CheckpointReader> inputs, Settings settings, ExecutionContextImpl ctx, WritableVariableStore writer );
 
 }

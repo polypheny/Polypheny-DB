@@ -17,13 +17,13 @@
 package org.polypheny.db.workflow.dag.activities;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgCluster;
-import org.polypheny.db.workflow.dag.settings.SettingDef.SettingValue;
+import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
+import org.polypheny.db.workflow.dag.settings.SettingDef.SettingsPreview;
 import org.polypheny.db.workflow.engine.execution.context.ExecutionContext;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 
@@ -40,13 +40,13 @@ public interface Fusable extends Activity {
      * @param settings preview of the settings
      * @return an Optional containing the final decision whether this activity can be fused, or an empty Optional if it cannot be stated at this point.
      */
-    default Optional<Boolean> canFuse( List<Optional<AlgDataType>> inTypes, Map<String, Optional<SettingValue>> settings ) {
+    default Optional<Boolean> canFuse( List<Optional<AlgDataType>> inTypes, SettingsPreview settings ) {
         return Optional.of( true );
     }
 
 
     @Override
-    default void execute( List<CheckpointReader> inputs, Map<String, SettingValue> settings, ExecutionContext ctx ) throws Exception {
+    default void execute( List<CheckpointReader> inputs, Settings settings, ExecutionContext ctx ) throws Exception {
         // TODO: add default implementation that calls fuse().
         throw new NotImplementedException();
     }
@@ -59,6 +59,6 @@ public interface Fusable extends Activity {
      * @param cluster the AlgCluster that is used for the construction of the query plan
      * @return The created logical AlgNode. In case of a relational result, its tuple type has the first column reserved for the primary key. It can be left empty.
      */
-    AlgNode fuse( List<AlgNode> inputs, Map<String, SettingValue> settings, AlgCluster cluster ) throws Exception;
+    AlgNode fuse( List<AlgNode> inputs, Settings settings, AlgCluster cluster ) throws Exception;
 
 }

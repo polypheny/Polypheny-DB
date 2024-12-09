@@ -31,7 +31,7 @@ import org.polypheny.db.workflow.dag.activities.ActivityWrapper.ActivityState;
 import org.polypheny.db.workflow.dag.activities.Fusable;
 import org.polypheny.db.workflow.dag.activities.Pipeable;
 import org.polypheny.db.workflow.dag.activities.VariableWriter;
-import org.polypheny.db.workflow.dag.settings.SettingDef.SettingValue;
+import org.polypheny.db.workflow.dag.settings.SettingDef.SettingsPreview;
 import org.polypheny.db.workflow.engine.execution.DefaultExecutor;
 import org.polypheny.db.workflow.engine.execution.Executor;
 import org.polypheny.db.workflow.engine.execution.Executor.ExecutorType;
@@ -54,7 +54,7 @@ public abstract class WorkflowOptimizer {
     final boolean isPipelineEnabled;
 
     Map<UUID, List<Optional<AlgDataType>>> inTypePreviews;
-    Map<UUID, Map<String, Optional<SettingValue>>> settingsPreviews;
+    Map<UUID, SettingsPreview> settingsPreviews;
 
 
     protected WorkflowOptimizer( Workflow workflow, AttributedDirectedGraph<UUID, ExecutionEdge> execDag ) {
@@ -66,7 +66,7 @@ public abstract class WorkflowOptimizer {
     }
 
 
-    public final List<SubmissionFactory> computeNextTrees( Map<UUID, List<Optional<AlgDataType>>> inTypePreviews, Map<UUID, Map<String, Optional<SettingValue>>> settingsPreviews, int submissionCount, CommonType commonType ) {
+    public final List<SubmissionFactory> computeNextTrees( Map<UUID, List<Optional<AlgDataType>>> inTypePreviews, Map<UUID, SettingsPreview> settingsPreviews, int submissionCount, CommonType commonType ) {
         this.inTypePreviews = inTypePreviews;
         this.settingsPreviews = settingsPreviews;
 

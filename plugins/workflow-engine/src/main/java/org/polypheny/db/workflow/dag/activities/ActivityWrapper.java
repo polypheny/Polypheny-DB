@@ -30,7 +30,8 @@ import org.polypheny.db.workflow.dag.edges.ControlEdge;
 import org.polypheny.db.workflow.dag.edges.DataEdge;
 import org.polypheny.db.workflow.dag.edges.Edge;
 import org.polypheny.db.workflow.dag.edges.Edge.EdgeState;
-import org.polypheny.db.workflow.dag.settings.SettingDef.SettingValue;
+import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
+import org.polypheny.db.workflow.dag.settings.SettingDef.SettingsPreview;
 import org.polypheny.db.workflow.dag.variables.VariableStore;
 import org.polypheny.db.workflow.models.ActivityConfigModel;
 import org.polypheny.db.workflow.models.ActivityModel;
@@ -73,21 +74,29 @@ public class ActivityWrapper {
     }
 
 
-    public Map<String, SettingValue> resolveSettings() {
+    public Settings resolveSettings() {
         return ActivityRegistry.buildSettingValues( type, variables.resolveVariables( serializableSettings ) );
     }
 
     // TODO: be careful to use correct variables (must be sure they are correct)
 
 
-    public Map<String, Optional<SettingValue>> resolveAvailableSettings( boolean hasStableVariables ) {
+    public SettingsPreview resolveAvailableSettings( boolean hasStableVariables ) {
         VariableStore store = hasStableVariables ? variables : new VariableStore();
         return ActivityRegistry.buildAvailableSettingValues( type, store.resolveAvailableVariables( serializableSettings ) );
     }
 
 
-    public Map<String, Optional<SettingValue>> updateOutTypePreview( List<Optional<AlgDataType>> inTypePreviews, boolean hasStableVariables ) throws ActivityException {
-        Map<String, Optional<SettingValue>> settings = resolveAvailableSettings( hasStableVariables );
+    /**
+     * Updates the output type preview based on the provided input type previews and variable stability.
+     *
+     * @param inTypePreviews a list of optional input type previews.
+     * @param hasStableVariables a flag indicating whether stable variables are available.
+     * @return the resolved settings preview used for computing the preview.
+     * @throws ActivityException if an error occurs during the preview resolution.
+     */
+    public SettingsPreview updateOutTypePreview( List<Optional<AlgDataType>> inTypePreviews, boolean hasStableVariables ) throws ActivityException {
+        SettingsPreview settings = resolveAvailableSettings( hasStableVariables );
         outTypePreview = activity.previewOutTypes( inTypePreviews, settings );
         return settings;
     }

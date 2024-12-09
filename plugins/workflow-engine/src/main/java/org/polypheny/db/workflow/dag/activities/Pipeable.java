@@ -17,11 +17,10 @@
 package org.polypheny.db.workflow.dag.activities;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.workflow.dag.settings.SettingDef.SettingValue;
+import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
+import org.polypheny.db.workflow.dag.settings.SettingDef.SettingsPreview;
 import org.polypheny.db.workflow.engine.execution.context.ExecutionContext;
 import org.polypheny.db.workflow.engine.execution.context.ExecutionContextImpl;
 import org.polypheny.db.workflow.engine.execution.context.PipeExecutionContext;
@@ -45,7 +44,7 @@ public interface Pipeable extends Activity {
      * @param settings preview of the settings
      * @return an Optional containing the final decision whether this activity can be piped, or an empty Optional if it cannot be stated at this point
      */
-    default Optional<Boolean> canPipe( List<Optional<AlgDataType>> inTypes, Map<String, Optional<SettingValue>> settings ) {
+    default Optional<Boolean> canPipe( List<Optional<AlgDataType>> inTypes, SettingsPreview settings ) {
         return Optional.of( true );
     }
 
@@ -60,15 +59,12 @@ public interface Pipeable extends Activity {
      * @throws Exception in case the execution fails or is interrupted at any point
      */
     @Override
-    default void execute( List<CheckpointReader> inputs, Map<String, SettingValue> settings, ExecutionContext ctx ) throws Exception {
+    default void execute( List<CheckpointReader> inputs, Settings settings, ExecutionContext ctx ) throws Exception {
         List<AlgDataType> inputTypes = inputs.stream().map( CheckpointReader::getTupleType ).toList();
         assert canPipe(
                 inputTypes.stream().map( Optional::of ).toList(),
-                settings.entrySet().stream()
-                        .collect( Collectors.toMap(
-                                Map.Entry::getKey,
-                                entry -> Optional.ofNullable( entry.getValue() )
-                        ) ) ).orElseThrow() : "Cannot use the default execute implementation of Pipeable if canPipe returns false.";
+                SettingsPreview.of( settings )
+        ).orElseThrow() : "Cannot use the default execute implementation of Pipeable if canPipe returns false.";
 
         AlgDataType type = lockOutputType( inputTypes, settings );
         List<InputPipe> inPipes = inputs.stream().map( reader -> (InputPipe) new CheckpointInputPipe( reader ) ).toList();
@@ -87,7 +83,7 @@ public interface Pipeable extends Activity {
      * @param settings the resolved settings
      * @return the compulsory output type of this instance until the next call to reset(), or null if this activity has no outputs.
      */
-    AlgDataType lockOutputType( List<AlgDataType> inTypes, Map<String, SettingValue> settings ) throws Exception;
+    AlgDataType lockOutputType( List<AlgDataType> inTypes, Settings settings ) throws Exception;
 
     /**
      * Successively consumes the tuples of the input pipe(s) and forwards produced tuples to the output pipe.
@@ -102,7 +98,7 @@ public interface Pipeable extends Activity {
      * @throws PipeInterruptedException if thread gets interrupted during execution (used for prematurely stopping execution)
      * @throws Exception if some other problem occurs during execution that requires the execution of the pipe to stop
      */
-    void pipe( List<InputPipe> inputs, OutputPipe output, Map<String, SettingValue> settings, PipeExecutionContext ctx ) throws Exception;
+    void pipe( List<InputPipe> inputs, OutputPipe output, Settings settings, PipeExecutionContext ctx ) throws Exception;
 
 
     class PipeInterruptedException extends RuntimeException {

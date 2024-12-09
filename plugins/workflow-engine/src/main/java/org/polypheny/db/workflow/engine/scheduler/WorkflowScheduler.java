@@ -41,7 +41,7 @@ import org.polypheny.db.workflow.dag.activities.ActivityWrapper.ActivityState;
 import org.polypheny.db.workflow.dag.edges.ControlEdge;
 import org.polypheny.db.workflow.dag.edges.Edge;
 import org.polypheny.db.workflow.dag.edges.Edge.EdgeState;
-import org.polypheny.db.workflow.dag.settings.SettingDef.SettingValue;
+import org.polypheny.db.workflow.dag.settings.SettingDef.SettingsPreview;
 import org.polypheny.db.workflow.engine.execution.Executor.ExecutorException;
 import org.polypheny.db.workflow.engine.scheduler.optimizer.WorkflowOptimizer;
 import org.polypheny.db.workflow.engine.scheduler.optimizer.WorkflowOptimizer.SubmissionFactory;
@@ -76,7 +76,7 @@ public class WorkflowScheduler {
     private final Set<UUID> remainingCommonLoad = new HashSet<>();
 
     private final Map<UUID, List<Optional<AlgDataType>>> inTypePreviews = new HashMap<>(); // contains the (possibly not yet known) input types of execDag activities
-    private final Map<UUID, Map<String, Optional<SettingValue>>> settingsPreviews = new HashMap<>(); // contains the (possibly not yet known) settings of execDag activities
+    private final Map<UUID, SettingsPreview> settingsPreviews = new HashMap<>(); // contains the (possibly not yet known) settings of execDag activities
 
 
     public WorkflowScheduler( Workflow workflow, StorageManager sm, int globalWorkers, @Nullable UUID targetActivity ) throws Exception {
@@ -223,7 +223,7 @@ public class WorkflowScheduler {
                 workflow.recomputeInVariables( n );
                 inTypePreviews.put( n, List.of() );
                 try {
-                    Map<String, Optional<SettingValue>> settings = nWrapper.updateOutTypePreview( List.of(), true );
+                    SettingsPreview settings = nWrapper.updateOutTypePreview( List.of(), true );
                     settingsPreviews.put( n, settings );
                 } catch ( ActivityException e ) {
                     // TODO: detected an inconsistency in the types and settings. Ignore?
@@ -339,7 +339,7 @@ public class WorkflowScheduler {
                 List<Optional<AlgDataType>> inTypes = workflow.getInputTypes( n );
                 inTypePreviews.put( n, inTypes );
                 try {
-                    Map<String, Optional<SettingValue>> settings = wrapper.updateOutTypePreview( inTypes, workflow.hasStableInVariables( n ) );
+                    SettingsPreview settings = wrapper.updateOutTypePreview( inTypes, workflow.hasStableInVariables( n ) );
                     settingsPreviews.put( n, settings );
                 } catch ( ActivityException e ) {
                     // TODO: detected an inconsistency in the types and settings. Ignore?

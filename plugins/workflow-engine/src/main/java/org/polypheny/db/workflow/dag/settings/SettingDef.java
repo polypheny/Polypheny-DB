@@ -22,10 +22,18 @@ import com.fasterxml.jackson.databind.json.JsonMapper;
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.Getter;
+import lombok.Value;
 import org.polypheny.db.util.Wrapper;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition;
+import org.polypheny.db.workflow.dag.annotations.BoolSetting;
 import org.polypheny.db.workflow.dag.annotations.EntitySetting;
 import org.polypheny.db.workflow.dag.annotations.IntSetting;
 import org.polypheny.db.workflow.dag.annotations.StringSetting;
@@ -94,6 +102,10 @@ public abstract class SettingDef {
                 settings.add( new EntitySettingDef( a ) );
             } else if ( annotation instanceof EntitySetting.List a ) {
                 Arrays.stream( a.value() ).forEach( el -> settings.add( new EntitySettingDef( el ) ) );
+            } else if ( annotation instanceof BoolSetting a ) {
+                settings.add( new BoolSettingDef( a ) );
+            } else if ( annotation instanceof BoolSetting.List a ) {
+                Arrays.stream( a.value() ).forEach( el -> settings.add( new BoolSettingDef( el ) ) );
             }
 
         }
@@ -115,13 +127,80 @@ public abstract class SettingDef {
     public enum SettingType {
         STRING,
         INT,
-        ENTITY
+        ENTITY,
+        BOOLEAN
     }
 
 
     public interface SettingValue extends Wrapper {
 
         JsonNode toJson( JsonMapper mapper );
+
+    }
+
+
+    @Value
+    public static class Settings {
+
+        Map<String, SettingValue> map;
+
+
+        public Settings( Map<String, SettingValue> map ) {
+            this.map = Collections.unmodifiableMap( map );
+        }
+
+
+        public <T extends SettingValue> T get( String key, Class<T> clazz ) {
+            return map.get( key ).unwrapOrThrow( clazz );
+        }
+
+
+        public SettingValue get( String key ) {
+            return map.get( key );
+        }
+
+
+        public Map<String, JsonNode> getSerializableSettings() {
+            JsonMapper mapper = new JsonMapper();
+            Map<String, JsonNode> settingValues = new HashMap<>();
+            for ( Entry<String, SettingValue> entry : map.entrySet() ) {
+                settingValues.put( entry.getKey(), entry.getValue().toJson( mapper ) );
+            }
+            return Collections.unmodifiableMap( settingValues );
+        }
+
+    }
+
+
+    @Value
+    public static class SettingsPreview {
+
+        Map<String, Optional<SettingValue>> map;
+
+
+        public SettingsPreview( Map<String, Optional<SettingValue>> map ) {
+            this.map = Collections.unmodifiableMap( map );
+        }
+
+
+        public static SettingsPreview of( Settings settings ) {
+            Map<String, Optional<SettingValue>> map = settings.map.entrySet().stream()
+                    .collect( Collectors.toMap(
+                            Map.Entry::getKey,
+                            entry -> Optional.ofNullable( entry.getValue() )
+                    ) );
+            return new SettingsPreview( map );
+        }
+
+
+        public <T extends SettingValue> Optional<T> get( String key, Class<T> clazz ) {
+            return map.get( key ).map( value -> value.unwrapOrThrow( clazz ) );
+        }
+
+
+        public Optional<SettingValue> get( String key ) {
+            return map.get( key );
+        }
 
     }
 

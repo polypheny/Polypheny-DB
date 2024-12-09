@@ -37,7 +37,7 @@ import org.polypheny.db.util.graph.TopologicalOrderIterator;
 import org.polypheny.db.workflow.dag.Workflow;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
 import org.polypheny.db.workflow.dag.activities.Pipeable;
-import org.polypheny.db.workflow.dag.settings.SettingDef.SettingValue;
+import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
 import org.polypheny.db.workflow.engine.execution.context.ExecutionContextImpl;
 import org.polypheny.db.workflow.engine.execution.context.PipeExecutionContext;
 import org.polypheny.db.workflow.engine.execution.pipe.CheckpointInputPipe;
@@ -60,7 +60,7 @@ public class PipeExecutor extends Executor {
     private final AttributedDirectedGraph<UUID, ExecutionEdge> execTree;
     private final UUID rootId;
     private final Map<UUID, QueuePipe> outQueues = new HashMap<>(); // maps activities to their (only!) output queue
-    private final Map<UUID, Map<String, SettingValue>> settingsSnapshot = new HashMap<>();
+    private final Map<UUID, Settings> settingsSnapshot = new HashMap<>();
     private final int queueCapacity;
 
     private boolean hasDetectedAbort = false;
@@ -164,7 +164,7 @@ public class PipeExecutor extends Executor {
             workflow.recomputeInVariables( root ); // inner nodes should get their variables merged
         }
 
-        Map<String, SettingValue> settings = wrapper.resolveSettings();
+        Settings settings = wrapper.resolveSettings();
         settingsSnapshot.put( root, settings ); // store current state of settings for later use
         Pipeable activity = (Pipeable) wrapper.getActivity();
 
@@ -224,7 +224,7 @@ public class PipeExecutor extends Executor {
 
 
     private Callable<Void> getCallable( ActivityWrapper wrapper, List<InputPipe> inPipes, OutputPipe outPipe ) {
-        Map<String, SettingValue> settings = settingsSnapshot.get( wrapper.getId() );
+        Settings settings = settingsSnapshot.get( wrapper.getId() );
         Pipeable activity = (Pipeable) wrapper.getActivity();
         PipeExecutionContext ctx = new ExecutionContextImpl( wrapper, sm );
         return () -> {

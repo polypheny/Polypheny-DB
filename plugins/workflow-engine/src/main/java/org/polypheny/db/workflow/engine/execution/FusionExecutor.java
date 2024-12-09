@@ -17,7 +17,6 @@
 package org.polypheny.db.workflow.engine.execution;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.apache.commons.lang3.NotImplementedException;
@@ -27,7 +26,7 @@ import org.polypheny.db.util.graph.AttributedDirectedGraph;
 import org.polypheny.db.workflow.dag.Workflow;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
 import org.polypheny.db.workflow.dag.activities.Fusable;
-import org.polypheny.db.workflow.dag.settings.SettingDef.SettingValue;
+import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
 import org.polypheny.db.workflow.engine.scheduler.ExecutionEdge;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
 
@@ -105,7 +104,7 @@ public class FusionExecutor extends Executor {
             workflow.recomputeInVariables( root ); // inner nodes should get their variables merged
         }
 
-        Map<String, SettingValue> settings = wrapper.resolveSettings();
+        Settings settings = wrapper.resolveSettings();
         Fusable activity = (Fusable) wrapper.getActivity();
 
         AlgNode fused = activity.fuse( inputs, settings, cluster );

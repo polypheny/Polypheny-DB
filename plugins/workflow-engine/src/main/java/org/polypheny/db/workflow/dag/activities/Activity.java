@@ -18,7 +18,6 @@ package org.polypheny.db.workflow.dag.activities;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -27,6 +26,8 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.workflow.dag.edges.Edge.EdgeState;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingValue;
+import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
+import org.polypheny.db.workflow.dag.settings.SettingDef.SettingsPreview;
 import org.polypheny.db.workflow.engine.execution.context.ExecutionContext;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 
@@ -47,7 +48,7 @@ public interface Activity {
      * If an output type cannot be determined at this point, the corresponding {@link Optional} will be empty.
      * @throws ActivityException if any available setting or input type results in a contradiction or invalid state.
      */
-    List<Optional<AlgDataType>> previewOutTypes( List<Optional<AlgDataType>> inTypes, Map<String, Optional<SettingValue>> settings ) throws ActivityException;
+    List<Optional<AlgDataType>> previewOutTypes( List<Optional<AlgDataType>> inTypes, SettingsPreview settings ) throws ActivityException;
 
     static List<Optional<AlgDataType>> wrapType( @Nullable AlgDataType type ) {
         return List.of( Optional.ofNullable( type ) );
@@ -65,7 +66,7 @@ public interface Activity {
      * @param ctx ExecutionContext to be used for creating checkpoints, updating progress and periodically checking for an abort
      * @throws Exception in case the execution fails or is interrupted at any point
      */
-    void execute( List<CheckpointReader> inputs, Map<String, SettingValue> settings, ExecutionContext ctx ) throws Exception; // default execution method
+    void execute( List<CheckpointReader> inputs, Settings settings, ExecutionContext ctx ) throws Exception; // default execution method
 
     /**
      * Reset any execution-specific state of this activity.
@@ -119,7 +120,10 @@ public interface Activity {
     enum ActivityCategory {
         EXTRACT,
         TRANSFORM,
-        LOAD
+        LOAD,
+        RELATIONAL,
+        DOCUMENT,
+        GRAPH
         // more granular categories are also thinkable
     }
 
