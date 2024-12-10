@@ -38,8 +38,12 @@ import java.util.List;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Project;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.metadata.AlgMdCollation;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.polyalg.arguments.ListArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
+import org.polypheny.db.algebra.polyalg.arguments.RexArg;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
@@ -88,6 +92,12 @@ public class EnumerableProject extends Project implements EnumerableAlg {
         final AlgCluster cluster = child.getCluster();
         final AlgDataType rowType = RexUtil.createStructType( cluster.getTypeFactory(), projects, fieldNames, ValidatorUtil.F_SUGGESTER );
         return create( child, projects, rowType );
+    }
+
+
+    public static AlgNode create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+        ListArg<RexArg> projects = args.getListArg( 0, RexArg.class );
+        return create( children.get( 0 ), projects.map( RexArg::getNode ), projects.map( RexArg::getAlias ) );
     }
 
 

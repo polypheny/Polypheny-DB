@@ -42,6 +42,7 @@ import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitDef;
 import org.polypheny.db.plan.AlgTraitSet;
+import java.util.Optional;
 
 
 /**
@@ -70,12 +71,13 @@ public abstract class ConverterImpl extends SingleAlg implements Converter {
 
     @Override
     public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
-        Double dRows = mq.getTupleCount( getInput() );
-        if ( dRows == null ) {
-            dRows = Double.MAX_VALUE;
-        }
+        Optional<Double> dRows = mq.getTupleCount( getInput() );
         double dIo = 0;
-        return planner.getCostFactory().makeCost( dRows, dRows, dIo );
+        if ( dRows.isEmpty() ) {
+            return planner.getCostFactory().makeCost( Double.MAX_VALUE, Double.MAX_VALUE, dIo );
+        }
+
+        return planner.getCostFactory().makeCost( dRows.get(), dRows.get(), dIo );
     }
 
 

@@ -29,6 +29,8 @@ import org.polypheny.db.algebra.core.common.ContextSwitcher;
 import org.polypheny.db.algebra.enumerable.EnumUtils;
 import org.polypheny.db.algebra.enumerable.EnumerableAlg;
 import org.polypheny.db.algebra.enumerable.EnumerableAlgImplementor;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.util.BuiltInMethod;
 
@@ -42,6 +44,11 @@ public class EnumerableContextSwitcher extends ContextSwitcher implements Enumer
      */
     public EnumerableContextSwitcher( AlgNode input ) {
         super( input );
+    }
+
+
+    public static EnumerableContextSwitcher create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+        return new EnumerableContextSwitcher( children.get( 0 ) );
     }
 
 
