@@ -85,7 +85,6 @@ public class EntityIdentifierTests {
 
     /*
     Modify <- Project <- RelValues ('first', 'second')
-    _eid is listed as varchar in rowtype
      */
     @Test
     public void testInsertUnparameterizedNoColumnNames() throws SQLException {
@@ -104,7 +103,9 @@ public class EntityIdentifierTests {
         }
     }
 
-
+    /*
+    Modify <- Project <- Select ('_eid', first', 'second')
+    */
     @Test
     public void testInsertUnparameterizedIdentifierManipulation() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
@@ -131,7 +132,7 @@ public class EntityIdentifierTests {
 
      */
     @Test
-    public void testInsertFromTableWithColumnNames() throws SQLException {
+    public void testInsertFromTableWithColumnNamesSameStore() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
@@ -164,6 +165,7 @@ public class EntityIdentifierTests {
             }
         }
     }
+
 
 
     @Test
