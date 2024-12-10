@@ -64,12 +64,14 @@ import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
 import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.processing.QueryContext.TranslatedQueryContext;
 import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.routing.UiRoutingPageUtil;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.transaction.TransactionManagerImpl;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.webui.UiTestingConfigPage;
 
 
 @SuppressWarnings("SqlNoDataSourceInspection")
@@ -186,23 +188,24 @@ public class PolyAlgParsingTest {
 
         String logical = null, allocation = null, physical = null;
 
-        int tries = 3;
+        int tries = 5;
         try {
             // plans are serialized in a separate thread, which might take some time
-            for ( int i = 0; i < tries; i++ ) {
-                for ( Information info : transaction.getQueryAnalyzer().getInformationArray() ) {
-                    if ( info instanceof InformationPolyAlg polyInfo ) {
-                        switch ( PlanType.valueOf( polyInfo.planType ) ) {
-                            case LOGICAL -> logical = polyInfo.getTextualPolyAlg();
-                            case ALLOCATION -> allocation = polyInfo.getTextualPolyAlg();
-                            case PHYSICAL -> physical = polyInfo.getTextualPolyAlg();
-                        }
+            while ( UiRoutingPageUtil.runningTasks() > 0 && tries-- > 0 ) {
+                Thread.sleep( 2000 );
+            }
+            if( tries == 0 ) {
+                throw new RuntimeException( "Took too long to set all plans" );
+            }
+
+            for ( Information info : transaction.getQueryAnalyzer().getInformationArray() ) {
+                if ( info instanceof InformationPolyAlg polyInfo ) {
+                    switch ( PlanType.valueOf( polyInfo.planType ) ) {
+                        case LOGICAL -> logical = polyInfo.getTextualPolyAlg();
+                        case ALLOCATION -> allocation = polyInfo.getTextualPolyAlg();
+                        case PHYSICAL -> physical = polyInfo.getTextualPolyAlg();
                     }
                 }
-                if ( logical != null && allocation != null && physical != null ) {
-                    break;
-                }
-                Thread.sleep( 2000 );
             }
 
             assertNotNull( logical );
