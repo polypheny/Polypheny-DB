@@ -58,6 +58,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
 import org.polypheny.db.algebra.logical.relational.LogicalRelCorrelate;
 import org.polypheny.db.algebra.logical.relational.LogicalRelExchange;
 import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalRelIdentifierInjection;
 import org.polypheny.db.algebra.logical.relational.LogicalRelIntersect;
 import org.polypheny.db.algebra.logical.relational.LogicalRelJoin;
 import org.polypheny.db.algebra.logical.relational.LogicalRelMatch;
@@ -105,6 +106,8 @@ public interface AlgShuttle {
     AlgNode visit( LogicalRelExchange exchange );
 
     AlgNode visit( LogicalRelModify modify );
+
+    AlgNode visit( LogicalRelIdentifierInjection idInjection );
 
     AlgNode visit( LogicalConditionalExecute lce );
 

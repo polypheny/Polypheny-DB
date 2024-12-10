@@ -18,12 +18,15 @@ package org.polypheny.db.transaction.locking;
 
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.AlgShuttleImpl;
+import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
 import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentAggregate;
@@ -48,6 +51,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
 import org.polypheny.db.algebra.logical.relational.LogicalRelCorrelate;
 import org.polypheny.db.algebra.logical.relational.LogicalRelExchange;
 import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalRelIdentifierInjection;
 import org.polypheny.db.algebra.logical.relational.LogicalRelIntersect;
 import org.polypheny.db.algebra.logical.relational.LogicalRelJoin;
 import org.polypheny.db.algebra.logical.relational.LogicalRelMatch;
@@ -64,12 +68,13 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexUtil;
 
-public class IdentifierAdder extends AlgShuttleImpl {
+public class AlgTreeRewriter extends AlgShuttleImpl {
 
 
     public static AlgRoot process( AlgRoot root ) {
-        return root.withAlg( root.alg.accept( new IdentifierAdder() ) );
+        return root.withAlg( root.alg.accept( new AlgTreeRewriter() ) );
     }
 
 
@@ -111,70 +116,7 @@ public class IdentifierAdder extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( LogicalRelProject project ) {
-        /*
-        Projects at this stage never contain references to values for the identifier column.
-        New identifiers must thus be drawn and the projection adjusted accordingly.
-         */
-
-        // Detect underpopulated columns if the user specifies fewer values than there are columns in the table
-        Optional<Integer> identifier = findIdentifierIndex( project );
-        if ( identifier.isEmpty() ) {
-            return project;
-        }
-        int identifierIndex = identifier.get();
-        AlgNode input = project.getInput();
-        if ( input instanceof LogicalRelValues inputValues ) {
-            return createNewProjectWithIdentifiers( project, inputValues, identifierIndex );
-        }
         return visitChild(project, 0, project.getInput());
-    }
-
-
-    private Optional<Integer> findIdentifierIndex( LogicalRelProject project ) {
-        return project.getRowType().getFields().stream()
-                .filter( field -> field.getName().equals( IdentifierUtils.IDENTIFIER_KEY ) )
-                .map( AlgDataTypeField::getIndex )
-                .findFirst();
-    }
-
-
-    private AlgNode createNewProjectWithIdentifiers( LogicalRelProject project, LogicalRelValues inputValues, int identifierIndex ) {
-        ImmutableList<ImmutableList<RexLiteral>> newValues = adjustInputValues( inputValues, identifierIndex );
-        LogicalRelValues newInput = new LogicalRelValues(
-                inputValues.getCluster(),
-                inputValues.getTraitSet(),
-                project.getRowType(),
-                newValues
-        );
-        List<RexNode> newProjects = createNewProjects( project, newInput );
-        return project.copy( project.getTraitSet(), newInput, newProjects, project.getRowType() );
-    }
-
-
-    private ImmutableList<ImmutableList<RexLiteral>> adjustInputValues( LogicalRelValues inputValues, int identifierIndex ) {
-        return inputValues.tuples.stream()
-                .map( row -> ImmutableList.<RexLiteral>builder()
-                        .addAll( row.subList( 0, identifierIndex ) )
-                        .add( IdentifierUtils.getIdentifierAsLiteral() )
-                        .addAll( row.subList( identifierIndex, row.size() ) )
-                        .build() )
-                .collect( ImmutableList.toImmutableList() );
-    }
-
-
-    private List<RexNode> createNewProjects(LogicalRelProject project, LogicalRelValues inputValues) {
-        List<RexNode> newProjects = new ArrayList<>();
-        List<AlgDataTypeField> fields = project.getRowType().getFields();
-        int inputFieldCount = inputValues.tuples.get(0).size();
-
-        for (int position = 0; position < fields.size(); position++) {
-            AlgDataType fieldType = fields.get(position).getType();
-            newProjects.add(position < inputFieldCount
-                    ? new RexIndexRef(position, fieldType)
-                    : new RexLiteral(null, fieldType, fieldType.getPolyType()));
-        }
-
-        return newProjects;
     }
 
 
@@ -228,7 +170,33 @@ public class IdentifierAdder extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( LogicalRelModify modify ) {
-        return visitChildren( modify );
+        if (modify.getOperation() != Operation.INSERT) {
+            return visitChildren( modify );
+        }
+        // modify is an insert: project away current eid and add new one using injector
+        AlgDataType modifyInputRowType = modify.getExpectedInputRowType( 0 );
+
+
+        /*
+        List<RexNode> projects = getProjects(modifyInputRowType);
+        AlgDataType projectRowType = RexUtil.createStructType( modify.getCluster().getTypeFactory(), projects);
+        AlgNode identifierRemovingProject = LogicalRelProject.create(modify.getInput(), projects , projectRowType  );
+        AlgNode identifierInjection = LogicalRelIdentifierInjection.create(modify.getEntity(), identifierRemovingProject, modifyInputRowType );
+         */
+        AlgNode identifierInjection = LogicalRelIdentifierInjection.create(modify.getEntity(), modify.getInput(), modifyInputRowType );
+        return modify.copy(modify.getTraitSet(), Collections.singletonList( identifierInjection ) );
+    }
+
+    private List<RexNode> getProjects(AlgDataType rowType) {
+        return rowType.getFields().stream()
+                .filter( f -> !f.getName().equals( IdentifierUtils.IDENTIFIER_KEY ) )
+                .map( f -> new RexIndexRef( f.getIndex(), f.getType() ) )
+                .collect( Collectors.toCollection( LinkedList::new));
+    }
+
+    @Override
+    public AlgNode visit( LogicalRelIdentifierInjection idInjection ) {
+        return visitChildren( idInjection );
     }
 
 
@@ -351,5 +319,4 @@ public class IdentifierAdder extends AlgShuttleImpl {
         return visitChildren( other );
 
     }
-
 }
