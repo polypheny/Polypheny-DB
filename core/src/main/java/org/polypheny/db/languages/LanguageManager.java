@@ -300,7 +300,12 @@ public class LanguageManager {
             if ( transaction.isAnalyze() ) {
                 transaction.getQueryAnalyzer().attachStacktrace( e );
             }
-            cancelTransaction( transaction, "Caught exception: " + e.getMessage() );
+            if ( !(e instanceof DeadlockException) ) {
+                // we only log unexpected cases with stacktrace
+                log.warn( "Caught exception: ", e );
+            }
+
+            cancelTransaction( transaction, String.format( "Caught %s exception: %s", e.getClass().getSimpleName(), e.getMessage() ) );
             return List.of( (ImplementationContext.ofError( e, translated, statement )) );
         }
     }

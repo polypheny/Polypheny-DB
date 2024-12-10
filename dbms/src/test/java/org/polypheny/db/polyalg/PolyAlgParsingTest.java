@@ -41,7 +41,6 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
 import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalRelSort;
-import org.polypheny.db.algebra.metadata.CyclicMetadataException;
 import org.polypheny.db.algebra.polyalg.PolyAlgRegistry;
 import org.polypheny.db.algebra.polyalg.parser.PolyAlgParser;
 import org.polypheny.db.algebra.polyalg.parser.PolyAlgToAlgConverter;
@@ -71,7 +70,6 @@ import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.transaction.TransactionManagerImpl;
 import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.webui.UiTestingConfigPage;
 
 
 @SuppressWarnings("SqlNoDataSourceInspection")
@@ -270,7 +268,8 @@ public class PolyAlgParsingTest {
     private static String getResultAsString( List<ExecutedContext> executedContexts, DataModel dataModel ) {
         assertEquals( 1, executedContexts.size() );
         ExecutedContext context = executedContexts.get( 0 );
-        assertTrue( context.getException().isEmpty() || context.getException().get().getClass() == CyclicMetadataException.class, "Query resulted in an exception" );
+
+        assertTrue( context.getException().isEmpty(), "Query resulted in an exception" );
         @NotNull ResultIterator iter = context.getIterator();
         String tupleType = context.getImplementation().tupleType.toString();
         List<List<PolyValue>> rows = iter.getAllRowsAndClose();
