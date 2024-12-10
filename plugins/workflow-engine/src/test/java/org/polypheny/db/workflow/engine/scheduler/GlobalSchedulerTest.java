@@ -21,11 +21,14 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.UUID;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
+import org.polypheny.db.util.Pair;
 import org.polypheny.db.workflow.WorkflowUtils;
 import org.polypheny.db.workflow.dag.Workflow;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
@@ -44,6 +47,7 @@ class GlobalSchedulerTest {
     public static void start() throws SQLException {
         testHelper = TestHelper.getInstance();
         StorageUtils.addHsqldbLocksStore( "locks" );
+        StorageUtils.addRelData();
         scheduler = GlobalScheduler.getInstance();
     }
 
@@ -62,6 +66,13 @@ class GlobalSchedulerTest {
         } catch ( Exception e ) {
             throw new RuntimeException( e );
         }
+        testHelper.checkAllTrxClosed();
+    }
+
+
+    @AfterAll
+    public static void tearDown() {
+        StorageUtils.dropData();
     }
 
 
@@ -73,7 +84,6 @@ class GlobalSchedulerTest {
         scheduler.awaitResultProcessor( 5000 );
 
         System.out.println( StorageUtils.readCheckpoint( sm, ids.get( 1 ), 0 ) );
-        testHelper.checkAllTrxClosed();
     }
 
 
@@ -87,7 +97,6 @@ class GlobalSchedulerTest {
         System.out.println( StorageUtils.readCheckpoint( sm, ids.get( 0 ), 0 ) );
         System.out.println( StorageUtils.readCheckpoint( sm, ids.get( 1 ), 0 ) );
         System.out.println( StorageUtils.readCheckpoint( sm, ids.get( 2 ), 0 ) );
-        testHelper.checkAllTrxClosed();
 
     }
 
@@ -103,7 +112,6 @@ class GlobalSchedulerTest {
         System.out.println( StorageUtils.readCheckpoint( sm, ids.get( 1 ), 0 ) );
         assertFalse( sm.hasCheckpoint( ids.get( 2 ), 0 ) );
         System.out.println( StorageUtils.readCheckpoint( sm, ids.get( 3 ), 0 ) );
-        testHelper.checkAllTrxClosed();
     }
 
 
@@ -117,6 +125,57 @@ class GlobalSchedulerTest {
             System.out.println( StorageUtils.readCheckpoint( sm, ids.get( i ), 0 ) );
         }
         testHelper.checkAllTrxClosed();
+    }
+
+
+    @Test
+    @Disabled
+    void simpleFusionTest() throws Exception {
+        Workflow workflow = WorkflowUtils.getSimpleFusion();
+        List<UUID> ids = WorkflowUtils.getTopologicalActivityIds( workflow );
+        scheduler.startExecution( workflow, sm, ids.get( 1 ) );
+        scheduler.awaitResultProcessor( 5000 );
+        assertFalse( sm.hasCheckpoint( ids.get( 0 ), 0 ) );
+        System.out.println( StorageUtils.readCheckpoint( sm, ids.get( 1 ), 0 ) );
+    }
+
+
+    @Test
+    void advancedFusionTest() throws Exception {
+        Pair<Workflow, List<UUID>> pair = WorkflowUtils.getAdvancedFusion();
+        List<UUID> ids = pair.right;
+        scheduler.startExecution( pair.left, sm, ids.get( ids.size() - 1 ) );
+        scheduler.awaitResultProcessor( 5000 );
+
+        assertFalse( sm.hasCheckpoint( ids.get( 0 ), 0 ) );
+        System.out.println( StorageUtils.readCheckpoint( sm, ids.get( 1 ), 0 ) );
+        System.out.println( StorageUtils.readCheckpoint( sm, ids.get( 2 ), 0 ) );
+        {
+            assertFalse( sm.hasCheckpoint( ids.get( 3 ), 0 ) );
+        }
+        System.out.println( StorageUtils.readCheckpoint( sm, ids.get( 4 ), 0 ) );
+    }
+
+
+    @Test
+    @Disabled
+    void RelValuesFusionTest() throws Exception {
+        Workflow workflow = WorkflowUtils.getRelValuesFusion();
+        List<UUID> ids = WorkflowUtils.getTopologicalActivityIds( workflow );
+        scheduler.startExecution( workflow, sm, ids.get( ids.size() - 1 ) );
+        scheduler.awaitResultProcessor( 5000 );
+        System.out.println( StorageUtils.readCheckpoint( sm, ids.get( ids.size() - 1 ), 0 ) );
+    }
+
+
+    @Test
+    void relExtractTest() throws Exception {
+        Workflow workflow = WorkflowUtils.getExtractWorkflow();
+        List<UUID> ids = WorkflowUtils.getTopologicalActivityIds( workflow );
+        scheduler.startExecution( workflow, sm, ids.get( ids.size() - 1 ) );
+        scheduler.awaitResultProcessor( 5000 );
+        assertFalse( sm.hasCheckpoint( ids.get( 0 ), 0 ) );
+        System.out.println( StorageUtils.readCheckpoint( sm, ids.get( ids.size() - 1 ), 0 ) );
     }
 
 }

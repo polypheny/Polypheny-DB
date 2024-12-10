@@ -173,7 +173,7 @@ class StorageManagerTest {
             try ( RelReader reader = (RelReader) sm.readCheckpoint( activityId, 0 ) ) {
 
                 int i = sampleData.size() - 1;  // reverse order because of DESC
-                Iterator<List<PolyValue>> it = reader.getIteratorFromQuery( query );
+                Iterator<List<PolyValue>> it = reader.getIteratorFromQuery( query ).right;
                 while ( it.hasNext() ) {
                     assertTupleEquals( sampleData.get( i ), it.next() );
                     i--;

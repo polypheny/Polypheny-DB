@@ -17,7 +17,7 @@
 package org.polypheny.db.workflow.dag.variables;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.Collections;
@@ -42,7 +42,7 @@ public class VariableStore implements ReadableVariableStore, WritableVariableSto
             ERROR_MSG_KEY
     ) );
 
-    private static final JsonMapper mapper = new JsonMapper();
+    private static final ObjectMapper mapper = new ObjectMapper();
 
     private final Map<String, JsonNode> variables = new HashMap<>();
 

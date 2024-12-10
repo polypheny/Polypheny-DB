@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.IntNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.sql.SQLException;
@@ -141,7 +141,7 @@ class ActivityRegistryTest {
             Map<String, SettingValue> rebuiltSettings = ActivityRegistry.buildSettingValues( key, defaultSettings, true ).getMap();
             assertEquals( defaultSettings.size(), rebuiltSettings.size() );
 
-            JsonMapper mapper = new JsonMapper();
+            ObjectMapper mapper = new ObjectMapper();
             for ( Entry<String, SettingValue> entry : rebuiltSettings.entrySet() ) {
                 JsonNode rebuiltJson = entry.getValue().toJson( mapper );
                 assertEquals( defaultSettings.get( entry.getKey() ), rebuiltJson );
@@ -158,7 +158,7 @@ class ActivityRegistryTest {
         String activity = "identity";
         String settingKey = "I1";
 
-        JsonMapper mapper = new JsonMapper();
+        ObjectMapper mapper = new ObjectMapper();
         VariableStore vStore = new VariableStore();
         vStore.setVariable( varName, IntNode.valueOf( newValue ) );
 

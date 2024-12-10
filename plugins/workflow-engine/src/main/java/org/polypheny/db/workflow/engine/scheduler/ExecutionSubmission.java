@@ -25,10 +25,15 @@ import org.polypheny.db.workflow.models.ActivityConfigModel.CommonType;
 @Value
 public class ExecutionSubmission {
 
-    CommonType commonType;
     Executor executor;
     Set<UUID> activities;
     UUID rootId;
+    CommonType commonType;
     UUID sessionId;
+
+
+    public String toString() {
+        return "ExecutionSubmission(executor=" + this.getExecutor().getType() + ", activities=" + this.getActivities() + ", rootId=" + this.getRootId() + ", commonType=" + this.getCommonType() + ", sessionId=" + this.getSessionId() + ")";
+    }
 
 }

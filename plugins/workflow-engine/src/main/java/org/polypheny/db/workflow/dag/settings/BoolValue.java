@@ -17,7 +17,7 @@
 package org.polypheny.db.workflow.dag.settings;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.BooleanNode;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -52,7 +52,7 @@ public class BoolValue implements SettingValue {
 
 
     @Override
-    public JsonNode toJson( JsonMapper mapper ) {
+    public JsonNode toJson( ObjectMapper mapper ) {
         return BooleanNode.valueOf( value );
     }
 

@@ -17,7 +17,7 @@
 package org.polypheny.db.workflow.dag.settings;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.TextNode;
 import java.util.Objects;
 import lombok.NonNull;
@@ -46,7 +46,7 @@ public class StringValue implements SettingValue {
 
 
     @Override
-    public JsonNode toJson( JsonMapper mapper ) {
+    public JsonNode toJson( ObjectMapper mapper ) {
         return TextNode.valueOf( value );
     }
 

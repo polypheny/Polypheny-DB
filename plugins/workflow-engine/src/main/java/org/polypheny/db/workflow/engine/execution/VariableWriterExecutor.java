@@ -53,7 +53,7 @@ public class VariableWriterExecutor extends Executor {
 
 
     @Override
-    ExecutorType getType() {
+    public ExecutorType getType() {
         return ExecutorType.VARIABLE_WRITER;
     }
 

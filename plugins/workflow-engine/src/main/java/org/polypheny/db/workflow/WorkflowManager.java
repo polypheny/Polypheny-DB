@@ -18,7 +18,6 @@ package org.polypheny.db.workflow;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.javalin.http.ContentType;
 import io.javalin.http.Context;
@@ -91,7 +90,7 @@ public class WorkflowManager {
         server.addSerializedRoute( PATH + "/executeDummy/{namespaceName}/{tableName}/{storeName}", ctx -> {
             System.out.println( "handling dummy execution..." );
 
-            JsonMapper mapper = new JsonMapper();
+            ObjectMapper mapper = new ObjectMapper();
             ObjectNode setting = mapper.createObjectNode();
             setting.put( "namespace", ctx.pathParam( "namespaceName" ) );
             setting.put( "name", ctx.pathParam( "tableName" ) );

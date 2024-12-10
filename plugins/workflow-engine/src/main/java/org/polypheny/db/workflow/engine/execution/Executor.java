@@ -54,7 +54,7 @@ public abstract class Executor implements Callable<Void> {
 
     abstract void execute() throws ExecutorException;
 
-    abstract ExecutorType getType();
+    public abstract ExecutorType getType();
 
 
     /**

@@ -174,7 +174,7 @@ public abstract class WorkflowOptimizer {
                 case VARIABLE_WRITER -> new VariableWriterExecutor( sm, wf, getRootActivity() );
             };
 
-            return new ExecutionSubmission( commonType, executor, activities, root, sm.getSessionId() );
+            return new ExecutionSubmission( executor, activities, root, commonType, sm.getSessionId() );
         }
 
 

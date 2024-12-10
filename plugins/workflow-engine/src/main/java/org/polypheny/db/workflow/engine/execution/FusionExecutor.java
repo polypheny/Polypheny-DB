@@ -17,20 +17,32 @@
 package org.polypheny.db.workflow.engine.execution;
 
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.plan.AlgCluster;
+import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
+import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.graph.AttributedDirectedGraph;
 import org.polypheny.db.workflow.dag.Workflow;
+import org.polypheny.db.workflow.dag.activities.Activity.PortType;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
 import org.polypheny.db.workflow.dag.activities.Fusable;
 import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
 import org.polypheny.db.workflow.engine.scheduler.ExecutionEdge;
+import org.polypheny.db.workflow.engine.storage.QueryUtils;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
+import org.polypheny.db.workflow.engine.storage.writer.CheckpointWriter;
 
 /**
  * Executes a subgraph representing a set of fused activities, meaning they implement {@link org.polypheny.db.workflow.dag.activities.Fusable}
@@ -55,26 +67,52 @@ public class FusionExecutor extends Executor {
     @Override
     void execute() throws ExecutorException {
         System.out.println( "Start execution fused tree: " + execTree );
+        ActivityWrapper rootWrapper = workflow.getActivity( rootId );
+        Transaction transaction = sm.getTransaction( rootId, rootWrapper.getConfig().getCommonType() );
+        Statement statement = transaction.createStatement();
+        AlgCluster cluster = AlgCluster.create(
+                statement.getQueryProcessor().getPlanner(),
+                new RexBuilder( statement.getTransaction().getTypeFactory() ),
+                null,
+                statement.getDataContext().getSnapshot() );
 
+        AlgRoot root;
         try {
-            // TODO: implement after PolyAlgebra is merged
-            //AlgNode node = constructAlgNode( rootId, cluster );
-
-            // 0. (verify node does not perform data manipulation)
-            // 1. exec node with TranslatedQueryContext
-            // 2. get result iterator
-            // 3. write result to checkpoint
+            root = AlgRoot.of( constructAlgNode( rootId, cluster ), Kind.SELECT );
         } catch ( Exception e ) {
-            // TODO: handle exception
+            throw new ExecutorException( e );
+        }
+        DataModel model = root.getModel().dataModel();
+        PortType definedType = rootWrapper.getDef().getOutPortTypes()[0];
+        if ( !PortType.fromDataModel( model ).canWriteTo( definedType ) ) {
+            throw new ExecutorException( "The data model of the fused AlgNode tree (" + model + ") is incompatible with the defined outPort type (" + definedType + ") of the root activity: " + execTree );
         }
 
-        throw new NotImplementedException();
+        if ( !QueryUtils.validateAlg( root, false, null ) ) {
+            throw new ExecutorException( "The fused AlgNode tree may not perform data manipulation: " + execTree );
+        }
+
+        ExecutedContext executedContext = QueryUtils.executeAlgRoot( root, statement );
+        if ( executedContext.getException().isPresent() ) {
+            throw new ExecutorException( "An error occurred while executing the fused activities: " + execTree );
+        }
+
+        Iterator<PolyValue[]> iterator = executedContext.getIterator().getIterator();
+        try ( CheckpointWriter writer = sm.createCheckpoint( rootId, 0, root.validatedRowType, true, rootWrapper.getConfig().getPreferredStore( 0 ), model ) ) {
+            while ( iterator.hasNext() ) {
+                writer.write( Arrays.asList( iterator.next() ) );
+            }
+        } catch ( Exception e ) {
+            throw new ExecutorException( e );
+        } finally {
+            executedContext.getIterator().close();
+        }
 
     }
 
 
     @Override
-    ExecutorType getType() {
+    public ExecutorType getType() {
         return ExecutorType.FUSION;
     }
 
@@ -97,8 +135,9 @@ public class FusionExecutor extends Executor {
         for ( int i = 0; i < inputsArr.length; i++ ) {
             if ( inputsArr[i] == null ) {
                 // add remaining inputs for existing checkpoints
-                CheckpointReader reader = getReader( wrapper, i );
-                inputsArr[i] = reader == null ? null : reader.getAlgNode( cluster );
+                try ( CheckpointReader reader = getReader( wrapper, i ) ) {
+                    inputsArr[i] = reader == null ? null : reader.getAlgNode( cluster );
+                }
             }
         }
         List<AlgNode> inputs = Arrays.asList( inputsArr );
@@ -111,6 +150,7 @@ public class FusionExecutor extends Executor {
         Fusable activity = (Fusable) wrapper.getActivity();
 
         AlgNode fused = activity.fuse( inputs, settings, cluster );
+        System.out.println( "fused type of " + wrapper.getType() + " is: " + fused.getTupleType() );
         wrapper.setOutTypePreview( List.of( Optional.of( fused.getTupleType() ) ) );
         return fused;
     }

@@ -16,14 +16,9 @@
 
 package org.polypheny.db.workflow.engine.execution.context;
 
-import java.util.Iterator;
-import java.util.List;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.transaction.Transaction;
-import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.workflow.dag.activities.Activity;
-import org.polypheny.db.workflow.engine.storage.reader.CheckpointQuery;
-import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 import org.polypheny.db.workflow.engine.storage.writer.CheckpointWriter;
 import org.polypheny.db.workflow.engine.storage.writer.DocWriter;
 import org.polypheny.db.workflow.engine.storage.writer.LpgWriter;
@@ -60,8 +55,6 @@ public interface ExecutionContext {
      * @return a CheckpointWriter for writing data to the output.
      */
     CheckpointWriter createWriter( int idx, AlgDataType tupleType, boolean resetPk );
-
-    Iterator<List<PolyValue>> getIteratorFromQuery( CheckpointQuery query, List<CheckpointReader> readers );
 
     /**
      * Returns a transaction to be used for extracting or loading data from data stores or data sources.

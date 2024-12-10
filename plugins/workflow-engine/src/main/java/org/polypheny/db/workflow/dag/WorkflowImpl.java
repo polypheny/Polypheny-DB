@@ -59,9 +59,7 @@ public class WorkflowImpl implements Workflow {
 
 
     public WorkflowImpl() {
-        this.activities = new ConcurrentHashMap<>();
-        this.edges = new ConcurrentHashMap<>();
-        this.config = WorkflowConfigModel.of();
+        this( new ConcurrentHashMap<>(), new ConcurrentHashMap<>(), WorkflowConfigModel.of() );
     }
 
 
@@ -69,6 +67,8 @@ public class WorkflowImpl implements Workflow {
         this.activities = activities;
         this.edges = edges;
         this.config = config;
+
+        // TODO: compute previews & variables
     }
 
 

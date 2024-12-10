@@ -56,7 +56,7 @@ public class DefaultExecutor extends Executor {
 
 
     @Override
-    ExecutorType getType() {
+    public ExecutorType getType() {
         return ExecutorType.DEFAULT;
     }
 

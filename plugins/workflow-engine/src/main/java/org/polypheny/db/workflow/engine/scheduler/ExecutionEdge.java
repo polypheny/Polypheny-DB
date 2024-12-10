@@ -126,8 +126,8 @@ public class ExecutionEdge extends DefaultEdge {
     @Override
     public String toString() {
         return "ExecutionEdge{" +
-                "source=" + source +
-                ", target=" + target +
+                "source=" + getSource().toString().substring( 0, 4 ) +
+                ", target=" + getTarget().toString().substring( 0, 4 ) +
                 ", isControl=" + isControl +
                 ", fromPort=" + fromPort +
                 ", toPort=" + toPort +

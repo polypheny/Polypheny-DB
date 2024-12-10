@@ -35,6 +35,8 @@ public class StorageUtils {
     public static final String HSQLDB_LOCKS = "hsqldb_locks";
     public static final String HSQLDB_MVLOCKS = "hsqldb_mvlocks";
 
+    public static final String REL_TABLE = "rel_data";
+
 
     public static void addHsqldbStore( String name, String trxControlMode ) throws SQLException {
         TestHelper.executeSQL( "ALTER ADAPTERS ADD \"%s\" USING 'Hsqldb' AS 'Store'".formatted( name )
@@ -78,6 +80,37 @@ public class StorageUtils {
             }
         }
         return list;
+    }
+
+
+    public static void addRelData() {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( "CREATE TABLE rel_data( id INTEGER NOT NULL, name VARCHAR(39), foo INTEGER, PRIMARY KEY (id))" );
+                statement.executeUpdate( "INSERT INTO rel_data VALUES (1, 'Hans', 5)" );
+                statement.executeUpdate( "INSERT INTO rel_data VALUES (2, 'Alice', 7)" );
+                statement.executeUpdate( "INSERT INTO rel_data VALUES (3, 'Bob', 4)" );
+                statement.executeUpdate( "INSERT INTO rel_data VALUES (4, 'Saskia', 6)" );
+                statement.executeUpdate( "INSERT INTO rel_data VALUES (5, 'Rebecca', 3)" );
+                statement.executeUpdate( "INSERT INTO rel_data VALUES (6, 'Georg', 9)" );
+                connection.commit();
+            }
+        } catch ( SQLException e ) {
+            throw new RuntimeException( e );
+        }
+    }
+
+
+    public static void dropData() {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( "DROP TABLE rel_data" );
+            }
+        } catch ( SQLException e ) {
+            throw new RuntimeException( e );
+        }
     }
 
 }

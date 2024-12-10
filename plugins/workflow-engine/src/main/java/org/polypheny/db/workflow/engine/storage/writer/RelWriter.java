@@ -27,7 +27,7 @@ import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.numerical.PolyLong;
-import org.polypheny.db.workflow.engine.storage.QueryUtils.BatchWriter;
+import org.polypheny.db.workflow.engine.storage.BatchWriter;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
 
 public class RelWriter extends CheckpointWriter {

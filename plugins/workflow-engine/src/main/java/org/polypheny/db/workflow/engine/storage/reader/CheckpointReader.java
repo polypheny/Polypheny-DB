@@ -93,9 +93,9 @@ public abstract class CheckpointReader implements AutoCloseable {
      * For user defined input, it is advised to use dynamic parameters in the CheckpointQuery, to avoid SQL injections.
      *
      * @param query The CheckpointQuery to be executed.
-     * @return An iterator of the query result.
+     * @return the result tuple type and an iterator of the query result
      */
-    public Iterator<List<PolyValue>> getIteratorFromQuery( CheckpointQuery query ) {
+    public Pair<AlgDataType, Iterator<List<PolyValue>>> getIteratorFromQuery( CheckpointQuery query ) {
         return getIteratorFromQuery( query, List.of( this ) );
     }
 
@@ -156,9 +156,9 @@ public abstract class CheckpointReader implements AutoCloseable {
      *
      * @param query The CheckpointQuery to be executed.
      * @param inputs The readers whose checkpoints can be used in the query. The index of a reader in this list corresponds to the placeholder index in the CheckpointQuery.
-     * @return An iterator of the query result.
+     * @return the result tuple type and an iterator of the query result
      */
-    public Iterator<List<PolyValue>> getIteratorFromQuery( CheckpointQuery query, List<CheckpointReader> inputs ) {
+    public Pair<AlgDataType, Iterator<List<PolyValue>>> getIteratorFromQuery( CheckpointQuery query, List<CheckpointReader> inputs ) {
         assert inputs.contains( this );
         List<LogicalEntity> entities = inputs.stream().map( reader -> reader.entity ).toList();
 
@@ -191,7 +191,7 @@ public abstract class CheckpointReader implements AutoCloseable {
 
         Iterator<PolyValue[]> iterator = executedContext.getIterator().getIterator();
         registerIterator( iterator );
-        return arrayToListIterator( iterator, false );
+        return Pair.of( executedContext.getIterator().getRowType(), arrayToListIterator( iterator, false ) );
     }
 
 

@@ -17,7 +17,7 @@
 package org.polypheny.db.workflow.dag.settings;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.IntNode;
 import lombok.Value;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingValue;
@@ -44,7 +44,7 @@ public class IntValue implements SettingValue {
 
 
     @Override
-    public JsonNode toJson( JsonMapper mapper ) {
+    public JsonNode toJson( ObjectMapper mapper ) {
         return IntNode.valueOf( value );
     }
 

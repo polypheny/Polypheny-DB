@@ -16,23 +16,18 @@
 
 package org.polypheny.db.workflow.engine.storage;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.stream.Collectors;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.core.common.Scan;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
@@ -100,6 +95,19 @@ public class QueryUtils {
     }
 
 
+    public static ExecutedContext executeAlgRoot( AlgRoot root, Statement statement ) {
+        QueryContext context = QueryContext.builder()
+                .query( "" )
+                .language( QueryLanguage.from( "SQL" ) ) // TODO: does this language matter?
+                .isAnalysed( false )
+                .origin( StorageManager.ORIGIN )
+                .transactionManager( statement.getTransaction().getTransactionManager() )
+                .transactions( List.of( statement.getTransaction() ) ).build();
+        ParsedQueryContext parsedContext = ParsedQueryContext.fromQuery( "", null, context );
+        return executeQuery( Pair.of( parsedContext, root ), statement );
+    }
+
+
     public static String quoteAndJoin( List<String> colNames ) {
         return colNames.stream()
                 .map( s -> "\"" + s + "\"" )
@@ -120,6 +128,10 @@ public class QueryUtils {
 
 
     public static boolean validateAlg( AlgRoot root, boolean allowDml, List<LogicalEntity> allowedEntities ) {
+        if ( !(root.kind.belongsTo( Kind.QUERY ) || (allowDml && root.kind.belongsTo( Kind.DML ))) ) {
+            return false;
+        }
+
         Set<Long> allowedIds = allowedEntities == null ? null : allowedEntities.stream().map( e -> e.id ).collect( Collectors.toSet() );
         return validateRecursive( root.alg, allowDml, allowedIds );
     }
@@ -207,7 +219,7 @@ public class QueryUtils {
     }
 
 
-    private static long computeBatchSize( PolyValue[] representativeTuple, long maxBytesPerBatch, int maxTuplesPerBatch ) {
+    static long computeBatchSize( PolyValue[] representativeTuple, long maxBytesPerBatch, int maxTuplesPerBatch ) {
         long maxFromBytes = maxBytesPerBatch / estimateByteSize( representativeTuple );
         return Math.max( Math.min( maxFromBytes, maxTuplesPerBatch ), 1 );
     }
@@ -284,276 +296,6 @@ public class QueryUtils {
             }
             default -> DEFAULT_BYTE_SIZE;
         };
-    }
-
-
-    public static class BatchWriter implements AutoCloseable {
-
-        private static final long MAX_BYTES_PER_BATCH = 10 * 1024 * 1024L; // 10 MiB, upper limit to (estimated) size of batch in bytes
-        private static final int MAX_TUPLES_PER_BATCH = 10_000; // upper limit to tuples per batch
-
-
-        private final Map<Long, AlgDataType> paramTypes;
-        private final List<Map<Long, PolyValue>> paramValues = new ArrayList<>();
-        private long batchSize = -1;
-
-        private final Statement writeStatement;
-        private final Pair<ParsedQueryContext, AlgRoot> parsed;
-
-
-        public BatchWriter( QueryContext context, Statement statement, Map<Long, AlgDataType> paramTypes ) {
-            this.writeStatement = statement;
-            this.parsed = QueryUtils.parseAndTranslateQuery( context, writeStatement );
-            this.paramTypes = paramTypes;
-        }
-
-
-        public void write( Map<Long, PolyValue> valueMap ) {
-            if ( batchSize == -1 ) {
-                batchSize = computeBatchSize( valueMap.values().toArray( new PolyValue[0] ), MAX_BYTES_PER_BATCH, MAX_TUPLES_PER_BATCH );
-            }
-            paramValues.add( valueMap );
-
-            if ( paramValues.size() < batchSize ) {
-                return;
-            }
-            executeBatch();
-        }
-
-
-        private void executeBatch() {
-            int batchSize = paramValues.size();
-
-            writeStatement.getDataContext().setParameterTypes( paramTypes );
-            writeStatement.getDataContext().setParameterValues( paramValues );
-
-            // create new implementation for each batch
-            ExecutedContext executedContext = QueryUtils.executeQuery( parsed, writeStatement );
-
-            if ( executedContext.getException().isPresent() ) {
-                throw new GenericRuntimeException( "An error occurred while writing a batch: ", executedContext.getException().get() );
-            }
-            List<List<PolyValue>> results = executedContext.getIterator().getAllRowsAndClose();
-            long changedCount = results.size() == 1 ? results.get( 0 ).get( 0 ).asLong().longValue() : 0;
-            if ( changedCount != batchSize ) {
-                throw new GenericRuntimeException( "Unable to write all values of the batch: " + changedCount + " of " + batchSize + " tuples were written" );
-            }
-
-            paramValues.clear();
-            writeStatement.getDataContext().resetParameterValues();
-        }
-
-
-        @Override
-        public void close() throws Exception {
-            if ( !paramValues.isEmpty() ) {
-                executeBatch();
-            }
-        }
-
-    }
-
-
-    public static class RelBatchReader implements Iterator<PolyValue[]>, AutoCloseable {
-
-        static final int MAX_TUPLES_PER_BATCH = 100_000; // upper limit to tuples per batch
-
-        private final Transaction transaction;
-        private final Statement readStatement;
-        private final Pair<ParsedQueryContext, AlgRoot> parsed;
-        private final AlgDataTypeFactory typeFactory = AlgDataTypeFactory.DEFAULT;
-        private final LogicalTable table;
-        private final int sortColumnIndex; // TODO: accept multiple sort cols
-        private final boolean isUnique;
-        private final AlgDataType sortColumnType;
-
-        private Iterator<PolyValue[]> currentBatch;
-        private PolyValue lastRead = null;
-        private PolyValue[] firstRow;
-        private int currentRowCount = 0; // number of rows read in the current batch
-
-        private boolean hasNext = true;
-
-
-        public RelBatchReader( LogicalTable table, Transaction transaction, String sortColumn, boolean isUnique ) {
-            this.table = table;
-            this.transaction = transaction;
-            this.readStatement = transaction.createStatement();
-            this.isUnique = isUnique;
-            assert isUnique : "RelBatchReader currently expects a primary key column with no duplicates";
-
-            this.sortColumnIndex = table.getTupleType().getFieldNames().indexOf( sortColumn );
-            assert sortColumnIndex != -1 : "Invalid sort column";
-
-            this.sortColumnType = table.getTupleType().getFields().get( sortColumnIndex ).getType();
-
-            firstRow = readFirstRow(); // TODO: set batch size according to byte size of first row
-
-            String query = "SELECT " + quoteAndJoin( table.getColumnNames() ) + " FROM " + quotedIdentifier( table ) +
-                    " WHERE " + sortColumn + " > ?" +
-                    " ORDER BY " + sortColumn +
-                    " LIMIT " + MAX_TUPLES_PER_BATCH;
-
-            QueryContext context = QueryContext.builder()
-                    .query( query )
-                    .language( QueryLanguage.from( "SQL" ) )
-                    .isAnalysed( false )
-                    .origin( StorageManager.ORIGIN )
-                    .namespaceId( table.getNamespaceId() )
-                    .transactionManager( transaction.getTransactionManager() )
-                    .transactions( List.of( transaction ) ).build();
-
-            this.parsed = QueryUtils.parseAndTranslateQuery( context, readStatement );
-        }
-
-
-        @Override
-        public boolean hasNext() {
-            return hasNext;
-        }
-
-
-        @Override
-        public PolyValue[] next() {
-            assert hasNext;
-
-            if ( lastRead == null ) {
-                lastRead = firstRow[sortColumnIndex];
-                readBatch();
-                return firstRow;
-            }
-
-            PolyValue[] row = currentBatch.next();
-            currentRowCount++;
-
-            if ( !currentBatch.hasNext() ) {
-                if ( currentRowCount < MAX_TUPLES_PER_BATCH ) {
-                    hasNext = false;
-                    closeIterator();
-                } else {
-                    lastRead = row[sortColumnIndex];
-                    readBatch();
-                }
-            }
-
-            return row;
-        }
-
-
-        /**
-         * Either sets the currentBatch iterator to the next batch if there are still rows to read
-         * or sets hasNext to false and closes the iterator.
-         */
-        private void readBatch() {
-            readStatement.getDataContext().addParameterValues( 0, sortColumnType, List.of( lastRead ) );
-
-            ExecutedContext executedContext = QueryUtils.executeQuery( parsed, readStatement );
-            readStatement.getDataContext().resetParameterValues();
-
-            if ( executedContext.getException().isPresent() ) {
-                throw new GenericRuntimeException( "An error occurred while reading a batch: ", executedContext.getException().get() );
-            }
-
-            currentBatch = executedContext.getIterator().getIterator();
-            if ( !currentBatch.hasNext() ) {
-                hasNext = false;
-                closeIterator();
-            }
-            currentRowCount = 0;
-        }
-
-
-        private PolyValue[] readFirstRow() {
-            String query = "SELECT " + quoteAndJoin( table.getColumnNames() ) + " FROM " + quotedIdentifier( table ) +
-                    " ORDER BY " + table.getColumnNames().get( sortColumnIndex ) +
-                    " LIMIT 1";
-
-            QueryContext context = QueryContext.builder()
-                    .query( query )
-                    .language( QueryLanguage.from( "SQL" ) )
-                    .isAnalysed( false )
-                    .origin( StorageManager.ORIGIN )
-                    .namespaceId( table.getNamespaceId() )
-                    .transactionManager( transaction.getTransactionManager() )
-                    .transactions( List.of( transaction ) ).build();
-
-            Statement statement = transaction.createStatement();
-
-            ExecutedContext executedContext = QueryUtils.executeQuery( QueryUtils.parseAndTranslateQuery( context, statement ), statement );
-            if ( executedContext.getException().isPresent() ) {
-                throw new GenericRuntimeException( "An error occurred while reading the first row: ", executedContext.getException().get() );
-            }
-            List<List<PolyValue>> values = executedContext.getIterator().getAllRowsAndClose();
-            if ( values.isEmpty() ) {
-                hasNext = false;
-                return null;
-            }
-            return values.get( 0 ).toArray( new PolyValue[0] );
-        }
-
-
-        private void closeIterator() {
-            if ( currentBatch == null ) {
-                return;
-            }
-            try {
-                if ( currentBatch instanceof AutoCloseable ) {
-                    ((AutoCloseable) currentBatch).close();
-                }
-            } catch ( Exception ignored ) {
-            }
-            currentBatch = null;
-        }
-
-
-        @Override
-        public void close() throws Exception {
-            closeIterator();
-        }
-
-    }
-
-
-    public static class AsyncRelBatchReader extends RelBatchReader {
-
-        private final BlockingQueue<PolyValue[]> queue;
-        private final Thread t;
-
-
-        public AsyncRelBatchReader( LogicalTable table, Transaction transaction, String sortColumn, boolean isUnique ) {
-            super( table, transaction, sortColumn, isUnique );
-            queue = new LinkedBlockingQueue<>( 2 * MAX_TUPLES_PER_BATCH );
-
-            t = new Thread( () -> {
-                while ( super.hasNext() ) {
-                    PolyValue[] row = super.next();
-                    try {
-                        queue.put( row );
-                    } catch ( InterruptedException e ) {
-                        throw new RuntimeException( e );
-                    }
-                }
-            } );
-            t.start();
-        }
-
-
-        @Override
-        public boolean hasNext() {
-            return super.hasNext() || !queue.isEmpty();
-        }
-
-
-        @Override
-        public PolyValue[] next() {
-            try {
-                return queue.take();
-            } catch ( InterruptedException e ) {
-                throw new RuntimeException( e );
-            }
-        }
-
-
     }
 
 }

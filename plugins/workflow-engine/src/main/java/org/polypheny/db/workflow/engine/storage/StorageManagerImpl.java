@@ -287,6 +287,7 @@ public class StorageManagerImpl implements StorageManager {
 
     @Override
     public void startCommonTransactions() {
+        // TODO: call this method at the correct time
         extractTransaction = QueryUtils.startTransaction( Catalog.defaultNamespaceId );
         loadTransaction = QueryUtils.startTransaction( Catalog.defaultNamespaceId );
     }
@@ -343,7 +344,7 @@ public class StorageManagerImpl implements StorageManager {
     private void dropNamespaces() {
         Transaction transaction = QueryUtils.startTransaction( relNamespace, "DropNamespaces" );
         for ( String ns : registeredNamespaces ) {
-            ddlManager.dropNamespace( ns, false, transaction.createStatement() );
+            ddlManager.dropNamespace( ns, true, transaction.createStatement() );
         }
         transaction.commit();
     }

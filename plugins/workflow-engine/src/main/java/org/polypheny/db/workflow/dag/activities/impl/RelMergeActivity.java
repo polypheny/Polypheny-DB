@@ -16,14 +16,16 @@
 
 package org.polypheny.db.workflow.dag.activities.impl;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.util.Pair;
 import org.polypheny.db.workflow.dag.activities.Activity;
 import org.polypheny.db.workflow.dag.activities.Activity.ActivityCategory;
 import org.polypheny.db.workflow.dag.activities.Activity.PortType;
 import org.polypheny.db.workflow.dag.activities.ActivityException;
-import org.polypheny.db.workflow.dag.activities.ActivityException.InvalidInputException;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition.InPort;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition.OutPort;
@@ -50,10 +52,7 @@ public class RelMergeActivity implements Activity {
             return List.of( Optional.empty() );
         }
 
-        if ( !firstType.get().equals( secondType.get() ) ) {
-            throw new InvalidInputException( "The second input type is not equal to the first input type", 1 );
-        }
-        return List.of( firstType );
+        return Activity.wrapType( RelUnionActivity.getTypeOrThrow( List.of( firstType.get(), secondType.get() ) ) );
     }
 
 
@@ -73,8 +72,9 @@ public class RelMergeActivity implements Activity {
                 .queryLanguage( "SQL" )
                 .query( "SELECT * FROM " + CheckpointQuery.ENTITY( 0 ) + " UNION ALL SELECT * FROM " + CheckpointQuery.ENTITY( 1 ) )
                 .build();
-        try ( CheckpointWriter writer = ctx.createRelWriter( 0, input0.getTupleType(), true ) ) {
-            writer.write( input0.getIteratorFromQuery( query, inputs ) );
+        Pair<AlgDataType, Iterator<List<PolyValue>>> result = input0.getIteratorFromQuery( query, inputs );
+        try ( CheckpointWriter writer = ctx.createRelWriter( 0, result.left, true ) ) {
+            writer.write( result.right );
         }
 
     }

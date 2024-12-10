@@ -16,20 +16,14 @@
 
 package org.polypheny.db.workflow.engine.execution.context;
 
-import java.util.Iterator;
-import java.util.List;
 import java.util.Objects;
 import lombok.Getter;
-import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.transaction.Transaction;
-import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.workflow.dag.activities.Activity.ActivityCategory;
 import org.polypheny.db.workflow.dag.activities.Activity.PortType;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
-import org.polypheny.db.workflow.engine.storage.reader.CheckpointQuery;
-import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 import org.polypheny.db.workflow.engine.storage.writer.CheckpointWriter;
 import org.polypheny.db.workflow.engine.storage.writer.DocWriter;
 import org.polypheny.db.workflow.engine.storage.writer.LpgWriter;
@@ -111,15 +105,6 @@ public class ExecutionContextImpl implements ExecutionContext, PipeExecutionCont
         PortType type = Objects.requireNonNull( remainingOutPorts[idx] );
         remainingOutPorts[idx] = null;
         return sm.createCheckpoint( activityWrapper.getId(), idx, tupleType, resetPk, getStore( idx ), type.getDataModel() );
-    }
-
-
-    @Override
-    public Iterator<List<PolyValue>> getIteratorFromQuery( CheckpointQuery query, List<CheckpointReader> readers ) {
-        // just like reader.getIteratorFromQuery(), but with the ability to use multiple checkpoints
-        // requires a special CheckpointQuery that can specify placeholders for any one of the reader, given its index.
-        // Idea for closing the iterator correctly: register it with one of the supplied readers.
-        throw new NotImplementedException();
     }
 
 

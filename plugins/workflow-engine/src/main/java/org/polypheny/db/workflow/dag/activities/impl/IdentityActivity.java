@@ -18,11 +18,15 @@ package org.polypheny.db.workflow.dag.activities.impl;
 
 import java.util.List;
 import java.util.Optional;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.workflow.dag.activities.Activity;
 import org.polypheny.db.workflow.dag.activities.Activity.ActivityCategory;
 import org.polypheny.db.workflow.dag.activities.Activity.PortType;
 import org.polypheny.db.workflow.dag.activities.ActivityException;
+import org.polypheny.db.workflow.dag.activities.Fusable;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition.InPort;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition.OutPort;
@@ -50,7 +54,7 @@ import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
 )
 @IntSetting(key = "I2", displayName = "THIRD", defaultValue = 0, isList = true, group = "groupA")
 @StringSetting(key = "S2", displayName = "FOURTH", defaultValue = "test", isList = true, group = "groupA", subGroup = "a")
-public class IdentityActivity implements Activity {
+public class IdentityActivity implements Activity, Fusable {
 
 
     public IdentityActivity() {
@@ -69,6 +73,13 @@ public class IdentityActivity implements Activity {
         try ( RelWriter output = ctx.createRelWriter( 0, input.getTupleType(), false ) ) {
             output.write( input.getIterator() );
         }
+    }
+
+
+    @Override
+    public AlgNode fuse( List<AlgNode> inputs, Settings settings, AlgCluster cluster ) throws Exception {
+        // to make it more interesting, we add a project activity that doesn't change the tupleType
+        return LogicalRelProject.identity( inputs.get( 0 ) );
     }
 
 

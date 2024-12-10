@@ -134,7 +134,7 @@ public class PipeExecutor extends Executor {
 
 
     @Override
-    ExecutorType getType() {
+    public ExecutorType getType() {
         return ExecutorType.PIPE;
     }
 

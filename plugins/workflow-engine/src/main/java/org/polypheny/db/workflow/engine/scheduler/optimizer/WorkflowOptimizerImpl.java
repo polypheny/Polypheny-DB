@@ -212,7 +212,7 @@ public class WorkflowOptimizerImpl extends WorkflowOptimizer {
                 target = outEdge.getTarget();
                 assert nodeColors.get( target ) == color;
 
-                outEdges = subDag.getOutwardEdges( start ).stream().filter( e -> edgeColors.get( e ) == color.compatibleEdge ).toList();
+                outEdges = subDag.getOutwardEdges( target ).stream().filter( e -> edgeColors.get( e ) == color.compatibleEdge ).toList();
                 assert outEdges.size() <= 1 : "Found connected component which is not an inverted tree";
                 outEdge = outEdges.isEmpty() ? null : outEdges.get( 0 );
             }

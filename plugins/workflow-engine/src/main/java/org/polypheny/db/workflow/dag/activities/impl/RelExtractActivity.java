@@ -18,12 +18,16 @@ package org.polypheny.db.workflow.dag.activities.impl;
 
 import static org.polypheny.db.workflow.dag.activities.impl.RelExtractActivity.TABLE_KEY;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.IntStream;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.ResultIterator;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
@@ -32,8 +36,12 @@ import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.plan.AlgCluster;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
 import org.polypheny.db.processing.QueryContext;
+import org.polypheny.db.rex.RexIndexRef;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.workflow.dag.activities.Activity;
@@ -144,13 +152,18 @@ public class RelExtractActivity implements Activity, Fusable, Pipeable {
 
     @Override
     public AlgNode fuse( List<AlgNode> inputs, Settings settings, AlgCluster cluster ) throws Exception {
-        throw new NotImplementedException();
-        /*LogicalTable table = getEntity( settings.get( TABLE_KEY ) );
-        AlgDataType type = getOutputType( table );
+        LogicalTable table = settings.get( TABLE_KEY, EntityValue.class ).getTable();
         AlgTraitSet traits = AlgTraitSet.createEmpty().plus( ModelTrait.RELATIONAL );
 
         AlgNode scan = new LogicalRelScan( cluster, traits, table );
-        return LogicalRelProject.create( scan, , );*/
+        List<RexNode> projects = new ArrayList<>();
+        projects.add( cluster.getRexBuilder().makeBigintLiteral( new BigDecimal( 0 ) ) ); // Add new PK col
+        IntStream.range( 0, table.getTupleType().getFieldCount() )
+                .mapToObj( i ->
+                        new RexIndexRef( i, table.getTupleType().getFields().get( i ).getType() )
+                ).forEach( projects::add );
+
+        return LogicalRelProject.create( scan, projects, getOutputType( table ) );
     }
 
 

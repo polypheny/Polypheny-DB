@@ -142,7 +142,7 @@ public class GlobalScheduler {
                     result = new ExecutionResult( submission );
                 } catch ( ExecutorException e ) {
                     result = new ExecutionResult( submission, e );
-                } catch ( Exception e ) {
+                } catch ( Throwable e ) {
                     result = new ExecutionResult( submission, new ExecutorException( "Unexpected exception", e ) );
                 }
                 activeSubmissions.get( sessionId ).remove( submission );

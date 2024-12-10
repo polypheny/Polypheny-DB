@@ -18,7 +18,7 @@ package org.polypheny.db.workflow.dag.settings;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -159,7 +159,7 @@ public abstract class SettingDef {
 
     public interface SettingValue extends Wrapper {
 
-        JsonNode toJson( JsonMapper mapper );
+        JsonNode toJson( ObjectMapper mapper );
 
     }
 
@@ -186,7 +186,7 @@ public abstract class SettingDef {
 
 
         public Map<String, JsonNode> getSerializableSettings() {
-            JsonMapper mapper = new JsonMapper();
+            ObjectMapper mapper = new ObjectMapper();
             Map<String, JsonNode> settingValues = new HashMap<>();
             for ( Entry<String, SettingValue> entry : map.entrySet() ) {
                 settingValues.put( entry.getKey(), entry.getValue().toJson( mapper ) );

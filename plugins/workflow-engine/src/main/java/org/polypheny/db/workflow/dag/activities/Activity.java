@@ -114,6 +114,15 @@ public interface Activity {
                 case LPG -> DataModel.GRAPH;
             };
         }
+
+
+        public static PortType fromDataModel( DataModel model ) {
+            return switch ( model ) {
+                case RELATIONAL -> REL;
+                case DOCUMENT -> DOC;
+                case GRAPH -> LPG;
+            };
+        }
     }
 
 

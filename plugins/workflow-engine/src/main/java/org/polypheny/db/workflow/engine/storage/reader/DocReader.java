@@ -17,7 +17,6 @@
 package org.polypheny.db.workflow.engine.storage.reader;
 
 import java.util.Iterator;
-import java.util.List;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
@@ -40,12 +39,6 @@ public class DocReader extends CheckpointReader {
 
     @Override
     public Iterator<PolyValue[]> getArrayIterator() {
-        throw new NotImplementedException();
-    }
-
-
-    @Override
-    public Iterator<List<PolyValue>> getIteratorFromQuery( CheckpointQuery query ) {
         throw new NotImplementedException();
     }
 
