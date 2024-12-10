@@ -588,6 +588,16 @@ public class AlgStructuredTypeFlattener implements AlgConsumingVisitor {
     }
 
 
+    public void rewriteAlg( LogicalRelIdentifierInjection alg ) {
+        LogicalRelIdentifierInjection newAlg =
+                LogicalRelIdentifierInjection.create(
+                        alg.getEntity(),
+                        getNewForOldRel( alg.getInput() ),
+                        alg.getRowType());
+        setNewForOldAlg( alg, newAlg );
+    }
+
+
     public void rewriteAlg( LogicalRelAggregate alg ) {
         AlgDataType inputType = alg.getInput().getTupleType();
         for ( AlgDataTypeField field : inputType.getFields() ) {
