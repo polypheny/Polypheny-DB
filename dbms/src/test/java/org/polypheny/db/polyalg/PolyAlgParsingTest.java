@@ -48,7 +48,6 @@ import org.polypheny.db.algebra.polyalg.parser.PolyAlgToAlgConverter;
 import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgNode;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.cypher.CypherTestTemplate;
@@ -85,7 +84,6 @@ public class PolyAlgParsingTest {
 
     @BeforeAll
     public static void start() throws SQLException {
-        //noinspection ResultOfMethodCallIgnored
         testHelper = TestHelper.getInstance();
         addTestData();
 
@@ -187,21 +185,33 @@ public class PolyAlgParsingTest {
         String result = getResultAsString( executedContexts, ql.dataModel() );
 
         String logical = null, allocation = null, physical = null;
-        for ( Information info : transaction.getQueryAnalyzer().getInformationArray() ) {
-            if ( info instanceof InformationPolyAlg polyInfo ) {
-                switch ( PlanType.valueOf( polyInfo.planType ) ) {
-                    case LOGICAL -> logical = polyInfo.getTextualPolyAlg();
-                    case ALLOCATION -> allocation = polyInfo.getTextualPolyAlg();
-                    case PHYSICAL -> physical = polyInfo.getTextualPolyAlg();
-                }
-            }
-        }
+
+        int tries = 3;
         try {
+            // plans are serialized in a separate thread, which might take some time
+            for ( int i = 0; i < tries; i++ ) {
+                for ( Information info : transaction.getQueryAnalyzer().getInformationArray() ) {
+                    if ( info instanceof InformationPolyAlg polyInfo ) {
+                        switch ( PlanType.valueOf( polyInfo.planType ) ) {
+                            case LOGICAL -> logical = polyInfo.getTextualPolyAlg();
+                            case ALLOCATION -> allocation = polyInfo.getTextualPolyAlg();
+                            case PHYSICAL -> physical = polyInfo.getTextualPolyAlg();
+                        }
+                    }
+                }
+                if ( logical != null && allocation != null && physical != null ) {
+                    break;
+                }
+                Thread.sleep( 500 );
+            }
+
             assertNotNull( logical );
             assertNotNull( allocation );
             assertNotNull( physical ); // Physical is not yet tested further since it is only partially implemented
 
-        }finally {
+        } catch ( InterruptedException e ) {
+            throw new RuntimeException( e );
+        } finally {
             transaction.commit(); // execute PolyAlg creates new transaction, as long as only DQLs are tested like this
         }
         if ( transactionManager.getNumberOfActiveTransactions() > 0 ) {
@@ -214,7 +224,6 @@ public class PolyAlgParsingTest {
         assertEquals( result, resultFromLogical, "Result from query does not match result when executing the logical plan." );
         String resultFromAllocation = executePolyAlg( allocation, PlanType.ALLOCATION, ql );
         assertEquals( result, resultFromAllocation, "Result from query does not match result when executing the allocation plan." );
-
 
     }
 

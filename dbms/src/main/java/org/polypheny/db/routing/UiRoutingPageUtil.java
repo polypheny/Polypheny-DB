@@ -21,6 +21,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
@@ -50,6 +52,8 @@ import org.polypheny.db.transaction.Statement;
 @Slf4j
 public class UiRoutingPageUtil {
 
+    private static final ExecutorService executorService = Executors.newFixedThreadPool( 10 );
+
 
     public static void outputSingleResult( Plan plan, InformationManager queryAnalyzer, long stmtIdx, boolean attachTextualPlan ) {
         addPhysicalPlanPage( plan.optimalNode(), queryAnalyzer, stmtIdx, attachTextualPlan );
@@ -65,7 +69,7 @@ public class UiRoutingPageUtil {
 
 
     public static void addPhysicalPlanPage( AlgNode optimalNode, InformationManager queryAnalyzer, long stmtIdx, boolean attachTextualPlan ) {
-        new Thread( () -> addRoutedPolyPlanPage( optimalNode, queryAnalyzer, stmtIdx, true, attachTextualPlan ) ).start();
+        executorService.submit( () -> addRoutedPolyPlanPage( optimalNode, queryAnalyzer, stmtIdx, true, attachTextualPlan ) );
     }
 
 
