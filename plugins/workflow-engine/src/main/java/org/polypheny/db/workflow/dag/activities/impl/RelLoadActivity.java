@@ -19,7 +19,6 @@ package org.polypheny.db.workflow.dag.activities.impl;
 import static org.polypheny.db.workflow.dag.activities.impl.RelLoadActivity.TABLE_KEY;
 
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -105,17 +104,14 @@ public class RelLoadActivity implements Activity, Fusable, Pipeable {
                 .transactions( List.of( transaction ) ).build();
 
         try ( BatchWriter writer = new BatchWriter( context, transaction.createStatement(), paramTypes ) ) {
-            Iterator<List<PolyValue>> it = inputs.get( 0 ).getIterator();
-            while ( it.hasNext() ) {
+            for ( List<PolyValue> row : inputs.get( 0 ).getIterable() ) {
                 Map<Long, PolyValue> map = new HashMap<>( mapCapacity );
-                List<PolyValue> row = it.next();
                 for ( int i = 1; i < row.size(); i++ ) { // skip primary key
                     map.put( (long) i - 1, row.get( i ) );
                 }
                 writer.write( map );
             }
         }
-
     }
 
 

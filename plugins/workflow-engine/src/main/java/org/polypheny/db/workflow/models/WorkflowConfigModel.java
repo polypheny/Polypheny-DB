@@ -28,6 +28,7 @@ public class WorkflowConfigModel {
     boolean fusionEnabled;
     boolean pipelineEnabled;
     int maxWorkers;
+    int pipelineQueueCapacity;
 
 
     public static WorkflowConfigModel of() {
@@ -35,7 +36,8 @@ public class WorkflowConfigModel {
                 Map.of( DataModel.RELATIONAL, "hsqldb", DataModel.DOCUMENT, "hsqldb", DataModel.GRAPH, "hsqldb" ),
                 true,
                 true,
-                1
+                1,
+                1000
         );
     }
 

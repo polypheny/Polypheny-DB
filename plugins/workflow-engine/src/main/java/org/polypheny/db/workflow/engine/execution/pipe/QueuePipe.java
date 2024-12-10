@@ -29,7 +29,8 @@ public class QueuePipe implements InputPipe, OutputPipe {
 
     private final BlockingQueue<List<PolyValue>> queue;
     private final AlgDataType type;
-    private boolean hasNext = true; // whether new tuples are still being inserted into the queue
+    private boolean hasNext = true; // whether all tuples to ever be produced have been consumed
+    private List<PolyValue> nextValue;
 
 
     public QueuePipe( int capacity, AlgDataType type ) {
@@ -46,6 +47,7 @@ public class QueuePipe implements InputPipe, OutputPipe {
 
     @Override
     public void put( List<PolyValue> value ) throws InterruptedException {
+        assert !value.isEmpty() : "Cannot pipe empty list, as it is used as an end marker.";
         queue.put( value );
     }
 
@@ -56,17 +58,26 @@ public class QueuePipe implements InputPipe, OutputPipe {
         return new Iterator<>() {
             @Override
             public boolean hasNext() {
-                return hasNext || !queue.isEmpty();
+                if ( !hasNext ) {
+                    return false;
+                }
+                try {
+                    nextValue = queue.take();
+                    if ( nextValue.isEmpty() ) {
+                        hasNext = false;
+                        return false;
+                    }
+                    return true;
+                } catch ( InterruptedException e ) {
+                    throw new PipeInterruptedException( e );
+                }
             }
 
 
             @Override
             public List<PolyValue> next() throws PipeInterruptedException {
-                try {
-                    return queue.take();
-                } catch ( InterruptedException e ) {
-                    throw new PipeInterruptedException( e );
-                }
+                assert hasNext;
+                return nextValue; // important: hasNext must be called to load the next value
             }
         };
     }
@@ -74,7 +85,10 @@ public class QueuePipe implements InputPipe, OutputPipe {
 
     @Override
     public void close() throws Exception {
-        hasNext = false;
+        if ( hasNext ) {
+            queue.put( List.of() ); // empty list is end marker
+            // this could lead to multiple markers in the queue if closed more than once, but only the first one is relevant
+        }
     }
 
 }

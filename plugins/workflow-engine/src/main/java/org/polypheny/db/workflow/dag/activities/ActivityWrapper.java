@@ -18,6 +18,7 @@ package org.polypheny.db.workflow.dag.activities;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -151,7 +152,11 @@ public class ActivityWrapper {
 
 
     public static ActivityWrapper fromModel( ActivityModel model ) {
-        return new ActivityWrapper( model.getId(), ActivityRegistry.activityFromType( model.getType() ), model.getType(), model.getSettings(), model.getConfig(), model.getRendering() );
+        String type = model.getType();
+        // ensure the default value is used for missing settings
+        Map<String, JsonNode> settings = new HashMap<>( ActivityRegistry.getSerializableDefaultSettings( type ) );
+        settings.putAll( model.getSettings() );
+        return new ActivityWrapper( model.getId(), ActivityRegistry.activityFromType( type ), type, settings, model.getConfig(), model.getRendering() );
     }
 
 

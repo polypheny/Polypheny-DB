@@ -19,6 +19,7 @@ package org.polypheny.db.workflow;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.BooleanNode;
+import com.fasterxml.jackson.databind.node.IntNode;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -39,7 +40,9 @@ import org.polypheny.db.workflow.models.WorkflowModel;
 
 public class WorkflowUtils {
 
-    private static ObjectMapper mapper = new ObjectMapper();
+    private static final ObjectMapper mapper = new ObjectMapper();
+    private static final BooleanNode TRUE = BooleanNode.TRUE;
+    private static final BooleanNode FALSE = BooleanNode.FALSE;
 
 
     public static Workflow getWorkflow( List<ActivityModel> activities, List<EdgeModel> edges, boolean fusionEnabled, boolean pipelineEnabled, int maxWorkers ) {
@@ -47,7 +50,8 @@ public class WorkflowUtils {
                 Map.of( DataModel.RELATIONAL, "hsqldb", DataModel.DOCUMENT, "hsqldb", DataModel.GRAPH, "hsqldb" ),
                 fusionEnabled,
                 pipelineEnabled,
-                maxWorkers
+                maxWorkers,
+                10 // low on purpose to observe blocking
         );
         return WorkflowImpl.fromModel( new WorkflowModel( activities, edges, config, null ) );
     }
@@ -81,7 +85,7 @@ public class WorkflowUtils {
 
 
     public static Workflow getMergeWorkflow( boolean simulateFailure ) {
-        Map<String, JsonNode> settings = new HashMap<>( ActivityRegistry.getSerializableSettingValues( "debug" ) );
+        Map<String, JsonNode> settings = new HashMap<>( ActivityRegistry.getSerializableDefaultSettings( "debug" ) );
         settings.put( "isSuccessful", BooleanNode.valueOf( !simulateFailure ) );
 
         List<ActivityModel> activities = List.of(
@@ -115,8 +119,8 @@ public class WorkflowUtils {
     public static Pair<Workflow, List<UUID>> getAdvancedFusion() {
         // 0 - 3 - 4 should fuse
         List<ActivityModel> activities = List.of(
-                new ActivityModel( "relExtract", Map.of( "table", getEntitySetting( "public", StorageUtils.REL_TABLE ) ) ),
-                new ActivityModel( "relExtract", Map.of( "table", getEntitySetting( "public", StorageUtils.REL_TABLE ) ) ),
+                new ActivityModel( "relExtract", extractTableSetting() ),
+                new ActivityModel( "relExtract", extractTableSetting() ),
                 new ActivityModel( "debug" ), // -> cannot fuse
                 new ActivityModel( "relUnion" ),
                 new ActivityModel( "identity" )
@@ -127,9 +131,7 @@ public class WorkflowUtils {
                 EdgeModel.of( activities.get( 2 ), activities.get( 3 ), 1 ),
                 EdgeModel.of( activities.get( 3 ), activities.get( 4 ), 0 )
         );
-        return Pair.of(
-                getWorkflow( activities, edges, true, false, 1 ),
-                activities.stream().map( ActivityModel::getId ).toList() ); // also return ids, since topological order is not stable
+        return getWorkflowWithActivities( activities, edges, true, false, 1 ); // also return ids, since topological order is not stable
     }
 
 
@@ -152,13 +154,66 @@ public class WorkflowUtils {
 
     public static Workflow getExtractWorkflow() {
         List<ActivityModel> activities = List.of(
-                new ActivityModel( "relExtract", Map.of( "table", getEntitySetting( "public", StorageUtils.REL_TABLE ) ) ),
+                new ActivityModel( "relExtract", extractTableSetting() ),
                 new ActivityModel( "identity" )
         );
         List<EdgeModel> edges = List.of(
                 EdgeModel.of( activities.get( 0 ), activities.get( 1 ), 0 )
         );
         return getWorkflow( activities, edges, true, false, 1 );
+    }
+
+
+    public static Workflow getSimplePipe() {
+        List<ActivityModel> activities = List.of(
+                new ActivityModel( "relValues", Map.of( "rowCount", IntNode.valueOf( 20 ) ) ),
+                new ActivityModel( "identity" ),
+                new ActivityModel( "identity" )
+        );
+        List<EdgeModel> edges = List.of(
+                EdgeModel.of( activities.get( 0 ), activities.get( 1 ), 0 ),
+                EdgeModel.of( activities.get( 1 ), activities.get( 2 ), 0 )
+        );
+        return getWorkflow( activities, edges, false, true, 1 );
+    }
+
+
+    public static Workflow getLongRunningPipe( int minMillis ) {
+        int n = 100;
+        List<ActivityModel> activities = List.of(
+                new ActivityModel( "relValues", Map.of( "rowCount", IntNode.valueOf( n ) ) ),
+                new ActivityModel( "debug", Map.of( "pipeDelay", IntNode.valueOf( minMillis / n + 1 ), "canPipe", TRUE ) ),
+                new ActivityModel( "identity" )
+        );
+        List<EdgeModel> edges = List.of(
+                EdgeModel.of( activities.get( 0 ), activities.get( 1 ), 0 ),
+                EdgeModel.of( activities.get( 1 ), activities.get( 2 ), 0 )
+        );
+        return getWorkflow( activities, edges, false, true, 1 );
+    }
+
+
+    public static Pair<Workflow, List<UUID>> getCombinedFuseAndPipe() {
+        // 0 - 4 - 5  should fuse
+        // 3 -/
+
+        // 1 = 2 should pipe
+        List<ActivityModel> activities = List.of(
+                new ActivityModel( "relExtract", extractTableSetting() ),
+                new ActivityModel( "relExtract", extractTableSetting() ),
+                new ActivityModel( "debug", Map.of( "canPipe", TRUE ) ), // can only pipe, not fuse!
+                new ActivityModel( "identity" ),
+                new ActivityModel( "relUnion" ),
+                new ActivityModel( "identity" )
+        );
+        List<EdgeModel> edges = List.of(
+                EdgeModel.of( activities.get( 0 ), activities.get( 4 ), 0 ),
+                EdgeModel.of( activities.get( 1 ), activities.get( 2 ), 0 ),
+                EdgeModel.of( activities.get( 2 ), activities.get( 3 ), 0 ),
+                EdgeModel.of( activities.get( 3 ), activities.get( 4 ), 1 ), // a greedy optimizer would create the checkpoint here instead of 2 -> 3, which is not optimal
+                EdgeModel.of( activities.get( 4 ), activities.get( 5 ), 0 )
+        );
+        return getWorkflowWithActivities( activities, edges, true, true, 1 );
     }
 
 
@@ -173,6 +228,18 @@ public class WorkflowUtils {
 
     public static JsonNode getEntitySetting( String namespace, String name ) {
         return new EntityValue( namespace, name ).toJson( mapper );
+    }
+
+
+    private static Map<String, JsonNode> extractTableSetting() {
+        return Map.of( "table", getEntitySetting( "public", StorageUtils.REL_TABLE ) );
+    }
+
+
+    private static Pair<Workflow, List<UUID>> getWorkflowWithActivities( List<ActivityModel> activities, List<EdgeModel> edges, boolean fusionEnabled, boolean pipelineEnabled, int maxWorkers ) {
+        return Pair.of(
+                getWorkflow( activities, edges, fusionEnabled, pipelineEnabled, maxWorkers ),
+                activities.stream().map( ActivityModel::getId ).toList() );
     }
 
 }

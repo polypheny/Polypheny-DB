@@ -22,6 +22,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -76,6 +77,23 @@ public abstract class CheckpointReader implements AutoCloseable {
 
 
     /**
+     * Convenience method that wraps the iterator from {@code getIterator()} into an Iterable
+     * to enable enhanced for loops.
+     *
+     * @return An iterable that yields tuples as mutable lists.
+     */
+    public final Iterable<List<PolyValue>> getIterable() {
+        return new Iterable<>() {
+            @NotNull
+            @Override
+            public Iterator<List<PolyValue>> iterator() {
+                return getIterator();
+            }
+        };
+    }
+
+
+    /**
      * Get a new iterator for this checkpoint that transforms the raw PolyValue array into a
      * list.
      *
@@ -97,6 +115,25 @@ public abstract class CheckpointReader implements AutoCloseable {
      */
     public Pair<AlgDataType, Iterator<List<PolyValue>>> getIteratorFromQuery( CheckpointQuery query ) {
         return getIteratorFromQuery( query, List.of( this ) );
+    }
+
+
+    /**
+     * Convenience method that wraps the iterator from {@code getIteratorFromQuery(query)} into an Iterable
+     * to enable enhanced for loops.
+     *
+     * @return the result tuple type and an iterable of the query result
+     */
+    public Pair<AlgDataType, Iterable<List<PolyValue>>> getIterableFromQuery( CheckpointQuery query ) {
+        Pair<AlgDataType, Iterator<List<PolyValue>>> pair = getIteratorFromQuery( query, List.of( this ) );
+        return Pair.of( pair.left,
+                new Iterable<>() {
+                    @NotNull
+                    @Override
+                    public Iterator<List<PolyValue>> iterator() {
+                        return pair.right;
+                    }
+                } );
     }
 
 
@@ -192,6 +229,25 @@ public abstract class CheckpointReader implements AutoCloseable {
         Iterator<PolyValue[]> iterator = executedContext.getIterator().getIterator();
         registerIterator( iterator );
         return Pair.of( executedContext.getIterator().getRowType(), arrayToListIterator( iterator, false ) );
+    }
+
+
+    /**
+     * Convenience method that wraps the iterator from {@code getIteratorFromQuery(query, inputs)} into an Iterable
+     * to enable enhanced for loops.
+     *
+     * @return the result tuple type and an iterable of the query result
+     */
+    public Pair<AlgDataType, Iterable<List<PolyValue>>> getIterableFromQuery( CheckpointQuery query, List<CheckpointReader> inputs ) {
+        Pair<AlgDataType, Iterator<List<PolyValue>>> pair = getIteratorFromQuery( query, inputs );
+        return Pair.of( pair.left,
+                new Iterable<>() {
+                    @NotNull
+                    @Override
+                    public Iterator<List<PolyValue>> iterator() {
+                        return pair.right;
+                    }
+                } );
     }
 
 

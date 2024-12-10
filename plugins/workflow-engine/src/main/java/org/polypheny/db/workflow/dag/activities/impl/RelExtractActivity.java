@@ -20,10 +20,10 @@ import static org.polypheny.db.workflow.dag.activities.impl.RelExtractActivity.T
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.IntStream;
-import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.ResultIterator;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
@@ -44,6 +44,7 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.workflow.dag.activities.Activity;
 import org.polypheny.db.workflow.dag.activities.Activity.ActivityCategory;
 import org.polypheny.db.workflow.dag.activities.Activity.PortType;
@@ -115,30 +116,9 @@ public class RelExtractActivity implements Activity, Fusable, Pipeable {
             }
         }*/
 
-        String quotedCols = QueryUtils.quoteAndJoin( table.getColumnNames() );
-        String quotedName = QueryUtils.quotedIdentifier( table );
-        String query = "SELECT 0, " + quotedCols + " FROM " + quotedName; // add a new column for the primary key
-
-        try ( RelWriter writer = (RelWriter) ctx.createWriter( 0, type, true ) ) {
-            Transaction transaction = ctx.getTransaction(); // transaction will get committed or rolled back externally
-            QueryContext context = QueryContext.builder()
-                    .query( query )
-                    .language( QueryLanguage.from( "SQL" ) )
-                    .isAnalysed( false )
-                    .origin( StorageManager.ORIGIN )
-                    .namespaceId( table.getNamespaceId() )
-                    .transactionManager( transaction.getTransactionManager() )
-                    .transactions( List.of( transaction ) ).build();
-
-            System.out.println( "Before exec" );
-            long start = System.currentTimeMillis();
-            List<ExecutedContext> executedContexts = LanguageManager.getINSTANCE().anyQuery( context );
-            System.out.println( "After exec (" + (System.currentTimeMillis() - start) + " ms)" );
-
-            try ( ResultIterator result = executedContexts.get( 0 ).getIterator() ) {
-                writer.write( CheckpointReader.arrayToListIterator( result.getIterator(), true ) );
-            }
-
+        try ( RelWriter writer = (RelWriter) ctx.createWriter( 0, type, true );
+                ResultIterator result = getResultIterator( ctx.getTransaction(), table ) ) { // transaction will get committed or rolled back externally
+            writer.write( CheckpointReader.arrayToListIterator( result.getIterator(), true ) );
         }
 
     }
@@ -176,8 +156,13 @@ public class RelExtractActivity implements Activity, Fusable, Pipeable {
 
     @Override
     public void pipe( List<InputPipe> inputs, OutputPipe output, Settings settings, PipeExecutionContext ctx ) throws Exception {
-        // TODO: Create new transaction or use ctx?
-        throw new NotImplementedException();
+        LogicalTable table = settings.get( TABLE_KEY, EntityValue.class ).getTable();
+        try ( ResultIterator result = getResultIterator( ctx.getTransaction(), table ) ) { // transaction will get committed or rolled back externally
+            Iterator<List<PolyValue>> it = CheckpointReader.arrayToListIterator( result.getIterator(), true );
+            while ( it.hasNext() ) {
+                output.put( it.next() );
+            }
+        }
     }
 
 
@@ -199,6 +184,28 @@ public class RelExtractActivity implements Activity, Fusable, Pipeable {
         }
 
         return factory.createStructType( ids, types, names );
+    }
+
+
+    private ResultIterator getResultIterator( Transaction transaction, LogicalTable table ) {
+        String quotedCols = QueryUtils.quoteAndJoin( table.getColumnNames() );
+        String quotedName = QueryUtils.quotedIdentifier( table );
+        String query = "SELECT 0, " + quotedCols + " FROM " + quotedName; // add a new column for the primary key
+        QueryContext context = QueryContext.builder()
+                .query( query )
+                .language( QueryLanguage.from( "SQL" ) )
+                .isAnalysed( false )
+                .origin( StorageManager.ORIGIN )
+                .namespaceId( table.getNamespaceId() )
+                .transactionManager( transaction.getTransactionManager() )
+                .transactions( List.of( transaction ) ).build();
+
+        System.out.println( "Before exec" );
+        long start = System.currentTimeMillis();
+        List<ExecutedContext> executedContexts = LanguageManager.getINSTANCE().anyQuery( context );
+        System.out.println( "After exec (" + (System.currentTimeMillis() - start) + " ms)" );
+
+        return executedContexts.get( 0 ).getIterator();
     }
 
 }

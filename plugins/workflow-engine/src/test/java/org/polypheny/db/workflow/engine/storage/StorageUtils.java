@@ -20,7 +20,6 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -74,10 +73,7 @@ public class StorageUtils {
     public static List<List<PolyValue>> readCheckpoint( StorageManager sm, UUID activityId, int index ) {
         List<List<PolyValue>> list = new ArrayList<>();
         try ( CheckpointReader reader = sm.readCheckpoint( activityId, index ) ) {
-            Iterator<List<PolyValue>> it = reader.getIterator();
-            while ( it.hasNext() ) {
-                list.add( it.next() );
-            }
+            reader.getIterable().forEach( list::add );
         }
         return list;
     }

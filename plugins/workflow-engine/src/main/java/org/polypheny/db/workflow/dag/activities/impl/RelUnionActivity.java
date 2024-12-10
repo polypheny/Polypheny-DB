@@ -16,7 +16,6 @@
 
 package org.polypheny.db.workflow.dag.activities.impl;
 
-import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import org.polypheny.db.algebra.AlgNode;
@@ -25,28 +24,29 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.util.Pair;
 import org.polypheny.db.workflow.dag.activities.Activity;
 import org.polypheny.db.workflow.dag.activities.Activity.ActivityCategory;
 import org.polypheny.db.workflow.dag.activities.Activity.PortType;
 import org.polypheny.db.workflow.dag.activities.ActivityException;
 import org.polypheny.db.workflow.dag.activities.ActivityException.InvalidInputException;
 import org.polypheny.db.workflow.dag.activities.Fusable;
+import org.polypheny.db.workflow.dag.activities.Pipeable;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition.InPort;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition.OutPort;
 import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingsPreview;
 import org.polypheny.db.workflow.engine.execution.context.ExecutionContext;
-import org.polypheny.db.workflow.engine.storage.reader.CheckpointQuery;
+import org.polypheny.db.workflow.engine.execution.context.PipeExecutionContext;
+import org.polypheny.db.workflow.engine.execution.pipe.InputPipe;
+import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
-import org.polypheny.db.workflow.engine.storage.writer.CheckpointWriter;
 
 @ActivityDefinition(type = "relUnion", displayName = "Relational Union", categories = { ActivityCategory.TRANSFORM, ActivityCategory.RELATIONAL },
         inPorts = { @InPort(type = PortType.REL), @InPort(type = PortType.REL) },
         outPorts = { @OutPort(type = PortType.REL) }
 )
-public class RelUnionActivity implements Activity, Fusable {
+public class RelUnionActivity implements Activity, Fusable, Pipeable {
 
     @Override
     public List<Optional<AlgDataType>> previewOutTypes( List<Optional<AlgDataType>> inTypes, SettingsPreview settings ) throws ActivityException {
@@ -61,22 +61,31 @@ public class RelUnionActivity implements Activity, Fusable {
 
 
     @Override
-    public void execute( List<CheckpointReader> inputs, Settings settings, ExecutionContext ctx ) throws Exception {
-        CheckpointQuery query = CheckpointQuery.builder()
-                .queryLanguage( "SQL" )
-                .query( "SELECT * FROM " + CheckpointQuery.ENTITY( 0 ) + " UNION ALL SELECT * FROM " + CheckpointQuery.ENTITY( 1 ) )
-                .build();
-        Pair<AlgDataType, Iterator<List<PolyValue>>> result = inputs.get( 0 ).getIteratorFromQuery( query, inputs );
-        try ( CheckpointWriter writer = ctx.createRelWriter( 0, result.left, true ) ) {
-            writer.write( result.right );
-        }
+    public AlgDataType lockOutputType( List<AlgDataType> inTypes, Settings settings ) throws Exception {
+        return getTypeOrThrow( inTypes );
+    }
 
+
+    @Override
+    public void pipe( List<InputPipe> inputs, OutputPipe output, Settings settings, PipeExecutionContext ctx ) throws Exception {
+        int i = 0;
+        for ( InputPipe input : inputs ) {
+            for ( List<PolyValue> tuple : input ) {
+                output.put( tuple );
+            }
+            ctx.updateProgress( ((double) ++i) / inputs.size() );
+        }
+    }
+
+
+    @Override
+    public void execute( List<CheckpointReader> inputs, Settings settings, ExecutionContext ctx ) throws Exception {
+        Fusable.super.execute( inputs, settings, ctx );
     }
 
 
     @Override
     public AlgNode fuse( List<AlgNode> inputs, Settings settings, AlgCluster cluster ) throws Exception {
-        System.out.println( "in types: " + inputs.stream().map( AlgNode::getTupleType ).toList() );
         return LogicalRelUnion.create( inputs, true );
     }
 

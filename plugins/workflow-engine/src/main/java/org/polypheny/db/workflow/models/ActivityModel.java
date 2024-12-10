@@ -45,7 +45,7 @@ public class ActivityModel {
 
 
     public ActivityModel( String type, UUID id ) {
-        this( type, id, ActivityRegistry.getSerializableSettingValues( type ), ActivityConfigModel.of(), RenderModel.of(), null );
+        this( type, id, ActivityRegistry.getSerializableDefaultSettings( type ), ActivityConfigModel.of(), RenderModel.of(), null );
     }
 
 

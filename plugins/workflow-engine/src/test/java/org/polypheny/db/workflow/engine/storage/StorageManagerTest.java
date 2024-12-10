@@ -107,11 +107,9 @@ class StorageManagerTest {
             try ( RelReader reader = (RelReader) sm.readCheckpoint( activityId, 0 ) ) {
                 System.out.println( "\nTuple type of checkpoint: " + reader.getTupleType() );
                 assertEquals( sampleData.size(), reader.getRowCount() );
-                Iterator<List<PolyValue>> it = reader.getIterator();
 
                 int i = 0;
-                while ( it.hasNext() ) {
-                    List<PolyValue> tuple = it.next();
+                for ( List<PolyValue> tuple : reader.getIterable() ) {
                     System.out.println( tuple );
                     assertTupleEquals( tuple, sampleData.get( i++ ) );
                 }

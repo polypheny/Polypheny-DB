@@ -19,6 +19,7 @@ package org.polypheny.db.workflow.engine.execution.context;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.workflow.dag.activities.Activity;
+import org.polypheny.db.workflow.engine.execution.Executor.ExecutorException;
 import org.polypheny.db.workflow.engine.storage.writer.CheckpointWriter;
 import org.polypheny.db.workflow.engine.storage.writer.DocWriter;
 import org.polypheny.db.workflow.engine.storage.writer.LpgWriter;
@@ -26,7 +27,7 @@ import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
 
 public interface ExecutionContext {
 
-    boolean checkInterrupted() throws Exception;
+    boolean checkInterrupted() throws ExecutorException;
 
     void updateProgress( double value );
 
@@ -57,11 +58,11 @@ public interface ExecutionContext {
     CheckpointWriter createWriter( int idx, AlgDataType tupleType, boolean resetPk );
 
     /**
-     * Returns a transaction to be used for extracting or loading data from data stores or data sources.
+     * Returns a transaction to be used for extracting or loading data from data stores or data sources or executing fused activities.
      * The transaction MUST NOT be committed or rolled back, as this is done externally.
-     * This method can only be called by {@link Activity.ActivityCategory#EXTRACT} or {@link Activity.ActivityCategory#LOAD} activities.
+     * This method should only be called by {@link Activity.ActivityCategory#EXTRACT}, {@link Activity.ActivityCategory#LOAD} or fusable activities.
      *
-     * @return A transaction to be used for either reading or writing arbitrary entities in this Polypheny instance.
+     * @return A transaction to be used for either reading or writing arbitrary entities in this Polypheny instance or executing fused activities.
      */
     Transaction getTransaction();
 

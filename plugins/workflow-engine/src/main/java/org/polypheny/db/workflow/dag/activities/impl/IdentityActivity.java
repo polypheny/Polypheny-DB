@@ -22,11 +22,13 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgCluster;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.workflow.dag.activities.Activity;
 import org.polypheny.db.workflow.dag.activities.Activity.ActivityCategory;
 import org.polypheny.db.workflow.dag.activities.Activity.PortType;
 import org.polypheny.db.workflow.dag.activities.ActivityException;
 import org.polypheny.db.workflow.dag.activities.Fusable;
+import org.polypheny.db.workflow.dag.activities.Pipeable;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition.InPort;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition.OutPort;
@@ -37,6 +39,9 @@ import org.polypheny.db.workflow.dag.annotations.StringSetting;
 import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingsPreview;
 import org.polypheny.db.workflow.engine.execution.context.ExecutionContext;
+import org.polypheny.db.workflow.engine.execution.context.PipeExecutionContext;
+import org.polypheny.db.workflow.engine.execution.pipe.InputPipe;
+import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 import org.polypheny.db.workflow.engine.storage.reader.RelReader;
 import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
@@ -54,7 +59,7 @@ import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
 )
 @IntSetting(key = "I2", displayName = "THIRD", defaultValue = 0, isList = true, group = "groupA")
 @StringSetting(key = "S2", displayName = "FOURTH", defaultValue = "test", isList = true, group = "groupA", subGroup = "a")
-public class IdentityActivity implements Activity, Fusable {
+public class IdentityActivity implements Activity, Fusable, Pipeable {
 
 
     public IdentityActivity() {
@@ -72,6 +77,20 @@ public class IdentityActivity implements Activity, Fusable {
         RelReader input = (RelReader) inputs.get( 0 );
         try ( RelWriter output = ctx.createRelWriter( 0, input.getTupleType(), false ) ) {
             output.write( input.getIterator() );
+        }
+    }
+
+
+    @Override
+    public AlgDataType lockOutputType( List<AlgDataType> inTypes, Settings settings ) throws Exception {
+        return inTypes.get( 0 );
+    }
+
+
+    @Override
+    public void pipe( List<InputPipe> inputs, OutputPipe output, Settings settings, PipeExecutionContext ctx ) throws Exception {
+        for ( List<PolyValue> value : inputs.get( 0 ) ) {
+            output.put( value );
         }
     }
 

@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -39,6 +40,7 @@ import org.polypheny.db.workflow.dag.activities.Activity.ActivityCategory;
 import org.polypheny.db.workflow.dag.activities.Activity.PortType;
 import org.polypheny.db.workflow.dag.activities.ActivityException;
 import org.polypheny.db.workflow.dag.activities.Fusable;
+import org.polypheny.db.workflow.dag.activities.Pipeable;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition.OutPort;
 import org.polypheny.db.workflow.dag.annotations.BoolSetting;
@@ -48,9 +50,14 @@ import org.polypheny.db.workflow.dag.settings.IntValue;
 import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingsPreview;
 import org.polypheny.db.workflow.engine.execution.context.ExecutionContext;
+import org.polypheny.db.workflow.engine.execution.context.PipeExecutionContext;
+import org.polypheny.db.workflow.engine.execution.pipe.InputPipe;
+import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
+
+@Slf4j
 
 @ActivityDefinition(type = "relValues", displayName = "Constant Table", categories = { ActivityCategory.EXTRACT, ActivityCategory.RELATIONAL },
         inPorts = {},
@@ -58,7 +65,7 @@ import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
 )
 @IntSetting(key = "rowCount", displayName = "Row Count", defaultValue = 3, min = 1, max = 1_000_000)
 @BoolSetting(key = "fixSeed", displayName = "Fix Random Seed", defaultValue = false)
-public class RelValuesActivity implements Activity, Fusable {
+public class RelValuesActivity implements Activity, Fusable, Pipeable {
 
     private static final List<String> NAMES = List.of( "Alice", "Bob", "Charlie", "Diana", "Eve", "Frank", "Grace", "Hank" );
     private static final List<String> LAST_NAMES = List.of( "Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis" );
@@ -77,6 +84,26 @@ public class RelValuesActivity implements Activity, Fusable {
                     settings.get( "rowCount", IntValue.class ).getValue(),
                     settings.get( "fixSeed", BoolValue.class ).getValue()
             ).iterator() );
+        }
+    }
+
+
+    @Override
+    public AlgDataType lockOutputType( List<AlgDataType> inTypes, Settings settings ) throws Exception {
+        return getType();
+    }
+
+
+    @Override
+    public void pipe( List<InputPipe> inputs, OutputPipe output, Settings settings, PipeExecutionContext ctx ) throws Exception {
+        int n = settings.get( "rowCount", IntValue.class ).getValue();
+        boolean fixSeed = settings.get( "fixSeed", BoolValue.class ).getValue();
+
+        Random random = fixSeed ? new Random( 42 ) : new Random();
+        for ( int i = 0; i < n; i++ ) {
+            List<PolyValue> tuple = getValue( random );
+            output.put( tuple );
+            log.info( "Value pipe inserted " + tuple );
         }
     }
 
@@ -113,13 +140,18 @@ public class RelValuesActivity implements Activity, Fusable {
         Random random = fixSeed ? new Random( 42 ) : new Random();
         List<List<PolyValue>> tuples = new ArrayList<>();
         for ( int i = 0; i < n; i++ ) {
-            String firstName = NAMES.get( random.nextInt( NAMES.size() ) );
-            String lastName = LAST_NAMES.get( random.nextInt( LAST_NAMES.size() ) );
-            int age = random.nextInt( 18, 66 );
-            int salary = random.nextInt( 5000, 10000 );
-            tuples.add( getRow( firstName, lastName, age, salary ) );
+            tuples.add( getValue( random ) );
         }
         return tuples;
+    }
+
+
+    private static List<PolyValue> getValue( Random random ) {
+        String firstName = NAMES.get( random.nextInt( NAMES.size() ) );
+        String lastName = LAST_NAMES.get( random.nextInt( LAST_NAMES.size() ) );
+        int age = random.nextInt( 18, 66 );
+        int salary = random.nextInt( 5000, 10000 );
+        return getRow( firstName, lastName, age, salary );
     }
 
 

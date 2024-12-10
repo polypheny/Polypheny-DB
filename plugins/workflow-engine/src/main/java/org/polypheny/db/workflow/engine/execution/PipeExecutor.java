@@ -31,6 +31,7 @@ import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.util.graph.AttributedDirectedGraph;
@@ -56,6 +57,7 @@ import org.polypheny.db.workflow.engine.storage.writer.CheckpointWriter;
  * Data is moved between threads using pipes.
  * Checkpoints are read and written in the activity thread that uses them, using special checkpoint pipes.
  */
+@Slf4j
 public class PipeExecutor extends Executor {
 
     private final AttributedDirectedGraph<UUID, ExecutionEdge> execTree;
@@ -92,6 +94,7 @@ public class PipeExecutor extends Executor {
         CompletionService<Void> completionService = new ExecutorCompletionService<>( executor );
         List<Future<Void>> futures = new ArrayList<>();
         for ( Callable<Void> callable : callables ) {
+            log.info( "1. Pipe submits callable " + callable );
             futures.add( completionService.submit( callable ) );
         }
         this.executor = executor; // store in field for manual interrupt
@@ -102,11 +105,13 @@ public class PipeExecutor extends Executor {
             try {
                 Future<Void> f = completionService.take();
                 futures.remove( f );
+                log.info( "3.1 Processing next completed pipe activity " );
 
                 try {
                     f.get();
                 } catch ( ExecutionException e ) {
                     if ( !hasDetectedAbort ) {
+                        log.warn( "First pipe has detected abort, cancelling all" );
                         // At this point, we cannot be sure if there are multiple failed tasks.
                         // This is not a problem, we just handle the first one we encounter and use it as a reason for the abort.
                         hasDetectedAbort = true;
@@ -115,17 +120,19 @@ public class PipeExecutor extends Executor {
                     }
                     // only the first task to throw an exception is relevant
                 } catch ( CancellationException ignored ) {
+                    log.warn( "Another pipe has detected abort" );
                     assert hasDetectedAbort; // we already cancelled the other tasks and don't have to do anything
                 }
+                log.info( "3.2 Pipe activity processing finished" );
 
             } catch ( InterruptedException ignored ) {
-                // THe PipeExecutor thread itself should never be ab
+                // THe PipeExecutor thread itself should never be interrupted
             }
 
         }
 
         executor.shutdownNow();
-        System.out.println( "All threads have finished" );
+        log.info( "4. All threads have finished" );
 
         if ( abortReason != null ) {
             throw abortReason; // we only throw now to ensure threads are all shut down.
@@ -176,7 +183,7 @@ public class PipeExecutor extends Executor {
 
         AlgDataType outType = activity.lockOutputType( Arrays.asList( inTypes ), settings );
         if ( outType != null ) {
-            outQueues.put( root, new QueuePipe( queueCapacity, outType ) );
+            outQueues.put( root, new QueuePipe( queueCapacity, outType ) ); // TODO: adapt queue capacity to tuple size?
             wrapper.setOutTypePreview( List.of( Optional.of( outType ) ) );
         } else {
             // we are at the actual root of the tree, and it's an activity with no outputs.
@@ -235,6 +242,7 @@ public class PipeExecutor extends Executor {
         Pipeable activity = (Pipeable) wrapper.getActivity();
         PipeExecutionContext ctx = new ExecutionContextImpl( wrapper, sm );
         return () -> {
+            log.info( "2.1 Starting execution of " + wrapper );
             try {
                 if ( outPipe != null ) {
                     try ( outPipe ) { // try-with-resource to close pipe (in case of the CheckpointOutputPipe, this closes the checkpoint writer)
@@ -255,6 +263,7 @@ public class PipeExecutor extends Executor {
                 }
                 ctx.updateProgress( 1 );
             }
+            log.info( "2.2 Finished execution of " + wrapper );
             return null;
         };
     }

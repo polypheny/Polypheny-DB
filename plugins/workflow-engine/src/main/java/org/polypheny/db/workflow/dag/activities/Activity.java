@@ -132,7 +132,8 @@ public interface Activity {
         LOAD,
         RELATIONAL,
         DOCUMENT,
-        GRAPH
+        GRAPH,
+        VARIABLES
         // more granular categories are also thinkable
     }
 

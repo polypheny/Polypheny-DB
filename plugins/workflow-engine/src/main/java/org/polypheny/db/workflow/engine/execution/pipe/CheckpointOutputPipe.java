@@ -19,6 +19,7 @@ package org.polypheny.db.workflow.engine.execution.pipe;
 import java.util.List;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.workflow.dag.activities.Pipeable.PipeInterruptedException;
 import org.polypheny.db.workflow.engine.storage.writer.CheckpointWriter;
 
 public class CheckpointOutputPipe implements OutputPipe {
@@ -35,6 +36,9 @@ public class CheckpointOutputPipe implements OutputPipe {
 
     @Override
     public void put( List<PolyValue> value ) throws InterruptedException {
+        if ( Thread.interrupted() ) { // get the same behavior as with QueuePipe -> adds ability to interrupt execution
+            throw new PipeInterruptedException();
+        }
         writer.write( value );
     }
 

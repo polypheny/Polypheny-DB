@@ -23,6 +23,8 @@ import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.workflow.dag.activities.Activity.ActivityCategory;
 import org.polypheny.db.workflow.dag.activities.Activity.PortType;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
+import org.polypheny.db.workflow.dag.activities.Fusable;
+import org.polypheny.db.workflow.engine.execution.Executor.ExecutorException;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
 import org.polypheny.db.workflow.engine.storage.writer.CheckpointWriter;
 import org.polypheny.db.workflow.engine.storage.writer.DocWriter;
@@ -59,9 +61,9 @@ public class ExecutionContextImpl implements ExecutionContext, PipeExecutionCont
 
     // Inspired by the ExecutionContext of KNIME: See its usage on https://github.com/knime/knime-examples/
     @Override
-    public boolean checkInterrupted() throws Exception {
+    public boolean checkInterrupted() throws ExecutorException {
         if ( interrupt ) {
-            throw new Exception( "Activity execution was interrupted" );
+            throw new ExecutorException( "Activity execution was interrupted" );
         }
         return interrupt;
     }
@@ -110,8 +112,10 @@ public class ExecutionContextImpl implements ExecutionContext, PipeExecutionCont
 
     @Override
     public Transaction getTransaction() {
-        if ( !activityWrapper.getDef().hasCategory( ActivityCategory.EXTRACT ) && !activityWrapper.getDef().hasCategory( ActivityCategory.LOAD ) ) {
-            throw new IllegalStateException( "Only EXTRACT or LOAD activities have access to transactions" );
+        if ( !activityWrapper.getDef().hasCategory( ActivityCategory.EXTRACT )
+                && !activityWrapper.getDef().hasCategory( ActivityCategory.LOAD )
+                && !(activityWrapper.getActivity() instanceof Fusable) ) {
+            throw new IllegalStateException( "Only EXTRACT or LOAD or fusable activities have access to transactions" );
         }
         return sm.getTransaction( activityWrapper.getId(), activityWrapper.getConfig().getCommonType() );
     }

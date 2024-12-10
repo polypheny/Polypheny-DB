@@ -170,7 +170,7 @@ public abstract class WorkflowOptimizer {
             Executor executor = switch ( executorType ) {
                 case DEFAULT -> new DefaultExecutor( sm, wf, root );
                 case FUSION -> new FusionExecutor( sm, wf, tree, root );
-                case PIPE -> new PipeExecutor( sm, wf, tree, root, 1000 ); // TODO: use value from config
+                case PIPE -> new PipeExecutor( sm, wf, tree, root, wf.getConfig().getPipelineQueueCapacity() );
                 case VARIABLE_WRITER -> new VariableWriterExecutor( sm, wf, getRootActivity() );
             };
 

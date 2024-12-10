@@ -16,16 +16,26 @@
 
 package org.polypheny.db.workflow.dag.activities;
 
+import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
-import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgCluster;
+import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
+import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingsPreview;
+import org.polypheny.db.workflow.engine.execution.Executor.ExecutorException;
 import org.polypheny.db.workflow.engine.execution.context.ExecutionContext;
+import org.polypheny.db.workflow.engine.storage.QueryUtils;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
+import org.polypheny.db.workflow.engine.storage.writer.CheckpointWriter;
 
 // TODO: write test to ensure at most 1 output was specified
 public interface Fusable extends Activity {
@@ -47,8 +57,41 @@ public interface Fusable extends Activity {
 
     @Override
     default void execute( List<CheckpointReader> inputs, Settings settings, ExecutionContext ctx ) throws Exception {
-        // TODO: add default implementation that calls fuse().
-        throw new NotImplementedException();
+        assert canFuse(
+                inputs.stream().map( r -> Optional.of( r.getTupleType() ) ).toList(),
+                SettingsPreview.of( settings )
+        ).orElseThrow() : "Cannot use the default execute implementation of Fusable if canFuse returns false.";
+
+        // Imitates the fusion executor
+        Statement statement = ctx.getTransaction().createStatement();
+        AlgCluster cluster = AlgCluster.create(
+                statement.getQueryProcessor().getPlanner(),
+                new RexBuilder( statement.getTransaction().getTypeFactory() ),
+                null,
+                statement.getDataContext().getSnapshot() );
+
+        List<AlgNode> inNodes = inputs.stream().map( reader -> reader.getAlgNode( cluster ) ).toList();
+        AlgRoot root = AlgRoot.of( fuse( inNodes, settings, cluster ), Kind.SELECT );
+
+        if ( !QueryUtils.validateAlg( root, false, null ) ) {
+            throw new ExecutorException( "The fused AlgNode tree may not perform data manipulation" );
+        }
+
+        ExecutedContext executedContext = QueryUtils.executeAlgRoot( root, statement );
+        if ( executedContext.getException().isPresent() ) {
+            throw new ExecutorException( "An error occurred while executing the fused activities." );
+        }
+
+        Iterator<PolyValue[]> iterator = executedContext.getIterator().getIterator();
+        try ( CheckpointWriter writer = ctx.createWriter( 0, root.validatedRowType, true ) ) {
+            while ( iterator.hasNext() ) {
+                writer.write( Arrays.asList( iterator.next() ) );
+            }
+        } catch ( Exception e ) {
+            throw new ExecutorException( e );
+        } finally {
+            executedContext.getIterator().close();
+        }
     }
 
     /**

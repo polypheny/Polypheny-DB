@@ -82,10 +82,28 @@ class ActivityRegistryTest {
             assertTrue( activity.hasCategory(
                             ActivityCategory.EXTRACT ) ||
                             activity.hasCategory( ActivityCategory.TRANSFORM ) ||
-                            activity.hasCategory( ActivityCategory.LOAD ),
-                    "Found activity without any one of the required categories (EXTRACT, TRANSFORM or LOAD): " + activityName );
+                            activity.hasCategory( ActivityCategory.LOAD ) ||
+                            activity.hasCategory( ActivityCategory.VARIABLES ),
+                    "Found activity without any one of the required categories (EXTRACT, TRANSFORM, LOAD or VARIABLES): " + activityName );
         }
 
+    }
+
+
+    @Test
+    public void checkActivityPortsTest() {
+        for ( ActivityDef activity : ActivityRegistry.getRegistry().values() ) {
+            String activityName = activity.getActivityClass().getSimpleName();
+            for ( Class<?> iface : activity.getActivityClass().getInterfaces() ) {
+                if ( iface.equals( Fusable.class ) ) {
+                    assertTrue( activity.getOutPorts().length <= 1,
+                            "A fusable activity cannot have more than 1 outPort: " + activityName );
+                } else if ( iface.equals( Pipeable.class ) ) {
+                    assertTrue( activity.getOutPorts().length <= 1,
+                            "A pipeable activity cannot have more than 1 outPort: " + activityName );
+                }
+            }
+        }
     }
 
 
@@ -126,8 +144,8 @@ class ActivityRegistryTest {
     public void getDefaultSettingValuesTest() {
         for ( String key : ActivityRegistry.getRegistry().keySet() ) {
             int noSettings = ActivityRegistry.get( key ).getSettings().size();
-            assertEquals( noSettings, ActivityRegistry.getSerializableSettingValues( key ).size() );
-            System.out.println( ActivityRegistry.getSerializableSettingValues( key ) );
+            assertEquals( noSettings, ActivityRegistry.getSerializableDefaultSettings( key ).size() );
+            System.out.println( ActivityRegistry.getSerializableDefaultSettings( key ) );
         }
     }
 
@@ -135,7 +153,7 @@ class ActivityRegistryTest {
     @Test
     public void buildDefaultSettingValuesTest() throws InvalidSettingException {
         for ( String key : ActivityRegistry.getRegistry().keySet() ) {
-            Map<String, JsonNode> defaultSettings = ActivityRegistry.getSerializableSettingValues( key );
+            Map<String, JsonNode> defaultSettings = ActivityRegistry.getSerializableDefaultSettings( key );
 
             // We check whether building the default settings results in an equivalent serializable object
             Map<String, SettingValue> rebuiltSettings = ActivityRegistry.buildSettingValues( key, defaultSettings, true ).getMap();
@@ -162,8 +180,8 @@ class ActivityRegistryTest {
         VariableStore vStore = new VariableStore();
         vStore.setVariable( varName, IntNode.valueOf( newValue ) );
 
-        assertNotEquals( newValue, ActivityRegistry.getSettingValues( activity ).get( settingKey ).unwrapOrThrow( IntValue.class ).getValue() );
-        Map<String, JsonNode> settings = new HashMap<>( ActivityRegistry.getSerializableSettingValues( activity ) );
+        assertNotEquals( newValue, ActivityRegistry.getDefaultSettings( activity ).get( settingKey ).unwrapOrThrow( IntValue.class ).getValue() );
+        Map<String, JsonNode> settings = new HashMap<>( ActivityRegistry.getSerializableDefaultSettings( activity ) );
 
         ObjectNode variable = mapper.createObjectNode().put( ReadableVariableStore.VARIABLE_REF_FIELD, varName );
         settings.put( settingKey, variable );

@@ -16,12 +16,25 @@
 
 package org.polypheny.db.workflow.engine.execution.pipe;
 
+import java.util.Iterator;
 import java.util.List;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.entity.PolyValue;
 
 public interface InputPipe extends Iterable<List<PolyValue>> {
 
     AlgDataType getType();
+
+    /**
+     * For performance reasons, the returned iterator must be used carefully.
+     * It is recommended to always use an enhanced for loop.
+     * If the iterator is used directly, make sure to only call {@code next()} if {@code hasNext()} has been called immediately before and returned true.
+     * Calls to {@code hasNext()} must be separated by exactly one call to {@code next()}.
+     * Otherwise, you risk skipping over elements, as some implementations retrieve the actual next element during hasNext().
+     */
+    @NotNull
+    @Override
+    Iterator<List<PolyValue>> iterator();
 
 }
