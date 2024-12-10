@@ -43,6 +43,7 @@ import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.locking.IdentifierAdder;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.transaction.locking.AlgTreeRewriter;
 import org.polypheny.db.util.DeadlockException;
 import org.polypheny.db.util.Pair;
 
@@ -198,7 +199,7 @@ public class LanguageManager {
                     }
 
                     AlgRoot root = processor.translate( statement, parsed );
-                    root = IdentifierAdder.process( root );
+                    root = AlgTreeRewriter.process( root );
 
                     if ( transaction.isAnalyze() ) {
                         statement.getOverviewDuration().stop( "Translation" );

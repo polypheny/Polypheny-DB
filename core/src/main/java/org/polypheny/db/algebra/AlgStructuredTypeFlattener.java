@@ -85,6 +85,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalModifyCollect;
 import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
 import org.polypheny.db.algebra.logical.relational.LogicalRelCorrelate;
 import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalRelIdentifierInjection;
 import org.polypheny.db.algebra.logical.relational.LogicalRelIntersect;
 import org.polypheny.db.algebra.logical.relational.LogicalRelJoin;
 import org.polypheny.db.algebra.logical.relational.LogicalRelMatch;
@@ -179,6 +180,7 @@ public class AlgStructuredTypeFlattener implements AlgConsumingVisitor {
     private ImmutableMap<Class<? extends AlgNode>, Consumer<AlgNode>> handlers = ImmutableMap.copyOf(
             new HashMap<>() {{
                 put( LogicalRelModify.class, a -> rewriteAlg( (LogicalRelModify) a ) );
+                put( LogicalRelIdentifierInjection.class, a -> rewriteAlg( (LogicalRelIdentifierInjection) a ) );
                 put( LogicalRelScan.class, a -> rewriteAlg( (LogicalRelScan) a ) );
                 put( LogicalRelTableFunctionScan.class, a -> rewriteAlg( (LogicalRelTableFunctionScan) a ) );
                 put( LogicalRelValues.class, a -> rewriteAlg( (LogicalRelValues) a ) );
@@ -572,6 +574,16 @@ public class AlgStructuredTypeFlattener implements AlgConsumingVisitor {
                         alg.getUpdateColumns(),
                         alg.getSourceExpressions(),
                         true );
+        setNewForOldAlg( alg, newAlg );
+    }
+
+
+    public void rewriteAlg( LogicalRelIdentifierInjection alg ) {
+        LogicalRelIdentifierInjection newAlg =
+                LogicalRelIdentifierInjection.create(
+                        alg.getEntity(),
+                        getNewForOldRel( alg.getInput() ),
+                        alg.getRowType());
         setNewForOldAlg( alg, newAlg );
     }
 

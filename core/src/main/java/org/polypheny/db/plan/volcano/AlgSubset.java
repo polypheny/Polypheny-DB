@@ -457,8 +457,6 @@ public class AlgSubset extends AbstractAlgNode {
             if ( p instanceof AlgSubset subset ) {
                 AlgNode cheapest = subset.best;
                 if ( cheapest == null ) {
-                    AlgOptCost cost = planner.getCost( p, p.getCluster().getMetadataQuery() );
-
                     // Dump the planner's expression pool, so we can figure out why we reached impasse.
                     StringWriter sw = new StringWriter();
                     final PrintWriter pw = new PrintWriter( sw );
