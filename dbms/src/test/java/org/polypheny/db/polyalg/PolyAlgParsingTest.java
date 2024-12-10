@@ -202,7 +202,7 @@ public class PolyAlgParsingTest {
                 if ( logical != null && allocation != null && physical != null ) {
                     break;
                 }
-                Thread.sleep( 500 );
+                Thread.sleep( 2000 );
             }
 
             assertNotNull( logical );
