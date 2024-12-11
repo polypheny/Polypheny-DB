@@ -21,13 +21,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
-import java.util.concurrent.CompletionService;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
@@ -81,25 +76,11 @@ public class UiRoutingPageUtil {
 
 
     public static void addPhysicalPlanPage( AlgNode optimalNode, InformationManager queryAnalyzer, long stmtIdx, boolean attachTextualPlan ) {
-        UiRoutingPageUtil.counter.incrementAndGet();
-        Future<?> future = executorService.submit( () -> {
-            try {
-                addRoutedPolyPlanPage( optimalNode, queryAnalyzer, stmtIdx, true, attachTextualPlan );
-            } catch ( Throwable t ) {
-                log.error( "Error adding routing plan", t );
-            } finally {
-                UiRoutingPageUtil.counter.decrementAndGet();
-            }
-        } );
-
-        new Thread( () -> {
-            try {
-                future.get();
-            } catch ( InterruptedException | ExecutionException e ) {
-                log.error( "Future failed: Error adding routing plan", e );
-                throw new GenericRuntimeException( e );
-            }
-        });
+        try {
+            addRoutedPolyPlanPage( optimalNode, queryAnalyzer, stmtIdx, true, attachTextualPlan );
+        } catch ( Throwable t ) {
+            log.error( "Error adding routing plan", t );
+        }
     }
 
 
