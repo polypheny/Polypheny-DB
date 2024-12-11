@@ -50,7 +50,6 @@ public class PolyAlgMetadata {
         addMetadata( "tuplesCost", "Processed Tuples", nonCumulative.getRows(), cumulative.getRows(), false, "Most Tuples Processed" );
         addMetadata( "cpuCost", "CPU Cost", nonCumulative.getCpu(), cumulative.getCpu(), false, "Most CPU" );
         setOutConnection( "tupleCount", false );
-        //addMetadata( "ioCost", "IO Cost", nonCumulative.getIo(), cumulative.getIo(), false );
         return this;
     }
 
@@ -152,7 +151,7 @@ public class PolyAlgMetadata {
 
     public static class GlobalStats {
 
-        private final double EPS = 0.0000001;
+        private final static double EPS = 0.0000001;
         private final Map<String, Double> maxValues = new HashMap<>();
         private final Map<String, Double> maxCumulativeValues = new HashMap<>();
 
@@ -182,7 +181,6 @@ public class PolyAlgMetadata {
             update( "tupleCount", tupleCount );
             update( "tuplesCost", nonCumulative.getRows() );
             update( "cpuCost", nonCumulative.getCpu() );
-            //update( "ioCost", nonCumulative.getIo() );
         }
 
 

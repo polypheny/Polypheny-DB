@@ -28,6 +28,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -72,6 +73,7 @@ import org.polypheny.db.transaction.TransactionManagerImpl;
 import org.polypheny.db.type.entity.PolyValue;
 
 
+@Slf4j
 @SuppressWarnings("SqlNoDataSourceInspection")
 public class PolyAlgParsingTest {
 
@@ -171,60 +173,65 @@ public class PolyAlgParsingTest {
         TransactionManager transactionManager = TransactionManagerImpl.getInstance();
         Transaction transaction = transactionManager.startTransaction( Catalog.defaultUserId, ns, true, ORIGIN );
 
-        QueryContext qc = QueryContext.builder()
-                .query( query )
-                .language( ql )
-                .isAnalysed( true )
-                .usesCache( true )
-                .origin( ORIGIN )
-                .namespaceId( ns )
-                .batch( -1 )
-                .transactionManager( transactionManager )
-                .transactions( List.of( transaction ) ).build();
-        List<ExecutedContext> executedContexts = LanguageManager.getINSTANCE().anyQuery( qc );
-        String result = getResultAsString( executedContexts, ql.dataModel() );
-
-        String logical = null, allocation = null, physical = null;
-
-        int tries = 5;
         try {
-            // plans are serialized in a separate thread, which might take some time
-            while ( UiRoutingPageUtil.runningTasks() > 0 && tries-- > 0 ) {
-                Thread.sleep( 2000 );
-            }
-            if( tries == 0 ) {
-                throw new RuntimeException( "Took too long to set all plans" );
-            }
 
-            for ( Information info : transaction.getQueryAnalyzer().getInformationArray() ) {
-                if ( info instanceof InformationPolyAlg polyInfo && polyInfo.getTextualPolyAlg() != null ) {
-                    switch ( PlanType.valueOf( polyInfo.planType ) ) {
-                        case LOGICAL -> logical = polyInfo.getTextualPolyAlg();
-                        case ALLOCATION -> allocation = polyInfo.getTextualPolyAlg();
-                        case PHYSICAL -> physical = polyInfo.getTextualPolyAlg();
+            QueryContext qc = QueryContext.builder()
+                    .query( query )
+                    .language( ql )
+                    .isAnalysed( true )
+                    .usesCache( true )
+                    .origin( ORIGIN )
+                    .namespaceId( ns )
+                    .batch( -1 )
+                    .transactionManager( transactionManager )
+                    .transactions( List.of( transaction ) ).build();
+            List<ExecutedContext> executedContexts = LanguageManager.getINSTANCE().anyQuery( qc );
+            String result = getResultAsString( executedContexts, ql.dataModel() );
+
+            String logical = null, allocation = null, physical = null;
+
+            int tries = 5;
+            try {
+                // plans are serialized in a separate thread, which might take some time
+                while ( UiRoutingPageUtil.runningTasks() > 0 && tries-- > 0 ) {
+                    Thread.sleep( 2000 );
+                }
+                if ( tries == 0 ) {
+                    throw new RuntimeException( "Took too long to set all plans" );
+                }
+
+                for ( Information info : transaction.getQueryAnalyzer().getInformationArray() ) {
+                    if ( info instanceof InformationPolyAlg polyInfo && polyInfo.getTextualPolyAlg() != null ) {
+                        switch ( PlanType.valueOf( polyInfo.planType ) ) {
+                            case LOGICAL -> logical = polyInfo.getTextualPolyAlg();
+                            case ALLOCATION -> allocation = polyInfo.getTextualPolyAlg();
+                            case PHYSICAL -> physical = polyInfo.getTextualPolyAlg();
+                        }
                     }
                 }
+
+                assertNotNull( logical );
+                assertNotNull( allocation );
+                assertNotNull( physical ); // Physical is not yet tested further since it is only partially implemented
+
+            } catch ( InterruptedException e ) {
+                throw new RuntimeException( e );
+            } finally {
+                transaction.commit(); // execute PolyAlg creates new transaction, as long as only DQLs are tested like this
+            }
+            if ( transactionManager.getNumberOfActiveTransactions() > 0 ) {
+                throw new RuntimeException();
             }
 
-            assertNotNull( logical );
-            assertNotNull( allocation );
-            assertNotNull( physical ); // Physical is not yet tested further since it is only partially implemented
-
-        } catch ( InterruptedException e ) {
+            // Check that parsing and executing again returns the same result
+            String resultFromLogical = executePolyAlg( logical, PlanType.LOGICAL, ql );
+            assertEquals( result, resultFromLogical, "Result from query does not match result when executing the logical plan." );
+            String resultFromAllocation = executePolyAlg( allocation, PlanType.ALLOCATION, ql );
+            assertEquals( result, resultFromAllocation, "Result from query does not match result when executing the allocation plan." );
+        } catch ( Exception e ) {
+            transaction.rollback( "Error during testing round trip: " + e.getMessage() );
             throw new RuntimeException( e );
-        } finally {
-            transaction.commit(); // execute PolyAlg creates new transaction, as long as only DQLs are tested like this
         }
-        if ( transactionManager.getNumberOfActiveTransactions() > 0 ) {
-            throw new RuntimeException();
-        }
-
-
-        // Check that parsing and executing again returns the same result
-        String resultFromLogical = executePolyAlg( logical, PlanType.LOGICAL, ql );
-        assertEquals( result, resultFromLogical, "Result from query does not match result when executing the logical plan." );
-        String resultFromAllocation = executePolyAlg( allocation, PlanType.ALLOCATION, ql );
-        assertEquals( result, resultFromAllocation, "Result from query does not match result when executing the allocation plan." );
 
     }
 
@@ -240,28 +247,34 @@ public class PolyAlgParsingTest {
         TransactionManager transactionManager = TransactionManagerImpl.getInstance();
         Transaction transaction = transactionManager.startTransaction( Catalog.defaultUserId, Catalog.defaultNamespaceId, true, ORIGIN );
         Statement statement = transaction.createStatement();
-        AlgRoot root = buildFromPolyAlg( polyAlg, planType, statement );
-        assertEqualAfterRoundtrip( polyAlg, root.alg );
-
-        QueryContext qc = QueryContext.builder()
-                .query( polyAlg )
-                .language( ql )
-                .isAnalysed( true )
-                .usesCache( true )
-                .origin( ORIGIN )
-                .batch( -1 )
-                .transactionManager( transactionManager )
-                .transactions( List.of( transaction ) )
-                .statement( statement ).build();
-        TranslatedQueryContext translated = TranslatedQueryContext.fromQuery( polyAlg, root, planType == PlanType.ALLOCATION, qc );
-        List<ExecutedContext> executedContexts = LanguageManager.getINSTANCE().anyQuery( translated );
-        String result = getResultAsString( executedContexts, ql.dataModel() );
         try {
-            transaction.commit();
-        } catch ( TransactionException e ) {
+            AlgRoot root = buildFromPolyAlg( polyAlg, planType, statement );
+            assertEqualAfterRoundtrip( polyAlg, root.alg );
+
+            QueryContext qc = QueryContext.builder()
+                    .query( polyAlg )
+                    .language( ql )
+                    .isAnalysed( true )
+                    .usesCache( true )
+                    .origin( ORIGIN )
+                    .batch( -1 )
+                    .transactionManager( transactionManager )
+                    .transactions( List.of( transaction ) )
+                    .statement( statement ).build();
+            TranslatedQueryContext translated = TranslatedQueryContext.fromQuery( polyAlg, root, planType == PlanType.ALLOCATION, qc );
+            List<ExecutedContext> executedContexts = LanguageManager.getINSTANCE().anyQuery( translated );
+            String result = getResultAsString( executedContexts, ql.dataModel() );
+            try {
+                transaction.commit();
+            } catch ( TransactionException e ) {
+                throw new RuntimeException( e );
+            }
+            return result;
+
+        } catch ( Exception e ) {
+            transaction.rollback( "Error during execution of polyAlg: " + e.getMessage() );
             throw new RuntimeException( e );
         }
-        return result;
     }
 
 
@@ -270,29 +283,34 @@ public class PolyAlgParsingTest {
         ExecutedContext context = executedContexts.get( 0 );
 
         assertTrue( context.getException().isEmpty(), "Query resulted in an exception" );
-        @NotNull ResultIterator iter = context.getIterator();
-        String tupleType = context.getImplementation().tupleType.toString();
-        List<List<PolyValue>> rows = iter.getAllRowsAndClose();
+        try {
 
-        StringBuilder sb = new StringBuilder( tupleType );
+            @NotNull ResultIterator iter = context.getIterator();
+            String tupleType = context.getImplementation().tupleType.toString();
+            List<List<PolyValue>> rows = iter.getAllRowsAndClose();
 
-        for ( List<PolyValue> row : rows ) {
-            sb.append( "\n" );
-            for ( PolyValue v : row ) {
-                String json = v == null ? "NULL" : v.toJson();
-                if ( json.contains( "\"id\"" ) ) {
-                    try {
-                        ObjectMapper objectMapper = new ObjectMapper();
-                        JsonNode jsonNode = objectMapper.readTree( json );
-                        ((ObjectNode) jsonNode).remove( "id" );
-                        json = objectMapper.writeValueAsString( jsonNode );
-                    } catch ( JsonProcessingException ignored ) {
+            StringBuilder sb = new StringBuilder( tupleType );
+
+            for ( List<PolyValue> row : rows ) {
+                sb.append( "\n" );
+                for ( PolyValue v : row ) {
+                    String json = v == null ? "NULL" : v.toJson();
+                    if ( json.contains( "\"id\"" ) ) {
+                        try {
+                            ObjectMapper objectMapper = new ObjectMapper();
+                            JsonNode jsonNode = objectMapper.readTree( json );
+                            ((ObjectNode) jsonNode).remove( "id" );
+                            json = objectMapper.writeValueAsString( jsonNode );
+                        } catch ( JsonProcessingException ignored ) {
+                        }
                     }
+                    sb.append( json ).append( "," );
                 }
-                sb.append( json ).append( "," );
             }
+            return sb.toString();
+        } catch ( Exception e ) {
+            throw new RuntimeException( e );
         }
-        return sb.toString();
     }
 
 
