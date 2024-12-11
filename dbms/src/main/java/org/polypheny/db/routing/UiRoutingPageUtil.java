@@ -22,9 +22,11 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.concurrent.CompletionService;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.extern.slf4j.Slf4j;
@@ -56,7 +58,7 @@ import org.polypheny.db.transaction.Statement;
 @Slf4j
 public class UiRoutingPageUtil {
 
-    private static final int RUNNERS = 10;
+    private static final int RUNNERS = 1;
     private static final ExecutorService executorService = Executors.newFixedThreadPool( RUNNERS );
     private static final AtomicInteger counter = new AtomicInteger( 0 );
 
@@ -79,16 +81,26 @@ public class UiRoutingPageUtil {
 
 
     public static void addPhysicalPlanPage( AlgNode optimalNode, InformationManager queryAnalyzer, long stmtIdx, boolean attachTextualPlan ) {
-        executorService.submit( () -> {
+
+        Future<?> future = executorService.submit( () -> {
             UiRoutingPageUtil.counter.incrementAndGet();
             try {
                 addRoutedPolyPlanPage( optimalNode, queryAnalyzer, stmtIdx, true, attachTextualPlan );
-            }finally {
+            } catch ( Throwable t ) {
+                log.error( "Error adding routing plan", t );
+            } finally {
                 UiRoutingPageUtil.counter.decrementAndGet();
             }
-
-
         } );
+
+        new Thread( () -> {
+            try {
+                future.get();
+            } catch ( InterruptedException | ExecutionException e ) {
+                log.error( "Future failed: Error adding routing plan", e );
+                throw new GenericRuntimeException( e );
+            }
+        });
     }
 
 
