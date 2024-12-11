@@ -22,8 +22,12 @@ import java.util.UUID;
 import javax.annotation.Nullable;
 import lombok.NonNull;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 import org.polypheny.db.workflow.engine.storage.writer.CheckpointWriter;
 import org.polypheny.db.workflow.engine.storage.writer.DocWriter;
@@ -40,6 +44,7 @@ public interface StorageManager extends AutoCloseable { // TODO: remove AutoClos
 
     String ORIGIN = "WorkflowEngine";
     String PK_COL = "key";
+    AlgDataTypeField PK_FIELD = new AlgDataTypeFieldImpl( null, PK_COL, 0, AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.BIGINT ) );
 
     UUID getSessionId();
 

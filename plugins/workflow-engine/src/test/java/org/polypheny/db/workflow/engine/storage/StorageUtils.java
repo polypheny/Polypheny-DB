@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
@@ -76,6 +77,13 @@ public class StorageUtils {
             reader.getIterable().forEach( list::add );
         }
         return list;
+    }
+
+
+    public static AlgDataType readCheckpointType( StorageManager sm, UUID activityId, int index ) {
+        try ( CheckpointReader reader = sm.readCheckpoint( activityId, index ) ) {
+            return reader.getTupleType();
+        }
     }
 
 

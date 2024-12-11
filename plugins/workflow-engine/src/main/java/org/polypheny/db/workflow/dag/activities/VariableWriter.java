@@ -19,13 +19,25 @@ package org.polypheny.db.workflow.dag.activities;
 import java.util.List;
 import java.util.Optional;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingsPreview;
 import org.polypheny.db.workflow.dag.variables.WritableVariableStore;
+import org.polypheny.db.workflow.engine.execution.context.ExecutionContext;
 import org.polypheny.db.workflow.engine.execution.context.ExecutionContextImpl;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 
 public interface VariableWriter extends Activity {
+
+    @Override
+    default void execute( List<CheckpointReader> inputs, Settings settings, ExecutionContext ctx ) throws Exception {
+        assert requestsToWrite(
+                inputs.stream().map( r -> Optional.of( r.getTupleType() ) ).toList(),
+                SettingsPreview.of( settings )
+        ).orElseThrow() : "Cannot use the default execute implementation of VariableWriter if requestsToWrite returns false.";
+
+        throw new GenericRuntimeException( "The standard execute method cannot be called for a VariableWriter that requests to write" );
+    }
 
     /**
      * Whether the activity wants to be able to write variables during execution.

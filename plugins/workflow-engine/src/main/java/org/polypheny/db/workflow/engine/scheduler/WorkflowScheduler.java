@@ -18,31 +18,25 @@ package org.polypheny.db.workflow.engine.scheduler;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
 import javax.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.util.graph.AttributedDirectedGraph;
 import org.polypheny.db.util.graph.TopologicalOrderIterator;
 import org.polypheny.db.workflow.dag.Workflow;
 import org.polypheny.db.workflow.dag.Workflow.WorkflowState;
-import org.polypheny.db.workflow.dag.activities.ActivityException;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper.ActivityState;
 import org.polypheny.db.workflow.dag.edges.ControlEdge;
 import org.polypheny.db.workflow.dag.edges.Edge;
 import org.polypheny.db.workflow.dag.edges.Edge.EdgeState;
-import org.polypheny.db.workflow.dag.settings.SettingDef.SettingsPreview;
 import org.polypheny.db.workflow.engine.execution.Executor.ExecutorException;
 import org.polypheny.db.workflow.engine.scheduler.optimizer.WorkflowOptimizer;
 import org.polypheny.db.workflow.engine.scheduler.optimizer.WorkflowOptimizer.SubmissionFactory;
@@ -75,9 +69,6 @@ public class WorkflowScheduler {
     private final Set<UUID> remainingActivities = new HashSet<>(); // activities that have not finished execution
     private final Set<UUID> remainingCommonExtract = new HashSet<>();
     private final Set<UUID> remainingCommonLoad = new HashSet<>();
-
-    private final Map<UUID, List<Optional<AlgDataType>>> inTypePreviews = new HashMap<>(); // contains the (possibly not yet known) input types of execDag activities
-    private final Map<UUID, SettingsPreview> settingsPreviews = new HashMap<>(); // contains the (possibly not yet known) settings of execDag activities
 
 
     public WorkflowScheduler( Workflow workflow, StorageManager sm, int globalWorkers, @Nullable UUID targetActivity ) throws Exception {
@@ -178,19 +169,6 @@ public class WorkflowScheduler {
                 edge.setState( EdgeState.IDLE );
                 open.add( edge.getFrom().getId() );
             }
-            if ( inEdges.isEmpty() ) {
-                // TODO: also initialize any activities that are not successors to SAVED activity. Currently in wrong order (reverse DFS)
-                workflow.recomputeInVariables( n );
-                inTypePreviews.put( n, List.of() );
-                try {
-                    SettingsPreview settings = nWrapper.updateOutTypePreview( List.of(), true );
-                    settingsPreviews.put( n, settings );
-                } catch ( ActivityException e ) {
-                    // TODO: detected an inconsistency in the types and settings. Ignore?
-                    e.printStackTrace();
-                }
-
-            }
         }
 
         AttributedDirectedGraph<UUID, ExecutionEdge> execDag = GraphUtils.getInducedSubgraph( workflow.toDag(), visited );
@@ -200,28 +178,11 @@ public class WorkflowScheduler {
             updateGraph( true, Set.of( saved ), saved, execDag ); // result propagation needs to happen individually
         }
 
-        TopologicalOrderIterator.of( execDag ).forEach( this::updatePreview );
+        for ( UUID n : TopologicalOrderIterator.of( execDag ) ) {
+            workflow.updateValidPreview( n );
+        }
 
         return execDag;
-    }
-
-
-    private void updatePreview( UUID n ) {
-        ActivityWrapper wrapper = workflow.getActivity( n );
-        if ( wrapper.getState() != ActivityState.QUEUED ) {
-            return;
-        }
-        workflow.recomputeInVariables( n );
-        List<Optional<AlgDataType>> inTypes = workflow.getInputTypes( n );
-        inTypePreviews.put( n, inTypes );
-        try {
-            SettingsPreview settings = wrapper.updateOutTypePreview( inTypes, workflow.hasStableInVariables( n ) );
-            settingsPreviews.put( n, settings );
-        } catch ( ActivityException e ) {
-            // TODO: detected an inconsistency in the types and settings. Ignore?
-            e.printStackTrace();
-        }
-
     }
 
 
@@ -245,6 +206,7 @@ public class WorkflowScheduler {
             }
             setErrorVariable( result.getActivities(), result.getException() );
         }
+        log.info( "Root variables: " + workflow.getActivity( result.getRootId() ).getVariables() );
 
         updateGraph( result.isSuccess(), result.getActivities(), result.getRootId(), execDag );
 
@@ -301,7 +263,7 @@ public class WorkflowScheduler {
 
 
     private List<ExecutionSubmission> computeNextSubmissions() {
-        List<SubmissionFactory> factories = optimizer.computeNextTrees( inTypePreviews, settingsPreviews, maxWorkers - pendingCount, getActiveCommonType() );
+        List<SubmissionFactory> factories = optimizer.computeNextTrees( maxWorkers - pendingCount, getActiveCommonType() );
         pendingCount += factories.size();
         List<ExecutionSubmission> submissions = factories.stream().map( f -> f.create( sm, workflow ) ).toList();
         for ( ExecutionSubmission submission : submissions ) {
@@ -353,7 +315,9 @@ public class WorkflowScheduler {
 
         // TODO: update entire workflow instead of dag?
         if ( !isInitialUpdate ) {
-            GraphUtils.getTopologicalIterable( dag, rootId, false ).forEach( this::updatePreview );
+            for ( UUID n : GraphUtils.getTopologicalIterable( dag, rootId, false ) ) {
+                workflow.updatePreview( n ); // TODO: use updateValidPreview instead? How to handle inconsistency?
+            }
         }
 
     }
@@ -374,10 +338,8 @@ public class WorkflowScheduler {
             case IDLE -> {
             }
             case ACTIVE -> {
-                List<ControlEdge> controlEdges = inEdges.stream().filter( e -> e instanceof ControlEdge ).map( e -> (ControlEdge) e ).toList();
-                if ( !controlEdges.isEmpty() ) {
-                    controlEdges.forEach( e -> e.setIgnored( true ) ); // even the active edges can be ignored, since they are not needed anymore
-                }
+                List<ControlEdge> controlEdges = inEdges.stream().filter( e -> e instanceof ControlEdge control && !control.isActive() ).map( e -> (ControlEdge) e ).toList();
+                controlEdges.forEach( e -> e.setIgnored( true ) ); // the not active edges can be ignored, as they are no longer relevant
             }
             case INACTIVE -> {
                 target.setState( ActivityState.SKIPPED );

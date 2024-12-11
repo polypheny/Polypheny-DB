@@ -21,10 +21,11 @@ import java.util.Optional;
 import java.util.UUID;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.util.graph.AttributedDirectedGraph;
+import org.polypheny.db.workflow.dag.activities.ActivityException;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
 import org.polypheny.db.workflow.dag.edges.DataEdge;
 import org.polypheny.db.workflow.dag.edges.Edge;
-import org.polypheny.db.workflow.dag.variables.ReadableVariableStore;
+import org.polypheny.db.workflow.dag.variables.VariableStore;
 import org.polypheny.db.workflow.engine.scheduler.ExecutionEdge;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
 import org.polypheny.db.workflow.models.EdgeModel;
@@ -79,6 +80,8 @@ public interface Workflow {
 
     WorkflowState getState();
 
+    VariableStore getVariables();
+
     /**
      * Sets the state of this workflow to the specified value.
      * A workflow should not change its state by itself (after initialization).
@@ -90,14 +93,33 @@ public interface Workflow {
     void setState( WorkflowState state );
 
     /**
+     * Updates the inTypePreview, outTypePreview and settingsPreview of the specified activity,
+     * if it is not already executed.
+     * To get consistent results, updates should be called in topological order.
+     * If the update resulted in an invalid state, the outTypePreview and settingsPreview is not updated.
+     *
+     * @param activityId the activity whose previews will be updated
+     */
+    void updatePreview( UUID activityId );
+
+    /**
+     * Updates the inTypePreview, outTypePreview and settingsPreview of the specified activity,
+     * if it is not already executed.
+     * To get consistent results, updates should be called in topological order.
+     * If the update resulted in an invalid state, an exception is thrown.
+     *
+     * @param activityId the activity whose previews will be updated
+     */
+    void updateValidPreview( UUID activityId ) throws ActivityException;
+
+    /**
      * Recomputes the variables of the specified activity based on the variables stored in its input activities
      * and the edge state.
      * The resulting variables might not yet be stable.
      *
      * @param activityId the activity whose variables will be recomputed
-     * @return a readable view of the recomputed variable store
      */
-    ReadableVariableStore recomputeInVariables( UUID activityId );
+    void recomputeInVariables( UUID activityId );
 
     /**
      * Returns true if all edges that could change the variables of the specified activity are
@@ -147,7 +169,7 @@ public interface Workflow {
         WorkflowState state = includeState ? getState() : null;
         return new WorkflowModel( getActivities().stream().map( a -> a.toModel( includeState ) ).toList(),
                 getEdges().stream().map( e -> e.toModel( includeState ) ).toList(),
-                getConfig(), state );
+                getConfig(), getVariables().getVariables(), state );
     }
 
 

@@ -16,6 +16,7 @@
 
 package org.polypheny.db.workflow.dag;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -33,12 +34,14 @@ import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.graph.AttributedDirectedGraph;
 import org.polypheny.db.util.graph.CycleDetector;
 import org.polypheny.db.util.graph.TopologicalOrderIterator;
+import org.polypheny.db.workflow.dag.activities.ActivityException;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper.ActivityState;
 import org.polypheny.db.workflow.dag.edges.DataEdge;
 import org.polypheny.db.workflow.dag.edges.Edge;
 import org.polypheny.db.workflow.dag.edges.Edge.EdgeState;
-import org.polypheny.db.workflow.dag.variables.ReadableVariableStore;
+import org.polypheny.db.workflow.dag.settings.SettingDef.SettingsPreview;
+import org.polypheny.db.workflow.dag.variables.VariableStore;
 import org.polypheny.db.workflow.engine.scheduler.ExecutionEdge;
 import org.polypheny.db.workflow.engine.scheduler.ExecutionEdge.ExecutionEdgeFactory;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
@@ -52,23 +55,28 @@ public class WorkflowImpl implements Workflow {
 
     private final Map<UUID, ActivityWrapper> activities;
     private final Map<Pair<UUID, UUID>, List<Edge>> edges;
+    @Getter
     private final WorkflowConfigModel config;
     @Getter
     @Setter
     private WorkflowState state = WorkflowState.IDLE;
+    @Getter
+    private final VariableStore variables = new VariableStore(); // contains "static" variables (= defined before execution starts)
 
 
     public WorkflowImpl() {
-        this( new ConcurrentHashMap<>(), new ConcurrentHashMap<>(), WorkflowConfigModel.of() );
+        this( new ConcurrentHashMap<>(), new ConcurrentHashMap<>(), WorkflowConfigModel.of(), Map.of() );
     }
 
 
-    private WorkflowImpl( Map<UUID, ActivityWrapper> activities, Map<Pair<UUID, UUID>, List<Edge>> edges, WorkflowConfigModel config ) {
+    private WorkflowImpl( Map<UUID, ActivityWrapper> activities, Map<Pair<UUID, UUID>, List<Edge>> edges, WorkflowConfigModel config, Map<String, JsonNode> variables ) {
         this.activities = activities;
         this.edges = edges;
         this.config = config;
+        this.variables.reset( variables );
 
         // TODO: compute previews & variables
+        TopologicalOrderIterator.of( toDag() ).forEach( this::updatePreview );
     }
 
 
@@ -86,7 +94,7 @@ public class WorkflowImpl implements Workflow {
             edgeList.add( Edge.fromModel( e, activities ) );
         }
 
-        return new WorkflowImpl( activities, edges, model.getConfig() );
+        return new WorkflowImpl( activities, edges, model.getConfig(), model.getVariables() );
     }
 
 
@@ -177,16 +185,46 @@ public class WorkflowImpl implements Workflow {
 
 
     @Override
-    public WorkflowConfigModel getConfig() {
-        return config;
+    public void updatePreview( UUID activityId ) {
+        try {
+            updatePreview( activityId, false );
+        } catch ( ActivityException ignored ) {
+            assert false;
+        }
     }
 
 
     @Override
-    public ReadableVariableStore recomputeInVariables( UUID activityId ) {
+    public void updateValidPreview( UUID activityId ) throws ActivityException {
+        updatePreview( activityId, true );
+    }
+
+
+    private void updatePreview( UUID activityId, boolean throwIfInvalid ) throws ActivityException {
+        ActivityWrapper wrapper = getActivity( activityId );
+        if ( wrapper.getState().isExecuted() ) {
+            return; // when an activity can be executed, it's previews won't change anymore
+        }
+        recomputeInVariables( activityId );
+        List<Optional<AlgDataType>> inTypes = getInputTypes( activityId );
+        wrapper.setInTypePreview( inTypes );
+        try {
+            SettingsPreview settings = wrapper.updateOutTypePreview( inTypes, hasStableInVariables( activityId ) );
+            wrapper.setSettingsPreview( settings );
+        } catch ( ActivityException e ) {
+            if ( throwIfInvalid ) {
+                throw e;
+            } else {
+                e.printStackTrace(); // TODO: make sure ignoring inconsistency is okay
+            }
+        }
+    }
+
+
+    @Override
+    public void recomputeInVariables( UUID activityId ) {
         ActivityWrapper wrapper = activities.get( activityId );
-        wrapper.getVariables().mergeInputStores( getInEdges( activityId ), wrapper.getDef().getInPorts().length );
-        return wrapper.getVariables();
+        wrapper.getVariables().mergeInputStores( getInEdges( activityId ), wrapper.getDef().getInPorts().length, variables );
     }
 
 
@@ -207,13 +245,15 @@ public class WorkflowImpl implements Workflow {
 
         for ( int i = 0; i < getInPortCount( activityId ); i++ ) {
             DataEdge dataEdge = getDataEdge( activityId, i );
-            if ( dataEdge.getState() == EdgeState.INACTIVE ) {
+            if ( dataEdge == null ) {
+                inputTypes.add( Optional.empty() ); // not yet connected
+            } else if ( dataEdge.getState() == EdgeState.INACTIVE ) {
                 inputTypes.add( null );
             } else {
                 inputTypes.add( dataEdge.getFrom().getOutTypePreview().get( dataEdge.getFromPort() ) );
             }
         }
-        return inputTypes;
+        return Collections.unmodifiableList( inputTypes );
     }
 
 
@@ -229,6 +269,7 @@ public class WorkflowImpl implements Workflow {
             throw new GenericRuntimeException( "Cannot add activity instance that is already part of this workflow." );
         }
         activities.put( activity.getId(), activity );
+        updatePreview( activity.getId() ); // creates empty previews
     }
 
 
@@ -246,6 +287,7 @@ public class WorkflowImpl implements Workflow {
             return;
         }
         edgeList.removeIf( e -> e.isEquivalent( model ) );
+        // TODO: reset target activity and all successors, update previews
     }
 
 
@@ -341,8 +383,7 @@ public class WorkflowImpl implements Workflow {
             }
         }
 
-        // compatible settings
-        // TODO: verify succesors of idle nodes are idle as well
+        // compatible settings ?
 
     }
 

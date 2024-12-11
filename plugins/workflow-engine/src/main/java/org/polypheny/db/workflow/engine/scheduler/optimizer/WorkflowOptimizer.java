@@ -18,12 +18,9 @@ package org.polypheny.db.workflow.engine.scheduler.optimizer;
 
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import lombok.Getter;
-import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.util.graph.AttributedDirectedGraph;
 import org.polypheny.db.workflow.dag.Workflow;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
@@ -31,7 +28,6 @@ import org.polypheny.db.workflow.dag.activities.ActivityWrapper.ActivityState;
 import org.polypheny.db.workflow.dag.activities.Fusable;
 import org.polypheny.db.workflow.dag.activities.Pipeable;
 import org.polypheny.db.workflow.dag.activities.VariableWriter;
-import org.polypheny.db.workflow.dag.settings.SettingDef.SettingsPreview;
 import org.polypheny.db.workflow.engine.execution.DefaultExecutor;
 import org.polypheny.db.workflow.engine.execution.Executor;
 import org.polypheny.db.workflow.engine.execution.Executor.ExecutorType;
@@ -53,9 +49,6 @@ public abstract class WorkflowOptimizer {
     final boolean isFusionEnabled;
     final boolean isPipelineEnabled;
 
-    Map<UUID, List<Optional<AlgDataType>>> inTypePreviews;
-    Map<UUID, SettingsPreview> settingsPreviews;
-
 
     protected WorkflowOptimizer( Workflow workflow, AttributedDirectedGraph<UUID, ExecutionEdge> execDag ) {
         this.workflow = workflow;
@@ -66,9 +59,7 @@ public abstract class WorkflowOptimizer {
     }
 
 
-    public final List<SubmissionFactory> computeNextTrees( Map<UUID, List<Optional<AlgDataType>>> inTypePreviews, Map<UUID, SettingsPreview> settingsPreviews, int submissionCount, CommonType commonType ) {
-        this.inTypePreviews = inTypePreviews;
-        this.settingsPreviews = settingsPreviews;
+    public final List<SubmissionFactory> computeNextTrees( int submissionCount, CommonType commonType ) {
 
         List<SubmissionFactory> orderedCandidates = computeNextTrees( commonType );
         return orderedCandidates.subList( 0, Math.min( submissionCount, orderedCandidates.size() ) );
@@ -93,25 +84,28 @@ public abstract class WorkflowOptimizer {
      * @return true if this activity can fuse when viewed in isolation
      */
     boolean canFuse( UUID activityId ) {
-        if ( workflow.getActivity( activityId ).getActivity() instanceof Fusable fusable ) {
-            return fusable.canFuse( inTypePreviews.get( activityId ), settingsPreviews.get( activityId ) ).orElse( false );
+        ActivityWrapper wrapper = workflow.getActivity( activityId );
+        if ( wrapper.getActivity() instanceof Fusable fusable ) {
+            return fusable.canFuse( wrapper.getInTypePreview(), wrapper.getSettingsPreview() ).orElse( false );
         }
         return false;
     }
 
 
     boolean canPipe( UUID activityId ) {
-        if ( workflow.getActivity( activityId ).getActivity() instanceof Pipeable pipeable ) {
-            return pipeable.canPipe( inTypePreviews.get( activityId ), settingsPreviews.get( activityId ) ).orElse( false );
+        ActivityWrapper wrapper = workflow.getActivity( activityId );
+        if ( wrapper.getActivity() instanceof Pipeable pipeable ) {
+            return pipeable.canPipe( wrapper.getInTypePreview(), wrapper.getSettingsPreview() ).orElse( false );
         }
         return false;
     }
 
 
     boolean requestsToWrite( UUID activityId ) {
-        if ( workflow.getActivity( activityId ).getActivity() instanceof VariableWriter writer ) {
+        ActivityWrapper wrapper = workflow.getActivity( activityId );
+        if ( wrapper.getActivity() instanceof VariableWriter writer ) {
             // true is more restricting for optimizer -> return true if empty Optional
-            return writer.requestsToWrite( inTypePreviews.get( activityId ), settingsPreviews.get( activityId ) ).orElse( true );
+            return writer.requestsToWrite( wrapper.getInTypePreview(), wrapper.getSettingsPreview() ).orElse( true );
         }
         return false;
     }

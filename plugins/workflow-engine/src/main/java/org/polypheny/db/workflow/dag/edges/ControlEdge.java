@@ -60,4 +60,15 @@ public class ControlEdge extends Edge {
         return hasSameEndpoints( model ) && model.isControl() && model.getFromPort() == getControlPort();
     }
 
+
+    @Override
+    public String toString() {
+        return "ControlEdge{" +
+                "onSuccess=" + onSuccess +
+                ", isIgnored=" + isIgnored +
+                ", from=" + from +
+                ", to=" + to +
+                '}';
+    }
+
 }

@@ -64,9 +64,9 @@ public class WorkflowOptimizerImpl extends WorkflowOptimizer {
             determinePipes( subDag, nodeColors, edgeColors );
         }
 
-        System.out.println( "\nSub-DAG: " + subDag );
-        System.out.println( "Node Colors: " + nodeColors );
-        System.out.println( "Edge Colors: " + edgeColors );
+        System.out.print( "\nSub-DAG: " + subDag );
+        System.out.print( ", Node Colors: " + nodeColors );
+        System.out.println( ", Edge Colors: " + edgeColors );
 
         // TODO: ensure common transaction boundaries are respected
 

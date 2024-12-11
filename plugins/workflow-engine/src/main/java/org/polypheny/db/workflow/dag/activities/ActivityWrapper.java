@@ -54,9 +54,13 @@ public class ActivityWrapper {
     @Setter
     private ActivityState state = ActivityState.IDLE;
 
-    private final VariableStore variables; // depending on state, this either represents the variables before (possibly not yet stable) or after execution (always stable)
+    private final VariableStore variables = new VariableStore(); // depending on state, this either represents the variables before (possibly not yet stable) or after execution (always stable)
     @Setter
     private List<Optional<AlgDataType>> outTypePreview; // TODO: ensure this is always up to date
+    @Setter
+    private List<Optional<AlgDataType>> inTypePreview; // contains the (possibly not yet known) input type
+    @Setter
+    private SettingsPreview settingsPreview; // contains the (possibly not yet known) settings
 
 
     protected ActivityWrapper( UUID id, Activity activity, String type, Map<String, JsonNode> settings, ActivityConfigModel config, RenderModel rendering ) {
@@ -66,8 +70,6 @@ public class ActivityWrapper {
         this.serializableSettings = settings;
         this.config = config;
         this.rendering = rendering;
-
-        this.variables = new VariableStore();
     }
 
 

@@ -19,6 +19,7 @@ package org.polypheny.db.workflow.dag.variables;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.util.Map;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingValue;
 
 public interface WritableVariableStore {
@@ -31,6 +32,15 @@ public interface WritableVariableStore {
      * @throws IllegalArgumentException if the value contains a variable reference and is therefore not resolved.
      */
     void setVariable( String key, JsonNode value );
+
+    /**
+     * Sets a variable in the store with the given key and (resolved) value.
+     *
+     * @param key the key for the variable.
+     * @param obj the object to be mapped to a {@link JsonNode} and associated with the key
+     * @throws IllegalArgumentException if the value contains a variable reference and is therefore not resolved.
+     */
+    void setVariable( String key, Object obj );
 
     /**
      * Sets a variable in the store with the given key and corresponding json representation
@@ -59,5 +69,12 @@ public interface WritableVariableStore {
      * @param newStore the store whose values are used to populate this store after clearing it
      */
     void reset( ReadableVariableStore newStore );
+
+    /**
+     * Clears the store and then sets its variables to the values of the given map.
+     *
+     * @param newVariables the map whose entries are used to populate this store after clearing it
+     */
+    void reset( Map<String, JsonNode> newVariables );
 
 }

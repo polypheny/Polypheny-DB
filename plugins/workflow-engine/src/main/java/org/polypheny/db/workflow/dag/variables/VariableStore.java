@@ -68,6 +68,13 @@ public class VariableStore implements ReadableVariableStore, WritableVariableSto
 
 
     @Override
+    public void setVariable( String key, Object obj ) {
+        JsonNode jsonNode = mapper.valueToTree( obj );
+        setVariable( key, jsonNode );
+    }
+
+
+    @Override
     public void setVariable( String key, SettingValue value ) {
         failIfReservedKey( key );
         variables.put( key, value.toJson( mapper ) );
@@ -97,6 +104,13 @@ public class VariableStore implements ReadableVariableStore, WritableVariableSto
     public void reset( ReadableVariableStore newStore ) {
         clear();
         merge( newStore );
+    }
+
+
+    @Override
+    public void reset( Map<String, JsonNode> newVariables ) {
+        clear();
+        variables.putAll( newVariables );
     }
 
 
@@ -200,7 +214,7 @@ public class VariableStore implements ReadableVariableStore, WritableVariableSto
      *
      * @param inEdges All input edges (data and control) to the activity
      */
-    public void mergeInputStores( List<Edge> inEdges, int inPortCount ) {
+    public void mergeInputStores( List<Edge> inEdges, int inPortCount, ReadableVariableStore workflowVariables ) {
         ReadableVariableStore[] dataToMerge = new ReadableVariableStore[inPortCount];
         Set<ReadableVariableStore> successToMerge = new HashSet<>();
         Set<ReadableVariableStore> failToMerge = new HashSet<>();
@@ -231,6 +245,9 @@ public class VariableStore implements ReadableVariableStore, WritableVariableSto
         }
 
         this.clear();
+        if ( inEdges.isEmpty() ) {
+            this.merge( workflowVariables ); // only add the workflow variables to source activities
+        }
         for ( ReadableVariableStore readableVariableStore : dataToMerge ) {
             if ( readableVariableStore != null ) {
                 this.merge( readableVariableStore );
@@ -264,5 +281,10 @@ public class VariableStore implements ReadableVariableStore, WritableVariableSto
 
     }
 
+
+    @Override
+    public String toString() {
+        return variables.toString();
+    }
 
 }

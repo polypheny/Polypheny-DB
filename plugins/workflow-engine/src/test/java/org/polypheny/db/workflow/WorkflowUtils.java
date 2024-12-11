@@ -20,6 +20,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.BooleanNode;
 import com.fasterxml.jackson.databind.node.IntNode;
+import com.fasterxml.jackson.databind.node.TextNode;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -53,7 +56,8 @@ public class WorkflowUtils {
                 maxWorkers,
                 10 // low on purpose to observe blocking
         );
-        return WorkflowImpl.fromModel( new WorkflowModel( activities, edges, config, null ) );
+        Map<String, JsonNode> variables = Map.of( "creationTime", TextNode.valueOf( LocalDateTime.now().format( DateTimeFormatter.ISO_DATE_TIME ) ) );
+        return WorkflowImpl.fromModel( new WorkflowModel( activities, edges, config, variables, null ) );
     }
 
 
@@ -214,6 +218,20 @@ public class WorkflowUtils {
                 EdgeModel.of( activities.get( 4 ), activities.get( 5 ), 0 )
         );
         return getWorkflowWithActivities( activities, edges, true, true, 1 );
+    }
+
+
+    public static Workflow getVariableWritingWorkflow() {
+        List<ActivityModel> activities = List.of(
+                new ActivityModel( "relValues" ),
+                new ActivityModel( "fieldNameToVar" ),
+                new ActivityModel( "varToRow" )
+        );
+        List<EdgeModel> edges = List.of(
+                EdgeModel.of( activities.get( 0 ), activities.get( 1 ), 0 ),
+                EdgeModel.of( activities.get( 1 ), activities.get( 2 ), true )
+        );
+        return getWorkflow( activities, edges, false, false, 1 );
     }
 
 

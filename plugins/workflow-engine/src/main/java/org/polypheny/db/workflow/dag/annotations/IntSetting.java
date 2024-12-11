@@ -44,6 +44,15 @@ public @interface IntSetting {
 
     // Setting-specific properties
 
+    /**
+     * If isList():
+     * <ul>
+     *     <li>0 results in an empty list</li>
+     *     <li>any other value results in a list with the default value as its only entry</li>
+     * </ul>
+     *
+     * @return
+     */
     int defaultValue() default 0;
 
     boolean isList() default false;  // results in values of type ListValue<IntValue> if true.

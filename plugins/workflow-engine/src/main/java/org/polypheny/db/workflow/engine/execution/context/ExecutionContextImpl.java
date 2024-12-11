@@ -24,6 +24,7 @@ import org.polypheny.db.workflow.dag.activities.Activity.ActivityCategory;
 import org.polypheny.db.workflow.dag.activities.Activity.PortType;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
 import org.polypheny.db.workflow.dag.activities.Fusable;
+import org.polypheny.db.workflow.dag.variables.ReadableVariableStore;
 import org.polypheny.db.workflow.engine.execution.Executor.ExecutorException;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
 import org.polypheny.db.workflow.engine.storage.writer.CheckpointWriter;
@@ -33,7 +34,6 @@ import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
 
 
 public class ExecutionContextImpl implements ExecutionContext, PipeExecutionContext {
-    // TODO: provide access to global variables + error msgs?
 
     private final StorageManager sm;
     private final ActivityWrapper activityWrapper;
@@ -118,6 +118,12 @@ public class ExecutionContextImpl implements ExecutionContext, PipeExecutionCont
             throw new IllegalStateException( "Only EXTRACT or LOAD or fusable activities have access to transactions" );
         }
         return sm.getTransaction( activityWrapper.getId(), activityWrapper.getConfig().getCommonType() );
+    }
+
+
+    @Override
+    public ReadableVariableStore getVariableStore() {
+        return activityWrapper.getVariables();
     }
 
 

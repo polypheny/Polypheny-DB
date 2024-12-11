@@ -19,6 +19,7 @@ package org.polypheny.db.workflow.engine.execution.context;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.workflow.dag.activities.Activity;
+import org.polypheny.db.workflow.dag.variables.ReadableVariableStore;
 import org.polypheny.db.workflow.engine.execution.Executor.ExecutorException;
 import org.polypheny.db.workflow.engine.storage.writer.CheckpointWriter;
 import org.polypheny.db.workflow.engine.storage.writer.DocWriter;
@@ -65,6 +66,8 @@ public interface ExecutionContext {
      * @return A transaction to be used for either reading or writing arbitrary entities in this Polypheny instance or executing fused activities.
      */
     Transaction getTransaction();
+
+    ReadableVariableStore getVariableStore();
 
     // TODO: add ability to create temporary "checkpoints" for intermediary results within an activity
     // -> identified by sessionId + activityId + "temp" + unique name of save

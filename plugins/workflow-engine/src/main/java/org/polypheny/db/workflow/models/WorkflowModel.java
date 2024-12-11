@@ -17,10 +17,10 @@
 package org.polypheny.db.workflow.models;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.JsonNode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Value;
 import org.polypheny.db.workflow.dag.Workflow.WorkflowState;
@@ -34,6 +34,7 @@ public class WorkflowModel {
     List<ActivityModel> activities;
     List<EdgeModel> edges;
     WorkflowConfigModel config;
+    Map<String, JsonNode> variables;
 
     @JsonInclude(JsonInclude.Include.NON_NULL) // do not serialize EdgeState in static version
     WorkflowState state;
@@ -44,21 +45,7 @@ public class WorkflowModel {
         edges = new ArrayList<>();
         config = WorkflowConfigModel.of();
         state = null;
-    }
-
-
-    public static WorkflowModel getSample() {
-        List<ActivityModel> activities = List.of(
-                new ActivityModel( "extract", UUID.randomUUID(), Map.of(), ActivityConfigModel.of(), RenderModel.of(), null ),
-                new ActivityModel( "transform", UUID.randomUUID(), Map.of(), ActivityConfigModel.of(), RenderModel.of(), null ),
-                new ActivityModel( "load", UUID.randomUUID(), Map.of(), ActivityConfigModel.of(), RenderModel.of(), null )
-        );
-        List<EdgeModel> edges = List.of(
-                new EdgeModel( activities.get( 0 ).getId(), activities.get( 1 ).getId(), 0, 0, false, null ),
-                new EdgeModel( activities.get( 1 ).getId(), activities.get( 2 ).getId(), 0, 0, false, null )
-        );
-        WorkflowConfigModel config = WorkflowConfigModel.of();
-        return new WorkflowModel( activities, edges, config, null );
+        variables = Map.of();
     }
 
 }

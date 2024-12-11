@@ -52,6 +52,16 @@ public @interface StringSetting {
 
     boolean isList() default false;  // results in values of type ListValue<StringValue> if true.
 
+    /**
+     * The minimum length of the string (inclusive)
+     */
+    int minLength() default 0;
+
+    /**
+     * The maximum length of the string (exclusive)
+     */
+    int maxLength() default Integer.MAX_VALUE;
+
 
     @Target(ElementType.TYPE)
     @Retention(RetentionPolicy.RUNTIME)

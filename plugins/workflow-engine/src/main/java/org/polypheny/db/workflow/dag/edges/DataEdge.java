@@ -61,4 +61,15 @@ public class DataEdge extends Edge {
         return getToPortType().canReadFrom( getFromPortType() );
     }
 
+
+    @Override
+    public String toString() {
+        return "DataEdge{" +
+                "fromPort=" + fromPort +
+                ", toPort=" + toPort +
+                ", from=" + from +
+                ", to=" + to +
+                '}';
+    }
+
 }

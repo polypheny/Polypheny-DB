@@ -19,6 +19,7 @@ package org.polypheny.db.workflow.dag.settings;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
+import org.polypheny.db.workflow.dag.activities.ActivityException.InvalidSettingException;
 import org.polypheny.db.workflow.dag.annotations.StringSetting;
 
 @EqualsAndHashCode(callSuper = true)
@@ -26,11 +27,17 @@ import org.polypheny.db.workflow.dag.annotations.StringSetting;
 public class StringSettingDef extends SettingDef {
 
     boolean isList;
+    int minLength;
+    int maxLength;
 
 
     public StringSettingDef( StringSetting a ) {
         super( SettingType.STRING, a.key(), a.displayName(), a.description(), getDefaultValue( a.defaultValue(), a.isList() ), a.group(), a.subGroup(), a.position(), a.subOf() );
         this.isList = a.isList();
+        this.minLength = a.minLength();
+        this.maxLength = a.maxLength();
+
+        assert minLength < maxLength;
     }
 
 
@@ -44,16 +51,30 @@ public class StringSettingDef extends SettingDef {
 
 
     @Override
-    public void validateValue( SettingValue value ) {
+    public void validateValue( SettingValue value ) throws InvalidSettingException {
         if ( value instanceof StringValue stringValue ) {
+            validateStringValue( stringValue );
             return;
         } else if ( value instanceof ListValue<? extends SettingValue> list ) {
             if ( !isList ) {
                 throw new IllegalArgumentException( "Value must not be a list" );
             }
+            for ( SettingValue v : list.getValues() ) {
+                validateStringValue( (StringValue) v );
+            }
             return;
         }
         throw new IllegalArgumentException( "Value is not a SettingValue" );
+    }
+
+
+    private void validateStringValue( StringValue value ) throws InvalidSettingException {
+        String s = value.getValue();
+        if ( s.length() < minLength ) {
+            throw new InvalidSettingException( "String must have a length of at least " + minLength, getKey() );
+        } else if ( s.length() >= maxLength ) {
+            throw new InvalidSettingException( "String must have a length of less than " + maxLength, getKey() );
+        }
     }
 
 

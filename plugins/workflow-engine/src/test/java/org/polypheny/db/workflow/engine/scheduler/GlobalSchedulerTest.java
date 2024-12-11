@@ -29,6 +29,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.workflow.WorkflowUtils;
 import org.polypheny.db.workflow.dag.Workflow;
@@ -218,6 +219,22 @@ class GlobalSchedulerTest {
         assertFalse( sm.hasCheckpoint( ids.get( 3 ), 0 ) );
         assertFalse( sm.hasCheckpoint( ids.get( 4 ), 0 ) );
         System.out.println( StorageUtils.readCheckpoint( sm, ids.get( 5 ), 0 ) );
+    }
+
+
+    @Test
+    void variableWritingTest() throws Exception {
+        Workflow workflow = WorkflowUtils.getVariableWritingWorkflow();
+        List<UUID> ids = WorkflowUtils.getTopologicalActivityIds( workflow );
+        scheduler.startExecution( workflow, sm, null );
+        scheduler.awaitResultProcessor( 5000 );
+        assertFalse( sm.hasCheckpoint( ids.get( 1 ), 0 ) );
+
+        List<String> fieldNames = StorageUtils.readCheckpointType( sm, ids.get( 0 ), 0 ).getFieldNames();
+        int colIdx = StorageUtils.readCheckpointType( sm, ids.get( ids.size() - 1 ), 0 ).getFieldNames().indexOf( "field_names" );
+        List<List<PolyValue>> rows = StorageUtils.readCheckpoint( sm, ids.get( ids.size() - 1 ), 0 );
+        System.out.println( rows );
+        assertEquals( fieldNames.toString(), rows.get( 0 ).get( colIdx ).toString() );
     }
 
 

@@ -150,6 +150,9 @@ public class StorageManagerImpl implements StorageManager {
     public List<AlgDataType> getCheckpointTypes( UUID activityId ) {
         List<AlgDataType> types = new ArrayList<>();
         Map<Integer, LogicalEntity> outputs = checkpoints.get( activityId );
+        if ( outputs == null ) {
+            return List.of();
+        }
         for ( int i = 0; i < outputs.size(); i++ ) {
             LogicalEntity output = outputs.get( i );
             types.add( output == null ? null : output.getTupleType() );
