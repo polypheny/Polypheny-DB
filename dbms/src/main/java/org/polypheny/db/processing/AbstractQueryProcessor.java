@@ -277,7 +277,11 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             InformationPolyAlg infoPolyAlg = new InformationPolyAlg( group, jsonString, PlanType.LOGICAL );
             if ( shouldAttachTextualPolyAlg() ) {
                 // when testing, we want to access the human-readable form
-                infoPolyAlg.setTextualPolyAlg( alg.buildPolyAlgebra( (String) null ) );
+                String serialized = alg.buildPolyAlgebra( (String) null );
+                if ( serialized == null ) {
+                    throw new GenericRuntimeException( "Could not serialize PolyAlgebra" );
+                }
+                infoPolyAlg.setTextualPolyAlg( serialized );
             }
 
             queryAnalyzer.registerInformation( infoPolyAlg );

@@ -125,7 +125,11 @@ public class UiRoutingPageUtil {
         queryAnalyzer.addGroup( group );
         InformationPolyAlg infoPolyAlg = new InformationPolyAlg( group, jsonString, isPhysical ? PlanType.PHYSICAL : PlanType.ALLOCATION );
         if ( attachTextualPlan ) {
-            infoPolyAlg.setTextualPolyAlg( routedNode.buildPolyAlgebra( (String) null ) );
+            String serialized = routedNode.buildPolyAlgebra( (String) null );
+            if ( serialized == null ) {
+                throw new GenericRuntimeException( "Unable to serialize routing plan" );
+            }
+            infoPolyAlg.setTextualPolyAlg( serialized );
         }
         queryAnalyzer.registerInformation( infoPolyAlg );
     }

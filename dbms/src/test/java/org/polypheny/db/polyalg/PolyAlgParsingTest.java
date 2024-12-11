@@ -79,12 +79,12 @@ public class PolyAlgParsingTest {
     private static final String GRAPH_NAME = "polyAlgGraph";
     private static final String DOC_NAME = MqlTestTemplate.namespace;
     private static final String DOC_COLL = "polyalgdocs";
-    private static TestHelper testHelper;
 
 
     @BeforeAll
     public static void start() throws SQLException {
-        testHelper = TestHelper.getInstance();
+        //noinspection ResultOfMethodCallIgnored
+        TestHelper.getInstance();
         addTestData();
 
     }
@@ -197,7 +197,7 @@ public class PolyAlgParsingTest {
             }
 
             for ( Information info : transaction.getQueryAnalyzer().getInformationArray() ) {
-                if ( info instanceof InformationPolyAlg polyInfo ) {
+                if ( info instanceof InformationPolyAlg polyInfo && polyInfo.getTextualPolyAlg() != null ) {
                     switch ( PlanType.valueOf( polyInfo.planType ) ) {
                         case LOGICAL -> logical = polyInfo.getTextualPolyAlg();
                         case ALLOCATION -> allocation = polyInfo.getTextualPolyAlg();
