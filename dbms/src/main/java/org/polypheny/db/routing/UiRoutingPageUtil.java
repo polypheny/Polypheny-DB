@@ -81,9 +81,8 @@ public class UiRoutingPageUtil {
 
 
     public static void addPhysicalPlanPage( AlgNode optimalNode, InformationManager queryAnalyzer, long stmtIdx, boolean attachTextualPlan ) {
-
+        UiRoutingPageUtil.counter.incrementAndGet();
         Future<?> future = executorService.submit( () -> {
-            UiRoutingPageUtil.counter.incrementAndGet();
             try {
                 addRoutedPolyPlanPage( optimalNode, queryAnalyzer, stmtIdx, true, attachTextualPlan );
             } catch ( Throwable t ) {
