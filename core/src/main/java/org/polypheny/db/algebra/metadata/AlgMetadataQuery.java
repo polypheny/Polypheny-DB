@@ -57,6 +57,7 @@ import org.polypheny.db.plan.AlgOptPredicateList;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexTableIndexRef.AlgTableRef;
 import org.polypheny.db.util.ImmutableBitSet;
+import javax.annotation.Nullable;
 
 
 /**
@@ -232,7 +233,7 @@ public class AlgMetadataQuery {
         for ( ; ; ) {
             try {
                 Double result = rowCountHandler.getTupleCount( alg, this );
-                return Optional.of( validateResult( result ) );
+                return Optional.ofNullable( validateResult( result ) );
             } catch ( JaninoRelMetadataProvider.NoHandler e ) {
                 rowCountHandler = revise( e.algClass, TupleCount.DEF );
             } catch ( CyclicMetadataException e ) {
@@ -408,7 +409,7 @@ public class AlgMetadataQuery {
             return null;
         }
         final Set<AlgColumnOrigin> colOrigins = getColumnOrigins( alg, 0 );
-        if ( colOrigins == null || colOrigins.size() == 0 ) {
+        if ( colOrigins == null || colOrigins.isEmpty() ) {
             return null;
         }
         return colOrigins.iterator().next().getOriginTable();
@@ -811,6 +812,7 @@ public class AlgMetadataQuery {
     }
 
 
+    @Nullable
     private static Double validateResult( Double result ) {
         if ( result == null ) {
             return null;
