@@ -301,7 +301,7 @@ public class WorkflowScheduler {
                 Edge edge = workflow.getEdge( execEdge );
                 if ( activities.contains( execEdge.getTarget() ) ) {
                     edge.setState( isSuccess ? EdgeState.ACTIVE : EdgeState.INACTIVE );
-                } else {
+                } else if ( !(isInitialUpdate && edge.getTo().getState() == ActivityState.SAVED) ) { // already saved target activities do not have to be updated again
                     assert edge.isIgnored() || !edge.getTo().getState().isExecuted() :
                             "Encountered an activity that was executed before its predecessors: " + edge.getTo();
 

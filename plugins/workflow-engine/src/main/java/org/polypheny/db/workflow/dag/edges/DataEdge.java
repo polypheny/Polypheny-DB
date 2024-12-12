@@ -69,6 +69,7 @@ public class DataEdge extends Edge {
                 ", toPort=" + toPort +
                 ", from=" + from +
                 ", to=" + to +
+                ", edgeState=" + getState() +
                 '}';
     }
 

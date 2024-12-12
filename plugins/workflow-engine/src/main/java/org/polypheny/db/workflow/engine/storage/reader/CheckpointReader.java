@@ -22,7 +22,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -83,13 +82,7 @@ public abstract class CheckpointReader implements AutoCloseable {
      * @return An iterable that yields tuples as mutable lists.
      */
     public final Iterable<List<PolyValue>> getIterable() {
-        return new Iterable<>() {
-            @NotNull
-            @Override
-            public Iterator<List<PolyValue>> iterator() {
-                return getIterator();
-            }
-        };
+        return this::getIterator;
     }
 
 
@@ -126,14 +119,7 @@ public abstract class CheckpointReader implements AutoCloseable {
      */
     public Pair<AlgDataType, Iterable<List<PolyValue>>> getIterableFromQuery( CheckpointQuery query ) {
         Pair<AlgDataType, Iterator<List<PolyValue>>> pair = getIteratorFromQuery( query, List.of( this ) );
-        return Pair.of( pair.left,
-                new Iterable<>() {
-                    @NotNull
-                    @Override
-                    public Iterator<List<PolyValue>> iterator() {
-                        return pair.right;
-                    }
-                } );
+        return Pair.of( pair.left, () -> pair.right );
     }
 
 
@@ -204,6 +190,7 @@ public abstract class CheckpointReader implements AutoCloseable {
                 .query( queryStr )
                 .language( QueryLanguage.from( query.getQueryLanguage() ) )
                 .isAnalysed( false )
+                .batch( 100 ) // TODO: ensure this has the desired effect, then change to suitable value
                 .origin( StorageManager.ORIGIN )
                 .namespaceId( entity.getNamespaceId() )
                 .transactionManager( transaction.getTransactionManager() )
@@ -241,13 +228,7 @@ public abstract class CheckpointReader implements AutoCloseable {
     public Pair<AlgDataType, Iterable<List<PolyValue>>> getIterableFromQuery( CheckpointQuery query, List<CheckpointReader> inputs ) {
         Pair<AlgDataType, Iterator<List<PolyValue>>> pair = getIteratorFromQuery( query, inputs );
         return Pair.of( pair.left,
-                new Iterable<>() {
-                    @NotNull
-                    @Override
-                    public Iterator<List<PolyValue>> iterator() {
-                        return pair.right;
-                    }
-                } );
+                () -> pair.right );
     }
 
 

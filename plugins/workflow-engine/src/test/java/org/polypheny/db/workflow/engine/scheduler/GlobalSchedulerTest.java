@@ -132,7 +132,6 @@ class GlobalSchedulerTest {
 
 
     @Test
-    @Disabled
     void simpleFusionTest() throws Exception {
         Workflow workflow = WorkflowUtils.getSimpleFusion();
         List<UUID> ids = WorkflowUtils.getTopologicalActivityIds( workflow );
@@ -161,7 +160,6 @@ class GlobalSchedulerTest {
 
 
     @Test
-    @Disabled
     void RelValuesFusionTest() throws Exception {
         Workflow workflow = WorkflowUtils.getRelValuesFusion();
         List<UUID> ids = WorkflowUtils.getTopologicalActivityIds( workflow );

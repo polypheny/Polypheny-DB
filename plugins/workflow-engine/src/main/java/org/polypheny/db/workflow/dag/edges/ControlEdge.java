@@ -68,6 +68,7 @@ public class ControlEdge extends Edge {
                 ", isIgnored=" + isIgnored +
                 ", from=" + from +
                 ", to=" + to +
+                ", edgeState=" + getState() +
                 '}';
     }
 

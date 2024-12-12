@@ -387,4 +387,16 @@ public class WorkflowImpl implements Workflow {
 
     }
 
+
+    @Override
+    public String toString() {
+        return "WorkflowImpl{" +
+                "\n    activities=" + getActivities() +
+                ", \n    edges=" + getEdges() +
+                ", \n    config=" + config +
+                ", \n    state=" + state +
+                ", \n    variables=" + variables +
+                "\n}";
+    }
+
 }
