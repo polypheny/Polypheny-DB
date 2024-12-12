@@ -18,15 +18,16 @@ package org.polypheny.db.workflow.engine.scheduler;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.type.entity.PolyValue;
@@ -233,6 +234,47 @@ class GlobalSchedulerTest {
         List<List<PolyValue>> rows = StorageUtils.readCheckpoint( sm, ids.get( ids.size() - 1 ), 0 );
         System.out.println( rows );
         assertEquals( fieldNames.toString(), rows.get( 0 ).get( colIdx ).toString() );
+    }
+
+
+    @Test
+    void concurrentActivityExecutionTest() throws Exception {
+        int nBranches = 10;
+        int delay = 1000;
+        assert nBranches <= GlobalScheduler.GLOBAL_WORKERS;
+
+        Workflow workflow = WorkflowUtils.getParallelBranchesWorkflow( nBranches, delay, nBranches );
+        List<UUID> ids = WorkflowUtils.getTopologicalActivityIds( workflow );
+        scheduler.startExecution( workflow, sm, null );
+        scheduler.awaitResultProcessor( delay + 2000 ); // not enough time if not executed concurrently
+
+        for ( int i = 0; i <= nBranches; i++ ) { // also checks initial activity
+            assertTrue( sm.hasCheckpoint( ids.get( i ), 0 ) );
+        }
+    }
+
+
+    @Test
+    void concurrentWorkflowExecutionTest() throws Exception {
+        int nWorkflows = 10;
+        int delay = 1000;
+        assert nWorkflows <= GlobalScheduler.GLOBAL_WORKERS;
+
+        List<Workflow> workflows = new ArrayList<>();
+        List<StorageManager> storageManagers = new ArrayList<>();
+        for ( int i = 0; i < nWorkflows; i++ ) {
+            StorageManager storageManager = new StorageManagerImpl( UUID.randomUUID(), StorageUtils.getDefaultStoreMap( "locks" ) );
+            Workflow workflow = WorkflowUtils.getLongRunningPipe( delay );
+            workflows.add( workflow );
+            storageManagers.add( storageManager );
+            scheduler.startExecution( workflow, storageManager, null );
+        }
+        scheduler.awaitResultProcessor( delay + 2000 ); // not enough time if not executed concurrently
+
+        for ( Pair<Workflow, StorageManager> entry : Pair.zip( workflows, storageManagers ) ) { // also checks initial activity
+            List<UUID> ids = WorkflowUtils.getTopologicalActivityIds( entry.left );
+            assertTrue( entry.right.hasCheckpoint( ids.get( ids.size() - 1 ), 0 ) );
+        }
     }
 
 

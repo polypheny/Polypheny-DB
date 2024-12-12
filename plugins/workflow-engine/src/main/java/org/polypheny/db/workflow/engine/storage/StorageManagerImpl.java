@@ -19,12 +19,14 @@ package org.polypheny.db.workflow.engine.storage;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nullable;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
@@ -34,6 +36,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
+import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.Collation;
 import org.polypheny.db.catalog.logistic.ConstraintType;
@@ -47,8 +50,11 @@ import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.transaction.TransactionManagerImpl;
+import org.polypheny.db.transaction.locking.Lockable.LockType;
+import org.polypheny.db.transaction.locking.LockablesRegistry;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.util.DeadlockException;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 import org.polypheny.db.workflow.engine.storage.reader.DocReader;
 import org.polypheny.db.workflow.engine.storage.reader.LpgReader;
@@ -60,6 +66,7 @@ import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
 import org.polypheny.db.workflow.models.ActivityConfigModel;
 import org.polypheny.db.workflow.models.ActivityConfigModel.CommonType;
 
+@Slf4j
 public class StorageManagerImpl implements StorageManager {
 
     public static final String REL_PREFIX = "rel_";
@@ -71,7 +78,7 @@ public class StorageManagerImpl implements StorageManager {
     private final UUID sessionId;
     private final Map<DataModel, String> defaultStores;
     private final Map<UUID, Map<Integer, LogicalEntity>> checkpoints = new ConcurrentHashMap<>();
-    private final List<String> registeredNamespaces = new ArrayList<>();
+    private final Map<Long, String> registeredNamespaces = new ConcurrentHashMap<>();
     private final AdapterManager adapterManager;
     private final TransactionManager transactionManager;
     private final DdlManager ddlManager;
@@ -98,10 +105,10 @@ public class StorageManagerImpl implements StorageManager {
 
         relNamespace = ddlManager.createNamespace(
                 REL_PREFIX + sessionId, DataModel.RELATIONAL, true, false, null );
-        registeredNamespaces.add( REL_PREFIX + sessionId );
+        registeredNamespaces.put( relNamespace, REL_PREFIX + sessionId );
 
         docNamespace = ddlManager.createNamespace( DOC_PREFIX + sessionId, DataModel.DOCUMENT, true, false, null );
-        registeredNamespaces.add( DOC_PREFIX + sessionId );
+        registeredNamespaces.put( docNamespace, DOC_PREFIX + sessionId );
     }
 
 
@@ -168,7 +175,8 @@ public class StorageManagerImpl implements StorageManager {
 
 
     @Override
-    public RelWriter createRelCheckpoint( UUID activityId, int outputIdx, AlgDataType type, boolean resetPk, @Nullable String storeName ) {
+    // TODO: it should be possible to remove synchronized when schema locking works, but it doesn't hurt to keep it
+    public synchronized RelWriter createRelCheckpoint( UUID activityId, int outputIdx, AlgDataType type, boolean resetPk, @Nullable String storeName ) {
         if ( storeName == null || storeName.isEmpty() ) {
             storeName = getDefaultStore( DataModel.RELATIONAL );
         }
@@ -184,6 +192,8 @@ public class StorageManagerImpl implements StorageManager {
 
         Transaction createTransaction = QueryUtils.startTransaction( relNamespace, "RelCreate" );
         String tableName = TABLE_PREFIX + activityId + "_" + outputIdx;
+
+        acquireSchemaLock( createTransaction, relNamespace );
         ddlManager.createTable(
                 relNamespace,
                 tableName,
@@ -204,13 +214,13 @@ public class StorageManagerImpl implements StorageManager {
 
 
     @Override
-    public DocWriter createDocCheckpoint( UUID activityId, int outputIdx, @Nullable String storeName ) {
+    public synchronized DocWriter createDocCheckpoint( UUID activityId, int outputIdx, @Nullable String storeName ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public LpgWriter createLpgCheckpoint( UUID activityId, int outputIdx, @Nullable String storeName ) {
+    public synchronized LpgWriter createLpgCheckpoint( UUID activityId, int outputIdx, @Nullable String storeName ) {
         throw new NotImplementedException();
     }
 
@@ -335,6 +345,7 @@ public class StorageManagerImpl implements StorageManager {
     private void dropEntity( LogicalEntity entity ) {
         Transaction transaction = startTransaction( entity );
         Statement statement = transaction.createStatement();
+        acquireSchemaLock( transaction, entity.getNamespaceId() );
         switch ( entity.dataModel ) {
             case RELATIONAL -> ddlManager.dropTable( (LogicalTable) entity, statement );
             case DOCUMENT -> ddlManager.dropCollection( (LogicalCollection) entity, statement );
@@ -346,10 +357,12 @@ public class StorageManagerImpl implements StorageManager {
 
     private void dropNamespaces() {
         Transaction transaction = QueryUtils.startTransaction( relNamespace, "DropNamespaces" );
-        for ( String ns : registeredNamespaces ) {
-            ddlManager.dropNamespace( ns, true, transaction.createStatement() );
+        for ( Entry<Long, String> entry : registeredNamespaces.entrySet() ) {
+            acquireSchemaLock( transaction, entry.getKey() );
+            ddlManager.dropNamespace( entry.getValue(), true, transaction.createStatement() );
         }
         transaction.commit();
+        registeredNamespaces.clear();
     }
 
     // Utils:
@@ -405,6 +418,12 @@ public class StorageManagerImpl implements StorageManager {
                 isArray ? (int) ((ArrayType) field.getType()).getDimension() : -1,
                 isArray ? (int) ((ArrayType) field.getType()).getCardinality() : -1,
                 field.getType().isNullable() );
+    }
+
+
+    private void acquireSchemaLock( Transaction transaction, long namespaceId ) throws DeadlockException {
+        LogicalNamespace namespace = Catalog.getInstance().getSnapshot().getNamespace( namespaceId ).orElseThrow();
+        transaction.acquireLockable( LockablesRegistry.convertToLockable( namespace ), LockType.EXCLUSIVE );
     }
 
 

@@ -40,7 +40,7 @@ import org.polypheny.db.workflow.engine.storage.StorageManager;
 public class GlobalScheduler {
 
     private static GlobalScheduler INSTANCE;
-    private static final int globalWorkers = 1; // TODO: use config value, allow to change it when no scheduler is running
+    public static final int GLOBAL_WORKERS = 20; // TODO: use config value, allow to change it when no scheduler is running
 
     private final Map<UUID, WorkflowScheduler> schedulers = new HashMap<>();
     private final Map<UUID, Set<ExecutionSubmission>> activeSubmissions = new ConcurrentHashMap<>(); // used for interrupting the execution
@@ -52,7 +52,7 @@ public class GlobalScheduler {
 
 
     private GlobalScheduler() {
-        executor = new ThreadPoolExecutor( 0, globalWorkers,
+        executor = new ThreadPoolExecutor( 0, GLOBAL_WORKERS,
                 60L, TimeUnit.SECONDS,
                 new SynchronousQueue<>() );
         completionService = new ExecutorCompletionService<>( executor );
@@ -73,7 +73,7 @@ public class GlobalScheduler {
             throw new GenericRuntimeException( "Cannot execute a workflow that is already being executed." );
         }
         interruptedSessions.remove( sessionId );
-        WorkflowScheduler scheduler = new WorkflowScheduler( workflow, sm, globalWorkers, targetActivity );
+        WorkflowScheduler scheduler = new WorkflowScheduler( workflow, sm, GLOBAL_WORKERS, targetActivity );
         List<ExecutionSubmission> submissions = scheduler.startExecution();
         if ( submissions.isEmpty() ) {
             throw new GenericRuntimeException( "At least one activity needs to be executable when submitting a workflow for execution" );

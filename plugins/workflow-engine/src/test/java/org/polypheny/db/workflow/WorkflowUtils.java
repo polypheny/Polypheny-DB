@@ -234,6 +234,20 @@ public class WorkflowUtils {
         return getWorkflow( activities, edges, false, false, 1 );
     }
 
+    public static Workflow getParallelBranchesWorkflow(int nBranches, int millisPerBranch, int maxWorkers) {
+        assert nBranches > 0 && millisPerBranch > 0;
+        ActivityModel root = new ActivityModel( "relValues" );
+        List<ActivityModel> activities = new ArrayList<>(List.of(root));
+        List<EdgeModel> edges = new ArrayList<>();
+
+        for (int i = 0; i<nBranches; i++) {
+            ActivityModel branch = new ActivityModel( "debug", Map.of( "delay", IntNode.valueOf( millisPerBranch ) ) );
+            activities.add( branch );
+            edges.add( EdgeModel.of( root, branch ) );
+        }
+        return getWorkflow( activities, edges, false, false, maxWorkers );
+    }
+
 
     public static List<UUID> getTopologicalActivityIds( Workflow workflow ) {
         List<UUID> list = new ArrayList<>();
