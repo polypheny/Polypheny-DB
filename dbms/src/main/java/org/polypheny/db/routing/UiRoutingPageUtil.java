@@ -76,11 +76,16 @@ public class UiRoutingPageUtil {
 
 
     public static void addPhysicalPlanPage( AlgNode optimalNode, InformationManager queryAnalyzer, long stmtIdx, boolean attachTextualPlan ) {
-        try {
-            addRoutedPolyPlanPage( optimalNode, queryAnalyzer, stmtIdx, true, attachTextualPlan );
-        } catch ( Throwable t ) {
-            log.error( "Error adding routing plan", t );
-        }
+        counter.incrementAndGet();
+        executorService.submit( () -> {
+            try {
+                addRoutedPolyPlanPage( optimalNode, queryAnalyzer, stmtIdx, true, attachTextualPlan );
+            } catch ( Throwable t ) {
+                log.error( "Error adding routing plan", t );
+            }
+            counter.decrementAndGet();
+        } );
+
     }
 
 
