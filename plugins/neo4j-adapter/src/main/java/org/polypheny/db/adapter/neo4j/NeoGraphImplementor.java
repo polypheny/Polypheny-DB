@@ -147,6 +147,8 @@ public class NeoGraphImplementor extends AlgShuttleImpl {
                 } else {
                     statements.add( return_( statement.statements ) );
                 }
+            } else if ( statement.type == StatementType.CALL || statement.type == StatementType.YIELD ) {
+                return;
             } else {
                 // have to add
                 statements.add( return_( getFields( last.getTupleType() ) ) );

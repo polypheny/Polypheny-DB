@@ -53,6 +53,9 @@ public interface NeoStatements {
         WITH( "WITH" ),
         SET( "SET" ),
 
+        CALL( "CALL" ),
+        YIELD( "YIELD" ),
+
         FOREACH( "FOREACH" ),
         DELETE( "DELETE" ),
         DELETE_DETACH( "DETACH DELETE" ),
@@ -704,6 +707,50 @@ public interface NeoStatements {
 
     static MatchStatement match_( NeoStatement... statement ) {
         return new MatchStatement( list_( Arrays.asList( statement ) ) );
+    }
+
+    class CallStatement extends OperatorStatement {
+
+        final String procedureName;
+        final boolean noArgs;
+        protected CallStatement( String procedureName, ListStatement<?> statements, boolean noArgs, boolean yieldAll, ArrayList<String> yieldItems ) {
+            super( StatementType.CALL, statements );
+            this.procedureName = procedureName;
+            this.noArgs = noArgs;
+        }
+
+        @Override
+        public String build() {
+            // statements.build may not add () if there is no arg
+            if ( noArgs ) {
+                return "CALL " + procedureName + "()";
+            }
+            return "CALL " + procedureName + statements.build();
+        }
+    }
+    static CallStatement call_( String procedureName, boolean noArgs, ListStatement<?> statements, boolean yieldAll, ArrayList<String> yieldItems ) {
+        return new CallStatement( procedureName, statements, noArgs, yieldAll, yieldItems  );
+    }
+
+    class YieldStatement extends OperatorStatement {
+        boolean yieldAll;
+
+        protected YieldStatement( boolean yieldAll, ListStatement<?> statements ) {
+            super( StatementType.YIELD, statements );
+            this.yieldAll = yieldAll;
+        }
+
+        @Override
+        public String build() {
+            if ( yieldAll || statements == null ) {
+                return " YIELD *";
+            }
+            return "YIELD " + statements.build();
+        }
+    }
+
+    static YieldStatement yield_( boolean yieldAll, ListStatement<?> statements ) {
+        return new YieldStatement( yieldAll, statements );
     }
 
     class ForeachStatement extends OperatorStatement {

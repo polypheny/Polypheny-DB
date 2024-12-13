@@ -515,6 +515,12 @@ public enum Kind {
     PROCEDURE_CALL,
 
     /**
+     * CypherProcedureCall
+     * We separate Cypher procedure calls and SQL procedure calls
+     */
+    CYPHER_PROCEDURE_CALL,
+
+    /**
      * NewSpecification
      */
     NEW_SPECIFICATION,
@@ -1399,7 +1405,7 @@ public enum Kind {
             DELETE,
             UPDATE,
             MERGE,
-            PROCEDURE_CALL );
+            PROCEDURE_CALL);
 
     /**
      * Category consisting of all DDL operators.

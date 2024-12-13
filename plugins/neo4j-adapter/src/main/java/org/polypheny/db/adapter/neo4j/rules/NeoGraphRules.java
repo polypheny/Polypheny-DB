@@ -21,6 +21,7 @@ import org.polypheny.db.adapter.neo4j.NeoConvention;
 import org.polypheny.db.adapter.neo4j.NeoGraph;
 import org.polypheny.db.adapter.neo4j.NeoToEnumerableConverterRule;
 import org.polypheny.db.adapter.neo4j.rules.graph.NeoLpgAggregate;
+import org.polypheny.db.adapter.neo4j.rules.graph.NeoLpgCall;
 import org.polypheny.db.adapter.neo4j.rules.graph.NeoLpgFilter;
 import org.polypheny.db.adapter.neo4j.rules.graph.NeoLpgMatch;
 import org.polypheny.db.adapter.neo4j.rules.graph.NeoLpgModify;
@@ -33,6 +34,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.lpg.LpgAggregate;
+import org.polypheny.db.algebra.core.lpg.LpgCall;
 import org.polypheny.db.algebra.core.lpg.LpgFilter;
 import org.polypheny.db.algebra.core.lpg.LpgMatch;
 import org.polypheny.db.algebra.core.lpg.LpgModify;
@@ -55,7 +57,8 @@ public interface NeoGraphRules {
             NeoGraphSortRule.INSTANCE,
             NeoGraphUnwindRule.INSTANCE,
             NeoGraphAggregateRule.INSTANCE,
-            NeoGraphMatchRule.INSTANCE
+            NeoGraphMatchRule.INSTANCE,
+            NeoGraphCallRule.INSTANCE
     };
 
 
@@ -131,6 +134,31 @@ public interface NeoGraphRules {
                     convert( project.getInput(), NeoConvention.INSTANCE ),
                     project.getNames(),
                     project.getProjects() );
+        }
+
+    }
+
+    class NeoGraphCallRule extends NeoConverterRule {
+
+        public static NeoGraphCallRule INSTANCE = new NeoGraphCallRule( LpgCall.class, r -> true, "NeoGraphCallRule" );
+
+        private <R extends AlgNode> NeoGraphCallRule( Class<R> clazz, Predicate<? super R> supports, String description ) {
+            super( clazz, supports, description );
+        }
+
+        @Override
+        public AlgNode convert( AlgNode alg ) {
+            LpgCall call = (LpgCall) alg;
+            return new NeoLpgCall(
+                    call.getCluster(),
+                    call.getTraitSet().replace( NeoConvention.INSTANCE ),
+                    call.getNamespace(),
+                    call.getProcedureName(),
+                    call.getArguments(),
+                    call.getProcedureProvider(),
+                    call.isYieldAll(),
+                    call.getYieldItems()
+            );
         }
 
     }

@@ -73,6 +73,7 @@ import org.polypheny.db.algebra.rules.AggregateJoinTransposeRule;
 import org.polypheny.db.algebra.rules.AggregateProjectMergeRule;
 import org.polypheny.db.algebra.rules.AggregateRemoveRule;
 import org.polypheny.db.algebra.rules.CalcRemoveRule;
+import org.polypheny.db.algebra.rules.CypherCallLogicalToPhysicalRule;
 import org.polypheny.db.algebra.rules.FilterJoinRule;
 import org.polypheny.db.algebra.rules.JoinAssociateRule;
 import org.polypheny.db.algebra.rules.JoinCommuteRule;
@@ -835,6 +836,7 @@ public class VolcanoPlanner extends AbstractAlgPlanner {
         addRule( ModelSwitcherRule.MODEL_SWITCHER_RULE_REL_GRAPH );
         addRule( ModelSwitcherRule.MODEL_SWITCHER_RULE_DOC_REL );
         addRule( ModelSwitcherRule.MODEL_SWITCHER_RULE_DOC_GRAPH );
+        addRule( CypherCallLogicalToPhysicalRule.INSTANCE );
     }
 
 

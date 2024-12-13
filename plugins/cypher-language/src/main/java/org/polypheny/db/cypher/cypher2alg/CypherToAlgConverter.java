@@ -38,6 +38,7 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.common.Modify;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgCall;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgFilter;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgMatch;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
@@ -57,8 +58,10 @@ import org.polypheny.db.catalog.entity.logical.LogicalGraph.SubstitutionGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.snapshot.Snapshot;
+import org.polypheny.db.cypher.CypherCallResultItem;
 import org.polypheny.db.cypher.CypherNode;
 import org.polypheny.db.cypher.CypherNode.CypherFamily;
+import org.polypheny.db.cypher.clause.CypherCall;
 import org.polypheny.db.cypher.clause.CypherClause;
 import org.polypheny.db.cypher.clause.CypherCreate;
 import org.polypheny.db.cypher.clause.CypherDelete;
@@ -69,6 +72,7 @@ import org.polypheny.db.cypher.clause.CypherSetClause;
 import org.polypheny.db.cypher.clause.CypherUnwind;
 import org.polypheny.db.cypher.clause.CypherWhere;
 import org.polypheny.db.cypher.clause.CypherWith;
+import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.cypher.pattern.CypherPattern;
 import org.polypheny.db.cypher.query.CypherSingleQuery;
 import org.polypheny.db.languages.OperatorRegistry;
@@ -84,6 +88,7 @@ import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyNode;
@@ -200,10 +205,37 @@ public class CypherToAlgConverter {
             case REMOVE:
                 convertRemove( (CypherRemove) clause, context );
                 break;
+            case CALL:
+                convertCall( (CypherCall) clause, context );
+                break;
             default:
                 throw new UnsupportedOperationException();
         }
 
+    }
+
+    private void convertCall( CypherCall call, CypherContext context ) {
+        assert call.getNamespace() instanceof ArrayList;
+        context.kind = call.getKind();
+        ArrayList<String> namespace = (ArrayList<String>) call.getNamespace();
+        String procedureName = call.getName();
+        ArrayList<PolyValue> arguments = new ArrayList<>();
+        for ( CypherExpression argument : call.getArguments() ) {
+            // TODO: are we assuming that there will not be a function/procedure call inside this procedure call?
+            arguments.add( argument.getComparable() );
+        }
+        boolean yieldAll = true;
+        ArrayList<String> yieldItems = new ArrayList<>();
+        if ( call.getItems() != null ) {
+            yieldAll = false;
+            for ( CypherCallResultItem item : call.getItems() ) {
+                yieldItems.add( item.getExpression() );
+            }
+        } else {
+            yieldAll = true;
+        }
+        LogicalLpgCall procedureCall = new LogicalLpgCall(cluster, cluster.traitSet(), namespace, procedureName, arguments, null, yieldAll, yieldItems );
+        context.add( procedureCall );
     }
 
 

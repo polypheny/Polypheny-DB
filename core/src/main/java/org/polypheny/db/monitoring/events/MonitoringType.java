@@ -31,7 +31,8 @@ public enum MonitoringType {
     UPDATE,
     MINUS,
     INTERSECT,
-    UNION;
+    UNION,
+    CYPHER_PROCEDURE_CALL;
 
 
     public static MonitoringType from( Kind kind ) {

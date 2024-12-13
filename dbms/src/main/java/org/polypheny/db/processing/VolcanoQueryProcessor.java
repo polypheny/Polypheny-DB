@@ -35,6 +35,7 @@ import org.polypheny.db.algebra.rules.AggregateReduceFunctionsRule;
 import org.polypheny.db.algebra.rules.AggregateValuesRule;
 import org.polypheny.db.algebra.rules.AllocationToPhysicalModifyRule;
 import org.polypheny.db.algebra.rules.AllocationToPhysicalScanRule;
+import org.polypheny.db.algebra.rules.CypherCallLogicalToPhysicalRule;
 import org.polypheny.db.algebra.rules.FilterAggregateTransposeRule;
 import org.polypheny.db.algebra.rules.FilterJoinRule;
 import org.polypheny.db.algebra.rules.FilterProjectTransposeRule;

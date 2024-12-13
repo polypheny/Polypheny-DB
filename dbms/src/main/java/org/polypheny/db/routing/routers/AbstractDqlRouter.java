@@ -142,6 +142,9 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
             return alg;
         } else if ( alg.getNodeType() == NodeType.VALUES ) {
             return alg;
+        } else if ( alg.getNodeType() == NodeType.CALL ) {
+            // TODO: we currently still return LogicalLpgCall
+            return alg;
         }
         throw new UnsupportedOperationException();
     }

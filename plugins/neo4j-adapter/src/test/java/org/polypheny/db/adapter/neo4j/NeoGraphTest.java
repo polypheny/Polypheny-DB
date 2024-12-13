@@ -55,6 +55,27 @@ public class NeoGraphTest extends CypherTestTemplate {
     }
 
     @Test
+    public void callTest() {
+        CypherConnection.executeGetResponse( "CREATE (p:Person {name: \"Max Muster\"})",GRAPH_NAMESPACE );
+        GraphResult res = CypherConnection.executeGetResponse( "CALL db.labels()" );
+        assert res.data.length == 2;
+    }
+
+    @Test
+    public void callWithYieldStarTest() {
+        CypherConnection.executeGetResponse( "CREATE (p:Person {name: \"Max Muster\"})",GRAPH_NAMESPACE );
+        GraphResult res = CypherConnection.executeGetResponse( "CALL db.labels() YIELD *" );
+        assert res.data.length == 2;
+    }
+
+    @Test
+    public void callWithYieldLabelTest() {
+        CypherConnection.executeGetResponse( "CREATE (p:Person {name: \"Max Muster\"})",GRAPH_NAMESPACE );
+        GraphResult res = CypherConnection.executeGetResponse( "CALL db.labels() YIELD label" );
+        assert res.data.length == 2;
+    }
+
+    @Test
     public void insertNodeTest() {
         CypherConnection.executeGetResponse( "CREATE (p:Person {name: \"Max Muster\"})",GRAPH_NAMESPACE );
         GraphResult res = CypherConnection.executeGetResponse( "MATCH (n) RETURN n", GRAPH_NAMESPACE );

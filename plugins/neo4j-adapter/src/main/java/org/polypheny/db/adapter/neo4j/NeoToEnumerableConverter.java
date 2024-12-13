@@ -16,14 +16,20 @@
 
 package org.polypheny.db.adapter.neo4j;
 
+import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
+import org.apache.calcite.linq4j.tree.ParameterExpression;
+import org.polypheny.db.adapter.neo4j.Neo4jPlugin.Neo4jStore;
+import org.polypheny.db.adapter.neo4j.NeoProcedureCallHandler.NeoProcedureCallable;
+import org.polypheny.db.adapter.neo4j.rules.graph.NeoLpgCall;
 import org.polypheny.db.adapter.neo4j.types.NestedPolyType;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterImpl;
+import org.polypheny.db.algebra.core.lpg.LpgCall;
 import org.polypheny.db.algebra.enumerable.EnumUtils;
 import org.polypheny.db.algebra.enumerable.EnumerableAlg;
 import org.polypheny.db.algebra.enumerable.EnumerableAlgImplementor;
@@ -71,6 +77,9 @@ public class NeoToEnumerableConverter extends ConverterImpl implements Enumerabl
         if ( this.getTraitSet().contains( ModelTrait.RELATIONAL ) ) {
             return getRelationalImplement( implementor, pref, blockBuilder );
         } else {
+            if ( getInput() instanceof LpgCall ) {
+                return getNeoCallImplementation( implementor, pref, blockBuilder );
+            }
             return getGraphImplement( implementor, pref, blockBuilder );
         }
 
@@ -122,6 +131,44 @@ public class NeoToEnumerableConverter extends ConverterImpl implements Enumerabl
                             NeoMethod.GRAPH_EXECUTE.method, Expressions.constant( query ), types, parameterClasses ) );
         }
 
+        blockBuilder.add( Expressions.return_( null, enumerable ) );
+
+        return implementor.result( physType, blockBuilder.toBlock() );
+    }
+
+    /**
+     * We use a separate method to handle CALLs, as calls don't require a graph entity
+     *
+     * @param implementor is used build the code snippets by recursively moving through them
+     * @param pref preferred result format, e.g. when SCALAR -> single result gets returned as single element, if ARRAY it is wrapped in an array
+     * @param blockBuilder helper builder to generate expressions
+     * @return the code in a result representation
+     */
+    private Result getNeoCallImplementation( EnumerableAlgImplementor implementor, Prefer pref, BlockBuilder blockBuilder ) {
+        final NeoGraphImplementor graphImplementor = new NeoGraphImplementor();
+
+        graphImplementor.visitChild( 0, getInput() );
+        final AlgDataType rowType = getTupleType();
+        final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), rowType, pref.prefer( JavaTupleFormat.ARRAY ) );
+
+        final Expression types = NestedPolyType.from( rowType ).asExpression();
+        final String query = graphImplementor.build();
+        NeoLpgCall callNode = (NeoLpgCall) getInput();
+
+        long callNodeId = ((Neo4jStore)callNode.getProcedureProvider()).addCallNode( callNode );
+        final Expression callHandler = blockBuilder.append( "callHandler", NeoProcedureCallHandler.asExpression(callNode.getProcedureProvider().getAdapterId(), callNodeId) );
+        Method method;
+        try {
+            method = NeoProcedureCallable.class.getMethod("execute", String.class, NestedPolyType.class);
+        } catch ( NoSuchMethodException e ) {
+            throw new RuntimeException( e );
+        }
+        Expression enumerable = blockBuilder.append(
+                blockBuilder.newName( "enumerable" ),
+                Expressions.call(
+                        Expressions.convert_( callHandler,
+                                NeoProcedureCallable.class),
+                        method, Expressions.constant( query ), types ) );
         blockBuilder.add( Expressions.return_( null, enumerable ) );
 
         return implementor.result( physType, blockBuilder.toBlock() );

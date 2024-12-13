@@ -18,6 +18,7 @@ package org.polypheny.db.cypher.clause;
 
 import java.util.List;
 import lombok.Getter;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.cypher.CypherCallResultItem;
 import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.languages.ParserPos;
@@ -62,6 +63,11 @@ public class CypherCall extends CypherClause {
     @Override
     public CypherKind getCypherKind() {
         return CypherKind.CALL;
+    }
+
+    @Override
+    public Kind getKind() {
+        return Kind.CYPHER_PROCEDURE_CALL;
     }
 
 }

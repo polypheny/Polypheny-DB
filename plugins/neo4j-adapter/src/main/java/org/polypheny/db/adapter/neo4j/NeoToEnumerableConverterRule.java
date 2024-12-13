@@ -19,6 +19,7 @@ package org.polypheny.db.adapter.neo4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.AlgFactories;
+import org.polypheny.db.algebra.core.lpg.LpgCall;
 import org.polypheny.db.algebra.enumerable.EnumerableConvention;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.tools.AlgBuilderFactory;
@@ -35,7 +36,7 @@ public class NeoToEnumerableConverterRule extends ConverterRule {
     public NeoToEnumerableConverterRule( AlgBuilderFactory algBuilderFactory ) {
         super(
                 AlgNode.class,
-                Util::containsEntity,
+                r -> Util.containsEntity( r ) || r instanceof LpgCall,
                 NeoConvention.INSTANCE,
                 EnumerableConvention.INSTANCE,
                 algBuilderFactory,

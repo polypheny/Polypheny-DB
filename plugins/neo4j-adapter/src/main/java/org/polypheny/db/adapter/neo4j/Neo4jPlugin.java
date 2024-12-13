@@ -23,6 +23,7 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -39,14 +40,18 @@ import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Transaction;
 import org.pf4j.Extension;
+import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DataStore.IndexMethodModel;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.GraphModifyDelegate;
+import org.polypheny.db.adapter.NeoProcedureProvider;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
+import org.polypheny.db.adapter.neo4j.rules.graph.NeoLpgCall;
 import org.polypheny.db.adapter.neo4j.types.NestedSingleType;
 import org.polypheny.db.adapter.neo4j.util.NeoUtil;
+import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.catalogs.GraphAdapterCatalog;
 import org.polypheny.db.catalog.entity.LogicalDefaultValue;
 import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
@@ -68,11 +73,17 @@ import org.polypheny.db.docker.DockerContainer;
 import org.polypheny.db.docker.DockerContainer.HostAndPort;
 import org.polypheny.db.docker.DockerInstance;
 import org.polypheny.db.docker.DockerManager;
+import org.polypheny.db.plan.AlgCluster;
+import org.polypheny.db.plan.AlgPlanner;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.plan.Convention;
+import org.polypheny.db.plan.volcano.VolcanoPlanner;
 import org.polypheny.db.plugins.PluginContext;
 import org.polypheny.db.plugins.PolyPlugin;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.PasswordGenerator;
 
 
@@ -136,7 +147,7 @@ public class Neo4jPlugin extends PolyPlugin {
             usedModes = { DeployMode.DOCKER, DeployMode.REMOTE },
             defaultMode = DeployMode.DOCKER)
     @Extension
-    public static class Neo4jStore extends DataStore<GraphAdapterCatalog> {
+    public static class Neo4jStore extends DataStore<GraphAdapterCatalog> implements NeoProcedureProvider {
 
         private final String DEFAULT_DATABASE = "public";
         @Delegate(excludes = Exclude.class)
@@ -155,8 +166,26 @@ public class Neo4jPlugin extends PolyPlugin {
         @Getter
         private NeoGraph currentGraph;
 
+        @Getter
         private final TransactionProvider transactionProvider;
         private String host;
+
+        private HashMap<Long, NeoLpgCall> callNodes = new HashMap<>();
+        private long currentNodeId = 0;
+
+        public NeoLpgCall getCallNode( long id ) {
+            return callNodes.get( id );
+        }
+
+        public long addCallNode( NeoLpgCall call ) {
+            callNodes.put( currentNodeId, call );
+            currentNodeId++;
+            return currentNodeId-1;
+        }
+
+        public void removeCallNode( long id ) {
+            callNodes.remove( currentNodeId );
+        }
 
 
         public Neo4jStore( final long adapterId, final String uniqueName, final Map<String, String> adapterSettings, DeployMode mode ) {
@@ -572,6 +601,24 @@ public class Neo4jPlugin extends PolyPlugin {
 
         }
 
+
+        @Override
+        public Convention getConvention( AlgPlanner planner ) {
+            NeoConvention.INSTANCE.register( planner );
+            return NeoConvention.INSTANCE;
+        }
+
+
+        @Override
+        public AlgNode getCall( AlgCluster cluster, AlgTraitSet traits, ArrayList<String> namespace, String procedureName, ArrayList<PolyValue> arguments, boolean yieldAll, ArrayList<String> yieldItems ) {
+            return new NeoLpgCall( cluster, traits, namespace, procedureName, arguments, this, yieldAll, yieldItems );
+        }
+
+
+        @Override
+        public Adapter getStore() {
+            return this;
+        }
 
     }
 
