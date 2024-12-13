@@ -20,6 +20,7 @@ package org.polypheny.db.algebra.enumerable;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.logical.relational.LogicalRelIdentifierInjection;
+import org.polypheny.db.plan.AlgTraitSet;
 
 /**
  * Planner rule that converts a {@link LogicalRelIdentifierInjection} relational expression {@link EnumerableConvention enumerable calling convention}.
@@ -33,10 +34,9 @@ public class EnumerableIdentifierInjectionRule extends ConverterRule {
     @Override
     public AlgNode convert( AlgNode alg ) {
         LogicalRelIdentifierInjection injection = (LogicalRelIdentifierInjection) alg;
-        AlgNode input = injection.getInput();
-        if ( !(input.getConvention() instanceof EnumerableConvention) ) {
-            input = convert( input, input.getTraitSet().replace( EnumerableConvention.INSTANCE ) );
-        }
-        return EnumerableIdentifierInjection.create( input.getEntity(), input );
+        final AlgNode provider = convert( injection.getLeft(), injection.getLeft().getTraitSet().replace( EnumerableConvention.INSTANCE ) );
+        final AlgNode collector = convert( injection.getRight(), injection.getRight().getTraitSet().replace( EnumerableConvention.INSTANCE ) );
+        final AlgTraitSet traits = alg.getTraitSet().replace( EnumerableConvention.INSTANCE );
+        return EnumerableIdentifierInjection.create( traits, injection.getEntity(), provider, collector );
     }
 }

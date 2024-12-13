@@ -16,16 +16,15 @@
 
 package org.polypheny.db.transaction.locking;
 
-import com.google.common.collect.ImmutableList;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.AlgShuttleImpl;
+import org.polypheny.db.algebra.core.AlgFactories;
+import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
 import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer;
@@ -64,11 +63,10 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelTableFunctionScan;
 import org.polypheny.db.algebra.logical.relational.LogicalRelUnion;
 import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexIndexRef;
-import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.rex.RexUtil;
+import org.polypheny.db.tools.AlgBuilder;
 
 public class AlgTreeRewriter extends AlgShuttleImpl {
 
@@ -116,7 +114,7 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( LogicalRelProject project ) {
-        return visitChild(project, 0, project.getInput());
+        return visitChild( project, 0, project.getInput() );
     }
 
 
@@ -170,12 +168,29 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( LogicalRelModify modify ) {
-        if (modify.getOperation() != Operation.INSERT) {
+        if ( modify.getOperation() != Operation.INSERT ) {
             return visitChildren( modify );
         }
-        // modify is an insert: project away current eid and add new one using injector
-        AlgDataType modifyInputRowType = modify.getExpectedInputRowType( 0 );
 
+        AlgBuilder algBuilder = AlgFactories.LOGICAL_BUILDER.create( modify.getCluster(), modify.getCluster().getSnapshot() );
+        RexBuilder rexBuilder = algBuilder.getRexBuilder();
+        AlgNode input = modify.getInput();
+
+        algBuilder.push( LogicalRelProject.create( LogicalRelValues.createOneRow( input.getCluster() ),
+                input.getTupleType()
+                        .getFields()
+                        .stream()
+                        .map( f -> rexBuilder.makeDynamicParam( f.getType(), f.getIndex() ) )
+                        .toList(),
+                input.getTupleType() ) );
+
+        Modify<?> prepared = LogicalRelModify.create(
+                modify.getEntity(),
+                algBuilder.build(),
+                modify.getOperation(),
+                modify.getUpdateColumns(),
+                null, // ToDo TH: are they always null in our case?
+                false ).streamed( true );
 
         /*
         List<RexNode> projects = getProjects(modifyInputRowType);
@@ -183,16 +198,18 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
         AlgNode identifierRemovingProject = LogicalRelProject.create(modify.getInput(), projects , projectRowType  );
         AlgNode identifierInjection = LogicalRelIdentifierInjection.create(modify.getEntity(), identifierRemovingProject, modifyInputRowType );
          */
-        AlgNode identifierInjection = LogicalRelIdentifierInjection.create(modify.getEntity(), modify.getInput(), modifyInputRowType );
-        return modify.copy(modify.getTraitSet(), Collections.singletonList( identifierInjection ) );
+
+        return LogicalRelIdentifierInjection.create( modify.getEntity(), input, prepared );
     }
 
-    private List<RexNode> getProjects(AlgDataType rowType) {
+
+    private List<RexNode> getProjects( AlgDataType rowType ) {
         return rowType.getFields().stream()
                 .filter( f -> !f.getName().equals( IdentifierUtils.IDENTIFIER_KEY ) )
                 .map( f -> new RexIndexRef( f.getIndex(), f.getType() ) )
-                .collect( Collectors.toCollection( LinkedList::new));
+                .collect( Collectors.toCollection( LinkedList::new ) );
     }
+
 
     @Override
     public AlgNode visit( LogicalRelIdentifierInjection idInjection ) {
@@ -319,4 +336,5 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
         return visitChildren( other );
 
     }
+
 }
