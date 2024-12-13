@@ -27,7 +27,6 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
 import org.polypheny.db.processing.QueryContext;
@@ -37,7 +36,6 @@ import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.workflow.engine.storage.QueryUtils;
-import org.polypheny.db.workflow.engine.storage.StorageManager;
 
 public abstract class CheckpointReader implements AutoCloseable {
 
@@ -186,16 +184,8 @@ public abstract class CheckpointReader implements AutoCloseable {
         List<LogicalEntity> entities = inputs.stream().map( reader -> reader.entity ).toList();
 
         String queryStr = query.getQueryWithPlaceholdersReplaced( entities );
-        QueryContext context = QueryContext.builder()
-                .query( queryStr )
-                .language( QueryLanguage.from( query.getQueryLanguage() ) )
-                .isAnalysed( false )
-                .batch( 100 ) // TODO: ensure this has the desired effect, then change to suitable value
-                .origin( StorageManager.ORIGIN )
-                .namespaceId( entity.getNamespaceId() )
-                .transactionManager( transaction.getTransactionManager() )
-                .transactions( List.of( transaction ) ).build();
 
+        QueryContext context = QueryUtils.constructContext( queryStr, query.getQueryLanguage(), entity.getNamespaceId(), transaction );
         Statement statement = transaction.createStatement();
         Pair<ParsedQueryContext, AlgRoot> parsed = QueryUtils.parseAndTranslateQuery( context, statement );
 

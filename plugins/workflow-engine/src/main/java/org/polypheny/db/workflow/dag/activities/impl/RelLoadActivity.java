@@ -28,7 +28,6 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.DataModel;
-import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.transaction.Transaction;
@@ -51,9 +50,9 @@ import org.polypheny.db.workflow.engine.execution.context.PipeExecutionContext;
 import org.polypheny.db.workflow.engine.execution.pipe.InputPipe;
 import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
 import org.polypheny.db.workflow.engine.storage.BatchWriter;
-import org.polypheny.db.workflow.engine.storage.StorageManager;
+import org.polypheny.db.workflow.engine.storage.QueryUtils;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
-import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
+import org.polypheny.db.workflow.engine.storage.reader.RelReader;
 
 @ActivityDefinition(type = "relLoad", displayName = "Load Table", categories = { ActivityCategory.LOAD, ActivityCategory.RELATIONAL },
         inPorts = { @InPort(type = PortType.REL) },
@@ -82,36 +81,7 @@ public class RelLoadActivity implements Activity, Fusable, Pipeable {
     @Override
     public void execute( List<CheckpointReader> inputs, Settings settings, ExecutionContext ctx ) throws Exception {
         LogicalTable table = getEntity( settings.get( TABLE_KEY, EntityValue.class ) );
-        Transaction transaction = ctx.getTransaction();
-        int mapCapacity = (int) Math.ceil( table.getTupleType().getFieldCount() / 0.75 );
-
-        Map<Long, AlgDataType> paramTypes = new HashMap<>();
-        StringJoiner joiner = new StringJoiner( ", ", "(", ")" );
-        for ( int i = 1; i < table.getTupleType().getFieldCount(); i++ ) {
-            joiner.add( "?" );
-            AlgDataType fieldType = table.getTupleType().getFields().get( i ).getType();
-            paramTypes.put( (long) i - 1, fieldType );
-        }
-
-        String query = "INSERT INTO \"" + table.getName() + "\" VALUES " + joiner;
-        QueryContext context = QueryContext.builder()
-                .query( query )
-                .language( QueryLanguage.from( "SQL" ) )
-                .isAnalysed( false )
-                .origin( StorageManager.ORIGIN + "-RelWriterCtx" )
-                .namespaceId( table.getNamespaceId() )
-                .transactionManager( transaction.getTransactionManager() )
-                .transactions( List.of( transaction ) ).build();
-
-        try ( BatchWriter writer = new BatchWriter( context, transaction.createStatement(), paramTypes ) ) {
-            for ( List<PolyValue> row : inputs.get( 0 ).getIterable() ) {
-                Map<Long, PolyValue> map = new HashMap<>( mapCapacity );
-                for ( int i = 1; i < row.size(); i++ ) { // skip primary key
-                    map.put( (long) i - 1, row.get( i ) );
-                }
-                writer.write( map );
-            }
-        }
+        write( table, ctx.getTransaction(), inputs.get( 0 ).getIterable(), ctx, ((RelReader) inputs.get( 0 )).getRowCount() );
     }
 
 
@@ -124,11 +94,7 @@ public class RelLoadActivity implements Activity, Fusable, Pipeable {
     @Override
     public void pipe( List<InputPipe> inputs, OutputPipe output, Settings settings, PipeExecutionContext ctx ) throws Exception {
         LogicalTable table = getEntity( settings.get( TABLE_KEY, EntityValue.class ) );
-
-        // TODO: modify writer to allow its use for arbitrary entities, not just checkpoints (requires disabling of auto commit etc.)
-        try ( RelWriter writer = new RelWriter( table, ctx.getTransaction(), true ) ) {
-            writer.write( inputs.get( 0 ).iterator() );
-        }
+        write( table, ctx.getTransaction(), inputs.get( 0 ), null, 1 ); // we do not know the number of rows
     }
 
 
@@ -145,6 +111,39 @@ public class RelLoadActivity implements Activity, Fusable, Pipeable {
             throw new InvalidSettingException( "Specified table does not exist", "table" );
         }
         return table;
+    }
+
+
+    private void write( LogicalTable table, Transaction transaction, Iterable<List<PolyValue>> rows, ExecutionContext ctx, long totalRows ) throws Exception {
+
+        Map<Long, AlgDataType> paramTypes = new HashMap<>();
+        StringJoiner joiner = new StringJoiner( ", ", "(", ")" );
+        for ( int i = 1; i < table.getTupleType().getFieldCount(); i++ ) {
+            joiner.add( "?" );
+            AlgDataType fieldType = table.getTupleType().getFields().get( i ).getType();
+            paramTypes.put( (long) i - 1, fieldType );
+        }
+
+        String query = "INSERT INTO \"" + table.getName() + "\" VALUES " + joiner;
+        QueryContext context = QueryUtils.constructContext( query, "SQL", table.getNamespaceId(), transaction );
+
+        int mapCapacity = (int) Math.ceil( table.getTupleType().getFieldCount() / 0.75 );
+        long rowCount = 0;
+        try ( BatchWriter writer = new BatchWriter( context, transaction.createStatement(), paramTypes ) ) {
+            for ( List<PolyValue> row : rows ) {
+                Map<Long, PolyValue> map = new HashMap<>( mapCapacity );
+                for ( int i = 1; i < row.size(); i++ ) { // skip primary key
+                    map.put( (long) i - 1, row.get( i ) );
+                }
+                writer.write( map );
+
+                rowCount++;
+                if ( ctx != null && rowCount % 1024 == 0 ) {
+                    ctx.updateProgress( (double) rowCount / totalRows );
+                    ctx.checkInterrupted();
+                }
+            }
+        }
     }
 
 }

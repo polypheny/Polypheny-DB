@@ -33,12 +33,9 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.DataModel;
-import org.polypheny.db.languages.LanguageManager;
-import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
-import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.trait.ModelTrait;
@@ -96,29 +93,23 @@ public class RelExtractActivity implements Activity, Fusable, Pipeable {
         LogicalTable table = settings.get( TABLE_KEY, EntityValue.class ).getTable();
         AlgDataType type = getOutputType( table );
 
-
-        /* Batch Reader approach (slower for some adapters like HSQLDB Disk, but faster for others (Postgres Docker))
-
-        List<String> pkCols = QueryUtils.getPkCols( table );
-        if (!QueryUtils.hasIndex(table, pkCols)) {
-            QueryUtils.createIndex( table, pkCols, false ); // TODO: drop index after reading
-        }
-
-        // TODO: uniqueness of pk values is currently an issue
-        if (pkCols.size() != 1) {
-            throw new NotImplementedException("RelExtract does not yet support tables with multiple pk columns");
-        }
-
-        try ( RelWriter writer = (RelWriter) ctx.createWriter( 0, type, true );
-                RelBatchReader batchReader = new AsyncRelBatchReader( table, ctx.getTransaction(), pkCols.get( 0 ),true ); ) { // transaction will get committed or rolled back externally
-            while (batchReader.hasNext()) {
-                writer.wInsert( Arrays.asList( batchReader.next() ), null, 0 );
-            }
-        }*/
-
         try ( RelWriter writer = (RelWriter) ctx.createWriter( 0, type, true );
                 ResultIterator result = getResultIterator( ctx.getTransaction(), table ) ) { // transaction will get committed or rolled back externally
+
             writer.write( CheckpointReader.arrayToListIterator( result.getIterator(), true ) );
+
+            /* Measuring execution time vs iteration time:
+
+            Iterator<PolyValue[]> it = result.getIterator();
+            int count = 0;
+            StopWatch stopWatch = new StopWatch();
+            stopWatch.start();
+            while ( it.hasNext()) {
+                it.next();
+                count++;
+            }
+            stopWatch.stop();
+            System.out.println("Count: " + count + ", time: " + stopWatch.getDuration().toMillis());*/
         }
 
     }
@@ -191,21 +182,13 @@ public class RelExtractActivity implements Activity, Fusable, Pipeable {
         String quotedCols = QueryUtils.quoteAndJoin( table.getColumnNames() );
         String quotedName = QueryUtils.quotedIdentifier( table );
         String query = "SELECT 0, " + quotedCols + " FROM " + quotedName; // add a new column for the primary key
-        QueryContext context = QueryContext.builder()
-                .query( query )
-                .language( QueryLanguage.from( "SQL" ) )
-                .isAnalysed( false )
-                .origin( StorageManager.ORIGIN )
-                .namespaceId( table.getNamespaceId() )
-                .transactionManager( transaction.getTransactionManager() )
-                .transactions( List.of( transaction ) ).build();
 
         System.out.println( "Before exec" );
         long start = System.currentTimeMillis();
-        List<ExecutedContext> executedContexts = LanguageManager.getINSTANCE().anyQuery( context );
+        ExecutedContext executedContext = QueryUtils.parseAndExecuteQuery( query, "SQL", table.getNamespaceId(), transaction );
         System.out.println( "After exec (" + (System.currentTimeMillis() - start) + " ms)" );
 
-        return executedContexts.get( 0 ).getIterator();
+        return executedContext.getIterator();
     }
 
 }

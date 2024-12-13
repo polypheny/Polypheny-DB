@@ -197,13 +197,8 @@ public class WorkflowScheduler {
 
         if ( !result.isSuccess() ) {
             sm.dropCheckpoints( result.getRootId() ); // remove any created checkpoints
-            Throwable cause = result.getException().getCause();
-
             // for debugging
             result.getException().printStackTrace();
-            if ( cause != null ) {
-                log.warn( "ExecutorException has inner exception", cause );
-            }
             setErrorVariable( result.getActivities(), result.getException() );
         }
         log.info( "Root variables: " + workflow.getActivity( result.getRootId() ).getVariables() );

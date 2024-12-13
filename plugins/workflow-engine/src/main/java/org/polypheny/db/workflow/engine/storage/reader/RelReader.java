@@ -17,23 +17,18 @@
 package org.polypheny.db.workflow.engine.storage.reader;
 
 import java.util.Iterator;
-import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.languages.LanguageManager;
-import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
-import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.workflow.engine.storage.QueryUtils;
-import org.polypheny.db.workflow.engine.storage.StorageManager;
 
 public class RelReader extends CheckpointReader {
 
@@ -81,17 +76,9 @@ public class RelReader extends CheckpointReader {
 
 
     private Iterator<PolyValue[]> executeSqlQuery( String query ) {
-        LogicalTable table = getTable();
-        QueryContext context = QueryContext.builder()
-                .query( query )
-                .language( QueryLanguage.from( "SQL" ) )
-                .isAnalysed( false )
-                .origin( StorageManager.ORIGIN )
-                .namespaceId( table.getNamespaceId() )
-                .transactionManager( transaction.getTransactionManager() )
-                .transactions( List.of( transaction ) ).build();
-        List<ExecutedContext> executedContexts = LanguageManager.getINSTANCE().anyQuery( context );
-        Iterator<PolyValue[]> iterator = executedContexts.get( 0 ).getIterator().getIterator();
+        ExecutedContext executedContext = QueryUtils.parseAndExecuteQuery(
+                query, "SQL", getTable().getNamespaceId(), transaction );
+        Iterator<PolyValue[]> iterator = executedContext.getIterator().getIterator();
         registerIterator( iterator );
         return iterator;
     }

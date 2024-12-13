@@ -22,13 +22,12 @@ import java.util.Map;
 import java.util.StringJoiner;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.workflow.engine.storage.BatchWriter;
-import org.polypheny.db.workflow.engine.storage.StorageManager;
+import org.polypheny.db.workflow.engine.storage.QueryUtils;
 
 public class RelWriter extends CheckpointWriter {
 
@@ -53,15 +52,7 @@ public class RelWriter extends CheckpointWriter {
         }
 
         String query = "INSERT INTO \"" + table.getName() + "\" VALUES " + joiner;
-        QueryContext context = QueryContext.builder()
-                .query( query )
-                .language( QueryLanguage.from( "SQL" ) )
-                .isAnalysed( false )
-                .origin( StorageManager.ORIGIN + "-RelWriterCtx" )
-                .namespaceId( table.getNamespaceId() )
-                .transactionManager( transaction.getTransactionManager() )
-                .transactions( List.of( transaction ) ).build();
-
+        QueryContext context = QueryUtils.constructContext( query, "SQL", table.getNamespaceId(), transaction );
         writer = new BatchWriter( context, transaction.createStatement(), paramTypes );
     }
 

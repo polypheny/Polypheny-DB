@@ -69,6 +69,19 @@ public class QueryUtils {
     }
 
 
+    public static QueryContext constructContext( String query, String queryLanguage, long namespaceId, Transaction transaction ) {
+        return QueryContext.builder()
+                .query( query )
+                .language( QueryLanguage.from( queryLanguage ) )
+                .isAnalysed( false )
+                .origin( StorageManager.ORIGIN )
+                .batch( 100 ) // TODO: ensure this has the desired effect, then change to suitable value
+                .namespaceId( namespaceId )
+                .transactionManager( transaction.getTransactionManager() )
+                .transactions( List.of( transaction ) ).build();
+    }
+
+
     public static Pair<ParsedQueryContext, AlgRoot> parseAndTranslateQuery( QueryContext context, Statement statement ) {
         ParsedQueryContext parsed = context.getLanguage().parser().apply( context ).get( 0 );
         Processor processor = context.getLanguage().processorSupplier().get();
@@ -95,14 +108,15 @@ public class QueryUtils {
     }
 
 
+    public static ExecutedContext parseAndExecuteQuery( String query, String queryLanguage, long namespaceId, Transaction transaction ) {
+        QueryContext context = constructContext( query, queryLanguage, namespaceId, transaction );
+        Statement statement = transaction.createStatement();
+        return executeQuery( parseAndTranslateQuery( context, statement ), statement );
+    }
+
+
     public static ExecutedContext executeAlgRoot( AlgRoot root, Statement statement ) {
-        QueryContext context = QueryContext.builder()
-                .query( "" )
-                .language( QueryLanguage.from( "SQL" ) ) // TODO: does this language matter?
-                .isAnalysed( false )
-                .origin( StorageManager.ORIGIN )
-                .transactionManager( statement.getTransaction().getTransactionManager() )
-                .transactions( List.of( statement.getTransaction() ) ).build();
+        QueryContext context = constructContext( "", "SQL", Catalog.defaultNamespaceId, statement.getTransaction() );
         ParsedQueryContext parsedContext = ParsedQueryContext.fromQuery( "", null, context );
         return executeQuery( Pair.of( parsedContext, root ), statement );
     }
