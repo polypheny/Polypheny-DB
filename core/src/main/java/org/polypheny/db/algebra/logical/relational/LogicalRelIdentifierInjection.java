@@ -20,10 +20,9 @@ import java.util.List;
 import lombok.Getter;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.SingleAlg;
+import org.polypheny.db.algebra.core.common.Streamer;
 import org.polypheny.db.algebra.core.relational.RelAlg;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
-import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
@@ -34,31 +33,21 @@ import org.polypheny.db.plan.AlgTraitSet;
  * Relational expression that complements the results of its input expression with unique identifiers.
  */
 @Getter
-public class LogicalRelIdentifierInjection extends SingleAlg implements RelAlg {
+public class LogicalRelIdentifierInjection extends Streamer implements RelAlg {
 
     public final Entity entity;
 
 
-    protected LogicalRelIdentifierInjection( Entity entity, AlgCluster cluster, AlgTraitSet traits, AlgNode input, AlgDataType rowType ) {
-        super( cluster, traits, input );
-
+    protected LogicalRelIdentifierInjection( Entity entity, AlgCluster cluster, AlgTraitSet traits, AlgNode provider, AlgNode collector ) {
+        super( cluster, traits, provider, collector );
         this.entity = entity;
-        this.rowType = rowType;
     }
 
 
-    public static LogicalRelIdentifierInjection create( Entity table, final AlgNode input, AlgDataType rowType ) {
-        final AlgCluster cluster = input.getCluster();
-        final AlgTraitSet traits = input.getTraitSet();
-        return new LogicalRelIdentifierInjection( table, cluster, traits, input, rowType );
-    }
-
-
-    @Override
-    public String algCompareString() {
-        return this.getClass().getSimpleName() + "$" +
-                input.algCompareString() + "$" +
-                entity.hashCode()+ "&";
+    public static LogicalRelIdentifierInjection create( Entity entity, final AlgNode provider, AlgNode collector ) {
+        final AlgCluster cluster = provider.getCluster();
+        final AlgTraitSet traits = provider.getTraitSet();
+        return new LogicalRelIdentifierInjection( entity, cluster, traits, provider, collector );
     }
 
 
@@ -70,14 +59,14 @@ public class LogicalRelIdentifierInjection extends SingleAlg implements RelAlg {
 
     @Override
     public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
-        double dRows = mq.getTupleCount( getInput() );
+        double dRows = mq.getTupleCount( getLeft() );
         return planner.getCostFactory().makeCost( dRows, 0, 0 );
     }
 
 
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        return new LogicalRelIdentifierInjection( entity, getCluster(), traitSet, sole( inputs ), getRowType() );
+        return new LogicalRelIdentifierInjection( entity, getCluster(), traitSet, getLeft(), getRight() );
     }
 
 }

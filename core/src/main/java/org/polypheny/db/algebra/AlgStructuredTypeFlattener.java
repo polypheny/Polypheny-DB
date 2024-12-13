@@ -592,8 +592,8 @@ public class AlgStructuredTypeFlattener implements AlgConsumingVisitor {
         LogicalRelIdentifierInjection newAlg =
                 LogicalRelIdentifierInjection.create(
                         alg.getEntity(),
-                        getNewForOldRel( alg.getInput() ),
-                        alg.getRowType());
+                        getNewForOldRel( alg.getLeft() ),
+                        getNewForOldRel( alg.getRight() ));
         setNewForOldAlg( alg, newAlg );
     }
 
