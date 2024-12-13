@@ -323,7 +323,6 @@ public class Functions {
         return Linq4j.asEnumerable( results );
     }
 
-
     private static AlgDataType deriveType( AlgDataTypeFactory factory, PolyType type ) {
         if ( type == PolyType.CHAR ) {
             return factory.createPolyType( PolyType.VARCHAR );
