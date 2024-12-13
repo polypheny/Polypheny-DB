@@ -509,7 +509,7 @@ public enum RuntimeConfig {
     LOCKING_MAX_TIMEOUT_SECONDS(
             "runtime/maxTimeout",
             "How long a transactions should wait for a lock until it is aborted",
-            30,
+            90,
             ConfigType.INTEGER );
 
 
@@ -654,99 +654,30 @@ public enum RuntimeConfig {
         this.key = key;
         this.description = description;
 
-        final Config config;
-        switch ( configType ) {
-            case BOOLEAN:
-                config = new ConfigBoolean( key, description, (boolean) defaultValue );
-                break;
-
-            case DECIMAL:
-                config = new ConfigDecimal( key, description, (BigDecimal) defaultValue );
-                break;
-
-            case DOUBLE:
-                config = new ConfigDouble( key, description, (double) defaultValue );
-                break;
-
-            case INTEGER:
-                config = new ConfigInteger( key, description, (int) defaultValue );
-                break;
-
-            case LONG:
-                config = new ConfigLong( key, description, (long) defaultValue );
-                break;
-
-            case STRING:
-                config = new ConfigString( key, description, (String) defaultValue );
-                break;
-
-            case ENUM:
-                config = new ConfigEnum( key, description, defaultValue.getClass(), (Enum) defaultValue );
-                break;
-
-            case BOOLEAN_TABLE:
-                config = new ConfigTable( key, (boolean[][]) defaultValue );
-                break;
-
-            case DECIMAL_TABLE:
-                config = new ConfigTable( key, (BigDecimal[][]) defaultValue );
-                break;
-
-            case DOUBLE_TABLE:
-                config = new ConfigTable( key, (double[][]) defaultValue );
-                break;
-
-            case INTEGER_TABLE:
-                config = new ConfigTable( key, (int[][]) defaultValue );
-                break;
-
-            case LONG_TABLE:
-                config = new ConfigTable( key, (long[][]) defaultValue );
-                break;
-
-            case STRING_TABLE:
-                config = new ConfigTable( key, (String[][]) defaultValue );
-                break;
-
-            case BOOLEAN_ARRAY:
-                config = new ConfigArray( key, (boolean[]) defaultValue );
-                break;
-
-            case DECIMAL_ARRAY:
-                config = new ConfigArray( key, (BigDecimal[]) defaultValue );
-                break;
-
-            case DOUBLE_ARRAY:
-                config = new ConfigArray( key, (double[]) defaultValue );
-                break;
-
-            case INTEGER_ARRAY:
-                config = new ConfigArray( key, (int[]) defaultValue );
-                break;
-
-            case LONG_ARRAY:
-                config = new ConfigArray( key, (long[]) defaultValue );
-                break;
-
-            case STRING_ARRAY:
-                config = new ConfigArray( key, (String[]) defaultValue );
-                break;
-
-            case STRING_LIST:
-                config = new ConfigList( key, (List<?>) defaultValue, String.class );
-                break;
-
-            case DOCKER_LIST:
-                config = new ConfigList( key, (List<?>) defaultValue, ConfigDocker.class );
-                break;
-
-            case PLUGIN_LIST:
-                config = new ConfigList( key, (List<?>) defaultValue, ConfigPlugin.class );
-                break;
-
-            default:
-                throw new GenericRuntimeException( "Unknown config type: " + configType.name() );
-        }
+        final Config config = switch ( configType ) {
+            case BOOLEAN -> new ConfigBoolean( key, description, (boolean) defaultValue );
+            case DECIMAL -> new ConfigDecimal( key, description, (BigDecimal) defaultValue );
+            case DOUBLE -> new ConfigDouble( key, description, (double) defaultValue );
+            case INTEGER -> new ConfigInteger( key, description, (int) defaultValue );
+            case LONG -> new ConfigLong( key, description, (long) defaultValue );
+            case STRING -> new ConfigString( key, description, (String) defaultValue );
+            case ENUM -> new ConfigEnum( key, description, defaultValue.getClass(), (Enum) defaultValue );
+            case BOOLEAN_TABLE -> new ConfigTable( key, (boolean[][]) defaultValue );
+            case DECIMAL_TABLE -> new ConfigTable( key, (BigDecimal[][]) defaultValue );
+            case DOUBLE_TABLE -> new ConfigTable( key, (double[][]) defaultValue );
+            case INTEGER_TABLE -> new ConfigTable( key, (int[][]) defaultValue );
+            case LONG_TABLE -> new ConfigTable( key, (long[][]) defaultValue );
+            case STRING_TABLE -> new ConfigTable( key, (String[][]) defaultValue );
+            case BOOLEAN_ARRAY -> new ConfigArray( key, (boolean[]) defaultValue );
+            case DECIMAL_ARRAY -> new ConfigArray( key, (BigDecimal[]) defaultValue );
+            case DOUBLE_ARRAY -> new ConfigArray( key, (double[]) defaultValue );
+            case INTEGER_ARRAY -> new ConfigArray( key, (int[]) defaultValue );
+            case LONG_ARRAY -> new ConfigArray( key, (long[]) defaultValue );
+            case STRING_ARRAY -> new ConfigArray( key, (String[]) defaultValue );
+            case STRING_LIST -> new ConfigList( key, (List<?>) defaultValue, String.class );
+            case DOCKER_LIST -> new ConfigList( key, (List<?>) defaultValue, ConfigDocker.class );
+            case PLUGIN_LIST -> new ConfigList( key, (List<?>) defaultValue, ConfigPlugin.class );
+        };
         configManager.registerConfig( config );
         if ( webUiGroup != null ) {
             config.withUi( webUiGroup );

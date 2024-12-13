@@ -153,6 +153,7 @@ public class PolyTypeAssignmentRules {
         // TEXT is assignable from...
         rule.clear();
         rule.add( PolyType.TEXT );
+        rule.add( PolyType.CHAR );
         rule.add( PolyType.VARCHAR );
         rule.add( PolyType.DOCUMENT );
         rules.add( PolyType.TEXT, rule );

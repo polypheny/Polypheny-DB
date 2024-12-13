@@ -311,4 +311,5 @@ public class RexShuttle implements RexVisitor<RexNode> {
     public final RexNode apply( RexNode expr ) {
         return (expr == null) ? null : expr.accept( this );
     }
+
 }

@@ -1713,7 +1713,6 @@ public enum OperatorName {
 
     CYPHER_LIKE( LangFunctionOperator.class ),
 
-    CYPHER_GRAPH_ONLY_LABEL( LangFunctionOperator.class ),
 
     CYPHER_GEO_DISTANCE( LangFunctionOperator.class ),
 

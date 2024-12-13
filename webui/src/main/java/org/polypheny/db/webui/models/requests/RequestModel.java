@@ -24,7 +24,7 @@ import lombok.experimental.SuperBuilder;
 public class RequestModel {
 
     /**
-     * ExpressionType of a request, e.g. QueryRequest or RelAlgRequest
+     * ExpressionType of a request, e.g. QueryRequest
      */
     public String type;
 

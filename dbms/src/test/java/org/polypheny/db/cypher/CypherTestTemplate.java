@@ -121,7 +121,7 @@ public class CypherTestTemplate {
     }
 
 
-    protected boolean containsNodes( GraphResult res, boolean exclusive, TestObject... nodes ) {
+    protected boolean containsNodes( GraphResult res, boolean exclusive, TestNode... nodes ) {
         if ( res.getHeader().length == 1 && res.getHeader()[0].dataType.toLowerCase( Locale.ROOT ).contains( "node" ) ) {
             return contains( res.getData(), exclusive, 0, PolyNode.class, nodes );
         }

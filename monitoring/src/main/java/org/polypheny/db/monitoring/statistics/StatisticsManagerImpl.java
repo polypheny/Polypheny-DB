@@ -72,7 +72,6 @@ import org.polypheny.db.schema.impl.AbstractEntity;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
-import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.entity.PolyValue;
@@ -215,12 +214,8 @@ public class StatisticsManagerImpl extends StatisticsManager {
             log.debug( "Finished resetting StatisticManager." );
             statisticQueryInterface.commitTransaction( transaction, statement );
         } catch ( Exception e ) {
-            try {
-                statement.getQueryProcessor().unlock( statement );
-                statement.getTransaction().rollback();
-            } catch ( TransactionException ex ) {
-                throw new GenericRuntimeException( ex );
-            }
+            statement.getQueryProcessor().unlock( statement );
+            statement.getTransaction().rollback( e.getMessage() );
         }
     }
 
@@ -1046,7 +1041,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
                 entityStatistic.put( tableId, statisticTable );
                 break;
             default:
-                log.warn( "Currently, only SELECT, INSERT, DELETE and UPDATE are available in Statistics." );
+                log.warn( "Currently, only SELECT, INSERT, DELETE and UPDATE are available in Statistics. Found " + kind );
         }
     }
 

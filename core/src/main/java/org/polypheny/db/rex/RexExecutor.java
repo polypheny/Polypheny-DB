@@ -53,5 +53,5 @@ public interface RexExecutor {
      * @param reducedValues List to which reduced expressions are appended
      */
     void reduce( RexBuilder rexBuilder, List<RexNode> constExps, List<RexNode> reducedValues );
-}
 
+}

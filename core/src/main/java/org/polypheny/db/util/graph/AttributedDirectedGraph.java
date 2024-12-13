@@ -143,6 +143,7 @@ public class AttributedDirectedGraph<V, E extends DefaultEdge> extends DefaultDi
     public interface AttributedEdgeFactory<V, E> extends EdgeFactory<V, E> {
 
         E createEdge( V v0, V v1, Object... attributes );
-    }
-}
 
+    }
+
+}

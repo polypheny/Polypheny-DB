@@ -140,6 +140,7 @@ public class VolcanoPlannerTest extends SqlLanguageDependent {
         return sort( Arrays.asList( es ) );
     }
 
+
     private void removeTrivialProject( boolean useRule ) {
         VolcanoPlanner planner = new VolcanoPlanner();
         planner.ambitious = true;
@@ -222,6 +223,7 @@ public class VolcanoPlannerTest extends SqlLanguageDependent {
         assertEquals( "c", resultLeaf.label );
     }
 
+
     /**
      * Converter from PHYS to ENUMERABLE convention.
      */
@@ -271,6 +273,7 @@ public class VolcanoPlannerTest extends SqlLanguageDependent {
         }
 
     }
+
 
     /**
      * Planner rule that converts a {@link LogicalRelProject} to PHYS convention.
@@ -324,6 +327,4 @@ public class VolcanoPlannerTest extends SqlLanguageDependent {
     }
 
 
-
 }
-

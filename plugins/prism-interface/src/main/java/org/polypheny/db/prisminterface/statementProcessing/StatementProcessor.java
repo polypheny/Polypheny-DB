@@ -19,7 +19,9 @@ package org.polypheny.db.prisminterface.statementProcessing;
 import com.google.common.collect.ImmutableMap;
 import java.util.List;
 import java.util.Map;
+import lombok.SneakyThrows;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.languages.LanguageManager;
@@ -34,7 +36,6 @@ import org.polypheny.db.processing.Processor;
 import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
-import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.util.Pair;
 import org.polypheny.prism.Frame;
 import org.polypheny.prism.StatementResult;
@@ -50,6 +51,9 @@ public class StatementProcessor {
                     .build();
 
 
+    // @SneakyThrows is needed for rethrowing implementation.get( 0 ).getException() without
+    // having to annotate everything with "throws Throwable" or wrapping it in another Exception
+    @SneakyThrows
     public static void implement( PIStatement piStatement ) {
         Statement statement = piStatement.getStatement();
         if ( statement == null ) {
@@ -70,19 +74,13 @@ public class StatementProcessor {
             // we remove additional transaction which where opened for auto generation todo adjust if interface supports it
             implementations.stream()
                     .filter( i -> !i.getStatement().getTransaction().getXid().equals( piStatement.getStatement().getTransaction().getXid() ) )
-                    .forEach( i -> {
-                        try {
-                            i.getStatement().getTransaction().rollback();
-                        } catch ( TransactionException e ) {
-                            throw new GenericRuntimeException( e );
-                        }
-                    } );
+                    .forEach( i -> i.getStatement().getTransaction().rollback( "Closing auto-generated transactions" ) );
 
             throw new GenericRuntimeException( "This query relies on an auto-generated subquery, which is not supported by this interface. Transaction was rolled backed." );
         }
 
         if ( implementations.get( 0 ).getImplementation() == null ) {
-            throw new GenericRuntimeException( implementations.get( 0 ).getException().orElseThrow() );
+            throw implementations.get( 0 ).getException().orElseThrow();
         }
         piStatement.setImplementation( implementations.get( 0 ).getImplementation() );
     }
@@ -110,11 +108,7 @@ public class StatementProcessor {
                     9004
             );
         }
-        try {
-            return executor.executeAndGetResult( piStatement, fetchSize );
-        } catch ( Exception e ) {
-            throw new GenericRuntimeException( e ); // TODO: check if this is still needed, or if executeAndGetResult throws another exception by now
-        }
+        return executor.executeAndGetResult( piStatement, fetchSize );
     }
 
 
@@ -143,6 +137,7 @@ public class StatementProcessor {
         Pair<Node, AlgDataType> validated = queryProcessor.validate( transaction, parsed, false );
         AlgDataType parameterRowType = queryProcessor.getParameterRowType( validated.left );
         piStatement.setParameterMetas( RelationalMetaRetriever.retrieveParameterMetas( parameterRowType ) );
+        piStatement.setParameterPolyTypes( parameterRowType.getFields().stream().map( AlgDataTypeField::getType ).toList() );
     }
 
 }

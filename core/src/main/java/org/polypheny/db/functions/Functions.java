@@ -522,9 +522,8 @@ public class Functions {
                 return ImageMetadataReader.readMetadata( new ByteArrayInputStream( (byte[]) mm ) );
             } else if ( mm instanceof Blob || mm instanceof InputStream ) {
                 InputStream is;
-                if ( mm instanceof PushbackInputStream ) {
+                if ( mm instanceof PushbackInputStream pbis ) {
                     byte[] buffer = new byte[10240];
-                    PushbackInputStream pbis = (PushbackInputStream) mm;
                     int len = pbis.read( buffer );
                     Metadata md = ImageMetadataReader.readMetadata( new ByteArrayInputStream( buffer ), len );
                     pbis.unread( buffer );
@@ -2137,7 +2136,7 @@ public class Functions {
      * NULL &rarr; NULL, FALSE &rarr; TRUE, TRUE &rarr; FALSE.
      */
     public static PolyBoolean not( PolyBoolean b ) {
-        return PolyBoolean.of( !b.value );
+        return b == null || b.value == null ? PolyBoolean.of( null ) : PolyBoolean.of( !b.value );
     }
 
 
@@ -2596,7 +2595,7 @@ public class Functions {
             };
             try {
                 Object json = ctx.read( pathWff );
-                PolyValue val = null;
+                PolyValue val;
                 try {
                     val = json == null ? null : PolyValue.fromJson( json.toString() );
                 } catch ( JsonParseException | GenericRuntimeException e ) {
@@ -2658,7 +2657,6 @@ public class Functions {
             case ERROR -> throw toUnchecked( exc );
             case NULL -> null;
             case DEFAULT -> defaultValueOnError;
-            default -> throw Static.RESOURCE.illegalErrorBehaviorInJsonValueFunc( errorBehavior.toString() ).ex();
         };
     }
 
@@ -2673,23 +2671,17 @@ public class Functions {
             if ( context.pathReturned == null ) {
                 value = null;
             } else {
-                switch ( wrapperBehavior ) {
-                    case WITHOUT_ARRAY:
-                        value = context.pathReturned;
-                        break;
-                    case WITH_UNCONDITIONAL_ARRAY:
-                        value = PolyList.of( context.pathReturned );
-                        break;
-                    case WITH_CONDITIONAL_ARRAY:
+                value = switch ( wrapperBehavior ) {
+                    case WITHOUT_ARRAY -> context.pathReturned;
+                    case WITH_UNCONDITIONAL_ARRAY -> PolyList.of( context.pathReturned );
+                    case WITH_CONDITIONAL_ARRAY -> {
                         if ( context.pathReturned instanceof Collection ) {
-                            value = context.pathReturned;
+                            yield context.pathReturned;
                         } else {
-                            value = PolyList.of( context.pathReturned );
+                            yield PolyList.of( context.pathReturned );
                         }
-                        break;
-                    default:
-                        throw Static.RESOURCE.illegalWrapperBehaviorInJsonQueryFunc( wrapperBehavior.toString() ).ex();
-                }
+                    }
+                };
             }
             if ( value == null || context.mode == PathMode.LAX && isScalarObject( value ) ) {
                 return switch ( emptyBehavior ) {

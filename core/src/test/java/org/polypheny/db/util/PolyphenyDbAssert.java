@@ -27,6 +27,7 @@ public class PolyphenyDbAssert {
 
     public static final boolean ENABLE_SLOW = false;
 
+
     static Collection<String> toStringList( ResultSet resultSet, Collection<String> list ) throws SQLException {
         return new ResultSetFormatter().toStringList( resultSet, list );
     }
@@ -94,5 +95,7 @@ public class PolyphenyDbAssert {
             buf.setLength( 0 );
             return s;
         }
+
     }
+
 }

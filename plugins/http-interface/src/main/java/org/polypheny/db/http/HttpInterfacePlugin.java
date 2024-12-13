@@ -147,7 +147,6 @@ public class HttpInterfacePlugin extends PolyPlugin {
                     }
                 } ) );
                 config.enableCorsForAllOrigins();
-                config.addStaticFiles( staticFileConfig -> staticFileConfig.directory = "webapp/" );
             } ).start( port );
             server.exception( Exception.class, ( e, ctx ) -> {
                 log.warn( "Caught exception in the HTTP interface", e );

@@ -105,5 +105,7 @@ public class SequencedAdderAggregateLambdaFactory<TSource, TAccumulate, TResult,
             }
             return result;
         }
+
     }
+
 }

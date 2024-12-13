@@ -28,6 +28,8 @@ import java.util.List;
 import java.util.Optional;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import net.lingala.zip4j.ZipFile;
+import net.lingala.zip4j.exception.ZipException;
 import org.jetbrains.annotations.NotNull;
 
 
@@ -269,8 +271,17 @@ public class PolyphenyHomeDirManager {
     }
 
 
-    public File registerNewGlobalFolder( String testBackup ) {
-        return registerNewFolder( this.root, testBackup );
+    public File registerNewGlobalFolder( String folder ) {
+        return registerNewFolder( this.root, folder );
+    }
+
+
+    public void unzipInto( File zip, File target ) {
+        try {
+            new ZipFile( zip ).extractAll( target.getAbsolutePath() );
+        } catch ( ZipException e ) {
+            throw new RuntimeException( "Could not unzip: {}", e );
+        }
     }
 
 
@@ -279,8 +290,13 @@ public class PolyphenyHomeDirManager {
     }
 
 
-    public File getRootPath() {
+    public File getHomePath() {
         return home;
+    }
+
+
+    public File getRootPath() {
+        return root;
     }
 
 }

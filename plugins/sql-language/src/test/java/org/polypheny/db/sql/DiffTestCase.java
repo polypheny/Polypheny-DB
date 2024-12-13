@@ -115,7 +115,6 @@ public abstract class DiffTestCase {
     }
 
 
-
     /**
      * Initializes a diff-based test. Any existing .log and .dif files corresponding to this test case are deleted, and a new, empty .log file is created. The default log file location is a subdirectory under the
      * result getTestlogRoot(), where the subdirectory name is based on the unqualified name of the test class. The generated log file name will be testMethodName.log, and the expected reference file will be testMethodName.ref.
@@ -478,4 +477,3 @@ public abstract class DiffTestCase {
     }
 
 }
-

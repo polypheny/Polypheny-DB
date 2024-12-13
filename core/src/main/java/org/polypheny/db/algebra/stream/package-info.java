@@ -1,4 +1,3 @@
-
 /**
  * Defines relational expressions for streaming.
  *
@@ -9,4 +8,3 @@
  */
 
 package org.polypheny.db.algebra.stream;
-

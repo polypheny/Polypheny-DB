@@ -51,6 +51,7 @@ public class NumberUtil {
     private NumberUtil() {
     }
 
+
     private static final DecimalFormat FLOAT_FORMATTER;
     private static final DecimalFormat DOUBLE_FORMATTER;
     private static final BigInteger[] BIG_INT_TEN_POW;
@@ -204,5 +205,5 @@ public class NumberUtil {
             return Math.min( a, b );
         }
     }
-}
 
+}

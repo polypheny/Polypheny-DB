@@ -28,6 +28,7 @@ public class MonitoringServiceProvider {
     private static MonitoringService INSTANCE = null;
     public static boolean resetRepository = false;
 
+
     public static MonitoringService getInstance() {
         if ( INSTANCE == null ) {
             INSTANCE = MonitoringServiceFactory.createMonitoringService( resetRepository );

@@ -669,7 +669,7 @@ public class CypherToAlgConverter {
             for ( Pair<PolyString, PolyNode> node : nodes ) {
                 if ( !this.nodes.containsKey( node.left ) ) {
                     this.nodes.put( node.left, node.right );
-                } else if ( node.left == null ) {
+                } else if ( node.left == null || node.left.isNull() ) {
                     this.nodes.put( node.right.id, node.right );
                 }
                 // we don't add the variable again
@@ -781,7 +781,7 @@ public class CypherToAlgConverter {
                     .entrySet()
                     .stream()
                     .map( n -> Pair.of( n.getKey(), n.getValue() ) )
-                    .collect( Collectors.toList() );
+                    .toList();
             this.nodes.clear();
             return nodes;
         }

@@ -98,5 +98,5 @@ public class SortedMultiMap<K, V> extends HashMap<K, List<V>> {
         multiMap.put( "x", list );
         return multiMap.arrays( comparator );
     }
-}
 
+}

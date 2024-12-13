@@ -61,7 +61,6 @@ public class CsvScannableTable extends CsvTable implements ScannableEntity {
     }
 
 
-
     @Override
     public Enumerable<PolyValue[]> scan( DataContext dataContext ) {
         dataContext.getStatement().getTransaction().registerInvolvedAdapter( csvSource );

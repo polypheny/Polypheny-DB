@@ -30,7 +30,6 @@ import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Optional;
 import java.util.TimeZone;
 import java.util.UUID;
@@ -46,7 +45,6 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.impl.PolyCatalog;
-import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.cli.PolyModesConverter;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.Config.ConfigListener;
@@ -62,8 +60,6 @@ import org.polypheny.db.gui.TrayGui;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.iface.QueryInterfaceManager;
 import org.polypheny.db.information.StatusService;
-import org.polypheny.db.languages.LanguageManager;
-import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.monitoring.information.HostInformation;
 import org.polypheny.db.monitoring.information.JavaInformation;
@@ -74,7 +70,6 @@ import org.polypheny.db.partition.FrequencyMapImpl;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.partition.PartitionManagerFactoryImpl;
 import org.polypheny.db.plugins.PolyPluginManager;
-import org.polypheny.db.processing.AlgProcessor;
 import org.polypheny.db.processing.AuthenticatorImpl;
 import org.polypheny.db.processing.ConstraintEnforceAttacher.ConstraintTracker;
 import org.polypheny.db.routing.RoutingManager;
@@ -244,7 +239,7 @@ public class PolyphenyDb {
                 throw new GenericRuntimeException( "Unable to backup the Polypheny folder since there is already a backup folder." );
             }
             File backupFolder = dirManager.registerNewFolder( "_test_backup" );
-            for ( File item : dirManager.getRootPath().listFiles() ) {
+            for ( File item : dirManager.getHomePath().listFiles() ) {
                 if ( item.getName().equals( "_test_backup" ) ) {
                     continue;
                 }
@@ -319,18 +314,6 @@ public class PolyphenyDb {
         // Initialize PartitionMangerFactory
         PartitionManagerFactory.setAndGetInstance( new PartitionManagerFactoryImpl() );
         FrequencyMap.setAndGetInstance( new FrequencyMapImpl( catalog ) );
-
-        // temporary add sql and rel here
-        QueryLanguage language = new QueryLanguage(
-                DataModel.RELATIONAL,
-                "alg",
-                List.of( "alg", "algebra" ),
-                null,
-                AlgProcessor::new,
-                null,
-                q -> null,
-                c -> c );
-        LanguageManager.getINSTANCE().addQueryLanguage( language );
 
         // Initialize index manager
         initializeIndexManager();
@@ -458,7 +441,7 @@ public class PolyphenyDb {
         if ( dirManager.getHomeFile( "_test_backup" ).isPresent() && dirManager.getHomeFile( "_test_backup" ).get().isDirectory() ) {
             File backupFolder = dirManager.getHomeFile( "_test_backup" ).get();
             // Cleanup Polypheny folder
-            for ( File item : dirManager.getRootPath().listFiles() ) {
+            for ( File item : dirManager.getHomePath().listFiles() ) {
                 if ( item.getName().equals( "_test_backup" ) ) {
                     continue;
                 }
@@ -471,7 +454,7 @@ public class PolyphenyDb {
             // Restore contents from backup
             for ( File item : backupFolder.listFiles() ) {
                 if ( dirManager.getHomeFile( "_test_backup/" + item.getName() ).isPresent() ) {
-                    if ( !item.renameTo( new File( dirManager.getRootPath(), item.getName() ) ) ) {
+                    if ( !item.renameTo( new File( dirManager.getHomePath(), item.getName() ) ) ) {
                         throw new GenericRuntimeException( "Unable to restore the Polypheny folder." );
                     }
                 }
@@ -574,12 +557,7 @@ public class PolyphenyDb {
         try {
             trx.commit();
         } catch ( TransactionException e ) {
-            try {
-                trx.rollback();
-            } catch ( TransactionException ex ) {
-                log.error( "Error while rolling back the transaction", e );
-            }
-            throw new GenericRuntimeException( "Something went wrong while restoring stores from the catalog.", e );
+            trx.rollback( "Something went wrong while restoring stores from the catalog. " + e.getMessage() );
         }
     }
 

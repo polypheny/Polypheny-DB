@@ -63,18 +63,15 @@ import org.polypheny.db.sql.language.SqlLiteral;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlNodeList;
 import org.polypheny.db.sql.language.SqlOperator;
-import org.polypheny.db.sql.language.SqlTestFactory;
 import org.polypheny.db.sql.language.dialect.PolyphenyDbSqlDialect;
 import org.polypheny.db.sql.language.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.language.pretty.SqlPrettyWriter;
 import org.polypheny.db.sql.language.utils.AbstractSqlTester;
-import org.polypheny.db.sql.language.utils.SqlRuntimeTester;
 import org.polypheny.db.sql.language.utils.SqlTester;
 import org.polypheny.db.sql.language.utils.SqlTester.VmName;
 import org.polypheny.db.sql.language.utils.SqlTests;
 import org.polypheny.db.sql.language.validate.SqlValidatorImpl;
 import org.polypheny.db.sql.language.validate.SqlValidatorScope;
-import org.polypheny.db.type.BasicPolyType;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.checker.PolyOperandTypeChecker;
@@ -133,14 +130,7 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
     public static final String DIVISION_BY_ZERO_MESSAGE = "(?s).*";
 
-    public static final String STRING_TRUNC_MESSAGE = "(?s).*";
-
     public static final String BAD_DATETIME_MESSAGE = "(?s).*";
-
-    // Error messages when an invalid time unit is given as input to extract for a particular input type.
-    public static final String INVALID_EXTRACT_UNIT_CONVERTLET_ERROR = "Extract.*from.*type data is not supported";
-
-    public static final String INVALID_EXTRACT_UNIT_VALIDATION_ERROR = "Cannot apply 'EXTRACT' to arguments of type .*'\n.*";
 
     public static final String LITERAL_OUT_OF_RANGE_MESSAGE = "(?s).*Numeric literal.*out of range.*";
 
@@ -211,11 +201,9 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
             "-1e309",
             "1e309"
     };
-    private static final boolean[] FALSE_TRUE = { false, true };
     private static final SqlTester.VmName VM_FENNEL = SqlTester.VmName.FENNEL;
     private static final SqlTester.VmName VM_JAVA = SqlTester.VmName.JAVA;
     private static final SqlTester.VmName VM_EXPAND = SqlTester.VmName.EXPAND;
-    protected static final TimeZone UTC_TZ = TimeZone.getTimeZone( "GMT" );
     // time zone for the LOCAL_{DATE,TIME,TIMESTAMP} functions
     protected static final TimeZone LOCAL_TZ = TimeZone.getDefault();
     // time zone for the CURRENT{DATE,TIME,TIMESTAMP} functions
@@ -249,7 +237,7 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @BeforeEach
-    public void setUp() throws Exception {
+    public void setUp() {
         tester.setFor( null );
     }
 
@@ -5218,16 +5206,16 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
         tester.checkFails( "^collect()^", "Invalid number of arguments to function 'COLLECT'. Was expecting 1 arguments", false );
         tester.checkFails( "^collect(1, 2)^", "Invalid number of arguments to function 'COLLECT'. Was expecting 1 arguments", false );
         final String[] values = { "0", "CAST(null AS INTEGER)", "2", "2" };
-        tester.checkAgg( "collect(x)", values, Collections.singletonList( "[0, 2, 2]" ), (double) 0 );
-        tester.checkAgg( "collect(x) within group(order by x desc)", values, Collections.singletonList( "[2, 2, 0]" ), (double) 0 );
+        tester.checkAgg( "collect(x)", values, Collections.singletonList( "[0, 2, 2]" ), 0 );
+        tester.checkAgg( "collect(x) within group(order by x desc)", values, Collections.singletonList( "[2, 2, 0]" ), 0 );
         Object result1 = -3;
         if ( !enable ) {
             return;
         }
-        tester.checkAgg( "collect(CASE x WHEN 0 THEN NULL ELSE -1 END)", values, result1, (double) 0 );
+        tester.checkAgg( "collect(CASE x WHEN 0 THEN NULL ELSE -1 END)", values, result1, 0 );
         Object result = -1;
-        tester.checkAgg( "collect(DISTINCT CASE x WHEN 0 THEN NULL ELSE -1 END)", values, result, (double) 0 );
-        tester.checkAgg( "collect(DISTINCT x)", values, 2, (double) 0 );
+        tester.checkAgg( "collect(DISTINCT CASE x WHEN 0 THEN NULL ELSE -1 END)", values, result, 0 );
+        tester.checkAgg( "collect(DISTINCT x)", values, 2, 0 );
     }
 
 
@@ -6333,18 +6321,18 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
         tester.checkType( "count(1, 2)", "BIGINT NOT NULL" );
         tester.checkType( "count(1, 2, 'x', 'y')", "BIGINT NOT NULL" );
         final String[] values = { "0", "CAST(null AS INTEGER)", "1", "0" };
-        tester.checkAgg( "COUNT(x)", values, 3, (double) 0 );
-        tester.checkAgg( "COUNT(CASE x WHEN 0 THEN NULL ELSE -1 END)", values, 2, (double) 0 );
-        tester.checkAgg( "COUNT(DISTINCT x)", values, 2, (double) 0 );
+        tester.checkAgg( "COUNT(x)", values, 3, 0 );
+        tester.checkAgg( "COUNT(CASE x WHEN 0 THEN NULL ELSE -1 END)", values, 2, 0 );
+        tester.checkAgg( "COUNT(DISTINCT x)", values, 2, 0 );
 
         // string values -- note that empty string is not null
         final String[] stringValues = {
                 "'a'", "CAST(NULL AS VARCHAR(1))", "''"
         };
-        tester.checkAgg( "COUNT(*)", stringValues, 3, (double) 0 );
-        tester.checkAgg( "COUNT(x)", stringValues, 2, (double) 0 );
-        tester.checkAgg( "COUNT(DISTINCT x)", stringValues, 2, (double) 0 );
-        tester.checkAgg( "COUNT(DISTINCT 123)", stringValues, 1, (double) 0 );
+        tester.checkAgg( "COUNT(*)", stringValues, 3, 0 );
+        tester.checkAgg( "COUNT(x)", stringValues, 2, 0 );
+        tester.checkAgg( "COUNT(DISTINCT x)", stringValues, 2, 0 );
+        tester.checkAgg( "COUNT(DISTINCT 123)", stringValues, 1, 0 );
     }
 
 
@@ -6364,18 +6352,18 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
         tester.checkType( "approx_count_distinct(1, 2, 'x', 'y')", "BIGINT NOT NULL" );
         final String[] values = { "0", "CAST(null AS INTEGER)", "1", "0" };
         // currently APPROX_COUNT_DISTINCT(x) returns the same as COUNT(DISTINCT x)
-        tester.checkAgg( "APPROX_COUNT_DISTINCT(x)", values, 2, (double) 0 );
-        tester.checkAgg( "APPROX_COUNT_DISTINCT(CASE x WHEN 0 THEN NULL ELSE -1 END)", values, 1, (double) 0 );
+        tester.checkAgg( "APPROX_COUNT_DISTINCT(x)", values, 2, 0 );
+        tester.checkAgg( "APPROX_COUNT_DISTINCT(CASE x WHEN 0 THEN NULL ELSE -1 END)", values, 1, 0 );
         // DISTINCT keyword is allowed but has no effect
-        tester.checkAgg( "APPROX_COUNT_DISTINCT(DISTINCT x)", values, 2, (double) 0 );
+        tester.checkAgg( "APPROX_COUNT_DISTINCT(DISTINCT x)", values, 2, 0 );
 
         // string values -- note that empty string is not null
         final String[] stringValues = {
                 "'a'", "CAST(NULL AS VARCHAR(1))", "''"
         };
-        tester.checkAgg( "APPROX_COUNT_DISTINCT(x)", stringValues, 2, (double) 0 );
-        tester.checkAgg( "APPROX_COUNT_DISTINCT(DISTINCT x)", stringValues, 2, (double) 0 );
-        tester.checkAgg( "APPROX_COUNT_DISTINCT(DISTINCT 123)", stringValues, 1, (double) 0 );
+        tester.checkAgg( "APPROX_COUNT_DISTINCT(x)", stringValues, 2, 0 );
+        tester.checkAgg( "APPROX_COUNT_DISTINCT(DISTINCT x)", stringValues, 2, 0 );
+        tester.checkAgg( "APPROX_COUNT_DISTINCT(DISTINCT 123)", stringValues, 1, 0 );
     }
 
 
@@ -6406,15 +6394,15 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
                 "(?s)Cannot apply 'SUM' to arguments of type 'SUM\\(<VARCHAR\\(2\\)>\\)'\\. Supported form\\(s\\): 'SUM\\(<NUMERIC>\\)'.*",
                 false );
         final String[] values = { "0", "CAST(null AS INTEGER)", "2", "2" };
-        tester.checkAgg( "sum(x)", values, 4, (double) 0 );
+        tester.checkAgg( "sum(x)", values, 4, 0 );
         Object result1 = -3;
         if ( !enable ) {
             return;
         }
-        tester.checkAgg( "sum(CASE x WHEN 0 THEN NULL ELSE -1 END)", values, result1, (double) 0 );
+        tester.checkAgg( "sum(CASE x WHEN 0 THEN NULL ELSE -1 END)", values, result1, 0 );
         Object result = -1;
-        tester.checkAgg( "sum(DISTINCT CASE x WHEN 0 THEN NULL ELSE -1 END)", values, result, (double) 0 );
-        tester.checkAgg( "sum(DISTINCT x)", values, 2, (double) 0 );
+        tester.checkAgg( "sum(DISTINCT CASE x WHEN 0 THEN NULL ELSE -1 END)", values, result, 0 );
+        tester.checkAgg( "sum(DISTINCT x)", values, 2, 0 );
     }
 
 
@@ -6607,7 +6595,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
                 false );
         tester.checkType( "stddev(CAST(NULL AS INTEGER))", "INTEGER" );
         checkAggType( tester, "stddev(DISTINCT 1.5)", "DECIMAL(2, 1) NOT NULL" );
-        final String[] values = { "0", "CAST(null AS FLOAT)", "3", "3" };
         // with one value
         tester.checkAgg( "stddev(x)", new String[]{ "5" }, null, 0d );
         // with zero values
@@ -6873,14 +6860,14 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
         if ( !enable ) {
             return;
         }
-        tester.checkWinAgg( "first_value(x)", values, "ROWS 3 PRECEDING", "INTEGER", Arrays.asList( "0" ), 0d );
+        tester.checkWinAgg( "first_value(x)", values, "ROWS 3 PRECEDING", "INTEGER", List.of( "0" ), 0d );
         final String[] values2 = { "1.6", "1.2" };
         tester.checkWinAgg(
                 "first_value(x)",
                 values2,
                 "ROWS 3 PRECEDING",
                 "DECIMAL(2, 1) NOT NULL",
-                Arrays.asList( "1.6" ),
+                List.of( "1.6" ),
                 0d );
         final String[] values3 = { "'foo'", "'bar'", "'name'" };
         tester.checkWinAgg(
@@ -6888,7 +6875,7 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
                 values3,
                 "ROWS 3 PRECEDING",
                 "CHAR(4) NOT NULL",
-                Arrays.asList( "foo " ),
+                List.of( "foo " ),
                 0d );
     }
 
@@ -7097,58 +7084,7 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
         }
     }
 
-
-    private List<Object> getValues( BasicPolyType type, boolean inBound ) {
-        List<Object> values = new ArrayList<>();
-        for ( boolean sign : FALSE_TRUE ) {
-            for ( PolyType.Limit limit : PolyType.Limit.values() ) {
-                Object o = type.getLimit( sign, limit, !inBound );
-                if ( o == null ) {
-                    continue;
-                }
-                if ( !values.contains( o ) ) {
-                    values.add( o );
-                }
-            }
-        }
-        return values;
-    }
-
     // TODO: Test other stuff
-
-
-    /**
-     * Result checker that considers a test to have succeeded if it throws an exception that matches one of a list of patterns.
-     */
-    private static class ExceptionResultChecker implements SqlTester.ResultChecker {
-
-        private final Pattern[] patterns;
-
-
-        ExceptionResultChecker( Pattern... patterns ) {
-            this.patterns = patterns;
-        }
-
-
-        @Override
-        public void checkResult( ResultSet result ) {
-            Throwable thrown = null;
-            try {
-                result.next();
-                fail( "expected exception" );
-            } catch ( SQLException e ) {
-                thrown = e;
-            }
-            final String stack = Throwables.getStackTraceAsString( thrown );
-            for ( Pattern pattern : patterns ) {
-                if ( pattern.matcher( stack ).matches() ) {
-                    return;
-                }
-            }
-            fail( "Stack did not match any pattern; " + stack );
-        }
-
-    }
 
 
     /**
@@ -7181,49 +7117,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
                 }
                 fail( "Stack did not match any pattern; " + stack );
             }
-        }
-
-    }
-
-
-    public static SqlTester tester() {
-        return new TesterImpl( SqlTestFactory.INSTANCE );
-    }
-
-
-    /**
-     * Implementation of {@link SqlTester} based on a JDBC connection.
-     */
-    protected static class TesterImpl extends SqlRuntimeTester {
-
-        public TesterImpl( SqlTestFactory testFactory ) {
-            super( testFactory );
-        }
-
-
-        @Override
-        public void check( String query, TypeChecker typeChecker, ParameterChecker parameterChecker, ResultChecker resultChecker ) {
-            // TODO MV: implement
-            /*
-            super.check( query, typeChecker, parameterChecker, resultChecker );
-            final PolyphenyDbAssert.ConnectionFactory connectionFactory = (PolyphenyDbAssert.ConnectionFactory) getFactory().get( "connectionFactory" );
-            try (
-                    Connection connection = connectionFactory.createConnection();
-                    Statement statement = connection.createStatement()
-            ) {
-                final ResultSet resultSet = statement.executeQuery( query );
-                resultChecker.checkResult( resultSet );
-            } catch ( RuntimeException e ) {
-                throw e;
-            } catch ( Exception e ) {
-                throw new RuntimeException( e );
-            }*/
-        }
-
-
-        @Override
-        protected SqlTester with( SqlTestFactory factory ) {
-            return new TesterImpl( factory );
         }
 
     }

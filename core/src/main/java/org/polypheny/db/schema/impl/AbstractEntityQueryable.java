@@ -92,5 +92,5 @@ public abstract class AbstractEntityQueryable<T, K extends Entity & QueryableEnt
     public @NotNull Iterator<T> iterator() {
         return Linq4j.enumeratorIterator( enumerator() );
     }
-}
 
+}

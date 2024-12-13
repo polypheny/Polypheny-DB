@@ -29,7 +29,7 @@ import org.polypheny.db.catalog.impl.allocation.PolyAllocRelCatalog;
 import org.polypheny.db.util.Wrapper;
 
 @SerializeClass(subclasses = { PolyAllocDocCatalog.class, PolyAllocGraphCatalog.class, PolyAllocRelCatalog.class })
-@JsonTypeInfo( use = Id.CLASS )
+@JsonTypeInfo(use = Id.CLASS)
 public interface AllocationCatalog extends Wrapper {
 
     LogicalNamespace getNamespace();

@@ -107,5 +107,5 @@ public class BreadthFirstIterator<V, E extends DefaultEdge> implements Iterator<
     public void remove() {
         throw new UnsupportedOperationException();
     }
-}
 
+}

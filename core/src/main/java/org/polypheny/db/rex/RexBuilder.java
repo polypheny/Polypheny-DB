@@ -63,6 +63,7 @@ import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.Function.FunctionType;
@@ -525,7 +526,7 @@ public class RexBuilder {
             final int length = value.asString().getValue().length();
             return switch ( toType.getPolyType() ) {
                 case CHAR -> PolyTypeUtil.comparePrecision( toType.getPrecision(), length ) == 0;
-                case JSON, VARCHAR -> PolyTypeUtil.comparePrecision( toType.getPrecision(), length ) >= 0;
+                case JSON, VARCHAR, TEXT -> PolyTypeUtil.comparePrecision( toType.getPrecision(), length ) >= 0;
                 default -> throw new AssertionError( toType );
             };
         }
@@ -762,6 +763,29 @@ public class RexBuilder {
         // All literals except NULL have NOT NULL types.
         type = typeFactory.createTypeWithNullability( type, o == null );
         return new RexLiteral( o, type, typeName );
+    }
+
+
+    /**
+     * Creates a literal for the specified PolyValue with no precision or scale.
+     */
+    public RexLiteral makeLiteral( PolyValue o ) {
+        AlgDataType type = switch ( o.getType() ) {
+            case PATH -> typeFactory.createPathType( o.asPath().getPathType(
+                    typeFactory.createPolyType( PolyType.NODE ),
+                    typeFactory.createPolyType( PolyType.EDGE )
+            ) );
+            default -> typeFactory.createPolyType( o.getType() );
+        };
+        return makeLiteral( o, type );
+    }
+
+
+    /**
+     * Creates a literal for the specified PolyValue and AlgDataType
+     */
+    public RexLiteral makeLiteral( PolyValue o, AlgDataType type ) {
+        return new RexLiteral( o, type, o.getType() );
     }
 
 
@@ -1045,6 +1069,11 @@ public class RexBuilder {
     }
 
 
+    public RexLiteral makeDocumentLiteral( PolyValue v ) {
+        return makeLiteral( v, new DocumentType() );
+    }
+
+
     /**
      * Creates a reference to a dynamic parameter
      *
@@ -1141,45 +1170,29 @@ public class RexBuilder {
         PolyValue poly = clean( value, type );
         RexLiteral literal;
         final List<RexNode> operands;
-        switch ( type.getPolyType() ) {
-            case CHAR:
-            case VARCHAR:
+        return switch ( type.getPolyType() ) {
+            case CHAR, VARCHAR, TEXT -> {
                 AlgDataType algType = typeFactory.createPolyType( type.getPolyType(), type.getPrecision() );
                 type = typeFactory.createTypeWithCharsetAndCollation( algType, poly.asString().charset, type.getCollation() );
                 literal = makeLiteral( poly.asString(), type, type.getPolyType() );
-                return allowCast ? makeCast( type, literal ) : literal;
-            case BINARY:
-                return makeLiteral( padRight( poly.asBinary(), type.getPrecision() ), type, type.getPolyType() );
-            case VARBINARY:
+                yield allowCast ? makeCast( type, literal ) : literal;
+            }
+            case BINARY -> makeLiteral( padRight( poly.asBinary(), type.getPrecision() ), type, type.getPolyType() );
+            case VARBINARY -> {
                 literal = makeLiteral( poly, type, type.getPolyType() );
-                return allowCast ? makeCast( type, literal ) : literal;
-            case FILE:
-                return makeLiteral( poly, type, type.getPolyType() );
-            case TINYINT:
-            case SMALLINT:
-            case INTEGER:
-            case BIGINT:
-            case DECIMAL:
-                return makeLiteral( poly, type, type.getPolyType() );
-            case FLOAT:
-            case REAL:
-            case DOUBLE:
-                return makeLiteral( poly, type, type.getPolyType() );
-            case BOOLEAN:
-                return poly.asBoolean().value ? booleanTrue : booleanFalse;
-            case TIME:
-                return makeTimeLiteral( poly.asTime(), type.getPrecision() );
-            case DATE:
-                return makeDateLiteral( poly.asDate() );
-            case TIMESTAMP:
-                return makeTimestampLiteral( poly.asTimestamp(), type.getPrecision() );
-            case INTERVAL:
-                return makeLiteral( poly, type, type.getPolyType() );
-            case MAP:
-                return makeMap( (Map<Object, Object>) value, type, allowCast );
-            case ARRAY:
-                return makeArray( (List<PolyValue>) value, type, allowCast );
-            case MULTISET:
+                yield allowCast ? makeCast( type, literal ) : literal;
+            }
+            case FILE -> makeLiteral( poly, type, type.getPolyType() );
+            case TINYINT, SMALLINT, INTEGER, BIGINT, DECIMAL -> makeLiteral( poly, type, type.getPolyType() );
+            case FLOAT, REAL, DOUBLE -> makeLiteral( poly, type, type.getPolyType() );
+            case BOOLEAN -> poly.asBoolean().value ? booleanTrue : booleanFalse;
+            case TIME -> makeTimeLiteral( poly.asTime(), type.getPrecision() );
+            case DATE -> makeDateLiteral( poly.asDate() );
+            case TIMESTAMP -> makeTimestampLiteral( poly.asTimestamp(), type.getPrecision() );
+            case INTERVAL -> makeLiteral( poly, type, type.getPolyType() );
+            case MAP -> makeMap( (Map<Object, Object>) value, type, allowCast );
+            case ARRAY -> makeArray( (List<PolyValue>) value, type, allowCast );
+            case MULTISET -> {
                 final MultisetPolyType multisetType = (MultisetPolyType) type;
                 operands = new ArrayList<>();
                 for ( Object entry : (List<?>) value ) {
@@ -1190,16 +1203,14 @@ public class RexBuilder {
                     operands.add( e );
                 }
                 if ( allowCast ) {
-                    return makeCall( OperatorRegistry.get( OperatorName.MULTISET_VALUE ), operands );
+                    yield makeCall( OperatorRegistry.get( OperatorName.MULTISET_VALUE ), operands );
                 }
-            case NODE:
-            case EDGE:
-                return new RexLiteral( (PolyValue) value, type, type.getPolyType() );
-            case ANY:
-                return makeLiteral( value, guessType( value ), allowCast );
-            default:
-                throw Util.unexpected( type.getPolyType() );
-        }
+                yield new RexLiteral( (PolyValue) value, type, type.getPolyType() );
+            }
+            case NODE, EDGE -> new RexLiteral( (PolyValue) value, type, type.getPolyType() );
+            case ANY -> makeLiteral( value, guessType( value ), allowCast );
+            default -> throw Util.unexpected( type.getPolyType() );
+        };
     }
 
 
@@ -1453,14 +1464,6 @@ public class RexBuilder {
                 typeFactory.createPolyType( PolyType.BOOLEAN ),
                 OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_HAS_LABEL ),
                 List.of( makeInputRef( typeFactory.createPolyType( PolyType.NODE ), 0 ), makeLiteral( label ) ) );
-    }
-
-
-    public RexCall makeLabelFilter( String label ) {
-        return new RexCall(
-                typeFactory.createPolyType( PolyType.BOOLEAN ),
-                OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_GRAPH_ONLY_LABEL ),
-                List.of( makeInputRef( typeFactory.createPolyType( PolyType.GRAPH ), 0 ), makeLiteral( label ) ) );
     }
 
 

@@ -23,7 +23,6 @@ import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.ExecutableStatement;
 import org.polypheny.db.nodes.Node;
@@ -52,9 +51,7 @@ public abstract class Processor {
             // Execute statement
             return getImplementation( statement, node, context );
         } catch ( DeadlockException e ) {
-            throw new GenericRuntimeException( "Exception while acquiring global schema lock", e );
-        } catch ( TransactionException e ) {
-            throw new GenericRuntimeException( e );
+            throw new DeadlockException( e.getMessage() + " Exception while acquiring global schema lock" );
         } finally {
             // Release lock
             unlock( statement );

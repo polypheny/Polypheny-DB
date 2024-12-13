@@ -125,8 +125,6 @@ public interface Convention extends AlgTrait<ConventionTraitDef>, Serializable {
         }
 
 
-
-
         @Override
         public boolean canConvertConvention( Convention toConvention ) {
             return false;
@@ -141,4 +139,3 @@ public interface Convention extends AlgTrait<ConventionTraitDef>, Serializable {
     }
 
 }
-

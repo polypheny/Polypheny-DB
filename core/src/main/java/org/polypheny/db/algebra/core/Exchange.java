@@ -36,6 +36,7 @@ package org.polypheny.db.algebra.core;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import org.polypheny.db.algebra.AlgDistribution;
 import org.polypheny.db.algebra.AlgDistributions;
@@ -97,9 +98,12 @@ public abstract class Exchange extends SingleAlg {
     @Override
     public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         // Higher cost if rows are wider discourages pushing a project through an exchange.
-        double rowCount = mq.getTupleCount( this );
+        Optional<Double> rowCount = mq.getTupleCount( this );
+        if ( rowCount.isEmpty() ) {
+            return planner.getCostFactory().makeInfiniteCost();
+        }
         double bytesPerRow = getTupleType().getFieldCount() * 4;
-        return planner.getCostFactory().makeCost( Util.nLogN( rowCount ) * bytesPerRow, rowCount, 0 );
+        return planner.getCostFactory().makeCost( Util.nLogN( rowCount.get() ) * bytesPerRow, rowCount.get(), 0 );
     }
 
 

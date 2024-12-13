@@ -291,8 +291,6 @@ public class MongoPlugin extends PolyPlugin {
 
         @Override
         public void shutdown() {
-            DockerContainer.getContainerByUUID( deploymentId ).ifPresent( DockerContainer::destroy );
-
             removeInformationPage();
         }
 

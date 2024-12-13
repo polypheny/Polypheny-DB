@@ -23,6 +23,10 @@ import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.document.DocumentProject;
+import org.polypheny.db.algebra.polyalg.arguments.ListArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
+import org.polypheny.db.algebra.polyalg.arguments.RexArg;
+import org.polypheny.db.algebra.polyalg.arguments.StringArg;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
@@ -44,10 +48,22 @@ public class LogicalDocumentProject extends DocumentProject {
     }
 
 
-    public static LogicalDocumentProject create( AlgNode node, List<RexNode> includes, List<String> includesName ) {
-        return create( node, Pair.zip( includesName, includes ).stream().collect( Collectors.toMap( e -> e.left, e -> e.right ) ), List.of(), Map.of() );
+    public static LogicalDocumentProject create( AlgNode node, List<RexNode> includes, List<String> includesName, List<String> excludes ) {
+        return create( node, Pair.zip( includesName, includes ).stream().collect( Collectors.toMap( e -> e.left, e -> e.right ) ), excludes, Map.of() );
     }
 
+    public static LogicalDocumentProject create( AlgNode node, List<RexNode> includes, List<String> includesName ) {
+        return create( node, includes, includesName, List.of() );
+    }
+
+    public static LogicalDocumentProject create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+        ListArg<RexArg> includes = args.getListArg( "includes", RexArg.class );
+        ListArg<StringArg> excludes = args.getListArg( "excludes", StringArg.class );
+        return create( children.get( 0 ),
+                includes.map( RexArg::getNode ),
+                includes.map( RexArg::getAlias ),
+                excludes.map( StringArg::getArg ) );
+    }
 
     @Override
     public LogicalDocumentProject copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
@@ -58,6 +74,15 @@ public class LogicalDocumentProject extends DocumentProject {
     @Override
     public AlgNode accept( AlgShuttle shuttle ) {
         return shuttle.visit( this );
+    }
+
+
+    @Override
+    public PolyAlgArgs bindArguments() {
+        PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
+
+        return args.put( "includes", new ListArg<>( includes, RexArg::new ) )
+                .put( "excludes", new ListArg<>( excludes, StringArg::new ) );
     }
 
 }

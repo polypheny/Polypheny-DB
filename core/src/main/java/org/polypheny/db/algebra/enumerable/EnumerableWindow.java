@@ -109,7 +109,7 @@ public class EnumerableWindow extends Window implements EnumerableAlg {
     /**
      * Implementation of {@link RexToLixTranslator.InputGetter} suitable for generating implementations of windowed aggregate functions.
      */
-    private record WindowRelInputGetter(Expression row, PhysType rowPhysType, int actualInputFieldCount, List<Expression> constants) implements RexToLixTranslator.InputGetter {
+    private record WindowRelInputGetter( Expression row, PhysType rowPhysType, int actualInputFieldCount, List<Expression> constants ) implements RexToLixTranslator.InputGetter {
 
 
         @Override
@@ -843,4 +843,3 @@ public class EnumerableWindow extends Window implements EnumerableAlg {
     }
 
 }
-

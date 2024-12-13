@@ -169,7 +169,7 @@ public class EnumerablesTest {
     /**
      * Employee record.
      */
-    private record Emp(int deptno, String name) {
+    private record Emp( int deptno, String name ) {
 
 
         @Override
@@ -183,7 +183,7 @@ public class EnumerablesTest {
     /**
      * Department record.
      */
-    private record Dept(int deptno, String name) {
+    private record Dept( int deptno, String name ) {
 
 
         @Override
@@ -192,4 +192,5 @@ public class EnumerablesTest {
         }
 
     }
+
 }

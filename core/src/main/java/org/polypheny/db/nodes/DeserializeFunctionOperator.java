@@ -60,7 +60,7 @@ public class DeserializeFunctionOperator extends OperatorImpl {
 
     @Override
     public AlgDataType deriveType( Validator validator, ValidatorScope scope, Call call ) {
-        return null;
+        return AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.DOCUMENT );
     }
 
 

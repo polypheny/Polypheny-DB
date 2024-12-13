@@ -48,6 +48,7 @@ public class Row<T> {
 
     public final Class<T> clazz;
 
+
     /**
      * Creates a Row.
      */
@@ -153,7 +154,6 @@ public class Row<T> {
     public static <T> RowBuilder<T> newBuilder( int size, Class<T> clazz ) {
         return new RowBuilder<>( size, clazz );
     }
-
 
 
     /**

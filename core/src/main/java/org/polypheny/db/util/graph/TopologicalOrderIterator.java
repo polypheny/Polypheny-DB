@@ -119,5 +119,5 @@ public class TopologicalOrderIterator<V, E extends DefaultEdge> implements Itera
         }
         return countMap.keySet();
     }
-}
 
+}

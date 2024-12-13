@@ -148,7 +148,10 @@ public class LanguageCrud {
         transaction.setUseCache( context.isUsesCache() );
         attachAnalyzerIfSpecified( context, crud, transaction );
 
-        List<ExecutedContext> executedContexts = LanguageManager.getINSTANCE().anyQuery( context.addTransaction( transaction ) );
+        if ( context.getTransactions().isEmpty() ) {
+            context.addTransaction( transaction );
+        }
+        List<ExecutedContext> executedContexts = LanguageManager.getINSTANCE().anyQuery( context );
 
         List<Result<?, ?>> results = new ArrayList<>();
         TriFunction<ExecutedContext, UIRequest, Statement, ResultBuilder<?, ?, ?, ?>> builder = REGISTER.get( context.getLanguage() );
@@ -176,10 +179,9 @@ public class LanguageCrud {
                 transaction.commit();
                 commitStatus = "Committed";
             } catch ( TransactionException e ) {
-                log.error( "Caught exception", e );
                 results.add( RelationalResult.builder().error( e.getMessage() ).build() );
                 try {
-                    transaction.rollback();
+                    transaction.rollback( e.getMessage() );
                     commitStatus = "Rolled back";
                 } catch ( TransactionException ex ) {
                     log.error( "Caught exception while rollback", e );
@@ -226,7 +228,7 @@ public class LanguageCrud {
         try {
             iterator.close();
             transaction.commit();
-        } catch ( Exception | TransactionException e ) {
+        } catch ( Exception e ) {
             throw new GenericRuntimeException( "Error while committing graph retrieval query." );
         }
 
@@ -247,11 +249,7 @@ public class LanguageCrud {
         };
 
         if ( transaction.isActive() ) {
-            try {
-                transaction.rollback();
-            } catch ( TransactionException e ) {
-                throw new GenericRuntimeException( "Error while rolling back the failed transaction." );
-            }
+            transaction.rollback( t != null ? t.getMessage() : "Unknown reason during error building." );
         }
 
         return result;
@@ -536,4 +534,3 @@ public class LanguageCrud {
     }
 
 }
-

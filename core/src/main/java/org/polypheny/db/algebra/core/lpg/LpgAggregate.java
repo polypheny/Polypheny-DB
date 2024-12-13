@@ -25,6 +25,7 @@ import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.core.LaxAggregateCall;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -78,6 +79,19 @@ public abstract class LpgAggregate extends SingleAlg implements LpgAlg {
     @Override
     public NodeType getNodeType() {
         return NodeType.AGGREGATE;
+    }
+
+    public static AlgDataType deriveTupleType(AlgCluster cluster, AlgDataType inputType, List<RexNameRef> groups, List<LaxAggregateCall> aggCalls) {
+        final AlgDataTypeFactory.Builder builder = cluster.getTypeFactory().builder();
+        for ( LaxAggregateCall aggCall : aggCalls ) {
+            builder.add( aggCall.name, null, aggCall.getType( cluster ));
+        }
+        List<AlgDataTypeField> fields = inputType.getFields();
+        for (RexNameRef group : groups) {
+            int idx = group.getIndex().orElseThrow();
+            builder.add( fields.get( idx ) );
+        }
+        return builder.build();
     }
 
 }

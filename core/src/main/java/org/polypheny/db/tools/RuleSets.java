@@ -70,7 +70,7 @@ public class RuleSets {
     /**
      * Rule set that consists of a list of rules.
      */
-    private record ListRuleSet(ImmutableList<AlgOptRule> rules) implements RuleSet {
+    private record ListRuleSet( ImmutableList<AlgOptRule> rules ) implements RuleSet {
 
 
         @Override
@@ -89,4 +89,3 @@ public class RuleSets {
     }
 
 }
-

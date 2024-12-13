@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -96,15 +96,14 @@ public class SqlCastFunction extends SqlFunction {
         AlgDataType ret = opBinding.getOperandType( 1 );
         AlgDataType firstType = opBinding.getOperandType( 0 );
         ret = opBinding.getTypeFactory().createTypeWithNullability( ret, firstType.isNullable() );
-        if ( opBinding instanceof SqlCallBinding ) {
-            SqlCallBinding callBinding = (SqlCallBinding) opBinding;
+        if ( opBinding instanceof SqlCallBinding callBinding ) {
             SqlNode operand0 = (SqlNode) callBinding.operand( 0 );
 
             // dynamic parameters and null constants need their types assigned to them using the type they are casted to.
-            if ( ((operand0 instanceof SqlLiteral) && (((SqlLiteral) operand0).getValue() == null)) || (operand0 instanceof SqlDynamicParam) ) {
+            if ( (operand0 instanceof SqlLiteral sqlLiteral && sqlLiteral.getValue() == null) || (operand0 instanceof SqlDynamicParam) ) {
                 final SqlValidatorImpl validator = (SqlValidatorImpl) callBinding.getValidator();
                 validator.setValidatedNodeType( operand0, ret );
-            } else if ( ((operand0 instanceof SqlBasicCall) && (((SqlBasicCall) operand0).getOperator() instanceof SqlArrayValueConstructor)) ) {
+            } else if ( operand0 instanceof SqlBasicCall sqlBasicCall && sqlBasicCall.getOperator() instanceof SqlArrayValueConstructor ) {
                 final SqlValidatorImpl validator = (SqlValidatorImpl) callBinding.getValidator();
                 validator.setValidatedNodeType( operand0, ret );
             }
