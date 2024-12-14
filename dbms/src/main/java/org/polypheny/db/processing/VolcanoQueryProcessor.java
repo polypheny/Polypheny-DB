@@ -78,6 +78,7 @@ public class VolcanoQueryProcessor extends AbstractQueryProcessor {
 
     public static final List<AlgOptRule> ENUMERABLE_RULES =
             ImmutableList.of(
+                    EnumerableRules.ENUMERABLE_IDENTIFIER_RULE,
                     EnumerableRules.ENUMERABLE_JOIN_RULE,
                     EnumerableRules.ENUMERABLE_MERGE_JOIN_RULE,
                     EnumerableRules.ENUMERABLE_SEMI_JOIN_RULE,
