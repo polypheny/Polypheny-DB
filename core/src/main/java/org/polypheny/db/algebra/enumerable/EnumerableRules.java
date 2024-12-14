@@ -42,6 +42,7 @@ import org.polypheny.db.algebra.enumerable.common.EnumerableConditionalExecuteRu
 import org.polypheny.db.algebra.enumerable.common.EnumerableConditionalExecuteTrueRule;
 import org.polypheny.db.algebra.enumerable.common.EnumerableConstraintEnforcerRule;
 import org.polypheny.db.algebra.enumerable.common.EnumerableContextSwitcherRule;
+import org.polypheny.db.algebra.enumerable.common.EnumerableIdentifierRule;
 import org.polypheny.db.algebra.enumerable.common.EnumerableModifyCollectRule;
 import org.polypheny.db.algebra.enumerable.document.EnumerableDocumentUnwindRule;
 import org.polypheny.db.algebra.enumerable.document.EnumerableDocumentValuesRule;
@@ -72,6 +73,8 @@ public class EnumerableRules {
 
     private EnumerableRules() {
     }
+
+    public static final EnumerableIdentifierRule ENUMERABLE_IDENTIFIER_RULE = EnumerableIdentifierRule.REL_INSTANCE;
 
     public static final EnumerableConditionalExecuteRule ENUMERABLE_CONDITIONAL_EXECUTE_RULE = new EnumerableConditionalExecuteRule();
 
