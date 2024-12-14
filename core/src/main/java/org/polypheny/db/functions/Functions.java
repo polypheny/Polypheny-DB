@@ -289,7 +289,8 @@ public class Functions {
         return Linq4j.asEnumerable( results );
     }
 
-    public static <T> Enumerable<PolyValue[]> addIdentifiers(final Enumerable<PolyValue[]> input) {
+    @SuppressWarnings("unused")
+    public static Enumerable<PolyValue[]> addIdentifiers(final Enumerable<PolyValue[]> input) {
         return input.select( oldRow -> {
             PolyValue[] newRow = new PolyValue[oldRow.length + 1];
             newRow[0] = IdentifierUtils.getIdentifierAsPolyLong();
@@ -356,8 +357,6 @@ public class Functions {
 
         List<PolyValue[]> values = new ArrayList<>();
         for ( PolyValue[] o : input ) {
-            // ToDo TH: naive proof of concept for identifier injection
-            o[0] = IdentifierUtils.getIdentifierAsPolyLong();
             values.add( o );
         }
         if ( values.isEmpty() ) {
