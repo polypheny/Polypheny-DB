@@ -16,6 +16,7 @@
 
 package org.polypheny.db.transaction;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.sql.Connection;
@@ -23,26 +24,14 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.List;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
-import org.polypheny.db.transaction.locking.IdentifierUtils;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.mql.MqlTestTemplate;
 import org.polypheny.jdbc.PrismInterfaceServiceException;
 
-public class EntityIdentifierTests {
-
-    private static TestHelper testHelper;
-    private static String identifierKey;
-
-
-    @BeforeAll
-    public static void start() throws SQLException {
-        testHelper = TestHelper.getInstance();
-        identifierKey = IdentifierUtils.IDENTIFIER_KEY;
-    }
-
+public class EntityIdentifierTests extends MqlTestTemplate {
 
     @Test
     public void testCreateTable() throws SQLException {
@@ -54,419 +43,6 @@ public class EntityIdentifierTests {
                     connection.commit();
                 } finally {
                     statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
-                    connection.commit();
-                }
-            }
-        }
-    }
-
-
-    /*
-    Modify <- Project <- RelValues ('first', 'second')
-     */
-    @Test
-    public void testInsertUnparameterizedWithColumnNames() throws SQLException {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
-            Connection connection = jdbcConnection.getConnection();
-            try ( Statement statement = connection.createStatement() ) {
-                try {
-                    statement.executeUpdate( "CREATE TABLE identifiers (a VARCHAR(8) NOT NULL, b VARCHAR(8), PRIMARY KEY (a))" );
-                    statement.executeUpdate( "INSERT INTO identifiers (a, b) VALUES ('first', 'second')" );
-
-                    connection.commit();
-                } finally {
-                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
-                    connection.commit();
-                }
-            }
-        }
-    }
-
-
-    /*
-    Modify <- Project <- RelValues ('first', 'second')
-     */
-    @Test
-    public void testInsertUnparameterizedNoColumnNames() throws SQLException {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
-            Connection connection = jdbcConnection.getConnection();
-            try ( Statement statement = connection.createStatement() ) {
-                try {
-                    statement.executeUpdate( "CREATE TABLE identifiers (a VARCHAR(8) NOT NULL, b VARCHAR(8), PRIMARY KEY (a))" );
-                    statement.executeUpdate( "INSERT INTO identifiers VALUES ('first', 'second')" );
-                    connection.commit();
-                } finally {
-                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
-                    connection.commit();
-                }
-            }
-        }
-    }
-
-    /*
-    Modify <- Project <- Select ('_eid', first', 'second')
-    */
-    @Test
-    public void testInsertUnparameterizedIdentifierManipulation() throws SQLException {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
-            Connection connection = jdbcConnection.getConnection();
-            try ( Statement statement = connection.createStatement() ) {
-                try {
-                    statement.executeUpdate( "CREATE TABLE identifiers (a INTEGER NOT NULL, b INTEGER, PRIMARY KEY (a))" );
-                    assertThrows(
-                            PrismInterfaceServiceException.class,
-                            () -> statement.executeUpdate( "INSERT INTO identifiers VALUES (-32, 2, 3)" )
-                    );
-                    connection.commit();
-                } finally {
-                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
-                    connection.commit();
-                }
-            }
-        }
-    }
-
-
-    /*
-
-
-     */
-    @Test
-    public void testInsertFromTableWithColumnNamesSameStore() throws SQLException {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
-            Connection connection = jdbcConnection.getConnection();
-            try ( Statement statement = connection.createStatement() ) {
-                try {
-                    statement.executeUpdate( "CREATE TABLE identifiers1 (a VARCHAR(8) NOT NULL, b VARCHAR(8), PRIMARY KEY (a))" );
-                    statement.executeUpdate( "INSERT INTO identifiers1 (a, b) VALUES ('first', 'second'), ('third', 'fourth')" );
-
-                    statement.executeUpdate( "CREATE TABLE identifiers2 (x VARCHAR(8) NOT NULL, y VARCHAR(8), PRIMARY KEY (x))" );
-                    statement.executeUpdate( "INSERT INTO identifiers2 (x, y) SELECT a, b FROM identifiers1" );
-
-                    // check that new identifiers had been assigned instead of copying from the first table
-                    try ( ResultSet rs = statement.executeQuery( """
-                            SELECT 1
-                            FROM identifiers1 id1
-                            WHERE EXISTS (
-                                SELECT 1
-                                FROM identifiers2 id2
-                                WHERE id1._eid = id2._eid
-                            );
-                            """ ) ) {
-                        TestHelper.checkResultSet( rs, List.of() );
-                    }
-
-                    connection.commit();
-                } finally {
-                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers1" );
-                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers2" );
-                    connection.commit();
-                }
-            }
-        }
-    }
-
-
-
-    @Test
-    public void testInsertFromTableWithoutTargetColumnNames() throws SQLException {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
-            Connection connection = jdbcConnection.getConnection();
-            try ( Statement statement = connection.createStatement() ) {
-                try {
-                    statement.executeUpdate( "CREATE TABLE identifiers1 (a VARCHAR(8) NOT NULL, b VARCHAR(8), PRIMARY KEY (a))" );
-                    statement.executeUpdate( "INSERT INTO identifiers1 (a, b) VALUES ('first', 'second'), ('third', 'fourth')" );
-
-                    statement.executeUpdate( "CREATE TABLE identifiers2 (x VARCHAR(8) NOT NULL, y VARCHAR(8), PRIMARY KEY (x))" );
-                    statement.executeUpdate( "INSERT INTO identifiers2 SELECT a, b FROM identifiers1" );
-
-                    //TODO TH: check that new identifiers had been assigned instead of copying from the first table
-                    connection.commit();
-                } finally {
-                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers1" );
-                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers2" );
-                    connection.commit();
-                }
-            }
-        }
-    }
-
-
-    @Test
-    public void testInsertPreparedWithColumnNames() throws SQLException {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
-            Connection connection = jdbcConnection.getConnection();
-            try ( Statement statement = connection.createStatement() ) {
-                try {
-                    statement.executeUpdate( "CREATE TABLE identifiers (a VARCHAR(8) NOT NULL, b VARCHAR(8), PRIMARY KEY (a))" );
-                    PreparedStatement preparedStatement = connection.prepareStatement( "INSERT INTO identifiers (a, b) VALUES (?, ?)" );
-                    preparedStatement.setString( 1, "first" );
-                    preparedStatement.setString( 2, "second" );
-                    preparedStatement.executeUpdate();
-                    connection.commit();
-                } finally {
-                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
-                    connection.commit();
-                }
-            }
-        }
-    }
-
-
-    @Test
-    public void testInsertMultipleUnparameterizedWithColumnNames() throws SQLException {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
-            Connection connection = jdbcConnection.getConnection();
-            try ( Statement statement = connection.createStatement() ) {
-                try {
-                    statement.executeUpdate( "CREATE TABLE identifiers (a VARCHAR(8) NOT NULL, b VARCHAR(8), PRIMARY KEY (a))" );
-                    statement.executeUpdate( "INSERT INTO identifiers (a, b) VALUES ('first', 'second'), ('third', 'fourth')" );
-
-                    connection.commit();
-                } finally {
-                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
-                    connection.commit();
-                }
-            }
-        }
-    }
-
-
-    @Test
-    public void testInsertMultiplePreparedWithColumnNames() throws SQLException {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
-            Connection connection = jdbcConnection.getConnection();
-            try ( Statement statement = connection.createStatement() ) {
-                try {
-                    statement.executeUpdate( "CREATE TABLE identifiers (a VARCHAR(8) NOT NULL, b VARCHAR(8), PRIMARY KEY (a))" );
-                    PreparedStatement preparedStatement = connection.prepareStatement( "INSERT INTO identifiers (a, b) VALUES (?, ?)" );
-                    preparedStatement.setString( 1, "first" );
-                    preparedStatement.setString( 2, "second" );
-                    preparedStatement.addBatch();
-                    preparedStatement.setString( 1, "third" );
-                    preparedStatement.setString( 2, "fourth" );
-                    preparedStatement.executeBatch();
-                    connection.commit();
-                } finally {
-                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
-                    connection.commit();
-                }
-            }
-        }
-    }
-
-
-    //TODO: fix this
-    @Test
-    public void testInsertFromTableWithDifferentColumnNames() throws SQLException {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
-            Connection connection = jdbcConnection.getConnection();
-            try ( Statement statement = connection.createStatement() ) {
-                try {
-                    statement.executeUpdate( "CREATE TABLE identifiers1 (a VARCHAR(8) NOT NULL, b VARCHAR(8), PRIMARY KEY (a))" );
-                    statement.executeUpdate( "INSERT INTO identifiers1 (a, b) VALUES ('first', 'second'), ('third', 'fourth')" );
-
-                    statement.executeUpdate( "CREATE TABLE identifiers2 (x VARCHAR(8) NOT NULL, y VARCHAR(8), PRIMARY KEY (x))" );
-                    statement.executeUpdate( "INSERT INTO identifiers2 (x, y) SELECT a, b FROM identifiers1" );
-
-                    // check that new identifiers had been assigned instead of copying from the first table
-                    try ( ResultSet rs = statement.executeQuery( """
-                            SELECT 1
-                            FROM identifiers1 id1
-                            WHERE EXISTS (
-                                SELECT 1
-                                FROM identifiers2 id2
-                                WHERE id1._eid = id2._eid
-                            );
-                            """ ) ) {
-                        TestHelper.checkResultSet( rs, List.of() );
-                    }
-
-                    connection.commit();
-                } finally {
-                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers1" );
-                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers2" );
-                    connection.commit();
-                }
-            }
-        }
-    }
-
-
-    @Test
-    public void testInsertFromTableWithoutColumnNames() throws SQLException {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
-            Connection connection = jdbcConnection.getConnection();
-            try ( Statement statement = connection.createStatement() ) {
-                try {
-                    statement.executeUpdate( "CREATE TABLE identifiers1 (a VARCHAR(8) NOT NULL, b VARCHAR(8), PRIMARY KEY (a))" );
-                    statement.executeUpdate( "INSERT INTO identifiers1 (a, b) VALUES ('first', 'second'), ('third', 'fourth')" );
-
-                    statement.executeUpdate( "CREATE TABLE identifiers2 (x VARCHAR(8) NOT NULL, y VARCHAR(8), PRIMARY KEY (x))" );
-                    statement.executeUpdate( "INSERT INTO identifiers2 SELECT * FROM identifiers1" );
-
-                    //TODO TH: check that new identifiers had been assigned instead of copying from the first table
-                    connection.commit();
-                } finally {
-                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers1" );
-                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers2" );
-                    connection.commit();
-                }
-            }
-        }
-    }
-
-
-    @Test
-    public void testInsertUnparameterizedDefaultOmitted() throws SQLException {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
-            Connection connection = jdbcConnection.getConnection();
-            try ( Statement statement = connection.createStatement() ) {
-                try {
-                    statement.executeUpdate( "CREATE TABLE identifiers1 (a VARCHAR(8) NOT NULL, b VARCHAR(8) DEFAULT 'foo', PRIMARY KEY (a))" );
-                    statement.executeUpdate( "INSERT INTO identifiers1 (a) VALUES ('first')" );
-                    connection.commit();
-                } finally {
-                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers1" );
-                    connection.commit();
-                }
-            }
-        }
-    }
-
-    // ------------------------------------------------------------------------
-    // DEFAULT VALUES STUFF
-    // ------------------------------------------------------------------------
-
-
-    @Test
-    public void testInsertUnparameterizedDefaultExplicitNoColumnNames() throws SQLException {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
-            Connection connection = jdbcConnection.getConnection();
-            try ( Statement statement = connection.createStatement() ) {
-                try {
-                    statement.executeUpdate( "CREATE TABLE identifiers1 (a VARCHAR(8) NOT NULL, b VARCHAR(8) DEFAULT 'foo', PRIMARY KEY (a))" );
-                    statement.executeUpdate( "INSERT INTO identifiers1 VALUES ('first', 'second')" );
-                    connection.commit();
-                } finally {
-                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers1" );
-                    connection.commit();
-                }
-            }
-        }
-    }
-
-
-    @Test
-    // TODO TH: Does this work?
-    public void testInsertParameterizedDefaultExplicit() throws SQLException {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
-            Connection connection = jdbcConnection.getConnection();
-            try ( Statement statement = connection.createStatement() ) {
-                try {
-                    statement.executeUpdate( "CREATE TABLE identifiers1 (a VARCHAR(8) NOT NULL, b VARCHAR(8) DEFAULT 'foo', PRIMARY KEY (a))" );
-
-                    String insertSql = "INSERT INTO identifiers1 (a, b) VALUES (?)";
-                    try ( PreparedStatement preparedStatement = connection.prepareStatement( insertSql ) ) {
-                        preparedStatement.setString( 1, "first" );
-                        preparedStatement.executeUpdate();
-                    }
-                    connection.commit();
-                } finally {
-                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers1" );
-                    connection.commit();
-                }
-            }
-        }
-    }
-
-
-    @Test
-    // TODO TH: Does this work?
-    public void testInsertParameterizedDefaultOmitted() throws SQLException {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
-            Connection connection = jdbcConnection.getConnection();
-            try ( Statement statement = connection.createStatement() ) {
-                try {
-                    statement.executeUpdate( "CREATE TABLE identifiers1 (a VARCHAR(8) NOT NULL, b VARCHAR(8) DEFAULT 'foo', PRIMARY KEY (a))" );
-
-                    String insertSql = "INSERT INTO identifiers1 (a) VALUES (?)";
-                    try ( PreparedStatement preparedStatement = connection.prepareStatement( insertSql ) ) {
-                        preparedStatement.setString( 1, "first" );
-                        preparedStatement.executeUpdate();
-                    }
-                    connection.commit();
-                } finally {
-                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers1" );
-                    connection.commit();
-                }
-            }
-        }
-    }
-
-
-    @Test
-    // TODO TH: Does this work?
-    public void testInsertMultipleUnparameterizedDefaultOmitted() throws SQLException {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
-            Connection connection = jdbcConnection.getConnection();
-            try ( Statement statement = connection.createStatement() ) {
-                try {
-                    statement.executeUpdate( "CREATE TABLE identifiers1 (a VARCHAR(8) NOT NULL, b VARCHAR(8) DEFAULT 'foo', PRIMARY KEY (a))" );
-                    statement.executeUpdate( "INSERT INTO identifiers1 (a) VALUES ('first'), ('second'), ('third')" );
-                    connection.commit();
-                } finally {
-                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
-                    connection.commit();
-                }
-            }
-        }
-    }
-
-
-    @Test
-    // TODO TH: Does this work?
-    public void testInsertMultipleParameterizedDefaultOmitted() throws SQLException {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
-            Connection connection = jdbcConnection.getConnection();
-            try ( Statement statement = connection.createStatement() ) {
-                try {
-                    statement.executeUpdate( "CREATE TABLE identifiers1 (a VARCHAR(8) NOT NULL, b VARCHAR(8) DEFAULT 'foo', PRIMARY KEY (a))" );
-                    String insertSql = "INSERT INTO identifiers1 (a) VALUES (?), (?), (?)";
-                    try ( PreparedStatement preparedStatement = connection.prepareStatement( insertSql ) ) {
-                        preparedStatement.setString( 1, "first" );
-                        preparedStatement.setString( 2, "second" );
-                        preparedStatement.setString( 3, "third" );
-                        preparedStatement.executeUpdate();
-                    }
-
-                    connection.commit();
-                } finally {
-                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers1" );
-                    connection.commit();
-                }
-            }
-        }
-    }
-
-
-    @Test
-    // TODO TH: Does this work?
-    public void testInsertPreparedNoColumnNames() throws SQLException {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
-            Connection connection = jdbcConnection.getConnection();
-            try ( Statement statement = connection.createStatement() ) {
-                try {
-                    statement.executeUpdate( "CREATE TABLE identifiers (a VARCHAR(8) NOT NULL, b VARCHAR(8), PRIMARY KEY (a))" );
-                    String insertSql = "INSERT INTO identifiers VALUES (?, ?)";
-                    try ( PreparedStatement preparedStatement = connection.prepareStatement( insertSql ) ) {
-                        preparedStatement.setString( 1, "first" );
-                        preparedStatement.setString( 2, "second" );
-                        preparedStatement.executeUpdate();
-                    }
-                    connection.commit();
-                } finally {
-                    statement.executeUpdate( "DROP TABLE identifiers" );
                     connection.commit();
                 }
             }
@@ -661,5 +237,448 @@ public class EntityIdentifierTests {
         }
     }
 
+
+    /*
+    Modify <- Project <- RelValues ('first', 'second')
+     */
+    @Test
+    public void testInsertUnparameterizedWithColumnNames() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                try {
+                    statement.executeUpdate( "CREATE TABLE identifiers (a VARCHAR(8) NOT NULL, b VARCHAR(8), PRIMARY KEY (a))" );
+                    statement.executeUpdate( "INSERT INTO identifiers (a, b) VALUES ('first', 'second')" );
+
+                    connection.commit();
+                } finally {
+                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
+                    connection.commit();
+                }
+            }
+        }
+    }
+
+
+    @Test
+    public void testInsertMultipleUnparameterizedWithColumnNames() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                try {
+                    statement.executeUpdate( "CREATE TABLE identifiers (a VARCHAR(8) NOT NULL, b VARCHAR(8), PRIMARY KEY (a))" );
+                    statement.executeUpdate( "INSERT INTO identifiers (a, b) VALUES ('first', 'second'), ('third', 'fourth')" );
+
+                    connection.commit();
+                } finally {
+                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
+                    connection.commit();
+                }
+            }
+        }
+    }
+
+
+    /*
+    Modify <- Project <- RelValues ('first', 'second')
+     */
+    @Test
+    public void testInsertUnparameterizedNoColumnNames() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                try {
+                    statement.executeUpdate( "CREATE TABLE identifiers (a VARCHAR(8) NOT NULL, b VARCHAR(8), PRIMARY KEY (a))" );
+                    statement.executeUpdate( "INSERT INTO identifiers VALUES ('first', 'second')" );
+                    connection.commit();
+                } finally {
+                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
+                    connection.commit();
+                }
+            }
+        }
+    }
+
+
+    @Test
+    public void testInsertMultipleUnparameterizedNoColumnNames() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                try {
+                    statement.executeUpdate( "CREATE TABLE identifiers (a VARCHAR(8) NOT NULL, b VARCHAR(8), PRIMARY KEY (a))" );
+                    statement.executeUpdate( "INSERT INTO identifiers VALUES ('first', 'second'), ('third', 'fourth')" );
+
+                    connection.commit();
+                } finally {
+                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
+                    connection.commit();
+                }
+            }
+        }
+    }
+
+
+    /*
+    Modify <- Project <- Select ('_eid', first', 'second')
+    */
+    @Test
+    public void testInsertUnparameterizedIdentifierManipulation() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                try {
+                    statement.executeUpdate( "CREATE TABLE identifiers (a INTEGER NOT NULL, b INTEGER, PRIMARY KEY (a))" );
+                    assertThrows(
+                            PrismInterfaceServiceException.class,
+                            () -> statement.executeUpdate( "INSERT INTO identifiers VALUES (-32, 2, 3)" )
+                    );
+                    connection.commit();
+                } finally {
+                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
+                    connection.commit();
+                }
+            }
+        }
+    }
+
+
+    /*
+
+
+     */
+    @Test
+    //ToDo TH: Revisit assert one ids are actually added in this case
+    public void testInsertFromTableWithColumnNamesSameStore() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                try {
+                    statement.executeUpdate( "CREATE TABLE identifiers1 (a VARCHAR(8) NOT NULL, b VARCHAR(8), PRIMARY KEY (a))" );
+                    statement.executeUpdate( "INSERT INTO identifiers1 (a, b) VALUES ('first', 'second'), ('third', 'fourth')" );
+
+                    statement.executeUpdate( "CREATE TABLE identifiers2 (x VARCHAR(8) NOT NULL, y VARCHAR(8), PRIMARY KEY (x))" );
+                    statement.executeUpdate( "INSERT INTO identifiers2 (x, y) SELECT a, b FROM identifiers1" );
+
+                    // check that new identifiers had been assigned instead of copying from the first table
+                    try ( ResultSet rs = statement.executeQuery( """
+                            SELECT 1
+                            FROM identifiers1 id1
+                            WHERE EXISTS (
+                                SELECT 1
+                                FROM identifiers2 id2
+                                WHERE id1._eid = id2._eid
+                            );
+                            """ ) ) {
+                        assertFalse( rs.first() );
+                    }
+
+                    connection.commit();
+                } finally {
+                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers1" );
+                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers2" );
+                    connection.commit();
+                }
+            }
+        }
+    }
+
+
+    @Test
+    //ToDo TH: Revisit assert one ids are actually added in this case
+    public void testInsertFromTableWithoutColumnNamesSameStore() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                try {
+                    statement.executeUpdate( "CREATE TABLE identifiers1 (a VARCHAR(8) NOT NULL, b VARCHAR(8), PRIMARY KEY (a))" );
+                    statement.executeUpdate( "INSERT INTO identifiers1 (a, b) VALUES ('first', 'second'), ('third', 'fourth')" );
+
+                    statement.executeUpdate( "CREATE TABLE identifiers2 (x VARCHAR(8) NOT NULL, y VARCHAR(8), PRIMARY KEY (x))" );
+                    statement.executeUpdate( "INSERT INTO identifiers2 SELECT a, b FROM identifiers1" );
+
+                    //TODO TH: check that new identifiers had been assigned instead of copying from the first table
+                    connection.commit();
+                } finally {
+                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers1" );
+                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers2" );
+                    connection.commit();
+                }
+            }
+        }
+    }
+
+
+    @Test
+    public void testInsertUnparameterizedDefaultOmitted() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                try {
+                    statement.executeUpdate( "CREATE TABLE identifiers1 (a VARCHAR(8) NOT NULL, b VARCHAR(8) DEFAULT 'foo', PRIMARY KEY (a))" );
+                    statement.executeUpdate( "INSERT INTO identifiers1 (a) VALUES ('first')" );
+                    connection.commit();
+                } finally {
+                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers1" );
+                    connection.commit();
+                }
+            }
+        }
+    }
+
+
+    @Test
+    public void testInsertUnparameterizedDefaultExplicitNoColumnNames() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                try {
+                    statement.executeUpdate( "CREATE TABLE identifiers1 (a VARCHAR(8) NOT NULL, b VARCHAR(8) DEFAULT 'foo', PRIMARY KEY (a))" );
+                    statement.executeUpdate( "INSERT INTO identifiers1 VALUES ('first', 'second')" );
+                    connection.commit();
+                } finally {
+                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers1" );
+                    connection.commit();
+                }
+            }
+        }
+    }
+
+
+    @Test
+    public void testInsertMultipleUnparameterizedDefaultOmitted() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                try {
+                    statement.executeUpdate( "CREATE TABLE identifiers1 (a VARCHAR(8) NOT NULL, b VARCHAR(8) DEFAULT 'foo', PRIMARY KEY (a))" );
+                    statement.executeUpdate( "INSERT INTO identifiers1 (a) VALUES ('first'), ('second'), ('third')" );
+                    connection.commit();
+                } finally {
+                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
+                    connection.commit();
+                }
+            }
+        }
+    }
+
+
+    @Test
+    //ToDo TH: fix this
+    public void testInsertPreparedWithColumnNames() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                try {
+                    statement.executeUpdate( "CREATE TABLE identifiers (a VARCHAR(8) NOT NULL, b VARCHAR(8), PRIMARY KEY (a))" );
+                    PreparedStatement preparedStatement = connection.prepareStatement( "INSERT INTO identifiers (a, b) VALUES (?, ?)" );
+                    preparedStatement.setString( 1, "first" );
+                    preparedStatement.setString( 2, "second" );
+                    preparedStatement.executeUpdate();
+                    connection.commit();
+                } finally {
+                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
+                    connection.commit();
+                }
+            }
+        }
+    }
+
+
+    @Test
+    //ToDo TH: fix this
+    public void testInsertMultiplePreparedWithColumnNames() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                try {
+                    statement.executeUpdate( "CREATE TABLE identifiers (a VARCHAR(8) NOT NULL, b VARCHAR(8), PRIMARY KEY (a))" );
+                    PreparedStatement preparedStatement = connection.prepareStatement( "INSERT INTO identifiers (a, b) VALUES (?, ?)" );
+                    preparedStatement.setString( 1, "first" );
+                    preparedStatement.setString( 2, "second" );
+                    preparedStatement.addBatch();
+                    preparedStatement.setString( 1, "third" );
+                    preparedStatement.setString( 2, "fourth" );
+                    preparedStatement.executeBatch();
+                    connection.commit();
+                } finally {
+                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
+                    connection.commit();
+                }
+            }
+        }
+    }
+
+
+    @Test
+    //ToDo TH: fix this
+    public void testInsertParameterizedDefaultExplicit() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                try {
+                    statement.executeUpdate( "CREATE TABLE identifiers1 (a VARCHAR(8) NOT NULL, b VARCHAR(8) DEFAULT 'foo', PRIMARY KEY (a))" );
+
+                    String insertSql = "INSERT INTO identifiers1 (a, b) VALUES (?)";
+                    try ( PreparedStatement preparedStatement = connection.prepareStatement( insertSql ) ) {
+                        preparedStatement.setString( 1, "first" );
+                        preparedStatement.executeUpdate();
+                    }
+                    connection.commit();
+                } finally {
+                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers1" );
+                    connection.commit();
+                }
+            }
+        }
+    }
+
+
+    @Test
+    //ToDo TH: fix this
+    public void testInsertParameterizedDefaultOmitted() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                try {
+                    statement.executeUpdate( "CREATE TABLE identifiers1 (a VARCHAR(8) NOT NULL, b VARCHAR(8) DEFAULT 'foo', PRIMARY KEY (a))" );
+
+                    String insertSql = "INSERT INTO identifiers1 (a) VALUES (?)";
+                    try ( PreparedStatement preparedStatement = connection.prepareStatement( insertSql ) ) {
+                        preparedStatement.setString( 1, "first" );
+                        preparedStatement.executeUpdate();
+                    }
+                    connection.commit();
+                } finally {
+                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers1" );
+                    connection.commit();
+                }
+            }
+        }
+    }
+
+
+    @Test
+    // TODO TH: Does this work?
+    public void testInsertMultipleParameterizedDefaultOmitted() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                try {
+                    statement.executeUpdate( "CREATE TABLE identifiers1 (a VARCHAR(8) NOT NULL, b VARCHAR(8) DEFAULT 'foo', PRIMARY KEY (a))" );
+                    String insertSql = "INSERT INTO identifiers1 (a) VALUES (?), (?), (?)";
+                    try ( PreparedStatement preparedStatement = connection.prepareStatement( insertSql ) ) {
+                        preparedStatement.setString( 1, "first" );
+                        preparedStatement.setString( 2, "second" );
+                        preparedStatement.setString( 3, "third" );
+                        preparedStatement.executeUpdate();
+                    }
+
+                    connection.commit();
+                } finally {
+                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers1" );
+                    connection.commit();
+                }
+            }
+        }
+    }
+
+
+    @Test
+    // TODO TH: Does this work?
+    public void testInsertPreparedNoColumnNames() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                try {
+                    statement.executeUpdate( "CREATE TABLE identifiers (a VARCHAR(8) NOT NULL, b VARCHAR(8), PRIMARY KEY (a))" );
+                    String insertSql = "INSERT INTO identifiers VALUES (?, ?)";
+                    try ( PreparedStatement preparedStatement = connection.prepareStatement( insertSql ) ) {
+                        preparedStatement.setString( 1, "first" );
+                        preparedStatement.setString( 2, "second" );
+                        preparedStatement.executeUpdate();
+                    }
+                    connection.commit();
+                } finally {
+                    statement.executeUpdate( "DROP TABLE identifiers" );
+                    connection.commit();
+                }
+            }
+        }
+    }
+
+
+
+    @Test
+    public void insertOneDocumentNoConflicts() {
+        execute( "db.test.insertOne({\"a\":\"first\", \"b\":\"second\" })" );
+    }
+
+
+    @Test
+    public void insertOneDocumentWithConflicts() {
+        execute("db.test.insertOne({\"_eid\":\"first\", \"b\":\"second\" })" );
+    }
+
+
+    @Test
+    public void insertSingleDocumentNoConflicts() {
+        execute( "db.test.insert({\"a\":\"first\", \"b\":\"second\" })" );
+    }
+
+
+    @Test
+    public void insertSingleDocumentWithConflicts() {
+        execute("db.test.insert({\"_eid\":\"first\", \"b\":\"second\" })" );
+    }
+
+
+    @Test
+    public void insertUpdateOneDocumentNoConflicts() {
+
+    }
+
+
+    @Test
+    public void insertUpdateOneDocumentWithConflicts() {
+
+    }
+
+
+    @Test
+    public void insertManyDocumentNoConflicts() {
+        execute("db.test.insertMany([{ \"a\": \"first\", \"b\": \"second\" }, { \"a\": \"third\", \"b\": \"fourth\" }, { \"a\": \"fifth\", \"b\": \"sixth\" }])");
+
+    }
+
+
+    @Test
+    public void insertManyDocumentWithConflicts() {
+        execute("db.test.insertMany([{ \"_eid\": \"first\", \"b\": \"second\" }, { \"a\": \"third\", \"b\": \"fourth\" }, { \"a\": \"fifth\", \"b\": \"sixth\" }])");
+
+    }
+
+
+    @Test
+    public void insertUpdateManyDocumentNoConflicts() {
+
+    }
+
+
+    @Test
+    public void insertUpdateManyDocumentWithConflicts() {
+
+    }
+
+
+    @Test
+    public void addCollectionNamingConflict() {
+        String name = "_eid";
+        LogicalNamespace namespace = Catalog.snapshot().getNamespace( MqlTestTemplate.namespace ).orElseThrow();
+        assertThrows(
+                Exception.class,
+                () -> execute( "db.createCollection(\"" + name + "\")" )
+        );
+    }
 
 }
