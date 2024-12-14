@@ -58,9 +58,4 @@ public abstract class Modify<E extends Entity> extends SingleAlg {
     public enum Operation {
         INSERT, UPDATE, DELETE, MERGE
     }
-
-    public boolean isDataModifying() {
-        return true;
-    }
-
 }
