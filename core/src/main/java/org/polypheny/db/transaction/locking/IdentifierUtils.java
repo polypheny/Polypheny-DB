@@ -29,13 +29,14 @@ import org.polypheny.db.ddl.DdlManager.FieldInformation;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.type.entity.numerical.PolyLong;
 
 public class IdentifierUtils {
 
     public static final String IDENTIFIER_KEY = "_eid";
     public static final long MISSING_IDENTIFIER = 0;
-    public static final AlgDataType IDENTIFIER_ALG_TYPE = AlgDataTypeFactoryImpl.DEFAULT.createPolyType( PolyType.BIGINT );
+    public static final AlgDataType IDENTIFIER_ALG_TYPE = ((PolyTypeFactoryImpl) AlgDataTypeFactoryImpl.DEFAULT).createBasicPolyType( PolyType.BIGINT, true );
 
     public static final ColumnTypeInformation IDENTIFIER_COLUMN_TYPE = new ColumnTypeInformation(
             PolyType.BIGINT, // binary not supported by hsqldb TODO TH: check for other stores, datatypes
@@ -60,6 +61,11 @@ public class IdentifierUtils {
 
     public static RexLiteral getIdentifierAsLiteral() {
         return REX_BUILDER.makeExactLiteral( BigDecimal.valueOf( IdentifierRegistry.INSTANCE.getEntryIdentifier() ) );
+    }
+
+
+    public static PolyLong getIdentifierAsPolyLong() {
+        return PolyLong.of( IdentifierRegistry.INSTANCE.getEntryIdentifier() );
     }
 
 

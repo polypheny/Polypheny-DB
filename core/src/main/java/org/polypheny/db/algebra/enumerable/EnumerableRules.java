@@ -73,8 +73,6 @@ public class EnumerableRules {
     private EnumerableRules() {
     }
 
-    public static final EnumerableIdentifierInjectionRule ENUMERABLE_IDENTIFIER_INJECTION_RULE = new EnumerableIdentifierInjectionRule();
-
     public static final EnumerableConditionalExecuteRule ENUMERABLE_CONDITIONAL_EXECUTE_RULE = new EnumerableConditionalExecuteRule();
 
     public static final EnumerableConditionalExecuteTrueRule ENUMERABLE_CONDITIONAL_EXECUTE_TRUE_RULE = new EnumerableConditionalExecuteTrueRule();
