@@ -74,7 +74,9 @@ public class EnumerableRules {
     private EnumerableRules() {
     }
 
-    public static final EnumerableIdentifierRule ENUMERABLE_IDENTIFIER_RULE = EnumerableIdentifierRule.REL_INSTANCE;
+    public static final EnumerableIdentifierRule ENUMERABLE_REL_IDENTIFIER_RULE = EnumerableIdentifierRule.REL_INSTANCE;
+
+    public static final EnumerableIdentifierRule ENUMERABLE_DOC_IDENTIFIER_RULE = EnumerableIdentifierRule.DOC_INSTANCE;
 
     public static final EnumerableConditionalExecuteRule ENUMERABLE_CONDITIONAL_EXECUTE_RULE = new EnumerableConditionalExecuteRule();
 
