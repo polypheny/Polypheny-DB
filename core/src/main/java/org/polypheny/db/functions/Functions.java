@@ -101,6 +101,8 @@ import org.polypheny.db.functions.util.ProductPolyListEnumerator;
 import org.polypheny.db.interpreter.Row;
 import org.polypheny.db.runtime.ComparableList;
 import org.polypheny.db.runtime.Like;
+import org.polypheny.db.transaction.locking.IdentifierRegistry;
+import org.polypheny.db.transaction.locking.IdentifierUtils;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.type.entity.PolyBinary;
@@ -347,6 +349,8 @@ public class Functions {
 
         List<PolyValue[]> values = new ArrayList<>();
         for ( PolyValue[] o : baz ) {
+            // ToDo TH: naive proof of concept for identifier injection
+            o[0] = IdentifierUtils.getIdentifierAsPolyLong();
             values.add( o );
         }
         if ( values.isEmpty() ) {

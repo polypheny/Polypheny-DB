@@ -76,7 +76,6 @@ public class AlgDataTypeFieldImpl extends Triple<String, Long, AlgDataType> impl
         this.physicalName = physicalName;
     }
 
-
     @Override
     public int hashCode() {
         return index ^ name.hashCode() ^ type.hashCode();
