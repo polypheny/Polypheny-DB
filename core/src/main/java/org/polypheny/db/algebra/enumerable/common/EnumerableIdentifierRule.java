@@ -28,6 +28,8 @@ public class EnumerableIdentifierRule extends ConverterRule {
 
     public static final EnumerableIdentifierRule REL_INSTANCE = new EnumerableIdentifierRule( LogicalRelIdentifier.class );
 
+    public static final EnumerableIdentifierRule DOC_INSTANCE = new EnumerableIdentifierRule( LogicalRelIdentifier.class );
+
 
     private EnumerableIdentifierRule( Class<? extends Identifier> identifier ) {
         super( identifier, Convention.NONE, EnumerableConvention.INSTANCE, "EnumerableIdentifierRule" );
