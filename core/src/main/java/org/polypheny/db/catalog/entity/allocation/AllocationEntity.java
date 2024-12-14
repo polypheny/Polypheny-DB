@@ -41,6 +41,8 @@ import org.polypheny.db.catalog.logistic.PartitionType;
 @JsonTypeInfo(use = Id.CLASS)
 public abstract class AllocationEntity extends Entity {
 
+    public static String PREFIX = "$alloc$";
+
     @Serialize
     @JsonProperty
     public long adapterId;
@@ -68,7 +70,7 @@ public abstract class AllocationEntity extends Entity {
             long namespaceId,
             long adapterId,
             DataModel type ) {
-        super( id, "$alloc$" + id, namespaceId, EntityType.ENTITY, type, true );
+        super( id, PREFIX + id, namespaceId, EntityType.ENTITY, type, true );
         this.adapterId = adapterId;
         this.logicalId = logicalId;
         this.partitionId = partitionId;
