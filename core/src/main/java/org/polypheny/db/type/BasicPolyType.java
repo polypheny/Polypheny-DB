@@ -66,7 +66,17 @@ public class BasicPolyType extends AbstractPolyType {
      * @param typeName Type name
      */
     public BasicPolyType( AlgDataTypeSystem typeSystem, PolyType typeName ) {
-        this( typeSystem, typeName, false, PRECISION_NOT_SPECIFIED, SCALE_NOT_SPECIFIED, null, null );
+       this(typeSystem, typeName, false);
+    }
+
+    /**
+     * Constructs a type with no parameters. This should only be called from a factory method.
+     *
+     * @param typeSystem Type system
+     * @param typeName Type name
+     */
+    public BasicPolyType( AlgDataTypeSystem typeSystem, PolyType typeName, boolean nullable ) {
+        this( typeSystem, typeName, nullable, PRECISION_NOT_SPECIFIED, SCALE_NOT_SPECIFIED, null, null );
         checkPrecScale( typeName, false, false );
     }
 

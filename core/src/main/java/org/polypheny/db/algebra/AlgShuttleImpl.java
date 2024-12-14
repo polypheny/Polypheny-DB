@@ -63,7 +63,6 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
 import org.polypheny.db.algebra.logical.relational.LogicalRelCorrelate;
 import org.polypheny.db.algebra.logical.relational.LogicalRelExchange;
 import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
-import org.polypheny.db.algebra.logical.relational.LogicalRelIdentifierInjection;
 import org.polypheny.db.algebra.logical.relational.LogicalRelIntersect;
 import org.polypheny.db.algebra.logical.relational.LogicalRelJoin;
 import org.polypheny.db.algebra.logical.relational.LogicalRelMatch;
@@ -208,12 +207,6 @@ public class AlgShuttleImpl implements AlgShuttle {
     @Override
     public AlgNode visit( LogicalRelModify modify ) {
         return visitChildren( modify );
-    }
-
-
-    @Override
-    public AlgNode visit( LogicalRelIdentifierInjection idInjection ) {
-        return visitChildren( idInjection );
     }
 
 

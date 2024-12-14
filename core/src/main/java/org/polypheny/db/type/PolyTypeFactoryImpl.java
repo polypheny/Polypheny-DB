@@ -56,6 +56,12 @@ public class PolyTypeFactoryImpl extends AlgDataTypeFactoryImpl {
         super( typeSystem );
     }
 
+    public AlgDataType createBasicPolyType(PolyType typeName, boolean nullable) {
+        assertBasic( typeName );
+        AlgDataType newType = new BasicPolyType( typeSystem, typeName, nullable );
+        return canonize( newType );
+    }
+
 
     @Override
     public AlgDataType createPolyType( PolyType typeName ) {
