@@ -18,9 +18,8 @@ package org.polypheny.db.algebra.logical.relational;
 
 import java.util.List;
 import lombok.Getter;
-import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.SingleAlg;
+import org.polypheny.db.algebra.core.common.Identifier;
 import org.polypheny.db.algebra.core.relational.RelAlg;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -31,14 +30,10 @@ import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 
 @Getter
-public class LogicalRelIdentifier extends SingleAlg implements RelAlg {
-
-    public final Entity entity;
-
+public class LogicalRelIdentifier extends Identifier implements RelAlg {
 
     protected LogicalRelIdentifier( Entity entity, AlgCluster cluster, AlgTraitSet traits, AlgNode input, AlgDataType rowType ) {
-        super( cluster, traits, input );
-        this.entity = entity;
+        super( cluster, traits, entity, input );
         this.rowType = rowType;
     }
 
@@ -47,20 +42,6 @@ public class LogicalRelIdentifier extends SingleAlg implements RelAlg {
         final AlgCluster cluster = input.getCluster();
         final AlgTraitSet traits = input.getTraitSet();
         return new LogicalRelIdentifier( table, cluster, traits, input, rowType );
-    }
-
-
-    @Override
-    public String algCompareString() {
-        return this.getClass().getSimpleName() + "$" +
-                input.algCompareString() + "$" +
-                entity.hashCode()+ "&";
-    }
-
-
-    @Override
-    public AlgNode unfoldView( @Nullable AlgNode parent, int index, AlgCluster cluster ) {
-        return super.unfoldView( parent, index, cluster );
     }
 
 
