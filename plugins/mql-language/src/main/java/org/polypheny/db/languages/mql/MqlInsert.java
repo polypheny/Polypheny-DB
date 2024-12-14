@@ -36,7 +36,6 @@ public class MqlInsert extends MqlCollectionStatement {
     private final BsonArray values;
     private final boolean ordered;
 
-
     public MqlInsert( ParserPos pos, String collection, String namespace, BsonValue values, BsonDocument options ) {
         super( collection, namespace, pos );
         if ( values.isDocument() ) {
@@ -46,21 +45,8 @@ public class MqlInsert extends MqlCollectionStatement {
         } else {
             throw new GenericRuntimeException( "Insert requires either a single document or multiple documents in an array." );
         }
-        insertEntryIdentifiers();
         this.ordered = getBoolean( options, "ordered" );
     }
-
-    private void insertEntryIdentifiers() {
-        values.asArray()
-                .stream()
-                .map(BsonValue::asDocument)
-                .forEach(doc -> doc.put(
-                        IdentifierUtils.IDENTIFIER_KEY,
-                        new BsonInt64( IdentifierRegistry.INSTANCE.getEntryIdentifier())
-                ));
-
-    }
-
 
     @Override
     public Type getMqlKind() {
