@@ -25,8 +25,11 @@ import org.polypheny.db.algebra.enumerable.EnumerableAlg;
 import org.polypheny.db.algebra.enumerable.EnumerableAlgImplementor;
 import org.polypheny.db.algebra.enumerable.EnumerableConvention;
 import org.polypheny.db.algebra.enumerable.PhysType;
+import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.plan.AlgCluster;
+import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.util.BuiltInMethod;
 
@@ -35,9 +38,13 @@ public class EnumerableIdentifier extends Identifier implements EnumerableAlg {
     protected EnumerableIdentifier( AlgCluster cluster, AlgTraitSet traits, Entity entity, AlgNode input ) {
         super( cluster, traits, entity, input );
         assert getConvention() instanceof EnumerableConvention;
-        assert getConvention() == input.getConvention();
     }
 
+    @Override
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
+        double dRows = mq.getTupleCount( getInput() );
+        return planner.getCostFactory().makeCost( dRows, 0, 0 );
+    }
 
     @Override
     public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
