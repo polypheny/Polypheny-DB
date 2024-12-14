@@ -130,7 +130,6 @@ public class Programs {
 
     public static final ImmutableSet<AlgOptRule> RULE_SET =
             ImmutableSet.of(
-                    EnumerableRules.ENUMERABLE_IDENTIFIER_INJECTION_RULE,
                     EnumerableRules.ENUMERABLE_JOIN_RULE,
                     EnumerableRules.ENUMERABLE_MERGE_JOIN_RULE,
                     EnumerableRules.ENUMERABLE_SEMI_JOIN_RULE,

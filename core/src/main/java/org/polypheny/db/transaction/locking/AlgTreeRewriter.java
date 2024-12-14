@@ -16,15 +16,14 @@
 
 package org.polypheny.db.transaction.locking;
 
-import java.util.Collections;
+import com.google.common.collect.ImmutableList;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.AlgShuttleImpl;
-import org.polypheny.db.algebra.core.AlgFactories;
-import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
 import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer;
@@ -50,7 +49,6 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
 import org.polypheny.db.algebra.logical.relational.LogicalRelCorrelate;
 import org.polypheny.db.algebra.logical.relational.LogicalRelExchange;
 import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
-import org.polypheny.db.algebra.logical.relational.LogicalRelIdentifierInjection;
 import org.polypheny.db.algebra.logical.relational.LogicalRelIntersect;
 import org.polypheny.db.algebra.logical.relational.LogicalRelJoin;
 import org.polypheny.db.algebra.logical.relational.LogicalRelMatch;
@@ -63,10 +61,20 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelTableFunctionScan;
 import org.polypheny.db.algebra.logical.relational.LogicalRelUnion;
 import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactoryImpl;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
+import org.polypheny.db.algebra.type.AlgRecordType;
+import org.polypheny.db.algebra.type.StructKind;
+import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexIndexRef;
+import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.tools.AlgBuilder;
+import org.polypheny.db.rex.RexUtil;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.numerical.PolyLong;
 
 public class AlgTreeRewriter extends AlgShuttleImpl {
 
@@ -102,9 +110,31 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( LogicalRelValues values ) {
-        return values;
-    }
+        /*
+            Inserts can be divided into two categories according to the nature of their input:
+            1) Values as input
+            2) Inputs that are not values.
 
+            In case 1, we already add the identifiers here by modifying the values.
+            Case 2 is handled using rules in the planner.
+         */
+        ImmutableList<ImmutableList<RexLiteral>> newValues = values.tuples.stream()
+                .map(row -> ImmutableList.<RexLiteral>builder()
+                        .add(IdentifierUtils.getIdentifierAsLiteral())
+                        .addAll(row)
+                        .build())
+                .collect(ImmutableList.toImmutableList());
+
+        List<AlgDataTypeField> newFields = new ArrayList<>();
+        newFields.add(new AlgDataTypeFieldImpl(0L, "_eid", "_eid", 0, IdentifierUtils.IDENTIFIER_ALG_TYPE ));
+        values.getRowType().getFields().stream()
+                .map(f -> new AlgDataTypeFieldImpl(f.getId(), f.getName(), f.getPhysicalName(), f.getIndex() + 1, f.getType()))
+                .forEach(newFields::add);
+
+        AlgDataType newRowType = new AlgRecordType( StructKind.FULLY_QUALIFIED, newFields );
+
+        return LogicalRelValues.create( values.getCluster(), newRowType, newValues );
+    }
 
     @Override
     public AlgNode visit( LogicalRelFilter filter ) {
@@ -114,7 +144,40 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( LogicalRelProject project ) {
-        return visitChild( project, 0, project.getInput() );
+        AlgNode input = project.getInput();
+        if (! (input instanceof LogicalRelValues oldValues)) {
+            return project;
+        }
+         /*
+            When values are used for an insert, they are modified.
+            The project has to be adjusted accordingly.
+         */
+        LogicalRelValues newValues = (LogicalRelValues) visit(oldValues);
+        List<RexNode> newProjects = createNewProjects(project, newValues);
+        return project.copy(project.getTraitSet(), newValues, newProjects, project.getRowType());
+    }
+
+    private List<RexNode> createNewProjects(LogicalRelProject project, LogicalRelValues inputValues) {
+        List<RexNode> newProjects = new LinkedList<>();
+        long fieldCount = project.getRowType().getFieldCount();
+        long inputFieldCount = inputValues.tuples.get(0).size();
+
+        for (int position = 0; position < fieldCount; position++) {
+            if (position < inputFieldCount) {
+                newProjects.add(new RexIndexRef(
+                        position,
+                        project.getRowType().getFields().get(position).getType()
+                ));
+            } else {
+                newProjects.add(new RexLiteral(
+                        null,
+                        project.getRowType().getFields().get(position).getType(),
+                        project.getRowType().getFields().get(position).getType().getPolyType()
+                ));
+            }
+        }
+
+        return newProjects;
     }
 
 
@@ -168,38 +231,7 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( LogicalRelModify modify ) {
-        if ( modify.getOperation() != Operation.INSERT ) {
             return visitChildren( modify );
-        }
-
-        AlgBuilder algBuilder = AlgFactories.LOGICAL_BUILDER.create( modify.getCluster(), modify.getCluster().getSnapshot() );
-        RexBuilder rexBuilder = algBuilder.getRexBuilder();
-        AlgNode input = modify.getInput();
-
-        algBuilder.push( LogicalRelProject.create( LogicalRelValues.createOneRow( input.getCluster() ),
-                input.getTupleType()
-                        .getFields()
-                        .stream()
-                        .map( f -> rexBuilder.makeDynamicParam( f.getType(), f.getIndex() ) )
-                        .toList(),
-                input.getTupleType() ) );
-
-        Modify<?> prepared = LogicalRelModify.create(
-                modify.getEntity(),
-                algBuilder.build(),
-                modify.getOperation(),
-                modify.getUpdateColumns(),
-                null, // ToDo TH: are they always null in our case?
-                false ).streamed( true );
-
-        /*
-        List<RexNode> projects = getProjects(modifyInputRowType);
-        AlgDataType projectRowType = RexUtil.createStructType( modify.getCluster().getTypeFactory(), projects);
-        AlgNode identifierRemovingProject = LogicalRelProject.create(modify.getInput(), projects , projectRowType  );
-        AlgNode identifierInjection = LogicalRelIdentifierInjection.create(modify.getEntity(), identifierRemovingProject, modifyInputRowType );
-         */
-
-        return LogicalRelIdentifierInjection.create( modify.getEntity(), input, prepared );
     }
 
 
@@ -208,12 +240,6 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
                 .filter( f -> !f.getName().equals( IdentifierUtils.IDENTIFIER_KEY ) )
                 .map( f -> new RexIndexRef( f.getIndex(), f.getType() ) )
                 .collect( Collectors.toCollection( LinkedList::new ) );
-    }
-
-
-    @Override
-    public AlgNode visit( LogicalRelIdentifierInjection idInjection ) {
-        return visitChildren( idInjection );
     }
 
 
