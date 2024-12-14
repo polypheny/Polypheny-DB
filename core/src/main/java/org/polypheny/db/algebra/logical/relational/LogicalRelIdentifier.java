@@ -46,20 +46,6 @@ public class LogicalRelIdentifier extends Identifier implements RelAlg {
 
 
     @Override
-    public String algCompareString() {
-        return this.getClass().getSimpleName() + "$" +
-                input.algCompareString() + "$" +
-                entity.hashCode()+ "&";
-    }
-
-
-    @Override
-    public AlgNode unfoldView( @Nullable AlgNode parent, int index, AlgCluster cluster ) {
-        return super.unfoldView( parent, index, cluster );
-    }
-
-
-    @Override
     public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         double dRows = mq.getTupleCount( getInput() );
         return planner.getCostFactory().makeCost( dRows, 0, 0 );
