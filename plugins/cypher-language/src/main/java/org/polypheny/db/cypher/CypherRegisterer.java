@@ -85,11 +85,11 @@ public class CypherRegisterer {
 
         register( OperatorName.CYPHER_GEO_WITHIN, new LangFunctionOperator( "GEO_WITHIN", Kind.CYPHER_FUNCTION, PolyType.BOOLEAN ) );
 
-        register( OperatorName.CYPHER_POINT, new LangFunctionOperator( "CYPHER_POINT", Kind.CYPHER_FUNCTION ) );
+        register( OperatorName.CYPHER_POINT, new LangFunctionOperator( "CYPHER_POINT", Kind.CYPHER_FUNCTION, PolyType.DOCUMENT ) );
 
-        register( OperatorName.DISTANCE, new LangFunctionOperator( "DISTANCE", Kind.CYPHER_FUNCTION ) );
+        register( OperatorName.DISTANCE, new LangFunctionOperator( "DISTANCE", Kind.CYPHER_FUNCTION, PolyType.DOUBLE ) );
 
-        register( OperatorName.CYPHER_WITHINBBOX, new LangFunctionOperator( "CYPHER_WITHIN_BBOX", Kind.CYPHER_FUNCTION ) );
+        register( OperatorName.CYPHER_WITHINBBOX, new LangFunctionOperator( "CYPHER_WITHIN_BBOX", Kind.CYPHER_FUNCTION, PolyType.BOOLEAN ) );
 
         isInit = true;
     }
