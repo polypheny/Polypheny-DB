@@ -85,6 +85,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalModifyCollect;
 import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
 import org.polypheny.db.algebra.logical.relational.LogicalRelCorrelate;
 import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalRelIdentifier;
 import org.polypheny.db.algebra.logical.relational.LogicalRelIntersect;
 import org.polypheny.db.algebra.logical.relational.LogicalRelJoin;
 import org.polypheny.db.algebra.logical.relational.LogicalRelMatch;
@@ -183,6 +184,7 @@ public class AlgStructuredTypeFlattener implements AlgConsumingVisitor {
                 put( LogicalRelTableFunctionScan.class, a -> rewriteAlg( (LogicalRelTableFunctionScan) a ) );
                 put( LogicalRelValues.class, a -> rewriteAlg( (LogicalRelValues) a ) );
                 put( LogicalRelProject.class, a -> rewriteAlg( (LogicalRelProject) a ) );
+                put( LogicalRelIdentifier.class, a -> rewriteAlg( (LogicalRelIdentifier) a ) );
                 put( LogicalCalc.class, a -> rewriteAlg( (LogicalCalc) a ) );
                 put( LogicalRelMatch.class, a -> rewriteAlg( (LogicalRelMatch) a ) );
                 put( LogicalChi.class, a -> rewriteAlg( (LogicalChi) a ) );
@@ -713,6 +715,11 @@ public class AlgStructuredTypeFlattener implements AlgConsumingVisitor {
                 Pair.right( flattenedExpList ),
                 true );
         setNewForOldAlg( alg, algBuilder.build() );
+    }
+
+
+    public void rewriteAlg( LogicalRelIdentifier alg ) {
+        rewriteGeneric( alg );
     }
 
 
