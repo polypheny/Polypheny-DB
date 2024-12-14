@@ -289,20 +289,27 @@ public class Functions {
         return Linq4j.asEnumerable( results );
     }
 
+    public static <T> Enumerable<PolyValue[]> addIdentifiers(final Enumerable<PolyValue[]> input) {
+        return input.select( oldRow -> {
+            PolyValue[] newRow = new PolyValue[oldRow.length + 1];
+            newRow[0] = IdentifierUtils.getIdentifierAsPolyLong();
+            System.arraycopy( oldRow, 0, newRow, 1, oldRow.length );
+            return newRow;
+        } );
+    }
+
 
     @SuppressWarnings("unused")
-    public static <T> Enumerable<PolyValue[]> streamRight( final DataContext context, final Enumerable<PolyValue[]> baz, final Function0<Enumerable<PolyValue[]>> executorCall, final List<PolyType> polyTypes ) {
+    public static Enumerable<PolyValue[]> streamRight( final DataContext context, final Enumerable<PolyValue[]> input, final Function0<Enumerable<PolyValue[]>> executorCall, final List<PolyType> polyTypes ) {
         AlgDataTypeFactory factory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
         List<AlgDataType> algDataTypes = polyTypes.stream().map( typeName -> typeName == PolyType.ARRAY ? factory.createArrayType( factory.createPolyType( PolyType.ANY ), -1 ) : deriveType( factory, typeName ) ).toList();
-
-        boolean single = polyTypes.size() == 1;
 
         List<PolyValue[]> results = new ArrayList<>();
         List<Map<Long, PolyValue>> valuesBackup = context.getParameterValues();
         Map<Long, AlgDataType> typesBackup = context.getParameterTypes();
 
         if ( context.getParameterValues().isEmpty() ) {
-            Enumerable<PolyValue[]> values = handleContextBatch( context, baz, executorCall, null, typesBackup, algDataTypes, results );
+            Enumerable<PolyValue[]> values = handleContextBatch( context, input, executorCall, null, typesBackup, algDataTypes, results );
             if ( values != null ) {
                 return values;
             }
@@ -310,7 +317,7 @@ public class Functions {
             // batches of inserts or selects do not care if they execute before the prepared side(right)
             // but updates need the full execution before the next batch
             for ( Map<Long, PolyValue> contextBatch : valuesBackup ) {
-                Enumerable<PolyValue[]> values = handleContextBatch( context, baz, executorCall, contextBatch, typesBackup, algDataTypes, results );
+                Enumerable<PolyValue[]> values = handleContextBatch( context, input, executorCall, contextBatch, typesBackup, algDataTypes, results );
                 if ( values != null ) {
                     return values;
                 }
@@ -336,7 +343,7 @@ public class Functions {
     @Nullable
     private static Enumerable<PolyValue[]> handleContextBatch(
             DataContext context,
-            Enumerable<PolyValue[]> baz,
+            Enumerable<PolyValue[]> input,
             Function0<Enumerable<PolyValue[]>> executorCall,
             @Nullable Map<Long, PolyValue> contextBatch,
             Map<Long, AlgDataType> typesBackup,
@@ -348,7 +355,7 @@ public class Functions {
         }
 
         List<PolyValue[]> values = new ArrayList<>();
-        for ( PolyValue[] o : baz ) {
+        for ( PolyValue[] o : input ) {
             // ToDo TH: naive proof of concept for identifier injection
             o[0] = IdentifierUtils.getIdentifierAsPolyLong();
             values.add( o );
