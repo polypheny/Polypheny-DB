@@ -43,6 +43,16 @@ public class MqlTestTemplate {
     }
 
 
+    public static void initDatabase() {
+        initDatabase( namespace );
+    }
+
+
+    public static void initDatabase( String database ) {
+        MongoConnection.executeGetResponse( "use " + database );
+    }
+
+
     @BeforeEach
     public void initCollection() {
         initCollection( namespace );
@@ -94,16 +104,6 @@ public class MqlTestTemplate {
 
     public static DocResult execute( String doc, String database ) {
         return MongoConnection.executeGetResponse( doc, database );
-    }
-
-
-    public static void initDatabase() {
-        initDatabase( namespace );
-    }
-
-
-    public static void initDatabase( String database ) {
-        MongoConnection.executeGetResponse( "use " + database );
     }
 
 
