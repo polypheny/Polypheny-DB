@@ -132,7 +132,9 @@ public abstract class Executor implements Callable<Void> {
             ObjectMapper mapper = new ObjectMapper();
             ObjectNode node = mapper.createObjectNode();
             node.put( "message", getMessage() );
-            node.put( "cause", getCause().getMessage() );
+            if ( getCause() != null ) {
+                node.put( "cause", getCause().getMessage() );
+            }
             return node;
         }
 

@@ -18,6 +18,7 @@ package org.polypheny.db.workflow.dag.activities;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -139,7 +140,7 @@ public class ActivityWrapper {
             }
         }
 
-        if ( !activity.getDataStateMerger().merge( List.of( dataEdges ) ) ) {
+        if ( !activity.getDataStateMerger().merge( Arrays.asList( dataEdges ) ) ) {
             return EdgeState.INACTIVE;
         }
         return getControlStateMerger().merge( successEdges, failEdges );
@@ -173,20 +174,23 @@ public class ActivityWrapper {
 
 
     public enum ActivityState {
-        IDLE( false ),
-        QUEUED( false ),
-        EXECUTING( false ),
-        SKIPPED( false ),  // => execution was aborted
-        FAILED( true ),
-        FINISHED( true ),
-        SAVED( true );  // => finished + checkpoint created
+        IDLE( false, false ),
+        QUEUED( false, false ),
+        EXECUTING( false, false ),
+        SKIPPED( false, false ),  // => execution was aborted
+        FAILED( true, false ),
+        FINISHED( true, true ),
+        SAVED( true, true );  // => finished + checkpoint created
 
         @Getter
         private final boolean isExecuted;
+        @Getter
+        private final boolean isSuccess;
 
 
-        ActivityState( boolean isExecuted ) {
+        ActivityState( boolean isExecuted, boolean isSuccess ) {
             this.isExecuted = isExecuted;
+            this.isSuccess = isSuccess;
         }
     }
 

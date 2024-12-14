@@ -202,8 +202,8 @@ public class WorkflowImpl implements Workflow {
 
     private void updatePreview( UUID activityId, boolean throwIfInvalid ) throws ActivityException {
         ActivityWrapper wrapper = getActivity( activityId );
-        if ( wrapper.getState().isExecuted() ) {
-            return; // when an activity can be executed, it's previews won't change anymore
+        if ( wrapper.getState().isExecuted() || wrapper.getState() == ActivityState.SKIPPED ) {
+            return; // previews are only important for activities that can still get executed
         }
         recomputeInVariables( activityId );
         List<Optional<AlgDataType>> inTypes = getInputTypes( activityId );
@@ -248,7 +248,7 @@ public class WorkflowImpl implements Workflow {
             if ( dataEdge == null ) {
                 inputTypes.add( Optional.empty() ); // not yet connected
             } else if ( dataEdge.getState() == EdgeState.INACTIVE ) {
-                inputTypes.add( null );
+                inputTypes.add( null ); // TODO: this might lead to problems when a newly added activity is connected to a failed activity
             } else {
                 inputTypes.add( dataEdge.getFrom().getOutTypePreview().get( dataEdge.getFromPort() ) );
             }
@@ -349,16 +349,19 @@ public class WorkflowImpl implements Workflow {
             for ( ExecutionEdge execEdge : subDag.getInwardEdges( n ) ) {
                 ActivityWrapper source = getActivity( execEdge.getSource() );
                 CommonType sourceType = source.getConfig().getCommonType();
-                int toPort = execEdge.getToPort();
 
-                requiredInPorts.remove( toPort );
+                if ( !execEdge.isControl() ) {
+                    int toPort = execEdge.getToPort();
 
-                if ( occupiedInPorts.contains( toPort ) ) {
-                    throw new IllegalStateException( "InPort " + toPort + " is already occupied: " + execEdge );
+                    requiredInPorts.remove( toPort );
+
+                    if ( occupiedInPorts.contains( toPort ) ) {
+                        throw new IllegalStateException( "InPort " + toPort + " is already occupied: " + execEdge );
+                    }
+                    occupiedInPorts.add( toPort );
                 }
-                occupiedInPorts.add( toPort );
 
-                if ( wrapper.getState().isExecuted() && !source.getState().isExecuted() ) {
+                if ( wrapper.getState().isExecuted() && !source.getState().isExecuted() && !getEdge( execEdge ).isIgnored() ) {
                     throw new IllegalStateException( "An activity that is executed cannot have a not yet executed predecessor: " + execEdge );
                 }
                 if ( type == CommonType.EXTRACT ) {

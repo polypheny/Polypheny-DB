@@ -68,9 +68,7 @@ public class WorkflowOptimizerImpl extends WorkflowOptimizer {
         System.out.print( ", Node Colors: " + nodeColors );
         System.out.println( ", Edge Colors: " + edgeColors );
 
-        // TODO: ensure common transaction boundaries are respected
-
-        return createFactories( subDag, getFirstConnectedComponents( subDag, nodeColors, edgeColors ) );
+        return createFactories( subDag, getFirstConnectedComponents( subDag, nodeColors, edgeColors ), commonType );
     }
 
 
@@ -248,7 +246,7 @@ public class WorkflowOptimizerImpl extends WorkflowOptimizer {
     }
 
 
-    private List<SubmissionFactory> createFactories( AttributedDirectedGraph<UUID, ExecutionEdge> subDag, List<Pair<Set<UUID>, NodeColor>> components ) {
+    private List<SubmissionFactory> createFactories( AttributedDirectedGraph<UUID, ExecutionEdge> subDag, List<Pair<Set<UUID>, NodeColor>> components, CommonType commonType ) {
         PriorityQueue<Pair<Integer, SubmissionFactory>> queue
                 = new PriorityQueue<>( Comparator.comparingInt( obj -> (int) ((Pair<?, ?>) obj).getLeft() ).reversed() );
 
@@ -257,7 +255,7 @@ public class WorkflowOptimizerImpl extends WorkflowOptimizer {
                     GraphUtils.getInducedSubgraph( subDag, component.left ),
                     component.left,
                     component.right.executorType, // TODO: use fusion executor even for single activities if possible
-                    CommonType.NONE );
+                    commonType );
             queue.add( Pair.of( factory.getActivities().size(), factory ) ); // larger trees have higher priority
         }
 

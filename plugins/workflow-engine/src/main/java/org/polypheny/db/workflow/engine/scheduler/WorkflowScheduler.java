@@ -18,13 +18,17 @@ package org.polypheny.db.workflow.engine.scheduler;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.transaction.TransactionException;
@@ -62,13 +66,14 @@ public class WorkflowScheduler {
     private final AttributedDirectedGraph<UUID, ExecutionEdge> execDag;
     private final WorkflowOptimizer optimizer;
 
-    private boolean isAborted; // either by interruption or failure
+    // TODO: define overall success or failure of workflow execution, e.g. with "mustSucceed" flag in activity
+    private boolean isAborted; // by interruption
     private boolean isFinished;
 
     private int pendingCount = 0; // current number of unfinished submissions
     private final Set<UUID> remainingActivities = new HashSet<>(); // activities that have not finished execution
-    private final Set<UUID> remainingCommonExtract = new HashSet<>();
-    private final Set<UUID> remainingCommonLoad = new HashSet<>();
+    private final Map<CommonType, Partition> partitions = new HashMap<>();
+    private Partition activePartition;
 
 
     public WorkflowScheduler( Workflow workflow, StorageManager sm, int globalWorkers, @Nullable UUID targetActivity ) throws Exception {
@@ -101,6 +106,7 @@ public class WorkflowScheduler {
     public void interruptExecution() {
         isAborted = true;
         workflow.setState( WorkflowState.INTERRUPTED );
+        activePartition.abort();
     }
 
 
@@ -116,6 +122,11 @@ public class WorkflowScheduler {
      */
     public boolean isFinished() {
         return isFinished;
+    }
+
+
+    public boolean isCommonActive( @NonNull CommonType commonType ) {
+        return sm.isCommonActive( commonType );
     }
 
 
@@ -158,11 +169,6 @@ public class WorkflowScheduler {
             nWrapper.setState( ActivityState.QUEUED );
             sm.dropCheckpoints( n );
             remainingActivities.add( n );
-            if ( type == CommonType.EXTRACT ) {
-                remainingCommonExtract.add( n );
-            } else if ( type == CommonType.LOAD ) {
-                remainingCommonLoad.add( n );
-            }
 
             List<Edge> inEdges = workflow.getInEdges( n );
             for ( Edge edge : inEdges ) {
@@ -182,6 +188,15 @@ public class WorkflowScheduler {
             workflow.updateValidPreview( n );
         }
 
+        for ( CommonType type : List.of( CommonType.EXTRACT, CommonType.NONE, CommonType.LOAD ) ) {
+            Partition partition = new Partition( type, execDag );
+            partitions.put( type, partition );
+            if ( activePartition == null && !partition.isFinished ) {
+                activePartition = partition;
+                activePartition.start();
+            }
+        }
+
         return execDag;
     }
 
@@ -190,7 +205,7 @@ public class WorkflowScheduler {
         pendingCount--;
 
         try {
-            updateRemaining( result );
+            updateTransactions( result );
         } catch ( TransactionException e ) {
             result = new ExecutionResult( result.getSubmission(), new ExecutorException( "An error occurred while closing open transactions of executed activities", e ) );
         }
@@ -204,6 +219,9 @@ public class WorkflowScheduler {
         log.info( "Root variables: " + workflow.getActivity( result.getRootId() ).getVariables() );
 
         updateGraph( result.isSuccess(), result.getActivities(), result.getRootId(), execDag );
+        updatePartitions();
+
+        log.warn( "Remaining activities: " + remainingActivities );
 
         if ( remainingActivities.isEmpty() ) {
             assert pendingCount == 0;
@@ -225,40 +243,30 @@ public class WorkflowScheduler {
     }
 
 
-    private void updateRemaining( ExecutionResult result ) throws TransactionException {
-        CommonType type = result.getSubmission().getCommonType();
+    private void updateTransactions( ExecutionResult result ) throws TransactionException {
+        CommonType type = result.getCommonType();
         Set<UUID> activities = result.getActivities();
         remainingActivities.removeAll( activities );
 
-        if ( type == CommonType.NONE ) {
+        assert type == activePartition.commonType;
+        activePartition.setResolved( activities, result.isSuccess() );
+        if ( activePartition.isAtomic ) {
+            if ( result.isSuccess() && activePartition.hasFailed ) {
+                throw new TransactionException( "Transaction has already been rolled back" ); // handle remaining activities after abort
+            }
+        } else {
             if ( result.isSuccess() ) {
                 activities.forEach( sm::commitTransaction );
             } else {
                 activities.forEach( sm::rollbackTransaction );
-            }
-        } else {
-            Set<UUID> remainingCommon = type == CommonType.EXTRACT ? remainingCommonExtract : remainingCommonLoad;
-            remainingCommon.removeAll( activities );
-            if ( result.isSuccess() ) {
-                if ( remainingCommon.isEmpty() ) {
-                    sm.commitCommonTransaction( type );
-                }
-            } else {
-                for ( UUID n : remainingCommon ) {
-                    ActivityWrapper wrapper = workflow.getActivity( n );
-                    if ( wrapper.getState() == ActivityState.QUEUED ) {
-                        wrapper.setState( ActivityState.SKIPPED ); // TODO: only skip later when updating graph?
-                    }
-                }
-                remainingCommon.clear();
-                sm.rollbackCommonTransaction( type ); // TODO: only roll back when all executing common have finished?
             }
         }
     }
 
 
     private List<ExecutionSubmission> computeNextSubmissions() {
-        List<SubmissionFactory> factories = optimizer.computeNextTrees( maxWorkers - pendingCount, getActiveCommonType() );
+        log.warn( "Computing next submissions" );
+        List<SubmissionFactory> factories = optimizer.computeNextTrees( maxWorkers - pendingCount, activePartition.commonType );
         pendingCount += factories.size();
         List<ExecutionSubmission> submissions = factories.stream().map( f -> f.create( sm, workflow ) ).toList();
         for ( ExecutionSubmission submission : submissions ) {
@@ -282,6 +290,7 @@ public class WorkflowScheduler {
         // TODO: any not yet executed activity whose input edges are all either Active or Inactive should have their variableStores updated -> reduce number of empty optionals in previews / canFuse etc.
         ActivityWrapper root = workflow.getActivity( rootId );
         boolean isInitialUpdate = root.getState() == ActivityState.SAVED;
+
         for ( UUID n : activities ) {
             ActivityWrapper wrapper = workflow.getActivity( n );
             if ( !isInitialUpdate ) {
@@ -303,7 +312,7 @@ public class WorkflowScheduler {
                     boolean isActive = isSuccess ?
                             !(edge instanceof ControlEdge control) || control.isOnSuccess() :
                             (edge instanceof ControlEdge control && !control.isOnSuccess());
-                    propagateResult( isActive, edge, dag );
+                    propagateResult( isActive, edge, dag, isInitialUpdate );
                 }
             }
         }
@@ -314,12 +323,16 @@ public class WorkflowScheduler {
                 workflow.updatePreview( n ); // TODO: use updateValidPreview instead? How to handle inconsistency?
             }
         }
-
     }
 
 
-    private void propagateResult( boolean isActive, Edge edge, AttributedDirectedGraph<UUID, ExecutionEdge> dag ) {
+    private void propagateResult( boolean isActive, Edge edge, AttributedDirectedGraph<UUID, ExecutionEdge> dag, boolean ignorePartitions ) {
         // must not access this.execDag as it might be null at this point
+        Partition sourcePartition = partitions.get( edge.getFrom().getConfig().getCommonType() );
+        Partition targetPartition = partitions.get( edge.getTo().getConfig().getCommonType() );
+        if ( !(ignorePartitions || sourcePartition.canPropagateTo( targetPartition )) ) {
+            return;
+        }
         edge.setState( isActive ? EdgeState.ACTIVE : EdgeState.INACTIVE );
         if ( edge.isIgnored() || (isActive && !(edge instanceof ControlEdge)) ) {
             return; // Cannot propagate activation of a data edge or ignored edge, since it cannot change the state of the activity
@@ -335,32 +348,178 @@ public class WorkflowScheduler {
             case ACTIVE -> {
                 List<ControlEdge> controlEdges = inEdges.stream().filter( e -> e instanceof ControlEdge control && !control.isActive() ).map( e -> (ControlEdge) e ).toList();
                 controlEdges.forEach( e -> e.setIgnored( true ) ); // the not active edges can be ignored, as they are no longer relevant
+                if ( target.getState() == ActivityState.SKIPPED ) {
+                    // previously skipped because of common extract that succeeded on its own, but transaction failed
+                    target.setState( ActivityState.QUEUED );
+                    remainingActivities.add( target.getId() );
+                    log.warn( "Setting skipped to queued!" );
+                }
             }
             case INACTIVE -> {
                 target.setState( ActivityState.SKIPPED );
                 remainingActivities.remove( target.getId() );
-                remainingCommonExtract.remove( target.getId() ); // TODO: what if a common activity is skipped? workflow config?
-                remainingCommonLoad.remove( target.getId() );
+                targetPartition.setResolved( target.getId(), false ); // no need to catch the exception, as the transaction is already rolled back
                 // a skipped activity does NOT count as failed -> onFail control edges also become INACTIVE
-                workflow.getOutEdges( target.getId() ).forEach( e -> propagateResult( false, e, dag ) );
+                dag.getOutwardEdges( target.getId() ).forEach( e -> propagateResult( false, workflow.getEdge( e ), dag, ignorePartitions ) ); // TODO: out edges from workflow or DAG?
             }
         }
     }
 
 
-    private CommonType getActiveCommonType() {
-        if ( !remainingCommonExtract.isEmpty() ) {
-            return CommonType.EXTRACT;
+    private void updatePartitions() {
+        while ( activePartition.isAllResolved() ) {
+            activePartition.finish( execDag );
+            if ( remainingActivities.isEmpty() ) {
+                break;
+            }
+
+            activePartition = switch ( activePartition.commonType ) {
+                case EXTRACT -> partitions.get( CommonType.NONE );
+                case NONE -> partitions.get( CommonType.LOAD );
+                case LOAD -> throw new IllegalStateException( "Cannot have remaining activities when load is finished" );
+            };
+            activePartition.start();
         }
-        if ( remainingActivities.size() > remainingCommonLoad.size() ) {
-            return CommonType.NONE;
-        }
-        return CommonType.LOAD;
     }
 
 
     private void setStates( Set<UUID> activities, ActivityState state ) {
         activities.forEach( id -> workflow.getActivity( id ).setState( state ) );
+    }
+
+
+    /**
+     * Currently, this class can be considered unnecessary. But it could be used as a starting point for implementing arbitrary partitions of workflows.
+     * This could be useful for nested workflows.
+     */
+    private class Partition {
+
+        private final CommonType commonType;
+        private final boolean isAtomic;
+        private final Set<UUID> activities;
+        private final Set<UUID> remaining = new HashSet<>();
+        private boolean hasFailed = false; // whether an activity of this partition was not successful (FAILED or SKIPPED)
+        private boolean isStarted = false; // whether execution has started
+        private boolean isFinished;
+
+
+        private Partition( CommonType commonType, AttributedDirectedGraph<UUID, ExecutionEdge> dag ) {
+            this.commonType = commonType;
+            this.isAtomic = commonType != CommonType.NONE;
+            this.activities = dag.vertexSet().stream().filter( n -> workflow.getActivity( n ).getConfig().getCommonType() == commonType ).collect( Collectors.toSet() );
+            this.remaining.addAll( activities );
+            this.isFinished = activities.isEmpty();
+        }
+
+
+        private void start() {
+            assert !isStarted;
+            if ( isAtomic && !hasFailed && !isAllResolved() ) {
+                sm.startCommonTransaction( commonType );
+            }
+
+            if ( isAtomic && hasFailed ) {
+                // partition failed before it was started
+                for ( UUID n : activities ) {
+                    if ( remaining.contains( n ) ) {
+                        workflow.getActivity( n ).setState( ActivityState.SKIPPED );
+                        remaining.remove( n );
+                        remainingActivities.remove( n ); // also remove from workflow-wide remaining list
+                        // TODO: also update inner edges?
+                    }
+                }
+            }
+
+            isStarted = true;
+        }
+
+
+        private boolean contains( UUID activity ) {
+            return activities.contains( activity );
+        }
+
+
+        private boolean isAllResolved() {
+            return remaining.isEmpty();
+        }
+
+
+        private void setResolved( UUID activity, boolean isSuccess ) throws TransactionException {
+            remaining.remove( activity );
+
+            if ( hasFailed ) {
+                return;
+            }
+            if ( isSuccess ) {
+                assert isStarted : "Cannot resolve the successful execution of an activity if its partition has not yet started";
+                if ( isAtomic && isAllResolved() ) {
+                    try {
+                        sm.commitCommonTransaction( commonType );
+                    } catch ( TransactionException e ) {
+                        hasFailed = true; // TODO: is a manual rollback required?
+                        throw e;
+                    }
+                }
+                return;
+            }
+
+            hasFailed = true;
+            if ( isAtomic ) {
+                if ( isStarted ) {
+                    sm.rollbackCommonTransaction( commonType );
+                    // we do not drop already created checkpoints
+                }
+            }
+        }
+
+
+        private void setResolved( Set<UUID> activities, boolean isSuccess ) throws TransactionException {
+            activities.forEach( n -> setResolved( n, isSuccess ) );
+        }
+
+
+        private void finish( AttributedDirectedGraph<UUID, ExecutionEdge> dag ) {
+            if ( !isStarted || isFinished || !remaining.isEmpty() ) {
+                throw new IllegalStateException( "Partition is not in a valid state to be finished" );
+            }
+
+            if ( isAtomic ) {
+                for ( UUID n : activities ) {
+                    ActivityWrapper wrapper = workflow.getActivity( n );
+
+                    for ( ExecutionEdge execEdge : dag.getOutwardEdges( n ) ) {
+                        if ( activities.contains( execEdge.getTarget() ) ) {
+                            continue;
+                        }
+                        Edge edge = workflow.getEdge( execEdge );
+                        assert !edge.getTo().getState().isExecuted() :
+                                "Encountered an activity that was executed before the previous partition finished: " + edge.getTo();
+
+                        boolean isActive = !hasFailed && wrapper.getState().isSuccess() ?
+                                !(edge instanceof ControlEdge control) || control.isOnSuccess() :
+                                (edge instanceof ControlEdge control && !control.isOnSuccess());
+                        propagateResult( isActive, edge, dag, true ); // propagate across partition border
+                    }
+                }
+            }
+            isFinished = true;
+        }
+
+
+        private boolean canPropagateTo( Partition other ) {
+            return this == other || !this.isAtomic;
+        }
+
+
+        private void abort() {
+            if ( !isFinished ) {
+                hasFailed = true;
+                if ( isStarted && isAtomic ) {
+                    sm.rollbackCommonTransaction( commonType );
+                }
+            }
+        }
+
     }
 
 }

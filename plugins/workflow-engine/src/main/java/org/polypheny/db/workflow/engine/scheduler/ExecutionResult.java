@@ -21,6 +21,7 @@ import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Value;
 import org.polypheny.db.workflow.engine.execution.Executor.ExecutorException;
+import org.polypheny.db.workflow.models.ActivityConfigModel.CommonType;
 
 @Value
 @AllArgsConstructor
@@ -48,6 +49,11 @@ public class ExecutionResult {
 
     public UUID getRootId() {
         return submission.getRootId();
+    }
+
+
+    public CommonType getCommonType() {
+        return submission.getCommonType();
     }
 
 

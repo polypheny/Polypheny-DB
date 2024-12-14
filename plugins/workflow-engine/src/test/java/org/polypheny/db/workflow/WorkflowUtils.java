@@ -24,7 +24,6 @@ import com.fasterxml.jackson.databind.node.TextNode;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -33,11 +32,14 @@ import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.graph.TopologicalOrderIterator;
 import org.polypheny.db.workflow.dag.Workflow;
 import org.polypheny.db.workflow.dag.WorkflowImpl;
-import org.polypheny.db.workflow.dag.activities.ActivityRegistry;
+import org.polypheny.db.workflow.dag.activities.Activity.ControlStateMerger;
 import org.polypheny.db.workflow.dag.settings.EntityValue;
 import org.polypheny.db.workflow.engine.storage.StorageUtils;
+import org.polypheny.db.workflow.models.ActivityConfigModel;
+import org.polypheny.db.workflow.models.ActivityConfigModel.CommonType;
 import org.polypheny.db.workflow.models.ActivityModel;
 import org.polypheny.db.workflow.models.EdgeModel;
+import org.polypheny.db.workflow.models.RenderModel;
 import org.polypheny.db.workflow.models.WorkflowConfigModel;
 import org.polypheny.db.workflow.models.WorkflowModel;
 
@@ -89,13 +91,10 @@ public class WorkflowUtils {
 
 
     public static Workflow getMergeWorkflow( boolean simulateFailure ) {
-        Map<String, JsonNode> settings = new HashMap<>( ActivityRegistry.getSerializableDefaultSettings( "debug" ) );
-        settings.put( "isSuccessful", BooleanNode.valueOf( !simulateFailure ) );
-
         List<ActivityModel> activities = List.of(
                 new ActivityModel( "relValues" ),
                 new ActivityModel( "relValues" ),
-                new ActivityModel( "debug", settings ),
+                new ActivityModel( "debug", Map.of( "isSuccessful", BooleanNode.valueOf( !simulateFailure ) ) ),
                 new ActivityModel( "relMerge" )
         );
         List<EdgeModel> edges = List.of(
@@ -234,18 +233,76 @@ public class WorkflowUtils {
         return getWorkflow( activities, edges, false, false, 1 );
     }
 
-    public static Workflow getParallelBranchesWorkflow(int nBranches, int millisPerBranch, int maxWorkers) {
+
+    public static Workflow getParallelBranchesWorkflow( int nBranches, int millisPerBranch, int maxWorkers ) {
         assert nBranches > 0 && millisPerBranch > 0;
         ActivityModel root = new ActivityModel( "relValues" );
-        List<ActivityModel> activities = new ArrayList<>(List.of(root));
+        List<ActivityModel> activities = new ArrayList<>( List.of( root ) );
         List<EdgeModel> edges = new ArrayList<>();
 
-        for (int i = 0; i<nBranches; i++) {
+        for ( int i = 0; i < nBranches; i++ ) {
             ActivityModel branch = new ActivityModel( "debug", Map.of( "delay", IntNode.valueOf( millisPerBranch ) ) );
             activities.add( branch );
             edges.add( EdgeModel.of( root, branch ) );
         }
         return getWorkflow( activities, edges, false, false, maxWorkers );
+    }
+
+
+    public static Pair<Workflow, List<UUID>> getCommonTransactionsWorkflow( boolean isFailingExtract ) {
+        List<ActivityModel> activities = List.of(
+                getCommonActivity( "relValues", Map.of(), CommonType.EXTRACT ),
+                getCommonActivity( "relValues", Map.of(), CommonType.EXTRACT ),
+                getCommonActivity( "debug", Map.of( "isSuccessful", BooleanNode.valueOf( !isFailingExtract ) ), CommonType.EXTRACT ),
+                new ActivityModel( "identity" ),
+                new ActivityModel( "identity" ),
+                new ActivityModel( "relValues" ),
+                getCommonActivity( "identity", Map.of(), CommonType.LOAD ),
+                getCommonActivity( "relUnion", Map.of(), CommonType.LOAD )
+
+        );
+        List<EdgeModel> edges = List.of(
+                EdgeModel.of( activities.get( 0 ), activities.get( 3 ) ),
+                EdgeModel.of( activities.get( 1 ), activities.get( 2 ) ),
+                EdgeModel.of( activities.get( 1 ), activities.get( 5 ), false ), // should be executed if extract fails
+                EdgeModel.of( activities.get( 2 ), activities.get( 4 ) ),
+                EdgeModel.of( activities.get( 3 ), activities.get( 6 ) ),
+                EdgeModel.of( activities.get( 3 ), activities.get( 7 ), 0 ),
+                EdgeModel.of( activities.get( 4 ), activities.get( 7 ), 1 )
+        );
+        return getWorkflowWithActivities( activities, edges, false, false, 1 );
+    }
+
+
+    public static Pair<Workflow, List<UUID>> getCommonExtractSkipActivityWorkflow() {
+        List<ActivityModel> activities = List.of(
+                getCommonActivity( "relValues", Map.of(), CommonType.EXTRACT ),
+                getCommonActivity( "debug", Map.of( "isSuccessful", FALSE ), CommonType.EXTRACT ),
+                getCommonActivity( "identity", Map.of(), CommonType.EXTRACT ),
+                new ActivityModel( "relValues" )
+        );
+        List<EdgeModel> edges = List.of(
+                EdgeModel.of( activities.get( 0 ), activities.get( 1 ) ),
+                EdgeModel.of( activities.get( 0 ), activities.get( 3 ), false ),
+                EdgeModel.of( activities.get( 1 ), activities.get( 2 ) )
+        );
+        return getWorkflowWithActivities( activities, edges, false, false, 1 );
+    }
+
+
+    public static Pair<Workflow, List<UUID>> getCommonLoadGetsSkippedWorkflow() {
+        List<ActivityModel> activities = List.of(
+                new ActivityModel( "relValues" ),
+                new ActivityModel( "debug", Map.of( "isSuccessful", FALSE ) ),
+                getCommonActivity( "identity", Map.of(), CommonType.LOAD ),
+                getCommonActivity( "identity", Map.of(), CommonType.LOAD ) // gets skipped by failing debug -> should trigger load tx rollback
+        );
+        List<EdgeModel> edges = List.of(
+                EdgeModel.of( activities.get( 0 ), activities.get( 1 ) ),
+                EdgeModel.of( activities.get( 0 ), activities.get( 2 ) ),
+                EdgeModel.of( activities.get( 1 ), activities.get( 3 ) )
+        );
+        return getWorkflowWithActivities( activities, edges, false, false, 1 );
     }
 
 
@@ -272,6 +329,12 @@ public class WorkflowUtils {
         return Pair.of(
                 getWorkflow( activities, edges, fusionEnabled, pipelineEnabled, maxWorkers ),
                 activities.stream().map( ActivityModel::getId ).toList() );
+    }
+
+
+    private static ActivityModel getCommonActivity( String type, Map<String, JsonNode> settings, CommonType commonType ) {
+        ActivityConfigModel config = new ActivityConfigModel( false, null, commonType, ControlStateMerger.AND_AND );
+        return new ActivityModel( type, UUID.randomUUID(), settings, config, RenderModel.of() );
     }
 
 }

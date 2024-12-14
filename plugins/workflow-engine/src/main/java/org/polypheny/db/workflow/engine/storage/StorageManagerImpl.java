@@ -299,10 +299,14 @@ public class StorageManagerImpl implements StorageManager {
 
 
     @Override
-    public void startCommonTransactions() {
+    public void startCommonTransaction( @NonNull ActivityConfigModel.CommonType commonType ) {
         // TODO: call this method at the correct time
-        extractTransaction = QueryUtils.startTransaction( Catalog.defaultNamespaceId );
-        loadTransaction = QueryUtils.startTransaction( Catalog.defaultNamespaceId );
+        assert commonType != CommonType.NONE;
+        if ( commonType == CommonType.EXTRACT ) {
+            extractTransaction = QueryUtils.startTransaction( Catalog.defaultNamespaceId );
+        } else if ( commonType == CommonType.LOAD ) {
+            loadTransaction = QueryUtils.startTransaction( Catalog.defaultNamespaceId );
+        }
     }
 
 
@@ -323,6 +327,13 @@ public class StorageManagerImpl implements StorageManager {
         if ( t != null && t.isActive() ) {
             t.rollback( null );
         }
+    }
+
+
+    public boolean isCommonActive( @NonNull ActivityConfigModel.CommonType commonType ) {
+        assert commonType != CommonType.NONE;
+        Transaction t = commonType == CommonType.EXTRACT ? extractTransaction : loadTransaction;
+        return t != null && t.isActive();
     }
 
 

@@ -278,11 +278,91 @@ class GlobalSchedulerTest {
     }
 
 
+    @Test
+    void commonTransactionsTest() throws Exception {
+        Pair<Workflow, List<UUID>> pair = WorkflowUtils.getCommonTransactionsWorkflow( false );
+        List<UUID> ids = pair.right;
+        scheduler.startExecution( pair.left, sm, null );
+        scheduler.awaitResultProcessor( 5000 );
+
+        for ( int i = 0; i < ids.size(); i++ ) {
+            UUID id = ids.get( i );
+            if ( i == 5 ) {
+                assertFalse( sm.hasCheckpoint( id, 0 ) );
+                assertEquals( ActivityState.SKIPPED, pair.left.getActivity( id ).getState() );
+                continue;
+            }
+            System.out.println( i + ": " + StorageUtils.readCheckpoint( sm, id, 0 ) );
+            assertEquals( ActivityState.SAVED, pair.left.getActivity( id ).getState() );
+        }
+    }
+
+
+    @Test
+    void commonTransactionFailsTest() throws Exception {
+        Pair<Workflow, List<UUID>> pair = WorkflowUtils.getCommonTransactionsWorkflow( true );
+        List<UUID> ids = pair.right;
+        scheduler.startExecution( pair.left, sm, null );
+        scheduler.awaitResultProcessor( 5000 );
+
+        checkFailed( pair.left, ids.get( 2 ) );
+
+        for ( int i = 3; i < ids.size(); i++ ) {
+            UUID id = ids.get( i );
+            if ( i == 5 ) {
+                System.out.println( i + ": " + StorageUtils.readCheckpoint( sm, id, 0 ) );
+                continue;
+            }
+            assertFalse( sm.hasCheckpoint( id, 0 ) );
+            assertEquals( ActivityState.SKIPPED, pair.left.getActivity( id ).getState() );
+        }
+    }
+
+
+    @Test
+    void commonExtractInnerActivityFailsTest() throws Exception {
+        Pair<Workflow, List<UUID>> pair = WorkflowUtils.getCommonExtractSkipActivityWorkflow();
+        List<UUID> ids = pair.right;
+        scheduler.startExecution( pair.left, sm, null );
+        scheduler.awaitResultProcessor( 5000 );
+
+        System.out.println( StorageUtils.readCheckpoint( sm, ids.get( 0 ), 0 ) ); // on its own the activity was successful
+        checkFailed( pair.left, ids.get( 1 ) );
+        checkSkipped( pair.left, ids.get( 2 ) );
+        System.out.println( StorageUtils.readCheckpoint( sm, ids.get( 3 ), 0 ) ); // this activity was triggered by the common rollback
+    }
+
+
+    @Test
+    void commonLoadGetsSkippedTest() throws Exception {
+        Pair<Workflow, List<UUID>> pair = WorkflowUtils.getCommonLoadGetsSkippedWorkflow();
+        List<UUID> ids = pair.right;
+        scheduler.startExecution( pair.left, sm, null );
+        scheduler.awaitResultProcessor( 15000 );
+
+        System.out.println( StorageUtils.readCheckpoint( sm, ids.get( 0 ), 0 ) );
+        checkFailed( pair.left, ids.get( 1 ) );
+        checkSkipped( pair.left, ids.get( 2 ) );
+        checkSkipped( pair.left, ids.get( 3 ) );
+    }
+
+
     private void checkFailed( Workflow workflow, List<UUID> failedActivityIds ) {
         for ( UUID id : failedActivityIds ) {
-            assertFalse( sm.hasCheckpoint( id, 0 ) );
-            assertEquals( ActivityState.FAILED, workflow.getActivity( id ).getState() );
+            checkFailed( workflow, id );
         }
+    }
+
+
+    private void checkFailed( Workflow workflow, UUID failedActivityId ) {
+        assertFalse( sm.hasCheckpoint( failedActivityId, 0 ), failedActivityId + " still has a checkpoint" );
+        assertEquals( ActivityState.FAILED, workflow.getActivity( failedActivityId ).getState() );
+    }
+
+
+    private void checkSkipped( Workflow workflow, UUID activityId ) {
+        assertFalse( sm.hasCheckpoint( activityId, 0 ), activityId + " still has a checkpoint" );
+        assertEquals( ActivityState.SKIPPED, workflow.getActivity( activityId ).getState() );
     }
 
 }

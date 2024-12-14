@@ -118,9 +118,9 @@ public interface StorageManager extends AutoCloseable { // TODO: remove AutoClos
     void rollbackTransaction( UUID activityId );
 
     /**
-     * Starts a common EXTRACT and LOAD transaction.
+     * Starts a common EXTRACT or LOAD transaction.
      */
-    void startCommonTransactions();
+    void startCommonTransaction( @NonNull ActivityConfigModel.CommonType commonType );
 
     /**
      * Commits the common transaction of the given type (either EXTRACT or LOAD).
@@ -141,5 +141,7 @@ public interface StorageManager extends AutoCloseable { // TODO: remove AutoClos
      * @param commonType which common transaction to roll back
      */
     void rollbackCommonTransaction( @NonNull ActivityConfigModel.CommonType commonType );
+
+    boolean isCommonActive( @NonNull ActivityConfigModel.CommonType commonType );
 
 }

@@ -35,6 +35,7 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.workflow.dag.Workflow;
 import org.polypheny.db.workflow.engine.execution.Executor.ExecutorException;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
+import org.polypheny.db.workflow.models.ActivityConfigModel.CommonType;
 
 @Slf4j
 public class GlobalScheduler {
@@ -134,6 +135,10 @@ public class GlobalScheduler {
                 if ( interruptedSessions.contains( sessionId ) ) {
                     return new ExecutionResult( submission, new ExecutorException( "Execution was interrupted before it started" ) );
                 }
+                if ( submission.getCommonType() != CommonType.NONE && !schedulers.get( sessionId ).isCommonActive( submission.getCommonType() ) ) {
+                    return new ExecutionResult( submission, new ExecutorException( "Common transaction was aborted" ) );
+                }
+
                 activeSubmissions.computeIfAbsent( sessionId, k -> ConcurrentHashMap.newKeySet() ).add( submission );
 
                 ExecutionResult result;
