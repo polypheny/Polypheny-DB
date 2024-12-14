@@ -49,6 +49,7 @@ public class FieldArg implements PolyAlgArg {
         return Integer.toString( field );
     }
 
+
     @Override
     public ObjectNode serialize( AlgNode context, @NonNull List<String> inputFieldNames, ObjectMapper mapper ) {
         return mapper.createObjectNode().put( "arg", toPolyAlg( context, inputFieldNames ) );

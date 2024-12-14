@@ -52,6 +52,7 @@ public class DoubleArg implements PolyAlgArg {
         return Double.toString( arg );
     }
 
+
     @Override
     public ObjectNode serialize( AlgNode context, @NonNull List<String> inputFieldNames, ObjectMapper mapper ) {
         return mapper.createObjectNode().put( "arg", arg );

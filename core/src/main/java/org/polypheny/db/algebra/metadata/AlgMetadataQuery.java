@@ -243,6 +243,7 @@ public class AlgMetadataQuery {
         }
     }
 
+
     /**
      * Returns the {@link BuiltInMetadata.MaxRowCount#getMaxRowCount()} statistic.
      *

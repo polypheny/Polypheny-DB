@@ -32,9 +32,11 @@ public class AnyArg implements PolyAlgArg {
 
     private final Object arg;
 
-    public AnyArg(Object arg) {
+
+    public AnyArg( Object arg ) {
         this.arg = arg;
     }
+
 
     @Override
     public ParamType getType() {
@@ -46,6 +48,7 @@ public class AnyArg implements PolyAlgArg {
     public String toPolyAlg( AlgNode context, @NonNull List<String> inputFieldNames ) {
         return arg.toString();
     }
+
 
     @Override
     public ObjectNode serialize( AlgNode context, @NonNull List<String> inputFieldNames, ObjectMapper mapper ) {

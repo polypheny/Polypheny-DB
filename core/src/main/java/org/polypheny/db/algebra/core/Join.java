@@ -258,12 +258,14 @@ public abstract class Join extends BiAlg {
                 (joinType != null ? joinType.name() : "") + "&";
     }
 
+
     protected static Triple<RexNode, Set<CorrelationId>, JoinAlgType> extractArgs( PolyAlgArgs args ) {
         RexArg condition = args.getArg( "condition", RexArg.class );
         EnumArg<JoinAlgType> type = args.getEnumArg( "type", JoinAlgType.class );
         List<CorrelationId> variables = args.getListArg( "variables", CorrelationArg.class ).map( CorrelationArg::getCorrId );
         return Triple.of( condition.getNode(), new HashSet<>( variables ), type.getArg() );
     }
+
 
     @Override
     public PolyAlgArgs bindArguments() {

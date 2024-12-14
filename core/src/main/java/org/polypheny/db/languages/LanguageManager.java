@@ -101,7 +101,6 @@ public class LanguageManager {
             context.getInformationTarget().accept( statement.getTransaction().getQueryAnalyzer() );
         }
 
-
         List<ParsedQueryContext> parsedQueries;
 
         if ( context instanceof ParsedQueryContext ) {

@@ -47,6 +47,7 @@ public class CorrelationArg implements PolyAlgArg {
         return String.valueOf( corrId.getId() );
     }
 
+
     @Override
     public ObjectNode serialize( AlgNode context, @NonNull List<String> inputFieldNames, ObjectMapper mapper ) {
         return mapper.createObjectNode().put( "arg", corrId.getId() );

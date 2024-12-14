@@ -256,9 +256,9 @@ public interface AlgNode extends AlgOptNode, Cloneable {
         buildPolyAlgebra( sb, null );
     }
 
-    default String buildPolyAlgebra(String prefix) {
+    default String buildPolyAlgebra( String prefix ) {
         StringBuilder sb = new StringBuilder();
-        buildPolyAlgebra(sb, prefix);
+        buildPolyAlgebra( sb, prefix );
         return sb.toString();
     }
 
@@ -273,10 +273,11 @@ public interface AlgNode extends AlgOptNode, Cloneable {
 
     /**
      * Serialize this node without generating metadata.
+     *
      * @param mapper the ObjectMapper used for creating JsonNodes.
      * @return a ObjectNode representing the AlgNode tree rooted at this node.
      */
-    default ObjectNode serializePolyAlgebra( ObjectMapper mapper) {
+    default ObjectNode serializePolyAlgebra( ObjectMapper mapper ) {
         return serializePolyAlgebra( mapper, null );
     }
 

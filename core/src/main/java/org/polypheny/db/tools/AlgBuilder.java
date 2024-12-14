@@ -432,7 +432,8 @@ public class AlgBuilder {
         return literal( value, rexBuilder );
     }
 
-    public static RexNode literal( Object value, RexBuilder rexBuilder) {
+
+    public static RexNode literal( Object value, RexBuilder rexBuilder ) {
         if ( value == null ) {
             return rexBuilder.constantNull();
         } else if ( value instanceof Boolean ) {

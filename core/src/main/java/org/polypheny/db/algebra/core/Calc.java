@@ -182,7 +182,7 @@ public abstract class Calc extends SingleAlg {
         if ( condition != null ) {
             builder.addCondition( condition );
         }
-        return builder.getProgram(false);
+        return builder.getProgram( false );
     }
 
 

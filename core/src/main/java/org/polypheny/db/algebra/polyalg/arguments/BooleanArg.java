@@ -52,8 +52,10 @@ public class BooleanArg implements PolyAlgArg {
         return Boolean.toString( bool );
     }
 
+
     @Override
     public ObjectNode serialize( AlgNode context, @NonNull List<String> inputFieldNames, ObjectMapper mapper ) {
         return mapper.createObjectNode().put( "arg", bool );
     }
+
 }

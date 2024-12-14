@@ -176,7 +176,7 @@ public class ReflectiveAlgMetadataProvider implements AlgMetadataProvider {
                                 }
                                 Object value = mq.map.put( key1, NullSentinel.INSTANCE );
                                 if ( value != null ) {
-                                    throw new CyclicMetadataException( String.format("Already found key %s with value %s", key1, value ) );
+                                    throw new CyclicMetadataException( String.format( "Already found key %s with value %s", key1, value ) );
                                 }
                                 try {
                                     return handlerMethod.invoke( target, args1 );

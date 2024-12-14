@@ -37,10 +37,12 @@ public class LogicalLpgFilter extends LpgFilter {
         super( cluster, traits, input, condition );
     }
 
+
     public static LogicalLpgFilter create( AlgNode input, RexNode condition ) {
         // TODO: modify traitset
         return new LogicalLpgFilter( input.getCluster(), input.getTraitSet(), input, condition );
     }
+
 
     public static LogicalLpgFilter create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
         RexArg condition = args.getArg( "condition", RexArg.class );

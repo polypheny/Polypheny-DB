@@ -213,6 +213,7 @@ public class PolyAlgDeclaration {
         return numInputs == -1 || numInputs == n;
     }
 
+
     public boolean mightRequireAuxiliaryProject() {
         return (numInputs == -1 || numInputs > 1) &&
                 !opTags.contains( OperatorTag.PHYSICAL ) &&
@@ -262,7 +263,7 @@ public class PolyAlgDeclaration {
         }
         node.set( "kwParams", kwArr );
 
-        if (isNotFullyImplemented) {
+        if ( isNotFullyImplemented ) {
             node.put( "notRegistered", true ); // disables editing for this node in the UI
         }
 
@@ -437,7 +438,7 @@ public class PolyAlgDeclaration {
         /**
          * Window.Group
          */
-        WINDOW_GROUP( WindowGroupArg.class);
+        WINDOW_GROUP( WindowGroupArg.class );
 
         private final Class<? extends PolyAlgArg> argClass;
         private final Class<? extends Enum<?>> enumClass;

@@ -18,7 +18,6 @@ package org.polypheny.db.algebra.polyalg.parser.nodes;
 
 import java.util.List;
 import lombok.Getter;
-import lombok.NonNull;
 import org.polypheny.db.languages.ParserPos;
 
 @Getter

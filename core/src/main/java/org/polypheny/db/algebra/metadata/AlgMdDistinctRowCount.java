@@ -90,6 +90,7 @@ public class AlgMdDistinctRowCount implements MetadataHandler<BuiltInMetadata.Di
         return null;
     }
 
+
     @SuppressWarnings("unused")//used by codegen
     public Double getDistinctRowCount( Union alg, AlgMetadataQuery mq, ImmutableBitSet groupKey, RexNode predicate ) {
         double rowCount = 0.0;

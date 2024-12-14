@@ -34,6 +34,7 @@
 package org.polypheny.db.algebra.metadata;
 
 
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.SingleAlg;
@@ -59,7 +60,6 @@ import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.NumberUtil;
 import org.polypheny.db.util.Util;
-import java.util.Optional;
 
 
 /**
@@ -132,7 +132,7 @@ public class AlgMdTupleCount implements MetadataHandler<TupleCount> {
 
     public Double getTupleCount( Sort alg, AlgMetadataQuery mq ) {
         Optional<Double> count = mq.getTupleCount( alg.getInput() );
-        if ( count.isEmpty()) {
+        if ( count.isEmpty() ) {
             return null;
         }
         double rowCount = count.get();

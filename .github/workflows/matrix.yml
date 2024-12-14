@@ -37,4 +37,4 @@ jobs:
                 run: ./gradlew assemblePlugins -PwithoutpullingUi=true
             -   name: Execute tests
                 timeout-minutes: 30
-                run: ./gradlew check -PwithoutpullingUi=true -i
+                run: ./gradlew check -PwithoutpullingUi=true

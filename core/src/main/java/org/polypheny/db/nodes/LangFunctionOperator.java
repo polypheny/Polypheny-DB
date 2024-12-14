@@ -59,6 +59,7 @@ public class LangFunctionOperator extends OperatorImpl {
         };
     }
 
+
     public LangFunctionOperator( String name, Kind kind, PolyType returnType ) {
         this( name, kind, returnType, null );
     }

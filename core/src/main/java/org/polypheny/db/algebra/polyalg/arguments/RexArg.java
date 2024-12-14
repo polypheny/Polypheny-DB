@@ -64,7 +64,7 @@ public class RexArg implements PolyAlgArg {
      * @param inputFieldNames the list of names to be used for serialization
      */
     public RexArg( RexNode node, @NonNull List<String> inputFieldNames ) {
-        this(node);
+        this( node );
         this.inputFieldNames = inputFieldNames;
     }
 
@@ -86,7 +86,7 @@ public class RexArg implements PolyAlgArg {
         if ( node == null ) {
             return str;
         }
-        return PolyAlgUtils.digestWithNames( node, this.inputFieldNames == null ? inputFieldNames : this.inputFieldNames);
+        return PolyAlgUtils.digestWithNames( node, this.inputFieldNames == null ? inputFieldNames : this.inputFieldNames );
     }
 
 

@@ -34,6 +34,7 @@
 package org.polypheny.db.algebra.convert;
 
 
+import java.util.Optional;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
@@ -42,7 +43,6 @@ import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitDef;
 import org.polypheny.db.plan.AlgTraitSet;
-import java.util.Optional;
 
 
 /**

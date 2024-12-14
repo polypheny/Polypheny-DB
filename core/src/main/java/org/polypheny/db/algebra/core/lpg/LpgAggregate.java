@@ -81,13 +81,14 @@ public abstract class LpgAggregate extends SingleAlg implements LpgAlg {
         return NodeType.AGGREGATE;
     }
 
-    public static AlgDataType deriveTupleType(AlgCluster cluster, AlgDataType inputType, List<RexNameRef> groups, List<LaxAggregateCall> aggCalls) {
+
+    public static AlgDataType deriveTupleType( AlgCluster cluster, AlgDataType inputType, List<RexNameRef> groups, List<LaxAggregateCall> aggCalls ) {
         final AlgDataTypeFactory.Builder builder = cluster.getTypeFactory().builder();
         for ( LaxAggregateCall aggCall : aggCalls ) {
-            builder.add( aggCall.name, null, aggCall.getType( cluster ));
+            builder.add( aggCall.name, null, aggCall.getType( cluster ) );
         }
         List<AlgDataTypeField> fields = inputType.getFields();
-        for (RexNameRef group : groups) {
+        for ( RexNameRef group : groups ) {
             int idx = group.getIndex().orElseThrow();
             builder.add( fields.get( idx ) );
         }

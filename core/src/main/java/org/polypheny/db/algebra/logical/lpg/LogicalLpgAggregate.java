@@ -43,8 +43,8 @@ public class LogicalLpgAggregate extends LpgAggregate {
     public static LogicalLpgAggregate create( final AlgNode input, @NotNull List<RexNameRef> groups, List<LaxAggregateCall> aggCalls ) {
         AlgCluster cluster = input.getCluster();
         AlgTraitSet traitSet = input.getTraitSet();
-        AlgDataType type = deriveTupleType(cluster, input.getTupleType(), groups, aggCalls);
-        return new LogicalLpgAggregate( cluster, traitSet, input, groups, aggCalls, type);
+        AlgDataType type = deriveTupleType( cluster, input.getTupleType(), groups, aggCalls );
+        return new LogicalLpgAggregate( cluster, traitSet, input, groups, aggCalls, type );
     }
 
 

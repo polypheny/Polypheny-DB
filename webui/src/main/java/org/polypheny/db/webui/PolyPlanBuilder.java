@@ -108,7 +108,7 @@ public class PolyPlanBuilder {
         List<AlgDataType> translatedTypes = new ArrayList<>();
         for ( int i = 0; i < vals.size(); i++ ) {
             String s = vals.get( i );
-            AlgDataType t = convertType( types.get( i ), factory);
+            AlgDataType t = convertType( types.get( i ), factory );
 
             PolyValue value = switch ( t.getPolyType() ) {
                 case BOOLEAN -> PolyBoolean.of( Boolean.parseBoolean( s ) );
@@ -117,8 +117,8 @@ public class PolyPlanBuilder {
                 case DECIMAL -> PolyBigDecimal.of( s );
                 case FLOAT, REAL -> PolyFloat.of( Float.parseFloat( s ) );
                 case DOUBLE -> PolyDouble.of( Double.parseDouble( s ) );
-                case DATE -> PolyDate.of(Long.parseLong( s ));
-                case TIME -> PolyTime.of(Long.parseLong( s ));
+                case DATE -> PolyDate.of( Long.parseLong( s ) );
+                case TIME -> PolyTime.of( Long.parseLong( s ) );
                 case TIMESTAMP -> PolyTimestamp.of( Long.parseLong( s ) );
                 case CHAR, VARCHAR -> PolyString.of( s );
                 default -> throw new NotImplementedException();
@@ -131,18 +131,19 @@ public class PolyPlanBuilder {
         return Pair.of( translatedVals, translatedTypes );
     }
 
-    private static AlgDataType convertType(String t, AlgDataTypeFactory factory) {
+
+    private static AlgDataType convertType( String t, AlgDataTypeFactory factory ) {
         //e.g. t = "CHAR(5)"
         String[] parts = t.split( "\\(" );
         PolyType type = PolyType.valueOf( parts[0] );
-        if (parts.length == 1) {
+        if ( parts.length == 1 ) {
             return factory.createPolyType( type );
         }
-        String[] args = parts[1].substring( 0, parts[1].length()-1 ).split( "," );
+        String[] args = parts[1].substring( 0, parts[1].length() - 1 ).split( "," );
 
         return switch ( args.length ) {
-            case 1 -> factory.createPolyType( type, Integer.parseInt( args[0].trim()) );
-            case 2 -> factory.createPolyType( type, Integer.parseInt( args[0].trim()), Integer.parseInt( args[1].trim()) );
+            case 1 -> factory.createPolyType( type, Integer.parseInt( args[0].trim() ) );
+            case 2 -> factory.createPolyType( type, Integer.parseInt( args[0].trim() ), Integer.parseInt( args[1].trim() ) );
             default -> throw new GenericRuntimeException( "Unexpected number of type arguments: " + args.length );
         };
 

@@ -58,6 +58,7 @@ public class EnumerableIntersect extends Intersect implements EnumerableAlg {
         assert !all;
     }
 
+
     public static EnumerableIntersect create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
         return new EnumerableIntersect( cluster, cluster.traitSet(), children, args.getArg( "all", BooleanArg.class ).toBool() );
     }

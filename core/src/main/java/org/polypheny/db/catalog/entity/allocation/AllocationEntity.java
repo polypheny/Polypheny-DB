@@ -40,6 +40,7 @@ import org.polypheny.db.catalog.logistic.PartitionType;
 @SerializeClass(subclasses = { AllocationTable.class, AllocationGraph.class, AllocationCollection.class })
 @JsonTypeInfo(use = Id.CLASS)
 public abstract class AllocationEntity extends Entity {
+
     public static String PREFIX = "$alloc$";
 
     @Serialize

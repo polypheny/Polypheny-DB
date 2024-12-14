@@ -82,7 +82,7 @@ public class PolyAlgNodeList extends PolyAlgNode implements NodeList {
 
     @Override
     public Node[] toArray() {
-        return list.toArray( new Node[0]);
+        return list.toArray( new Node[0] );
     }
 
 

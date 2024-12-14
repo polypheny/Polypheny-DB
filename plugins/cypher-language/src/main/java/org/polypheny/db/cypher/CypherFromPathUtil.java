@@ -31,6 +31,7 @@ public class CypherFromPathUtil {
         return inferReturnType( opBinding.collectOperandTypes(), opBinding );
     }
 
+
     public static AlgDataType inferReturnType( List<AlgDataType> operandTypes ) {
         if ( operandTypes.size() < 2 || !(operandTypes.get( 0 ) instanceof PathType pathType) ) {
             throw new GenericRuntimeException( "Could not get element to derive type for extract from path" );
