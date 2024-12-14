@@ -435,7 +435,6 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements AlgPro
         switch ( modify.getOperation() ) {
             case INSERT: {
                 // Convert the input to a SELECT query or keep as VALUES. Not all dialects support naked VALUES,
-                // but all support VALUES inside INSERT.
                 final SqlNode sqlSource = visitChild( 0, modify.getInput() ).asQueryOrValues();
                 final SqlInsert sqlInsert = new SqlInsert(
                         POS,

@@ -1303,7 +1303,6 @@ public class JdbcRules {
 
         @Override
         public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
-            double cost = super.computeSelfCost( planner, mq ).getCosts();
             return super.computeSelfCost( planner, mq ).multiplyBy( .1 );
         }
 
