@@ -39,7 +39,7 @@ public class EnumerableIdentifierRule extends ConverterRule {
         final Identifier identifier = (Identifier) alg;
         final AlgTraitSet traits = identifier.getTraitSet().replace( EnumerableConvention.INSTANCE );
         final AlgNode input = identifier.getInput();
-        return new EnumerableIdentifier();
+        return new EnumerableIdentifier( identifier.getCluster(), traits, identifier.getEntity(), input );
     }
 
 }
