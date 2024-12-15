@@ -18,6 +18,7 @@ package org.polypheny.db.languages;
 
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
@@ -26,6 +27,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -143,6 +145,15 @@ public class LanguageManager {
         int i = 0;
         String changedNamespace = null;
         for ( ParsedQueryContext parsed : parsedQueries ) {
+            // TODO: Remove after testing
+            if ( Kind.DDL.contains( parsed.getQueryNode().get().getKind() )) {
+                String currentPath = System.getProperty( "user.home" );
+                File file = new File( currentPath, "RO" );
+                if ( file.exists() ) {
+                    throw new GenericRuntimeException( "DML-Queries are not allowed. Sorry!" );
+                }
+            }
+
             if ( i != 0 ) {
                 // as long as we directly commit the transaction, we cannot reuse the same transaction
                 if ( previousDdl && !transaction.isActive() ) {
