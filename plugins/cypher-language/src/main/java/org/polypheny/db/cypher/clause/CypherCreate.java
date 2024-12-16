@@ -17,11 +17,8 @@
 package org.polypheny.db.cypher.clause;
 
 import java.util.List;
-import java.util.stream.Stream;
 import lombok.Getter;
 import org.polypheny.db.cypher.expression.CypherLiteral;
-import org.polypheny.db.cypher.expression.CypherLiteral.Literal;
-import org.polypheny.db.cypher.pattern.CypherEveryPathPattern;
 import org.polypheny.db.cypher.pattern.CypherNodePattern;
 import org.polypheny.db.cypher.expression.CypherLiteral;
 import org.polypheny.db.cypher.expression.CypherLiteral.Literal;
@@ -30,8 +27,6 @@ import org.polypheny.db.cypher.pattern.CypherNodePattern;
 import org.polypheny.db.cypher.pattern.CypherPattern;
 import org.polypheny.db.cypher.pattern.CypherRelPattern;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.transaction.locking.IdentifierRegistry;
-import org.polypheny.db.transaction.locking.IdentifierUtils;
 
 
 @Getter
@@ -43,47 +38,7 @@ public class CypherCreate extends CypherClause {
     public CypherCreate( ParserPos pos, List<CypherPattern> patterns ) {
         super( pos );
         this.patterns = patterns;
-        addEntryIdentifiers();
     }
-
-
-    private void addEntryIdentifiers() {
-        patterns.stream()
-                .filter( CypherEveryPathPattern.class::isInstance )
-                .map( CypherEveryPathPattern.class::cast )
-                .forEach( everyPathPattern -> Stream.concat(
-                        everyPathPattern.getNodes().stream(),
-                        everyPathPattern.getEdges().stream()
-                ).forEach( pattern -> {
-                    CypherLiteral properties = extractProperties( pattern );
-                    properties.getMapValue().put(
-                            IdentifierUtils.IDENTIFIER_KEY,
-                            new CypherLiteral(
-                                    ParserPos.ZERO,
-                                    Literal.DECIMAL,
-                                    String.valueOf( IdentifierRegistry.INSTANCE.getEntryIdentifier() ),
-                                    false
-                            )
-                    );
-                } ) );
-    }
-
-    private CypherLiteral extractProperties( CypherPattern pattern ) {
-        if ( pattern instanceof CypherNodePattern cypherNodePattern ) {
-            if (cypherNodePattern.getProperties() == null) {
-                cypherNodePattern.initializeProperties();
-            }
-            return (CypherLiteral) cypherNodePattern.getProperties();
-        }
-        if ( pattern instanceof CypherRelPattern cypherRelPattern ) {
-            if (cypherRelPattern.getProperties() == null) {
-                cypherRelPattern.initializeProperties();
-            }
-            return (CypherLiteral) cypherRelPattern.getProperties();
-        }
-        throw new RuntimeException( "Unknown pattern type" );
-    }
-
 
     @Override
     public CypherKind getCypherKind() {
