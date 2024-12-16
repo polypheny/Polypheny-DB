@@ -256,7 +256,6 @@ public class CypherTestTemplate {
         return contains;
     }
 
-
     public GraphResult matchAndReturnAllNodes() {
         return execute( "MATCH (n) RETURN n" );
     }
