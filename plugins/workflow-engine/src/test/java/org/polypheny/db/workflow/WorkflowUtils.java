@@ -306,6 +306,17 @@ public class WorkflowUtils {
     }
 
 
+    public static Workflow getDocumentWorkflow( int nDocs ) {
+        List<ActivityModel> activities = List.of(
+                new ActivityModel( "docValues", Map.of( "count", IntNode.valueOf( nDocs ) ) ),
+                new ActivityModel( "docIdentity" ) );
+        List<EdgeModel> edges = List.of(
+                EdgeModel.of( activities.get( 0 ), activities.get( 1 ) )
+        );
+        return getWorkflow( activities, edges, false, false, 1 );
+    }
+
+
     public static List<UUID> getTopologicalActivityIds( Workflow workflow ) {
         List<UUID> list = new ArrayList<>();
         for ( UUID n : TopologicalOrderIterator.of( workflow.toDag() ) ) {

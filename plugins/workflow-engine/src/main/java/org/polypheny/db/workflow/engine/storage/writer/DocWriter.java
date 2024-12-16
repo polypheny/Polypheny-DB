@@ -16,33 +16,46 @@
 
 package org.polypheny.db.workflow.engine.storage.writer;
 
+import java.util.Iterator;
 import java.util.List;
-import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
+import org.polypheny.db.workflow.engine.storage.DocBatchWriter;
 
 public class DocWriter extends CheckpointWriter {
 
+    private final DocBatchWriter writer;
+
+
     public DocWriter( LogicalCollection collection, Transaction transaction ) {
         super( collection, transaction );
+        writer = new DocBatchWriter( collection, transaction );
     }
 
 
     public void write( PolyDocument document ) {
-        throw new NotImplementedException();
+        writer.write( document );
+    }
+
+
+    public void writeFromIterator( Iterator<PolyDocument> iterator ) {
+        while ( iterator.hasNext() ) {
+            write( iterator.next() );
+        }
     }
 
 
     @Override
     public void write( List<PolyValue> tuple ) {
-        throw new NotImplementedException();
+        writer.write( tuple.get( 0 ).asDocument() );
     }
 
 
     @Override
     public void close() throws Exception {
+        writer.close();
         super.close();
     }
 

@@ -347,6 +347,21 @@ class GlobalSchedulerTest {
     }
 
 
+    @Test
+    void documentWorkflowTest() throws Exception {
+        int nDocs = 3;
+        Workflow workflow = WorkflowUtils.getDocumentWorkflow( nDocs );
+        List<UUID> ids = WorkflowUtils.getTopologicalActivityIds( workflow );
+        scheduler.startExecution( workflow, sm, null );
+        scheduler.awaitResultProcessor( 5000 );
+
+        //System.out.println( StorageUtils.readCheckpoint( sm, ids.get( 0 ), 0 ) );
+        //System.out.println( StorageUtils.readCheckpoint( sm, ids.get( 1 ), 0 ) );
+        assertEquals( nDocs, StorageUtils.readCheckpoint( sm, ids.get( 0 ), 0 ).size() );
+        assertEquals( nDocs, StorageUtils.readCheckpoint( sm, ids.get( 1 ), 0 ).size() );
+    }
+
+
     private void checkFailed( Workflow workflow, List<UUID> failedActivityIds ) {
         for ( UUID id : failedActivityIds ) {
             checkFailed( workflow, id );

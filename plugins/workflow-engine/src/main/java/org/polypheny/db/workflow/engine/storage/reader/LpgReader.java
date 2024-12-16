@@ -17,12 +17,19 @@
 package org.polypheny.db.workflow.engine.storage.reader;
 
 import java.util.Iterator;
-import org.apache.commons.lang3.NotImplementedException;
+import java.util.NoSuchElementException;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.plan.AlgCluster;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
+import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.graph.PolyEdge;
+import org.polypheny.db.type.entity.graph.PolyNode;
+import org.polypheny.db.workflow.engine.storage.QueryUtils;
 
 public class LpgReader extends CheckpointReader {
 
@@ -31,15 +38,115 @@ public class LpgReader extends CheckpointReader {
     }
 
 
+    public long getNodeCount() {
+        return getCount( "MATCH (n) RETURN COUNT(n)" );
+    }
+
+
+    public long getEdgeCount() {
+        return getCount( "MATCH ()-[r]->() RETURN COUNT(r)" );
+    }
+
+
     @Override
     public AlgNode getAlgNode( AlgCluster cluster ) {
-        throw new NotImplementedException();
+        AlgTraitSet traits = AlgTraitSet.createEmpty().plus( ModelTrait.GRAPH );
+        return new LogicalLpgScan( cluster, traits, entity, entity.getTupleType() );
+    }
+
+
+    public Iterator<PolyNode> getNodeIterator() {
+        Iterator<PolyValue[]> it = executeCypherQuery( "MATCH (n) RETURN n" );
+        return new Iterator<>() {
+            @Override
+            public boolean hasNext() {
+                return it.hasNext();
+            }
+
+
+            @Override
+            public PolyNode next() {
+                return it.next()[0].asNode();
+            }
+        };
+    }
+
+
+    public Iterable<PolyNode> getNodeIterable() {
+        return this::getNodeIterator;
+    }
+
+
+    public Iterator<PolyEdge> getEdgeIterator() {
+        Iterator<PolyValue[]> it = executeCypherQuery( "MATCH ()-[r]->() RETURN r" );
+        return new Iterator<>() {
+            @Override
+            public boolean hasNext() {
+                return it.hasNext();
+            }
+
+
+            @Override
+            public PolyEdge next() {
+                return it.next()[0].asEdge();
+            }
+        };
+    }
+
+
+    public Iterable<PolyEdge> getEdgeIterable() {
+        return this::getEdgeIterator;
     }
 
 
     @Override
     public Iterator<PolyValue[]> getArrayIterator() {
-        throw new NotImplementedException();
+        return new Iterator<>() {
+            private final Iterator<PolyNode> nodeIterator = getNodeIterator();
+            private Iterator<PolyEdge> edgeIterator = null;
+
+
+            @Override
+            public boolean hasNext() {
+                if ( nodeIterator.hasNext() ) {
+                    return true;
+                }
+
+                if ( edgeIterator == null ) {
+                    edgeIterator = getEdgeIterator();
+                }
+                return edgeIterator.hasNext();
+            }
+
+
+            @Override
+            public PolyValue[] next() {
+                if ( edgeIterator == null ) {
+                    return new PolyValue[]{ nodeIterator.next() };
+                }
+                return new PolyValue[]{ edgeIterator.next() };
+            }
+        };
+    }
+
+
+    private Iterator<PolyValue[]> executeCypherQuery( String query ) {
+        ExecutedContext executedContext = QueryUtils.parseAndExecuteQuery(
+                query, "cypher", getGraph().getNamespaceId(), transaction );
+        Iterator<PolyValue[]> it = executedContext.getIterator().getIterator();
+        registerIterator( it );
+        return it;
+    }
+
+
+    private long getCount( String countQuery ) {
+        Iterator<PolyValue[]> it = executeCypherQuery( countQuery );
+        registerIterator( it );
+        try {
+            return it.next()[0].asLong().longValue();
+        } catch ( NoSuchElementException | IndexOutOfBoundsException | NullPointerException ignored ) {
+            return 0;
+        }
     }
 
 

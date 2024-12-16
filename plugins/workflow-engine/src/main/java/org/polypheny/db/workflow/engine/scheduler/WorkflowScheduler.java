@@ -265,7 +265,6 @@ public class WorkflowScheduler {
 
 
     private List<ExecutionSubmission> computeNextSubmissions() {
-        log.warn( "Computing next submissions" );
         List<SubmissionFactory> factories = optimizer.computeNextTrees( maxWorkers - pendingCount, activePartition.commonType );
         pendingCount += factories.size();
         List<ExecutionSubmission> submissions = factories.stream().map( f -> f.create( sm, workflow ) ).toList();

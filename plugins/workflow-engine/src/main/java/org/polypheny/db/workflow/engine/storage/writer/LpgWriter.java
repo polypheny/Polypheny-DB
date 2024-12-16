@@ -17,44 +17,72 @@
 package org.polypheny.db.workflow.engine.storage.writer;
 
 import java.util.List;
-import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.graph.GraphPropertyHolder;
 import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyNode;
+import org.polypheny.db.workflow.engine.storage.LpgBatchWriter;
 
 public class LpgWriter extends CheckpointWriter {
 
+    private final LpgBatchWriter writer;
+    boolean isWritingEdges = false;
+
+
     public LpgWriter( LogicalGraph graph, Transaction transaction ) {
         super( graph, transaction );
+        writer = new LpgBatchWriter( graph, transaction );
+    }
+
+
+    public void write( GraphPropertyHolder value ) {
+        if ( value.isNode() ) {
+            writeNode( value.asNode() );
+        } else {
+            writeEdge( value.asEdge() );
+        }
     }
 
 
     public void writeNode( PolyNode node ) {
-
+        if ( isWritingEdges ) {
+            throw new GenericRuntimeException( "Cannot write node after writing edges" );
+        }
+        writer.write( node );
     }
 
 
     public void writeEdge( PolyEdge edge ) {
-
-    }
-
-
-    private LogicalGraph getGraph() {
-        return (LogicalGraph) entity;
+        writer.write( edge );
+        isWritingEdges = true;
     }
 
 
     @Override
     public void write( List<PolyValue> tuple ) {
-        throw new NotImplementedException();
+        PolyValue value = tuple.get( 0 );
+        if ( value.isNode() ) {
+            writeNode( value.asNode() );
+        } else if ( value.isEdge() ) {
+            writeEdge( value.asEdge() );
+        } else {
+            throw new IllegalArgumentException( "LpgWriter can only write PolyNode or PolyEdge values, but found: " + value.getClass().getSimpleName() );
+        }
     }
 
 
     @Override
     public void close() throws Exception {
+        writer.close();
         super.close();
+    }
+
+
+    private LogicalGraph getGraph() {
+        return (LogicalGraph) entity;
     }
 
 }

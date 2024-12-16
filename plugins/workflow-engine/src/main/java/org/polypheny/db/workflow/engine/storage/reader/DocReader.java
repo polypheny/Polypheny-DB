@@ -17,12 +17,19 @@
 package org.polypheny.db.workflow.engine.storage.reader;
 
 import java.util.Iterator;
-import org.apache.commons.lang3.NotImplementedException;
+import java.util.NoSuchElementException;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.plan.AlgCluster;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
+import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.document.PolyDocument;
+import org.polypheny.db.workflow.engine.storage.QueryUtils;
 
 public class DocReader extends CheckpointReader {
 
@@ -31,15 +38,62 @@ public class DocReader extends CheckpointReader {
     }
 
 
+    public long getDocCount() {
+        LogicalCollection collection = getCollection();
+        String query = "db.\"" + collection.getName() + "\".count({})";
+
+        ExecutedContext executedContext = QueryUtils.parseAndExecuteQuery(
+                query, "MQL", collection.getNamespaceId(), transaction );
+
+        Iterator<PolyValue[]> it = executedContext.getIterator().getIterator();
+        registerIterator( it );
+        try {
+            PolyDocument doc = it.next()[0].asDocument();
+            return doc.get( PolyString.of( "count" ) ).asLong().value;
+        } catch ( NoSuchElementException | IndexOutOfBoundsException | NullPointerException ignored ) {
+            return 0;
+        }
+    }
+
+
+    public Iterator<PolyDocument> getDocIterator() {
+        Iterator<PolyValue[]> it = getArrayIterator();
+        return new Iterator<>() {
+            @Override
+            public boolean hasNext() {
+                return it.hasNext();
+            }
+
+
+            @Override
+            public PolyDocument next() {
+                return it.next()[0].asDocument();
+            }
+        };
+    }
+
+
+    public Iterable<PolyDocument> getDocIterable() {
+        return this::getDocIterator;
+    }
+
+
     @Override
     public AlgNode getAlgNode( AlgCluster cluster ) {
-        throw new NotImplementedException();
+        AlgTraitSet traits = AlgTraitSet.createEmpty().plus( ModelTrait.DOCUMENT );
+        return new LogicalDocumentScan( cluster, traits, entity );
     }
 
 
     @Override
     public Iterator<PolyValue[]> getArrayIterator() {
-        throw new NotImplementedException();
+        LogicalCollection collection = getCollection();
+        String query = "db.\"" + collection.getName() + "\".find({})";
+        ExecutedContext executedContext = QueryUtils.parseAndExecuteQuery(
+                query, "MQL", collection.getNamespaceId(), transaction );
+        Iterator<PolyValue[]> it = executedContext.getIterator().getIterator();
+        registerIterator( it );
+        return it;
     }
 
 

@@ -26,7 +26,6 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.PolyObject;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
-import org.polypheny.db.transaction.locking.Lockable;
 
 @EqualsAndHashCode(callSuper = true)
 @Value
@@ -55,6 +54,12 @@ public class LogicalCollection extends LogicalEntity implements PolyObject {
     @Override
     public ObjectType getLockableObjectType() {
         return ObjectType.ENTITY;
+    }
+
+
+    @Override
+    public String getNamespaceName() {
+        return Catalog.snapshot().getNamespace( namespaceId ).orElseThrow().name;
     }
 
 }

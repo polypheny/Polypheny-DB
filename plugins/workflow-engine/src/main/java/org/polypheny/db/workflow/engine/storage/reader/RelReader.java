@@ -18,7 +18,6 @@ package org.polypheny.db.workflow.engine.storage.reader;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
-import java.util.stream.Collectors;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
@@ -81,15 +80,6 @@ public class RelReader extends CheckpointReader {
         Iterator<PolyValue[]> iterator = executedContext.getIterator().getIterator();
         registerIterator( iterator );
         return iterator;
-    }
-
-
-    private String getQuotedColumns() {
-        LogicalTable table = getTable();
-        return table.getColumnNames().stream()
-                .map( s -> "\"" + s + "\"" )
-                .collect( Collectors.joining( ", " ) );
-
     }
 
 }

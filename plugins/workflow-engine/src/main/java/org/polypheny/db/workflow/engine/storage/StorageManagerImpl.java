@@ -42,6 +42,7 @@ import org.polypheny.db.catalog.logistic.Collation;
 import org.polypheny.db.catalog.logistic.ConstraintType;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.PlacementType;
+import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.DdlManager.ColumnTypeInformation;
 import org.polypheny.db.ddl.DdlManager.ConstraintInformation;
@@ -175,8 +176,7 @@ public class StorageManagerImpl implements StorageManager {
 
 
     @Override
-    // TODO: it should be possible to remove synchronized when schema locking works, but it doesn't hurt to keep it
-    public synchronized RelWriter createRelCheckpoint( UUID activityId, int outputIdx, AlgDataType type, boolean resetPk, @Nullable String storeName ) {
+    public RelWriter createRelCheckpoint( UUID activityId, int outputIdx, AlgDataType type, boolean resetPk, @Nullable String storeName ) {
         if ( storeName == null || storeName.isEmpty() ) {
             storeName = getDefaultStore( DataModel.RELATIONAL );
         }
@@ -190,10 +190,10 @@ public class StorageManagerImpl implements StorageManager {
             }
         }
 
-        Transaction createTransaction = QueryUtils.startTransaction( relNamespace, "RelCreate" );
-        String tableName = TABLE_PREFIX + activityId + "_" + outputIdx;
+        Transaction transaction = QueryUtils.startTransaction( relNamespace, "RelCreate" );
+        String tableName = getTableName( activityId, outputIdx );
 
-        acquireSchemaLock( createTransaction, relNamespace );
+        acquireSchemaLock( transaction, relNamespace );
         ddlManager.createTable(
                 relNamespace,
                 tableName,
@@ -202,11 +202,10 @@ public class StorageManagerImpl implements StorageManager {
                 false,
                 List.of( getStore( storeName ) ),
                 PlacementType.AUTOMATIC,
-                createTransaction.createStatement() );
-        createTransaction.commit();
+                transaction.createStatement() );
+        transaction.commit();
 
         LogicalTable table = Catalog.snapshot().rel().getTable( relNamespace, tableName ).orElseThrow();
-        //QueryUtils.createIndex( table, List.of(PK_COL), true ); // TODO: if using batch reader: index significantly increases performance for some stores
 
         register( activityId, outputIdx, table );
         return new RelWriter( table, QueryUtils.startTransaction( relNamespace, "RelWrite" ), resetPk );
@@ -215,13 +214,53 @@ public class StorageManagerImpl implements StorageManager {
 
     @Override
     public synchronized DocWriter createDocCheckpoint( UUID activityId, int outputIdx, @Nullable String storeName ) {
-        throw new NotImplementedException();
+        if ( storeName == null || storeName.isEmpty() ) {
+            storeName = getDefaultStore( DataModel.DOCUMENT );
+        }
+
+        String collectionName = getCollectionName( activityId, outputIdx );
+
+        Transaction transaction = QueryUtils.startTransaction( docNamespace, "DocCreate" );
+        acquireSchemaLock( transaction, docNamespace );
+        ddlManager.createCollection(
+                docNamespace,
+                collectionName,
+                false,
+                List.of( getStore( storeName ) ),
+                PlacementType.AUTOMATIC,
+                transaction.createStatement()
+        );
+        transaction.commit();
+
+        LogicalCollection collection = Catalog.snapshot().doc().getCollection( docNamespace, collectionName ).orElseThrow();
+        register( activityId, outputIdx, collection );
+        return new DocWriter( collection, QueryUtils.startTransaction( docNamespace, "DocWrite" ) );
     }
 
 
     @Override
     public synchronized LpgWriter createLpgCheckpoint( UUID activityId, int outputIdx, @Nullable String storeName ) {
-        throw new NotImplementedException();
+        if ( storeName == null || storeName.isEmpty() ) {
+            storeName = getDefaultStore( DataModel.GRAPH );
+        }
+        String graphName = getGraphName( activityId, outputIdx );
+        Transaction transaction = QueryUtils.startTransaction( Catalog.defaultNamespaceId, "LpgCreate" );
+        //acquireSchemaLock( transaction, Catalog.defaultNamespaceId ); // TODO: no lock required since we create a new namespace?
+        long graphId = ddlManager.createGraph(
+                graphName,
+                true,
+                List.of( getStore( storeName ) ),
+                false,
+                false,
+                RuntimeConfig.GRAPH_NAMESPACE_DEFAULT_CASE_SENSITIVE.getBoolean(),
+                transaction.createStatement()
+        );
+        transaction.commit();
+
+        LogicalGraph graph = Catalog.snapshot().graph().getGraph( graphId ).orElseThrow();
+        register( activityId, outputIdx, graph );
+        registeredNamespaces.put( graphId, graphName );
+        return new LpgWriter( graph, QueryUtils.startTransaction( docNamespace, "DocWrite" ) );
     }
 
 
@@ -434,7 +473,23 @@ public class StorageManagerImpl implements StorageManager {
 
     private void acquireSchemaLock( Transaction transaction, long namespaceId ) throws DeadlockException {
         LogicalNamespace namespace = Catalog.getInstance().getSnapshot().getNamespace( namespaceId ).orElseThrow();
-        transaction.acquireLockable( LockablesRegistry.convertToLockable( namespace ), LockType.EXCLUSIVE );
+        transaction.acquireLockable( LockablesRegistry.INSTANCE.getOrCreateLockable( namespace ), LockType.EXCLUSIVE );
+    }
+
+
+    private String getTableName( UUID activityId, int outputIdx ) {
+        return TABLE_PREFIX + activityId.toString().replace( "-", "" ) + "_" + outputIdx;
+    }
+
+
+    private String getCollectionName( UUID activityId, int outputIdx ) {
+        return COLLECTION_PREFIX + activityId.toString().replace( "-", "" ) + "_" + outputIdx;
+    }
+
+
+    private String getGraphName( UUID activityId, int outputIdx ) {
+        return LPG_PREFIX + sessionId.toString().replace( "-", "" ) + "_"
+                + activityId.toString().replace( "-", "" ) + "_" + outputIdx;
     }
 
 

@@ -93,7 +93,7 @@ public class RelExtractActivity implements Activity, Fusable, Pipeable {
         LogicalTable table = settings.get( TABLE_KEY, EntityValue.class ).getTable();
         AlgDataType type = getOutputType( table );
 
-        try ( RelWriter writer = (RelWriter) ctx.createWriter( 0, type, true );
+        try ( RelWriter writer = ctx.createRelWriter( 0, type, true );
                 ResultIterator result = getResultIterator( ctx.getTransaction(), table ) ) { // transaction will get committed or rolled back externally
 
             writer.write( CheckpointReader.arrayToListIterator( result.getIterator(), true ) );
