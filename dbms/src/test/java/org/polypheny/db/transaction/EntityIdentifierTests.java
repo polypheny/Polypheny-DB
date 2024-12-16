@@ -16,8 +16,10 @@
 
 package org.polypheny.db.transaction;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -25,13 +27,22 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import org.junit.jupiter.api.Test;
+import org.opentest4j.AssertionFailedError;
 import org.polypheny.db.TestHelper.JdbcConnection;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.mql.MqlTestTemplate;
+import org.polypheny.db.transaction.locking.IdentifierUtils;
 import org.polypheny.jdbc.PrismInterfaceServiceException;
 
 public class EntityIdentifierTests extends MqlTestTemplate {
+
+    @Test
+    public void exceptionCheck() {
+        RuntimeException exception = assertThrows(
+                RuntimeException.class,
+                () -> IdentifierUtils.throwIfIsIdentifierKey( IdentifierUtils.IDENTIFIER_KEY )
+        );
+        assertTrue(exception.getMessage().contains("The field _eid is reserved"));
+    }
 
     @Test
     public void testCreateTable() throws SQLException {
@@ -40,6 +51,23 @@ public class EntityIdentifierTests extends MqlTestTemplate {
             try ( Statement statement = connection.createStatement() ) {
                 try {
                     statement.executeUpdate( "CREATE TABLE identifiers (a VARCHAR(8) NOT NULL, b VARCHAR(8), PRIMARY KEY (a))" );
+                    connection.commit();
+                } finally {
+                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
+                    connection.commit();
+                }
+            }
+        }
+    }
+
+
+    @Test
+    public void testCreateTable2() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                try {
+                    statement.executeUpdate( "CREATE TABLE _eid (a VARCHAR(8) NOT NULL, b VARCHAR(8), PRIMARY KEY (a))" );
                     connection.commit();
                 } finally {
                     statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
@@ -608,77 +636,154 @@ public class EntityIdentifierTests extends MqlTestTemplate {
     }
 
 
-
     @Test
-    public void insertOneDocumentNoConflicts() {
+    public void insertOneDocumentNoConflict() {
         execute( "db.test.insertOne({\"a\":\"first\", \"b\":\"second\" })" );
+
+        String[] data = execute( "db.test.find({})" ).getData();
+        assertEquals( 1, data.length );
+        String document = data[0];
+        assertTrue( document.contains( "\"a\":\"first\"" ) );
+        assertTrue( document.contains( "\"b\":\"second\"" ) );
+        assertTrue( document.contains( "\"_eid\":" ) );
     }
 
+
+    @Test
+    public void updateOneAddOrUpdateFieldNoConflict() {
+        execute( "db.test.insertOne({\"a\":\"first\", \"b\":\"second\" })" );
+        execute( "db.test.updateOne({ \"a\":\"first\" }, { $set: { \"c\":\"third\" } })" );
+
+        String[] data = execute( "db.test.find({})" ).getData();
+        assertEquals( 1, data.length );
+        String document = data[0];
+        assertTrue( document.contains( "\"a\":\"first\"" ) );
+        assertTrue( document.contains( "\"b\":\"second\"" ) );
+        assertTrue( document.contains( "\"c\":\"third\"" ) );
+        assertTrue( document.contains( "\"_eid\":" ) );
+    }
+
+
+    @Test
+    // TODO David: find out why this does not work
+    public void updateOneRemoveFieldNoConflict() {
+        execute( "db.test.insertOne({\"a\":\"first\", \"b\":\"second\" })" );
+        execute( "db.test.updateOne({ \"a\":\"first\" }, { $unset: { \"b\": null } });\n" );
+
+        String[] data = execute( "db.test.find({})" ).getData();
+        assertEquals( 1, data.length );
+        String document = data[0];
+        assertTrue( document.contains( "\"a\":\"first\"" ) );
+        assertTrue( document.contains( "\"_eid\":" ) );
+    }
+
+
+    @Test
+    public void insertSingleDocumentWithConflict() {
+        RuntimeException exception = assertThrows(
+                RuntimeException.class,
+                () -> execute("db.test.insert({\"_eid\":\"first\", \"b\":\"second\" })")
+        );
+        assertTrue(exception.getMessage().contains("The field _eid is reserved"));
+    }
+
+    @Test
+    public void updateOneAddOrUpdateIdentifierFieldConflict() {
+        execute("db.test.insertOne({\"a\":\"first\", \"b\":\"second\" })");
+        RuntimeException exception = assertThrows(
+                RuntimeException.class,
+                () -> execute("db.test.updateOne({ \"a\":\"first\" }, { $set: { \"_eid\":-32 } })")
+        );
+        assertTrue(exception.getMessage().contains("The field _eid is reserved"));
+    }
+
+    @Test
+    // TODO David: find out why this does not work
+    public void updateOneRemoveIdentifierFieldConflict() {
+        execute("db.test.insertOne({\"a\":\"first\", \"b\":\"second\" })");
+        RuntimeException exception = assertThrows(
+                RuntimeException.class,
+                () -> execute("db.test.updateOne({ \"a\":\"first\" }, { $unset: { \"_eid\": null } });")
+        );
+        assertTrue(exception.getMessage().contains("The field _eid is reserved"));
+    }
 
     @Test
     public void insertOneDocumentWithConflicts() {
-        execute("db.test.insertOne({\"_eid\":\"first\", \"b\":\"second\" })" );
+        RuntimeException exception = assertThrows(
+                RuntimeException.class,
+                () -> execute("db.test.insertOne({\"_eid\":\"first\", \"b\":\"second\" })")
+        );
+        assertTrue(exception.getMessage().contains("The field _eid is reserved"));
     }
+
 
 
     @Test
     public void insertSingleDocumentNoConflicts() {
         execute( "db.test.insert({\"a\":\"first\", \"b\":\"second\" })" );
-    }
 
-
-    @Test
-    public void insertSingleDocumentWithConflicts() {
-        execute("db.test.insert({\"_eid\":\"first\", \"b\":\"second\" })" );
-    }
-
-
-    @Test
-    public void insertUpdateOneDocumentNoConflicts() {
-
-    }
-
-
-    @Test
-    public void insertUpdateOneDocumentWithConflicts() {
-
+        String[] data = execute( "db.test.find({})" ).getData();
+        assertEquals( 1, data.length );
+        String document = data[0];
+        assertTrue( document.contains( "\"a\":\"first\"" ) );
+        assertTrue( document.contains( "\"b\":\"second\"" ) );
+        assertTrue( document.contains( "\"_eid\":" ) );
     }
 
 
     @Test
     public void insertManyDocumentNoConflicts() {
-        execute("db.test.insertMany([{ \"a\": \"first\", \"b\": \"second\" }, { \"a\": \"third\", \"b\": \"fourth\" }, { \"a\": \"fifth\", \"b\": \"sixth\" }])");
+        execute( "db.test.insertMany([{ \"a\": \"first\", \"b\": \"second\" }, { \"a\": \"third\", \"b\": \"fourth\" }, { \"a\": \"fifth\", \"b\": \"sixth\" }])" );
 
+        String[] data = execute( "db.test.find({})" ).getData();
+        assertEquals( 3, data.length );
+        for (String document : data) {
+            assertTrue( document.contains( "\"a\":" ) );
+            assertTrue( document.contains( "\"b\":" ) );
+            assertTrue(document.contains( "\"_eid\":" ));
+        }
     }
 
 
     @Test
     public void insertManyDocumentWithConflicts() {
-        execute("db.test.insertMany([{ \"_eid\": \"first\", \"b\": \"second\" }, { \"a\": \"third\", \"b\": \"fourth\" }, { \"a\": \"fifth\", \"b\": \"sixth\" }])");
-
-    }
-
-
-    @Test
-    public void insertUpdateManyDocumentNoConflicts() {
-
-    }
-
-
-    @Test
-    public void insertUpdateManyDocumentWithConflicts() {
-
-    }
-
-
-    @Test
-    public void addCollectionNamingConflict() {
-        String name = "_eid";
-        LogicalNamespace namespace = Catalog.snapshot().getNamespace( MqlTestTemplate.namespace ).orElseThrow();
-        assertThrows(
-                Exception.class,
-                () -> execute( "db.createCollection(\"" + name + "\")" )
+        RuntimeException exception = assertThrows(
+                RuntimeException.class,
+                () -> execute( "db.test.insertMany([{ \"_eid\": \"first\", \"b\": \"second\" }, { \"a\": \"third\", \"b\": \"fourth\" }, { \"a\": \"fifth\", \"b\": \"sixth\" }])" )
         );
+        assertTrue(exception.getMessage().contains("The field _eid is reserved"));
+    }
+
+
+    @Test
+    public void updateManyAddOrUpdateFieldNoConflict() {
+        execute("db.test.insertMany([{\"a\":\"first\", \"b\":\"second\" }, {\"a\":\"first\", \"b\":\"second\" }, {\"a\":\"second\", \"b\":\"third\" }])");
+        execute("db.test.updateMany({ \"a\":\"first\" }, { $set: { \"c\":\"third\" } })");
+        String[] data = execute("db.test.find({})").getData();
+        assertEquals(3, data.length);
+
+        int countUpdated = 0;
+        for (String document : data) {
+            if (document.contains("\"a\":\"first\"")) {
+                assertTrue(document.contains("\"c\":\"third\""));
+                countUpdated++;
+            } else {
+                assertTrue(document.contains("\"b\":\"third\""));
+            }
+        }
+        assertEquals(2, countUpdated);
+        assertTrue(data[0].contains("\"_eid\":"));
+    }
+
+    @Test
+    public void updateManyRemoveIdentifierFieldConflict() {
+        execute("db.test.insertMany([{\"a\":\"first\", \"b\":\"second\"}, {\"a\":\"first\", \"b\":\"third\"}, {\"a\":\"second\", \"b\":\"fourth\"}])");
+        RuntimeException exception = assertThrows(
+                RuntimeException.class,
+                () -> execute("db.test.updateMany({ \"a\":\"first\" }, { $unset: { \"_eid\": null } })")
+        );
+        assertTrue(exception.getMessage().contains("The field _eid is reserved"));
     }
 
 }

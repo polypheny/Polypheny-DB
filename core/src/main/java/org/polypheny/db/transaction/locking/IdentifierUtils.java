@@ -20,6 +20,7 @@ import java.math.BigDecimal;
 import java.text.MessageFormat;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactoryImpl;
@@ -30,6 +31,8 @@ import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.numerical.PolyLong;
 
 public class IdentifierUtils {
@@ -69,6 +72,11 @@ public class IdentifierUtils {
     }
 
 
+    public static PolyString getIdentifierKeyAsPolyString() {
+        return PolyString.of( IDENTIFIER_KEY );
+    }
+
+
     public static void throwIllegalFieldName() {
         throw new IllegalArgumentException( MessageFormat.format(
                 "The field {0} is reserved for internal use and cannot be used.",
@@ -88,21 +96,30 @@ public class IdentifierUtils {
         return newFields;
     }
 
-
-    public static void throwIfContainsIdentifierField( List<FieldInformation> fields ) {
-        if ( fields.stream().noneMatch( f -> f.name().equals( IDENTIFIER_FIELD_INFORMATION.name() ) ) ) {
-            return;
-
+    public static void throwIfIsIdentifierKey(String string) {
+        if (IDENTIFIER_KEY.equals(string)) {
+            throwIllegalFieldName();
         }
-        throwIllegalFieldName();
     }
 
-
-    public static void throwIfIsIdentifierKey( String string ) {
-        if ( !string.equals( IDENTIFIER_KEY ) ) {
-            return;
+    public static void throwIfContainsIdentifierKey(Set<String> fieldNames) {
+        if (fieldNames.contains(IDENTIFIER_KEY)) {
+            throwIllegalFieldName();
         }
-        throwIllegalFieldName();
     }
 
+    public static void throwIfContainsIdentifierKey(List<PolyDocument> documents) {
+        Set<String> fieldNames = documents.stream()
+                .flatMap(v -> v.map.keySet().stream())
+                .map(PolyString::getValue)
+                .collect(Collectors.toSet());
+        throwIfContainsIdentifierKey( fieldNames );
+    }
+
+    public static void throwIfContainsIdentifierField(List<FieldInformation> fields) {
+        Set<String> fieldNames = fields.stream()
+                .map(FieldInformation::name)
+                .collect(Collectors.toSet());
+        throwIfContainsIdentifierKey( fieldNames );
+    }
 }
