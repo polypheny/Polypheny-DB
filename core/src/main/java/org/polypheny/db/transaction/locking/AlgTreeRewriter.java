@@ -62,7 +62,6 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.document.PolyDocument;
 
 public class AlgTreeRewriter extends AlgShuttleImpl {
@@ -260,7 +259,10 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
 
 
     @Override
-    public AlgNode visit( LogicalLpgValues values ) {
+    public AlgNode visit( LogicalLpgValues values )
+    {
+        values.getNodes().forEach( n -> n.getProperties().put( IdentifierUtils.getIdentifierKeyAsPolyString(), IdentifierUtils.getIdentifierAsPolyLong() ) );
+        values.getEdges().forEach( n -> n.getProperties().put( IdentifierUtils.getIdentifierKeyAsPolyString(), IdentifierUtils.getIdentifierAsPolyLong() ) );
         return values;
     }
 
