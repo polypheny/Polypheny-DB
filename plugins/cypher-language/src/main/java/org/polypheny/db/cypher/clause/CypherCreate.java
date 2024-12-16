@@ -17,7 +17,6 @@
 package org.polypheny.db.cypher.clause;
 
 import java.util.List;
-import java.util.stream.Stream;
 import lombok.Getter;
 import org.polypheny.db.cypher.expression.CypherLiteral;
 import org.polypheny.db.cypher.pattern.CypherNodePattern;
@@ -28,8 +27,6 @@ import org.polypheny.db.cypher.pattern.CypherNodePattern;
 import org.polypheny.db.cypher.pattern.CypherPattern;
 import org.polypheny.db.cypher.pattern.CypherRelPattern;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.transaction.locking.IdentifierRegistry;
-import org.polypheny.db.transaction.locking.IdentifierUtils;
 
 
 @Getter
@@ -41,7 +38,6 @@ public class CypherCreate extends CypherClause {
     public CypherCreate( ParserPos pos, List<CypherPattern> patterns ) {
         super( pos );
         this.patterns = patterns;
-        addEntryIdentifiers();
     }
 
 
