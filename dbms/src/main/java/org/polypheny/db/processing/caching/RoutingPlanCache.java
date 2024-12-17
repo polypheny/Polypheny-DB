@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationAction;
 import org.polypheny.db.information.InformationGraph;
@@ -69,6 +70,7 @@ public class RoutingPlanCache {
     }
 
 
+    @NotNull
     public List<CachedProposedRoutingPlan> getIfPresent( String queryId, Set<Long> partitionIds ) {
         List<CachedProposedRoutingPlan> routingPlans = planCache.getIfPresent( Pair.of( queryId, partitionIds ) );
         if ( routingPlans == null ) {

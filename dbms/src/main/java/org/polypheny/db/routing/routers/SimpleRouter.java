@@ -62,7 +62,9 @@ public class SimpleRouter extends AbstractDqlRouter {
         List<AllocationEntity> entities = Catalog.snapshot().alloc().getFromLogical( table.id );
 
         List<Long> partitionId = List.of( entities.get( 0 ).partitionId );
-        context.fieldDistribution = new ColumnDistribution( table.id, table.getColumnIds(), partitionId, partitionId, List.of(), context.getSnapshot() );
+        ColumnDistribution columnDistribution = new ColumnDistribution( table.id, table.getColumnIds(), partitionId, partitionId, List.of(), context.getSnapshot() );
+        context.fieldDistribution = columnDistribution;
+        context.routedDistribution = columnDistribution.route();
 
         // Only one builder available
         super.handleRelScan( builders.get( 0 ), context.getStatement(), entities.get( 0 ) );
