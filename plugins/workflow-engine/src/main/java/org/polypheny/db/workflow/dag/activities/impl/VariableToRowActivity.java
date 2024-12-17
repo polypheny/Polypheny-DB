@@ -49,6 +49,8 @@ import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
         outPorts = { @OutPort(type = PortType.REL) }
 )
 @BoolSetting(key = "allJson", displayName = "All JSON")
+
+@SuppressWarnings("unused")
 public class VariableToRowActivity implements Activity {
 
     @Override
@@ -104,10 +106,9 @@ public class VariableToRowActivity implements Activity {
             row.add( insertAsString ? PolyString.of( node.toString() ) : PolyValue.fromJson( node.toString() ) );
         }
 
-        try ( RelWriter writer = ctx.createRelWriter( 0, builder.build(), true ) ) {
-            if ( !variables.isEmpty() ) {
-                writer.write( row );
-            }
+        RelWriter writer = ctx.createRelWriter( 0, builder.build(), true );
+        if ( !variables.isEmpty() ) {
+            writer.write( row );
         }
     }
 

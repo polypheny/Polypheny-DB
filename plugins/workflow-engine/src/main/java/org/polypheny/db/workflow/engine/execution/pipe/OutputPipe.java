@@ -19,14 +19,13 @@ package org.polypheny.db.workflow.engine.execution.pipe;
 import java.util.List;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.type.entity.document.PolyDocument;
 
 public interface OutputPipe extends AutoCloseable {
 
     void put( List<PolyValue> value ) throws InterruptedException;
 
-    default void put( PolyDocument document ) throws InterruptedException {
-        put( List.of( document ) );
+    default void put( PolyValue value ) throws InterruptedException {
+        put( List.of( value ) );
     }
 
     AlgDataType getType();

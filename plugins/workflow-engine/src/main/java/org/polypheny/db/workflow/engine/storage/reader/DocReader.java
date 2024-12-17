@@ -49,7 +49,7 @@ public class DocReader extends CheckpointReader {
         registerIterator( it );
         try {
             PolyDocument doc = it.next()[0].asDocument();
-            return doc.get( PolyString.of( "count" ) ).asLong().value;
+            return doc.get( PolyString.of( "count" ) ).asNumber().longValue();
         } catch ( NoSuchElementException | IndexOutOfBoundsException | NullPointerException ignored ) {
             return 0;
         }

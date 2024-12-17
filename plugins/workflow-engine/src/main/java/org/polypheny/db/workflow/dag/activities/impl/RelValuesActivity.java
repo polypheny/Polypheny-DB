@@ -65,10 +65,12 @@ import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
 )
 @IntSetting(key = "rowCount", displayName = "Row Count", defaultValue = 3, min = 1, max = 1_000_000)
 @BoolSetting(key = "fixSeed", displayName = "Fix Random Seed", defaultValue = false)
+
+@SuppressWarnings("unused")
 public class RelValuesActivity implements Activity, Fusable, Pipeable {
 
-    private static final List<String> NAMES = List.of( "Alice", "Bob", "Charlie", "Diana", "Eve", "Frank", "Grace", "Hank" );
-    private static final List<String> LAST_NAMES = List.of( "Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis" );
+    public static final List<String> NAMES = List.of( "Alice", "Bob", "Charlie", "Diana", "Eve", "Frank", "Grace", "Hank" );
+    public static final List<String> LAST_NAMES = List.of( "Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis" );
 
 
     @Override
@@ -79,12 +81,12 @@ public class RelValuesActivity implements Activity, Fusable, Pipeable {
 
     @Override
     public void execute( List<CheckpointReader> inputs, Settings settings, ExecutionContext ctx ) throws Exception {
-        try ( RelWriter writer = ctx.createRelWriter( 0, getType(), true ) ) {
-            writer.write( getValues(
-                    settings.get( "rowCount", IntValue.class ).getValue(),
-                    settings.get( "fixSeed", BoolValue.class ).getValue()
-            ).iterator() );
-        }
+        List<List<PolyValue>> values = getValues(
+                settings.get( "rowCount", IntValue.class ).getValue(),
+                settings.get( "fixSeed", BoolValue.class ).getValue()
+        );
+        RelWriter writer = ctx.createRelWriter( 0, getType(), true );
+        writer.write( values.iterator() );
     }
 
 

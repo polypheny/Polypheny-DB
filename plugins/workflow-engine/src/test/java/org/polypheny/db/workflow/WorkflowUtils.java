@@ -19,6 +19,7 @@ package org.polypheny.db.workflow;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.BooleanNode;
+import com.fasterxml.jackson.databind.node.DoubleNode;
 import com.fasterxml.jackson.databind.node.IntNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import java.time.LocalDateTime;
@@ -33,6 +34,8 @@ import org.polypheny.db.util.graph.TopologicalOrderIterator;
 import org.polypheny.db.workflow.dag.Workflow;
 import org.polypheny.db.workflow.dag.WorkflowImpl;
 import org.polypheny.db.workflow.dag.activities.Activity.ControlStateMerger;
+import org.polypheny.db.workflow.dag.activities.impl.DocExtractActivity;
+import org.polypheny.db.workflow.dag.activities.impl.LpgExtractActivity;
 import org.polypheny.db.workflow.dag.settings.EntityValue;
 import org.polypheny.db.workflow.engine.storage.StorageUtils;
 import org.polypheny.db.workflow.models.ActivityConfigModel;
@@ -317,6 +320,43 @@ public class WorkflowUtils {
     }
 
 
+    public static Workflow getDocumentLoadAndExtract( int nDocs, String targetNamespace, String targetCollection ) {
+        List<ActivityModel> activities = List.of(
+                new ActivityModel( "docValues", Map.of( "count", IntNode.valueOf( nDocs ) ) ),
+                new ActivityModel( "docLoad", getDocEntitySetting( targetNamespace, targetCollection ) ),
+                new ActivityModel( "docExtract", getDocEntitySetting( targetNamespace, targetCollection ) ) );
+        List<EdgeModel> edges = List.of(
+                EdgeModel.of( activities.get( 0 ), activities.get( 1 ) ),
+                EdgeModel.of( activities.get( 1 ), activities.get( 2 ), true )
+        );
+        return getWorkflow( activities, edges, false, false, 1 );
+    }
+
+
+    public static Workflow getLpgWorkflow( int nNodes, double edgeDensity, boolean pipelineEnabled ) {
+        List<ActivityModel> activities = List.of(
+                new ActivityModel( "lpgValues", Map.of( "count", IntNode.valueOf( nNodes ), "edgeDensity", DoubleNode.valueOf( edgeDensity ) ) ),
+                new ActivityModel( "lpgIdentity" ) );
+        List<EdgeModel> edges = List.of(
+                EdgeModel.of( activities.get( 0 ), activities.get( 1 ) )
+        );
+        return getWorkflow( activities, edges, false, pipelineEnabled, 1 );
+    }
+
+
+    public static Workflow getLpgLoadAndExtract( int nNodes, double edgeDensity, String targetGraph ) {
+        List<ActivityModel> activities = List.of(
+                new ActivityModel( "lpgValues", Map.of( "count", IntNode.valueOf( nNodes ), "edgeDensity", DoubleNode.valueOf( edgeDensity ) ) ),
+                new ActivityModel( "lpgLoad", getGraphEntitySetting( targetGraph ) ),
+                new ActivityModel( "lpgExtract", getGraphEntitySetting( targetGraph ) ) );
+        List<EdgeModel> edges = List.of(
+                EdgeModel.of( activities.get( 0 ), activities.get( 1 ) ),
+                EdgeModel.of( activities.get( 1 ), activities.get( 2 ), true )
+        );
+        return getWorkflow( activities, edges, false, false, 1 );
+    }
+
+
     public static List<UUID> getTopologicalActivityIds( Workflow workflow ) {
         List<UUID> list = new ArrayList<>();
         for ( UUID n : TopologicalOrderIterator.of( workflow.toDag() ) ) {
@@ -333,6 +373,16 @@ public class WorkflowUtils {
 
     private static Map<String, JsonNode> extractTableSetting() {
         return Map.of( "table", getEntitySetting( "public", StorageUtils.REL_TABLE ) );
+    }
+
+
+    private static Map<String, JsonNode> getDocEntitySetting( String ns, String collection ) {
+        return Map.of( DocExtractActivity.COLL_KEY, getEntitySetting( ns, collection ) );
+    }
+
+
+    private static Map<String, JsonNode> getGraphEntitySetting( String graphName ) {
+        return Map.of( LpgExtractActivity.GRAPH_KEY, getEntitySetting( graphName, graphName ) );
     }
 
 

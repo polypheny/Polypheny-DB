@@ -70,7 +70,10 @@ public interface Pipeable extends Activity {
         AlgDataType type = lockOutputType( inputTypes, settings );
         List<InputPipe> inPipes = inputs.stream().map( reader -> (InputPipe) new CheckpointInputPipe( reader ) ).toList();
         PipeExecutionContext pipeCtx = (ExecutionContextImpl) ctx;
-        try ( CheckpointWriter writer = ctx.createWriter( 0, type, true ) ) {
+
+        CheckpointWriter writer = ctx.createWriter( 0, type, true );
+
+        try {
             OutputPipe outPipe = new CheckpointOutputPipe( type, writer );
             pipe( inPipes, outPipe, settings, pipeCtx );
         } catch ( PipeInterruptedException e ) {

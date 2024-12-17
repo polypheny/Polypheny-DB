@@ -16,6 +16,8 @@
 
 package org.polypheny.db.workflow.engine.execution.context;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import lombok.Getter;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -33,11 +35,12 @@ import org.polypheny.db.workflow.engine.storage.writer.LpgWriter;
 import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
 
 
-public class ExecutionContextImpl implements ExecutionContext, PipeExecutionContext {
+public class ExecutionContextImpl implements ExecutionContext, PipeExecutionContext, AutoCloseable {
 
     private final StorageManager sm;
     private final ActivityWrapper activityWrapper;
     private final PortType[] remainingOutPorts; // contains the PortType for each outPort or null after the checkpoint was created to avoid duplicate checkpoints
+    private final List<CheckpointWriter> writers = new ArrayList<>();
 
     private volatile boolean interrupt = false;  // can be set by external thread to indicate that the activity should stop its execution
     @Getter
@@ -61,11 +64,10 @@ public class ExecutionContextImpl implements ExecutionContext, PipeExecutionCont
 
     // Inspired by the ExecutionContext of KNIME: See its usage on https://github.com/knime/knime-examples/
     @Override
-    public boolean checkInterrupted() throws ExecutorException {
+    public void checkInterrupted() throws ExecutorException {
         if ( interrupt ) {
             throw new ExecutorException( "Activity execution was interrupted" );
         }
-        return interrupt;
     }
 
 
@@ -74,7 +76,9 @@ public class ExecutionContextImpl implements ExecutionContext, PipeExecutionCont
         PortType type = Objects.requireNonNull( remainingOutPorts[idx] );
         remainingOutPorts[idx] = null;
         if ( type.canWriteTo( PortType.REL ) ) {
-            return sm.createRelCheckpoint( activityWrapper.getId(), idx, tupleType, resetPk, getStore( idx ) );
+            RelWriter writer = sm.createRelCheckpoint( activityWrapper.getId(), idx, tupleType, resetPk, getStore( idx ) );
+            writers.add( writer );
+            return writer;
         }
         throw new IllegalArgumentException( "Unable to create a relational checkpoint for output type " + type );
     }
@@ -85,7 +89,9 @@ public class ExecutionContextImpl implements ExecutionContext, PipeExecutionCont
         PortType type = Objects.requireNonNull( remainingOutPorts[idx] );
         remainingOutPorts[idx] = null;
         if ( type.canWriteTo( PortType.DOC ) ) {
-            return sm.createDocCheckpoint( activityWrapper.getId(), idx, getStore( idx ) );
+            DocWriter writer = sm.createDocCheckpoint( activityWrapper.getId(), idx, getStore( idx ) );
+            writers.add( writer );
+            return writer;
         }
         throw new IllegalArgumentException( "Unable to create a document checkpoint for output type " + type );
     }
@@ -96,7 +102,9 @@ public class ExecutionContextImpl implements ExecutionContext, PipeExecutionCont
         PortType type = Objects.requireNonNull( remainingOutPorts[idx] );
         remainingOutPorts[idx] = null;
         if ( type.canWriteTo( PortType.LPG ) ) {
-            return sm.createLpgCheckpoint( activityWrapper.getId(), idx, getStore( idx ) );
+            LpgWriter writer = sm.createLpgCheckpoint( activityWrapper.getId(), idx, getStore( idx ) );
+            writers.add( writer );
+            return writer;
         }
         throw new IllegalArgumentException( "Unable to create a graph checkpoint for output type " + type );
     }
@@ -106,7 +114,9 @@ public class ExecutionContextImpl implements ExecutionContext, PipeExecutionCont
     public CheckpointWriter createWriter( int idx, AlgDataType tupleType, boolean resetPk ) {
         PortType type = Objects.requireNonNull( remainingOutPorts[idx] );
         remainingOutPorts[idx] = null;
-        return sm.createCheckpoint( activityWrapper.getId(), idx, tupleType, resetPk, getStore( idx ), type.getDataModel() );
+        CheckpointWriter writer = sm.createCheckpoint( activityWrapper.getId(), idx, tupleType, resetPk, getStore( idx ), type.getDataModel() );
+        writers.add( writer );
+        return writer;
     }
 
 
@@ -136,5 +146,12 @@ public class ExecutionContextImpl implements ExecutionContext, PipeExecutionCont
         return activityWrapper.getConfig().getPreferredStore( idx );
     }
 
+
+    @Override
+    public void close() throws Exception {
+        for ( CheckpointWriter writer : writers ) {
+            writer.close();
+        }
+    }
 
 }

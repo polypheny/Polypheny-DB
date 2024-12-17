@@ -46,6 +46,8 @@ import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
         inPorts = { @InPort(type = PortType.REL), @InPort(type = PortType.REL) },
         outPorts = { @OutPort(type = PortType.REL) }
 )
+
+@SuppressWarnings("unused")
 public class RelUnionActivity implements Activity, Fusable, Pipeable {
 
     @Override

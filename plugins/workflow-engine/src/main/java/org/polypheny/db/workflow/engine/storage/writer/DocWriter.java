@@ -55,8 +55,10 @@ public class DocWriter extends CheckpointWriter {
 
     @Override
     public void close() throws Exception {
-        writer.close();
-        super.close();
+        if ( transaction.isActive() ) { // ensure writer is only closed once
+            writer.close();
+            super.close();
+        }
     }
 
 

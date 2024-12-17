@@ -40,9 +40,10 @@ public class VariableWriterExecutor extends Executor {
     @Override
     void execute() throws ExecutorException {
         List<CheckpointReader> inputs = getReaders( wrapper );
-        ctx = new ExecutionContextImpl( wrapper, sm );
 
-        try ( CloseableList ignored = new CloseableList( inputs ) ) {
+        try ( CloseableList ignored = new CloseableList( inputs );
+                ExecutionContextImpl ctx = new ExecutionContextImpl( wrapper, sm ) ) {
+            this.ctx = ctx;
             VariableWriter activity = (VariableWriter) wrapper.getActivity();
             activity.execute( inputs, wrapper.resolveSettings(), ctx, wrapper.getVariables() );
             wrapper.setOutTypePreview( sm.getOptionalCheckpointTypes( wrapper.getId() ) );

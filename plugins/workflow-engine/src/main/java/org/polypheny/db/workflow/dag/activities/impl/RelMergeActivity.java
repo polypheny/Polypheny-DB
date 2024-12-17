@@ -34,12 +34,13 @@ import org.polypheny.db.workflow.dag.settings.SettingDef.SettingsPreview;
 import org.polypheny.db.workflow.engine.execution.context.ExecutionContext;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointQuery;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
-import org.polypheny.db.workflow.engine.storage.writer.CheckpointWriter;
 
 @ActivityDefinition(type = "relMerge", displayName = "Relational Merge", categories = { ActivityCategory.TRANSFORM, ActivityCategory.RELATIONAL },
         inPorts = { @InPort(type = PortType.REL), @InPort(type = PortType.REL, isOptional = true) }, // TODO: check if optional works
         outPorts = { @OutPort(type = PortType.REL) }
 )
+
+@SuppressWarnings("unused")
 public class RelMergeActivity implements Activity {
 
     @Override
@@ -62,9 +63,9 @@ public class RelMergeActivity implements Activity {
         if ( input0 == null || input1 == null ) {
             assert (input0 != null || input1 != null);
             CheckpointReader input = input0 != null ? input0 : input1;
-            try ( CheckpointWriter writer = ctx.createRelWriter( 0, input.getTupleType(), true ) ) {
-                writer.write( input.getIterator() );
-            }
+
+            ctx.createRelWriter( 0, input.getTupleType(), true )
+                    .write( input.getIterator() );
             return;
         }
 
@@ -73,10 +74,8 @@ public class RelMergeActivity implements Activity {
                 .query( "SELECT * FROM " + CheckpointQuery.ENTITY( 0 ) + " UNION ALL SELECT * FROM " + CheckpointQuery.ENTITY( 1 ) )
                 .build();
         Pair<AlgDataType, Iterator<List<PolyValue>>> result = input0.getIteratorFromQuery( query, inputs );
-        try ( CheckpointWriter writer = ctx.createRelWriter( 0, result.left, true ) ) {
-            writer.write( result.right );
-        }
-
+        ctx.createRelWriter( 0, result.left, true )
+                .write( result.right );
     }
 
 

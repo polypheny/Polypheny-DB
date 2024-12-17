@@ -41,7 +41,6 @@ import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
 import org.polypheny.db.workflow.dag.activities.Pipeable;
 import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
 import org.polypheny.db.workflow.engine.execution.context.ExecutionContextImpl;
-import org.polypheny.db.workflow.engine.execution.context.PipeExecutionContext;
 import org.polypheny.db.workflow.engine.execution.pipe.CheckpointInputPipe;
 import org.polypheny.db.workflow.engine.execution.pipe.CheckpointOutputPipe;
 import org.polypheny.db.workflow.engine.execution.pipe.InputPipe;
@@ -202,6 +201,7 @@ public class PipeExecutor extends Executor {
         DataModel model = wrapper.getDef().getOutPortTypes()[0].getDataModel(); // TODO: handle ANY DataModel
         String store = wrapper.getConfig().getPreferredStore( 0 );
 
+        System.out.println( "creating CheckpointWriterPipe for model " + model );
         CheckpointWriter writer = sm.createCheckpoint( rootId, 0, rootType, true, store, model );
         return new CheckpointOutputPipe( rootType, writer );
     }
@@ -240,7 +240,7 @@ public class PipeExecutor extends Executor {
     private Callable<Void> getCallable( ActivityWrapper wrapper, List<InputPipe> inPipes, OutputPipe outPipe ) {
         Settings settings = settingsSnapshot.get( wrapper.getId() );
         Pipeable activity = (Pipeable) wrapper.getActivity();
-        PipeExecutionContext ctx = new ExecutionContextImpl( wrapper, sm );
+        ExecutionContextImpl ctx = new ExecutionContextImpl( wrapper, sm );
         return () -> {
             log.info( "2.1 Starting execution of " + wrapper );
             try {
@@ -262,6 +262,7 @@ public class PipeExecutor extends Executor {
                     }
                 }
                 ctx.updateProgress( 1 );
+                ctx.close();
             }
             log.info( "2.2 Finished execution of " + wrapper );
             return null;

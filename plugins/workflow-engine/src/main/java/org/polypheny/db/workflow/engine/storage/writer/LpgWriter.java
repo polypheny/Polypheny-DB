@@ -16,6 +16,7 @@
 
 package org.polypheny.db.workflow.engine.storage.writer;
 
+import java.util.Iterator;
 import java.util.List;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -47,6 +48,13 @@ public class LpgWriter extends CheckpointWriter {
     }
 
 
+    public void writeFromIterator( Iterator<GraphPropertyHolder> iterator ) {
+        while ( iterator.hasNext() ) {
+            write( iterator.next() );
+        }
+    }
+
+
     public void writeNode( PolyNode node ) {
         if ( isWritingEdges ) {
             throw new GenericRuntimeException( "Cannot write node after writing edges" );
@@ -55,9 +63,23 @@ public class LpgWriter extends CheckpointWriter {
     }
 
 
+    public void writeNode( Iterator<PolyNode> iterator ) {
+        while ( iterator.hasNext() ) {
+            writeNode( iterator.next() );
+        }
+    }
+
+
     public void writeEdge( PolyEdge edge ) {
         writer.write( edge );
         isWritingEdges = true;
+    }
+
+
+    public void writeEdge( Iterator<PolyEdge> iterator ) {
+        while ( iterator.hasNext() ) {
+            writeEdge( iterator.next() );
+        }
     }
 
 
@@ -76,8 +98,10 @@ public class LpgWriter extends CheckpointWriter {
 
     @Override
     public void close() throws Exception {
-        writer.close();
-        super.close();
+        if ( transaction.isActive() ) { // ensure writer is only closed once
+            writer.close();
+            super.close();
+        }
     }
 
 

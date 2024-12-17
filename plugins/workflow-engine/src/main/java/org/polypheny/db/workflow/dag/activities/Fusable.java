@@ -83,7 +83,8 @@ public interface Fusable extends Activity {
         }
 
         Iterator<PolyValue[]> iterator = executedContext.getIterator().getIterator();
-        try ( CheckpointWriter writer = ctx.createWriter( 0, root.validatedRowType, true ) ) {
+        CheckpointWriter writer = ctx.createWriter( 0, root.validatedRowType, true );
+        try {
             while ( iterator.hasNext() ) {
                 writer.write( Arrays.asList( iterator.next() ) );
             }

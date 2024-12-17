@@ -69,6 +69,7 @@ import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
 
 @EntitySetting(key = TABLE_KEY, displayName = "Table", dataModel = DataModel.RELATIONAL, mustExist = true)
 
+@SuppressWarnings("unused")
 public class RelExtractActivity implements Activity, Fusable, Pipeable {
 
     static final String TABLE_KEY = "table";
@@ -92,10 +93,8 @@ public class RelExtractActivity implements Activity, Fusable, Pipeable {
     public void execute( List<CheckpointReader> inputs, Settings settings, ExecutionContext ctx ) throws Exception {
         LogicalTable table = settings.get( TABLE_KEY, EntityValue.class ).getTable();
         AlgDataType type = getOutputType( table );
-
-        try ( RelWriter writer = ctx.createRelWriter( 0, type, true );
-                ResultIterator result = getResultIterator( ctx.getTransaction(), table ) ) { // transaction will get committed or rolled back externally
-
+        RelWriter writer = ctx.createRelWriter( 0, type, true );
+        try ( ResultIterator result = getResultIterator( ctx.getTransaction(), table ) ) { // transaction will get committed or rolled back externally
             writer.write( CheckpointReader.arrayToListIterator( result.getIterator(), true ) );
 
             /* Measuring execution time vs iteration time:

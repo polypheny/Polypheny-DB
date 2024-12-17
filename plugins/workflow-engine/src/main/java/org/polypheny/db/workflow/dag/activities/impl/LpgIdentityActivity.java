@@ -18,15 +18,12 @@ package org.polypheny.db.workflow.dag.activities.impl;
 
 import java.util.List;
 import java.util.Optional;
-import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.workflow.dag.activities.Activity;
 import org.polypheny.db.workflow.dag.activities.Activity.ActivityCategory;
 import org.polypheny.db.workflow.dag.activities.Activity.PortType;
 import org.polypheny.db.workflow.dag.activities.ActivityException;
-import org.polypheny.db.workflow.dag.activities.Fusable;
 import org.polypheny.db.workflow.dag.activities.Pipeable;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition.InPort;
@@ -38,18 +35,18 @@ import org.polypheny.db.workflow.engine.execution.context.PipeExecutionContext;
 import org.polypheny.db.workflow.engine.execution.pipe.InputPipe;
 import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
-import org.polypheny.db.workflow.engine.storage.reader.DocReader;
-import org.polypheny.db.workflow.engine.storage.writer.DocWriter;
+import org.polypheny.db.workflow.engine.storage.reader.LpgReader;
+import org.polypheny.db.workflow.engine.storage.writer.LpgWriter;
 
-@ActivityDefinition(type = "docIdentity", displayName = "Document Identity", categories = { ActivityCategory.TRANSFORM, ActivityCategory.DOCUMENT },
-        inPorts = { @InPort(type = PortType.DOC) },
-        outPorts = { @OutPort(type = PortType.DOC) }
+@ActivityDefinition(type = "lpgIdentity", displayName = "Graph Identity", categories = { ActivityCategory.TRANSFORM, ActivityCategory.GRAPH },
+        inPorts = { @InPort(type = PortType.LPG) },
+        outPorts = { @OutPort(type = PortType.LPG) }
 )
 @SuppressWarnings("unused")
-public class DocIdentityActivity implements Activity, Fusable, Pipeable {
+public class LpgIdentityActivity implements Activity, Pipeable {
 
 
-    public DocIdentityActivity() {
+    public LpgIdentityActivity() {
     }
 
 
@@ -61,9 +58,11 @@ public class DocIdentityActivity implements Activity, Fusable, Pipeable {
 
     @Override
     public void execute( List<CheckpointReader> inputs, Settings settings, ExecutionContext ctx ) throws Exception {
-        DocReader input = (DocReader) inputs.get( 0 );
-        DocWriter output = ctx.createDocWriter( 0 );
-        output.write( input.getIterator() );
+        LpgReader input = (LpgReader) inputs.get( 0 );
+        LpgWriter output = ctx.createLpgWriter( 0 );
+
+        output.writeNode( input.getNodeIterator() );
+        output.writeEdge( input.getEdgeIterator() );
     }
 
 
@@ -78,12 +77,6 @@ public class DocIdentityActivity implements Activity, Fusable, Pipeable {
         for ( List<PolyValue> value : inputs.get( 0 ) ) {
             output.put( value );
         }
-    }
-
-
-    @Override
-    public AlgNode fuse( List<AlgNode> inputs, Settings settings, AlgCluster cluster ) throws Exception {
-        return inputs.get( 0 ); // this does not really test fusion
     }
 
 

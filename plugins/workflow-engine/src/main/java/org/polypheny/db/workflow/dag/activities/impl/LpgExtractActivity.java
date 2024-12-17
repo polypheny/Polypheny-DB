@@ -16,28 +16,22 @@
 
 package org.polypheny.db.workflow.dag.activities.impl;
 
-import static org.polypheny.db.workflow.dag.activities.impl.DocExtractActivity.COLL_KEY;
+import static org.polypheny.db.workflow.dag.activities.impl.LpgExtractActivity.GRAPH_KEY;
 
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import org.polypheny.db.ResultIterator;
-import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.entity.logical.LogicalCollection;
+import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.logistic.DataModel;
-import org.polypheny.db.plan.AlgCluster;
-import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
-import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.workflow.dag.activities.Activity;
 import org.polypheny.db.workflow.dag.activities.Activity.ActivityCategory;
 import org.polypheny.db.workflow.dag.activities.Activity.PortType;
 import org.polypheny.db.workflow.dag.activities.ActivityException;
-import org.polypheny.db.workflow.dag.activities.Fusable;
 import org.polypheny.db.workflow.dag.activities.Pipeable;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition.OutPort;
@@ -51,28 +45,28 @@ import org.polypheny.db.workflow.engine.execution.pipe.InputPipe;
 import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
 import org.polypheny.db.workflow.engine.storage.QueryUtils;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
-import org.polypheny.db.workflow.engine.storage.writer.DocWriter;
+import org.polypheny.db.workflow.engine.storage.writer.LpgWriter;
 
-@ActivityDefinition(type = "docExtract", displayName = "Read Collection", categories = { ActivityCategory.EXTRACT, ActivityCategory.DOCUMENT },
+@ActivityDefinition(type = "lpgExtract", displayName = "Read Graph", categories = { ActivityCategory.EXTRACT, ActivityCategory.GRAPH },
         inPorts = {},
-        outPorts = { @OutPort(type = PortType.DOC) })
+        outPorts = { @OutPort(type = PortType.LPG) })
 
-@EntitySetting(key = COLL_KEY, displayName = "Collection", dataModel = DataModel.DOCUMENT, mustExist = true)
+@EntitySetting(key = GRAPH_KEY, displayName = "Graph", dataModel = DataModel.GRAPH, mustExist = true)
 
 @SuppressWarnings("unused")
-public class DocExtractActivity implements Activity, Fusable, Pipeable {
+public class LpgExtractActivity implements Activity, Pipeable {
 
-    public static final String COLL_KEY = "collection";
+    public static final String GRAPH_KEY = "graph";
 
-    private LogicalCollection lockedEntity;
+    private LogicalGraph lockedEntity;
 
 
     @Override
     public List<Optional<AlgDataType>> previewOutTypes( List<Optional<AlgDataType>> inTypes, SettingsPreview settings ) throws ActivityException {
-        Optional<EntityValue> collection = settings.get( COLL_KEY, EntityValue.class );
+        Optional<EntityValue> graph = settings.get( GRAPH_KEY, EntityValue.class );
 
-        if ( collection.isPresent() ) {
-            AlgDataType type = getOutputType( collection.get().getCollection() );
+        if ( graph.isPresent() ) {
+            AlgDataType type = getOutputType( graph.get().getGraph() );
             return Activity.wrapType( type );
         }
         return Activity.wrapType( null );
@@ -81,12 +75,17 @@ public class DocExtractActivity implements Activity, Fusable, Pipeable {
 
     @Override
     public void execute( List<CheckpointReader> inputs, Settings settings, ExecutionContext ctx ) throws Exception {
-        LogicalCollection collection = settings.get( COLL_KEY, EntityValue.class ).getCollection();
-        AlgDataType type = getOutputType( collection );
-        DocWriter writer = ctx.createDocWriter( 0 );
-        try ( ResultIterator result = getResultIterator( ctx.getTransaction(), collection ) ) { // transaction will get committed or rolled back externally
-            for ( Iterator<PolyValue[]> it = result.getIterator(); it.hasNext(); ) {
-                writer.write( it.next()[0].asDocument() );
+        LogicalGraph graph = settings.get( GRAPH_KEY, EntityValue.class ).getGraph();
+        AlgDataType type = getOutputType( graph );
+        LpgWriter writer = ctx.createLpgWriter( 0 );
+        try ( ResultIterator nodes = getResultIterator( ctx.getTransaction(), graph, false ) ) {
+            for ( Iterator<PolyValue[]> it = nodes.getIterator(); it.hasNext(); ) {
+                writer.writeNode( it.next()[0].asNode() );
+            }
+        }
+        try ( ResultIterator edges = getResultIterator( ctx.getTransaction(), graph, true ) ) {
+            for ( Iterator<PolyValue[]> it = edges.getIterator(); it.hasNext(); ) {
+                writer.writeEdge( it.next()[0].asEdge() );
             }
         }
 
@@ -100,45 +99,40 @@ public class DocExtractActivity implements Activity, Fusable, Pipeable {
 
 
     @Override
-    public AlgNode fuse( List<AlgNode> inputs, Settings settings, AlgCluster cluster ) throws Exception {
-        LogicalCollection collection = settings.get( COLL_KEY, EntityValue.class ).getCollection();
-        AlgTraitSet traits = AlgTraitSet.createEmpty().plus( ModelTrait.DOCUMENT );
-
-        return new LogicalDocumentScan( cluster, traits, collection );
-    }
-
-
-    @Override
     public AlgDataType lockOutputType( List<AlgDataType> inTypes, Settings settings ) throws Exception {
-        lockedEntity = settings.get( COLL_KEY, EntityValue.class ).getCollection();
+        lockedEntity = settings.get( GRAPH_KEY, EntityValue.class ).getGraph();
         return getOutputType( lockedEntity );
     }
 
 
     @Override
     public void pipe( List<InputPipe> inputs, OutputPipe output, Settings settings, PipeExecutionContext ctx ) throws Exception {
-        LogicalCollection collection = settings.get( COLL_KEY, EntityValue.class ).getCollection();
-        try ( ResultIterator result = getResultIterator( ctx.getTransaction(), collection ) ) { // transaction will get committed or rolled back externally
-            Iterator<List<PolyValue>> it = CheckpointReader.arrayToListIterator( result.getIterator(), true );
-            while ( it.hasNext() ) {
+        LogicalGraph graph = settings.get( GRAPH_KEY, EntityValue.class ).getGraph();
+        try ( ResultIterator nodes = getResultIterator( ctx.getTransaction(), graph, false ) ) {
+            for ( Iterator<List<PolyValue>> it = CheckpointReader.arrayToListIterator( nodes.getIterator(), true ); it.hasNext(); ) {
+                output.put( it.next() );
+            }
+        }
+        try ( ResultIterator edges = getResultIterator( ctx.getTransaction(), graph, true ) ) {
+            for ( Iterator<List<PolyValue>> it = CheckpointReader.arrayToListIterator( edges.getIterator(), true ); it.hasNext(); ) {
                 output.put( it.next() );
             }
         }
     }
 
 
-    private AlgDataType getOutputType( LogicalCollection collection ) {
-        return collection.getTupleType();
+    private AlgDataType getOutputType( LogicalGraph graph ) {
+        return graph.getTupleType();
     }
 
 
-    private ResultIterator getResultIterator( Transaction transaction, LogicalCollection collection ) {
-        String query = "db.\"" + collection.getName() + "\".find({})";
+    private ResultIterator getResultIterator( Transaction transaction, LogicalGraph graph, boolean isEdges ) {
+        String query = isEdges ? "MATCH ()-[r]->() RETURN r" : "MATCH (n) RETURN n";
 
-        System.out.println( "Before exec" );
+        System.out.println( "Before exec (isEdges: " + isEdges + ")" );
         long start = System.currentTimeMillis();
-        ExecutedContext executedContext = QueryUtils.parseAndExecuteQuery( query, "MQL", collection.getNamespaceId(), transaction );
-        System.out.println( "After exec (" + (System.currentTimeMillis() - start) + " ms)" );
+        ExecutedContext executedContext = QueryUtils.parseAndExecuteQuery( query, "cypher", graph.namespaceId, transaction );
+        System.out.println( "After exec (isEdges: " + isEdges + ", " + (System.currentTimeMillis() - start) + " ms)" );
         return executedContext.getIterator();
     }
 

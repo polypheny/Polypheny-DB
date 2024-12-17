@@ -20,13 +20,17 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.cypher.CypherTestTemplate;
+import org.polypheny.db.mql.MqlTestTemplate;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 
@@ -36,6 +40,10 @@ public class StorageUtils {
     public static final String HSQLDB_MVLOCKS = "hsqldb_mvlocks";
 
     public static final String REL_TABLE = "rel_data";
+    public static final String GRAPH = "lpg_data";
+
+    private static final Set<String> createdGraphs = new HashSet<>();
+    private static final Set<String> createdCollections = new HashSet<>();
 
 
     public static void addHsqldbStore( String name, String trxControlMode ) throws SQLException {
@@ -106,6 +114,32 @@ public class StorageUtils {
     }
 
 
+    public static void addLpgData() {
+        CypherTestTemplate.createGraph( GRAPH );
+        CypherTestTemplate.execute( "CREATE (p:Person {name: 'Ann', age: 45, depno: 13})", GRAPH );
+        CypherTestTemplate.execute( "CREATE (p:Person {name: 'Bob', age: 31, depno: 13})", GRAPH );
+        CypherTestTemplate.execute( "CREATE (p:Person {name: 'Hans', age: 55, depno: 7})", GRAPH );
+        CypherTestTemplate.execute( "CREATE (p:Person {name: 'Max'})-[rel:OWNER_OF]->(a:Animal {name:'Kira', age:3, type:'dog'})", GRAPH );
+    }
+
+
+    public static String createEmptyGraph() {
+        String graphName = "test_" + UUID.randomUUID().toString().replace( "-", "" );
+        CypherTestTemplate.createGraph( graphName );
+        createdGraphs.add( graphName );
+        return graphName;
+    }
+
+
+    public static String createEmptyCollection( String namespace ) {
+        MqlTestTemplate.initDatabase( namespace );
+        String collectionName = "test_" + UUID.randomUUID().toString().replace( "-", "" );
+        MqlTestTemplate.createCollection( collectionName, namespace );
+        createdCollections.add( collectionName );
+        return collectionName;
+    }
+
+
     public static void dropData() {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
@@ -115,6 +149,10 @@ public class StorageUtils {
         } catch ( SQLException e ) {
             throw new RuntimeException( e );
         }
+
+        CypherTestTemplate.deleteData( GRAPH );
+        createdGraphs.forEach( CypherTestTemplate::deleteData );
+        createdCollections.forEach( MqlTestTemplate::dropCollection );
     }
 
 }

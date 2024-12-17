@@ -61,6 +61,7 @@ import org.polypheny.db.workflow.engine.storage.reader.RelReader;
 @EntitySetting(key = TABLE_KEY, displayName = "Table", dataModel = DataModel.RELATIONAL)
 // add setting to keep or remove primary key column
 // add setting to switch between insert and update
+@SuppressWarnings("unused")
 public class RelLoadActivity implements Activity, Fusable, Pipeable {
 
     static final String TABLE_KEY = "table";
@@ -108,7 +109,7 @@ public class RelLoadActivity implements Activity, Fusable, Pipeable {
         // TODO: check if the adapter is a data store (and thus writable)
         LogicalTable table = setting.getTable();
         if ( table == null ) {
-            throw new InvalidSettingException( "Specified table does not exist", "table" );
+            throw new InvalidSettingException( "Specified table does not exist", TABLE_KEY );
         }
         return table;
     }

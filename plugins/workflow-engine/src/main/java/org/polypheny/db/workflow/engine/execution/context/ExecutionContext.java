@@ -28,12 +28,13 @@ import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
 
 public interface ExecutionContext {
 
-    boolean checkInterrupted() throws ExecutorException;
+    void checkInterrupted() throws ExecutorException;
 
     void updateProgress( double value );
 
     /**
      * Creates a {@link RelWriter} for the specified output index with the given tuple type.
+     * The writer is automatically closed by the executor that executes the activity.
      *
      * @param idx the output index.
      * @param tupleType the schema of the output.
@@ -42,14 +43,29 @@ public interface ExecutionContext {
      */
     RelWriter createRelWriter( int idx, AlgDataType tupleType, boolean resetPk );
 
+    /**
+     * Creates a {@link DocWriter} for the specified output index.
+     * The writer is automatically closed by the executor that executes the activity.
+     *
+     * @param idx the output index.
+     * @return a {@link DocWriter} for writing data to the output.
+     */
     DocWriter createDocWriter( int idx );
 
+    /**
+     * Creates a {@link LpgWriter} for the specified output index.
+     * The writer is automatically closed by the executor that executes the activity.
+     *
+     * @param idx the output index.
+     * @return a {@link LpgWriter} for writing data to the output.
+     */
     LpgWriter createLpgWriter( int idx );
 
     /**
      * Creates a CheckpointWriter for the specified output index and tuple type.
      * The data model of the checkpoint is automatically inferred from the output port definition.
      * In case of {@code PortType.ANY}, the relational data model is used.
+     * The writer is automatically closed by the executor that executes the activity.
      *
      * @param idx the output index.
      * @param tupleType the schema of the output. Only relevant for relational outputs.

@@ -42,6 +42,8 @@ import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 )
 @StringSetting(key = "variableName", displayName = "Variable Name", defaultValue = "field_names", minLength = 1, maxLength = 128)
 @IntSetting(key = "fields", displayName = "Target Fields", isList = true, defaultValue = 0, min = 0)
+
+@SuppressWarnings("unused")
 public class FieldNameToVariableActivity implements VariableWriter {
 
     @Override

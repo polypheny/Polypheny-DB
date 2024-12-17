@@ -27,7 +27,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nullable;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -133,7 +132,7 @@ public class StorageManagerImpl implements StorageManager {
 
     @Override
     public CheckpointReader readCheckpoint( UUID activityId, int outputIdx ) {
-        LogicalEntity entity = Objects.requireNonNull( checkpoints.get( activityId ).get( outputIdx ) );
+        LogicalEntity entity = Objects.requireNonNull( checkpoints.get( activityId ).get( outputIdx ), "Checkpoint does not exist for output " + outputIdx + " of activity " + activityId );
         return switch ( entity.dataModel ) {
             case RELATIONAL -> new RelReader( (LogicalTable) entity, QueryUtils.startTransaction( relNamespace, "RelRead" ) );
             case DOCUMENT -> new DocReader( (LogicalCollection) entity, QueryUtils.startTransaction( docNamespace, "DocRead" ) );
@@ -176,7 +175,7 @@ public class StorageManagerImpl implements StorageManager {
 
 
     @Override
-    public RelWriter createRelCheckpoint( UUID activityId, int outputIdx, AlgDataType type, boolean resetPk, @Nullable String storeName ) {
+    public synchronized RelWriter createRelCheckpoint( UUID activityId, int outputIdx, AlgDataType type, boolean resetPk, @Nullable String storeName ) {
         if ( storeName == null || storeName.isEmpty() ) {
             storeName = getDefaultStore( DataModel.RELATIONAL );
         }
@@ -422,9 +421,7 @@ public class StorageManagerImpl implements StorageManager {
         return switch ( targetEntity.dataModel ) {
             case RELATIONAL -> QueryUtils.startTransaction( relNamespace );
             case DOCUMENT -> QueryUtils.startTransaction( docNamespace );
-            case GRAPH -> {
-                throw new NotImplementedException();
-            }
+            case GRAPH -> QueryUtils.startTransaction( targetEntity.getNamespaceId() );
         };
     }
 
@@ -472,7 +469,10 @@ public class StorageManagerImpl implements StorageManager {
 
 
     private void acquireSchemaLock( Transaction transaction, long namespaceId ) throws DeadlockException {
-        LogicalNamespace namespace = Catalog.getInstance().getSnapshot().getNamespace( namespaceId ).orElseThrow();
+        LogicalNamespace namespace = Catalog.getInstance().getSnapshot().getNamespace( namespaceId ).orElse( null );
+        if ( namespace == null ) {
+            return; // for graphs, the namespace is already removed when the checkpoint is dropped
+        }
         transaction.acquireLockable( LockablesRegistry.INSTANCE.getOrCreateLockable( namespace ), LockType.EXCLUSIVE );
     }
 

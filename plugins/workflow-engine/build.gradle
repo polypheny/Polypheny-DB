@@ -27,6 +27,8 @@ dependencies {
     testImplementation(group: "org.polypheny", name: "polypheny-jdbc-driver", version: polypheny_jdbc_driver_version) {
         exclude(group: "com.fasterxml.jackson.core")
     }
+
+    testImplementation group: "com.konghq", name: "unirest-java", version: unirest_version
 }
 
 test.dependsOn(":dbms:shadowJar")

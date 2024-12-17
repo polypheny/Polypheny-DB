@@ -51,6 +51,7 @@ public class LpgBatchWriter implements AutoCloseable {
     private final List<PolyNode> nodeValues = new ArrayList<>();
     private final List<PolyEdge> edgeValues = new ArrayList<>();
     private long batchSize = -1;
+    private final boolean isBatchingDisabled = true; // TODO: either completely disable batching or find a solution
 
 
     public LpgBatchWriter( LogicalGraph graph, Transaction transaction ) {
@@ -66,7 +67,7 @@ public class LpgBatchWriter implements AutoCloseable {
         }
         nodeValues.add( node );
 
-        if ( nodeValues.size() < batchSize ) {
+        if ( isBatchingDisabled || nodeValues.size() < batchSize ) {
             return;
         }
         executeBatch( false );
@@ -80,7 +81,7 @@ public class LpgBatchWriter implements AutoCloseable {
         }
         edgeValues.add( edge );
 
-        if ( edgeValues.size() < batchSize ) {
+        if ( isBatchingDisabled || edgeValues.size() < batchSize ) {
             return;
         }
         executeBatch( false );
@@ -90,13 +91,17 @@ public class LpgBatchWriter implements AutoCloseable {
     private void executeBatch( boolean isEdges ) {
 
         Statement statement = transaction.createStatement();
-        AlgNode modify = isEdges ? getModify( statement, List.of(), edgeValues ) : getModify( statement, nodeValues, List.of() );
+        AlgNode modify;
+        if ( isBatchingDisabled ) {
+            modify = getModify( statement, nodeValues, edgeValues );
+        } else {
+            modify = isEdges ? getModify( statement, List.of(), edgeValues ) : getModify( statement, nodeValues, List.of() );
+        }
         AlgRoot root = AlgRoot.of( modify, Kind.INSERT );
 
         List<? extends PolyValue> values = isEdges ? edgeValues : nodeValues;
         int batchSize = values.size();
 
-        System.out.println( "Executing batch of size " + batchSize );
         ExecutedContext executedContext = QueryUtils.executeAlgRoot( root, statement );
 
         if ( executedContext.getException().isPresent() ) {
@@ -104,8 +109,8 @@ public class LpgBatchWriter implements AutoCloseable {
         }
         List<List<PolyValue>> results = executedContext.getIterator().getAllRowsAndClose();
         long changedCount = results.size() == 1 ? results.get( 0 ).get( 0 ).asLong().longValue() : 0;
-        if ( changedCount != batchSize ) {
-            throw new GenericRuntimeException( "Unable to write all values of the batch: " + changedCount + " of " + batchSize + " tuples were written" );
+        if ( changedCount < 1 && batchSize > 0 ) { // Temporary solution, since changedCount can be higher than the number of tuples written
+            throw new GenericRuntimeException( "Unable to write all values of the batch: " + changedCount + " of " + batchSize + " tuples were written. Result is " + results );
         }
 
         values.clear();
@@ -137,6 +142,11 @@ public class LpgBatchWriter implements AutoCloseable {
 
     @Override
     public void close() throws Exception {
+        if ( isBatchingDisabled ) {
+            executeBatch( true ); // isEdges doesn't matter
+            return;
+        }
+
         if ( !nodeValues.isEmpty() ) {
             executeBatch( false );
         }

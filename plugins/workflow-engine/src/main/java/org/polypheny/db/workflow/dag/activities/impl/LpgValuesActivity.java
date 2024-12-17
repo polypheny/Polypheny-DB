@@ -26,26 +26,28 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.DocumentType;
-import org.polypheny.db.plan.AlgCluster;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.type.entity.document.PolyDocument;
+import org.polypheny.db.type.entity.graph.PolyDictionary;
+import org.polypheny.db.type.entity.graph.PolyEdge;
+import org.polypheny.db.type.entity.graph.PolyEdge.EdgeDirection;
+import org.polypheny.db.type.entity.graph.PolyNode;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.workflow.dag.activities.Activity;
 import org.polypheny.db.workflow.dag.activities.Activity.ActivityCategory;
 import org.polypheny.db.workflow.dag.activities.Activity.PortType;
 import org.polypheny.db.workflow.dag.activities.ActivityException;
-import org.polypheny.db.workflow.dag.activities.Fusable;
 import org.polypheny.db.workflow.dag.activities.Pipeable;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition.OutPort;
 import org.polypheny.db.workflow.dag.annotations.BoolSetting;
+import org.polypheny.db.workflow.dag.annotations.DoubleSetting;
 import org.polypheny.db.workflow.dag.annotations.IntSetting;
 import org.polypheny.db.workflow.dag.settings.BoolValue;
+import org.polypheny.db.workflow.dag.settings.DoubleValue;
 import org.polypheny.db.workflow.dag.settings.IntValue;
 import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingsPreview;
@@ -54,19 +56,23 @@ import org.polypheny.db.workflow.engine.execution.context.PipeExecutionContext;
 import org.polypheny.db.workflow.engine.execution.pipe.InputPipe;
 import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
-import org.polypheny.db.workflow.engine.storage.writer.DocWriter;
+import org.polypheny.db.workflow.engine.storage.writer.LpgWriter;
 
 @Slf4j
 
-@ActivityDefinition(type = "docValues", displayName = "Constant Collection", categories = { ActivityCategory.EXTRACT, ActivityCategory.DOCUMENT },
+@ActivityDefinition(type = "lpgValues", displayName = "Generate Graph", categories = { ActivityCategory.EXTRACT, ActivityCategory.GRAPH },
         inPorts = {},
-        outPorts = { @OutPort(type = PortType.DOC) }
+        outPorts = { @OutPort(type = PortType.LPG) }
 )
-@IntSetting(key = "count", displayName = "Document Count", defaultValue = 3, min = 1, max = 1_000_000)
+@IntSetting(key = "count", displayName = "Node Count", defaultValue = 3, min = 1, max = 1_000)
+@DoubleSetting(key = "edgeDensity", displayName = "Edges per Node", defaultValue = 0.5, min = 0, max = 1)
 @BoolSetting(key = "fixSeed", displayName = "Fix Random Seed", defaultValue = false)
 
 @SuppressWarnings("unused")
-public class DocValuesActivity implements Activity, Fusable, Pipeable {
+public class LpgValuesActivity implements Activity, Pipeable {
+
+    private static final String NODE_LABEL = "Person";
+    private static final String EDGE_LABEL = "KNOWS";
 
 
     @Override
@@ -77,11 +83,13 @@ public class DocValuesActivity implements Activity, Fusable, Pipeable {
 
     @Override
     public void execute( List<CheckpointReader> inputs, Settings settings, ExecutionContext ctx ) throws Exception {
-        DocWriter writer = ctx.createDocWriter( 0 );
-        writer.writeFromIterator( getValues(
-                settings.get( "count", IntValue.class ).getValue(),
-                settings.get( "fixSeed", BoolValue.class ).getValue()
-        ).iterator() );
+        boolean fixSeed = settings.get( "fixSeed", BoolValue.class ).getValue();
+        List<PolyNode> nodes = getNodes( settings.get( "count", IntValue.class ).getValue(), fixSeed );
+        List<PolyEdge> edges = getEdges( nodes.stream().map( PolyNode::getId ).toList(), settings.get( "edgeDensity", DoubleValue.class ).getValue(), fixSeed );
+
+        LpgWriter writer = ctx.createLpgWriter( 0 );
+        writer.writeNode( nodes.iterator() );
+        writer.writeEdge( edges.iterator() );
     }
 
 
@@ -95,23 +103,28 @@ public class DocValuesActivity implements Activity, Fusable, Pipeable {
     public void pipe( List<InputPipe> inputs, OutputPipe output, Settings settings, PipeExecutionContext ctx ) throws Exception {
         int n = settings.get( "count", IntValue.class ).getValue();
         boolean fixSeed = settings.get( "fixSeed", BoolValue.class ).getValue();
+        double edgeDensity = settings.get( "edgeDensity", DoubleValue.class ).getValue();
 
         Random random = fixSeed ? new Random( 42 ) : new Random();
+        List<PolyString> nodeIds = new ArrayList<>();
         for ( int i = 0; i < n; i++ ) {
-            PolyDocument doc = getValue( random );
-            output.put( doc );
-            log.info( "Value pipe inserted " + doc );
+            PolyNode node = getNode( random );
+            nodeIds.add( node.id );
+            output.put( node );
         }
-    }
 
-
-    @Override
-    public AlgNode fuse( List<AlgNode> inputs, Settings settings, AlgCluster cluster ) throws Exception {
-        List<PolyDocument> values = getValues(
-                settings.get( "count", IntValue.class ).getValue(),
-                settings.get( "fixSeed", BoolValue.class ).getValue()
-        );
-        return LogicalDocumentValues.create( cluster, values );
+        if ( edgeDensity > 0 && n > 1 ) {
+            random = fixSeed ? new Random( 42 ) : random;
+            for ( int i = 0; i < n; i++ ) {
+                if ( random.nextDouble() < edgeDensity ) {
+                    int target;
+                    do {
+                        target = random.nextInt( n );
+                    } while ( target == i );
+                    output.put( getEdge( nodeIds, i, target ) );
+                }
+            }
+        }
     }
 
 
@@ -122,37 +135,62 @@ public class DocValuesActivity implements Activity, Fusable, Pipeable {
 
 
     private static AlgDataType getType() {
-        return DocumentType.ofId();
+        return AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.NODE );
     }
 
 
-    private static List<PolyDocument> getValues( int n, boolean fixSeed ) {
+    private static List<PolyNode> getNodes( int n, boolean fixSeed ) {
         Random random = fixSeed ? new Random( 42 ) : new Random();
-        List<PolyDocument> documents = new ArrayList<>();
+        List<PolyNode> nodes = new ArrayList<>();
         for ( int i = 0; i < n; i++ ) {
-            documents.add( getValue( random ) );
+            nodes.add( getNode( random ) );
         }
-        return documents;
+        return nodes;
     }
 
 
-    private static PolyDocument getValue( Random random ) {
+    private static List<PolyEdge> getEdges( List<PolyString> nodeIds, double edgeDensity, boolean fixSeed ) {
+        if ( edgeDensity == 0 || nodeIds.size() < 2 ) {
+            return List.of();
+        }
+        Random random = fixSeed ? new Random( 42 ) : new Random();
+        List<PolyEdge> edges = new ArrayList<>();
+        int n = nodeIds.size();
+        for ( int i = 0; i < n; i++ ) {
+            if ( random.nextDouble() < edgeDensity ) {
+                int target;
+                do {
+                    target = random.nextInt( n );
+                } while ( target == i );
+                edges.add( getEdge( nodeIds, i, target ) );
+            }
+        }
+        return edges;
+    }
+
+
+    private static PolyNode getNode( Random random ) {
         String firstName = NAMES.get( random.nextInt( NAMES.size() ) );
         String lastName = LAST_NAMES.get( random.nextInt( LAST_NAMES.size() ) );
         int age = random.nextInt( 18, 66 );
         int salary = random.nextInt( 5000, 10000 );
-        return getDocument( firstName, lastName, age, salary );
+        return getNode( firstName, lastName, age, salary );
     }
 
 
-    private static PolyDocument getDocument( String name, String lastName, int age, int salary ) {
+    private static PolyNode getNode( String name, String lastName, int age, int salary ) {
         Map<PolyString, PolyValue> map = new HashMap<>();
-        //map.put( PolyString.of( DocumentType.DOCUMENT_ID ), PolyString.of( UUID.randomUUID().toString().replace( "-", "" ).substring( 0, 12 ) ) );
         map.put( PolyString.of( "name" ), PolyString.of( name ) );
         map.put( PolyString.of( "lastName" ), PolyString.of( lastName ) );
         map.put( PolyString.of( "age" ), PolyInteger.of( age ) );
         map.put( PolyString.of( "salary" ), PolyInteger.of( salary ) );
-        return new PolyDocument( map );
+        return new PolyNode( new PolyDictionary( map ), List.of( PolyString.of( NODE_LABEL ) ), null );
+    }
+
+
+    private static PolyEdge getEdge( List<PolyString> nodes, int fromIdx, int toIdx ) {
+        return new PolyEdge( new PolyDictionary(), List.of( PolyString.of( EDGE_LABEL ) ),
+                nodes.get( fromIdx ), nodes.get( toIdx ), EdgeDirection.LEFT_TO_RIGHT, null );
     }
 
 }

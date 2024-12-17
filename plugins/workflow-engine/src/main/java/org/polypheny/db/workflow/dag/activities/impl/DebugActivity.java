@@ -58,6 +58,8 @@ import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
 @BoolSetting(key = "canPipe", displayName = "Enable Pipelining", defaultValue = false)
 @BoolSetting(key = "canFuse", displayName = "Enable Fusion", defaultValue = false)
 @BoolSetting(key = "isSuccessful", displayName = "Successful Execution", defaultValue = true)
+
+@SuppressWarnings("unused")
 public class DebugActivity implements Activity, Pipeable, Fusable {
 
     @Override
@@ -69,11 +71,11 @@ public class DebugActivity implements Activity, Pipeable, Fusable {
     @Override
     public void execute( List<CheckpointReader> inputs, Settings settings, ExecutionContext ctx ) throws Exception {
         RelReader input = (RelReader) inputs.get( 0 );
-        try ( RelWriter output = ctx.createRelWriter( 0, input.getTupleType(), false ) ) {
-            Thread.sleep( settings.get( "delay", IntValue.class ).getValue() );
-            checkFail( settings );
-            output.write( input.getIterator() );
-        }
+        RelWriter output = ctx.createRelWriter( 0, input.getTupleType(), false );
+
+        Thread.sleep( settings.get( "delay", IntValue.class ).getValue() );
+        checkFail( settings );
+        output.write( input.getIterator() );
     }
 
 

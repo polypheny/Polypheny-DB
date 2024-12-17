@@ -35,6 +35,7 @@ import org.polypheny.db.util.Wrapper;
 import org.polypheny.db.workflow.dag.activities.ActivityException.InvalidSettingException;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition;
 import org.polypheny.db.workflow.dag.annotations.BoolSetting;
+import org.polypheny.db.workflow.dag.annotations.DoubleSetting;
 import org.polypheny.db.workflow.dag.annotations.EntitySetting;
 import org.polypheny.db.workflow.dag.annotations.IntSetting;
 import org.polypheny.db.workflow.dag.annotations.StringSetting;
@@ -131,8 +132,11 @@ public abstract class SettingDef {
                 settings.add( new BoolSettingDef( a ) );
             } else if ( annotation instanceof BoolSetting.List a ) {
                 Arrays.stream( a.value() ).forEach( el -> settings.add( new BoolSettingDef( el ) ) );
+            } else if ( annotation instanceof DoubleSetting a ) {
+                settings.add( new DoubleSettingDef( a ) );
+            } else if ( annotation instanceof DoubleSetting.List a ) {
+                Arrays.stream( a.value() ).forEach( el -> settings.add( new DoubleSettingDef( el ) ) );
             }
-
         }
         return settings;
     }
@@ -153,7 +157,8 @@ public abstract class SettingDef {
         STRING,
         INT,
         ENTITY,
-        BOOLEAN
+        BOOLEAN,
+        DOUBLE
     }
 
 

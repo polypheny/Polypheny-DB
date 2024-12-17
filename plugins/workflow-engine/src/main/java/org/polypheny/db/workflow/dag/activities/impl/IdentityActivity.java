@@ -44,7 +44,6 @@ import org.polypheny.db.workflow.engine.execution.pipe.InputPipe;
 import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 import org.polypheny.db.workflow.engine.storage.reader.RelReader;
-import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
 
 @ActivityDefinition(type = "identity", displayName = "Identity", categories = { ActivityCategory.TRANSFORM, ActivityCategory.RELATIONAL },
         inPorts = { @InPort(type = PortType.REL) },
@@ -59,6 +58,8 @@ import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
 )
 @IntSetting(key = "I2", displayName = "THIRD", defaultValue = 0, isList = true, group = "groupA")
 @StringSetting(key = "S2", displayName = "FOURTH", defaultValue = "test", isList = true, group = "groupA", subGroup = "a")
+
+@SuppressWarnings("unused")
 public class IdentityActivity implements Activity, Fusable, Pipeable {
 
 
@@ -75,9 +76,8 @@ public class IdentityActivity implements Activity, Fusable, Pipeable {
     @Override
     public void execute( List<CheckpointReader> inputs, Settings settings, ExecutionContext ctx ) throws Exception {
         RelReader input = (RelReader) inputs.get( 0 );
-        try ( RelWriter output = ctx.createRelWriter( 0, input.getTupleType(), false ) ) {
-            output.write( input.getIterator() );
-        }
+        ctx.createRelWriter( 0, input.getTupleType(), false )
+                .write( input.getIterator() );
     }
 
 
