@@ -17,7 +17,9 @@
 package org.polypheny.db.cypher.expression;
 
 import com.google.common.collect.ImmutableList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import lombok.Getter;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgValues;
@@ -35,6 +37,7 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.util.Pair;
 
 @Getter
@@ -136,6 +139,11 @@ public class CypherExpression extends CypherNode {
 
 
     public PolyValue getComparable() {
+        if (this instanceof CypherFunctionInvocation func){
+            if (func.getOperatorName() == OperatorName.CYPHER_POINT){
+                // TODO: Call function to return PolyGeometry?
+            }
+        }
         throw new UnsupportedOperationException();
     }
 

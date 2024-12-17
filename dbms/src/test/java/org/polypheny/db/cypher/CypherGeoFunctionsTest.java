@@ -67,6 +67,24 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
         assert geometry.asPoint().getZ() == 100.0;
     }
 
+    @Test
+    public void createNodeWithPointTest(){
+        execute( "CREATE (z:Station {name: 'Zürich', location: point({latitude: 47.3769, longitude: 8.5417})})" );
+        // Node should have the following properties (according to Neo4j)
+        //"properties": {
+        //		  "name": "Zürich",
+        //		  "location": {
+        //			"srid": {
+        //			  "low": 4326,
+        //			  "high": 0
+        //			},
+        //			"x": 8.5417,
+        //			"y": 47.3769
+        //		  }
+        //		},
+        GraphResult res = execute( "MATCH (n) RETURN n;" );
+        assert res.data.length == 1;
+    }
 
     @Test
     public void createPointFromNodeFields() {
