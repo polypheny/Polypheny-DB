@@ -784,8 +784,17 @@ public class MqlFunctions {
         try {
             PolyGeometry geometryFilter = geometry.asGeometry();
             PolyGeometry inputGeometry = convertInputToPolyGeometry( input, geometryFilter.getSRID() );
+            double distanceValue;
+            if (distance.isBigDecimal()){
+                distanceValue = distance.asBigDecimal().doubleValue();
+            }
+            else if (distance.isDouble()){
+                distanceValue = distance.asDouble().doubleValue();
+            }
+            else {
+                throw new GenericRuntimeException( "Cannot parse distance %s to type double", distance);
+            }
 
-            double distanceValue = distance.asDouble().doubleValue();
             if ( distanceValue > 0 ) {
                 if(geometryFilter.getSRID() != 0){
                     // In the case of $centerSphere, we first have to convert radians to meters.
