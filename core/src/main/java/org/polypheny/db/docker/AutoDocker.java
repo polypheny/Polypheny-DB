@@ -75,7 +75,7 @@ public final class AutoDocker {
 
     private void updateStatus( String newStatus ) {
         status = newStatus;
-        log.info( "AutoDocker: " + newStatus );
+        log.info( "AutoDocker: {}", newStatus );
     }
 
 
@@ -243,7 +243,7 @@ public final class AutoDocker {
             try {
                 handshake = DockerSetupHelper.reconnectToInstance( maybeDockerInstance.get().getKey() );
             } catch ( DockerUserException e ) {
-                log.info( "AutoDocker: Reconnect failed: " + e );
+                log.info( "AutoDocker: Reconnect failed: {}", String.valueOf( e ) );
                 updateStatus( "error: " + e.getMessage() );
                 throw new DockerUserException( e.getMessage() );
             }
@@ -255,7 +255,7 @@ public final class AutoDocker {
                 }
                 handshake = res.get();
             } catch ( DockerUserException e ) {
-                log.info( "AutoDocker: Setup failed: " + e );
+                log.info( "AutoDocker: Setup failed: {}", String.valueOf( e ) );
                 updateStatus( "setup failed: " + e.getMessage() );
                 throw e;
             }
