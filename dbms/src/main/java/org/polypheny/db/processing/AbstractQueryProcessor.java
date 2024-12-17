@@ -1319,10 +1319,13 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
 
     private void cacheRouterPlans( List<ProposedRoutingPlan> proposedRoutingPlans, List<AlgOptCost> approximatedCosts, String queryId, Set<Long> partitionIds ) {
-        List<CachedProposedRoutingPlan> cachedPlans = new ArrayList<>();
+        List<CachedProposedRoutingPlan> cachedPlans = new ArrayList<>( RoutingPlanCache.INSTANCE.getIfPresent( queryId, partitionIds ) );
         for ( int i = 0; i < proposedRoutingPlans.size(); i++ ) {
-            if ( proposedRoutingPlans.get( i ).isCacheable() && !RoutingPlanCache.INSTANCE.isKeyPresent( queryId, partitionIds ) ) {
-                cachedPlans.add( new CachedProposedRoutingPlan( proposedRoutingPlans.get( i ), approximatedCosts.get( i ) ) );
+            if ( proposedRoutingPlans.get( i ).isCacheable() ) {
+                CachedProposedRoutingPlan plan = new CachedProposedRoutingPlan( proposedRoutingPlans.get( i ), approximatedCosts.get( i ) );
+                if ( !cachedPlans.contains( plan ) ) {
+                    cachedPlans.add( plan );
+                }
             }
         }
 

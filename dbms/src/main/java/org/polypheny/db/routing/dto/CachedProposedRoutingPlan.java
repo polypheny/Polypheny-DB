@@ -18,6 +18,7 @@ package org.polypheny.db.routing.dto;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.Value;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.routing.ColumnDistribution.RoutedDistribution;
 import org.polypheny.db.routing.FieldDistribution;
@@ -31,6 +32,7 @@ import org.polypheny.db.routing.RoutingPlan;
  */
 @Getter
 @Setter
+@Value
 public class CachedProposedRoutingPlan implements RoutingPlan {
 
     @Getter
@@ -38,10 +40,10 @@ public class CachedProposedRoutingPlan implements RoutingPlan {
     @Getter
     public FieldDistribution fieldDistribution; // PartitionId -> List<AllocationColumn>
 
-    protected String queryClass;
-    protected String physicalQueryClass;
-    protected AlgOptCost preCosts;
-    protected Class<? extends Router> router;
+    String queryClass;
+    String physicalQueryClass;
+    AlgOptCost preCosts;
+    Class<? extends Router> router;
 
 
     public CachedProposedRoutingPlan( ProposedRoutingPlan routingPlan, AlgOptCost approximatedCosts ) {
