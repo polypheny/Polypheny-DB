@@ -80,6 +80,7 @@ public class VolcanoQueryProcessor extends AbstractQueryProcessor {
             ImmutableList.of(
                     EnumerableRules.ENUMERABLE_REL_IDENTIFIER_RULE,
                     EnumerableRules.ENUMERABLE_DOC_IDENTIFIER_RULE,
+                    EnumerableRules.ENUMERABLE_LPG_IDENTIFIER_RULE,
                     EnumerableRules.ENUMERABLE_JOIN_RULE,
                     EnumerableRules.ENUMERABLE_MERGE_JOIN_RULE,
                     EnumerableRules.ENUMERABLE_SEMI_JOIN_RULE,
